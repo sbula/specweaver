@@ -65,8 +65,8 @@ class _CaptureOnEntry:
         self._sink = sink
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
-        self._sink["decomposition"] = context.decomposition
-        self._sink["plan"] = context.plan
+        self._sink["decomposition"] = context.plan_context.decomposition
+        self._sink["plan"] = context.plan_context.plan
         return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
 
 
@@ -117,7 +117,7 @@ class TestStoreRoundTripSeam:
         fresh = _ctx(tmp_path)
         rehydrate_from_records(pipeline, reloaded, fresh)
 
-        assert json.loads(fresh.decomposition) == plan
+        assert json.loads(fresh.plan_context.decomposition) == plan
 
     def test_proposed_dal_survives_the_round_trip(self, tmp_path: Path) -> None:
         """FR-7 depends on proposed_dal reaching downstream consumers intact."""
@@ -143,7 +143,9 @@ class TestStoreRoundTripSeam:
         fresh = _ctx(tmp_path)
         rehydrate_from_records(pipeline, store.load_run(run.run_id), fresh)
 
-        dals = [c["proposed_dal"] for c in json.loads(fresh.decomposition)["components"]]
+        dals = [
+            c["proposed_dal"] for c in json.loads(fresh.plan_context.decomposition)["components"]
+        ]
         assert dals == ["DAL_A", "DAL_D"]
 
 
@@ -186,7 +188,7 @@ class TestCrossSessionJourney:
         reg2.register(StepAction.VALIDATE, StepTarget.FEATURE, _Stub(ok=True))
         reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         ctx2 = _ctx(tmp_path)
-        assert ctx2.decomposition is None
+        assert ctx2.plan_context.decomposition is None
 
         run2 = asyncio.run(
             PipelineRunner(pipeline, ctx2, registry=reg2, store=store).resume(run1.run_id)
@@ -199,7 +201,7 @@ class TestCrossSessionJourney:
     def test_plan_artifact_rehydrates_from_the_real_file_across_sessions(
         self, tmp_path: Path
     ) -> None:
-        """context.plan is read from the artifact the PREVIOUS session left on disk."""
+        """context.plan_context.plan is read from the artifact the PREVIOUS session left on disk."""
         store = StateStore(tmp_path / "state.db")
         plan_file = tmp_path / "x_feature_spec_plan.yaml"
         plan_file.write_text(PLAN_BODY, encoding="utf-8")
@@ -335,7 +337,7 @@ class TestCrossSessionJourney:
         fresh = _ctx(tmp_path)
         rehydrate_from_records(pipeline, store.load_run(run.run_id), fresh)
 
-        assert fresh.decomposition is None
+        assert fresh.plan_context.decomposition is None
 
 
 class TestBundledPipelineCrossSession:
@@ -388,4 +390,4 @@ class TestBundledPipelineCrossSession:
 
         fresh = _ctx(tmp_path)
         rehydrate_from_records(pipeline, final, fresh)
-        assert json.loads(fresh.decomposition) == plan
+        assert json.loads(fresh.plan_context.decomposition) == plan

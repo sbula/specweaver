@@ -91,7 +91,7 @@ async def test_fan_out_cascade_failures_bubble_up(tmp_path: Path, mock_store: St
         "coverage_score": 1.0,
         "timestamp": "2026",
     }
-    ctx.plan = json.dumps(plan_data)
+    ctx.plan_context = ctx.plan_context.model_copy(update={"plan": json.dumps(plan_data)})
 
     with patch("specweaver.core.flow.handlers.decompose.OrchestrateComponentsHandler") as _:
         handler_instance = AsyncMock()

@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import PlanContext, RunContext
 from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 from specweaver.core.flow.handlers.generation import (
     GenerateCodeHandler,
@@ -457,7 +457,7 @@ class TestRunContextPlanFlowsToGenerator:
             spec_path=spec,
             output_dir=src_dir,
             llm=mock_llm,
-            plan="## File Layout\n- src/test.py: main module",
+            plan_context=PlanContext(plan="## File Layout\n- src/test.py: main module"),
         )
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
@@ -486,7 +486,7 @@ class TestRunContextPlanFlowsToGenerator:
             spec_path=spec,
             output_dir=tests_dir,
             llm=mock_llm,
-            plan="## Test Expectations\n- test_login: Check login flow",
+            plan_context=PlanContext(plan="## Test Expectations\n- test_login: Check login flow"),
         )
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
@@ -703,7 +703,9 @@ class TestDagOrchestratorIntegration:
                 },
             ]
         }
-        ctx.decomposition = json.dumps(plan_dict)
+        ctx.plan_context = ctx.plan_context.model_copy(
+            update={"decomposition": json.dumps(plan_dict)}
+        )
 
         # We need a PipelineRunner with a registry. We will mock the runner to fail on 'service_a'
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
@@ -754,7 +756,9 @@ class TestDagOrchestratorIntegration:
                 {"component": "service_b", "dependencies": [], "target_modules": ["auth"]},
             ]
         }
-        ctx.decomposition = json.dumps(plan_dict)
+        ctx.plan_context = ctx.plan_context.model_copy(
+            update={"decomposition": json.dumps(plan_dict)}
+        )
 
         # Mock topology showing collision
         mock_topo = MagicMock(spec=TopologyGraph)
@@ -820,7 +824,7 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
             ]
         }
     )
-    ctx.decomposition = mock_plan
+    ctx.plan_context = ctx.plan_context.model_copy(update={"decomposition": mock_plan})
 
     import importlib.resources
 

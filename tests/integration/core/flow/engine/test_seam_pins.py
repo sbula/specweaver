@@ -5,7 +5,7 @@
 """Seam pin — the D-INTL-03 plan bridge, driven by production wiring (INT-US-21 FR-9(b)).
 
 `D-INTL-03` shipped `PlanSpecHandler`, and `GenerateCodeHandler` enriches its prompt from
-``context.plan``. Nothing connected the two: ``RunContext.plan`` was documented as
+``context.plan_context.plan``. Nothing connected the two: ``RunContext.plan`` was documented as
 "(set by runner hook)" with **zero writes anywhere in src/** until SF-01 CB-2 added
 ``hydrate_plan_context``.
 
@@ -100,8 +100,8 @@ class _CaptureContextAtGenerate:
         self._sink = sink
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
-        self._sink["plan"] = context.plan
-        self._sink["decomposition"] = context.decomposition
+        self._sink["plan"] = context.plan_context.plan
+        self._sink["decomposition"] = context.plan_context.decomposition
         return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
 
 
@@ -137,7 +137,7 @@ def _run(tmp_path: Path, sink: dict[str, Any]):
 
 @pytest.mark.integration()
 class TestPlanBridgeIsHookDriven:
-    """FR-9(b): `context.plan` must arrive from the runner hook, not from a fixture."""
+    """FR-9(b): `context.plan_context.plan` must arrive from the runner hook, not from a fixture."""
 
     def test_plan_reaches_the_next_step_without_being_seeded(self, tmp_path: Path) -> None:
         sink: dict[str, Any] = {}
@@ -145,7 +145,7 @@ class TestPlanBridgeIsHookDriven:
 
         assert run.status == RunStatus.COMPLETED
         assert sink["plan"] is not None, (
-            "context.plan was still unset at the generate step — the D-INTL-03 bridge is not wired"
+            "context.plan_context.plan was still unset at the generate step — the D-INTL-03 bridge is not wired"
         )
 
     def test_the_value_is_the_artifact_on_disk_not_something_invented(self, tmp_path: Path) -> None:
@@ -167,7 +167,7 @@ class TestPlanBridgeIsHookDriven:
     def test_the_hook_is_what_sets_it(self, tmp_path: Path) -> None:
         """Remove the artifact between the steps and the field must stay unset, not stale.
 
-        If `context.plan` were populated by anything other than reading the step's `plan_path`,
+        If `context.plan_context.plan` were populated by anything other than reading the step's `plan_path`,
         deleting that file would not change the outcome.
         """
         sink: dict[str, Any] = {}

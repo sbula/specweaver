@@ -4,7 +4,7 @@
 
 """Tests for resume-time plan rehydration — INT-US-21 SF-01 CB-3 (FR-3).
 
-`context.decomposition` / `context.plan` live in memory and die with the process. On
+`context.plan_context.decomposition` / `context.plan_context.plan` live in memory and die with the process. On
 `resume()` they must be rebuilt from **persisted step records** before the loop starts,
 replaying the same `hydrate_plan_context` the live path uses so the two cannot diverge.
 
@@ -102,8 +102,8 @@ class TestRehydrationHappyPath:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition)["components"][0]["name"] == "auth"
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["name"] == "auth"
 
     def test_completed_record_rehydrates(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -111,7 +111,7 @@ class TestRehydrationHappyPath:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition == "{}" or ctx.decomposition is not None
+        assert ctx.plan_context.decomposition == "{}" or ctx.plan_context.decomposition is not None
 
     def test_plan_record_rehydrates_from_the_artifact_file(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -123,7 +123,7 @@ class TestRehydrationHappyPath:
 
         rehydrate_from_records(_pipeline(PLAN), run, ctx)
 
-        assert ctx.plan == "impl: plan\n"
+        assert ctx.plan_context.plan == "impl: plan\n"
 
     def test_both_fields_rehydrate_in_one_pass(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -142,8 +142,8 @@ class TestRehydrationHappyPath:
 
         rehydrate_from_records(_pipeline(PLAN, DECOMPOSE), run, ctx)
 
-        assert ctx.plan == "impl: plan\n"
-        assert ctx.decomposition is not None
+        assert ctx.plan_context.plan == "impl: plan\n"
+        assert ctx.plan_context.decomposition is not None
 
     def test_later_index_wins(self, tmp_path: Path) -> None:
         """A loop_back that re-ran decompose leaves two records; the newest must win."""
@@ -158,7 +158,7 @@ class TestRehydrationHappyPath:
 
         rehydrate_from_records(pipeline, run, ctx)
 
-        assert json.loads(ctx.decomposition)["components"][0]["n"] == "new"
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["n"] == "new"
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ class TestRehydrationBoundaries:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), _run(), ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     def test_more_records_than_pipeline_steps_skips_the_overflow(
         self, tmp_path: Path, caplog
@@ -187,7 +187,7 @@ class TestRehydrationBoundaries:
         with caplog.at_level("WARNING"):
             rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert json.loads(ctx.decomposition)["components"][0]["n"] == "a"
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["n"] == "a"
         assert any("gone" in r.getMessage() for r in caplog.records)
 
     def test_reordered_pipeline_skips_mismatched_indices(self, tmp_path: Path, caplog) -> None:
@@ -202,7 +202,7 @@ class TestRehydrationBoundaries:
         with caplog.at_level("WARNING"):
             rehydrate_from_records(reordered, run, ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
         assert any("decompose" in r.getMessage() for r in caplog.records)
 
     def test_resuming_with_a_different_pipeline_warns_up_front(
@@ -224,7 +224,7 @@ class TestRehydrationBoundaries:
 
         assert any("a_completely_different_pipeline" in r.getMessage() for r in caplog.records)
         # Same-named steps still rehydrate — the warning is advisory, not a hard stop.
-        assert ctx.decomposition is not None
+        assert ctx.plan_context.decomposition is not None
 
     def test_fewer_records_than_steps_is_fine(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -234,7 +234,7 @@ class TestRehydrationBoundaries:
 
         rehydrate_from_records(_pipeline(DECOMPOSE, PLAN), run, ctx)
 
-        assert ctx.decomposition is not None
+        assert ctx.plan_context.decomposition is not None
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +250,7 @@ class TestRehydrationDegradation:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     def test_plan_artifact_deleted_between_sessions_warns_and_skips(
         self, tmp_path: Path, caplog
@@ -268,7 +268,7 @@ class TestRehydrationDegradation:
         with caplog.at_level("WARNING"):
             rehydrate_from_records(_pipeline(PLAN), run, ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
         assert any("vanished_plan.yaml" in r.getMessage() for r in caplog.records)
 
     def test_a_failed_record_does_not_rehydrate(self, tmp_path: Path) -> None:
@@ -279,7 +279,7 @@ class TestRehydrationDegradation:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
 
 # ---------------------------------------------------------------------------
@@ -295,7 +295,7 @@ class TestRehydrationHostile:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     @pytest.mark.parametrize(
         "result_status",
@@ -309,7 +309,7 @@ class TestRehydrationHostile:
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     def test_corrupt_plan_path_type_does_not_raise(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -317,7 +317,7 @@ class TestRehydrationHostile:
 
         rehydrate_from_records(_pipeline(PLAN), run, ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
 
 # NOTE: the resume() wiring is proven at the INTEGRATION level, where it belongs —

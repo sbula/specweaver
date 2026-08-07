@@ -54,7 +54,7 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     registry.register(StepAction.GENERATE, StepTarget.CODE, FakeConcurrentIOHandler())
 
     mock_plan = json.dumps({"components": [{"component": "Alpha"}, {"component": "Beta"}]})
-    ctx.decomposition = mock_plan
+    ctx.plan_context = ctx.plan_context.model_copy(update={"decomposition": mock_plan})
 
     # Force step 1 to be standard, Step 2 to be Join
     custom_yaml = {

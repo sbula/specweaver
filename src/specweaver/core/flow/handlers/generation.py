@@ -156,8 +156,8 @@ class GenerateCodeHandler:
             base_prompt = await _build_base_prompt(
                 context, CODE_GEN_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
-            if context.plan:
-                base_prompt.add_plan(context.plan)
+            if context.plan_context.plan:
+                base_prompt.add_plan(context.plan_context.plan)
             if context.topology:
                 base_prompt.add_topology([context.topology])
 
@@ -262,8 +262,8 @@ class GenerateTestsHandler:
             base_prompt = await _build_base_prompt(
                 context, TEST_GEN_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
-            if context.plan:
-                base_prompt.add_plan(context.plan)
+            if context.plan_context.plan:
+                base_prompt.add_plan(context.plan_context.plan)
             if context.topology:
                 base_prompt.add_topology([context.topology])
 

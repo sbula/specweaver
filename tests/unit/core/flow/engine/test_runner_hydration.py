@@ -5,8 +5,8 @@
 """Tests for the runner's plan-hydration bridge — INT-US-21 SF-01 CB-2 (FR-2).
 
 Two colliding plan concepts previously shared one never-written field:
-  * decompose+feature -> a DecompositionPlan  -> context.decomposition (new)
-  * plan+spec         -> an implementation PlanArtifact -> context.plan
+  * decompose+feature -> a DecompositionPlan  -> context.plan_context.decomposition (new)
+  * plan+spec         -> an implementation PlanArtifact -> context.plan_context.plan
 
 `hydrate_plan_context` is the single place both are written, shared with the
 resume-time rehydration (CB-3) so the two can never drift apart.
@@ -80,8 +80,8 @@ class TestHydrationHappyPath:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(**plan), ctx)
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition) == plan
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition) == plan
 
     def test_decomposition_is_a_json_string_not_a_dict(self, tmp_path: Path) -> None:
         """The add-on seam is frozen as a string contract (plan decision D4)."""
@@ -89,7 +89,7 @@ class TestHydrationHappyPath:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(components=[]), ctx)
 
-        assert isinstance(ctx.decomposition, str)
+        assert isinstance(ctx.plan_context.decomposition, str)
 
     def test_plan_step_loads_file_content_into_context_plan(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -98,7 +98,7 @@ class TestHydrationHappyPath:
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(plan_file)), ctx)
 
-        assert ctx.plan == "files:\n  - src/greeter.py\n"
+        assert ctx.plan_context.plan == "files:\n  - src/greeter.py\n"
 
     def test_decompose_hydration_logs_at_info_with_run_id(self, tmp_path: Path, caplog) -> None:
         """NFR-7: every hydration is observable, tagged with the run it belongs to."""
@@ -109,7 +109,7 @@ class TestHydrationHappyPath:
             hydrate_plan_context(DECOMPOSE_STEP, _result(components=[]), ctx)
 
         msgs = [r.getMessage() for r in caplog.records if r.levelname == "INFO"]
-        assert any("run-abc" in m and "context.decomposition" in m for m in msgs)
+        assert any("run-abc" in m and "context.plan_context.decomposition" in m for m in msgs)
 
     def test_plan_hydration_logs_at_info_with_run_id_and_path(self, tmp_path: Path, caplog) -> None:
         ctx = _ctx(tmp_path)
@@ -132,8 +132,8 @@ class TestHydrationHappyPath:
         hydrate_plan_context(DECOMPOSE_STEP, _result(components=[{"name": "auth"}]), ctx)
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(plan_file)), ctx)
 
-        assert json.loads(ctx.decomposition)["components"][0]["name"] == "auth"
-        assert ctx.plan == "impl: plan\n"
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["name"] == "auth"
+        assert ctx.plan_context.plan == "impl: plan\n"
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ class TestHydrationBoundaries:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(status, components=[]), ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     @pytest.mark.parametrize("status", [StepStatus.SKIPPED, StepStatus.WAITING_FOR_INPUT])
     def test_non_failure_statuses_do_not_clear(self, tmp_path: Path, status: StepStatus) -> None:
@@ -171,8 +171,8 @@ class TestHydrationBoundaries:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(status), ctx)
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition)["components"][0]["name"] == "still_valid"
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["name"] == "still_valid"
 
     @pytest.mark.parametrize("status", [StepStatus.FAILED, StepStatus.ERROR])
     def test_failed_rerun_clears_a_previously_hydrated_decomposition(
@@ -181,28 +181,28 @@ class TestHydrationBoundaries:
         """F4: a superseded plan must never survive a failed re-run of its own step.
 
         decompose passes -> hydrates -> a later step loops back -> decompose re-runs and
-        fails. Without clearing, context.decomposition still holds the OLD plan and a
+        fails. Without clearing, context.plan_context.decomposition still holds the OLD plan and a
         downstream orchestrate step silently consumes stale data. No plan (loud failure)
         beats wrong plan (silent success).
         """
         ctx = _ctx(tmp_path)
         hydrate_plan_context(DECOMPOSE_STEP, _result(components=[{"name": "stale"}]), ctx)
-        assert ctx.decomposition is not None
+        assert ctx.plan_context.decomposition is not None
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(status), ctx)
 
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
     def test_failed_plan_step_clears_a_previously_hydrated_plan(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
         plan_file = tmp_path / "greeter_spec_plan.yaml"
         plan_file.write_text("impl: plan\n", encoding="utf-8")
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(plan_file)), ctx)
-        assert ctx.plan == "impl: plan\n"
+        assert ctx.plan_context.plan == "impl: plan\n"
 
         hydrate_plan_context(PLAN_STEP, _result(StepStatus.FAILED), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
     def test_a_failed_step_only_clears_its_own_field(self, tmp_path: Path) -> None:
         """A failed decompose must not wipe the unrelated implementation plan."""
@@ -214,8 +214,8 @@ class TestHydrationBoundaries:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(StepStatus.FAILED), ctx)
 
-        assert ctx.decomposition is None
-        assert ctx.plan == "impl: plan\n"
+        assert ctx.plan_context.decomposition is None
+        assert ctx.plan_context.plan == "impl: plan\n"
 
     def test_an_unrelated_failed_step_clears_nothing(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -225,7 +225,7 @@ class TestHydrationBoundaries:
             _step(StepAction.VALIDATE, StepTarget.SPEC), _result(StepStatus.FAILED), ctx
         )
 
-        assert ctx.decomposition is not None
+        assert ctx.plan_context.decomposition is not None
 
     def test_unrelated_step_hydrates_nothing(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -233,15 +233,15 @@ class TestHydrationBoundaries:
 
         hydrate_plan_context(step, _result(anything="here"), ctx)
 
-        assert ctx.decomposition is None
-        assert ctx.plan is None
+        assert ctx.plan_context.decomposition is None
+        assert ctx.plan_context.plan is None
 
     def test_empty_decompose_output_still_hydrates(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(), ctx)
 
-        assert ctx.decomposition == "{}"
+        assert ctx.plan_context.decomposition == "{}"
 
     def test_empty_plan_file_hydrates_empty_string(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
@@ -250,7 +250,7 @@ class TestHydrationBoundaries:
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(plan_file)), ctx)
 
-        assert ctx.plan == ""
+        assert ctx.plan_context.plan == ""
 
 
 # ---------------------------------------------------------------------------
@@ -261,11 +261,11 @@ class TestHydrationBoundaries:
 class TestHydrationDegradation:
     def test_missing_plan_path_key_leaves_context_plan_untouched(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
-        ctx.plan = "pre-existing"
+        ctx.plan_context = ctx.plan_context.model_copy(update={"plan": "pre-existing"})
 
         hydrate_plan_context(PLAN_STEP, _result(something_else="x"), ctx)
 
-        assert ctx.plan == "pre-existing"
+        assert ctx.plan_context.plan == "pre-existing"
 
     def test_deleted_plan_file_warns_and_leaves_context_plan_untouched(
         self, tmp_path: Path, caplog
@@ -277,7 +277,7 @@ class TestHydrationDegradation:
         with caplog.at_level("WARNING"):
             hydrate_plan_context(PLAN_STEP, _result(plan_path=str(missing)), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
         assert any("gone_plan.yaml" in r.getMessage() for r in caplog.records)
 
     def test_unreadable_plan_file_does_not_raise(self, tmp_path: Path) -> None:
@@ -288,7 +288,7 @@ class TestHydrationDegradation:
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(as_dir)), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
 
 # ---------------------------------------------------------------------------
@@ -302,21 +302,21 @@ class TestHydrationHostile:
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=None), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
     def test_non_string_plan_path_does_not_raise(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=12345), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
     def test_empty_string_plan_path_does_not_raise(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=""), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
     def test_non_serializable_decompose_output_does_not_raise(self, tmp_path: Path) -> None:
         """A handler returning exotic objects must not take the whole run down."""
@@ -325,7 +325,9 @@ class TestHydrationHostile:
         hydrate_plan_context(DECOMPOSE_STEP, _result(obj=object()), ctx)
 
         # Either skipped or coerced — the contract is only "does not raise".
-        assert ctx.decomposition is None or isinstance(ctx.decomposition, str)
+        assert ctx.plan_context.decomposition is None or isinstance(
+            ctx.plan_context.decomposition, str
+        )
 
     def test_binary_plan_file_does_not_raise(self, tmp_path: Path) -> None:
         """UnicodeDecodeError is a ValueError, not an OSError — it must still be caught."""
@@ -335,7 +337,7 @@ class TestHydrationHostile:
 
         hydrate_plan_context(PLAN_STEP, _result(plan_path=str(corrupt)), ctx)
 
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
 
 # ---------------------------------------------------------------------------
@@ -367,8 +369,10 @@ class TestSerializationParityWithTheStore:
 
         hydrate_plan_context(DECOMPOSE_STEP, _result(components=[{label: value}]), ctx)
 
-        assert ctx.decomposition is not None, f"{label} failed to hydrate on the live path"
-        assert isinstance(json.loads(ctx.decomposition)["components"][0][label], str)
+        assert ctx.plan_context.decomposition is not None, (
+            f"{label} failed to hydrate on the live path"
+        )
+        assert isinstance(json.loads(ctx.plan_context.decomposition)["components"][0][label], str)
 
     def test_live_hydration_matches_a_store_round_trip(self, tmp_path: Path) -> None:
         """Byte-for-byte parity between hydrating live and hydrating from a stored record."""
@@ -384,7 +388,7 @@ class TestSerializationParityWithTheStore:
         resumed_ctx = _ctx(tmp_path)
         hydrate_plan_context(DECOMPOSE_STEP, _result(**round_tripped), resumed_ctx)
 
-        assert live_ctx.decomposition == resumed_ctx.decomposition
+        assert live_ctx.plan_context.decomposition == resumed_ctx.plan_context.decomposition
 
 
 # ---------------------------------------------------------------------------
@@ -438,7 +442,7 @@ class TestHydrationWiredIntoTheLoop:
 
         _run(pipeline, ctx)
 
-        assert ctx.plan == "impl: plan\n"
+        assert ctx.plan_context.plan == "impl: plan\n"
 
     def test_router_bearing_step_still_hydrates(self, tmp_path: Path) -> None:
         """The join point sits before the router branch — both routing outcomes hydrate."""
@@ -453,8 +457,8 @@ class TestHydrationWiredIntoTheLoop:
 
         _run(pipeline, ctx)
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition)["components"][0]["name"] == "auth"
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["name"] == "auth"
 
     def test_downstream_handler_observes_the_hydrated_field(self, tmp_path: Path) -> None:
         """CB-2's own seam: the NEXT step's handler sees the field already populated."""
@@ -468,7 +472,7 @@ class TestHydrationWiredIntoTheLoop:
 
         class _ObservingHandler:
             async def execute(self, step, context):
-                seen["decomposition"] = context.decomposition
+                seen["decomposition"] = context.plan_context.decomposition
                 return StepResult(
                     status=StepStatus.PASSED, output={}, started_at="1", completed_at="2"
                 )
@@ -507,8 +511,8 @@ class TestHydrationWiredIntoTheLoop:
 
         _run(pipeline, ctx)
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition)["components"][0]["name"] == "auth"
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["name"] == "auth"
 
 
 # ---------------------------------------------------------------------------

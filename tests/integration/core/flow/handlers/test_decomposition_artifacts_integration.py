@@ -13,7 +13,7 @@ seams the unit suite structurally cannot reach:
   that constructs the handler by hand cannot notice an unregistered row, which is exactly how
   `D-INTL-02` shipped an unrunnable pipeline;
 * the **real** runner hydration hook, so FR-5's claim that the on-disk artifact and the in-memory
-  ``context.decomposition`` agree is proven in production wiring rather than by calling
+  ``context.plan_context.decomposition`` agree is proven in production wiring rather than by calling
   ``hydrate_plan_context`` by hand;
 * **real SQLite** for both the state store round trip and the ``generated_decomposition`` lineage
   row;
@@ -215,8 +215,10 @@ class TestArtifactThroughTheRealRunner:
         run, _ = _run(_pipeline(), ctx, store, _plan())
 
         assert run.status == RunStatus.COMPLETED
-        assert ctx.decomposition is not None, "the runner hook never hydrated context.decomposition"
-        in_memory = json.loads(ctx.decomposition)
+        assert ctx.plan_context.decomposition is not None, (
+            "the runner hook never hydrated context.plan_context.decomposition"
+        )
+        in_memory = json.loads(ctx.plan_context.decomposition)
         on_disk = _yaml_body(_artifact_path(tmp_path))
         assert in_memory == on_disk
 
@@ -279,14 +281,14 @@ class TestPersistenceSeams:
 
         # Session 2: a fresh context that has never seen the plan in memory.
         second = _ctx(tmp_path)
-        assert second.decomposition is None
+        assert second.plan_context.decomposition is None
         reloaded = store.load_run(run.run_id)
         from specweaver.core.flow.engine.hydration import rehydrate_from_records
 
         rehydrate_from_records(pipeline, reloaded, second)
 
-        assert second.decomposition is not None
-        assert json.loads(second.decomposition) == _yaml_body(_artifact_path(tmp_path))
+        assert second.plan_context.decomposition is not None
+        assert json.loads(second.plan_context.decomposition) == _yaml_body(_artifact_path(tmp_path))
 
 
 # ---------------------------------------------------------------------------
@@ -352,13 +354,13 @@ class TestWriteFailureDegradation:
         ]
 
     def test_failed_write_does_not_hydrate_the_seam(self, tmp_path: Path) -> None:
-        """A FAILED result must not leave a half-truth in context.decomposition."""
+        """A FAILED result must not leave a half-truth in context.plan_context.decomposition."""
         store = StateStore(tmp_path / "state.db")
         ctx = _ctx(tmp_path)
         _artifact_path(tmp_path).mkdir(parents=True, exist_ok=True)
 
         _run(_pipeline(), ctx, store, _plan())
-        assert ctx.decomposition is None
+        assert ctx.plan_context.decomposition is None
 
 
 # ---------------------------------------------------------------------------
@@ -403,8 +405,8 @@ class TestTelemetryFailureIsNotFatal:
 
         _run(_pipeline(), ctx, store, _plan())
 
-        assert ctx.decomposition is not None
-        assert json.loads(ctx.decomposition) == _yaml_body(_artifact_path(tmp_path))
+        assert ctx.plan_context.decomposition is not None
+        assert json.loads(ctx.plan_context.decomposition) == _yaml_body(_artifact_path(tmp_path))
 
 
 class TestSeamKeyIsOneSymbol:
@@ -422,7 +424,7 @@ class TestSeamKeyIsOneSymbol:
 
         output = run.step_records[0].result.output
         assert DECOMPOSITION_PLAN_KEY in output, "the writer does not use the shared seam constant"
-        assert json.loads(ctx.decomposition) == output[DECOMPOSITION_PLAN_KEY], (
+        assert json.loads(ctx.plan_context.decomposition) == output[DECOMPOSITION_PLAN_KEY], (
             "hydration did not read the key the writer wrote"
         )
 

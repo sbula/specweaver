@@ -84,7 +84,7 @@ class DecomposeFeatureHandler(StepHandler):
             # `proposed_dal` as a DALLevel enum and ruamel raises RepresenterError on it — and the
             # field is mandatory on every component, so the python-mode dump fails on 100% of real
             # plans. mode="json" also makes this byte-identical to the hydrated
-            # `context.decomposition`, so the on-disk and in-memory halves of this AD-4-frozen seam
+            # `context.plan_context.decomposition`, so the on-disk and in-memory halves of this AD-4-frozen seam
             # agree. Generalised by TECH-016.
             dumped = plan.model_dump(mode="json")
             started_at = context.project_metadata.date_iso if context.project_metadata else ""
@@ -108,7 +108,7 @@ class DecomposeFeatureHandler(StepHandler):
             summary = build_dal_summary(dumped, artifact_path, component_specs)
 
             # The plan is NESTED so `decomposition_path` cannot leak into the frozen seam:
-            # `hydrate_plan_context` unwraps `output["plan"]`, keeping `context.decomposition`
+            # `hydrate_plan_context` unwraps `output["plan"]`, keeping `plan_context.decomposition`
             # canonical DecompositionPlan JSON (AD-4).
             return StepResult(
                 status=StepStatus.PASSED,
@@ -163,22 +163,22 @@ class OrchestrateComponentsHandler(StepHandler):
             )
 
         try:
-            # INT-US-21 AD-1: reads context.decomposition, NOT context.plan. The latter is the
+            # INT-US-21 AD-1: reads plan_context.decomposition, NOT plan_context.plan. The latter is the
             # implementation PlanArtifact consumed by the generation handlers; sharing one field
             # for both concepts was a latent type bug. Populated by the runner's
             # hydrate_plan_context hook after a decompose+feature step passes.
-            if not context.decomposition:
+            if not context.plan_context.decomposition:
                 return StepResult(
                     status=StepStatus.FAILED,
                     error_message=(
-                        "No DecompositionPlan found in context.decomposition — a "
+                        "No DecompositionPlan found in context.plan_context.decomposition — a "
                         "decompose+feature step must run (and pass) earlier in this pipeline."
                     ),
                     started_at="",
                     completed_at="",
                 )
 
-            plan_data = json.loads(context.decomposition)
+            plan_data = json.loads(context.plan_context.decomposition)
             components = plan_data.get("components", [])
 
             if not components:

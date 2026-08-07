@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
+from specweaver.core.flow.handlers.base import IsolationPolicy, PlanContext, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata
 
 
@@ -209,3 +209,71 @@ class TestIsolationPolicy:
         so `resolve_should_isolate`'s tolerance of it is belt-and-braces, not a live path."""
         with pytest.raises(ValidationError):
             RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", isolation=None)
+
+
+class TestPlanContext:
+    """TECH-006 SF-02 CB2 (FR-6, FR-10, AD-8): the two plan concepts move into one frozen
+    sub-model. INT-US-21 AD-1's rule that they are DISTINCT and must not be reconflated is
+    unchanged by the move — it is now expressed by the sub-model's own shape."""
+
+    # --- [Happy Path] ------------------------------------------------------
+
+    def test_defaults_match_the_previous_flat_defaults(self) -> None:
+        plan_context = PlanContext()
+        assert plan_context.plan is None
+        assert plan_context.decomposition is None
+
+    def test_run_context_gets_a_default_plan_context(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        assert isinstance(context.plan_context, PlanContext)
+        assert context.plan_context.plan is None
+
+    # --- [Boundary] --------------------------------------------------------
+
+    def test_the_two_fields_stay_independent(self, tmp_path: Path) -> None:
+        """INT-US-21 AD-1: `plan` is the implementation PlanArtifact, `decomposition` is the
+        DecompositionPlan JSON. Setting one must never imply the other — the exact
+        reconflation the AD-1 comment exists to prevent."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+
+        context.plan_context = context.plan_context.model_copy(update={"plan": "impl"})
+
+        assert context.plan_context.plan == "impl"
+        assert context.plan_context.decomposition is None
+
+    def test_clearing_one_field_leaves_the_other_intact(self, tmp_path: Path) -> None:
+        """`hydration.py` clears exactly one of the pair on FAILED/ERROR (FR-10). Under a
+        frozen sub-model that clear is a `model_copy`, which must not reset its sibling."""
+        original = PlanContext(plan="impl", decomposition='{"components": []}')
+
+        cleared = original.model_copy(update={"decomposition": None})
+
+        assert cleared.decomposition is None
+        assert cleared.plan == "impl"
+        assert original.decomposition == '{"components": []}'
+
+    # --- [Hostile / Wrong Input] ------------------------------------------
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.plan_context.plan = "impl"
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            PlanContext(bogus=1)
+
+    def test_old_flat_kwargs_raise_instead_of_being_dropped(self, tmp_path: Path) -> None:
+        for gone in ("plan", "decomposition"):
+            with pytest.raises(ValidationError):
+                RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{gone: "x"})
+
+    def test_old_flat_attribute_reads_raise(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("plan", "decomposition"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+
+    def test_plan_context_is_not_nullable(self, tmp_path: Path) -> None:
+        with pytest.raises(ValidationError):
+            RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", plan_context=None)

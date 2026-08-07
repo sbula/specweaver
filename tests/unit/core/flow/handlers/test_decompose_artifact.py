@@ -278,7 +278,7 @@ class TestArtifactHostile:
 
 class TestSeamStaysPure:
     def test_hydration_unwraps_the_nested_plan(self, tmp_path: Path) -> None:
-        """context.decomposition must remain canonical DecompositionPlan JSON (AD-4)."""
+        """context.plan_context.decomposition must remain canonical DecompositionPlan JSON (AD-4)."""
         from specweaver.commons import json
         from specweaver.core.flow.engine.hydration import hydrate_plan_context
 
@@ -287,8 +287,8 @@ class TestSeamStaysPure:
 
         hydrate_plan_context(_step(), result, ctx)
 
-        assert ctx.decomposition is not None
-        hydrated = json.loads(ctx.decomposition)
+        assert ctx.plan_context.decomposition is not None
+        hydrated = json.loads(ctx.plan_context.decomposition)
         assert "decomposition_path" not in hydrated, "the frozen seam was polluted"
         assert set(hydrated) == set(_plan().model_dump(mode="json"))
         assert hydrated["components"][0]["proposed_dal"] == "DAL_B"
@@ -309,7 +309,7 @@ class TestSeamStaysPure:
 
         hydrate_plan_context(_step(), legacy, ctx)
 
-        assert json.loads(ctx.decomposition)["components"][0]["component"] == "auth"
+        assert json.loads(ctx.plan_context.decomposition)["components"][0]["component"] == "auth"
 
 
 # ---------------------------------------------------------------------------

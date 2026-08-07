@@ -44,7 +44,7 @@ def mock_step() -> PipelineStep:
 class TestDualPipelineDispatch:
     @pytest.mark.asyncio
     async def test_dual_mode_delegates_before_plan_guard(self, mock_context: RunContext) -> None:
-        # [Happy] context.decomposition is None — the old code failed here with
+        # [Happy] context.plan_context.decomposition is None — the old code failed here with
         # "No DecompositionPlan"; dual mode must never hit that guard.
         from specweaver.core.flow.engine.state import StepResult
 
@@ -60,7 +60,7 @@ class TestDualPipelineDispatch:
             target=StepTarget.COMPONENTS,
             params={"mode": "dual_pipeline"},
         )
-        assert mock_context.decomposition is None
+        assert mock_context.plan_context.decomposition is None
         with patch(
             "specweaver.core.flow.handlers.dual_pipeline.ArbitrateDualPipelineHandler.execute",
             new=AsyncMock(return_value=sentinel),
@@ -140,7 +140,7 @@ async def test_decompose_feature_handler_success(
         assert "base_prompt" in kwargs
         # INT-US-21 SF-02: the plan is nested under "plan" so the handler can also report
         # `decomposition_path` without that key leaking into the AD-4-frozen
-        # `context.decomposition` seam. Hydration unwraps it; see test_decompose_artifact.py.
+        # `context.plan_context.decomposition` seam. Hydration unwraps it; see test_decompose_artifact.py.
         assert result.output["plan"].get("coverage_score") == 1.0
         assert result.output["decomposition_path"].endswith("_decomposition.yaml")
 
@@ -222,7 +222,9 @@ async def test_orchestrate_components_handler_success_dag(
         "coverage_score": 1.0,
         "timestamp": "2026-01-01T00:00:00Z",
     }
-    mock_context.decomposition = json.dumps(mock_plan_dict)
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": json.dumps(mock_plan_dict)}
+    )
 
     mock_runner_instance = AsyncMock()
     mock_run_result = MagicMock()
@@ -258,23 +260,25 @@ async def test_orchestrate_components_handler_empty_plan(
     mock_orchestrate_step: PipelineStep, mock_context: RunContext
 ) -> None:
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = None
+    mock_context.plan_context = mock_context.plan_context.model_copy(update={"decomposition": None})
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
     assert "No DecompositionPlan" in str(result.error_message)
     # INT-US-21 AD-1: the message must name the field the operator has to fix, and must NOT
-    # send them looking at context.plan (the unrelated implementation PlanArtifact).
-    assert "context.decomposition" in str(result.error_message)
+    # send them looking at context.plan_context.plan (the unrelated implementation PlanArtifact).
+    assert "context.plan_context.decomposition" in str(result.error_message)
 
 
 @pytest.mark.asyncio
 async def test_orchestrate_ignores_the_implementation_plan_field(
     mock_orchestrate_step: PipelineStep, mock_context: RunContext
 ) -> None:
-    """AD-1 regression pin: a populated context.plan must never satisfy the orchestrator."""
+    """AD-1 regression pin: a populated context.plan_context.plan must never satisfy the orchestrator."""
     handler = OrchestrateComponentsHandler()
-    mock_context.plan = '{ "components": [{"component": "from_the_wrong_field"}] }'
-    mock_context.decomposition = None
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"plan": '{ "components": [{"component": "from_the_wrong_field"}] }'}
+    )
+    mock_context.plan_context = mock_context.plan_context.model_copy(update={"decomposition": None})
 
     result = await handler.execute(mock_orchestrate_step, mock_context)
 
@@ -287,7 +291,9 @@ async def test_orchestrate_components_handler_missing_runner(
     mock_orchestrate_step: PipelineStep, mock_context: RunContext
 ) -> None:
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid"}] }'}
+    )
     mock_context.pipeline_runner = None
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
@@ -302,7 +308,11 @@ async def test_orchestrate_components_handler_child_failure(
     mock_context: RunContext,
 ) -> None:
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a", "dependencies": [], "target_modules": ["a"]}, {"component": "valid_b", "dependencies": ["valid_a"], "target_modules": ["b"]}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={
+            "decomposition": '{ "components": [{"component": "valid_a", "dependencies": [], "target_modules": ["a"]}, {"component": "valid_b", "dependencies": ["valid_a"], "target_modules": ["b"]}] }'
+        }
+    )
 
     mock_runner_instance = AsyncMock()
     # Mock a failed sub run for the first one, meaning valid_b should starve
@@ -332,7 +342,9 @@ async def test_orchestrate_components_malicious_name(
     mock_orchestrate_step: PipelineStep, mock_context: RunContext
 ) -> None:
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "../../../etc/shadow"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "../../../etc/shadow"}] }'}
+    )
     mock_context.pipeline_runner = MagicMock()
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
@@ -348,7 +360,9 @@ async def test_orchestrate_loads_new_feature_yaml(
 ) -> None:
     # FR-3 / FR-4 Verification
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_comp"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_comp"}] }'}
+    )
 
     mock_runner_instance = AsyncMock()
     mock_run_result = MagicMock()
@@ -392,7 +406,9 @@ async def test_orchestrate_components_preserves_params_gap_1(
 ) -> None:
     """Gap 1: Preserves existing `params` dict keys when injecting component target."""
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_a"}] }'}
+    )
     mock_runner_instance = AsyncMock()
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
@@ -429,7 +445,9 @@ async def test_orchestrate_components_handles_gate_gaps_2_3_4(
 ) -> None:
     """Gaps 2, 3, 4: Safely handles missing/malformed gates without attribute errors, and does not strip non-join gates."""
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_a"}] }'}
+    )
     mock_runner_instance = AsyncMock()
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
@@ -475,7 +493,9 @@ async def test_orchestrate_components_skips_wave_n_if_failed_gap_5(
 ) -> None:
     """Gap 5: Ensures Wave N is STRICTLY skipped if a primary `fan_out` pipeline crashed."""
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_a"}] }'}
+    )
     mock_runner_instance = AsyncMock()
     mock_fail = MagicMock(status=StepStatus.FAILED, run_id="child")
     mock_runner_instance.run.return_value = mock_fail
@@ -508,7 +528,9 @@ async def test_orchestrate_components_skips_wave_n_if_empty_gap_6(
 ) -> None:
     """Gap 6: Ensures Wave N is STRICTLY skipped if no JOIN steps exist."""
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_a"}] }'}
+    )
     mock_runner_instance = AsyncMock()
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
@@ -538,7 +560,9 @@ async def test_orchestrate_components_wave_n_crash_gap_7(
 ) -> None:
     """Gap 7: Wave N cascade failure trap properly returns FAILED if it internally faults."""
     handler = OrchestrateComponentsHandler()
-    mock_context.decomposition = '{ "components": [{"component": "valid_a"}] }'
+    mock_context.plan_context = mock_context.plan_context.model_copy(
+        update={"decomposition": '{ "components": [{"component": "valid_a"}] }'}
+    )
     mock_runner_instance = AsyncMock()
 
     # We must mock that it SUCCEEDS the fan_out wave, but FAILS the wave_n synchronous execution.

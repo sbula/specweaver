@@ -68,7 +68,7 @@ class TestRunContext:
             project_path=tmp_path,
             spec_path=tmp_path / "specs" / "test.md",
         )
-        assert ctx.plan is None
+        assert ctx.plan_context.plan is None
 
 
 # ---------------------------------------------------------------------------

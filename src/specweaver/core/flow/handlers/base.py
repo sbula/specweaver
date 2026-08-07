@@ -60,6 +60,26 @@ class IsolationPolicy(BaseModel):
     dal_level: Any = None
 
 
+class PlanContext(BaseModel):
+    """TECH-006 SF-02 (FR-6): the run's two plan artifacts, hydrated by the runner hook.
+
+    INT-US-21 AD-1: two distinct plan concepts, deliberately on two fields. ``plan`` is the
+    *implementation* PlanArtifact body (spec -> file layout, written by PlanSpecHandler);
+    ``decomposition`` is the *DecompositionPlan* JSON (feature -> components). Both are set by
+    the runner's hydrate_plan_context hook. Do not reconflate them.
+
+    Frozen (AD-8): ``hydration.py`` sets each on success and clears it on FAILED/ERROR via
+    ``context.plan_context = context.plan_context.model_copy(update={...})``. The resulting
+    values are exactly as before (FR-10) — only the write mechanism differs, and a partial
+    update must not disturb the sibling field.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    plan: str | None = None  # Implementation PlanArtifact content (set by runner hook)
+    decomposition: str | None = None  # DecompositionPlan JSON (set by runner hook)
+
+
 class RunContext(BaseModel):
     """Execution context passed to every step handler.
 
@@ -94,15 +114,10 @@ class RunContext(BaseModel):
     analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
     isolation: IsolationPolicy = Field(default_factory=IsolationPolicy)
+    plan_context: PlanContext = Field(default_factory=PlanContext)
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
-    # INT-US-21 AD-1: two distinct plan concepts, deliberately on two fields. `plan` is the
-    # *implementation* PlanArtifact body (spec -> file layout, written by PlanSpecHandler);
-    # `decomposition` is the *DecompositionPlan* JSON (feature -> components). Both are set by
-    # the runner's hydrate_plan_context hook. Do not reconflate them.
-    plan: str | None = None  # Implementation PlanArtifact content (set by runner hook)
-    decomposition: str | None = None  # DecompositionPlan JSON (set by runner hook)
     workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
     task_id: str | None = None  # Target Task ID for Handover Protocol

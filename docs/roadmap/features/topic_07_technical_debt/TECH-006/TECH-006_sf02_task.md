@@ -10,8 +10,8 @@ Never leave an old and a new field alive for the same data across a commit bound
 
 | CB | Group | Fields moved | Status |
 |----|-------|--------------|--------|
-| 1 | `IsolationPolicy` | `enforce_isolation`, `execution_root`, `session_isolation`, `allowed_paths`, `dal_level` | ⬜ |
-| 2 | `PlanContext` | `plan`, `decomposition` | ⬜ |
+| 1 | `IsolationPolicy` | `enforce_isolation`, `execution_root`, `session_isolation`, `allowed_paths`, `dal_level` | ✅ `4e23171b` |
+| 2 | `PlanContext` | `plan`, `decomposition` | ✅ |
 | 3 | `RunHandle` + `AnalysisContext` + `ModelAccess` | `run_id`, `pipeline_runner`, `task_id`, `analyzer_factory`, `parsers`, `llm`, `config`, `llm_router` | ⬜ |
 | 4 | `GraphContext` | `topology`, `stale_nodes`, `workspace_roots`, `api_contract_paths` | ⬜ |
 | 5 | Dead-field cleanup + `model_post_init` split | deletes `env_vars`, `step_records`, `pipeline_name` | ⬜ |
@@ -237,7 +237,7 @@ reclassify `--kind` to dodge it.
 
 ---
 
-## Commit Boundary 2 — `PlanContext`  ⬜
+## Commit Boundary 2 — `PlanContext`  🟡 in progress
 Per impl plan Commit 2. Tasks detailed at the start of CB2 (after CB1 is committed).
 Writers: `hydration.py` (set-on-success + clear-on-`FAILED`/`ERROR`, → `model_copy`, FR-10/AD-8).
 Readers: `generation.py`, `decompose.py`. New `TestPlanContext` in `test_base.py`.
@@ -420,3 +420,37 @@ nested-path counterpart** among the 123 added. The 2 outliers:
 So exactly ONE assertion changed meaning in this commit, deliberately and with its reasoning
 recorded at the site. That is the finding the gate exists to surface, and it is the one thing a
 reviewer needs to look at.
+
+
+---
+# CB2 Execution Record — `PlanContext`
+
+`RunContext`: 29 → **28** counted attributes. Flow scope **1215 passed, 0 failed** (+9 tests).
+
+`plan` and `decomposition` moved into a frozen `PlanContext`. INT-US-21 AD-1's rule — that these
+are two DISTINCT concepts that must never be reconflated — was previously a comment above the two
+fields; it is now carried by the sub-model's own docstring AND pinned by a test asserting that
+setting one leaves the other untouched, plus one asserting a `model_copy` clear of one field does
+not reset its sibling (the exact shape `hydration.py`'s clear-on-FAILED/ERROR takes under AD-8).
+
+## Found during execution
+**mypy caught a narrowing loss that the plan did not anticipate.** `context.decomposition =
+json.dumps(...)` used to narrow the field to `str` for the `len(...)` in the very next log call.
+Routing the write through `model_copy` erases that narrowing (the field is declared `str | None`),
+so `mypy src/` failed on `len()`. Fixed by binding the serialised JSON to a local and using it for
+both the update and the log — which is clearer than the original anyway. Worth carrying into CB3-5:
+**every `model_copy` conversion is a potential narrowing regression at the following read**, and
+mypy is the only gate that catches it (the tests all passed).
+
+## Verification
+- Assertion-integrity audit (same method as CB1): 73 removed assertions, 82 added. Four had no
+  literal counterpart; all four verified by reading them — three were reflowed onto multiple lines
+  by `ruff format`, and the fourth is the class-health sub-model test deliberately parametrised to
+  cover `PlanContext` as well as `IsolationPolicy`, which is strictly broader than what it replaced.
+  **Zero assertions weakened.**
+- `ruff` / `mypy` (312 files) / `tach` clean. File sizes 0 errors — `generation.py`'s 589-line
+  YELLOW is pre-existing (589 at HEAD, unchanged by this commit).
+- NFR-7 ratchet updated 29 → 28; the class-health sub-model test parametrised over both sub-models
+  so a later boundary cannot add an oversized one unnoticed.
+- Refactor-safety gate blocks on 8 test files (down from CB1's 16 — this migration is more purely
+  mechanical). Same disposition as CB1: surfaced for review, not dodged.

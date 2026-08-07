@@ -5,8 +5,8 @@
 
 INT-US-21 FR-2/AD-1. Two distinct plan concepts live on two distinct fields:
 
-* ``decompose+feature`` -> ``context.decomposition`` (DecompositionPlan, canonical JSON)
-* ``plan+spec``         -> ``context.plan`` (implementation PlanArtifact file content)
+* ``decompose+feature`` -> ``context.plan_context.decomposition`` (DecompositionPlan, canonical JSON)
+* ``plan+spec``         -> ``context.plan_context.plan`` (implementation PlanArtifact file content)
 
 Both the live runner loop and the resume-time rehydration call into here, so the two paths
 cannot drift apart.
@@ -47,8 +47,8 @@ def hydrate_plan_context(
 
     Two distinct concepts, two distinct fields (AD-1):
 
-    * ``decompose+feature`` -> ``context.decomposition`` (DecompositionPlan, canonical JSON)
-    * ``plan+spec``         -> ``context.plan`` (implementation PlanArtifact file content)
+    * ``decompose+feature`` -> ``context.plan_context.decomposition`` (DecompositionPlan, canonical JSON)
+    * ``plan+spec``         -> ``context.plan_context.plan`` (implementation PlanArtifact file content)
 
     Only ``PASSED`` results hydrate. This is the single hydration point: the runner calls it
     after a step advances, and ``resume()`` replays it over persisted step records, so the
@@ -71,24 +71,27 @@ def hydrate_plan_context(
         # there is nothing to supersede and wiping a still-valid plan would be gratuitous.
         if result.status not in (StepStatus.FAILED, StepStatus.ERROR):
             return
-        if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE) and context.decomposition:
+        if (
+            combo == (StepAction.DECOMPOSE, StepTarget.FEATURE)
+            and context.plan_context.decomposition
+        ):
             logger.warning(
                 "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
-                "context.decomposition from a previous attempt",
+                "context.plan_context.decomposition from a previous attempt",
                 getattr(context, "run_id", None),
                 step_def.name,
                 result.status.value,
             )
-            context.decomposition = None
-        elif combo == (StepAction.PLAN, StepTarget.SPEC) and context.plan:
+            context.plan_context = context.plan_context.model_copy(update={"decomposition": None})
+        elif combo == (StepAction.PLAN, StepTarget.SPEC) and context.plan_context.plan:
             logger.warning(
                 "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
-                "context.plan from a previous attempt",
+                "context.plan_context.plan from a previous attempt",
                 getattr(context, "run_id", None),
                 step_def.name,
                 result.status.value,
             )
-            context.plan = None
+            context.plan_context = context.plan_context.model_copy(update={"plan": None})
         return
 
     if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE):
@@ -101,28 +104,32 @@ def hydrate_plan_context(
             # guarantee; the serialization semantics must match too.
             # INT-US-21 SF-02: the handler nests the plan under "plan" so it can also report
             # `decomposition_path` without that key leaking into this field. AD-4 freezes
-            # `context.decomposition` as canonical DecompositionPlan JSON, and
+            # `context.plan_context.decomposition` as canonical DecompositionPlan JSON, and
             # OrchestrateComponentsHandler / C-FLOW-12 consume it as such. The `.get("plan", ...)`
             # fallback keeps records persisted before SF-02 (flat plan) rehydrating correctly.
             payload = result.output or {}
             nested = payload.get(DECOMPOSITION_PLAN_KEY)
-            context.decomposition = json.dumps(
-                nested if isinstance(nested, dict) else payload, default=str
+            # Bound to a local first: `model_copy` erases the narrowing that a direct field
+            # assignment used to give the logging call below (`decomposition` is declared
+            # `str | None`, so mypy cannot see that this branch always just set a `str`).
+            serialized = json.dumps(nested if isinstance(nested, dict) else payload, default=str)
+            context.plan_context = context.plan_context.model_copy(
+                update={"decomposition": serialized}
             )
         except (TypeError, ValueError) as exc:
             logger.warning(
                 "[run_id=%s] Step '%s': decomposition output is not JSON-serializable (%s) — "
-                "context.decomposition left unset",
+                "context.plan_context.decomposition left unset",
                 getattr(context, "run_id", None),
                 step_def.name,
                 exc,
             )
             return
         logger.info(
-            "[run_id=%s] Hydrated context.decomposition from step '%s' (%d chars)",
+            "[run_id=%s] Hydrated context.plan_context.decomposition from step '%s' (%d chars)",
             getattr(context, "run_id", None),
             step_def.name,
-            len(context.decomposition),
+            len(serialized),
         )
         return
 
@@ -131,20 +138,22 @@ def hydrate_plan_context(
         if not raw_path or not isinstance(raw_path, str):
             logger.warning(
                 "[run_id=%s] Step '%s' passed but carries no usable 'plan_path' output — "
-                "context.plan left unset",
+                "context.plan_context.plan left unset",
                 getattr(context, "run_id", None),
                 step_def.name,
             )
             return
         try:
-            context.plan = Path(raw_path).read_text(encoding="utf-8")
+            context.plan_context = context.plan_context.model_copy(
+                update={"plan": Path(raw_path).read_text(encoding="utf-8")}
+            )
         except (OSError, UnicodeDecodeError) as exc:
             # UnicodeDecodeError is a ValueError, NOT an OSError — a corrupt or binary plan
             # artifact would otherwise escape this guard and blow up the runner loop *after*
             # the gate already decided to advance.
             logger.warning(
                 "[run_id=%s] Step '%s': plan artifact '%s' could not be read (%s) — "
-                "context.plan left unset",
+                "context.plan_context.plan left unset",
                 getattr(context, "run_id", None),
                 step_def.name,
                 raw_path,
@@ -152,7 +161,7 @@ def hydrate_plan_context(
             )
             return
         logger.info(
-            "[run_id=%s] Hydrated context.plan from step '%s' (%s)",
+            "[run_id=%s] Hydrated context.plan_context.plan from step '%s' (%s)",
             getattr(context, "run_id", None),
             step_def.name,
             raw_path,
@@ -166,7 +175,7 @@ def rehydrate_from_records(
 ) -> None:
     """Rebuild the plan context from persisted step records (INT-US-21 FR-3).
 
-    ``context.decomposition`` / ``context.plan`` live in memory and die with the process, so a
+    ``context.plan_context`` lives in memory and dies with the process, so a
     resumed run must reconstruct them before the loop starts. This replays
     :func:`hydrate_plan_context` over the stored records, so the live path and the cross-session
     path can never drift apart.

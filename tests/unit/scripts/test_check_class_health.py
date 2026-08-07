@@ -96,7 +96,7 @@ class TestAttributeCount:
     #: Counts include `model_config`, which the analyser sees as a class attribute — hence one
     #: more than the design's own field ledger at every step.
     #:   pre-SF-02 33 -> CB1 29 -> CB2 28 -> CB3 23 -> CB4 20 -> CB5 17
-    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 29
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 28
 
     def test_run_context_attribute_count_is_on_the_tech_006_ratchet(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
@@ -122,14 +122,21 @@ class TestAttributeCount:
 
         assert run_context.too_many_attributes(ch.MAX_ATTRIBUTES)
 
-    def test_the_new_isolation_policy_is_not_a_god_object(self, ch: ModuleType) -> None:
-        """The point of the split: what comes OUT of `RunContext` must not repeat the problem."""
+    @pytest.mark.parametrize("extracted", ["IsolationPolicy", "PlanContext"])
+    def test_the_extracted_sub_models_are_not_god_objects(
+        self, ch: ModuleType, extracted: str
+    ) -> None:
+        """The point of the split: what comes OUT of `RunContext` must not repeat the problem.
+
+        Parametrised so every sub-model added by a later commit boundary is covered by adding
+        one name here, rather than the check quietly applying to only the first one extracted.
+        """
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)
 
-        policy = next(r for r in reports if r.name == "IsolationPolicy")
+        sub_model = next(r for r in reports if r.name == extracted)
 
-        assert not policy.too_many_attributes(ch.MAX_ATTRIBUTES)
+        assert not sub_model.too_many_attributes(ch.MAX_ATTRIBUTES)
 
 
 # ---------------------------------------------------------------------------

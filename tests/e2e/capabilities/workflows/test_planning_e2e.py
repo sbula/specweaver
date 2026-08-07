@@ -25,7 +25,7 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import PlanContext, RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler, PlanSpecHandler
 from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 
@@ -190,7 +190,7 @@ class TestFullPlanPipelineE2E:
             spec_path=spec,
             output_dir=src_dir,
             llm=gen_llm,
-            plan=plan_text,
+            plan_context=PlanContext(plan=plan_text),
         )
         step_generate = PipelineStep(
             name="generate_code",

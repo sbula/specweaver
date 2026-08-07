@@ -240,7 +240,7 @@ class TestApproveOnResume:
 
         class _Observe:
             async def execute(self, step, context):
-                seen["decomposition"] = context.decomposition
+                seen["decomposition"] = context.plan_context.decomposition
                 return StepResult(
                     status=StepStatus.PASSED, output={}, started_at="1", completed_at="2"
                 )
