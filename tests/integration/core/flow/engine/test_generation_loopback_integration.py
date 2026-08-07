@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -45,9 +45,12 @@ def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
     )
 
     context = RunContext(
-        project_path=tmp_path, spec_path=spec_path, output_dir=tmp_path / "src", llm=mock_llm
+        project_path=tmp_path,
+        spec_path=spec_path,
+        output_dir=tmp_path / "src",
+        model=ModelAccess(llm=mock_llm),
     )
-    context.run_id = "test-e2e-run"
+    context.run = context.run.model_copy(update={"run_id": "test-e2e-run"})
     context.db = MagicMock()
 
     # 1. Inject the parsed hitl feedback structure matching loop_back output

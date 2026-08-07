@@ -107,7 +107,7 @@ class ArbitrateVerdictHandler(StepHandler):
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         started = _now_iso()
-        logger.info("Executing ARBITRATE VERDICT for %s", context.run_id)
+        logger.info("Executing ARBITRATE VERDICT for %s", context.run.run_id)
 
         # INT-US-24 FR-2: the evidence contract. run_scenario_tests ALWAYS publishes
         # the raw QA export under this reserved key for scenario runs — its absence
@@ -173,7 +173,7 @@ class ArbitrateVerdictHandler(StepHandler):
                 completed_at=_now_iso(),
             )
 
-        if not context.llm:
+        if not context.model.llm:
             return _error_result("LLM not configured in context", started)
 
         try:
@@ -211,7 +211,7 @@ class ArbitrateVerdictHandler(StepHandler):
             base_prompt.add_context(filtered_trace, label="Failures")
 
             prompt = base_prompt.build()
-            response = await context.llm.generate(prompt)
+            response = await context.model.llm.generate(prompt)
             # INT-US-24 SF-03 (inherited defect #9): normalize the adapter's
             # LLMResponse (string returns are the unit-mock convention only).
             raw_response = response.text if hasattr(response, "text") else response

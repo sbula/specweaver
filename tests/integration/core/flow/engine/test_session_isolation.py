@@ -28,7 +28,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -76,7 +76,9 @@ def _bash_step(name: str, script: str, *, use_worktree: bool | None = None) -> P
 
 
 def _ctx(tmp_path: Path, *, session: bool) -> RunContext:
-    ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    ctx = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     ctx.isolation = ctx.isolation.model_copy(update={"session_isolation": session})
     return ctx
 

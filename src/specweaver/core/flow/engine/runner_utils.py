@@ -308,10 +308,10 @@ def _now_iso() -> str:
 
 
 def flush_telemetry(context: RunContext, logger: logging.Logger) -> None:
-    """Flush telemetry if context.llm is a TelemetryCollector."""
+    """Flush telemetry if context.model.llm is a TelemetryCollector."""
     from specweaver.infrastructure.llm.collector import TelemetryCollector
 
-    llm = getattr(context, "llm", None)
+    llm = context.model.llm
     if not isinstance(llm, TelemetryCollector):
         return
 
@@ -386,7 +386,12 @@ async def execute_in_sandbox(
 
     atom = GitAtom(cwd=context.project_path)
     clean_pipeline = (context.pipeline_name or "default_pipe").replace(" ", "_")
-    task_id = getattr(context, "task_id", getattr(context, "run_id", "default"))
+    # NOTE: exact prior semantics preserved — this read was `getattr(context, "task_id", ...)`
+    # whose default was unreachable (the attribute always existed), so it resolved to
+    # `context.task_id` and could legitimately be None. CB5 owns the documented improvement
+    # to `task_id or run_id or "default"`; widening it here would smuggle a behaviour change
+    # into a relocation commit.
+    task_id = context.run.task_id
     branch = f"sf-{clean_pipeline}-{task_id}"
     wt_path = f".worktrees/{task_id}"
 

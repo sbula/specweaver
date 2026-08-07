@@ -12,7 +12,7 @@ import pytest
 
 from specweaver.core.flow.engine.handover import save_handover_context
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import RunContext, RunHandle
 
 if TYPE_CHECKING:
     from specweaver.workspace.memory.models import HandoverContext
@@ -40,10 +40,10 @@ def mock_repo(monkeypatch):
 def run_context(mock_db):
     db, _ = mock_db
     return RunContext(
+        run=RunHandle(task_id=None),
         project_path=Path("."),
         spec_path=Path("."),
         db=db,
-        task_id=None,
     )
 
 
@@ -80,7 +80,7 @@ def create_pipeline_run(status: RunStatus, steps: int = 1) -> PipelineRun:
 @pytest.mark.asyncio
 async def test_handover_success_with_task_id(run_context, mock_repo):
     """Happy Path: Uses explicitly provided task_id."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=3)
 
     await save_handover_context(run_context, run)
@@ -89,7 +89,7 @@ async def test_handover_success_with_task_id(run_context, mock_repo):
     mock_repo.update_handover_context.assert_called_once()
 
     call_args = mock_repo.update_handover_context.call_args[0]
-    assert call_args[0] == uuid.UUID(run_context.task_id)
+    assert call_args[0] == uuid.UUID(run_context.run.task_id)
     ctx: HandoverContext = call_args[1]
     assert ctx.summary == "Pipeline 'test_pipeline' completed. 3 steps executed."
     assert "file_0.py" in ctx.files_touched
@@ -121,7 +121,7 @@ async def test_skips_parked_and_not_started(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_saves_running_on_interrupt(run_context, mock_repo):
     """Happy Path: Saves RUNNING status (simulating KeyboardInterrupt)."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.RUNNING)
     await save_handover_context(run_context, run)
     mock_repo.update_handover_context.assert_called_once()
@@ -130,7 +130,7 @@ async def test_saves_running_on_interrupt(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_skips_empty_pipeline(run_context, mock_repo):
     """Boundary Case: RT-15 guard against 0-step pipelines."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=0)
     await save_handover_context(run_context, run)
     mock_repo.update_handover_context.assert_not_called()
@@ -139,7 +139,7 @@ async def test_skips_empty_pipeline(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_error_deduplication(run_context, mock_repo):
     """Happy Path: Deduplicates identical errors."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
     # Add identical errors
     for _ in range(3):
@@ -165,7 +165,7 @@ async def test_error_deduplication(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_error_truncation_and_capping(run_context, mock_repo):
     """Boundary Case: RT-23 string truncation and RT-14 capping."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
 
     # Add 15 unique errors, each 600 chars long
@@ -195,7 +195,7 @@ async def test_error_truncation_and_capping(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_files_touched_type_safety(run_context, mock_repo):
     """Hostile Input: RT-19 output is not a dictionary."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=0)
 
     # output is a string (bypassing pydantic for hostile input)
@@ -234,7 +234,7 @@ async def test_files_touched_type_safety(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_files_deduplication_and_truncation(run_context, mock_repo):
     """Boundary Case: RT-20 deduplication, RT-23 truncation."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=0)
 
     long_file = "B" * 200
@@ -263,7 +263,7 @@ async def test_files_deduplication_and_truncation(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_graceful_degradation_on_exception(run_context, mock_repo):
     """Graceful Degradation: Handles general exceptions cleanly."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED)
 
     mock_repo.update_handover_context.side_effect = Exception("DB Connection Lost")
@@ -274,7 +274,7 @@ async def test_graceful_degradation_on_exception(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_saves_on_failed_run(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.FAILED)
     await save_handover_context(run_context, run)
     mock_repo.update_handover_context.assert_called_once()
@@ -283,7 +283,7 @@ async def test_saves_on_failed_run(run_context, mock_repo):
 @pytest.mark.asyncio
 async def test_skips_sub_pipeline(run_context, mock_repo):
     """Boundary Case: Skips if parent_run_id is set."""
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED)
     run.parent_run_id = str(uuid.uuid4())
     await save_handover_context(run_context, run)
@@ -300,7 +300,7 @@ async def test_skips_when_no_db(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_skips_when_no_active_task(run_context, mock_repo):
-    run_context.task_id = None
+    run_context.run = run_context.run.model_copy(update={"task_id": None})
     mock_repo.list_tasks.return_value = []
     run = create_pipeline_run(RunStatus.COMPLETED)
     await save_handover_context(run_context, run)
@@ -309,7 +309,7 @@ async def test_skips_when_no_active_task(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_errors_order_preserved(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
     from specweaver.core.flow.engine.state import StepRecord
 
@@ -332,7 +332,7 @@ async def test_errors_order_preserved(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_files_touched_capped_at_30(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=0)
     files = [f"file_{i}.py" for i in range(50)]
     from specweaver.core.flow.engine.state import StepRecord
@@ -355,7 +355,7 @@ async def test_files_touched_capped_at_30(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_metadata_contains_run_id(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED)
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
@@ -364,7 +364,7 @@ async def test_metadata_contains_run_id(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_handover_passes_pydantic_validation(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED)
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
@@ -373,7 +373,7 @@ async def test_handover_passes_pydantic_validation(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_handover_under_8kb(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
     long_msg = "A" * 600
     from specweaver.core.flow.engine.state import StepRecord
@@ -411,7 +411,7 @@ async def test_handover_under_8kb(run_context, mock_repo):
 
 @pytest.mark.asyncio
 async def test_summary_format(run_context, mock_repo):
-    run_context.task_id = str(uuid.uuid4())
+    run_context.run = run_context.run.model_copy(update={"task_id": str(uuid.uuid4())})
     run = create_pipeline_run(RunStatus.COMPLETED, steps=5)
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]

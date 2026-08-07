@@ -73,7 +73,7 @@ class ModelRouter:
     def get_for_task(self, task_type: TaskType) -> RouterResult | None:
         """Return RouterResult for this task_type, or None if no routing configured.
 
-        None → caller MUST fall back to context.llm + context.config.llm.model.
+        None → caller MUST fall back to context.model.llm + context.model.config.llm.model.
         Never raises — all exceptions are caught and logged.
         """
         role_key = f"task:{task_type.value}"

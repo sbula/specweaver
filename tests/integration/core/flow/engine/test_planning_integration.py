@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import PlanContext, RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, PlanContext, RunContext
 from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 from specweaver.core.flow.handlers.generation import (
     GenerateCodeHandler,
@@ -262,7 +262,7 @@ class TestPlanSpecHandlerFileSystem:
         spec.write_text("# Component\n## 1. Purpose\nDoes things.\n", encoding="utf-8")
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm))
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -321,7 +321,9 @@ class TestPlanSpecHandlerFileSystem:
             llm = MockLlmSettings()
 
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=MockSettings()
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm=FakeLLM([]), config=MockSettings()),
         )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
@@ -356,7 +358,9 @@ class TestPlanSpecHandlerFileSystem:
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
         # Just test the fallback case: config is missing or lacks stitch
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=None)
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=FakeLLM([]), config=None)
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -386,7 +390,9 @@ class TestPlanSpecHandlerFileSystem:
             llm = MockLlmSettings()
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm, config=MockSettings())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm, config=MockSettings())
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -420,7 +426,9 @@ class TestPlanSpecHandlerFileSystem:
             llm = MockLlmSettings()
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm, config=MockSettings())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm, config=MockSettings())
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -453,10 +461,10 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="x = 1\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_llm),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            llm=mock_llm,
             plan_context=PlanContext(plan="## File Layout\n- src/test.py: main module"),
         )
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -482,10 +490,10 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="def test_x(): pass\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_llm),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
-            llm=mock_llm,
             plan_context=PlanContext(plan="## Test Expectations\n- test_login: Check login flow"),
         )
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -690,7 +698,7 @@ class TestDagOrchestratorIntegration:
         from specweaver.core.flow.engine.runner import PipelineRunner
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-        ctx.run_id = "parent_run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})
 
         # Two components: A and B. B depends on A.
         plan_dict = {
@@ -710,7 +718,11 @@ class TestDagOrchestratorIntegration:
         # We need a PipelineRunner with a registry. We will mock the runner to fail on 'service_a'
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
         registry = StepHandlerRegistry()
-        ctx.pipeline_runner = PipelineRunner(pipe, ctx, registry=registry, store=MagicMock())
+        ctx.run = ctx.run.model_copy(
+            update={
+                "pipeline_runner": PipelineRunner(pipe, ctx, registry=registry, store=MagicMock())
+            }
+        )
 
         # Mock PipelineRunner.run() so we don't actually trigger deep LLM calls
 
@@ -746,7 +758,7 @@ class TestDagOrchestratorIntegration:
         from specweaver.core.flow.engine.runner import PipelineRunner
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-        ctx.run_id = "parent_run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})
 
         # Parallel components logically, no logical strictly defined dependency!
         # BUT they share a target module "auth"
@@ -766,7 +778,13 @@ class TestDagOrchestratorIntegration:
         ctx.topology = mock_topo
 
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
-        ctx.pipeline_runner = PipelineRunner(pipe, ctx, registry=MagicMock(), store=MagicMock())
+        ctx.run = ctx.run.model_copy(
+            update={
+                "pipeline_runner": PipelineRunner(
+                    pipe, ctx, registry=MagicMock(), store=MagicMock()
+                )
+            }
+        )
 
         # We need custom run() locking to prove they don't run *at the same time*.
         running_tasks = set()
@@ -813,7 +831,7 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
     from specweaver.core.flow.handlers.base import RunContext
 
     ctx = RunContext(project_path=Path("/tmp/path"), spec_path=Path("/tmp/path/spec.md"))
-    ctx.run_id = "parent_run"
+    ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})
 
     # 1. Provide a plan indicating 2 entirely disconnected components.
     mock_plan = json.dumps(
@@ -846,7 +864,7 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
         store=MagicMock(),
         on_event=MagicMock(),
     )
-    ctx.pipeline_runner = runner
+    ctx.run = ctx.run.model_copy(update={"pipeline_runner": runner})
 
     original_init = PipelineRunner.__init__
     created_pipelines = []

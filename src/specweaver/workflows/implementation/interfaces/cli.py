@@ -184,7 +184,7 @@ def implement(
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
@@ -236,11 +236,10 @@ def implement(
     pipeline = _build_implement_pipeline(stem)
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
-        llm=adapter,
-        config=settings,
+        model=ModelAccess(llm=adapter, config=settings),
         topology=topo_contexts,
         constitution=constitution_content,
         standards=standards_content,

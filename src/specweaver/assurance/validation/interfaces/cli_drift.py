@@ -65,7 +65,7 @@ def drift_check(
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 
     pipeline = PipelineDefinition.create_single_step(
         name="drift_check",
@@ -80,7 +80,7 @@ def drift_check(
     )
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=plan_path,
         db=_core.get_db(),
@@ -98,7 +98,7 @@ def drift_check(
         except (LLMAdapterError, ValueError) as exc:
             _core.console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
-        context.llm = adapter
+        context.model = context.model.model_copy(update={"llm": adapter})
 
     runner = PipelineRunner(pipeline, context)
     run_state = asyncio.run(runner.run())
@@ -207,7 +207,7 @@ def drift_check_rot(  # noqa: C901
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 
     for target in target_files:
         _core.console.print(f"DEBUG TARGET STR: {target}")
@@ -256,7 +256,7 @@ def drift_check_rot(  # noqa: C901
         )
 
         context = RunContext(
-            analyzer_factory=AnalyzerFactory,
+            analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
             project_path=project_path,
             spec_path=matched_plan,
             db=_core.get_db(),

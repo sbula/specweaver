@@ -166,7 +166,7 @@ def draft(
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
 
@@ -198,11 +198,10 @@ def draft(
     pipeline = _build_draft_pipeline(name)
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
-        llm=adapter,
-        config=settings,
+        model=ModelAccess(llm=adapter, config=settings),
         context_provider=HITLProvider(console=_core.console),
         topology=topo_contexts,
         db=_core.get_db(),
@@ -260,7 +259,7 @@ def review(
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
@@ -314,11 +313,10 @@ def review(
     )
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=actual_spec_path,
-        llm=adapter,
-        config=settings,
+        model=ModelAccess(llm=adapter, config=settings),
         topology=topo_contexts,
         constitution=(lambda info: info.content if info else None)(
             find_constitution(project_path, spec_path=actual_spec_path)

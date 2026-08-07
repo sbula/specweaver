@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 
 
 @pytest.fixture
@@ -33,13 +33,13 @@ def run_context(tmp_path):
     project_path = tmp_path
 
     return RunContext(
+        analysis=AnalysisContext(parsers={}),
         project_path=project_path,
         spec_path=spec_path,
         constitution="",
         standards="",
         db=db,
         project_metadata=metadata,
-        parsers={},
     )
 
 
@@ -55,7 +55,7 @@ async def test_draft_handler_uses_interactive_profile(mock_drafter_class, mock_b
     mock_drafter.draft = AsyncMock(return_value="/tmp/spec.md")
 
     handler = DraftSpecHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     if run_context.spec_path.exists():
@@ -84,7 +84,7 @@ async def test_generate_code_uses_full_profile(mock_generator_class, mock_build,
     mock_generator.generate = AsyncMock()
 
     handler = GenerateCodeHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     step = PipelineStep(
@@ -115,7 +115,7 @@ async def test_generate_tests_uses_full_profile(mock_generator_class, mock_build
     mock_generator.generate = AsyncMock()
 
     handler = GenerateTestsHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     step = PipelineStep(
@@ -146,7 +146,7 @@ async def test_plan_spec_uses_full_profile(mock_planner_class, mock_build, run_c
     mock_planner.generate_plan = AsyncMock()
 
     handler = PlanSpecHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     step = PipelineStep(
@@ -172,7 +172,7 @@ async def test_review_spec_uses_full_profile(mock_reviewer_class, mock_build, ru
     mock_reviewer.review = AsyncMock()
 
     handler = ReviewSpecHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     step = PipelineStep(
@@ -200,7 +200,7 @@ async def test_review_code_uses_full_profile(
     mock_reviewer.review = AsyncMock()
 
     handler = ReviewCodeHandler()
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     run_context.context_provider = AsyncMock()
 
     code_file = tmp_path / "code.py"
@@ -233,8 +233,8 @@ async def test_arbitrate_verdict_uses_arbiter_profile(mock_build, run_context, t
     mock_build.return_value.build.return_value = "fake prompt"
 
     handler = ArbitrateVerdictHandler()
-    run_context.llm = AsyncMock()
-    run_context.llm.generate.return_value = '{"verdict": "CODE_BUG", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
+    run_context.model.llm.generate.return_value = '{"verdict": "CODE_BUG", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
     # INT-US-24 FR-2: failure evidence required to reach prompt building.
     run_context.feedback["scenario_test_failures"] = {
         "passed": 0,
@@ -280,7 +280,7 @@ async def test_decompose_feature_uses_minimal_profile(mock_build, run_context, t
         mock_decomposer.decompose = AsyncMock(return_value=mock_plan)
 
         handler = DecomposeFeatureHandler()
-        run_context.llm = AsyncMock()
+        run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
 
         step = PipelineStep(
             name="dec",

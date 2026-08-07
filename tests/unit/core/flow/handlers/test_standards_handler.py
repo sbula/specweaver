@@ -11,7 +11,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.standards import EnrichStandardsHandler
 
 
@@ -25,10 +25,9 @@ def mock_context(tmp_path: Path) -> RunContext:
     mock_config.standards.mode = "mimicry"
 
     return RunContext(
+        model=ModelAccess(llm=MagicMock(), config=mock_config),
         project_path=tmp_path,
         spec_path=tmp_path / "dummy.md",
-        llm=MagicMock(),
-        config=mock_config,
     )
 
 

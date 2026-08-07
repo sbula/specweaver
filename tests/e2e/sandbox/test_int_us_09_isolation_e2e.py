@@ -30,7 +30,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -89,7 +89,9 @@ def test_explicit_use_worktree_runs_bash_bounded_to_worktree(tmp_path: Path) -> 
     """[Happy Path] use_worktree=True → the real bash process runs inside the worktree."""
     _commit_project_with_script(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     run_state = _run(PipelineDefinition(name="p", steps=[_bash_step(use_worktree=True)]), context)
 
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -105,7 +107,9 @@ def test_policy_enforced_runs_bash_bounded_to_worktree(tmp_path: Path) -> None:
     (the isolation policy) → the bash process still runs inside the worktree."""
     _commit_project_with_script(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     context.isolation = context.isolation.model_copy(
         update={"enforce_isolation": True}
     )  # the policy resolved at the composition root
@@ -143,7 +147,9 @@ def test_run_tests_pytest_executes_bounded_to_worktree(tmp_path: Path) -> None:
     asserts its own cwd is inside `.worktrees`, so a PASSED step proves it ran there."""
     _commit_pytest_project(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     context.isolation = context.isolation.model_copy(
         update={"enforce_isolation": True}
     )  # the US-9 policy
@@ -171,7 +177,9 @@ def test_run_tests_not_isolated_runs_at_project_root(tmp_path: Path) -> None:
     tests.mkdir(parents=True, exist_ok=True)
     (tests / "test_cwd_probe.py").write_text(_CWD_PROBE_TEST, encoding="utf-8", newline="\n")
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     step = PipelineStep(
         name="qa",
         action=StepAction.VALIDATE,
@@ -193,7 +201,9 @@ def test_not_isolated_runs_bash_at_project_root(tmp_path: Path) -> None:
     project root (proves the rebind only happens under isolation). No git needed."""
     _write_marker_script(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     run_state = _run(PipelineDefinition(name="p", steps=[_bash_step(use_worktree=False)]), context)
 
     assert run_state.status == RunStatus.COMPLETED, run_state

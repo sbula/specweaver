@@ -78,7 +78,7 @@ def hydrate_plan_context(
             logger.warning(
                 "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
                 "context.plan_context.decomposition from a previous attempt",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 step_def.name,
                 result.status.value,
             )
@@ -87,7 +87,7 @@ def hydrate_plan_context(
             logger.warning(
                 "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
                 "context.plan_context.plan from a previous attempt",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 step_def.name,
                 result.status.value,
             )
@@ -120,14 +120,14 @@ def hydrate_plan_context(
             logger.warning(
                 "[run_id=%s] Step '%s': decomposition output is not JSON-serializable (%s) — "
                 "context.plan_context.decomposition left unset",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 step_def.name,
                 exc,
             )
             return
         logger.info(
             "[run_id=%s] Hydrated context.plan_context.decomposition from step '%s' (%d chars)",
-            getattr(context, "run_id", None),
+            context.run.run_id,
             step_def.name,
             len(serialized),
         )
@@ -139,7 +139,7 @@ def hydrate_plan_context(
             logger.warning(
                 "[run_id=%s] Step '%s' passed but carries no usable 'plan_path' output — "
                 "context.plan_context.plan left unset",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 step_def.name,
             )
             return
@@ -154,7 +154,7 @@ def hydrate_plan_context(
             logger.warning(
                 "[run_id=%s] Step '%s': plan artifact '%s' could not be read (%s) — "
                 "context.plan_context.plan left unset",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 step_def.name,
                 raw_path,
                 exc,
@@ -162,7 +162,7 @@ def hydrate_plan_context(
             return
         logger.info(
             "[run_id=%s] Hydrated context.plan_context.plan from step '%s' (%s)",
-            getattr(context, "run_id", None),
+            context.run.run_id,
             step_def.name,
             raw_path,
         )

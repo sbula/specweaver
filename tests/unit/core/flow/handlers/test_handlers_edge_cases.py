@@ -87,7 +87,7 @@ async def test_generate_handlers_exception_wrapper(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """GenerateCodeHandler and GenerateTestsHandler trap LLM generation faults."""
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
 
     code_handler = GenerateCodeHandler()
     test_handler = GenerateTestsHandler()
@@ -126,7 +126,7 @@ async def test_lint_fix_handler_missing_code(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """LintFixHandler safely aborts reflection if code files vanish."""
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     handler = LintFixHandler()
 
     with patch.object(handler, "_get_atom") as mock_get_atom:
@@ -170,7 +170,7 @@ async def test_review_handlers_execution(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """ReviewSpecHandler and ReviewCodeHandler execute their core LLM logic without crashing."""
-    run_context.llm = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
     (run_context.output_dir / "foo.py").touch()
 
     spec_handler = ReviewSpecHandler()

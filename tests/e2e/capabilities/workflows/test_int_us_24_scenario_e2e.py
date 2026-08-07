@@ -348,7 +348,7 @@ def _scenario_world(adapter: ScenarioWorldAdapter, implementer: ImplementerState
         )
         # The router would otherwise build a REAL provider adapter from the
         # registry (bypassing the factory patch); None → handlers fall back to
-        # context.llm, i.e. the scripted adapter.
+        # context.model.llm, i.e. the scripted adapter.
         stack.enter_context(
             patch(
                 "specweaver.infrastructure.llm.router.ModelRouter.get_for_task",
@@ -577,7 +577,7 @@ def test_e7_resume_after_park_heals_through_the_loop(
     loop_back and RE-RUNS the whole verification round: dual fan-out, fresh
     implementation, real pytest, fresh evidence. The park heals through the
     loop, not through fake persistence. (Required fixing defect #10: `sw
-    resume` never wired context.llm, silently ERRORing every resumed LLM
+    resume` never wired context.model.llm, silently ERRORing every resumed LLM
     step.)"""
     project = _init_project(tmp_path, "us24_e7")
     monkeypatch.setenv("SW_PROJECT", str(project))

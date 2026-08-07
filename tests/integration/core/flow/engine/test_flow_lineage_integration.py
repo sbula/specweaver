@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
@@ -116,7 +116,9 @@ async def test_lineage_tracking_flow_database(
 
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
-    ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_llm)
+    ctx = RunContext(
+        project_path=tmp_path, spec_path=spec, output_dir=src_dir, model=ModelAccess(llm=mock_llm)
+    )
     ctx.context_provider = AsyncMock()
     ctx.db = lineage_db
     store = StateStore(tmp_path / ".specweaver_state.db")
@@ -190,7 +192,9 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
 
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
-    ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_llm)
+    ctx = RunContext(
+        project_path=tmp_path, spec_path=spec, output_dir=src_dir, model=ModelAccess(llm=mock_llm)
+    )
     ctx.context_provider = AsyncMock()
     ctx.db = lineage_db
     store = StateStore(tmp_path / ".specweaver_state.db")

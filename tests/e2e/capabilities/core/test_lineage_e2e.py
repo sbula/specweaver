@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 from typer.testing import CliRunner
 
+from specweaver.core.flow.handlers.base import ModelAccess
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.interfaces.cli.main import app
 
@@ -194,7 +195,7 @@ class TestLineageE2EFlow:
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == spec_uuid
-        assert rows[0][2] == "mock"  # model extracted from context.config.llm.model
+        assert rows[0][2] == "mock"  # model extracted from context.model.config.llm.model
         conn.close()
 
     def test_plan_spec_retains_tag(self, tmp_path: Path, _isolate_env) -> None:
@@ -249,10 +250,11 @@ class TestLineageE2EFlow:
 
         bootstrap_database(str(db_path))
         context = RunContext(
+            model=ModelAccess(
+                llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))
+            ),
             project_path=project_dir,
             spec_path=spec,
-            llm=mock_llm,
-            config=SpecWeaverSettings(llm=LLMSettings(model="mock")),
             db=Database(db_path),
         )
 

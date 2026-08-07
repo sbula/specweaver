@@ -30,7 +30,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, StepHandler
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext, StepHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -56,7 +56,9 @@ def test_bash_step_runs_end_to_end(tmp_path: Path) -> None:
         target=StepTarget.SCRIPT,
         params={"script": "hello.sh"},
     )
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
 
     run_state = asyncio.run(runner.run())
@@ -103,7 +105,9 @@ def test_downstream_step_reads_step_records(tmp_path: Path) -> None:
             ),
         ],
     )
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     registry = StepHandlerRegistry()
     registry.register(StepAction.DRAFT, StepTarget.SPEC, ReadsStepRecordsHandler())
     runner = PipelineRunner(pipeline, context, registry=registry)
@@ -168,7 +172,9 @@ def test_router_branches_on_exit_code(tmp_path: Path) -> None:
             PipelineStep(name="on_success", action=StepAction.DRAFT, target=StepTarget.SPEC),
         ],
     )
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     runner = PipelineRunner(pipeline, context, registry=registry)
 
     run_state = asyncio.run(runner.run())
@@ -197,7 +203,9 @@ def test_router_branches_on_nonzero_exit(tmp_path: Path) -> None:
             PipelineStep(name="on_failure", action=StepAction.REVIEW, target=StepTarget.SPEC),
         ],
     )
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     runner = PipelineRunner(pipeline, context, registry=registry)
 
     run_state = asyncio.run(runner.run())

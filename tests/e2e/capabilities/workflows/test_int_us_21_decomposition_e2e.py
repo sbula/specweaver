@@ -182,7 +182,7 @@ def scripted_world(llm: ScriptedLLM):
         )
         # Without this the router builds a REAL provider adapter from the registry, bypassing the
         # factory patch entirely — a live API call inside a "mocked" test (vacuous-proof pattern 5,
-        # found for real in INT-US-02's e2e). None makes handlers fall back to context.llm.
+        # found for real in INT-US-02's e2e). None makes handlers fall back to context.model.llm.
         stack.enter_context(
             patch(
                 "specweaver.infrastructure.llm.router.ModelRouter.get_for_task",

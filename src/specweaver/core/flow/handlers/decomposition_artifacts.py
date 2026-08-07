@@ -117,7 +117,7 @@ def persist_decomposition(dumped: dict[str, Any], context: RunContext) -> tuple[
     artifact_path.write_text(content, encoding="utf-8")
     logger.info(
         "[run_id=%s] Decomposition artifact written: %s (%d components)",
-        getattr(context, "run_id", None),
+        context.run.run_id,
         artifact_path,
         len(dumped.get("components", [])),
     )
@@ -145,7 +145,7 @@ async def log_decomposition_lineage(context: RunContext, artifact_uuid: str) -> 
             await repo.log_artifact_event(
                 artifact_id=artifact_uuid,
                 parent_id=None,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                run_id=context.run.run_id or "pipeline_run",
                 event_type="generated_decomposition",
                 model_id="unknown",
             )
@@ -153,7 +153,7 @@ async def log_decomposition_lineage(context: RunContext, artifact_uuid: str) -> 
         logger.exception(
             "[run_id=%s] Decomposition lineage event failed for artifact %s — the artifact is "
             "already on disk, so the step continues",
-            getattr(context, "run_id", None),
+            context.run.run_id,
             artifact_uuid,
         )
 
@@ -213,7 +213,7 @@ def write_component_stubs(
         if not name or not COMPONENT_NAME_PATTERN.match(str(name)):
             logger.warning(
                 "[run_id=%s] Refusing to write a component spec for an invalid name: %r",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 name,
             )
             report["rejected"].append(str(name) if name else "<unnamed>")
@@ -230,7 +230,7 @@ def write_component_stubs(
             logger.warning(
                 "[run_id=%s] Component '%s' would overwrite the feature spec itself (%s) — "
                 "skipping; rename the component",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 name,
                 target.name,
             )
@@ -258,7 +258,7 @@ def write_component_stubs(
         except (OSError, UnicodeDecodeError) as exc:
             logger.warning(
                 "[run_id=%s] Could not write the component spec for '%s': %s",
-                getattr(context, "run_id", None),
+                context.run.run_id,
                 name,
                 exc,
             )
@@ -268,7 +268,7 @@ def write_component_stubs(
 
     logger.info(
         "[run_id=%s] Component specs: %d created, %d skipped, %d rejected, %d failed, %d collided",
-        getattr(context, "run_id", None),
+        context.run.run_id,
         len(report["created"]),
         len(report["skipped"]),
         len(report["rejected"]),

@@ -39,8 +39,8 @@ class EnrichStandardsHandler:
         from specweaver.assurance.standards.scanner import StandardsScanner
 
         mode = "mimicry"
-        if context.config and hasattr(context.config, "standards"):
-            mode = context.config.standards.mode
+        if context.model.config and hasattr(context.model.config, "standards"):
+            mode = context.model.config.standards.mode
 
         built_in_defaults = None
         if mode == "best_practice":
@@ -91,22 +91,22 @@ class EnrichStandardsHandler:
                 completed_at=_now_iso(),
             )
 
-        if not context.llm:
-            logger.error("EnrichStandardsHandler: context.llm is missing")
+        if not context.model.llm:
+            logger.error("EnrichStandardsHandler: context.model.llm is missing")
             return _error_result("No LLM adapter provided for standards enrichment", started)
 
         from specweaver.infrastructure.llm.models import GenerationConfig
 
         gen_config = None
-        if context.config and hasattr(context.config, "llm"):
+        if context.model.config and hasattr(context.model.config, "llm"):
             gen_config = GenerationConfig(
-                model=context.config.llm.model,
-                temperature=context.config.llm.temperature,
-                max_output_tokens=context.config.llm.max_output_tokens,
-                run_id=getattr(context, "run_id", "") or "",
+                model=context.model.config.llm.model,
+                temperature=context.model.config.llm.temperature,
+                max_output_tokens=context.model.config.llm.max_output_tokens,
+                run_id=context.run.run_id or "",
             )
 
-        enricher = StandardsEnricher(context.llm, config=gen_config)
+        enricher = StandardsEnricher(context.model.llm, config=gen_config)
 
         try:
             logger.info(

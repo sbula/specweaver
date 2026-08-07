@@ -5,7 +5,7 @@
 """Tests for runner telemetry flush (Feature 3.12).
 
 Verifies that PipelineRunner flushes the TelemetryCollector
-(if present on context.llm) after run() and resume() complete.
+(if present on context.model.llm) after run() and resume() complete.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -73,15 +73,15 @@ class QARunnerTelemetryFlush:
 
     @pytest.mark.asyncio
     async def test_flush_called_on_successful_run(self, tmp_path: Path):
-        """After a successful pipeline run, flush() is called on context.llm."""
+        """After a successful pipeline run, flush() is called on context.model.llm."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_db = MagicMock()
         ctx = RunContext(
+            model=ModelAccess(llm=mock_collector),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=mock_collector,
             db=mock_db,
         )
         runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(PassHandler()))
@@ -98,9 +98,9 @@ class QARunnerTelemetryFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_db = MagicMock()
         ctx = RunContext(
+            model=ModelAccess(llm=mock_collector),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=mock_collector,
             db=mock_db,
         )
         runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(FailHandler()))
@@ -111,12 +111,12 @@ class QARunnerTelemetryFlush:
 
     @pytest.mark.asyncio
     async def test_no_flush_when_llm_is_not_collector(self, tmp_path: Path):
-        """When context.llm is a plain adapter (not TelemetryCollector), no crash."""
+        """When context.model.llm is a plain adapter (not TelemetryCollector), no crash."""
         mock_adapter = MagicMock()  # no spec=TelemetryCollector
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=mock_adapter,
         )
         runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(PassHandler()))
 
@@ -131,9 +131,9 @@ class QARunnerTelemetryFlush:
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         ctx = RunContext(
+            model=ModelAccess(llm=mock_collector),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=mock_collector,
             # db=None — omitted
         )
         runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(PassHandler()))
@@ -144,11 +144,11 @@ class QARunnerTelemetryFlush:
 
     @pytest.mark.asyncio
     async def test_flush_called_when_context_llm_is_none(self, tmp_path: Path):
-        """When context.llm is None, _flush_telemetry does nothing (no crash)."""
+        """When context.model.llm is None, _flush_telemetry does nothing (no crash)."""
         ctx = RunContext(
+            model=ModelAccess(llm=None),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=None,
         )
         runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(PassHandler()))
 
@@ -158,7 +158,7 @@ class QARunnerTelemetryFlush:
 
     @pytest.mark.asyncio
     async def test_resume_flushes_telemetry(self, tmp_path: Path):
-        """After resume(), flush() is called on context.llm."""
+        """After resume(), flush() is called on context.model.llm."""
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
@@ -186,9 +186,9 @@ class QARunnerTelemetryFlush:
         mock_store.load_run.return_value = run
 
         ctx = RunContext(
+            model=ModelAccess(llm=mock_collector),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm=mock_collector,
             db=mock_db,
         )
         runner = PipelineRunner(

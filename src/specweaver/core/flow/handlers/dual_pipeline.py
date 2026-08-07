@@ -32,7 +32,7 @@ class ArbitrateDualPipelineHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
-        if context.pipeline_runner is None:
+        if context.run.pipeline_runner is None:
             return _error_result(
                 "pipeline_runner not available in context — cannot fan out dual pipelines",
                 started,
@@ -44,8 +44,10 @@ class ArbitrateDualPipelineHandler:
             coding_runner = self._build_runner("new_feature.yaml", stem, context)
             scenario_runner = self._build_runner("scenario_validation.yaml", stem, context)
 
-            coding_task = asyncio.create_task(coding_runner.run(parent_run_id=context.run_id))
-            scenario_task = asyncio.create_task(scenario_runner.run(parent_run_id=context.run_id))
+            coding_task = asyncio.create_task(coding_runner.run(parent_run_id=context.run.run_id))
+            scenario_task = asyncio.create_task(
+                scenario_runner.run(parent_run_id=context.run.run_id)
+            )
 
             _done, _ = await asyncio.wait(
                 [coding_task, scenario_task], return_when=asyncio.ALL_COMPLETED
@@ -117,8 +119,8 @@ class ArbitrateDualPipelineHandler:
 
         return PipelineRunner(
             pipeline=pipe,
-            context=context.pipeline_runner._context,
-            registry=context.pipeline_runner._registry,
-            store=context.pipeline_runner._store,
-            on_event=context.pipeline_runner._on_event,
+            context=context.run.pipeline_runner._context,
+            registry=context.run.pipeline_runner._registry,
+            store=context.run.pipeline_runner._store,
+            on_event=context.run.pipeline_runner._on_event,
         )

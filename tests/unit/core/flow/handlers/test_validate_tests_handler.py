@@ -114,7 +114,7 @@ class TestGetAtomSandboxSettings:
     def test_passes_none_when_context_config_is_none(self, tmp_path: Path) -> None:
         handler = ValidateTestsHandler()
         context = _ctx(tmp_path)
-        assert context.config is None
+        assert context.model.config is None
 
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
@@ -129,7 +129,7 @@ class TestGetAtomSandboxSettings:
             llm={"model": "test-model"}, sandbox=SandboxSettings(execution_mode="container")
         )
         context = _ctx(tmp_path)
-        context.config = config
+        context.model = context.model.model_copy(update={"config": config})
 
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
@@ -148,12 +148,12 @@ class TestGetAtomExecutionRoot:
 
     def test_binds_cwd_to_execution_root_when_set(self, tmp_path: Path) -> None:
         # [Happy] isolated step → cwd is the worktree; sandbox_settings stay None
-        # (container-neutral — context.config is not populated on this path).
+        # (container-neutral — context.model.config is not populated on this path).
         handler = ValidateTestsHandler()
         wt = tmp_path / ".worktrees" / "task-1"
         context = _ctx(tmp_path)
         context.isolation = context.isolation.model_copy(update={"execution_root": wt})
-        assert context.config is None
+        assert context.model.config is None
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=None)
@@ -168,7 +168,7 @@ class TestGetAtomExecutionRoot:
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
 
     def test_rebind_preserves_sandbox_settings_from_config(self, tmp_path: Path) -> None:
-        # [Edge] if context.config IS populated (e.g. workflow CLIs), the rebind must
+        # [Edge] if context.model.config IS populated (e.g. workflow CLIs), the rebind must
         # still pass through sandbox_settings unchanged alongside the new cwd.
         from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
 
@@ -176,12 +176,17 @@ class TestGetAtomExecutionRoot:
         wt = tmp_path / ".worktrees" / "task-1"
         context = _ctx(tmp_path)
         context.isolation = context.isolation.model_copy(update={"execution_root": wt})
-        context.config = SpecWeaverSettings(
-            llm={"model": "test-model"}, sandbox=SandboxSettings(enforce_worktree_isolation=True)
+        context.model = context.model.model_copy(
+            update={
+                "config": SpecWeaverSettings(
+                    llm={"model": "test-model"},
+                    sandbox=SandboxSettings(enforce_worktree_isolation=True),
+                )
+            }
         )
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
-        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=context.config.sandbox)
+        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=context.model.config.sandbox)
 
 
 # ---------------------------------------------------------------------------

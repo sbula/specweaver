@@ -8,7 +8,7 @@ import pytest
 
 from specweaver.assurance.validation.models import Status
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
 
 
@@ -28,10 +28,10 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
     spec_file.write_text("spec")
 
     context = RunContext(
+        model=ModelAccess(llm=MagicMock()),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        llm=MagicMock(),
     )
 
     step = PipelineStep(
@@ -111,10 +111,10 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
     spec_file.write_text("spec")
 
     context = RunContext(
+        model=ModelAccess(llm=MagicMock()),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        llm=MagicMock(),
     )
 
     step = PipelineStep(
@@ -159,10 +159,10 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
     spec_file.write_text("spec")
 
     context = RunContext(
+        model=ModelAccess(llm=MagicMock()),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        llm=MagicMock(),
     )
 
     step = PipelineStep(
@@ -226,10 +226,10 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
     spec_file.write_text("spec")
 
     context = RunContext(
+        model=ModelAccess(llm=MagicMock()),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        llm=MagicMock(),
     )
 
     step = PipelineStep(
@@ -267,7 +267,10 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -316,7 +319,10 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
@@ -363,7 +369,10 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -406,7 +415,10 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
@@ -471,7 +483,10 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
     )
 
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -551,7 +566,10 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
     spec_file.write_text("# Bad Title\n\n## 1. Wrong\nTest purpose.\n")
 
     context = RunContext(
-        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+        project_path=project_root,
+        spec_path=spec_file,
+        output_dir=project_root,
+        model=ModelAccess(llm=MagicMock()),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}

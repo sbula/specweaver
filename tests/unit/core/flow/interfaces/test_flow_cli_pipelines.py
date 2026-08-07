@@ -223,7 +223,7 @@ class TestRunPipelineMocked:
 
 class TestRunContextConfigWiring:
     """INT-US-09 T2: the `sw run`/`resume` composition roots must populate
-    `RunContext.config` so `context.config.sandbox` (the isolation policy) is
+    `RunContext.config` so `context.model.config.sandbox` (the isolation policy) is
     readable at pipeline runtime — previously it was left None on these paths."""
 
     def _run_and_capture_context(self, tmp_path: Path):
@@ -264,11 +264,11 @@ class TestRunContextConfigWiring:
         assert context.isolation.enforce_isolation is False
 
     def test_run_stays_container_neutral(self, tmp_path: Path) -> None:
-        # Guard (user decision): we do NOT populate context.config on sw run, so
+        # Guard (user decision): we do NOT populate context.model.config on sw run, so
         # B-EXEC-01 container QA stays dormant on this path — INT-US-09 is
         # strictly container-free. The isolation policy rides on its own flag.
         context = self._run_and_capture_context(tmp_path)
-        assert context.config is None
+        assert context.model.config is None
 
     def test_run_settings_failure_leaves_config_none_and_does_not_crash(
         self, tmp_path: Path
@@ -307,7 +307,7 @@ class TestRunContextConfigWiring:
         assert result.exit_code == 0, result.stdout  # run did NOT crash
         context = mock_runner_class.call_args.args[1]
         assert context.isolation.enforce_isolation is False  # graceful fallback to default (off)
-        assert context.config is None
+        assert context.model.config is None
 
 
 class TestResumeContextConfigWiring:
@@ -351,7 +351,7 @@ class TestResumeContextConfigWiring:
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
             # Patch the loader to a sentinel so we assert the *wiring* (resume assigns
-            # load_settings' result to context.config) independent of project resolution.
+            # load_settings' result to context.model.config) independent of project resolution.
             patch(
                 "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=sentinel,
@@ -372,9 +372,9 @@ class TestResumeContextConfigWiring:
     def test_resume_resolves_isolation_policy(self, tmp_path: Path, monkeypatch) -> None:
         context = self._resume_and_capture_context(tmp_path, monkeypatch)
         # sentinel settings enable the policy → resume wires it onto the flag,
-        # while keeping context.config None (container-neutral).
+        # while keeping context.model.config None (container-neutral).
         assert context.isolation.enforce_isolation is True
-        assert context.config is None
+        assert context.model.config is None
 
 
 # ── sw resume — unit tests ───────────────────────────────────────────────

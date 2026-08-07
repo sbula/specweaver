@@ -165,10 +165,12 @@ async def test_fallback_pipeline_execution(tmp_db: Database, tmp_path: Path) -> 
 
     mock_adapter = AsyncMock()
     mock_adapter.generate.return_value = MagicMock(text="```python\nprint(1)\n```")
-    context.llm = mock_adapter
+    context.model = context.model.model_copy(update={"llm": mock_adapter})
 
     # Attach router but with an EMPTY database mapped for this project.
-    context.llm_router = ModelRouter(lambda r: None, telemetry_project="test-proj")
+    context.model = context.model.model_copy(
+        update={"llm_router": ModelRouter(lambda r: None, telemetry_project="test-proj")}
+    )
 
     handler = GenerateCodeHandler()
     step = PipelineStep(name="test", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -202,10 +204,15 @@ async def test_initialization_failure_fallbacks_safely(tmp_db: Database, tmp_pat
     mock_response = MagicMock(text="```python\nprint(2)\n```")
     mock_fallback_adapter.generate.return_value = mock_response
     mock_fallback_adapter.generate_with_tools.return_value = mock_response
-    context.llm = mock_fallback_adapter
+    context.model = context.model.model_copy(update={"llm": mock_fallback_adapter})
 
-    context.llm_router = ModelRouter(
-        lambda r: load_settings(tmp_db, "test-proj", llm_role=r), telemetry_project="test-proj"
+    context.model = context.model.model_copy(
+        update={
+            "llm_router": ModelRouter(
+                lambda r: load_settings(tmp_db, "test-proj", llm_role=r),
+                telemetry_project="test-proj",
+            )
+        }
     )
 
     handler = GenerateCodeHandler()

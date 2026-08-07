@@ -48,7 +48,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.generation import PlanSpecHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
@@ -128,7 +128,11 @@ def _run(tmp_path: Path, sink: dict[str, Any]):
         "the real registry must resolve plan+spec to the real handler"
     )
     registry.register(StepAction.GENERATE, StepTarget.CODE, _CaptureContextAtGenerate(sink))
-    ctx = RunContext(project_path=tmp_path, spec_path=_spec(tmp_path), llm=_FakeLLM([_plan_json()]))
+    ctx = RunContext(
+        project_path=tmp_path,
+        spec_path=_spec(tmp_path),
+        model=ModelAccess(llm=_FakeLLM([_plan_json()])),
+    )
     runner = PipelineRunner(
         _plan_then_generate(), ctx, registry=registry, store=StateStore(tmp_path / "state.db")
     )
@@ -197,7 +201,9 @@ class TestPlanBridgeIsHookDriven:
                 )
 
         registry.register(StepAction.PLAN, StepTarget.SPEC, _PlanThenVanish())
-        ctx = RunContext(project_path=tmp_path, spec_path=_spec(tmp_path), llm=_FakeLLM([""]))
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=_spec(tmp_path), model=ModelAccess(llm=_FakeLLM([""]))
+        )
         run2 = asyncio.run(
             PipelineRunner(
                 _plan_then_generate(),

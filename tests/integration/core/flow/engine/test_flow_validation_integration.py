@@ -11,7 +11,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
 
@@ -66,7 +66,10 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
     )  # Ensure source_dir is set for GitExecutor
 
     context = RunContext(
-        project_path=tmp_path, spec_path=spec_path, output_dir=out_dir, llm=mock_adapter
+        project_path=tmp_path,
+        spec_path=spec_path,
+        output_dir=out_dir,
+        model=ModelAccess(llm=mock_adapter),
     )
 
     step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)

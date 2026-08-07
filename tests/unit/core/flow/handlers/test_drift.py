@@ -129,7 +129,7 @@ async def test_drift_handler_analyze(tmp_path: Path, plan_yaml_content: str) -> 
         params={"target_path": str(src_file), "plan_path": str(plan_file), "analyze": True},
     )
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
-    context.llm = MockLLMAdapter()
+    context.model = context.model.model_copy(update={"llm": MockLLMAdapter()})
 
     result = await handler.execute(step, context)
     assert result.status == StepStatus.FAILED
@@ -246,7 +246,7 @@ async def test_drift_handler_analyze_failure(tmp_path: Path, plan_yaml_content: 
         params={"target_path": str(src_file), "plan_path": str(plan_file), "analyze": True},
     )
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
-    context.llm = FailingLLMAdapter()
+    context.model = context.model.model_copy(update={"llm": FailingLLMAdapter()})
 
     result = await handler.execute(step, context)
     assert result.status == StepStatus.FAILED

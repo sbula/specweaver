@@ -116,7 +116,7 @@ class LintFixHandler:
         # Phase 2: LLM reflection loop for remaining errors
         for _ in range(max_reflections):
             # No LLM → can't fix
-            if context.llm is None:
+            if context.model.llm is None:
                 return StepResult(
                     status=StepStatus.FAILED,
                     error_message="Lint errors found but no LLM configured for auto-fix",
@@ -151,7 +151,7 @@ class LintFixHandler:
                     code_files[0].name,
                 )
                 await self._llm_fix(
-                    context.llm,
+                    context.model.llm,
                     code_files[0],
                     lint_result.exports.get("errors", []) if lint_result.exports else [],
                     context=context,
@@ -212,7 +212,7 @@ class LintFixHandler:
         """Lazily create a QARunnerAtom for the project."""
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-        sandbox_settings = context.config.sandbox if context.config else None
+        sandbox_settings = context.model.config.sandbox if context.model.config else None
         return QARunnerAtom(cwd=context.project_path, sandbox_settings=sandbox_settings)
 
     def _find_code_files(self, context: RunContext, target: str | None = None) -> list[Path]:
@@ -274,13 +274,13 @@ class LintFixHandler:
         messages = [Message(role=Role.USER, content=prompt)]
 
         # Base config from project default (fallback)
-        if context.config is not None:
+        if context.model.config is not None:
             base_config = GenerationConfig(
-                model=context.config.llm.model,
+                model=context.model.config.llm.model,
                 temperature=0.1,  # low creativity — fix, not invent
-                max_output_tokens=context.config.llm.max_output_tokens,
+                max_output_tokens=context.model.config.llm.max_output_tokens,
                 task_type=TaskType.CHECK,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
         else:
             base_config = GenerationConfig(
@@ -288,13 +288,13 @@ class LintFixHandler:
                 temperature=0.1,
                 max_output_tokens=4096,
                 task_type=TaskType.CHECK,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
 
         # Routing resolution — same pattern as all other handlers
         routed = (
-            context.llm_router.get_for_task(TaskType.CHECK)
-            if getattr(context, "llm_router", None)
+            context.model.llm_router.get_for_task(TaskType.CHECK)
+            if context.model.llm_router
             else None
         )
         adapter = routed.adapter if routed else llm
@@ -304,7 +304,7 @@ class LintFixHandler:
                 temperature=routed.temperature,
                 max_output_tokens=routed.max_output_tokens,
                 task_type=TaskType.CHECK,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
             if routed
             else base_config
@@ -335,7 +335,7 @@ class LintFixHandler:
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,
                     parent_id=None,
-                    run_id=getattr(context, "run_id", None) or "pipeline_run",
+                    run_id=context.run.run_id or "pipeline_run",
                     event_type="lint_fixed",
                     model_id=config.model if config else "unknown",
                 )

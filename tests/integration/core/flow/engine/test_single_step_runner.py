@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -48,7 +48,11 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
                 completed_at=datetime.datetime.now(datetime.UTC).isoformat(),
             )
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "dummy.md",
+        model=ModelAccess(config=MagicMock()),
+    )
 
     registry = StepHandlerRegistry()
     registry.register(StepAction.DRAFT, StepTarget.SPEC, DummyHandler())

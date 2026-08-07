@@ -12,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.base import ModelAccess
 from specweaver.interfaces.cli.main import app as app  # type: ignore
 
 if TYPE_CHECKING:
@@ -91,7 +92,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._profiles import ARBITER
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.base import ModelAccess, RunContext
     from specweaver.core.flow.handlers.draft import DraftSpecHandler
 
     # Create a custom handler that strictly uses the ARBITER profile to ensure E2E connectivity
@@ -106,7 +107,9 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
                 # Send to mock LLM to capture it
                 from specweaver.infrastructure.llm.models import Message, Role
 
-                await run_context.llm.generate([Message(role=Role.USER, content=prompt.build())])
+                await run_context.model.llm.generate(
+                    [Message(role=Role.USER, content=prompt.build())]
+                )
 
                 from specweaver.core.flow.engine.state import StepResult
                 from specweaver.core.flow.handlers.base import _now_iso
@@ -168,10 +171,9 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     conn.close()
 
     context = RunContext(
+        model=ModelAccess(llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))),
         project_path=project_dir,
         spec_path=spec,
-        llm=mock_llm,
-        config=SpecWeaverSettings(llm=LLMSettings(model="mock")),
         db=Database(db_path),
     )
 
@@ -246,7 +248,9 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
 
                 from specweaver.infrastructure.llm.models import Message, Role
 
-                await run_context.llm.generate([Message(role=Role.USER, content=prompt.build())])
+                await run_context.model.llm.generate(
+                    [Message(role=Role.USER, content=prompt.build())]
+                )
 
                 from specweaver.core.flow.engine.state import StepResult
                 from specweaver.core.flow.handlers.base import _now_iso
@@ -275,10 +279,9 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     bootstrap_database(str(db_path))
 
     context = RunContext(
+        model=ModelAccess(llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))),
         project_path=project_dir,
         spec_path=spec,
-        llm=mock_llm,
-        config=SpecWeaverSettings(llm=LLMSettings(model="mock")),
         db=Database(db_path),
     )
 

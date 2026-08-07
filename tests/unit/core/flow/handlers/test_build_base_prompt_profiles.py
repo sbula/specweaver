@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
-from specweaver.core.flow.handlers.base import RunContext, _build_base_prompt
+from specweaver.core.flow.handlers.base import AnalysisContext, RunContext, _build_base_prompt
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 
 
@@ -35,13 +35,13 @@ def run_context(mock_db):
         safe_config=PromptSafeConfig(llm_provider="fake", llm_model="fake"),
     )
     ctx = RunContext(
+        analysis=AnalysisContext(parsers={}),
         project_path=Path("/tmp/fake_project"),
         spec_path=Path("/tmp/fake_project/spec.yaml"),
         constitution="Always be honest",
         standards="Use type hints",
         db=mock_db,
         project_metadata=metadata,
-        parsers={},
     )
     # INT-US-24 FR-2: ArbitrateVerdictHandler now requires failure evidence to
     # reach _build_base_prompt (green/absent evidence short-circuits before any
@@ -199,7 +199,7 @@ class TestHandlerProfileIntegration:
         # We expect a failure because LLM is None or other setup is missing, but that's fine.
         # We just want to check the call args to _build_base_prompt if it gets called.
         # Let's mock the necessary context components.
-        run_context.llm = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
         run_context.context_provider = MagicMock()
 
         # We mock the specific generator/drafter/etc to prevent full execution.
@@ -290,7 +290,7 @@ class TestHandlerProfileIntegration:
             params={"render_profile": "MINIMAL"},
         )
 
-        run_context.llm = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
         run_context.context_provider = MagicMock()
 
         def mock_exists(self: Any) -> bool:
@@ -365,7 +365,7 @@ class TestHandlerProfileIntegration:
             params={"render_profile": "INVALID"},
         )
 
-        run_context.llm = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
         run_context.context_provider = MagicMock()
 
         # We don't need to mock Generator here because resolve_profile should fail before instantiation

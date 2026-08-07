@@ -54,7 +54,7 @@ class DraftSpecHandler:
         # popped exactly once so it never sticks across attempts.
         findings = self._pop_feedback(step, context)
         if findings is not None:
-            if context.context_provider is not None and context.llm is not None:
+            if context.context_provider is not None and context.model.llm is not None:
                 logger.info(
                     "DraftSpecHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -97,7 +97,7 @@ class DraftSpecHandler:
             )
 
         # Spec doesn't exist. If we have a context provider (HITL), do the drafting.
-        if context.context_provider is not None and context.llm is not None:
+        if context.context_provider is not None and context.model.llm is not None:
             return await self._execute_drafting(step, context, started)
 
         # Otherwise (e.g. headless autonomous run without provider), park and tell the user
@@ -135,12 +135,12 @@ class DraftSpecHandler:
         from specweaver.workflows.drafting.drafter import Drafter
 
         gen_config = None
-        if context.config and hasattr(context.config, "llm"):
+        if context.model.config and hasattr(context.model.config, "llm"):
             gen_config = GenerationConfig(
-                model=context.config.llm.model,
-                temperature=context.config.llm.temperature,
-                max_output_tokens=context.config.llm.max_output_tokens,
-                run_id=getattr(context, "run_id", "") or "",
+                model=context.model.config.llm.model,
+                temperature=context.model.config.llm.temperature,
+                max_output_tokens=context.model.config.llm.max_output_tokens,
+                run_id=context.run.run_id or "",
             )
 
         from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
@@ -165,7 +165,7 @@ class DraftSpecHandler:
             base_prompt.add_context(json.dumps(findings, ensure_ascii=False), "reviewer_findings")
 
         drafter = Drafter(
-            llm=context.llm,
+            llm=context.model.llm,
             context_provider=context.context_provider,
             config=gen_config,
             base_prompt=base_prompt,
@@ -204,7 +204,7 @@ class DraftSpecHandler:
                     await repo.log_artifact_event(
                         artifact_id=artifact_uuid,
                         parent_id=None,
-                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        run_id=context.run.run_id or "pipeline_run",
                         event_type="drafted_spec",
                         model_id=gen_config.model if gen_config else "unknown",
                     )
@@ -247,7 +247,7 @@ class DraftFeatureHandler:
             )
 
         if findings is not None:
-            if context.context_provider is not None and context.llm is not None:
+            if context.context_provider is not None and context.model.llm is not None:
                 logger.info(
                     "DraftFeatureHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -295,7 +295,7 @@ class DraftFeatureHandler:
                 artifact_uuid=artifact_uuid,
             )
 
-        if context.context_provider is not None and context.llm is not None:
+        if context.context_provider is not None and context.model.llm is not None:
             return await self._execute_drafting(step, context, started, name)
 
         logger.info(
@@ -350,12 +350,12 @@ class DraftFeatureHandler:
             return _error_result(str(e), started)
 
         gen_config = None
-        if context.config and hasattr(context.config, "llm"):
+        if context.model.config and hasattr(context.model.config, "llm"):
             gen_config = GenerationConfig(
-                model=context.config.llm.model,
-                temperature=context.config.llm.temperature,
-                max_output_tokens=context.config.llm.max_output_tokens,
-                run_id=getattr(context, "run_id", "") or "",
+                model=context.model.config.llm.model,
+                temperature=context.model.config.llm.temperature,
+                max_output_tokens=context.model.config.llm.max_output_tokens,
+                run_id=context.run.run_id or "",
             )
 
         base_prompt = await _build_base_prompt(
@@ -372,7 +372,7 @@ class DraftFeatureHandler:
         # Keyword args only: FeatureDrafter's positional order differs from Drafter's.
         drafter = FeatureDrafter(
             base_prompt=base_prompt,
-            llm=context.llm,
+            llm=context.model.llm,
             context_provider=context.context_provider,
             config=gen_config,
         )
@@ -456,7 +456,7 @@ class DraftFeatureHandler:
             await repo.log_artifact_event(
                 artifact_id=artifact_uuid,
                 parent_id=None,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                run_id=context.run.run_id or "pipeline_run",
                 event_type="drafted_feature_spec",
                 model_id=gen_config.model if gen_config else "unknown",
             )

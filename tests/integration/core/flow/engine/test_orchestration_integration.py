@@ -31,7 +31,7 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     from specweaver.core.flow.engine.state import StepResult, StepStatus
 
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-    ctx.run_id = "parent_run"
+    ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})
 
     log_file = tmp_path / "execution_log.txt"
     log_file.touch()
@@ -67,7 +67,7 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
 
     handler = OrchestrateComponentsHandler()
     runner = PipelineRunner(pipeline=MagicMock(), context=ctx, registry=registry, store=MagicMock())
-    ctx.pipeline_runner = runner
+    ctx.run = ctx.run.model_copy(update={"pipeline_runner": runner})
     ctx.topology = MagicMock(impact_of=MagicMock(return_value=set()))
 
     with patch("yaml.safe_load", return_value=custom_yaml), patch("importlib.resources.files"):

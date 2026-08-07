@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 
 
 def _make_context(*, with_config: bool = True) -> RunContext:
@@ -21,10 +21,9 @@ def _make_context(*, with_config: bool = True) -> RunContext:
     else:
         config = None
     return RunContext(
+        model=ModelAccess(config=config, llm=MagicMock()),
         project_path=Path("/tmp/fake-project"),
         spec_path=Path("/tmp/fake-project/spec.md"),
-        config=config,
-        llm=MagicMock(),
     )
 
 
@@ -39,7 +38,7 @@ class TestReviewConfigTaskType:
         assert config.task_type == "review"
 
     def test_review_config_fallback_also_sets_review(self):
-        """Fallback path (context.config=None) also sets task_type=REVIEW."""
+        """Fallback path (context.model.config=None) also sets task_type=REVIEW."""
         from specweaver.core.flow.handlers.review import _resolve_review_routing
 
         context = _make_context(with_config=False)
@@ -60,7 +59,7 @@ class TestGenConfigTaskType:
             context, task_type=TaskType.IMPLEMENT, temperature=0.2
         )
         assert config.task_type == "implement"
-        assert adapter == context.llm
+        assert adapter == context.model.llm
 
     def test_explicit_task_type_override(self):
         """Explicit task_type is used instead of default (story 8)."""
@@ -74,7 +73,7 @@ class TestGenConfigTaskType:
         assert config.task_type == "validate"
 
     def test_fallback_path_still_sets_task_type(self):
-        """Fallback path (context.config=None) still sets task_type."""
+        """Fallback path (context.model.config=None) still sets task_type."""
         from specweaver.core.flow.handlers.generation import _resolve_generation_routing
         from specweaver.infrastructure.llm.models import TaskType
 
@@ -98,7 +97,7 @@ class TestPlanSpecConfigTaskType:
         assert config.task_type == "plan"
 
     def test_plan_config_fallback_sets_plan(self):
-        """Fallback path (context.config=None) also sets task_type=PLAN."""
+        """Fallback path (context.model.config=None) also sets task_type=PLAN."""
         from specweaver.core.flow.handlers.generation import PlanSpecHandler
 
         handler = PlanSpecHandler()

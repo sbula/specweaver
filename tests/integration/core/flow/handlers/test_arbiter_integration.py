@@ -9,13 +9,18 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
 
 
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
-    ctx.run_id = "test_run_123"
+    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
+    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    ctx.analysis = AnalysisContext()
+    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
+    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    ctx.run = RunHandle(run_id="test_run_123")
     ctx.spec_path = MagicMock()
     ctx.spec_path.stem = "auth_spec.md"
     ctx.project_path = "/mock/project"
@@ -31,7 +36,9 @@ def run_context():
     )
     ctx.constitution = ""
     ctx.standards = ""
-    ctx.run_id = "test_run"
+    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
+    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    ctx.run = RunHandle(run_id="test_run")
     ctx.step_records = []
 
     # INT-US-24 FR-2: the arbiter consumes the reserved evidence key published
@@ -52,11 +59,11 @@ def run_context():
         }
     }
 
-    ctx.pipeline_runner = MagicMock()
-    ctx.pipeline_runner._context = ctx
-    ctx.pipeline_runner._registry = MagicMock()
-    ctx.pipeline_runner._store = MagicMock()
-    ctx.pipeline_runner._on_event = MagicMock()
+    ctx.run = RunHandle(pipeline_runner=MagicMock())
+    ctx.run.pipeline_runner._context = ctx
+    ctx.run.pipeline_runner._registry = MagicMock()
+    ctx.run.pipeline_runner._store = MagicMock()
+    ctx.run.pipeline_runner._on_event = MagicMock()
     return ctx
 
 
@@ -69,9 +76,9 @@ class TestArbiterIntegrationFlow:
         mock_filter.filter.return_value = "Cleaned assertion text"
         mock_create_filter.return_value = mock_filter
 
-        run_context.llm = AsyncMock()
+        run_context.model = ModelAccess(llm=AsyncMock())
         # Mock LLM verdict
-        run_context.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The implementation drifted.", "scenario_feedback": ""}'
+        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The implementation drifted.", "scenario_feedback": ""}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -96,9 +103,9 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_nfr8_no_scenario_vocab_in_coding_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.llm = AsyncMock()
+        run_context.model = ModelAccess(llm=AsyncMock())
         # LLM tries to leak scenario vocabulary
-        run_context.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The scenario test failed on Pytest parametrized inputs.", "scenario_feedback": ""}'
+        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The scenario test failed on Pytest parametrized inputs.", "scenario_feedback": ""}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -117,8 +124,8 @@ class TestArbiterIntegrationFlow:
         self, mock_create_filter, run_context
     ):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.llm = AsyncMock()
-        run_context.llm.generate.return_value = '{"verdict": "scenario_error", "coding_feedback": "", "scenario_feedback": "Check FR-1 test."}'
+        run_context.model = ModelAccess(llm=AsyncMock())
+        run_context.model.llm.generate.return_value = '{"verdict": "scenario_error", "coding_feedback": "", "scenario_feedback": "Check FR-1 test."}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -137,8 +144,8 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_gracefully_handles_malformed_json(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.llm = AsyncMock()
-        run_context.llm.generate.return_value = '{"verdict": "code_bug", missing quotes}'
+        run_context.model = ModelAccess(llm=AsyncMock())
+        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", missing quotes}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -152,8 +159,8 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_spec_ambiguity_parks_run(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.llm = AsyncMock()
-        run_context.llm.generate.return_value = (
+        run_context.model = ModelAccess(llm=AsyncMock())
+        run_context.model.llm.generate.return_value = (
             '{"verdict": "spec_ambiguity", "spec_clause": "FR-99"}'
         )
         run_context.spec_path.exists.return_value = True

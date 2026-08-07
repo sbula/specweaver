@@ -7,7 +7,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from specweaver.core.flow.handlers.base import IsolationPolicy, PlanContext, RunContext
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    IsolationPolicy,
+    ModelAccess,
+    PlanContext,
+    RunContext,
+    RunHandle,
+)
 from specweaver.infrastructure.llm.models import ProjectMetadata
 
 
@@ -23,11 +30,10 @@ def test_run_context_builds_project_metadata(tmp_path: Path) -> None:
     db = MagicMock()
 
     context = RunContext(
-        llm=llm,
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         db=db,
-        config=config,
+        model=ModelAccess(llm=llm, config=config),
     )
 
     assert isinstance(context.project_metadata, ProjectMetadata)
@@ -50,11 +56,10 @@ def test_run_context_graceful_degradation(tmp_path: Path) -> None:
 
     with patch("platform.platform", side_effect=Exception("err")):
         context = RunContext(
-            llm=llm,
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             db=db,
-            config=config,
+            model=ModelAccess(llm=llm, config=config),
         )
 
     assert context.project_metadata.language_target == "Unknown Environment"
@@ -277,3 +282,129 @@ class TestPlanContext:
     def test_plan_context_is_not_nullable(self, tmp_path: Path) -> None:
         with pytest.raises(ValidationError):
             RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", plan_context=None)
+
+
+class TestModelAccess:
+    """TECH-006 SF-02 CB3 (FR-6): LLM wiring — adapter, settings, and per-task router."""
+
+    def test_defaults_match_the_previous_flat_defaults(self) -> None:
+        access = ModelAccess()
+        assert access.llm is None
+        assert access.config is None
+        assert access.llm_router is None
+
+    def test_run_context_gets_a_default_model_access(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        assert isinstance(context.model, ModelAccess)
+
+    def test_model_is_a_usable_pydantic_field_name(self, tmp_path: Path) -> None:
+        """Pydantic v2 reserves the `model_` PREFIX, not the bare word `model`. Verified
+        directly rather than assumed, because a silent namespace clash here would surface as
+        a confusing failure far from this file."""
+        context = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(llm="x")
+        )
+        assert context.model.llm == "x"
+        assert context.model_dump()["model"]["llm"] == "x"
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.model.llm = "x"
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            ModelAccess(bogus=1)
+
+    def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("llm", "config", "llm_router"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+            with pytest.raises(ValidationError):
+                RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{gone: 1})
+
+
+class TestRunHandle:
+    """TECH-006 SF-02 CB3 (FR-6, FR-11): runner-injected identity for this run."""
+
+    def test_defaults_match_the_previous_flat_defaults(self) -> None:
+        handle = RunHandle()
+        assert handle.run_id is None
+        assert handle.pipeline_runner is None
+        assert handle.task_id is None
+
+    def test_re_stamping_the_run_id_preserves_the_pipeline_runner(self, tmp_path: Path) -> None:
+        """The runner re-stamps `run_id` every step iteration. FR-11 keeps `pipeline_runner`'s
+        fan-out access working, so a partial update must not drop the runner reference."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        sentinel = object()
+        context.run = context.run.model_copy(update={"pipeline_runner": sentinel})
+
+        context.run = context.run.model_copy(update={"run_id": "run-2"})
+
+        assert context.run.run_id == "run-2"
+        assert context.run.pipeline_runner is sentinel
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.run.run_id = "x"
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            RunHandle(bogus=1)
+
+    def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("run_id", "pipeline_runner", "task_id"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+
+
+class TestAnalysisContext:
+    """TECH-006 SF-02 CB3 (FR-6, FR-9): DI'd analyzer factory + AST parsers."""
+
+    def test_analyzer_factory_defaults_to_none(self) -> None:
+        assert AnalysisContext().analyzer_factory is None
+
+    def test_parsers_are_default_injected_on_construction(self, tmp_path: Path) -> None:
+        """`model_post_init` injects the default parser set when none was supplied. The
+        behaviour is unchanged by the move; only its destination is now `analysis.parsers`."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        assert context.analysis.parsers is not None
+
+    def test_explicitly_supplied_parsers_are_not_overwritten(self, tmp_path: Path) -> None:
+        sentinel = {"py": object()}
+        context = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            analysis=AnalysisContext(parsers=sentinel),
+        )
+        assert context.analysis.parsers is sentinel
+
+    def test_parser_loading_failure_degrades_gracefully(self, tmp_path: Path) -> None:
+        """[Graceful degradation] Parser loading is best-effort — an import-time explosion
+        must leave `parsers` None rather than making RunContext unconstructible."""
+        with patch(
+            "specweaver.workspace.ast.parsers.factory.get_default_parsers",
+            side_effect=RuntimeError("boom"),
+        ):
+            context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+
+        assert context.analysis.parsers is None
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.analysis.analyzer_factory = object()
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            AnalysisContext(bogus=1)
+
+    def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("analyzer_factory", "parsers"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)

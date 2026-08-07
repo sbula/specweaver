@@ -40,7 +40,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -126,7 +126,9 @@ def test_session_isolation_multistep_generates_runs_and_reconciles(tmp_path: Pat
     authorized reconcile lands ONLY allowed_paths back in the real repo."""
     _commit_session_project(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     context.isolation = context.isolation.model_copy(
         update={"session_isolation": True, "allowed_paths": _ALLOWED}
     )
@@ -153,7 +155,9 @@ def test_session_reconcile_hardblocks_docs_even_when_allowlisted(tmp_path: Path)
     at the strip_merge unit level."""
     _commit_session_project(tmp_path, gen_script=_GEN_WITH_DOCS)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     context.isolation = context.isolation.model_copy(update={"session_isolation": True})
     # Deliberately allow-list the docs file — the hard-block must STILL strip it.
     context.isolation = context.isolation.model_copy(
@@ -174,7 +178,9 @@ def test_control_not_isolated_runs_at_real_root_and_probe_fails(tmp_path: Path) 
     false pass) and that isolation is what moved cwd + gated the write-back. No git needed."""
     _write_sources(tmp_path)
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     # session_isolation defaults False — no worktree, no reconcile.
     run_state = _run(context)
 
@@ -192,7 +198,9 @@ def test_session_isolation_on_non_git_project_fails_loud(tmp_path: Path) -> None
     loud — isolation is never silently skipped, and no span step touches the real root."""
     _write_sources(tmp_path)  # sources present, but NO `git init`
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
     context.isolation = context.isolation.model_copy(
         update={"session_isolation": True, "allowed_paths": _ALLOWED}
     )

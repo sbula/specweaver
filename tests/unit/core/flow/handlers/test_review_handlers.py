@@ -19,7 +19,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -38,17 +38,17 @@ class TestRunContextConfigField:
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
         )
-        assert ctx.config is None
+        assert ctx.model.config is None
 
     def test_config_accepts_arbitrary_value(self, tmp_path: Path):
         """RunContext.config can hold any object (Any type)."""
         sentinel = object()
         ctx = RunContext(
+            model=ModelAccess(config=sentinel),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            config=sentinel,
         )
-        assert ctx.config is sentinel
+        assert ctx.model.config is sentinel
 
     def test_llm_router_defaults_to_none(self, tmp_path: Path):
         """RunContext without llm_router= kwarg → llm_router is None (backward-compat)."""
@@ -56,17 +56,17 @@ class TestRunContextConfigField:
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
         )
-        assert ctx.llm_router is None
+        assert ctx.model.llm_router is None
 
     def test_llm_router_accepts_arbitrary_value(self, tmp_path: Path):
         """RunContext.llm_router can hold any object (ModelRouter instance)."""
         sentinel = object()
         ctx = RunContext(
+            model=ModelAccess(llm_router=sentinel),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            llm_router=sentinel,
         )
-        assert ctx.llm_router is sentinel
+        assert ctx.model.llm_router is sentinel
 
 
 # ---------------------------------------------------------------------------
@@ -86,9 +86,9 @@ class TestReviewSpecHandlerGuards:
         spec.write_text("# Test spec\n", encoding="utf-8")
 
         ctx = RunContext(
+            model=ModelAccess(llm=None),
             project_path=tmp_path,
             spec_path=spec,
-            llm=None,
         )
         step = PipelineStep(
             name="review_spec",
@@ -120,9 +120,9 @@ class TestReviewCodeHandlerGuards:
         spec.write_text("# Test spec\n", encoding="utf-8")
 
         ctx = RunContext(
+            model=ModelAccess(llm=None),
             project_path=tmp_path,
             spec_path=spec,
-            llm=None,
         )
         step = PipelineStep(
             name="review_code",
@@ -157,11 +157,10 @@ class TestReviewCodeHandlerGuards:
         )
 
         ctx = RunContext(
+            model=ModelAccess(llm=mock_llm, config=mock_config),
             project_path=tmp_path,
             spec_path=spec,
-            llm=mock_llm,
             output_dir=output_dir,
-            config=mock_config,
         )
         step = PipelineStep(
             name="review_code",
@@ -194,10 +193,10 @@ class TestBuildToolDispatcherDI:
         mock_llm.generate_with_tools = MagicMock()
 
         ctx = RunContext(
+            analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
+            model=ModelAccess(llm=mock_llm),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
-            analyzer_factory=AnalyzerFactory,
-            llm=mock_llm,
         )
 
         # Mocking or simulating _build_tool_dispatcher requirement for project paths

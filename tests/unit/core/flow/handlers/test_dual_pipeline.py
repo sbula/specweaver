@@ -9,21 +9,27 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 
 
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
-    ctx.run_id = "test_run_123"
+    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
+    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    ctx.model = ModelAccess()
+    ctx.analysis = AnalysisContext()
+    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
+    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    ctx.run = RunHandle(run_id="test_run_123")
     ctx.spec_path = Path("/mock/project/specs/login_spec.md")
     # Need to mock the pipeline_runner and its components
-    ctx.pipeline_runner = MagicMock()
-    ctx.pipeline_runner._context = ctx
-    ctx.pipeline_runner._registry = MagicMock()
-    ctx.pipeline_runner._store = MagicMock()
-    ctx.pipeline_runner._on_event = MagicMock()
+    ctx.run = RunHandle(run_id="test_run_123", pipeline_runner=MagicMock())
+    ctx.run.pipeline_runner._context = ctx
+    ctx.run.pipeline_runner._registry = MagicMock()
+    ctx.run.pipeline_runner._store = MagicMock()
+    ctx.run.pipeline_runner._on_event = MagicMock()
     return ctx
 
 

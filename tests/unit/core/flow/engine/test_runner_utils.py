@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from specweaver.core.flow.engine.runner_utils import setup_sandbox_caches
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 
@@ -13,6 +13,11 @@ def test_setup_sandbox_caches_uses_file_system_atom(tmp_path: Path) -> None:
     """Test that setup_sandbox_caches uses FileSystemAtom for safe linking."""
     # Create mock context
     context = MagicMock(spec=RunContext)
+    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
+    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    context.run = RunHandle()
+    context.model = ModelAccess()
+    context.analysis = AnalysisContext()
     context.project_path = tmp_path
 
     # Create dummy node_modules to trigger linking

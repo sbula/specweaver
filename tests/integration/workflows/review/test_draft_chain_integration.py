@@ -20,7 +20,7 @@ import pytest
 
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, _now_iso
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext, _now_iso
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
 
@@ -72,8 +72,8 @@ def _make_context(tmp_path: Path) -> RunContext:
     config.llm.model = "test-model"
     config.llm.temperature = 0.2
     config.llm.max_output_tokens = 4096
-    ctx = RunContext(project_path=tmp_path, spec_path=spec, config=config)
-    ctx.llm = AsyncMock()
+    ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(config=config))
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
     ctx.context_provider = AsyncMock()
     return ctx
 

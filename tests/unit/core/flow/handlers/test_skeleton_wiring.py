@@ -24,7 +24,7 @@ async def test_generate_code_handler_skeleton_wiring(
     """Story 9: GenerateCodeHandler properly proxies dictionary seamlessly into Generator."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
     ctx.api_contract_paths = ["c:/fake/contract.py"]
-    ctx.llm = MagicMock()
+    ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="generate", target="code")
     handler = GenerateCodeHandler()
@@ -68,7 +68,7 @@ async def test_review_code_handler_skeleton_wiring(
     code_path.touch()
 
     ctx.api_contract_paths = ["c:/fake/contract.py"]
-    ctx.llm = MagicMock()
+    ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="review", target="code")
     handler = ReviewCodeHandler()
@@ -124,7 +124,7 @@ async def test_review_e2e_fallback_protection(
     """Story 12: Pipeline Completely suppresses binary faults and falls back downstream natively."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
     ctx.api_contract_paths = ["c:/fake/contract.py"]
-    ctx.llm = MagicMock()
+    ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="review", target="spec")
     from specweaver.core.flow.handlers.review import ReviewSpecHandler

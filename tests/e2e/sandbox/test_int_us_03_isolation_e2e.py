@@ -40,7 +40,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.runner_utils import apply_session_policy
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -116,7 +116,9 @@ def _context(tmp_path: Path) -> RunContext:
     """A RunContext wired exactly like `sw implement` — the per-run policy is resolved via
     apply_session_policy with DAL escalation opted in."""
     context = RunContext(
-        project_path=tmp_path, spec_path=tmp_path / "foo_spec.md", config=MagicMock()
+        project_path=tmp_path,
+        spec_path=tmp_path / "foo_spec.md",
+        model=ModelAccess(config=MagicMock()),
     )
     settings = SpecWeaverSettings(llm={"model": "test-model"})  # sandbox: default DAL_B threshold
     apply_session_policy(context, settings, _LOG, dal_auto_escalate=True)

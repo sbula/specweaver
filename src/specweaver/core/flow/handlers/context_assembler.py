@@ -53,7 +53,7 @@ def evaluate_and_fetch_skeleton_context(
     atom = CodeStructureAtom(
         cwd=context.project_path,
         active_archetype=active_archetype,
-        parsers=context.parsers,
+        parsers=context.analysis.parsers,
     )
 
     logger.debug(

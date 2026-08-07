@@ -36,7 +36,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.runner_utils import apply_session_policy
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
@@ -115,7 +115,9 @@ def test_toml_session_policy_drives_isolated_run_and_authorized_reconcile(tmp_pa
     )
     # spec stem "foo_spec" -> derived allow-list src/foo.py + tests/test_foo.py.
     context = RunContext(
-        project_path=tmp_path, spec_path=tmp_path / "foo_spec.md", config=MagicMock()
+        project_path=tmp_path,
+        spec_path=tmp_path / "foo_spec.md",
+        model=ModelAccess(config=MagicMock()),
     )
 
     # THE composition-root seam under test: policy + allow-list are produced here.
@@ -147,7 +149,9 @@ def test_toml_session_policy_off_runs_without_isolation(tmp_path: Path) -> None:
         sandbox=_load_toml_sandbox(str(tmp_path)),
     )
     context = RunContext(
-        project_path=tmp_path, spec_path=tmp_path / "foo_spec.md", config=MagicMock()
+        project_path=tmp_path,
+        spec_path=tmp_path / "foo_spec.md",
+        model=ModelAccess(config=MagicMock()),
     )
     apply_session_policy(context, settings, _LOG)
 

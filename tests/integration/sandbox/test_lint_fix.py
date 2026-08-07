@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 def _make_context(project: Path, *, llm: object = None) -> RunContext:
     """Create a RunContext from the sample project."""
     spec = project / "specs" / "calculator.md"
-    return RunContext(project_path=project, spec_path=spec, llm=llm)
+    return RunContext(project_path=project, spec_path=spec, model=ModelAccess(llm=llm))
 
 
 def _make_step(target: str = "src/") -> PipelineStep:

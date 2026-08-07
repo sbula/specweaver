@@ -72,7 +72,7 @@ def test_toml_isolation_policy_true_flows_onto_run_context(tmp_path: Path) -> No
     context = _run_and_capture(project_dir)
     assert context.isolation.enforce_isolation is True
     # container-neutral: the full config is NOT exposed on sw run (B-EXEC-01 dormant).
-    assert context.config is None
+    assert context.model.config is None
 
 
 def test_no_sandbox_section_keeps_policy_off_on_run_context(tmp_path: Path) -> None:
@@ -85,13 +85,13 @@ def test_no_sandbox_section_keeps_policy_off_on_run_context(tmp_path: Path) -> N
 def test_container_execution_mode_stays_dormant_on_run(tmp_path: Path) -> None:
     """[Hostile/Scope guard] a [sandbox] execution_mode=container toml must NOT activate
     B-EXEC-01 container QA on sw run — INT-US-09 is strictly container-free. Proven by
-    context.config staying None (QA handlers read `context.config.sandbox if context.config
+    context.model.config staying None (QA handlers read `context.model.config.sandbox if context.model.config
     else None` → None → host mode)."""
     project_dir = _init_project(
         tmp_path, "int09-container", '[sandbox]\nexecution_mode = "container"\n'
     )
     context = _run_and_capture(project_dir)
-    assert context.config is None  # container opt-in stays dormant on this path
+    assert context.model.config is None  # container opt-in stays dormant on this path
     assert context.isolation.enforce_isolation is False
 
 

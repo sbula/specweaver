@@ -120,7 +120,7 @@ def _spec(tmp_path: Path) -> Path:
 
 def _ctx(tmp_path: Path, db: Database | None = None) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=_spec(tmp_path))
-    ctx.llm = AsyncMock()
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
     if db is not None:
         ctx.db = db
     return ctx

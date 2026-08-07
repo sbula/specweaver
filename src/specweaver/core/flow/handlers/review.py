@@ -29,11 +29,9 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
 
     routed = (
-        context.llm_router.get_for_task(TaskType.REVIEW)
-        if getattr(context, "llm_router", None)
-        else None
+        context.model.llm_router.get_for_task(TaskType.REVIEW) if context.model.llm_router else None
     )
-    adapter = routed.adapter if routed else context.llm
+    adapter = routed.adapter if routed else context.model.llm
 
     if routed:
         config = GenerationConfig(
@@ -41,15 +39,15 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
             temperature=routed.temperature,
             max_output_tokens=routed.max_output_tokens,
             task_type=TaskType.REVIEW,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
-    elif context.config is not None:
+    elif context.model.config is not None:
         config = GenerationConfig(
-            model=context.config.llm.model,
+            model=context.model.config.llm.model,
             temperature=0.3,
-            max_output_tokens=context.config.llm.max_output_tokens,
+            max_output_tokens=context.model.config.llm.max_output_tokens,
             task_type=TaskType.REVIEW,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
     else:
         config = GenerationConfig(
@@ -57,7 +55,7 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
             temperature=0.3,
             max_output_tokens=4096,
             task_type=TaskType.REVIEW,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
 
     return adapter, config
@@ -76,7 +74,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     from specweaver.sandbox.security import WorkspaceBoundary
 
     # Only enable when the LLM actually supports tool use
-    if not hasattr(context.llm, "generate_with_tools"):
+    if not hasattr(context.model.llm, "generate_with_tools"):
         return None
 
     try:
@@ -92,7 +90,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
         boundary,
         role=role,
         allowed_tools=allowed_tools,
-        analyzer_factory=context.analyzer_factory,
+        analyzer_factory=context.analysis.analyzer_factory,
         topology=context.topology,
     )
 
@@ -103,7 +101,7 @@ class ReviewSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             logger.error("ReviewSpecHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 
@@ -216,7 +214,7 @@ class ReviewCodeHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             logger.error("ReviewCodeHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 

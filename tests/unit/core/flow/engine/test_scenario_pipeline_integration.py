@@ -14,7 +14,13 @@ from ruamel.yaml import YAML
 
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    IsolationPolicy,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 
 
 @pytest.fixture()
@@ -78,18 +84,22 @@ async def test_scenario_pipeline_end_to_end_integration(
     mock_llm.generate.return_value = json.dumps(valid_response)
 
     ctx = MagicMock(spec=RunContext)
+    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
+    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    ctx.run = RunHandle()
+    ctx.analysis = AnalysisContext()
     # TECH-006 SF-02 CB1: spec'd mocks do not auto-create attributes, and the runner reads
     # `isolation.dal_level` at construction. A real IsolationPolicy keeps this honest.
     ctx.isolation = IsolationPolicy(dal_level=None)
     ctx.spec_path = project_workspace / "specs" / "auth_spec.md"
     ctx.project_path = project_workspace
-    ctx.llm = mock_llm
+    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
+    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    ctx.model = ModelAccess(llm=mock_llm, config=None, llm_router=None)
     ctx.api_contract_paths = [str(project_workspace / "contracts" / "auth_contract.py")]
     ctx.constitution = None
     ctx.project_metadata = None
-    ctx.config = None
     ctx.llm_routing_enabled = False
-    ctx.llm_router = None
     ctx.generation_config = None
     ctx.feedback = {}
     ctx.stale_nodes = None

@@ -31,7 +31,7 @@ class DecomposeFeatureHandler(StepHandler):
     """Generates the DecompositionPlan via FeatureDecomposer."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
-        logger.info("Executing DECOMPOSE FEATURE for %s", context.run_id)
+        logger.info("Executing DECOMPOSE FEATURE for %s", context.run.run_id)
         started = _now_iso()
 
         try:
@@ -44,7 +44,7 @@ class DecomposeFeatureHandler(StepHandler):
 
             # Use the LLM and the Decomposer
             decomposer = FeatureDecomposer(
-                llm=context.llm, context_provider=context.context_provider
+                llm=context.model.llm, context_provider=context.context_provider
             )
 
             # Read spec content if exists
@@ -137,7 +137,7 @@ class OrchestrateComponentsHandler(StepHandler):
     """Executes fan_out on the runner for each mapped component."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
-        logger.info("Executing ORCHESTRATE COMPONENTS for %s", context.run_id)
+        logger.info("Executing ORCHESTRATE COMPONENTS for %s", context.run.run_id)
         import asyncio
         import graphlib
         import importlib.resources
@@ -189,7 +189,7 @@ class OrchestrateComponentsHandler(StepHandler):
                     completed_at="",
                 )
 
-            if not context.pipeline_runner:
+            if not context.run.pipeline_runner:
                 return StepResult(
                     status=StepStatus.FAILED,
                     error_message="pipeline_runner not found in context. Cannot orchestrate.",
@@ -282,14 +282,14 @@ class OrchestrateComponentsHandler(StepHandler):
 
                         isolated_runner = PipelineRunner(
                             pipeline=pipe,
-                            context=context.pipeline_runner._context,
-                            registry=context.pipeline_runner._registry,
-                            store=context.pipeline_runner._store,
-                            on_event=context.pipeline_runner._on_event,
+                            context=context.run.pipeline_runner._context,
+                            registry=context.run.pipeline_runner._registry,
+                            store=context.run.pipeline_runner._store,
+                            on_event=context.run.pipeline_runner._on_event,
                         )
 
                         task = asyncio.create_task(
-                            isolated_runner.run(parent_run_id=context.run_id)
+                            isolated_runner.run(parent_run_id=context.run.run_id)
                         )
                         active_tasks[node] = task
 
@@ -333,7 +333,7 @@ class OrchestrateComponentsHandler(StepHandler):
             if deferred_joins:
                 logger.info("Executing Wave N with %d deferred JOIN steps", len(deferred_joins))
                 wave_n_pipe = PipelineDefinition(
-                    name=f"auto_wave_n_{context.run_id}",
+                    name=f"auto_wave_n_{context.run.run_id}",
                     steps=deferred_joins,
                 )
 
@@ -341,13 +341,13 @@ class OrchestrateComponentsHandler(StepHandler):
 
                 wave_n_runner = PipelineRunner(
                     pipeline=wave_n_pipe,
-                    context=context.pipeline_runner._context,
-                    registry=context.pipeline_runner._registry,
-                    store=context.pipeline_runner._store,
-                    on_event=context.pipeline_runner._on_event,
+                    context=context.run.pipeline_runner._context,
+                    registry=context.run.pipeline_runner._registry,
+                    store=context.run.pipeline_runner._store,
+                    on_event=context.run.pipeline_runner._on_event,
                 )
 
-                wave_res = await wave_n_runner.run(parent_run_id=context.run_id)
+                wave_res = await wave_n_runner.run(parent_run_id=context.run.run_id)
                 sub_runs.append(wave_res)
 
                 if getattr(wave_res, "status", None) not in (StepStatus.PASSED, "completed"):

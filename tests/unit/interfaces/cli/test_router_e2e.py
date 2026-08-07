@@ -59,13 +59,13 @@ def test_cli_pipelines_injects_model_router_in_run(
         context = args[1]
 
         # Verify the ModelRouter was successfully instantiated and attached
-        assert context.llm_router is not None
-        assert context.llm_router._telemetry_project == "test-proj"
+        assert context.model.llm_router is not None
+        assert context.model.llm_router._telemetry_project == "test-proj"
 
         # Verify the AnalyzerFactory was successfully attached at the edge
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
-        assert context.analyzer_factory is AnalyzerFactory
+        assert context.analysis.analyzer_factory is AnalyzerFactory
 
 
 def test_cli_pipelines_injects_model_router_in_resume(
@@ -110,13 +110,13 @@ def test_cli_pipelines_injects_model_router_in_resume(
         context = args[1]
 
         # Verify ModelRouter was attached to the resurrected context
-        assert context.llm_router is not None
-        assert context.llm_router._telemetry_project == "test-proj"
+        assert context.model.llm_router is not None
+        assert context.model.llm_router._telemetry_project == "test-proj"
 
         # Verify the AnalyzerFactory was attached to resurrected context
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
-        assert context.analyzer_factory is AnalyzerFactory
+        assert context.analysis.analyzer_factory is AnalyzerFactory
 
 
 def test_empty_pipeline_spec_edgecase(mock_active_db: MagicMock, tmp_path: Path) -> None:

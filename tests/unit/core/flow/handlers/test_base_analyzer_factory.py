@@ -4,14 +4,16 @@
 
 from pathlib import Path
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 
 
 def test_run_context_accepts_analyzer_factory():
+    """TECH-006 SF-02 CB3: the DI'd factory now arrives via `analysis`. Same guarantee —
+    what the caller injects is what a handler reads back, by identity."""
     dummy_factory = object()
     context = RunContext(
         project_path=Path("/tmp/proj"),
         spec_path=Path("/tmp/proj/spec.md"),
-        analyzer_factory=dummy_factory,
+        analysis=AnalysisContext(analyzer_factory=dummy_factory),
     )
-    assert context.analyzer_factory is dummy_factory
+    assert context.analysis.analyzer_factory is dummy_factory

@@ -12,7 +12,7 @@ Never leave an old and a new field alive for the same data across a commit bound
 |----|-------|--------------|--------|
 | 1 | `IsolationPolicy` | `enforce_isolation`, `execution_root`, `session_isolation`, `allowed_paths`, `dal_level` | ✅ `4e23171b` |
 | 2 | `PlanContext` | `plan`, `decomposition` | ✅ |
-| 3 | `RunHandle` + `AnalysisContext` + `ModelAccess` | `run_id`, `pipeline_runner`, `task_id`, `analyzer_factory`, `parsers`, `llm`, `config`, `llm_router` | ⬜ |
+| 3 | `RunHandle` + `AnalysisContext` + `ModelAccess` | `run_id`, `pipeline_runner`, `task_id`, `analyzer_factory`, `parsers`, `llm`, `config`, `llm_router` | ✅ |
 | 4 | `GraphContext` | `topology`, `stale_nodes`, `workspace_roots`, `api_contract_paths` | ⬜ |
 | 5 | Dead-field cleanup + `model_post_init` split | deletes `env_vars`, `step_records`, `pipeline_name` | ⬜ |
 
@@ -454,3 +454,63 @@ mypy is the only gate that catches it (the tests all passed).
   so a later boundary cannot add an oversized one unnoticed.
 - Refactor-safety gate blocks on 8 test files (down from CB1's 16 — this migration is more purely
   mechanical). Same disposition as CB1: surfaced for review, not dodged.
+
+
+---
+# CB3 Execution Record — `ModelAccess` + `RunHandle` + `AnalysisContext`
+
+`RunContext`: 28 → **23** counted attributes (exactly the ledger's prediction). Flow scope
+**1233 passed**; full suite **6191 passed, 0 failed**. The widest boundary of the five: 8 fields,
+~106 production call sites, 45 test files.
+
+## Verified before designing around it
+`model` is a legal Pydantic v2 field name — the framework reserves the `model_` PREFIX, not the
+bare word. Checked under `-W error::UserWarning` (no warning, `model_dump()` round-trips) rather
+than assumed, because a namespace clash here would have surfaced far from its cause.
+
+## Three defects the mechanical passes introduced, each caught by reading rather than by tests
+1. **40+ `getattr(context, "run_id", ...)` string-based reads.** Post-move these would have
+   silently returned the default — the exact silent-`None` class NFR-6 exists to forbid, and
+   completely invisible to a regex over attribute access. All converted to direct nested reads so
+   a miss fails loudly. This is the single biggest hazard in the whole SF and it was not in the
+   plan; a later boundary should grep for `getattr(context, "<field>"` FIRST, before any rename.
+2. **A regex turned a multi-line assignment into a frozen-model mutation**
+   (`context.model.llm_router = ModelRouter(...)`, ×2 in `core/flow/interfaces/cli.py` and ×2 in
+   tests), which raises at runtime. Caught because AD-8 made the sub-models frozen — the design
+   decision doing precisely the job it was chosen for.
+3. **A compound `getattr(context, "task_id", getattr(context, "run_id", "default"))` silently
+   changed meaning** once the inner call was rewritten: `task_id` stopped resolving to the (always
+   present, possibly `None`) attribute and started falling through to `run_id`. Exact prior
+   semantics restored — `context.run.task_id`. CB5 still owns the documented widening to
+   `task_id or run_id or "default"`; smuggling it in here would have hidden a behaviour change
+   inside a relocation commit.
+
+Also: four test files had to be reverted and redone after a merge helper wrongly combined
+assignments across different functions, producing duplicate kwargs. Caught by ruff's
+duplicate-keyword error, not by tests.
+
+## `MagicMock(spec=RunContext)` exposes NO Pydantic v2 fields
+Verified directly: `spec=RunContext` permits *setting* any attribute but *reading* none of the
+model fields. So `ctx.run = ctx.run.model_copy(...)` fails at the read. Every spec'd-mock fixture
+now holds REAL sub-model instances, which is both correct and more honest than a mocked stand-in.
+Same fix for a bare `MagicMock()` fixture in `test_arbiter.py`, where `model_copy` returned another
+MagicMock and the `AsyncMock` llm never actually landed.
+
+## Verification
+- Assertion-integrity audit: **38 removed, all 38 with an exact nested-path counterpart, zero
+  outliers** — cleaner than CB1/CB2 because CB3 is a purer rename.
+- One failure escaped the flow-scoped runs entirely and was caught only by the full suite:
+  `tests/integration/engine/` (note: NOT `tests/integration/core/flow/`) uses a fixture named
+  `mock_run_context`, which no var-name allowlist matched. Module-scoped greens are not evidence
+  for a rename this wide.
+- NFR-7 ratchet 28 → 23; the sub-model health test now parametrises over all five extracted models.
+
+## Tooling fix made during this boundary (not part of SF-02's scope, but caused by it)
+`CLAUDE.md`'s Test Commands prescribed a bare serial `python -m pytest`, and the system interpreter
+has no `pytest-xdist` — so four full-suite runs were made at ~13 min each before this was noticed.
+Measured on 16 cores: one module 12.5s serial vs 15.2s parallel (serial wins); `tests/unit` 5m02 vs
+1m37; full suite ~13m vs 4m26. `CLAUDE.md` and `specweaver-dev/SKILL.md` now state the interpreter
+and the crossover. (`scripts/tests.py` already passed `-n auto` — using it would have avoided this.)
+Incidental discovery: `.claude/skills/` and `.agents/skills/` are **hard-linked** (same inode), not
+merely kept in sync as an older working note claims; one edit updates both, and an editor that
+replaces rather than truncates would silently break the link.

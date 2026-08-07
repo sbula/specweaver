@@ -13,7 +13,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
 from specweaver.core.flow.handlers.generation import (
     GenerateCodeHandler,
     GenerateTestsHandler,
@@ -39,7 +39,7 @@ class TestRunContext:
             spec_path=tmp_path / "specs" / "test.md",
         )
         assert ctx.project_path == tmp_path
-        assert ctx.llm is None
+        assert ctx.model.llm is None
         assert ctx.topology is None
         assert ctx.settings is None
 
@@ -52,7 +52,7 @@ class TestRunContext:
             project_path=tmp_path,
             spec_path=tmp_path / "specs" / "test.md",
         )
-        assert ctx.parsers is None
+        assert ctx.analysis.parsers is None
 
     def test_context_with_output_dir(self, tmp_path: Path) -> None:
         ctx = RunContext(
@@ -142,11 +142,13 @@ class TestValidateSpecHandler:
     @pytest.mark.asyncio
     @patch.object(ValidateSpecHandler, "_run_validation")
     async def test_validate_spec_injects_parsers(self, mock_run_val, tmp_path: Path) -> None:
-        """Verify that context.parsers is cleanly passed into the underlying _run_validation method."""
+        """Verify that context.analysis.parsers is cleanly passed into the underlying _run_validation method."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
         dummy_parsers = {(".custom",): MagicMock()}
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, parsers=dummy_parsers)
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, analysis=AnalysisContext(parsers=dummy_parsers)
+        )
         step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)
         handler = ValidateSpecHandler()
         mock_run_val.return_value = []
@@ -240,13 +242,13 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            llm=mock_adapter,
             db=MagicMock(),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
@@ -277,8 +279,8 @@ class TestGenerateCodeHandler:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.run_id = "test-run"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         # Inject feedback mock matching runner behavior
         ctx.feedback = {
@@ -331,13 +333,13 @@ class TestGenerateCodeHandler:
             )
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            llm=mock_adapter,
             db=MagicMock(),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
@@ -373,9 +375,12 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            model=ModelAccess(llm=mock_adapter),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
@@ -396,7 +401,10 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\npass\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            model=ModelAccess(llm=mock_adapter),
         )
         # deliberately NOT setting ctx.db
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -448,13 +456,13 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
-            llm=mock_adapter,
             db=MagicMock(),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
@@ -485,8 +493,8 @@ class TestGenerateTestsHandler:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.run_id = "test-run"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         # Inject feedback mock matching runner behavior
         ctx.feedback = {
@@ -536,13 +544,13 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
-            llm=mock_adapter,
             db=MagicMock(),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
@@ -563,7 +571,10 @@ class TestGenerateTestsHandler:
             return_value=MagicMock(text="```python\npass\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tests_dir,
+            model=ModelAccess(llm=mock_adapter),
         )
         ctx.db = None
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -606,7 +617,12 @@ class TestPlanSpecHandler:
         spec = tmp_path / "test_spec.md"
         valid_uuid = "11111111-2222-3333-4444-888888888888"
         spec.write_text(f"# sw-artifact: {valid_uuid}\nTest\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock(), db=MagicMock())
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            db=MagicMock(),
+            model=ModelAccess(llm=MagicMock()),
+        )
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -656,8 +672,13 @@ class TestPlanSpecHandler:
         """If spec lacks a tag, parent_id falls back to run_id."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# No tag here\nTest\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock(), db=MagicMock())
-        ctx.run_id = "test-run-123"
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            db=MagicMock(),
+            model=ModelAccess(llm=MagicMock()),
+        )
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run-123"})
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
 
@@ -692,7 +713,7 @@ class TestPlanSpecHandler:
         """Verifies handler catches planner exceptions and returns a clean error."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
 

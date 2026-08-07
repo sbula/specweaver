@@ -15,7 +15,7 @@ import typer
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
@@ -82,7 +82,7 @@ def _get_state_store() -> StateStore:
 
 
 def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> None:
-    """Wire context.llm for non-validate-only pipelines — shared by run AND
+    """Wire context.model.llm for non-validate-only pipelines — shared by run AND
     resume (INT-US-24 defect #10: resume historically skipped this, silently
     degrading every resumed LLM step to "LLM not configured" errors)."""
     if pipeline_name == "validate_only":
@@ -93,7 +93,7 @@ def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> No
 
         settings = load_settings(_core.get_db(), project_path.name)
         _, adapter, _gen_config = create_llm_adapter(settings, telemetry_project=project_path.name)
-        context.llm = adapter
+        context.model = context.model.model_copy(update={"llm": adapter})
     except (LLMAdapterError, ValueError):
         _core.console.print(
             "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
@@ -290,7 +290,7 @@ def _execute_run(  # noqa: C901
     )
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
@@ -310,7 +310,7 @@ def _execute_run(  # noqa: C901
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
     # root (ADR-002) into dedicated context flags — the per-step US-9 policy
     # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
-    # ``allowed_paths``). We deliberately do NOT populate context.config here: doing so
+    # ``allowed_paths``). We deliberately do NOT populate context.model.config here: doing so
     # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
     # container QA on this path, which is out of scope. Graceful: a settings-resolution
     # failure must never crash a run — the policies fall back to their defaults (off).
@@ -327,11 +327,15 @@ def _execute_run(  # noqa: C901
             project_path.name,
         )
 
-    context.llm_router = ModelRouter(
-        settings_provider=lambda role: load_settings(
-            _core.get_db(), project_path.name, llm_role=role
-        ),
-        telemetry_project=project_path.name,
+    context.model = context.model.model_copy(
+        update={
+            "llm_router": ModelRouter(
+                settings_provider=lambda role: load_settings(
+                    _core.get_db(), project_path.name, llm_role=role
+                ),
+                telemetry_project=project_path.name,
+            )
+        }
     )
 
     _wire_llm(context, pipeline_def.name, project_path)
@@ -497,7 +501,7 @@ def resume(  # noqa: C901
     )
 
     context = RunContext(
-        analyzer_factory=AnalyzerFactory,
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
@@ -517,7 +521,7 @@ def resume(  # noqa: C901
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
     # root (ADR-002) into dedicated context flags — the per-step US-9 policy
     # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
-    # ``allowed_paths``). We deliberately do NOT populate context.config here: doing so
+    # ``allowed_paths``). We deliberately do NOT populate context.model.config here: doing so
     # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
     # container QA on this path, which is out of scope. Graceful: a settings-resolution
     # failure must never crash a run — the policies fall back to their defaults (off).
@@ -534,11 +538,15 @@ def resume(  # noqa: C901
             project_path.name,
         )
 
-    context.llm_router = ModelRouter(
-        settings_provider=lambda role: load_settings(
-            _core.get_db(), project_path.name, llm_role=role
-        ),
-        telemetry_project=project_path.name,
+    context.model = context.model.model_copy(
+        update={
+            "llm_router": ModelRouter(
+                settings_provider=lambda role: load_settings(
+                    _core.get_db(), project_path.name, llm_role=role
+                ),
+                telemetry_project=project_path.name,
+            )
+        }
     )
 
     _wire_llm(context, pipeline_def.name, project_path)

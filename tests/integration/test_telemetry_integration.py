@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,
@@ -74,10 +74,9 @@ def _make_context(*, with_config: bool = True) -> RunContext:
     else:
         config = None
     return RunContext(
+        model=ModelAccess(config=config, llm=MagicMock()),
         project_path=Path("/tmp/fake"),
         spec_path=Path("/tmp/fake/spec.md"),
-        config=config,
-        llm=MagicMock(),
     )
 
 

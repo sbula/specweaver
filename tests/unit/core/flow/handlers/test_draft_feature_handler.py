@@ -41,7 +41,7 @@ def _step(**params: Any) -> PipelineStep:
 def _interactive_ctx(tmp_path: Path, spec: Path) -> RunContext:
     """A context with both an LLM and a provider — the drafting path is reachable."""
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
-    ctx.llm = AsyncMock()
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
     ctx.context_provider = AsyncMock()
     return ctx
 
@@ -307,7 +307,7 @@ class TestDraftFeatureHostile:
     async def test_llm_present_but_no_provider_parks(self, tmp_path: Path) -> None:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec)
-        ctx.llm = AsyncMock()
+        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
 
         result = await DraftFeatureHandler().execute(_step(), ctx)
 
@@ -490,7 +490,7 @@ class TestDraftFeatureLineageAndConfig:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
         ctx.db = MagicMock()
-        ctx.run_id = "run-42"
+        ctx.run = ctx.run.model_copy(update={"run_id": "run-42"})
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -516,15 +516,15 @@ class TestDraftFeatureLineageAndConfig:
     async def test_generation_config_built_from_context_config(
         self, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
-        """context.config.llm present -> GenerationConfig built; its model reaches lineage."""
+        """context.model.config.llm present -> GenerationConfig built; its model reaches lineage."""
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
         ctx.db = MagicMock()
-        ctx.run_id = "run-7"
-        ctx.config = MagicMock()
-        ctx.config.llm.model = "gemini-3-flash-preview"
-        ctx.config.llm.temperature = 0.4
-        ctx.config.llm.max_output_tokens = 2048
+        ctx.run = ctx.run.model_copy(update={"run_id": "run-7"})
+        ctx.model = ctx.model.model_copy(update={"config": MagicMock()})
+        ctx.model.config.llm.model = "gemini-3-flash-preview"
+        ctx.model.config.llm.temperature = 0.4
+        ctx.model.config.llm.max_output_tokens = 2048
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -551,7 +551,7 @@ class TestDraftFeatureLineageAndConfig:
         class _ConfigWithoutLlm:
             pass
 
-        ctx.config = _ConfigWithoutLlm()
+        ctx.model = ctx.model.model_copy(update={"config": _ConfigWithoutLlm()})
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()

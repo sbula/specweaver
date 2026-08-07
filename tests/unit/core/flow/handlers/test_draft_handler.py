@@ -54,7 +54,7 @@ class TestDraftSpecHandler:
         """If drafting succeeds, StepResult contains a generated artifact_uuid."""
         spec = tmp_path / "test_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
-        ctx.llm = AsyncMock()
+        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
         ctx.context_provider = AsyncMock()
 
         mock_repo = MagicMock()
@@ -71,7 +71,7 @@ class TestDraftSpecHandler:
         step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
         handler = DraftSpecHandler()
 
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         result = await handler.execute(step, ctx)
 
@@ -121,9 +121,9 @@ class TestDraftSpecHandlerFeedbackLoop:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# v1 draft\n", encoding="utf-8")
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
-        ctx.llm = AsyncMock()
+        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
         ctx.context_provider = AsyncMock()
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         ctx.feedback = self._feedback()
 
         mock_repo = MagicMock()

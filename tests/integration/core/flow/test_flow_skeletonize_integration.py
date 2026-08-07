@@ -20,11 +20,11 @@ async def test_integration_flow_skeletonize_di(tmp_path: Path) -> None:
 
     # 1. Pipeline Runner instantiates Context (Invoking DI Hotfix)
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "test.md")
-    assert ctx.parsers is not None, "Hotfix failed to inject default parsers dictionaries."
+    assert ctx.analysis.parsers is not None, "Hotfix failed to inject default parsers dictionaries."
 
     # 2. Handlers instantiate isolated Atoms passing DI map
     executor = EngineFileExecutor(tmp_path)
-    atom = CodeStructureAtom(executor, parsers=ctx.parsers)
+    atom = CodeStructureAtom(executor, parsers=ctx.analysis.parsers)
 
     # 3. PromptBuilder triggers skeletonize condensation bounds natively
     t0 = time.time()

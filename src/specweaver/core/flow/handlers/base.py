@@ -80,6 +80,55 @@ class PlanContext(BaseModel):
     decomposition: str | None = None  # DecompositionPlan JSON (set by runner hook)
 
 
+class ModelAccess(BaseModel):
+    """TECH-006 SF-02 (FR-6): how this run reaches a language model.
+
+    Every field is ``Any`` to avoid a runtime import across the ``core.flow`` boundary, matching
+    what these fields already were as flat attributes (D-2/D-3 — relocation only).
+
+    Note on the attribute name: Pydantic v2 reserves the ``model_`` *prefix*, not the bare word
+    ``model``, so ``RunContext.model`` is legal. Verified directly rather than assumed.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    llm: Any = None  # LLMAdapter | None
+    config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
+    llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
+
+
+class RunHandle(BaseModel):
+    """TECH-006 SF-02 (FR-6, FR-11): the run's identity, injected by the runner.
+
+    ``run_id`` is re-stamped on every step iteration, so partial updates via ``model_copy`` must
+    leave ``pipeline_runner`` intact — the fan-out in ``decompose.py``/``dual_pipeline.py``
+    reaches through it. FR-11 keeps that access pattern exactly as it was; redesigning the
+    fan-out mechanism is explicitly out of SF-02's scope.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    run_id: str | None = None
+    pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
+    task_id: str | None = None  # Target Task ID for Handover Protocol
+
+
+class AnalysisContext(BaseModel):
+    """TECH-006 SF-02 (FR-6, FR-9): injected code-analysis tooling.
+
+    ``parsers`` is default-injected by ``RunContext.model_post_init`` when not supplied, and that
+    load is best-effort: a failure leaves it ``None`` rather than making the context
+    unconstructible. ``analyzer_factory`` stays ``Any`` (D-2) because
+    ``AnalyzerFactoryProtocol`` lives outside ``core.flow``'s ``consumes`` list — giving it a real
+    runtime import would be a new boundary question, not something this ticket decides.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
+    parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
+
+
 class RunContext(BaseModel):
     """Execution context passed to every step handler.
 
@@ -106,39 +155,34 @@ class RunContext(BaseModel):
 
     project_path: Path
     spec_path: Path
-    llm: Any = None  # LLMAdapter | None — Any to avoid import issues
     context_provider: Any = None  # ContextProvider | None
     topology: Any = None  # TopologyContext | None
     settings: Any = None  # ValidationSettings | None
-    config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
-    analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
     isolation: IsolationPolicy = Field(default_factory=IsolationPolicy)
     plan_context: PlanContext = Field(default_factory=PlanContext)
+    model: ModelAccess = Field(default_factory=ModelAccess)
+    run: RunHandle = Field(default_factory=RunHandle)
+    analysis: AnalysisContext = Field(default_factory=AnalysisContext)
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
     workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
-    task_id: str | None = None  # Target Task ID for Handover Protocol
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
-    llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
     project_metadata: Any = None  # ProjectMetadata | None
-    pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
-    run_id: str | None = None
     step_records: list[dict[str, Any]] | None = None
     env_vars: dict[str, str] = Field(default_factory=dict)
     pipeline_name: str | None = None
     stale_nodes: set[str] | None = None
-    parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
 
     def model_post_init(self, __context: Any) -> None:
         """Inject ProjectMetadata into context execution strictly securely."""
-        if self.parsers is None:
+        if self.analysis.parsers is None:
             try:
                 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
-                self.parsers = get_default_parsers()
+                self.analysis = self.analysis.model_copy(update={"parsers": get_default_parsers()})
             except BaseException:
                 pass
 
@@ -173,16 +217,22 @@ class RunContext(BaseModel):
             archetype = "generic"
 
         rules = {}
-        if self.config and hasattr(self.config, "validation") and self.config.validation:
-            overrides = getattr(self.config.validation, "overrides", {})
+        if (
+            self.model.config
+            and hasattr(self.model.config, "validation")
+            and self.model.config.validation
+        ):
+            overrides = getattr(self.model.config.validation, "overrides", {})
             if isinstance(overrides, dict):
                 rules = overrides
 
         try:
             provider = (
-                str(self.llm.provider_name) if hasattr(self.llm, "provider_name") else "unknown"
+                str(self.model.llm.provider_name)
+                if hasattr(self.model.llm, "provider_name")
+                else "unknown"
             )
-            model_str = str(self.llm.model) if hasattr(self.llm, "model") else "unknown"
+            model_str = str(self.model.llm.model) if hasattr(self.model.llm, "model") else "unknown"
         except Exception:
             provider = "unknown"
             model_str = "unknown"

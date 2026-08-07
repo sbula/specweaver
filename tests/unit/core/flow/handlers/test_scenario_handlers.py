@@ -10,7 +10,7 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
@@ -41,17 +41,21 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     contract_path.write_text("class AuthProtocol: ...", encoding="utf-8")
 
     ctx = MagicMock(spec=RunContext)
+    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
+    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    ctx.run = RunHandle()
+    ctx.analysis = AnalysisContext()
     ctx.spec_path = spec_path
     ctx.project_path = tmp_path
-    ctx.llm = llm
+    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
+    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    ctx.model = ModelAccess(llm=llm, config=None, llm_router=None)
     ctx.api_contract_paths = [str(contract_path)]
     ctx.constitution = None
     ctx.project_metadata = None
-    ctx.config = None
 
     # Mock _resolve_generation_routing needs
     ctx.llm_routing_enabled = False
-    ctx.llm_router = None
     ctx.generation_config = None
     ctx.feedback = {}
 

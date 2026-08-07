@@ -37,11 +37,9 @@ def _resolve_generation_routing(
     resolved_type = task_type if task_type is not None else _TaskType.IMPLEMENT
 
     routed = (
-        context.llm_router.get_for_task(resolved_type)
-        if getattr(context, "llm_router", None)
-        else None
+        context.model.llm_router.get_for_task(resolved_type) if context.model.llm_router else None
     )
-    adapter = routed.adapter if routed else context.llm
+    adapter = routed.adapter if routed else context.model.llm
 
     if routed:
         config = GenerationConfig(
@@ -49,15 +47,15 @@ def _resolve_generation_routing(
             temperature=routed.temperature,
             max_output_tokens=routed.max_output_tokens,
             task_type=resolved_type,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
-    elif context.config is not None:
+    elif context.model.config is not None:
         config = GenerationConfig(
-            model=context.config.llm.model,
+            model=context.model.config.llm.model,
             temperature=temperature,
-            max_output_tokens=context.config.llm.max_output_tokens,
+            max_output_tokens=context.model.config.llm.max_output_tokens,
             task_type=resolved_type,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
     else:
         # Fallback: no config set (e.g. test harness)
@@ -66,7 +64,7 @@ def _resolve_generation_routing(
             temperature=temperature,
             max_output_tokens=4096,
             task_type=resolved_type,
-            run_id=getattr(context, "run_id", "") or "",
+            run_id=context.run.run_id or "",
         )
 
     return adapter, config
@@ -99,7 +97,7 @@ class GenerateCodeHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             logger.error("GenerateCodeHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for generate steps", started)
 
@@ -124,7 +122,7 @@ class GenerateCodeHandler:
             if context.spec_path.exists():
                 parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             if not parent_id:
-                parent_id = getattr(context, "run_id", "") or ""
+                parent_id = context.run.run_id or ""
 
             artifact_uuid = None
             if output_path.exists():
@@ -180,7 +178,7 @@ class GenerateCodeHandler:
                     await repo.log_artifact_event(
                         artifact_id=artifact_uuid,
                         parent_id=parent_id,
-                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        run_id=context.run.run_id or "pipeline_run",
                         event_type="generated_code",
                         model_id=config.model,
                     )
@@ -205,7 +203,7 @@ class GenerateTestsHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             logger.error("GenerateTestsHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for generate steps", started)
 
@@ -230,7 +228,7 @@ class GenerateTestsHandler:
             if context.spec_path.exists():
                 parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             if not parent_id:
-                parent_id = getattr(context, "run_id", "") or ""
+                parent_id = context.run.run_id or ""
 
             artifact_uuid = None
             if output_path.exists():
@@ -286,7 +284,7 @@ class GenerateTestsHandler:
                     await repo.log_artifact_event(
                         artifact_id=artifact_uuid,
                         parent_id=parent_id,
-                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        run_id=context.run.run_id or "pipeline_run",
                         event_type="generated_tests",
                         model_id=config.model,
                     )
@@ -320,11 +318,11 @@ class PlanSpecHandler:
         from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
 
         routed = (
-            context.llm_router.get_for_task(TaskType.PLAN)
-            if getattr(context, "llm_router", None)
+            context.model.llm_router.get_for_task(TaskType.PLAN)
+            if context.model.llm_router
             else None
         )
-        adapter = routed.adapter if routed else context.llm
+        adapter = routed.adapter if routed else context.model.llm
 
         if routed:
             config = GenerationConfig(
@@ -332,15 +330,15 @@ class PlanSpecHandler:
                 temperature=routed.temperature,
                 max_output_tokens=routed.max_output_tokens,
                 task_type=TaskType.PLAN,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
-        elif context.config is not None:
+        elif context.model.config is not None:
             config = GenerationConfig(
-                model=context.config.llm.model,
+                model=context.model.config.llm.model,
                 temperature=0.3,
-                max_output_tokens=context.config.llm.max_output_tokens,
+                max_output_tokens=context.model.config.llm.max_output_tokens,
                 task_type=TaskType.PLAN,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
         else:
             # Fallback
@@ -349,7 +347,7 @@ class PlanSpecHandler:
                 temperature=0.3,
                 max_output_tokens=4096,
                 task_type=TaskType.PLAN,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=context.run.run_id or "",
             )
 
         return adapter, config
@@ -365,9 +363,9 @@ class PlanSpecHandler:
         from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
 
         try:
-            if context.config and hasattr(context.config, "stitch"):
-                stitch_mode = context.config.stitch.mode
-                stitch_api_key = context.config.stitch.api_key
+            if context.model.config and hasattr(context.model.config, "stitch"):
+                stitch_mode = context.model.config.stitch.mode
+                stitch_api_key = context.model.config.stitch.api_key
             else:
                 stitch_mode = "off"
                 stitch_api_key = ""
@@ -413,7 +411,7 @@ class PlanSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             logger.error("PlanSpecHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for plan steps", started)
 
@@ -471,7 +469,7 @@ class PlanSpecHandler:
             if context.spec_path.exists():
                 parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             if not parent_id:
-                parent_id = getattr(context, "run_id", "") or ""
+                parent_id = context.run.run_id or ""
 
             from specweaver.core.flow.store import FlowRepository
 
@@ -481,7 +479,7 @@ class PlanSpecHandler:
                     await repo.log_artifact_event(
                         artifact_id=artifact_uuid,
                         parent_id=parent_id,
-                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        run_id=context.run.run_id or "pipeline_run",
                         event_type="generated_plan",
                         model_id=config.model,
                     )

@@ -44,7 +44,7 @@ async def test_pipeline_runner_passes_render_profile_to_handler():
         project_path=Path("/tmp/workspace/project"),
         spec_path=Path("/tmp/workspace/project/spec.yaml"),
     )
-    context.llm = MagicMock()
+    context.model = context.model.model_copy(update={"llm": MagicMock()})
     context.context_provider = MagicMock()
 
     # Create the handler instance we will mock internally

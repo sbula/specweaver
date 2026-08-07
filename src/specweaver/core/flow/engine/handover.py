@@ -99,8 +99,8 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
 
             # Task Discovery
             target_task_id: uuid.UUID | None = None
-            if context.task_id is not None:
-                target_task_id = uuid.UUID(context.task_id)
+            if context.run.task_id is not None:
+                target_task_id = uuid.UUID(context.run.task_id)
             else:
                 # Fallback to the most recently created IN_PROGRESS task
                 active_tasks = await repo.list_tasks(

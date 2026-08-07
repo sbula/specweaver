@@ -103,7 +103,7 @@ class TestHydrationHappyPath:
     def test_decompose_hydration_logs_at_info_with_run_id(self, tmp_path: Path, caplog) -> None:
         """NFR-7: every hydration is observable, tagged with the run it belongs to."""
         ctx = _ctx(tmp_path)
-        ctx.run_id = "run-abc"
+        ctx.run = ctx.run.model_copy(update={"run_id": "run-abc"})
 
         with caplog.at_level("INFO"):
             hydrate_plan_context(DECOMPOSE_STEP, _result(components=[]), ctx)
@@ -113,7 +113,7 @@ class TestHydrationHappyPath:
 
     def test_plan_hydration_logs_at_info_with_run_id_and_path(self, tmp_path: Path, caplog) -> None:
         ctx = _ctx(tmp_path)
-        ctx.run_id = "run-xyz"
+        ctx.run = ctx.run.model_copy(update={"run_id": "run-xyz"})
         plan_file = tmp_path / "greeter_spec_plan.yaml"
         plan_file.write_text("impl: plan\n", encoding="utf-8")
 

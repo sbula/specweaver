@@ -126,11 +126,11 @@ async def _ok_execute(self, step, context) -> StepResult:
 
 
 # Handlers beyond review_spec in new_feature.yaml — US-3 territory, out of this contract.
-# INT-US-21 CB-4: ReviewSpecHandler prefers `context.llm_router.get_for_task(...)` over
-# `context.llm` (review.py:32-36), and `sw run`/`sw resume` inject a real ModelRouter. Patching
+# INT-US-21 CB-4: ReviewSpecHandler prefers `context.model.llm_router.get_for_task(...)` over
+# `context.model.llm` (review.py:32-36), and `sw run`/`sw resume` inject a real ModelRouter. Patching
 # only `create_llm_adapter` left the router building a LIVE adapter — once approve-on-resume let
 # E6/E7 reach review_spec they started making real Gemini calls (observed as 429s). Returning
-# None makes every routed lookup fall back to the scripted adapter on `context.llm`.
+# None makes every routed lookup fall back to the scripted adapter on `context.model.llm`.
 _NO_ROUTING = "specweaver.infrastructure.llm.router.ModelRouter.get_for_task"
 
 

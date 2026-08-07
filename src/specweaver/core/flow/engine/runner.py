@@ -315,9 +315,10 @@ class PipelineRunner:
 
             try:
                 # Inject flow state for downstream tracking
-                self._context.run_id = run.run_id
+                self._context.run = self._context.run.model_copy(
+                    update={"run_id": run.run_id, "pipeline_runner": self}
+                )
                 self._context.step_records = [r.model_dump() for r in run.step_records]
-                self._context.pipeline_runner = self
 
                 # INT-US-09: tri-state isolation gate (see resolve_should_isolate).
                 # C-EXEC-06: inside an active session, ALL steps already run in the one session

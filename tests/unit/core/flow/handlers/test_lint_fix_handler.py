@@ -20,7 +20,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
@@ -41,9 +41,9 @@ def _make_context(tmp_path: Path, *, llm: MagicMock | None = None) -> RunContext
     mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
     return RunContext(
+        model=ModelAccess(llm=llm),
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
-        llm=llm,
         output_dir=output_dir,
         db=mock_db,
     )
@@ -379,7 +379,7 @@ class TestLintFixArtifactLineage:
         mock_repo_class.return_value = mock_repo
 
         ctx = _make_context(tmp_path, llm=mock_llm)
-        ctx.run_id = "test-run-1"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run-1"})
 
         result = await _handler(mock_atom).execute(_make_step(), ctx)
 
@@ -405,7 +405,7 @@ class TestGetAtomSandboxSettings:
     def test_passes_none_when_context_config_is_none(self, tmp_path: Path) -> None:
         handler = LintFixHandler()
         context = _make_context(tmp_path)
-        assert context.config is None
+        assert context.model.config is None
 
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
@@ -420,7 +420,7 @@ class TestGetAtomSandboxSettings:
             llm={"model": "test-model"}, sandbox=SandboxSettings(execution_mode="container")
         )
         context = _make_context(tmp_path)
-        context.config = config
+        context.model = context.model.model_copy(update={"config": config})
 
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)

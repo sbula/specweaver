@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
 
 
@@ -33,10 +33,9 @@ async def test_full_execute_pipeline_generates_json_log_session(tmp_path: Path) 
 
         try:
             context = RunContext(
+                model=ModelAccess(config=MagicMock(), llm=MagicMock()),
                 project_path=tmp_path,
                 spec_path=tmp_path / "spec.md",
-                config=MagicMock(),
-                llm=MagicMock(),
             )
 
             from specweaver.core.flow.engine.models import PipelineDefinition

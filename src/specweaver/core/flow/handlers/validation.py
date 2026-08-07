@@ -91,8 +91,8 @@ class ValidateSpecHandler:
                 merged_settings,
                 kind_str=kind_str,
                 project_path=context.project_path,
-                analyzer_factory=context.analyzer_factory,
-                parsers=context.parsers,
+                analyzer_factory=context.analysis.analyzer_factory,
+                parsers=context.analysis.parsers,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -227,8 +227,8 @@ class ValidateCodeHandler:
                 context.spec_path,
                 merged_settings,
                 context.project_path,
-                analyzer_factory=context.analyzer_factory,
-                parsers=context.parsers,
+                analyzer_factory=context.analysis.analyzer_factory,
+                parsers=context.analysis.parsers,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -465,7 +465,7 @@ class ValidateTestsHandler:
         """
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-        sandbox_settings = context.config.sandbox if context.config else None
+        sandbox_settings = context.model.config.sandbox if context.model.config else None
         cwd = context.isolation.execution_root or context.project_path
         return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
 

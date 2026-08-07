@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.handover import save_handover_context
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import RunContext, RunHandle
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
 
@@ -57,7 +57,9 @@ async def test_handover_persistence_e2e(tmp_path: Path):
         await session.commit()
 
     # Setup RunContext and Run
-    ctx = RunContext(project_path=Path("."), spec_path=Path("."), db=db, task_id=str(task_id))
+    ctx = RunContext(
+        project_path=Path("."), spec_path=Path("."), db=db, run=RunHandle(task_id=str(task_id))
+    )
 
     run = PipelineRun(
         run_id=str(uuid.uuid4()),
@@ -129,7 +131,9 @@ async def test_handover_persisted_on_failure(tmp_path: Path):
         session.add(task)
         await session.commit()
 
-    ctx = RunContext(project_path=Path("."), spec_path=Path("."), db=db, task_id=str(task_id))
+    ctx = RunContext(
+        project_path=Path("."), spec_path=Path("."), db=db, run=RunHandle(task_id=str(task_id))
+    )
     run = PipelineRun(
         run_id=str(uuid.uuid4()),
         pipeline_name="integration",
@@ -170,7 +174,9 @@ async def test_handover_noop_when_no_task(tmp_path: Path):
     Base.metadata.create_all(sync_engine)
     sync_engine.dispose()
 
-    ctx = RunContext(project_path=Path("."), spec_path=Path("."), db=db, task_id=str(uuid.uuid4()))
+    ctx = RunContext(
+        project_path=Path("."), spec_path=Path("."), db=db, run=RunHandle(task_id=str(uuid.uuid4()))
+    )
     run = PipelineRun(
         run_id=str(uuid.uuid4()),
         pipeline_name="integration",

@@ -96,7 +96,7 @@ class TestAttributeCount:
     #: Counts include `model_config`, which the analyser sees as a class attribute — hence one
     #: more than the design's own field ledger at every step.
     #:   pre-SF-02 33 -> CB1 29 -> CB2 28 -> CB3 23 -> CB4 20 -> CB5 17
-    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 28
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 23
 
     def test_run_context_attribute_count_is_on_the_tech_006_ratchet(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
@@ -110,10 +110,10 @@ class TestAttributeCount:
         """Honest record of an unfinished job: `RunContext` remains a god object mid-sequence.
 
         `check_class_health` still BLOCKS on this file, exactly as it did before SF-02 started
-        (33 attributes then, 29 now) — the finding is pre-existing and improving, not introduced
-        or suppressed. This test exists so that fact cannot be quietly forgotten between commit
-        boundaries, and it is expected to be deleted by CB5, which is what makes it removable
-        rather than permanent.
+        (33 attributes then; see the ratchet above for where it stands now) — the finding is
+        pre-existing and improving, not introduced or suppressed. This test exists so that fact
+        cannot be quietly forgotten between commit boundaries, and it is expected to be deleted
+        by CB5, which is what makes it removable rather than permanent.
         """
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)
@@ -122,7 +122,10 @@ class TestAttributeCount:
 
         assert run_context.too_many_attributes(ch.MAX_ATTRIBUTES)
 
-    @pytest.mark.parametrize("extracted", ["IsolationPolicy", "PlanContext"])
+    @pytest.mark.parametrize(
+        "extracted",
+        ["IsolationPolicy", "PlanContext", "ModelAccess", "RunHandle", "AnalysisContext"],
+    )
     def test_the_extracted_sub_models_are_not_god_objects(
         self, ch: ModuleType, extracted: str
     ) -> None:

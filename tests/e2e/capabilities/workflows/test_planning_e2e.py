@@ -25,7 +25,7 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import PlanContext, RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, PlanContext, RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler, PlanSpecHandler
 from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 
@@ -148,7 +148,9 @@ class TestFullPlanPipelineE2E:
         )
         plan_llm = FakeLLM([plan_json])
 
-        ctx_plan = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
+        ctx_plan = RunContext(
+            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=plan_llm)
+        )
         step_plan = PipelineStep(
             name="plan_spec",
             action=StepAction.PLAN,
@@ -186,10 +188,10 @@ class TestFullPlanPipelineE2E:
         src_dir.mkdir(exist_ok=True)
 
         ctx_generate = RunContext(
+            model=ModelAccess(llm=gen_llm),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            llm=gen_llm,
             plan_context=PlanContext(plan=plan_text),
         )
         step_generate = PipelineStep(
@@ -243,7 +245,7 @@ class TestPlanWithConstitutionAndStandardsE2E:
         )
 
         plan_llm = FakeLLM([plan_json])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=plan_llm))
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         plan_result = await PlanSpecHandler().execute(step, ctx)
@@ -301,7 +303,7 @@ class TestPlannerCleanJsonE2E:
         fenced = f"```json\n{plan_json}\n```"
 
         plan_llm = FakeLLM([fenced])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=plan_llm))
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         result = await PlanSpecHandler().execute(step, ctx)

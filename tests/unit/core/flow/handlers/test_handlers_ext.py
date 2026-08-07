@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class TestRunIdPropagation:
     async def test_review_code_handler_injects_run_id(
         self, mock_review_code, tmp_path: Path
     ) -> None:
-        """Handlers must inject context.run_id into GenerationConfig for telemetry correlation."""
+        """Handlers must inject context.run.run_id into GenerationConfig for telemetry correlation."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
         code = tmp_path / "src" / "test.py"
@@ -49,12 +49,12 @@ class TestRunIdPropagation:
         mock_adapter = MagicMock()
         mock_adapter.generate = AsyncMock()
         ctx = RunContext(
+            model=ModelAccess(llm=mock_adapter),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path / "src",
-            llm=mock_adapter,
         )
-        ctx.run_id = "mock-run-id-1234"
+        ctx.run = ctx.run.model_copy(update={"run_id": "mock-run-id-1234"})
 
         step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
         handler = ReviewCodeHandler()
@@ -77,7 +77,9 @@ class TestExtractPromptFeedback:
         """Verifies it skips feedback gracefully if 'findings' is missing."""
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
-        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "f", llm=MagicMock())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+        )
         ctx.feedback = {"test_step": {"other_data": True}}
         step = PipelineStep(name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE)
 
@@ -90,7 +92,9 @@ class TestExtractPromptFeedback:
         """Verifies dictator remarks are dropped if hitl_verdict is 'approve'."""
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
-        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "f", llm=MagicMock())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+        )
         ctx.feedback = {
             "test_step": {
                 "findings": {
@@ -109,7 +113,9 @@ class TestExtractPromptFeedback:
         """Verifies mapping drops validation rules if none failed."""
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
-        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "f", llm=MagicMock())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+        )
         ctx.feedback = {
             "test_step": {
                 "findings": {

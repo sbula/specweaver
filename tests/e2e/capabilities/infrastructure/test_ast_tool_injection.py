@@ -13,7 +13,7 @@ def test_dispatcher_ast_injection() -> None:
     grants = [FolderGrant(path="/", mode=AccessMode.FULL, recursive=True)]
 
     context = MagicMock()
-    context.llm.generate_with_tools = True
+    context.model.llm.generate_with_tools = True
     context.workspace.uri = "file://C:/workspace"
 
     with patch("specweaver.sandbox.security.WorkspaceBoundary.from_run_context") as mock_bounds:

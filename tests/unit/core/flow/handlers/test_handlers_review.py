@@ -9,7 +9,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
 
 
@@ -36,8 +36,8 @@ class TestReviewSpecHandler:
         """Verifies MCP environment context is fetched and passed to Reviewer."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.run_id = "test-run"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
         handler = ReviewSpecHandler()
@@ -77,8 +77,8 @@ class TestReviewSpecOutputContract:
     ) -> None:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.run_id = "test-run"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
 
         from specweaver.workflows.review.reviewer import (
@@ -113,9 +113,12 @@ class TestReviewSpecOutputContract:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, llm=MagicMock(), output_dir=tmp_path
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tmp_path,
+            model=ModelAccess(llm=MagicMock()),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         (tmp_path / "test.py").write_text("x = 1")
         step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
 
@@ -163,9 +166,12 @@ class TestReviewCodeHandler:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, llm=MagicMock(), output_dir=tmp_path
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tmp_path,
+            model=ModelAccess(llm=MagicMock()),
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         (tmp_path / "test.py").write_text("x = 1")
 
         step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)

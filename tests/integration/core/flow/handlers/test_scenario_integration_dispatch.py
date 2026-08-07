@@ -64,7 +64,7 @@ def _ctx(tmp_path: Path) -> RunContext:
     spec_path = project / "specs" / "greet_spec.md"
     spec_path.write_text(SPEC, encoding="utf-8")
     ctx = RunContext(project_path=project, spec_path=spec_path)
-    ctx.llm = AsyncMock()
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
     return ctx
 
 
@@ -112,7 +112,7 @@ async def test_green_path_completes_with_zero_llm_calls(tmp_path: Path) -> None:
         result = await runner.run()
 
     assert result.status == RunStatus.COMPLETED
-    ctx.llm.generate.assert_not_called()
+    ctx.model.llm.generate.assert_not_called()
     # Both sub-pipelines were fanned out through the real dispatch chain.
     assert stub_runner.run.await_count == 2
     # Terminal green verdict consumed the evidence.
@@ -146,7 +146,7 @@ async def test_red_path_arbitrates_with_real_evidence_and_loops_back(tmp_path: P
         ),
         _qa(passed=3, failed=0, errors=0, total=3, failures=[]),
     ]
-    ctx.llm.generate.return_value = (
+    ctx.model.llm.generate.return_value = (
         '{"verdict": "code_bug", "spec_clause": "FR-1", '
         '"coding_feedback": "The greeting must include the salutation required by FR-1."}'
     )
@@ -165,7 +165,7 @@ async def test_red_path_arbitrates_with_real_evidence_and_loops_back(tmp_path: P
 
     assert result.status == RunStatus.COMPLETED
     # Exactly one arbitration LLM call (round 1); round 2 short-circuited green.
-    assert ctx.llm.generate.await_count == 1
+    assert ctx.model.llm.generate.await_count == 1
     # loop_back re-ran the dual step: 2 sub-runs per round x 2 rounds.
     assert stub_runner.run.await_count == 4
     # The coding-side feedback was routed and is scenario-vocabulary-free.
@@ -212,7 +212,7 @@ async def test_fr6_leaky_verdict_reaches_code_generator_vocabulary_free(tmp_path
     # guard's unit tests.
     ctx = _ctx(tmp_path)
     ctx.feedback["scenario_test_failures"] = _evidence_with_failure()
-    ctx.llm.generate.return_value = (
+    ctx.model.llm.generate.return_value = (
         '{"verdict": "code_bug", "spec_clause": "FR-1", '
         '"coding_feedback": "The scenario test failed on pytest parametrize inputs."}'
     )
@@ -268,7 +268,7 @@ async def test_fr4_scenario_error_reaches_scenario_generator_with_delta(tmp_path
     # ScenarioGenerator receives the behavioral delta; key popped.
     ctx = _ctx(tmp_path)
     ctx.feedback["scenario_test_failures"] = _evidence_with_failure()
-    ctx.llm.generate.return_value = (
+    ctx.model.llm.generate.return_value = (
         '{"verdict": "scenario_error", "spec_clause": "FR-1", '
         '"scenario_feedback": "Expected greeting includes the salutation per FR-1."}'
     )

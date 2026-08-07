@@ -13,7 +13,7 @@ import pytest
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 
 
@@ -91,15 +91,16 @@ class TestMCPFlowE2E:
         mock_db.async_session_scope = mock_session_scope
 
         ctx = RunContext(
+            model=ModelAccess(
+                llm=AsyncMock(), config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test"))
+            ),
             project_path=tmp_path,
             spec_path=spec,
             topology=topology,
-            llm=AsyncMock(),
             output_dir=src_dir,
-            config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
             db=mock_db,
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         mock_generate_code.return_value = tmp_path / "src" / "test.py"
         mock_git.return_value = (0, "", "")
@@ -140,14 +141,15 @@ class TestMCPFlowE2E:
         spec.write_text("# Test Spec\\n")
 
         ctx = RunContext(
+            model=ModelAccess(
+                llm=AsyncMock(), config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test"))
+            ),
             project_path=tmp_path,
             spec_path=spec,
             topology=topology,
-            llm=AsyncMock(),
-            config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
             output_dir=tmp_path,
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock
 
         mock_db = MagicMock()
@@ -210,14 +212,15 @@ class TestMCPFlowE2E:
         spec.write_text("# Test Spec\\n")
 
         ctx = RunContext(
+            model=ModelAccess(
+                llm=AsyncMock(), config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test"))
+            ),
             project_path=tmp_path,
             spec_path=spec,
             topology=topology,
-            llm=AsyncMock(),
-            config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
             output_dir=tmp_path,
         )
-        ctx.run_id = "test-run"
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock
 
         mock_db = MagicMock()

@@ -80,8 +80,8 @@ def _ctx(tmp_path: Path) -> RunContext:
     spec = specs / "onboarding_feature_spec.md"
     spec.write_text("# Onboarding\n", encoding="utf-8")
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
-    ctx.llm = AsyncMock()
-    ctx.run_id = "run-1"
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+    ctx.run = ctx.run.model_copy(update={"run_id": "run-1"})
     return ctx
 
 
@@ -324,8 +324,8 @@ def _ctx_named(tmp_path: Path, filename: str) -> RunContext:
     spec = specs / filename
     spec.write_text("# Spec\n", encoding="utf-8")
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
-    ctx.llm = AsyncMock()
-    ctx.run_id = "run-1"
+    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+    ctx.run = ctx.run.model_copy(update={"run_id": "run-1"})
     return ctx
 
 

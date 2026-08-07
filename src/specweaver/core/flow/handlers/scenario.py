@@ -23,7 +23,7 @@ class GenerateScenarioHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
-        if context.llm is None:
+        if context.model.llm is None:
             return _error_result("LLM adapter required for scenario generation", started)
         try:
             from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator
