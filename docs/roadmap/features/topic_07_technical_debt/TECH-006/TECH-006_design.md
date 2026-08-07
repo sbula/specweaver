@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-006
 - **Phase**: Technical Debt
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_design.md
 
 > [!IMPORTANT]

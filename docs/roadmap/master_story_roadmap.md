@@ -687,12 +687,12 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `tests/unit/core/flow/engine/test_reservation.py`
 *   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-1/2 (found by SF-3's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
 
-### 🟡 TECH-006: Context Loading Pipeline Refactoring
-**Benefit:** *Eliminates business logic from CLI layers and kills the cross-interface spider web of private helper imports. RunContext reduction is not yet done — it has grown to 32 fields, worse than the 23-field baseline this ticket names as the problem.*
+### 🟢 TECH-006: Context Loading Pipeline Refactoring
+**Benefit:** *Eliminates business logic from CLI layers and kills the cross-interface spider web of private helper imports. `RunContext` is down from 32 flat fields to 15 attributes — 10 flat plus 7 frozen sub-models — and `check_class_health.py` no longer reports the file at all.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
+    *   `✅` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
         *   `✅` SF-01: Delete All CLI Wrappers
-        *   `[ ]` SF-02: Reduce `RunContext` God Object — 32 fields today, 68-line `model_post_init`.
+        *   `✅` SF-02: Reduce `RunContext` God Object — 32 fields → 15 attributes.
 *   **Dependency:** D-INTL-06 SF-02 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
 *   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
 
