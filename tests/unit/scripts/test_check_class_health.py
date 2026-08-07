@@ -86,19 +86,49 @@ class TestAttributeCount:
 
         assert _analyse(ch, source).too_many_attributes(15)
 
-    #: TECH-006 SF-02's NFR-7 ledger. This test used to assert `> 30` — a deliberate witness
-    #: that `RunContext` had GROWN past the 23 fields TECH-006 set out to cut, with every gate
-    #: green. SF-02 is the work that pays that debt down, so the witness is inverted into a
-    #: ratchet rather than relaxed: the count must land on exactly the value below, and each
-    #: commit boundary tightens it. Adding a field still fails loudly; so does a boundary that
-    #: silently fails to remove the flat fields it claimed to.
-    #:
-    #: Counts include `model_config`, which the analyser sees as a class attribute — hence one
-    #: more than the design's own field ledger at every step.
-    #:   pre-SF-02 33 -> CB1 29 -> CB2 28 -> CB3 23 -> CB4 20 -> CB5 17
-    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 23
+    def test_pydantic_model_config_is_not_counted(self, ch: ModuleType) -> None:
+        """It is framework configuration, not state the class carries."""
+        source = "class C:\n    model_config = ConfigDict(frozen=True)\n    a: int\n    b: str\n"
 
-    def test_run_context_attribute_count_is_on_the_tech_006_ratchet(self, ch: ModuleType) -> None:
+        assert _analyse(ch, source).attributes == {"a", "b"}
+
+    def test_a_pydantic_class_gets_the_same_budget_as_any_other(self, ch: ModuleType) -> None:
+        """Counting `model_config` would silently give Pydantic classes a budget of 14 while
+        every other class gets 15 — a constant offset that says nothing about whether the
+        class does too much."""
+        plain = "class C:\n" + "".join(f"    a{i}: int\n" for i in range(15))
+        pydantic = "class C:\n    model_config = ConfigDict()\n" + "".join(
+            f"    a{i}: int\n" for i in range(15)
+        )
+
+        assert not _analyse(ch, plain).too_many_attributes(15)
+        assert not _analyse(ch, pydantic).too_many_attributes(15)
+
+    def test_a_field_merely_named_like_it_is_still_counted(self, ch: ModuleType) -> None:
+        """Only the exact `model_config` name is exempt. A field called `model_configuration`
+        is ordinary state and must not slip through on a prefix match."""
+        source = "class C:\n    model_configuration: dict\n    a: int\n"
+
+        assert _analyse(ch, source).attributes == {"model_configuration", "a"}
+
+    def test_model_config_reached_through_self_is_also_ignored(self, ch: ModuleType) -> None:
+        """The exemption must hold however the attribute is discovered — declared in the class
+        body or touched via `self` inside a method — or the count depends on writing style."""
+        source = "class C:\n    def m(self):\n        return self.model_config, self.real_state\n"
+
+        assert _analyse(ch, source).attributes == {"real_state"}
+
+    #: `RunContext` is being cut down from 32 fields to a size that clears the god-object
+    #: limit, one group of related fields at a time. This asserts an EXACT count rather than
+    #: an upper bound, so it fails in both directions: adding a field fails, and so does a
+    #: step that claims to have removed fields but left them in place.
+    #:
+    #: Lower it as each group lands. Remaining: 22 -> 19 (graph fields) -> 15 (dead fields
+    #: dropped, constitution/standards paired). 15 is the limit, so the last step is the one
+    #: that stops this file being reported.
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 22
+
+    def test_run_context_attribute_count_matches_the_expected_step(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)
 
@@ -106,14 +136,14 @@ class TestAttributeCount:
 
         assert len(run_context.attributes) == self.EXPECTED_RUN_CONTEXT_ATTRIBUTES
 
-    def test_run_context_is_still_over_the_god_object_limit_until_cb5(self, ch: ModuleType) -> None:
-        """Honest record of an unfinished job: `RunContext` remains a god object mid-sequence.
+    def test_run_context_is_still_over_the_god_object_limit(self, ch: ModuleType) -> None:
+        """A deliberate record that the job is not finished yet.
 
-        `check_class_health` still BLOCKS on this file, exactly as it did before SF-02 started
-        (33 attributes then; see the ratchet above for where it stands now) — the finding is
-        pre-existing and improving, not introduced or suppressed. This test exists so that fact
-        cannot be quietly forgotten between commit boundaries, and it is expected to be deleted
-        by CB5, which is what makes it removable rather than permanent.
+        This file is still reported as a god object, as it was before the split began (33
+        attributes then). The finding is long-standing and shrinking, not newly introduced and
+        not suppressed. Keeping it asserted means nobody can lose track of that mid-way. DELETE
+        this test with the step that finally brings the count to the limit — if it ever starts
+        failing, that step succeeded.
         """
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)
@@ -131,8 +161,8 @@ class TestAttributeCount:
     ) -> None:
         """The point of the split: what comes OUT of `RunContext` must not repeat the problem.
 
-        Parametrised so every sub-model added by a later commit boundary is covered by adding
-        one name here, rather than the check quietly applying to only the first one extracted.
+        Listed by name so each new group has to be added here deliberately, rather than the
+        check silently covering only the first one that was extracted.
         """
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)

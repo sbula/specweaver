@@ -49,6 +49,15 @@ MAX_LCOM4 = 1
 #: Bases whose attribute count is meaningless — members are values, not state.
 EXEMPT_BASES = {"Enum", "StrEnum", "IntEnum", "IntFlag", "Flag", "Protocol", "TypedDict"}
 
+#: Names that are framework configuration rather than state the class carries.
+#:
+#: `model_config` is Pydantic's own settings block. Every Pydantic model has exactly one, so
+#: counting it does not distinguish a class doing too much from one doing very little — it just
+#: subtracts one from the real budget of every Pydantic class while leaving every other class
+#: on the full limit. Same reasoning as excluding stateless methods from the cohesion score: a
+#: term that is present by construction cannot carry information.
+IGNORED_ATTRIBUTES = {"model_config"}
+
 
 @dataclass
 class ClassReport:
@@ -196,9 +205,10 @@ def analyse_class(node: ast.ClassDef, path: Path) -> ClassReport:
         called[m.name] = calls
 
     method_names = {m.name for m in methods}
-    report.attributes = _declared_attributes(node) | (
-        set().union(*touched.values()) - method_names if touched else set()
-    )
+    report.attributes = (
+        _declared_attributes(node)
+        | (set().union(*touched.values()) - method_names if touched else set())
+    ) - IGNORED_ATTRIBUTES
 
     # LCOM4 over every method except the constructor (see module docstring) and except methods
     # that carry no instance state at all.
