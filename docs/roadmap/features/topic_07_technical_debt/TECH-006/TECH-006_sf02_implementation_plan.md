@@ -49,6 +49,16 @@ model's *own* fields can still be `None`-defaulted normally (frozen prevents att
 | D-4 | Test file organization | **Corrected during this plan's own Phase 5 Red/Blue review** — `tests/unit/core/flow/handlers/test_base.py` (4 tests) and `test_base_analyzer_factory.py` (1 test) already exist and already exercise fields this SF moves or deletes. New sub-model tests EXTEND `test_base.py` (no new file); its 4 existing tests get updated in place, in the commit that touches their field(s) — see per-commit Test rows below for exactly which. `test_base_analyzer_factory.py`'s one test updates in Commit 3. | The original plan claimed "no dedicated test file — confirmed via glob" without actually running the glob; it was wrong. Extending existing coverage in place (not duplicating into a parallel file) is both more correct and the established convention. |
 | D-5 | `GraphContext` docstring (RED-1.5 from the design's Red/Blue) | Class docstring explicitly states: "`stale_nodes` and `workspace_roots` currently have real readers but no production writer — a half-built feature seam, not dead code; do not assume every field here is populated in every run." | Resolves the design's accepted-risk finding at the point future readers will actually see it. |
 
+## FR coverage
+
+Every commit boundary below carries **FR-7** (migrate every production call site of a moved field
+to its new nested path) — it is not a separate step but the bulk of each one: ~106 production call
+sites in the `ModelAccess`/`RunHandle`/`AnalysisContext` boundary alone. Named here explicitly
+because the closure ledger checks that each requirement is owned by a plan, and an FR spread across
+every commit is exactly the kind that gets missed.
+
+FR-6, FR-8, FR-9, FR-10, FR-11 and FR-12 are owned by the specific boundaries called out below.
+
 ## Proposed Changes (by commit boundary, per the design's already-approved sequencing)
 
 ### Commit 1 — `IsolationPolicy`

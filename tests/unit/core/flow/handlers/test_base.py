@@ -89,8 +89,10 @@ def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
 
 
 class TestIsolationPolicy:
-    """The five worktree-isolation fields, moved off `RunContext` into one frozen object that
-    also rejects unknown keyword arguments."""
+    """The worktree-isolation fields, moved into one frozen object.
+
+    Proves: TECH-006 FR-6, FR-7, FR-12.
+    """
 
     # --- [Happy Path] ------------------------------------------------------
 
@@ -198,10 +200,10 @@ class TestIsolationPolicy:
 
 
 class TestPlanContext:
-    """The two plan documents, moved into one frozen object.
+    """The two plan documents, moved into one frozen object, still distinct.
 
-    The rule that they are DIFFERENT things and must not be merged is unchanged by the move —
-    it is now carried by the object's shape and pinned by the tests below."""
+    Proves: TECH-006 FR-6, FR-10.
+    """
 
     # --- [Happy Path] ------------------------------------------------------
 
@@ -267,7 +269,10 @@ class TestPlanContext:
 
 
 class TestModelAccess:
-    """How a run reaches a language model: adapter, settings, and per-task router."""
+    """How a run reaches a language model: adapter, settings, router.
+
+    Proves: TECH-006 FR-6, FR-7.
+    """
 
     def test_defaults_match_the_previous_flat_defaults(self) -> None:
         access = ModelAccess()
@@ -308,7 +313,10 @@ class TestModelAccess:
 
 
 class TestRunHandle:
-    """Who the run is: id, runner, and owning task, all stamped on by the runner."""
+    """Who the run is: id, runner, owning task, and the steps already done.
+
+    Proves: TECH-006 FR-6, FR-11.
+    """
 
     def test_defaults_match_the_previous_flat_defaults(self) -> None:
         handle = RunHandle()
@@ -345,7 +353,10 @@ class TestRunHandle:
 
 
 class TestAnalysisContext:
-    """The injected code-analysis tools: an analyzer factory and the AST parsers."""
+    """The injected code-analysis tools: analyzer factory and AST parsers.
+
+    Proves: TECH-006 FR-6, FR-9.
+    """
 
     def test_analyzer_factory_defaults_to_none(self) -> None:
         assert AnalysisContext().analyzer_factory is None
@@ -393,7 +404,10 @@ class TestAnalysisContext:
 
 
 class TestGraphContext:
-    """What the run knows about the project's dependency graph."""
+    """What the run knows about the project's dependency graph.
+
+    Proves: TECH-006 FR-6, FR-7.
+    """
 
     # --- [Happy Path] ------------------------------------------------------
 
@@ -467,7 +481,10 @@ class TestGraphContext:
 
 
 class TestGuidanceContent:
-    """The constitution and coding standards, pasted into prompts."""
+    """The constitution and coding standards, pasted into prompts.
+
+    Proves: TECH-006 FR-6.
+    """
 
     def test_defaults_are_none(self) -> None:
         guidance = GuidanceContent()
@@ -503,16 +520,9 @@ class TestGuidanceContent:
 
 
 class TestRemovedFields:
-    """Two fields are gone, for different reasons, and passing either is now an error rather
-    than a value that silently disappears.
+    """Two unused fields are gone; passing either is an error, not a silent no-op.
 
-    `env_vars` was never wired to anything: the plan was to inject it into spawned processes
-    and that half was never built, and bash steps later got an explicit per-step `env:` map
-    instead, which deliberately does NOT read this field so secrets cannot leak into it.
-
-    `pipeline_name` was read in two places but never set anywhere, so both reads always took
-    their fallback. Both now take the name from the run itself, which fixed a real bug -- see
-    the reserve-gate tests.
+    Proves: TECH-006 FR-8.
     """
 
     @pytest.mark.parametrize(
@@ -530,8 +540,10 @@ class TestRemovedFields:
 
 
 class TestConstructionHelpers:
-    """`model_post_init` was long enough to hide what it did. Its two jobs are now named
-    methods that can be exercised on their own."""
+    """`model_post_init`'s jobs, split into methods testable on their own.
+
+    Proves: TECH-006 FR-9.
+    """
 
     def test_default_parsers_needs_no_context_at_all(self) -> None:
         """A plain function of nothing, so it can be tested without building a context."""

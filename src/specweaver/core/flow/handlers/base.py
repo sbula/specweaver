@@ -28,28 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 class IsolationPolicy(BaseModel):
-    """Whether and where this run executes inside a git worktree instead of the real repo.
+    """Whether and where this run executes in a git worktree instead of the real repo.
 
-    Resolved once at start-up and read by the engine's sandbox paths.
-
-    **Frozen deliberately.** ``runner_utils`` isolates a step or a session with
-    ``copy.copy(context)``, which is SHALLOW: the copy and the original then share this one
-    instance. Setting a field on it would silently change the original run's isolation too.
-    Frozen turns that mistake into an immediate error. To change anything here, build a new
-    one and rebind the whole attribute::
-
-        context.isolation = context.isolation.model_copy(update={...})
-
-    Frozen stops the attribute being *replaced*, not the contents of a mutable value being
-    edited — ``policy.allowed_paths.append(...)`` still works and would still leak across the
-    shared copy. Nothing replaces that list piecemeal today; keep it that way.
-
-    Attributes:
-        enforce_isolation: Run each step in its own worktree.
-        execution_root: Where untrusted processes bind cwd; None means the project root.
-        session_isolation: Run the WHOLE run in one shared worktree instead of one per step.
-        allowed_paths: The only paths the end-of-run merge is permitted to write back.
-        dal_level: How strict the boundary rules are for the code being touched.
+    Frozen because the engine isolates a step with ``copy.copy(context)``, leaving copy and
+    original sharing this instance — setting a field here would change both. Replace the whole
+    attribute instead. (A mutable field's *contents* can still be edited, so don't.)
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -64,14 +47,9 @@ class IsolationPolicy(BaseModel):
 class PlanContext(BaseModel):
     """The two plan documents a run produces, filled in by the runner as steps complete.
 
-    These are two DIFFERENT things and must never be merged into one field. ``plan`` is the
-    implementation plan — spec to file layout, written by the plan step. ``decomposition`` is
-    the feature-to-components breakdown, as JSON, written by the decompose step. Code that
-    wants one and reads the other will appear to work and be wrong.
-
-    Frozen, so both are replaced together via ``model_copy``. A partial update must leave the
-    other field alone: ``hydration.py`` clears exactly one of them when its own step fails,
-    and clearing one must not wipe a plan the other step legitimately produced.
+    Two DIFFERENT things, never to be merged: ``plan`` is the implementation plan (spec to file
+    layout); ``decomposition`` is the feature-to-components breakdown. Code that wants one and
+    reads the other looks like it works and is wrong.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -81,13 +59,9 @@ class PlanContext(BaseModel):
 
 
 class ModelAccess(BaseModel):
-    """How this run reaches a language model: the adapter, its settings, and the router.
+    """How this run reaches a language model: adapter, settings, router.
 
-    Everything is typed ``Any`` on purpose — importing the real types here would cross a module
-    boundary this package is not allowed to cross.
-
-    The attribute is called ``model`` on the context, which is safe: Pydantic reserves the
-    ``model_`` prefix, not the bare word.
+    All ``Any``: importing the real types would cross a module boundary this package may not.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -98,15 +72,11 @@ class ModelAccess(BaseModel):
 
 
 class RunHandle(BaseModel):
-    """Who this run is: its id, the runner executing it, and the task it belongs to.
+    """Who this run is, plus the results of the steps already done.
 
-    The runner rewrites ``run_id`` and ``step_records`` on every step, so any partial update
-    must preserve ``pipeline_runner`` — the fan-out in ``decompose.py`` and ``dual_pipeline.py``
-    reaches through it to spawn sub-pipelines, and dropping it breaks them with no obvious cause.
-
-    ``step_records`` is how a step reads an earlier step's output: it holds every prior
-    ``StepResult`` as plain dicts, refreshed before each step runs. Bash steps rely on it to
-    hand results downstream.
+    ``step_records`` is how a step reads an earlier step's output. The runner rewrites it and
+    ``run_id`` every step, so a partial update must keep ``pipeline_runner`` — the fan-out
+    reaches through it to spawn sub-pipelines.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -118,14 +88,10 @@ class RunHandle(BaseModel):
 
 
 class AnalysisContext(BaseModel):
-    """The code-analysis tools a run may use: a language-analyzer factory and AST parsers.
+    """Code-analysis tools a run may use: an analyzer factory and AST parsers.
 
-    ``parsers`` is filled in automatically when the caller does not supply it, and that load is
-    best-effort — if it fails the field stays ``None`` rather than making the context
-    impossible to build, because most steps never touch a parser.
-
-    ``analyzer_factory`` is typed ``Any`` because its real type lives in a package this one is
-    not permitted to import at runtime.
+    ``parsers`` is loaded automatically if not supplied, best-effort — most steps never touch
+    one, so a failure leaves it ``None`` rather than making the context unbuildable.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -137,16 +103,8 @@ class AnalysisContext(BaseModel):
 class GraphContext(BaseModel):
     """What this run knows about the project's dependency graph.
 
-    Beware: only ``topology`` and ``api_contract_paths`` are actually filled in during a real
-    run. ``stale_nodes`` and ``workspace_roots`` have code that READS them but nothing that
-    writes them, so in production they are always ``None`` — a half-built feature rather than
-    dead code. Do not assume a value is present just because a field exists here.
-
-    Attributes:
-        topology: The project's component graph, when one was loaded.
-        stale_nodes: Nodes changed since the last run, to narrow what gets re-checked.
-        workspace_roots: Narrows the boundary to specific roots instead of the whole project.
-        api_contract_paths: Neighbouring API surfaces a step should read but not modify.
+    ``stale_nodes`` and ``workspace_roots`` are read by code but written by nothing, so they are
+    always ``None`` in production — a half-built feature, not dead code.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -160,8 +118,7 @@ class GraphContext(BaseModel):
 class GuidanceContent(BaseModel):
     """The project's constitution and coding standards, pasted into prompts as-is.
 
-    These share an object because they are always supplied together: every place that builds a
-    run context sets both, on adjacent lines, and nothing sets one without the other.
+    Together because every place that builds a context sets both; nothing sets one alone.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -173,32 +130,9 @@ class GuidanceContent(BaseModel):
 class RunContext(BaseModel):
     """Everything a pipeline step needs, passed to every handler as one object.
 
-    Related fields are grouped into small frozen sub-models rather than left loose here, so
-    that adding a field means choosing which group it belongs to instead of making this class
-    a little bigger every time.
-
-    Attributes:
-        project_path: Root directory of the target project.
-        spec_path: The spec being processed.
-        output_dir: Where generated code and tests are written.
-        isolation: Whether and where this run is sandboxed in a worktree.
-        plan_context: The implementation plan and the feature decomposition.
-        model: The LLM adapter, its settings, and the per-task router.
-        run: This run's id, its runner, and the task it belongs to.
-        analysis: Analyzer factory and AST parsers, when a step needs them.
-        context_provider: Asks a human for input, for interactive steps.
-        graph: What is known about the project's dependency graph.
-        settings: Per-project validation settings and overrides.
-        feedback: Messages passed between steps, including loop-back findings.
-        guidance: The project constitution and coding standards.
-        db: Database handle, for telemetry and memory.
-        project_metadata: Computed on construction; describes the project to prompts.
-
-    Unknown keyword arguments are REJECTED, which is load-bearing rather than tidiness. The
-    default Pydantic behaviour silently discards them, so a caller still passing a field that
-    has since moved into one of the sub-models would build a context with that value quietly
-    missing and no error anywhere. Rejecting them makes such a call fail at construction, the
-    same way reading a moved field already fails at the attribute.
+    Related fields live in small frozen sub-models, so a new field has to join a group rather
+    than making this class bigger. Unknown keyword arguments are rejected: the default would
+    discard a since-moved field silently, leaving the value missing with no error anywhere.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")

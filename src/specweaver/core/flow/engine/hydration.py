@@ -109,9 +109,7 @@ def hydrate_plan_context(
             # fallback keeps records persisted before SF-02 (flat plan) rehydrating correctly.
             payload = result.output or {}
             nested = payload.get(DECOMPOSITION_PLAN_KEY)
-            # Bound to a local first: `model_copy` erases the narrowing that a direct field
-            # assignment used to give the logging call below (`decomposition` is declared
-            # `str | None`, so mypy cannot see that this branch always just set a `str`).
+            # Local first: `model_copy` erases the narrowing the log call below needs.
             serialized = json.dumps(nested if isinstance(nested, dict) else payload, default=str)
             context.plan_context = context.plan_context.model_copy(
                 update={"decomposition": serialized}

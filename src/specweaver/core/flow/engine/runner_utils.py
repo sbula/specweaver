@@ -29,9 +29,7 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     step_val = getattr(step_def, "use_worktree", None)
     if step_val is not None:
         return bool(step_val)
-    # Two hops, both guarded, because this function is duck-typed and callers do pass `None`
-    # for the context. That cannot hide a mistake: a real context always has `isolation`, so a
-    # missing one here means a stand-in object, not a field someone forgot to rename.
+    # Two hops, both guarded: callers do pass `None` for the context.
     return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
@@ -83,9 +81,8 @@ def apply_session_policy(
     C2 (no half-apply): the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the
     dangerous "session on, empty allow-list" state that would drop all generated code.
-    Both fields land in ONE ``model_copy``, so the half-applied state is not merely avoided by
-    careful ordering — it cannot be represented at all. Keep it a single call: splitting it in
-    two quietly brings the danger back.
+    Both fields land in ONE ``model_copy``, so the half-applied state cannot be represented.
+    Splitting it in two brings the danger back.
     Best-effort: never raises (the composition root also wraps this call defensively).
     """
     try:
@@ -111,11 +108,8 @@ def apply_session_policy(
 def seed_dal_level(context: RunContext) -> Any:
     """Resolve the run's DAL onto ``context.isolation``, caching it, and return it.
 
-    Target is ``spec_path`` when it exists, else ``project_path``. Idempotent — an already-cached
-    ``dal_level`` is returned untouched, so the second caller never re-resolves.
-
-    One definition, two callers (``PipelineRunner.__init__`` per SF-2 FR-3, and
-    ``_dal_requires_isolation``), which previously each carried their own copy of this rule.
+    Target is ``spec_path`` when it exists, else ``project_path``. Idempotent, so the second
+    caller never re-resolves.
     """
     if context.isolation.dal_level is not None:
         return context.isolation.dal_level
@@ -208,10 +202,8 @@ async def execute_run(
     isolated = copy.copy(original)
     isolated.project_path = original.project_path / wt_path
     isolated.output_dir = None
-    # `copy.copy` is SHALLOW, so `isolated.isolation` is literally `original.isolation`. Rebind
-    # the whole attribute on the copy; editing a field in place would change the original run's
-    # isolation too (it is frozen, so that raises rather than corrupting silently).
-    # `enforce_isolation=False`: inside a session worktree, do not nest a per-step one.
+    # Shallow copy: rebind the whole attribute, don't edit the shared one. No per-step
+    # isolation nested inside a session worktree.
     isolated.isolation = isolated.isolation.model_copy(
         update={"execution_root": isolated.project_path, "enforce_isolation": False}
     )
@@ -386,13 +378,9 @@ async def execute_in_sandbox(
     context = runner._context
 
     atom = GitAtom(cwd=context.project_path)
-    # From the run, not the context: the context field this used to read was never set by
-    # anything, so every worktree branch was named "sf-default_pipe-..." regardless of
-    # which pipeline produced it.
+    # From the run: the old context field was never set, so every branch was "sf-default_pipe-".
     clean_pipeline = (run.pipeline_name or "default_pipe").replace(" ", "_")
-    # This can be None, and then the branch below is named "...-None". That is pre-existing
-    # behaviour, kept deliberately: falling back to the run id would be an improvement, but
-    # making it here would hide a behaviour change inside a pure field move.
+    # May be None, giving a branch named "...-None". Pre-existing; left alone.
     task_id = context.run.task_id
     branch = f"sf-{clean_pipeline}-{task_id}"
     wt_path = f".worktrees/{task_id}"
@@ -416,8 +404,7 @@ async def execute_in_sandbox(
     # INT-US-09: rebind the execution root to the worktree source tree so untrusted-
     # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
     # cwd inside the worktree rather than against the real project root.
-    # `copy.copy` is shallow, so rebind the whole `isolation` attribute on the copy rather than
-    # editing the policy object that both contexts still point at.
+    # Shallow copy: rebind the whole attribute, don't edit the shared one.
     isolated_context.isolation = isolated_context.isolation.model_copy(
         update={"execution_root": context.project_path / wt_path}
     )
