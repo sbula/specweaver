@@ -45,19 +45,37 @@ specs/                  # YAML spec definitions (input to validation battery)
 
 ## Test Commands
 
+> [!IMPORTANT]
+> **Use `.venv/Scripts/python.exe` (Windows) / `.venv/bin/python` (Linux), not a bare `python`.**
+> The system interpreter can import `specweaver` and will happily run the suite, but it does
+> **not** have `pytest-xdist` installed — so `-n auto` is silently unavailable there and every
+> run is serial. This is not theoretical: a full suite was run four times at ~13 min each before
+> anyone noticed it could be 4.5.
+>
+> **Add `-n auto` for anything tier-sized or larger; leave single modules serial.** Measured on a
+> 16-core box: one module 12.5s serial vs 15.2s parallel (worker startup loses); `tests/unit`
+> 5m02 serial vs 1m37 parallel (3.1x); full suite ~13m vs 4m26 (2.9x). The crossover sits
+> between one module and one tier.
+>
+> `scripts/tests.py` already passes `-n auto` itself — prefer it at commit boundaries and you
+> get this for free.
+
 ```bash
-# Module-scoped (preferred — fast feedback)
-python -m pytest tests/unit/core/ -v --tb=short
-python -m pytest tests/unit/sandbox/ -v --tb=short
-python -m pytest tests/unit/graph/ -v --tb=short
+PY=.venv/Scripts/python.exe   # Linux: .venv/bin/python
 
-# By tier
-python -m pytest tests/unit/ -v --tb=short -q
-python -m pytest tests/integration/ -v --tb=short -q
-python -m pytest tests/e2e/ -v --tb=short -q
+# Module-scoped (preferred — fast feedback). Serial on purpose: xdist startup costs more
+# than it saves at this size.
+$PY -m pytest tests/unit/core/ -v --tb=short
+$PY -m pytest tests/unit/sandbox/ -v --tb=short
+$PY -m pytest tests/unit/graph/ -v --tb=short
 
-# Full suite (before commit)
-python -m pytest -v --tb=short -q
+# By tier — always parallel
+$PY -m pytest tests/unit/ -n auto --tb=short -q
+$PY -m pytest tests/integration/ -n auto --tb=short -q
+$PY -m pytest tests/e2e/ -n auto --tb=short -q
+
+# Full suite (before commit) — always parallel
+$PY -m pytest -n auto --tb=short -q
 
 # Quality checks
 ruff check src/ tests/

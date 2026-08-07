@@ -159,6 +159,19 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 
 ### 3.2a Debugging — When Tests Fail Unexpectedly
 
+> [!NOTE]
+> **Interpreter + parallelism.** Every command in this skill uses a bare `python` for brevity, but
+> run them with the project venv (`.venv/Scripts/python.exe` on Windows, `.venv/bin/python` on
+> Linux): the system interpreter imports `specweaver` fine but has **no `pytest-xdist`**, so
+> `-n auto` silently does nothing there and the suite runs serial.
+>
+> The single-file commands below are deliberately serial — measured on 16 cores, one module is
+> 12.5s serial vs 15.2s with `-n auto`, because worker startup costs more than it saves. Add
+> `-n auto` only once you are running a whole tier or the full suite (`tests/unit` 5m02 -> 1m37;
+> full suite ~13m -> 4m26). `scripts/tests.py` already passes `-n auto`, so the commit-boundary
+> gate in Phase 4/5 needs nothing extra.
+
+
 When a test fails and you need to debug, run targeted tests autonomously.
 All these commands auto-run — no human interaction needed:
 ```
