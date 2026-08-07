@@ -12,6 +12,7 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,
+    GuidanceContent,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -27,6 +28,7 @@ def run_context():
     ctx.model = ModelAccess()
     ctx.analysis = AnalysisContext()
     ctx.graph = GraphContext()
+    ctx.guidance = GuidanceContent()
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.run = RunHandle(run_id="test_run_123")

@@ -11,7 +11,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
-from specweaver.core.flow.handlers.base import AnalysisContext, RunContext, _build_base_prompt
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    GuidanceContent,
+    RunContext,
+    _build_base_prompt,
+)
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 
 
@@ -38,10 +43,9 @@ def run_context(mock_db):
         analysis=AnalysisContext(parsers={}),
         project_path=Path("/tmp/fake_project"),
         spec_path=Path("/tmp/fake_project/spec.yaml"),
-        constitution="Always be honest",
-        standards="Use type hints",
         db=mock_db,
         project_metadata=metadata,
+        guidance=GuidanceContent(constitution="Always be honest", standards="Use type hints"),
     )
     # INT-US-24 FR-2: ArbitrateVerdictHandler now requires failure evidence to
     # reach _build_base_prompt (green/absent evidence short-circuits before any

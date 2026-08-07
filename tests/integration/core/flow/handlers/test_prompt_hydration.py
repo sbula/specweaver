@@ -11,7 +11,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.flow.handlers.base import RunContext, _build_base_prompt
+from specweaver.core.flow.handlers.base import GuidanceContent, RunContext, _build_base_prompt
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
@@ -98,9 +98,8 @@ async def test_build_base_prompt_with_hydration(
             date_iso="2026-05-09",
             safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         ),
-        constitution="Be safe.",
-        standards="Use types.",
         db=FakeDB(db_session),
+        guidance=GuidanceContent(constitution="Be safe.", standards="Use types."),
     )
 
     # 3. Call the orchestrator function
@@ -157,9 +156,8 @@ async def test_build_base_prompt_with_corrupted_handover(
                 llm_model="test", llm_provider="test", validation_rules={}
             ),
         ),
-        constitution="Be safe.",
-        standards="Use types.",
         db=FakeDB(db_session),
+        guidance=GuidanceContent(constitution="Be safe.", standards="Use types."),
     )
 
     # 3. Call the function - it should NOT crash

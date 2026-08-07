@@ -100,9 +100,13 @@ class ModelAccess(BaseModel):
 class RunHandle(BaseModel):
     """Who this run is: its id, the runner executing it, and the task it belongs to.
 
-    The runner rewrites ``run_id`` on every step, so any partial update must preserve
-    ``pipeline_runner`` — the fan-out in ``decompose.py`` and ``dual_pipeline.py`` reaches
-    through it to spawn sub-pipelines, and dropping it breaks them with no obvious cause.
+    The runner rewrites ``run_id`` and ``step_records`` on every step, so any partial update
+    must preserve ``pipeline_runner`` — the fan-out in ``decompose.py`` and ``dual_pipeline.py``
+    reaches through it to spawn sub-pipelines, and dropping it breaks them with no obvious cause.
+
+    ``step_records`` is how a step reads an earlier step's output: it holds every prior
+    ``StepResult`` as plain dicts, refreshed before each step runs. Bash steps rely on it to
+    hand results downstream.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -110,6 +114,7 @@ class RunHandle(BaseModel):
     run_id: str | None = None
     pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
     task_id: str | None = None  # Target Task ID for Handover Protocol
+    step_records: list[dict[str, Any]] | None = None
 
 
 class AnalysisContext(BaseModel):
@@ -152,6 +157,19 @@ class GraphContext(BaseModel):
     api_contract_paths: list[str] | None = None
 
 
+class GuidanceContent(BaseModel):
+    """The project's constitution and coding standards, pasted into prompts as-is.
+
+    These share an object because they are always supplied together: every place that builds a
+    run context sets both, on adjacent lines, and nothing sets one without the other.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    constitution: str | None = None
+    standards: str | None = None
+
+
 class RunContext(BaseModel):
     """Everything a pipeline step needs, passed to every handler as one object.
 
@@ -172,8 +190,7 @@ class RunContext(BaseModel):
         graph: What is known about the project's dependency graph.
         settings: Per-project validation settings and overrides.
         feedback: Messages passed between steps, including loop-back findings.
-        constitution: Pre-loaded project constitution text.
-        standards: Pre-loaded coding standards text.
+        guidance: The project constitution and coding standards.
         db: Database handle, for telemetry and memory.
         project_metadata: Computed on construction; describes the project to prompts.
 
@@ -197,28 +214,41 @@ class RunContext(BaseModel):
     run: RunHandle = Field(default_factory=RunHandle)
     analysis: AnalysisContext = Field(default_factory=AnalysisContext)
     graph: GraphContext = Field(default_factory=GraphContext)
+    guidance: GuidanceContent = Field(default_factory=GuidanceContent)
     feedback: dict[str, Any] = Field(default_factory=dict)
-    constitution: str | None = None  # Pre-loaded constitution content
-    standards: str | None = None  # Pre-loaded project standards
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     project_metadata: Any = None  # ProjectMetadata | None
-    step_records: list[dict[str, Any]] | None = None
-    env_vars: dict[str, str] = Field(default_factory=dict)
-    pipeline_name: str | None = None
 
     def model_post_init(self, __context: Any) -> None:
-        """Inject ProjectMetadata into context execution strictly securely."""
+        """Fill in the two things a caller is not expected to supply by hand."""
         if self.analysis.parsers is None:
-            try:
-                from specweaver.workspace.ast.parsers.factory import get_default_parsers
+            self.analysis = self.analysis.model_copy(update={"parsers": self._default_parsers()})
 
-                self.analysis = self.analysis.model_copy(update={"parsers": get_default_parsers()})
-            except BaseException:
-                pass
+        if self.project_metadata is None:
+            self.project_metadata = self._build_project_metadata()
 
-        if self.project_metadata is not None:
-            return
+    @staticmethod
+    def _default_parsers() -> Any:
+        """Load the AST parsers, or return None if they cannot be loaded.
 
+        Deliberately swallows everything, including BaseException: most steps never touch a
+        parser, so a broken or missing parser package must not make every context in the
+        process impossible to build.
+        """
+        try:
+            from specweaver.workspace.ast.parsers.factory import get_default_parsers
+
+            return get_default_parsers()
+        except BaseException:
+            return None
+
+    def _build_project_metadata(self) -> Any:
+        """Describe the project to prompts: its name, archetype, language and LLM in use.
+
+        Every lookup here falls back rather than raising. This runs during construction of a
+        context that most steps then never read metadata from, so an unreadable `context.yaml`
+        or an odd platform must degrade to a sensible default instead of failing the run.
+        """
         import platform
         import sys
 
@@ -227,59 +257,48 @@ class RunContext(BaseModel):
         try:
             target = f"Python {sys.version.split()[0]} on {platform.platform()}"
         except Exception:
-            # Handoff Directive 3
             target = "Unknown Environment"
 
-        try:
-            # Handoff Directive 2 fix (load_context_yaml does not exist)
-            import ruamel.yaml
-
-            ctx_path = self.project_path / "context.yaml"
-            if ctx_path.exists():
-                with ctx_path.open("r", encoding="utf-8") as f:
-                    data = ruamel.yaml.YAML(typ="safe").load(f)
-                archetype = (
-                    data.get("archetype", "generic") if isinstance(data, dict) else "generic"
-                )
-            else:
-                archetype = "generic"
-        except Exception:
-            archetype = "generic"
+        archetype = self._read_archetype()
 
         rules = {}
-        if (
-            self.model.config
-            and hasattr(self.model.config, "validation")
-            and self.model.config.validation
-        ):
-            overrides = getattr(self.model.config.validation, "overrides", {})
+        config = self.model.config
+        if config and getattr(config, "validation", None):
+            overrides = getattr(config.validation, "overrides", {})
             if isinstance(overrides, dict):
                 rules = overrides
 
         try:
-            provider = (
-                str(self.model.llm.provider_name)
-                if hasattr(self.model.llm, "provider_name")
-                else "unknown"
-            )
-            model_str = str(self.model.llm.model) if hasattr(self.model.llm, "model") else "unknown"
+            llm = self.model.llm
+            provider = str(llm.provider_name) if hasattr(llm, "provider_name") else "unknown"
+            model_str = str(llm.model) if hasattr(llm, "model") else "unknown"
         except Exception:
             provider = "unknown"
             model_str = "unknown"
 
-        safe_config = PromptSafeConfig(
-            llm_provider=provider,
-            llm_model=model_str,
-            validation_rules=rules,
-        )
-
-        self.project_metadata = ProjectMetadata(
+        return ProjectMetadata(
             project_name=self.project_path.name,
             archetype=archetype,
             language_target=target,
             date_iso=_now_iso(),
-            safe_config=safe_config,
+            safe_config=PromptSafeConfig(
+                llm_provider=provider, llm_model=model_str, validation_rules=rules
+            ),
         )
+
+    def _read_archetype(self) -> str:
+        """The project's archetype from its `context.yaml`, or "generic" if unavailable."""
+        try:
+            import ruamel.yaml
+
+            ctx_path = self.project_path / "context.yaml"
+            if not ctx_path.exists():
+                return "generic"
+            with ctx_path.open("r", encoding="utf-8") as f:
+                data = ruamel.yaml.YAML(typ="safe").load(f)
+            return data.get("archetype", "generic") if isinstance(data, dict) else "generic"
+        except Exception:
+            return "generic"
 
 
 # ---------------------------------------------------------------------------
@@ -345,10 +364,10 @@ async def _build_base_prompt(
     builder.add_instructions(instructions)
     builder.add_project_metadata(context.project_metadata)
 
-    if context.constitution:
-        builder.add_constitution(context.constitution)
-    if context.standards:
-        builder.add_standards(context.standards)
+    if context.guidance.constitution:
+        builder.add_constitution(context.guidance.constitution)
+    if context.guidance.standards:
+        builder.add_standards(context.guidance.standards)
 
     # Memory Hydration — fail-safe
     if (

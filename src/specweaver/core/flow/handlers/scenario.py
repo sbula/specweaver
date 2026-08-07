@@ -75,7 +75,7 @@ class GenerateScenarioHandler:
                 spec_content=spec_content,
                 contract_content=contract_content,
                 req_ids=req_ids,
-                constitution=context.constitution,
+                constitution=context.guidance.constitution,
                 project_metadata=context.project_metadata,
                 feedback=verdict_feedback,
             )

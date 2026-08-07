@@ -386,7 +386,10 @@ async def execute_in_sandbox(
     context = runner._context
 
     atom = GitAtom(cwd=context.project_path)
-    clean_pipeline = (context.pipeline_name or "default_pipe").replace(" ", "_")
+    # From the run, not the context: the context field this used to read was never set by
+    # anything, so every worktree branch was named "sf-default_pipe-..." regardless of
+    # which pipeline produced it.
+    clean_pipeline = (run.pipeline_name or "default_pipe").replace(" ", "_")
     # This can be None, and then the branch below is named "...-None". That is pre-existing
     # behaviour, kept deliberately: falling back to the run id would be an improvement, but
     # making it here would hide a behaviour change inside a pure field move.
@@ -418,7 +421,6 @@ async def execute_in_sandbox(
     isolated_context.isolation = isolated_context.isolation.model_copy(
         update={"execution_root": context.project_path / wt_path}
     )
-    isolated_context.env_vars = context.env_vars.copy()
 
     try:
         # 2. Execute inner handler bounded to the isolated worktree context

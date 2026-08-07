@@ -118,15 +118,14 @@ class TestAttributeCount:
 
         assert _analyse(ch, source).attributes == {"real_state"}
 
-    #: `RunContext` is being cut down from 32 fields to a size that clears the god-object
-    #: limit, one group of related fields at a time. This asserts an EXACT count rather than
-    #: an upper bound, so it fails in both directions: adding a field fails, and so does a
-    #: step that claims to have removed fields but left them in place.
+    #: `RunContext` was cut from 32 fields to 15 by grouping related fields into small
+    #: objects. 15 is exactly the god-object limit, so there is no headroom: the next field
+    #: added directly to `RunContext` puts it over again.
     #:
-    #: Lower it as each group lands. Remaining: 19 -> 15 (drop the three fields nothing
-    #: reads, and pair constitution with standards). 15 is the limit, so that last step is
-    #: the one that stops this file being reported at all.
-    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 19
+    #: Asserted as an EXACT count, not an upper bound, so it fails in both directions — a new
+    #: field fails, and so does a change that claims to remove one but does not. If you need a
+    #: new field, put it in the group it belongs to rather than raising this number.
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 15
 
     def test_run_context_attribute_count_matches_the_expected_step(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
@@ -135,22 +134,6 @@ class TestAttributeCount:
         run_context = next(r for r in reports if r.name == "RunContext")
 
         assert len(run_context.attributes) == self.EXPECTED_RUN_CONTEXT_ATTRIBUTES
-
-    def test_run_context_is_still_over_the_god_object_limit(self, ch: ModuleType) -> None:
-        """A deliberate record that the job is not finished yet.
-
-        This file is still reported as a god object, as it was before the split began (33
-        attributes then). The finding is long-standing and shrinking, not newly introduced and
-        not suppressed. Keeping it asserted means nobody can lose track of that mid-way. DELETE
-        this test with the step that finally brings the count to the limit — if it ever starts
-        failing, that step succeeded.
-        """
-        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
-        reports = ch.analyse_file(path)
-
-        run_context = next(r for r in reports if r.name == "RunContext")
-
-        assert run_context.too_many_attributes(ch.MAX_ATTRIBUTES)
 
     @pytest.mark.parametrize(
         "extracted",
@@ -161,6 +144,7 @@ class TestAttributeCount:
             "RunHandle",
             "AnalysisContext",
             "GraphContext",
+            "GuidanceContent",
         ],
     )
     def test_the_extracted_sub_models_are_not_god_objects(

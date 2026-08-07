@@ -107,7 +107,10 @@ class GateEvaluator:
             return "advance"
 
         db_path = self._context.project_path / ".specweaver" / "reservations.db"
-        pipeline_target = getattr(self._context, "pipeline_name", None) or "default_pipeline"
+        # Keyed on the run's pipeline name so two DIFFERENT pipelines do not contend for
+        # one lock. This used to read a RunContext field that nothing ever set, so every
+        # pipeline in the project queued behind a single shared resource.
+        pipeline_target = run.pipeline_name
 
         sys = SQLiteReservationSystem(db_path)
         if sys.acquire(

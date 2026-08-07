@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,
+    GuidanceContent,
     IsolationPolicy,
     ModelAccess,
     PlanContext,
@@ -64,27 +65,6 @@ def test_run_context_graceful_degradation(tmp_path: Path) -> None:
         )
 
     assert context.project_metadata.language_target == "Unknown Environment"
-
-
-def test_run_context_env_vars(tmp_path: Path) -> None:
-    """Test that RunContext safely holds isolated env_vars boundaries natively."""
-    context = RunContext(
-        project_path=tmp_path,
-        spec_path=tmp_path / "spec.md",
-        pipeline_name="decomposition_flow",
-        env_vars={"SW_PORT_OFFSET": "49551"},
-    )
-
-    # Must natively survive pydantic model dumping
-    data = context.model_dump()
-    assert context.pipeline_name == "decomposition_flow"
-    assert context.env_vars == {"SW_PORT_OFFSET": "49551"}
-    assert data["env_vars"] == {"SW_PORT_OFFSET": "49551"}
-
-    # Default fallback
-    context_default = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-    assert context_default.env_vars == {}
-    assert context_default.pipeline_name is None
 
 
 def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
@@ -484,3 +464,98 @@ class TestGraphContext:
                 getattr(context, gone)
             with pytest.raises(ValidationError):
                 RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{gone: None})
+
+
+class TestGuidanceContent:
+    """The constitution and coding standards, pasted into prompts."""
+
+    def test_defaults_are_none(self) -> None:
+        guidance = GuidanceContent()
+        assert guidance.constitution is None
+        assert guidance.standards is None
+
+    def test_they_are_supplied_together(self, tmp_path: Path) -> None:
+        """Every place that builds a context sets both, which is why they share an object."""
+        context = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            guidance=GuidanceContent(constitution="rules", standards="style"),
+        )
+        assert context.guidance.constitution == "rules"
+        assert context.guidance.standards == "style"
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.guidance.constitution = "x"
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            GuidanceContent(bogus=1)
+
+    def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("constitution", "standards"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+            with pytest.raises(ValidationError):
+                RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{gone: "x"})
+
+
+class TestRemovedFields:
+    """Two fields are gone, for different reasons, and passing either is now an error rather
+    than a value that silently disappears.
+
+    `env_vars` was never wired to anything: the plan was to inject it into spawned processes
+    and that half was never built, and bash steps later got an explicit per-step `env:` map
+    instead, which deliberately does NOT read this field so secrets cannot leak into it.
+
+    `pipeline_name` was read in two places but never set anywhere, so both reads always took
+    their fallback. Both now take the name from the run itself, which fixed a real bug -- see
+    the reserve-gate tests.
+    """
+
+    @pytest.mark.parametrize(
+        ("field", "value"), [("env_vars", {"A": "1"}), ("pipeline_name", "flow")]
+    )
+    def test_removed_field_is_rejected_and_absent(
+        self, tmp_path: Path, field: str, value: object
+    ) -> None:
+        with pytest.raises(ValidationError):
+            RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{field: value})
+
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(AttributeError):
+            getattr(context, field)
+
+
+class TestConstructionHelpers:
+    """`model_post_init` was long enough to hide what it did. Its two jobs are now named
+    methods that can be exercised on their own."""
+
+    def test_default_parsers_needs_no_context_at_all(self) -> None:
+        """A plain function of nothing, so it can be tested without building a context."""
+        assert RunContext._default_parsers() is not None
+
+    def test_default_parsers_swallows_a_loading_failure(self) -> None:
+        """Parser loading is best-effort: most steps never touch one, so a failure here must
+        not make every context in the process unconstructible."""
+        with patch(
+            "specweaver.workspace.ast.parsers.factory.get_default_parsers",
+            side_effect=RuntimeError("boom"),
+        ):
+            assert RunContext._default_parsers() is None
+
+    def test_build_project_metadata_reads_the_project(self, tmp_path: Path) -> None:
+        (tmp_path / "context.yaml").write_text("archetype: web-service\n", encoding="utf-8")
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+
+        metadata = context._build_project_metadata()
+
+        assert metadata.project_name == tmp_path.name
+        assert metadata.archetype == "web-service"
+
+    def test_build_project_metadata_falls_back_without_a_context_file(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+
+        assert context._build_project_metadata().archetype == "generic"

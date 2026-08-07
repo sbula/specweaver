@@ -267,6 +267,7 @@ def review(
     from specweaver.core.flow.handlers.base import (
         AnalysisContext,
         GraphContext,
+        GuidanceContent,
         ModelAccess,
         RunContext,
     )
@@ -328,15 +329,17 @@ def review(
         spec_path=actual_spec_path,
         model=ModelAccess(llm=adapter, config=settings),
         graph=GraphContext(topology=topo_contexts),
-        constitution=(lambda info: info.content if info else None)(
-            find_constitution(project_path, spec_path=actual_spec_path)
-        ),
-        standards=(
-            load_standards_content(db, project, project_path, target_path=target_path)
-            if project
-            else None
-        ),
         db=_core.get_db(),
+        guidance=GuidanceContent(
+            constitution=(lambda info: info.content if info else None)(
+                find_constitution(project_path, spec_path=actual_spec_path)
+            ),
+            standards=(
+                load_standards_content(db, project, project_path, target_path=target_path)
+                if project
+                else None
+            ),
+        ),
     )
 
     runner = PipelineRunner(pipeline, context)

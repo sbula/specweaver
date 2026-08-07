@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,
+    GuidanceContent,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -58,7 +59,7 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm=llm, config=None, llm_router=None)
     ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": [str(contract_path)]})
-    ctx.constitution = None
+    ctx.guidance = GuidanceContent(constitution=None)
     ctx.project_metadata = None
 
     # Mock _resolve_generation_routing needs

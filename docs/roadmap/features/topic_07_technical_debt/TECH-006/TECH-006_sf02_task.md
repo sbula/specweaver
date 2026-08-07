@@ -14,7 +14,7 @@ Never leave an old and a new field alive for the same data across a commit bound
 | 2 | `PlanContext` | `plan`, `decomposition` | ✅ |
 | 3 | `RunHandle` + `AnalysisContext` + `ModelAccess` | `run_id`, `pipeline_runner`, `task_id`, `analyzer_factory`, `parsers`, `llm`, `config`, `llm_router` | ✅ |
 | 4 | `GraphContext` | `topology`, `stale_nodes`, `workspace_roots`, `api_contract_paths` | ✅ |
-| 5 | Dead-field cleanup + `model_post_init` split | deletes `env_vars`, `step_records`, `pipeline_name` | ⬜ |
+| 5 | Dead-field cleanup + `model_post_init` split + `GuidanceContent` | deletes `env_vars`, `pipeline_name`; RELOCATES `step_records` | ✅ |
 
 Field-count ledger (NFR-7): 32 today → 32−5+1 = 28 (CB1) → 27 (CB2) → 22 (CB3) → 19 (CB4) → 16 (CB5). ✅ ≤16.
 
@@ -549,3 +549,62 @@ from the fixtures first rather than assuming a list.
 - One self-inflicted defect worth recording: the assignment rewriter swallowed a trailing `#`
   comment into a `model_copy(...)` call, producing invalid syntax. Ruff caught it immediately.
   Line-based rewriting must split trailing comments off before touching the expression.
+
+
+---
+# CB5 Execution Record — the step that finished the job
+
+`RunContext`: 19 → **15**. `scripts/check_class_health.py` now reports
+`handlers/base.py` as "all within limits" and exits 0 — the first time since that check existed.
+Full suite **6216 passed, 0 failed**.
+
+## FR-8's premise was wrong, and the three fields needed three different answers
+
+The requirement said "delete `env_vars`, `step_records`, `pipeline_name` — confirmed zero
+production readers". Asked the right question of each ("is this dead because it is not needed, or
+because a feature was never finished?"), the answers diverged completely:
+
+- **`env_vars` — not needed.** Born dead in `17ee01f5` (2026-04-12) with a written plan to inject
+  it into spawned processes; that half was never built. `C-EXEC-02` later shipped an explicit
+  per-step `env:` map that *deliberately refuses* this field so secrets cannot leak into
+  `stdout`/`step_records`. Superseded by a better design → deleted as clutter.
+
+- **`pipeline_name` — a BUG, not clutter.** Two real readers, no writer anywhere, so both always
+  took their fallback. The consequence was not cosmetic: the RESERVE gate's resource key was
+  `f"pipeline:{pipeline_target}"` with the target always `"default_pipeline"`, so **every pipeline
+  in a project queued behind one shared lock** — global serialisation from a gate whose entire
+  purpose was per-pipeline serialisation. Both readers now take the name from
+  `PipelineRun.pipeline_name`, which is always populated and was already in scope at both sites.
+  The original instruction (substitute the literal) would have cemented the defect and destroyed
+  the evidence that a pipeline name ever belonged there.
+
+  **A vacuous test had been hiding it.** `test_reserve_gate_acquires_lock` asserted
+  `resource_id == "pipeline:test_pipe"` — and passed only because the test itself set
+  `context.pipeline_name = "test_pipe"`. It proved a path production never took. Rewritten to
+  assert against the pipeline definition with nothing seeded, plus a new
+  `test_two_pipelines_reserve_different_resources` that would have caught this from the start.
+
+- **`step_records` — not dead at all.** It is the delivered mechanism of `C-EXEC-02` FR-6/AD-4,
+  with `test_downstream_step_reads_step_records` as its acceptance test. No *shipped handler*
+  reads it — which is what the original research saw — but a completed story chose it as its
+  state-propagation channel precisely because it needed no new plumbing. Deleting it would have
+  withdrawn a delivered FR. Relocated to `RunHandle` (`context.run.step_records`): capability and
+  tests intact, and `RunContext` still loses the top-level attribute.
+
+## Reaching 15 needed two things the design never accounted for
+NFR-7 said ≤16, a number derived from the grouping without ever being checked against the
+project's own limit of 15. Closing the gap took the `model_config` metric fix (separate commit)
+and `GuidanceContent` (AD-9), pairing `constitution`/`standards` — justified on AD-6's own
+criterion, which simply had never been applied to that pair: all 7 construction sites set both,
+on adjacent lines, and none sets one alone.
+
+## Collateral
+`test_planning_integration.py` crossed its 900-line limit (885 → 907) because of this work's
+construction-site rewrites. A first attempt to compact them made it *worse* (914) — line-golfing
+is the same anti-pattern as condensing comments to duck a size gate. Split instead at a real seam:
+`TestDagOrchestratorIntegration` moved to `test_dag_orchestration_integration.py` (688 + 241).
+
+## Still failing at the `cb` gate, all pre-existing and none in files touched here
+`complexipy` and `cycles` report long-standing violations across `assurance/standards`,
+`workspace/ast`, `graph/` and others — the debt already tracked as TECH-023/TECH-024. Verified
+none of the reported functions live in any file this sub-feature changed.

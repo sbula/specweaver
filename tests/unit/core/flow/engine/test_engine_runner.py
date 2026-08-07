@@ -82,7 +82,9 @@ class ContextInjectionHandler:
             status=StepStatus.PASSED,
             output={
                 "run_id": context.run.run_id,
-                "step_records_len": len(context.step_records) if context.step_records else 0,
+                "step_records_len": len(context.run.step_records)
+                if context.run.step_records
+                else 0,
             },
             started_at="2026-01-01T00:00:00Z",
             completed_at="2026-01-01T00:00:01Z",

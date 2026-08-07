@@ -187,6 +187,7 @@ def implement(
     from specweaver.core.flow.handlers.base import (
         AnalysisContext,
         GraphContext,
+        GuidanceContent,
         ModelAccess,
         RunContext,
     )
@@ -246,9 +247,8 @@ def implement(
         spec_path=spec_path,
         model=ModelAccess(llm=adapter, config=settings),
         graph=GraphContext(topology=topo_contexts),
-        constitution=constitution_content,
-        standards=standards_content,
         db=_core.get_db(),
+        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
     )
 
     # INT-US-03 SF-03 (FR-5, AD-8): run the autonomous (untrusted) implement loop

@@ -8,7 +8,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import AnalysisContext, RunContext, _build_base_prompt
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    GuidanceContent,
+    RunContext,
+    _build_base_prompt,
+)
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 
 """
@@ -58,10 +63,9 @@ def run_context(mock_db):
         analysis=AnalysisContext(parsers={}),
         project_path=Path("/tmp/fake_project"),
         spec_path=Path("/tmp/fake_project/spec.yaml"),
-        constitution="Always be honest",
-        standards="Use type hints",
         db=mock_db,
         project_metadata=metadata,
+        guidance=GuidanceContent(constitution="Always be honest", standards="Use type hints"),
     )
 
 

@@ -35,7 +35,6 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
     )
     pipeline = PipelineDefinition(name="test_pipe", steps=[step])
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
-    context.pipeline_name = "test_pipe"
 
     # 2. Mock handler and GitAtom run explicitly to spy on intents in order
     intents_called = []
@@ -258,7 +257,6 @@ async def test_isolation_gate_resolution(
         spec_path=tmp_path / "Spec.md",
         isolation=IsolationPolicy(enforce_isolation=enforce_isolation),
     )
-    context.pipeline_name = "p"
     passed = StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
 
     with (
@@ -306,7 +304,6 @@ async def test_execute_in_sandbox_rebinds_execution_root(
         spec_path=tmp_path / "Spec.md",
         isolation=IsolationPolicy(allowed_paths=preset_allowed),
     )
-    context.pipeline_name = "p"
 
     def fake_atom_run(self, ctx_dict):
         if ctx_dict.get("intent") == "worktree_add":
@@ -368,7 +365,6 @@ async def test_worktree_add_failure_raises_actionable_error(tmp_path: Path):
     from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
-    context.pipeline_name = "p"
     runner = SimpleNamespace(_context=context)
 
     def fake_run(self, ctx_dict):
@@ -401,7 +397,6 @@ async def test_worktree_add_failure_does_not_assume_non_git_cause(tmp_path: Path
     from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
-    context.pipeline_name = "p"
     runner = SimpleNamespace(_context=context)
 
     def fake_run(self, ctx_dict):

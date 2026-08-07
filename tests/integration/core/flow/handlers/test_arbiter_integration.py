@@ -12,6 +12,7 @@ from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,
+    GuidanceContent,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -41,12 +42,10 @@ def run_context():
         date_iso="2026",
         safe_config={"llm_model": "test", "llm_provider": "test"},
     )
-    ctx.constitution = ""
-    ctx.standards = ""
+    ctx.guidance = GuidanceContent(constitution="", standards="")
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
-    ctx.run = RunHandle(run_id="test_run")
-    ctx.step_records = []
+    ctx.run = RunHandle(run_id="test_run", step_records=[])
 
     # INT-US-24 FR-2: the arbiter consumes the reserved evidence key published
     # by ValidateTestsHandler (raw QA export shape).

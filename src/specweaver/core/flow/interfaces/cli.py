@@ -15,7 +15,7 @@ import typer
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, GuidanceContent, RunContext
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
@@ -294,9 +294,8 @@ def _execute_run(  # noqa: C901
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
-        constitution=constitution_content,
-        standards=standards_content,
         db=db,
+        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
     )
 
     # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
@@ -505,9 +504,8 @@ def resume(  # noqa: C901
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
-        constitution=constitution_content,
-        standards=standards_content,
         db=db,
+        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
     )
 
     # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —

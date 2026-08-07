@@ -17,6 +17,7 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,
+    GuidanceContent,
     IsolationPolicy,
     ModelAccess,
     RunContext,
@@ -101,7 +102,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.graph = ctx.graph.model_copy(
         update={"api_contract_paths": [str(project_workspace / "contracts" / "auth_contract.py")]}
     )
-    ctx.constitution = None
+    ctx.guidance = GuidanceContent(constitution=None)
     ctx.project_metadata = None
     ctx.llm_routing_enabled = False
     ctx.generation_config = None

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
-from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
+from specweaver.core.flow.handlers.base import AnalysisContext, GuidanceContent, RunContext
 
 
 @pytest.fixture
@@ -36,10 +36,9 @@ def run_context(tmp_path):
         analysis=AnalysisContext(parsers={}),
         project_path=project_path,
         spec_path=spec_path,
-        constitution="",
-        standards="",
         db=db,
         project_metadata=metadata,
+        guidance=GuidanceContent(constitution="", standards=""),
     )
 
 

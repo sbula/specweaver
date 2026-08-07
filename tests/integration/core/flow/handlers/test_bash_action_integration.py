@@ -72,15 +72,15 @@ def test_bash_step_runs_end_to_end(tmp_path: Path) -> None:
 
 
 def test_downstream_step_reads_step_records(tmp_path: Path) -> None:
-    """A downstream step reads a bash step's output via `context.step_records`."""
+    """A downstream step reads a bash step's output via `context.run.step_records`."""
     _write_script(tmp_path, "greet.sh", "echo from-bash-step\n")
 
     class ReadsStepRecordsHandler:
         async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
             import datetime
 
-            assert context.step_records is not None
-            bash_record = context.step_records[0]
+            assert context.run.step_records is not None
+            bash_record = context.run.step_records[0]
             stdout = bash_record["result"]["output"]["stdout"]
             return StepResult(
                 status=StepStatus.PASSED,

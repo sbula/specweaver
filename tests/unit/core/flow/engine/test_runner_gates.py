@@ -318,14 +318,46 @@ class TestGateConditions:
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
 
         context = _make_context(tmp_path)
-        context.pipeline_name = "test_pipe"
 
         runner = PipelineRunner(pipeline, context, registry=registry)
         run = await runner.run()
 
         assert mock_acquire.called
-        assert mock_acquire.call_args[1]["resource_id"] == "pipeline:test_pipe"
+        # From the pipeline definition, with nothing seeded by this test. The previous version
+        # set a context field by hand and asserted on it, which passed while production -- where
+        # nothing ever set that field -- locked every pipeline under one shared name.
+        assert mock_acquire.call_args[1]["resource_id"] == "pipeline:test"
         assert run.status == RunStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    @mock.patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.acquire")
+    async def test_two_pipelines_reserve_different_resources(
+        self, mock_acquire: mock.MagicMock, tmp_path: Path
+    ) -> None:
+        """The whole point of the gate: two DIFFERENT pipelines must not queue behind each
+        other. They did, for months -- the resource name came from a context field nothing
+        ever populated, so every pipeline resolved to the same fallback string."""
+        mock_acquire.return_value = True
+        seen = []
+
+        for name in ("alpha", "beta"):
+            pipeline = PipelineDefinition(
+                name=name,
+                steps=[
+                    PipelineStep(
+                        name="validate",
+                        action=StepAction.VALIDATE,
+                        target=StepTarget.SPEC,
+                        gate=GateDefinition(type=GateType.RESERVE),
+                    )
+                ],
+            )
+            registry = StepHandlerRegistry()
+            registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
+            await PipelineRunner(pipeline, _make_context(tmp_path), registry=registry).run()
+            seen.append(mock_acquire.call_args[1]["resource_id"])
+
+        assert seen == ["pipeline:alpha", "pipeline:beta"]
 
     @pytest.mark.asyncio
     @mock.patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.acquire")
@@ -350,7 +382,6 @@ class TestGateConditions:
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
 
         context = _make_context(tmp_path)
-        context.pipeline_name = "test_pipe"
 
         runner = PipelineRunner(pipeline, context, registry=registry)
         run = await runner.run()
