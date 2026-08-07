@@ -127,7 +127,7 @@ class TestGetAtomExecutionRoot:
         handler = BashActionHandler()
         wt = tmp_path / ".worktrees" / "task-1"
         context = _ctx(tmp_path)
-        context.execution_root = wt
+        context.isolation = context.isolation.model_copy(update={"execution_root": wt})
         with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=wt)
@@ -136,7 +136,7 @@ class TestGetAtomExecutionRoot:
         # [Boundary/backward-compat] non-isolated step → cwd unchanged (project_path).
         handler = BashActionHandler()
         context = _ctx(tmp_path)
-        assert context.execution_root is None
+        assert context.isolation.execution_root is None
         with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=tmp_path)
@@ -145,7 +145,7 @@ class TestGetAtomExecutionRoot:
         # [Edge] execution_root explicitly set to project_path → cwd == project_path.
         handler = BashActionHandler()
         context = _ctx(tmp_path)
-        context.execution_root = tmp_path
+        context.isolation = context.isolation.model_copy(update={"execution_root": tmp_path})
         with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=tmp_path)

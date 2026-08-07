@@ -14,7 +14,7 @@ from ruamel.yaml import YAML
 
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
 
 
 @pytest.fixture()
@@ -78,6 +78,9 @@ async def test_scenario_pipeline_end_to_end_integration(
     mock_llm.generate.return_value = json.dumps(valid_response)
 
     ctx = MagicMock(spec=RunContext)
+    # TECH-006 SF-02 CB1: spec'd mocks do not auto-create attributes, and the runner reads
+    # `isolation.dal_level` at construction. A real IsolationPolicy keeps this honest.
+    ctx.isolation = IsolationPolicy(dal_level=None)
     ctx.spec_path = project_workspace / "specs" / "auth_spec.md"
     ctx.project_path = project_workspace
     ctx.llm = mock_llm

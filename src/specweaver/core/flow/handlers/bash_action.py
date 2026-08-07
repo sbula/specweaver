@@ -71,4 +71,4 @@ class BashActionHandler:
         """
         from specweaver.sandbox.execution.core.atom import BashActionAtom
 
-        return BashActionAtom(cwd=context.execution_root or context.project_path)
+        return BashActionAtom(cwd=context.isolation.execution_root or context.project_path)

@@ -80,8 +80,8 @@ async def test_metadata_flows_to_generator_handler(
         llm=mock_llm,
         project_path=tmp_path,
         spec_path=tmp_path / "test.md",
-        test_path=tmp_path / "out.py",
-        code_path=tmp_path / "src.py",
+        # `test_path`/`code_path` were never RunContext fields — silently discarded until
+        # TECH-006 SF-02 CB1 added `extra="forbid"` (FR-12). Nothing in src/ reads either.
         project_metadata=mock_metadata,
     )
 

@@ -133,8 +133,8 @@ def test_dal_b_escalation_runs_generated_qa_bounded_and_reconciles(tmp_path: Pat
     _commit_project(tmp_path, "DAL_B")
 
     context = _context(tmp_path)
-    assert context.session_isolation is True  # DAL_B escalated
-    assert context.allowed_paths == ["src/foo.py", "tests/test_foo.py"]
+    assert context.isolation.session_isolation is True  # DAL_B escalated
+    assert context.isolation.allowed_paths == ["src/foo.py", "tests/test_foo.py"]
 
     run_state = _run(context)
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -156,7 +156,7 @@ def test_low_dal_project_runs_on_host_and_probe_fails(tmp_path: Path) -> None:
     _commit_project(tmp_path, "DAL_E")
 
     context = _context(tmp_path)
-    assert context.session_isolation is False  # DAL_E is below the DAL_B threshold
+    assert context.isolation.session_isolation is False  # DAL_E is below the DAL_B threshold
 
     run_state = _run(context)
     probe = run_state.step_records[1]

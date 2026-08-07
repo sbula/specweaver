@@ -70,7 +70,7 @@ def test_toml_isolation_policy_true_flows_onto_run_context(tmp_path: Path) -> No
         tmp_path, "int09-toml", "[sandbox]\nenforce_worktree_isolation = true\n"
     )
     context = _run_and_capture(project_dir)
-    assert context.enforce_isolation is True
+    assert context.isolation.enforce_isolation is True
     # container-neutral: the full config is NOT exposed on sw run (B-EXEC-01 dormant).
     assert context.config is None
 
@@ -79,7 +79,7 @@ def test_no_sandbox_section_keeps_policy_off_on_run_context(tmp_path: Path) -> N
     """[Boundary/backward-compat] absent [sandbox] key → policy stays off on the context."""
     project_dir = _init_project(tmp_path, "int09-notoml", None)
     context = _run_and_capture(project_dir)
-    assert context.enforce_isolation is False
+    assert context.isolation.enforce_isolation is False
 
 
 def test_container_execution_mode_stays_dormant_on_run(tmp_path: Path) -> None:
@@ -92,7 +92,7 @@ def test_container_execution_mode_stays_dormant_on_run(tmp_path: Path) -> None:
     )
     context = _run_and_capture(project_dir)
     assert context.config is None  # container opt-in stays dormant on this path
-    assert context.enforce_isolation is False
+    assert context.isolation.enforce_isolation is False
 
 
 def test_toml_session_isolation_true_flows_onto_run_context(tmp_path: Path) -> None:
@@ -103,8 +103,8 @@ def test_toml_session_isolation_true_flows_onto_run_context(tmp_path: Path) -> N
         tmp_path, "cexec06-toml", "[sandbox]\nenforce_session_isolation = true\n"
     )
     context = _run_and_capture(project_dir)
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/test.py", "tests/test_test.py"]
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/test.py", "tests/test_test.py"]
 
 
 def test_toml_session_allowed_paths_override_used_verbatim(tmp_path: Path) -> None:
@@ -116,8 +116,8 @@ def test_toml_session_allowed_paths_override_used_verbatim(tmp_path: Path) -> No
         '[sandbox]\nenforce_session_isolation = true\nsession_allowed_paths = ["src/only.py"]\n',
     )
     context = _run_and_capture(project_dir)
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/only.py"]
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/only.py"]
 
 
 def test_toml_per_step_isolation_on_but_session_off_keeps_allowed_paths_empty(
@@ -130,9 +130,9 @@ def test_toml_per_step_isolation_on_but_session_off_keeps_allowed_paths_empty(
         tmp_path, "cexec06-nfr2", "[sandbox]\nenforce_worktree_isolation = true\n"
     )
     context = _run_and_capture(project_dir)
-    assert context.enforce_isolation is True
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.enforce_isolation is True
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []
 
 
 def test_toml_both_isolation_knobs_true_set_both_flags(tmp_path: Path) -> None:
@@ -144,9 +144,9 @@ def test_toml_both_isolation_knobs_true_set_both_flags(tmp_path: Path) -> None:
         "[sandbox]\nenforce_worktree_isolation = true\nenforce_session_isolation = true\n",
     )
     context = _run_and_capture(project_dir)
-    assert context.enforce_isolation is True
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/test.py", "tests/test_test.py"]
+    assert context.isolation.enforce_isolation is True
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/test.py", "tests/test_test.py"]
 
 
 def test_toml_no_sandbox_section_keeps_session_isolation_off(tmp_path: Path) -> None:
@@ -154,8 +154,8 @@ def test_toml_no_sandbox_section_keeps_session_isolation_off(tmp_path: Path) -> 
     empty (NFR-2 byte-identical default)."""
     project_dir = _init_project(tmp_path, "cexec06-notoml", None)
     context = _run_and_capture(project_dir)
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []
 
 
 def test_toml_malformed_sandbox_keeps_session_isolation_off(tmp_path: Path) -> None:
@@ -163,8 +163,8 @@ def test_toml_malformed_sandbox_keeps_session_isolation_off(tmp_path: Path) -> N
     leave per-run isolation off (the composition wiring is best-effort)."""
     project_dir = _init_project(tmp_path, "cexec06-malformed", "not valid toml [[[")
     context = _run_and_capture(project_dir)
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []
 
 
 def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> None:
@@ -178,8 +178,8 @@ def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> Non
         "operational:\n  dal_level: DAL_B\n", encoding="utf-8"
     )
     context = _run_and_capture(project_dir)
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []
 
 
 def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, monkeypatch) -> None:
@@ -218,7 +218,7 @@ def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, mo
         assert result.exit_code == 0, result.stdout
         context = mock_runner_class.call_args.args[1]
 
-    assert context.enforce_isolation is True
+    assert context.isolation.enforce_isolation is True
 
 
 def test_toml_session_isolation_true_flows_onto_resume_context(tmp_path: Path, monkeypatch) -> None:
@@ -256,8 +256,8 @@ def test_toml_session_isolation_true_flows_onto_resume_context(tmp_path: Path, m
         assert result.exit_code == 0, result.stdout
         context = mock_runner_class.call_args.args[1]
 
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/test.py", "tests/test_test.py"]
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/test.py", "tests/test_test.py"]
 
 
 def test_tty_run_gets_interactive_context_provider(tmp_path: Path) -> None:

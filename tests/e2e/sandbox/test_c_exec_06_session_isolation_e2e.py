@@ -4,7 +4,7 @@
 """C-EXEC-06 SF-03 Verifiable Proof (FR-8): real-worktree, multi-step, unmocked e2e.
 
 Drives a real MULTI-step pipeline through the real PipelineRunner under per-run (session)
-isolation (`context.session_isolation = True`). Step 1 (bash) freshly generates files into
+isolation (`context.isolation.session_isolation`). Step 1 (bash) freshly generates files into
 the ONE session worktree; step 2 (pytest) runs bounded to that SAME worktree and sees the
 step-1 output — proving in-session persistence across steps. After the run completes, the
 single authorized reconcile lands ONLY `allowed_paths` back into the real repo:
@@ -127,8 +127,9 @@ def test_session_isolation_multistep_generates_runs_and_reconciles(tmp_path: Pat
     _commit_session_project(tmp_path)
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    context.session_isolation = True
-    context.allowed_paths = _ALLOWED
+    context.isolation = context.isolation.model_copy(
+        update={"session_isolation": True, "allowed_paths": _ALLOWED}
+    )
     run_state = _run(context)
 
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -153,9 +154,11 @@ def test_session_reconcile_hardblocks_docs_even_when_allowlisted(tmp_path: Path)
     _commit_session_project(tmp_path, gen_script=_GEN_WITH_DOCS)
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    context.session_isolation = True
+    context.isolation = context.isolation.model_copy(update={"session_isolation": True})
     # Deliberately allow-list the docs file — the hard-block must STILL strip it.
-    context.allowed_paths = ["src/foo.py", "tests/test_foo.py", "docs/evil.md"]
+    context.isolation = context.isolation.model_copy(
+        update={"allowed_paths": ["src/foo.py", "tests/test_foo.py", "docs/evil.md"]}
+    )
     run_state = _run(context)
 
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -190,8 +193,9 @@ def test_session_isolation_on_non_git_project_fails_loud(tmp_path: Path) -> None
     _write_sources(tmp_path)  # sources present, but NO `git init`
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    context.session_isolation = True
-    context.allowed_paths = _ALLOWED
+    context.isolation = context.isolation.model_copy(
+        update={"session_isolation": True, "allowed_paths": _ALLOWED}
+    )
 
     with pytest.raises(RuntimeError, match="session isolation could not start"):
         _run(context)

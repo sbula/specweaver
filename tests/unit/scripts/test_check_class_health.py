@@ -86,14 +86,50 @@ class TestAttributeCount:
 
         assert _analyse(ch, source).too_many_attributes(15)
 
-    def test_the_real_run_context_is_still_a_god_object(self, ch: ModuleType) -> None:
-        """TECH-006 set out to cut it from 23 fields; it grew instead, with every gate green."""
+    #: TECH-006 SF-02's NFR-7 ledger. This test used to assert `> 30` — a deliberate witness
+    #: that `RunContext` had GROWN past the 23 fields TECH-006 set out to cut, with every gate
+    #: green. SF-02 is the work that pays that debt down, so the witness is inverted into a
+    #: ratchet rather than relaxed: the count must land on exactly the value below, and each
+    #: commit boundary tightens it. Adding a field still fails loudly; so does a boundary that
+    #: silently fails to remove the flat fields it claimed to.
+    #:
+    #: Counts include `model_config`, which the analyser sees as a class attribute — hence one
+    #: more than the design's own field ledger at every step.
+    #:   pre-SF-02 33 -> CB1 29 -> CB2 28 -> CB3 23 -> CB4 20 -> CB5 17
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 29
+
+    def test_run_context_attribute_count_is_on_the_tech_006_ratchet(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
         reports = ch.analyse_file(path)
 
         run_context = next(r for r in reports if r.name == "RunContext")
 
-        assert len(run_context.attributes) > 30
+        assert len(run_context.attributes) == self.EXPECTED_RUN_CONTEXT_ATTRIBUTES
+
+    def test_run_context_is_still_over_the_god_object_limit_until_cb5(self, ch: ModuleType) -> None:
+        """Honest record of an unfinished job: `RunContext` remains a god object mid-sequence.
+
+        `check_class_health` still BLOCKS on this file, exactly as it did before SF-02 started
+        (33 attributes then, 29 now) — the finding is pre-existing and improving, not introduced
+        or suppressed. This test exists so that fact cannot be quietly forgotten between commit
+        boundaries, and it is expected to be deleted by CB5, which is what makes it removable
+        rather than permanent.
+        """
+        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
+        reports = ch.analyse_file(path)
+
+        run_context = next(r for r in reports if r.name == "RunContext")
+
+        assert run_context.too_many_attributes(ch.MAX_ATTRIBUTES)
+
+    def test_the_new_isolation_policy_is_not_a_god_object(self, ch: ModuleType) -> None:
+        """The point of the split: what comes OUT of `RunContext` must not repeat the problem."""
+        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
+        reports = ch.analyse_file(path)
+
+        policy = next(r for r in reports if r.name == "IsolationPolicy")
+
+        assert not policy.too_many_attributes(ch.MAX_ATTRIBUTES)
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,10 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.core.flow.handlers.base import RunContext
+import pytest
+from pydantic import ValidationError
+
+from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata
 
 
@@ -80,12 +83,129 @@ def test_run_context_env_vars(tmp_path: Path) -> None:
 
 def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
     """INT-US-09 T5: execution_root defaults to None (callers fall back to project_path);
-    enforce_isolation defaults to False (opt-in policy off)."""
+    enforce_isolation defaults to False (opt-in policy off).
+
+    TECH-006 SF-02 (FR-6): both now live on the nested `isolation` sub-model. The asserted
+    behaviour is unchanged — only the path to it is.
+    """
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-    assert context.execution_root is None
-    assert context.enforce_isolation is False
+    assert context.isolation.execution_root is None
+    assert context.isolation.enforce_isolation is False
 
     # execution_root can carry the worktree path.
     wt = tmp_path / ".worktrees" / "task-1"
-    ctx2 = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", execution_root=wt)
-    assert ctx2.execution_root == wt
+    ctx2 = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md",
+        isolation=IsolationPolicy(execution_root=wt),
+    )
+    assert ctx2.isolation.execution_root == wt
+
+
+class TestIsolationPolicy:
+    """TECH-006 SF-02 CB1 (FR-6, FR-12, NFR-6, NFR-8, AD-8): the five worktree-isolation
+    fields move off `RunContext`'s flat surface into one frozen, extra-forbidding sub-model."""
+
+    # --- [Happy Path] ------------------------------------------------------
+
+    def test_defaults_match_the_previous_flat_defaults_exactly(self) -> None:
+        """D-3: relocation only — every default is byte-identical to the flat field's."""
+        policy = IsolationPolicy()
+        assert policy.enforce_isolation is False
+        assert policy.execution_root is None
+        assert policy.session_isolation is False
+        assert policy.allowed_paths == []
+        assert policy.dal_level is None
+
+    def test_run_context_gets_a_default_policy_without_being_given_one(
+        self, tmp_path: Path
+    ) -> None:
+        """Every minimal-construction call site (the API passes 3 kwargs) keeps working."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        assert isinstance(context.isolation, IsolationPolicy)
+        assert context.isolation.enforce_isolation is False
+
+    # --- [Boundary] --------------------------------------------------------
+
+    def test_allowed_paths_default_factory_is_per_instance(self) -> None:
+        """Carried over from the flat field: two policies must not share one list."""
+        a = IsolationPolicy()
+        a.allowed_paths.append("src/x.py")
+        assert IsolationPolicy().allowed_paths == []
+
+    def test_model_copy_returns_an_independent_instance(self, tmp_path: Path) -> None:
+        """The exact mechanism NFR-8 depends on: a copy-then-reassign never touches the source."""
+        original = IsolationPolicy()
+        updated = original.model_copy(update={"execution_root": tmp_path / "wt"})
+        assert updated is not original
+        assert updated.execution_root == tmp_path / "wt"
+        assert original.execution_root is None
+
+    def test_model_copy_carries_every_unlisted_field_through(self, tmp_path: Path) -> None:
+        """A partial update must not silently reset the fields it does not name."""
+        original = IsolationPolicy(session_isolation=True, allowed_paths=["src/a.py"])
+        updated = original.model_copy(update={"execution_root": tmp_path})
+        assert updated.session_isolation is True
+        assert updated.allowed_paths == ["src/a.py"]
+
+    # --- [Graceful Degradation] -------------------------------------------
+
+    def test_policy_survives_a_shallow_copy_of_its_run_context(self, tmp_path: Path) -> None:
+        """`runner_utils` worktree isolation uses `copy.copy(context)`, NOT `model_copy`.
+        The shallow copy SHARES the policy instance — reassigning the whole attribute on the
+        copy is the only safe update, and it must leave the original's policy untouched."""
+        import copy
+
+        original = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        isolated = copy.copy(original)
+        assert isolated.isolation is original.isolation  # shallow: shared by reference
+
+        isolated.isolation = isolated.isolation.model_copy(
+            update={"execution_root": tmp_path / "wt"}
+        )
+        assert isolated.isolation is not original.isolation
+        assert original.isolation.execution_root is None
+
+    # --- [Hostile / Wrong Input] ------------------------------------------
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        """AD-8: frozen closes the RED-1.3 shallow-copy corruption bug class structurally."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.isolation.execution_root = tmp_path / "wt"
+
+    def test_unknown_kwarg_on_the_policy_raises(self) -> None:
+        """FR-12: `extra="forbid"` — a typo'd kwarg must never be silently dropped."""
+        with pytest.raises(ValidationError):
+            IsolationPolicy(bogus=1)
+
+    def test_unknown_kwarg_on_run_context_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ValidationError):
+            RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", bogus=1)
+
+    def test_old_flat_kwarg_raises_instead_of_being_dropped(self, tmp_path: Path) -> None:
+        """NFR-6 half 1: a missed migration at a CONSTRUCTION site fails loudly."""
+        with pytest.raises(ValidationError):
+            RunContext(
+                project_path=tmp_path, spec_path=tmp_path / "spec.md", enforce_isolation=True
+            )
+
+    def test_old_flat_attribute_read_raises(self, tmp_path: Path) -> None:
+        """NFR-6 half 2: a missed migration at an ATTRIBUTE-READ site fails loudly."""
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("enforce_isolation", "execution_root", "session_isolation", "allowed_paths"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+
+    def test_wrong_types_still_rejected_at_the_new_path(self) -> None:
+        """The two hostile-input guarantees `test_run_context_session_fields` made flatly."""
+        with pytest.raises(ValidationError):
+            IsolationPolicy(session_isolation="yes-please")
+        with pytest.raises(ValidationError):
+            IsolationPolicy(allowed_paths="src/foo.py")  # a bare str, not a list
+
+    def test_isolation_is_not_nullable(self, tmp_path: Path) -> None:
+        """RED-2.3: proves the degenerate `isolation=None` shape is unreachable in production,
+        so `resolve_should_isolate`'s tolerance of it is belt-and-braces, not a live path."""
+        with pytest.raises(ValidationError):
+            RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", isolation=None)

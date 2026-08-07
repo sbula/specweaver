@@ -177,17 +177,18 @@ Starting in Feature 3.26, the Orchestrator supports executing dangerous steps in
 The US-9 Base Integration Contract (`INT-US-09`, container-free) extends this Bouncer so that
 untrusted *execution* — not just file writes — is bounded to the worktree:
 
-- **Execution-boundary hand-off**: `execute_in_sandbox` now also sets `RunContext.execution_root`
+- **Execution-boundary hand-off**: `execute_in_sandbox` now also sets `RunContext.isolation.execution_root`
   to the worktree source tree (previously only `output_dir` was rebound). The two untrusted-execution
   handlers — `BashActionHandler` (`action: bash`) and `ValidateTestsHandler` (`run_tests`/pytest) —
-  build their atom/`SubprocessExecutor` `cwd` from `context.execution_root or context.project_path`,
+  build their atom/`SubprocessExecutor` `cwd` from
+  `context.isolation.execution_root or context.project_path`,
   so an LLM-authored script or test runs with its working directory *inside* the worktree, not the
   real project root. Static-analysis QA (`lint_fix`/ruff, complexity, `tach`) parses but never
   executes the code, so it is intentionally left project-root-bound.
 - **Tri-state `use_worktree`**: the flag is now `bool | None`. `True` forces isolation on, `False`
   forces it off, and **`None` (the default) defers to the US-9 isolation policy**.
 - **Enforcement policy**: set `[sandbox] enforce_worktree_isolation = true` in `specweaver.toml`.
-  The composition root (`sw run`/`sw resume`) resolves it onto `RunContext.enforce_isolation`; the
+  The composition root (`sw run`/`sw resume`) resolves it onto `RunContext.isolation.enforce_isolation`; the
   runner gate then isolates any step whose `use_worktree` is unset. Default off ⇒ behavior is
   byte-identical to before. (Note: this is **container-free**; container QA is a separate opt-in —
   see `execution_mode` — and is *not* activated by this path.)

@@ -91,9 +91,9 @@ Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-2) invoke `
 > [!NOTE]
 > **Execution-root convention under worktree isolation (INT-US-09).** The `SubprocessExecutor`
 > boundary is its constructor `cwd`, fixed at construction. When a step runs under the US-9 worktree
-> sandbox, the runner sets `RunContext.execution_root` to the worktree source tree, and the
+> sandbox, the runner sets `RunContext.isolation.execution_root` to the worktree source tree, and the
 > untrusted-execution handlers (`BashActionHandler`, `ValidateTestsHandler`/`run_tests`) construct
-> their atom `cwd` as `context.execution_root or context.project_path`. So the executor binds inside
+> their atom `cwd` as `context.isolation.execution_root or context.project_path`. So the executor binds inside
 > the worktree, and `.specweaver/scripts/` containment resolves relative to that worktree cwd. When
 > `execution_root` is `None` (no isolation), `cwd` falls back to `project_path` — byte-identical to
 > pre-INT-US-09 behavior. This is container-free host execution; see `pipeline_engine_guide.md` §7.

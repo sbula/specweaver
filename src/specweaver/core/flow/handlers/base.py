@@ -27,6 +27,39 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+class IsolationPolicy(BaseModel):
+    """TECH-006 SF-02 (FR-6): the run's worktree-isolation policy, resolved at the
+    composition root and read by the engine's sandbox paths.
+
+    Frozen on purpose (AD-8). ``runner_utils`` isolates a step/session by taking a
+    ``copy.copy(context)`` — a *shallow* copy, so the copy and the original share this
+    instance by reference. Mutating a field here in place would therefore corrupt the
+    original context too. Frozen turns that mistake into an immediate ``ValidationError``
+    instead of silent corruption: update via
+    ``context.isolation = context.isolation.model_copy(update={...})``, which rebinds the
+    whole attribute on one context only (NFR-8).
+
+    Caveat: ``frozen`` blocks attribute *reassignment*, not mutation of a mutable value —
+    ``policy.allowed_paths.append(...)`` still works. Nothing in ``src/`` does that (the
+    list is only ever replaced wholesale); do not start.
+
+    Attributes:
+        enforce_isolation: INT-US-09 per-step worktree-isolation policy.
+        execution_root: Where untrusted processes bind cwd (worktree); None -> project_path.
+        session_isolation: C-EXEC-06 per-run isolation — the whole run in ONE worktree.
+        allowed_paths: C-EXEC-06 repo-relative paths the end-of-run reconcile may write back.
+        dal_level: DALLevel | None — enforced boundary strictness.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enforce_isolation: bool = False
+    execution_root: Path | None = None
+    session_isolation: bool = False
+    allowed_paths: list[str] = Field(default_factory=list)
+    dal_level: Any = None
+
+
 class RunContext(BaseModel):
     """Execution context passed to every step handler.
 
@@ -40,9 +73,16 @@ class RunContext(BaseModel):
         output_dir: Output directory for generated code/tests.
         plan: Pre-loaded plan content (populated by runner post-step hook).
         analyzer_factory: Optional DI injected AnalyzerFactoryProtocol instance.
+        isolation: Worktree-isolation policy for this run (see ``IsolationPolicy``).
+
+    ``extra="forbid"`` (TECH-006 SF-02, FR-12) is load-bearing, not hygiene: Pydantic's
+    default (``extra="ignore"``) would let a construction site still passing a since-moved
+    flat field silently drop it, leaving the run on a default policy with no error. Forbid
+    turns every missed migration into a ``ValidationError`` at construction, matching the
+    ``AttributeError`` an unmigrated *read* already raises (NFR-6).
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
     project_path: Path
     spec_path: Path
@@ -53,18 +93,7 @@ class RunContext(BaseModel):
     config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
     analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
-    enforce_isolation: bool = (
-        False  # INT-US-09: US-9 per-step worktree-isolation policy (composition root)
-    )
-    execution_root: Path | None = (
-        None  # INT-US-09: where untrusted processes bind cwd (worktree); None -> project_path
-    )
-    session_isolation: bool = (
-        False  # C-EXEC-06: per-run (session) worktree isolation — the whole run in ONE worktree
-    )
-    allowed_paths: list[str] = Field(
-        default_factory=list
-    )  # C-EXEC-06: repo-relative paths the reconcile may write back
+    isolation: IsolationPolicy = Field(default_factory=IsolationPolicy)
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
@@ -85,7 +114,6 @@ class RunContext(BaseModel):
     step_records: list[dict[str, Any]] | None = None
     env_vars: dict[str, str] = Field(default_factory=dict)
     pipeline_name: str | None = None
-    dal_level: Any = None  # DALLevel | None — Enforced boundary strictness
     stale_nodes: set[str] | None = None
     parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
 

@@ -77,7 +77,7 @@ def _bash_step(name: str, script: str, *, use_worktree: bool | None = None) -> P
 
 def _ctx(tmp_path: Path, *, session: bool) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    ctx.session_isolation = session
+    ctx.isolation = ctx.isolation.model_copy(update={"session_isolation": session})
     return ctx
 
 

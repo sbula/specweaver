@@ -17,7 +17,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 
@@ -245,7 +245,7 @@ async def test_symlink_cache_folders(tmp_path: Path):
 async def test_isolation_gate_resolution(
     mock_release, tmp_path: Path, use_worktree, enforce_isolation, expect_isolated
 ):
-    """The gate resolves `step.use_worktree if not None else context.enforce_isolation`."""
+    """The gate resolves `step.use_worktree if not None else context.isolation.enforce_isolation`."""
     from unittest.mock import AsyncMock
 
     step = PipelineStep(
@@ -256,7 +256,7 @@ async def test_isolation_gate_resolution(
         project_path=tmp_path,
         output_dir=tmp_path,
         spec_path=tmp_path / "Spec.md",
-        enforce_isolation=enforce_isolation,
+        isolation=IsolationPolicy(enforce_isolation=enforce_isolation),
     )
     context.pipeline_name = "p"
     passed = StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
@@ -280,14 +280,34 @@ async def test_isolation_gate_resolution(
 
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.release")
-async def test_execute_in_sandbox_rebinds_execution_root(mock_release, tmp_path: Path):
+@pytest.mark.parametrize("preset_allowed", [[], ["src/a.py"], ["src/a.py", "tests/test_a.py"]])
+async def test_execute_in_sandbox_rebinds_execution_root(
+    mock_release, tmp_path: Path, preset_allowed
+):
     """T8: execute_in_sandbox sets the isolated context's execution_root to the worktree
-    source-tree path (so untrusted-execution handlers bind their cwd there, not project_path)."""
+    source-tree path (so untrusted-execution handlers bind their cwd there, not project_path).
+
+    TECH-006 SF-02 CB1 (NFR-8) — this is the direct regression test for the shallow-copy
+    corruption bug class. ``execute_in_sandbox`` isolates via ``copy.copy(context)``, which
+    SHARES the ``IsolationPolicy`` instance between the copy and the original. Asserting only
+    "the handler saw a worktree path" would pass even under a naive in-place mutation that
+    corrupted the original context too, so the structural assertions below (a *different*
+    policy instance reached the handler; the original's ``execution_root`` is still None) are
+    the part that actually proves the ``model_copy``-and-reassign discipline was followed.
+
+    Parametrised over 0/1/N ``allowed_paths`` to prove the unlisted fields survive the copy
+    rather than being reset by the partial update.
+    """
     step = PipelineStep(
         name="s", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
     )
     pipeline = PipelineDefinition(name="p", steps=[step])
-    context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
+    context = RunContext(
+        project_path=tmp_path,
+        output_dir=tmp_path,
+        spec_path=tmp_path / "Spec.md",
+        isolation=IsolationPolicy(allowed_paths=preset_allowed),
+    )
     context.pipeline_name = "p"
 
     def fake_atom_run(self, ctx_dict):
@@ -298,7 +318,9 @@ async def test_execute_in_sandbox_rebinds_execution_root(mock_release, tmp_path:
     seen = {}
 
     async def fake_execute(step_def, ctx):
-        seen["execution_root"] = ctx.execution_root
+        seen["execution_root"] = ctx.isolation.execution_root
+        seen["policy"] = ctx.isolation
+        seen["allowed_paths"] = ctx.isolation.allowed_paths
         return StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
 
     with (
@@ -316,8 +338,20 @@ async def test_execute_in_sandbox_rebinds_execution_root(mock_release, tmp_path:
     # The isolated context handed to the handler points execution_root inside the worktree.
     assert seen["execution_root"] is not None
     assert ".worktrees" in str(seen["execution_root"])
-    # The ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
-    assert context.execution_root is None
+    # NFR-8: the policy the handler saw is a DIFFERENT INSTANCE from the one the original
+    # context holds. `copy.copy` leaves them shared, so an in-place update would make these
+    # identical AND would have leaked the worktree path onto the original — this identity
+    # check is what makes the assertion below non-vacuous.
+    #
+    # Compared against the ORIGINAL's *current* policy, deliberately not against a snapshot
+    # taken before the run: `PipelineRunner.__init__` legitimately rebinds `context.isolation`
+    # once to cache the resolved `dal_level`, so a pre-run snapshot is stale by this point and
+    # would fail for a reason unrelated to isolation.
+    assert seen["policy"] is not context.isolation
+    # NFR-8: the ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
+    assert context.isolation.execution_root is None
+    # The partial update carried every unlisted field through unchanged.
+    assert seen["allowed_paths"] == preset_allowed
 
 
 # ---------------------------------------------------------------------------

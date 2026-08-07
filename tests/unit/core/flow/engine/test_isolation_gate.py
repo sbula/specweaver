@@ -14,14 +14,22 @@ from specweaver.core.flow.engine.runner import resolve_should_isolate
 
 class TestResolveShouldIsolate:
     """Resolution: explicit per-step `use_worktree` (True/False) wins; `None` (or a
-    missing attribute) defers to `context.enforce_isolation`; both reads are defensive."""
+    missing attribute) defers to `context.isolation.enforce_isolation`; every read is
+    defensive.
+
+    TECH-006 SF-02 CB1: the policy moved onto a nested `isolation` sub-model, so the read
+    is now a two-hop `getattr`. That splits the single "attribute absent" case this class
+    used to have into three structurally distinct absence shapes — all three are covered
+    below deliberately, because a mechanical one-for-one reshape would have kept the suite
+    green while silently testing only the last of them."""
 
     # --- [Happy Path] None defers to the policy ---
 
     def test_step_none_policy_on_isolates(self) -> None:
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=None), SimpleNamespace(enforce_isolation=True)
+                SimpleNamespace(use_worktree=None),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
             )
             is True
         )
@@ -29,7 +37,8 @@ class TestResolveShouldIsolate:
     def test_step_none_policy_off_host(self) -> None:
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=None), SimpleNamespace(enforce_isolation=False)
+                SimpleNamespace(use_worktree=None),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=False)),
             )
             is False
         )
@@ -39,7 +48,8 @@ class TestResolveShouldIsolate:
     def test_step_true_overrides_policy_off(self) -> None:
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=True), SimpleNamespace(enforce_isolation=False)
+                SimpleNamespace(use_worktree=True),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=False)),
             )
             is True
         )
@@ -47,23 +57,51 @@ class TestResolveShouldIsolate:
     def test_step_false_overrides_policy_on(self) -> None:
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=False), SimpleNamespace(enforce_isolation=True)
+                SimpleNamespace(use_worktree=False),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
             )
             is False
         )
 
     # --- [Graceful Degradation / Hostile] missing attributes must never raise ---
 
-    def test_context_missing_enforce_isolation_defaults_host(self) -> None:
-        # step None + a context that lacks enforce_isolation entirely → host, no AttributeError.
+    # TECH-006 SF-02 CB1: at the nested path there are THREE distinct absence shapes where
+    # there used to be one. Each gets its own test — the two-hop `getattr` has two places to
+    # fail, and only the third shape is what a naive reshape of the old test would produce.
+
+    def test_context_missing_isolation_entirely_defaults_host(self) -> None:
+        # Shape 1: no `isolation` attribute at all → host, no AttributeError.
         assert (
             resolve_should_isolate(SimpleNamespace(use_worktree=None), SimpleNamespace()) is False
+        )
+
+    def test_context_isolation_is_none_defaults_host(self) -> None:
+        # Shape 2: `isolation` present but None. Unreachable for a real RunContext (the field
+        # is non-nullable — asserted in test_base.py::test_isolation_is_not_nullable), so this
+        # guards the duck-typed contract only: the INNER getattr is what saves it.
+        assert (
+            resolve_should_isolate(
+                SimpleNamespace(use_worktree=None), SimpleNamespace(isolation=None)
+            )
+            is False
+        )
+
+    def test_context_isolation_missing_enforce_isolation_defaults_host(self) -> None:
+        # Shape 3: sub-object present, field absent → host.
+        assert (
+            resolve_should_isolate(
+                SimpleNamespace(use_worktree=None), SimpleNamespace(isolation=SimpleNamespace())
+            )
+            is False
         )
 
     def test_step_missing_use_worktree_defers_to_policy(self) -> None:
         # a step object with no use_worktree attribute → treated as None → policy decides.
         assert (
-            resolve_should_isolate(SimpleNamespace(), SimpleNamespace(enforce_isolation=True))
+            resolve_should_isolate(
+                SimpleNamespace(),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
+            )
             is True
         )
 
@@ -78,7 +116,8 @@ class TestResolveShouldIsolate:
 
     def test_returns_strict_bool_true(self) -> None:
         r = resolve_should_isolate(
-            SimpleNamespace(use_worktree=None), SimpleNamespace(enforce_isolation=True)
+            SimpleNamespace(use_worktree=None),
+            SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
         )
         assert r is True and isinstance(r, bool)
 
@@ -93,7 +132,8 @@ class TestResolveShouldIsolate:
         # 0 is not None → return bool(0)=False; must NOT fall through to enforce_isolation.
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=0), SimpleNamespace(enforce_isolation=True)
+                SimpleNamespace(use_worktree=0),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
             )
             is False
         )
@@ -101,7 +141,8 @@ class TestResolveShouldIsolate:
     def test_step_empty_string_is_not_none_returns_false_not_policy(self) -> None:
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=""), SimpleNamespace(enforce_isolation=True)
+                SimpleNamespace(use_worktree=""),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True)),
             )
             is False
         )
@@ -110,7 +151,8 @@ class TestResolveShouldIsolate:
         # 1 is not None → bool(1)=True → isolate, without consulting the policy.
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=1), SimpleNamespace(enforce_isolation=False)
+                SimpleNamespace(use_worktree=1),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=False)),
             )
             is True
         )
@@ -119,7 +161,8 @@ class TestResolveShouldIsolate:
 
     def test_context_truthy_nonbool_coerced_true(self) -> None:
         r = resolve_should_isolate(
-            SimpleNamespace(use_worktree=None), SimpleNamespace(enforce_isolation="yes")
+            SimpleNamespace(use_worktree=None),
+            SimpleNamespace(isolation=SimpleNamespace(enforce_isolation="yes")),
         )
         assert r is True and isinstance(r, bool)
 
@@ -131,7 +174,8 @@ class TestResolveShouldIsolate:
         # attribute present but explicitly None → bool(None)=False → host.
         assert (
             resolve_should_isolate(
-                SimpleNamespace(use_worktree=None), SimpleNamespace(enforce_isolation=None)
+                SimpleNamespace(use_worktree=None),
+                SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=None)),
             )
             is False
         )
@@ -140,7 +184,12 @@ class TestResolveShouldIsolate:
 
     def test_step_def_is_none_defers_to_policy(self) -> None:
         # getattr(None, "use_worktree", None) -> None -> defer to the policy.
-        assert resolve_should_isolate(None, SimpleNamespace(enforce_isolation=True)) is True
+        assert (
+            resolve_should_isolate(
+                None, SimpleNamespace(isolation=SimpleNamespace(enforce_isolation=True))
+            )
+            is True
+        )
 
     def test_context_is_none_defaults_host(self) -> None:
         assert resolve_should_isolate(SimpleNamespace(use_worktree=None), None) is False

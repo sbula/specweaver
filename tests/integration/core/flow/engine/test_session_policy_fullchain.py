@@ -120,8 +120,8 @@ def test_toml_session_policy_drives_isolated_run_and_authorized_reconcile(tmp_pa
 
     # THE composition-root seam under test: policy + allow-list are produced here.
     apply_session_policy(context, settings, _LOG)
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/foo.py", "tests/test_foo.py"]
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/foo.py", "tests/test_foo.py"]
 
     run_state = asyncio.run(
         PipelineRunner(_pipeline(), context, registry=StepHandlerRegistry()).run()
@@ -151,5 +151,5 @@ def test_toml_session_policy_off_runs_without_isolation(tmp_path: Path) -> None:
     )
     apply_session_policy(context, settings, _LOG)
 
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []

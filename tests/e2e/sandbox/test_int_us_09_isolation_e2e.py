@@ -106,7 +106,9 @@ def test_policy_enforced_runs_bash_bounded_to_worktree(tmp_path: Path) -> None:
     _commit_project_with_script(tmp_path)
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    context.enforce_isolation = True  # the policy resolved at the composition root
+    context.isolation = context.isolation.model_copy(
+        update={"enforce_isolation": True}
+    )  # the policy resolved at the composition root
     run_state = _run(PipelineDefinition(name="p", steps=[_bash_step(use_worktree=None)]), context)
 
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -142,7 +144,9 @@ def test_run_tests_pytest_executes_bounded_to_worktree(tmp_path: Path) -> None:
     _commit_pytest_project(tmp_path)
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    context.enforce_isolation = True  # the US-9 policy
+    context.isolation = context.isolation.model_copy(
+        update={"enforce_isolation": True}
+    )  # the US-9 policy
     step = PipelineStep(
         name="qa",
         action=StepAction.VALIDATE,

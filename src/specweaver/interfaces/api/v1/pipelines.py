@@ -82,7 +82,7 @@ async def start_pipeline_run(
 
     # Build context
     # INT-US-09 Backlog: the API run sites (this one + resume_run,
-    # submit_gate_decision) do not yet set `context.enforce_isolation` from
+    # submit_gate_decision) do not yet set `context.isolation.enforce_isolation` from
     # `await load_settings_async(...).sandbox.enforce_worktree_isolation`, so
     # API-launched runs currently ignore the worktree-isolation policy. The CLI
     # `sw run`/`resume` paths DO resolve it. Wiring here is a small follow-up

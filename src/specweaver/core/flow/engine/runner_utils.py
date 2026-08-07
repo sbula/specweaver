@@ -21,7 +21,7 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     """INT-US-09 tri-state worktree-isolation gate resolution.
 
     An explicit per-step ``use_worktree`` (``True``/``False``) wins; ``None`` — or a
-    missing attribute — defers to the US-9 isolation policy (``context.enforce_isolation``,
+    missing attribute — defers to the US-9 isolation policy (``context.isolation.enforce_isolation``,
     resolved at the composition root). Both reads are defensive (``getattr`` with a default)
     so a partially-populated step or context never crashes the runner, and the result is a
     strict ``bool``.
@@ -29,7 +29,10 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     step_val = getattr(step_def, "use_worktree", None)
     if step_val is not None:
         return bool(step_val)
-    return bool(getattr(context, "enforce_isolation", False))
+    # TECH-006 SF-02: policy moved onto `context.isolation`, so the read is now two hops — both
+    # defensive, because this function is duck-typed and callers pass `None`. It cannot mask a
+    # migration miss: `RunContext.isolation` is non-nullable, so a real context always has it.
+    return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
 def _derive_allowed_paths(spec_path: Path) -> list[str]:
@@ -80,6 +83,9 @@ def apply_session_policy(
     C2 (no half-apply): the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the
     dangerous "session on, empty allow-list" state that would drop all generated code.
+    TECH-006 SF-02 strengthens this: both fields now land in ONE ``model_copy``, so the
+    half-applied state is not merely avoided by ordering — it is unrepresentable. Keep it
+    one call; splitting it into two would silently repeal the guarantee.
     Best-effort: never raises (the composition root also wraps this call defensively).
     """
     try:
@@ -88,12 +94,13 @@ def apply_session_policy(
         if not session_on and dal_auto_escalate:
             session_on = _dal_requires_isolation(context, sandbox, logger)
         if not session_on:
-            context.session_isolation = False
+            context.isolation = context.isolation.model_copy(update={"session_isolation": False})
             return
         override = list(getattr(sandbox, "session_allowed_paths", None) or [])
         allowed = override or _derive_allowed_paths(context.spec_path)
-        context.session_isolation = True
-        context.allowed_paths = allowed
+        context.isolation = context.isolation.model_copy(
+            update={"session_isolation": True, "allowed_paths": allowed}
+        )
     except Exception:  # best-effort — a policy-resolution failure must never crash a run
         logger.debug(
             "Could not apply per-run session-isolation policy; leaving it off.",
@@ -101,28 +108,42 @@ def apply_session_policy(
         )
 
 
+def seed_dal_level(context: RunContext) -> Any:
+    """Resolve the run's DAL onto ``context.isolation``, caching it, and return it.
+
+    Target is ``spec_path`` when it exists, else ``project_path``. Idempotent — an already-cached
+    ``dal_level`` is returned untouched, so the second caller never re-resolves.
+
+    One definition, two callers (``PipelineRunner.__init__`` per SF-2 FR-3, and
+    ``_dal_requires_isolation``), which previously each carried their own copy of this rule.
+    """
+    if context.isolation.dal_level is not None:
+        return context.isolation.dal_level
+
+    from specweaver.core.config.dal_resolver import DALResolver
+
+    target = context.spec_path if context.spec_path.exists() else context.project_path
+    dal = DALResolver(context.project_path).resolve(target)
+    context.isolation = context.isolation.model_copy(update={"dal_level": dal})
+    return dal
+
+
 def _dal_requires_isolation(context: RunContext, sandbox: Any, logger: logging.Logger) -> bool:
     """INT-US-03 SF-03 (AD-8): does the touched code's DAL meet the escalation threshold?
 
-    Reads ``auto_isolate_min_dal`` (a ``DALLevel`` name, or ``"off"`` to disable). Resolves
-    the run's DAL the same way ``PipelineRunner`` does (``spec_path`` if it exists, else
-    ``project_path``), reusing ``context.dal_level`` when already set and caching the result
-    back onto it so the runner does not re-resolve. Returns True iff the resolved DAL is at
-    or above the threshold in strictness. Any failure ⇒ False (the caller stays on host).
+    Reads ``auto_isolate_min_dal`` (a ``DALLevel`` name, or ``"off"`` to disable), then defers
+    to ``seed_dal_level`` for the run's DAL (resolving and caching it if the runner has not
+    already). Returns True iff the resolved DAL is at or above the threshold in strictness.
+    Any failure ⇒ False (the caller stays on host).
     """
     from specweaver.commons.enums.dal import DALLevel
-    from specweaver.core.config.dal_resolver import DALResolver
 
     threshold_raw = getattr(sandbox, "auto_isolate_min_dal", "DAL_B")
     if not threshold_raw or str(threshold_raw).lower() == "off":
         return False
     threshold = DALLevel(threshold_raw)
 
-    dal = getattr(context, "dal_level", None)
-    if dal is None:
-        target = context.spec_path if context.spec_path.exists() else context.project_path
-        dal = DALResolver(context.project_path).resolve(target)
-        context.dal_level = dal  # cache — the runner skips its own resolution
+    dal = seed_dal_level(context)
     if dal is None or dal.rank < threshold.rank:
         return False
 
@@ -159,7 +180,7 @@ async def execute_run(
     Fail-closed: a non-git project raises. Default-off: the path is byte-identical to before.
     """
     context = runner._context
-    if not getattr(context, "session_isolation", False):
+    if not context.isolation.session_isolation:
         return cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
 
     import copy
@@ -186,9 +207,13 @@ async def execute_run(
 
     isolated = copy.copy(original)
     isolated.project_path = original.project_path / wt_path
-    isolated.execution_root = isolated.project_path
     isolated.output_dir = None
-    isolated.enforce_isolation = False  # no per-step isolation nested inside the session
+    # NFR-8: `copy.copy` is SHALLOW, so `isolated.isolation` IS `original.isolation`. Rebind the
+    # whole attribute on the copy — mutating a field in place would corrupt the original too
+    # (frozen, so it raises). `enforce_isolation=False`: no per-step isolation nested in a session.
+    isolated.isolation = isolated.isolation.model_copy(
+        update={"execution_root": isolated.project_path, "enforce_isolation": False}
+    )
     runner._context = isolated
     runner._session_active = True
     try:
@@ -210,7 +235,11 @@ async def execute_run(
                     f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}"
                 )
             merge_res = atom.run(
-                {"intent": "strip_merge", "branch": branch, "allowed_paths": original.allowed_paths}
+                {
+                    "intent": "strip_merge",
+                    "branch": branch,
+                    "allowed_paths": original.isolation.allowed_paths,
+                }
             )
             if merge_res.status != AtomStatus.SUCCESS:
                 raise RuntimeError(
@@ -380,7 +409,11 @@ async def execute_in_sandbox(
     # INT-US-09: rebind the execution root to the worktree source tree so untrusted-
     # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
     # cwd inside the worktree rather than against the real project root.
-    isolated_context.execution_root = context.project_path / wt_path
+    # NFR-8: `copy.copy` is shallow, so rebind the whole `isolation` attribute on the copy
+    # rather than mutating the policy instance both contexts still share.
+    isolated_context.isolation = isolated_context.isolation.model_copy(
+        update={"execution_root": context.project_path / wt_path}
+    )
     isolated_context.env_vars = context.env_vars.copy()
 
     try:
@@ -395,7 +428,7 @@ async def execute_in_sandbox(
             {
                 "intent": "strip_merge",
                 "branch": branch,
-                "allowed_paths": getattr(context, "allowed_paths", []),
+                "allowed_paths": context.isolation.allowed_paths,
             }
         )
         if strip_res.status != AtomStatus.SUCCESS:

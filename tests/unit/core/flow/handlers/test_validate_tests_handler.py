@@ -152,7 +152,7 @@ class TestGetAtomExecutionRoot:
         handler = ValidateTestsHandler()
         wt = tmp_path / ".worktrees" / "task-1"
         context = _ctx(tmp_path)
-        context.execution_root = wt
+        context.isolation = context.isolation.model_copy(update={"execution_root": wt})
         assert context.config is None
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
@@ -162,7 +162,7 @@ class TestGetAtomExecutionRoot:
         # [Boundary/backward-compat] non-isolated step → cwd unchanged.
         handler = ValidateTestsHandler()
         context = _ctx(tmp_path)
-        assert context.execution_root is None
+        assert context.isolation.execution_root is None
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
@@ -175,7 +175,7 @@ class TestGetAtomExecutionRoot:
         handler = ValidateTestsHandler()
         wt = tmp_path / ".worktrees" / "task-1"
         context = _ctx(tmp_path)
-        context.execution_root = wt
+        context.isolation = context.isolation.model_copy(update={"execution_root": wt})
         context.config = SpecWeaverSettings(
             llm={"model": "test-model"}, sandbox=SandboxSettings(enforce_worktree_isolation=True)
         )

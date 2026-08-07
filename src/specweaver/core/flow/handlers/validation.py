@@ -466,7 +466,7 @@ class ValidateTestsHandler:
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         sandbox_settings = context.config.sandbox if context.config else None
-        cwd = context.execution_root or context.project_path
+        cwd = context.isolation.execution_root or context.project_path
         return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:

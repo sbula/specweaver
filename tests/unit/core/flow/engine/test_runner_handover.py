@@ -8,6 +8,7 @@ import pytest
 
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus
+from specweaver.core.flow.handlers.base import IsolationPolicy
 
 
 class MockPath:
@@ -34,7 +35,13 @@ class MockContext:
     project_path = MockPath()
     spec_path = MockPath()
     db = MagicMock()
-    dal_level = "DAL_A"
+    # TECH-006 SF-02 CB1: `dal_level` moved onto the nested `isolation` policy. It is set here
+    # (as before) purely so `PipelineRunner.__init__` sees a resolved DAL and skips its own
+    # `DALResolver` pass — this duck type has no real project on disk to resolve against.
+    # A REAL `IsolationPolicy` rather than another stand-in: the engine now reads several of
+    # its fields non-defensively (NFR-6), so a partial namespace would only re-break here the
+    # next time one of them is read.
+    isolation = IsolationPolicy(dal_level="DAL_A")
 
 
 class MockPipeline:

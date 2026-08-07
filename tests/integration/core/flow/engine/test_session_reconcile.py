@@ -69,8 +69,9 @@ def _bash(name: str, script: str) -> PipelineStep:
 
 def _ctx(tmp_path: Path, *, allowed: list[str]) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", config=MagicMock())
-    ctx.session_isolation = True
-    ctx.allowed_paths = allowed
+    ctx.isolation = ctx.isolation.model_copy(
+        update={"session_isolation": True, "allowed_paths": allowed}
+    )
     return ctx
 
 

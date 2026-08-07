@@ -261,7 +261,7 @@ class TestRunContextConfigWiring:
     def test_run_resolves_isolation_policy_default_off(self, tmp_path: Path) -> None:
         context = self._run_and_capture_context(tmp_path)
         # Policy resolved onto a dedicated flag; default off (backward-compatible).
-        assert context.enforce_isolation is False
+        assert context.isolation.enforce_isolation is False
 
     def test_run_stays_container_neutral(self, tmp_path: Path) -> None:
         # Guard (user decision): we do NOT populate context.config on sw run, so
@@ -306,7 +306,7 @@ class TestRunContextConfigWiring:
 
         assert result.exit_code == 0, result.stdout  # run did NOT crash
         context = mock_runner_class.call_args.args[1]
-        assert context.enforce_isolation is False  # graceful fallback to default (off)
+        assert context.isolation.enforce_isolation is False  # graceful fallback to default (off)
         assert context.config is None
 
 
@@ -373,7 +373,7 @@ class TestResumeContextConfigWiring:
         context = self._resume_and_capture_context(tmp_path, monkeypatch)
         # sentinel settings enable the policy → resume wires it onto the flag,
         # while keeping context.config None (container-neutral).
-        assert context.enforce_isolation is True
+        assert context.isolation.enforce_isolation is True
         assert context.config is None
 
 

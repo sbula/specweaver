@@ -26,9 +26,9 @@ def test_pipeline_runner_injects_dal_level(mock_project_path: Path):
     pipeline = MagicMock()
     _ = PipelineRunner(pipeline=pipeline, context=context)
     # Runner calls DALResolver internally and defaults to the project root context
-    assert context.dal_level is not None
-    assert context.dal_level.value == "DAL_D"
-    assert not context.dal_level.is_strict
+    assert context.isolation.dal_level is not None
+    assert context.isolation.dal_level.value == "DAL_D"
+    assert not context.isolation.dal_level.is_strict
 
 
 def test_pipeline_runner_injects_strict_dal_level(tmp_path: Path):
@@ -40,9 +40,9 @@ def test_pipeline_runner_injects_strict_dal_level(tmp_path: Path):
     context = RunContext(project_path=proj, spec_path=proj / "spec.yaml")
     pipeline = MagicMock()
     _ = PipelineRunner(pipeline=pipeline, context=context)
-    assert context.dal_level is not None
-    assert context.dal_level.value == "DAL_A"
-    assert context.dal_level.is_strict
+    assert context.isolation.dal_level is not None
+    assert context.isolation.dal_level.value == "DAL_A"
+    assert context.isolation.dal_level.is_strict
 
 
 def test_pipeline_runner_passes_dal_level_to_context(mock_project_path: Path):
@@ -54,5 +54,5 @@ def test_pipeline_runner_passes_dal_level_to_context(mock_project_path: Path):
     pipeline.steps = []
     _ = PipelineRunner(pipeline=pipeline, context=context)
 
-    assert context.dal_level is not None
-    assert context.dal_level.value == "DAL_D"
+    assert context.isolation.dal_level is not None
+    assert context.isolation.dal_level.value == "DAL_D"

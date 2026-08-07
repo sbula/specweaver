@@ -316,7 +316,9 @@ def _execute_run(  # noqa: C901
     # failure must never crash a run — the policies fall back to their defaults (off).
     try:
         _settings = load_settings(db, project_path.name)
-        context.enforce_isolation = _settings.sandbox.enforce_worktree_isolation
+        context.isolation = context.isolation.model_copy(
+            update={"enforce_isolation": _settings.sandbox.enforce_worktree_isolation}
+        )
         apply_session_policy(context, _settings, logger)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(
@@ -521,7 +523,9 @@ def resume(  # noqa: C901
     # failure must never crash a run — the policies fall back to their defaults (off).
     try:
         _settings = load_settings(db, project_path.name)
-        context.enforce_isolation = _settings.sandbox.enforce_worktree_isolation
+        context.isolation = context.isolation.model_copy(
+            update={"enforce_isolation": _settings.sandbox.enforce_worktree_isolation}
+        )
         apply_session_policy(context, _settings, logger)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(

@@ -90,31 +90,31 @@ def _run_and_capture_context(
 def test_dal_b_project_auto_enables_session_isolation(tmp_path) -> None:
     """[Happy] a DAL_B project → session isolation auto-on + derived allow-list."""
     context = _run_and_capture_context(tmp_path, dal="DAL_B")
-    assert context.session_isolation is True
-    assert context.allowed_paths == ["src/greeter.py", "tests/test_greeter.py"]
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/greeter.py", "tests/test_greeter.py"]
 
 
 def test_small_project_without_dal_marker_stays_on_host(tmp_path) -> None:
     """[Boundary] no DAL marker (small project) → session off, host mode, allow-list empty."""
     context = _run_and_capture_context(tmp_path, dal=None)
-    assert context.session_isolation is False
-    assert context.allowed_paths == []
+    assert context.isolation.session_isolation is False
+    assert context.isolation.allowed_paths == []
 
 
 def test_low_dal_project_stays_on_host(tmp_path) -> None:
     """[Boundary] DAL_D is below the DAL_B threshold → session off."""
     context = _run_and_capture_context(tmp_path, dal="DAL_D")
-    assert context.session_isolation is False
+    assert context.isolation.session_isolation is False
 
 
 def test_threshold_off_disables_escalation_even_for_dal_a(tmp_path) -> None:
     """[Boundary] auto_isolate_min_dal='off' → no escalation even for DAL_A."""
     context = _run_and_capture_context(tmp_path, dal="DAL_A", min_dal="off")
-    assert context.session_isolation is False
+    assert context.isolation.session_isolation is False
 
 
 def test_dal_a_but_non_git_project_degrades_to_host(tmp_path) -> None:
     """[Degradation/Q3] a high-DAL but NON-git project degrades to host — auto-escalation
     must never break `sw implement`."""
     context = _run_and_capture_context(tmp_path, dal="DAL_A", git=False)
-    assert context.session_isolation is False
+    assert context.isolation.session_isolation is False

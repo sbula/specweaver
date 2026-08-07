@@ -30,6 +30,7 @@ from specweaver.core.flow.engine.runner_utils import (
     _now_iso,
     execute_run,
     resolve_should_isolate,
+    seed_dal_level,
     setup_sandbox_caches,
     verify_vault_security,
 )
@@ -82,20 +83,12 @@ class PipelineRunner:
         # INT-US-21 SF-03 CB-2 (R-13) — see `current_run_id`.
         self._current_run_id: str | None = None
 
-        from specweaver.core.config.dal_resolver import DALResolver
         from specweaver.core.flow.engine.routers import RouterEvaluator
 
         self._router_evaluator = RouterEvaluator()
 
         # SF-2 (FR-3): Intrinsically load the DALLevel of the execution target
-        if getattr(self._context, "dal_level", None) is None:
-            resolver = DALResolver(self._context.project_path)
-            target = (
-                self._context.spec_path
-                if self._context.spec_path.exists()
-                else self._context.project_path
-            )
-            self._context.dal_level = resolver.resolve(target)
+        seed_dal_level(self._context)
 
     def _setup_sandbox_caches(self, wt_dir: str) -> None:
         setup_sandbox_caches(self._context, wt_dir, logger)
