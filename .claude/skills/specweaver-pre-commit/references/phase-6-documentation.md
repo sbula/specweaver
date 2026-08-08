@@ -1,5 +1,5 @@
 ---
-description: "Phase 6: Update documentation — test matrix, README, quickstart, roadmap, architecture reference, dev guides, user guides."
+description: "Phase 6: Update documentation — test matrix, README, roadmap, architecture docs, dev guides, user guides."
 ---
 
 # Phase 6: Documentation Updates
@@ -8,10 +8,8 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
 
 6.3. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
      - `README.md` — updating features list, CLI commands table, project structure, test counts
-     - `docs/quickstart.md` — new workflows or commands
-     - `docs/testing_guide.md` — new test patterns or quality gates
+     - `docs/dev_guides/testing_guide.md` — new test patterns or quality gates
      - `docs/roadmap/master_story_roadmap.md and docs/roadmap/capability_matrix.md` — updating the feature's completion status and timeline
-     - `docs/developer_guide.html` - add diagrams and short descriptions for new/updated feature
      - `docs/roadmap/topics/topic_*.md` — mark milestone tracking and tables
      - `docs/roadmap/master_story_roadmap.md`
      - `docs/roadmap/features/[Topic]/[ID]/[ID]_implementation_plan.md` — The specific plan for this feature MUST be updated to reflect what was actually implemented (e.g. check off boxes, add notes on deviations).
@@ -21,11 +19,15 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
      - **[🚨 PROOF MANDATE]**: If you change a status to `🟢 Completed` or check an `[x]` box, you **MUST** paste the exact filepath of the passing E2E integration test into the `Verifiable Proof:` field for that Story or Add-On. Do not check the box if no E2E test exists.
      - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
 
-6.3. **MANDATORY: Update the architecture reference and developer guide** if this feature
+6.3. **MANDATORY: Update the architecture documentation** if this feature
      changed any module placement, dependency direction, layer boundaries, security
      patterns, or dispatch mechanisms. You MUST explicitly open, read, and update these:
-     - `docs/architecture/architecture_reference.md`
-     - `docs/developer_guide.html`
+     - `docs/architecture/03_system_topology/module_dependency_graph.md` — module placement
+     - `docs/architecture/03_system_topology/hard_dependency_rules.md` — dependency direction,
+       layer boundaries
+     - `docs/architecture/06_lessons_and_future/anti_patterns.md` — new anti-patterns
+     - `docs/architecture/06_lessons_and_future/known_boundary_violations.md` — violations you
+       recorded rather than fixed
      
      Add new anti-patterns discovered during this feature. Update the sub-layer
      structure diagram if new modules were added or moved.

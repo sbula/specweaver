@@ -8,10 +8,11 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
 > **Autonomy vs. HITL:**
 > Execute the architecture verifications autonomously, but you MUST STOP and present any findings to the user. NEVER bypass the user review of violations.
 
-1.1. Read the architecture reference in full:
-     ```
-     docs/architecture/architecture_reference.md
-     ```
+1.1. Read the architecture documentation this phase depends on, in full:
+     - `docs/architecture/03_system_topology/module_dependency_graph.md` — module map (1.3)
+     - `docs/architecture/03_system_topology/hard_dependency_rules.md` — dependency rules (1.3, 1.5)
+     - `docs/architecture/01_foundational_principles/archetypes.md` — archetype constraints (1.3)
+     - `docs/architecture/06_lessons_and_future/anti_patterns.md` — known anti-patterns (1.3, 1.4)
 
 1.2. Identify ALL source files that were created or modified for this feature.
 
@@ -33,7 +34,10 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
      - Is the new code named by what the *agent does* ("research") rather than
        what the *code is* ("filesystem search")? If so, it likely belongs in an
        existing module.
-     - Check the Feature Map in the architecture reference for precedent.
+     - Check `docs/architecture/02_bounded_contexts/legacy_feature_map.md` for precedent. It is a
+       historical record: it documents Phase 1–3 placement reasoning against a directory layout
+       that predates the current `src/specweaver/` tree, so read it for *why a thing was put
+       where it was*, not to locate files.
 
      > A feature may look correct in isolation, but the whole picture may reveal
      > a better home already exists. Always verify against the full architecture
@@ -60,9 +64,9 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
 
 1.8. For EACH violation found (whether pre-existing or newly introduced):
      - **Fix it** if possible within the scope of this feature.
-     - If the fix requires a separate task, **document the violation** in the
-       architecture reference (`docs/architecture/architecture_reference.md`)
-       under "Known Boundary Violations" with: what, where, which rule is broken.
+     - If the fix requires a separate task, **record the violation** in the live ledger,
+       `docs/architecture/06_lessons_and_future/known_boundary_violations.md`, with: what,
+       where, which rule is broken.
      - **No violation may be silently skipped.** Every issue must be either
        fixed or documented — this is non-negotiable.
 
@@ -70,8 +74,9 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
      - Do NOT stop immediately if architecture violations are found.
      - Instead, document the architecture findings and PROCEED to Phase 2 (Test Gap Analysis).
      - At the end of Phase 2, present a COMBINED analysis containing both the Architecture Violations and the Test Gap Analysis.
-     - > [!CAUTION]
-       > **FORMAT EXCEPTION:** You MUST NOT write this combined analysis into a file or system Artifact! You MUST print the full Background, Architecture Findings, Coverage Matrix, Options, Analysis, and Proposal DIRECTLY into your conversational chat response.
+     - **Format:** §2.8 of `phase-2-test-gap.md` is the single authority on how that combined
+       analysis is presented. Do not restate it here — two copies of a format rule is how this
+       instruction came to contradict itself.
 
 > [!CAUTION]
 > **HARD GATE RELOCATED:** The hard stop has been moved to the end of Phase 2. You may proceed directly to Phase 2.

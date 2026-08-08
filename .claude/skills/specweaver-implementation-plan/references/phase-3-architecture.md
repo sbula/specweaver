@@ -19,7 +19,9 @@ description: "Phase 3: Architecture Verification — verify layer placement, dep
      - **Dependencies**: Importing from other modules (e.g., `loom/`, `cli/`).
      - **Domain Topic (Semantic Cohesion)**: The core subject matter of the computation (e.g., Graph Topology vs. Financial Math).
      
-     For every mechanism identified, check the `context.yaml` and `architecture_reference.md` definitions for the target module:
+     For every mechanism identified, check the target module's `context.yaml` against
+     `docs/architecture/03_system_topology/context_yaml_spec.md` (what the fields mean) and
+     `docs/architecture/03_system_topology/hard_dependency_rules.md` (which combinations are legal):
      - If the module is `pure-logic`, it strictly forbids ALL I/O, Execution, and State mechanisms.
      - If the module `forbids: [specweaver/loom/*]`, it strictly forbids Execution.
      - If the module `forbids: [specweaver/llm]`, it strictly forbids LLM/AI.

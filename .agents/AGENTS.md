@@ -43,7 +43,8 @@ skip or reorder phases, and never bypass a HITL gate.
 
 Before modifying ANY module, you MUST:
 1. Read its `context.yaml` to understand `purpose`, `archetype`, `consumes`, and `forbids`.
-2. Read `docs/architecture/architecture_reference.md` for the module map and dependency rules.
+2. Read `docs/architecture/03_system_topology/module_dependency_graph.md` for the module map and
+   `docs/architecture/03_system_topology/hard_dependency_rules.md` for the dependency rules.
 3. Read relevant files in `docs/dev_guides/` and `docs/user_guides/` for established patterns.
 4. Read the design doc's FRs, NFRs, Architectural Decisions (ADs), and Risk/Trade-off Tables (RTs) before any implementation work.
 

@@ -122,12 +122,19 @@ python scripts/quality.py cb --only useless_asserts,test_basenames
 
 2.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
 2.7. Present the FULL list — do NOT limit to 10 items.
-2.8. **STOP and wait for the HITL response.** Present the gap analysis.
+2.8. **STOP and wait for the HITL response.** Present the combined analysis — the Architecture
+     Findings deferred from Phase 1 (§1.9) together with this phase's gap analysis. This is the
+     single authority on that format; §1.9 defers to it.
      > [!CAUTION]
-     > You MUST write the test gap analysis into a system Artifact (using `write_to_file` with `IsArtifact: true`)!
-     > You MUST NOT print the Coverage Matrix or Test Stories directly into your conversational chat response. The user needs the Artifact to leave line-by-line comments.
+     > You MUST write the combined analysis into a **reviewable document the user can comment on
+     > line by line** — whatever this harness offers for that. You MUST NOT print the Coverage
+     > Matrix or Test Stories directly into your conversational chat response.
+     >
+     > The requirement is line-by-line commentability, not a particular tool. Name no tool here:
+     > an instruction naming a mechanism that does not exist in the harness running it is the
+     > same rot as a path that does not resolve.
 
 > [!CAUTION]
-> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories as an Artifact. 
-> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls after generating the Artifact. You must end your response and wait for the user to type a reply.
+> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories in that document.
+> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls after producing it. You must end your response and wait for the user to type a reply.
 > You MUST NOT proceed to Phase 3 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.

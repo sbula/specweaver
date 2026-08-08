@@ -20,10 +20,19 @@ A.1. Search for all modules, files, classes, and patterns related to the feature
      - Use `list_dir` to explore relevant package directories.
      - Use `view_file` to read any relevant source files found.
 
-A.2. Read the architecture reference in full:
-     `docs/architecture/architecture_reference.md`
-     Focus on: module map, dependency rules (`consumes`/`forbids`), archetypes,
-     Known Boundary Violations, Feature Map, Anti-Patterns.
+A.2. Read the architecture documentation in full — one document per thing you need:
+     - `docs/architecture/03_system_topology/module_dependency_graph.md` — module map
+     - `docs/architecture/03_system_topology/hard_dependency_rules.md` — dependency rules
+       (`consumes`/`forbids`)
+     - `docs/architecture/01_foundational_principles/archetypes.md` — archetypes
+     - `docs/architecture/06_lessons_and_future/known_boundary_violations.md` — the live
+       Known Boundary Violations ledger
+     - `docs/architecture/06_lessons_and_future/anti_patterns.md` — anti-patterns
+     - `docs/architecture/02_bounded_contexts/legacy_feature_map.md` — feature map. Historical:
+       it records Phase 1–3 placement reasoning against a directory layout that predates the
+       current `src/specweaver/` tree. Read it for precedent, not to locate files.
+     `docs/architecture/README.md` is the hub, but it is only a module tree — it does not
+     contain any of the above.
 
 A.3. Read `context.yaml` files in ALL modules the feature will likely touch.
 

@@ -16,10 +16,16 @@ description: "Phase 1: Preparation — read the Design Document, architecture re
      - Sub-feature scope, inputs, and outputs
      - Other sub-features this one depends on
 
-1.2. **Read the architecture reference in full**:
-     `docs/architecture/architecture_reference.md`
-     Pay special attention to: module map, dependency rules (`consumes`/`forbids`),
-     archetypes, Known Boundary Violations, and Anti-Patterns.
+1.2. **Read the architecture documentation in full** — one document per thing you need:
+     - `docs/architecture/03_system_topology/module_dependency_graph.md` — module map
+     - `docs/architecture/03_system_topology/hard_dependency_rules.md` — dependency rules
+       (`consumes`/`forbids`)
+     - `docs/architecture/01_foundational_principles/archetypes.md` — archetypes
+     - `docs/architecture/06_lessons_and_future/known_boundary_violations.md` — the live
+       Known Boundary Violations ledger
+     - `docs/architecture/06_lessons_and_future/anti_patterns.md` — anti-patterns
+     `docs/architecture/README.md` is the hub, but it is only a module tree — it does not
+     contain any of the above.
 
 1.3. **Read the implementation plan file** at the provided path in its entirety.
      If any link or reference document is mentioned, read those too.
