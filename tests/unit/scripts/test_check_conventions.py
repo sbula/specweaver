@@ -261,62 +261,165 @@ class TestFamilyContract:
         assert cv.check_family(family, repo_root=tmp_path) == []
 
 
-class TestE2ENaming:
-    """R5: an e2e file is named for what it proves, not for the ticket that funded it."""
+def _test_file(root: Path, rel: str, body: str = "") -> Path:
+    """A file under a fake `tests/` tree, so the rule can be driven without touching the real one."""
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    return path
 
-    def test_an_int_story_named_e2e_file_is_flagged(self, cv: ModuleType) -> None:
+
+class TestRegistryIdsInNames:
+    """R5: a test is named for what it proves, never for the ticket that funded it.
+
+    A registry ID is an accident of when the work happened; the behaviour outlives it. The rule
+    covers every tier and every name — file, class and function — because the three offenders that
+    survived its first version did so purely by living outside `tests/e2e/`.
+    """
+
+    def test_an_int_story_named_file_is_flagged(self, cv: ModuleType) -> None:
         path = REPO_ROOT / "tests" / "e2e" / "workflows" / "test_int_us_42_widget_e2e.py"
 
-        assert [v.rule for v in cv.check_e2e_naming(path)] == ["R5"]
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
 
-    def test_a_capability_id_named_e2e_file_is_flagged(self, cv: ModuleType) -> None:
+    def test_a_capability_id_named_file_is_flagged(self, cv: ModuleType) -> None:
         path = REPO_ROOT / "tests" / "e2e" / "sandbox" / "test_c_exec_09_thing_e2e.py"
 
-        assert [v.rule for v in cv.check_e2e_naming(path)] == ["R5"]
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
 
-    def test_a_tech_named_e2e_file_is_flagged(self, cv: ModuleType) -> None:
+    def test_a_tech_named_file_is_flagged(self, cv: ModuleType) -> None:
         path = REPO_ROOT / "tests" / "e2e" / "test_tech_042_fix_e2e.py"
 
-        assert [v.rule for v in cv.check_e2e_naming(path)] == ["R5"]
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
 
-    def test_a_subject_named_e2e_file_passes(self, cv: ModuleType) -> None:
+    def test_a_subject_named_file_passes(self, cv: ModuleType) -> None:
         path = REPO_ROOT / "tests" / "e2e" / "workflows" / "test_decomposition_e2e.py"
 
-        assert cv.check_e2e_naming(path) == []
+        assert cv.check_registry_ids_in_names(path) == []
 
-    def test_the_rule_does_not_reach_outside_e2e(self, cv: ModuleType) -> None:
-        """The alembic migration test names a revision, which IS its subject."""
+    def test_an_integration_tier_file_is_flagged(self, cv: ModuleType) -> None:
+        """Was invisible: the rule used to inspect `tests/e2e/` only."""
+        path = REPO_ROOT / "tests" / "integration" / "sandbox" / "test_dispatcher_sf2_thing.py"
+
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
+
+    def test_a_unit_tier_file_is_flagged(self, cv: ModuleType) -> None:
+        """Also invisible, and the reason a revision-hash name survived review."""
         path = REPO_ROOT / "tests" / "unit" / "alembic" / "test_af60fd3509a2_tech_005_rename.py"
 
-        assert cv.check_e2e_naming(path) == []
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
 
-    def test_a_legacy_name_is_not_flagged(self, cv: ModuleType) -> None:
-        path = (
-            REPO_ROOT
-            / "tests"
-            / "e2e"
-            / "capabilities"
-            / "workflows"
-            / "test_int_us_21_decomposition_e2e.py"
+    def test_a_sub_feature_tag_in_a_filename_is_flagged(self, cv: ModuleType) -> None:
+        path = REPO_ROOT / "tests" / "integration" / "sandbox" / "test_dispatcher_sf3_thing.py"
+
+        assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
+
+    def test_a_story_named_test_class_is_flagged(self, cv: ModuleType, tmp_path: Path) -> None:
+        path = _test_file(
+            tmp_path, "tests/unit/test_thing.py", "class TestIntUs21Decomposition:\n    pass\n"
         )
 
-        assert cv.check_e2e_naming(path) == []
+        assert [v.rule for v in cv.check_registry_ids_in_names(path, repo_root=tmp_path)] == ["R5"]
 
-    def test_every_legacy_entry_still_exists_on_disk(self, cv: ModuleType) -> None:
-        """A stale allowlist silently permits names nobody uses — and grows quietly."""
-        on_disk = {p.name for p in (REPO_ROOT / "tests" / "e2e").rglob("test_*.py")}
+    def test_a_story_named_test_function_is_flagged(self, cv: ModuleType, tmp_path: Path) -> None:
+        path = _test_file(
+            tmp_path, "tests/unit/test_thing.py", "def test_orchestrator_ignores_sf4():\n    pass\n"
+        )
 
-        assert on_disk >= cv.LEGACY_E2E_NAMES
+        assert [v.rule for v in cv.check_registry_ids_in_names(path, repo_root=tmp_path)] == ["R5"]
 
-    def test_the_legacy_list_covers_exactly_todays_offenders(self, cv: ModuleType) -> None:
-        """If a new offender appears, it must fail R5 — never be absorbed into the list."""
-        offenders = {
-            p.name
-            for p in (REPO_ROOT / "tests" / "e2e").rglob("test_*.py")
-            if cv._STORY_ID_IN_FILENAME.search(p.name)
-        }
+    def test_subject_named_classes_and_functions_pass(self, cv: ModuleType, tmp_path: Path) -> None:
+        body = "class TestToolRegistry:\n    def test_missing_factory_warns(self):\n        pass\n"
+        path = _test_file(tmp_path, "tests/unit/test_thing.py", body)
 
-        assert offenders == set(cv.LEGACY_E2E_NAMES)
+        assert cv.check_registry_ids_in_names(path, repo_root=tmp_path) == []
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "test_c01_c02_c03.py",
+            "test_c05_architecture_integration.py",
+            "test_c12_archetype_code_bounds.py",
+            "test_s07_test_first.py",
+            "test_s12_integration.py",
+        ],
+    )
+    def test_validation_rule_ids_are_domain_vocabulary_not_registry_ids(
+        self, cv: ModuleType, name: str
+    ) -> None:
+        """`c05` is a validation rule, not a ticket. Flagging these would force a fresh allowlist —
+        reopening the exact hole this rule exists to close.
+        """
+        path = REPO_ROOT / "tests" / "unit" / "assurance" / "validation" / name
+
+        assert cv.check_registry_ids_in_names(path) == []
+
+    @pytest.mark.parametrize(
+        ("camel", "expected"),
+        [
+            ("TestIntUs21Decomposition", "test_int_us_21_decomposition"),
+            ("TestTECH019References", "test_tech_019_references"),
+            ("TestSF4Exclusions", "test_sf_4_exclusions"),
+            ("TestC05Architecture", "test_c_05_architecture"),
+            ("test_already_snake", "test_already_snake"),
+            ("", ""),
+        ],
+    )
+    def test_camel_case_is_normalised_before_matching(
+        self, cv: ModuleType, camel: str, expected: str
+    ) -> None:
+        """Class names are CamelCase, so every alternative in the pattern depends on this split.
+
+        Covered directly because the failure is silent and one-directional: if a transition stops
+        splitting, CamelCase classes become invisible to R5 and the rule **fails open**. Nothing
+        goes red — it simply stops finding things.
+        """
+        assert cv._snake(camel) == expected
+
+    def test_a_rule_id_named_test_class_is_not_flagged(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        """`c05` names a shipped module (`c05_import_direction.py`), so a test named for it IS
+        named for its subject. Verified for filenames already; this pins it at class level, where a
+        careless widening of the pattern would break the ten validation-rule test files.
+        """
+        path = _test_file(
+            tmp_path, "tests/unit/test_thing.py", "class TestC05Architecture:\n    pass\n"
+        )
+
+        assert cv.check_registry_ids_in_names(path, repo_root=tmp_path) == []
+
+    def test_a_registry_id_in_a_docstring_is_not_flagged(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        """Names only. Scanning docstrings would flag every `Proves: TECH-NNN FR-N` tag and put
+        this gate in direct contradiction with `check_fr_coverage.py`.
+        """
+        body = '"""Proves: TECH-019 FR-1, FR-4."""\n\n\ndef test_thing():\n    pass\n'
+        path = _test_file(tmp_path, "tests/unit/test_thing.py", body)
+
+        assert cv.check_registry_ids_in_names(path, repo_root=tmp_path) == []
+
+    def test_an_unparseable_file_yields_no_naming_violation(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        """Graceful degradation: a syntax error is not a naming defect."""
+        path = _test_file(tmp_path, "tests/unit/test_thing.py", "def (((:\n")
+
+        assert cv.check_registry_ids_in_names(path, repo_root=tmp_path) == []
+
+    def test_the_rule_does_not_reach_outside_tests(self, cv: ModuleType) -> None:
+        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "test_int_us_21_helper.py"
+
+        assert cv.check_registry_ids_in_names(path) == []
+
+    def test_the_legacy_allowlist_is_gone(self, cv: ModuleType) -> None:
+        """It was frozen pending a ticket that decided renames and references together. This is it."""
+        assert not hasattr(cv, "LEGACY_E2E_NAMES")
+
+    # The allowlist-parity test that stood here is obsolete: the list is gone, so there is nothing
+    # to keep in step with. Its replacement — "no test file anywhere carries a registry ID", the
+    # whole tree as the assertion — lands in CB-2, because it cannot pass until the renames do.
 
 
 class TestFixtureExemption:

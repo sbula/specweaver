@@ -196,42 +196,13 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_sf01_implementation_plan.md
 
-> Verified during design: after this fix INT-US-21 must still pass, because every one of its ten FRs
-> is cited by at least one genuine test besides the fixture file. If it does not, the fix has
-> over-reached. That check is the sub-feature's own regression proof.
-
 ### SF-02: Test Naming Closure
 - **Scope**: Rename every story-named test file and function for its subject, update all references, and widen R5 so it cannot happen again.
 - **FRs**: [FR-6, FR-7]
-- **Inputs**: The 9 files and 3 functions enumerated below; the ~30 doc references citing them; `scripts/check_conventions.py` R5 and `LEGACY_E2E_NAMES`.
-- **Outputs**: Renamed tests; updated docs; R5 covering all tiers, `_sf<N>`, and class/function names; empty allowlist.
+- **Inputs**: 9 story-named test files and 3 test functions; the ~30 doc references citing them; `scripts/check_conventions.py` R5 and its legacy allowlist.
+- **Outputs**: Renamed tests; updated references; R5 covering all tiers, `_sf<N>`, and class/function names; allowlist gone.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_sf02_implementation_plan.md
-
-> Two traps found in review. R5's docstring **itself** cites `test_int_us_21_decomposition_e2e.py`
-> as its worked example, so the checker's own documentation is one of the references that must move.
-> And `LEGACY_E2E_NAMES` is misnamed the moment R5 spans every tier — it is emptied and removed, not
-> renamed and kept.
-
-Rename inventory (final names are set during planning; these are the working proposals):
-
-| Current | Proposed | Owning story |
-|---|---|---|
-| `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py` | `test_table_prefix_migration.py` | TECH-005 |
-| `tests/integration/sandbox/test_dispatcher_sf2_integration.py` | `test_dispatcher_domain_conformance.py` | TECH-002 |
-| `tests/integration/sandbox/test_dispatcher_sf3_integration.py` | `test_dispatcher_registry_delegation.py` | TECH-002 |
-| `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` | `test_drafter_e2e.py` | INT-US-02 |
-| `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py` | `test_decomposition_e2e.py` | INT-US-21 |
-| `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py` | `test_scenario_e2e.py` | INT-US-24 |
-| `tests/e2e/sandbox/test_int_us_03_isolation_e2e.py` | `test_implement_loop_worktree_isolation_e2e.py` | INT-US-03 |
-| `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` | `test_step_worktree_isolation_e2e.py` | INT-US-09 |
-| `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` | `test_session_worktree_isolation_e2e.py` | C-EXEC-06 |
-| `test_exclusions.py::test_integration_orchestrator_initializes_ignores_sf4` | `test_scaffolded_ignore_file_contains_analyzer_default_dirs` | — |
-| `test_exclusions.py::test_e2e_topological_spec_bypass_hidden_binary_sf4` | `test_compiled_spec_matches_analyzer_binary_patterns` | — |
-| `test_check_story_preconditions.py::test_story_block_unaffected_for_int_us_ticket` | names the case, not the ID family | — |
-
-The two `_sf4` functions also falsely claim `integration`/`e2e` while living in `tests/unit/`; the
-rename fixes both defects at once.
 
 ### SF-03: Unit Test Class Naming Ratchet
 - **Scope**: Require a unit test class to name the class or function under test, ratcheted against the pre-existing 292.
@@ -288,7 +259,7 @@ rename fixes both defects at once.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Gate Integrity | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Test Naming Closure | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Test Naming Closure | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -330,6 +301,16 @@ All three stories shipped before the citation gate was wired into the closure pr
 case this is a traceability defect, not a functional one: each story's declared `Verifiable Proof`
 passes.
 
+## Spun off from this ticket
+
+- **`TECH-026`** — [Roadmap Placement Contract](../TECH-026/TECH-026_design.md), minted 2026-08-08
+  during SF-02. Asked where sub-features were recorded, this session added TECH-025's seven
+  design-document sub-features to `master_story_roadmap.md`, having derived the convention from
+  `TECH-001`/`TECH-006` — the only two entries that violate it. The rule (one registry ID = one
+  line; a design's `SF-NN` never appears) exists nowhere in the repo, so `TECH-026` writes it down,
+  ships a checker, and repairs those two entries. **Not** TECH-025's work; TECH-025 owns only
+  reverting that edit and its own title drift.
+
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-08-08 after a 2-cycle Red/Blue review that added FR-9 and
@@ -339,6 +320,9 @@ ledger sub-features can close against a gate that no longer credits its own chec
 It also cleared two blockers found on the way: `scripts/` had no mirror in `tests.py`, so no
 scripts-only change could pass its own commit gate; and `tests.py` sat at exactly 600/600 with no
 headroom for any change at all (now 538, via the extracted `_story_resolution.py`).
-**Next step**: SF-02 (Test Naming Closure) — implementation plan. No dependencies.
+**Next step**: SF-02 (Test Naming Closure) — dev. Plan APPROVED 2026-08-08, two commit boundaries:
+CB-1 widens R5 and deletes the legacy allowlist (leaving the conventions gate **deliberately red**
+against the 9 files + 2 function names it now catches — that red is the proof the rule works);
+CB-2 performs the renames and moves ~89 references, turning it green.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

@@ -10,7 +10,7 @@ quietly omits what the other ten all do. Nothing else in the battery can see tha
 lints clean, types clean, and is under every threshold -- it is simply not the same shape as its
 family, and the divergence is invisible until something calls the method that is not there.
 
-Four rules:
+Five rules:
 
   R1 GRAB-BAG NAMES  Module and package names matching util(s)/helper(s)/misc/shared/common are
                      rejected outside the L0 `commons` leaf. Named as a required guardrail by
@@ -32,6 +32,14 @@ Four rules:
                      reported, along with the siblings that have it. The bar is deliberately
                      "every other member", not a majority: a conservative rule that fires rarely
                      gets fixed, and a chatty one gets suppressed.
+
+  R5 TEST NAMING     A test's file, class and function names carry no registry ID. The ticket that
+                     paid for a test is an accident of timing; the behaviour outlives it, and the
+                     name is what the next reader searches for. Covers every tier -- the first
+                     version inspected `tests/e2e/` filenames only, and three offenders survived it
+                     purely by living elsewhere. Names only: the one sanctioned `Proves:` docstring
+                     tag is what `check_fr_coverage.py` reads, and flagging it would set the two
+                     gates against each other.
 
 Exit 1 on any violation.
 """
@@ -58,30 +66,18 @@ GRAB_BAG_EXEMPT_PATHS = {"src/specweaver/commons", "tests/fixtures"}
 HEADER_MARKERS = ("Copyright (c)", "Licensed under the Apache License")
 HEADER_SCAN_LINES = 5
 
-#: Registry IDs that must not appear in a test filename (R5).
-_STORY_ID_IN_FILENAME = re.compile(
-    r"int_us_\d+|_(ui|sens|flow|intl|val|exec)_\d{2}_|tech_\d{3}", re.I
-)
-E2E_ROOT = "tests/e2e"
-
-#: Files that predate R5, recorded rather than silently ignored.
+#: Registry IDs that must not appear in a test's file, class or function name (R5).
 #:
-#: These are NOT grandfathered on merit — every one of them should be renamed for its subject.
-#: They are frozen here because renaming them is not a rename: each is cited by name in the
-#: walkthroughs and integration docs of a DELIVERED story, and those are immutable records.
-#: Changing the files without the docs manufactures exactly the dangling references TECH-019
-#: exists to remove; changing the docs edits finished-story content. That needs a ticket that
-#: decides both halves together, not a drive-by rename. Nothing may be ADDED to this list.
-LEGACY_E2E_NAMES = frozenset(
-    {
-        "test_int_us_02_drafter_e2e.py",
-        "test_int_us_03_isolation_e2e.py",
-        "test_int_us_09_isolation_e2e.py",
-        "test_int_us_21_decomposition_e2e.py",
-        "test_int_us_24_scenario_e2e.py",
-        "test_c_exec_06_session_isolation_e2e.py",
-    }
+#: Each alternative is anchored on something a registry ID has and ordinary prose does not: the
+#: `int_us_` prefix, a topic word between separators, the `tech_` prefix, a `sf<n>` sub-feature tag.
+#: What it must NOT match is validation rule IDs — `c01`..`c13`, `s07`, `s12` — which name
+#: `test_c05_architecture_integration.py` and nine siblings. `c05` is a rule, part of the domain
+#: vocabulary, and outlives every ticket that touched it. A looser `[a-z]\d{2}` pattern flags all
+#: ten, and the reflex fix is a fresh allowlist — which is how the previous allowlist was born.
+_STORY_ID_IN_NAME = re.compile(
+    r"int_us_\d+|_(ui|sens|flow|intl|val|exec)_\d{2}_|tech_\d{3}|_sf_?\d", re.I
 )
+TESTS_ROOT = "tests"
 
 
 @dataclass(frozen=True)
@@ -160,31 +156,75 @@ def check_grab_bag_name(path: Path) -> list[Violation]:
     ]
 
 
-def check_e2e_naming(path: Path) -> list[Violation]:
-    """R5: an e2e file is named for what it exercises, never for the story that produced it.
+def _snake(name: str) -> str:
+    """`TestIntUs21Decomposition` -> `test_int_us_21_decomposition`.
 
-    A story ID is an accident of when the work happened. The workflow the test proves outlives
-    it — and the name is what the next reader searches for. `test_int_us_21_decomposition_e2e.py`
-    tells you which ticket paid for the test; `test_decomposition_e2e.py` tells you what breaks
-    if it goes red.
-
-    It also makes the tests themselves navigable by subject, which is what lets a diff touching
-    `workflows/` select the e2e files that cover it instead of running all 191.
+    Class names are CamelCase, so the underscore-anchored pattern cannot see a registry ID in one
+    without this. Splitting before an upper-case run and before a digit run is enough: the ID's own
+    separators are what the pattern keys on.
     """
-    rel = _rel(path)
-    if not rel.startswith(f"{E2E_ROOT}/") or path.name in LEGACY_E2E_NAMES:
-        return []
-    match = _STORY_ID_IN_FILENAME.search(path.name)
-    if match is None:
+    spaced = re.sub(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=\d)|(?<=\d)(?=[A-Za-z])", "_", name)
+    return spaced.lower()
+
+
+def _test_symbol_names(path: Path) -> list[str]:
+    """Test class and function names defined in the file, or none if it will not parse.
+
+    A syntax error is somebody else's failure, not a naming defect — degrade quietly, as
+    `_family_class` does.
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, SyntaxError):
         return []
     return [
-        Violation(
-            "R5",
-            path,
-            f"e2e filename carries the registry ID '{match.group(0).strip('_')}' — name it for "
-            "the function, feature or workflow under test instead",
-        )
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef)
+        and (node.name.startswith("test") or node.name.startswith("Test"))
     ]
+
+
+def check_registry_ids_in_names(path: Path, repo_root: Path = REPO_ROOT) -> list[Violation]:
+    """R5: a test is named for what it exercises, never for the story that produced it.
+
+    A story ID is an accident of when the work happened. The behaviour the test proves outlives
+    it — and the name is what the next reader searches for. `test_int_us_21_decomposition_e2e.py`
+    tells you which ticket paid for the test; `test_feature_decomposition_e2e.py` tells you what
+    breaks if it goes red.
+
+    It also makes the tests navigable by subject, which is what lets a diff touching `workflows/`
+    select the files that cover it instead of running all 191.
+
+    Covers **every tier and every name** — file, class and function. The first version of this rule
+    inspected `tests/e2e/` filenames only, and the three offenders that survived it did so purely by
+    living elsewhere: two integration files and one unit file, plus two `_sf4` function names.
+
+    **Names only.** Docstrings and comments are never inspected: a single trailing
+    `Proves: TECH-NNN FR-N` tag is the one sanctioned place a registry ID may appear in a test, and
+    `check_fr_coverage.py` reads it. Flagging it here would put the two gates in direct
+    contradiction and make the citation convention impossible to satisfy.
+    """
+    rel = path.relative_to(repo_root).as_posix() if path.is_relative_to(repo_root) else _rel(path)
+    if not rel.startswith(f"{TESTS_ROOT}/"):
+        return []
+
+    offenders = [path.name, *_test_symbol_names(path)]
+    violations = []
+    for name in offenders:
+        match = _STORY_ID_IN_NAME.search(_snake(name))
+        if match is not None:
+            kind = "filename" if name == path.name else "test name"
+            violations.append(
+                Violation(
+                    "R5",
+                    path,
+                    f"{kind} '{name}' carries the registry ID "
+                    f"'{match.group(0).strip('_')}' — name it for the function, feature or "
+                    "workflow under test instead",
+                )
+            )
+    return violations
 
 
 #: Every tree carrying first-party code. `tests/` joined once its 349 missing headers were
@@ -321,7 +361,7 @@ RULE_TITLES = {
     "R2": "Missing file header",
     "R3": "Family shape",
     "R4": "Family contract",
-    "R5": "e2e named for a registry ID, not its subject",
+    "R5": "test named for a registry ID, not its subject",
 }
 
 
@@ -356,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
     for path in files:
         violations.extend(check_grab_bag_name(path))
         violations.extend(check_header(path))
-        violations.extend(check_e2e_naming(path))
+        violations.extend(check_registry_ids_in_names(path))
 
     # Families are checked whole: conformance is a statement about siblings, so a diff-scoped run
     # still compares the changed member against every other member of its family.

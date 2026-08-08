@@ -823,8 +823,8 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
 *   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. One cycle overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing rather than duplicating.
 
-### 🔴 TECH-025: Pre-Existing FR Traceability Gap (TECH-001 SF-01/02/03, TECH-002 SF-1..4, TECH-005 SF-1/2)
-**Benefit:** *`check_fr_coverage.py` passes cleanly for TECH-001, TECH-002 and TECH-005 instead of reporting 21 uncited FRs between them, closing the loop between each design's promises and what actually proves them.*
+### 🟡 TECH-025: Registry IDs Leaking Into Proofs — FR Traceability Gap and Story-Named Tests
+**Benefit:** *`check_fr_coverage.py` passes cleanly for TECH-001, TECH-002 and TECH-005 instead of reporting 21 uncited FRs between them, and no test is named after the ticket that paid for it — closing the loop between each design's promises and what actually proves them.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-025:** [Pre-Existing FR Traceability Gap](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
+    *   `[ ]` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
 *   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02), then again for `TECH-005` the same day, and for `TECH-002` on 2026-08-08 while verifying whether its amber status still reflected outstanding work (it did not). Three stories, 21 FRs, one cause: all shipped before this gate was wired into the closure process. FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
