@@ -10,7 +10,7 @@ quietly omits what the other ten all do. Nothing else in the battery can see tha
 lints clean, types clean, and is under every threshold -- it is simply not the same shape as its
 family, and the divergence is invisible until something calls the method that is not there.
 
-Five rules:
+Six rules:
 
   R1 GRAB-BAG NAMES  Module and package names matching util(s)/helper(s)/misc/shared/common are
                      rejected outside the L0 `commons` leaf. Named as a required guardrail by
@@ -41,6 +41,14 @@ Five rules:
                      tag is what `check_fr_coverage.py` reads, and flagging it would set the two
                      gates against each other.
 
+  R6 TEST CLASS      A unit test class names the class or function it exercises. Unlike R1-R5 this
+     NAMING          is a repo-wide census against a frozen baseline rather than a per-file rule,
+                     so it runs only on a repo-wide invocation — which is what `quality.py` does at
+                     `cb` and above, leaving the inner loop diff-scoped. Implementation and full
+                     rationale live in the sibling `_test_class_naming.py`; this file re-exports it
+                     so there is still one place to look. `--update-naming-baseline` rewrites the
+                     baseline, and the diff is meant to be reviewed.
+
 Exit 1 on any violation.
 """
 
@@ -48,12 +56,48 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_sibling(module_name: str) -> ModuleType:
+    """Load a same-directory script by path.
+
+    `scripts/` is not an importable package, so a plain import only resolves when this file is run
+    as `python scripts/check_conventions.py`; a test harness loading it via
+    `spec_from_file_location` gets no such freebie.
+    """
+    spec = importlib.util.spec_from_file_location(
+        module_name, Path(__file__).resolve().parent / f"{module_name}.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+#: R6 lives in a sibling: it is a repo-wide census against a frozen baseline, not a per-file rule,
+#: and this file has no headroom under the size ceiling. Re-exported so `check_conventions` stays
+#: the one place a reader looks for "why was my test name rejected".
+_r6 = _load_sibling("_test_class_naming")
+MIN_CONTAINED_STEM = _r6.MIN_CONTAINED_STEM
+NAMING_BASELINE_PATH = _r6.BASELINE_PATH
+source_symbols = _r6.source_symbols
+class_names_subject = _r6.class_names_subject
+test_class_naming_census = _r6.census
+load_naming_baseline = _r6.load_baseline
+write_naming_baseline = _r6.write_baseline
+naming_regressions = _r6.regressions
 
 #: Names with no contract of their own — they accrete whatever has no better home.
 GRAB_BAG_NAMES = {"util", "utils", "helper", "helpers", "misc", "shared", "common"}
@@ -377,12 +421,53 @@ def _print_violations(violations: list[Violation]) -> None:
             print(f"  {_rel(v.path)}\n      {v.message}")
 
 
+def _whole_test_tree_in_scope(paths: list[Path]) -> bool:
+    """Whether the `tests/` tree root itself was asked for, rather than files inside it."""
+    tests_root = (REPO_ROOT / "tests").resolve()
+    return any(p.is_dir() and p.resolve() == tests_root for p in paths)
+
+
+def _naming_ratchet_failed() -> bool:
+    """R6: report and fail only where a directory's count GREW."""
+    current = test_class_naming_census()
+    baseline = load_naming_baseline()
+    if baseline is None:
+        print(
+            f"FAIL  R6: no baseline at {NAMING_BASELINE_PATH.relative_to(REPO_ROOT).as_posix()} — "
+            "run `python scripts/check_conventions.py --update-naming-baseline` and review the diff"
+        )
+        return True
+
+    grown = naming_regressions(current, baseline)
+    if not grown:
+        return False
+    print(f"\nR6 -- unit test class names no class or function under test ({len(grown)} dir(s)):\n")
+    for directory, was, now in grown:
+        print(f"  {directory}: {was} -> {now}")
+    print(
+        "\nBLOCKED: name the class for the class or function under test. The count may fall, "
+        "never rise."
+    )
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("paths", nargs="*", help="files or directories (default: src, tests)")
+    ap.add_argument(
+        "--update-naming-baseline",
+        action="store_true",
+        help="rewrite the R6 baseline from the current tree; the diff is meant to be reviewed",
+    )
     args = ap.parse_args(argv)
+
+    if args.update_naming_baseline:
+        counts = test_class_naming_census()
+        write_naming_baseline(counts)
+        print(f"R6 baseline written: {sum(counts.values())} class(es) across {len(counts)} dir(s)")
+        return 0
 
     raw = [Path(p) for p in args.paths] if args.paths else [REPO_ROOT / "src", REPO_ROOT / "tests"]
     missing = [p for p in raw if not p.exists()]
@@ -406,12 +491,19 @@ def main(argv: list[str] | None = None) -> int:
             if violation.path.resolve() in scanned or not args.paths:
                 violations.append(violation)
 
-    if not violations:
+    # R6 is a census, so it runs only when the WHOLE tests tree is in scope. `quality.py` passes
+    # the tree roots at `cb` and above and individual changed files at `quick`, so this is exactly
+    # the "repo-wide gate, not inner loop" line. Keying on `args.paths` being empty does NOT work —
+    # the gate always passes paths, which silently disabled R6 until a probe caught it.
+    r6_failed = _naming_ratchet_failed() if _whole_test_tree_in_scope(raw) else False
+
+    if not violations and not r6_failed:
         print(f"Conventions: {len(files)} file(s) checked, {len(FAMILIES)} family(ies), all clean")
         return 0
 
-    _print_violations(violations)
-    print(f"\nBLOCKED: {len(violations)} convention violation(s) across {len(files)} file(s).")
+    if violations:
+        _print_violations(violations)
+        print(f"\nBLOCKED: {len(violations)} convention violation(s) across {len(files)} file(s).")
     return 1
 
 

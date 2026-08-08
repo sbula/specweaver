@@ -21,7 +21,7 @@ This guide explains the Scenario Testing framework introduced in Feature 3.28 (`
 >   calls, equality asserts on `expected_output`, `pytest.raises` for error-category. Groups
 >   are `(function, category)`-keyed. Emitted names/values go through identifier validation
 >   and `repr()` — LLM content cannot inject statements.
-> - **Verifiable proof**: `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py`
+> - **Verifiable proof**: `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py`
 >   (E1–E8 on the real CLI).
 >
 > **Host-posture facts (until `C-EXEC-07` contains runs in worktrees):** scenario artifacts

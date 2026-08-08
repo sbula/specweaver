@@ -15,7 +15,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import pytest
 
@@ -431,9 +431,148 @@ class TestRegistryIdsInNames:
 
         assert offenders == []
 
-    # The allowlist-parity test that stood here is obsolete: the list is gone, so there is nothing
-    # to keep in step with. Its replacement — "no test file anywhere carries a registry ID", the
-    # whole tree as the assertion — lands in CB-2, because it cannot pass until the renames do.
+
+class TestClassNamesSubject:
+    """R6's predicate: does a unit test class name the class or function it exercises?
+
+    Bidirectional on purpose. `TestToolRegistry` contains the symbol; `TestRegistryIdsInNames` is
+    contained BY `check_registry_ids_in_names`, because the `check_` prefix is not part of the
+    subject. One-way matching gets the second case wrong, and that case is this repo's own norm for
+    gate scripts.
+    """
+
+    SYMBOLS: ClassVar[set[str]] = {
+        "ToolRegistry",
+        "IsFixtureData",
+        "CheckRegistryIdsInNames",
+        "GetCompiledSpec",
+    }
+
+    @pytest.mark.parametrize(
+        "stem", ["ToolRegistry", "IsFixtureData", "RegistryIdsInNames", "ToolRegistryFailures"]
+    )
+    def test_a_name_referencing_a_real_symbol_passes(self, cv: ModuleType, stem: str) -> None:
+        assert cv.class_names_subject(stem, self.SYMBOLS) is True
+
+    @pytest.mark.parametrize("stem", ["Degradation", "Ratchet", "GateResolution"])
+    def test_a_behaviour_grouping_name_does_not(self, cv: ModuleType, stem: str) -> None:
+        assert cv.class_names_subject(stem, self.SYMBOLS) is False
+
+    def test_an_empty_stem_is_rejected(self, cv: ModuleType) -> None:
+        """`class Test:` has an empty stem, which every symbol contains. Fails OPEN without this."""
+        assert cv.class_names_subject("", self.SYMBOLS) is False
+
+    def test_a_short_accidental_stem_is_rejected(self, cv: ModuleType) -> None:
+        """`Get` is contained by 99 real symbols. Passing it would make the rule decorative."""
+        assert cv.class_names_subject("Get", self.SYMBOLS) is False
+
+    def test_the_minimum_length_is_a_real_boundary(self, cv: ModuleType) -> None:
+        """Five characters passes on the reverse direction; four does not."""
+        symbols = {"AbcdeSuffix", "AbcdSuffix"}
+
+        assert cv.class_names_subject("Abcde", symbols) is True
+        assert cv.class_names_subject("Abcd", symbols) is False
+
+
+class TestTestClassNamingCensus:
+    """The census counts per top-level directory so one area cannot pay for another's regression."""
+
+    def test_offenders_are_counted_under_their_top_level_directory(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        _member(tmp_path, "src/specweaver/thing.py", "class RealSubject:\n    pass\n")
+        _member(tmp_path, "tests/unit/alpha/test_a.py", "class TestDegradation:\n    pass\n")
+        _member(tmp_path, "tests/unit/beta/test_b.py", "class TestRealSubject:\n    pass\n")
+
+        assert cv.test_class_naming_census(repo_root=tmp_path) == {"alpha": 1}
+
+    def test_a_file_directly_under_the_unit_root_groups_under_a_directory_key(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        """`parts[0]` of a top-level file is its FILENAME, which would put filenames in a table of
+        directories — and split a category per file, so each one ratchets independently.
+        """
+        _member(tmp_path, "src/specweaver/thing.py", "class RealSubject:\n    pass\n")
+        _member(tmp_path, "tests/unit/test_top.py", "class TestDegradation:\n    pass\n")
+
+        assert cv.test_class_naming_census(repo_root=tmp_path) == {".": 1}
+
+    def test_non_test_classes_and_functions_are_ignored(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        _member(tmp_path, "src/specweaver/thing.py", "class RealSubject:\n    pass\n")
+        _member(
+            tmp_path,
+            "tests/unit/alpha/test_a.py",
+            "class HelperThing:\n    pass\n\n\ndef test_degradation():\n    pass\n",
+        )
+
+        assert cv.test_class_naming_census(repo_root=tmp_path) == {}
+
+    def test_an_unparseable_file_does_not_abort_the_census(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        _member(tmp_path, "src/specweaver/thing.py", "class RealSubject:\n    pass\n")
+        _member(tmp_path, "tests/unit/alpha/broken.py", "def (((:\n")
+        _member(tmp_path, "tests/unit/beta/test_b.py", "class TestDegradation:\n    pass\n")
+
+        assert cv.test_class_naming_census(repo_root=tmp_path) == {"beta": 1}
+
+    def test_only_the_unit_tier_is_censused(self, cv: ModuleType, tmp_path: Path) -> None:
+        """e2e and integration classes group by scenario, not by unit under test."""
+        _member(tmp_path, "src/specweaver/thing.py", "class RealSubject:\n    pass\n")
+        _member(tmp_path, "tests/e2e/test_a.py", "class TestSomeScenario:\n    pass\n")
+        _member(tmp_path, "tests/integration/test_b.py", "class TestSomeSeam:\n    pass\n")
+
+        assert cv.test_class_naming_census(repo_root=tmp_path) == {}
+
+
+class TestNamingRegressions:
+    """The ratchet: a count may fall, never rise."""
+
+    def test_a_falling_count_is_not_a_regression(self, cv: ModuleType) -> None:
+        assert cv.naming_regressions({"core": 3}, {"core": 5}) == []
+
+    def test_an_unchanged_count_is_not_a_regression(self, cv: ModuleType) -> None:
+        assert cv.naming_regressions({"core": 5}, {"core": 5}) == []
+
+    def test_a_rising_count_is_reported_with_both_numbers(self, cv: ModuleType) -> None:
+        assert cv.naming_regressions({"core": 6}, {"core": 5}) == [("core", 5, 6)]
+
+    def test_a_brand_new_category_is_a_regression(self, cv: ModuleType) -> None:
+        """A directory absent from the baseline starts at zero, not at 'unmeasured'."""
+        assert cv.naming_regressions({"graph": 1}, {"core": 5}) == [("graph", 0, 1)]
+
+    def test_a_missing_baseline_is_reported_not_crashed_on(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        assert cv.load_naming_baseline(tmp_path / "nope.json") is None
+
+
+class TestWholeTestTreeInScope:
+    """R6 runs at the repo-wide gates and stays out of the inner loop. This decides which.
+
+    Pinned because getting it wrong is SILENT. The first version keyed on "no paths were given",
+    which looked right and was wrong: `quality.py` always passes paths — the tree roots at `cb`,
+    individual changed files at `quick` — so R6 never ran at any gate. Every gate reported green.
+    A probe caught it; no test would have.
+    """
+
+    def test_the_tests_tree_root_is_in_scope(self, cv: ModuleType) -> None:
+        """What `quality.py` passes at `cb`, `sf` and `feature`."""
+        assert cv._whole_test_tree_in_scope([Path("src"), Path("tests")]) is True
+
+    def test_individual_changed_files_are_not(self, cv: ModuleType) -> None:
+        """What `quality.py` passes at `quick` — a census over a diff means nothing."""
+        changed = [REPO_ROOT / "tests" / "unit" / "scripts" / "test_check_conventions.py"]
+
+        assert cv._whole_test_tree_in_scope(changed) is False
+
+    def test_a_subdirectory_of_tests_is_not_the_whole_tree(self, cv: ModuleType) -> None:
+        assert cv._whole_test_tree_in_scope([REPO_ROOT / "tests" / "unit"]) is False
+
+    def test_src_alone_is_not(self, cv: ModuleType) -> None:
+        assert cv._whole_test_tree_in_scope([Path("src")]) is False
 
 
 class TestFixtureExemption:

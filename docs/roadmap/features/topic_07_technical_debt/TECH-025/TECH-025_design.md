@@ -260,7 +260,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Gate Integrity | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Test Naming Closure | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -320,13 +320,12 @@ ledger sub-features can close against a gate that no longer credits its own chec
 It also cleared two blockers found on the way: `scripts/` had no mirror in `tests.py`, so no
 scripts-only change could pass its own commit gate; and `tests.py` sat at exactly 600/600 with no
 headroom for any change at all (now 538, via the extracted `_story_resolution.py`).
-**SF-02 delivered 2026-08-08.** R5 now catches registry IDs in every test file, class and
-function name across every tier; the six-entry legacy allowlist is gone; nine files and three
-functions are renamed for their subject with 92 references moved in the same change. The tree
-itself is now the assertion — a new offender fails a test rather than being absorbed into an
-exemption.
-**Next step**: SF-03 (Unit Test Class Naming Ratchet) — implementation plan. Its only dependency,
-SF-02, is committed. SF-04 (TECH-001 FR Ledger) is also unblocked and independent of SF-03.
+**SF-03 delivered 2026-08-08.** R6 ratchets unit test class names against a frozen per-directory
+baseline (278 across 10 dirs). SF-01 and SF-02 are also delivered: the FR ledger gate no longer
+credits its own checker's fixture data, and no test file, class or function name carries a registry
+ID.
+**Next step**: SF-04 (TECH-001 FR Ledger) — implementation plan. Its only dependency, SF-01, is
+committed. SF-05 and SF-06 are also unblocked and independent of SF-04; SF-07 waits on all three.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
