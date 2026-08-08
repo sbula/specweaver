@@ -20,6 +20,11 @@ A test "cites" an FR when the file names the story (e.g. ``INT-US-21``) *and* me
 File-level granularity is deliberate: it makes the design→proof link auditable without forcing a
 ``<STORY> FR-N`` tag onto every individual test function.
 
+That granularity has one blind spot, and ``FIXTURE_DATA_MARKER`` below covers it: a test *of this
+checker* names a story and feeds it ``FR-N`` strings as inputs, which is indistinguishable from a
+citation. Marking such a file removes it from the scan. That is not the override this module
+refuses to add — see the marker's own note for why it can only ever subtract.
+
 Usage:
     python scripts/check_fr_coverage.py INT-US-21
 
@@ -49,6 +54,29 @@ _FR_MENTION = re.compile(r"(?<![\w-])(FR-\d+)(?![\w-])")
 _STORY_ID = re.compile(r"^[A-Z0-9-]+$")
 
 _SKIP_DIRS = {"__pycache__", ".pytest_cache", ".git"}
+
+#: A test file declares itself fixture data with this line, and the citation scan then ignores it.
+#:
+#: Needed because a test *of this checker* both names a story (explaining why the checker exists)
+#: and feeds requirement ids to the function under test. Under the file-level rule below, that
+#: combination reads as proof: eight of ``INT-US-21``'s ten requirements were credited to a file
+#: asserting nothing about it. Inflated counts hide real gaps.
+#:
+#: This is not the kind of override this repo refuses to add. The marker can only ever *remove*
+#: citations, never grant one, so it cannot be used to make a failing ledger pass -- it makes this
+#: gate stricter. Marking a file that carries a genuine ``Proves:`` tag silently discards that
+#: proof, so put fixture-heavy tests and real citations in different files.
+#:
+#: The obvious alternative -- requiring the story id and the requirement id on the *same line* --
+#: was measured and rejected: it reopens ``INT-US-24`` (two requirements) and ``TECH-019`` (two
+#: more), because the ``Proves:`` convention names the story once while a file's other citations
+#: sit on other lines. Do not revisit it without re-running that measurement.
+FIXTURE_DATA_MARKER = "# fr-coverage: fixture-data"
+
+#: Lines from the top of a file searched for the marker. Wide enough for the licence header plus a
+#: blank line; narrow enough that prose mentioning the marker further down does not silently
+#: exclude a real proof.
+_MARKER_SCAN_LINES = 10
 
 
 def normalize_story_id(raw: str) -> str:
@@ -82,6 +110,21 @@ def collect_frs(text: str) -> set[str]:
     return set(_FR_MENTION.findall(text))
 
 
+def is_fixture_data(text: str) -> bool:
+    """Whether a file declares its requirement ids to be fixture data rather than citations.
+
+    Matched as a whole line at column 0. Two near-misses this deliberately rejects:
+    ``# fr-coverage: fixture-database`` is a different comment, and an *indented* copy is inside
+    something else — a docstring documenting the convention, a data literal. Exempting a file is a
+    file-level declaration, and the failure mode of getting it wrong is silent: the gate stays
+    green while a genuine proof quietly stops counting.
+    """
+    for line in text.splitlines()[:_MARKER_SCAN_LINES]:
+        if line.rstrip() == FIXTURE_DATA_MARKER:
+            return True
+    return False
+
+
 def _read(path: Path) -> str | None:
     """Read a text file, or None if it is unreadable/undecodable."""
     try:
@@ -106,7 +149,8 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
 
     A file counts only if it names the story, so an ``FR-2`` belonging to a different story is not
     miscredited. Undecodable files are skipped rather than aborting the sweep — one bad file must
-    not be able to hide the state of the whole tree.
+    not be able to hide the state of the whole tree. Files marked ``FIXTURE_DATA_MARKER`` are
+    skipped too: their requirement ids are inputs, not claims.
     """
     cited: dict[str, list[str]] = {}
     if not tests_root.is_dir():
@@ -116,6 +160,10 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
             continue
         text = _read(path)
         if text is None or story not in text:
+            continue
+        # After the story check on purpose: this reads a header window, and it matters to roughly
+        # one file in a thousand.
+        if is_fixture_data(text):
             continue
         relative = path.relative_to(tests_root).as_posix()
         for fr in sorted(collect_frs(text)):

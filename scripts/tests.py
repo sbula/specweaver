@@ -41,6 +41,10 @@ TECH tickets are not one kind of work, so each declares a KIND and everything fo
 
 A tier whose scope resolves to ZERO tests FAILS. Especially `touched`: if you changed a source
 file and nothing mirrors it, that is not a clean run, it is code with no direct test.
+
+Source means `src/specweaver/` **and** `scripts/`, both mirrored under `tests/<tier>/`. The gates
+in `scripts/` were excluded until 2026-08-08, so every scripts-only change resolved to zero paths
+and was refused for having no mirror — while `tests/unit/scripts/` sat there mirroring them.
 """
 
 from __future__ import annotations
@@ -92,8 +96,11 @@ TECH_ID = re.compile(r"^TECH-(\d{3})$", re.I)
 CAP_ID = re.compile(r"^([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}$", re.I)
 
 
-class UsageError(Exception):
-    """The caller asked for something the matrix cannot answer."""
+#: Defined in the sibling and re-exported, NOT redeclared here. Two classes of the same name are
+#: two different exceptions, and `main`'s `except UsageError` would silently miss whatever the
+#: sibling raised — a usage error would surface as a traceback instead of a message.
+_story_resolution = _load_sibling("_story_resolution")
+UsageError = _story_resolution.UsageError
 
 
 # ---------------------------------------------------------------------------
@@ -163,82 +170,12 @@ def most_critical(letters: list[str]) -> str:
     return sorted(letters)[0]
 
 
-BASE_SECTION = "## Base Story Contract"
-SUBSTORY_SECTION = "## Sub-Story Add-Ons"
-INTEGRATION_DESCRIPTION = "**Integration Description:**"
-
-
-def _bullet_at(lines: list[str], start: int) -> str:
-    """One markdown bullet, including any continuation lines beneath it."""
-    collected = [lines[start]]
-    for line in lines[start + 1 :]:
-        if line.lstrip().startswith(("* ", "## ", "# ")):
-            break
-        collected.append(line)
-    return "\n".join(collected)
-
-
-def integration_scope_text(story_id: str, doc_text: str) -> str:
-    """The passage naming what THIS story integrates — nothing more.
-
-    Scoping this precisely is the whole correctness of the DAL derivation. Scanning the entire
-    document reads `INT-US-09` as DAL-A, because its **Sub-Story Add-Ons** section mentions
-    `A-EXEC-01` and `A-EXEC-03` — capabilities those add-ons are BLOCKED ON, which the base
-    contract does not integrate and which are not built. A base INT story integrates the
-    Core-Required MVS capabilities named in its Integration Description; `INT-US-NN-SFxx` add-ons
-    are separate stories with separate scope, and pulling theirs into the base over-escalates
-    every gate for work that has not happened.
-    """
-    lines = doc_text.splitlines()
-    upper = story_id.upper()
-
-    if "-SF" in upper:
-        # Only the bullet that DEFINES the add-on, and only inside the add-ons section. The base
-        # contract's Status bullet also mentions sub-story IDs in passing ("container add-on =
-        # `INT-US-09-SF01`"), and matching that reads the wrong scope entirely.
-        section_start = next(
-            (i for i, line in enumerate(lines) if line.startswith(SUBSTORY_SECTION)), None
-        )
-        if section_start is None:
-            raise UsageError(f"{story_id}: integration doc has no '{SUBSTORY_SECTION}' section")
-        defines = re.compile(r"^\*\s+\*\*[`'\"]?" + re.escape(upper), re.I)
-        for i in range(section_start, len(lines)):
-            if defines.match(lines[i]):
-                return _bullet_at(lines, i)
-        raise UsageError(
-            f"{story_id}: no defining bullet under '{SUBSTORY_SECTION}' in the integration doc"
-        )
-
-    start = next((i for i, line in enumerate(lines) if line.startswith(BASE_SECTION)), None)
-    end = next((i for i, line in enumerate(lines) if line.startswith(SUBSTORY_SECTION)), len(lines))
-    if start is None:
-        raise UsageError(f"{story_id}: integration doc has no '{BASE_SECTION}' section")
-
-    for i in range(start, end):
-        if INTEGRATION_DESCRIPTION in lines[i]:
-            return _bullet_at(lines, i)
-    raise UsageError(f"{story_id}: no '{INTEGRATION_DESCRIPTION}' bullet in the base contract")
-
-
-def integrated_capabilities(story_id: str) -> list[str]:
-    """Capability IDs an INT story integrates, read from its integration doc."""
-    base_id = re.sub(r"-SF\d+$", "", story_id.upper())
-    number = base_id.removeprefix("INT-US-")
-    doc = (
-        REPO_ROOT
-        / "docs"
-        / "roadmap"
-        / "topics"
-        / "topic_08_integration"
-        / f"US-{number}_integration.md"
-    )
-    if not doc.is_file():
-        raise UsageError(
-            f"no integration doc for {story_id} at {doc.relative_to(REPO_ROOT).as_posix()} — "
-            "cannot derive DAL; pass --dal explicitly"
-        )
-    scope_text = integration_scope_text(story_id, doc.read_text(encoding="utf-8", errors="replace"))
-    return sorted({m.group(0) for m in CAPABILITY_ID.finditer(scope_text)})
+#: Re-exported so `tests.py` stays the single entry point callers and tests already know.
+BASE_SECTION = _story_resolution.BASE_SECTION
+SUBSTORY_SECTION = _story_resolution.SUBSTORY_SECTION
+INTEGRATION_DESCRIPTION = _story_resolution.INTEGRATION_DESCRIPTION
+integration_scope_text = _story_resolution.integration_scope_text
+integrated_capabilities = _story_resolution.integrated_capabilities
 
 
 def resolve_story(story_id: str, tech_kind: str | None, dal_override: str | None) -> Story:
@@ -385,11 +322,17 @@ def changed_files(base: str | None = None) -> list[Path]:
 
 
 def _src_relative(path: Path) -> Path | None:
-    """src/specweaver/core/flow/runner.py -> core/flow/runner.py"""
+    """src/specweaver/core/flow/runner.py -> core/flow/runner.py; scripts/x.py -> scripts/x.py.
+
+    `scripts/` keeps its prefix because callers scope by `rel.parent`, which puts its mirror at
+    `tests/unit/scripts`. Excluding it blocked every scripts-only change; see the tests.
+    """
     posix = path.as_posix()
-    if not posix.startswith("src/specweaver/") or path.suffix != ".py":
+    if path.suffix != ".py":
         return None
-    return Path(posix[len("src/specweaver/") :])
+    if posix.startswith("src/specweaver/"):
+        return Path(posix[len("src/specweaver/") :])
+    return Path(posix) if posix.startswith("scripts/") else None
 
 
 def paths_for(
@@ -405,7 +348,8 @@ def paths_for(
 
     for rel in relatives:
         if scope == "touched":
-            # tests/<tier>/ mirrors src/specweaver/, so the module's own tests sit alongside.
+            # tests/<tier>/ mirrors src/specweaver/ and scripts/, so a module's own tests sit
+            # alongside it.
             mirror = tier_root / rel.parent
             found.update(
                 p.relative_to(repo_root)
@@ -429,13 +373,7 @@ def paths_for(
 
 
 # ---------------------------------------------------------------------------
-# The refactor rule — see scripts/_refactor_diff_safety.py (split out to stay under the
-# file-size RED threshold; no behaviour change).
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Execution
+# Execution  (the refactor rule lives in scripts/_refactor_diff_safety.py)
 # ---------------------------------------------------------------------------
 
 

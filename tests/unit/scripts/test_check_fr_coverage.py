@@ -1,5 +1,6 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+# fr-coverage: fixture-data
 
 """Tests for scripts/check_fr_coverage.py — the design→plan→test FR ledger.
 
@@ -9,6 +10,12 @@ implementation plan, no test asserted it, and it silently evaporated — surfaci
 as work for the *integration* story that assumed it already existed.
 
 `scripts/` is not an importable package, so the module under test is loaded by path.
+
+This file is marked fixture data: it names a real story above and feeds requirement ids to the
+function under test, which together used to read as proof and credited that story with eight
+requirements this file asserts nothing about. The tests for that exclusion live in
+`test_fr_coverage_fixture_exclusion.py` — they cannot live here, because the marker would discard
+their own citation.
 """
 
 from __future__ import annotations
