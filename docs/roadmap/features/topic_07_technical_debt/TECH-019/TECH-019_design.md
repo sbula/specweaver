@@ -164,8 +164,8 @@ ignore it.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Repair references + reconcile format orders | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-02 | `check_skill_references.py` guardrail | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Repair references + reconcile format orders | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | `check_skill_references.py` guardrail | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Verifiable Proof
 
@@ -186,7 +186,14 @@ That false failure blocked **every** story behind a gate with no override. Fixed
 `(set by runner hook)` comments in `handlers/base.py` were corrected to name `hydrate_plan_context`,
 which is what actually writes them.
 
-**Next step**: SF-01 implementation plan.
+**SF-01 delivered** (commit `ffaa4a8b`, 2026-08-08). 15 edits across both skill trees; the
+dangling-reference scan went 10 sites → 0, `check_skill_sync.py` reports 0 drift, and the full
+suite passed 6228. Three extra repairs were made in `phase-6-documentation.md` beyond the plan's
+edit table — its frontmatter and §6.3 heading still advertised `quickstart` and the developer
+guide after those bullets were deleted, which is the same defect class.
+
+**Next step**: SF-02 implementation plan — `scripts/check_skill_references.py`. FR-1's live-tree
+assertion lands there and is green on arrival because SF-01 already repaired.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate workflow.

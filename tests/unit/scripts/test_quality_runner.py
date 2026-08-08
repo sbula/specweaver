@@ -112,6 +112,7 @@ EXPECTED: dict[str, dict[str, str]] = {
     "doc": {
         "roadmap_sync": "all",
         "skill_sync": "all",
+        "skill_references": "all",
     },
 }
 
@@ -150,7 +151,11 @@ class TestDocTrackIsSeparate:
         assert not {p.check for p in q.resolve_plans(gate)} & {"roadmap_sync", "skill_sync"}
 
     def test_the_doc_gate_runs_no_code_checks(self, q: ModuleType) -> None:
-        assert {p.check for p in q.resolve_plans("doc")} == {"roadmap_sync", "skill_sync"}
+        assert {p.check for p in q.resolve_plans("doc")} == {
+            "roadmap_sync",
+            "skill_sync",
+            "skill_references",
+        }
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:
         assert "doc" not in q.CODE_GATES

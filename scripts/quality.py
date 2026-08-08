@@ -105,6 +105,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # whole registry, and a skill file drifts relative to its twin in the other tree.
     "roadmap_sync": {"doc": "all"},
     "skill_sync": {"doc": "all"},
+    # Same track, same reason: an instruction's references are stale relative to the whole repo,
+    # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*
+    # commit deleting a referenced document is not caught until the next doc-gate run.
+    "skill_references": {"doc": "all"},
 }
 
 
@@ -251,6 +255,10 @@ def _skill_sync(_paths: list[Path]) -> list[str]:
     return _script("check_skill_sync.py")
 
 
+def _skill_references(_paths: list[Path]) -> list[str]:
+    return _script("check_skill_references.py")
+
+
 CHECKS: dict[str, Check] = {
     # `scripts/` is included so the gate lints itself — it was previously unlinted by anything.
     "ruff": Check("ruff", ("src", "tests", "scripts"), _ruff),
@@ -276,6 +284,13 @@ CHECKS: dict[str, Check] = {
     ),
     "skill_sync": Check(
         "skill_sync", (".agents",), _skill_sync, ignores_paths=True, script="check_skill_sync.py"
+    ),
+    "skill_references": Check(
+        "skill_references",
+        (".agents", "docs"),
+        _skill_references,
+        ignores_paths=True,
+        script="check_skill_references.py",
     ),
     # `tests` is in scope so R5 (e2e naming) can see e2e files; R2 stays src/scripts-only.
     "conventions": Check(
