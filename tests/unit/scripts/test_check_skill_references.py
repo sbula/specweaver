@@ -221,3 +221,45 @@ def test_delivered_designs_and_plans_are_outside_the_scan_scope(mod: ModuleType)
     scoped = mod.default_scan_scope()
 
     assert not [p for p in scoped if "roadmap" in p.parts and "features" in p.parts]
+
+
+# ---------------------------------------------------------------------------
+# FR-2 / FR-3 -- the SF-01 repairs, guarded against silent regression
+# ---------------------------------------------------------------------------
+
+_PRE_COMMIT = REPO_ROOT / ".agents" / "skills" / "specweaver-pre-commit" / "references"
+_ARCH_PHASE = _PRE_COMMIT / "phase-1-architecture.md"
+_GAP_PHASE = _PRE_COMMIT / "phase-2-test-gap.md"
+
+
+def test_boundary_violations_are_directed_at_the_live_ledger() -> None:
+    """Proves FR-2.
+
+    Before TECH-019, phase 1.8 told the agent to record NEW boundary violations in a file
+    TECH-008 had deleted -- worse than a dead read, because findings were written nowhere at all.
+    """
+    ledger = "docs/architecture/06_lessons_and_future/known_boundary_violations.md"
+    assert (REPO_ROOT / ledger).exists(), "the ledger itself must exist"
+
+    text = _ARCH_PHASE.read_text(encoding="utf-8")
+
+    assert ledger in text
+    assert "architecture_reference.md" not in text
+
+
+def test_exactly_one_instruction_states_the_combined_analysis_format() -> None:
+    """Proves FR-3.
+
+    Phase 1.9 said the combined analysis MUST go to chat and MUST NOT be an Artifact; phase 2.8
+    said the reverse. Same output, same moment, both marked MUST -- so compliance was a coin flip
+    whichever the agent picked. 2.8 survived as the actively maintained one; 1.9 now defers to it.
+    """
+    arch = _ARCH_PHASE.read_text(encoding="utf-8")
+    gap = _GAP_PHASE.read_text(encoding="utf-8")
+    # The mandate is wrapped across lines and quoted with `> `, so match on collapsed whitespace
+    # rather than pinning one particular line break.
+    gap_flat = " ".join(gap.replace(">", " ").split())
+
+    assert "FORMAT EXCEPTION" not in arch, "the losing format order came back"
+    assert "MUST NOT print the Coverage Matrix" in gap_flat, "the surviving format order is gone"
+    assert "IsArtifact" not in gap, "a harness-specific mechanism came back into the instruction"

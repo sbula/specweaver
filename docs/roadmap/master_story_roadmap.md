@@ -61,7 +61,7 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 | Ticket | Claim | Against |
 |---|---|---|
-| `TECH-019` 🔴 | Land **ahead of the next feature's design phase** — six live instruction sites order the agent to read a file `TECH-008` deleted, so every design / impl-plan / pre-commit run since has been told to load architecture that cannot load. | **Any** candidate — it degrades the process used to build it |
+| `TECH-019` 🟢 | **Delivered 2026-08-08** — claim discharged. Twelve instruction sites repaired (six more than the ticket claimed) and `check_skill_references.py` now enforces the invariant in the `doc` gate. | — |
 | `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. | **Any** candidate's planning phase |
 | `TECH-014` 🔴 | Live fan-out `RunContext` race in shipped `C-FLOW-03`; should land **before** `C-FLOW-12`. | Candidate 4 (`C-EXEC-07`) → `C-FLOW-12` |
 | `TECH-020` 🔴 | `runner.py` at **exactly 600/600 RED**, `_execute_loop` 360 lines under `# noqa: C901`; sequence before `C-FLOW-12`'s fan-out work or that feature pays the tax. | Candidate 4 (`C-EXEC-07`) → `C-FLOW-12` |
@@ -78,7 +78,7 @@ this section drift for a month.
 
 | # | Ticket | Why it sits here |
 |---|---|---|
-| 1 | `TECH-019` | Fixes instructions every later ticket is executed through. Docs only. |
+| 1 | `TECH-019` | ✅ Done 2026-08-08. Fixed the instructions every later ticket is executed through, and shipped the checker that keeps them fixed. |
 | 2 | `TECH-025` | Docs only, independent, and establishes the citation convention each ticket below meets at its own closure gate. |
 | 3 | `TECH-014` | A live bug, not cleanup. Cheapest now: `TECH-006` SF-02 put its three racing fields (`run_id`, `step_records`, `pipeline_runner`) into one `RunHandle`, so each sub-run takes a copy instead of three writes interleaving. |
 | 4 | `TECH-020` | Reshapes `runner.py`; removes flow's largest complexity offender and changes the import graph 6 and 7 measure. |
@@ -790,11 +790,13 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
 *   **Sequencing:** Audit-only; precondition (INT-US-21 SF-03 committed) met 2026-07-28. Findings become NEW stories.
 
-### 🔴 TECH-019: Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders
+### 🟢 TECH-019: Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders
 **Benefit:** *Skill instructions cannot order the agent to read files that do not exist, and two phases cannot both mandate opposite formats.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
-*   **Sequencing:** Six live instruction sites point at a file `TECH-008` deleted — land ahead of the next feature's *design* phase.
+    *   `[x]` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
+*   **Verifiable Proof:**
+    *   `tests/unit/scripts/test_check_skill_references.py`
+*   **Sequencing:** Delivered 2026-08-08 (`ffaa4a8b`, `fdc4eac2`).
 
 ### 🔴 TECH-020: Extract the Step-Execution Loop from PipelineRunner
 **Benefit:** *`runner.py` has headroom again, and `_execute_loop`'s complexity is fixed rather than suppressed.*

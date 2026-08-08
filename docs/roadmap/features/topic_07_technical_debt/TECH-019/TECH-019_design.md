@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-019
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Origin**: found by the INT-US-21 SF-02 CB-1 pre-commit gate, 2026-07-26
 - **Designed**: 2026-08-08
 
@@ -165,7 +165,7 @@ ignore it.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Repair references + reconcile format orders | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | `check_skill_references.py` guardrail | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | `check_skill_references.py` guardrail | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Verifiable Proof
 
@@ -192,8 +192,25 @@ suite passed 6228. Three extra repairs were made in `phase-6-documentation.md` b
 edit table — its frontmatter and §6.3 heading still advertised `quickstart` and the developer
 guide after those bullets were deleted, which is the same defect class.
 
-**Next step**: SF-02 implementation plan — `scripts/check_skill_references.py`. FR-1's live-tree
-assertion lands there and is green on arrival because SF-01 already repaired.
+**SF-02 delivered** (commit `fdc4eac2`, 2026-08-08). `scripts/check_skill_references.py` + 17 tests
++ a `doc`-gate row. Verified by injecting a dangling reference and observing exit 1 with
+file/line/reference before reverting — a guardrail never seen failing is not known to work.
+
+**Feature COMPLETE.** Closure gate green: `check_fr_coverage.py TECH-019` reports all 6 FRs planned
+and cited; `tests.py feature TECH-019 --kind tooling` exits 0; full suite 6242 passed.
+
+FR-2, FR-3 and FR-6 initially failed the FR ledger — delivered but unproven, because SF-01 was
+documentation and SF-02's tests only covered the checker. Rather than descope them, three
+regression guards were added: the boundary-violation ledger is the one §1.8 names, exactly one
+instruction states the combined-analysis format, and the checker is registered in the `doc` gate.
+That also closes the gap SF-01 knowingly accepted — its repairs now have automated protection.
+
+**Known and deliberately not fixed**: `quality.py cb` fails `complexipy` and `cycles`. `src/` was
+byte-identical to HEAD throughout this work, so both are inherited — they are `TECH-023` and
+`TECH-024`, which this roadmap ranks #7 and #6 against TECH-019's #1, and which must not share a
+working tree.
+
+**Next step**: nothing for TECH-019. Per the debt order, `TECH-025` is #2.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate workflow.

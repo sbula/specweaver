@@ -150,6 +150,17 @@ class TestDocTrackIsSeparate:
     def test_no_code_gate_runs_a_registry_check(self, q: ModuleType, gate: str) -> None:
         assert not {p.check for p in q.resolve_plans(gate)} & {"roadmap_sync", "skill_sync"}
 
+    def test_the_reference_check_runs_in_the_standard_gate(self, q: ModuleType) -> None:
+        """Proves TECH-019 FR-6.
+
+        A guardrail nothing invokes is a script, not a gate. This is the wiring that makes a doc
+        refactor breaking an instruction reference fail at the commit that breaks it, rather than
+        a fortnight later when an agent silently loads nothing.
+        """
+        assert "skill_references" in q.CHECKS
+        assert q.MATRIX["skill_references"] == {"doc": "all"}
+        assert {p.check for p in q.resolve_plans("doc")} >= {"skill_references"}
+
     def test_the_doc_gate_runs_no_code_checks(self, q: ModuleType) -> None:
         assert {p.check for p in q.resolve_plans("doc")} == {
             "roadmap_sync",
