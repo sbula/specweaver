@@ -235,7 +235,7 @@ No new external dependencies.
 - **FRs**: [FR-5, FR-7]
 - **Inputs**: SF-01 + SF-02; INT-US-02 SF-03 harness pattern (scripted adapter); spec fixture with
   `## Contract` + `## Scenarios` sections (S07-conformant).
-- **Outputs**: `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py`; guide update;
+- **Outputs**: `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py`; guide update;
   registry/roadmap flips.
 - **Depends on**: SF-02
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-24/INT-US-24_sf03_implementation_plan.md

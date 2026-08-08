@@ -8,7 +8,7 @@ Every handler is mocked (`StepHandlerRegistry.get` patched) — this pins ONLY
 the YAML's step ordering and loop_back wiring at the engine level. It proves
 nothing about real handlers, converters, or QA execution. The REAL verifiable
 proof for the chain is `tests/e2e/capabilities/workflows/
-test_int_us_24_scenario_e2e.py` (INT-US-24 SF-03, E1-E8). Retitled honestly in
+test_scenario_verification_e2e.py` (INT-US-24 SF-03, E1-E8). Retitled honestly in
 SF-03 — the "e2e" filename is kept only to preserve git history.
 """
 

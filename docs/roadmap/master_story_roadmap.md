@@ -687,7 +687,7 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-002:** [BaseTool Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**
-    *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
+    *   `tests/integration/sandbox/test_dispatcher_registry_delegation.py`
 *   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in all four sub-features — unrelated to this ticket's substantive claim, which is code-verified.
 
 ### 🟢 TECH-003: Structural Refactoring of Workspace AST Module
@@ -708,7 +708,7 @@ These stories do not add new user-facing features, but are critical epics requir
         *   `✅` SF-2: Alembic Migration
         *   `✅` SF-3: Prefix Raw-SQLite3 Tables — commit `4ebb89cf` (2026-08-02); `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations` renamed with a zero-data-loss migration path for pre-SF-3 installations.
 *   **Verifiable Proof:**
-    *   `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py`
+    *   `tests/unit/alembic/test_table_prefix_migration.py`
     *   `tests/unit/graph/core/store/test_repository_schema.py`
     *   `tests/unit/core/flow/engine/test_engine_store.py::TestStoreSchema`
     *   `tests/unit/core/flow/engine/test_reservation.py`
@@ -809,7 +809,7 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
 *   **Verifiable Proof:**
-    *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
+    *   `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
 
 ### 🔴 TECH-023: Repo-Wide Cyclomatic Complexity Violations (complexipy)
 **Benefit:** *`complexipy` reports a clean baseline instead of 98 chronic failures, so a NEW violation is visible instead of lost in noise.*

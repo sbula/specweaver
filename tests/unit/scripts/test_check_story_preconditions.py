@@ -80,7 +80,7 @@ def test_story_block_finds_tech_ticket_by_its_own_literal_id(
     assert "The Validation Engine" not in block  # must not spill into the next section
 
 
-def test_story_block_unaffected_for_int_us_ticket(
+def test_story_block_unaffected_for_a_multi_segment_id(
     mod: ModuleType, roadmap: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(mod, "ROADMAP", roadmap)

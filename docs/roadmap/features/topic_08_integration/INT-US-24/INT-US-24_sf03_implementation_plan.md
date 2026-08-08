@@ -92,7 +92,7 @@
   stub IS the defect; NFR-1 protects call-surfaces, not the defective emission). Then implement.
   Adversarial focus: the emitted file is CODE — every interpolated name/value goes through
   `repr()`/identifier validation so hostile LLM content cannot inject statements.
-- **T2 — e2e harness** (`tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py`, NEW):
+- **T2 — e2e harness** (`tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py`, NEW):
   fixtures per Research Notes 2–3: spec fixture (S07-conformant `## Contract` python block +
   `## Scenarios` YAML), `_mechanical_preset`, ScriptedAdapter (scenario-JSON + verdict-JSON
   branches), the scripted implementer double (buggy→fixed rounds), the name-dispatched

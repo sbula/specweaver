@@ -76,7 +76,7 @@ should drive `sw run --resume`. See **Q1**.
 
 ### R-6 — the INT-US-24 harness is the pattern to copy
 
-`tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py`: module-level
+`tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py`: module-level
 `runner = CliRunner()`, `pytestmark = pytest.mark.e2e`, real `specweaver.interfaces.cli.main.app`,
 scripted LLM responses, per-scenario fixtures. Its docstring enumerates E1–E8 with what each proves
 — worth imitating, because it makes an unproven claim visible in review.
@@ -211,7 +211,7 @@ feature so far has surfaced a live defect, and smaller diffs review better.
 
 ### CB-3 — Verifiable proof: the journey (FR-10)
 
-**Files**: `[NEW] tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py`
+**Files**: `[NEW] tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py`
 
 | # | Scenario | Proves |
 |---|---|---|

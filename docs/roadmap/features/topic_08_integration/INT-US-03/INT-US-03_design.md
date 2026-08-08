@@ -59,7 +59,7 @@ root. It touches only `workflows/implementation` (the `sw implement` pipeline + 
   plumbing is **already built**. `RunContext.enforce_isolation` (`src/specweaver/core/flow/handlers/base.py:56`,
   default `False`) + `execution_root` (`base.py:57`) rebind untrusted-process cwd to an ephemeral git
   worktree. `PipelineStep.use_worktree` (`True`=force, `False`=off, `None`=defer to policy). Proven by
-  `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py`: a `VALIDATE`/`TESTS` step with
+  `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py`: a `VALIDATE`/`TESTS` step with
   `use_worktree=None` + `enforce_isolation=True` runs `QARunnerAtom`→pytest **worktree-bounded**, with
   a paired un-isolated control guarding against a 0-collected vacuous pass. Container-free; needs only
   git+bash; skips cleanly otherwise.
@@ -95,7 +95,7 @@ No new external tool is introduced. Podman/Docker is **explicitly excluded** fro
 ### Blueprint References
 
 None. This feature is driven entirely by the existing SpecWeaver Flow + Sandbox architecture and the
-`INT-US-09` isolation pattern (`test_int_us_09_isolation_e2e.py`).
+`INT-US-09` isolation pattern (`test_step_worktree_isolation_e2e.py`).
 
 ## Functional Requirements
 
@@ -149,7 +149,7 @@ No dependency upgrade required. No Podman/Docker dependency added.
 > isolation is per-step (fresh worktree per step, torn down after; inter-step state travels through
 > the real repo via allow-listed `strip_merge`), the freshly generated, **uncommitted** code will be
 > **absent** from the `run_tests` worktree unless the generate steps are themselves isolated and their
-> output paths are in `context.allowed_paths`. The existing `test_int_us_09_isolation_e2e.py` sidesteps
+> output paths are in `context.allowed_paths`. The existing `test_step_worktree_isolation_e2e.py` sidesteps
 > this by committing its probe test up front — a luxury the autonomous loop does not have. SF-03 must
 > resolve this explicitly (recommended path in AD-7) and its proof (FR-8) must exercise **generated**
 > code, not pre-committed code. If validation shows the per-step model can't cleanly carry generated
@@ -165,7 +165,7 @@ No dependency upgrade required. No Podman/Docker dependency added.
 | Extend inline pipeline (run_tests + lint_fix + validate_code) + target resolution | Low (single file) | Low — steps/handlers already exist |
 | Thread US-9 isolation policy into `implement` `RunContext` | Low | Low — field already exists (`base.py:56`) |
 | Inline QA reporting + remove stale message | Trivial | Low |
-| e2e verifiable-proof test (+ control) | Medium | Low — mirrors shipped `test_int_us_09_isolation_e2e.py` |
+| e2e verifiable-proof test (+ control) | Medium | Low — mirrors shipped `test_step_worktree_isolation_e2e.py` |
 
 ### Returns
 | Beneficiary | Benefit | Magnitude |

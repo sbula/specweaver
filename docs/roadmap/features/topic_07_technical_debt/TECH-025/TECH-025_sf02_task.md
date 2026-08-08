@@ -37,12 +37,12 @@
 
 ## CB-2 — renames and references
 
-- [ ] **T-E — `git mv` the 9 files** to the approved names (plan §1).
-- [ ] **T-F — Rename the 3 functions**, including the one the rule cannot catch (Q2).
-- [ ] **T-G — Move every reference** across `docs/`, `scripts/`, `tests/`, `.agents/`, `.claude/`.
+- [x] **T-E — `git mv` the 9 files** to the approved names (plan §1).
+- [x] **T-F — Rename the 3 functions**, including the one the rule cannot catch (Q2).
+- [x] **T-G — Move every reference** across `docs/`, `scripts/`, `tests/`, `.agents/`, `.claude/`.
       `.claude/` is a junction and `grep -r` returns zero inside it — enumerate explicitly and use a
       positive control before believing a clean result.
-- [ ] **T-H — Verify.** Zero hits for all 9 old basenames; conventions gate green; identical test
+- [x] **T-H — Verify.** Zero hits for all 9 old basenames; conventions gate green; identical test
       count before and after (renames change no assertion).
 
 ## Known deviation, needs a decision at the Phase 2 gate
@@ -81,4 +81,36 @@ ticket id, the migration is still loaded by that id inside the test, and it is t
 - [x] **Phase 7.5 - Red/Blue.** Three probes run and restored; findings below.
 
 ### CB-2
-_(pending)_
+- [x] **Phase 1 - Architecture.** No violations. Renames only; zero `src/`; `tach check` validated.
+- [x] **Phase 2 - Test gap.** `useless_asserts` + `test_basenames` pass repo-wide.
+- [x] **Phase 3 - Implement missing tests.** T10 landed: "no test anywhere in the tree carries a
+      registry ID" -- the tree itself as the assertion, replacing the retired allowlist-parity test.
+      It could not exist before the renames.
+- [x] **Phase 4 - Test suite.** `tests.py cb TECH-025 --kind tooling --all` ok across all three
+      tiers; full suite **6284 passed, 19 skipped** (6283 + T10; renames changed no behaviour).
+- [x] **Phase 5 - Quality.** 10 of 12 pass. **`conventions` is GREEN** -- CB-1's deliberate red is
+      cleared. `complexipy` and `cycles` remain chronic (TECH-023 / TECH-024).
+- [x] **Phase 6 - Documentation.** 92 references moved across 36 files. TECH-025's own plan and
+      design restored after the sweep over-reached into them (see below).
+- [x] **Phase 7 - Walkthrough.** CB-2 section added.
+- [x] **Phase 7.5 - Red/Blue.** The sweep's over-reach was the finding; see below.
+
+## The sweep over-reached, and the guard was the diff
+
+A blind basename replace across `docs/`, `scripts/`, `tests/`, `.agents/` and `.claude/` also
+rewrote **TECH-025's own rename record** -- the plan's `Current | Proposed` table came out with
+both columns identical, and Research Notes R1/R3/R5, which describe why the OLD names were
+invisible to the OLD rule, were rewritten into nonsense.
+
+Caught by reading the diff, not by any gate: every test still passed and every reference still
+resolved. Both files were restored from `c34fefaa` and only the two genuinely *live* pointers in
+the design (where a proof actually lives) were re-applied by hand.
+
+**The distinction a future sweep must make:** a reference that must *resolve* moves with the file;
+a reference that *describes the state before the rename* must not. TECH-025's own documents are
+almost entirely the second kind -- 33 old-name occurrences remain there deliberately, and a repo
+wide search confirms **zero** stray occurrences anywhere else.
+
+**`.claude/` was walked with a positive control**, since `grep -r` returns zero inside the junction
+even when matches exist: searching for a string known to be present matched 6 files, proving the
+walk reached it before any clean result was believed.

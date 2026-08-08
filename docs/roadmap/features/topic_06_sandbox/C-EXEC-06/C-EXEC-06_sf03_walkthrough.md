@@ -37,7 +37,7 @@ adds the *producer* / composition-root half:
 | Unit | `test_session_policy.py` (new) | 13 direct (`_derive_allowed_paths` C1/dotfile/fwd-slash; `apply_session_policy` NFR-2/C2/C3/degradation) |
 | Integration | `test_cli_config_integration.py` (extended) | +7 (run+resume policy, NFR-2 guard, both-knobs, malformed-toml) |
 | Integration | `test_session_policy_fullchain.py` (new, G2) | 2 (real toml → `apply_session_policy` → real session run → reconcile) |
-| E2E | `test_c_exec_06_session_isolation_e2e.py` (new) | 4 (multi-step persistence + reconcile; NFR-4 `secret.py` stripped; G1 `docs/` hard-block over allow-list; un-isolated control; non-git fail-loud) |
+| E2E | `test_session_worktree_isolation_e2e.py` (new) | 4 (multi-step persistence + reconcile; NFR-4 `secret.py` stripped; G1 `docs/` hard-block over allow-list; un-isolated control; non-git fail-loud) |
 
 **Full suite (re-run in Phase 4, from scratch):** unit **4727** · integration **481** · e2e **148** —
 **5356 passed, 0 failures**, 21 skipped.

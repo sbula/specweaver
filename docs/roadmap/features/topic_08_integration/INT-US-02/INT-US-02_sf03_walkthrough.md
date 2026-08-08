@@ -6,7 +6,7 @@
 
 ## What changed and why
 
-The FR-8 proof: `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` drives the REAL CLI
+The FR-8 proof: `tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py` drives the REAL CLI
 surfaces through the full co-author → validate → review loop with a scripted `ContextProvider`
 (registered through the SF-02 seam — the proof exercises the delivered wiring itself) and a scripted
 LLM adapter. Everything else is genuine: real Drafter, real battery machinery (D-VAL-02 project-local

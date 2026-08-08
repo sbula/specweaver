@@ -188,11 +188,11 @@ list. This is exactly why the enumeration runs before the file-by-file migration
 
 - **Red/Green** (mechanical): `test_isolation_gate.py` (19 tests, `SimpleNamespace` reshape),
   `test_run_context_session_fields.py` (6 tests), `test_base.py::test_run_context_isolation_fields_default`,
-  `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py`, `test_int_us_03_isolation_e2e.py`,
-  `test_int_us_09_isolation_e2e.py`. Every post-construction `ctx.<field> = v` becomes
+  `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py`, `test_implement_loop_worktree_isolation_e2e.py`,
+  `test_step_worktree_isolation_e2e.py`. Every post-construction `ctx.<field> = v` becomes
   `ctx.isolation = ctx.isolation.model_copy(update={…})`.
 - **RED-1.8 — consecutive assignments must collapse, not chain-off-stale**: several call sites set two
-  fields back to back (e.g. `test_c_exec_06_session_isolation_e2e.py:130-131` sets `session_isolation`
+  fields back to back (e.g. `test_session_worktree_isolation_e2e.py:130-131` sets `session_isolation`
   then `allowed_paths`). Each pair becomes ONE `model_copy` with both keys. Translating them as two
   independent `model_copy` calls both derived from the *original* `ctx.isolation` silently discards
   the first write — a green-looking test that no longer tests what its name says.

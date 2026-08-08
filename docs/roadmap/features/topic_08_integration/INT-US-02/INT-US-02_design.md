@@ -88,7 +88,7 @@ Internet research not applicable — no new external dependency or algorithm; al
 
 ### Blueprint References
 `INT-US-03` (inline-pipeline extension + composition wiring + proof pattern) and the `INT-US-09` e2e
-control-test pattern (`test_int_us_09_isolation_e2e.py`).
+control-test pattern (`test_step_worktree_isolation_e2e.py`).
 
 ## Functional Requirements
 
@@ -210,7 +210,7 @@ Linear DAG; acyclic.
 ## Session Handoff
 **Current status**: **FEATURE COMPLETE** — SF-03 committed `e6645a57` (2026-07-23); INT-US-02 closed →
 **US-2 epic 🟢** (US-21 now integration-only). Verifiable Proof:
-`tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` (7 scenarios). The proof + pre-commit
+`tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py` (7 scenarios). The proof + pre-commit
 sweeps flushed **5 inherited defects**, all fixed in-boundary (see `INT-US-02_sf03_walkthrough.md`).
 Documented semantics: resume-in-TTY after a rejection-park skips the re-draft (findings consumed at
 park time) and self-heals on the next rejection.

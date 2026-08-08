@@ -67,7 +67,7 @@ No new external dependency; per-run isolation is git-worktree only (container-fr
 
 ### Blueprint References
 Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolation pattern
-(`test_int_us_09_isolation_e2e.py`). No external blueprint.
+(`test_step_worktree_isolation_e2e.py`). No external blueprint.
 
 ## Functional Requirements
 

@@ -59,7 +59,7 @@ on `allowed_paths`. **Nothing populates either field yet** (both are always defa
    a documented pre-existing INT-US-09 backlog gap: `start_pipeline_run`/`resume_run`/`submit_gate_decision`
    never set `enforce_isolation` either. SF-03 stays consistent with that boundary (see Q1) and does not widen it.
 
-6. **The e2e pattern to mirror** — `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (200 lines): `skipif`
+6. **The e2e pattern to mirror** — `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py` (200 lines): `skipif`
    on `shutil.which("git")/("bash")`; a `_git(cwd,*args)` subprocess helper; commit a real repo (init, config
    user, add README + payload, commit) so the worktree checkout carries the payload; build a real
    `PipelineDefinition` of `PipelineStep`s; run via `asyncio.run(PipelineRunner(pipeline, context,
@@ -111,7 +111,7 @@ line (`cli.py:272` and `:473`). Keep it best-effort: a settings-resolution failu
 > regression. Gate the population on `context.session_isolation` being True.
 
 ### Change 3 — verifiable proof (FR-8) + adversarial authorization (NFR-4) · new e2e
-New `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py`, mirroring the INT-US-09 e2e devices. See Test
+New `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py`, mirroring the INT-US-09 e2e devices. See Test
 Plan. Real git + real subprocess, no LLM (the "generation" is a committed/bash-written file, as the INT-US-09
 e2e does — the runner/GitAtom path under test is unchanged by whether a human or an LLM wrote the file).
 
@@ -123,7 +123,7 @@ e2e does — the runner/GitAtom path under test is unchanged by whether a human 
 | `src/specweaver/core/flow/interfaces/cli.py` | call `apply_session_policy` at both composition sites | FR-5, FR-7 |
 | `tests/unit/core/config/test_settings_loader.py` | new-field model + TOML tests | FR-7 |
 | `tests/unit/core/flow/engine/...` | `apply_session_policy` / `_derive_allowed_paths` direct unit tests | FR-5, FR-7 |
-| `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` | multi-step proof + adversarial + control | FR-8, NFR-4 |
+| `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py` | multi-step proof + adversarial + control | FR-8, NFR-4 |
 No new module.
 
 ## Test Plan (4 Adversarial Buckets — DAL-C rigor)
@@ -227,14 +227,14 @@ Delivered exactly as planned; no deviations. Source:
 
 Tests: `test_settings_loader.py` (+11), `test_session_policy.py` (13 unit, direct), `test_cli_config_integration.py`
 (+7 integration), `test_session_policy_fullchain.py` (2 integration, real git — G2), and the FR-8 e2e
-`tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` (4 e2e incl. G1 docs hard-block). Full suite green:
+`tests/e2e/sandbox/test_session_worktree_isolation_e2e.py` (4 e2e incl. G1 docs hard-block). Full suite green:
 unit 4727 · integration 481 · e2e 148 (5356 passed, 0 failures). ruff/mypy(303)/C901/tach/file-size clean.
 
 One test-expectation correction during dev: `Path(".md").stem == ".md"` (pathlib treats a leading-dot name as
 having no suffix), so a degenerate dotfile spec derives `src/.md.py` — safe (matches nothing real); the test
 now asserts the true value.
 
-**Verifiable Proof (FR-8):** `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` +
+**Verifiable Proof (FR-8):** `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py` +
 `tests/integration/core/flow/engine/test_session_policy_fullchain.py`.
 
 ## Backlog (deferred — not SF-03 scope)

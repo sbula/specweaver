@@ -91,7 +91,7 @@ The `create_git_interface` factory in `git/interfaces/facades.py` already handle
 - **Unit tests** (`test_dispatcher_arbiter.py`): Arbiter agent grant logic and read-only boundary handling.
 - **Unit tests** (`test_dispatcher_schema_hiding.py`): Hidden intent schema filtering and plugin-driven tool gate suppression.
 - **Unit tests** (`test_registry.py`): 26 assertions across 14 test cases covering BaseTool ABC, ToolRegistry operations, lazy resolution, conformance, facade conformance.
-- **Integration tests** (`test_dispatcher_sf2_integration.py`): 3 tests covering full tool set compliance, NO_ROLE sentinel, and topology pass-through.
+- **Integration tests** (`test_dispatcher_domain_conformance.py`): 3 tests covering full tool set compliance, NO_ROLE sentinel, and topology pass-through.
 
 ---
 
@@ -206,11 +206,11 @@ Key tests that verify SF-3 correctness:
 
 All 14 existing test cases must remain GREEN. No changes needed.
 
-**File: `tests/integration/sandbox/test_dispatcher_sf2_integration.py`**
+**File: `tests/integration/sandbox/test_dispatcher_domain_conformance.py`**
 
 All 3 existing integration tests must remain GREEN.
 
-**New test file: `tests/integration/sandbox/test_dispatcher_sf3_integration.py`**
+**New test file: `tests/integration/sandbox/test_dispatcher_registry_delegation.py`**
 
 New integration tests to verify the registry delegation:
 
@@ -221,7 +221,7 @@ New integration tests to verify the registry delegation:
 ### Manual Verification
 
 1. Run full dispatcher test suite (expect all green):
-   `uv run pytest tests/unit/sandbox/test_dispatcher.py tests/unit/sandbox/test_dispatcher_arbiter.py tests/unit/sandbox/test_dispatcher_schema_hiding.py tests/unit/sandbox/test_registry.py tests/integration/sandbox/test_dispatcher_sf2_integration.py -v`
+   `uv run pytest tests/unit/sandbox/test_dispatcher.py tests/unit/sandbox/test_dispatcher_arbiter.py tests/unit/sandbox/test_dispatcher_schema_hiding.py tests/unit/sandbox/test_registry.py tests/integration/sandbox/test_dispatcher_domain_conformance.py -v`
 
 2. Run tach check (must not increase violation count from baseline of 95):
    `uv run tach check 2>&1 | Select-String "FAIL" | Measure-Object`
@@ -242,7 +242,7 @@ New integration tests to verify the registry delegation:
 - `dispatcher.py` — refactor `create_standard_set` to delegate to `ToolRegistry`
 
 **Tests:**
-- `tests/integration/sandbox/test_dispatcher_sf3_integration.py` [NEW] — 3 integration tests for registry delegation
+- `tests/integration/sandbox/test_dispatcher_registry_delegation.py` [NEW] — 3 integration tests for registry delegation
 
 ---
 

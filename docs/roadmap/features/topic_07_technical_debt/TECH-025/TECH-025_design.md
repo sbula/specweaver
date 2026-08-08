@@ -45,8 +45,8 @@ what to do when a requirement is "delete this thing" — assert the absence dire
 | Subject FR | Already proven by | Missing |
 |---|---|---|
 | TECH-002 FR-1, FR-2, FR-4 | `tests/unit/sandbox/test_sandbox_registry.py` — `BaseTool` ABC contract, `ToolRegistry` register/create/failure paths, and parametrized conformance over every domain tool and facade | citation only |
-| TECH-002 FR-3 | `tests/integration/sandbox/test_dispatcher_sf3_integration.py` — asserts `create_standard_set` delegates to `ToolRegistry.create_tools` | citation only |
-| TECH-005 FR-1, FR-2, FR-3, FR-6, FR-7 | `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py` — mocked `op.rename_table`/index calls **and** a live in-memory SQLite up/down migration | citation only |
+| TECH-002 FR-3 | `tests/integration/sandbox/test_dispatcher_registry_delegation.py` — asserts `create_standard_set` delegates to `ToolRegistry.create_tools` | citation only |
+| TECH-005 FR-1, FR-2, FR-3, FR-6, FR-7 | `tests/unit/alembic/test_table_prefix_migration.py` — mocked `op.rename_table`/index calls **and** a live in-memory SQLite up/down migration | citation only |
 | TECH-005 FR-4 | `tests/e2e/test_cli_bootstrap_e2e.py` bootstraps from the models and asserts `workspace_projects` exists | citation only |
 | TECH-005 FR-5 | `tests/e2e/capabilities/core/test_lineage_e2e.py` issues raw SQL against `flow_artifact_events` | citation only |
 | TECH-001 FR-9 | `tests/unit/test_architecture.py::test_core_config_has_no_cross_domain_runtime_imports` | already cited — out of scope |
@@ -259,7 +259,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Gate Integrity | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Test Naming Closure | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Test Naming Closure | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -320,9 +320,13 @@ ledger sub-features can close against a gate that no longer credits its own chec
 It also cleared two blockers found on the way: `scripts/` had no mirror in `tests.py`, so no
 scripts-only change could pass its own commit gate; and `tests.py` sat at exactly 600/600 with no
 headroom for any change at all (now 538, via the extracted `_story_resolution.py`).
-**Next step**: SF-02 (Test Naming Closure) — dev. Plan APPROVED 2026-08-08, two commit boundaries:
-CB-1 widens R5 and deletes the legacy allowlist (leaving the conventions gate **deliberately red**
-against the 9 files + 2 function names it now catches — that red is the proof the rule works);
-CB-2 performs the renames and moves ~89 references, turning it green.
+**SF-02 delivered 2026-08-08.** R5 now catches registry IDs in every test file, class and
+function name across every tier; the six-entry legacy allowlist is gone; nine files and three
+functions are renamed for their subject with 92 references moved in the same change. The tree
+itself is now the assertion — a new offender fails a test rather than being absorbed into an
+exemption.
+**Next step**: SF-03 (Unit Test Class Naming Ratchet) — implementation plan. Its only dependency,
+SF-02, is committed. SF-04 (TECH-001 FR Ledger) is also unblocked and independent of SF-03.
+
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

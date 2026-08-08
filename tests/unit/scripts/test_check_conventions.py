@@ -417,6 +417,20 @@ class TestRegistryIdsInNames:
         """It was frozen pending a ticket that decided renames and references together. This is it."""
         assert not hasattr(cv, "LEGACY_E2E_NAMES")
 
+    def test_no_test_anywhere_in_the_tree_carries_a_registry_id(self, cv: ModuleType) -> None:
+        """Replaces the old allowlist-parity test: with no list to keep in step with, the tree
+        itself is the assertion — and it now covers every tier and every name, not just `e2e`
+        filenames. A new offender must fail here rather than be absorbed into an exemption.
+        """
+        offenders = sorted(
+            f"{v.path.relative_to(REPO_ROOT).as_posix()}: {v.message.split(' carries')[0]}"
+            for p in (REPO_ROOT / "tests").rglob("*.py")
+            if "__pycache__" not in p.parts
+            for v in cv.check_registry_ids_in_names(p)
+        )
+
+        assert offenders == []
+
     # The allowlist-parity test that stood here is obsolete: the list is gone, so there is nothing
     # to keep in step with. Its replacement — "no test file anywhere carries a registry ID", the
     # whole tree as the assertion — lands in CB-2, because it cannot pass until the renames do.

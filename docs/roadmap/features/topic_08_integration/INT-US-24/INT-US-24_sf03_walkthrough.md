@@ -6,7 +6,7 @@
 
 ## What changed and why
 
-The FR-7 proof: `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py` drives
+The FR-7 proof: `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py` drives
 `sw run scenario_integration` on the REAL CLI — real contract extraction, real dual fan-out,
 real ScenarioGenerator (scripted LLM JSON), real converter emitting REAL test bodies, real
 pytest subprocesses executing them, real arbiter judging real QA evidence, real gates/park

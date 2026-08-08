@@ -37,7 +37,7 @@ and the **headless park control** (NFR-5/NFR-6). Test-only; closes the contract 
 ### External deps: none new. Test-only — no src/ changes expected (any defect found = fix under this SF per the fix-inherited rule).
 
 ## Implementation Approach
-> New file `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` (placement beside
+> New file `tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py` (placement beside
 > `test_pipeline_e2e.py`). Shared fixtures: scripted provider (deterministic answers), scripted LLM
 > adapter (ordered responses: drafter sections… then review verdicts), mechanical-only validation preset
 > written into the temp project, seam registration + reset fixture.

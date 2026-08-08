@@ -46,7 +46,7 @@
     [Degradation] malformed `[sandbox]` toml → both off (composition never crashes).
 
 - [x] **T5 — Verifiable proof e2e** (FR-8, NFR-4)
-  - test: new `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` (real git+bash, skipif guard).
+  - test: new `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py` (real git+bash, skipif guard).
     [Happy/persistence] multi-step: committed generator script writes `src/foo.py`+`secret.py` into the worktree
     cwd, a later `VALIDATE`/tests step runs a committed pytest probe bounded there that asserts `".worktrees" in
     cwd` AND `src/foo.py` exists in-tree (proves ONE shared worktree across steps; guard `passed==1`);

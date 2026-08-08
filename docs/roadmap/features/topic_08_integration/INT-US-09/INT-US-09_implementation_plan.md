@@ -81,7 +81,7 @@ Exact current signatures/locations (research findings — quoted, not authored):
 | `src/specweaver/core/flow/engine/runner_utils.py` | MODIFY | In `execute_in_sandbox`: set `isolated_context.execution_root = worktree path`; add an early fail-closed git-repo check. |
 | `src/specweaver/core/flow/handlers/bash_action.py` | MODIFY | `_get_atom` uses `cwd=context.execution_root or context.project_path`. |
 | `src/specweaver/core/flow/handlers/validation.py` | MODIFY | `ValidateTestsHandler._get_atom` uses `cwd=context.execution_root or context.project_path`. |
-| `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` | NEW | Real-worktree unmocked proof (FR-6). |
+| `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py` | NEW | Real-worktree unmocked proof (FR-6). |
 | `tests/unit/**` + `tests/integration/**` | NEW/MODIFY | Unit + integration coverage per Test Plan. |
 | `docs/dev_guides/pipeline_engine_guide.md`, `subprocess_execution.md` | MODIFY | Doc updates (pre-commit). |
 
@@ -186,7 +186,7 @@ Exact current signatures/locations (research findings — quoted, not authored):
   (intent order asserted); policy-off + `None` does not (backward-compat).
 - Fail-closed: policy-on run against a non-git tmp project raises the actionable error.
 
-**E2E (FR-6 — primary proof, real + unmocked)** — `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py`
+**E2E (FR-6 — primary proof, real + unmocked)** — `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py`
 - `git init` a real project in `tmp_path` with a `.specweaver/scripts/<name>.sh` that writes a
   sentinel to a **source-tree** path (e.g. `<root>/marker.txt` or `src/marker.py`) — **not** under
   `.specweaver/` (that dir is a shared symlink per AD-4 and would escape the worktree, giving a

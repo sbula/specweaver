@@ -34,7 +34,7 @@ resolved by `C-EXEC-06`; SF-03 makes `sw implement` actually consume it.
 | Unit | `test_session_policy.py` (extended) | +13 (DAL_A/B/C/None, **non-git degrade**, no-escalate=sw-run-safe, off-threshold, force-on, cache, resolver-raises, **G4 configurable threshold**, **G1 invalid threshold**) |
 | Integration | `test_cli_implement_isolation.py` (new) | 6 (DAL_B on, no-marker host, low-DAL host, off-threshold, **non-git degrade**) |
 | Integration | `test_cli_config_integration.py` (extended) | +1 (**G2**: DAL_B project via `sw run` stays OFF — escalation is implement-only) |
-| E2E | `test_int_us_03_isolation_e2e.py` (new) | 2 (DAL_B escalation → generated code runs QA worktree-bounded → reconcile lands only allow-listed; DAL_E control probe FAILS at real root) |
+| E2E | `test_implement_loop_worktree_isolation_e2e.py` (new) | 2 (DAL_B escalation → generated code runs QA worktree-bounded → reconcile lands only allow-listed; DAL_E control probe FAILS at real root) |
 
 **Full suite (Phase 4, re-run):** unit **4750** · integration **487** · e2e **150** — **5387 passed, 0 failures**.
 **Quality (Phase 5):** ruff ✅ · mypy ✅ (303) · C901 ✅ · file-size ✅ (0 err) · tach ✅.

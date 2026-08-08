@@ -189,7 +189,7 @@ def check_registry_ids_in_names(path: Path, repo_root: Path = REPO_ROOT) -> list
     """R5: a test is named for what it exercises, never for the story that produced it.
 
     A story ID is an accident of when the work happened. The behaviour the test proves outlives
-    it — and the name is what the next reader searches for. `test_int_us_21_decomposition_e2e.py`
+    it — and the name is what the next reader searches for. `test_feature_decomposition_e2e.py`
     tells you which ticket paid for the test; `test_feature_decomposition_e2e.py` tells you what
     breaks if it goes red.
 

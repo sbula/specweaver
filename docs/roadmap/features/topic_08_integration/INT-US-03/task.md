@@ -39,7 +39,7 @@
     → session off even at DAL_B.
 
 - [x] **T5 — Verifiable-proof e2e** (FR-8, NFR-6)
-  - test: new `tests/e2e/.../test_int_us_03_isolation_e2e.py` (real git+bash, skipif). [Happy] implement loop
+  - test: new `tests/e2e/.../test_implement_loop_worktree_isolation_e2e.py` (real git+bash, skipif). [Happy] implement loop
     under session isolation (generation stub writes `src/<stem>.py`+`tests/test_<stem>.py`): `run_tests` runs
     pytest **worktree-bounded** (probe: cwd ∈ `.worktrees` AND generated file in-tree; guard `passed==1`),
     reconcile lands only allow-listed files; [Control] isolation off → host, probe FAILS at real root;
@@ -63,7 +63,7 @@
 - T1–T4 done (TDD). **Dev finding (Q3):** escalation now git-repo-checks and DEGRADES to host on a
   non-git project (never hard-fails). Fixed inherited `test_cli_implement.py` MagicMock settings (now real
   SandboxSettings so `enforce_session_isolation` is a real False).
-- T5 (e2e) done: `test_int_us_03_isolation_e2e.py` — DAL_B escalation → bounded QA → reconcile; DAL_E control.
+- T5 (e2e) done: `test_implement_loop_worktree_isolation_e2e.py` — DAL_B escalation → bounded QA → reconcile; DAL_E control.
 - Full suite (Step A): unit 4748 · integration 486 · e2e 150 (5384 passed, 0 failures). No regressions.
   (Fixed inherited MagicMock-settings failures in test_cli_implement.py, test_cli.py, test_cli_telemetry_flush.py.)
 - Pre-commit gate (Step B): _running_.

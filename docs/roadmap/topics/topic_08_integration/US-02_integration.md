@@ -3,7 +3,7 @@
 ## Base Story Contract (`INT-US-02`)
 * **Status:** ✅ Complete (2026-07-23) — [design](../../features/topic_08_integration/INT-US-02/INT-US-02_design.md); SF-01 (feedback-aware draft→validate→review inline chain) + SF-02 (composition-root provider seam, TTY-gated / headless park exit 0) + SF-03 (verifiable proof) all committed. Closing this contract closes the **US-2 epic** (US-21 now integration-only).
 * **Integration Description:** The interactive loop (`E-INTL-02`) must seamlessly hand off the generated context to the Review Engine, ensuring no manual copy-pasting is required.
-* **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` — 7 scenarios on the REAL CLI surfaces (scripted provider via the SF-02 seam + scripted adapter; real Drafter, real battery via D-VAL-02 mechanical-only local preset, real reviewer + gate loop): accept · reject→re-draft→accept · headless park (exit 0) · retries exhausted · provider crash · park→manual-spec→resume · rejection-park→edit→resume.
+* **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py` — 7 scenarios on the REAL CLI surfaces (scripted provider via the SF-02 seam + scripted adapter; real Drafter, real battery via D-VAL-02 mechanical-only local preset, real reviewer + gate loop): accept · reject→re-draft→accept · headless park (exit 0) · retries exhausted · provider crash · park→manual-spec→resume · rejection-park→edit→resume.
 
 ## Sub-Story Add-Ons
 

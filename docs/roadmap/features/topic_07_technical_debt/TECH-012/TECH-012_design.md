@@ -6,7 +6,7 @@
   SF-01/02/03 committed) + its integration `INT-US-09-SF05` (delivered by `C-EXEC-06` SF-03). Multi-step
   untrusted spans now run in one worktree with a single authorized reconcile. The legacy per-step model stays
   single-step-only (multi-step per-step isolation = documented limitation; use session mode). Proof:
-  `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py`.
+  `tests/e2e/sandbox/test_session_worktree_isolation_e2e.py`.
 - **Origin**: Found during `INT-US-03 SF-03`'s implementation-plan Phase 0 spike (2026-07-19). The spike
   proved `sw implement` cannot run its multi-step loop under US-9 worktree isolation.
 - **Severity**: HIGH — `INT-US-09` Core is marked 🟢 Done but is non-functional for any **multi-step**
@@ -35,7 +35,7 @@ independent defects that break any multi-step isolated pipeline (e.g. generate �
    isolated step's `git worktree add -b <existing-branch>` fails "branch already exists" → fail-closed
    `RuntimeError` (`runner_utils.py:170-178`).
 
-**Test-coverage gap:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` uses only single-step pipelines
+**Test-coverage gap:** `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py` uses only single-step pipelines
 and commits its probe files up front (`:64-65`, `:134-135`). No test drives >1 isolated step or a
 freshly-generated (uncommitted) file across steps — which is why the 🟢 Done was granted on incomplete
 coverage.

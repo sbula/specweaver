@@ -55,4 +55,4 @@
 ## Post-commit (after CB-1)
 - Design tracker: SF-03 Committed ✅ → INT-US-02 done.
 - `US-02_integration.md` status ✅; US-2 → 🟢 in master roadmap (Verifiable Proof:
-  `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py`); US-21 dep box sync; queue update.
+  `tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py`); US-21 dep box sync; queue update.

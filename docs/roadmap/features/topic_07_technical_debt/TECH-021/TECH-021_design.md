@@ -57,7 +57,7 @@ note the two compound: an unbounded loop whose failures are also invisible.
 ## Next Step
 
 Run the `specweaver-design` skill. The failing case is already reproducible from
-`tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py`, where
+`tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py`, where
 `TestE8ValidationFailureLoopsBack::test_the_validation_failure_is_recorded_for_the_human` is a
 **strict `xfail`** — it will start failing the moment this is fixed, which is the signal to remove
 the marker.

@@ -166,10 +166,10 @@ a real `SandboxSettings`.
 
 Tests: `test_dal.py` (7 unit), `test_settings_loader.py` (+6), `test_session_policy.py` (+13 escalation incl.
 G1/G4), `test_cli_implement_isolation.py` (6 integration), `test_cli_config_integration.py` (+1 G2 NFR guard),
-`test_int_us_03_isolation_e2e.py` (2 e2e). Full suite green: unit 4750 · integration 487 · e2e 150
+`test_implement_loop_worktree_isolation_e2e.py` (2 e2e). Full suite green: unit 4750 · integration 487 · e2e 150
 (5387 passed, 0 failures). ruff/mypy(303)/C901/tach/file-size clean.
 
-**Verifiable Proof (FR-8):** `tests/e2e/sandbox/test_int_us_03_isolation_e2e.py` +
+**Verifiable Proof (FR-8):** `tests/e2e/sandbox/test_implement_loop_worktree_isolation_e2e.py` +
 `tests/integration/interfaces/cli/test_cli_implement_isolation.py`.
 
 ## Session Handoff

@@ -25,7 +25,7 @@
     (wrong impl) FAILS with the expected failed-count; hyphenated (non-identifier) stem loads
     fine via the file-anchored loader.
 - [x] **T2 — e2e harness**
-  - Tests: `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py` (NEW; fixtures only
+  - Tests: `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py` (NEW; fixtures only
     in this task, proven red by a first skeletal scenario)
   - Pieces: S07-conformant spec fixture (`## Contract` python block + `## Scenarios` YAML;
     parametrized group + single-scenario function); `_mechanical_preset` (D-VAL-02 local

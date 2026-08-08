@@ -22,7 +22,7 @@ re-parked, and the run could **never** advance. Resuming a reviewed gate-park no
 | `docs/architecture/.../domain_flow_engine.md` | New "HITL Approve-on-Resume" section |
 | `docs/user_guides/4_interactive_hitl_gates.md` | **Approve-on-resume semantics for users** — pulled forward from SF-03 (see below) |
 | `tests/unit/core/flow/engine/test_approve_on_resume.py` | **NEW** — 15 tests |
-| `tests/e2e/.../test_int_us_02_drafter_e2e.py` | E6/E7 re-asserted honestly; 3 fixture defects fixed |
+| `tests/e2e/.../test_drafter_loop_e2e.py` | E6/E7 re-asserted honestly; 3 fixture defects fixed |
 | `tests/integration/.../test_pipeline_state_persistence.py` | Obsolete `gate = None` workaround removed |
 | `tests/integration/.../test_rehydration_integration.py` | Observation points moved past the now-approved step |
 | `tests/unit/interfaces/api/v1/test_pipelines.py` | REST approve→resume routing pinned (D7) |

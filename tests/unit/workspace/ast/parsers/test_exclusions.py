@@ -146,7 +146,7 @@ def tmp_path_fixture(tmp_path: Path):
     return tmp_path
 
 
-def test_integration_orchestrator_initializes_ignores_sf4(tmp_path: Path) -> None:
+def test_scaffolded_ignore_file_contains_analyzer_default_dirs(tmp_path: Path) -> None:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.project.scaffold import NativeIgnoreIOHandler
 
@@ -165,7 +165,7 @@ def test_integration_orchestrator_initializes_ignores_sf4(tmp_path: Path) -> Non
     assert "node_modules/" in content
 
 
-def test_e2e_topological_spec_bypass_hidden_binary_sf4(tmp_path: Path) -> None:
+def test_compiled_spec_matches_analyzer_binary_patterns(tmp_path: Path) -> None:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.project.scaffold import NativeIgnoreIOHandler
 

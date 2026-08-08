@@ -397,7 +397,7 @@ Steps:
 ### CB-4 — Approve-on-resume (FR-4) + NFR-1 re-assertions
 
 **Files**: `[MODIFY] core/flow/engine/runner.py`, `[MODIFY] core/flow/engine/runner_utils.py`,
-`[MODIFY] tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py`,
+`[MODIFY] tests/e2e/capabilities/workflows/test_drafter_loop_e2e.py`,
 `[MODIFY] tests/integration/core/flow/engine/test_pipeline_state_persistence.py`,
 `[MODIFY] tests/unit/interfaces/api/v1/test_pipelines.py`
 
