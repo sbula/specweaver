@@ -68,6 +68,28 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
+
+**Order among the debt tickets themselves (recorded 2026-08-08).** Distinct from the claims above,
+which are about feature candidates. This is a dependency order: seven tickets contend for the same
+six files (`runner.py`, `runner_utils.py`, `staleness.py`, `decompose.py`, `dual_pipeline.py`,
+`handlers/registry.py`), so the wrong order means doing the work twice. No status markers here on
+purpose — they live on each ticket's own `### TECH-NNN` header, and duplicating them is what let
+this section drift for a month.
+
+| # | Ticket | Why it sits here |
+|---|---|---|
+| 1 | `TECH-019` | Fixes instructions every later ticket is executed through. Docs only. |
+| 2 | `TECH-025` | Docs only, independent, and establishes the citation convention each ticket below meets at its own closure gate. |
+| 3 | `TECH-014` | A live bug, not cleanup. Cheapest now: `TECH-006` SF-02 put its three racing fields (`run_id`, `step_records`, `pipeline_runner`) into one `RunHandle`, so each sub-run takes a copy instead of three writes interleaving. |
+| 4 | `TECH-020` | Reshapes `runner.py`; removes flow's largest complexity offender and changes the import graph 6 and 7 measure. |
+| 5 | `TECH-015` | Moves/renames modules, changing those imports again. |
+| 6 | `TECH-024` | Measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
+| 7 | `TECH-023` | **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
+
+`TECH-023` and `TECH-024` must not share a working tree: extracting helpers to cut complexity
+changes imports, which is exactly what the cycle check measures, so neither number stays
+attributable. `TECH-010`, `TECH-011`, `TECH-013`, `TECH-016` are independent of this chain and fit
+anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
 **Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
