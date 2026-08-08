@@ -122,3 +122,70 @@ def test_tech_ticket_declared_dependencies_use_its_own_section(
     mod.check_declared_dependencies("TECH-042", report)
 
     assert not report.failures, report.failures
+
+
+# ---------------------------------------------------------------------------
+# Dead-promise scan
+# ---------------------------------------------------------------------------
+
+
+def _fake_src(tmp_path: Path, body: str) -> Path:
+    src = tmp_path / "src" / "pkg"
+    src.mkdir(parents=True)
+    (src / "models.py").write_text(body, encoding="utf-8")
+    return tmp_path
+
+
+FROZEN_MODEL = '''\
+class PlanContext(BaseModel):
+    """A frozen model: assignment raises, so the only legal write is model_copy."""
+
+    model_config = ConfigDict(frozen=True)
+
+    plan: str | None = None  # PlanArtifact content (set by hydrate_plan_context)
+'''
+
+
+def test_model_copy_update_counts_as_a_write_on_a_frozen_model(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A frozen model cannot be written by assignment -- model_copy(update=) is the only way.
+
+    Reading only `.field =` and `Class(field=...)` makes the scan structurally blind to every
+    field on a frozen model, and the codebase freezes the models the engine copies per step.
+    That reported `PlanContext.plan` and `.decomposition` as dead promises while
+    `hydration.py` had been writing both since INT-US-21 SF-02 -- a false positive that
+    blocked every story behind an unoverridable gate.
+    """
+    writer = 'ctx.plan_context = ctx.plan_context.model_copy(update={"plan": text})\n'
+    monkeypatch.setattr(mod, "REPO_ROOT", _fake_src(tmp_path, FROZEN_MODEL + writer))
+
+    report = mod.Report()
+    mod.check_no_dead_promises(report)
+
+    assert not report.failures, report.failures
+
+
+def test_unwritten_field_still_fails(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The widening must not blunt the check: no writer of any form is still a failure."""
+    monkeypatch.setattr(mod, "REPO_ROOT", _fake_src(tmp_path, FROZEN_MODEL))
+
+    report = mod.Report()
+    mod.check_no_dead_promises(report)
+
+    assert any("nothing in src/ writes it" in f for f in report.failures), report.failures
+
+
+def test_model_copy_of_a_different_field_does_not_count(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keyed on the field name, not on model_copy appearing anywhere in the file."""
+    decoy = 'ctx.other = ctx.other.model_copy(update={"decomposition": text})\n'
+    monkeypatch.setattr(mod, "REPO_ROOT", _fake_src(tmp_path, FROZEN_MODEL + decoy))
+
+    report = mod.Report()
+    mod.check_no_dead_promises(report)
+
+    assert any("'plan' is documented" in f for f in report.failures), report.failures

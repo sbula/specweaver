@@ -54,8 +54,8 @@ class PlanContext(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    plan: str | None = None  # Implementation PlanArtifact content (set by runner hook)
-    decomposition: str | None = None  # DecompositionPlan JSON (set by runner hook)
+    plan: str | None = None  # Implementation PlanArtifact content (set by hydrate_plan_context)
+    decomposition: str | None = None  # DecompositionPlan JSON (set by hydrate_plan_context)
 
 
 class ModelAccess(BaseModel):

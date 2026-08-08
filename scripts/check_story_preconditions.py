@@ -350,8 +350,18 @@ def check_no_dead_promises(report: Report) -> None:
     Counting is deliberately CLASS-AWARE. A naive "is `<field>=` used anywhere" test is worthless:
     `review.py` passes `workspace_roots=` to a *different* constructor while only reading
     RunContext's value, and `Generator.generate_code(plan=...)` exists — so a naive check reports
-    both fields as written and can never fail for the right reason. Only two things count as a
-    write: `.<field> =` attribute assignment, or `<DeclaringClass>(... <field>=...)`.
+    both fields as written and can never fail for the right reason. Three things count as a
+    write: `.<field> =` attribute assignment, `<DeclaringClass>(... <field>=...)`, or
+    `model_copy(update={"<field>": ...})`.
+
+    That third form is not a convenience. A frozen model raises on attribute assignment, so
+    `model_copy` is the *only* legal way to write one — and this codebase freezes exactly the
+    models the engine copies per step (`PlanContext`, `IsolationPolicy`) to keep a step's copy
+    from mutating the original. Reading only the first two forms therefore made this scan
+    structurally blind to every field on those models: it reported `PlanContext.plan` and
+    `.decomposition` as dead promises while `hydration.py` had been writing both since
+    INT-US-21 SF-02, and the resulting false failure blocked every story behind a gate with no
+    override.
     """
     src_files = list((REPO_ROOT / "src").rglob("*.py"))
     blob = "\n".join(f.read_text(encoding="utf-8", errors="replace") for f in src_files)
@@ -375,7 +385,14 @@ def check_no_dead_promises(report: Report) -> None:
                 for call in re.finditer(rf"{owner}\s*\(", blob)
                 if re.search(rf"(?<![\w.]){name}\s*=(?!=)", blob[call.end() : call.end() + 1200])
             )
-            if attr_writes or ctor_writes:
+            # `model_copy(update={"<field>": ...})` — the only legal write on a frozen model.
+            copy_writes = len(
+                re.findall(
+                    rf"model_copy\s*\(\s*update\s*=\s*\{{[^}}]*[\"']{name}[\"']\s*:",
+                    blob,
+                )
+            )
+            if attr_writes or ctor_writes or copy_writes:
                 continue
             reason = DEAD_PROMISE_ALLOWLIST.get(name)
             msg = f"'{name}' is documented as (set by {who}) but nothing in src/ writes it"
