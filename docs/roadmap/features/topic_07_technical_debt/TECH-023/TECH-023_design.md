@@ -59,3 +59,36 @@ scoped effort(s), not to be absorbed into whichever commit happens to touch the 
 
 Run through `specweaver-design` to decide the triage/batching strategy and produce implementation
 plan(s).
+
+
+## Re-verified 2026-08-08
+
+Count is now **97 functions**, not 98. The one that went is `RunContext::model_post_init`, which
+this ticket had explicitly excluded as TECH-006 SF-02's target; that work landed and split it into
+three named methods. The exclusion can be dropped from the entry — nothing else about the list
+changed, which is further evidence the debt is chronic rather than drifting.
+
+Reproduce with the project venv, not a bare `python` (the system interpreter has no `pytest-xdist`
+and differs in other ways):
+
+```
+.venv/Scripts/complexipy src --max-complexity-allowed 15    # Windows
+python scripts/quality.py cb                                # what the commit gate actually runs
+```
+
+### Before starting, decide the split
+
+97 functions across ~68 files is far too large for one sub-feature and spans nearly every domain.
+It needs decomposing before any code is written — most likely by domain (assurance/standards,
+workspace/ast, sandbox/filesystem, interfaces) rather than by severity, so each sub-feature stays
+inside one bounded context and one reviewer's head.
+
+### Sequencing hazards
+
+* `PipelineRunner::_execute_loop` belongs to **TECH-020** and is excluded here. TECH-020 is still
+  🔴. If TECH-020 runs first the count drops again; if this ticket runs first, do not touch that
+  function.
+* Extracting helpers to reduce complexity **changes imports**, which is exactly what **TECH-024**
+  measures. Running both at once in one working tree will make it hard to tell which change moved
+  which number. Do TECH-024 first (it is far smaller) or keep them in separate sessions.
+* `docs/dev_guides/` may describe functions this ticket splits. Check before finishing.

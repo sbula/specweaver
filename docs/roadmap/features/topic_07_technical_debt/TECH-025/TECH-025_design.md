@@ -103,3 +103,49 @@ ticket's `Verifiable Proof` test passes. Citation convention only.
 Run through `specweaver-design` to plan the citation sweep across both stories, or handle directly
 as a small, well-scoped documentation-and-test-citation task if a full design pass is unnecessary
 for its size.
+
+
+## Notes for whoever picks this up (2026-08-08)
+
+### The rule this ticket exists to get around
+
+`TECH-001`, `TECH-002` and `TECH-005` are all delivered. The standing rule is that delivered
+stories' documents are not edited — which is exactly why this work needs its own ticket rather
+than being done quietly inside whatever session notices the gap. Doing it *under this ticket* is
+the sanctioned route; doing it as a drive-by edit while closing something else is not. Expect to
+touch those three stories' implementation plans and tests, and say so in the commit.
+
+### What "fixing" it actually means
+
+The gate is `scripts/check_fr_coverage.py <STORY>`. A test counts as citing an FR only when the
+file names the story **and** mentions the literal `FR-N`. So each requirement needs:
+
+1. a mention in the implementation plan that owns it, and
+2. a test file naming the story and the FR.
+
+`TECH-006` was closed this way on 2026-08-08 and is a worked example of both halves —
+`tests/unit/core/flow/handlers/test_base.py` carries `Proves: TECH-006 FR-6, FR-7, FR-12.` style
+tags, and `tests/unit/interfaces/cli/test_interface_layer_boundaries.py` shows what to do when a
+requirement is "delete this thing" and has no natural test: assert the absence directly.
+
+### Two traps
+
+* **Do not tag a tangential test to make the number go green.** The gate only checks that a
+  citation exists, so it cannot tell you whether the test actually proves the requirement. That
+  makes it trivially gameable and worthless if gamed. Where no test genuinely covers an FR, write
+  one — and check it fails when the thing it guards is broken.
+* **Comment style.** Registry IDs are otherwise kept out of source in this repo, because they mean
+  nothing to a reader years later. These `Proves:` tags are the one sanctioned exception, because a
+  tool reads them. Keep them to a single trailing line and leave the surrounding docstring able to
+  stand on its own.
+
+### Scope check before starting
+
+```
+python scripts/check_fr_coverage.py TECH-001    # FR-1..FR-8  (SF-01/02/03)
+python scripts/check_fr_coverage.py TECH-002    # FR-1..FR-6  (all four sub-features)
+python scripts/check_fr_coverage.py TECH-005    # FR-1..FR-7  (SF-1/2)
+```
+21 requirements between them. TECH-001 SF-04's FR-9 and TECH-005 SF-3's FR-8 are already cited and
+are not in scope. This is the only one of the three open debt tickets that touches no production
+code at all, which makes it the safest to run first and the easiest to verify.

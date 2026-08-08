@@ -58,3 +58,33 @@ SF-04's changes present or absent).
 
 Run through `specweaver-design` once `TECH-020`/`TECH-015`'s sequencing is clearer, so Cycle 2's
 fix isn't designed twice.
+
+
+## Re-verified 2026-08-08
+
+All **4 cycles still present and unchanged**. Worth knowing because TECH-006 SF-02 rewrote call
+sites in five of the six modules in the largest cycle (`runner`, `runner_utils`, `staleness`,
+`decompose`, `dual_pipeline`) without moving the number — the cycle is structural, not incidental
+to how those files were being used.
+
+```
+python scripts/check_coupling.py --cycles-only
+```
+
+### Three of the four are self-contained; one is not
+
+* `assurance.validation.registry` / `rules.code.register` / `rules.spec.register` (3) — isolated.
+* `infrastructure.llm.adapters._rate_limit` / `factory` (2) — isolated, and the smallest. Good
+  first target.
+* `interfaces.api.app` / `ui.htmx` / `v1.pipelines` / `v1.router` / `v1.ws` (5) — isolated to the
+  API layer.
+* `core.flow.engine.runner` / `runner_utils` / `staleness` / `handlers.decompose` /
+  `handlers.dual_pipeline` / `handlers.registry` (6) — **overlaps TECH-015 and TECH-020**, both
+  still 🔴. This ticket owns only the import-direction defect, not the restructuring those two
+  tickets plan for the same files. Take the other three cycles first; this one wants coordinating.
+
+### The one thing not to do
+
+The gate's own message says it: break a cycle by moving the shared contract down, **not** by
+deferring an import inside a function. A function-local import silences the checker while leaving
+the modules just as entangled, and it is the fix that will look tempting for the 6-module cycle.
