@@ -1,4 +1,4 @@
-# Design: Pre-Existing FR Traceability Gap (TECH-001 SF-01/02/03, TECH-005 SF-1/2)
+# Design: Pre-Existing FR Traceability Gap (TECH-001 SF-01/02/03, TECH-002 SF-1..4, TECH-005 SF-1/2)
 
 - **Feature ID**: TECH-025
 - **Epic**: Topic 07 (Technical Debt)
@@ -7,11 +7,15 @@
   TECH-001 SF-04 (2026-08-02). **Widened** (2026-08-02, same day) after `check_fr_coverage.py
   TECH-005` surfaced the identical gap while closing TECH-005 SF-3 — user's explicit direction was
   to fold it into this ticket rather than mint a separate one (`TECH-026`), since it's the same
-  systemic cause under a different story ID, not a second distinct problem.
+  systemic cause under a different story ID, not a second distinct problem. **Widened again**
+  (2026-08-08) when `check_fr_coverage.py TECH-002` was run while verifying whether that ticket's
+  amber status still reflected outstanding work. It did not — the work is complete and
+  code-verified — but the same citation gap turned up, this time across all four of its
+  sub-features. Same cause, same disposition.
 
 ## Problem Statement
 
-Two TECH tickets' earlier sub-features fail `check_fr_coverage.py`'s citation check, for the same
+Three TECH tickets' earlier sub-features fail `check_fr_coverage.py`'s citation check, for the same
 underlying reason: they shipped before that gate existed / was wired into the closure process.
 
 **`check_fr_coverage.py TECH-001`**:
@@ -55,6 +59,22 @@ string) was never followed for either story's earlier sub-features.
 
 Per finished-stories-immutable, none of TECH-001 SF-01/02/03's or TECH-005 SF-1/2's own delivered
 files are edited by this ticket — this tracks the citation gap as new work, per story.
+
+
+**`check_fr_coverage.py TECH-002`** (added 2026-08-08):
+```
+FR-1    NO PLAN  NO TEST
+FR-2    NO PLAN  NO TEST
+FR-3    NO PLAN  NO TEST
+FR-4    NO PLAN  NO TEST
+FR-5    NO PLAN  NO TEST
+FR-6    NO PLAN  NO TEST
+```
+None of `TECH-002_design.md`'s FR-1 through FR-6 are cited in any of its four implementation plans
+or in any test naming the story. The substance is verified in code: the explicit `ToolRegistry`
+exists in `sandbox/registry.py`, `__init_subclass__` appears nowhere in `src/` (the design
+deliberately rejected it), the validation layer carries no runtime sandbox imports, and the
+ticket's `Verifiable Proof` test passes. Citation convention only.
 
 ## Candidate Approaches (not yet designed)
 

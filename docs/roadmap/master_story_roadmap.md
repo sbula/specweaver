@@ -68,7 +68,7 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟡, `TECH-005` 🟢, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
 2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
@@ -76,7 +76,11 @@ mechanism never matched the entry's description. `TECH-005` corrected to 🟡 �
 (raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
 (commit `346f64c3`), all three circular dependencies eliminated. `TECH-005` corrected back to
 🟢 — SF-3 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
-migration path.)*
+migration path. 2026-08-08: `TECH-002` corrected back to 🟢 — the description defect that caused
+the 🟡 was fixed in `cea3548c`; re-verified against code (explicit `ToolRegistry` in
+`sandbox/registry.py`, zero `__init_subclass__` anywhere, validation layer free of sandbox imports,
+proof test passing) and no work was ever outstanding. `TECH-006` closed 🟢 — SF-02 landed,
+`RunContext` 32 fields → 15 attributes.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -656,12 +660,13 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `tests/unit/test_architecture.py::test_core_config_has_no_cross_domain_runtime_imports`
 *   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-01/02/03 (found by SF-04's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
 
-### 🟡 TECH-002: BaseTool Registry
+### 🟢 TECH-002: BaseTool Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry`. The originally-described `__init_subclass__` mechanism was never built — the approved design deliberately rejected it in favor of the registry actually shipped.*
 *   **Core Required (MVS):**
     *   `✅` **TECH-002:** [BaseTool Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**
     *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
+*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in all four sub-features — unrelated to this ticket's substantive claim, which is code-verified.
 
 ### 🟢 TECH-003: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*
@@ -794,8 +799,8 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
 *   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. One cycle overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing rather than duplicating.
 
-### 🔴 TECH-025: TECH-001's Pre-Existing FR Traceability Gap (SF-01/02/03)
-**Benefit:** *`check_fr_coverage.py TECH-001` passes cleanly instead of reporting 7 uncited FRs, closing the loop between the design's promises and what actually proves them.*
+### 🔴 TECH-025: Pre-Existing FR Traceability Gap (TECH-001 SF-01/02/03, TECH-002 SF-1..4, TECH-005 SF-1/2)
+**Benefit:** *`check_fr_coverage.py` passes cleanly for TECH-001, TECH-002 and TECH-005 instead of reporting 21 uncited FRs between them, closing the loop between each design's promises and what actually proves them.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-025:** [TECH-001's Pre-Existing FR Traceability Gap](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
-*   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02). FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
+    *   `[ ]` **TECH-025:** [Pre-Existing FR Traceability Gap](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
+*   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02), then again for `TECH-005` the same day, and for `TECH-002` on 2026-08-08 while verifying whether its amber status still reflected outstanding work (it did not). Three stories, 21 FRs, one cause: all shipped before this gate was wired into the closure process. FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
