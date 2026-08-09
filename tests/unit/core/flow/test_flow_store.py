@@ -2,6 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The pipeline-state store stands on its own models, constraints and session scope.
+
+Drives the store directly rather than through the runner, so a regression that folded flow state
+back into the shared config database would fail here rather than somewhere downstream.
+
+Proves: TECH-001 FR-2.
+"""
+
 from datetime import UTC, datetime
 
 import pytest

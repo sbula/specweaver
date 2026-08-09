@@ -132,7 +132,17 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ### SF-01: Deconstruct `core/config/` Database Monolith
 - **Scope**: Extracts LLM telemetry, Flow state, and Profile database logic into independent domain stores.
-- **FRs**: [FR-1, FR-2, FR-3]
+- **FRs**: [FR-1, FR-2, FR-3, FR-7, FR-8]
+
+> **FR-7 and FR-8 assigned here by `TECH-025` SF-04 on 2026-08-09, not by this story.** Every other
+> row of the FR table above belonged to a sub-feature; these two belonged to none, so the table and
+> this breakdown disagreed and nothing owned them. SF-01 is the right owner on the evidence rather
+> than by elimination: its plan §4b ("Dependency Inversion — The Monolith Fix") describes exactly
+> their work — stripping `settings.py` and `database.py` of control flow, adding
+> `interfaces/cli/settings_loader.py` and `interfaces/cli/_db_utils.py`, and modifying
+> `llm/router.py` and `llm/factory.py`. No scope is added to a delivered sub-feature; the
+> assignment records what SF-01 already shipped. Editing a delivered story's design is authorised
+> for this ticket only, by TECH-025 AD-4, and is noted here rather than made silently.
 - **Inputs**: Legacy `_db_mixin` classes and SQLAlchemy models.
 - **Outputs**: Decentralized `store/` packages inside their respective domains.
 - **Depends on**: none

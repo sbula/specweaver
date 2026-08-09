@@ -5,6 +5,17 @@
 - **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-001/TECH-001_sf02_implementation_plan.md
 - **Status**: COMPLETED
+- **Requirements delivered**: FR-4, FR-5
+
+> **Citations added by `TECH-025` SF-04 on 2026-08-09 — no scope added.** This plan shipped before
+> the FR traceability gate existed and named neither requirement it delivered.
+>
+> | FR | Delivered by | Proven by |
+> |---|---|---|
+> | FR-4 | §Proposed Changes — the domain-local `interfaces/cli.py` modules | `tests/unit/test_architecture.py::test_cli_commands_live_in_their_own_domains` — enumerates the domains from the tree rather than a list, so deleting a module cannot be hidden by deleting its entry |
+> | FR-5 | re-registering the decentralised apps on `interfaces/cli/main.py` | `tests/unit/test_architecture.py::test_every_domain_cli_is_mounted_on_the_root_app` — compares what is on disk against what `main.py` mounts, so a domain CLI nobody wired is a failure |
+>
+> Editing a delivered story's plan is authorised for TECH-025 only, by its AD-4.
 
 ## Goal Description
 Refactor the monolithic `interfaces/cli/` layer by decentralizing Typer CLI commands into their respective domain packages. To maintain strict archetype enforcement, domains will adopt a Hexagonal Architecture (Vertical Slicing), utilizing a neutral top-level folder containing `core/` (pure-logic) and `interfaces/` (orchestrators/adapters) sub-packages.

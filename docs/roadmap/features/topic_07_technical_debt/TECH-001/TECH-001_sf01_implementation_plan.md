@@ -6,6 +6,24 @@
 - **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-001/TECH-001_sf01_implementation_plan.md
 - **Status**: COMPLETED (Phase 3 tests passed autonomously, Phase 4 & 5 green)
+- **Requirements delivered**: FR-1, FR-2, FR-3, FR-7, FR-8
+
+> **Citations added by `TECH-025` SF-04 on 2026-08-09 — no scope added.** This plan shipped before
+> the FR traceability gate existed, so it named none of the requirements it delivered and
+> `check_fr_coverage.py TECH-001` blocked the story. Each row below names the requirement and the
+> assertion that would fail if it regressed; nothing here is new work.
+>
+> | FR | Delivered by | Proven by |
+> |---|---|---|
+> | FR-1 | §Proposed Changes — the `llm/store.py` extraction | `tests/unit/infrastructure/llm/test_llm_store.py` drives the store's models and constraints directly |
+> | FR-2 | the `core/flow/store.py` extraction | `tests/unit/core/flow/test_flow_store.py` |
+> | FR-3 | the `workspace/store.py` extraction | `tests/unit/workspace/test_workspace_store.py` |
+> | FR-7 | §4b "Dependency Inversion — The Monolith Fix": strips `settings.py` and `database.py` of control flow, adds `interfaces/cli/settings_loader.py` and `interfaces/cli/_db_utils.py` | `tests/unit/test_architecture.py::test_config_modules_hold_no_domain_orchestration` — asserts no domain imports **and** no import-time database work |
+> | FR-8 | §4b: modifies `llm/router.py` and `llm/factory.py` to take settings by injection | `tests/unit/test_architecture.py::test_llm_entry_points_take_settings_not_a_database` |
+>
+> FR-7 and FR-8 were assigned to this sub-feature by the same ticket — see the note in
+> §Sub-Feature Breakdown → SF-01 of the design for why SF-01 is their owner on the evidence.
+> Editing a delivered story's plan is authorised for TECH-025 only, by its AD-4.
 
 ## Overview
 Deconstruct the monolithic `core/config/database.py` and `_schema.py` raw SQLite strings into feature-bounded contexts (`llm/`, `flow/`, `workspace/`). Implement a highly concurrent `AsyncSession` architecture powered by SQLite WAL mode, `NullPool`, and an asynchronous Command Query Responsibility Segregation (CQRS) Write Queue to safely support massive orchestrator parallelism without OS File Descriptor exhaustion or SQLite locking.

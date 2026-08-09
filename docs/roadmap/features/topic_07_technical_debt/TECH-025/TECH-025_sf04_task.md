@@ -150,7 +150,27 @@ either here would destroy the attribution those tickets depend on.
 
 ### CB-3
 
-- [ ] Phases 1-7.5
+- [x] **Phase 1 - Architecture.** No violations. Zero `src/` (NFR-1 verified). AD-4 waiver applied
+      to four delivered-story documents, each with a dated note.
+- [x] **Phase 2 - Test gap.** Guards green. C1: FR-1/2/3's proofs were adopted, never probed.
+      C2: nothing guards a deleted `Proves:` line — SF-07's job, scheduled not missed. Story W1.
+- [x] **Phase 3 - W1.** All three adopted citations probed genuine. The first FR-2 probe survived
+      (wrong constraint picked) — recorded, and the reason the probe was worth running.
+- [x] **Phase 4 - Test suite.** 4 paths unioned → **5568 passed, 16 skipped**.
+- [x] **Phase 5 - Quality.** `cb`: 10 ok, 1 skip, the same 2 chronic FAILs. `doc`: 3/3.
+- [x] **Phase 6 - Documentation.** Design Progress Tracker → SF-04 all ✅; Session Handoff rewritten
+      for whoever picks up SF-05/SF-06.
+- [x] **Phase 7 - Walkthrough.** `TECH-025_sf04_walkthrough_cb3.md`.
+- [x] **Phase 7.5 - Red/Blue. One live false credit found and fixed.** `test_architecture.py`
+      named `TECH-022` in prose, crediting it with FR-4..FR-9 — the SF-01 defect class, in the file
+      this boundary was adding citations to. Plus an ID in an assertion message and one in a
+      comment. Three NFR-5 violations, all repaired; every `TECH-` occurrence in the four touched
+      test files is now a `Proves:` line.
+
+## Result
+
+`check_fr_coverage.py TECH-001` **exits 0** — the first of the three subject ledgers closed.
+TECH-002, TECH-005 and TECH-022 all still exit 1, and INT-US-21 still exits 0.
 
 ## What the CB-1 probes caught
 

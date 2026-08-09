@@ -261,7 +261,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF-01 | Gate Integrity | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Test Naming Closure | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -324,8 +324,28 @@ headroom for any change at all (now 538, via the extracted `_story_resolution.py
 baseline (278 across 10 dirs). SF-01 and SF-02 are also delivered: the FR ledger gate no longer
 credits its own checker's fixture data, and no test file, class or function name carries a registry
 ID.
-**Next step**: SF-04 (TECH-001 FR Ledger) — implementation plan. Its only dependency, SF-01, is
-committed. SF-05 and SF-06 are also unblocked and independent of SF-04; SF-07 waits on all three.
+**SF-04 delivered 2026-08-09** across three commit boundaries. `check_fr_coverage.py TECH-001`
+now **exits 0** — the first of the three subject ledgers to close. TECH-002 and TECH-005 were
+re-checked at every boundary and both still exit 1, which is the required outcome: a citation in a
+shared test file closing someone else's ledger is the false-credit defect SF-01 existed to fix.
+
+Three things SF-04 found that were not in its plan, each fixed rather than deferred:
+- **The selector assumed every change is source-shaped** — four instances of one root cause, two
+  found by SF-01 and SF-04 being blocked, two more by CB-1's Red/Blue in `domain` scope. Fixed, and
+  the path→module mapping extracted to `scripts/_changed_file_mapping.py`. What remains is recorded
+  in SF-04's plan §Finding: nothing enumerates the (tier × scope × change-shape) space.
+- **Four of the five new invariants passed against a tree that does not exist.** The synthetic
+  probes proved the logic; nothing proved the live invocation pointed anywhere. One guard test now
+  does. Generalised as vacuous-proof **pattern 8** in `test-quality.md`.
+- **`test_architecture.py` was crediting `TECH-022`** through a story ID sitting in prose, and
+  carried an ID in an assertion message and a comment. All three were NFR-5 violations and the
+  first was a live false credit — the SF-01 defect class, found in the file this ticket was adding
+  citations to.
+
+**Next step**: SF-05 (TECH-002) and SF-06 (TECH-005) — both unblocked, independent of each other,
+and may run in parallel sessions. Neither has an implementation plan yet. SF-07 waits on both.
+Note for whoever takes them: SF-04's CB-1 removed the wall that made a tests-and-docs boundary
+impossible to commit, so neither should hit it.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

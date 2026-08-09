@@ -2,6 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The LLM telemetry store stands on its own models, constraints and session scope.
+
+Drives the store directly rather than through a caller, so a regression that folded these tables
+back into the shared config database would fail here rather than somewhere downstream.
+
+Proves: TECH-001 FR-1.
+"""
+
 from datetime import UTC, datetime
 
 import pytest

@@ -2,6 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The workspace profile store stands on its own models, constraints and session scope.
+
+Drives the store directly rather than through project discovery, so a regression that folded
+profiles back into the shared config database would fail here rather than somewhere downstream.
+
+Proves: TECH-001 FR-3.
+"""
+
 from datetime import UTC, datetime
 
 import pytest

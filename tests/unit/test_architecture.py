@@ -127,22 +127,22 @@ def _load_check_coupling() -> ModuleType:
 
 
 def test_core_config_has_no_cross_domain_runtime_imports() -> None:
-    """TECH-001 SF-04 regression guard, proving FR-9 (Eliminate `core.config` Circular
-    Dependencies).
+    """`core.config` stays a pure leaf: no runtime import of a domain package.
 
-    `core.config`'s own `context.yaml` declares `consumes: []` (a pure leaf), but two files
-    (`db_bootstrap.py`, `settings_loader.py`) imported `infrastructure.llm`/`core.flow`/`workspace`
-    directly, creating three separate `tach.toml`-declared circular dependencies -- only two of
-    which (llm, flow) were ever named in TECH-001/TECH-022; the third (`workspace`) was found
-    during this SF's own Red/Blue review. Both files moved to `core.config.bootstrap` (an
-    `adapter`-archetype sub-boundary explicitly allowed to touch those domains) to fix it. This
-    pins `core.config` itself -- excluding `bootstrap/` and `interfaces/`, both separately-scoped
-    boundaries -- to never regrow a runtime import of those three domains.
+    Its own `context.yaml` declares `consumes: []`, but two files (`db_bootstrap.py`,
+    `settings_loader.py`) imported `infrastructure.llm`/`core.flow`/`workspace` directly, creating
+    three separate `tach.toml`-declared circular dependencies -- only two of which (llm, flow) had
+    ever been named in a ticket; the third (`workspace`) surfaced in a Red/Blue review. Both files
+    moved to `core.config.bootstrap`, an `adapter`-archetype sub-boundary explicitly allowed to
+    touch those domains. This pins `core.config` itself -- excluding `bootstrap/` and
+    `interfaces/`, both separately-scoped boundaries -- to never regrow one.
 
     Uses `check_coupling.py`'s own `iter_runtime_imports` so `if TYPE_CHECKING:`-guarded imports
     are excluded the same way that script already had to fix for itself (see its test file): a
     check that flags correct code (a TYPE_CHECKING-only import breaks no cycle at runtime) is a
     check that gets suppressed.
+
+    Proves: TECH-001 FR-9.
     """
     check_coupling = _load_check_coupling()
     root_dir = Path(__file__).resolve().parent.parent.parent
@@ -168,14 +168,11 @@ def test_core_config_has_no_cross_domain_runtime_imports() -> None:
                 if name.startswith(forbidden_prefixes):
                     violations.append(f"{path.name}: {name}")
 
-    assert not violations, (
-        "core.config regrew a cross-domain circular dependency (TECH-001 SF-04 regression): "
-        f"{violations}"
-    )
+    assert not violations, f"core.config regrew a cross-domain circular dependency: {violations}"
 
 
 # ---------------------------------------------------------------------------
-# TECH-001's architectural claims.
+# Structural claims the decentralisation work left behind.
 #
 # Each was true whenever someone last looked and asserted by nothing until now.
 # The logic takes a root so every invariant can be driven against a synthetic
@@ -328,18 +325,15 @@ def llm_database_coupling(root: Path) -> list[str]:
     for f in (llm / "factory.py", llm / "router.py"):
         if not f.is_file():
             continue
-        names = {
-            n.id if isinstance(n, ast.Name) else n.attr
-            for n in ast.walk(ast.parse(f.read_text(encoding="utf-8")))
-            if isinstance(n, ast.Name | ast.Attribute)
-        }
-        aliases = {
-            a.name
-            for n in ast.walk(ast.parse(f.read_text(encoding="utf-8")))
-            if isinstance(n, ast.Import | ast.ImportFrom)
-            for a in n.names
-        }
-        if "Database" in names | aliases:
+        names: set[str] = set()
+        for node in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Name):
+                names.add(node.id)
+            elif isinstance(node, ast.Attribute):
+                names.add(node.attr)
+            elif isinstance(node, ast.Import | ast.ImportFrom):
+                names.update(a.name for a in node.names)
+        if "Database" in names:
             coupled.append(f.name)
     return coupled
 
