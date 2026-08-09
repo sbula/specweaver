@@ -93,7 +93,7 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 
 > [!CAUTION]
 > Read **`references/test-quality.md`** and check every test you intend to rely on against its
-> seven patterns. You MUST NOT cite an existing test as covering a gap until you have read its
+> eight patterns. You MUST NOT cite an existing test as covering a gap until you have read its
 > body. "There is a test named `test_x_flows_through`" is not a finding. What it asserts is.
 >
 > Anything you find is a **finding for this analysis**, not a footnote: list it in the coverage

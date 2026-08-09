@@ -129,7 +129,7 @@ For each task in the breakdown:
 
 > [!IMPORTANT]
 > **The matrix says WHAT to test; `specweaver-pre-commit/references/test-quality.md` says whether a
-> passing test proves anything.** Read it before writing assertions — the seven vacuous-proof
+> passing test proves anything.** Read it before writing assertions — the eight vacuous-proof
 > patterns are cheaper to avoid than to find later, and pattern 7 (deriving your expected value
 > from the thing under test) is invisible in review.
 >

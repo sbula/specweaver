@@ -120,7 +120,33 @@ either here would destroy the attribution those tickets depend on.
 
 ### CB-2
 
-- [ ] Phases 1-7.5
+- [x] **Phase 1 - Architecture.** No violations. `tach check` green; one file, zero `src/`;
+      `test_architecture.py` 384 lines, correct home per plan R5.
+- [x] **Phase 2 - Test gap.** `useless_asserts` + `test_basenames` green repo-wide. **Finding B1
+      (critical): four of the five live-tree tests pass against a nonexistent tree** — measured by
+      calling every helper with a bogus root. The synthetic probes prove the logic; nothing proves
+      the live invocation points at anything. B2: `config_orchestration_offenders` implements half
+      of plan §3 (imports, not DB bootstrapping) while its docstring claims the whole. B3:
+      `llm_database_coupling` is a bare substring match. Stories V1–V4 in
+      `TECH-025_sf04_precommit_review_cb2.md`.
+- [x] **Phase 3 - Implement missing tests.** V1–V4 (16 → 22 tests). V3 added
+      `config_bootstrapping_offenders`; V4 moved the LLM check to the AST. A control test caught
+      `ast.walk` descending into function bodies, so "import time" had included every method —
+      fixed with `_import_time_statements()`.
+- [x] **Phase 4 - Test suite.** unit @ module → `tests/unit` (whole tier, the U4 behaviour CB-1
+      pinned): **5568 passed, 16 skipped**.
+- [x] **Phase 5 - Quality.** `cb`: 10 ok, 1 skip, the same 2 chronic FAILs. `doc`: 3/3.
+- [x] **Phase 6 - Documentation.** New vacuous-proof **pattern 8 "Subject never located"** in
+      `test-quality.md`, with both "seven patterns" references updated. `.claude/` and `.agents/`
+      are one tree via a junction — edited once, verified by explicit path with a positive control.
+- [x] **Phase 7 - Walkthrough.** `TECH-025_sf04_walkthrough_cb2.md`.
+- [x] **Phase 7.5 - Red/Blue. Five attacks, no blocking defect.** S1 a module-level call nested in
+      an `if` is caught · S2 a domain import deferred inside a function is caught (correct — this
+      repo's cycle gate rejects deferred imports as a cycle fix) · S3 dotted `import x.y.z` caught ·
+      S4 a **parent-relative** domain import is NOT matched — unreachable, because ruff's TID252
+      bans them repo-wide (verified by planting one) · S5 an unparseable config module raises
+      loudly rather than being skipped, which is what plan T5 asked for. S4 recorded in the
+      helper's docstring: relaxing TID252 would silently open it.
 
 ### CB-3
 

@@ -16,7 +16,7 @@ hypothetical.
 
 ---
 
-## The seven vacuous-proof patterns
+## The eight vacuous-proof patterns
 
 | # | Pattern | How to detect it |
 |---|---|---|
@@ -27,6 +27,7 @@ hypothetical.
 | 5 | **Escaped mock** — a "mocked" test reaching a real network or paid API | Look for alternative resolution paths that bypass the patch. Watch suite duration and quota errors |
 | 6 | **Assertion weaker than the claim** — the name promises more than the assert checks | Read the name, then the asserts. "Flows through the whole chain" backed by one truthiness check is a gap |
 | 7 | **Self-referential expectation** — the expected value is derived from the thing under test | *"If the implementation were wrong in the way this test names, would this test change?"* If no, it asserts nothing |
+| 8 | **Subject never located** — the test runs, but the thing it inspects resolved to nothing | An absence proof over a real tree reports *clean* for a tree that does not exist. Call the locator with a deliberately wrong root: if it still reports clean, a moved test file or a renamed layout silently retires the proof while it goes on passing. Guard the inputs once, in one test, rather than restating them in every assertion |
 
 ### Pattern 4 has a subtle form: inert fixture input
 
