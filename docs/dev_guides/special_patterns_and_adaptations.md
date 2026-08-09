@@ -450,3 +450,45 @@ result == 5` -> `assert result == 3` sitting next to an unrelated real rename wa
    fixpoint/constraint-propagation resolution over a single greedy pass once more than one
    independent substitution can coexist in the same file — and should always pair a new "safe"
    pattern with an adversarial test proving the specific bug-hiding shape it must still reject.
+
+---
+
+## 26. Union-Only Contribution in Change-Driven Selection (The Tests-Are-Source-Too Model)
+
+`scripts/tests.py` picks which tests to run from what a diff touched. It was written on the
+assumption that a change is a `src/` change, and that assumption failed twice in a row: a
+`scripts/`-only change resolved to zero paths (nothing mapped `scripts/` to its `tests/unit/scripts/`
+mirror), and then a tests-and-docs-only change did the same. Both were reported as *"you changed
+source that nothing mirrors"* — missing coverage — when in the second case no source had changed at
+all.
+
+### How it works:
+A changed **test** file now contributes its own module to the scope exactly as a source file does
+(`_tier_relative` maps `tests/unit/core/flow/test_x.py` → `core/flow/test_x.py`), and the two sets
+are combined with a **union**. The direction matters more than the mapping:
+
+- A changed test can **add** a module to the run. It can never redirect or remove one.
+- That preserves the intent of the guard it replaced — *"editing a test must not be what decides
+  which tests run"* — because under a union a test **contributes**, it does not **decide**.
+- The mapping is **tier-specific**: a test's tier is baked into its own path, whereas a source file
+  serves every tier. Without that, editing an e2e test would pull in unit paths.
+- At `touched` scope a changed test resolves to **itself**; the `test_{stem}*.py` glob cannot serve
+  it, since it would look for `test_test_x*.py`.
+
+The mapping is by **directory**, which is an admitted proxy: an integration test genuinely spanning
+three modules maps to whichever directory it sits in. That is the same proxy the source side already
+uses, so it is consistent — and the code says so rather than implying precision it does not have.
+
+### Why we do it:
+1. **A blocked gate must name the cause it can prove, not the most likely one.** The original
+   message asserted the source cause unconditionally. Rewriting the prose to mention both causes was
+   not enough — it still left the operator to work out which applied. `_blocked_reason()` now
+   *computes* it: source-with-no-mirror, tests-with-no-mirror, or nothing-in-this-tier-at-all.
+2. **General applicability**: whenever a selector derives scope from a change set, ask what happens
+   when the change is not the shape you had in mind. Prefer union-only contribution so a new input
+   class can widen the selection but never narrow it — a selector that can *narrow* on unfamiliar
+   input fails silently green, which is strictly worse than failing loudly red. And any gate that
+   refuses work must distinguish its refusal reasons in code, because a hard-coded reason is a
+   claim, and an untested claim about *why* something failed will eventually be false.
+3. **Untested operator prose rots.** The false message survived because nothing read it. Messages
+   that a human acts on deserve assertions like any other output.

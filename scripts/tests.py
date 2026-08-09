@@ -45,6 +45,19 @@ file and nothing mirrors it, that is not a clean run, it is code with no direct 
 Source means `src/specweaver/` **and** `scripts/`, both mirrored under `tests/<tier>/`. The gates
 in `scripts/` were excluded until 2026-08-08, so every scripts-only change resolved to zero paths
 and was refused for having no mirror — while `tests/unit/scripts/` sat there mirroring them.
+
+A CHANGED TEST contributes its own module too (2026-08-08). A test belongs to the module it covers,
+so it is scoped exactly like a source file — and the two sets are UNIONED, so a changed test can
+add a module but never redirect or remove one. Before this, a tests-only change resolved to zero
+paths and was refused as "source that nothing mirrors", which is false when no source changed at
+all; it blocked every commit whose work is tests and documents. Tier-specific, because a test's
+tier is embedded in its own path while a source file serves every tier.
+
+Both gaps have the same root: this selector was written assuming every change is source-shaped.
+CB-1's adversarial review found the same root a third time, in `domain` scope: a test in the tier
+root resolved to no domain at all, and one under `capabilities/` resolved to every capability. The
+path-to-module mapping now lives in `_changed_file_mapping.py`, so this file keeps only the
+decision of what to RUN for a module.
 """
 
 from __future__ import annotations
@@ -101,6 +114,15 @@ CAP_ID = re.compile(r"^([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}$", re.I)
 #: sibling raised — a usage error would surface as a traceback instead of a message.
 _story_resolution = _load_sibling("_story_resolution")
 UsageError = _story_resolution.UsageError
+
+#: "What module does a changed file belong to" — a pure mapping over paths, split out so this file
+#: keeps only the decision of what to RUN for it. Underscore-prefixed aliases because the tests and
+#: `paths_for` already know them by those names.
+_changed_file_mapping = _load_sibling("_changed_file_mapping")
+_src_relative = _changed_file_mapping.src_relative
+_tier_relative = _changed_file_mapping.tier_relative
+_blocked_reason = _changed_file_mapping.blocked_reason
+domain_parts = _changed_file_mapping.domain_parts
 
 
 # ---------------------------------------------------------------------------
@@ -321,18 +343,38 @@ def changed_files(base: str | None = None) -> list[Path]:
     return sorted(Path(p) for p in found)
 
 
-def _src_relative(path: Path) -> Path | None:
-    """src/specweaver/core/flow/runner.py -> core/flow/runner.py; scripts/x.py -> scripts/x.py.
-
-    `scripts/` keeps its prefix because callers scope by `rel.parent`, which puts its mirror at
-    `tests/unit/scripts`. Excluding it blocked every scripts-only change; see the tests.
-    """
-    posix = path.as_posix()
-    if path.suffix != ".py":
-        return None
-    if posix.startswith("src/specweaver/"):
-        return Path(posix[len("src/specweaver/") :])
-    return Path(posix) if posix.startswith("scripts/") else None
+def _scoped_paths(rel: Path, tier_root: Path, scope: str, repo_root: Path) -> set[Path]:
+    """The paths one module-relative contributes at this scope."""
+    if scope == "touched":
+        # tests/<tier>/ mirrors src/specweaver/ and scripts/, so a module's own tests sit
+        # alongside it.
+        mirror = tier_root / rel.parent
+        return {
+            p.relative_to(repo_root)
+            for p in (repo_root / mirror).glob(f"test_{rel.stem}*.py")
+            if p.is_file()
+        }
+    if scope == "module":
+        mirror = tier_root / rel.parent
+        return {mirror} if (repo_root / mirror).is_dir() else set()
+    if scope == "domain":
+        # e2e is organised by top-level domain rather than by full package path.
+        parts = domain_parts(rel)
+        if len(parts) <= 1:
+            # No directory to name a domain with: a test sitting in the tier root IS the unit of
+            # work. Without this, the four tests directly under `tests/e2e/` contribute nothing.
+            # The `test_` check is load-bearing, not belt-and-braces: a bare SOURCE module lands
+            # here too, and `src/specweaver/conftest.py` would otherwise select the unrelated
+            # `tests/e2e/conftest.py` purely because that file happens to exist.
+            target = tier_root / rel
+            is_test = rel.name.startswith("test_") and (repo_root / target).is_file()
+            return {target} if is_test else set()
+        return {
+            candidate
+            for candidate in (tier_root / "capabilities" / parts[0], tier_root / parts[0])
+            if (repo_root / candidate).is_dir()
+        }
+    raise UsageError(f"unknown scope {scope!r}")
 
 
 def paths_for(
@@ -346,28 +388,19 @@ def paths_for(
     relatives = [r for r in (_src_relative(p) for p in changed) if r is not None]
     found: set[Path] = set()
 
-    for rel in relatives:
+    # A changed test resolves to ITSELF at `touched` scope; the `test_{stem}*.py` glob below cannot
+    # serve it, since it would look for `test_test_x*.py`. At every other scope it contributes its
+    # module through the same machinery as a source file.
+
+    for rel in (r for r in (_tier_relative(p, tier) for p in changed) if r is not None):
         if scope == "touched":
-            # tests/<tier>/ mirrors src/specweaver/ and scripts/, so a module's own tests sit
-            # alongside it.
-            mirror = tier_root / rel.parent
-            found.update(
-                p.relative_to(repo_root)
-                for p in (repo_root / mirror).glob(f"test_{rel.stem}*.py")
-                if p.is_file()
-            )
-        elif scope == "module":
-            mirror = tier_root / rel.parent
-            if (repo_root / mirror).is_dir():
-                found.add(mirror)
-        elif scope == "domain":
-            # e2e is organised by top-level domain rather than by full package path.
-            domain = rel.parts[0]
-            for candidate in (tier_root / "capabilities" / domain, tier_root / domain):
-                if (repo_root / candidate).is_dir():
-                    found.add(candidate)
+            if (repo_root / tier_root / rel).is_file():
+                found.add(tier_root / rel)
         else:
-            raise UsageError(f"unknown scope {scope!r}")
+            relatives.append(rel)
+
+    for rel in relatives:
+        found |= _scoped_paths(rel, tier_root, scope, repo_root)
 
     return sorted(found)
 
@@ -423,9 +456,8 @@ def run_selections(
         paths = paths_for(selection.tier, selection.scope, changed)
         if not paths:
             print(
-                f"\nBLOCKED: {selection.tier} at scope '{selection.scope}' selected NO tests.\n"
-                "You changed source that nothing mirrors — that is missing coverage, not a "
-                "clean run."
+                f"\nBLOCKED: {selection.tier} at scope '{selection.scope}' selected NO tests: "
+                f"{_blocked_reason(selection.tier, changed)}."
             )
             results.append((selection, 1, 0))
             continue

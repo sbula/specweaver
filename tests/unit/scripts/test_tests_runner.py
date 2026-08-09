@@ -15,6 +15,11 @@ That is a one-character mistake with no visible symptom, so it is pinned from se
 
 The diff-safety rule this file used to cover lives in `test_refactor_diff_safety.py`, mirroring
 `scripts/_refactor_diff_safety.py` — one test file per script.
+
+`scripts/_changed_file_mapping.py` is the exception, and deliberately so: `tests.py` re-exports its
+whole surface under the names used here, and the mapping is only ever meaningful as an input to
+scope resolution. Testing it through its caller is what makes the union model assertable at all.
+Same arrangement as `_test_class_naming.py`, covered via `test_check_conventions.py`.
 """
 
 from __future__ import annotations
@@ -299,9 +304,61 @@ class TestScopeResolution:
     def test_non_source_changes_select_nothing(self, tr: ModuleType) -> None:
         assert tr.paths_for("unit", "module", [Path("README.md")]) == []
 
-    def test_test_file_changes_do_not_drive_source_scoping(self, tr: ModuleType) -> None:
-        """Editing a test must not be what decides which tests run."""
-        assert tr.paths_for("unit", "module", [Path("tests/unit/core/test_x.py")]) == []
+    def test_a_changed_test_contributes_its_own_module(self, tr: ModuleType) -> None:
+        """A test belongs to the module it covers, so it contributes that module like a source file.
+
+        This assertion is the REVERSE of the one it replaces
+        (`test_test_file_changes_do_not_drive_source_scoping`, which required `[]`). That guard's
+        reasoning — "editing a test must not be what decides which tests run" — still holds and is
+        why the model is a UNION: a changed test can ADD a module, never redirect or remove one, so
+        it decides nothing. Inverted deliberately, not by accident.
+
+        Without this, a tests-only change resolves to zero paths and the gate refuses it as "source
+        that nothing mirrors" — which is false when no source changed at all, and blocks every
+        commit whose work is tests and documents.
+        """
+        assert tr.paths_for("unit", "module", [Path("tests/unit/core/test_x.py")]) == [
+            Path("tests/unit/core")
+        ]
+
+    def test_a_changed_test_does_not_leak_into_another_tier(self, tr: ModuleType) -> None:
+        """A test's tier is embedded in its own path, unlike a source file which serves every tier."""
+        changed = [Path("tests/e2e/sandbox/test_x.py")]
+
+        assert tr.paths_for("unit", "module", changed) == []
+
+    def test_source_and_test_changes_union_their_modules(self, tr: ModuleType) -> None:
+        changed = [
+            Path("src/specweaver/core/flow/runner.py"),
+            Path("tests/unit/graph/test_builder.py"),
+        ]
+
+        assert tr.paths_for("unit", "module", changed) == [
+            Path("tests/unit/core/flow"),
+            Path("tests/unit/graph"),
+        ]
+
+    def test_a_changed_e2e_test_maps_to_its_domain(self, tr: ModuleType) -> None:
+        changed = [Path("tests/e2e/sandbox/test_x.py")]
+
+        assert tr.paths_for("e2e", "domain", changed) == [Path("tests/e2e/sandbox")]
+
+    def test_touched_scope_runs_the_changed_test_itself(self, tr: ModuleType) -> None:
+        """The `test_{stem}*.py` glob cannot serve a test file — it would seek `test_test_x*.py`."""
+        changed = [Path("tests/unit/scripts/test_tests_runner.py")]
+
+        assert tr.paths_for("unit", "touched", changed) == [
+            Path("tests/unit/scripts/test_tests_runner.py")
+        ]
+
+    def test_a_changed_test_in_a_nonexistent_package_selects_nothing(self, tr: ModuleType) -> None:
+        assert tr.paths_for("unit", "module", [Path("tests/unit/nope/test_x.py")]) == []
+
+    def test_a_deleted_test_is_not_handed_to_pytest(self, tr: ModuleType) -> None:
+        """A deletion shows up in the diff too; passing the missing path on would abort the run."""
+        changed = [Path("tests/unit/scripts/test_deleted_yesterday.py")]
+
+        assert tr.paths_for("unit", "touched", changed) == []
 
     def test_a_package_with_no_mirror_selects_nothing(self, tr: ModuleType) -> None:
         assert (
@@ -314,6 +371,140 @@ class TestScopeResolution:
         paths = tr.paths_for("unit", "touched", changed)
 
         assert all(p.name.startswith("test_hasher") for p in paths)
+
+    def test_a_non_python_file_under_the_tier_root_selects_nothing(self, tr: ModuleType) -> None:
+        """The suffix guard, which `README.md` never reaches — that one exits at the prefix check.
+
+        `tests/unit/scripts/` is a real mirror directory on purpose: drop the `.py` check and this
+        resolves to it, so the assertion moves. Point it at a non-existent package and the test
+        would pass for the wrong reason.
+        """
+        assert tr.paths_for("unit", "module", [Path("tests/unit/scripts/fixture.yaml")]) == []
+
+    def test_a_test_at_the_tier_root_resolves_to_the_whole_tier(self, tr: ModuleType) -> None:
+        """`rel.parent` is `.`, so the mirror IS the tier root.
+
+        Defensible — a repo-root architecture test really does cover the tier — but it is a
+        6000-test consequence of a `Path(".")`, so it is pinned rather than left to be discovered.
+        """
+        changed = [Path("tests/unit/test_architecture.py")]
+
+        assert tr.paths_for("unit", "module", changed) == [Path("tests/unit")]
+
+    def test_an_unknown_scope_is_rejected(self, tr: ModuleType) -> None:
+        """Reached only with a changed file: an empty diff never enters the scope branch at all."""
+        with pytest.raises(tr.UsageError, match="sideways"):
+            tr.paths_for("unit", "sideways", self.CHANGED)
+
+
+class TestPathsForAtDomainScope:
+    """`domain` is the one scope where a test's path is not shaped like a source path.
+
+    Both cases here were found by CB-1's adversarial review, after U1-U4 were already green: every
+    one of those exercises `module` or `touched`, so the domain branch went unexamined while the
+    boundary claimed to have fixed test-derived scoping generally.
+    """
+
+    def test_a_test_in_the_tier_root_resolves_to_itself(self, tr: ModuleType) -> None:
+        """`rel.parts[0]` is the FILENAME here, not a domain — there is no directory to find.
+
+        Four e2e tests sit directly in `tests/e2e/`. Without this they contribute nothing, so an
+        INT story editing one fails its own gate for a reason that is not the developer's fault —
+        the very defect class this boundary exists to remove, one tier over.
+        """
+        changed = [Path("tests/e2e/test_cli_bootstrap_e2e.py")]
+
+        assert tr.paths_for("e2e", "domain", changed) == [
+            Path("tests/e2e/test_cli_bootstrap_e2e.py")
+        ]
+
+    def test_a_capabilities_test_resolves_to_its_domain_not_the_container(
+        self, tr: ModuleType
+    ) -> None:
+        """`capabilities/` is a container, so the domain is what follows it.
+
+        Taking `parts[0]` verbatim selects EVERY capability. Union-only makes that safe rather
+        than wrong, but the source route resolves the same domain precisely, and two routes
+        disagreeing about what `domain` means reads as a bug to whoever meets it next.
+        """
+        changed = [Path("tests/e2e/capabilities/core/test_lineage_e2e.py")]
+
+        assert tr.paths_for("e2e", "domain", changed) == [
+            Path("tests/e2e/capabilities/core"),
+            Path("tests/e2e/core"),
+        ]
+
+    def test_the_test_route_and_the_source_route_agree_on_a_domain(self, tr: ModuleType) -> None:
+        """The asymmetry itself, asserted — so closing one route and not the other goes red."""
+        from_test = tr.paths_for("e2e", "domain", [Path("tests/e2e/capabilities/core/test_x.py")])
+        from_source = tr.paths_for("e2e", "domain", [Path("src/specweaver/core/flow/runner.py")])
+
+        assert from_test == from_source
+
+    def test_a_tier_root_test_that_does_not_exist_selects_nothing(self, tr: ModuleType) -> None:
+        """A deletion reaches the selector too; handing pytest a missing path aborts the run."""
+        changed = [Path("tests/e2e/test_deleted_yesterday.py")]
+
+        assert tr.paths_for("e2e", "domain", changed) == []
+
+    def test_a_bare_source_module_still_selects_nothing_at_domain_scope(
+        self, tr: ModuleType
+    ) -> None:
+        """The new tier-root branch must not start inventing e2e paths for source files."""
+        assert tr.paths_for("e2e", "domain", [Path("src/specweaver/conftest.py")]) == []
+
+
+class TestBlockedReason:
+    """A tier that selects nothing must say WHY, and the reason must be true.
+
+    The message this pins replaced one that asserted the source cause unconditionally. It was
+    therefore false for a tests-only change, and cost a session hunting for a coverage hole that
+    did not exist. Untested prose is how that survived.
+    """
+
+    def test_changed_source_with_no_mirror_names_the_coverage_cause(self, tr: ModuleType) -> None:
+        reason = tr._blocked_reason("unit", [Path("src/specweaver/nonexistent/a.py")])
+
+        assert "missing coverage" in reason
+
+    def test_a_tests_only_change_is_not_blamed_on_missing_source_coverage(
+        self, tr: ModuleType
+    ) -> None:
+        """The false claim, stated exactly: no source changed, so none of it can lack a mirror."""
+        reason = tr._blocked_reason("unit", [Path("tests/unit/nope/test_x.py")])
+
+        assert "missing coverage" not in reason
+        assert "no mirror in this tier" in reason
+
+    def test_a_change_touching_neither_says_so(self, tr: ModuleType) -> None:
+        reason = tr._blocked_reason("unit", [Path("README.md")])
+
+        assert reason == "nothing you changed resolves to this tier at all"
+
+    def test_an_e2e_test_does_not_explain_a_blocked_unit_tier(self, tr: ModuleType) -> None:
+        """Tier-specific: an e2e file is invisible to the unit tier, so it cannot be the cause."""
+        reason = tr._blocked_reason("unit", [Path("tests/e2e/sandbox/test_x.py")])
+
+        assert reason == "nothing you changed resolves to this tier at all"
+
+    def test_source_wins_when_both_kinds_changed(self, tr: ModuleType) -> None:
+        """Missing source coverage is the more serious of the two, so it is reported first."""
+        changed = [Path("tests/unit/nope/test_x.py"), Path("src/specweaver/nonexistent/a.py")]
+
+        assert "missing coverage" in tr._blocked_reason("unit", changed)
+
+    def test_an_empty_selection_is_reported_and_counted_as_a_failure(
+        self, tr: ModuleType, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """No pytest subprocess runs here — `run_selections` returns before `run_tier`."""
+        selection = tr.Selection("unit", "module")
+
+        results = tr.run_selections([selection], [Path("README.md")], "1")
+        out = capsys.readouterr().out
+
+        assert results == [(selection, 1, 0)]
+        assert "BLOCKED" in out
+        assert "nothing you changed resolves to this tier at all" in out
 
     def test_a_gate_script_mirrors_to_the_scripts_test_package(self, tr: ModuleType) -> None:
         """`scripts/` is mirrored by `tests/unit/scripts/`, so changing a gate must select it.

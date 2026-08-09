@@ -85,6 +85,41 @@ pytest -k "not validate"   # Runs tests except those containing "validate"
 
 ## 7. Code Quality Gates
 
+### The commit gate (`scripts/tests.py`)
+
+Everything above is for the loop you are in. At a commit boundary you do **not** hand-pick tiers —
+the gate picks them from the story:
+
+```bash
+python scripts/tests.py cb C-FLOW-12           # capability story
+python scripts/tests.py cb INT-US-21           # integration story
+python scripts/tests.py cb TECH-020 --kind refactor|bugfix|tooling|audit
+python scripts/tests.py matrix                 # every profile
+```
+
+Story type chooses the profile, commit state (`quick`/`cb`/`sf`/`feature`) chooses the row, and DAL
+shifts the whole thing earlier or later. `--also`/`--all` may widen a run; **nothing narrows one**.
+It already passes `-n auto`, so no extra flag is needed.
+
+**How a changed file becomes a test path.** Both `src/specweaver/` and `scripts/` are treated as
+source and mirrored under `tests/<tier>/`. A changed **test** contributes its own module too, for
+its own tier only — and the two sets are *unioned*, so a changed test can add a module to the run
+but never redirect or remove one. Scope then decides what each contributes: `touched` → the
+mirroring test file (a changed test resolves to itself), `module` → the mirror directory, `domain` →
+the e2e domain directory, `all` → the whole tier. See pattern 26 in
+`special_patterns_and_adaptations.md` for why it is union-only.
+
+**A tier that selects zero tests FAILS.** The message names which of three causes applies: source
+with no mirror (missing coverage — go write the test, do not work around the scope), tests whose
+package has no mirror in that tier, or nothing in the diff touching that tier at all.
+
+> [!NOTE]
+> **The rest of this guide predates `scripts/tests.py` and `scripts/quality.py`** and still shows
+> bare `pytest` / `ruff check` invocations and at least one module path that no longer exists
+> (`src/specweaver/flow/engine.py`). Those commands still work for local iteration, which is what
+> the sections below are for — but they are not the gate. Refreshing the whole guide is outside the
+> boundary that added this section.
+
 ### Linting & Formatting (Ruff)
 SpecWeaver uses [Ruff](https://docs.astral.sh/ruff/) for linting and import sorting. Configuration is in `pyproject.toml`.
 
