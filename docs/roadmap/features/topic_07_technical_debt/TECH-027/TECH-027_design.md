@@ -104,6 +104,22 @@ guard.
   violates `TECH-026`'s placement rule. But both fall out of one scan of `master_story_roadmap.md`,
   so they should share a checker rather than each walking the file.
 
+  > **Note (2026-08-11) — `TECH-026`'s checker rule was corrected, and it changes what this ticket
+  > inherits.** `TECH-026`'s design had stated its rule two ways: the principle *"a line exists only
+  > for something with its own registry ID"*, and, in its Candidate Approaches bullet, a lexical
+  > *"distinguish `INT-US-NN-SFxx` from a bare `SF-NN` — that distinction is the whole rule"*. The
+  > second was wrong and has been struck: it flags 15 legal prose mentions of `SF-NN` and ignores
+  > the ~89 capability lines at the same nesting level. The surviving, validated form is
+  > **structural** — a third-level list item must name a bold registry ID, which separates 168 legal
+  > lines from exactly the 11 violations.
+  >
+  > **Why that matters here.** A lexical rule would have collided head-on with this ticket: clause 2
+  > makes a *qualified* `TECH-001 SF-04` legal in prose everywhere, so a checker that treats any
+  > `SF-NN` token as suspect cannot express both contracts at once. The structural rule leaves the
+  > prose plane entirely to `TECH-027`, and the list-item plane entirely to `TECH-026`. That clean
+  > split is what makes one shared scan feasible — design the checker to walk the file once and
+  > apply a list-item rule and a prose rule to different line classes, not to run two token scans.
+
 ## Non-Goals (proposed, pending design)
 
 - **Not** `INT-US-NN-SFxx` sub-story IDs. Those are minted registry IDs that already carry their

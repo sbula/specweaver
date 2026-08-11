@@ -29,16 +29,22 @@ design doc, status flag. A design document's `SF-NN` decomposition never appears
 `B-INTL-09` is structurally identical to `TECH-025` — a multi-sub-feature design — and gets a single
 line.
 
-**Measured violations (2026-08-08), the full repair list:**
+**Measured violations — historical snapshot (2026-08-08) and today's repair list (re-measured
+2026-08-11):**
 
-| Entry | Illegal nested SF lines |
-|---|---|
-| `TECH-001` | 4 |
-| `TECH-005` | 3 |
-| `TECH-006` | 2 |
-| `TECH-009` | 2 |
-| `TECH-025` | 7 — added 2026-08-08 by the session that found this; TECH-025 reverts its own |
-| **Total** | **18** (11 pre-existing) |
+| Entry | 2026-08-08 | 2026-08-11 | |
+|---|---|---|---|
+| `TECH-001` | 4 | **4** | lines 676–679 |
+| `TECH-005` | 3 | **3** | lines 707–709 |
+| `TECH-006` | 2 | **2** | lines 721–722 |
+| `TECH-009` | 2 | **2** | lines 741–742 |
+| `TECH-025` | 7 | **0** | added by the session that found this, and reverted there |
+| **Total** | **18** | **11** | |
+
+> **The repair list is 11 lines across 4 entries, not 18 across 5.** The 18 was true when measured;
+> `TECH-025`'s seven were its own and are gone. Both numbers are kept because the design phase reads
+> this table as a work inventory, and hunting for seven lines that no longer exist ends either in
+> "the doc is wrong" or — worse — "someone already did part of this", and stopping short.
 
 **Every violation is in the TECH family. Zero US-N or capability entries deviate.** That asymmetry
 is the finding: an agent looking for precedent inside `TECH-NNN` sees the convention broken four
@@ -88,8 +94,32 @@ executed as truth — and the same shape of fix: repair the instances, then ship
   files kept byte-identical by convention, enforced by `check_skill_sync.py` in the `doc` gate.
 - **Ship `scripts/check_roadmap_placement.py`**, wired into the `doc` gate beside `skill_sync` and
   `skill_references`: assert no line in `master_story_roadmap.md` introduces a design-doc
-  sub-feature. It must distinguish `INT-US-NN-SFxx` (legal) from a bare `SF-NN` (illegal) — that
-  distinction is the whole rule, so it is also the whole test.
+  sub-feature. **Implement the rule stated in §"Why this matters to the checker" below — a line
+  exists only for something with its own registry ID** — not a lexical `INT-US-NN-SFxx`-vs-`SF-NN`
+  discrimination.
+
+  > **Corrected 2026-08-11.** This bullet previously read *"It must distinguish `INT-US-NN-SFxx`
+  > (legal) from a bare `SF-NN` (illegal) — that distinction is the whole rule, so it is also the
+  > whole test."* That contradicts §"Why this matters to the checker" and fails in two directions.
+  > It flags legal prose: `SF-NN` appears in 15 ordinary sentences across Sequencing lines, the Debt
+  > Sequencing table and the "Known separate gap" notes — including `TECH-025`'s own entry, which
+  > would be flagged by the ticket it spun off. And it under-specifies the legal set: ~89 capability
+  > lines (`C-EXEC-01`, `B-VAL-02`, …) sit at the same nesting level and a whitelist naming only
+  > `INT-US-NN-SFxx` says nothing about them. Left visible rather than deleted, per this document's
+  > house style, because the wrong version is the one an implementer reads first.
+
+  **The implementable form, validated against the file 2026-08-11:** a list item at the third
+  nesting level (8-space indent) must name a **bold registry ID**.
+
+  ```
+  168 items match the bold-ID shape  ->  all legal   (INT-US-NN-SFxx + capability IDs)
+   11 items do not                   ->  exactly the 11 violations, no others
+  ```
+
+  Perfect separation, no allowlist, no tuning. It works because it is *structural* rather than
+  lexical: prose sentences are not list items at that depth, so they never enter the check.
+  `TECH-027` carries a sibling rule over the same file and the two should share one scan — see
+  §"Spun off from this ticket".
 - **Repair all four pre-existing offenders** — `TECH-001`, `TECH-005`, `TECH-006`, `TECH-009`
   (11 lines). Each one's SF detail already exists in its own design's Sub-Feature Breakdown and
   Progress Tracker, so the roadmap lines are duplicates, not the only record — nothing is lost by
@@ -177,11 +207,21 @@ asymmetry is the argument for a checker rather than a convention.
 
 ## Known adjacent defects (found while minting, not this ticket's scope)
 
-- `.tmp/pre/` holds a stale copy of the `tests/` tree and pollutes every repo-wide grep — including
+**Both entries below are closed. Struck 2026-08-11 rather than deleted, per this document's house
+style — a stub that lists resolved defects as open costs the design phase a round of
+re-verification, which is the cost this section exists to avoid.**
+
+- ~~`.tmp/pre/` holds a stale copy of the `tests/` tree and pollutes every repo-wide grep — including
   the collision check `specweaver-ticket` Phase 2 mandates. It produced phantom `TECH-042` /
-  `TECH-999` hits during this ticket's own minting.
-- `TECH-025`'s roadmap title ("Pre-Existing FR Traceability Gap") has drifted from its design-doc
-  title ("Registry IDs Leaking Into Proofs"). That is `TECH-025`'s to fix.
+  `TECH-999` hits during this ticket's own minting.~~ **Resolved.** The directory is gone;
+  repo-wide greps are clean and the Phase 2 collision check runs uncorrupted. Confirmed while
+  minting `TECH-027` and `TECH-028`, both of which used that check. The only remaining
+  `TECH-042`/`TECH-999` hits are the deliberate fixtures in
+  `tests/unit/scripts/test_check_story_preconditions.py`.
+- ~~`TECH-025`'s roadmap title ("Pre-Existing FR Traceability Gap") has drifted from its design-doc
+  title ("Registry IDs Leaking Into Proofs"). That is `TECH-025`'s to fix.~~ **Resolved.** All three
+  registries now read "Registry IDs Leaking Into Proofs — FR Traceability Gap and Story-Named
+  Tests", byte-identical.
 
 ## Spun off from this ticket
 

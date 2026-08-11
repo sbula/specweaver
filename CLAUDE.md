@@ -83,6 +83,29 @@ mypy src/
 tach check
 ```
 
+> [!IMPORTANT]
+> **Accepted known Linux delta: 6 tests fail on Linux and are not a regression (user, 2026-08-11).**
+> Baseline on this box is **5567 passed, 6 failed, 11 skipped** for `tests/unit -n auto`. Do not
+> "fix" these as part of unrelated work, and do not read them as a broken tree:
+>
+> | Test | Why |
+> |---|---|
+> | `sandbox/filesystem/…/test_filesystem_tool.py::TestGrantBypassAttempts::test_backslash_normalization` | Backslash is a path separator on Windows and a legal filename character on Linux |
+> | `sandbox/filesystem/…/test_filesystem_tool.py::TestPathTraversalEdgeCases::test_grant_at_root_covers_everything` | same class — encodes Windows path semantics |
+> | `sandbox/filesystem/…/test_filesystem_atom.py::TestSymlinkIntent::test_symlink_valid` | same class |
+> | `interfaces/api/v1/test_api_review.py::TestReviewEndpoint::test_review_returns_result` | returns 500; cause not diagnosed |
+> | `interfaces/api/v1/test_api_review.py::TestReviewEndpoint::test_review_denied_returns_result` | same |
+> | `interfaces/api/v1/test_implement.py::TestImplementEndpoint::test_implement_returns_200` | same |
+>
+> The repo was developed on Windows and moved to Linux 2026-08-11. Judge a change against
+> **5567/6**, not against zero failures. If a *seventh* fails, that one is yours.
+>
+> Two environment requirements, both found the hard way (see `TECH-028`):
+> - **`uv sync --all-extras`**, never a bare `uv sync` — `pyproject.toml` has two things named
+>   `dev`, and the default command installs `pytest-xdist` without `pytest` (5347 errors).
+> - **Put `.venv/bin` on `PATH`** — `tests/unit/test_architecture.py` shells out to a bare `tach`,
+>   which `.venv/bin/python -m pytest` cannot see.
+
 ## Critical Rules
 
 1. **No subprocess.** Use `SubprocessExecutor` from `specweaver.sandbox.execution.executor`.
