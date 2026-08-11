@@ -205,7 +205,7 @@ asymmetry is the argument for a checker rather than a convention.
 > the wrong ratio — `TECH-025`'s plans average 258 lines against a 400–650 norm, precisely because
 > its design absorbed detail the plans should own.
 
-## Third rule (DRAFT, 2026-08-11) — a field's value is bounded
+## Third rule (DRAFT, 2026-08-11) — every line in an entry is bounded
 
 > [!WARNING]
 > **Draft, not designed.** Written after this ticket's own roadmap entries violated it. It appears to
@@ -289,11 +289,52 @@ repair, not a sweep, and `TECH-025`'s 708-char entry is independently worth cutt
 honest rule** — length is a proxy for the real defect, and this document elsewhere criticises proxy
 invariants — so if C can be expressed cheaply it should win. A and C are not exclusive.
 
+### Scope correction (user, 2026-08-11) — the rule is general, and it is about line length
+
+> [!IMPORTANT]
+> **"I am not talking about TECH stories alone. This is a general rule for all stories / sub-stories
+> / features / tech debts / … mentioned in `master_story_roadmap`. They must be short — this is an
+> overview only."**
+>
+> The framing above ("a field's value is bounded") is a **subset** of the rule, derived from the two
+> fields that happened to break. The rule the user states is simpler and wider: **every line of every
+> entry, in every family, is bounded.** Design against this, not against `Benefit:`/`Sequencing:`.
+
+The field-value measurement above looked at three named fields. This is the same file measured
+without that filter — **every non-empty line inside a `### ` section**, by family:
+
+| Family | Lines | Median | p90 | Max | >200 ch | >400 ch |
+|---|---|---|---|---|---|---|
+| `TECH-NNN` | 146 | 96 | 186 | **728** | 12 | 1 |
+| `US-N` | 507 | 58 | 138 | 248 | 11 | 0 |
+| capability / other `###` | 110 | 93 | 196 | 335 | 10 | 0 |
+| **whole file** | **763** | — | — | 728 | **33** | **1** |
+
+**This corrects the section above in one important way.** "The `US-N` family is not an outlier" is
+true, but it was read as *`US-N` is clean*. It is not: **11 `US-N` lines and 10 capability lines
+exceed 200 characters.** Measured on the three named fields the repair list is one entry; measured as
+the user states the rule it is **33 lines spread across all three families**. A design written against
+the narrow framing would ship a checker that passes 32 of the 33 lines the user is pointing at.
+
+The medians say the convention is already short — 58 to 96 characters, roughly one clause — so as
+with `TECH-027`'s padding rule, this **ratifies existing practice** and the long lines are outliers
+rather than the norm.
+
+**What stays unbounded** is unchanged and still important: the *number* of `Core Required` /
+`Sub-Story Add-Ons` lines. `US-N` sections are long because they list many registry IDs, one per
+line, and each earns its place. Bounding line length does not touch that — which is precisely why a
+line-length rule can be general where a section-size rule could not, and why §"Why this matters to
+the checker" still stands.
+
+A cap in the **200–250** range sits above every median and p90 in the table and below all 33
+outliers. That number is for the design phase to set; the measurement is here so it does not have to
+be re-derived.
+
 ### Interaction with the checker
 
 If `scripts/check_roadmap_placement.py` takes this on it walks the file once and applies three
 line-class rules, not three scans: the list-item rule from this ticket, the prose qualification rule
-from `TECH-027`, and this field-value rule. A fourth pass would be the wrong shape.
+from `TECH-027`, and this length rule. A fourth pass would be the wrong shape.
 
 ## Known adjacent defects (found while minting, not this ticket's scope)
 

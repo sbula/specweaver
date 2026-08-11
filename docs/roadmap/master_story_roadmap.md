@@ -836,7 +836,7 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Sequencing:** Spun off from `TECH-025` SF-02 (2026-08-08). Docs-and-tooling only; unranked in the debt chain above.
 
 ### 🔴 TECH-027: Sub-Feature Identifier Contract — Two Digits and an Explicit Owner
-**Benefit:** *An `SF-NN` is spelled one way and always says which story it belongs to, so a reference outside its own folder resolves instead of quietly pointing at whichever story the reader saw last.*
+**Benefit:** *An `SF-NN` is spelled one way and always says which story it belongs to, so a reference outside its own folder resolves instead of pointing at the nearest ID.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
 *   **Sequencing:** Split from `TECH-026` (2026-08-11). Filename half delivered ahead of design to unblock `TECH-025` SF-05. Docs-and-tooling only; unranked in the debt chain above.
