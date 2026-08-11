@@ -89,8 +89,7 @@ this section drift for a month.
 `TECH-023` and `TECH-024` must not share a working tree: extracting helpers to cut complexity
 changes imports, which is exactly what the cycle check measures, so neither number stays
 attributable. `TECH-010`, `TECH-011`, `TECH-013`, `TECH-016` are independent of this chain and fit
-anywhere; `TECH-017` and `TECH-018` are audits and want the code still first. `TECH-026` is
-docs-and-tooling only, contends for none of the six files, and is likewise unranked.
+anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
 **Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
@@ -834,16 +833,16 @@ These stories do not add new user-facing features, but are critical epics requir
 **Benefit:** *What belongs in this file is written down and enforced, so an agent updating roadmap state no longer has to derive the convention from whichever entries it happens to grep.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
-*   **Sequencing:** Spun off from `TECH-025` SF-02 (2026-08-08), which had just reproduced the defect: asked where sub-features were recorded, the session added `TECH-025`'s seven design-document sub-features here on `TECH-001`/`TECH-006`'s precedent, then reverted them. Docs-and-tooling only, contends for no source file, and independent of the debt-sequencing chain above. **11 nested `SF-NN` lines remain** — `TECH-001` (4), `TECH-005` (3), `TECH-006` (2), `TECH-009` (2), re-measured 2026-08-11 — and all four are 🟢, so repairing them needs this ticket's explicit waiver of finished-stories-immutable. Every violation is in the `TECH-NNN` family; the 168 third-level lines under `US-N` entries all name a registry ID and are correct, which is why precedent must be taken from `B-INTL-09` (4 sub-features, one line) rather than from Topic 07.
+*   **Sequencing:** Spun off from `TECH-025` SF-02 (2026-08-08). Docs-and-tooling only; unranked in the debt chain above.
 
 ### 🔴 TECH-027: Sub-Feature Identifier Contract — Two Digits and an Explicit Owner
 **Benefit:** *An `SF-NN` is spelled one way and always says which story it belongs to, so a reference outside its own folder resolves instead of quietly pointing at whichever story the reader saw last.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
-*   **Sequencing:** Raised 2026-08-11 while reviewing `TECH-026`; split out rather than folded in, because `TECH-026` repairs 11 lines in one file where this reaches 40 documents across 5 delivered stories and needs its own waiver. Two clauses, both measured: **format** — `SF-{2d}` is already the norm at 166 padded filenames against 16 unpadded, so the rule ratifies practice; **ownership** — a bare `SF-NN` is unambiguous only under `features/<topic>/<STORY-ID>/`, where the path supplies the owner. Two live instances sit in this file at lines 684 and 716, each attributing another story's sub-features to `TECH-025` because it is the only ID in the sentence. The convention already exists for `FR-N` (`TECH-025_design.md:8`, hand-copied into three more documents, enforced nowhere) and generalising it is most of the work. **Collides with `TECH-025` SF-05**, whose drafted plan already works around `TECH-002`'s unpadded filenames — decide the order before SF-05 starts. Docs-and-tooling only; unranked in the debt chain above.
+*   **Sequencing:** Split from `TECH-026` (2026-08-11). Filename half delivered ahead of design to unblock `TECH-025` SF-05. Docs-and-tooling only; unranked in the debt chain above.
 
 ### 🔴 TECH-028: Split `dev` Dependency Definitions — Broken Default Sync, Test Tooling in the Container Image
 **Benefit:** *A bare `uv sync` produces an environment that can actually run the suite, and `--no-dev` stops putting `pytest`, `ruff`, `mypy` and `tach` inside the container image.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
-*   **Sequencing:** Found 2026-08-11 rebuilding the environment on a Linux server after the Windows laptop failed. `pyproject.toml` declares two different things named `dev` — a `[dependency-groups]` one (`:139-146`) and a `[project.optional-dependencies]` one (`:60-69`) — with `respx` in both and, decisively, `pytest-xdist` in the group while `pytest` sits in the extra. `uv` installs groups by default and extras on request, so the project's own default command yields an environment that cannot work: measured `uv sync` → **5347 errors**, `--extra dev` → 5442 passed, `--all-extras` → 5567 passed. Second consequence, dry-run verified: `Containerfile:25`'s `--all-extras --no-dev` removes only `complexipy` and `pytest-xdist`, so the image built from it keeps every lint and test package — a latent defect in an unfinished build path rather than a live leak, since there is no full containerized support yet (user, 2026-08-11). **Not a documentation gap** — `README.md:95`, `CONTRIBUTING.md:16` and the installation guide already all say `--all-extras`; the docs were compensating for a wrong default. Manifest and `Containerfile` change land in one commit with a rebuilt image. Docs-and-build only; unranked in the debt chain above.
+*   **Sequencing:** Found 2026-08-11 rebuilding the environment on Linux. Manifest and `Containerfile` change land in one commit. Docs-and-build only; unranked in the debt chain above.
