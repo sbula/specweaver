@@ -205,6 +205,96 @@ asymmetry is the argument for a checker rather than a convention.
 > the wrong ratio — `TECH-025`'s plans average 258 lines against a 400–650 norm, precisely because
 > its design absorbed detail the plans should own.
 
+## Third rule (DRAFT, 2026-08-11) — a field's value is bounded
+
+> [!WARNING]
+> **Draft, not designed.** Written after this ticket's own roadmap entries violated it. It appears to
+> contradict §"Why this matters to the checker" above, which rejects a size-based checker. The
+> measurement below resolves that — but read both before writing any FR.
+
+### Origin
+
+The session that registered `TECH-026`, `TECH-027` and `TECH-028` (2026-08-11) gave each entry a
+`**Sequencing:**` field that ran to a full paragraph — measurements, dry-run output, `file:line`
+references and out-of-scope lists. Every one of those facts already existed in the topic doc and in
+the ticket's own design. Reverted in `134f8de6`.
+
+Two things make this a rule rather than a correction:
+
+1. **The one-ID-one-line rule did not catch it.** No nested `SF-NN` line was added and the
+   third-level line count was unchanged; the entry *bodies* grew instead. The contract as written
+   constrains how many lines an entry has, not how much each line carries.
+2. **The verification reported clean.** That session checked the third-level line count and declared
+   the entry compliant. Wrong measurement for this defect — the same failure this document already
+   warns about, arriving from the other direction.
+
+### The apparent contradiction, and why it dissolves
+
+§"Why this matters to the checker" says a checker written against size "would enforce the wrong
+invariant and flag the 28 clean `US-N` entries — which are the largest sections in the file." That is
+correct about section **size**. It says nothing about field **values**, and the two turn out to be
+unrelated.
+
+**Measured 2026-08-11, one method, whole file** — the distribution nobody had taken:
+
+| Field | n | Median | p90 | Max |
+|---|---|---|---|---|
+| `Benefit:` | 49 | **127** | 219 | 296 (`TECH-002`) |
+| `Sequencing:` | 11 | **128** | 183 | **708** (`TECH-025`) |
+| `Known separate gap:` | 3 | 173 | 179 | 179 |
+
+**The `US-N` family is not an outlier on field values.** The longest `Benefit` in the file belongs to
+a TECH entry (296); the longest `US-N` one is `US-27` at 235, inside the general spread. `US-N`
+sections are long because they carry *many legitimate ID lines*, which this rule does not touch. So a
+field-value bound does **not** flag the 28 clean entries, and the objection above does not apply to
+it.
+
+`Sequencing:` is bimodal: ten entries between 94 and 211, and `TECH-025` at 708 — 5.5× the median and
+3.9× p90. One pre-existing violation, not from the session that prompted this.
+
+```
+TECH-017   94  ############
+TECH-026  101  #############
+TECH-020  128  ################
+TECH-027  161  ####################
+TECH-028  164  #####################
+TECH-023  183  #######################
+TECH-024  211  ##########################
+TECH-025  708  ####################################################################...
+```
+
+### Proposed rule
+
+**A field's value is a clause, not a paragraph.** In a `### <ID>` section, the value of `Benefit:`,
+`Sequencing:` or any similar inline field is bounded. Detail belongs in the topic doc, which owns it.
+
+Deliberately **not** bounded:
+
+- The number of `Core Required` / `Sub-Story Add-Ons` lines — that is what makes `US-N` entries long
+  and it is correct, each line being a registry ID earning its place.
+- `Verifiable Proof:`, which is a header whose value is the test paths on the lines beneath it. It
+  measures 0 chars inline in all five occurrences; a naive character check must not treat it as a
+  field or it will read as trivially compliant while meaning nothing.
+
+### Open — pick one at design time
+
+| Form | Mechanism | Trade |
+|---|---|---|
+| **A — absolute cap** | ~300 chars per field value: above p90 for both fields, below every current value except `TECH-025`'s | Simplest to check, and the measurement now supports a defensible number. Makes exactly one pre-existing entry non-compliant |
+| **B — ratchet** | Freeze today's per-field p90; a new or edited entry may not exceed it | Precedent: `TECH-025` SF-03's R6 ratchets unit test class names against a frozen per-directory baseline (278 across 10 dirs). Ships without touching `TECH-025` |
+| **C — structural** | A field value may contain no `file:line` reference, no measurement and no out-of-scope list, regardless of length | Targets what actually went wrong instead of proxying it by size. Hardest to express as a check |
+
+**Leaning A**, which the measurement did not originally support and now does: a single violation is a
+repair, not a sweep, and `TECH-025`'s 708-char entry is independently worth cutting. **C is the more
+honest rule** — length is a proxy for the real defect, and this document elsewhere criticises proxy
+invariants — so if C can be expressed cheaply it should win. A and C are not exclusive.
+
+### Interaction with the checker
+
+If `scripts/check_roadmap_placement.py` takes this on it walks the file once and applies three
+line-class rules, not three scans: the list-item rule from this ticket, the prose qualification rule
+from `TECH-027`, and this field-value rule. A fourth pass would be the wrong shape.
+
 ## Known adjacent defects (found while minting, not this ticket's scope)
 
 **Both entries below are closed. Struck 2026-08-11 rather than deleted, per this document's house
