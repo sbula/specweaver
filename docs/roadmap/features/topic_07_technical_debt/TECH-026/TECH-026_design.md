@@ -183,6 +183,21 @@ asymmetry is the argument for a checker rather than a convention.
 - `TECH-025`'s roadmap title ("Pre-Existing FR Traceability Gap") has drifted from its design-doc
   title ("Registry IDs Leaking Into Proofs"). That is `TECH-025`'s to fix.
 
+## Spun off from this ticket
+
+- **`TECH-027`** — [Sub-Feature Identifier Contract](../TECH-027/TECH-027_design.md), minted
+  2026-08-11. This ticket measured *where* an `SF-NN` may appear in the roadmap but never asked what
+  an `SF-NN` **is**, so two defects it walked past stayed open: the identifier is spelled both
+  `SF-01` and `SF-1` (16 unpadded filenames against 166 padded), and a bare `SF-NN` outside
+  `features/<topic>/<STORY-ID>/` names nothing — including twice in `master_story_roadmap.md`, where
+  another story's sub-features are attributed to `TECH-025` because it is the only ID in the
+  sentence. Split out rather than folded in: this ticket repairs 11 lines in one file, `TECH-027`
+  reaches 40 documents across 5 delivered stories and needs its own waiver.
+- The two contracts are **complementary, not overlapping** — a nested line written
+  `✅ TECH-001 SF-01:` satisfies `TECH-027`'s qualification rule and still violates this ticket's
+  placement rule. Both fall out of one scan of `master_story_roadmap.md`, so they should share a
+  checker rather than each walking the file.
+
 ## Next Step
 
 > [!IMPORTANT]
