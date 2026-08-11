@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import os
+import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.standards.discovery import discover_files
@@ -158,14 +158,31 @@ class TestGitLsFiles:
         tmp_path: Path,
     ) -> None:
         """In a git repo, gitignored files should be excluded."""
-        # Initialize a real git repo
-        os.system(f'git init "{tmp_path}" > nul 2>&1')
+        # Initialize a real git repo. `check=True` matters: the previous
+        # `os.system` form used Windows shell idioms (`> nul`, `cd /d`) that
+        # failed silently on Linux, so a broken setup could not be seen.
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
         (tmp_path / "tracked.py").write_text("pass")
         (tmp_path / ".gitignore").write_text("ignored.py\n")
         (tmp_path / "ignored.py").write_text("pass")
-        os.system(
-            f'cd /d "{tmp_path}" && git add tracked.py .gitignore > nul 2>&1',
+        subprocess.run(
+            ["git", "add", "tracked.py", ".gitignore"],
+            cwd=tmp_path,
+            capture_output=True,
+            check=True,
         )
+
+        # Staging must have worked, or the assertions below would pass through
+        # `--others` alone and never exercise the `--cached` half of
+        # `_git_ls_files`. This is the guard the silent `cd /d` failure removed.
+        staged = subprocess.run(
+            ["git", "ls-files", "--cached"],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert "tracked.py" in staged.stdout.split()
 
         files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
