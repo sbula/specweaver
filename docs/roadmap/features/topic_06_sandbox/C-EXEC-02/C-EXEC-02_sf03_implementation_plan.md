@@ -4,7 +4,7 @@
 - **Sub-Feature**: SF-3 — Scaffold, Boundary Config, and Docs
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-3
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf3_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf03_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope

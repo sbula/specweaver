@@ -101,7 +101,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 - **Inputs**: Existing SQLAlchemy models and queries.
 - **Outputs**: Updated codebase with no compilation errors.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf01_implementation_plan.md
 
 ### SF-2: Alembic Migration
 - **Scope**: Generate and apply the database schema migration via Alembic to rename tables and indexes.
@@ -109,7 +109,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 - **Inputs**: The updated SQLAlchemy models from SF-1.
 - **Outputs**: A new Alembic migration script.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 
 ### SF-3: Prefix Raw-SQLite3 Tables
 - **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so SF-1/SF-2 never touched them) remain unprefixed: `nodes`, `edges` (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version` (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This contradicts the ticket's "all existing database tables" claim. Rename all six to their bounded-context-prefixed equivalents.
@@ -141,10 +141,10 @@ tables (`nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw
 are renamed with a zero-data-loss migration path for pre-SF-3 installations, alongside SF-1/SF-2's
 SQLAlchemy-managed renames. Every table in the SQLite database now follows the domain-prefix
 convention. Story-level closure gate (`check_fr_coverage.py TECH-005` + full suite) still needs to
-run before this can be marked `Status: COMPLETE` — see `TECH-005_sf3_task.md`'s T5 for the known,
+run before this can be marked `Status: COMPLETE` — see `TECH-005_sf03_task.md`'s T5 for the known,
 pre-existing FR-1–7 citation gap (SF-1/SF-2 predate the citation convention) that closure will
 surface and must route to a new ticket, not block SF-3's own delivery.
-**Next step**: Run T5 (story closure) per `TECH-005_sf3_task.md`.
+**Next step**: Run T5 (story closure) per `TECH-005_sf03_task.md`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
 

@@ -86,7 +86,7 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Inputs**: Registry registrations.
 - **Outputs**: Instantiated tools list.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf01_implementation_plan.md
 
 ### SF-2: Sandbox Domain Alignment
 - **Scope**: Make all domain tool facades inherit `BaseTool` by adding `(BaseTool)` and a delegating `role` property where missing. Affected classes: `FileSystemTool`, `ReviewerFileInterface`, `ImplementerFileInterface`, `DrafterFileInterface`, `GitTool`, `ImplementerGitInterface`, `ReviewerGitInterface`, `DebuggerGitInterface`, `DrafterGitInterface`, `ConflictResolverGitInterface`, `WebTool`, `CodeStructureTool`, `ArchitectMCPInterface`, `ProtocolTool`. Also refactor `MCPExplorerTool.__init__` to accept `topology: Any = None` directly, removing all `DummyContext` wrapper usages from both `registry.py` and `dispatcher.py` (AD-6). The `isinstance(tool, BaseTool)` assertions in `test_registry.py` must turn GREEN.
@@ -94,7 +94,7 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Inputs**: `BaseTool` ABC from SF-1.
 - **Outputs**: All domain facades are `BaseTool`-conformant; `isinstance` tests pass.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf02_implementation_plan.md
 
 ### SF-3: ToolDispatcher Integration
 - **Scope**: Refactor `ToolDispatcher` to build standard tool sets by delegating construction to `ToolRegistry`. Remove `create_standard_set` hardcoded factory logic. Wire `get_standard_registry()` into the flow engine entry points. Register `"protocol"` factory dynamically inside `get_standard_registry()` (AD-9) and handle Git role fallbacks (AD-10).
@@ -102,7 +102,7 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Inputs**: Configured `ToolRegistry` from SF-1 (functionally does not require SF-2, but follows SF-2 in recommended order so the dispatcher can add `BaseTool` type assertions).
 - **Outputs**: Reusable configured `ToolDispatcher`.
 - **Depends on**: SF-2 (recommended; functionally only requires SF-1)
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf3_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf03_implementation_plan.md
 
 ### SF-4: Validation Layer Isolation
 - **Scope**: Remove direct `QARunnerAtom` and `AtomStatus` imports from `c03_tests_pass.py`, `c04_coverage.py`, and `c05_import_direction.py`. Rules must read execution results from `self.context` using agreed keys (see below). Refactor all three call sites to route through `specweaver.core.flow`'s new `execute_validation_flow` handler: (1) `ValidateCodeHandler._run_validation` in `core.flow.handlers.validation`, (2) the standalone CLI check command, (3) `interfaces.api.v1.validation`. Update rule check logic for C03 so that if test files exist but the context key is missing, it fails/warns instead of silently skipping. Remove the `forbids: specweaver/sandbox/*` violation from validation context files once no direct imports remain.
@@ -116,7 +116,7 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Inputs**: Hydrated `Rule.context` injected by all three callers.
 - **Outputs**: Isolated validation layer; zero direct sandbox imports in validation rules.
 - **Depends on**: SF-3
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf4_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf04_implementation_plan.md
 
 ## Execution Order
 

@@ -4,7 +4,7 @@
 - **Sub-Feature**: SF-2 — Language Runner Migration
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf2_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope

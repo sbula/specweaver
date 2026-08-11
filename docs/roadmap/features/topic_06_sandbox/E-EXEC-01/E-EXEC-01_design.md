@@ -170,7 +170,7 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 - **Inputs**: Command list, cwd path, timeout, env allowlist, resource limits
 - **Outputs**: `SubprocessResult` dataclass with structured output
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
 
 ### SF-2: Language Runner Migration
 - **Scope**: Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct `subprocess.run()` to `SubprocessExecutor.execute()`. Ensure backward compatibility across all 4900+ tests.
@@ -178,7 +178,7 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 - **Inputs**: `SubprocessExecutor` from SF-1, existing runner.py files
 - **Outputs**: All runners using unified executor, all tests green
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
 
 ## Execution Order
 

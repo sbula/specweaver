@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-1 — BaseTool and ToolRegistry Core
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf01_implementation_plan.md
 - **Status**: IMPLEMENTED (SF-1)
 
 ---

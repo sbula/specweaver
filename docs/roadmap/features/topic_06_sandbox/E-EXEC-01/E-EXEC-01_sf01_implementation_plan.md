@@ -4,7 +4,7 @@
 - **Sub-Feature**: SF-1 — SubprocessExecutor Core
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope

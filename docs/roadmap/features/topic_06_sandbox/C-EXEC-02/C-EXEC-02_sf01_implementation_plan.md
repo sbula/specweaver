@@ -4,7 +4,7 @@
 - **Sub-Feature**: SF-1 — BashActionAtom Core Execution
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf01_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope

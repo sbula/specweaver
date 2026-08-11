@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-4 — Validation Layer Isolation
 - **Design Document**: [TECH-002_design.md](file:///c:/development/pitbula/specweaver/docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 - **Design Section**: §Sub-Feature Breakdown → SF-4
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf4_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf04_implementation_plan.md
 - **Status**: APPROVED
 
 ---

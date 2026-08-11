@@ -155,7 +155,7 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 - **Inputs**: script name, args, working_dir, timeout_seconds, project_path (from caller — a unit test harness in this SF, the pipeline handler in SF-2)
 - **Outputs**: `AtomResult(status, exports={exit_code, stdout, stderr, duration_seconds})`
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf01_implementation_plan.md
 
 ### SF-2: Pipeline Engine Integration
 - **Scope**: Add `StepAction.BASH`/`StepTarget.SCRIPT` to the pipeline models, register `BashActionHandler` (wraps SF-1's Atom, maps exit code → `StepStatus`), and confirm `RouterRule`/`GateDefinition`/`step_records` propagation work end-to-end via integration tests using real pipeline YAML.
@@ -163,7 +163,7 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 - **Inputs**: `BashActionAtom` from SF-1, existing `PipelineStep`/`StepHandlerRegistry`/`RunContext` machinery
 - **Outputs**: A pipeline YAML file with an `action: bash` step runs end-to-end, is routable, and its output is readable by later steps
 - **Depends on**: SF-1, SF-3 *(code depends only on SF-1's `BashActionAtom`; SF-3's `tach.toml`/`context.yaml` edits are additionally required for this SF's imports to pass `tach check` — not a code dependency on SF-3's FR-10 scaffold/docs work itself)*
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf02_implementation_plan.md
 
 ### SF-3: Scaffold, Boundary Config, and Docs
 - **Scope**: Extend `workspace/project/scaffold.py` to create `.specweaver/scripts/` on project init; add `sandbox/execution/core` to `tach.toml`'s sandbox interface expose-list and to `core/flow/context.yaml`'s `consumes`; correct `hard_dependency_rules.md` and `ORIGINS.md`'s Archon attribution; write the dev-guide sections.
@@ -171,7 +171,7 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 - **Inputs**: none (parallelizable — does not require SF-1/SF-2 code, only the module *names* they will introduce)
 - **Outputs**: `.specweaver/scripts/` exists on every newly-scaffolded project; `tach check` passes once SF-1/SF-2 land; docs are accurate
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf3_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf03_implementation_plan.md
 
 ## Execution Order
 

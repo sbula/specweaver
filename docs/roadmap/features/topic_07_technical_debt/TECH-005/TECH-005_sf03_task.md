@@ -1,6 +1,6 @@
 # Task Breakdown: TECH-005 SF-3 — Prefix Raw-SQLite3 Tables
 
-Implementation Plan: `TECH-005_sf3_implementation_plan.md`
+Implementation Plan: `TECH-005_sf03_implementation_plan.md`
 Story kind: TECH (refactor) → `python scripts/tests.py cb TECH-005 --kind refactor`
 
 **Commit boundary**: single commit after T0–T4. The three files rename structurally identical
@@ -134,7 +134,7 @@ gate during TECH-001 SF-04, not reclassifying to dodge the check or skipping it.
 Full pre-commit gate (`specweaver-pre-commit`, all 7 phases + 7.5 Red/Blue) complete. Phase 7.5
 found and fixed 2 HIGH findings in the rename logic itself (DDL-atomicity claim was wrong but the
 actual resumability property holds; over-broad `except OperationalError` could have silently
-swallowed real errors) — see `TECH-005_sf3_walkthrough.md`'s Red/Blue report for full detail.
+swallowed real errors) — see `TECH-005_sf03_walkthrough.md`'s Red/Blue report for full detail.
 Final story gate: 612 tests passed (500 unit + 112 integration), 0 failed. Committed as
 `4ebb89cf` (2026-08-02).
 
@@ -169,7 +169,7 @@ under this ticket. Steps:
 # Red/Blue Team Review Report
 
 ## Summary
-- **Target**: TECH-005 SF-3 Task Breakdown (`TECH-005_sf3_task.md`)
+- **Target**: TECH-005 SF-3 Task Breakdown (`TECH-005_sf03_task.md`)
 - **Cycles**: 2
 - **Findings**: 4 (Cycle 1) + 0 (Cycle 2)
 - **Critical/High fixes applied**: 1

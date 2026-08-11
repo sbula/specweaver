@@ -26,9 +26,14 @@ and its amber status corrected back to 🟢 in `cea3548c`. This is traceability,
 sub-feature: SF-1 `[FR-1, FR-2]`, SF-2 `[FR-4]`, SF-3 `[FR-3]`, SF-4 `[FR-5, FR-6]`. There is no
 TECH-025 FR-4 equivalent here and no design edit is needed.
 
-> Note the plan filenames are `TECH-002_sf1_…`, not `sf01`. The gate's glob
+> ~~Note the plan filenames are `TECH-002_sf1_…`, not `sf01`. The gate's glob
 > (`*/TECH-002/TECH-002*implementation_plan.md`) matches either; a citation added to the wrong
-> guess simply would not be found.
+> guess simply would not be found.~~
+>
+> **Superseded 2026-08-11 — the workaround is no longer needed.** `TECH-027`'s rename landed first,
+> by user decision, so `TECH-002`'s four plans are now `TECH-002_sf01_…` through `_sf04_`. Cite the
+> padded names. The gate's glob still matches either, so this is about writing the citation against
+> a name that will still exist, not about whether the gate finds it.
 
 **R2 — Test-side reality: four of six have a genuine proof, one is half-covered, one has nothing.**
 Every file below was read, not name-matched.
@@ -89,10 +94,10 @@ Each plan names the requirements it already delivered. No plan gains scope.
 
 | Plan | Add |
 |---|---|
-| `TECH-002_sf1_implementation_plan.md` | `FR-1`, `FR-2` |
-| `TECH-002_sf2_implementation_plan.md` | `FR-4` |
-| `TECH-002_sf3_implementation_plan.md` | `FR-3` |
-| `TECH-002_sf4_implementation_plan.md` | `FR-5`, `FR-6` |
+| `TECH-002_sf01_implementation_plan.md` | `FR-1`, `FR-2` |
+| `TECH-002_sf02_implementation_plan.md` | `FR-4` |
+| `TECH-002_sf03_implementation_plan.md` | `FR-3` |
+| `TECH-002_sf04_implementation_plan.md` | `FR-5`, `FR-6` |
 
 ### 2. Test-side citations (4 existing proofs)
 

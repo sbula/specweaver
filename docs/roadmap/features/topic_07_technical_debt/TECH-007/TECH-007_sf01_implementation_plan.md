@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-1 — Injection-Safe Escaping Engine & XML Attribute Escaping
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf01_implementation_plan.md
 - **Status**: APPROVED
 
 ---

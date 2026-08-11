@@ -1,8 +1,8 @@
 # Walkthrough: TECH-005 SF-3 — Prefix Raw-SQLite3 Tables (FR-8)
 
 - **Design**: `TECH-005_design.md` (APPROVED)
-- **Plan**: `TECH-005_sf3_implementation_plan.md` (APPROVED, Red/Blue reviewed, 2 cycles)
-- **Tasks**: `TECH-005_sf3_task.md` (T0–T4, single commit boundary; Red/Blue reviewed)
+- **Plan**: `TECH-005_sf03_implementation_plan.md` (APPROVED, Red/Blue reviewed, 2 cycles)
+- **Tasks**: `TECH-005_sf03_task.md` (T0–T4, single commit boundary; Red/Blue reviewed)
 - **Commit boundary**: 1 of 1
 - **Date**: 2026-08-02
 

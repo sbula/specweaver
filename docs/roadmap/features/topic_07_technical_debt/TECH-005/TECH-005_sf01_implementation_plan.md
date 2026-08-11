@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-1 — Model Refactoring
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf01_implementation_plan.md
 - **Status**: COMPLETED
 
 ## Goal

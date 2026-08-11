@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-3 — ToolDispatcher Integration
 - **Design Document**: [TECH-002_design.md](file:///c:/development/pitbula/specweaver/docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 - **Design Section**: §Sub-Feature Breakdown → SF-3
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf3_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf03_implementation_plan.md
 - **Status**: COMPLETED
 
 ---

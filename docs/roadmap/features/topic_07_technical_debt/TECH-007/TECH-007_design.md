@@ -73,7 +73,7 @@ Feature TECH-007 adds a pluggable context loading architecture and an injection-
 - **Inputs**: Raw input text strings, attribute keys/values.
 - **Outputs**: Safe escaped strings.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf01_implementation_plan.md
 
 ### SF-2: Pluggable Context Architecture (Structural Protocol)
 - **Scope**: Define the `PromptContentSource` protocol and support adding arbitrary sources to `PromptBuilder`.
@@ -81,7 +81,7 @@ Feature TECH-007 adds a pluggable context loading architecture and an injection-
 - **Inputs**: Any object structurally conforming to `PromptContentSource`.
 - **Outputs**: Adapted blocks inside `PromptBuilder`.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf02_implementation_plan.md
 
 ## Execution Order
 

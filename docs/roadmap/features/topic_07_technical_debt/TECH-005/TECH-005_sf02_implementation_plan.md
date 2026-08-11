@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-2 — Alembic Migration
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf2_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 - **Status**: DONE
 
 ## Proposed Changes

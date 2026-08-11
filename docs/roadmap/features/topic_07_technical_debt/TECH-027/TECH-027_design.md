@@ -134,16 +134,46 @@ guard.
 
 ## Sequencing constraints
 
-- **Collision with `TECH-025` SF-05, which is drafted and not yet started.** Its plan already
+- ~~**Collision with `TECH-025` SF-05, which is drafted and not yet started.** Its plan already
   noticed this defect and worked around it: *"Note the plan filenames are `TECH-002_sf1_…`, not
   `sf01`. The gate's glob matches either; a citation added to the wrong guess simply would not be
   found."* Normalise `TECH-002`'s four filenames and that note goes stale; leave them and SF-05
   ships citations against names this ticket forbids. **Decide the order before SF-05 starts**, not
-  after.
-- `TECH-005`'s five unpadded files are the same problem one ticket later, for `TECH-025` SF-06.
+  after.~~
+- ~~`TECH-005`'s five unpadded files are the same problem one ticket later, for `TECH-025` SF-06.~~
+- **Resolved 2026-08-11 — the user chose rename-first, and clause 1's filename half is delivered.**
+  All 16 files renamed to `_sfNN_` and every inbound reference updated across 21 documents. SF-05's
+  workaround note is struck in its plan; SF-06 will not meet the problem at all. See §Delivery below.
 - All five offending stories (`TECH-002`, `TECH-005`, `TECH-007`, `C-EXEC-02`, `E-EXEC-01`) are
   delivered. Repairing them requires a waiver of finished-stories-immutable named in every commit,
-  as `TECH-025` AD-4 does for the test renames.
+  as `TECH-025` AD-4 does for the test renames — **invoked for the rename commit.**
+
+## Delivery (partial, ahead of design)
+
+> [!WARNING]
+> **This ticket shipped work before it had a design or an implementation plan.** The user directed
+> the rename on 2026-08-11 to unblock `TECH-025` SF-05, so clause 1's filename half landed out of
+> the normal design → plan → dev order. Recorded here rather than hidden, because the rest of the
+> ticket must not assume a clean start.
+
+**Delivered:**
+
+- 16 files renamed `_sfN_` → `_sf0N_` via `git mv` (history preserved), across `C-EXEC-02` (3),
+  `E-EXEC-01` (2), `TECH-002` (4), `TECH-005` (5), `TECH-007` (2).
+- Every inbound reference rewritten — 21 documents, 39 references.
+- Verified: zero `_sfN_` filenames remain; the repo's dangling-relative-link count is **66 before
+  and 66 after**, none sf-related, so the rename introduced none.
+
+**Explicitly NOT delivered — still this ticket's work:**
+
+- **Clause 1's prose half.** Single-digit `SF-N` still appears in ~40 documents, including inside the
+  five renamed stories, so a padded filename can sit beside unpadded prose in the same file. That
+  inconsistency is now visible where it was previously uniform, which is the cost of splitting the
+  clause; it wants closing soon rather than eventually.
+- **Clause 2 entirely.** The two live instances at `master_story_roadmap.md` are untouched.
+- **The checker.** Nothing prevents a new `_sfN_` file today.
+- **No FRs exist**, so nothing above is cited by a ledger. Whoever runs `specweaver-design` on this
+  ticket must write FRs that account for work already done rather than assuming a green field.
 
 ## Next Step
 

@@ -4,7 +4,7 @@
 - **Sub-Feature**: SF-2 — Pipeline Engine Integration
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf2_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf02_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope
