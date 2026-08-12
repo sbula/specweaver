@@ -54,16 +54,17 @@ def _display_results(
     # Show detailed findings for failed/warned rules
     for r in results:
         if r.findings and r.status in (Status.FAIL, Status.WARN):
-            _core.console.print(
-                f"\n[bold]{r.rule_id} {r.rule_name}[/bold] findings:",
-            )
-            for f in r.findings:
-                line_info = f" (line {f.line})" if f.line else ""
-                _core.console.print(
-                    f"  [{f.severity.value}] {f.message}{line_info}",
-                )
-                if f.suggestion:
-                    _core.console.print(f"    [dim]-> {f.suggestion}[/dim]")
+            _display_rule_findings(r)
+
+
+def _display_rule_findings(result: RuleResult) -> None:
+    """The per-finding detail under one failed or warned rule."""
+    _core.console.print(f"\n[bold]{result.rule_id} {result.rule_name}[/bold] findings:")
+    for f in result.findings:
+        line_info = f" (line {f.line})" if f.line else ""
+        _core.console.print(f"  [{f.severity.value}] {f.message}{line_info}")
+        if f.suggestion:
+            _core.console.print(f"    [dim]-> {f.suggestion}[/dim]")
 
 
 def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:

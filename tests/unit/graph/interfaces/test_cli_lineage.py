@@ -8,12 +8,20 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.graph.interfaces.cli import lineage_app as app
 from specweaver.graph.lineage.scanner import check_lineage
 
 runner = CliRunner()
+
+#: Real uuid4s. A lineage id is always `str(uuid.uuid4())` in production and the shared
+#: `extract_artifact_uuid` validates that shape — the made-up ids these fixtures used
+#: (`filebase-uuid-999`, `existing-uuid-456`) passed only while the CLI hand-rolled
+#: `line.split(": ")[1]`, which accepted anything after the colon.
+_FILE_UUID = "9c4f1a2b-7d3e-4c5a-8b6f-1e2d3c4b5a60"
+_EXISTING_UUID = "5b8e0d7c-2a41-4f6b-9c3d-7e1a2b4c6d80"
 
 
 def test_check_lineage_empty_dir(tmp_path):
@@ -158,7 +166,7 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
     """sw lineage tag <file> should read existing UUID and log manual event."""
     target_file = tmp_path / "target.py"
     target_file.write_text(
-        "# sw-artifact: existing-uuid-456\ndef foo():\n    pass\n", encoding="utf-8"
+        f"# sw-artifact: {_EXISTING_UUID}\ndef foo():\n    pass\n", encoding="utf-8"
     )
 
     with (
@@ -180,7 +188,7 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
         assert result.exit_code == 0, f"Command failed: {result.output}"
 
         mock_repo.log_artifact_event.assert_called_once_with(
-            artifact_id="existing-uuid-456",
+            artifact_id=_EXISTING_UUID,
             parent_id=None,
             run_id="manual",
             event_type="manual_tag",
@@ -249,7 +257,7 @@ def test_tag_command_exits_if_file_not_found(tmp_path):
 def test_tree_command_reads_uuid_from_file_content(tmp_path):
     """sw lineage tree <file> should read the UUID from the sw-artifact tag."""
     target_file = tmp_path / "test_file.py"
-    target_file.write_text("# sw-artifact: filebase-uuid-999\n", encoding="utf-8")
+    target_file.write_text(f"# sw-artifact: {_FILE_UUID}\n", encoding="utf-8")
 
     with (
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
@@ -267,9 +275,9 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
 
-        mock_engine.find_root.return_value = "filebase-uuid-999"
+        mock_engine.find_root.return_value = _FILE_UUID
         mock_engine.build_tree.return_value = {
-            "id": "filebase-uuid-999",
+            "id": _FILE_UUID,
             "circular": False,
             "history": [],
             "children": [],
@@ -278,8 +286,8 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
         result = runner.invoke(app, ["tree", str(target_file)])
 
         assert result.exit_code == 0
-        assert "filebase-uuid-999" in result.output
-        mock_engine.find_root.assert_called_with("filebase-uuid-999")
+        assert _FILE_UUID in result.output
+        mock_engine.find_root.assert_called_with(_FILE_UUID)
 
 
 def test_tree_command_graceful_missing_history():
@@ -350,3 +358,72 @@ def test_tree_command_handles_circular_references():
         result = runner.invoke(app, ["tree", "loop-a"])
         assert result.exit_code == 0
         assert "Circular reference: loop-a" in result.output
+
+
+#: `wrap_artifact_tag` is language-aware, so a drafted spec carries `<!-- sw-artifact: … -->` and
+#: a TypeScript file carries `// sw-artifact: …`. The CLI matched `"# sw-artifact: "` at line start
+#: and nothing else, so it silently resolved none of them and treated the path string as a UUID.
+#: Markdown is the sharpest case: every spec `draft.py` writes is tagged that way (`TECH-023`).
+@pytest.mark.parametrize(
+    ("language", "tag"),
+    [
+        ("markdown", f"<!-- sw-artifact: {_FILE_UUID} -->"),
+        ("typescript", f"// sw-artifact: {_FILE_UUID}"),
+        ("sql", f"-- sw-artifact: {_FILE_UUID}"),
+        ("yaml", f"# sw-artifact: {_FILE_UUID}"),
+    ],
+)
+def test_tree_command_resolves_a_tag_in_any_comment_syntax(tmp_path, language, tag):
+    """`sw lineage tree <file>` must read the tag the writer actually wrote."""
+    target_file = tmp_path / f"spec.{language}"
+    target_file.write_text(f"{tag}\nbody\n", encoding="utf-8")
+
+    with (
+        patch("specweaver.graph.interfaces.cli.get_db"),
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
+    ):
+        mock_repo_op.side_effect = ["test-proj", {"root_path": "/tmp/test-proj"}]
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        mock_engine.find_root.return_value = _FILE_UUID
+        mock_engine.build_tree.return_value = {
+            "id": _FILE_UUID,
+            "circular": False,
+            "history": [],
+            "children": [],
+        }
+
+        result = runner.invoke(app, ["tree", str(target_file)])
+
+        assert result.exit_code == 0, result.output
+        mock_engine.find_root.assert_called_with(_FILE_UUID)
+
+
+def test_tree_command_falls_back_to_treating_the_argument_as_a_uuid(tmp_path):
+    """An untagged file is not an error — the argument may simply be a UUID already."""
+    untagged = tmp_path / "untagged.py"
+    untagged.write_text("print('hi')\n", encoding="utf-8")
+
+    with (
+        patch("specweaver.graph.interfaces.cli.get_db"),
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
+    ):
+        mock_repo_op.side_effect = ["test-proj", {"root_path": "/tmp/test-proj"}]
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        mock_engine.find_root.return_value = "root"
+        mock_engine.build_tree.return_value = {
+            "id": "root",
+            "circular": False,
+            "history": [],
+            "children": [],
+        }
+
+        result = runner.invoke(app, ["tree", str(untagged)])
+
+        assert result.exit_code == 0, result.output
+        mock_engine.find_root.assert_called_with(str(untagged))

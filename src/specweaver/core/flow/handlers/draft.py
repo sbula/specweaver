@@ -86,7 +86,7 @@ class DraftSpecHandler:
             logger.debug(
                 "DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path
             )
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+            from specweaver.commons.lineage import extract_artifact_uuid
 
             artifact_uuid = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             return StepResult(
@@ -271,7 +271,7 @@ class DraftFeatureHandler:
                 "DraftFeatureHandler: feature spec already exists at '%s' — skipping",
                 context.spec_path,
             )
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+            from specweaver.commons.lineage import extract_artifact_uuid
 
             artifact_uuid = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             return StepResult(

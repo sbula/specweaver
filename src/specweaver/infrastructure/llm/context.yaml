@@ -37,8 +37,6 @@ exposes:
   - TaskType
   - TelemetryCollector
   - UsageRecord
-  - extract_artifact_uuid
-  - wrap_artifact_tag
   - PromptSlot
   - RenderProfile
 

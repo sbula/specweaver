@@ -456,8 +456,8 @@ class TestE10JourneyIsRerunnable:
     def test_a_second_journey_reuses_the_artifact_identity_and_skips_stubs(
         self, project: Path, data_dir: Path
     ) -> None:
+        from specweaver.commons.lineage import extract_artifact_uuid
         from specweaver.core.flow.engine.state import RunStatus
-        from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
 
         with scripted_world(ScriptedLLM([_plan_json()])):
             run_id = _reach_decompose(project, data_dir)

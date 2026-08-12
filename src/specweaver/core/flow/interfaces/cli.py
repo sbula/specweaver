@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
+    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
     from specweaver.core.flow.engine.store import StateStore
 
@@ -241,7 +242,118 @@ def run_pipeline(
         raise typer.Exit(code=1) from None
 
 
-def _execute_run(  # noqa: C901
+def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) -> RunContext:
+    """The fully-wired `RunContext` a run or a resume starts from.
+
+    `TECH-023`: `_execute_run` and `resume` built this identically — constitution, standards,
+    interaction provider, isolation policy, model router, LLM wiring — differing only in a local
+    variable's name. Forty duplicated lines is forty lines where the two entry points can drift
+    into giving a run and its resume different execution postures, which is exactly the class of
+    defect `TECH-013` records for the API composition root.
+    """
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
+    from specweaver.infrastructure.llm.router import ModelRouter
+
+    info = find_constitution(project_path, spec_path=spec_path)
+    active = _core.run_repo_op(lambda r: r.get_active_project())
+    db = _core.get_db()
+
+    context = RunContext(
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
+        project_path=project_path,
+        spec_path=spec_path,
+        output_dir=project_path / "src",
+        db=db,
+        guidance=GuidanceContent(
+            constitution=info.content if info else None,
+            standards=(
+                load_standards_content(db, active, project_path, target_path=spec_path)
+                if active
+                else None
+            ),
+        ),
+    )
+
+    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
+    # the delivery-layer factory decides interactivity (returns None when headless, so
+    # DraftSpecHandler's parking contract is untouched without a TTY).
+    _maybe_attach_provider(context)
+    _apply_isolation_policy(context, db, project_path)
+
+    context.model = context.model.model_copy(
+        update={
+            "llm_router": ModelRouter(
+                settings_provider=lambda role: load_settings(
+                    _core.get_db(), project_path.name, llm_role=role
+                ),
+                telemetry_project=project_path.name,
+            )
+        }
+    )
+    _wire_llm(context, pipeline_name, project_path)
+    return context
+
+
+def _apply_isolation_policy(context: RunContext, db: Database, project_path: Path) -> None:
+    """Resolve the worktree-isolation policies at the composition root (ADR-002).
+
+    INT-US-09 + C-EXEC-06: the per-step US-9 policy (``enforce_isolation``) and the per-run
+    C-EXEC-06 policy (``session_isolation`` + ``allowed_paths``). We deliberately do NOT populate
+    ``context.model.config`` here: that would also expose ``[sandbox] execution_mode`` and
+    incidentally activate B-EXEC-01 container QA on this path, which is out of scope.
+
+    **Best-effort by contract:** a settings-resolution failure must never crash a run, so the
+    policies fall back to their defaults (off).
+    """
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
+    from specweaver.core.flow.engine.isolation import apply_session_policy
+
+    try:
+        settings = load_settings(db, project_path.name)
+        context.isolation = context.isolation.model_copy(
+            update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
+        )
+        apply_session_policy(context, settings, logger)
+    except Exception:  # settings resolution is best-effort here — never crash a run
+        logger.debug(
+            "Could not resolve settings for project '%s'; worktree isolation "
+            "policy will use its default (off).",
+            project_path.name,
+        )
+
+
+def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) -> None:
+    """Save the staleness cache on success, then translate the run status into an exit code.
+
+    `TECH-023`: written out twice, once in `_execute_run` and once in `resume`. They differed in
+    one respect only and it is preserved rather than smoothed over — `resume` logs a cache-save
+    failure without printing it, so `warn_on_console` says which caller is which instead of
+    quietly changing what a resume prints.
+
+    `PARKED` exits 0 explicitly. Falling through would too, but a parked run is a routine outcome
+    rather than an absence of one, and saying so keeps the three statuses side by side.
+    """
+    from specweaver.core.flow.engine.state import RunStatus
+
+    if final_run.status == RunStatus.COMPLETED:
+        from specweaver.assurance.graph.hasher import DependencyHasher
+
+        try:
+            DependencyHasher(project_path, AnalyzerFactory).save_cache()
+            logger.info("Pipeline completed successfully, saved staleness topology cache.")
+            _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
+        except Exception as e:
+            logger.warning(f"Failed to save staleness cache: {e}")
+            if warn_on_console:
+                _core.console.print(f"[yellow]Failed to save staleness cache: {e}[/yellow]")
+
+    if final_run.status == RunStatus.FAILED:
+        raise typer.Exit(code=1)
+    if final_run.status == RunStatus.PARKED:
+        raise typer.Exit(code=0)  # Not an error, just parked
+
+
+def _execute_run(
     *,
     pipeline: str,
     spec_or_module: str,
@@ -277,67 +389,7 @@ def _execute_run(  # noqa: C901
     # Build display backend
     display = _create_display(use_json=json_output, verbose=verbose)
 
-    # Build run context
-    from specweaver.infrastructure.llm.router import ModelRouter
-
-    _info = find_constitution(project_path, spec_path=spec_path)
-    constitution_content = _info.content if _info else None
-
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    db = _core.get_db()
-    standards_content = (
-        load_standards_content(db, active, project_path, target_path=spec_path) if active else None
-    )
-
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=spec_path,
-        output_dir=project_path / "src",
-        db=db,
-        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
-    )
-
-    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
-    # the delivery-layer factory decides interactivity (returns None when headless, so
-    # DraftSpecHandler's parking contract is untouched without a TTY).
-    _maybe_attach_provider(context)
-
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.flow.engine.isolation import apply_session_policy
-
-    # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
-    # root (ADR-002) into dedicated context flags — the per-step US-9 policy
-    # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
-    # ``allowed_paths``). We deliberately do NOT populate context.model.config here: doing so
-    # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
-    # container QA on this path, which is out of scope. Graceful: a settings-resolution
-    # failure must never crash a run — the policies fall back to their defaults (off).
-    try:
-        _settings = load_settings(db, project_path.name)
-        context.isolation = context.isolation.model_copy(
-            update={"enforce_isolation": _settings.sandbox.enforce_worktree_isolation}
-        )
-        apply_session_policy(context, _settings, logger)
-    except Exception:  # settings resolution is best-effort here — never crash a run
-        logger.debug(
-            "Could not resolve settings for project '%s'; worktree isolation "
-            "policy will use its default (off).",
-            project_path.name,
-        )
-
-    context.model = context.model.model_copy(
-        update={
-            "llm_router": ModelRouter(
-                settings_provider=lambda role: load_settings(
-                    _core.get_db(), project_path.name, llm_role=role
-                ),
-                telemetry_project=project_path.name,
-            )
-        }
-    )
-
-    _wire_llm(context, pipeline_def.name, project_path)
+    context = _build_run_context(project_path, spec_path, pipeline_def.name)
 
     # Load topology
     topo_graph = load_topology(project_path)
@@ -390,27 +442,43 @@ def _execute_run(  # noqa: C901
         display.stop()
 
     # Exit code based on final status
+
+    _finish_run(final_run, project_path, warn_on_console=True)
+
+
+def _resolve_resumable_run(store: StateStore, run_id: str | None) -> Any:
+    """The run `sw resume` should continue: the one named, or the newest resumable one.
+
+    Exits 1 when a named run or the active project is missing, and **0** when auto-detection
+    simply finds nothing — having no parked run is not a failure.
+    """
+    if run_id is not None:
+        run_state = store.load_run(run_id)
+        if run_state is None:
+            _core.console.print(f"[red]Error:[/red] Run '{run_id}' not found.")
+            raise typer.Exit(code=1)
+        return run_state
+
+    from specweaver.core.flow.engine.parser import list_bundled_pipelines
     from specweaver.core.flow.engine.state import RunStatus
 
-    if final_run.status == RunStatus.COMPLETED:
-        from specweaver.assurance.graph.hasher import DependencyHasher
-
-        try:
-            DependencyHasher(project_path, AnalyzerFactory).save_cache()
-            logger.info("Pipeline completed successfully, saved staleness topology cache.")
-            _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
-        except Exception as e:
-            logger.warning(f"Failed to save staleness cache: {e}")
-            _core.console.print(f"[yellow]Failed to save staleness cache: {e}[/yellow]")
-
-    if final_run.status == RunStatus.FAILED:
+    name = _core._require_active_project()
+    _core.get_db()
+    if not _core.run_repo_op(lambda r: r.get_project(name)):
+        _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
-    if final_run.status == RunStatus.PARKED:
-        raise typer.Exit(code=0)  # Not an error, just parked
+
+    for pipeline_name in list_bundled_pipelines():
+        candidate = store.get_latest_run(name, pipeline_name)
+        if candidate and candidate.status in (RunStatus.PARKED, RunStatus.FAILED):
+            return candidate
+
+    _core.console.print("[dim]No resumable runs found for the active project.[/dim]")
+    raise typer.Exit(code=0)
 
 
 @flow_cli.command(name="resume")
-def resume(  # noqa: C901
+def resume(
     run_id: str | None = typer.Argument(
         None,
         help="Run ID to resume. If omitted, resumes the latest parked/failed run.",
@@ -438,40 +506,9 @@ def resume(  # noqa: C901
     """
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.engine.state import RunStatus
 
     store = _get_state_store()
-
-    if run_id is not None:
-        # Explicit run ID
-        run_state = store.load_run(run_id)
-        if run_state is None:
-            _core.console.print(f"[red]Error:[/red] Run '{run_id}' not found.")
-            raise typer.Exit(code=1)
-    else:
-        # Auto-detect: find latest resumable run for active project
-        name = _core._require_active_project()
-        _core.get_db()
-        proj = _core.run_repo_op(lambda r: r.get_project(name))
-        if not proj:
-            _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
-            raise typer.Exit(code=1)
-
-        # Try common pipeline names
-        from specweaver.core.flow.engine.parser import list_bundled_pipelines
-
-        run_state = None
-        for pipeline_name in list_bundled_pipelines():
-            candidate = store.get_latest_run(name, pipeline_name)
-            if candidate and candidate.status in (RunStatus.PARKED, RunStatus.FAILED):
-                run_state = candidate
-                break
-
-        if run_state is None:
-            _core.console.print(
-                "[dim]No resumable runs found for the active project.[/dim]",
-            )
-            raise typer.Exit(code=0)
+    run_state = _resolve_resumable_run(store, run_id)
 
     _core.console.print(
         f"[bold]Resuming[/bold] run [cyan]{run_state.run_id[:8]}...[/cyan] "
@@ -482,72 +519,9 @@ def resume(  # noqa: C901
     # Load the pipeline definition
     pipeline_def = load_pipeline(Path(run_state.pipeline_name))
 
-    # Build context from stored state
-    from specweaver.infrastructure.llm.router import ModelRouter
-
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
-
-    _info = find_constitution(project_path, spec_path=spec_path)
-    constitution_content = _info.content if _info else None
-
-    resume_active = _core.run_repo_op(lambda r: r.get_active_project())
-    db = _core.get_db()
-    standards_content = (
-        load_standards_content(db, resume_active, project_path, target_path=spec_path)
-        if resume_active
-        else None
-    )
-
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=spec_path,
-        output_dir=project_path / "src",
-        db=db,
-        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
-    )
-
-    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
-    # the delivery-layer factory decides interactivity (returns None when headless, so
-    # DraftSpecHandler's parking contract is untouched without a TTY).
-    _maybe_attach_provider(context)
-
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.flow.engine.isolation import apply_session_policy
-
-    # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
-    # root (ADR-002) into dedicated context flags — the per-step US-9 policy
-    # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
-    # ``allowed_paths``). We deliberately do NOT populate context.model.config here: doing so
-    # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
-    # container QA on this path, which is out of scope. Graceful: a settings-resolution
-    # failure must never crash a run — the policies fall back to their defaults (off).
-    try:
-        _settings = load_settings(db, project_path.name)
-        context.isolation = context.isolation.model_copy(
-            update={"enforce_isolation": _settings.sandbox.enforce_worktree_isolation}
-        )
-        apply_session_policy(context, _settings, logger)
-    except Exception:  # settings resolution is best-effort here — never crash a run
-        logger.debug(
-            "Could not resolve settings for project '%s'; worktree isolation "
-            "policy will use its default (off).",
-            project_path.name,
-        )
-
-    context.model = context.model.model_copy(
-        update={
-            "llm_router": ModelRouter(
-                settings_provider=lambda role: load_settings(
-                    _core.get_db(), project_path.name, llm_role=role
-                ),
-                telemetry_project=project_path.name,
-            )
-        }
-    )
-
-    _wire_llm(context, pipeline_def.name, project_path)
+    context = _build_run_context(project_path, spec_path, pipeline_def.name)
 
     display = _create_display(use_json=json_output, verbose=verbose)
 
@@ -575,15 +549,4 @@ def resume(  # noqa: C901
     finally:
         display.stop()
 
-    if final_run.status == RunStatus.COMPLETED:
-        from specweaver.assurance.graph.hasher import DependencyHasher
-
-        try:
-            DependencyHasher(project_path, AnalyzerFactory).save_cache()
-            logger.info("Pipeline completed successfully, saved staleness topology cache.")
-            _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
-        except Exception as e:
-            logger.warning(f"Failed to save staleness cache: {e}")
-
-    if final_run.status == RunStatus.FAILED:
-        raise typer.Exit(code=1)
+    _finish_run(final_run, project_path, warn_on_console=False)

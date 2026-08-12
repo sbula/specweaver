@@ -117,7 +117,7 @@ class GenerateCodeHandler:
 
             import uuid
 
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+            from specweaver.commons.lineage import extract_artifact_uuid
 
             parent_id = None
             if context.spec_path.exists():
@@ -216,7 +216,7 @@ class GenerateTestsHandler:
 
             import uuid
 
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+            from specweaver.commons.lineage import extract_artifact_uuid
 
             parent_id = None
             if context.spec_path.exists():
@@ -445,7 +445,7 @@ class PlanSpecHandler:
                 planner, context, spec_content, base_prompt
             )
 
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+            from specweaver.commons.lineage import extract_artifact_uuid
 
             parent_id = None
             if context.spec_path.exists():

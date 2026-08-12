@@ -18,7 +18,7 @@ dependencies:
   - specweaver.core.flow.engine.runner
   - specweaver.core.flow.engine.state
   - specweaver.core.flow.handlers.base
-  - specweaver.infrastructure.llm.lineage
+  - specweaver.commons.lineage
   - specweaver.interfaces.cli
   - specweaver.interfaces.cli.lineage
   - specweaver.workspace.analyzers.factory

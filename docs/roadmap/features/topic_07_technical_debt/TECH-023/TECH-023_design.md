@@ -184,3 +184,68 @@ above is largely spent. Expect the rest to be individual work.
 
 Keep reducing. The gate no longer depends on it — that is the point of the ratchet. Start with
 `core/flow`, the one cluster still large enough to pay for a shared abstraction.
+## Batch 7 — the CLI layer, 2026-08-12
+
+**All 9 `interfaces/cli` violations resolved: 40 → 31.** Baseline diff is nine deletions and
+**zero** additions, so nothing relocated and nothing new appeared. All **4** `# noqa: C901` in the
+set are deleted, not moved — suppressions 229 → 223.
+
+| | before | after |
+|---|---|---|
+| `graph::tree_command` | 34 | resolved |
+| `review::_report_draft_chain` | 29 | resolved |
+| `implementation::_report_implementation` | 27 | resolved |
+| `flow::resume` | 25 | resolved |
+| `standards::standards_scan` | 24 | resolved |
+| `review::review` | 21 | resolved |
+| `flow::_execute_run` | 19 | resolved |
+| `validation::_display_results` | 18 | resolved |
+| `standards::_maybe_bootstrap_constitution` | 16 | resolved |
+
+### The premise was wrong, and correcting it is the finding
+
+These nine were picked as *"one duplicated rendering mechanism"*. They are not: `_display_results`
+renders typed `RuleResult`s, `_report_implementation` dispatches on step name, `tree_command` walks
+a lineage DB. Forcing a shared renderer over them would have been inventing an abstraction to move
+a number.
+
+What the cluster **does** share is smaller and real, and it took reading all nine to see it: each
+one hand-rolls something that already exists elsewhere in the same file or its sibling.
+
+- **`graph/interfaces/cli.py` reimplemented artifact-tag reading three times**, hardcoded to
+  `"# sw-artifact: "` at line start — twice inside `tree_command` alone, in the two branches of an
+  `is_absolute()` test whose halves did the same thing. **This was a live defect:**
+  `wrap_artifact_tag` is language-aware, so a drafted spec carries `<!-- sw-artifact: … -->` and
+  `sw lineage tree spec.md` silently resolved nothing and passed the path string on as a UUID.
+  Proven per-syntax before the fix: markdown, TypeScript and SQL all missed, YAML matched.
+- **`_execute_run` and `resume` built their `RunContext` identically** — constitution, standards,
+  interaction provider, isolation policy, model router, LLM wiring — forty lines differing only in
+  a local variable's name. That is forty lines where a run and its own resume can drift into
+  different execution postures, which is the exact defect class `TECH-013` records for the API
+  composition root. Now `_build_run_context`, with `_apply_isolation_policy` and `_finish_run`
+  likewise shared.
+- **`_maybe_bootstrap_constitution`'s two modes ran the same four statements**; only the message
+  afterwards differed.
+- **`_report_implementation`'s `elif` chain became a `_STEP_REPORTERS` table**, so adding a step is
+  an entry rather than a branch.
+
+### A boundary the fix had to move
+
+`extract_artifact_uuid` lived in `infrastructure/llm/lineage.py`, and `tach` correctly refused
+`graph.interfaces → infrastructure.llm`. `graph.lineage` could not host it either — it is
+deliberately dependency-free. The tag format is a cross-cutting convention (`infrastructure.llm`,
+`core.flow.handlers`, `graph`), so the module moved to **`commons/lineage.py`**, with `tach.toml`
+and both `context.yaml` exposure lists updated.
+
+`test_tach_interfaces_map_to_valid_namespaces` caught the leftover: `infrastructure.llm` still
+declared a `lineage` interface pointing at a file that had moved. That test exists for exactly this
+and it earned its place.
+
+### One behaviour difference preserved rather than smoothed over
+
+`_finish_run` takes `warn_on_console`: `resume` logs a staleness-cache failure without printing it,
+`_execute_run` prints it. Unifying silently would have changed what a resume shows, so the
+parameter names which caller is which.
+
+`6563 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; 0 cycles; class
+health within limits.

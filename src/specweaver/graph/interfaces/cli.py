@@ -13,6 +13,7 @@ import typer
 from rich import print as rprint
 from rich.tree import Tree
 
+from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli import _core
@@ -70,6 +71,51 @@ lineage_app = typer.Typer(
 )
 
 
+def _resolve_target_uuid(target: str) -> str:
+    """The lineage UUID `target` names — read from the file when it is one, else `target` itself.
+
+    `TECH-023`. Written out twice inside `tree_command`, once per branch of an `is_absolute()` test
+    whose two halves did the same thing, and a third time in `tag`. All three matched
+    `"# sw-artifact: "` at line start, so they saw **only** hash-comment languages —
+    `wrap_artifact_tag` is language-aware, and every spec `draft.py` writes carries
+    `<!-- sw-artifact: … -->`. `sw lineage tree spec.md` therefore resolved nothing and silently
+    passed the path string on as a UUID.
+    """
+    path = Path(target)
+    try:
+        if not path.is_file():
+            return target
+        return extract_artifact_uuid(path.read_text(encoding="utf-8")) or target
+    except OSError:
+        return target
+
+
+def _require_active_project() -> None:
+    """Exit 1 unless an active project is set and still resolvable. Written out twice."""
+    active = _core.run_repo_op(lambda r: r.get_active_project())
+    if not active:
+        typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    if not _core.run_repo_op(lambda r: r.get_project(active)):
+        typer.secho("Active project not found in global database.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+
+def _add_lineage_nodes(node_data: dict[str, Any], parent_tree: Tree, target_uuid: str) -> None:
+    """Render one lineage node and its children onto `parent_tree`."""
+    if node_data["circular"]:
+        parent_tree.add(f"[red]Circular reference: {node_data['id']}[/red]")
+        return
+
+    node_uid = node_data["id"]
+    events = ", ".join(f"{h['event_type']}:{h['model_id']}" for h in node_data["history"])
+    name = f"[bold green]{node_uid}[/bold green]" if node_uid == target_uuid else node_uid
+
+    node = parent_tree.add(f"📄 {name} [dim]({events})[/dim]")
+    for child in node_data["children"]:
+        _add_lineage_nodes(child, node, target_uuid)
+
+
 @lineage_app.command("tag")
 def tag(
     target: Annotated[Path, typer.Argument(help="Python file to tag")],
@@ -83,11 +129,7 @@ def tag(
         raise typer.Exit(code=1)
 
     content_lines = target.read_text(encoding="utf-8").splitlines()
-    existing_uuid = None
-    for line in content_lines:
-        if line.startswith("# sw-artifact: "):
-            existing_uuid = line.split(": ")[1].strip()
-            break
+    existing_uuid = extract_artifact_uuid("\n".join(content_lines))
 
     if existing_uuid:
         target_uuid = existing_uuid
@@ -104,14 +146,7 @@ def tag(
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
     get_db()
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    if not active:
-        typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
-    proj = _core.run_repo_op(lambda r: r.get_project(active))
-    if not proj:
-        typer.secho("Active project not found in global database.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+    _require_active_project()
 
     from specweaver.core.config.paths import config_db_path
 
@@ -128,72 +163,20 @@ def tag(
 
 
 @lineage_app.command("tree")
-def tree_command(  # noqa: C901
-    target: Annotated[str, typer.Argument(help="UUID or Python file path to trace")],
+def tree_command(
+    target: Annotated[str, typer.Argument(help="UUID or file path to trace")],
 ) -> None:
     """Recursively traces up and down the artifact lineage DB to display a rich tree."""
-    target_uuid = target
-    path_target = Path(target)
-    if not path_target.is_absolute():
-        try:
-            # Check if it looks like a valid path relative to cwd
-            if path_target.exists() and path_target.is_file():
-                content_lines = path_target.read_text(encoding="utf-8").splitlines()
-                for line in content_lines:
-                    if line.startswith("# sw-artifact: "):
-                        target_uuid = line.split(": ")[1].strip()
-                        break
-        except Exception:
-            pass
-    elif path_target.exists() and path_target.is_file():
-        try:
-            content_lines = path_target.read_text(encoding="utf-8").splitlines()
-            for line in content_lines:
-                if line.startswith("# sw-artifact: "):
-                    target_uuid = line.split(": ")[1].strip()
-                    break
-        except Exception:
-            pass
+    target_uuid = _resolve_target_uuid(target)
 
     get_db()
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    if not active:
-        typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
-    proj = _core.run_repo_op(lambda r: r.get_project(active))
-    if not proj:
-        typer.secho("Active project not found in global database.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+    _require_active_project()
 
     from specweaver.core.config.paths import config_db_path
 
-    db_path = config_db_path()
-    repo = LineageRepository(str(db_path))
-    engine = LineageEngine(repo)
-
+    engine = LineageEngine(LineageRepository(str(config_db_path())))
     root_uuid = engine.find_root(target_uuid)
-    tree_data = engine.build_tree(root_uuid)
 
     tree = Tree(f"[bold blue]Lineage Graph (Root: {root_uuid})[/bold blue]")
-
-    def build_node(node_data: dict[str, Any], parent_tree: Tree) -> None:
-        node_uid = node_data["id"]
-
-        if node_data["circular"]:
-            parent_tree.add(f"[red]Circular reference: {node_uid}[/red]")
-            return
-
-        hist = node_data["history"]
-        events = [f"{h['event_type']}:{h['model_id']}" for h in hist]
-
-        highlight = "[bold green]" if node_uid == target_uuid else ""
-        close = "[/bold green]" if highlight else ""
-        label = f"📄 {highlight}{node_uid}{close} [dim]({', '.join(events)})[/dim]"
-
-        node = parent_tree.add(label)
-
-        for child in node_data["children"]:
-            build_node(child, node)
-
-    build_node(tree_data, tree)
+    _add_lineage_nodes(engine.build_tree(root_uuid), tree, target_uuid)
     console.print(tree)

@@ -478,7 +478,7 @@ class PromptBuilderAddersMixin:
         and instructs the LLM to place it physically at the very top of the output.
         If the language is unsupported, no tag instruction is added.
         """
-        from specweaver.infrastructure.llm.lineage import wrap_artifact_tag
+        from specweaver.commons.lineage import wrap_artifact_tag
 
         tag = wrap_artifact_tag(artifact_id, language)
         if tag is not None:

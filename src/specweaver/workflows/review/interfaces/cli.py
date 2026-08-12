@@ -91,43 +91,56 @@ def _report_draft_chain(run_state: Any, spec_path: Path) -> None:
 
     records = {r.step_name: r for r in (run_state.step_records or [])}
 
-    def _output(step_name: str) -> dict[str, Any]:
-        rec = records.get(step_name)
-        result = getattr(rec, "result", None) if rec else None
-        output = getattr(result, "output", None) if result else None
-        return output if isinstance(output, dict) else {}
-
-    draft_out = _output("draft_spec")
     draft_rec = records.get("draft_spec")
     if draft_rec is not None and draft_rec.status == StepStatus.PASSED:
-        _core.console.print(f"\n[green]Spec drafted:[/green] {draft_out.get('path', spec_path)}")
+        path = _step_output(records, "draft_spec").get("path", spec_path)
+        _core.console.print(f"\n[green]Spec drafted:[/green] {path}")
 
-    validate_out = _output("validate_spec")
-    if validate_out:
-        _core.console.print(
-            f"Validation: {validate_out.get('passed', '?')}/{validate_out.get('total', '?')} "
-            "rules passed"
-        )
-        for rule in validate_out.get("results", []) or []:
-            # RuleStatus.value is lowercase ("fail") — compare case-insensitively.
-            if isinstance(rule, dict) and str(rule.get("status", "")).upper() == "FAIL":
-                # escape(): rule messages can embed spec content — stray [/tags] would
-                # raise rich.errors.MarkupError and crash the report.
-                _core.console.print(
-                    f"  [red]{escape(str(rule.get('rule_id', '?')))}[/red]: "
-                    f"{escape(str(rule.get('message', '')))}"
-                )
+    _report_validation(_step_output(records, "validate_spec"))
+    _report_review(_step_output(records, "review_spec"))
 
-    review_out = _output("review_spec")
-    if review_out:
-        verdict = str(review_out.get("verdict", "unknown"))
-        findings = review_out.get("findings") or []
-        _core.console.print(f"Review: {verdict}")
-        if verdict != "accepted":
-            _core.console.print("[red]Review rejected (re-draft retries exhausted).[/red]")
-            for finding in findings:
-                text = finding.get("message", finding) if isinstance(finding, dict) else finding
-                _core.console.print(f"  [red]-[/red] {escape(str(text))}")
+
+def _step_output(records: dict[str, Any], step_name: str) -> dict[str, Any]:
+    """One step's `output` dict, or `{}` when the step is missing, unfinished or non-dict."""
+    result = getattr(records.get(step_name), "result", None)
+    output = getattr(result, "output", None) if result else None
+    return output if isinstance(output, dict) else {}
+
+
+def _report_validation(validate_out: dict[str, Any]) -> None:
+    """Rule tally, then each failure."""
+    if not validate_out:
+        return
+
+    _core.console.print(
+        f"Validation: {validate_out.get('passed', '?')}/{validate_out.get('total', '?')} "
+        "rules passed"
+    )
+    for rule in validate_out.get("results", []) or []:
+        # RuleStatus.value is lowercase ("fail") — compare case-insensitively.
+        if isinstance(rule, dict) and str(rule.get("status", "")).upper() == "FAIL":
+            # escape(): rule messages can embed spec content — stray [/tags] would
+            # raise rich.errors.MarkupError and crash the report.
+            _core.console.print(
+                f"  [red]{escape(str(rule.get('rule_id', '?')))}[/red]: "
+                f"{escape(str(rule.get('message', '')))}"
+            )
+
+
+def _report_review(review_out: dict[str, Any]) -> None:
+    """Verdict, then the findings behind a rejection."""
+    if not review_out:
+        return
+
+    verdict = str(review_out.get("verdict", "unknown"))
+    _core.console.print(f"Review: {verdict}")
+    if verdict == "accepted":
+        return
+
+    _core.console.print("[red]Review rejected (re-draft retries exhausted).[/red]")
+    for finding in review_out.get("findings") or []:
+        text = finding.get("message", finding) if isinstance(finding, dict) else finding
+        _core.console.print(f"  [red]-[/red] {escape(str(text))}")
 
 
 @review_cli.command(name="draft")
@@ -343,35 +356,38 @@ def review(
     )
 
     runner = PipelineRunner(pipeline, context)
-    run_state = asyncio.run(runner.run())
 
-    last_record = run_state.step_records[-1] if run_state.step_records else None
+    _display_review_result(_review_result_from_run(asyncio.run(runner.run())))
 
+
+def _review_result_from_run(run_state: Any) -> ReviewResult:
+    """The `ReviewResult` a finished review run produced, or an ERROR result if it produced none.
+
+    A pipeline that failed before its handler ran leaves no result to read, and that is not the
+    same as a review that returned ERROR — hence the distinct summary.
+    """
     from specweaver.workflows.review.reviewer import ReviewFinding, ReviewResult, ReviewVerdict
 
-    if last_record and last_record.result:
-        out = last_record.result.output
-        verdict_str = out.get("verdict", "error")
-        try:
-            verdict = ReviewVerdict(verdict_str)
-        except ValueError:
-            verdict = ReviewVerdict.ERROR
-
-        raw_findings = out.get("findings", [])
-        findings = [ReviewFinding(**f) if isinstance(f, dict) else f for f in raw_findings]
-
-        result = ReviewResult(
-            verdict=verdict,
-            summary=out.get("summary", last_record.result.error_message),
-            findings=findings,
-        )
-    else:
-        result = ReviewResult(
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+    if not (last_record and last_record.result):
+        return ReviewResult(
             verdict=ReviewVerdict.ERROR,
             summary="Review failed: pipeline did not produce a valid result.",
         )
 
-    _display_review_result(result)
+    out = last_record.result.output
+    try:
+        verdict = ReviewVerdict(out.get("verdict", "error"))
+    except ValueError:
+        verdict = ReviewVerdict.ERROR
+
+    return ReviewResult(
+        verdict=verdict,
+        summary=out.get("summary", last_record.result.error_message),
+        findings=[
+            ReviewFinding(**f) if isinstance(f, dict) else f for f in out.get("findings", [])
+        ],
+    )
 
 
 def _display_review_result(result: ReviewResult) -> None:

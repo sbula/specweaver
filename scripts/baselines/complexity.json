@@ -2,12 +2,9 @@
   "functions": {
     "src/specweaver/assurance/graph/hasher.py::DependencyHasher::_hash_directory": 36,
     "src/specweaver/assurance/graph/topology.py::TopologyGraph::_calculate_stale_seeds": 17,
-    "src/specweaver/assurance/standards/interfaces/cli.py::_maybe_bootstrap_constitution": 16,
-    "src/specweaver/assurance/standards/interfaces/cli.py::standards_scan": 24,
     "src/specweaver/assurance/standards/reviewer.py::StandardsReviewer::review": 19,
     "src/specweaver/assurance/validation/drift_detector.py::_extract_param_names": 31,
     "src/specweaver/assurance/validation/drift_detector.py::detect_drift": 19,
-    "src/specweaver/assurance/validation/interfaces/cli.py::_display_results": 18,
     "src/specweaver/assurance/validation/rules/code/c13_contract_drift.py::C13ContractDriftRule::check": 16,
     "src/specweaver/assurance/validation/rules/spec/s12_archetype_spec_bounds.py::S12ArchetypeSpecBoundsRule::check": 18,
     "src/specweaver/core/flow/engine/handover.py::save_handover_context": 28,
@@ -19,9 +16,6 @@
     "src/specweaver/core/flow/handlers/mcp_assembler.py::evaluate_and_fetch_mcp_context": 17,
     "src/specweaver/core/flow/handlers/review.py::ReviewCodeHandler::execute": 20,
     "src/specweaver/core/flow/handlers/validation.py::ValidateTestsHandler::_resolve_targets": 18,
-    "src/specweaver/core/flow/interfaces/cli.py::_execute_run": 19,
-    "src/specweaver/core/flow/interfaces/cli.py::resume": 25,
-    "src/specweaver/graph/interfaces/cli.py::tree_command": 34,
     "src/specweaver/interfaces/api/v1/pipelines.py::get_run_status": 16,
     "src/specweaver/interfaces/api/v1/validation.py::run_check": 17,
     "src/specweaver/sandbox/code_structure/core/atom.py::CodeStructureAtom::active_evaluator": 22,
@@ -36,9 +30,6 @@
     "src/specweaver/sandbox/mcp/core/atom.py::MCPAtom::_scrub_telemetry": 17,
     "src/specweaver/sandbox/qa_runner/core/atom.py::QARunnerAtom::_intent_run_tests": 19,
     "src/specweaver/workflows/evaluators/loader.py::load_evaluator_schemas": 36,
-    "src/specweaver/workflows/implementation/interfaces/cli.py::_report_implementation": 27,
-    "src/specweaver/workflows/review/interfaces/cli.py::_report_draft_chain": 29,
-    "src/specweaver/workflows/review/interfaces/cli.py::review": 21,
     "src/specweaver/workspace/memory/hydrator.py::MemoryHydrator::hydrate": 35
   }
 }

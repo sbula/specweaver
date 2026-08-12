@@ -19,6 +19,8 @@ forbids:
   - specweaver/*
 
 exposes:
+  - extract_artifact_uuid
+  - wrap_artifact_tag
   - DALLevel
   - TestFailure
   - TestRunResult

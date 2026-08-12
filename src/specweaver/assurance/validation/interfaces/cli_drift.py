@@ -319,7 +319,7 @@ def _resolve_plan_by_lineage(
     target_path: Path, all_plans: list[Path], target_posix: str
 ) -> Path | None:
     try:
-        from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+        from specweaver.commons.lineage import extract_artifact_uuid
 
         content = target_path.read_text(encoding="utf-8")
         uuid = extract_artifact_uuid(content)

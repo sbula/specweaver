@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from specweaver.assurance.standards.analyzer import CategoryResult
     from specweaver.core.config.database import Database
 
@@ -31,8 +33,77 @@ standards_app = typer.Typer(
 # standards_app will be mounted by main.py
 
 
+def _resolve_project_root(name: str) -> Path:
+    """The active project's root on disk. Exits 1 if it is unregistered or gone."""
+    proj = _core.run_repo_op(lambda r: r.get_project(name))
+    if proj is None:
+        _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
+        raise typer.Exit(code=1)
+
+    project_path = Path(str(proj["root_path"]))
+    if not project_path.exists():
+        _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
+        raise typer.Exit(code=1)
+    return project_path
+
+
+def _scan_scopes(
+    scopes: list[str],
+    all_files: list[Any],
+    project_path: Path,
+    make_context: Callable[[], Any],
+    *,
+    compare: bool,
+) -> dict[str, list[CategoryResult]]:
+    """Enrich every scope that has source files, keeping only those that produced results.
+
+    `make_context` is a factory rather than a value: each scope gets a fresh `RunContext`, which is
+    what the loop did inline before and what keeps one scope's run from observing another's state.
+    """
+    scope_results: dict[str, list[CategoryResult]] = {}
+    for scope in scopes:
+        scope_path = project_path if scope == "." else project_path / scope
+        scope_files = [
+            f for f in all_files if _file_in_scope(f, scope_path, project_path, scope, scopes)
+        ]
+        if not scope_files:
+            continue
+
+        _core.console.print(f"  Scope [cyan]{scope}[/cyan]: {len(scope_files)} source files")
+        results = _enrich_scope(scope, scope_files, make_context(), compare=compare)
+        if results:
+            scope_results[scope] = results
+    return scope_results
+
+
+def _enrich_scope(
+    scope: str, scope_files: list[Any], context: Any, *, compare: bool
+) -> list[CategoryResult]:
+    """Run the one-step enrichment pipeline for a scope; `[]` unless it passed with results."""
+    import asyncio
+
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import StepStatus
+
+    pipeline = PipelineDefinition.create_single_step(
+        name=f"enrich_scope_{scope}",
+        action=StepAction.ENRICH,
+        target=StepTarget.STANDARDS,
+        description=f"Enrich standards for scope {scope}",
+        params={"scope_files": scope_files, "half_life_days": 90.0, "compare": compare},
+    )
+
+    run_state = asyncio.run(PipelineRunner(pipeline, context).run())
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+    if last_record and last_record.status == StepStatus.PASSED and last_record.result:
+        results: list[CategoryResult] = last_record.result.output.get("results", [])
+        return results
+    return []
+
+
 @standards_app.command("scan")
-def standards_scan(  # noqa: C901
+def standards_scan(
     scope: str | None = typer.Option(
         None,
         "--scope",
@@ -56,7 +127,6 @@ def standards_scan(  # noqa: C901
     and presents a combined HITL review (unless --no-review is set).
     """
     logger.debug("Executing standards_scan command")
-    import asyncio
 
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
@@ -66,17 +136,7 @@ def standards_scan(  # noqa: C901
 
     name = _core._require_active_project()
     db = _core.get_db()
-    proj = _core.run_repo_op(lambda r: r.get_project(name))
-    if proj is None:
-        _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
-        raise typer.Exit(code=1)
-    project_path = Path(str(proj["root_path"]))
-
-    if not project_path.exists():
-        _core.console.print(
-            f"[red]Error:[/red] Project root does not exist: {project_path}",
-        )
-        raise typer.Exit(code=1)
+    project_path = _resolve_project_root(name)
 
     _core.console.print(f"[bold]Scanning standards for[/bold] [cyan]{name}[/cyan]")
     _core.console.print(f"  [dim]Root: {project_path}[/dim]\n")
@@ -89,9 +149,6 @@ def standards_scan(  # noqa: C901
     # Discover all files once
     all_files = discover_files(project_path, AnalyzerFactory)
 
-    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
 
     settings = load_settings(db, name)
@@ -100,37 +157,8 @@ def standards_scan(  # noqa: C901
     # We use a dummy spec_path since standards scanning is project/scope-wide
     dummy_spec = project_path / "CONSTITUTION.md"
 
-    # Scan each scope
-    scope_results: dict[str, list[CategoryResult]] = {}
-
-    for s in scopes:
-        scope_path = project_path if s == "." else project_path / s
-
-        # Filter files to this scope
-        scope_files = [
-            f for f in all_files if _file_in_scope(f, scope_path, project_path, s, scopes)
-        ]
-
-        if not scope_files:
-            continue
-
-        _core.console.print(
-            f"  Scope [cyan]{s}[/cyan]: {len(scope_files)} source files",
-        )
-
-        pipeline = PipelineDefinition.create_single_step(
-            name=f"enrich_scope_{s}",
-            action=StepAction.ENRICH,
-            target=StepTarget.STANDARDS,
-            description=f"Enrich standards for scope {s}",
-            params={
-                "scope_files": scope_files,
-                "half_life_days": 90.0,
-                "compare": compare,
-            },
-        )
-
-        context = RunContext(
+    def _context() -> Any:
+        return RunContext(
             analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
             project_path=project_path,
             spec_path=dummy_spec,
@@ -138,14 +166,9 @@ def standards_scan(  # noqa: C901
             db=db,
         )
 
-        runner = PipelineRunner(pipeline, context)
-        run_state = asyncio.run(runner.run())
-
-        last_record = run_state.step_records[-1] if run_state.step_records else None
-        if last_record and last_record.status == StepStatus.PASSED and last_record.result:
-            results = last_record.result.output.get("results", [])
-            if results:
-                scope_results[s] = results
+    scope_results = _scan_scopes(
+        scopes, all_files, project_path, _context, compare=compare
+    )
 
     if not scope_results:
         _core.console.print(
@@ -231,7 +254,6 @@ def _maybe_bootstrap_constitution(
     """
     from specweaver.workspace.project.constitution import (
         CONSTITUTION_FILENAME,
-        generate_constitution_from_standards,
         is_unmodified_starter,
     )
 
@@ -245,43 +267,45 @@ def _maybe_bootstrap_constitution(
     languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 
     if bootstrap_mode == "auto":
-        all_standards = _core.run_repo_op(lambda r: r.get_standards(project_name))
-        project_slug = project_path.name.lower().replace(" ", "-")
-        result = generate_constitution_from_standards(
-            project_path,
-            project_slug,
-            all_standards,
-            languages,
-        )
-        if result:
+        written, count = _write_constitution(project_path, project_name, languages)
+        if written:
             _core.console.print(
                 f"\n[green]\u2713[/green] CONSTITUTION.md auto-bootstrapped "
-                f"from {len(all_standards)} standards.",
+                f"from {count} standards.",
             )
-    elif bootstrap_mode == "prompt" and not no_review:
-        do_bootstrap = typer.confirm(
-            "\nBootstrap CONSTITUTION.md from these standards?",
-            default=True,
-        )
-        if do_bootstrap:
-            all_standards = _core.run_repo_op(lambda r: r.get_standards(project_name))
-            project_slug = project_path.name.lower().replace(" ", "-")
-            result = generate_constitution_from_standards(
-                project_path,
-                project_slug,
-                all_standards,
-                languages,
-            )
-            if result:
+        return
+
+    if bootstrap_mode == "prompt" and not no_review:
+        if typer.confirm("\nBootstrap CONSTITUTION.md from these standards?", default=True):
+            written, _ = _write_constitution(project_path, project_name, languages)
+            if written:
                 _core.console.print(
-                    f"[green]\u2713[/green] CONSTITUTION.md bootstrapped: [bold]{result}[/bold]",
+                    f"[green]\u2713[/green] CONSTITUTION.md bootstrapped: [bold]{written}[/bold]",
                 )
-    else:
-        # mode == "off" or (mode == "prompt" and no_review)
-        _core.console.print(
-            "\n[dim]Tip: Run 'sw constitution bootstrap' to generate "
-            "CONSTITUTION.md from these standards.[/dim]",
-        )
+        return
+
+    # mode == "off" or (mode == "prompt" and no_review)
+    _core.console.print(
+        "\n[dim]Tip: Run 'sw constitution bootstrap' to generate "
+        "CONSTITUTION.md from these standards.[/dim]",
+    )
+
+
+def _write_constitution(
+    project_path: Path, project_name: str, languages: list[str]
+) -> tuple[Any, int]:
+    """Generate `CONSTITUTION.md` from every stored standard. `(result, standards_count)`.
+
+    Both bootstrap modes ran these same four statements; only the message afterwards differed.
+    """
+    from specweaver.workspace.project.constitution import generate_constitution_from_standards
+
+    all_standards = _core.run_repo_op(lambda r: r.get_standards(project_name))
+    project_slug = project_path.name.lower().replace(" ", "-")
+    result = generate_constitution_from_standards(
+        project_path, project_slug, all_standards, languages
+    )
+    return result, len(all_standards)
 
 
 def _file_in_scope(

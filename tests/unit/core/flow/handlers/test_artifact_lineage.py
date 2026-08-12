@@ -21,13 +21,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.core.flow.handlers.artifact_lineage import (
     derive_artifact_uuid,
     ensure_file_tagged,
     log_artifact_lineage,
     tag_content,
 )
-from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import typer
 
@@ -20,6 +20,8 @@ from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from specweaver.core.flow.engine.models import PipelineDefinition
 
 logger = logging.getLogger(__name__)
@@ -109,42 +111,59 @@ def _report_implementation(run_state: object) -> None:
         out = record.result.output if record.result else {}
         passed = record.status == StepStatus.PASSED
         mark = "[green]✓[/green]" if passed else "[red]✗[/red]"
-        name = record.step_name
 
-        if name in ("generate_code", "generate_tests"):
-            generated_path = out.get("generated_path")
-            if generated_path:
-                _core.console.print(f"  {mark} {name}: {generated_path}")
-        elif name == "run_tests":
-            line = f"  {mark} tests: {out.get('passed', 0)} passed, {out.get('failed', 0)} failed"
-            coverage = out.get("coverage_pct")
-            if coverage is not None:
-                line += f", coverage {coverage}%"
-            _core.console.print(line)
-        elif name == "lint_fix":
-            remaining = out.get("lint_errors_remaining", 0)
-            detail = (
-                "auto-fixed"
-                if out.get("auto_fixed")
-                else f"{out.get('reflections_used', 0)} reflection(s)"
-            )
-            _core.console.print(f"  {mark} lint: {detail}, {remaining} errors remaining")
-        elif name == "validate_code":
-            _core.console.print(
-                f"  {mark} code validation: {out.get('passed', 0)}/{out.get('total', 0)} "
-                "rules passed"
-            )
-            failed_rules = [
-                r.get("rule_id")
-                for r in out.get("results", [])
-                if str(r.get("status", "")).lower().startswith("fail")
-            ]
-            if failed_rules:
-                _core.console.print(
-                    f"      [yellow]failed rules:[/yellow] {', '.join(failed_rules)}"
-                )
+        reporter = _STEP_REPORTERS.get(record.step_name)
+        if reporter is not None:
+            reporter(mark, record.step_name, out)
         elif not passed:
-            _core.console.print(f"  {mark} {name}: {record.error_message or 'failed'}")
+            _core.console.print(f"  {mark} {record.step_name}: {record.error_message or 'failed'}")
+
+
+def _report_generated(mark: str, name: str, out: dict[str, Any]) -> None:
+    generated_path = out.get("generated_path")
+    if generated_path:
+        _core.console.print(f"  {mark} {name}: {generated_path}")
+
+
+def _report_tests(mark: str, _name: str, out: dict[str, Any]) -> None:
+    line = f"  {mark} tests: {out.get('passed', 0)} passed, {out.get('failed', 0)} failed"
+    coverage = out.get("coverage_pct")
+    if coverage is not None:
+        line += f", coverage {coverage}%"
+    _core.console.print(line)
+
+
+def _report_lint(mark: str, _name: str, out: dict[str, Any]) -> None:
+    detail = (
+        "auto-fixed" if out.get("auto_fixed") else f"{out.get('reflections_used', 0)} reflection(s)"
+    )
+    remaining = out.get("lint_errors_remaining", 0)
+    _core.console.print(f"  {mark} lint: {detail}, {remaining} errors remaining")
+
+
+def _report_code_validation(mark: str, _name: str, out: dict[str, Any]) -> None:
+    _core.console.print(
+        f"  {mark} code validation: {out.get('passed', 0)}/{out.get('total', 0)} rules passed"
+    )
+    failed_rules = [
+        r.get("rule_id")
+        for r in out.get("results", [])
+        if str(r.get("status", "")).lower().startswith("fail")
+    ]
+    if failed_rules:
+        _core.console.print(f"      [yellow]failed rules:[/yellow] {', '.join(failed_rules)}")
+
+
+#: Which step names get a bespoke line. Anything absent falls back to "report it only if it
+#: failed" — a table rather than an `elif` chain, so adding a step is one entry rather than a
+#: branch in a function that was already the longest in this package (`TECH-023`).
+_STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
+    "generate_code": _report_generated,
+    "generate_tests": _report_generated,
+    "run_tests": _report_tests,
+    "lint_fix": _report_lint,
+    "validate_code": _report_code_validation,
+}
 
 
 @implement_cli.command(name="implement")

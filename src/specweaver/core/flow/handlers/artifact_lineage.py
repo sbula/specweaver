@@ -14,7 +14,7 @@ has *already* written, `generation.py` and `decomposition_artifacts.py` tag cont
 disk, and `lint_fix.py` carries a **pre-existing** uuid through an LLM round-trip and must never
 mint one. Rendering a model, a dict, or an LLM's reply to bytes is genuinely different work.
 
-`infrastructure/llm/lineage` holds the string half (`extract_artifact_uuid`, `wrap_artifact_tag`)
+`commons/lineage` holds the string half (`extract_artifact_uuid`, `wrap_artifact_tag`)
 and is deliberately pure. Anything touching a `Path` or the database belongs here instead.
 """
 
@@ -24,7 +24,7 @@ import logging
 import uuid as _uuid
 from typing import TYPE_CHECKING
 
-from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
 
 if TYPE_CHECKING:
     from pathlib import Path

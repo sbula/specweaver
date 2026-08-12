@@ -251,11 +251,11 @@ class LintFixHandler:
         from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role, TaskType
 
         code = code_path.read_text(encoding="utf-8")
+        from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
         from specweaver.core.flow.handlers.artifact_lineage import (
             log_artifact_lineage,
             tag_content,
         )
-        from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
 
         # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
         # and the LLM is being asked to preserve it. Minting one would fork the lineage.
