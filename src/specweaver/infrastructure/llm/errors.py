@@ -10,6 +10,10 @@ Hierarchy:
   - ModelNotFoundError (requested model doesn't exist)
   - GenerationError (LLM returned an error during generation)
   - ContentFilterError (response blocked by safety filters)
+
+`LLMAdapterError` stands outside that hierarchy deliberately: the others are provider failures
+during a call, this one is a failure to *build* an adapter at all. It lives here rather than in
+`factory` because `_rate_limit` raises it and `factory` imports `_rate_limit` — see `TECH-024`.
 """
 
 from __future__ import annotations
@@ -47,3 +51,17 @@ class GenerationError(LLMError):
 
 class ContentFilterError(LLMError):
     """Response was blocked by the provider's safety/content filters."""
+
+
+class LLMAdapterError(Exception):
+    """Raised when an LLM adapter cannot be created or validated.
+
+    `TECH-024` cycle 3 moved this down out of `factory`. `factory` needs `_rate_limit`'s adapter
+    and `_rate_limit` needs this exception, so each had deferred its import inside a function —
+    exactly the workaround `check_coupling` names when it says *"break it by moving the shared
+    contract down, not by deferring an import inside a function"*. Deferring hides a cycle from the
+    interpreter without removing it; the modules still could not be understood or extracted apart.
+
+    Not a subclass of `LLMError`: eleven files catch these separately and widening the hierarchy
+    would silently change what their `except LLMError` blocks catch.
+    """

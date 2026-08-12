@@ -12,15 +12,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+# Re-exported, not defined: `TECH-024` moved it to `errors.py`, a leaf, so `_rate_limit` can raise
+# it without importing `factory` back. Eleven files import it from here, so the name keeps
+# resolving — new code should import from `errors`.
+from specweaver.infrastructure.llm.errors import LLMAdapterError as LLMAdapterError
+
 if TYPE_CHECKING:
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import GenerationConfig
 
 logger = logging.getLogger(__name__)
-
-
-class LLMAdapterError(Exception):
-    """Raised when an LLM adapter cannot be created or validated."""
 
 
 def _get_adapter_class(provider: str) -> Any:

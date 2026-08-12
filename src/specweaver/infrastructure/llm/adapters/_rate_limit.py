@@ -6,6 +6,7 @@ import logging
 from collections.abc import AsyncIterator, Callable
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+from specweaver.infrastructure.llm.errors import LLMAdapterError
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
 
 logger = logging.getLogger(__name__)
@@ -54,8 +55,6 @@ class AsyncRateLimiterAdapter(LLMAdapter):
             logger.error(
                 "[%s] Concurrency lock timed out after %.1fs", self.provider_name, self._timeout
             )
-            from specweaver.infrastructure.llm.factory import LLMAdapterError
-
             raise LLMAdapterError(
                 f"Rate limit timeout: Exhausted concurrency bounds awaiting slots for {self.provider_name}."
             ) from e
