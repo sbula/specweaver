@@ -172,10 +172,25 @@ or the master roadmap referencing `topic_07` only, since that document already c
 prose for all 24. The second matches this ticket's own thesis — one home per fact — and would make
 the master roadmap's TECH region a list of links.
 
-**Sequencing note.** `TECH-027`, `TECH-028` and `TECH-029` were registered with `###` sections
-matching their 24 siblings, before this correction. They are not exceptions to be fixed one-off;
-they are part of the same 24 and convert with the rest. Adding a lone one-liner now would leave the
-file *more* inconsistent, not less, and would pre-empt the placement decision above.
+**Converted 2026-08-12.** `TECH-026` through `TECH-030` — the five registered by this session — now
+sit as capability-level lines under a single `### Technical Debt` grouping: ID, short name, link,
+status box, and no story fields. The remaining **19** `TECH-NNN` entries still carry `Benefit:` /
+`Core Required (MVS)` / `Sequencing:` and are this ticket's repair list.
+
+**The tooling was enforcing the wrong shape, which is why this kept regrowing.**
+`check_story_preconditions.py::_story_block` looked only for a `^### .*<ID>:` heading, so writing a
+TECH entry *correctly* made it report "no roadmap section found" and fail the ticket — all five went
+red the moment they were converted. An agent that followed the rule got a red gate; an agent that
+broke it got green. That is the same instructions-versus-reality class as `TECH-019`, arriving
+through a checker rather than through prose, and it is why "precedent in the artifact beat the rule"
+kept happening. `_story_block` now falls back to the capability line when no `###` section exists,
+so the correct shape is writable at all.
+
+**Consequence for the design phase, recorded rather than papered over**: `Verifiable Proof:` has
+nowhere to live on a one-line entry, so all five now warn about it. That is not a regression to
+suppress — it is the question this ticket must answer. Either proof citations move to the topic doc,
+or they belong to the design's FR ledger and the roadmap field was duplicating `check_fr_coverage`
+all along.
 
 ## Measured hierarchy (2026-08-08) — SUPERSEDED, see the correction above
 
