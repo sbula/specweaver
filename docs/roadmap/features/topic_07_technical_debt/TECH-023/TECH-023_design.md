@@ -2,8 +2,9 @@
 
 - **Feature ID**: TECH-023
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **93 of 97
-  violations remain frozen**. See §Delivery. This stays open as the reduction work.
+- **Status**: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **41 of 97
+  violations remain frozen** (was 93 when the ratchet shipped). See §Delivery. This stays open as
+  the reduction work.
 - **Origin**: Found while running `python scripts/quality.py cb` for TECH-001 SF-04
   (2026-08-02) — confirmed via `git stash` to be chronic and unrelated to that commit
   (identical failure list with or without SF-04's changes applied).
@@ -140,12 +141,46 @@ Two things worth carrying into the remaining 93:
   had seven early `return StepResult(FAILED, ...)` sites, each a branch. Collapsing them behind a
   private refusal exception — converted back to the identical `StepResult` — did most of the work.
 
+### Six reduction batches, 2026-08-12 — 93 → 41
+
+Reduced by **package cluster** rather than by score, on the finding that the violations were not 93
+independent functions. Each batch was its own commit, full suite green, baseline re-frozen with the
+diff reviewed.
+
+| Batch | Cluster | Cleared | What was actually shared |
+|---|---|---|---|
+| 1–2 | `workspace/ast/parsers` | 20 | Query/walk/edit mechanics repeated across ten parsers — this is what grew into `TECH-034` |
+| 3 | `core/flow/engine` + handlers | ~14 | The step-execution loop (`TECH-020`), plus prompting/results/context helpers |
+| 4 | `workspace/project`, `sandbox/language` | ~11 | Constitution loading, directory walking, SARIF report parsing (two runners, one parser) |
+| 5 | `core/config` | 5 | One up-tree walk under three resolvers (`_context_walk.resolve_up_tree`) |
+| 6 | `assurance/standards` analyzers | 4 | One documentation-coverage banding under two analyzers (`_documentation.py`) |
+
+**The recurring finding: a cluster of violations is usually one duplicated mechanism, not N
+complicated functions.** Nine of the last two batches' functions were cleared by naming the shared
+thing once — no function was split for the sake of the number.
+
+Two hazards this work hit, worth knowing before continuing:
+
+- **Moving a function to a new file reads as a new violation to the ratchet.** The
+  `BaseTreeSitterParser` split produced three. Each had to be checked against its old score
+  (16→16, 16→16, 19→19) before re-freezing. The ratchet is right to ask; "review the diff" is what
+  it is for.
+- **Extracting a helper can trade a complexity violation for a suppression.** `_dlx_logger` was
+  extracted returning `object`, which needed a `type: ignore[attr-defined]` to call `.error` on it.
+  The suppressions ratchet caught the +1 at the commit gate. The fix was the honest return type,
+  not a re-freeze.
+
 ### What remains
 
-93 frozen violations: 16 in the 25–39 band, 32 at 20–24, 45 at 16–19. They are now bounded rather
-than growing, and each is one line in `scripts/baselines/complexity.json` with a number that can
-only go down. Reduce them in their own commits, in whatever domain a future session is already in.
+**41 frozen violations: 11 in the 25–39 band, 9 at 20–24, 21 at 16–19. Nothing at 40+.** The
+largest concentration is **`core/flow` (12)** — handover persistence, resume, and four handler
+`execute` methods. After that: `assurance/validation` (5), `assurance/standards` (3, all outside
+the analyzers), `sandbox/filesystem` (3).
+
+The remainder is a genuine long tail — 22 packages hold one or two each — so the cluster strategy
+above is largely spent. Expect the rest to be individual work.
 
 ## Next Step
 
-Keep reducing. The gate no longer depends on it — that is the point of the ratchet.
+Keep reducing. The gate no longer depends on it — that is the point of the ratchet. Start with
+`core/flow`, the one cluster still large enough to pay for a shared abstraction.

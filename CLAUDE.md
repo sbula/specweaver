@@ -84,25 +84,16 @@ tach check
 ```
 
 > [!IMPORTANT]
-> **25 tests currently fail on Linux. NONE of them is an accepted delta (user, 2026-08-12).**
-> Every one is explained or being fixed — full root-cause analysis in
-> `docs/analysis/linux_test_failures_2026-08-12.md`.
+> **The suite is green on Linux as of 2026-08-12: `6485 passed, 11 skipped, 0 failed`.**
+> **There are no accepted deltas.** A failure you see is a failure you caused — do not go looking
+> for a "known Linux failure" list to file it under.
 >
-> | Tier | Command | Current | Cause of the remainder |
-> |---|---|---|---|
-> | unit | `pytest tests/unit -n auto` | 5586 passed, **3 failed** | Windows path semantics — undecided |
-> | integration | `pytest tests/integration -n auto` | 578 passed, **13 failed** | `TECH-029` (10), tooling (3) |
-> | e2e | `pytest tests/e2e -n auto` | 182 passed, **9 failed** | `TECH-029` (8), tooling (1) |
->
-> **18 of the 25 are one production defect, tracked as `TECH-029`**: `max_processes=128` becomes
-> `setrlimit(RLIMIT_NPROC)` on Linux, which caps every process the *user* owns rather than the
-> sandbox's, so the limit does not bound what it exists to bound. That `preexec_fn` branch is
-> guarded by `sys.platform != "win32"` and had never executed before the Linux move. Do not "fix"
-> the failing tests — they assert `C-EXEC-06`'s promise correctly and the defect is in `src/`.
->
-> Fixed 2026-08-12: three unit tests that needed a live `GEMINI_API_KEY` (now mock the adapter), and
-> `test_file_size_limit`, which asserted `RLIMIT_FSIZE` against a pipe and so had never run to a
-> meaningful conclusion on any platform.
+> This block previously recorded 25 chronic failures. All 25 are fixed; the root-cause analysis
+> that closed them is kept at `docs/analysis/linux_test_failures_2026-08-12.md`. 18 were one
+> production defect (`max_processes=128` becoming `setrlimit(RLIMIT_NPROC)`, which is per-real-UID
+> and so bounded the *user* rather than the sandbox) — closed by **`TECH-029`**, whose
+> `current task count + budget` backstop is explicitly best-effort and is meant to be **removed**,
+> not extended, when `B-EXEC-04` lands kernel-enforced cgroups v2 `pids.max`.
 >
 > **Two gate lessons worth keeping:**
 > - `tests.py cb <STORY> --kind tooling` selects the **unit tier only** — see `tests.py matrix`. The
