@@ -102,10 +102,21 @@ def _story_block(story_id: str) -> str | None:
     else:
         m = re.search(rf"^###\s+.*\b{re.escape(story_id)}:.*$", text, re.M)
 
-    if not m:
-        return None
-    nxt = re.search(r"^###\s+", text[m.end() :], re.M)
-    return text[m.start() : m.end() + (nxt.start() if nxt else len(text))]
+    if m:
+        nxt = re.search(r"^###\s+", text[m.end() :], re.M)
+        return text[m.start() : m.end() + (nxt.start() if nxt else len(text))]
+
+    # Capability-level entry: one list line, no `###` section of its own.
+    #
+    # A `TECH-NNN` is not a user story — it sits alongside `C-FLOW-02` and `E-INTL-02` (user,
+    # 2026-08-12), and those appear as a single line inside a parent's list rather than as a
+    # top-level section with `Benefit:` / `Core Required (MVS)` / `Verifiable Proof:` fields.
+    # Requiring a `###` heading here is what kept pushing TECH tickets back into user-story shape:
+    # writing the entry correctly made this checker report "no roadmap section found", so the
+    # checker was quietly enforcing the wrong convention. `TECH-026` owns the contract; this
+    # accepts the correct shape so it stops being unwritable.
+    line = re.search(rf"^\s*\*\s+`[^`]*`\s+\*\*{re.escape(story_id)}:\*\*.*$", text, re.M)
+    return line.group(0) if line else None
 
 
 def _check_proof_in_roadmap_block(story_id: str, report: Report, *, fast: bool) -> list[Path]:

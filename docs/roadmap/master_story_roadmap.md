@@ -829,32 +829,11 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
 *   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02), then again for `TECH-005` the same day, and for `TECH-002` on 2026-08-08 while verifying whether its amber status still reflected outstanding work (it did not). Three stories, 21 FRs, one cause: all shipped before this gate was wired into the closure process. FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
 
-### 🔴 TECH-026: Roadmap Placement Contract — One Registry ID, One Line
-**Benefit:** *What belongs in this file is written down and enforced, so an agent updating roadmap state no longer has to derive the convention from whichever entries it happens to grep.*
-*   **Core Required (MVS):**
+### 🔴 Technical Debt — registered, not yet scheduled
+*A TECH ticket is capability-level, like `C-FLOW-02` or `E-INTL-02`: one line, no story fields. Detail lives in [topic_07](topics/topic_07_technical_debt.md) and each design doc.*
+
     *   `[ ]` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
-*   **Sequencing:** Spun off from `TECH-025` SF-02 (2026-08-08). Docs-and-tooling only; unranked in the debt chain above.
-
-### 🔴 TECH-027: Sub-Feature Identifier Contract — Two Digits and an Explicit Owner
-**Benefit:** *An `SF-NN` is spelled one way and always says which story it belongs to, so a reference outside its own folder resolves instead of pointing at the nearest ID.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
-*   **Sequencing:** Split from `TECH-026` (2026-08-11). Filename half delivered ahead of design to unblock `TECH-025` SF-05. Docs-and-tooling only; unranked in the debt chain above.
-
-### 🔴 TECH-028: Split `dev` Dependency Definitions — Broken Default Sync, Test Tooling in the Container Image
-**Benefit:** *A bare `uv sync` produces an environment that can actually run the suite, and `--no-dev` stops putting `pytest`, `ruff`, `mypy` and `tach` inside the container image.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
-*   **Sequencing:** Found 2026-08-11 rebuilding the environment on Linux. Manifest and `Containerfile` change land in one commit. Docs-and-build only; unranked in the debt chain above.
-
-### 🔴 TECH-029: Sandbox Process Cap Uses `RLIMIT_NPROC`, Which Bounds the User and Not the Sandbox
-**Benefit:** *The sandbox's process cap bounds the sandbox instead of the whole login session, so an isolated run stops failing because the developer had other things open.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
-*   **Sequencing:** Found 2026-08-12 on Linux; explains 18 of 29 failures. Live `src/` defect in `C-EXEC-02`/`B-EXEC-01` territory — not `TECH-025`'s.
-
-### 🔴 TECH-030: An Empty `FolderGrant` Path Grants the Whole Project on POSIX and Nothing on Windows
-**Benefit:** *A grant means the same thing on every platform, so an empty path cannot quietly widen read access to the whole project including `.git/`.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
-*   **Sequencing:** Found 2026-08-12 on Linux. Live `src/` security divergence; needs a decision (invalid vs project-root) before any code change.
