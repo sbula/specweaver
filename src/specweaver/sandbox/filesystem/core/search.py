@@ -161,6 +161,37 @@ def _grep_ripgrep(
     return matches, len(matches) >= max_results, ""
 
 
+def _matches_with_context(
+    lines: list[str],
+    compiled: re.Pattern[str],
+    file_path: Path,
+    search_dir: Path,
+    context_lines: int,
+) -> Iterator[dict[str, Any]]:
+    """Each matching line of one file, with its surrounding context lines.
+
+    Yields rather than returns so the caller can stop at `max_results` without this function
+    needing to know the cap — the truncation decision stays in one place.
+    """
+    try:
+        rel_path = str(file_path.relative_to(search_dir))
+    except ValueError:
+        rel_path = str(file_path)
+
+    for i, line in enumerate(lines):
+        if not compiled.search(line):
+            continue
+        start = max(0, i - context_lines)
+        end = min(len(lines), i + context_lines + 1)
+        yield {
+            "file": rel_path,
+            "line_number": i + 1,
+            "content": line,
+            "context_before": lines[start:i],
+            "context_after": lines[i + 1 : end],
+        }
+
+
 def _grep_python(
     search_dir: Path,
     pattern: str,
@@ -193,25 +224,10 @@ def _grep_python(
         except (OSError, UnicodeDecodeError):
             continue
 
-        for i, line in enumerate(lines):
-            if compiled.search(line):
-                start = max(0, i - context_lines)
-                end = min(len(lines), i + context_lines + 1)
-                try:
-                    rel_path = str(file_path.relative_to(search_dir))
-                except ValueError:
-                    rel_path = str(file_path)
-                matches.append(
-                    {
-                        "file": rel_path,
-                        "line_number": i + 1,
-                        "content": line,
-                        "context_before": lines[start:i],
-                        "context_after": lines[i + 1 : end],
-                    }
-                )
-                if len(matches) >= max_results:
-                    return matches, True, warning
+        for match in _matches_with_context(lines, compiled, file_path, search_dir, context_lines):
+            matches.append(match)
+            if len(matches) >= max_results:
+                return matches, True, warning
 
     return matches, truncated, warning
 

@@ -60,34 +60,43 @@ class ActualSignature:
     parameters: list[str]
 
 
-def _extract_param_names(parameters_node: Any) -> list[str]:  # noqa: C901
-    """Given a tree-sitter parameters node, extract parameter identifiers."""
-    params: list[str] = []
-    if not hasattr(parameters_node, "children"):
-        return params
+#: Parameter node types whose identifier is labelled `name`, or is the first identifier child.
+_ANNOTATED_PARAMS = ("typed_parameter", "default_parameter", "typed_default_parameter")
+#: `*args` / `**kwargs`, whose identifier is simply the first one inside.
+_SPLAT_PARAMS = ("dictionary_splat_pattern", "list_splat_pattern")
 
-    for child in parameters_node.children:
-        if child.type == "identifier":
-            params.append(child.text.decode("utf-8"))
-        elif child.type in ("typed_parameter", "default_parameter", "typed_default_parameter"):
-            # The identifier is usually labeled "name" or is the first identifier child
-            name_node = child.child_by_field_name("name")
-            if name_node and name_node.text:
-                params.append(name_node.text.decode("utf-8"))
-            elif hasattr(child, "children") and child.children:
-                for subchild in child.children:
-                    if subchild.type == "identifier":
-                        params.append(subchild.text.decode("utf-8"))
-                        break
-        elif child.type == "dictionary_splat_pattern" or child.type == "list_splat_pattern":
-            # kwargs / args
-            for subchild in child.children:
-                if subchild.type == "identifier":
-                    params.append(subchild.text.decode("utf-8"))
-                    break
 
-    # Strip self/cls
-    return [p for p in params if p not in ("self", "cls")]
+def _first_identifier(node: Any) -> str | None:
+    """The first `identifier` child's text, or None."""
+    for child in getattr(node, "children", None) or ():
+        if child.type == "identifier" and child.text:
+            return str(child.text.decode("utf-8"))
+    return None
+
+
+def _param_name(child: Any) -> str | None:
+    """One parameter node's identifier, whichever of the four shapes it is."""
+    if child.type == "identifier":
+        return str(child.text.decode("utf-8"))
+    if child.type in _ANNOTATED_PARAMS:
+        name_node = child.child_by_field_name("name")
+        if name_node and name_node.text:
+            return str(name_node.text.decode("utf-8"))
+        return _first_identifier(child)
+    if child.type in _SPLAT_PARAMS:
+        return _first_identifier(child)
+    return None
+
+
+def _extract_param_names(parameters_node: Any) -> list[str]:
+    """Given a tree-sitter parameters node, extract parameter identifiers.
+
+    `TECH-023`: scored 31 for a 25-line function — the cost was three nested loops inside a
+    three-way type branch. Per-shape naming is now its own function, so this reads as
+    "name every parameter, minus the implicit receiver".
+    """
+    names = (_param_name(child) for child in getattr(parameters_node, "children", None) or ())
+    return [n for n in names if n and n not in ("self", "cls")]
 
 
 def _declared_name(node: Any) -> str | None:
@@ -162,6 +171,58 @@ def _clean_expected_params(params: list[str]) -> list[str]:
     return cleaned
 
 
+def _planned_vs_actual(
+    expected_sigs: dict[str, MethodSignatureProtocol], actual_map: dict[str, Any]
+) -> list[DriftFinding]:
+    """Every planned method that is missing (ERROR) or whose parameters moved (WARNING)."""
+    findings: list[DriftFinding] = []
+    for expected_name, expected_sig in expected_sigs.items():
+        if expected_name not in actual_map:
+            findings.append(
+                DriftFinding(
+                    severity=Severity.ERROR,
+                    node_type="function",
+                    description=f"Missing expected method {expected_name}",
+                    expected_signature=expected_name,
+                )
+            )
+            continue
+
+        actual_param_list = actual_map[expected_name].parameters
+        expected_param_list = _clean_expected_params(expected_sig.parameters)
+        if actual_param_list != expected_param_list:
+            findings.append(
+                DriftFinding(
+                    severity=Severity.WARNING,
+                    node_type="function",
+                    description=(
+                        f"Parameter drift in {expected_name}: "
+                        f"Expected {expected_param_list}, Actual {actual_param_list}"
+                    ),
+                    expected_signature=", ".join(expected_param_list),
+                    actual_signature=", ".join(actual_param_list),
+                )
+            )
+    return findings
+
+
+def _unauthorised_methods(
+    expected_sigs: dict[str, MethodSignatureProtocol], actual_map: dict[str, Any]
+) -> list[DriftFinding]:
+    """Public methods present in the code but absent from the plan. Private names are ignored."""
+    return [
+        DriftFinding(
+            severity=Severity.ERROR,
+            node_type="function",
+            description=f"Found unauthorized public method '{name}' not defined in the plan",
+            expected_signature="",
+            actual_signature=name,
+        )
+        for name in actual_map
+        if name not in expected_sigs and not name.split(".")[-1].startswith("_")
+    ]
+
+
 def detect_drift(file_ast: Any, plan: PlanArtifactProtocol, file_path: str) -> DriftReport:
     """Compare a single file's AST against the expected signatures."""
     findings: list[DriftFinding] = []
@@ -186,49 +247,10 @@ def detect_drift(file_ast: Any, plan: PlanArtifactProtocol, file_path: str) -> D
             expected_sigs[sig.name] = sig
 
     # 3. Detect Missing Methods and Signature Drifts
-    for expected_name, expected_sig in expected_sigs.items():
-        if expected_name not in actual_map:
-            findings.append(
-                DriftFinding(
-                    severity=Severity.ERROR,
-                    node_type="function",
-                    description=f"Missing expected method {expected_name}",
-                    expected_signature=expected_name,
-                )
-            )
-        else:
-            # Check Parameter Drift
-            actual_param_list = actual_map[expected_name].parameters
-            expected_param_list = _clean_expected_params(expected_sig.parameters)
-
-            # Simple list comparison
-            if actual_param_list != expected_param_list:
-                findings.append(
-                    DriftFinding(
-                        severity=Severity.WARNING,
-                        node_type="function",
-                        description=f"Parameter drift in {expected_name}: Expected {expected_param_list}, Actual {actual_param_list}",
-                        expected_signature=", ".join(expected_param_list),
-                        actual_signature=", ".join(actual_param_list),
-                    )
-                )
+    findings.extend(_planned_vs_actual(expected_sigs, actual_map))
 
     # 4. Detect Unauthorized Methods (actual methods not in the plan)
-    for actual_name in actual_map:
-        if actual_name not in expected_sigs:
-            # Ignore private methods and dunders
-            if actual_name.split(".")[-1].startswith("_"):
-                continue
-
-            findings.append(
-                DriftFinding(
-                    severity=Severity.ERROR,
-                    node_type="function",
-                    description=f"Found unauthorized public method '{actual_name}' not defined in the plan",
-                    expected_signature="",
-                    actual_signature=actual_name,
-                )
-            )
+    findings.extend(_unauthorised_methods(expected_sigs, actual_map))
 
     is_drifted = any(f.severity == Severity.ERROR for f in findings)
     return DriftReport(is_drifted=is_drifted, findings=findings)

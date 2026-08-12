@@ -7,7 +7,7 @@
     "mypy:file-ignore-errors": 6,
     "noqa:B008": 3,
     "noqa:B027": 1,
-    "noqa:C901": 7,
+    "noqa:C901": 6,
     "noqa:E402": 4,
     "noqa:F401": 16,
     "noqa:N801": 3,
@@ -32,5 +32,5 @@
     "type-ignore:type-arg": 9,
     "type-ignore:var-annotated": 3
   },
-  "total": 220
+  "total": 219
 }

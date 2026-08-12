@@ -11,6 +11,21 @@ from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Se
 
 if TYPE_CHECKING:
     from pathlib import Path
+from typing import Any
+
+
+def _endpoint_path_and_method(endpoint: Any) -> tuple[str | None, str]:
+    """`(path, method)` for a protocol endpoint given either shape.
+
+    The loader hands back `ProtocolEndpoint` instances or plain dict exports depending on the
+    source format, so both are read the same way here rather than branching at every access.
+    A `None` path means "not an endpoint" and the caller skips it.
+    """
+    if isinstance(endpoint, dict):
+        return endpoint.get("path"), str(endpoint.get("method", "ANY")).upper()
+    if hasattr(endpoint, "path"):
+        return getattr(endpoint, "path", None), str(getattr(endpoint, "method", "ANY")).upper()
+    return None, "ANY"
 
 
 class C13ContractDriftRule(Rule):
@@ -44,33 +59,19 @@ class C13ContractDriftRule(Rule):
             protocol_endpoints = [protocol_endpoints]
 
         for endpoint in protocol_endpoints:
-            if not isinstance(endpoint, dict) and not hasattr(endpoint, "path"):
-                continue
-
-            # ProtocolEndpoint instances or simple dictionary exports
-            path = (
-                endpoint.get("path")
-                if isinstance(endpoint, dict)
-                else getattr(endpoint, "path", None)
-            )
-            method = (
-                endpoint.get("method", "ANY").upper()
-                if isinstance(endpoint, dict)
-                else getattr(endpoint, "method", "ANY").upper()
-            )
-
-            if not path:
-                continue
-
-            # Native drift check: Does the exact path show up in the AST routing bindings?
-            matched = path in ast_marker_string
-
-            if not matched:
+            path, method = _endpoint_path_and_method(endpoint)
+            # Native drift check: does the exact path show up in the AST routing bindings?
+            if path and path not in ast_marker_string:
                 findings.append(
                     Finding(
-                        message=f"Contract Drift: Endpoint '{method} {path}' declared in protocol but missing from code AST routing.",
+                        message=(
+                            f"Contract Drift: Endpoint '{method} {path}' declared in protocol "
+                            "but missing from code AST routing."
+                        ),
                         severity=Severity.ERROR,
-                        suggestion=f"Implement the missing routing endpoint '{path}' in the source file.",
+                        suggestion=(
+                            f"Implement the missing routing endpoint '{path}' in the source file."
+                        ),
                     )
                 )
 

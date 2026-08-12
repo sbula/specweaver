@@ -293,6 +293,21 @@ class FileSystemTool(BaseTool):
                 if pattern.search(line):
                     matches.append({"file": name, "line": i, "content": line.strip()})
 
+    def _matches_in(self, rel: str, pattern: re.Pattern[str]) -> list[dict[str, Any]]:
+        """Every line of one file matching `pattern`. Empty when the file cannot be read.
+
+        An unreadable file is skipped rather than raised: a recursive search crossing one binary
+        or permission-denied file must still report what it did find.
+        """
+        read_result = self._executor.read(rel)
+        if read_result.status != "success":
+            return []
+        return [
+            {"file": rel, "line": i, "content": line.strip()}
+            for i, line in enumerate(read_result.data.splitlines(), 1)
+            if pattern.search(line)
+        ]
+
     def _search_recursive(
         self,
         path: str,
@@ -304,21 +319,54 @@ class FileSystemTool(BaseTool):
         if not base.is_dir():
             return
 
-        for dirpath, _dirnames, filenames in os.walk(base):
+        for dirpath, dirnames, filenames in os.walk(base):
             if self._exclude_dirs:
-                _dirnames[:] = [
-                    d for d in _dirnames if d not in self._exclude_dirs and not d.startswith(".")
+                # In-place: os.walk reads this list back to decide where to descend.
+                dirnames[:] = [
+                    d for d in dirnames if d not in self._exclude_dirs and not d.startswith(".")
                 ]
-
             for fname in filenames:
                 full = os.path.join(dirpath, fname)
                 rel = os.path.relpath(full, self._executor._cwd).replace("\\", "/")
-                read_result = self._executor.read(rel)
-                if read_result.status != "success":
-                    continue
-                for i, line in enumerate(read_result.data.splitlines(), 1):
-                    if pattern.search(line):
-                        matches.append({"file": rel, "line": i, "content": line.strip()})
+                matches.extend(self._matches_in(rel, pattern))
+
+    def _score_boundary(
+        self, ctx_file: str, dirpath: str, keywords: list[str]
+    ) -> dict[str, Any] | None:
+        """Score one `context.yaml` against the keywords, or None if it does not qualify.
+
+        Four reasons to skip — unreadable, empty, no `purpose`, no keyword hit — collapsed here so
+        `find_placement` reads as walk-score-sort. A malformed boundary file is skipped rather than
+        raised: one bad `context.yaml` must not sink a whole-project placement search.
+        """
+        import os
+
+        from ruamel.yaml import YAML
+
+        try:
+            with open(ctx_file, encoding="utf-8") as fh:
+                data = YAML().load(fh)
+        except Exception:
+            return None
+        if data is None:
+            return None
+
+        purpose = str(data.get("purpose", "")).lower()
+        if not purpose:
+            return None
+
+        # Score: count how many keywords appear as substrings in purpose
+        score = sum(1 for kw in keywords if kw in purpose)
+        if score == 0:
+            return None
+
+        rel_path = os.path.relpath(dirpath, self._executor._cwd).replace("\\", "/")
+        return {
+            "path": "" if rel_path == "." else rel_path,
+            "name": str(data.get("name", "")),
+            "purpose": data.get("purpose", ""),
+            "score": score,
+        }
 
     def find_placement(self, description: str) -> ToolResult:
         """Semantic search over context.yaml purpose fields.
@@ -343,45 +391,14 @@ class FileSystemTool(BaseTool):
         # Walk all context.yaml files in the project
         import os
 
-        from ruamel.yaml import YAML
-
-        yaml = YAML()
         scored: list[dict[str, Any]] = []
 
         for dirpath, _dirnames, filenames in os.walk(self._executor._cwd):
             if "context.yaml" not in filenames:
                 continue
-            ctx_file = os.path.join(dirpath, "context.yaml")
-            try:
-                with open(ctx_file, encoding="utf-8") as fh:
-                    data = yaml.load(fh)
-            except Exception:
-                continue
-            if data is None:
-                continue
-
-            purpose = str(data.get("purpose", "")).lower()
-            name = str(data.get("name", ""))
-            if not purpose:
-                continue
-
-            # Score: count how many keywords appear as substrings in purpose
-            score = sum(1 for kw in keywords if kw in purpose)
-            if score == 0:
-                continue
-
-            rel_path = os.path.relpath(dirpath, self._executor._cwd).replace("\\", "/")
-            if rel_path == ".":
-                rel_path = ""
-
-            scored.append(
-                {
-                    "path": rel_path,
-                    "name": name,
-                    "purpose": data.get("purpose", ""),
-                    "score": score,
-                }
-            )
+            entry = self._score_boundary(os.path.join(dirpath, "context.yaml"), dirpath, keywords)
+            if entry is not None:
+                scored.append(entry)
 
         # Sort by score descending
         scored.sort(key=lambda x: x["score"], reverse=True)

@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 from pathlib import Path
+from typing import Any
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult
 from specweaver.commons import json
@@ -20,6 +21,22 @@ class S12ArchetypeSpecBoundsRule(Rule):
     @property
     def name(self) -> str:
         return "Archetype Spec Bounds"
+
+    def _missing_headers(self, skeleton: dict[str, Any]) -> list[str]:
+        """Every configured header the skeleton does not carry, matched as a substring.
+
+        Case-insensitive and by containment on purpose: the bound is "this section exists", not
+        "its title is exactly this".
+        """
+        return [
+            f"Missing required <{header_kind}> header: '{expected}'"
+            for header_kind, expected_list in self.required_headers.items()
+            for expected in expected_list
+            if not any(
+                expected.lower() in node_text.lower()
+                for node_text in skeleton.get(header_kind, [])
+            )
+        ]
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         if not self.required_headers:
@@ -41,20 +58,7 @@ class S12ArchetypeSpecBoundsRule(Rule):
                 ],
             )
 
-        failures = []
-
-        for header_kind, expected_list in self.required_headers.items():
-            found_headers = skeleton.get(header_kind, [])
-            # For simplicity, check if the expected substrings exist in the found headers ATX
-            for expected in expected_list:
-                found = False
-                for node_text in found_headers:
-                    if expected.lower() in node_text.lower():
-                        found = True
-                        break
-
-                if not found:
-                    failures.append(f"Missing required <{header_kind}> header: '{expected}'")
+        failures = self._missing_headers(skeleton)
 
         if failures:
             return self._fail(
