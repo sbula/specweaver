@@ -13,6 +13,7 @@ Test structure:
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -542,10 +543,43 @@ class TestGrantBypassAttempts:
         )
         assert result.status == "error"
 
-    def test_backslash_normalization(self, implementer: FileSystemTool) -> None:
-        """Agent uses backslashes to confuse path matching."""
-        result = implementer.read_file("src\\domain\\billing\\calc.py")
-        assert result.status == "success"
+    @pytest.mark.skipif(os.name == "nt", reason="On Windows a backslash IS a separator")
+    def test_backslash_is_a_legal_filename_character_on_posix(
+        self, implementer: FileSystemTool, tmp_path: Path
+    ) -> None:
+        """On POSIX a backslash is an ordinary filename character, not a separator.
+
+        This test used to read `src\\domain\\billing\\calc.py` and assert success, which encodes
+        Windows semantics: there the backslashes are separators and the path resolves to the
+        granted `calc.py`. On Linux that string is a single filename, no such file exists, and the
+        tool correctly returns an error — so the old assertion could only ever hold on Windows.
+
+        Decision (user, 2026-08-12): a backslash is a legal filename on Linux. The behaviour that
+        matters is therefore that such a file is readable **when it exists inside a grant**, which
+        is what this asserts. The bypass half is the sibling test below.
+        """
+        weird = tmp_path / "src" / "domain" / "billing" / "back\\slash.py"
+        weird.write_text("value = 1\n", encoding="utf-8")
+
+        result = implementer.read_file("src/domain/billing/back\\slash.py")
+
+        assert result.status == "success", result
+        assert "value = 1" in str(result.data), (
+            "the file was located but its contents did not come back — a status-only assertion "
+            "here would pass on an empty read"
+        )
+
+    def test_backslashes_cannot_escape_a_grant(self, implementer: FileSystemTool) -> None:
+        """The security half: whatever a backslash means locally, it must not widen a grant.
+
+        Kept platform-agnostic on purpose. On Windows the backslashes are separators and this is a
+        genuine `..` traversal; on POSIX it is an exotic filename that no grant covers. Both must
+        be refused, and for the caller the outcome is identical — which is the property this class
+        exists to defend.
+        """
+        result = implementer.read_file("src\\domain\\billing\\..\\..\\..\\specs\\secret.md")
+
+        assert result.status == "error"
 
     def test_trailing_slash_in_path(self, implementer: FileSystemTool) -> None:
         """Trailing slash should not confuse grant matching."""

@@ -852,3 +852,9 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
 *   **Sequencing:** Found 2026-08-12 on Linux; explains 18 of 29 failures. Live `src/` defect in `C-EXEC-02`/`B-EXEC-01` territory — not `TECH-025`'s.
+
+### 🔴 TECH-030: An Empty `FolderGrant` Path Grants the Whole Project on POSIX and Nothing on Windows
+**Benefit:** *A grant means the same thing on every platform, so an empty path cannot quietly widen read access to the whole project including `.git/`.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
+*   **Sequencing:** Found 2026-08-12 on Linux. Live `src/` security divergence; needs a decision (invalid vs project-root) before any code change.

@@ -159,7 +159,7 @@ whether `RLIMIT_FSIZE` is reached at all on Windows, or whether this only ever p
 
 ---
 
-## Cluster D — Windows path semantics — **3 failures**
+## Cluster D — three unrelated causes, not one — **2 fixed, 1 minted as `TECH-030`**
 
 **Affected**: `test_filesystem_tool.py::TestGrantBypassAttempts::test_backslash_normalization`,
 `::TestPathTraversalEdgeCases::test_grant_at_root_covers_everything`,
@@ -250,3 +250,31 @@ NO limit    exit=0   file=2097152 bytes    <- full write
 
 The old test had `skipif(sys.platform == "win32")`, so it was skipped on Windows and broken on
 Linux: **it had never run to a meaningful conclusion on any platform.**
+
+---
+
+## Cluster D resolved (2026-08-12) — and it was not one cause
+
+Grouping these three as "Windows path semantics" was wrong. Only one was about backslashes.
+
+- **`test_backslash_normalization`** — genuinely platform semantics. Read
+  `src\domain\billing\calc.py` and asserted success, which only holds where backslash is a
+  separator. Per the user's ruling (backslash is a legal filename on Linux) it is now two tests: one
+  proving a file literally named `back\slash.py` inside a grant is readable on POSIX, and one
+  keeping the bypass property the class exists for — platform-agnostic, since on Windows those
+  backslashes are a real `..` traversal and on POSIX an exotic filename, and both must be refused.
+- **`test_symlink_valid`** — not a path-semantics issue at all. The test never created
+  `.worktrees/agent/`, so `os.symlink` failed on the link's parent with ENOENT. With
+  `skipif(os.name == "nt")` it was skipped on Windows and broken on Linux: **never run anywhere**,
+  exactly like `test_file_size_limit`. Now creates the parent, asserts the link *resolves to the
+  target* rather than merely being a symlink, and the missing-parent case is pinned as its own test.
+- **`test_grant_at_root_covers_everything`** — **not a test defect. Left failing on purpose** and
+  minted as `TECH-030`. `FolderGrant("")` grants read of the whole project on POSIX — including
+  `secrets/` and `.git/` — and matches nothing on Windows, because an absolute POSIX path splits to
+  a leading `''` and a Windows one to `'C:'`. Scope is the project root, not the filesystem:
+  `/etc/passwd` is refused by a separate containment check. Which behaviour is correct is a product
+  decision; editing the test would silently bless whole-project read.
+
+**Corrected while investigating**: this analysis first reported the empty grant as reading the
+entire filesystem. It does not — the live probe refuses `/etc/passwd`. The real scope is the
+project root, which is narrower but still an unintended widening.
