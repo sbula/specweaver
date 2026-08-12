@@ -2,10 +2,17 @@
 
 - **Feature ID**: TECH-035
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: **DELIVERED 2026-08-12.** Ratchet shipped, checker corrected, baseline re-frozen
-  **19 incohesive + 1 oversized → 9 incohesive + 0 oversized**. Every one of the 9 has a stated
-  reason below: **7 are `TECH-034`'s recorded residue and this ticket's explicit non-goal**, and
-  **2 are reviewed exemptions**. See §Where the 19 went.
+- **Status**: **DELIVERED 2026-08-12.** Ratchet shipped, checker corrected **four** ways, the
+  shared symbol filter hoisted, baseline re-frozen **19 incohesive + 1 oversized → 4 + 0**.
+  See §Where the 19 went.
+
+  > **Reopened once, and the reason matters.** This was first closed at 9, on the strength of a
+  > non-goal reading *"Not the AST parsers — `TECH-034` owns them"*. `TECH-034` is **DELIVERED**,
+  > and its own §Delivery says the opposite: *"`class_health` remains red … tracked as `TECH-035`"*
+  > and *"belongs to `TECH-035`, **which already owns the class-health debt**"*. **The two tickets
+  > pointed at each other and 7 classes fell through the gap.** Five of the seven are now fixed and
+  > two are reviewed exemptions. A non-goal citing another ticket is only as good as that ticket's
+  > own claim — check both directions before invoking one.
 - **Origin**: Found 2026-08-12 during `TECH-023` batch 2. The gate fired for the first time in the
   session because that commit finally *changed* a file it covers — see "Why nobody had seen this".
 
@@ -356,3 +363,68 @@ pinning a debt number that later reduction is meant to shrink.
 
 `6529 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; complexity ratchet
 **40**, suppressions **227**.
+
+## The 7 language parsers, resolved — 2026-08-12
+
+Reopened after the circular hand-off above was found. **5 fixed, 2 reviewed exemptions.**
+
+### The shared symbol filter (Java, Kotlin, Rust, TypeScript)
+
+`_is_symbol_valid` was written out four times — **Java, Rust and TypeScript byte-identical**,
+Kotlin differing by a single token (`self._is_symbol_private(...)` where the others have
+`not self._is_symbol_public(...)`). `check_class_health` had named this split independently: the
+pair `{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` was its own connected component in
+all four classes. The metric was right, and it was pointing at duplication rather than at
+incohesion.
+
+The variance is one question — *is this declaration hidden from outside its module?* — so that
+became the hook, `_is_symbol_hidden`, defaulting to `False` so a language that has not opted in
+cannot silently start dropping symbols. The filter itself moved to `SymbolReadingMixin`, which is
+where it is **used** (`list_symbols` calls it) and therefore where it is coupled.
+
+**It went to the base first, and the ratchet caught that.** On `BaseTreeSitterParser` the pair was
+still its own component — `LCOM4` 2 → **3**. The incohesion had been *moved*, not removed, and the
+gate said so before the commit. Putting it on the reading mixin, where a real call edge exists,
+resolved it.
+
+`TECH-034`'s tier rule still governs: **a default, never a prohibition.** C, C++, Go, Python and
+the declarative tier still override the filter outright.
+
+### The nested-scope leak (Markdown)
+
+`MarkdownCodeStructure._find_target_block` touches **no state at all** — it builds a local
+`MarkdownBodyBlock` whose `__init__` assigns four fields. `ast.walk` does not stop at a scope
+boundary, so those four were attributed to the enclosing method, making a stateless helper look
+like its own component **and** adding four phantom attributes to the god-object count. Six methods
+across five classes were affected.
+
+**The first fix was wrong in the opposite direction**, and a planted probe caught it: skipping
+*every* nested scope decoupled `EventBridge.start_run` from `get_result`, because the write to
+`self._results` happens inside an `async def _wrapper()` closure — which has no `self` parameter
+and therefore captures the enclosing one. A nested **class**'s method rebinds `self` to a different
+object; a **closure** does not. The rule is now "skip a scope only if it rebinds `self`", and
+`EventBridge` correctly stays cohesive.
+
+### Go and Sql — reviewed exemptions
+
+Both are correctly measured at `LCOM4=2`, and the split the metric names is real: **reading versus
+editing**. `GoCodeStructure` cuts into find/extract against `{_format_body_injection,
+_format_replacement, add_symbol}`; `SqlCodeStructure`, at 91 lines and three methods, cuts into
+`{_format_replacement, add_symbol}` against `{_find_symbol_node}`.
+
+That seam is the architecture, not a defect — the base already models it as `SymbolReadingMixin`
+and `SymbolEditingMixin`. The other languages score 1 only because their two halves happen to share
+a helper. Splitting a 91-line single-language parser into two classes to satisfy the number would
+contradict the one-parser-per-language contract these tiers exist to express.
+
+**A fifth checker change was measured and rejected to reach this conclusion honestly.** Treating a
+name invoked as `self.X(...)` as a method rather than as state would resolve `SqlCodeStructure` —
+by scoring it **0**, "not measurable" — while blinding **11** validation-rule classes the same way.
+Same trade as the candidate rejected earlier in this ticket, and refused for the same reason.
+
+### Adjacent finding, recorded, not fixed here
+
+`add_symbol` is duplicated: Go's and Sql's whole bodies are the same append-at-end, and **Python's
+no-target branch is identical to both**. That is a *duplication* finding rather than a cohesion one
+— it does not move either class's `LCOM4` — so folding it in would repeat the scope-muddle this
+session already had to correct once in `TECH-016`. It wants `TECH-023`'s bucket or its own ticket.

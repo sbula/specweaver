@@ -65,17 +65,6 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
         """Tree-sitter query for extracting comments/trace tags."""
 
     @abstractmethod
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        """Hook to filter symbols by visibility/decorators."""
-
-    @abstractmethod
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         """Finds the bounding node for a given symbol name."""
 

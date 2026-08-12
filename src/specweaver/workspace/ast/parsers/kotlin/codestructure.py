@@ -46,7 +46,8 @@ class KotlinCodeStructure(ClassBasedParser):
         (block_comment) @comment
         """
 
-    def _is_symbol_private(self, parent: typing.Any) -> bool:
+    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
+        """Kotlin is public by default, so only an explicit modifier hides a declaration."""
         if parent:
             for child in parent.children:
                 if child.type == "modifiers":
@@ -59,28 +60,6 @@ class KotlinCodeStructure(ClassBasedParser):
                         return True
         return False
 
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        if (
-            visibility
-            and "public" in visibility
-            and name_node
-            and self._is_symbol_private(name_node.parent)
-        ):
-            return False
-
-        if decorator_filter:
-            decs = framework_markers.get(sym_name, {}).get("decorators", [])
-            if not any(decorator_filter in d for d in decs):
-                return False
-
-        return True
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:

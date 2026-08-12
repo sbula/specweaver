@@ -394,6 +394,76 @@ class TestLcom4CouplingThroughExcludedMethods:
 
         assert _analyse(ch, source).lcom4 == 2
 
+    def test_a_nested_class_s_self_is_not_the_outer_method_s(self, ch: ModuleType) -> None:
+        """`ast.walk` does not stop at a scope boundary, so an inner `self` leaked outward.
+
+        `MarkdownCodeStructure._find_target_block` touches no state at all — it builds a local
+        `MarkdownBodyBlock` whose `__init__` assigns `self.start_byte` and three more. Those four
+        were attributed to the enclosing method, which made a stateless helper look like its own
+        component AND added four phantom attributes to the god-object count. `TECH-035`.
+        """
+        source = (
+            "class C:\n"
+            "    def build(self, a, b):\n"
+            "        class Inner:\n"
+            "            def __init__(self, x):\n"
+            "                self.start_byte = x\n"
+            "                self.end_byte = x\n"
+            "        return Inner(a)\n"
+        )
+
+        report = _analyse(ch, source)
+
+        assert report.attributes == set(), f"nested self leaked: {sorted(report.attributes)}"
+
+    def test_a_nested_function_s_self_is_not_the_outer_method_s(self, ch: ModuleType) -> None:
+        """The same boundary, for a closure rather than a class."""
+        source = (
+            "class C:\n"
+            "    def build(self):\n"
+            "        def inner(self):\n"
+            "            return self.leaked\n"
+            "        return inner\n"
+        )
+
+        assert _analyse(ch, source).attributes == set()
+
+    def test_a_closure_writes_to_the_enclosing_self(self, ch: ModuleType) -> None:
+        """A nested `def` with NO `self` parameter captures the outer one — its writes count.
+
+        The opposite error to the leak, and it was made first: skipping every nested scope
+        decoupled `EventBridge.start_run` from `get_result`, because the write to `self._results`
+        happens inside exactly such a closure. Both methods must stay in one component.
+        """
+        source = (
+            "class C:\n"
+            "    def start(self):\n"
+            "        async def _wrapper():\n"
+            "            self._results['k'] = 1\n"
+            "        return _wrapper\n"
+            "    def get_result(self):\n"
+            "        return self._results.get('k')\n"
+        )
+
+        report = _analyse(ch, source)
+
+        assert report.lcom4 == 1, f"a closure's write was not seen: {report.components}"
+        assert report.attributes == {"_results"}
+
+    def test_the_outer_method_s_own_state_still_counts(self, ch: ModuleType) -> None:
+        """The boundary must not swallow what the method itself touches."""
+        source = (
+            "class C:\n"
+            "    def build(self):\n"
+            "        value = self._real\n"
+            "        class Inner:\n"
+            "            def __init__(self):\n"
+            "                self.ignored = 1\n"
+            "        return Inner(), value\n"
+        )
+
+        assert _analyse(ch, source).attributes == {"_real"}
+
 
 class TestExemptions:
     def test_enum_members_are_not_god_object_attributes(self, ch: ModuleType) -> None:

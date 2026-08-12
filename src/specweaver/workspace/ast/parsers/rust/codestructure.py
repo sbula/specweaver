@@ -63,35 +63,14 @@ class RustCodeStructure(FunctionBasedParser):
     def supported_parameters(self) -> list[str]:
         return ["visibility"]
 
-    def _is_symbol_public(self, parent: typing.Any) -> bool:
+    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
+        """Rust is private by default, so anything without a `pub` modifier is hidden."""
         if parent:
             for child in parent.children:
                 if child.type == "visibility_modifier":
-                    return True
-        return False
-
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        if (
-            visibility
-            and "public" in visibility
-            and name_node
-            and not self._is_symbol_public(name_node.parent)
-        ):
-            return False
-
-        if decorator_filter:
-            decs = framework_markers.get(sym_name, {}).get("decorators", [])
-            if not any(decorator_filter in d for d in decs):
-                return False
-
+                    return False
         return True
+
 
     def _impl_type_name(self, impl_item: typing.Any) -> str | None:
         """The type an `impl` block is for, unwrapping a generic to its base identifier."""

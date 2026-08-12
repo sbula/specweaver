@@ -78,18 +78,50 @@ class SymbolReadingMixin:
         @property
         def SCM_COMMENT_QUERY(self) -> str: ...
 
-        def _is_symbol_valid(
-            self,
-            sym_name: str,
-            name_node: typing.Any | None,
-            visibility: list[str] | None,
-            decorator_filter: str | None,
-            framework_markers: dict[str, typing.Any],
-        ) -> bool: ...
         def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None: ...
         def _find_target_block(self, node: typing.Any) -> typing.Any | None: ...
         def _get_symbol_scope(self, name_node: typing.Any) -> str | None: ...
         def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]: ...
+
+    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
+        """Whether this declaration is hidden from outside its module.
+
+        The **only** thing the shared filter varied by across four languages, so it is the hook.
+        Default is "nothing is hidden": a language that has not opted in must not silently start
+        dropping symbols. Java, Rust and TypeScript answer *"has no `public` modifier"*; Kotlin
+        answers *"has `private`, `protected` or `internal`"* — the same question with the polarity
+        its grammar happens to use.
+        """
+        return False
+
+    def _is_symbol_valid(
+        self,
+        sym_name: str,
+        name_node: typing.Any | None,
+        visibility: list[str] | None,
+        decorator_filter: str | None,
+        framework_markers: dict[str, typing.Any],
+    ) -> bool:
+        """Filter a symbol by the requested visibility and decorator.
+
+        `TECH-035`: this was written out four times — Java, Rust and TypeScript byte-identical,
+        Kotlin differing by one token — and `check_class_health` named the split independently, as
+        the pair `{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` forming its own
+        component in all four classes.
+
+        A **default, not a prohibition** (`TECH-034`'s tier rule): a language whose filtering is
+        genuinely different still overrides this outright, as C, C++, Go, Python and the
+        declarative tier all do.
+        """
+        if visibility and "public" in visibility and name_node and self._is_symbol_hidden(name_node.parent):
+            return False
+
+        if decorator_filter:
+            decorators = framework_markers.get(sym_name, {}).get("decorators", [])
+            if not any(decorator_filter in d for d in decorators):
+                return False
+
+        return True
 
     def extract_skeleton(self, code: str) -> str:
         if not code.strip():

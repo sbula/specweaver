@@ -106,13 +106,15 @@ def test_the_census_finds_the_known_offenders() -> None:
 
     current = module.measure(REPO_ROOT / "src")
 
-    # Floor was 15 while the checker mismeasured cohesion three ways — stranded callers of
-    # stateless helpers, dispatch tables read as unrelated, and class constants read as state.
-    # `TECH-035` corrected all three and 10 classes left the census legitimately, so the floor
-    # moves with it. It stays a FLOOR and not an equality on purpose, and is set well below the
-    # current count: this test exists to catch `measure` collapsing to nothing, not to pin a debt
-    # number that reduction work is meant to shrink.
-    assert len(current) >= 5, f"expected the known offenders, found {len(current)}"
+    # Floor was 15 while the checker mismeasured cohesion four ways — stranded callers of stateless
+    # helpers, dispatch tables read as unrelated, class constants read as state, and a nested
+    # scope's `self` leaking outward. `TECH-035` corrected all four and hoisted the shared symbol
+    # filter, so 15 classes left the census legitimately and the floor moves with them.
+    #
+    # It stays a FLOOR and not an equality on purpose, and is set below the current count: this
+    # test exists to catch `measure` collapsing to nothing, not to pin a debt number that reduction
+    # work is meant to shrink. The named-class assertion below is the real anti-collapse guard.
+    assert len(current) >= 2, f"expected the known offenders, found {len(current)}"
     assert any("BaseTreeSitterParser" in name for name in current), (
         "the most incohesive class in the repo is missing from the census"
     )

@@ -3,12 +3,7 @@
     "src/specweaver/assurance/graph/topology.py::TopologyGraph": 3,
     "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser": 2,
     "src/specweaver/workspace/ast/parsers/go/codestructure.py::GoCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py::KotlinCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/markdown/codestructure.py::MarkdownCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/rust/codestructure.py::RustCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/sql/codestructure.py::SqlCodeStructure": 2,
-    "src/specweaver/workspace/ast/parsers/typescript/codestructure.py::TypeScriptCodeStructure": 2
+    "src/specweaver/workspace/ast/parsers/sql/codestructure.py::SqlCodeStructure": 2
   },
   "attributes": {}
 }

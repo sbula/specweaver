@@ -125,16 +125,50 @@ def _base_names(node: ast.ClassDef) -> set[str]:
     return names
 
 
+def _rebinds_self(node: ast.AST) -> bool:
+    """True when a nested scope introduces its OWN `self`, rather than closing over the outer one.
+
+    The distinction is the whole point, and getting it wrong breaks the measurement in opposite
+    directions:
+
+    - a nested **class**'s methods take their own `self`, a different object entirely — attributing
+      their attributes outward is the leak this exists to stop;
+    - a nested **closure** (`def _wrapper(): ... self._results[x] = y`) has no `self` parameter and
+      captures the enclosing method's, so its attributes ARE the outer method's and must count.
+
+    Skipping both indiscriminately silently decoupled `EventBridge.start_run` from `get_result` —
+    the write to `self._results` happens inside exactly such a closure.
+    """
+    if isinstance(node, ast.ClassDef):
+        return True
+    if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda):
+        return False
+    args = node.args
+    return any(a.arg == "self" for a in (*args.posonlyargs, *args.args, *args.kwonlyargs))
+
+
 def _self_attributes(func: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
-    """Attributes reached through `self` anywhere inside one method."""
+    """Attributes reached through `self` inside one method, excluding scopes that rebind `self`.
+
+    `ast.walk` does not stop at a scope boundary, so a nested class's `self` was attributed to the
+    enclosing method. `TECH-035` found it in `MarkdownCodeStructure._find_target_block`, which
+    touches no state at all but builds a local `MarkdownBodyBlock` whose `__init__` assigns four
+    fields: those four made a stateless helper look like its own cohesion component **and** added
+    four phantom attributes to the god-object count.
+    """
     found: set[str] = set()
-    for node in ast.walk(func):
+    stack: list[ast.AST] = list(ast.iter_child_nodes(func))
+    while stack:
+        node = stack.pop()
+        if _rebinds_self(node):
+            continue
         if (
             isinstance(node, ast.Attribute)
             and isinstance(node.value, ast.Name)
             and node.value.id == "self"
         ):
             found.add(node.attr)
+        stack.extend(ast.iter_child_nodes(node))
     return found
 
 
