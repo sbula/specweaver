@@ -102,7 +102,12 @@ class TestTypeScriptRunner:
 
             result = runner.run_debugger(target=".", entrypoint="src/index.ts")
 
-            mock_executor.execute.assert_called_once()
+            # Two calls now, and deliberately: the runner asks node whether it strips types
+            # before deciding it needs a wrapper at all. Asserting the LAST call keeps the subject
+            # of this test the fallback choice rather than the call count.
+            probe_args = mock_executor.execute.call_args_list[0][0][0]
+            assert probe_args[1] == "--version", probe_args
+
             cmd_args = mock_executor.execute.call_args[0][0]
             assert "ts-node" in cmd_args, f"Expected 'ts-node' fallback, got {cmd_args}"
             assert result.exit_code == 0

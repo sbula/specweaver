@@ -133,14 +133,53 @@ class TypeScriptRunner(QARunnerInterface):
             errors=errors,
         )
 
+    def _node_strips_types(self, node_bin: str) -> bool:
+        """Whether this Node runs a `.ts` file directly, without a transpiling wrapper.
+
+        Node gained type stripping behind a flag in 22.6 and on by default in 23.6, so on a current
+        runtime no wrapper is needed at all. Probed by version rather than by running a scratch
+        file: this is called per debug run, and spawning a probe process to decide how to spawn a
+        process is a cost with no payoff.
+        """
+        try:
+            probe = self._executor.execute([node_bin, "--version"], timeout_seconds=10)
+        except OSError:
+            # No node at all. Answering "no" hands the caller back to its own fallback and its own
+            # error handling; raising from a capability probe would replace a reported exit code
+            # with a traceback from a question nobody asked.
+            return False
+        if probe.exit_code != 0:
+            return False
+        try:
+            major, minor = (int(part) for part in probe.stdout.strip().lstrip("v").split(".")[:2])
+        except ValueError:
+            return False
+        return (major, minor) >= (23, 6)
+
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         """Execute a process and stream runtime outputs."""
         npx_bin = shutil.which("npx") or "npx"
         node_bin = shutil.which("node") or "node"
         if entrypoint.endswith(".ts"):
-            # Prefer tsx (modern, Node v22+ compatible) over ts-node
+            # Three ways to run TypeScript, in descending order of reliability.
+            #
+            # `tsx` first — maintained, fast, and independent of the installed compiler version.
+            #
+            # Then Node itself. 23.6+ strips types natively, which needs no package at all and so
+            # cannot be broken by a dependency resolution.
+            #
+            # `ts-node` last, and only as a fallback for older runtimes. Its final release (10.9.2,
+            # 2023) reads `ts.sys` from the TypeScript compiler API, which TypeScript 7 no longer
+            # exposes — so `npm install typescript ts-node` on a current registry produces a pair
+            # that cannot work: `TypeError: Cannot read properties of undefined (reading
+            # 'fileExists')`. Measured, with TypeScript 7.0.2 and Node 24.
             tsx_bin = shutil.which("tsx")
-            cmd = [tsx_bin, entrypoint] if tsx_bin else [npx_bin, "ts-node", entrypoint]
+            if tsx_bin:
+                cmd = [tsx_bin, entrypoint]
+            elif self._node_strips_types(node_bin):
+                cmd = [node_bin, entrypoint]
+            else:
+                cmd = [npx_bin, "ts-node", entrypoint]
         else:
             cmd = [node_bin, entrypoint]
         logger.debug("Running TypeScript debugger wrapper: %s", shlex.join(cmd))

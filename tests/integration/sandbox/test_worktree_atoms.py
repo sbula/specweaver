@@ -25,10 +25,15 @@ def repo_with_cache(tmp_path: Path) -> Path:
     subprocess.run(["git", "config", "user.name", "Test Agent"], cwd=repo_dir, check=True)
     subprocess.run(["git", "config", "user.email", "agent@test.com"], cwd=repo_dir, check=True)
 
-    # Create fake cache (like node_modules)
+    # A local cache, like node_modules — and gitignored, as a real one is. That matters to the
+    # test rather than being scene-setting: committing it made `git worktree add` check it out into
+    # the new worktree, so the symlink step below hit `[Errno 17] File exists` and the whole point
+    # of symlinking a cache into a worktree could not be exercised. The assertion was guarded by
+    # `if os.name != "nt"`, so it was skipped on Windows and broken on Linux — it had never run.
     cache_dir = repo_dir / "node_modules"
     cache_dir.mkdir()
     (cache_dir / "lib.js").write_text("console.log('hello');")
+    (repo_dir / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
 
     # Commit to master
     (repo_dir / "README.md").write_text("# Main")

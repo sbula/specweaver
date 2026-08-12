@@ -19,13 +19,12 @@ import shutil
 import sys
 import tomllib
 import uuid
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.sandbox.execution.models import (
         ContainerMounts,
         ResourceLimits,
@@ -136,7 +135,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         )
         raise ContainerEngineUnavailableError(msg)
 
-    def _baseline_flags(self) -> list[str]:
+    def _baseline_flags(self, engine: str) -> list[str]:
         """Security/resource flags shared by BOTH the prepare and execute phases (Red/Blue
         fix — the prepare phase runs `uv sync`, which can execute arbitrary sdist build code
         from PyPI, so it gets the same cap-drop/resource/user hardening as the execute phase,
@@ -154,6 +153,17 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         ]
         if sys.platform != "win32":
             flags.extend(["--user", f"{os.getuid()}:{os.getgid()}"])
+            # Rootless podman maps the invoking user to container UID 0, so `--user <host uid>`
+            # selects an unmapped subuid rather than the host user — and a bind-mounted directory
+            # owned by that user becomes unwritable. Measured: the RW scratch mount failed with
+            # `Permission denied` until `keep-id` was added, which maps the host uid through so
+            # `--user` means what it says.
+            #
+            # Conditional rather than always-on: `keep-id` is podman-only (docker rejects it) and
+            # is an error when not rootless, since there is then no mapping to keep. Docker's own
+            # rootless mode maps the host user directly, so the mismatch does not arise there.
+            if "podman" in Path(engine).name and os.getuid() != 0:
+                flags.append("--userns=keep-id")
         else:
             logger.warning(
                 "ContainerSubprocessExecutor: running as the container image's default user "
@@ -196,7 +206,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             f"{self._mounts.cache_root}:/cache:rw",
             "--tmpfs",
             "/tmp:size=100m,mode=1777",
-            *self._baseline_flags(),
+            *self._baseline_flags(engine),
             "-e",
             "UV_CACHE_DIR=/cache",
             "--workdir",
@@ -242,7 +252,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             "/tmp:size=100m,mode=1777",
             "--network",
             "none",
-            *self._baseline_flags(),
+            *self._baseline_flags(engine),
         ]
 
         for key, value in (extra_env or {}).items():

@@ -181,7 +181,7 @@ resolved.**
 
 ---
 
-## Cluster E — still open — **4 failures**
+## Cluster E — **all four fixed 2026-08-12**
 
 | Test | What is known | What is not |
 |---|---|---|
@@ -278,3 +278,43 @@ Grouping these three as "Windows path semantics" was wrong. Only one was about b
 **Corrected while investigating**: this analysis first reported the empty grant as reading the
 entire filesystem. It does not — the live probe refuses `/etc/passwd`. The real scope is the
 project root, which is narrower but still an unintended widening.
+
+---
+
+## Cluster E resolved — three distinct causes, none of them "tooling missing"
+
+| Test | Actual cause |
+|---|---|
+| `test_ts_node_debugger_execution`, `test_e2e_typescript_qarunner_tooling` | **`ts-node` 10.9.2 cannot read TypeScript 7's compiler API.** `npm install typescript ts-node` on a current registry installs a pair that cannot work: `TypeError: Cannot read properties of undefined (reading 'fileExists')` from `ts.sys`. Not a missing binary — a broken combination |
+| `test_worktree_sandbox_lifecycle_integration` | The fixture committed `node_modules`, so `git worktree add` checked it out and the symlink hit `[Errno 17] File exists`. A real cache is gitignored |
+| `test_writable_scratch_mount_allows_writes` | **Rootless podman maps the invoking user to container UID 0**, so `--user 1000` selects an unmapped subuid and the bind mount is unwritable. Needs `--userns=keep-id` |
+
+Two are product fixes, one is a fixture fix. My earlier guess that the TypeScript pair were simply
+"missing `ts-node`" was wrong: installing it is exactly what breaks them.
+
+### The pattern behind almost all 29
+
+**Five separate defects lived behind a `win32` guard and had therefore never executed** on the
+development machine:
+
+| | Guard | Consequence |
+|---|---|---|
+| `RLIMIT_NPROC` (`TECH-029`) | `sys.platform != "win32"` | 18 failures |
+| `--user` in the container executor | `sys.platform != "win32"` | scratch mount unwritable |
+| `test_file_size_limit` | `skipif(win32)` | never ran on any platform |
+| `test_symlink_valid` | `skipif(os.name == "nt")` | never ran on any platform |
+| worktree symlink assertion | `if os.name != "nt"` | never ran on any platform |
+
+A platform-conditional branch is untested on the other platform *by construction*, and three of
+these were tests that could not have passed anywhere. Worth a standing check rather than
+rediscovering it one failure at a time.
+
+### Final state
+
+```
+tests/unit          5625 passed,  1 failed   <- TECH-030, held red deliberately
+tests/integration    591 passed,  0 failed
+tests/e2e            191 passed,  0 failed
+```
+
+From 29 failures to 1, and that one is a security decision awaiting a product call.

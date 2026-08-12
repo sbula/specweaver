@@ -308,6 +308,58 @@ class TestBuildContainerCmd:
         assert "--user" not in argv
         assert any("Windows" in rec.message for rec in caplog.records)
 
+    def test_rootless_podman_gets_keep_id_so_the_uid_maps_to_the_host(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """`--user <host uid>` needs `--userns=keep-id` under rootless podman, or writes are denied.
+
+        Rootless podman maps the invoking user to container UID 0 by default, so asking for
+        `--user 1000` selects an unmapped subuid rather than the host user. A bind-mounted directory
+        owned by the host user is then unwritable, and the scratch mount fails with
+        `Permission denied` — measured, not theorised.
+
+        `--user` sits behind a `sys.platform != "win32"` guard, so this combination had never
+        executed on the Windows development machine.
+        """
+        monkeypatch.setattr(sys, "platform", "linux")
+        monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
+        monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
+
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
+
+        assert "--userns=keep-id" in argv
+        assert argv[argv.index("--user") + 1] == "1000:1000"
+
+    def test_docker_does_not_get_keep_id(self, tmp_path: Path, monkeypatch) -> None:
+        """`--userns=keep-id` is a podman flag; docker rejects it.
+
+        Docker's rootless mode maps the host user directly, so the mismatch does not arise there.
+        """
+        monkeypatch.setattr(sys, "platform", "linux")
+        monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
+        monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
+
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        argv = executor._build_container_cmd("/usr/bin/docker", "n1", ["echo"], None)
+
+        assert "--userns=keep-id" not in argv
+
+    def test_root_podman_does_not_get_keep_id(self, tmp_path: Path, monkeypatch) -> None:
+        """Running podman as root is not rootless, so there is no mapping to keep.
+
+        Passing `keep-id` there is an error rather than a no-op, so the flag is conditional on the
+        situation it exists for rather than always applied to podman.
+        """
+        monkeypatch.setattr(sys, "platform", "linux")
+        monkeypatch.setattr(os, "getuid", lambda: 0, raising=False)
+        monkeypatch.setattr(os, "getgid", lambda: 0, raising=False)
+
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
+
+        assert "--userns=keep-id" not in argv
+
     def test_extra_env_becomes_dash_e_flags(self, tmp_path: Path) -> None:
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
         argv = executor._build_container_cmd("podman", "n1", ["echo"], {"MY_VAR": "value"})
