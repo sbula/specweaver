@@ -1,13 +1,14 @@
 {
   "_comment": "Frozen suppression baseline. Regenerate ONLY with `python scripts/check_suppressions.py --update-baseline`, and expect the diff to be reviewed: every increase is a gate someone switched off.",
   "counts": {
+    "config:per-file-ignore:N802": 1,
     "config:per-file-ignore:TID251": 3,
     "config:ruff-ignore:E501": 1,
     "mypy:file-ignore-errors": 6,
     "noqa:B008": 3,
     "noqa:B027": 1,
-    "noqa:C901": 20,
-    "noqa:E402": 6,
+    "noqa:C901": 14,
+    "noqa:E402": 4,
     "noqa:F401": 16,
     "noqa:N801": 3,
     "noqa:N802": 40,
@@ -17,7 +18,7 @@
     "noqa:TC003": 6,
     "noqa:TID251": 3,
     "pragma:no-cover": 3,
-    "type-ignore:BLANKET": 18,
+    "type-ignore:BLANKET": 15,
     "type-ignore:arg-type": 24,
     "type-ignore:attr-defined": 7,
     "type-ignore:call-arg": 4,
@@ -32,5 +33,5 @@
     "type-ignore:type-arg": 9,
     "type-ignore:var-annotated": 3
   },
-  "total": 239
+  "total": 229
 }

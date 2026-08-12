@@ -11,15 +11,16 @@ from abc import ABC, abstractmethod
 
 from tree_sitter import Language, Parser, Query, QueryCursor
 
+from specweaver.workspace.ast.parsers._editing import SymbolEditingMixin
+from specweaver.workspace.ast.parsers._reading import SymbolReadingMixin
 from specweaver.workspace.ast.parsers.interfaces import (
-    CodeStructureError,
     CodeStructureInterface,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class BaseTreeSitterParser(CodeStructureInterface, ABC):
+class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructureInterface, ABC):
     """Base class centralizing Tree-sitter AST mutation and extraction."""
 
     @staticmethod
@@ -152,187 +153,3 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
     def _text_of(node: typing.Any) -> str:
         """A node's source text, decoded."""
         return typing.cast("bytes", node.text).decode("utf-8")
-
-    def _auto_indent(self, new_code: str, margin: int) -> str:
-        if not new_code:
-            return new_code
-        lines = new_code.split("\n")
-        padded = []
-        for i, line in enumerate(lines):
-            if i == 0:
-                padded.append(line)
-            else:
-                if line.strip() == "":
-                    padded.append(line)
-                else:
-                    padded.append((" " * margin) + line)
-        return "\n".join(padded)
-
-    def extract_skeleton(self, code: str) -> str:
-        if not code.strip():
-            return code
-
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-
-        query = Query(self.language, self.SCM_SKELETON_QUERY)
-        cursor = QueryCursor(query)
-        captures = cursor.captures(tree.root_node)
-
-        nodes_to_blank: list[tuple[int, int]] = []
-
-        if "block" in captures:
-            for node in captures["block"]:
-                start_cut = node.start_byte + 1
-                end_cut = node.end_byte - 1
-
-                if node.children:
-                    first_child = node.children[0]
-                    if (
-                        first_child.type == "expression_statement"
-                        and first_child.children
-                        and first_child.children[0].type == "string"
-                    ):
-                        start_cut = first_child.end_byte
-
-                if start_cut < end_cut:
-                    nodes_to_blank.append((start_cut, end_cut))
-
-        nodes_to_blank.sort(key=lambda x: x[0], reverse=True)
-
-        skeleton = code_bytes
-        for start_byte, end_byte in nodes_to_blank:
-            skeleton = skeleton[:start_byte] + b" ... " + skeleton[end_byte:]
-
-        return skeleton.decode("utf-8")
-
-    def extract_symbol(self, code: str, symbol_name: str) -> str:
-        if not code.strip():
-            raise CodeStructureError(f"Cannot extract '{symbol_name}' from empty code.")
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-        node = self._find_symbol_node(tree, symbol_name)
-        if not node:
-            raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
-        return typing.cast("bytes", node.text).decode("utf-8")
-
-    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
-        if not code.strip():
-            raise CodeStructureError(f"Cannot extract body of '{symbol_name}' from empty code.")
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-        node = self._find_symbol_node(tree, symbol_name)
-        if not node:
-            raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
-
-        target_block = self._find_target_block(node)
-        if not target_block:
-            raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
-        return typing.cast("bytes", target_block.text).decode("utf-8")
-
-    def list_symbols(
-        self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
-    ) -> list[str]:
-        if not code.strip():
-            return []
-
-        framework_markers = {}
-        if decorator_filter:
-            framework_markers = self.extract_framework_markers(code)
-
-        tree = self.parser.parse(code.encode("utf-8"))
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        symbols = []
-        for _match_id, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    scope = self._get_symbol_scope(name_node)
-                    full_name = f"{scope}.{sym_name}" if scope else sym_name
-                    if self._is_symbol_valid(
-                        full_name, name_node, visibility, decorator_filter, framework_markers
-                    ):
-                        symbols.append(full_name)
-
-        seen = set()
-        unique_symbols = []
-        for x in symbols:
-            if x not in seen:
-                seen.add(x)
-                unique_symbols.append(x)
-        return unique_symbols
-
-    def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
-        if not code.strip():
-            raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
-
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-        node = self._find_symbol_node(tree, symbol_name)
-
-        if not node:
-            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-
-        mutated = self._format_replacement(code_bytes, node, new_code)
-        return mutated.decode("utf-8")
-
-    def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
-        if not code.strip():
-            raise CodeStructureError(f"Cannot replace body of '{symbol_name}' in empty code.")
-
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-
-        node = self._find_symbol_node(tree, symbol_name)
-        if not node:
-            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-
-        target_block = self._find_target_block(node)
-        if not target_block:
-            raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
-
-        margin = typing.cast("int", node.start_point[1])
-        mutated = self._format_body_injection(code_bytes, target_block, new_code, margin)
-        return mutated.decode("utf-8")
-
-    def delete_symbol(self, code: str, symbol_name: str) -> str:
-        if not code.strip():
-            return code
-
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
-        node = self._find_symbol_node(tree, symbol_name)
-
-        if not node:
-            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-        mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
-        return mutated.decode("utf-8")
-
-    def extract_traceability_tags(self, code: str) -> set[str]:
-        if not code.strip():
-            return set()
-        tree = self.parser.parse(code.encode("utf-8"))
-        query = Query(self.language, self.SCM_COMMENT_QUERY)
-        cursor = QueryCursor(query)
-        tags: set[str] = set()
-
-        import re
-
-        trace_pattern = re.compile(r"@trace\(([^)]+)\)")
-
-        for _, match_dict in cursor.matches(tree.root_node):
-            if "comment" in match_dict:
-                for comment_node in match_dict["comment"]:
-                    text = typing.cast("bytes", comment_node.text).decode("utf-8")
-                    match = trace_pattern.search(text)
-                    if match:
-                        content = match.group(1)
-                        for part in content.split(","):
-                            tags.add(part.strip())
-        return tags

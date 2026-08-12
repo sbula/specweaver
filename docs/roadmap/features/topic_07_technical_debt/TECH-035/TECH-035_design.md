@@ -154,3 +154,47 @@ they can never match a baseline entry and are correctly treated as new.
 19 incohesive classes and 1 oversized, now bounded rather than growing. The largest single target is
 **`BaseTreeSitterParser` at `LCOM4=8`** — four distinct jobs (query, walk, edit, format) in one
 class, and clearing it also removes three of `TECH-023`'s violations.
+
+## `BaseTreeSitterParser` split, 2026-08-12
+
+The ticket's largest single target, and the debt `TECH-034` knowingly created when it concentrated
+the parsers' shared mechanics into one class.
+
+**Measured first: reading and editing share nothing.** Zero cross-references between the two
+groups; each depends only on the per-language contract the base declares. That is what made this a
+**move** rather than a rewrite, and it is worth checking before splitting anything — the split
+would have been wrong if they had been entangled.
+
+| | before | after |
+|---|---|---|
+| `BaseTreeSitterParser` | 338 lines, `LCOM4=8` | 155 lines, **`LCOM4=2`** |
+| `SymbolReadingMixin` | — | 151 lines, **`LCOM4=1`** (cohesive) |
+| `SymbolEditingMixin` | — | 88 lines, **`LCOM4=1`** (cohesive) |
+
+Mixins rather than collaborators, so **no parser's public API changes** — every one still answers
+`extract_symbol` and the rest exactly as before, and no caller moved.
+
+Each mixin declares what it needs from its host under `if TYPE_CHECKING:`. That states the
+dependency instead of letting `self.parser` resolve by luck, and does not touch the runtime MRO.
+Getting those declarations to match cost three rounds — `_format_body_injection` takes a `margin`,
+`_is_symbol_valid` takes five arguments, and the `SCM_*` members are read-only *properties* rather
+than attributes. Each mismatch was a real inconsistency the type checker refused to let through.
+
+**The complexity ratchet flagged the move as three new violations**, because the functions changed
+file. Before re-freezing, each was checked against its old score: `extract_skeleton` 16→16,
+`extract_traceability_tags` 16→16, `list_symbols` 19→19, and no genuinely new violation. A pure
+relocation — but the ratchet was right to ask, and "review the diff" is exactly what it exists for.
+
+**Suppressions went down, not up.** The one added exemption is a `per-file-ignore` for `N802` on
+the reading mixin — the sanctioned form, in configuration rather than three call-site `noqa`s, per
+the suppressions gate's own instruction. Against it, this session removed six `noqa: C901`, two
+`noqa: E402` and three blanket `type: ignore`s: **239 → 229 total**.
+
+`quality.py cb`: **0 failed of 12**. 6485 tests pass, `mypy` and `tach` clean.
+
+### Where that leaves the ticket
+
+18 incohesive classes and 1 oversized remain frozen. `BaseTreeSitterParser` is still above the
+threshold at `LCOM4=2`, deliberately: what is left is construction plus the per-language contract,
+which is one job stated two ways rather than two jobs. Squeezing it to 1 would be chasing the
+metric.

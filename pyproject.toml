@@ -108,6 +108,12 @@ ignore = [
 # src/specweaver/sandbox/, and a quality gate that imports the product it checks cannot run when
 # that product is broken — precisely when the gate is needed.
 "scripts/**" = ["TID251"]
+# `TECH-035`: the reading mixin restates `SCM_*` as property stubs under `TYPE_CHECKING`, purely to
+# declare what it needs from the parser it is mixed into. The names must match the abstract
+# properties they mirror, which are uppercase by long-standing convention (tree-sitter `.scm`
+# queries) and already carry their own N802 exemption in `base.py`. Configured here rather than as
+# three call-site `noqa`s, per the suppressions gate's own instruction.
+"src/specweaver/workspace/ast/parsers/_reading.py" = ["N802"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution.executor instead."

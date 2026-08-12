@@ -11,7 +11,7 @@
     "src/specweaver/sandbox/protocol/core/asyncapi_parser.py::AsyncAPIParser": 2,
     "src/specweaver/sandbox/protocol/core/grpc_parser.py::GRPCParser": 2,
     "src/specweaver/sandbox/qa_runner/core/atom.py::QARunnerAtom": 2,
-    "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser": 8,
+    "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser": 2,
     "src/specweaver/workspace/ast/parsers/go/codestructure.py::GoCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py::KotlinCodeStructure": 2,
