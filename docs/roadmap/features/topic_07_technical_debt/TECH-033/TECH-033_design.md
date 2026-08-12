@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-033
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-12 — see §Delivery.
 - **Origin**: Named as an accepted inherited limit in `INT-US-21`'s NFR-2 (2026-07-27), carried
   forward by `TECH-020` (2026-08-12) which made it structurally visible without changing it —
   behaviour change was forbidden there. Minted 2026-08-12 at the user's request.
@@ -53,14 +53,29 @@ defect does not wait on an unbuilt capability — and here the capability would 
 
 ## Settled: this is a bug, not a documented behaviour
 
-**Decided by the user, 2026-08-12.** `max_retries: 3` means **three attempts for that step, ever**.
-A resume continues a run; it does not hand back a fresh budget. The per-session reset is a defect
-in the counter's lifetime, not a design choice — it was never chosen, only observed and then
-written down as a limitation.
+**Decided by the user, 2026-08-12.** The per-session reset is a defect in the counter's lifetime,
+not a design choice — it was never chosen, only observed and then written down as a limitation.
+**The budget must survive a resume.**
 
-This closes the one open question the ticket had, and it removes the "documented behaviour change"
-reading entirely: the gate documentation does not need a new rule, because the rule it already
-states is the correct one and the code does not honour it.
+> **Correction, same day.** This section first recorded the decision as *"three attempts for that
+> step, ever"*. That was an **inference, not what the user said**, and checking `sw resume` showed
+> why it mattered: the CLI *"resumes the latest parked/**failed** run"*, so resuming an exhausted
+> run is a first-class flow. Read strictly, "ever" makes a retry-exhausted run **permanently
+> unresumable** — fix the root cause, resume, and it refuses forever. That is a worse defect than
+> the one being fixed. The question was put back to the user rather than built on the inference.
+
+**Decided: seed and let the gate decide as normal.** A resume of a fully-exhausted step gets one
+final attempt and then stops; total executions are bounded at `max_retries + 2` instead of today's
+unbounded `3 × N`. No pre-execution budget check, and therefore no new coupling from the loop into
+gate configuration.
+
+The case that actually matters is not the exhausted one. It is a `loop_back` interrupted by a HITL
+park: step 5 fails, loops back to step 2, the run parks at step 3, a human resumes. That is **one
+in-flight loop**, and its budget must carry — today it silently restarts at zero, and `loop_back`
+does not even record what it spent.
+
+The gate documentation needs no new rule: the rule it already states is the correct one and the
+code does not honour it.
 
 ## Non-Goals (proposed, pending design)
 
@@ -78,11 +93,50 @@ re-run — the only shape that can catch this, since every existing retry test l
 `_execute_loop` entry and therefore cannot observe the reset. Plus a `loop_back` twin, because that
 path's write side is the one that is missing.
 
+## Delivery, 2026-08-12
+
+Two halves, in the order the ticket required — the write side first, because seeding alone would
+have looked complete and been half done.
+
+**Write side.** `_handle_loop_back` now sets `run.step_records[step_idx].attempt`, the way
+`_handle_retry` already did. Without it that path's spend existed only in memory.
+
+**Read side.** `LoopState.for_run` seeds `attempts` from each `StepRecord.attempt` instead of
+starting empty. The two counters are offset by one and the offset is meaningful: `attempt` is the
+1-based number of the attempt about to be made, `attempts` counts retries already spent. A fresh
+run seeds to an empty dict and behaves exactly as before — **only a resumed run carries anything**,
+which is what keeps this a fix rather than a change.
+
+### Verification
+
+`tests/unit/core/flow/engine/test_retry_budget_across_resume.py` — four tests, none of which could
+have existed before, since every prior retry test lives inside a single `_execute_loop` entry where
+the counter is correct.
+
+- The budget is not re-granted on resume (the core claim).
+- A **partly** spent budget carries its remainder: one retry spent leaves two, not three. Asserted
+  separately on purpose — a fix that merely capped resumes at one attempt would pass the first test
+  and fail this one.
+- `loop_back` records what it spends, driven at the gate directly.
+- A baseline that also serves as the vacuity guard: a first run spends exactly `max_retries + 1`
+  executions, so a zero reading would fail loudly instead of letting the resume assertions pass
+  against a handler that never ran.
+
+**Mutation-checked independently.** Disabling the read side fails two tests; disabling the write
+side fails one; the baseline stays green through both. Neither half is decorative.
+
+Full suite 6442 passed, `mypy` clean, `quality.py cb` at the two chronic gates only.
+
+### Documentation corrected
+
+`docs/dev_guides/pipeline_engine_guide.md` stated the old behaviour as a known limit owned by
+`C-FLOW-07`. The behaviour is fixed and the ownership was wrong from the start. The remaining
+boundary — one final attempt for a fully-exhausted step — is recorded there as a decision, with the
+reason, rather than left to be rediscovered.
+
 ## Next Step
 
-Run the `specweaver-design` skill. The semantics question that would have gated it is **settled**
-(see above), so the design's job is the sequencing: close `_handle_loop_back`'s missing write
-first, then seed from the persisted counter, then prove it across an actual resume.
+Done.
 
 Related: `TECH-020` (which separated `attempts` into `LoopState` and made this a single field with
 a single construction site); `INT-US-21` NFR-2 (the original record, corrected above).

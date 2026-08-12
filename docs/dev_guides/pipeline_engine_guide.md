@@ -420,10 +420,19 @@ parks for a human rather than looping to `FAILED`. A resume of a failed gate-par
 approval — the step re-executes, costing a fresh LLM round. Measured, not inferred.
 
 The same applies to `validate_feature`: a spec that fails the battery loops back to
-`draft_feature`, which parks. Note the retry budget does **not** accumulate across sessions —
-`_execute_loop` re-initialises `attempts` on every entry, so each `sw resume` grants a fresh
-3-strike allowance. That is a known inherited limit (`C-FLOW-07` owns it), recorded here so no
-planner assumes otherwise.
+`draft_feature`, which parks. **The retry budget survives the resume** — `LoopState.for_run` seeds
+`attempts` from the persisted `StepRecord.attempt`, so a step that has spent one of three retries
+resumes with two left, not three.
+
+> **Corrected 2026-08-12 (`TECH-033`).** This paragraph previously stated the opposite: that
+> `attempts` re-initialised on every `_execute_loop` entry, so each `sw resume` granted a fresh
+> 3-strike allowance, and that `C-FLOW-07` owned the limit. The behaviour was real and is now
+> fixed; the ownership was wrong from the start, since `C-FLOW-07` is HITL Root-Cause Tagging.
+>
+> One boundary remains, by decision rather than oversight: resuming a step whose budget is
+> **fully** spent gives it one final attempt before the gate stops the run. Refusing outright
+> would make a retry-exhausted run permanently unresumable — you could fix the root cause, resume,
+> and it would still refuse — which is a worse defect than the one being fixed.
 
 ### Host posture
 

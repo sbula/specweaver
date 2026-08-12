@@ -60,6 +60,31 @@ class LoopState:
     route_jumps: int = 0
     approve_parked: bool = False
 
+    @classmethod
+    def for_run(cls, run: PipelineRun, *, approve_parked: bool = False) -> LoopState:
+        """Start the loop with the retry budget each step has **already** spent.
+
+        `TECH-033`. `attempts` used to start empty on every `_execute_loop` entry, and `resume()`
+        re-enters that loop — so every `sw resume` handed each step a full fresh budget and
+        `max_retries: 3` bounded retries *per session* rather than per step.
+
+        `StepRecord.attempt` already carried the durable count: it is written by the gate and it
+        round-trips through the store. Only the read back was missing.
+
+        The two counters are offset by one and that is not arbitrary — `attempt` is the 1-based
+        number of the attempt about to be made (so a fresh record reads 1), while `attempts` counts
+        retries already spent. A fresh run therefore seeds to an empty dict and behaves exactly as
+        before; only a resumed one carries anything.
+        """
+        return cls(
+            attempts={
+                index: record.attempt - 1
+                for index, record in enumerate(run.step_records)
+                if record.attempt > 1
+            },
+            approve_parked=approve_parked,
+        )
+
 
 class LoopAction(Enum):
     """What `_execute_loop` should do once a step's outcome is known.

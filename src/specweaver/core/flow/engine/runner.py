@@ -240,7 +240,7 @@ class PipelineRunner:
         self._log(run, "run_started")
         self._emit("run_started", run=run, total_steps=total)
 
-        state = LoopState(approve_parked=approve_parked)
+        state = LoopState.for_run(run, approve_parked=approve_parked)
 
         while run.current_step < len(run.step_records):
             step_idx = run.current_step

@@ -222,6 +222,12 @@ class GateEvaluator:
                 run.step_records[step_idx].status = result.status
                 run.step_records[step_idx].result = result
 
+                # TECH-033: record the retry this loop-back just spent, the way `_handle_retry`
+                # does. Without it the budget existed only in memory for this path, so a resume
+                # restarted it at zero — and seeding the counter from the persisted value would
+                # have fixed `retry` while leaving `loop_back` silently resetting.
+                run.step_records[step_idx].attempt = attempts[step_idx] + 1
+
                 # Reset target step to PENDING
                 run.step_records[target_idx].status = StepStatus.PENDING
                 run.step_records[target_idx].result = None
