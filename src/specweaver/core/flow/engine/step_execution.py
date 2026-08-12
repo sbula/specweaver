@@ -31,10 +31,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
+from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.engine.approval import try_approve_parked_step
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
+from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.routers import resolve_route_target
-from specweaver.core.flow.engine.runner_utils import _now_iso, resolve_should_isolate
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 
@@ -199,7 +200,7 @@ async def execute_step(
         if not getattr(runner, "_session_active", False) and resolve_should_isolate(
             step_def, runner._context
         ):
-            from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+            from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
             return await execute_in_sandbox(runner, handler, step_def, run, logger)
         return cast("StepResult", await handler.execute(step_def, runner._context))

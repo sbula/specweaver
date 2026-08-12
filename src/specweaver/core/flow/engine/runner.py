@@ -21,18 +21,14 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.timestamps import now_iso as _now_iso
+from specweaver.core.flow.engine.fan_out import isolate_sub_run_context
 from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.hydration import rehydrate_from_records
-from specweaver.core.flow.engine.runner_utils import (
-    RunnerEventCallback,
-    _now_iso,
-    execute_run,
-    isolate_sub_run_context,
-    resolve_should_isolate,
-    seed_dal_level,
-    setup_sandbox_caches,
-    verify_vault_security,
-)
+from specweaver.core.flow.engine.isolation import resolve_should_isolate, seed_dal_level
+from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
+from specweaver.core.flow.engine.security import verify_vault_security
+from specweaver.core.flow.engine.session import execute_run
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,
@@ -46,6 +42,7 @@ from specweaver.core.flow.engine.step_execution import (
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
+    from specweaver.core.flow.engine.events import RunnerEventCallback
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.core.flow.handlers.base import RunContext
@@ -279,7 +276,7 @@ class PipelineRunner:
             self._on_event(event, **kwargs)
 
     def _flush_telemetry(self) -> None:
-        from specweaver.core.flow.engine.runner_utils import flush_telemetry
+        from specweaver.core.flow.engine.telemetry import flush_telemetry
 
         flush_telemetry(self._context, logger)
 

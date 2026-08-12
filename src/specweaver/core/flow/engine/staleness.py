@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.runner_utils import _now_iso
+from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 
 if TYPE_CHECKING:

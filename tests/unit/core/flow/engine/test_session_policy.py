@@ -18,10 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.flow.engine.runner_utils import (
-    _derive_allowed_paths,
-    apply_session_policy,
-)
+from specweaver.core.flow.engine.isolation import _derive_allowed_paths, apply_session_policy
 from specweaver.core.flow.handlers.base import RunContext
 
 _LOG = logging.getLogger("test.session_policy")
@@ -138,7 +135,7 @@ class TestApplySessionPolicy:
         def _boom(_spec):
             raise RuntimeError("derivation blew up")
 
-        monkeypatch.setattr("specweaver.core.flow.engine.runner_utils._derive_allowed_paths", _boom)
+        monkeypatch.setattr("specweaver.core.flow.engine.isolation._derive_allowed_paths", _boom)
         ctx = _ctx("foo_spec.md")
         apply_session_policy(ctx, _settings(session=True), _LOG)
         assert ctx.isolation.session_isolation is False

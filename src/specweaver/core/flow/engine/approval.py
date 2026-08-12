@@ -79,7 +79,7 @@ def try_approve_parked_step(
     it would simply re-park and the defect would survive.
 
     Takes the runner rather than its collaborators, matching the existing
-    ``runner_utils.execute_run(runner, ...)`` convention.
+    ``session.execute_run(runner, ...)`` convention.
     """
     record = run.current_step_record()
     if not is_approvable_gate_park(record, step_def):

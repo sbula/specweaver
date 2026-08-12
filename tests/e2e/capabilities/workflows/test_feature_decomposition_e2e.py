@@ -759,11 +759,11 @@ class TestTeardownActuallyRuns:
 
     def _interrupt_and_spy(self, project: Path, data_dir: Path):
         import specweaver.core.flow.engine.handover as handover_mod
-        import specweaver.core.flow.engine.runner_utils as runner_utils_mod
+        import specweaver.core.flow.engine.telemetry as telemetry_mod
 
         calls = {"handover": 0, "telemetry": 0}
         real_handover = handover_mod.save_handover_context
-        real_flush = runner_utils_mod.flush_telemetry
+        real_flush = telemetry_mod.flush_telemetry
 
         async def spy_handover(context, run):
             calls["handover"] += 1
@@ -779,7 +779,7 @@ class TestTeardownActuallyRuns:
 
             with (
                 patch.object(handover_mod, "save_handover_context", spy_handover),
-                patch.object(runner_utils_mod, "flush_telemetry", spy_flush),
+                patch.object(telemetry_mod, "flush_telemetry", spy_flush),
                 patch(
                     "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
                     new=_InterruptingDecompose.execute,

@@ -4,7 +4,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.core.flow.engine.runner_utils import setup_sandbox_caches
+from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
     GraphContext,

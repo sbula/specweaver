@@ -27,6 +27,7 @@ import pytest
 
 from specweaver.core.config.bootstrap.settings_loader import _load_toml_sandbox
 from specweaver.core.config.settings import SpecWeaverSettings
+from specweaver.core.flow.engine.isolation import apply_session_policy
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -34,7 +35,6 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.engine.runner_utils import apply_session_policy
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry

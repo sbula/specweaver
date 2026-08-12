@@ -255,7 +255,7 @@ def implement(
     # worktree-bounded when the risk warrants it. Opt into DAL-driven auto-escalation —
     # session isolation auto-enables for high-assurance (DAL_B+) code, while small/low-DAL
     # projects keep today's friction-free host behavior. Best-effort: never crashes the run.
-    from specweaver.core.flow.engine.runner_utils import apply_session_policy
+    from specweaver.core.flow.engine.isolation import apply_session_policy
 
     apply_session_policy(context, settings, logger, dal_auto_escalate=True)
 

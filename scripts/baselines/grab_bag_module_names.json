@@ -1,11 +1,9 @@
 {
   "modules": [
-    "src/specweaver/core/flow/engine/runner_utils.py",
     "src/specweaver/workspace/project/_helpers.py",
     "tests/unit/assurance/standards/interfaces/test_cli_standards_helpers.py",
     "tests/unit/core/config/test_cli_db_utils.py",
     "tests/unit/core/config/test_db_utils.py",
-    "tests/unit/core/flow/engine/test_runner_utils.py",
     "tests/unit/core/flow/handlers/test_config_helpers.py",
     "tests/unit/graph/core/store/test_repository_helpers.py",
     "tests/unit/interfaces/cli/test_cli_helpers.py"

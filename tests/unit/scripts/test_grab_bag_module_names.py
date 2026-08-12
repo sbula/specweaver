@@ -83,20 +83,38 @@ def test_the_commons_leaf_is_exempt() -> None:
     assert not module.is_exempt(Path("src/specweaver/core/flow/engine/runner_utils.py"))
 
 
-def test_the_census_finds_the_known_offenders() -> None:
-    """Anchored to the real tree, so the rule cannot pass while the artifact drifts.
+def test_the_census_reflects_the_real_tree() -> None:
+    """Anchored to the tree, so the rule cannot pass while the artifact drifts.
 
-    `TECH-015` names four modules; only two carry a grab-bag *name* (`base.py` and `_core.py` are
-    in the ticket for their contents, which no name rule can see). Those two are what R7 tracks.
+    Deliberately asserts *properties* rather than today's offender list: `TECH-015` is actively
+    deleting entries, and a test that names them would need editing on every split — which is how a
+    census test decays into a copy of the baseline it is supposed to check.
     """
     module = _load("_grab_bag_names")
 
     offenders = module.census(REPO_ROOT)
 
-    assert "src/specweaver/core/flow/engine/runner_utils.py" in offenders
+    assert all((REPO_ROOT / o).is_file() for o in offenders), "census lists a module that is gone"
     assert not any(o.startswith("tests/fixtures/") for o in offenders), (
         "fixture sample projects are deliberate and must stay exempt"
     )
+    assert not any(o.startswith("src/specweaver/commons/") for o in offenders), (
+        "the L0 leaf is where cross-cutting code belongs and must stay exempt"
+    )
+
+
+def test_the_split_removed_the_module_the_ticket_was_written_about() -> None:
+    """`runner_utils.py` is the worked example, and its removal is the ticket's headline claim.
+
+    Worth its own assertion rather than folding into the ratchet: the ratchet only notices names
+    being *added*, so nothing else in this file would fail if the split were reverted.
+    """
+    module = _load("_grab_bag_names")
+
+    offenders = module.census(REPO_ROOT)
+
+    assert "src/specweaver/core/flow/engine/runner_utils.py" not in offenders
+    assert not (REPO_ROOT / "src/specweaver/core/flow/engine/runner_utils.py").exists()
 
 
 def test_the_count_has_not_risen_above_the_baseline() -> None:

@@ -191,7 +191,7 @@ async def test_symlink_cache_folders(tmp_path: Path):
 
         import logging
 
-        from specweaver.core.flow.engine.runner_utils import setup_sandbox_caches
+        from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 
         target_wt = ".worktrees/test1234"
         out_wt = tmp_path / ".worktrees" / "test1234"
@@ -261,7 +261,7 @@ async def test_isolation_gate_resolution(
 
     with (
         patch(
-            "specweaver.core.flow.engine.runner_utils.execute_in_sandbox",
+            "specweaver.core.flow.engine.sandboxed_execution.execute_in_sandbox",
             new=AsyncMock(return_value=passed),
         ) as mock_sandbox,
         patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
@@ -362,7 +362,7 @@ async def test_worktree_add_failure_raises_actionable_error(tmp_path: Path):
     import logging
     from types import SimpleNamespace
 
-    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+    from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
     runner = SimpleNamespace(_context=context)
@@ -394,7 +394,7 @@ async def test_worktree_add_failure_does_not_assume_non_git_cause(tmp_path: Path
     import logging
     from types import SimpleNamespace
 
-    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+    from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
     runner = SimpleNamespace(_context=context)

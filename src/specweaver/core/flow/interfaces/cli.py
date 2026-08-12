@@ -304,7 +304,7 @@ def _execute_run(  # noqa: C901
     _maybe_attach_provider(context)
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.flow.engine.runner_utils import apply_session_policy
+    from specweaver.core.flow.engine.isolation import apply_session_policy
 
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
     # root (ADR-002) into dedicated context flags — the per-step US-9 policy
@@ -514,7 +514,7 @@ def resume(  # noqa: C901
     _maybe_attach_provider(context)
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.flow.engine.runner_utils import apply_session_policy
+    from specweaver.core.flow.engine.isolation import apply_session_policy
 
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
     # root (ADR-002) into dedicated context flags — the per-step US-9 policy
