@@ -9,6 +9,8 @@ import tomllib
 from pathlib import Path
 from types import ModuleType
 
+from tests.fixtures.arch_scanners import import_offenders
+
 
 def test_tach_architectural_boundaries() -> None:
     """
@@ -235,27 +237,11 @@ def sandbox_layer_violations(root: Path) -> tuple[list[str], list[str]]:
 def config_orchestration_offenders(root: Path) -> list[str]:
     """Domain imports in `core/config/`'s own modules — `bootstrap/` and `interfaces/` excluded.
 
-    Whole-module, not import-time only: a domain import deferred inside a function is still a
-    domain dependency, and this repo's cycle gate explicitly rejects deferring an import as a way
-    to break one. That is the opposite scoping to `config_bootstrapping_offenders`, deliberately.
-
-    Only ABSOLUTE imports are matched. A parent-relative one (`from ...workspace import store`)
-    would slip past — and cannot occur: ruff's TID252 bans parent-relative imports repo-wide, and
-    a sibling-relative import cannot reach out of `core/config/` at all. Verified, not assumed.
-    Relaxing TID252 would silently open this hole.
+    A thin caller over `import_offenders`. The non-recursive scan is the load-bearing part and is
+    pinned by `test_config_submodule_packages_are_out_of_scope`: unify it with a recursive caller
+    and this proof silently changes meaning.
     """
-    offenders: list[str] = []
-    for path in sorted((root / "core" / "config").glob("*.py")):
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if not isinstance(node, ast.Import | ast.ImportFrom):
-                continue
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [node.module or ""]
-            )
-            offenders.extend(f"{path.name}: {n}" for n in names if n.startswith(DOMAIN_PREFIXES))
-    return offenders
+    return import_offenders(root / "core" / "config", DOMAIN_PREFIXES, recursive=False)
 
 
 #: Callee names that mean a module *opens* a database rather than describing one. Matched as

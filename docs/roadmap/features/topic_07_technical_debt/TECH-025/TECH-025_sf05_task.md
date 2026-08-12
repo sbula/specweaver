@@ -37,7 +37,7 @@
 |---|---|---|
 | C1 | New file `tests/unit/test_layer_import_isolation.py`, naming **only** `TECH-002` | BLUE-1.1 |
 | C2 | That file writes its **own** real-tree guard — plan R4's "inherits the guard" is false (P6) | BLUE-1.3 |
-| C3 | Scanner stays in `test_architecture.py` and is **imported**; importing does not copy `TECH-001` into the new file's text | BLUE-1.1 |
+| C3 | ~~Scanner stays in `test_architecture.py` and is **imported**~~ — **superseded by A2 at the pre-commit gate**: it moved to `tests/fixtures/arch_scanners.py`, which satisfies BLUE-1.1 equally (a fixtures module names no story) *and* follows the `db_utils.py` precedent, 4 of 4 | BLUE-1.1 → A2 |
 | C4 | CB-2 verification reads the **file list** per FR, not the count — a count cannot distinguish a borrowed citation from a real one | BLUE-1.2 |
 | C5 | Docstrings state the tach asymmetry (P4/P5) so neither test is later deleted as duplicate | BLUE-1.4 |
 | C6 | **No `TECH-025` tag** in the new file — it would credit TECH-025 FR-5/FR-6 from TECH-002's tokens. Recorded as a constraint on SF-07 | BLUE-2.1 |
@@ -47,17 +47,17 @@
 
 *Ledger stays RED through this boundary. It answers: is the claim true?*
 
-- [ ] **T1 — Red: the real-tree guard, in the NEW file.** `tests/unit/test_layer_import_isolation.py`.
+- [x] **T1 — Red: the real-tree guard, in the NEW file.** `tests/unit/test_layer_import_isolation.py`.
       Assert `assurance/validation/` and `interfaces/` exist and contain `.py` modules *recursively*.
       Demonstrate pattern 8 first: point the scanner at a deliberately wrong root and watch it report
       clean. Per C2 this is not inherited from SF-04's guard, which asserts other paths.
-- [ ] **T2 — Generalise the scanner.** `tests/unit/test_architecture.py`.
+- [x] **T2 — Generalise the scanner.** `tests/unit/test_architecture.py`.
       `_import_offenders(root, prefixes, *, recursive)`; `config_orchestration_offenders` becomes a
       thin caller with `recursive=False` and `DOMAIN_PREFIXES`. FR-7's four synthetic probes
       (lines 413, 477, 485) must pass **untouched** — that is the regression check on this refactor.
-- [ ] **T2a — Self-guard the new file (C7).** It reads its own source and asserts exactly two literal
+- [x] **T2a — Self-guard the new file (C7).** It reads its own source and asserts exactly two literal
       `FR-<digit>` tokens, and that it names no registry ID other than `TECH-002`.
-- [ ] **T3 — Red: the eight test stories.** Write all of T1–T8 from the plan's Test Plan as failing
+- [x] **T3 — Red: the eight test stories.** Write all of T1–T8 from the plan's Test Plan as failing
       tests before any scanner code. Matrix coverage:
       - *Happy*: validation imports no sandbox (FR-5) · interfaces imports no sandbox (FR-6)
       - *Boundary*: recursion **is** used for the new roots (planted import in nested `rules/code/`
@@ -65,12 +65,18 @@
       - *Hostile*: planted `specweaver.sandbox` import detected in a validation module, and in an
         interfaces module
       - *Degradation*: an unparseable module raises rather than being silently skipped
-- [ ] **T4 — Green.** Implement the generalised scanner and the two invariants.
-- [ ] **T5 — Record P4/P5 in the test docstrings.** FR-5's test says tach is the primary guard and
+- [x] **T4 — Green.** Implement the generalised scanner and the two invariants.
+- [x] **T5 — Record P4/P5 in the test docstrings.** FR-5's test says tach is the primary guard and
       this is the citable second one; FR-6's says nothing else enforces it. Without this a later
       reader deletes FR-5's test as duplicate and never notices FR-6's is load-bearing.
 
-**Gate:** `tests.py cb TECH-025 --kind tooling` → pre-commit skill → **HITL stop**.
+**Gate:** ✅ `tests.py cb TECH-025 --kind tooling` (5582 passed / 6 accepted-delta) → pre-commit
+Phases 1–7 complete (`TECH-025_sf05_precommit_review_cb1.md`, `TECH-025_sf05_walkthrough_cb1.md`)
+→ **awaiting commit**.
+
+> Pre-commit Phase 2 HITL added: A2 (scanner moved to `tests/fixtures/arch_scanners.py`, following
+> the `db_utils.py` precedent) and gaps G1–G4 (multi-prefix, empty tuple, relative import,
+> non-UTF-8). 15 tests in the new file, 37 with the sibling module.
 
 ## CB-2 — Citations and the NFR-5 repairs
 
