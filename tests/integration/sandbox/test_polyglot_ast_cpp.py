@@ -43,7 +43,12 @@ public:
     assert res.status.value == "SUCCESS"
     assert "int run()" not in cpp_file.read_text("utf-8")
 
-    # Test extract_framework_markers
+    # Test extract_framework_markers.
+    #
+    # TECH-034: this previously asserted `== {}`, codifying the gap rather than a behaviour — C++
+    # extracted no inheritance and no attributes at all, while every other class-based parser did.
+    # `Engine` declares no bases here, so `extends` is empty; the point is that the key EXISTS,
+    # which is the difference between "no bases" and "not supported".
     res = atom.run({"intent": "extract_framework_markers", "path": "main.cpp"})
     assert res.status.value == "SUCCESS"
-    assert res.exports["markers"] == {}
+    assert res.exports["markers"]["Engine"] == {"decorators": [], "extends": []}

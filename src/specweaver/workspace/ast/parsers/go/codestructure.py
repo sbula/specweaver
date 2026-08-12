@@ -11,12 +11,12 @@ import typing
 import tree_sitter_go
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
 
 
-class GoCodeStructure(BaseTreeSitterParser):
+class GoCodeStructure(FunctionBasedParser):
     """Go tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_go.language)

@@ -11,13 +11,13 @@ import typing
 import tree_sitter_python
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
-class PythonCodeStructure(BaseTreeSitterParser):
+class PythonCodeStructure(ClassBasedParser):
     """Python tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_python.language)

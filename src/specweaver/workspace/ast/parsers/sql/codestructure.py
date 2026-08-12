@@ -10,12 +10,12 @@ import typing
 
 import tree_sitter_sql
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+from specweaver.workspace.ast.parsers.tiers import DeclarativeParser
 
 logger = logging.getLogger(__name__)
 
 
-class SqlCodeStructure(BaseTreeSitterParser):
+class SqlCodeStructure(DeclarativeParser):
     """SQL tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_sql.language)
@@ -41,25 +41,12 @@ class SqlCodeStructure(BaseTreeSitterParser):
         return """
         """
 
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        return True
-
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         """SQL has no scoping, so the bare name is matched as given."""
         for name_node in self._named_nodes(tree, symbol_name):
             parent = name_node.parent
             if parent and parent.type == "object_reference":
                 return parent.parent
-        return None
-
-    def _find_target_block(self, node: typing.Any) -> typing.Any | None:
         return None
 
     def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
@@ -73,12 +60,6 @@ class SqlCodeStructure(BaseTreeSitterParser):
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
     ) -> bytes:
         return code_bytes
-
-    def extract_imports(self, code: str) -> list[str]:
-        return []
-
-    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        return {}
 
     def supported_intents(self) -> list[str]:
         return [

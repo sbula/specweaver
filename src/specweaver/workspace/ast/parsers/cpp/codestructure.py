@@ -9,12 +9,12 @@ import typing
 import tree_sitter_cpp
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
-class CppCodeStructure(BaseTreeSitterParser):
+class CppCodeStructure(ClassBasedParser):
     """AST parser for C++ source files."""
 
     grammar = staticmethod(tree_sitter_cpp.language)
@@ -226,9 +226,82 @@ class CppCodeStructure(BaseTreeSitterParser):
 
         return code_bytes[:start_byte] + indented_code.encode("utf-8") + code_bytes[end_byte:]
 
+    #: The access keywords that sit inside a `base_class_clause` alongside the type names. A walk
+    #: that collects every child of the clause picks these up as bases, which is the obvious way to
+    #: get C++ inheritance wrong.
+    _ACCESS_SPECIFIERS = ("public", "private", "protected")
+
+    def _extract_bases(self, target_node: typing.Any) -> list[str]:
+        """The types this class or struct derives from, in declaration order.
+
+        `TECH-034` — C++ reported **no** inheritance at all before this: `extract_framework_markers`
+        returned `{}` unconditionally and `_extract_bases` did not exist, while every other
+        class-based parser implemented both. `struct` is included because in C++ it is a class with
+        different default access, and inherits identically.
+        """
+        bases: list[str] = []
+        for clause in self._children_of_type(target_node, "base_class_clause"):
+            bases.extend(
+                self._text_of(node)
+                for node in self._children_of_type(
+                    clause, "type_identifier", "qualified_identifier"
+                )
+            )
+        return bases
+
+    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
+        """C++ attributes (`[[nodiscard]]`) on this declaration, first occurrence order kept.
+
+        Both spellings the grammar produces are read: a free-standing `attribute_declaration` and
+        an inline `attribute_specifier`.
+        """
+        decorators: list[str] = []
+        for holder in self._children_of_type(
+            target_node, "attribute_declaration", "attribute_specifier"
+        ):
+            for name in self._attribute_names(holder):
+                if name not in decorators:
+                    decorators.append(name)
+        return decorators
+
+    def _attribute_names(self, holder: typing.Any) -> list[str]:
+        """Identifier names inside one attribute holder, at whatever depth the grammar nests them."""
+        names: list[str] = []
+        stack = list(getattr(holder, "children", []))
+        while stack:
+            node = stack.pop()
+            if node.type == "identifier":
+                names.append(self._text_of(node))
+            stack.extend(getattr(node, "children", []))
+        return names
+
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        logger.debug("extract_framework_markers called for C++ parser (returning empty)")
-        return {}
+        """Bases and attributes per declared type — previously hard-coded to `{}`."""
+        if not code.strip():
+            return {}
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        query_str = (
+            "(class_specifier name: (type_identifier) @name) @cls\n"
+            "(struct_specifier name: (type_identifier) @name) @cls\n"
+            "(function_definition declarator: (function_declarator "
+            "declarator: (identifier) @name)) @fn"
+        )
+
+        markers: dict[str, dict[str, list[str]]] = {}
+        for _, match_dict in QueryCursor(Query(self.language, query_str)).matches(tree.root_node):
+            if "name" not in match_dict:
+                continue
+            symbol = self._extract_marker_text(match_dict["name"][0])
+            is_class = "cls" in match_dict
+            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+
+            if symbol in markers:
+                continue
+            markers[symbol] = {"decorators": self._extract_decorators(target)}
+            if is_class:
+                markers[symbol]["extends"] = self._extract_bases(target)
+        return markers
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():

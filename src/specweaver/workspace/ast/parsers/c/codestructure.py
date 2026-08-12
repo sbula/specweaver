@@ -9,12 +9,12 @@ import typing
 import tree_sitter_c
 from tree_sitter import Query
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
 
 
-class CCodeStructure(BaseTreeSitterParser):
+class CCodeStructure(FunctionBasedParser):
     """AST parser for C source files."""
 
     grammar = staticmethod(tree_sitter_c.language)
@@ -81,9 +81,6 @@ class CCodeStructure(BaseTreeSitterParser):
             raise CodeStructureError("Decorator filtering is not supported in C parsers")
         # C does not have class visibility (public/private).
         return visibility is None
-
-    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
-        return None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         target_scope, target_name = self._split_scope(symbol_name)

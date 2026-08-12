@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-034
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-12 — see §Delivery.
 - **Origin**: Found 2026-08-12 while reducing `TECH-023`'s complexity debt across
   `workspace/ast/parsers/`. Refactoring nine parsers in two batches made the duplication
   structural rather than anecdotal, and the measurements below were taken during that work.
@@ -137,8 +137,82 @@ A design that answers all four with one axis will be wrong for `rust` today and 
   ticket removes cannot regrow. `check_class_health`'s `LCOM4` on these classes is the obvious
   before/after measurement.
 
+## Delivery, 2026-08-12
+
+### The design question, settled before building
+
+`proto` and `lisp` do **not** break the three-tier shape, on one condition: **a tier supplies
+defaults, never prohibitions.**
+
+- `proto` is declarative *with real imports*. `DeclarativeParser.extract_imports` returns `[]` as a
+  **default**, so `proto` overrides it — ordinary subclassing, not a broken tier. A tier that
+  *forbade* imports would have been wrong the day `proto` arrived.
+- `lisp` has bodies but no brace-delimited block. `_find_target_block` therefore stays
+  per-language rather than being implemented in a tier, so a tier never assumes braces.
+
+Both are written into `tiers.py` where the next person meets them.
+
+### What shipped, in three steps
+
+**1. One declared grammar per parser.** All ten carried identical `__init__` plus two pass-through
+properties to hold one value. Now `grammar = staticmethod(tree_sitter_x.language)` and the base
+builds everything. A static method rather than a class attribute because a bare callable in a class
+body is a *method* to the type checker and would be handed `self`; a callable rather than a module
+reference because TypeScript needs `language_typescript`.
+
+**2. Three tiers.** `ClassBasedParser` (Java, Kotlin, Python, TypeScript, C++),
+`FunctionBasedParser` (C, Go, Rust), `DeclarativeParser` (Markdown, SQL). SQL and Markdown shed
+four hand-written stubs each.
+
+**3. The C++ gap, fixed** — the ticket's one intended behaviour change.
+
+### The tier caught the C++ gap by construction
+
+The moment `CppCodeStructure` was reparented onto `ClassBasedParser`, **it stopped being
+instantiable**: `TypeError: Can't instantiate abstract class CppCodeStructure without an
+implementation for abstract methods '_extract_bases', '_extract_decorators'`.
+
+That is the ticket's central argument, demonstrated rather than asserted. The gap had been
+invisible for as long as one base class served every language, because that base never asked.
+
+The gap was also **wider than recorded**: `extract_framework_markers` returned `{}`
+unconditionally, so C++ reported no bases *and* no attributes. Both are implemented now, with
+`_ACCESS_SPECIFIERS` documented because a naive walk over `base_class_clause` collects `public` /
+`private` / `protected` as base names — the obvious way to get C++ inheritance wrong, pinned by its
+own test.
+
+### Cohesion, measured before and after
+
+`check_class_health`'s `LCOM4` is the independent evidence the ticket asked for:
+
+| | before | after |
+|---|---|---|
+| Language parsers flagged | 10 | **7** |
+| Worst parser | TypeScript, 6 | **2** |
+| Every remaining parser | 3–6 | **2** (the minimum failing value) |
+| C++, Python, C | flagged | **off the list** |
+| `BaseTreeSitterParser` | 6 | **8** |
+
+**The base got worse, and that is the honest trade.** The parsers shed their shared mechanics into
+it, so the concentration moved rather than vanishing. Splitting the base itself — its query, walk,
+edit and format concerns are four different jobs — is the natural next step and belongs to
+`TECH-035`, which already owns the class-health debt.
+
+### Test changes
+
+Only two, both required rather than incidental:
+
+- `test_polyglot_ast_cpp` asserted `markers == {}` — it was **codifying the gap**. Now it asserts
+  the key *exists* with an empty `extends`, which is the difference between "no bases" and "not
+  supported". The ticket anticipated exactly this exception.
+- `check_conventions`' parser family required inheriting `BaseTreeSitterParser` **literally**. The
+  invariant still holds transitively through the tiers, so the rule learned `also_accepts` rather
+  than the hierarchy being forced flat to satisfy a checker.
+
+6479 tests pass, `mypy` and `tach` clean. `class_health` remains red at 20 classes — pre-existing,
+tracked as `TECH-035`, and **down from 23** partly because of this work.
+
 ## Next Step
 
-Run through `specweaver-design`. Settle the tier boundaries against the four discriminators above —
-specifically whether `proto`'s imports and `lisp`'s missing block node break the three-tier shape
-before it is built, rather than after.
+Done. `xml` / `proto` / `http` / `lisp` remain design input only; the tiers are shaped for them but
+none is implemented.

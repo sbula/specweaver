@@ -147,9 +147,17 @@ class Family:
     name: str
     glob: str
     base: str
+
     suffix: str
     #: Index into the file's parent chain that supplies the class-name prefix; None to skip.
     prefix_from: int | None = None
+
+    #: Additional accepted bases. `TECH-034` split the tree-sitter parsers by language paradigm, so
+    #: a parser now inherits `ClassBasedParser` / `FunctionBasedParser` / `DeclarativeParser` —
+    #: each of which IS a `BaseTreeSitterParser`. The invariant the rule protects still holds; only
+    #: the literal name in the class statement changed, and a checker that cannot see that would
+    #: force the hierarchy flat.
+    also_accepts: tuple[str, ...] = ()
 
 
 FAMILIES = (
@@ -157,6 +165,7 @@ FAMILIES = (
         name="tree-sitter parser",
         glob="src/specweaver/workspace/ast/parsers/*/codestructure.py",
         base="BaseTreeSitterParser",
+        also_accepts=("ClassBasedParser", "FunctionBasedParser", "DeclarativeParser"),
         suffix="CodeStructure",
         prefix_from=0,
     ),
@@ -333,7 +342,8 @@ def _family_class(path: Path, family: Family) -> ast.ClassDef | None:
     except (OSError, UnicodeDecodeError, SyntaxError):
         return None
     for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef) and family.base in _base_names(node):
+        accepted = {family.base, *family.also_accepts}
+        if isinstance(node, ast.ClassDef) and accepted & _base_names(node):
             return node
     return None
 
@@ -353,7 +363,8 @@ def check_family(family: Family, repo_root: Path = REPO_ROOT) -> list[Violation]
                 Violation(
                     "R3",
                     path,
-                    f"{family.name}: defines no class inheriting '{family.base}'",
+                    f"{family.name}: defines no class inheriting '{family.base}'"
+                    + (f" (or {', '.join(family.also_accepts)})" if family.also_accepts else ""),
                 )
             )
             continue

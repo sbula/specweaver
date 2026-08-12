@@ -9,13 +9,13 @@ import typing
 import tree_sitter_java
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
-class JavaCodeStructure(BaseTreeSitterParser):
+class JavaCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_java.language)
 
     @property

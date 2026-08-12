@@ -10,13 +10,13 @@ import typing
 
 import tree_sitter_markdown
 
-from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.tiers import DeclarativeParser
 
 logger = logging.getLogger(__name__)
 
 
-class MarkdownCodeStructure(BaseTreeSitterParser):
+class MarkdownCodeStructure(DeclarativeParser):
     """Markdown tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_markdown.language)
@@ -61,12 +61,6 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
     def supported_parameters(self) -> list[str]:
         return []
 
-    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        return {}
-
-    def extract_imports(self, code: str) -> list[str]:
-        return []
-
     def get_binary_ignore_patterns(self) -> list[str]:
         return []
 
@@ -90,16 +84,6 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
                 prefix += "\n\n"
 
         return prefix + new_code
-
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        return True
 
     def _heading_text(self, section: typing.Any) -> str | None:
         """The inline text of a section's own ATX heading."""
