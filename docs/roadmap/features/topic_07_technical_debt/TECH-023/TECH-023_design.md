@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-023
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **41 of 97
+- **Status**: **DELIVERED 2026-08-12 — `complexipy` reports 0 functions over 15**, from 98 when filed. See §Closed at zero. Was: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **41 of 97
   violations remain frozen** (was 93 when the ratchet shipped). See §Delivery. This stays open as
   the reduction work.
 - **Origin**: Found while running `python scripts/quality.py cb` for TECH-001 SF-04
@@ -249,3 +249,52 @@ parameter names which caller is which.
 
 `6563 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; 0 cycles; class
 health within limits.
+
+## Closed at zero — 2026-08-12
+
+**`complexipy` (threshold 15): 98 → 0.** The ratchet baseline is empty.
+
+The last session took it 41 → 0 in five batches, every one a nine-or-fewer-deletion / **zero-addition**
+baseline diff — nothing relocated, and no function was split for the sake of the number.
+
+| Batch | Scope | |
+|---|---|---|
+| 7 | `interfaces/cli` (9) | 40 → 31 |
+| 8 | `core/flow` (9) | 31 → 22 |
+| 9 | `assurance/validation` + `sandbox/filesystem` (7) | 22 → 15 |
+| 10 | the three worst singletons (3) | 15 → 12 |
+| 11 | `sandbox` + `standards` (4) | 12 → 8 |
+| 12 | the tail (8) | 8 → **0** |
+
+**Eleven `# noqa: C901` deleted rather than moved** across batches 7–8; suppressions 229 → 216.
+
+### Two live defects fell out of the reduction
+
+Both were found the same way — deduplicating something the complexity score had pointed at:
+
+- **`sw lineage tree spec.md` silently resolved nothing.** `graph/interfaces/cli.py` reimplemented
+  artifact-tag reading three times, hardcoded to `"# sw-artifact: "`, while `wrap_artifact_tag` is
+  language-aware and every drafted spec carries `<!-- sw-artifact: … -->`. Proven per-syntax before
+  the fix: markdown, TypeScript and SQL all missed, YAML matched.
+- **The code-review prompt shipped literal `\n` characters.** `ReviewSpecHandler._inject_mentions`
+  and `ReviewCodeHandler`'s nested `on_tool_round` closure were the same logic written twice and
+  had **drifted**: one used `\n`, the other `\\n`, so auto-attached files reached the model as one
+  run-on line instead of a fenced block.
+
+A third, `_execute_run` and `resume` building their `RunContext` across forty identical lines, was
+not yet a defect — it is the drift *mechanism* `TECH-013` records for the API composition root.
+
+### What remains, and why it is not this ticket
+
+**`ruff`'s `C901` still suppresses three functions** — `arbiter.py::execute` (14) and
+`generation.py`'s two `execute` methods (11, 11). That is a **different metric at a stricter
+threshold**: McCabe cyclomatic against 10, where this ticket's subject is `complexipy`'s cognitive
+score against 15. Removing the three `noqa` was tried and reverted — they are live suppressions,
+not dead ones.
+
+Worth a follow-up rather than a stretch of this ticket, because the two `generation.py` methods are
+a **237-node near-identical clone pair** in `TECH-037`'s scan: deduplicating them is the fix, and
+duplication is that ticket's subject.
+
+`6563 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; 0 cycles across 335
+modules; class health within limits.

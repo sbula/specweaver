@@ -16,6 +16,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 from specweaver.sandbox.qa_runner.core.interface import ArchitectureViolation
@@ -79,6 +80,35 @@ def check_file_forbids(target_path: Path, project_root: Path) -> list[Architectu
     return _scan_imports_against_forbids(target_path, forbids)
 
 
+def _type_checking_node_ids(tree: ast.AST) -> set[int]:
+    """Every node inside an `if TYPE_CHECKING:` block.
+
+    RED-5: those imports never execute, so treating them as real dependencies reports a boundary
+    violation for a type annotation.
+    """
+    ids: set[int] = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.If)
+            and isinstance(node.test, ast.Name)
+            and node.test.id == "TYPE_CHECKING"
+        ):
+            ids.update(id(child) for child in ast.walk(node))
+    return ids
+
+
+def _imported_modules(tree: ast.AST, skip_ids: set[int]) -> Iterator[str]:
+    """Every module name imported at runtime, from both import forms."""
+    for node in ast.walk(tree):
+        if id(node) in skip_ids:
+            continue
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                yield alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            yield node.module
+
+
 def _scan_imports_against_forbids(
     target_path: Path,
     forbids: list[str],
@@ -91,29 +121,12 @@ def _scan_imports_against_forbids(
         logger.warning("Failed to parse %s for import checking: %s", target_path, e)
         return []
 
-    violations: list[ArchitectureViolation] = []
-
-    # RED-5: Collect nodes inside TYPE_CHECKING blocks to avoid false positives
-    type_checking_ids: set[int] = set()
-    for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.If)
-            and isinstance(node.test, ast.Name)
-            and node.test.id == "TYPE_CHECKING"
-        ):
-            for child in ast.walk(node):
-                type_checking_ids.add(id(child))
-
-    for node in ast.walk(tree):
-        if id(node) in type_checking_ids:
-            continue
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                violations.extend(_check_forbids(alias.name, forbids, target_path))
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            violations.extend(_check_forbids(node.module, forbids, target_path))
-
-    return violations
+    type_checking_ids = _type_checking_node_ids(tree)
+    return [
+        violation
+        for module in _imported_modules(tree, type_checking_ids)
+        for violation in _check_forbids(module, forbids, target_path)
+    ]
 
 
 def _check_forbids(

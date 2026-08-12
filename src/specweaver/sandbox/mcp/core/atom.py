@@ -19,6 +19,19 @@ from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 logger = logging.getLogger(__name__)
 
 
+def _scrub(payload: Any, secrets: set[str]) -> Any:
+    """`payload` with every secret replaced, walking dicts and lists."""
+    if isinstance(payload, dict):
+        return {k: _scrub(v, secrets) for k, v in payload.items()}
+    if isinstance(payload, list):
+        return [_scrub(item, secrets) for item in payload]
+    if isinstance(payload, str):
+        for secret in secrets:
+            payload = payload.replace(secret, "***RESTRICTED***")
+        return payload
+    return payload
+
+
 class MCPAtom(Atom):
     """Flow-level MCP lifecycle and operation bridging.
 
@@ -101,26 +114,15 @@ class MCPAtom(Atom):
             self._executor = None
 
     def _scrub_telemetry(self, payload: Any) -> Any:
-        """Recursively scrub vault secrets from RPC payloads."""
+        """Recursively scrub vault secrets from RPC payloads.
+
+        Only values of 8+ characters are treated as secrets: a short vault entry (a port, a flag
+        like "true") would otherwise match everywhere and redact ordinary telemetry.
+        """
         if not self._env:
             return payload
-
-        secrets = [v for v in self._env.values() if isinstance(v, str) and len(v.strip()) >= 8]
-
-        if not secrets:
-            return payload
-
-        if isinstance(payload, dict):
-            return {k: self._scrub_telemetry(v) for k, v in payload.items()}
-        if isinstance(payload, list):
-            return [self._scrub_telemetry(item) for item in payload]
-        if isinstance(payload, str):
-            for secret in set(secrets):
-                if secret in payload:
-                    payload = payload.replace(secret, "***RESTRICTED***")
-            return payload
-
-        return payload
+        secrets = {v for v in self._env.values() if isinstance(v, str) and len(v.strip()) >= 8}
+        return _scrub(payload, secrets) if secrets else payload
 
     # -- Intent implementations ----------------------------------------
 

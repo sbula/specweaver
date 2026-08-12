@@ -81,6 +81,15 @@ _CREDENTIAL_VARS: frozenset[str] = frozenset(
 _CREDENTIAL_PREFIXES: tuple[str, ...] = ("AZURE_",)
 
 
+def _is_credential(key: str) -> bool:
+    """Whether an environment variable name names a credential.
+
+    Checked by exact name AND by prefix, because the prefix list is what catches the variants a
+    fixed list cannot enumerate (`AWS_*`, `*_TOKEN` families).
+    """
+    return key in _CREDENTIAL_VARS or any(key.startswith(p) for p in _CREDENTIAL_PREFIXES)
+
+
 class SubprocessExecutor:
     """Unified, cross-platform subprocess execution with security boundaries.
 
@@ -237,13 +246,7 @@ class SubprocessExecutor:
 
         # Strip credentials — ALWAYS, even if injected via extra_env
         if self._strip_credentials:
-            for key in _CREDENTIAL_VARS:
-                env.pop(key, None)
-            for key in list(env.keys()):
-                for prefix in _CREDENTIAL_PREFIXES:
-                    if key.startswith(prefix):
-                        del env[key]
-                        break
+            env = {k: v for k, v in env.items() if not _is_credential(k)}
 
         return env
 

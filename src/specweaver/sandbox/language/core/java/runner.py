@@ -62,6 +62,33 @@ def _harvest_junit(search_path: Path) -> tuple[int, int, int]:
     return passed, failed, skipped
 
 
+def _forbids_for(target_path: Path, cwd: Path) -> list[str]:
+    """The `forbids` list from the nearest enclosing `context.yaml`, walking up from `target_path`.
+
+    Empty when no boundary declares one, or when the file cannot be parsed — a malformed
+    `context.yaml` is logged and treated as "no constraints" rather than failing the QA run, since
+    the alternative is an architecture check that reports a violation it never actually evaluated.
+    """
+    import yaml
+
+    ctx_dir = target_path.parent if target_path.is_file() else target_path
+    while (
+        ctx_dir != cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists()
+    ):
+        ctx_dir = ctx_dir.parent
+
+    ctx_file = ctx_dir / "context.yaml"
+    if not ctx_file.exists():
+        return []
+    try:
+        data = yaml.safe_load(ctx_file.read_text(encoding="utf-8")) or {}
+    except Exception as e:
+        logger.warning("Failed to parse context.yaml at %s: %s", ctx_file, e)
+        return []
+    forbids: list[str] = data.get("forbids", [])
+    return forbids
+
+
 class JavaRunner(QARunnerInterface):
     """Java compilation, testing, and linting pipeline."""
 
@@ -260,30 +287,11 @@ class JavaRunner(QARunnerInterface):
         """Run architectural checks dynamically using ArchUnit via Maven."""
         import contextlib
 
-        import yaml
-
         from specweaver.sandbox.qa_runner.core.interface import ArchitectureViolation
 
         logger.debug("JavaRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
 
-        target_path = self._cwd / target
-        ctx_dir = target_path.parent if target_path.is_file() else target_path
-
-        while (
-            ctx_dir != self._cwd
-            and ctx_dir.parent != ctx_dir
-            and not (ctx_dir / "context.yaml").exists()
-        ):
-            ctx_dir = ctx_dir.parent
-
-        ctx_file = ctx_dir / "context.yaml"
-        forbids = []
-        if ctx_file.exists():
-            try:
-                data = yaml.safe_load(ctx_file.read_text(encoding="utf-8")) or {}
-                forbids = data.get("forbids", [])
-            except Exception as e:
-                logger.warning("Failed to parse context.yaml at %s: %s", ctx_file, e)
+        forbids = _forbids_for(self._cwd / target, self._cwd)
 
         if not forbids:
             return ArchitectureRunResult(violation_count=0, violations=[])

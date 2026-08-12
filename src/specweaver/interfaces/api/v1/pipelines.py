@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
@@ -129,6 +130,21 @@ async def start_pipeline_run(
     )
 
 
+def _pending_gate_prompt(run: Any) -> str | None:
+    """The prompt a parked run is waiting on, read from the paused step's output.
+
+    A dict output is searched for `comment` then `prompt` before falling back to its repr, so the
+    dashboard shows the gate's question rather than the whole payload where one was supplied.
+    """
+    record = run.current_step_record()
+    if record is None or record.result is None:
+        return None
+    output = record.result.output
+    if isinstance(output, dict):
+        return str(output.get("comment") or output.get("prompt") or output)
+    return str(output)
+
+
 @router.get("/runs/{run_id}")
 def get_run_status(
     run_id: str,
@@ -158,20 +174,8 @@ def get_run_status(
                 rec["result"].pop("output", None)
 
     # Dashboard helper fields
-    data["pending_gate"] = False
-    data["pending_gate_prompt"] = None
-    if run.status.value == "parked":
-        data["pending_gate"] = True
-        record = run.current_step_record()
-        if record is not None and record.result is not None:
-            # We look for a prompt/comment in the output of the paused step
-            output = record.result.output
-            if isinstance(output, dict):
-                data["pending_gate_prompt"] = (
-                    output.get("comment") or output.get("prompt") or str(output)
-                )
-            else:
-                data["pending_gate_prompt"] = str(output)
+    data["pending_gate"] = run.status.value == "parked"
+    data["pending_gate_prompt"] = _pending_gate_prompt(run) if data["pending_gate"] else None
 
     return data
 

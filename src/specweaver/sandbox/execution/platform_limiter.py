@@ -92,6 +92,27 @@ def get_platform_limiter() -> PlatformLimiter:
 # ---------------------------------------------------------------------------
 
 
+def _threads_owned_by(entry: Path, uid: int) -> int | None:
+    """Thread count for one `/proc/<pid>` entry, or None if it is not `uid`'s or has gone.
+
+    A process exiting between listing and reading is ordinary, not a reason to fail.
+    """
+    try:
+        status = (entry / "status").read_text(encoding="utf-8", errors="replace")
+    except (OSError, ValueError):
+        return None
+
+    entry_uid: int | None = None
+    threads: int | None = None
+    for line in status.splitlines():
+        if line.startswith("Uid:"):
+            entry_uid = int(line.split()[1])
+        elif line.startswith("Threads:"):
+            threads = int(line.split()[1])
+            break
+    return threads if entry_uid == uid else None
+
+
 def current_task_count() -> int | None:
     """Tasks (threads) owned by the current real UID, or ``None`` if it cannot be determined.
 
@@ -108,29 +129,14 @@ def current_task_count() -> int | None:
         return None
 
     uid = os.getuid()
-    total = 0
-    found = False
-    for entry in proc.iterdir():
-        if not entry.name.isdigit():
-            continue
-        try:
-            status = (entry / "status").read_text(encoding="utf-8", errors="replace")
-        except (OSError, ValueError):
-            # The process exited between listing and reading. Ordinary, and not a reason to fail.
-            continue
-        entry_uid: int | None = None
-        threads: int | None = None
-        for line in status.splitlines():
-            if line.startswith("Uid:"):
-                entry_uid = int(line.split()[1])
-            elif line.startswith("Threads:"):
-                threads = int(line.split()[1])
-                break
-        if entry_uid == uid and threads is not None:
-            total += threads
-            found = True
-
-    return total if found else None
+    counts = [
+        threads
+        for entry in proc.iterdir()
+        if entry.name.isdigit()
+        for threads in (_threads_owned_by(entry, uid),)
+        if threads is not None
+    ]
+    return sum(counts) if counts else None
 
 
 class UnixLimiter(PlatformLimiter):

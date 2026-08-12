@@ -97,6 +97,25 @@ class TopologyContext:
         return self.name
 
 
+def _hash_moved(
+    node: TopologyNode,
+    project_root: Path,
+    cache: dict[str, Any],
+    new_hashes: dict[str, Any],
+) -> bool:
+    """Whether this node's boundary hash differs from the cached one.
+
+    A boundary missing from either side counts as moved: an uncached directory has never been
+    verified, and one that vanished from the fresh scan cannot be shown to be current.
+    """
+    if not node.yaml_path:
+        return False
+    dir_path = node.yaml_path.parent.relative_to(project_root).as_posix()
+    if dir_path not in cache or dir_path not in new_hashes:
+        return True
+    return bool(cache[dir_path].get("merkle_root") != new_hashes[dir_path].get("merkle_root"))
+
+
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
 
@@ -165,26 +184,15 @@ class TopologyGraph:
         manifest_paths = [n.yaml_path for n in nodes.values() if n.yaml_path]
         new_hashes = hasher.compute_hashes(manifest_paths)
 
-        stale_seeds: set[str] = set()
         if not cache:
             return set(nodes.keys())
 
-        for node_name, node in nodes.items():
-            if not node.yaml_path:
-                continue
-            dir_path = node.yaml_path.parent.relative_to(project_root).as_posix()
-            if dir_path not in cache or dir_path not in new_hashes:
-                stale_seeds.add(node_name)
-                continue
-            if cache[dir_path].get("merkle_root") != new_hashes[dir_path].get("merkle_root"):
-                stale_seeds.add(node_name)
-
-        for node_name, node in nodes.items():
-            for dep in node.consumes:
-                if dep not in nodes:
-                    stale_seeds.add(node_name)
-
-        return stale_seeds
+        return {
+            node_name
+            for node_name, node in nodes.items()
+            if _hash_moved(node, project_root, cache, new_hashes)
+            or any(dep not in nodes for dep in node.consumes)
+        }
 
     @classmethod
     def from_project(

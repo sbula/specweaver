@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
@@ -28,6 +29,39 @@ router = APIRouter()
 _db_dep = Depends(get_db)
 
 
+async def _active_domain_profile(db: Database) -> str | None:
+    """The active project's `domain_profile`, or None when there is no active project."""
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        repo = WorkspaceRepository(session)
+        active_name = await repo.get_active_project()
+        if not active_name:
+            return None
+        proj = await repo.get_project(active_name)
+        profile = proj.get("domain_profile") if proj else None
+    return str(profile) if profile else None
+
+
+def _rule_response(r: Any) -> RuleResultResponse:
+    """One rule's result as its wire envelope."""
+    return RuleResultResponse(
+        rule_id=r.rule_id,
+        rule_name=r.rule_name,
+        status=r.status.value,
+        message=r.message,
+        findings=[
+            FindingResponse(
+                message=f.message,
+                line=f.line,
+                severity=f.severity.value,
+                suggestion=f.suggestion,
+            )
+            for f in r.findings
+        ],
+    )
+
+
 @router.post("/check", response_model=CheckResponse)
 async def run_check(
     body: CheckRequest,
@@ -41,26 +75,15 @@ async def run_check(
         load_pipeline_yaml,
         resolve_pipeline_name,
     )
-    from specweaver.workspace.store import WorkspaceRepository
 
     validate_relative_path(body.file)
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     content = abs_path.read_text(encoding="utf-8")
 
-    async with db.async_session_scope() as session:
-        repo = WorkspaceRepository(session)
-        active_name = await repo.get_active_project()
-        active_profile = None
-        if active_name:
-            proj = await repo.get_project(active_name)
-            if proj:
-                active_profile = proj.get("domain_profile")
-
+    active_profile = await _active_domain_profile(db)
     pipeline_name = resolve_pipeline_name(
-        body.level,
-        body.pipeline,
-        active_profile=str(active_profile) if active_profile else None,
+        body.level, body.pipeline, active_profile=active_profile
     )
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)
@@ -80,25 +103,7 @@ async def run_check(
     else:
         results = execute_validation_pipeline(resolved, content, abs_path)
 
-    # Build response envelope
-    rule_results = [
-        RuleResultResponse(
-            rule_id=r.rule_id,
-            rule_name=r.rule_name,
-            status=r.status.value,
-            message=r.message,
-            findings=[
-                FindingResponse(
-                    message=f.message,
-                    line=f.line,
-                    severity=f.severity.value,
-                    suggestion=f.suggestion,
-                )
-                for f in r.findings
-            ],
-        )
-        for r in results
-    ]
+    rule_results = [_rule_response(r) for r in results]
 
     passed = sum(1 for r in results if r.status.value == "pass")
     failed = sum(1 for r in results if r.status.value == "fail")
