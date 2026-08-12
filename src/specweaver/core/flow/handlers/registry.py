@@ -21,7 +21,6 @@ import logging
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.base import (  # noqa: F401
-    RunContext,
     StepHandler,
     _error_result,
     _now_iso,
@@ -44,6 +43,7 @@ from specweaver.core.flow.handlers.generation import (
 )
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.scenario import (
     ConvertScenarioHandler,
     GenerateScenarioHandler,

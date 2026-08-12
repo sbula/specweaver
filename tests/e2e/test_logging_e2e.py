@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
 
 

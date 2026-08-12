@@ -17,7 +17,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
+from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 

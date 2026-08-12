@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import ValidationError
 
-from specweaver.core.flow.handlers.base import IsolationPolicy, RunContext
+from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -11,10 +11,11 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
+from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

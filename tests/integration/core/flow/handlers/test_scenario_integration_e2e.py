@@ -22,7 +22,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 
 pytestmark = pytest.mark.integration
 

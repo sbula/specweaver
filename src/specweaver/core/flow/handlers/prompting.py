@@ -14,7 +14,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.run_context import RunContext
     from specweaver.infrastructure.llm.prompt.profiles import RenderProfile
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 

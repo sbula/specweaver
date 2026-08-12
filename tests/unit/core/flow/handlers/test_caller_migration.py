@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
-from specweaver.core.flow.handlers.base import AnalysisContext, GuidanceContent, RunContext
+from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Query
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_project_root
 from specweaver.interfaces.api.v1.schemas import (

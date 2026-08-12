@@ -10,7 +10,8 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
-from specweaver.core.flow.handlers.base import (
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -18,7 +19,6 @@ from specweaver.core.flow.handlers.base import (
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
 if TYPE_CHECKING:

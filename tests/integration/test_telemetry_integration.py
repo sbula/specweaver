@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,

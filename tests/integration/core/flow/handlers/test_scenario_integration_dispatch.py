@@ -24,7 +24,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:

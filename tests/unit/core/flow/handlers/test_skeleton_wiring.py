@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
+from specweaver.core.flow.handlers.run_context import RunContext
 
 
 @patch("specweaver.workflows.implementation.generator.Generator")

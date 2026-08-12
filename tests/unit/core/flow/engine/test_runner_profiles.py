@@ -11,7 +11,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers._profiles import MINIMAL
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 
 
 @pytest.mark.asyncio

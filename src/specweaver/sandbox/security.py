@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

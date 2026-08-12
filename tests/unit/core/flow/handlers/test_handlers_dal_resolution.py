@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 
 # ---------------------------------------------------------------------------
 # DAL Constraint Resolution

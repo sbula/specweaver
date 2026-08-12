@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+from specweaver.core.flow.handlers.run_context import RunContext
 
 
 def test_evaluate_and_fetch_skeleton_context_empty() -> None:

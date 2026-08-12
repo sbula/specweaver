@@ -20,8 +20,8 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:

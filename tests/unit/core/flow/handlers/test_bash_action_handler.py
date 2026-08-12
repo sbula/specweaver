@@ -13,9 +13,9 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.bash_action import BashActionHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:

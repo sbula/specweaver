@@ -14,7 +14,7 @@ from specweaver.core.flow.handlers.arbiter import (
     ArbitrateVerdictHandler,
     _guard_coding_feedback,
 )
-from specweaver.core.flow.handlers.base import ModelAccess, RunHandle
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunHandle
 
 
 class TestArbitrateVerdict:

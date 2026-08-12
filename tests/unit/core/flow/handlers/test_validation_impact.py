@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import GraphContext, RunContext
+from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 
 

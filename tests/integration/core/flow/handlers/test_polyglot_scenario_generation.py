@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.base import (
+from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,

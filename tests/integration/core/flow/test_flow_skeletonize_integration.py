@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
 

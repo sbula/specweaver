@@ -23,8 +23,8 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

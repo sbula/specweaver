@@ -6,7 +6,7 @@ import uuid
 from typing import Any
 
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepStatus
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.memory.store import TaskStatus

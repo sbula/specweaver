@@ -11,7 +11,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.flow.handlers.base import GuidanceContent, RunContext, _build_base_prompt
+from specweaver.core.flow.handlers.base import _build_base_prompt
+from specweaver.core.flow.handlers.run_context import GuidanceContent, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository

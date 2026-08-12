@@ -17,13 +17,13 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.draft import (
     DraftFeatureHandler,
     DraftSpecHandler,
     _pop_step_feedback,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

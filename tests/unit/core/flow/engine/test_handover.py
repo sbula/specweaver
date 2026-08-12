@@ -12,7 +12,7 @@ import pytest
 
 from specweaver.core.flow.engine.handover import save_handover_context
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, RunHandle
+from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 
 if TYPE_CHECKING:
     from specweaver.workspace.memory.models import HandoverContext

@@ -184,7 +184,7 @@ def implement(
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers.base import (
+    from specweaver.core.flow.handlers.run_context import (
         AnalysisContext,
         GraphContext,
         GuidanceContent,

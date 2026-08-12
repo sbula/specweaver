@@ -15,7 +15,7 @@ import typer
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.base import AnalysisContext, GuidanceContent, RunContext
+from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core

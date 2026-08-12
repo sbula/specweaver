@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler
 
 if TYPE_CHECKING:

@@ -14,10 +14,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

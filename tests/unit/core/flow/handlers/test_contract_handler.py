@@ -8,9 +8,9 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock
 
-from specweaver.core.flow.handlers.base import GraphContext
 from specweaver.core.flow.handlers.generation import GenerateContractHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import GraphContext
 
 if typing.TYPE_CHECKING:
     from pathlib import Path

@@ -19,7 +19,7 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.interfaces import cli as flow_cli_mod
 from specweaver.core.flow.interfaces.cli import (
     _maybe_attach_provider,

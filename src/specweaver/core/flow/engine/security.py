@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 
 def verify_vault_security(context: RunContext) -> None:

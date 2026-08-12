@@ -56,9 +56,9 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.engine.store import StateStore
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
 from specweaver.workflows.planning.decomposition import (
     ComponentChange,

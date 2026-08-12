@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.handover import save_handover_context
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, RunHandle
+from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
 

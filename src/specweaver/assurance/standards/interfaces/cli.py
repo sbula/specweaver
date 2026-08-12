@@ -92,7 +92,7 @@ def standards_scan(  # noqa: C901
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext
+    from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
 
     settings = load_settings(db, name)
     adapter = GeminiAdapter(api_key=settings.llm.api_key or None)

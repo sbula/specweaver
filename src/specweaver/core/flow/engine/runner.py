@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from specweaver.core.flow.engine.events import RunnerEventCallback
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

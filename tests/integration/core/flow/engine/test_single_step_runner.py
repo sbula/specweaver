@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

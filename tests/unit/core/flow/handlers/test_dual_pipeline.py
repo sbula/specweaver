@@ -9,7 +9,8 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import (
+from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
+from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -17,7 +18,6 @@ from specweaver.core.flow.handlers.base import (
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 
 
 @pytest.fixture

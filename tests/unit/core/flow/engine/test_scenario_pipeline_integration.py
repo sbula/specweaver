@@ -14,7 +14,7 @@ from ruamel.yaml import YAML
 
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.handlers.base import (
+from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,

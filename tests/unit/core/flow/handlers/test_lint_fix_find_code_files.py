@@ -14,8 +14,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
+from specweaver.core.flow.handlers.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

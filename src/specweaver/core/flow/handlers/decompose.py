@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.hydration import DECOMPOSITION_PLAN_KEY
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, StepHandler, _error_result, _now_iso
+from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 from specweaver.core.flow.handlers.decomposition_artifacts import (
     COMPONENT_NAME_PATTERN,
     build_dal_summary,
@@ -23,6 +23,7 @@ from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

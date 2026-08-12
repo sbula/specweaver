@@ -20,8 +20,8 @@ from ruamel.yaml import YAML
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.workflows.planning.decomposition import (
     ComponentChange,
     DecompositionPlan,

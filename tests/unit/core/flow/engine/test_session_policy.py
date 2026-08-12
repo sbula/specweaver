@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.flow.engine.isolation import _derive_allowed_paths, apply_session_policy
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 
 _LOG = logging.getLogger("test.session_policy")
 

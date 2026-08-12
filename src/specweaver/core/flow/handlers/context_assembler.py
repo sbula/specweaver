@@ -18,7 +18,7 @@ from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

@@ -128,7 +128,9 @@ class TestAttributeCount:
     EXPECTED_RUN_CONTEXT_ATTRIBUTES = 15
 
     def test_run_context_attribute_count_matches_the_expected_step(self, ch: ModuleType) -> None:
-        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
+        # TECH-015 moved the context model out of `base.py`, which now holds only the
+        # StepHandler Protocol. These assertions follow the models, not the filename.
+        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "run_context.py"
         reports = ch.analyse_file(path)
 
         run_context = next(r for r in reports if r.name == "RunContext")
@@ -155,7 +157,9 @@ class TestAttributeCount:
         Listed by name so each new group has to be added here deliberately, rather than the
         check silently covering only the first one that was extracted.
         """
-        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
+        # TECH-015 moved the context model out of `base.py`, which now holds only the
+        # StepHandler Protocol. These assertions follow the models, not the filename.
+        path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "run_context.py"
         reports = ch.analyse_file(path)
 
         sub_model = next(r for r in reports if r.name == extracted)
