@@ -82,7 +82,7 @@ this section drift for a month.
 | 2 | `TECH-025` | ✅ Done 2026-08-12. Established the citation convention each ticket below meets at its own closure gate. |
 | 3 | `TECH-014` | ✅ Done 2026-08-12. `RunHandle` did make it cheap, but narrowed the failure rather than closing it — a reader saw the wrong handle, not a torn one. Fixed in `PipelineRunner.run`, covering all four fan-out sites. |
 | 4 | `TECH-020` | ✅ Done 2026-08-12. Removed flow's largest complexity offender and added `engine/step_execution.py` — so 6 and 7 now measure the reshaped import graph, not the old one. |
-| 5 | `TECH-015` | Moves/renames modules, changing those imports again. |
+| 5 | `TECH-015` | ✅ Done 2026-08-12. Split three grab-bags into eleven contract-named modules and shipped R7 so they cannot regrow; 6 and 7 now measure that import graph. |
 | 6 | `TECH-024` | Measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
 | 7 | `TECH-023` | **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
 
@@ -688,7 +688,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
     *   `✅` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
-    *   `[ ]` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
+    *   `✅` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
     *   `[ ]` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
     *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
     *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
