@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-025
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (2026-08-08)
+- **Status**: COMPLETE (2026-08-12)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_design.md
 
 > **Reading convention used throughout this document.** A bare `FR-N` always means *this ticket's*
@@ -264,7 +264,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Closure
 
@@ -357,7 +357,15 @@ new invariants. Its research found the plan-side twin of SF-05's false-credit tr
 reported as planned from a *disclaimer* in SF-3's plan, because `planned_frs` unions tokens without
 asking which sub-feature claims them.
 
-**Next step**: SF-07 — the regression manifest,
+**SF-07 delivered 2026-08-12, and the ticket is COMPLETE.** `check_fr_coverage.py TECH-025` exits
+0 — nine of nine. Widened at its Phase 4 gate to close this ticket's own ledger, because R5 showed
+nothing came after it and no natural host existed: every candidate file already named another story
+and would have credited it with TECH-025's tokens. Two files name only TECH-025; the manifest keeps
+the subject ids in data the guard reads at run time, which is the only way the guard could exist.
+FR-4 was generalised — *every requirement a design declares is assigned to some sub-feature* — since
+any test asserting TECH-001's specific case must name a path containing that story's id.
+
+**Superseded next step**: SF-07 — the regression manifest,
 and may run in parallel sessions. Neither has an implementation plan yet. SF-07 waits on both.
 Note for whoever takes them: SF-04's CB-1 removed the wall that made a tests-and-docs boundary
 impossible to commit, so neither should hit it.

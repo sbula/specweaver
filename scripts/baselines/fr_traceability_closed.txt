@@ -1,0 +1,23 @@
+# Stories whose FR-traceability ledger is closed and must stay closed.
+#
+# `tests/unit/scripts/test_ledger_regression_guard.py` runs `check_fr_coverage` for every id below
+# and fails if any exits non-zero. Adding a line here is how a ticket records that its ledger is
+# shut; removing one is how a reviewer would notice someone reopening it.
+#
+# WHY THIS FILE IS NOT A PYTHON MODULE, AND MUST NOT BECOME ONE:
+# the citation scan reads `tests/**/*.py` and credits a story every requirement id in any file that
+# names it. A guard listing these ids as literals inside `tests/` would hand each of them the
+# guard's own requirement tokens. Keeping the ids in data the test reads at runtime is what lets
+# the guard exist at all — not a style choice.
+#
+# One id per line. Blank lines and `#` comments are ignored.
+
+TECH-001
+TECH-002
+TECH-005
+
+# Seeded by TECH-025 AD-5 as amended (2026-08-08). SF-01 removed citation credit this story had
+# been receiving from its own checker's fixture data, and the claim that it still closes on genuine
+# proof cannot be a pytest: asserting it means naming the story in a file that also carries a
+# requirement token, which would re-credit it. This manifest is the only place that check can live.
+INT-US-21
