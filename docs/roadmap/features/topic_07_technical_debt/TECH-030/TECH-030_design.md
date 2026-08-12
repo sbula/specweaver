@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-030
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED (2026-08-12)
 - **Origin**: Found 2026-08-12 working through the Linux test failures
   (`docs/analysis/linux_test_failures_2026-08-12.md`, Cluster D). Two of that cluster were test
   defects and are fixed; this one is not. `test_grant_at_root_covers_everything` is **left failing
@@ -117,3 +117,57 @@ Run through `specweaver-design`. Before writing any FR:
    split. It has never been asserted on Windows either — the test passes there for a reason nobody
    has verified.
 3. **Decide A or B**, then make both platforms implement it, with a test per platform reading.
+
+---
+
+## Delivery (2026-08-12)
+
+**Decision: option A — an empty grant path is invalid** (user). Rejected at construction, in
+`FolderGrant.__post_init__`.
+
+### The caller count decided the shape, as §Next Step said it would
+
+- **`src/`: zero** of eight `FolderGrant(` constructions pass an empty path. Rejecting breaks no
+  production code.
+- **`tests/`: twelve** call sites did — all in `code_structure` suites using `""` as a
+  "grant everything" convenience. **They passed because of the bug.**
+
+That mattered, because `"."` does *not* work as a whole-project grant, so the obvious replacement
+was not available. Two legitimate expressions already existed and were used instead:
+
+- `FileSystemTool` — the project root's **absolute path**, verified working.
+- `CodeStructureTool` — **`"/"`**, which `_resolve_mode` already maps the root case to explicitly.
+
+So no new capability was needed; the tests were leaning on the defect where a supported spelling
+existed.
+
+### Both definitions guarded
+
+`FolderGrant` is declared **twice** — `sandbox/security.py` and
+`sandbox/filesystem/interfaces/models.py` — and both are imported by real callers, so guarding one
+would have left the hole open through the other. A test pins each. **The duplication itself is a
+defect** and is left recorded rather than fixed under a security change.
+
+### Verified end to end
+
+```
+empty grant                       -> ValueError, naming the fix in the message
+explicit project-root grant       -> success        (whole-project access still expressible)
+scoped grant reading secrets/     -> error          (scoping still works)
+```
+
+### The test that had to change, and why it is not weakening
+
+`test_grant_at_root_covers_everything` asserted `status == "error"` — the *Windows* reading, on the
+platform where that branch is unreachable. That is why it passed for years while the hole was open.
+It now asserts the construction raises, which is where the guard lives.
+
+### Final state
+
+```
+tests/unit         5630 passed, 0 failed
+tests/integration   591 passed, 0 failed
+tests/e2e           191 passed, 0 failed
+```
+
+The Linux migration's 29 failures are closed.

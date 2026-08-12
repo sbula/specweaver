@@ -793,13 +793,24 @@ class TestPathTraversalEdgeCases:
         result = implementer.read_file("src///domain///billing///calc.py")
         assert result.status == "success"
 
-    def test_grant_at_root_covers_everything(self, executor: FileExecutor) -> None:
-        """A grant with empty path does NOT cover subdirectories (security)."""
-        grants = [FolderGrant("", AccessMode.READ, recursive=True)]
-        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
-        result = tool.read_file("src/domain/billing/calc.py")
-        # Empty-string grant path is treated as invalid — doesn't match
-        assert result.status == "error"
+    def test_a_grant_with_an_empty_path_cannot_be_constructed(self) -> None:
+        """An empty grant path is rejected outright, not merely treated as matching nothing.
+
+        It was never inert. `_resolve_access` compares an absolute path by segments, so on POSIX
+        `/tmp/proj/x` splits to `['', 'tmp', ...]` whose leading `''` matched an empty grant's
+        `['']` — granting read of the entire project. Measured with one such grant:
+        `secrets/prod.env` and `.git/config` both readable though granted nowhere. On Windows
+        `C:/proj/x` splits to `['C:', ...]` and never matched, so one configuration meant two
+        security postures.
+
+        This test previously asserted the Windows reading — `status == "error"` — on the platform
+        where that branch is unreachable, which is why it passed for years while the hole was open.
+        The guard now lives at construction (user decision, 2026-08-12): a grant naming no
+        directory is a bug or an unset config, and a security primitive fails closed on it. The
+        whole project is still expressible — pass the project root's absolute path.
+        """
+        with pytest.raises(ValueError, match="empty"):
+            FolderGrant("", AccessMode.READ, recursive=True)
 
 
 # ===========================================================================

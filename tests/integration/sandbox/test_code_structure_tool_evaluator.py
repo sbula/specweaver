@@ -56,7 +56,7 @@ def test_code_structure_tool_exposes_read_unrolled_symbol(tmp_path, mock_schemas
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
-        grants=[FolderGrant(path="", mode=AccessMode.FULL, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.FULL, recursive=True)],
     )
 
     assert hasattr(tool, "read_unrolled_symbol")
@@ -178,7 +178,7 @@ def test_tool_blocks_role_without_intent(tmp_path, mock_schemas):
     tool = CodeStructureTool(
         atom=atom,
         role="drafter",
-        grants=[FolderGrant(path="", mode=AccessMode.FULL, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.FULL, recursive=True)],
     )
     with pytest.raises(CodeStructureToolError, match="not allowed for role"):
         tool.read_unrolled_symbol("test.py", "User")

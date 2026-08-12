@@ -48,6 +48,24 @@ class FolderGrant:
     mode: AccessMode
     recursive: bool
 
+    def __post_init__(self) -> None:
+        """Reject a grant that names no directory.
+
+        An empty path is not "the project root" — it is a bug or an unset config, and a security
+        primitive should fail closed on it. It was also not inert: the matcher compares path
+        segments against an absolute path, so on POSIX the leading `''` of `/tmp/proj/x` matched an
+        empty grant and granted the whole project, while on Windows `C:/proj/x` never matched.
+        One configuration, two security postures.
+
+        To grant the whole project, pass the project root's absolute path — which already works.
+        """
+        if not self.path.strip():
+            msg = (
+                "FolderGrant.path is empty. A grant must name a directory; pass the project "
+                "root's absolute path to grant the whole project."
+            )
+            raise ValueError(msg)
+
 
 class WorkspaceBoundaryError(Exception):
     """Raised when a path escapes the workspace boundary."""

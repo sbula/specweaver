@@ -28,7 +28,7 @@ def test_tool_read_file_structure_requires_intent() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="planner",
-        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.READ, recursive=True)],
     )
 
     with pytest.raises(CodeStructureToolError, match="not allowed for role"):
@@ -55,7 +55,7 @@ def test_tool_read_file_structure_success() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="reviewer",
-        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.READ, recursive=True)],
     )
 
     result = tool.read_file_structure("test.py")
@@ -101,7 +101,7 @@ def test_tool_intents_propagate_to_atom() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
-        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.READ, recursive=True)],
     )
 
     tool.list_symbols("test.py", visibility=["public"])
@@ -176,7 +176,7 @@ def test_tool_execution_serialization() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
-        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.READ, recursive=True)],
     )
 
     atom.run.return_value = AtomResult(status=AtomStatus.FAILED, message="Some error bubbled")
@@ -198,7 +198,7 @@ def test_tool_mutation_intents_blocked_by_read_grant() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
-        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.READ, recursive=True)],
     )
 
     res = tool.replace_symbol("test.py", "Target", "pass")
@@ -214,7 +214,7 @@ def test_tool_mutation_intents_success_with_write_grant() -> None:
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
-        grants=[FolderGrant(path="", mode=AccessMode.WRITE, recursive=True)],
+        grants=[FolderGrant(path="/", mode=AccessMode.WRITE, recursive=True)],
     )
 
     res = tool.replace_symbol("test.py", "Target", "pass")

@@ -22,7 +22,7 @@ def physical_tool(tmp_path: Path) -> CodeStructureTool:
 
     # Mount tool with an explicit grant
     # Grant paths use "" to mean the root of the relative workspace context
-    grant = FolderGrant(path="", mode=AccessMode.FULL, recursive=True)
+    grant = FolderGrant(path="/", mode=AccessMode.FULL, recursive=True)
     tool = CodeStructureTool(atom=atom, role="implementer", grants=[grant])
 
     return tool

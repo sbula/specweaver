@@ -157,3 +157,58 @@ class TestFromRunContext:
         boundary = WorkspaceBoundary.from_run_context(ctx)
         assert boundary.roots == [svc_root]
         assert boundary.api_paths == [api_path]
+
+
+class TestFolderGrantPathValidation:
+    """An empty grant path is rejected at construction (user decision, 2026-08-12)."""
+
+    def test_an_empty_path_is_rejected(self) -> None:
+        """An empty path granted the whole project on POSIX and nothing on Windows.
+
+        The matcher compares path segments, and `_resolve_access` builds an absolute path first. On
+        POSIX `/tmp/proj/x` splits to `['', 'tmp', ...]`, whose leading `''` matches an empty
+        grant's `['']`; on Windows `C:/proj/x` splits to `['C:', ...]` and never matches. Measured:
+        with one such grant, reads of `secrets/prod.env` and `.git/config` both succeeded though
+        granted nowhere.
+
+        Rejected at construction rather than treated as matching nothing, so the mistake is loud.
+        A grant naming no directory is a bug or an unset config, and failing closed is the default
+        a security primitive should take. The whole project is expressible already — pass the
+        project root's absolute path.
+        """
+        import pytest
+
+        from specweaver.sandbox.security import AccessMode, FolderGrant
+
+        with pytest.raises(ValueError, match="empty"):
+            FolderGrant("", AccessMode.READ, recursive=True)
+
+    def test_a_whitespace_only_path_is_rejected(self) -> None:
+        """Boundary: `" "` names no directory either, and would slip past an `if not path` check."""
+        import pytest
+
+        from specweaver.sandbox.security import AccessMode, FolderGrant
+
+        with pytest.raises(ValueError, match="empty"):
+            FolderGrant("   ", AccessMode.READ, recursive=True)
+
+    def test_the_models_copy_rejects_it_too(self) -> None:
+        """`FolderGrant` is defined twice — in `sandbox.security` and in `filesystem.interfaces`.
+
+        Both are imported by real callers, so guarding only one leaves the hole open through the
+        other. The duplication itself is worth removing, but not under a security fix.
+        """
+        import pytest
+
+        from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
+
+        with pytest.raises(ValueError, match="empty"):
+            FolderGrant("", AccessMode.READ, recursive=True)
+
+    def test_an_ordinary_relative_path_is_accepted(self) -> None:
+        """Control: the guard rejects the empty case, not every grant."""
+        from specweaver.sandbox.security import AccessMode, FolderGrant
+
+        grant = FolderGrant("src/domain/billing", AccessMode.READ, recursive=True)
+
+        assert grant.path == "src/domain/billing"
