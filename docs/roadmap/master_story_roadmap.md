@@ -220,26 +220,26 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
-        *   `[ ]` **INT-US-04-SF02:** Sub-Story Integration defined in [SF-02: Security Defenses](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-02-security-defenses-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF02:** [Security Defenses](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-02-security-defenses-integration-pending-design)
         *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
-        *   `✅` **INT-US-04-SF03:** Sub-Story Integration defined in [SF-03: Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
+        *   `✅` **INT-US-04-SF03:** [Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   🟢 **Context Mention Highlighting:**
-        *   `✅` **INT-US-04-SF04:** Sub-Story Integration defined in [SF-04: Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-04-context-mention-highlighting-integration-pending-design)
+        *   `✅` **INT-US-04-SF04:** [Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-04-context-mention-highlighting-integration-pending-design)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
-        *   `[ ]` **INT-US-04-SF05:** Sub-Story Integration defined in [SF-05: Advanced Routing & Conditional Flows](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-05-advanced-routing--conditional-flows-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF05:** [Advanced Routing](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-05-advanced-routing--conditional-flows-integration-pending-design)
         *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
-        *   `[ ]` **INT-US-04-SF06:** Sub-Story Integration defined in [SF-06: Infinite Memory Management](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-06-infinite-memory-management-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF06:** [Infinite Memory Management](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-06-infinite-memory-management-integration-pending-design)
         *   `[ ]` **C-INTL-04:** Conversation Summarization (Token compression)
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **INT-US-04-SF07:** Sub-Story Integration defined in [SF-07: Remote UI Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-07-remote-ui-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF07:** [Remote UI Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-07-remote-ui-integration-pending-design)
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
-        *   `✅` **INT-US-04-SF08:** Sub-Story Integration defined in [SF-08: Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
+        *   `✅` **INT-US-04-SF08:** [Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
         *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
     *   🔴 **Envelope-vs-Content Prompt Externalization:**
         *   `[ ]` **INT-US-04-SF10:** Sub-Story Integration (Pending Design)
@@ -543,7 +543,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
 ### 🟡 US-20: Enterprise Architecture Enforcement
-**Benefit:** *SpecWeaver mathematically prevents my project from degrading by enforcing strict test intensities (e.g., DAL-A requires mutation tests) and blocking forbidden dependencies across the DAG.*
+**Benefit:** *My project cannot degrade — test intensity is enforced per DAL and forbidden dependencies are blocked across the DAG.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-20:** Base Integration Contract defined in [US-20_integration.md](topics/topic_08_integration/US-20_integration.md)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
@@ -630,7 +630,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ---
 
 ### 🟡 US-26: Fleet-Wide CVE Remediation
-**Benefit:** *When a zero-day vulnerability drops, SpecWeaver instantly scans the polyglot AST across all repositories to find every usage of the vulnerable function, and safely refactors the implementation across the entire fleet.*
+**Benefit:** *When a zero-day drops, every usage of the vulnerable function is found across all repositories and refactored fleet-wide.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-26:** Base Integration Contract defined in [US-26_integration.md](topics/topic_08_integration/US-26_integration.md)
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -642,7 +642,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-INTL-05:** Multi-Repo Refactoring Orchestration
 
 ### 🟡 US-27: Autonomous Production Self-Healing
-**Benefit:** *SpecWeaver hooks directly into Datadog/Sentry. When a production exception fires, it reads the stack trace, uses the Knowledge Graph to pinpoint the failing AST node, and autonomously drafts a Hotfix Spec and PR to resolve the crash.*
+**Benefit:** *A production exception becomes a Hotfix Spec and PR on its own — the stack trace resolves to an AST node through the Knowledge Graph.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-27:** Base Integration Contract defined in [US-27_integration.md](topics/topic_08_integration/US-27_integration.md)
     *   `✅` **US-4 Core** *(provides Flow Engine)*
@@ -654,7 +654,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-FLOW-04:** Blast-Radius Circuit Breaker (Prevents bad hotfixes from cascading)
 
 ### 🟢 US-28: Agent-Native Issue & State Tracker
-**Benefit:** *AI Agents can seamlessly hand over complex tasks to one another and prevent context degradation by storing session state, active tasks, and blockers in a structured, local SQLite Memory Bank.*
+**Benefit:** *Agents hand complex tasks to one another without context degrading — session state, tasks and blockers live in a local Memory Bank.*
 *   **Core Required (MVS):**
     *   `✅` **INT-US-28:** Base Integration Contract defined in [US-28_integration.md](topics/topic_08_integration/US-28_integration.md) (Complete)
     *   `✅` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (Complete)
@@ -698,7 +698,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
     *   `✅` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
-    *   `[ ]` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
+    *   `✅` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
     *   `✅` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
     *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)

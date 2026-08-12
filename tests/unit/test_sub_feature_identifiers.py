@@ -21,7 +21,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-DOCS = Path(__file__).resolve().parents[2] / "docs"
+ROOT = Path(__file__).resolve().parents[2]
+DOCS = ROOT / "docs"
+
+#: The skill trees are scanned too, and that is not thoroughness for its own sake: the design
+#: skill's template used `### SF-1:` until 2026-08-12, so the document that teaches the convention
+#: was teaching the form it forbids. Every design written from it inherited that. `.agents/` is kept
+#: byte-identical to `.claude/` by `check_skill_sync`, so scanning both catches a drifted copy.
+SCANNED = (DOCS, ROOT / ".claude" / "skills", ROOT / ".agents" / "skills")
 
 #: `SF-` followed by exactly one digit. The lookarounds keep `SF-01` and `_sf01_` out of it.
 SINGLE_DIGIT = re.compile(r"(?<![\w-])SF-\d(?![\d])")
@@ -43,15 +50,16 @@ PADDED = re.compile(r"(?<![\w-])SF-\d\d(?![\d])")
 
 def _offenders() -> list[str]:
     found: list[str] = []
-    for path in sorted(DOCS.rglob("*.md")):
-        if path.name in LEGACY_DOCUMENTS:
-            continue
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if LEGACY_CONTEXT.search(line):
+    for root in SCANNED:
+        for path in sorted(root.rglob("*.md")):
+            if path.name in LEGACY_DOCUMENTS:
                 continue
-            if SINGLE_DIGIT.search(line) and not PADDED.search(line):
-                rel = path.relative_to(DOCS.parent).as_posix()
-                found.append(f"{rel}:{number}: {line.strip()[:80]}")
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if LEGACY_CONTEXT.search(line):
+                    continue
+                if SINGLE_DIGIT.search(line) and not PADDED.search(line):
+                    rel = path.relative_to(ROOT).as_posix()
+                    found.append(f"{rel}:{number}: {line.strip()[:80]}")
     return found
 
 
@@ -68,7 +76,7 @@ def test_no_document_filename_spells_it_with_one_digit() -> None:
     Pinned separately because a filename is what inbound links resolve against: prose can be wrong
     and merely confusing, a filename can be wrong and break a reference.
     """
-    unpadded = sorted(p.name for p in DOCS.rglob("*_sf[0-9]_*"))
+    unpadded = sorted(p.name for r in SCANNED for p in r.rglob("*_sf[0-9]_*"))
 
     assert unpadded == [], f"unpadded filenames: {unpadded}"
 

@@ -27,7 +27,7 @@ description: "Phase 4: Merge Findings — present the full combined audit list t
      > [!IMPORTANT]
      > **MANDATORY ARTIFACT FORMATTING RULE:**
      > When generating the HITL review artifact, you MUST:
-     > 1. Specify the active **Skill Name** and **Current Phase** in the main header (e.g., `# [Skill: specweaver-implementation-plan] Phase 4: HITL Gate - SF-3`).
+     > 1. Specify the active **Skill Name** and **Current Phase** in the main header (e.g., `# [Skill: specweaver-implementation-plan] Phase 4: HITL Gate - SF-03`).
      > 2. Present each question uniquely mapping its Options, Pros/Cons, Impact, and your Proposal.
      > 3. Add an explicit **Comment** row (e.g., `> Comment: `) beneath EACH question allowing the user to seamlessly type their responses beside the proposals in their IDE.
 

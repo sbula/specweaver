@@ -77,7 +77,7 @@ checks explicitly. Do NOT just assert "yes" — provide evidence.
      - Set `Status: APPROVED` in the impl plan header block.
      - Update the **Progress Tracker** in the Design Document: mark `Impl Plan ✅` for this SF.
      - Update the **Session Handoff** paragraph in the Design Document
-       to name the next concrete step (e.g., "Trigger the dev skill for SF-1 impl plan").
+       to name the next concrete step (e.g., "Trigger the dev skill for SF-01 impl plan").
 
 > [!CAUTION]
 > **HARD GATE:** Implementation MUST NOT begin until the user explicitly approves

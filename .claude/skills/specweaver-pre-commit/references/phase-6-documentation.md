@@ -16,6 +16,10 @@ description: "Phase 6: Update documentation — test matrix, README, roadmap, ar
 
 6.3.1. **[🚨 MANDATORY STATE SYNC]** You MUST physically update the `master_story_roadmap.md` to reflect the correct state:
      - Update colors (`🟢`, `🟡`, `🔴`) and check off boxes (`[x]`) for the User Story and any Add-Ons you implemented.
+       > **"Add-Ons" means minted sub-story IDs (`INT-US-NN-SFxx`), never a design's `SF-NN`
+       > sub-features.** Read as the latter this line is a standing order to corrupt the roadmap,
+       > which is how that defect was introduced. Full contract:
+       > `.claude/skills/specweaver-ticket/references/roadmap-placement.md`.
      - **[🚨 PROOF MANDATE]**: If you change a status to `🟢 Completed` or check an `[x]` box, you **MUST** paste the exact filepath of the passing E2E integration test into the `Verifiable Proof:` field for that Story or Add-On. Do not check the box if no E2E test exists.
      - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
 

@@ -57,6 +57,10 @@ Each ID family has a **different** authoritative source. Pick the right one:
 > For **TECH** IDs the topic doc is NOT authoritative — it has historically listed only a subset.
 > For **capability** IDs the matrix and topic docs *are* authoritative, and
 > `master_story_roadmap.md` only references them.
+>
+> That last clause is not capability-specific: `master_story_roadmap.md` references **every**
+> family and holds detail for none. What may appear there, and at what length, is written down
+> once in `references/roadmap-placement.md` and enforced by `check_roadmap_placement.py`.
 
 ## Phase 2: Prove the ID Is Free (MANDATORY — both commands)
 

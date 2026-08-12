@@ -65,7 +65,7 @@ After the Design Document is written, evaluate and present the following consist
 6.7. On approval:
      - Set `Status: APPROVED` in the Design Document header block.
      - Update the **Session Handoff** paragraph in the Design Document
-       to name the next concrete step (e.g., "Trigger the implementation-plan skill for SF-1").
+       to name the next concrete step (e.g., "Trigger the implementation-plan skill for SF-01").
 
 > [!CAUTION]
 > **HARD GATE:** The design MUST NOT be marked `APPROVED` until the user explicitly approves

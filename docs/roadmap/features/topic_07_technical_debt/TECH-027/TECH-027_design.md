@@ -217,7 +217,7 @@ Two exclusions, both earned rather than assumed:
 - **Legacy numbering.** `Feature 3.32 SF-4` and `3.14a … (SF-1)` belong to a pre-registry scheme
   where a sub-feature hung off a decimal feature number, not a story id. Padding them would invent
   identifiers for something that no longer exists. A first attempt excluded these by *line*, using
-  any decimal as the marker — which wrongly caught `**5.0 Pre-check**: All 4 FRs assigned to SF-2`,
+  any decimal as the marker — which wrongly caught `**5.0 Pre-check**: All 4 FRs assigned to SF-2` (a real reference needing `SF-02`),
   where `5.0` is a section number and the reference is a real one. The marker is now the literal
   word `Feature`.
 - **Demonstration lines.** A document stating the rule must quote the form it forbids. The sweep

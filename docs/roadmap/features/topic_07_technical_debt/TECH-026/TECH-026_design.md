@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-026
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED (2026-08-12)
 - **Origin**: Found 2026-08-08 during `TECH-025` SF-02. Asked whether sub-features were recorded
   anywhere, the agent compared `TECH-025`'s roadmap entry to `TECH-001`'s and `TECH-006`'s, judged
   it "inconsistent", and added all seven of `TECH-025`'s **design-document sub-features** to
@@ -458,3 +458,68 @@ work is in the checker's rule — precisely which line shapes are legal, given t
 pre-existing nested lines across `TECH-001`, `TECH-005`, `TECH-006` and `TECH-009` loses nothing,
 because each ticket's own design already carries that detail in its Sub-Feature Breakdown and
 Progress Tracker. Verify that per ticket rather than assuming it.
+
+---
+
+## Delivery (2026-08-12)
+
+### The contract exists now, which was the whole point
+
+`.claude/skills/specweaver-ticket/references/roadmap-placement.md` states the three-document split
+and the three rules once. The three callers point at it — `phase-6-documentation.md` (with the
+"Add-Ons" ambiguity disambiguated in place), `phase-5-document.md`, `specweaver-ticket/SKILL.md` —
+in both `.agents/` and `.claude/`, byte-identical per `check_skill_sync`.
+
+### `scripts/check_roadmap_placement.py`, in the `doc` gate
+
+One walk, three rules by line class — the shared walker `TECH-027` clause 2 was blocked on:
+
+| | |
+|---|---|
+| **R-PLACE** | a nested list item must name a bold registry ID |
+| **R-LENGTH** | a line inside an entry is ≤ 200 chars |
+| **R-OWNER** | a bare `SF-NN` must have its owner named |
+
+Probed rather than assumed: a planted `SF-01:` line is caught with the message naming why.
+
+**R-OWNER is line-scoped, and that was a correction made against the real file.** Requiring the id
+*adjacent* to each reference reported correct references as violations — `**INT-US-04-SF05:** …
+[SF-05: Advanced Routing]` names its owner in the bold key, and a clause-scoped rule flagged it
+anyway. Four earlier measurements in `TECH-027` failed the same way. A checker that cries wolf gets
+disabled and takes its rule with it.
+
+### 11 over-length lines repaired
+
+Seven sub-story lines carried `Sub-Story Integration defined in [SF-NN: <full section title>]`,
+where the id is already the bold key; four `Benefit` lines were simply overlong prose.
+
+### The template was teaching the defect
+
+`specweaver-design`'s Sub-Feature Breakdown template used `### SF-1:` and `[ID]_sf1_…`. Every design
+written from it inherited the single-digit form that `TECH-027` then swept. Corrected, and the
+clause-1 guard now scans the skill trees as well as `docs/` — it could not see the template that was
+propagating the error.
+
+### An extraction the size limit forced, and what it uncovered
+
+`quality.py` sat at 595/600 against the RED threshold, and a fifth check needs ~8 lines. The
+project's rule is that headroom comes from structure, not denser prose, so the argv builders and the
+venv resolution moved to `_quality_runners.py` and `_venv.py`. **`venv_python` turned out to be
+duplicated verbatim in `scripts/tests.py`** — two places to keep in step for a thing with one
+correct answer. `quality.py` is now 541.
+
+A first attempt at this broke 43 tests by importing the sibling directly: `scripts/` is not a
+package, so a plain import resolves only when the file is run as a script, never when a test loads
+it by path. The repo already had `_load_sibling` for exactly this, in two other scripts.
+
+### Two guards fired, correctly
+
+`test_quality_runner.py` pins the doc gate's exact check set, so adding one failed it until updated
+— that is the guard doing its job. And a `# noqa` added in passing tripped the suppressions ratchet,
+which is the point of having one; the annotation moved into a `TYPE_CHECKING` block instead.
+
+### What remains
+
+**`TECH-027` clause 2 is now unblocked** — R-OWNER is the walker it needed. The remaining question
+is whether "enclosing entry" should mean the markdown structure rather than the line, which is a
+refinement of a rule that now exists rather than a rule that does not.

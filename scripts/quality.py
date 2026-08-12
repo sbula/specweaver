@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import contextlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -46,8 +47,33 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_sibling(module_name: str) -> ModuleType:
+    """Load a same-directory script by path.
+
+    `scripts/` is not an importable package, so a plain import only resolves when this file is run
+    as a script. A test harness loading it via `spec_from_file_location` gets no such freebie —
+    which is exactly how the extraction below first broke 43 tests.
+    """
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_venv = _load_sibling("_venv")
+venv_python = _venv.venv_python
+venv_tool = _venv.venv_tool
 
 #: The four static-analysis gates form one escalating ladder. `doc` is a SEPARATE TRACK, not a
 #: rung on it: it checks documentation registries rather than code, so folding it into `cb` would
@@ -104,6 +130,7 @@ MATRIX: dict[str, dict[str, str]] = {
     # Both are inherently repo-wide and take no paths: a roadmap checkbox is stale relative to the
     # whole registry, and a skill file drifts relative to its twin in the other tree.
     "roadmap_sync": {"doc": "all"},
+    "roadmap_placement": {"doc": "all"},
     "skill_sync": {"doc": "all"},
     # Same track, same reason: an instruction's references are stale relative to the whole repo,
     # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*
@@ -154,147 +181,66 @@ class Result:
 # ---------------------------------------------------------------------------
 
 
-def venv_python() -> str:
-    """Prefer the project venv over whatever `python` happens to be on PATH.
-
-    Measured on this repo: system Python has ruff/mypy/tach but NOT complexipy, while `.venv` has
-    all four. Resolving this per-invocation avoids a gate that passes or fails depending on which
-    shell it was launched from.
-    """
-    for rel in ("Scripts/python.exe", "bin/python"):
-        candidate = REPO_ROOT / ".venv" / rel
-        if candidate.exists():
-            return str(candidate)
-    return sys.executable
-
-
-def venv_tool(name: str) -> str | None:
-    """Locate a console-script entry point (some tools have no importable __main__)."""
-    for rel in (f"Scripts/{name}.exe", f"bin/{name}"):
-        candidate = REPO_ROOT / ".venv" / rel
-        if candidate.exists():
-            return str(candidate)
-    return None
-
-
 PY = venv_python()
 
 
-def _script(name: str) -> list[str]:
-    return [PY, str(REPO_ROOT / "scripts" / name)]
-
-
-def _ruff(paths: list[Path]) -> list[str]:
-    return [PY, "-m", "ruff", "check", *(str(p) for p in paths)]
-
-
-def _format(paths: list[Path]) -> list[str]:
-    # --check never writes; `ruff format` is the fix and the failure message says so.
-    return [PY, "-m", "ruff", "format", "--check", *(str(p) for p in paths)]
-
-
-def _mypy(paths: list[Path]) -> list[str]:
-    return [PY, "-m", "mypy", *(str(p) for p in paths)]
-
-
-def _tach(_paths: list[Path]) -> list[str]:
-    return [PY, "-m", "tach", "check"]
-
-
-def _complexipy(paths: list[Path]) -> list[str]:
-    exe = venv_tool("complexipy")
-    head = [exe] if exe else [PY, "-m", "complexipy"]
-    return [
-        *head,
-        *(str(p) for p in paths),
-        "--failed",
-        "--color",
-        "no",
-        "--max-complexity-allowed",
-        str(MAX_COGNITIVE_COMPLEXITY),
-    ]
-
-
-def _file_sizes(paths: list[Path]) -> list[str]:
-    return [*_script("check_file_sizes.py"), *(str(p) for p in paths)]
-
-
-def _test_basenames(paths: list[Path]) -> list[str]:
-    return [*_script("check_test_basenames.py"), *(str(p) for p in paths)]
-
-
-def _useless_asserts(paths: list[Path]) -> list[str]:
-    return [*_script("check_useless_asserts.py"), *(str(p) for p in paths)]
-
-
-def _suppressions(paths: list[Path]) -> list[str]:
-    return [*_script("check_suppressions.py"), *(str(p) for p in paths)]
-
-
-def _class_health(paths: list[Path]) -> list[str]:
-    return [*_script("check_class_health.py"), *(str(p) for p in paths)]
-
-
-def _coupling(paths: list[Path]) -> list[str]:
-    return [*_script("check_coupling.py"), *(str(p) for p in paths)]
-
-
-def _cycles(paths: list[Path]) -> list[str]:
-    return [*_script("check_coupling.py"), "--cycles-only", *(str(p) for p in paths)]
-
-
-def _conventions(paths: list[Path]) -> list[str]:
-    return [*_script("check_conventions.py"), *(str(p) for p in paths)]
-
-
-def _roadmap_sync(_paths: list[Path]) -> list[str]:
-    return _script("check_roadmap_sync.py")
-
-
-def _skill_sync(_paths: list[Path]) -> list[str]:
-    return _script("check_skill_sync.py")
-
-
-def _skill_references(_paths: list[Path]) -> list[str]:
-    return _script("check_skill_references.py")
-
+_r = _load_sibling("_quality_runners")
 
 CHECKS: dict[str, Check] = {
     # `scripts/` is included so the gate lints itself — it was previously unlinted by anything.
-    "ruff": Check("ruff", ("src", "tests", "scripts"), _ruff),
-    "format": Check("format", ("src", "tests", "scripts"), _format),
-    "mypy": Check("mypy", ("src",), _mypy),
-    "tach": Check("tach", ("src",), _tach, ignores_paths=True),
-    "complexipy": Check("complexipy", ("src",), _complexipy),
+    "ruff": Check("ruff", ("src", "tests", "scripts"), _r._ruff),
+    "format": Check("format", ("src", "tests", "scripts"), _r._format),
+    "mypy": Check("mypy", ("src",), _r._mypy),
+    "tach": Check("tach", ("src",), _r._tach, ignores_paths=True),
+    "complexipy": Check("complexipy", ("src",), _r._complexipy),
     "file_sizes": Check(
-        "file_sizes", ("src", "tests", "scripts"), _file_sizes, script="check_file_sizes.py"
+        "file_sizes", ("src", "tests", "scripts"), _r._file_sizes, script="check_file_sizes.py"
     ),
     "test_basenames": Check(
-        "test_basenames", ("tests",), _test_basenames, script="check_test_basenames.py"
+        "test_basenames", ("tests",), _r._test_basenames, script="check_test_basenames.py"
     ),
     "useless_asserts": Check(
-        "useless_asserts", ("tests",), _useless_asserts, script="check_useless_asserts.py"
+        "useless_asserts", ("tests",), _r._useless_asserts, script="check_useless_asserts.py"
     ),
-    "suppressions": Check("suppressions", ("src",), _suppressions, script="check_suppressions.py"),
-    "class_health": Check("class_health", ("src",), _class_health, script="check_class_health.py"),
-    "coupling": Check("coupling", ("src",), _coupling, script="check_coupling.py"),
-    "cycles": Check("cycles", ("src",), _cycles, script="check_coupling.py"),
+    "suppressions": Check(
+        "suppressions", ("src",), _r._suppressions, script="check_suppressions.py"
+    ),
+    "class_health": Check(
+        "class_health", ("src",), _r._class_health, script="check_class_health.py"
+    ),
+    "coupling": Check("coupling", ("src",), _r._coupling, script="check_coupling.py"),
+    "cycles": Check("cycles", ("src",), _r._cycles, script="check_coupling.py"),
+    "roadmap_placement": Check(
+        "roadmap_placement",
+        ("docs",),
+        _r._whole_repo("check_roadmap_placement.py"),
+        ignores_paths=True,
+        script="check_roadmap_placement.py",
+    ),
     "roadmap_sync": Check(
-        "roadmap_sync", ("docs",), _roadmap_sync, ignores_paths=True, script="check_roadmap_sync.py"
+        "roadmap_sync",
+        ("docs",),
+        _r._whole_repo("check_roadmap_sync.py"),
+        ignores_paths=True,
+        script="check_roadmap_sync.py",
     ),
     "skill_sync": Check(
-        "skill_sync", (".agents",), _skill_sync, ignores_paths=True, script="check_skill_sync.py"
+        "skill_sync",
+        (".agents",),
+        _r._whole_repo("check_skill_sync.py"),
+        ignores_paths=True,
+        script="check_skill_sync.py",
     ),
     "skill_references": Check(
         "skill_references",
         (".agents", "docs"),
-        _skill_references,
+        _r._whole_repo("check_skill_references.py"),
         ignores_paths=True,
         script="check_skill_references.py",
     ),
     # `tests` is in scope so R5 (e2e naming) can see e2e files; R2 stays src/scripts-only.
     "conventions": Check(
-        "conventions", ("src", "tests"), _conventions, script="check_conventions.py"
+        "conventions", ("src", "tests"), _r._conventions, script="check_conventions.py"
     ),
 }
 

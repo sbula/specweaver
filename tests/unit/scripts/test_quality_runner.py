@@ -111,6 +111,7 @@ EXPECTED: dict[str, dict[str, str]] = {
     # A separate track, not a rung on the ladder above: registries, not code.
     "doc": {
         "roadmap_sync": "all",
+        "roadmap_placement": "all",
         "skill_sync": "all",
         "skill_references": "all",
     },
@@ -164,6 +165,7 @@ class TestDocTrackIsSeparate:
     def test_the_doc_gate_runs_no_code_checks(self, q: ModuleType) -> None:
         assert {p.check for p in q.resolve_plans("doc")} == {
             "roadmap_sync",
+            "roadmap_placement",
             "skill_sync",
             "skill_references",
         }
