@@ -703,4 +703,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
     *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
     *   `✅` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
-    *   `[ ]` **TECH-031:** [Container Prepare Phase Assumes a Dependency Layout](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
+    *   `[ ]` **TECH-031:** [Container Prepare Phase Has Never Installed a Toolchain](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
+    *   `[ ]` **TECH-032:** [Non-Python QA Runners Report an Absent Toolchain as Success](features/topic_07_technical_debt/TECH-032/TECH-032_design.md)

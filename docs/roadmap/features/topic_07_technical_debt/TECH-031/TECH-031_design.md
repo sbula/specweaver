@@ -1,12 +1,15 @@
-# Design: The Container Prepare Phase Assumes a Target Project's Dependency Layout
+# Design: The Container Prepare Phase Has Never Installed a Toolchain
 
 - **Feature ID**: TECH-031
 - **Epic**: Topic 07 (Technical Debt)
 - **Status**: PARTIAL — the QA-runner half is delivered; the prepare phase is not. See
   §Measured, 2026-08-12, which **corrects the Problem Statement below rather than extending it**.
-- **Origin**: Found 2026-08-12 during `TECH-028`. That ticket fixed **this** repo's manifest, which
-  incidentally fixed the prepare phase for SpecWeaver itself. The gap for *other* target projects is
-  what remains, and is recorded here rather than left implied.
+- **Origin**: Found 2026-08-12 during `TECH-028`. **That ticket's claimed side-effect was wrong** —
+  it fixed this repo's manifest, but §Measured shows the prepare phase fails for SpecWeaver too, on
+  a defect the manifest cannot reach. The layout gap is real but is not what stops the phase.
+- **Renamed 2026-08-12**, from *"…Assumes a Target Project's Dependency Layout"*. The old title
+  named defect 3 of 3 and read as though the phase otherwise worked. Recorded rather than done
+  silently, since registry/design title drift is itself a tracked defect.
 
 ## Problem Statement
 
