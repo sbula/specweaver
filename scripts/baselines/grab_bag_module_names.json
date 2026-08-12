@@ -1,6 +1,5 @@
 {
   "modules": [
-    "src/specweaver/workspace/project/_helpers.py",
     "tests/unit/assurance/standards/interfaces/test_cli_standards_helpers.py",
     "tests/unit/core/config/test_cli_db_utils.py",
     "tests/unit/core/config/test_db_utils.py",

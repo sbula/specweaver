@@ -90,13 +90,14 @@ class TestBatch1LoggingRollout:
     def test_project_modules_have_loggers(self):
         """workspace/project modules should declare loggers."""
         from specweaver.workspace.project import (
-            _helpers,
             constitution,
+            constitution_loading,
+            directory_walk,
             discovery,
             scaffold,
         )
 
-        for mod in (_helpers, constitution, discovery, scaffold):
+        for mod in (constitution_loading, directory_walk, constitution, discovery, scaffold):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__

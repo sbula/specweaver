@@ -21,26 +21,27 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.workspace.project._templates import STANDARDS_TEMPLATE as _STANDARDS_TEMPLATE
+from specweaver.workspace.project._templates import STARTER_TEMPLATE as _STARTER_TEMPLATE
+
 # Re-export from sub-modules for backward compatibility
-from specweaver.workspace.project._helpers import (
+from specweaver.workspace.project.constitution_loading import (
     CONSTITUTION_FILENAME,
     DEFAULT_MAX_CONSTITUTION_SIZE,
     ConstitutionInfo,
 )
-from specweaver.workspace.project._helpers import (
-    build_standards_section as _build_standards_section,
-)
-from specweaver.workspace.project._helpers import (
-    build_tech_stack_rows as _build_tech_stack_rows,
-)
-from specweaver.workspace.project._helpers import (
+from specweaver.workspace.project.constitution_loading import (
     load_constitution as _load_constitution,
 )
-from specweaver.workspace.project._helpers import (
+from specweaver.workspace.project.directory_walk import (
     walk_up_dirs as _walk_up_dirs,
 )
-from specweaver.workspace.project._templates import STANDARDS_TEMPLATE as _STANDARDS_TEMPLATE
-from specweaver.workspace.project._templates import STARTER_TEMPLATE as _STARTER_TEMPLATE
+from specweaver.workspace.project.standards_rendering import (
+    build_standards_section as _build_standards_section,
+)
+from specweaver.workspace.project.standards_rendering import (
+    build_tech_stack_rows as _build_tech_stack_rows,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
