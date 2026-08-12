@@ -278,8 +278,15 @@ python scripts/check_fr_coverage.py TECH-005
 python scripts/quality.py cb          # conventions gate, R5 with an empty allowlist
 ```
 
-TECH-025's roadmap section currently has no **Verifiable Proof** field — `check_story_preconditions.py`
-warns about it. SF-07's guard test is the natural entry; add it at closure.
+~~TECH-025's roadmap section currently has no **Verifiable Proof** field — `check_story_preconditions.py`
+warns about it. SF-07's guard test is the natural entry; add it at closure.~~
+
+**Overtaken 2026-08-12.** The roadmap no longer has a section to put it in: `TECH-NNN` entries are
+now capability-level one-liners (user's ruling, recorded in `TECH-026`), and a one-line entry has no
+`Verifiable Proof` field by construction. The warning is now expected for every TECH ticket rather
+than particular to this one, and `TECH-026` owns deciding where those citations belong — the topic
+doc, or the design's FR ledger, which `check_fr_coverage` already reads and which for this ticket
+now exits 0.
 
 One closure check is peculiar to this ticket and easy to forget: re-run the gate for **INT-US-21**
 as well. SF-01 removes citation credit it currently receives from fixture data, and the design's

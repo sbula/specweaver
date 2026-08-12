@@ -79,7 +79,7 @@ this section drift for a month.
 | # | Ticket | Why it sits here |
 |---|---|---|
 | 1 | `TECH-019` | ✅ Done 2026-08-08. Fixed the instructions every later ticket is executed through, and shipped the checker that keeps them fixed. |
-| 2 | `TECH-025` | Docs only, independent, and establishes the citation convention each ticket below meets at its own closure gate. |
+| 2 | `TECH-025` | ✅ Done 2026-08-12. Established the citation convention each ticket below meets at its own closure gate. |
 | 3 | `TECH-014` | A live bug, not cleanup. Cheapest now: `TECH-006` SF-02 put its three racing fields (`run_id`, `step_records`, `pipeline_runner`) into one `RunHandle`, so each sub-run takes a copy instead of three writes interleaving. |
 | 4 | `TECH-020` | Reshapes `runner.py`; removes flow's largest complexity offender and changes the import graph 6 and 7 measure. |
 | 5 | `TECH-015` | Moves/renames modules, changing those imports again. |
@@ -696,7 +696,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
     *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
-    *   `[ ]` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
+    *   `✅` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
     *   `[ ]` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
     *   `[ ]` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
