@@ -83,6 +83,31 @@ pytest -k "not validate"   # Runs tests except those containing "validate"
 5. Run type checking on modified files: `mypy src/specweaver/flow/engine.py --ignore-missing-imports`
 6. Once satisfied, run the full test suite: `pytest`
 
+## A serial pass can hide a real failure — always confirm with `-n auto`
+
+**Measured 2026-08-12.** `test_fan_out_log_observability_context_isolation` passed serially and
+failed on **every** parallel run of `tests/integration/core/flow/`. It was not flaky and not a
+parallelism bug: `TECH-020` had moved the run-tagged step logs out of `engine.runner` into
+`engine.step_execution`, and the test pinned `caplog.set_level(..., logger=".....runner")`, so it
+captured nothing and its `count >= 1` assertion was correct to fail.
+
+It passed serially because **another test had already lowered a log level process-wide**. `caplog`
+only guarantees the level it sets for the logger it names; anything else it captures is leakage
+from whatever ran before it in the same process. xdist gives each worker a fresh process, which
+removes the leakage — so the parallel run was the honest one.
+
+Two things follow:
+
+- **A green serial run is not evidence a log-capture test is sound.** If a test asserts on log
+  records, run it under `-n auto` before trusting it.
+- **Set `caplog` levels on the package, not one module** — `specweaver.core.flow.engine` rather
+  than `specweaver.core.flow.engine.runner`. A test pinned to one module silently stops observing
+  anything the moment a refactor moves the emitting call, and the assertion still reads as a real
+  check.
+
+The same shape applies to any test whose subject can move between modules: pin the *contract*, not
+the location. That is `TECH-015`'s argument applied to assertions.
+
 ## 7. Code Quality Gates
 
 ### The commit gate (`scripts/tests.py`)

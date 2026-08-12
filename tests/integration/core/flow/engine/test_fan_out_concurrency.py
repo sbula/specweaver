@@ -99,7 +99,12 @@ async def test_fan_out_log_observability_context_isolation(
     """
     import logging
 
-    caplog.set_level(logging.INFO, logger="specweaver.core.flow.engine.runner")
+    # The whole engine package, not one module: `TECH-020` moved the run-tagged step logs out
+    # of `runner` into `step_execution` (and `approval` / `hydration`), so pinning this to
+    # `runner` captured nothing. It passed serially anyway because another test had already
+    # lowered a level process-wide — contamination that xdist worker isolation removes, which
+    # is why this surfaced only under `-n auto`.
+    caplog.set_level(logging.INFO, logger="specweaver.core.flow.engine")
 
     store = StateStore(tmp_path / "concurrent_state.db")
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
