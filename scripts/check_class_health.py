@@ -60,7 +60,13 @@ EXEMPT_BASES = {"Enum", "StrEnum", "IntEnum", "IntFlag", "Flag", "Protocol", "Ty
 #: subtracts one from the real budget of every Pydantic class while leaving every other class
 #: on the full limit. Same reasoning as excluding stateless methods from the cohesion score: a
 #: term that is present by construction cannot carry information.
-IGNORED_ATTRIBUTES = {"model_config"}
+#:
+#: `__tablename__` and `__table_args__` are the SQLAlchemy equivalent, added by `TECH-035` on the
+#: same evidence: all 13 mapped classes in `src` declare `__tablename__`, so it distinguishes none
+#: of them. It mattered — `Task` was the single oversized class in the baseline at 16 attributes,
+#: and has **14** real mapped columns against a limit of 15. A named list rather than "ignore every
+#: dunder", so `__slots__` and friends still count.
+IGNORED_ATTRIBUTES = {"model_config", "__tablename__", "__table_args__"}
 
 
 @dataclass
@@ -172,6 +178,27 @@ def _is_abstract_stub(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     return False
 
 
+def _is_constant(name: str) -> bool:
+    """True for an UPPER_CASE member — a constant by PEP 8, not instance state.
+
+    `MCPExplorerTool.role` is `return self.NO_ROLE`, where `NO_ROLE: str = "no_role"` lives on
+    `BaseTool`. That is exactly as stateless as `return "no_role"`, which is already excluded, but
+    the constant is reached through `self` so it read as state and made the property its own
+    component. Detected by naming rather than by declaration because the constant is usually
+    inherited, and a base class is not in scope when one class body is analysed. `TECH-035`.
+    """
+    return name.isupper() or (name.replace("_", "").isupper() and any(c.isalpha() for c in name))
+
+
+def _instance_state(touched: set[str], method_names: set[str]) -> set[str]:
+    """The members a method reaches that are genuinely per-instance state.
+
+    Sibling method names are handled as call edges, not shared state; constants are shared by
+    every instance and so distinguish nothing.
+    """
+    return {name for name in touched - method_names if not _is_constant(name)}
+
+
 def _is_stateless(
     func: ast.FunctionDef | ast.AsyncFunctionDef,
     touched: set[str],
@@ -183,7 +210,7 @@ def _is_stateless(
         return True
     if _is_abstract_stub(func):
         return True
-    return not (touched - method_names) and not (called & method_names)
+    return not _instance_state(touched, method_names) and not (called & method_names)
 
 
 def _dispatches_dynamically(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -284,11 +311,25 @@ def analyse_class(node: ast.ClassDef, path: Path) -> ClassReport:
 
     dynamic = {m.name for m in methods if _dispatches_dynamically(m)}
 
+    # `b in touched[a]` catches a DISPATCH TABLE: `get_extractors` returns
+    # `[self._extract_tsdoc, ...]`, which are attribute loads rather than calls, so the call rule
+    # alone missed them and `TSStandardsAnalyzer` read as three unrelated classes. Handing a
+    # sibling around as a value is coupling exactly as much as invoking it. `TECH-035`.
     edges: set[tuple[str, str]] = set()
     for i, a in enumerate(graph_nodes):
         for b in graph_nodes[i + 1 :]:
-            shared = (touched[a] - method_names) & (touched[b] - method_names)
-            if shared or b in called[a] or a in called[b] or a in dynamic or b in dynamic:
+            shared = _instance_state(touched[a], method_names) & _instance_state(
+                touched[b], method_names
+            )
+            if (
+                shared
+                or b in called[a]
+                or a in called[b]
+                or b in touched[a]
+                or a in touched[b]
+                or a in dynamic
+                or b in dynamic
+            ):
                 edges.add((a, b))
 
     by_name = {m.name: m for m in methods}

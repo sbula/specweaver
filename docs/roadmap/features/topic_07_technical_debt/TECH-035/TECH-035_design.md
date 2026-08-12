@@ -2,11 +2,10 @@
 
 - **Feature ID**: TECH-035
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL 2026-08-12 — the ratchet is delivered and the gate is green; 19 incohesive
-  classes and 1 oversized remain frozen, but **11 of the 19 are a measurement defect, not debt** —
-  the dispatcher question is settled, see §The dispatcher question, answered. Real remaining
-  scope: **8 classes + 1 oversized**, and a checker fix that must land before the reduction work so
-  it is not measured against a knowingly-wrong baseline.
+- **Status**: **DELIVERED 2026-08-12.** Ratchet shipped, checker corrected, baseline re-frozen
+  **19 incohesive + 1 oversized → 9 incohesive + 0 oversized**. Every one of the 9 has a stated
+  reason below: **7 are `TECH-034`'s recorded residue and this ticket's explicit non-goal**, and
+  **2 are reviewed exemptions**. See §Where the 19 went.
 - **Origin**: Found 2026-08-12 during `TECH-023` batch 2. The gate fired for the first time in the
   session because that commit finally *changed* a file it covers — see "Why nobody had seen this".
 
@@ -121,8 +120,10 @@ identical split, and three atoms that each separate intent-dispatch from executi
 
 ## Next Step
 
-Run through `specweaver-design`. Settle the dispatcher question first — it decides whether three of
-the 23 are debt at all.
+None — the ticket is closed. Two findings it surfaced but deliberately did **not** absorb need
+tickets of their own: the **7 language parsers**, now unowned since `TECH-034` closed (a shared
+`_is_symbol_valid` on the class-based tier clears four of them), and `TopologyGraph._stale_nodes`
+being **assigned from outside the class**.
 
 ## Delivery of the ratchet, 2026-08-12
 
@@ -278,3 +279,80 @@ The frozen baseline currently records 11 scores that are **not debt**, so "19 in
 overstates the real figure by more than half. The reduction work is **8 classes**, and the first
 deliverable is the checker fix plus a re-freeze — otherwise later work is measured against a
 baseline that is wrong in a known direction.
+## Where the 19 went — 2026-08-12
+
+**19 incohesive + 1 oversized → 9 incohesive + 0 oversized.** Not one class was restructured to get
+there: every reduction was a **measurement** correction, each probed and each measured across all
+402 classes for regressions before it shipped. `MAX_LCOM4` is still 1 and `MAX_ATTRIBUTES` is still
+15.
+
+| Correction | Classes | What was wrong |
+|---|---|---|
+| Stranded callers | 7 | A method admitted for calling a sibling that was then excluded as stateless was left alone as its own component. Removing the stateless node also removed the edges **through** it — `extract_endpoints` and `extract_messages` both call `_parse_proto`, so they are coupled by it. Fixed by dropping a stateless method from the **count**, not the **graph**. |
+| Dynamic dispatch | (of those 7) | `getattr(self, f"_intent_{…}")` is a call to *some* sibling. The analyser cannot say which, so the honest reading is any of them. Probed: a synthetic dispatcher scores 1, and adding one `self._known_intents()` call — no design change — drove it to 2. |
+| Dispatch tables | 2 | `get_extractors` returns `[self._extract_tsdoc, …]`. Those are attribute loads, not calls, and the edge rule subtracted method names before comparing — so a dispatch table read as three unrelated classes. Handing a sibling around as a value is coupling exactly as much as invoking it. |
+| Class constants | 1 | `MCPExplorerTool.role` is `return self.NO_ROLE`, where `NO_ROLE: str = "no_role"` lives on `BaseTool`. As stateless as `return "no_role"`, which was already excluded. Detected by PEP 8 naming because the constant is inherited, and a base class is out of scope when one class body is analysed. |
+| ORM declarations | 1 oversized | `__tablename__` / `__table_args__` counted as state. All 13 mapped classes in `src` declare them, so they distinguish none — the `model_config` precedent exactly. `Task` was the single oversized class at 16 and has **14** real mapped columns against a limit of 15. |
+
+**A rejected candidate, recorded because it looked right.** The first fix dropped stranded callers
+instead of connecting them. Measured: it scored four real classes at **0**, and `incohesive()` is
+`lcom4 > 1`, so 0 *passes*. It would have traded a false positive for a silent blind spot — this
+ticket's own subject. The rule that shipped produces none.
+
+### The 9 that remain, and why each is not this ticket's work
+
+**7 are `TECH-034`'s recorded residue and this ticket's explicit non-goal.** `GoCodeStructure`,
+`JavaCodeStructure`, `KotlinCodeStructure`, `MarkdownCodeStructure`, `RustCodeStructure`,
+`SqlCodeStructure`, `TypeScriptCodeStructure` — all at `LCOM4=2`. `TECH-034` took the parsers from
+10 flagged to 7 and knowingly stopped there; §Relationship above says *"Do not refactor the language
+parsers here"* and §Non-Goals says *"Not the AST parsers — `TECH-034` owns them."*
+
+Their components now name a real split, which they did not before: four of the seven cut along
+`{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` — a **symbol-filter** concern, with
+`_is_symbol_valid` near-duplicated across all four and differing only in which visibility predicate
+it calls. Go and Sql cut along reading-vs-editing, the same seam `TECH-034`/`TECH-035` already
+split out of the base as `SymbolReadingMixin` / `SymbolEditingMixin`.
+
+> **This is now unowned, and that is worth saying plainly.** `TECH-034` is DELIVERED, so nobody
+> holds these seven. They are a real, actionable finding — a shared `_is_symbol_valid` on the
+> class-based tier would clear four of them — and they need a ticket rather than a sentence here.
+> Deliberately **not** absorbed into this one: expanding a ticket past its own stated non-goal is
+> how scope stops meaning anything.
+
+**2 are reviewed exemptions.** Both are the same shape: a read-only property exposing
+constructor-assigned state that no other method in the class reads.
+
+- **`TopologyGraph`** (3) — components 2 and 3 are `stale_nodes` and `warnings`, defensive-copy
+  accessors for construction data. As a refactoring instruction this reads "extract a class that
+  holds warnings, and a class that holds stale nodes", which nobody would do.
+- **`BaseTreeSitterParser`** (2) — component 2 is `parser`, assigned in `__init__` and consumed by
+  the mixins rather than by the base. §"`BaseTreeSitterParser` split" already recorded this:
+  *"one job stated two ways rather than two jobs. Squeezing it to 1 would be chasing the metric."*
+
+**Why these are an exemption and not a sixth checker fix.** A blanket "single-attribute getter is
+stateless" rule was considered and rejected: it would let a god object with 15 getters score
+`LCOM4=1`, which is the exact blindness the cohesion axis exists to cover for. Per-class judgement
+recorded here is the honest mechanism, and the frozen baseline is what makes it reviewable —
+they are named in `scripts/baselines/class_health.json`, so a reader asking "why is this allowed"
+has one file to open.
+
+### Adjacent finding, recorded because nobody has looked
+
+`TopologyGraph._stale_nodes` is assigned **from outside the class** —
+`graph._stale_nodes = final_stale_nodes` (`topology.py:271`), reaching into a private attribute of
+an instance from a factory. That is why nothing inside the class couples to it, and it is a real
+encapsulation defect rather than a cohesion one. Out of scope here (§Non-Goals: no behaviour
+change), and it needs its own ticket.
+
+### Verification
+
+Both guards probed by planting violations, not by reading the code — a genuinely incohesive class
+**and** a 20-column ORM table in one file: exit 1, both named, the incohesive one's components
+printed as the split. Removed: exit 0. The ORM exemption did not blind the god-object axis.
+
+The ratchet census floor moved 15 → 5 with the corrected measurement. It stays a floor rather than
+an equality, and well below the current 9, so it catches `measure` collapsing to nothing without
+pinning a debt number that later reduction is meant to shrink.
+
+`6529 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; complexity ratchet
+**40**, suppressions **227**.

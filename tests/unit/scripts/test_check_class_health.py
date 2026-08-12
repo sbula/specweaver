@@ -104,6 +104,29 @@ class TestAttributeCount:
         assert not _analyse(ch, plain).too_many_attributes(15)
         assert not _analyse(ch, pydantic).too_many_attributes(15)
 
+    def test_sqlalchemy_table_declarations_are_not_counted(self, ch: ModuleType) -> None:
+        """`__tablename__` and `__table_args__` are ORM wiring, not state the class carries.
+
+        Same reasoning as `model_config`, and the same evidence: every one of the 13 mapped
+        classes in `src` declares `__tablename__`, so counting it subtracts from every ORM class's
+        budget and distinguishes none of them. `Task` was the one oversized class in the baseline
+        at 16 — and has **14** real mapped columns, under the limit of 15. `TECH-035`.
+        """
+        source = (
+            "class T(Base):\n"
+            '    __tablename__ = "memory_tasks"\n'
+            "    __table_args__ = (Index('i', 'a'),)\n"
+            "    id: Mapped[int] = mapped_column(primary_key=True)\n"
+        )
+
+        assert _analyse(ch, source).attributes == {"id"}
+
+    def test_a_dunder_that_is_not_orm_wiring_is_still_counted(self, ch: ModuleType) -> None:
+        """The exemption is a named list, not "ignore every dunder"."""
+        source = "class T:\n    __slots__ = ('a',)\n    a: int\n"
+
+        assert _analyse(ch, source).attributes == {"__slots__", "a"}
+
     def test_a_field_merely_named_like_it_is_still_counted(self, ch: ModuleType) -> None:
         """Only the exact `model_config` name is exempt. A field called `model_configuration`
         is ordinary state and must not slip through on a prefix match."""
@@ -331,6 +354,45 @@ class TestLcom4CouplingThroughExcludedMethods:
     def test_a_genuinely_split_class_is_still_split(self, ch: ModuleType) -> None:
         """The correction must not swallow the incohesion the metric exists to find."""
         assert _analyse(ch, TWO_CLASSES_IN_A_TRENCHCOAT).lcom4 == 2
+
+    def test_a_dispatch_table_couples_the_methods_it_lists(self, ch: ModuleType) -> None:
+        """Handing a sibling method around as a VALUE is coupling, exactly like calling it.
+
+        `TSStandardsAnalyzer.get_extractors` returns `[self._extract_tsdoc, ...]`. Those are
+        `ast.Attribute` loads, not `ast.Call`s, and the edge rule subtracted method names before
+        comparing — so a dispatch table read as three unrelated classes.
+        """
+        source = (
+            "class C(Base):\n"
+            "    def get_extractors(self):\n"
+            "        return [self._inherited_one, self._extract_a, self._extract_b]\n"
+            "    def _extract_a(self, files):\n"
+            "        return self._inherited_two(files)\n"
+            "    def _extract_b(self, files):\n"
+            "        return self._inherited_three(files)\n"
+        )
+
+        report = _analyse(ch, source)
+
+        assert report.lcom4 == 1, f"a dispatch table read as {report.components}"
+
+    def test_a_property_returning_a_class_constant_is_not_its_own_component(
+        self, ch: ModuleType
+    ) -> None:
+        """`return self.NO_ROLE` is as stateless as `return "no_role"` — it is not instance state.
+
+        `MCPExplorerTool.role` returns `BaseTool.NO_ROLE`, a class-level `str` constant. The
+        existing exclusion covered a literal return and missed the constant that names it.
+        """
+        source = COHESIVE + "    @property\n    def role(self):\n        return self.NO_ROLE\n"
+
+        assert _analyse(ch, source).lcom4 == 1
+
+    def test_a_property_returning_instance_state_is_still_counted(self, ch: ModuleType) -> None:
+        """The class-constant rule must not swallow a real accessor for real state."""
+        source = COHESIVE + "    @property\n    def other(self):\n        return self._other\n"
+
+        assert _analyse(ch, source).lcom4 == 2
 
 
 class TestExemptions:

@@ -1,9 +1,6 @@
 {
   "classes": {
     "src/specweaver/assurance/graph/topology.py::TopologyGraph": 3,
-    "src/specweaver/assurance/standards/languages/python/analyzer.py::PythonStandardsAnalyzer": 2,
-    "src/specweaver/assurance/standards/languages/typescript/analyzer.py::TSStandardsAnalyzer": 3,
-    "src/specweaver/sandbox/mcp/interfaces/tool.py::MCPExplorerTool": 2,
     "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser": 2,
     "src/specweaver/workspace/ast/parsers/go/codestructure.py::GoCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure": 2,
@@ -13,7 +10,5 @@
     "src/specweaver/workspace/ast/parsers/sql/codestructure.py::SqlCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/typescript/codestructure.py::TypeScriptCodeStructure": 2
   },
-  "attributes": {
-    "src/specweaver/workspace/memory/store.py::Task": 16
-  }
+  "attributes": {}
 }
