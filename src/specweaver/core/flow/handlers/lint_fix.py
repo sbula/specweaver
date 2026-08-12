@@ -21,6 +21,61 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _linter_kwargs(context: RunContext, target: str) -> dict[str, Any]:
+    """What to hand the linter: every stale file under `target`, or `target` itself.
+
+    A topology-aware run lints only what the staleness cache says changed; without a cache it
+    lints the whole target. Extracted so `execute` reads as its four phases rather than opening
+    with a file walk (`TECH-023`).
+    """
+    if context.graph.stale_nodes is None:
+        return {"intent": "run_linter", "target": target}
+
+    target_path = (context.project_path / target).resolve()
+    if target_path.is_file():
+        candidates = [target_path]
+    elif target_path.is_dir():
+        candidates = list(target_path.rglob("*.py"))
+    else:
+        candidates = []
+
+    stale = context.graph.stale_nodes
+    targets = [
+        rel
+        for f in candidates
+        if (rel := f.relative_to(context.project_path).as_posix()) in stale or str(f) in stale
+    ]
+    return {"intent": "run_linter", "targets": targets}
+
+
+def _lint_outcome(
+    started: str,
+    *,
+    status: StepStatus,
+    reflections: int,
+    remaining: int,
+    auto_fixed: bool | None = None,
+    error: str | None = None,
+) -> StepResult:
+    """One `StepResult` shape for all five of this handler's exits."""
+    output: dict[str, Any] = {
+        "reflections_used": reflections,
+        "lint_errors_remaining": remaining,
+    }
+    if auto_fixed is not None:
+        output["auto_fixed"] = auto_fixed
+    # `error_message` is a required `str` on the model, so a success path must OMIT it rather than
+    # pass None — which is what the five inlined literals did, and what this nearly lost.
+    extra = {"error_message": error} if error is not None else {}
+    return StepResult(
+        status=status,
+        output=output,
+        started_at=started,
+        completed_at=_now_iso(),
+        **extra,
+    )
+
+
 class LintFixHandler:
     """Handler for lint_fix+code — lint-fix reflection loop.
 
@@ -35,7 +90,7 @@ class LintFixHandler:
         max_reflections: int — max fix cycles (default: 3).
     """
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)
@@ -50,26 +105,7 @@ class LintFixHandler:
         reflections_used = 0
         last_error_count = 0
 
-        run_kwargs: dict[str, Any]
-        # Resolve targets topologically if stale_nodes is present
-        if context.graph.stale_nodes is not None:
-            target_path = (context.project_path / target).resolve()
-            all_py = []
-            if target_path.is_file():
-                all_py = [target_path]
-            elif target_path.is_dir():
-                all_py = list(target_path.rglob("*.py"))
-
-            resolved_targets = []
-            for f in all_py:
-                abs_str = str(f)
-                rel_str = f.relative_to(context.project_path).as_posix()
-                if abs_str in context.graph.stale_nodes or rel_str in context.graph.stale_nodes:
-                    resolved_targets.append(rel_str)
-
-            run_kwargs = {"intent": "run_linter", "targets": resolved_targets}
-        else:
-            run_kwargs = {"intent": "run_linter", "target": target}
+        run_kwargs = _linter_kwargs(context, target)
 
         # Initial lint
         lint_result = atom.run(run_kwargs)
@@ -79,15 +115,8 @@ class LintFixHandler:
         # Clean on first run → done
         if last_error_count == 0:
             logger.info("LintFixHandler: code is clean — no lint errors")
-            return StepResult(
-                status=StepStatus.PASSED,
-                output={
-                    "reflections_used": 0,
-                    "lint_errors_remaining": 0,
-                    "auto_fixed": False,
-                },
-                started_at=started,
-                completed_at=_now_iso(),
+            return _lint_outcome(
+                started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=False
             )
 
         # Phase 1: Try ruff auto-fix first (cheaper than LLM)
@@ -103,30 +132,20 @@ class LintFixHandler:
 
         if last_error_count == 0:
             logger.info("LintFixHandler: all errors resolved by ruff auto-fix")
-            return StepResult(
-                status=StepStatus.PASSED,
-                output={
-                    "reflections_used": 0,
-                    "lint_errors_remaining": 0,
-                    "auto_fixed": True,
-                },
-                started_at=started,
-                completed_at=_now_iso(),
+            return _lint_outcome(
+                started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=True
             )
 
         # Phase 2: LLM reflection loop for remaining errors
         for _ in range(max_reflections):
             # No LLM → can't fix
             if context.model.llm is None:
-                return StepResult(
+                return _lint_outcome(
+                    started,
                     status=StepStatus.FAILED,
-                    error_message="Lint errors found but no LLM configured for auto-fix",
-                    output={
-                        "reflections_used": reflections_used,
-                        "lint_errors_remaining": last_error_count,
-                    },
-                    started_at=started,
-                    completed_at=_now_iso(),
+                    reflections=reflections_used,
+                    remaining=last_error_count,
+                    error="Lint errors found but no LLM configured for auto-fix",
                 )
 
             # Find code to fix
@@ -161,15 +180,12 @@ class LintFixHandler:
                 logger.exception(
                     "LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1
                 )
-                return StepResult(
+                return _lint_outcome(
+                    started,
                     status=StepStatus.ERROR,
-                    error_message=str(exc),
-                    output={
-                        "reflections_used": reflections_used,
-                        "lint_errors_remaining": last_error_count,
-                    },
-                    started_at=started,
-                    completed_at=_now_iso(),
+                    reflections=reflections_used,
+                    remaining=last_error_count,
+                    error=str(exc),
                 )
 
             reflections_used += 1
@@ -181,14 +197,8 @@ class LintFixHandler:
             )
 
             if last_error_count == 0:
-                return StepResult(
-                    status=StepStatus.PASSED,
-                    output={
-                        "reflections_used": reflections_used,
-                        "lint_errors_remaining": 0,
-                    },
-                    started_at=started,
-                    completed_at=_now_iso(),
+                return _lint_outcome(
+                    started, status=StepStatus.PASSED, reflections=reflections_used, remaining=0
                 )
 
         # Exhausted

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.mcp.core.atom import MCPAtom
 
@@ -54,6 +54,41 @@ def _sync_fetch(command: list[str], env: dict[str, str], uri: str) -> str:
         return f"ERROR fetching resource: {exc}"
 
 
+def _resolve_mcp_command(
+    uri: str, servers: dict[str, Any]
+) -> tuple[list[str], dict[str, Any], str | None]:
+    """`(command, env, error)` for one `mcp://<server>/<resource>` URI.
+
+    `error` is non-None for each of the three ways a URI can fail to name a runnable server, and
+    the caller renders it into the snippet — the three refusals were three `continue`s inside the
+    fetch loop (`TECH-023`).
+    """
+    if not uri.startswith("mcp://"):
+        return [], {}, "Invalid MCP URI format"
+
+    server_name = uri[6:].split("/", 1)[0]
+    server_config = servers.get(server_name)
+    if not server_config:
+        return [], {}, f"Server '{server_name}' not found in topology bounds"
+
+    command = server_config.get("command")
+    if isinstance(command, str):
+        import shlex
+
+        command = shlex.split(command)
+    elif not isinstance(command, list):
+        command = []
+
+    args = server_config.get("args")
+    if isinstance(args, list):
+        command.extend(args)
+
+    if not command:
+        return [], {}, f"Server '{server_name}' command configuration invalid"
+
+    return command, (server_config.get("env") or {}), None
+
+
 async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
     """Evaluate topology and fetch physical MCP resources lazily.
 
@@ -84,41 +119,10 @@ async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
     for uri in resources:
         logger.debug("MCP Assembler: Fetching %s...", uri)
 
-        # URI format expected: mcp://<server_name>/<resource>
-        server_name = ""
-        if uri.startswith("mcp://"):
-            parts = uri[6:].split("/", 1)
-            server_name = parts[0]
-        else:
-            snippets.append(f"{uri}:\n  |\n    ERROR: Invalid MCP URI format\n")
+        command, env, error = _resolve_mcp_command(uri, servers)
+        if error is not None:
+            snippets.append(f"{uri}:\n  |\n    ERROR: {error}\n")
             continue
-
-        server_config = servers.get(server_name)
-        if not server_config:
-            snippets.append(
-                f"{uri}:\n  |\n    ERROR: Server '{server_name}' not found in topology bounds\n"
-            )
-            continue
-
-        command = server_config.get("command")
-        if isinstance(command, str):
-            import shlex
-
-            command = shlex.split(command)
-        elif not isinstance(command, list):
-            command = []
-
-        args = server_config.get("args")
-        if isinstance(args, list):
-            command.extend(args)
-
-        if not command:
-            snippets.append(
-                f"{uri}:\n  |\n    ERROR: Server '{server_name}' command configuration invalid\n"
-            )
-            continue
-
-        env = server_config.get("env") or {}
 
         # Schedule the blocking subprocess IPC over a separate thread context
         content = await asyncio.to_thread(_sync_fetch, command, env, uri)

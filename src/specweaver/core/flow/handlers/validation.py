@@ -357,6 +357,25 @@ class ValidateCodeHandler:
         )
 
 
+def _test_dir_for(module_dir: Path, src_dir: Path, project_path: Path, kind: str) -> str:
+    """The test directory mirroring one source module, e.g. `specweaver/core/flow` ->
+    `tests/unit/core/flow`.
+
+    Falls back to the tier root (`tests/<kind>`) when the module sits directly under `src/`, when
+    the mirrored directory does not exist yet, or when the module is not under `src/` at all —
+    three distinct reasons that all mean "run the whole tier rather than nothing".
+    """
+    tier_root = str(Path("tests") / kind)
+    try:
+        parts = module_dir.relative_to(src_dir).parts
+    except ValueError:
+        return tier_root
+    if len(parts) <= 1:
+        return tier_root
+    mirrored = Path("tests") / kind / Path(*parts[1:])
+    return str(mirrored) if (project_path / mirrored).exists() else tier_root
+
+
 class ValidateTestsHandler:
     """Runs tests via the QARunnerAtom.
 
@@ -486,31 +505,13 @@ class ValidateTestsHandler:
             engine = TopologyEngine()
             graph = TopologyGraph.from_project(context.project_path, engine, auto_infer=False)
 
-            resolved: set[str] = set()
             src_dir = context.project_path / "src"
-
-            for node_name in stale_nodes:
-                node = graph.nodes.get(node_name)
-                if not node or not node.yaml_path:
-                    continue
-
-                try:
-                    rel_to_src = node.yaml_path.parent.relative_to(src_dir)
-                    parts = rel_to_src.parts
-                    if len(parts) > 1:
-                        # e.g. specweaver/core/flow -> tests/unit/core/flow
-                        rel_test_path = Path("tests") / kind / Path(*parts[1:])
-                        if (context.project_path / rel_test_path).exists():
-                            resolved.add(str(rel_test_path))
-                        else:
-                            # If targeted test directory doesn't exist, fallback to root tests/kind
-                            resolved.add(str(Path("tests") / kind))
-                    else:
-                        resolved.add(str(Path("tests") / kind))
-                except ValueError:
-                    resolved.add(str(Path("tests") / kind))
-
-            return sorted(list(resolved)) if resolved else [target]
+            resolved = {
+                _test_dir_for(node.yaml_path.parent, src_dir, context.project_path, kind)
+                for node_name in stale_nodes
+                if (node := graph.nodes.get(node_name)) and node.yaml_path
+            }
+            return sorted(resolved) if resolved else [target]
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]

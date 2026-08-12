@@ -38,6 +38,48 @@ logger = logging.getLogger(__name__)
 DECOMPOSITION_PLAN_KEY = "plan"
 
 
+def _clear_superseded_plan(
+    combo: tuple[StepAction, StepTarget],
+    step_def: PipelineStep,
+    result: StepResult,
+    context: RunContext,
+) -> None:
+    """Drop the plan field this step owns when the step tried again and did not pass.
+
+    A step that owns a plan field and *tried and failed* invalidates whatever it wrote on a
+    previous attempt. Scenario: decompose passes -> hydrates -> a later step loops back ->
+    decompose re-runs and fails. Retaining the superseded plan lets a downstream orchestrate step
+    consume stale data and silently "succeed". No plan (loud failure) beats wrong plan (silent
+    success). Only the field this combo owns is cleared.
+
+    Restricted to FAILED/ERROR deliberately: SKIPPED and WAITING_FOR_INPUT mean the step produced
+    no new verdict at all (bypassed, or parked and due to re-run on resume), so there is nothing to
+    supersede and wiping a still-valid plan would be gratuitous.
+    """
+    if result.status not in (StepStatus.FAILED, StepStatus.ERROR):
+        return
+
+    if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE):
+        field, current = "decomposition", context.plan_context.decomposition
+    elif combo == (StepAction.PLAN, StepTarget.SPEC):
+        field, current = "plan", context.plan_context.plan
+    else:
+        return
+
+    if not current:
+        return
+
+    logger.warning(
+        "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
+        "context.plan_context.%s from a previous attempt",
+        context.run.run_id,
+        step_def.name,
+        result.status.value,
+        field,
+    )
+    context.plan_context = context.plan_context.model_copy(update={field: None})
+
+
 def hydrate_plan_context(
     step_def: PipelineStep,
     result: StepResult,
@@ -60,38 +102,7 @@ def hydrate_plan_context(
     combo = (step_def.action, step_def.target)
 
     if result.status != StepStatus.PASSED:
-        # A step that owns a plan field and *tried and failed* invalidates whatever it wrote on a
-        # previous attempt. Scenario: decompose passes -> hydrates -> a later step loops back
-        # -> decompose re-runs and fails. Retaining the superseded plan lets a downstream
-        # orchestrate step consume stale data and silently "succeed". No plan (loud failure)
-        # beats wrong plan (silent success). Only the field this combo owns is cleared.
-        #
-        # Restricted to FAILED/ERROR deliberately: SKIPPED and WAITING_FOR_INPUT mean the step
-        # produced no new verdict at all (bypassed, or parked and due to re-run on resume), so
-        # there is nothing to supersede and wiping a still-valid plan would be gratuitous.
-        if result.status not in (StepStatus.FAILED, StepStatus.ERROR):
-            return
-        if (
-            combo == (StepAction.DECOMPOSE, StepTarget.FEATURE)
-            and context.plan_context.decomposition
-        ):
-            logger.warning(
-                "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
-                "context.plan_context.decomposition from a previous attempt",
-                context.run.run_id,
-                step_def.name,
-                result.status.value,
-            )
-            context.plan_context = context.plan_context.model_copy(update={"decomposition": None})
-        elif combo == (StepAction.PLAN, StepTarget.SPEC) and context.plan_context.plan:
-            logger.warning(
-                "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
-                "context.plan_context.plan from a previous attempt",
-                context.run.run_id,
-                step_def.name,
-                result.status.value,
-            )
-            context.plan_context = context.plan_context.model_copy(update={"plan": None})
+        _clear_superseded_plan(combo, step_def, result, context)
         return
 
     if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE):

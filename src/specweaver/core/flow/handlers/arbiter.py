@@ -102,6 +102,39 @@ in the spec below. Your job is to determine WHO is at fault.
 """
 
 
+def _evidence_error(context: RunContext) -> str | None:
+    """Why the scenario evidence cannot be arbitrated, or None when it can.
+
+    INT-US-24 FR-2, the evidence contract: `run_scenario_tests` ALWAYS publishes the raw QA export
+    under this reserved key for scenario runs, so its absence means the wire is broken and must
+    fail LOUD, never green. The key is consumed ON VERDICT (popped only on terminal branches) so a
+    `spec_ambiguity` park can resume and re-arbitrate, and an ERROR retry re-reads it.
+    """
+    if "scenario_test_failures" not in context.feedback:
+        return (
+            "scenario evidence missing — feedback['scenario_test_failures'] was never "
+            "published (wiring defect between run_scenario_tests and the arbiter), or the "
+            "run was resumed across sessions (scenario evidence is not persisted — re-run "
+            "the pipeline)"
+        )
+
+    evidence = context.feedback["scenario_test_failures"]
+    counts_ok = isinstance(evidence, dict) and all(
+        isinstance(evidence.get(k, 0), int) for k in ("total", "failed", "errors")
+    )
+    failures = evidence.get("failures", []) if isinstance(evidence, dict) else None
+    if (
+        not counts_ok
+        or not isinstance(failures, list)
+        or any(not isinstance(f, dict) for f in failures)
+    ):
+        return (
+            "malformed scenario evidence under feedback['scenario_test_failures'] — "
+            "expected the QA export shape (total/failed/errors ints, failures list of dicts)"
+        )
+    return None
+
+
 class ArbitrateVerdictHandler(StepHandler):
     """Diagnose test failures and route feedback to the offending party."""
 
@@ -114,29 +147,12 @@ class ArbitrateVerdictHandler(StepHandler):
         # means the wire is broken and must fail LOUD, never green. The key is
         # consumed ON VERDICT (popped only on terminal branches) so a spec_ambiguity
         # park can resume and re-arbitrate, and an ERROR retry re-reads it.
-        if "scenario_test_failures" not in context.feedback:
-            return _error_result(
-                "scenario evidence missing — feedback['scenario_test_failures'] was never "
-                "published (wiring defect between run_scenario_tests and the arbiter), or the "
-                "run was resumed across sessions (scenario evidence is not persisted — re-run "
-                "the pipeline)",
-                started,
-            )
+        evidence_error = _evidence_error(context)
+        if evidence_error is not None:
+            return _error_result(evidence_error, started)
         evidence = context.feedback["scenario_test_failures"]
-        counts_ok = isinstance(evidence, dict) and all(
-            isinstance(evidence.get(k, 0), int) for k in ("total", "failed", "errors")
-        )
-        failures = evidence.get("failures", []) if isinstance(evidence, dict) else None
-        if (
-            not counts_ok
-            or not isinstance(failures, list)
-            or any(not isinstance(f, dict) for f in failures)
-        ):
-            return _error_result(
-                "malformed scenario evidence under feedback['scenario_test_failures'] — "
-                "expected the QA export shape (total/failed/errors ints, failures list of dicts)",
-                started,
-            )
+        # Shape already validated above, so this is a plain read rather than a second guard.
+        failures = evidence.get("failures", [])
 
         total = evidence.get("total", 0)
         failed = evidence.get("failed", 0)

@@ -71,25 +71,47 @@ def _resolve_generation_routing(
     return adapter, config
 
 
+def _pop_findings(context: RunContext, step: PipelineStep) -> dict[str, Any] | None:
+    """This step's loop-back findings, consumed exactly once. None when there are none.
+
+    Popping is the point: feedback that is not cleared sticks across retries, so the next attempt
+    re-applies a previous round's overrides.
+    """
+    if not (hasattr(context, "feedback") and context.feedback):
+        return None
+    step_feedback = context.feedback.pop(step.name, None)
+    if not step_feedback or "findings" not in step_feedback:
+        return None
+    findings: dict[str, Any] = step_feedback["findings"]
+    return findings
+
+
 def _extract_prompt_feedback(
     context: RunContext, step: PipelineStep
 ) -> tuple[list[str] | None, str | None]:
-    """Extract dictator overrides and validation findings from loop-back feedback and clear it."""
-    dictator_overrides = None
-    validation_findings = None
-    if hasattr(context, "feedback") and context.feedback:
-        step_feedback = context.feedback.pop(step.name, None)
-        if step_feedback and "findings" in step_feedback:
-            findings = step_feedback["findings"]
-            if findings.get("hitl_verdict") == "reject" and "remarks" in findings:
-                dictator_overrides = [findings["remarks"]]
-            if "results" in findings:
-                fails = [r for r in findings["results"] if r.get("status") == "FAIL"]
-                if fails:
-                    validation_findings = "\n".join(
-                        f"[{r.get('rule_id', 'UNKNOWN')}] {r.get('message', '')}" for r in fails
-                    )
-    return dictator_overrides, validation_findings
+    """Extract dictator overrides and validation findings from loop-back feedback and clear it.
+
+    `TECH-023`: this scored 26 at fourteen lines — the cost was four levels of nesting, not size.
+    The pop is now a guard clause, so each half of the return reads on its own.
+    """
+    findings = _pop_findings(context, step)
+    if findings is None:
+        return None, None
+
+    overrides = (
+        [findings["remarks"]]
+        if findings.get("hitl_verdict") == "reject" and "remarks" in findings
+        else None
+    )
+
+    fails = [r for r in findings.get("results", []) if r.get("status") == "FAIL"]
+    validation = (
+        "\n".join(f"[{r.get('rule_id', 'UNKNOWN')}] {r.get('message', '')}" for r in fails)
+        if fails
+        else None
+    )
+
+    return overrides, validation
 
 
 class GenerateCodeHandler:

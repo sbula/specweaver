@@ -96,6 +96,52 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     )
 
 
+def _inject_resolved_mentions(messages: list[Any], context: RunContext) -> None:
+    """Append the contents of any files the assistant @-mentioned, as extra USER turns.
+
+    `TECH-023`: written twice — once as `ReviewSpecHandler._inject_mentions`, once as a nested
+    `on_tool_round` closure inside `ReviewCodeHandler.execute`. The copies had **drifted**: the
+    closure's f-string used `\\n` (a literal backslash and an n) where the method used `\n`, so
+    the code-review path fed the model a single run-on line with visible `\n` characters instead
+    of a fenced block. Unifying fixes that by construction.
+
+    Never raises: an unreadable resolved path is suppressed, because losing one auto-attached file
+    must not fail a review that has otherwise succeeded.
+    """
+
+    from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
+    from specweaver.infrastructure.llm.models import Message, Role
+
+    last_msg = messages[-1]
+    if last_msg.role != Role.ASSISTANT:
+        return
+
+    candidates = extract_mentions(last_msg.content)
+    if not candidates:
+        return
+
+    resolved = _resolve_mentions(
+        candidates,
+        context.project_path,
+        workspace_roots=(
+            [context.project_path / r for r in context.graph.workspace_roots]
+            if context.graph.workspace_roots
+            else None
+        ),
+    )
+    for r in resolved or []:
+        with contextlib.suppress(OSError):
+            messages.append(
+                Message(
+                    role=Role.USER,
+                    content=(
+                        f"Auto-resolved file `{r.original}`:\n\n"
+                        f"```\n{r.resolved_path.read_text('utf-8')}\n```"
+                    ),
+                )
+            )
+
+
 class ReviewSpecHandler:
     """Handler for review+spec — LLM-based spec review."""
 
@@ -179,40 +225,17 @@ class ReviewSpecHandler:
             logger.exception("ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
 
-    def _inject_mentions(self, round_num: int, messages: list[Any], context: RunContext) -> None:
-        import contextlib
-
-        from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
-        from specweaver.infrastructure.llm.models import Message, Role
-
-        last_msg = messages[-1]
-        if last_msg.role == Role.ASSISTANT:
-            candidates = extract_mentions(last_msg.content)
-            if candidates:
-                resolved = _resolve_mentions(
-                    candidates,
-                    context.project_path,
-                    workspace_roots=(
-                        [context.project_path / r for r in context.graph.workspace_roots]
-                        if context.graph.workspace_roots
-                        else None
-                    ),
-                )
-                if resolved:
-                    for r in resolved:
-                        with contextlib.suppress(OSError):
-                            messages.append(
-                                Message(
-                                    role=Role.USER,
-                                    content=f"Auto-resolved file `{r.original}`:\n\n```\n{r.resolved_path.read_text('utf-8')}\n```",
-                                )
-                            )
+    @staticmethod
+    def _inject_mentions(round_num: int, messages: list[Any], context: RunContext) -> None:
+        """Kept as a method: it is referenced directly by the `on_tool_round` lambda above."""
+        del round_num
+        _inject_resolved_mentions(messages, context)
 
 
 class ReviewCodeHandler:
     """Handler for review+code — LLM-based code review."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         if context.model.llm is None:
@@ -236,31 +259,8 @@ class ReviewCodeHandler:
             )
 
             def on_tool_round(round_num: int, messages: list[Message]) -> None:
-                from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
-                from specweaver.infrastructure.llm.models import Message, Role
-
-                last_msg = messages[-1]
-                if last_msg.role == Role.ASSISTANT:
-                    candidates = extract_mentions(last_msg.content)
-                    if candidates:
-                        resolved = _resolve_mentions(
-                            candidates,
-                            context.project_path,
-                            workspace_roots=(
-                                [context.project_path / r for r in context.graph.workspace_roots]
-                                if context.graph.workspace_roots
-                                else None
-                            ),
-                        )
-                        if resolved:
-                            for r in resolved:
-                                with contextlib.suppress(OSError):
-                                    messages.append(
-                                        Message(
-                                            role=Role.USER,
-                                            content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```",
-                                        )
-                                    )
+                del round_num
+                _inject_resolved_mentions(messages, context)
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 

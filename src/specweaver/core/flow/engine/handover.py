@@ -3,7 +3,6 @@
 
 import logging
 import uuid
-from typing import Any
 
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepStatus
 from specweaver.core.flow.handlers.run_context import RunContext
@@ -14,101 +13,95 @@ from specweaver.workspace.memory.store import TaskStatus
 logger = logging.getLogger(__name__)
 
 
-async def save_handover_context(context: RunContext, run: PipelineRun) -> None:  # noqa: C901
+
+def _skip_reason(context: RunContext, run: PipelineRun) -> str | None:
+    """Why this run has no handover to save, or None when it does.
+
+    Four guards that were four early returns inside one 90-line function. Collected here so the
+    *reasons* read as a list -- the caller then has one branch instead of four.
     """
-    Persists pipeline telemetry to the Agent Memory Bank for handover scenarios.
+    if run.status in (RunStatus.PARKED, RunStatus.NOT_STARTED):
+        return f"status is {run.status.value}"
+    if run.parent_run_id is not None:
+        return "sub-pipeline execution"
+    if not run.step_records:
+        return "pipeline has 0 steps executed"
+    if context.db is None:
+        return "database connection is missing"
+    return None
 
-    This function is fail-safe. If anything goes wrong (e.g., database unavailable,
-    missing task IDs, serialization errors), it gracefully catches the exception, logs
-    a warning, and allows the pipeline cleanup to continue uninterrupted.
 
-    Args:
-        context: The execution context (provides database connection and task targeting).
-        run: The current state of the pipeline run.
+def _bounded(values: list[str], *, cap: int, width: int) -> list[str]:
+    """De-duplicate, cap the count, truncate each entry.
+
+    Errors and files were bounded by the same three operations written twice. The bounding is not
+    cosmetic: it keeps the payload under the 8KB column limit `Task.handover_context` enforces.
+    """
+    return [v[:width] for v in list(dict.fromkeys(values))[:cap]]
+
+
+def _failed_step_errors(run: PipelineRun) -> list[str]:
+    return [
+        str(step.result.error_message)
+        for step in run.step_records
+        if step.result
+        and step.result.status in (StepStatus.FAILED, StepStatus.ERROR)
+        and step.result.error_message
+    ]
+
+
+def _files_touched(run: PipelineRun) -> list[str]:
+    files: list[str] = []
+    for step in run.step_records:
+        if step.result and isinstance(step.result.output, dict):
+            touched = step.result.output.get("files_touched", [])
+            if isinstance(touched, list):
+                files.extend(str(f) for f in touched)
+    return files
+
+
+async def _target_task_id(repo: MemoryRepository, context: RunContext) -> uuid.UUID | None:
+    """The task the handover attaches to: this run's, else the newest IN_PROGRESS one."""
+    if context.run.task_id is not None:
+        return uuid.UUID(context.run.task_id)
+
+    active = await repo.list_tasks(
+        project_name=context.project_path.name, status=TaskStatus.IN_PROGRESS
+    )
+    return uuid.UUID(str(active[0]["id"])) if active else None
+
+
+async def save_handover_context(context: RunContext, run: PipelineRun) -> None:
+    """Persist pipeline telemetry to the Agent Memory Bank for handover scenarios.
+
+    **Fail-safe by contract.** Anything that goes wrong -- database unavailable, missing task id,
+    serialization error -- is logged and swallowed so pipeline cleanup continues. The runner calls
+    this from a `finally:`, so raising here would replace whatever outcome the run actually had.
     """
     try:
-        # 1. Status and Integrity Guards
-        if run.status in (RunStatus.PARKED, RunStatus.NOT_STARTED):
-            logger.debug(
-                "[run_id=%s] Skipping handover save for status: %s", run.run_id, run.status.value
-            )
+        skip = _skip_reason(context, run)
+        if skip is not None:
+            logger.debug("[run_id=%s] Skipping handover save: %s", run.run_id, skip)
             return
-
-        if run.parent_run_id is not None:
-            logger.debug("[run_id=%s] Skipping handover save: Sub-pipeline execution.", run.run_id)
-            return
-
-        if not run.step_records:
-            logger.debug(
-                "[run_id=%s] Skipping handover save: Pipeline has 0 steps executed.", run.run_id
-            )
-            return
-
-        if context.db is None:
-            logger.warning(
-                "[run_id=%s] Skipping handover save: Database connection is missing.", run.run_id
-            )
-            return
-
-        # 2. Telemetry Collection & Mathematical Bounding
-        # We strictly truncate strings to prevent theoretical 8KB payload bounds exceptions.
-
-        errors: list[str] = []
-        for step in run.step_records:
-            if (
-                step.result
-                and step.result.status in (StepStatus.FAILED, StepStatus.ERROR)
-                and step.result.error_message
-            ):
-                errors.append(str(step.result.error_message))
-
-        # Deduplicate, cap at 10 items, truncate to 500 chars
-        unique_errors = list(dict.fromkeys(errors))[:10]
-        truncated_errors = [err[:500] for err in unique_errors]
-
-        files: list[str] = []
-        for step in run.step_records:
-            if step.result and isinstance(step.result.output, dict):
-                files_touched = step.result.output.get("files_touched", [])
-                if isinstance(files_touched, list):
-                    files.extend(str(f) for f in files_touched)
-
-        # Deduplicate, cap at 30 items, truncate to 150 chars
-        unique_files = list(dict.fromkeys(files))[:30]
-        truncated_files = [f[:150] for f in unique_files]
-
-        summary = f"Pipeline '{run.pipeline_name}' {run.status.value}. {len(run.step_records)} steps executed."
-
-        metadata: dict[str, Any] = {
-            "run_id": run.run_id,
-            "pipeline_name": run.pipeline_name,
-            "step_count": len(run.step_records),
-            "status": run.status.value,
-        }
 
         handover_ctx = HandoverContext(
-            summary=summary,
-            files_touched=truncated_files,
-            errors_encountered=truncated_errors,
-            metadata=metadata,
+            summary=(
+                f"Pipeline '{run.pipeline_name}' {run.status.value}. "
+                f"{len(run.step_records)} steps executed."
+            ),
+            files_touched=_bounded(_files_touched(run), cap=30, width=150),
+            errors_encountered=_bounded(_failed_step_errors(run), cap=10, width=500),
+            metadata={
+                "run_id": run.run_id,
+                "pipeline_name": run.pipeline_name,
+                "step_count": len(run.step_records),
+                "status": run.status.value,
+            },
         )
 
-        # 3. Persistence
         async with context.db.async_session_scope() as session:
             repo = MemoryRepository(session)
-
-            # Task Discovery
-            target_task_id: uuid.UUID | None = None
-            if context.run.task_id is not None:
-                target_task_id = uuid.UUID(context.run.task_id)
-            else:
-                # Fallback to the most recently created IN_PROGRESS task
-                active_tasks = await repo.list_tasks(
-                    project_name=context.project_path.name, status=TaskStatus.IN_PROGRESS
-                )
-                if active_tasks and len(active_tasks) > 0:
-                    target_task_id = uuid.UUID(str(active_tasks[0]["id"]))
-
+            target_task_id = await _target_task_id(repo, context)
             if target_task_id is None:
                 logger.warning(
                     "[run_id=%s] Skipping handover save: No active task found for persistence.",

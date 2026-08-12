@@ -143,6 +143,65 @@ def load_component_template(project_path: Path) -> str:
         return FALLBACK_COMPONENT_SPEC
 
 
+def _classify_stub(
+    component: dict[str, Any], context: RunContext
+) -> tuple[str, str, Path | None]:
+    """`(report bucket, name, target)`. A non-None target means "safe to write".
+
+    The three refusals, in the order they must be checked (`TECH-023` moved them out of
+    :func:`write_component_stubs`; the ordering below is behaviour, not style).
+    """
+    name = component.get("component")
+    if not name or not COMPONENT_NAME_PATTERN.match(str(name)):
+        logger.warning(
+            "[run_id=%s] Refusing to write a component spec for an invalid name: %r",
+            context.run.run_id,
+            name,
+        )
+        return "rejected", (str(name) if name else "<unnamed>"), None
+
+    target = context.spec_path.with_name(f"{name}_spec.md")
+
+    # Checked BEFORE is_file(), because the feature spec IS a file and would otherwise be
+    # reported as `skipped` — telling the user a component spec exists where their own feature
+    # spec sits. A component named `<feature>_feature` targets `<feature>_feature_spec.md`.
+    # Distinct bucket because the remedy differs: `rejected` means fix the LLM output,
+    # `collided` means rename the component.
+    if target == context.spec_path:
+        logger.warning(
+            "[run_id=%s] Component '%s' would overwrite the feature spec itself (%s) — "
+            "skipping; rename the component",
+            context.run.run_id,
+            name,
+            target.name,
+        )
+        return "collided", name, None
+
+    # is_file(), not exists(): a directory sitting at the stub path is an obstruction, not a
+    # spec to preserve. exists() would label it "skipped" — reporting a user file that is not
+    # there. Matches DraftSpecHandler's exists-skip, which is also is_file().
+    if target.is_file():
+        return "skipped", name, None
+
+    return "", name, target
+
+
+def _stub_vars(
+    component: dict[str, Any], name: str, date_iso: str, feature_name: str
+) -> dict[str, Any]:
+    """Only pass variables that actually have a value.
+
+    Jinja's `default()` filter fires on *undefined*, NOT on None — passing `purpose=None` would
+    render the literal "None" into the user's spec instead of the template's TODO placeholder.
+    """
+    render_vars: dict[str, Any] = {"component_name": name, "date": date_iso}
+    if feature_name:
+        render_vars["parent_feature"] = feature_name
+    if component.get("description"):
+        render_vars["purpose"] = component["description"]
+    return render_vars
+
+
 def write_component_stubs(
     dumped: dict[str, Any], context: RunContext, feature_name: str
 ) -> dict[str, list[str]]:
@@ -182,52 +241,16 @@ def write_component_stubs(
     date_iso = context.project_metadata.date_iso if context.project_metadata else ""
 
     for component in components:
-        name = component.get("component")
-        if not name or not COMPONENT_NAME_PATTERN.match(str(name)):
-            logger.warning(
-                "[run_id=%s] Refusing to write a component spec for an invalid name: %r",
-                context.run.run_id,
-                name,
-            )
-            report["rejected"].append(str(name) if name else "<unnamed>")
+        bucket, name, target = _classify_stub(component, context)
+        if target is None:
+            report[bucket].append(name)
             continue
-
-        target = context.spec_path.with_name(f"{name}_spec.md")
-
-        # Checked BEFORE is_file(), because the feature spec IS a file and would otherwise be
-        # reported as `skipped` — telling the user a component spec exists where their own feature
-        # spec sits. A component named `<feature>_feature` targets `<feature>_feature_spec.md`.
-        # Distinct bucket because the remedy differs: `rejected` means fix the LLM output,
-        # `collided` means rename the component.
-        if target == context.spec_path:
-            logger.warning(
-                "[run_id=%s] Component '%s' would overwrite the feature spec itself (%s) — "
-                "skipping; rename the component",
-                context.run.run_id,
-                name,
-                target.name,
-            )
-            report["collided"].append(name)
-            continue
-
-        # is_file(), not exists(): a directory sitting at the stub path is an obstruction, not a
-        # spec to preserve. exists() would label it "skipped" — reporting a user file that is not
-        # there. Matches DraftSpecHandler's exists-skip, which is also is_file().
-        if target.is_file():
-            report["skipped"].append(name)
-            continue
-
-        # Only pass variables that actually have a value. Jinja's `default()` filter fires on
-        # *undefined*, NOT on None — passing `purpose=None` would render the literal "None" into
-        # the user's spec instead of the template's TODO placeholder.
-        render_vars: dict[str, Any] = {"component_name": name, "date": date_iso}
-        if feature_name:
-            render_vars["parent_feature"] = feature_name
-        if component.get("description"):
-            render_vars["purpose"] = component["description"]
 
         try:
-            target.write_text(template.render(**render_vars), encoding="utf-8")
+            target.write_text(
+                template.render(**_stub_vars(component, name, date_iso, feature_name)),
+                encoding="utf-8",
+            )
         except (OSError, UnicodeDecodeError) as exc:
             logger.warning(
                 "[run_id=%s] Could not write the component spec for '%s': %s",
