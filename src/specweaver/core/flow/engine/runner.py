@@ -29,6 +29,7 @@ from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
     _now_iso,
     execute_run,
+    isolate_sub_run_context,
     resolve_should_isolate,
     seed_dal_level,
     setup_sandbox_caches,
@@ -113,6 +114,7 @@ class PipelineRunner:
         Returns:
             The final PipelineRun state (COMPLETED, FAILED, or PARKED).
         """
+        self._context = isolate_sub_run_context(self._context, parent_run_id)
         verify_vault_security(self._context)
         now = _now_iso()
 
