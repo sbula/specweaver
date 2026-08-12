@@ -343,6 +343,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-09-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control
+        *   `[ ]` **B-EXEC-04:** [Kernel-Enforced Resource Bounds (cgroups v2)](features/topic_06_sandbox/B-EXEC-04/B-EXEC-04_design.md)
     *   🔴 **Extreme Execution Paranoia:**
         *   `[ ]` **INT-US-09-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-01:** Functional Agent Sandboxing (Black Box Ledgers)

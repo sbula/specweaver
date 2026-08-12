@@ -43,6 +43,46 @@ bash gen.sh   under AS=2GiB + NPROC=128      rc=254
 `RLIMIT_AS` alone is harmless — probed separately, `echo ok` succeeds, because a shell builtin never
 forks. Only the fork limit bites, which is why a naive probe misses it.
 
+### The limit is not merely over-broad — it can never succeed on Linux (measured 2026-08-12)
+
+`RLIMIT_NPROC` counts **tasks**, i.e. threads, not processes. Measured on this idle machine:
+
+```
+processes for this UID :  64
+TASKS (threads) for UID: 234   <- what RLIMIT_NPROC actually counts
+system default (ulimit -u): 321342
+```
+
+The UID sits at **234 tasks at idle — 83% above the 128 cap before the sandbox forks anything.**
+So the limit is already exceeded at the moment it is applied, and every bash step fails regardless
+of load. This is not "breaks on a busy machine"; it is "never works".
+
+Confirmed against ordinary work — 40 *sequential* `/bin/true` calls, a workload no sandbox budget
+would object to:
+
+```
+no limit      rc=0    0.02s   done
+NPROC=128     rc=254  15.00s  fork: retry: Resource temporarily unavailable
+NPROC=4096    rc=0    0.03s   done
+```
+
+The 15 seconds are bash retrying the fork before giving up, which is where the suite's wall-clock
+went.
+
+### The conflict this creates with a delivered story
+
+`C-EXEC-02 FR-11` specifies these defaults and its acceptance criterion reads:
+
+> *A runaway or fork-bombing script is capped by default; pipeline authors may tune within a
+> bounded range but **MAY NOT disable limits entirely**.*
+
+`E-EXEC-01 FR-10` owns the mechanism: *"Unix/macOS: `resource.setrlimit()` via `preexec_fn`.
+Windows: Win32 Job Objects."*
+
+**So option A — stop setting `RLIMIT_NPROC` — contradicts a delivered FR in its letter**, even
+though the limit it removes has never once worked on this platform. That conflict is the decision
+this ticket exists to make, and it must be made explicitly rather than by quietly deleting a line.
+
 ### Measured blast radius
 
 | `max_processes` | integration | e2e | wall clock |
