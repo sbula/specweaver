@@ -13,9 +13,12 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +221,70 @@ def _grep_python(
 # ---------------------------------------------------------------------------
 
 
-def find_by_glob(  # noqa: C901
+def _candidates_in(
+    root_path: Path, dirs: list[str], files: list[str], file_type: str
+) -> list[Path]:
+    """The entries in one walked directory that the requested `file_type` admits."""
+    items: list[Path] = []
+    if file_type in ("directory", "any"):
+        items.extend(root_path / d for d in dirs)
+    if file_type in ("file", "any"):
+        items.extend(root_path / f for f in files)
+    return items
+
+
+def _relative_to(item: Path, search_dir: Path) -> str:
+    """The path as reported to the caller — relative when it can be, absolute when it cannot."""
+    try:
+        return str(item.relative_to(search_dir))
+    except ValueError:
+        return str(item)
+
+
+def _glob_entry(item: Path, rel_path_str: str) -> dict[str, Any]:
+    """One match, with its size when it is a readable file.
+
+    A size of 0 on `OSError` is deliberate and pre-existing: a match the caller cannot stat is
+    still a match, and a broken symlink should not abort the whole search.
+    """
+    entry: dict[str, Any] = {
+        "path": rel_path_str,
+        "type": "directory" if item.is_dir() else "file",
+    }
+    if item.is_file():
+        try:
+            entry["size_bytes"] = item.stat().st_size
+        except OSError:
+            entry["size_bytes"] = 0
+    return entry
+
+
+def _matches_glob(item: Path, rel_path_str: str, pattern: str) -> bool:
+    """Match on the relative path OR the bare name, so `*.py` and `a/b/*.py` both work."""
+    import fnmatch
+
+    return fnmatch.fnmatch(rel_path_str, pattern) or fnmatch.fnmatch(item.name, pattern)
+
+
+def _walk_candidates(
+    search_dir: Path, file_type: str, exclude_set: set[str]
+) -> Iterator[tuple[Path, str]]:
+    """Every admissible entry under `search_dir`, with the path string the caller will see.
+
+    A generator rather than a nested loop inside the search: the truncation break then applies to
+    one loop instead of two, which is what the `break`-then-`if truncated: break` dance existed to
+    work around.
+    """
+    import os
+
+    for root_str, dirs, files in os.walk(search_dir):
+        if exclude_set:
+            dirs[:] = [d for d in dirs if d not in exclude_set and not d.startswith(".")]
+        for item in _candidates_in(Path(root_str), dirs, files, file_type):
+            yield item, _relative_to(item, search_dir)
+
+
+def find_by_glob(
     search_dir: Path,
     pattern: str,
     *,
@@ -240,49 +306,13 @@ def find_by_glob(  # noqa: C901
     results: list[dict[str, Any]] = []
     truncated = False
 
-    exclude_set = exclude_dirs or set()
-
-    import fnmatch
-    import os
-
     try:
-        count = 0
-        for root_str, dirs, files in os.walk(search_dir):
-            if exclude_set:
-                dirs[:] = [d for d in dirs if d not in exclude_set and not d.startswith(".")]
-
-            root_path = Path(root_str)
-            items_to_check: list[Path] = []
-
-            if file_type in ("directory", "any"):
-                items_to_check.extend(root_path / d for d in dirs)
-            if file_type in ("file", "any"):
-                items_to_check.extend(root_path / f for f in files)
-
-            for item in items_to_check:
-                try:
-                    rel_path_str = str(item.relative_to(search_dir))
-                except ValueError:
-                    rel_path_str = str(item)
-
-                if fnmatch.fnmatch(rel_path_str, pattern) or fnmatch.fnmatch(item.name, pattern):
-                    entry: dict[str, Any] = {
-                        "path": rel_path_str,
-                        "type": "directory" if item.is_dir() else "file",
-                    }
-                    if item.is_file():
-                        try:
-                            entry["size_bytes"] = item.stat().st_size
-                        except OSError:
-                            entry["size_bytes"] = 0
-                    results.append(entry)
-                    count += 1
-
-                    if count >= max_results:
-                        truncated = True
-                        break
-
-            if truncated:
+        for item, rel_path_str in _walk_candidates(search_dir, file_type, exclude_dirs or set()):
+            if not _matches_glob(item, rel_path_str, pattern):
+                continue
+            results.append(_glob_entry(item, rel_path_str))
+            if len(results) >= max_results:
+                truncated = True
                 break
     except OSError as exc:
         return [{"error": str(exc)}]

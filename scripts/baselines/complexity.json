@@ -49,7 +49,6 @@
     "src/specweaver/sandbox/execution/executor.py::SubprocessExecutor::_build_env": 16,
     "src/specweaver/sandbox/execution/platform_limiter.py::current_task_count": 16,
     "src/specweaver/sandbox/filesystem/core/search.py::_grep_python": 20,
-    "src/specweaver/sandbox/filesystem/core/search.py::find_by_glob": 49,
     "src/specweaver/sandbox/filesystem/interfaces/tool.py::FileSystemTool::_search_recursive": 21,
     "src/specweaver/sandbox/filesystem/interfaces/tool.py::FileSystemTool::find_placement": 19,
     "src/specweaver/sandbox/language/core/java/runner.py::JavaRunner::run_architecture_check": 18,
