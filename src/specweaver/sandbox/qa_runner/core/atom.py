@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 
@@ -133,7 +133,60 @@ class QARunnerAtom(Atom):
 
     # -- Intent implementations ----------------------------------------
 
-    def _intent_run_tests(self, context: dict[str, Any]) -> AtomResult:  # noqa: C901
+    #: A run over zero stale nodes is a SUCCESS with an empty tally, not a failure.
+    _PRISTINE_EXPORTS: ClassVar[dict[str, Any]] = {
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 0,
+        "duration_seconds": 0.0,
+        "failures": [],
+    }
+
+    def _resolve_test_targets(
+        self, context: dict[str, Any]
+    ) -> tuple[list[str], AtomResult | None]:
+        """`(targets, early result)`. A non-None early result means stop.
+
+        `targets=[]` is meaningful and distinct from `targets` being absent: an explicit empty list
+        is the topology saying every node is pristine, which is a pass.
+        """
+        targets_kwarg = context.get("targets")
+        if targets_kwarg is not None:
+            if not targets_kwarg:
+                return [], AtomResult(
+                    status=AtomStatus.SUCCESS,
+                    message="All nodes pristine.",
+                    exports=dict(self._PRISTINE_EXPORTS),
+                )
+            return list(targets_kwarg), None
+
+        target = context.get("target")
+        if not target:
+            return [], AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'target' or 'targets' in context for run_tests intent.",
+            )
+        return [target], None
+
+    def _traversal_error(self, targets: list[str]) -> AtomResult | None:
+        """NFR-3 path-traversal protection: None when every target stays inside the sandbox."""
+        try:
+            for t in targets:
+                if not (self._cwd / t).resolve().is_relative_to(self._cwd.resolve()):
+                    return AtomResult(
+                        status=AtomStatus.FAILED,
+                        message="Target cannot traverse outside of the sandbox directory.",
+                    )
+        except ValueError:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Invalid target path provided for sandbox execution.",
+            )
+        return None
+
+    def _intent_run_tests(self, context: dict[str, Any]) -> AtomResult:
         """Run tests via the language-specific runner.
 
         Context keys:
@@ -144,47 +197,13 @@ class QARunnerAtom(Atom):
             coverage: bool — measure coverage (default: False).
             coverage_threshold: int — minimum % (default: 70).
         """
-        targets_kwarg = context.get("targets")
-        if targets_kwarg is not None:
-            if not targets_kwarg:
-                # Explicit empty list means all nodes pristine
-                return AtomResult(
-                    status=AtomStatus.SUCCESS,
-                    message="All nodes pristine.",
-                    exports={
-                        "passed": 0,
-                        "failed": 0,
-                        "errors": 0,
-                        "skipped": 0,
-                        "total": 0,
-                        "duration_seconds": 0.0,
-                        "failures": [],
-                    },
-                )
-            targets = targets_kwarg
-        else:
-            target = context.get("target")
-            if not target:
-                return AtomResult(
-                    status=AtomStatus.FAILED,
-                    message="Missing 'target' or 'targets' in context for run_tests intent.",
-                )
-            targets = [target]
+        targets, early = self._resolve_test_targets(context)
+        if early is not None:
+            return early
 
-        # NFR-3: Path Traversal Protection
-        try:
-            for t in targets:
-                resolved_target = (self._cwd / t).resolve()
-                if not resolved_target.is_relative_to(self._cwd.resolve()):
-                    return AtomResult(
-                        status=AtomStatus.FAILED,
-                        message="Target cannot traverse outside of the sandbox directory.",
-                    )
-        except ValueError:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Invalid target path provided for sandbox execution.",
-            )
+        traversal = self._traversal_error(targets)
+        if traversal is not None:
+            return traversal
 
         # Execute tests, natively aggregating for multiple dynamically rewritten boundaries
         agg_passed = 0

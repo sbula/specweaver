@@ -22,6 +22,35 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _merge_value(existing: Any, value: Any) -> Any:
+    """How one overlay value combines with what is already there.
+
+    Three rules, in order:
+
+    * two dicts merge recursively;
+    * two lists **aggregate** (FR-3: `intents.hide`, `annotations`), de-duplicated;
+    * a scalar or null must NOT replace an existing dict or list — that would let a plugin wipe
+      the underlying schema object rather than extend it.
+
+    Anything else is a plain override.
+    """
+    if isinstance(existing, dict) and isinstance(value, dict):
+        return _aggregate_merge(existing, value)
+    if isinstance(existing, list) and isinstance(value, list):
+        return list(set(existing + value))
+    if isinstance(existing, dict | list) and not isinstance(value, dict | list):
+        return existing
+    return value
+
+
+def _aggregate_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """`base` with `overlay` applied, per :func:`_merge_value`."""
+    merged = dict(base)
+    for key, value in overlay.items():
+        merged[key] = _merge_value(merged[key], value) if key in merged else value
+    return merged
+
+
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
@@ -56,35 +85,12 @@ class CodeStructureAtom(Atom):
 
     @property
     def active_evaluator(self) -> dict[str, Any]:
-        """Provides a dynamically composed single evaluator dict merging base archetype and all plugins."""
-
-        def _aggregate_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
-            merged = dict(base)
-            for key, value in overlay.items():
-                if key in merged:
-                    if isinstance(merged[key], dict) and isinstance(value, dict):
-                        merged[key] = _aggregate_merge(merged[key], value)
-                    elif isinstance(merged[key], list) and isinstance(value, list):
-                        # FR-3: Aggregate lists (e.g. intents.hide, annotations)
-                        merged[key] = list(set(merged[key] + value))
-                    elif isinstance(merged[key], (dict, list)) and not isinstance(
-                        value, (dict, list)
-                    ):
-                        # Protect underlying schema objects from being wiped by nulls or scalars in plugins
-                        pass
-                    else:
-                        merged[key] = value
-                else:
-                    merged[key] = value
-            return merged
-
+        """A single evaluator dict composed from the base archetype plus every plugin."""
         merged: dict[str, Any] = {}
-        target_keys = [self._active_archetype, *self._plugins]
-        for key in target_keys:
-            if key in self._evaluator_schemas:
-                schema = self._evaluator_schemas[key]
-                if isinstance(schema, dict):
-                    merged = _aggregate_merge(merged, schema)
+        for key in (self._active_archetype, *self._plugins):
+            schema = self._evaluator_schemas.get(key)
+            if isinstance(schema, dict):
+                merged = _aggregate_merge(merged, schema)
         return merged
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:

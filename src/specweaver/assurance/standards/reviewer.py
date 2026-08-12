@@ -43,6 +43,38 @@ class StandardsReviewer:
     def __init__(self, console: Console | None = None) -> None:
         self._console = console or Console()
 
+    def _review_scope(
+        self,
+        scope: str,
+        results: list[CategoryResult],
+        existing_by_cat: dict[str, dict[str, object]],
+    ) -> list[CategoryResult]:
+        """Review one scope's categories, returning those the user accepted.
+
+        Stops early when the user asks to skip the scope — the remaining categories are neither
+        shown nor accepted, which is what "skip this scope" means.
+        """
+        scope_accepted: list[CategoryResult] = []
+        for result in results:
+            # Auto-accept if unchanged AND already HITL-confirmed
+            if self._should_auto_accept(result, existing_by_cat):
+                scope_accepted.append(result)
+                continue
+
+            # Show diff if re-scan
+            old = existing_by_cat.get(result.category)
+            if old:
+                self._show_diff(scope, result.category, old, result)
+
+            self._show_category(scope, result)
+
+            stop = self._handle_result_action(
+                self._prompt_action(), result, results, scope_accepted
+            )
+            if stop == "skip_scope":
+                break
+        return scope_accepted
+
     def review(
         self,
         scope_results: dict[str, list[CategoryResult]],
@@ -68,46 +100,11 @@ class StandardsReviewer:
         accepted: dict[str, list[CategoryResult]] = {}
 
         for scope in sorted(scope_results):
-            results = scope_results[scope]
-            scope_existing = existing.get(scope, [])
-            scope_accepted: list[CategoryResult] = []
-
-            # Build lookup of existing by category
-            existing_by_cat: dict[str, dict[str, object]] = {
-                str(e["category"]): e for e in scope_existing
-            }
-
-            skip_scope = False
-
-            for result in results:
-                if skip_scope:
-                    break
-
-                # Auto-accept if unchanged AND already HITL-confirmed
-                if self._should_auto_accept(result, existing_by_cat):
-                    scope_accepted.append(result)
-                    continue
-
-                # Show diff if re-scan
-                old = existing_by_cat.get(result.category)
-                if old:
-                    self._show_diff(scope, result.category, old, result)
-
-                # Show the result table
-                self._show_category(scope, result)
-
-                # Prompt for action
-                action = self._prompt_action()
-                stop = self._handle_result_action(
-                    action,
-                    result,
-                    results,
-                    scope_accepted,
-                )
-                if stop == "skip_scope":
-                    skip_scope = True
-
-            accepted[scope] = scope_accepted
+            accepted[scope] = self._review_scope(
+                scope,
+                scope_results[scope],
+                {str(e["category"]): e for e in existing.get(scope, [])},
+            )
 
         total = sum(len(v) for v in accepted.values())
         logger.debug("review: completed, %d accepted across %d scopes", total, len(accepted))

@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _folder_grant(path: Any, mode: Any) -> Any:
+    """A recursive `FolderGrant` over `path`. Every grant this dispatcher issues is recursive."""
+    from specweaver.sandbox.security import FolderGrant
+
+    return FolderGrant(str(path), mode, recursive=True)
+
+
 class ToolDispatcher:
     """Dispatches tool calls from the LLM to underlying tool interfaces.
 
@@ -147,29 +154,37 @@ class ToolDispatcher:
 
     @classmethod
     def _compute_role_grants(cls, role: str, boundary: Any) -> list[Any]:
-        from specweaver.sandbox.security import AccessMode, FolderGrant, ReadOnlyWorkspaceBoundary
+        """The filesystem grants one agent role gets over a workspace boundary.
 
-        grants = []
+        `TECH-023`: three roles, each spelled out as its own `append` sequence over the same two
+        collections. Each role is now a rule — which roots, at what access, and whether the API
+        paths come with them — so a fourth role is a table entry rather than a fourth branch.
+        """
+        from specweaver.sandbox.security import AccessMode, ReadOnlyWorkspaceBoundary
+
         if role == "scenario_agent":
-            for root in boundary.roots:
-                grants.append(FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True))
-                grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
-                grants.append(FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True))
-        elif role == "arbiter_agent":
-            if isinstance(boundary, ReadOnlyWorkspaceBoundary):
-                for api_path in boundary.api_paths:
-                    grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-            else:
-                for root in boundary.roots:
-                    grants.append(FolderGrant(str(root), AccessMode.READ, recursive=True))
-                for api_path in boundary.api_paths:
-                    grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-        else:
-            for root in boundary.roots:
-                grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
-            for api_path in boundary.api_paths:
-                grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-        return grants
+            return [
+                grant
+                for root in boundary.roots
+                for grant in (
+                    _folder_grant(root / "scenarios", AccessMode.FULL),
+                    _folder_grant(root / "specs", AccessMode.READ),
+                    _folder_grant(root / "contracts", AccessMode.READ),
+                )
+            ]
+
+        if role == "arbiter_agent":
+            # A read-only boundary already withholds the roots, so granting them would widen it.
+            roots = [] if isinstance(boundary, ReadOnlyWorkspaceBoundary) else list(boundary.roots)
+            return [
+                *[_folder_grant(root, AccessMode.READ) for root in roots],
+                *[_folder_grant(api, AccessMode.READ) for api in boundary.api_paths],
+            ]
+
+        return [
+            *[_folder_grant(root, AccessMode.FULL) for root in boundary.roots],
+            *[_folder_grant(api, AccessMode.READ) for api in boundary.api_paths],
+        ]
 
     @classmethod
     def _build_ast_kwargs(
