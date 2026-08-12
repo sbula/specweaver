@@ -134,22 +134,237 @@ class DecomposeFeatureHandler(StepHandler):
             )
 
 
+class _OrchestrationRefusedError(Exception):
+    """A condition that stops the fan-out with a FAILED result rather than an ERROR.
+
+    `TECH-023`. `execute` had **seven** early `return StepResult(FAILED, ...)` sites, and each one
+    is a branch — a large share of its complexity of 79 was the shape of reporting failure, not the
+    orchestration itself. Raising lets the steps below read as a straight line and keeps every
+    message and status byte-identical, because `execute` converts this back into the same
+    `StepResult` the inline returns produced.
+
+    Distinct from the bare `Exception` handler, which reports ERROR: these are *expected* refusals
+    (a bad component name, a dependency cycle, a failed sub-run), not crashes.
+    """
+
+
+def _failed(message: str) -> StepResult:
+    return StepResult(
+        status=StepStatus.FAILED, error_message=message, started_at="", completed_at=""
+    )
+
+
+def _components_of(context: RunContext) -> list[dict[str, Any]]:
+    """The decomposition plan's components, or a refusal explaining what is missing."""
+    # INT-US-21 AD-1: reads plan_context.decomposition, NOT plan_context.plan. The latter is the
+    # implementation PlanArtifact consumed by the generation handlers; sharing one field for both
+    # concepts was a latent type bug. Populated by the runner's hydrate_plan_context hook after a
+    # decompose+feature step passes.
+    if not context.plan_context.decomposition:
+        raise _OrchestrationRefusedError(
+            "No DecompositionPlan found in context.plan_context.decomposition — a "
+            "decompose+feature step must run (and pass) earlier in this pipeline."
+        )
+
+    from specweaver.commons import json
+
+    plan_data = json.loads(context.plan_context.decomposition)
+    return list(plan_data.get("components", []))
+
+
+def _dependency_graph(
+    components: list[dict[str, Any]],
+) -> tuple[dict[str, set[str]], dict[str, dict[str, Any]]]:
+    """Validate every component name, then map each to its declared dependencies."""
+    graph: dict[str, set[str]] = {}
+    comp_by_name: dict[str, dict[str, Any]] = {}
+    for comp in components:
+        name = comp.get("component")
+        if not name or not COMPONENT_NAME_PATTERN.match(name):
+            raise _OrchestrationRefusedError(
+                f"Invalid or malicious component name detected: '{name}'. "
+                "Aborting fan_out to prevent path traversal."
+            )
+        graph[name] = set(comp.get("dependencies", []))
+        comp_by_name[name] = comp
+    return graph, comp_by_name
+
+
+def _prepared_sorter(graph: dict[str, set[str]]) -> Any:
+    """A prepared topological sorter, or a refusal naming the cycle."""
+    import graphlib
+
+    try:
+        sorter = graphlib.TopologicalSorter(graph)
+        sorter.prepare()
+    except graphlib.CycleError as exc:
+        raise _OrchestrationRefusedError(f"Circular dependency detected: {exc}") from exc
+    return sorter
+
+
+def _base_pipeline_yaml() -> str:
+    """The template every component's sub-pipeline is built from. Read once, not per node."""
+    import importlib.resources
+
+    files = importlib.resources.files("specweaver.workflows.pipelines")
+    return str(files.joinpath("new_feature.yaml").read_text(encoding="utf-8"))
+
+
+def _component_pipeline(node: str, base_pipe_yaml: str, deferred_joins: list[Any]) -> Any:
+    """Build one component's sub-pipeline, siphoning its `join` gates into Wave N.
+
+    A `join` step cannot run inside a per-component pipeline — it exists to wait for all of them —
+    so it is collected here and run once at the end.
+    """
+    import yaml
+
+    from specweaver.core.flow.engine.models import PipelineDefinition
+
+    pipe_data = yaml.safe_load(base_pipe_yaml)
+    pipe_data["name"] = f"auto_{node}"
+    valid_steps = []
+    for step_dict in pipe_data.get("steps", []):
+        step_dict.setdefault("params", {})
+        step_dict["params"]["component"] = node
+
+        gate_def = step_dict.get("gate")
+        gate_type = gate_def.get("type") if isinstance(gate_def, dict) else ""
+        if gate_type == "join":
+            deferred_joins.append(step_dict)
+        else:
+            valid_steps.append(step_dict)
+
+    pipe_data["steps"] = valid_steps
+    return PipelineDefinition(**pipe_data)
+
+
+def _impacts_of(
+    node: str, comp_by_name: dict[str, dict[str, Any]], context: RunContext
+) -> set[str]:
+    """A node plus everything the knowledge graph says its target modules reach."""
+    impacts = {node}
+    if context.graph.topology:
+        for target_module in comp_by_name[node].get("target_modules", []):
+            impacts.update(context.graph.topology.impact_of(target_module))
+    return impacts
+
+
+def _succeeded(result: Any) -> bool:
+    """Anything not PASSED (or the legacy string "completed") is a failure."""
+    return getattr(result, "status", None) in (StepStatus.PASSED, "completed")
+
+
+class _Fanout:
+    """The mutable state one fan-out carries across its dispatch rounds."""
+
+    def __init__(self) -> None:
+        self.active: dict[str, Any] = {}
+        self.pending: set[str] = set()
+        self.sub_runs: list[Any] = []
+        self.deferred_joins: list[Any] = []
+        self.has_failed = False
+
+
+def _dispatch_ready(
+    state: _Fanout,
+    sorter: Any,
+    comp_by_name: dict[str, dict[str, Any]],
+    context: RunContext,
+    base_pipe_yaml: str,
+) -> None:
+    """Start every pending component whose impact set does not collide with a running one."""
+    import asyncio
+
+    for node in sorter.get_ready():
+        state.pending.add(node)
+
+    running_impacts: set[str] = set()
+    for running in state.active:
+        running_impacts.update(_impacts_of(running, comp_by_name, context))
+
+    for node in list(state.pending):
+        node_impacts = _impacts_of(node, comp_by_name, context)
+        if node_impacts.intersection(running_impacts):
+            continue
+        state.pending.remove(node)
+        running_impacts.update(node_impacts)
+
+        pipe = _component_pipeline(node, base_pipe_yaml, state.deferred_joins)
+        runner = context.run.pipeline_runner.spawn(pipe)
+        state.active[node] = asyncio.create_task(runner.run(parent_run_id=context.run.run_id))
+
+
+async def _harvest_finished(state: _Fanout, sorter: Any) -> None:
+    """Wait for at least one sub-run, record it, and unlock its dependents if it passed."""
+    import asyncio
+
+    done, _ = await asyncio.wait(list(state.active.values()), return_when=asyncio.FIRST_COMPLETED)
+
+    for node, task in list(state.active.items()):
+        if task not in done:
+            continue
+        del state.active[node]
+        result = task.result()
+        state.sub_runs.append(result)
+        if _succeeded(result):
+            sorter.done(node)  # unlocks dependents
+        else:
+            state.has_failed = True
+
+
+async def _run_dag(
+    context: RunContext,
+    sorter: Any,
+    comp_by_name: dict[str, dict[str, Any]],
+    base_pipe_yaml: str,
+    state: _Fanout,
+) -> None:
+    """Dispatch and harvest until the graph is exhausted, starved, or deadlocked."""
+    while sorter.is_active():
+        _dispatch_ready(state, sorter, comp_by_name, context, base_pipe_yaml)
+
+        if state.active:
+            await _harvest_finished(state, sorter)
+        elif state.pending:
+            raise _OrchestrationRefusedError(
+                "Deadlock: Components ready but cannot start due to graph/topology collision."
+            )
+        else:
+            # Starvation: some nodes failed, so their dependents can never start.
+            break
+
+
+async def _run_wave_n(context: RunContext, state: _Fanout) -> None:
+    """Run the `join` steps siphoned out of every component pipeline, once, at the end."""
+    if not state.deferred_joins:
+        return
+
+    from specweaver.core.flow.engine.models import PipelineDefinition
+
+    logger.info("Executing Wave N with %d deferred JOIN steps", len(state.deferred_joins))
+    wave_n_pipe = PipelineDefinition(
+        name=f"auto_wave_n_{context.run.run_id}", steps=state.deferred_joins
+    )
+    result = await context.run.pipeline_runner.spawn(wave_n_pipe).run(
+        parent_run_id=context.run.run_id
+    )
+    state.sub_runs.append(result)
+
+    if not _succeeded(result):
+        raise _OrchestrationRefusedError(
+            "Cascading failure: Wave N deferred join execution failed. "
+            f"Ran {len(state.sub_runs)} total pipelines."
+        )
+
+
 class OrchestrateComponentsHandler(StepHandler):
     """Executes fan_out on the runner for each mapped component."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.info("Executing ORCHESTRATE COMPONENTS for %s", context.run.run_id)
-        import asyncio
-        import graphlib
-        import importlib.resources
 
-        import yaml
-
-        from specweaver.commons import json
-        from specweaver.core.flow.engine.models import PipelineDefinition
-
-        # INT-US-24 FR-1 (AD-1): "dual_pipeline" mode is a plan-less orchestration —
-        # it must branch BEFORE the DecompositionPlan guard below.
+        # INT-US-24 FR-1 (AD-1): "dual_pipeline" mode is a plan-less orchestration — it must branch
+        # BEFORE the DecompositionPlan guard below.
         mode = step.params.get("mode")
         if mode == "dual_pipeline":
             from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
@@ -164,193 +379,45 @@ class OrchestrateComponentsHandler(StepHandler):
             )
 
         try:
-            # INT-US-21 AD-1: reads plan_context.decomposition, NOT plan_context.plan. The latter is the
-            # implementation PlanArtifact consumed by the generation handlers; sharing one field
-            # for both concepts was a latent type bug. Populated by the runner's
-            # hydrate_plan_context hook after a decompose+feature step passes.
-            if not context.plan_context.decomposition:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=(
-                        "No DecompositionPlan found in context.plan_context.decomposition — a "
-                        "decompose+feature step must run (and pass) earlier in this pipeline."
-                    ),
-                    started_at="",
-                    completed_at="",
-                )
-
-            plan_data = json.loads(context.plan_context.decomposition)
-            components = plan_data.get("components", [])
-
-            if not components:
-                return StepResult(
-                    status=StepStatus.PASSED,
-                    output={"sub_runs": []},
-                    started_at="",
-                    completed_at="",
-                )
-
-            if not context.run.pipeline_runner:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message="pipeline_runner not found in context. Cannot orchestrate.",
-                    started_at="",
-                    completed_at="",
-                )
-
-            graph: dict[str, set[str]] = {}
-            comp_by_name = {}
-
-            for comp in components:
-                name = comp.get("component")
-                if not name or not COMPONENT_NAME_PATTERN.match(name):
-                    return StepResult(
-                        status=StepStatus.FAILED,
-                        error_message=f"Invalid or malicious component name detected: '{name}'. Aborting fan_out to prevent path traversal.",
-                        started_at="",
-                        completed_at="",
-                    )
-                deps = set(comp.get("dependencies", []))
-                graph[name] = deps
-                comp_by_name[name] = comp
-
-            try:
-                sorter = graphlib.TopologicalSorter(graph)
-                sorter.prepare()
-            except graphlib.CycleError as e:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=f"Circular dependency detected: {e}",
-                    started_at="",
-                    completed_at="",
-                )
-
-            # Preload yaml to avoid I/O in the loop
-            files = importlib.resources.files("specweaver.workflows.pipelines")
-            resource = files.joinpath("new_feature.yaml")
-            base_pipe_yaml = resource.read_text(encoding="utf-8")
-
-            active_tasks: dict[str, asyncio.Task[Any]] = {}
-            pending_dispatch: set[str] = set()
-            sub_runs = []
-            deferred_joins = []
-            has_failed = False
-
-            while sorter.is_active():
-                for node in sorter.get_ready():
-                    pending_dispatch.add(node)
-
-                running_impacts = set()
-                for rn in active_tasks:
-                    running_impacts.add(rn)
-                    if context.graph.topology:
-                        for tm in comp_by_name[rn].get("target_modules", []):
-                            running_impacts.update(context.graph.topology.impact_of(tm))
-
-                dispatched_this_round = []
-                for node in list(pending_dispatch):
-                    node_impacts = {node}
-                    if context.graph.topology:
-                        for tm in comp_by_name[node].get("target_modules", []):
-                            node_impacts.update(context.graph.topology.impact_of(tm))
-
-                    if not node_impacts.intersection(running_impacts):
-                        pending_dispatch.remove(node)
-                        dispatched_this_round.append(node)
-                        running_impacts.update(node_impacts)
-
-                        pipe_data = yaml.safe_load(base_pipe_yaml)
-                        pipe_data["name"] = f"auto_{node}"
-                        valid_steps = []
-                        for step_dict in pipe_data.get("steps", []):
-                            if "params" not in step_dict:
-                                step_dict["params"] = {}
-                            step_dict["params"]["component"] = node
-
-                            gate_def = step_dict.get("gate")
-                            gate_type = gate_def.get("type") if isinstance(gate_def, dict) else ""
-
-                            if gate_type == "join":
-                                deferred_joins.append(step_dict)
-                            else:
-                                valid_steps.append(step_dict)
-
-                        pipe_data["steps"] = valid_steps
-                        pipe = PipelineDefinition(**pipe_data)
-
-                        isolated_runner = context.run.pipeline_runner.spawn(pipe)
-
-                        task = asyncio.create_task(
-                            isolated_runner.run(parent_run_id=context.run.run_id)
-                        )
-                        active_tasks[node] = task
-
-                if active_tasks:
-                    done, _ = await asyncio.wait(
-                        list(active_tasks.values()), return_when=asyncio.FIRST_COMPLETED
-                    )
-
-                    for node, task in list(active_tasks.items()):
-                        if task in done:
-                            del active_tasks[node]
-                            result = task.result()
-                            sub_runs.append(result)
-                            # Assume any run not evaluating to PASSED or string "completed" is a failure
-                            if getattr(result, "status", None) not in (
-                                StepStatus.PASSED,
-                                "completed",
-                            ):
-                                has_failed = True
-                            else:
-                                sorter.done(node)  # Unlocks dependents
-                else:
-                    if pending_dispatch:
-                        return StepResult(
-                            status=StepStatus.FAILED,
-                            error_message="Deadlock: Components ready but cannot start due to graph/topology collision.",
-                            started_at="",
-                            completed_at="",
-                        )
-                    else:
-                        break  # Starvation: some nodes failed, dependents cannot start. End DAG execution.
-
-            if has_failed:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=f"Cascading failure: pipeline execution halted for dependent components. Ran {len(sub_runs)} total pipelines.",
-                    started_at="",
-                    completed_at="",
-                )
-
-            if deferred_joins:
-                logger.info("Executing Wave N with %d deferred JOIN steps", len(deferred_joins))
-                wave_n_pipe = PipelineDefinition(
-                    name=f"auto_wave_n_{context.run.run_id}",
-                    steps=deferred_joins,
-                )
-
-                wave_n_runner = context.run.pipeline_runner.spawn(wave_n_pipe)
-
-                wave_res = await wave_n_runner.run(parent_run_id=context.run.run_id)
-                sub_runs.append(wave_res)
-
-                if getattr(wave_res, "status", None) not in (StepStatus.PASSED, "completed"):
-                    return StepResult(
-                        status=StepStatus.FAILED,
-                        error_message=f"Cascading failure: Wave N deferred join execution failed. Ran {len(sub_runs)} total pipelines.",
-                        started_at="",
-                        completed_at="",
-                    )
-
-            return StepResult(
-                status=StepStatus.PASSED,
-                output={"sub_runs": [getattr(r, "run_id", "unknown") for r in sub_runs]},
-                started_at="",
-                completed_at="",
-            )
-
-        except Exception as e:
+            return await self._orchestrate(context)
+        except _OrchestrationRefusedError as refusal:
+            return _failed(str(refusal))
+        except Exception as exc:
             logger.exception("Failed to orchestrate components")
             return StepResult(
-                status=StepStatus.ERROR, error_message=str(e), started_at="", completed_at=""
+                status=StepStatus.ERROR, error_message=str(exc), started_at="", completed_at=""
             )
+
+    async def _orchestrate(self, context: RunContext) -> StepResult:
+        """The fan-out proper: build the graph, run it, then run Wave N."""
+        components = _components_of(context)
+        if not components:
+            return StepResult(
+                status=StepStatus.PASSED, output={"sub_runs": []}, started_at="", completed_at=""
+            )
+
+        if not context.run.pipeline_runner:
+            raise _OrchestrationRefusedError(
+                "pipeline_runner not found in context. Cannot orchestrate."
+            )
+
+        graph, comp_by_name = _dependency_graph(components)
+        sorter = _prepared_sorter(graph)
+        state = _Fanout()
+
+        await _run_dag(context, sorter, comp_by_name, _base_pipeline_yaml(), state)
+
+        if state.has_failed:
+            raise _OrchestrationRefusedError(
+                "Cascading failure: pipeline execution halted for dependent components. "
+                f"Ran {len(state.sub_runs)} total pipelines."
+            )
+
+        await _run_wave_n(context, state)
+
+        return StepResult(
+            status=StepStatus.PASSED,
+            output={"sub_runs": [getattr(r, "run_id", "unknown") for r in state.sub_runs]},
+            started_at="",
+            completed_at="",
+        )

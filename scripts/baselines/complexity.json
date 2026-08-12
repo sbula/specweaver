@@ -24,7 +24,6 @@
     "src/specweaver/core/flow/engine/handover.py::save_handover_context": 28,
     "src/specweaver/core/flow/engine/hydration.py::hydrate_plan_context": 20,
     "src/specweaver/core/flow/handlers/arbiter.py::ArbitrateVerdictHandler::execute": 19,
-    "src/specweaver/core/flow/handlers/decompose.py::OrchestrateComponentsHandler::execute": 79,
     "src/specweaver/core/flow/handlers/decomposition_artifacts.py::write_component_stubs": 20,
     "src/specweaver/core/flow/handlers/generation.py::_extract_prompt_feedback": 26,
     "src/specweaver/core/flow/handlers/lint_fix.py::LintFixHandler::_llm_fix": 18,
