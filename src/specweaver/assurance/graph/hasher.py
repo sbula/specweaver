@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from specweaver.commons import json
 
@@ -65,6 +65,14 @@ def _ensure_gitignore(project_root: Path) -> None:
         logger.warning(f"Failed to ensure .specweaver/ is ignored by Git: {e}")
 
 
+def _relative_to(path: Path, base: Path) -> str:
+    """`path` relative to `base` as posix, or its absolute posix form when it is outside."""
+    try:
+        return path.relative_to(base).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 class DependencyHasher:
     """Computes semantic merkle-tree hashes for topology boundaries."""
 
@@ -87,14 +95,15 @@ class DependencyHasher:
             logger.debug(f"DependencyHasher failed to read {filepath}: {e}")
             return ""
 
-    def _hash_directory(self, directory: Path) -> dict[str, str]:  # noqa: C901
-        """Compute the semantic hash payload for a specific boundary directory."""
-        import os
+    def _ignore_rules(self) -> tuple[set[str], Any]:
+        """`(directory names to skip, pathspec or None)` assembled from every analyzer.
 
-        file_hashes = {}
+        Each analyzer contributes its language's build/vendor directories and binary globs;
+        `.specweaverignore` appends project-specific ones. `pathspec` is optional at runtime, and
+        a missing one degrades to "match nothing" with a warning rather than failing the hash.
+        """
         skip_dirs = {".git"}
         binary_patterns: list[str] = []
-
         for analyzer in self.analyzer_factory.get_all_analyzers():
             for ign in analyzer.get_default_directory_ignores():
                 skip_dirs.add(ign.rstrip("/"))
@@ -104,44 +113,46 @@ class DependencyHasher:
         if ignore_file.is_file():
             binary_patterns.extend(ignore_file.read_text(encoding="utf-8").splitlines())
 
-        spec = None
-        if binary_patterns:
-            try:
-                import pathspec
+        if not binary_patterns:
+            return skip_dirs, None
+        try:
+            import pathspec
+        except ImportError:
+            logger.warning("pathspec not installed; ignoring binary and .specweaverignore patterns")
+            return skip_dirs, None
+        return skip_dirs, pathspec.PathSpec.from_lines("gitignore", binary_patterns)
 
-                spec = pathspec.PathSpec.from_lines("gitignore", binary_patterns)
-            except ImportError:
-                logger.warning(
-                    "pathspec not installed; ignoring binary and .specweaverignore patterns"
-                )
+    def _is_hashable(self, filepath: Path, name: str, spec: Any) -> bool:
+        """Whether this file contributes to the boundary's semantic hash.
 
+        Symlinks are excluded deliberately: hashing a link's target would make the boundary's
+        identity depend on something outside it.
+        """
+        if name.startswith("."):
+            return False
+        if filepath.is_symlink() or not filepath.is_file():
+            return False
+        return not (spec and spec.match_file(_relative_to(filepath, self.project_root)))
+
+    def _hash_directory(self, directory: Path) -> dict[str, str]:
+        """Compute the semantic hash payload for a specific boundary directory."""
+        import os
+
+        skip_dirs, spec = self._ignore_rules()
+
+        file_hashes = {}
         for root, dirs, files in os.walk(directory):
+            # In-place: os.walk reads this list back to decide where to descend.
             dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
 
             root_path = Path(root)
             for f in files:
-                if f.startswith("."):
-                    continue
-
                 filepath = root_path / f
-                if filepath.is_symlink() or not filepath.is_file():
+                if not self._is_hashable(filepath, f, spec):
                     continue
-
-                try:
-                    rel_to_proj = filepath.relative_to(self.project_root).as_posix()
-                except ValueError:
-                    rel_to_proj = filepath.as_posix()
-
-                if spec and spec.match_file(rel_to_proj):
-                    continue
-
                 h = self._hash_file(filepath)
                 if h:
-                    try:
-                        rel_path = filepath.relative_to(directory).as_posix()
-                    except ValueError:
-                        rel_path = filepath.as_posix()
-                    file_hashes[rel_path] = h
+                    file_hashes[_relative_to(filepath, directory)] = h
 
         local_analyzer = self.analyzer_factory.for_directory(directory)
         dependencies = local_analyzer.extract_imports(directory) if local_analyzer else []

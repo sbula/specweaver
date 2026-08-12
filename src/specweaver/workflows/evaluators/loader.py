@@ -9,55 +9,71 @@ from typing import Any
 from specweaver.core.config.settings import deep_merge_dict
 
 
-def load_evaluator_schemas(project_dir: Path | None = None) -> dict[str, Any]:  # noqa: C901
-    """Dynamically load yaml schemas for framework annotator evaluation."""
-    import importlib.resources
+def _merge_schema(
+    schemas: dict[str, dict[str, Any]], language: str, text: str, origin: str, name: str
+) -> None:
+    """Parse one YAML schema and merge it into `schemas[language]`, in place.
+
+    A malformed file is logged and skipped rather than raised: one bad evaluator schema must not
+    stop every other language's from loading. `TECH-023` — this was written out twice, once per
+    source, differing only in the wording of that warning.
+    """
     import io
+    import logging
 
     from ruamel.yaml import YAML
 
-    _yaml = YAML(typ="safe")
-    schemas: dict[str, dict[str, Any]] = {}
+    try:
+        content = YAML(typ="safe").load(io.StringIO(text)) or {}
+    except Exception as e:
+        logging.getLogger(__name__).warning("Failed to parse %s YAML schema %s: %s", origin, name, e)
+        return
+    if isinstance(content, dict):
+        schemas[language] = deep_merge_dict(schemas.get(language, {}), content)
+
+
+def _packaged_schemas(schemas: dict[str, dict[str, Any]]) -> None:
+    """Merge every schema shipped inside the package."""
+    import importlib.resources
 
     try:
         frameworks_dir = importlib.resources.files("specweaver.workflows.evaluators.frameworks")
         for yaml_file in frameworks_dir.iterdir():
             if yaml_file.is_file() and yaml_file.name.endswith(".yaml"):
-                language = yaml_file.name[:-5]  # remove .yaml
-                text = yaml_file.read_text(encoding="utf-8")
-                try:
-                    content = _yaml.load(io.StringIO(text)) or {}
-                    if isinstance(content, dict):
-                        if language not in schemas:
-                            schemas[language] = {}
-                        schemas[language] = deep_merge_dict(schemas[language], content)
-                except Exception as e:
-                    import logging
-
-                    logging.getLogger(__name__).warning(
-                        "Failed to parse package YAML schema %s: %s", yaml_file.name, e
-                    )
+                _merge_schema(
+                    schemas,
+                    yaml_file.name[:-5],
+                    yaml_file.read_text(encoding="utf-8"),
+                    "package",
+                    yaml_file.name,
+                )
     except (FileNotFoundError, ModuleNotFoundError, TypeError, OSError):
         pass
 
-    # Load from project directory overrides if provided
+
+def _project_schemas(schemas: dict[str, dict[str, Any]], project_dir: Path) -> None:
+    """Merge the project's own overrides on top of the packaged ones."""
+    local_dir = project_dir / ".specweaver" / "evaluators"
+    if not local_dir.is_dir():
+        return
+    for yaml_file in local_dir.glob("*.yaml"):
+        _merge_schema(
+            schemas,
+            yaml_file.stem,
+            yaml_file.read_text(encoding="utf-8"),
+            "user-supplied",
+            yaml_file.name,
+        )
+
+
+def load_evaluator_schemas(project_dir: Path | None = None) -> dict[str, Any]:
+    """Dynamically load yaml schemas for framework annotator evaluation.
+
+    Packaged schemas first, then the project's `.specweaver/evaluators/` overrides on top — the
+    order is the precedence.
+    """
+    schemas: dict[str, dict[str, Any]] = {}
+    _packaged_schemas(schemas)
     if project_dir:
-        local_evaluators_dir = project_dir / ".specweaver" / "evaluators"
-        if local_evaluators_dir.is_dir():
-            for yaml_file in local_evaluators_dir.glob("*.yaml"):
-                language = yaml_file.stem  # e.g., java.yaml -> java
-                text = yaml_file.read_text(encoding="utf-8")
-                try:
-                    content = _yaml.load(io.StringIO(text)) or {}
-                    if isinstance(content, dict):
-                        if language not in schemas:
-                            schemas[language] = {}
-                        schemas[language] = deep_merge_dict(schemas[language], content)
-                except Exception as e:
-                    import logging
-
-                    logging.getLogger(__name__).warning(
-                        "Failed to parse user-supplied YAML schema %s: %s", yaml_file.name, e
-                    )
-
+        _project_schemas(schemas, project_dir)
     return schemas

@@ -11,7 +11,7 @@ import json
 import logging
 import re
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -103,6 +103,33 @@ class HydrationResult:
 logger = logging.getLogger(__name__)
 
 
+def _handover_summary(task: Any) -> str | None:
+    """A task's sanitised handover summary, or None when it has none or cannot be parsed.
+
+    Never raises: handover context is stored as a JSON string written by an earlier session, so a
+    schema change or a truncated write must degrade to "no summary" rather than sink hydration.
+    """
+    if not task.handover_context:
+        return None
+    try:
+        ctx = HandoverContext.from_json_str(task.handover_context)
+    except Exception as e:
+        logger.warning(
+            f"Failed to parse handover context for task {task.id}: {e} Schema validation failed"
+        )
+        return None
+    return _sanitize(ctx.summary, 500) if ctx.summary else None
+
+
+def _blocker_for(task_title: str, task_defects: list[Any]) -> HydratedBlocker:
+    """The blocker entry for a BLOCKED task, carrying its open defects."""
+    return HydratedBlocker(
+        task_title=task_title,
+        defect_titles=[_sanitize(d.title, 200) for d in task_defects],
+        defect_descriptions=[_sanitize(d.description, 500) for d in task_defects if d.description],
+    )
+
+
 class MemoryHydrator:
     """Read-side service for fetching and formatting contextual memory."""
 
@@ -155,24 +182,11 @@ class MemoryHydrator:
 
         # Process tasks
         for task in all_tasks:
-            # Handle handover context safely
-            handover_summary = None
-            if task.handover_context:
-                try:
-                    ctx = HandoverContext.from_json_str(task.handover_context)
-                    if ctx.summary:
-                        handover_summary = _sanitize(ctx.summary, 500)
-
-                    # If this is the active task (or retrying), include its notes directly
-                    if task.status == TaskStatus.IN_PROGRESS and ctx.summary:
-                        notes_with_time.append((task.updated_at, _sanitize(ctx.summary, 500)))
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse handover context for task {task.id}: {e} Schema validation failed"
-                    )
+            handover_summary = _handover_summary(task)
+            if handover_summary and task.status == TaskStatus.IN_PROGRESS:
+                notes_with_time.append((task.updated_at, handover_summary))
 
             sanitized_title = _sanitize(task.title, 200)
-
             if task.status == TaskStatus.UPSTREAM_BLOCKED:
                 blockers.append(
                     HydratedBlocker(
@@ -182,20 +196,7 @@ class MemoryHydrator:
                     )
                 )
             elif task.status == TaskStatus.BLOCKED:
-                task_defects = defects_map.get(task.id, [])
-                d_titles = [_sanitize(d.title, 200) for d in task_defects] if task_defects else []
-                d_descs = (
-                    [_sanitize(d.description, 500) for d in task_defects if d.description]
-                    if task_defects
-                    else []
-                )
-                blockers.append(
-                    HydratedBlocker(
-                        task_title=sanitized_title,
-                        defect_titles=d_titles,
-                        defect_descriptions=d_descs,
-                    )
-                )
+                blockers.append(_blocker_for(sanitized_title, defects_map.get(task.id, [])))
             else:
                 active_tasks.append(
                     HydratedTask(
