@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
-import specweaver.interfaces.api.app as app_module
+# TECH-024 moved the singleton beside the class it hands out; `app` only re-exports it now,
+# so the module global these tests reset lives here.
+import specweaver.interfaces.api.event_bridge as app_module
 from specweaver.interfaces.api.event_bridge import EventBridge
 
 

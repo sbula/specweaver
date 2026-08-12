@@ -189,3 +189,31 @@ class EventBridge:
     def serialize_event(self, event: dict[str, Any]) -> str:
         """Serialize an event dict to a JSON string."""
         return json.dumps(event, default=str)
+
+
+# ---------------------------------------------------------------------------
+# Process-wide singleton
+# ---------------------------------------------------------------------------
+#
+# `TECH-024` cycle 4 moved these down out of `app`. `app` imports the routers, and three of them
+# reached back for this accessor — a five-module cycle held together by imports deferred inside
+# functions. The singleton belongs beside the class it hands out anyway; sitting in `app` it made
+# every route module depend on the application object just to publish an event.
+
+_event_bridge: EventBridge | None = None
+
+
+def get_event_bridge() -> EventBridge:
+    """Get the shared EventBridge instance (lazy init)."""
+    logger.info("Initializing get_event_bridge")
+    global _event_bridge
+    if _event_bridge is None:
+        _event_bridge = EventBridge()
+    return _event_bridge
+
+
+def set_event_bridge(bridge: EventBridge) -> None:
+    """Override the EventBridge (for testing)."""
+    logger.info("Initializing set_event_bridge")
+    global _event_bridge
+    _event_bridge = bridge

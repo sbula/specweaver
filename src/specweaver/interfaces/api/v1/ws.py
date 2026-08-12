@@ -26,7 +26,7 @@ async def pipeline_ws(websocket: WebSocket, run_id: str) -> None:
     Sends NDJSON events as text messages. Sends a final
     ``{"event": "done"}`` and closes when the run completes.
     """
-    from specweaver.interfaces.api.app import get_event_bridge
+    from specweaver.interfaces.api.event_bridge import get_event_bridge
 
     bridge = get_event_bridge()
     await websocket.accept()

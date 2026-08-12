@@ -15,6 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from specweaver.interfaces.api import deps
 from specweaver.interfaces.api.errors import SpecWeaverAPIError, specweaver_error_handler
+
+# Re-exported, not defined: `TECH-024` moved the singleton beside the class it hands out, so the
+# route modules no longer import the application object back. Kept resolving here for callers
+# that reach `app.get_event_bridge`.
+from specweaver.interfaces.api.event_bridge import get_event_bridge as get_event_bridge
+from specweaver.interfaces.api.event_bridge import set_event_bridge as set_event_bridge
 from specweaver.interfaces.api.ui import htmx as ui_htmx
 from specweaver.interfaces.api.ui import routes as ui_routes
 from specweaver.interfaces.api.v1 import health
@@ -25,28 +31,6 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.api.event_bridge import EventBridge
-
-# Module-level singleton for the event bridge
-_event_bridge: EventBridge | None = None
-
-
-def get_event_bridge() -> EventBridge:
-    """Get the shared EventBridge instance (lazy init)."""
-    logger.info("Initializing get_event_bridge")
-    global _event_bridge
-    if _event_bridge is None:
-        from specweaver.interfaces.api.event_bridge import EventBridge
-
-        _event_bridge = EventBridge()
-    return _event_bridge
-
-
-def set_event_bridge(bridge: EventBridge) -> None:
-    """Override the EventBridge (for testing)."""
-    logger.info("Initializing set_event_bridge")
-    global _event_bridge
-    _event_bridge = bridge
 
 
 def create_app(

@@ -814,7 +814,8 @@ class TestStartRunResponse:
         with (
             patch.object(Path, "home", return_value=tmp_path),
             patch(
-                "specweaver.interfaces.api.app.get_event_bridge",
+                # TECH-024: `pipelines` resolves this from `event_bridge` now, not `app`.
+                "specweaver.interfaces.api.event_bridge.get_event_bridge",
                 return_value=mock_bridge,
             ),
             patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load,

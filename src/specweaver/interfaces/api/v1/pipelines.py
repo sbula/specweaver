@@ -99,7 +99,7 @@ async def start_pipeline_run(
     store = StateStore(state_db)
 
     # Get or create event bridge
-    from specweaver.interfaces.api.app import get_event_bridge
+    from specweaver.interfaces.api.event_bridge import get_event_bridge
 
     bridge = get_event_bridge()
 
@@ -235,7 +235,7 @@ async def resume_run(
         output_dir=project_root / "src",
     )
 
-    from specweaver.interfaces.api.app import get_event_bridge
+    from specweaver.interfaces.api.event_bridge import get_event_bridge
 
     bridge = get_event_bridge()
     event_cb = bridge.make_event_callback(run_id)
@@ -322,7 +322,7 @@ async def submit_gate_decision(
         output_dir=project_root / "src",
     )
 
-    from specweaver.interfaces.api.app import get_event_bridge
+    from specweaver.interfaces.api.event_bridge import get_event_bridge
 
     bridge = get_event_bridge()
     event_cb = bridge.make_event_callback(run_id)

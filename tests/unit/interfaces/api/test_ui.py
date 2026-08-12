@@ -223,7 +223,9 @@ def test_submit_hitl_gate(tmp_path) -> None:
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.interfaces.api import app as api_app
+
+    # TECH-024: patch where the consumer resolves it, not where it used to live.
+    from specweaver.interfaces.api import event_bridge as api_app
     from specweaver.interfaces.api.app import create_app
     from specweaver.interfaces.api.event_bridge import EventBridge
 
