@@ -54,19 +54,55 @@ class TestSubprocessExecutorIntegration:
         reason="Windows Job Objects do not support max file size per process",
     )
     def test_file_size_limit(self, tmp_path: Path) -> None:
-        """Verify file size limits are enforced on Unix (FR-10)."""
+        """A child writing past `max_file_size_bytes` is stopped by the OS (FR-10).
+
+        The write MUST target a real file. `RLIMIT_FSIZE` bounds writes to regular files only, and
+        this test previously wrote 2 MB to stdout — a `subprocess.PIPE`, which no size limit
+        applies to. It asserted `exit_code != 0` for a process that always exits 0, and was
+        `skipif`-ed on Windows, so it had never run on any platform and could not have passed on
+        this one.
+
+        Two assertions, because "the process failed" alone would also be satisfied by a typo in the
+        script: the file on disk must also stop at the limit, which is the limit doing the work.
+        """
         limit_bytes = 1024 * 1024  # 1MB
         executor = SubprocessExecutor(
             cwd=tmp_path, resource_limits=ResourceLimits(max_file_size_bytes=limit_bytes)
         )
         py = "python" if sys.platform == "win32" else "python3"
+        target = tmp_path / "oversized.bin"
 
-        # A script that attempts to print 2MB of output to stdout
-        script = "import sys\nprint('A' * (2 * 1024 * 1024))"
+        script = f"open({str(target)!r}, 'wb').write(b'A' * (2 * 1024 * 1024))"
         result = executor.execute([py, "-c", script])
 
-        # Should be killed by OS (SIGXFSZ)
-        assert result.exit_code != 0
+        assert result.exit_code != 0, "writing past RLIMIT_FSIZE must not succeed"
+        assert target.stat().st_size <= limit_bytes, (
+            f"file grew to {target.stat().st_size} past the {limit_bytes} limit"
+        )
+
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Windows Job Objects do not support max file size per process",
+    )
+    def test_a_write_under_the_file_size_limit_succeeds(self, tmp_path: Path) -> None:
+        """Control for the test above: the limit bounds large writes, it does not fail all writes.
+
+        Without this, `test_file_size_limit` would still pass if the executor were broken in a way
+        that made every child exit non-zero — the assertion would be satisfied for entirely the
+        wrong reason.
+        """
+        limit_bytes = 1024 * 1024
+        executor = SubprocessExecutor(
+            cwd=tmp_path, resource_limits=ResourceLimits(max_file_size_bytes=limit_bytes)
+        )
+        py = "python" if sys.platform == "win32" else "python3"
+        target = tmp_path / "modest.bin"
+
+        script = f"open({str(target)!r}, 'wb').write(b'A' * 1024)"
+        result = executor.execute([py, "-c", script])
+
+        assert result.exit_code == 0, result.stderr
+        assert target.stat().st_size == 1024
 
     def test_timeout_escalation(self, tmp_path: Path) -> None:
         """Verify process is killed if it ignores SIGTERM."""

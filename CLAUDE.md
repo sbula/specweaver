@@ -84,27 +84,34 @@ tach check
 ```
 
 > [!IMPORTANT]
-> **Accepted known Linux delta: 6 tests fail on Linux and are not a regression (user, 2026-08-11).**
-> Baseline on this box is **5567 passed, 6 failed, 11 skipped** for `tests/unit -n auto`. Do not
-> "fix" these as part of unrelated work, and do not read them as a broken tree:
+> **25 tests currently fail on Linux. NONE of them is an accepted delta (user, 2026-08-12).**
+> Every one is explained or being fixed — full root-cause analysis in
+> `docs/analysis/linux_test_failures_2026-08-12.md`.
 >
-> | Test | Why |
-> |---|---|
-> | `sandbox/filesystem/…/test_filesystem_tool.py::TestGrantBypassAttempts::test_backslash_normalization` | Backslash is a path separator on Windows and a legal filename character on Linux |
-> | `sandbox/filesystem/…/test_filesystem_tool.py::TestPathTraversalEdgeCases::test_grant_at_root_covers_everything` | same class — encodes Windows path semantics |
-> | `sandbox/filesystem/…/test_filesystem_atom.py::TestSymlinkIntent::test_symlink_valid` | same class |
-> | `interfaces/api/v1/test_api_review.py::TestReviewEndpoint::test_review_returns_result` | returns 500; cause not diagnosed |
-> | `interfaces/api/v1/test_api_review.py::TestReviewEndpoint::test_review_denied_returns_result` | same |
-> | `interfaces/api/v1/test_implement.py::TestImplementEndpoint::test_implement_returns_200` | same |
+> | Tier | Command | Current | Cause of the remainder |
+> |---|---|---|---|
+> | unit | `pytest tests/unit -n auto` | 5586 passed, **3 failed** | Windows path semantics — undecided |
+> | integration | `pytest tests/integration -n auto` | 578 passed, **13 failed** | `TECH-029` (10), tooling (3) |
+> | e2e | `pytest tests/e2e -n auto` | 182 passed, **9 failed** | `TECH-029` (8), tooling (1) |
 >
-> The repo was developed on Windows and moved to Linux 2026-08-11. Judge a change against
-> **5567/6**, not against zero failures. If a *seventh* fails, that one is yours.
+> **18 of the 25 are one production defect, tracked as `TECH-029`**: `max_processes=128` becomes
+> `setrlimit(RLIMIT_NPROC)` on Linux, which caps every process the *user* owns rather than the
+> sandbox's, so the limit does not bound what it exists to bound. That `preexec_fn` branch is
+> guarded by `sys.platform != "win32"` and had never executed before the Linux move. Do not "fix"
+> the failing tests — they assert `C-EXEC-06`'s promise correctly and the defect is in `src/`.
 >
-> Two environment requirements, both found the hard way (see `TECH-028`):
-> - **`uv sync --all-extras`**, never a bare `uv sync` — `pyproject.toml` has two things named
->   `dev`, and the default command installs `pytest-xdist` without `pytest` (5347 errors).
+> Fixed 2026-08-12: three unit tests that needed a live `GEMINI_API_KEY` (now mock the adapter), and
+> `test_file_size_limit`, which asserted `RLIMIT_FSIZE` against a pipe and so had never run to a
+> meaningful conclusion on any platform.
+>
+> **Two gate lessons worth keeping:**
+> - `tests.py cb <STORY> --kind tooling` selects the **unit tier only** — see `tests.py matrix`. The
+>   integration and e2e failures went unmeasured for a day because of it. **Pass `--all` when a
+>   change could reach beyond unit, and measure all three tiers before calling a baseline complete.**
 > - **Put `.venv/bin` on `PATH`** — `tests/unit/test_architecture.py` shells out to a bare `tach`,
 >   which `.venv/bin/python -m pytest` cannot see.
+> - **`uv sync --all-extras`**, never a bare `uv sync` — `pyproject.toml` has two things named
+>   `dev`, and the default installs `pytest-xdist` without `pytest` (see `TECH-028`).
 
 ## Critical Rules
 

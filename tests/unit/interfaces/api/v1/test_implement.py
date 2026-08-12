@@ -64,6 +64,7 @@ class TestImplementEndpoint:
         mock_code,
         client,
         _project_with_spec,
+        stub_llm_adapter,
     ) -> None:
         """Implement with mocked LLM → 200 with generated paths."""
         proj, spec = _project_with_spec

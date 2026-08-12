@@ -49,7 +49,9 @@ class TestReviewEndpoint:
     """Tests for POST /api/v1/review."""
 
     @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
-    def test_review_returns_result(self, mock_review, client, _project_with_spec) -> None:
+    def test_review_returns_result(
+        self, mock_review, client, _project_with_spec, stub_llm_adapter
+    ) -> None:
         """Review a spec → 200 with review result."""
         from specweaver.workflows.review.reviewer import ReviewResult
 
@@ -72,7 +74,9 @@ class TestReviewEndpoint:
         assert "summary" in data
 
     @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
-    def test_review_denied_returns_result(self, mock_review, client, _project_with_spec) -> None:
+    def test_review_denied_returns_result(
+        self, mock_review, client, _project_with_spec, stub_llm_adapter
+    ) -> None:
         """Review that denies spec → 200 with DENIED verdict."""
         from specweaver.workflows.review.reviewer import ReviewFinding, ReviewResult
 
@@ -126,3 +130,31 @@ class TestReviewEndpoint:
             },
         )
         assert resp.status_code == 400
+
+
+class TestReviewEndpointWithoutAnLlm:
+    """The route's own error path, which was previously exercised only by accident."""
+
+    def test_missing_provider_key_returns_llm_error(self, client, _project_with_spec) -> None:
+        """No usable adapter → 500 with `LLM_ERROR`, not an unhandled exception.
+
+        Written while fixing three tests that returned 500 on any machine without `GEMINI_API_KEY`
+        exported. The 500 was correct — `review.py` maps `LLMAdapterError` to a structured
+        `LLM_ERROR` response — but nothing asserted it, so the endpoint's documented failure mode
+        was proven only by other tests failing for the wrong reason. This pins it deliberately, and
+        supplies no adapter on purpose.
+        """
+        from specweaver.infrastructure.llm.factory import LLMAdapterError
+
+        proj, spec = _project_with_spec
+        with patch(
+            "specweaver.infrastructure.llm.factory.create_llm_adapter",
+            side_effect=LLMAdapterError("No API key configured for gemini."),
+        ):
+            resp = client.post(
+                "/api/v1/review",
+                json={"file": str(spec.relative_to(proj)), "project": "testproj"},
+            )
+
+        assert resp.status_code == 500
+        assert resp.json()["error_code"] == "LLM_ERROR"
