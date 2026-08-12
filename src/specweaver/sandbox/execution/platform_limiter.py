@@ -16,8 +16,10 @@ the appropriate limiter instance.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -90,6 +92,47 @@ def get_platform_limiter() -> PlatformLimiter:
 # ---------------------------------------------------------------------------
 
 
+def current_task_count() -> int | None:
+    """Tasks (threads) owned by the current real UID, or ``None`` if it cannot be determined.
+
+    This is what ``RLIMIT_NPROC`` actually counts — threads, not processes — which is why a cap set
+    from a process-shaped intuition is unreachable. Read from ``/proc``; on platforms without it
+    (macOS) this returns ``None`` and the caller degrades explicitly rather than guessing.
+
+    Costs ~6 ms on a host with 230 tasks, measured. That is per subprocess launch, against bash
+    steps that take orders of magnitude longer, so it is not worth caching — and a cached baseline
+    would go stale in exactly the situation the limit exists for.
+    """
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return None
+
+    uid = os.getuid()
+    total = 0
+    found = False
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            status = (entry / "status").read_text(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            # The process exited between listing and reading. Ordinary, and not a reason to fail.
+            continue
+        entry_uid: int | None = None
+        threads: int | None = None
+        for line in status.splitlines():
+            if line.startswith("Uid:"):
+                entry_uid = int(line.split()[1])
+            elif line.startswith("Threads:"):
+                threads = int(line.split()[1])
+                break
+        if entry_uid == uid and threads is not None:
+            total += threads
+            found = True
+
+    return total if found else None
+
+
 class UnixLimiter(PlatformLimiter):
     """Uses ``resource.setrlimit()`` via ``preexec_fn``.
 
@@ -105,8 +148,33 @@ class UnixLimiter(PlatformLimiter):
         """
         # Capture limits in closure — will be called in the child process
         mem = limits.max_memory_bytes
-        nproc = limits.max_processes
         fsize = limits.max_file_size_bytes
+
+        # `max_processes` is a budget for THIS sandbox, but RLIMIT_NPROC is per-real-UID and counts
+        # tasks (threads). Applying the budget raw caps every task the user owns, and an ordinary
+        # machine is already past it before the sandbox forks: 64 processes but 234 tasks against a
+        # configured 128, measured on an idle host. Every bash step failed with
+        # `fork: retry: Resource temporarily unavailable` after ~15s of retries.
+        #
+        # So the cap is baseline + budget, bounding what this sandbox may ADD. Counted here in the
+        # parent, not in the closure: `preexec_fn` runs after fork where only async-signal-safe work
+        # is sound, and walking /proc there is neither safe nor cheap.
+        #
+        # This is a best-effort backstop, not a real bound — the limit still applies to the whole
+        # UID, and the baseline can drift between measurement and exec. `B-EXEC-04` replaces it with
+        # a kernel-enforced per-subtree bound via cgroups v2 `pids.max`, and should REMOVE this
+        # rather than layer on top.
+        nproc: int | None = None
+        if limits.max_processes is not None:
+            baseline = current_task_count()
+            if baseline is None:
+                logger.warning(
+                    "Cannot read the current task count, so max_processes=%d is not enforced. "
+                    "Memory and file-size limits still apply.",
+                    limits.max_processes,
+                )
+            else:
+                nproc = baseline + limits.max_processes
 
         def _apply_limits() -> None:
             import resource

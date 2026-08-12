@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-029
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED (2026-08-12)
 - **Origin**: Found 2026-08-12 diagnosing 29 test failures after the move from Windows to Linux.
   Full analysis: `docs/analysis/linux_test_failures_2026-08-12.md`. This defect alone accounts for
   **18 of the 29**.
@@ -152,3 +152,63 @@ places:
    cannot apply — so its real behaviour on Linux is also unverified.
 3. **Whether the 18 tests need anything beyond the fix.** They should pass unchanged. If any needs
    editing, that is a signal the fix changed more than intended.
+
+---
+
+## Delivery (2026-08-12)
+
+> [!NOTE]
+> **Process, recorded rather than implied.** This ticket did not run `specweaver-design` to
+> completion. Its Phase 3 gate surfaced a gap — the leaning recommendation contradicted a delivered
+> FR — the options were discussed with the user, and the decisions below were taken directly. The
+> measured evidence above *is* the research; what was skipped is the FR/NFR table and a
+> sub-feature breakdown, which a single-change fix would not have used.
+
+### Decisions taken (user, 2026-08-12)
+
+| # | Decision |
+|---|---|
+| 1 | **Option D**, not A. A would have contradicted `C-EXEC-02 FR-11`'s *"MAY NOT disable limits entirely"* |
+| 2 | **Budget stays 128.** The semantics change; the configured number does not |
+| 3 | **Amend `C-EXEC-02 FR-11`** to state what is actually enforced |
+| 4 | **`B-EXEC-04`** minted for cgroups v2 — a capability at DAL-B under US-9, not a TECH ticket, because it delivers something never built rather than repairing something broken |
+
+### What changed
+
+- `platform_limiter.py`: new `current_task_count()` reading `/proc`, and the cap computed as
+  **baseline + budget** in the **parent** — not in `preexec_fn`, which runs after fork where only
+  async-signal-safe work is sound and walking `/proc` is neither safe nor cheap.
+- No task count available (macOS, restricted `/proc`) → the process cap is **not set** and a warning
+  says so. Memory and file-size bounds still apply. Guessing a number would be a limit that does not
+  limit.
+- `C-EXEC-02 FR-11` amended under a waiver named in the commit.
+
+### Measured outcome
+
+```
+                       before        after
+tests/integration      578 / 13      588 /  3      68s -> 12.6s
+tests/e2e              182 /  9      190 /  1      39s -> 13.8s
+tests/unit            5620 /  1     5622 /  1
+```
+
+The wall-clock collapse is the fork-retry loops disappearing.
+
+**Acceptance, probed directly rather than inferred from the suite:**
+
+```
+ordinary work (40 sequential forks)   rc=0    0.04s   <- was rc=254 after 15s
+fork storm    (400 concurrent procs)  rc=254  5.02s   <- still capped, FR-11 holds
+```
+
+### One test changed, and why that is not weakening it
+
+`test_process_limit_unix` asserted the literal `"50"` appeared in the child's `RLIMIT_NPROC`. That
+assertion is what let the defect survive: the raw budget is not a reachable ceiling, so pinning it
+pinned the bug. It now asserts the cap **exceeds the baseline by the budget** — relative, which is
+the actual contract. The other 17 tests fixed here were not touched.
+
+### What remains with `B-EXEC-04`
+
+This is a best-effort backstop. The cap still applies to the whole UID and the baseline can drift
+between measurement and exec. Only a per-subtree mechanism makes `FR-11` true without qualification.

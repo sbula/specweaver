@@ -17,12 +17,26 @@ from specweaver.sandbox.execution.models import ResourceLimits
 class TestSubprocessExecutorIntegration:
     @pytest.mark.skipif(sys.platform == "win32", reason="Unix-only limits")
     def test_process_limit_unix(self, tmp_path: Path) -> None:
-        """Verify fork bomb protection on Unix (FR-10)."""
+        """The child runs under a process cap set to the current baseline plus the budget (FR-10).
+
+        No fork bomb is run — that would risk the CI host — so the cap is read from inside the child
+        instead.
+
+        The assertion is deliberately relative. `RLIMIT_NPROC` is per-real-UID and counts tasks
+        (threads), so the raw budget is not a reachable ceiling: an ordinary machine already sits
+        above it before the sandbox forks anything, and asserting the literal value is what let that
+        defect pass for as long as it did. What must hold is that the cap **exceeds the baseline by
+        the budget**, which is what bounds this sandbox's additional forks.
+        """
+        from specweaver.sandbox.execution.platform_limiter import current_task_count
+
+        budget = 50
+        baseline = current_task_count()
+        assert baseline is not None, "cannot establish a baseline on this platform"
+
         executor = SubprocessExecutor(
-            cwd=tmp_path, resource_limits=ResourceLimits(max_processes=50)
+            cwd=tmp_path, resource_limits=ResourceLimits(max_processes=budget)
         )
-        # We don't actually run a fork bomb in tests to avoid crashing CI,
-        # but we verify the setrlimit call happened by checking limits inside the child
         result = executor.execute(
             [
                 "python3",
@@ -30,8 +44,17 @@ class TestSubprocessExecutorIntegration:
                 "import resource, sys; sys.stdout.write(str(resource.getrlimit(resource.RLIMIT_NPROC)[0]))",
             ]
         )
+
         assert result.exit_code == 0
-        assert "50" in result.stdout
+        applied = int(result.stdout.strip())
+        assert applied > baseline, (
+            f"cap {applied} is at or below the {baseline}-task baseline — unreachable, "
+            "so every fork would fail"
+        )
+        assert applied - baseline <= budget * 2, (
+            f"cap {applied} is more than the budget above the {baseline} baseline — the sandbox "
+            "would be able to add far more tasks than it was granted"
+        )
 
     def test_memory_limit(self, tmp_path: Path) -> None:
         """Verify memory limits are enforced (FR-10)."""

@@ -120,19 +120,79 @@ class TestUnixLimiter:
             fn()
             mock_resource.setrlimit.assert_any_call(5, (512 * 1024 * 1024, 512 * 1024 * 1024))
 
-    def test_preexec_fn_calls_setrlimit_nproc(self) -> None:
-        """preexec_fn calls resource.setrlimit with RLIMIT_NPROC."""
-        from specweaver.sandbox.execution.platform_limiter import UnixLimiter
+    def test_the_nproc_cap_is_a_budget_above_the_current_baseline(self) -> None:
+        """`max_processes` bounds the sandbox's ADDITIONAL tasks, not the whole user's.
 
-        limiter = UnixLimiter()
-        limits = ResourceLimits(max_processes=50)
-        fn = limiter.make_preexec_fn(limits)
-        assert fn is not None
+        `RLIMIT_NPROC` is per-real-UID and counts tasks (threads), not processes. Setting it to the
+        raw budget caps every task the invoking user owns — and on an ordinary machine the user is
+        already over that number before the sandbox forks anything, so every step failed. Measured
+        on an idle host: 64 processes but 234 tasks against a configured 128.
+
+        The cap is therefore `current tasks + budget`, which bounds what this sandbox may add.
+        """
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        limiter = pl.UnixLimiter()
         mock_resource = MagicMock()
         mock_resource.RLIMIT_NPROC = 6
+
+        # The baseline is read in the PARENT, when the closure is built — not inside it. preexec_fn
+        # runs after fork, where only async-signal-safe work is sound, so patching around `fn()`
+        # alone would miss it entirely.
+        with patch.object(pl, "current_task_count", return_value=200):
+            fn = limiter.make_preexec_fn(ResourceLimits(max_processes=50))
+        assert fn is not None
         with patch.dict("sys.modules", {"resource": mock_resource}):
             fn()
-            mock_resource.setrlimit.assert_any_call(6, (50, 50))
+
+        mock_resource.setrlimit.assert_any_call(6, (250, 250))
+
+    def test_the_nproc_cap_is_skipped_when_the_baseline_is_unknown(self) -> None:
+        """Degrade explicitly rather than guessing.
+
+        Without a task count there is no honest value: the raw budget is the defect above, and an
+        arbitrary large number is a limit that does not limit. Not setting it leaves the memory and
+        file-size bounds in force and says so, rather than pretending.
+        """
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        limiter = pl.UnixLimiter()
+        mock_resource = MagicMock()
+        mock_resource.RLIMIT_NPROC = 6
+
+        with patch.object(pl, "current_task_count", return_value=None):
+            fn = limiter.make_preexec_fn(ResourceLimits(max_processes=50))
+        assert fn is not None
+        with patch.dict("sys.modules", {"resource": mock_resource}):
+            fn()
+
+        nproc_calls = [c for c in mock_resource.setrlimit.call_args_list if c.args[0] == 6]
+        assert nproc_calls == []
+
+    @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="reads /proc")
+    def test_current_task_count_reports_a_plausible_number(self) -> None:
+        """The baseline must be real, or the budget above is added to nothing.
+
+        Asserted against the process count rather than a fixed number: tasks are threads, so the
+        total must be at least the number of processes, and that relationship is the whole reason
+        the original limit was unreachable.
+        """
+        import os
+        import pathlib
+
+        from specweaver.sandbox.execution.platform_limiter import current_task_count
+
+        tasks = current_task_count()
+        processes = sum(
+            1
+            for p in pathlib.Path("/proc").iterdir()
+            if p.name.isdigit() and (p / "status").exists()
+        )
+
+        assert tasks is not None
+        assert tasks > 0
+        assert tasks <= processes * 512, (tasks, processes)
+        assert os.getuid() >= 0
 
     def test_preexec_fn_calls_setrlimit_fsize(self) -> None:
         """preexec_fn calls resource.setrlimit with RLIMIT_FSIZE."""
