@@ -321,6 +321,22 @@ class PythonQARunner(QARunnerInterface):
                 max_complexity=max_complexity,
             )
 
+        reason = did_not_run(result, "complexipy")
+        if reason:
+            return ComplexityRunResult(
+                violation_count=1,
+                max_complexity=max_complexity,
+                violations=[
+                    ComplexityViolation(
+                        file="<validation_engine>",
+                        line=0,
+                        function="<toolchain>",
+                        complexity=0,
+                        message=reason,
+                    )
+                ],
+            )
+
         return self._build_complexity_result(result.stdout, max_complexity)
 
     def _build_complexity_result(

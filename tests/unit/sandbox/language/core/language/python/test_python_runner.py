@@ -478,6 +478,36 @@ class TestPythonQARunnerMissingToolchain:
 
         assert result.error_count == 0
 
+    def test_absent_complexipy_reports_an_error_rather_than_no_violations(
+        self, tmp_path: Path
+    ) -> None:
+        """The fourth path, missed on the first pass through this very file.
+
+        `run_tests`, `run_linter` and `run_architecture_check` were fixed together and
+        `run_complexity` was not, which is its own small lesson: the hole was found by probing
+        every method on the runner rather than by re-reading the ones already changed.
+        """
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=127, stdout="", stderr="/usr/bin/python3: No module named complexipy"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_complexity(target=".")
+
+        assert result.violation_count == 1, "an unusable checker is not an absence of violations"
+        assert "complexipy" in result.violations[0].message
+
+    def test_a_clean_complexity_run_is_untouched(self, tmp_path: Path) -> None:
+        """The control: the tool ran, found nothing, and exited 0."""
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_complexity(target=".")
+
+        assert result.violation_count == 0
+
     def test_absent_tach_in_a_container_reports_an_error(self, tmp_path: Path) -> None:
         """The architecture path guards on `shutil.which`, which is the wrong filesystem.
 
