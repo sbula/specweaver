@@ -38,6 +38,10 @@ import ast
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -74,6 +78,26 @@ class ClassReport:
 
     def incohesive(self) -> bool:
         return self.lcom4 > MAX_LCOM4
+
+
+def _load_sibling(module_name: str) -> ModuleType:
+    """Load a same-directory script by path — `scripts/` is not an importable package."""
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        msg = f"cannot load {path}"
+        raise ImportError(msg)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+#: `TECH-035` freezes the known offenders in a sibling, matching R6/R7 and `check_complexity`.
+#: Re-exported so this file stays the one place a reader looks for "why was my class rejected".
+_ratchet = _load_sibling("_class_health_baseline")
 
 
 def _base_names(node: ast.ClassDef) -> set[str]:
@@ -274,12 +298,56 @@ def _rel(path: Path) -> str:
         return path.as_posix()
 
 
+def _unfrozen(split: list[ClassReport]) -> list[ClassReport]:
+    """The incohesive classes that are new, or worse than their frozen score."""
+    baseline = _ratchet.load_baseline()
+    if baseline is None:
+        print(
+            "FAIL  no cohesion baseline — run "
+            "`python scripts/check_class_health.py --update-baseline`"
+        )
+        return split
+
+    scored = {f"{_ratchet._repo_relative(r.path)}::{r.name}": r for r in split}
+    worse = dict(
+        (name, was)
+        for name, was, _ in _ratchet.regressions({k: v.lcom4 for k, v in scored.items()}, baseline)
+    )
+    better = _ratchet.improvements({k: v.lcom4 for k, v in scored.items()}, baseline)
+    if better:
+        print(f"{len(better)} class(es) improved — re-freeze with --update-baseline:")
+        for name, was, now in better[:8]:
+            print(f"    {name}: {was} -> {now or 'cohesive'}")
+        print()
+    return [report for name, report in scored.items() if name in worse]
+
+
+def _unfrozen_attributes(fat: list[ClassReport]) -> list[ClassReport]:
+    """The oversized classes that are new, or larger than their frozen count."""
+    baseline = _ratchet.load_attribute_baseline()
+    if baseline is None:
+        return fat
+    scored = {f"{_ratchet._repo_relative(r.path)}::{r.name}": r for r in fat}
+    worse = {
+        name
+        for name, _was, _now in _ratchet.regressions(
+            {k: len(v.attributes) for k, v in scored.items()}, baseline
+        )
+    }
+    return [report for name, report in scored.items() if name in worse]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("paths", nargs="*", help="files or directories (default: src)")
     ap.add_argument("--max-attributes", type=int, default=MAX_ATTRIBUTES)
+    ap.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="rewrite the cohesion baseline from the current tree; the diff is meant to be reviewed",
+    )
     args = ap.parse_args(argv)
 
     limit: int = args.max_attributes
@@ -291,10 +359,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAIL  path not found: {path}")
         return 1
 
+    if args.update_baseline:
+        scores = _ratchet.measure(*raw)
+        attributes = _ratchet.measure_attributes(*raw)
+        _ratchet.write_baseline(scores, attributes)
+        print(
+            f"Class-health baseline written: {len(scores)} incohesive, {len(attributes)} oversized"
+        )
+        return 0
+
     files = iter_python_files(raw)
     reports = [r for f in files for r in analyse_file(f)]
     fat = [r for r in reports if r.too_many_attributes(limit)]
     split = [r for r in reports if r.incohesive()]
+
+    # `TECH-035`: the known incohesive set is frozen, so an untouched offender is not this commit's
+    # problem. Only a NEW class, or an existing one getting WORSE, blocks. Without this the gate is
+    # simultaneously ignored (its `cb` scope is `changed`, so it usually skips) and blocking (the
+    # moment a commit touches one, everything goes red on debt it did not create).
+    split = _unfrozen(split)
+    fat = _unfrozen_attributes(fat)
     failures = {id(r): r for r in [*fat, *split]}
 
     if not failures:

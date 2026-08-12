@@ -2,7 +2,8 @@
 
 - **Feature ID**: TECH-035
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: PARTIAL 2026-08-12 — the ratchet is delivered and the gate is green; **19 incohesive
+  classes and 1 oversized remain frozen**. See §Delivery. This stays open as the reduction work.
 - **Origin**: Found 2026-08-12 during `TECH-023` batch 2. The gate fired for the first time in the
   session because that commit finally *changed* a file it covers — see "Why nobody had seen this".
 
@@ -121,3 +122,35 @@ identical split, and three atoms that each separate intent-dispatch from executi
 
 Run through `specweaver-design`. Settle the dispatcher question first — it decides whether three of
 the 23 are debt at all.
+
+## Delivery of the ratchet, 2026-08-12
+
+`scripts/_class_health_baseline.py`, wired into `check_class_health.py`. **`quality.py cb` reports
+0 failed of 12** — the gate enforces again instead of being ignored.
+
+Both measures are frozen, cohesion and attribute count. Freezing only cohesion left `Task` (one
+attribute over the limit) keeping the gate red, which would have preserved the exact condition this
+ticket exists to end: a check nobody can act on.
+
+**Verified by planting both regression kinds**, not by reading the code — a new two-component class
+in `commons` (exit 1) and `Task` grown 16 → 17 attributes (exit 1), with a clean tree at 0.
+
+### The first probe was wrong, and that mattered
+
+The initial "getting worse" probe added a field the checker does not count, so it reported exit 0
+and looked like a gap in the ratchet. It was a bad probe, not a bad guard — but the two are
+indistinguishable from the outside, which is the whole subject of this ticket. Re-probed with a
+real `mapped_column` and it blocked correctly.
+
+### A real bug the tests caught
+
+`_repo_relative` raised `ValueError` for any path **outside** the repo — which is exactly what a
+test scanning `tmp_path` produces. `test_a_god_object_blocks` went from failing loudly to the check
+silently reporting nothing, and the suite caught it. Out-of-repo paths now key by absolute path, so
+they can never match a baseline entry and are correctly treated as new.
+
+### Still open
+
+19 incohesive classes and 1 oversized, now bounded rather than growing. The largest single target is
+**`BaseTreeSitterParser` at `LCOM4=8`** — four distinct jobs (query, walk, edit, format) in one
+class, and clearing it also removes three of `TECH-023`'s violations.
