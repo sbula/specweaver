@@ -708,3 +708,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-033:** [A Step's Retry Budget Resets on Every `sw resume`](features/topic_07_technical_debt/TECH-033/TECH-033_design.md)
     *   `✅` **TECH-034:** [Split the AST Parser Hierarchy by Language Paradigm](features/topic_07_technical_debt/TECH-034/TECH-034_design.md)
     *   `[ ]` **TECH-035:** [Chronically Failing Class-Health Gate](features/topic_07_technical_debt/TECH-035/TECH-035_design.md)
+    *   `[ ]` **TECH-036:** [Lineage Telemetry Takes Down a Lint Fix That Already Succeeded](features/topic_07_technical_debt/TECH-036/TECH-036_design.md)
