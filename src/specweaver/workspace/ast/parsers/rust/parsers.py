@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 from specweaver.commons.qa import ComplexityViolation
+from specweaver.workspace.ast.parsers._sarif_complexity import parse_sarif_complexity
 
 logger = logging.getLogger(__name__)
 
@@ -14,51 +15,9 @@ logger = logging.getLogger(__name__)
 def parse_clippy_complexity(data: dict[str, Any], max_complexity: int) -> list[ComplexityViolation]:
     """Parse Clippy complexities strictly from structural SARIF properties without Regex."""
     logger.debug("parse_clippy_complexity called with max_complexity=%d", max_complexity)
-    violations = []
-
-    for run in data.get("runs", []):
-        for result in run.get("results", []):
-            rule_id = result.get("ruleId", "")
-
-            if "cognitive_complexity" not in rule_id.lower() and "complex" not in rule_id.lower():
-                continue
-
-            # Pure JSON mapping check. NO REGEX ALLOWED.
-            props = result.get("properties", {})
-            comp_val = None
-
-            if "complexity" in props:
-                comp_val = int(props["complexity"])
-            elif "CyclomaticComplexity" in props:
-                comp_val = int(props["CyclomaticComplexity"])
-
-            if comp_val is None:
-                logger.error(
-                    "SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node"
-                )
-                raise ValueError(
-                    "HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing clippy property mapping?"
-                )
-
-            if comp_val > max_complexity:
-                msg = result.get("message", {}).get("text", "")
-
-                uri = ""
-                line = 0
-                for loc in result.get("locations", []):
-                    ploc = loc.get("physicalLocation", {})
-                    uri = ploc.get("artifactLocation", {}).get("uri", "")
-                    line = ploc.get("region", {}).get("startLine", 0)
-                    break
-
-                violations.append(
-                    ComplexityViolation(
-                        file=uri,
-                        line=line,
-                        function="unknown",
-                        complexity=comp_val,
-                        message=msg,
-                    )
-                )
-
-    return violations
+    return parse_sarif_complexity(
+        data,
+        max_complexity,
+        rule_markers=("cognitive_complexity", "complex"),
+        drift_hint="Missing clippy property mapping?",
+    )

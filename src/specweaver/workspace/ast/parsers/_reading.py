@@ -18,6 +18,7 @@ answers `extract_symbol` and the rest exactly as before.
 from __future__ import annotations
 
 import logging
+import re
 import typing
 
 from tree_sitter import Query, QueryCursor
@@ -25,6 +26,37 @@ from tree_sitter import Query, QueryCursor
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
 logger = logging.getLogger(__name__)
+
+
+#: `@trace(FR-1, FR-2)` in a comment. One tag per comma-separated entry.
+_TRACE_PATTERN = re.compile(r"@trace\(([^)]+)\)")
+
+
+def _trace_tags(comment_text: str) -> set[str]:
+    """The traceability tags one comment declares, if any."""
+    match = _TRACE_PATTERN.search(comment_text)
+    return {part.strip() for part in match.group(1).split(",")} if match else set()
+
+
+def _blankable_span(node: typing.Any) -> tuple[int, int] | None:
+    """The byte range of a block's body, or None when there is nothing to blank.
+
+    A leading docstring is kept: the skeleton is what a reader (or an LLM) sees instead of the
+    body, and the docstring is the part of a body worth keeping.
+    """
+    start_cut = node.start_byte + 1
+    end_cut = node.end_byte - 1
+
+    first_child = node.children[0] if node.children else None
+    if (
+        first_child is not None
+        and first_child.type == "expression_statement"
+        and first_child.children
+        and first_child.children[0].type == "string"
+    ):
+        start_cut = first_child.end_byte
+
+    return (start_cut, end_cut) if start_cut < end_cut else None
 
 
 class SymbolReadingMixin:
@@ -70,25 +102,10 @@ class SymbolReadingMixin:
         cursor = QueryCursor(query)
         captures = cursor.captures(tree.root_node)
 
-        nodes_to_blank: list[tuple[int, int]] = []
-
-        if "block" in captures:
-            for node in captures["block"]:
-                start_cut = node.start_byte + 1
-                end_cut = node.end_byte - 1
-
-                if node.children:
-                    first_child = node.children[0]
-                    if (
-                        first_child.type == "expression_statement"
-                        and first_child.children
-                        and first_child.children[0].type == "string"
-                    ):
-                        start_cut = first_child.end_byte
-
-                if start_cut < end_cut:
-                    nodes_to_blank.append((start_cut, end_cut))
-
+        nodes_to_blank = [
+            span for node in captures.get("block", []) if (span := _blankable_span(node))
+        ]
+        # Back to front, so each replacement leaves earlier offsets valid.
         nodes_to_blank.sort(key=lambda x: x[0], reverse=True)
 
         skeleton = code_bytes
@@ -121,6 +138,12 @@ class SymbolReadingMixin:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
         return typing.cast("bytes", target_block.text).decode("utf-8")
 
+    def _scoped_name(self, name_node: typing.Any) -> str:
+        """`Class.method` when the symbol has a scope, the bare name otherwise."""
+        sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
+        scope = self._get_symbol_scope(name_node)
+        return f"{scope}.{sym_name}" if scope else sym_name
+
     def list_symbols(
         self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
     ) -> list[str]:
@@ -136,25 +159,19 @@ class SymbolReadingMixin:
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
-        symbols = []
-        for _match_id, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    scope = self._get_symbol_scope(name_node)
-                    full_name = f"{scope}.{sym_name}" if scope else sym_name
-                    if self._is_symbol_valid(
-                        full_name, name_node, visibility, decorator_filter, framework_markers
-                    ):
-                        symbols.append(full_name)
-
-        seen = set()
-        unique_symbols = []
-        for x in symbols:
-            if x not in seen:
-                seen.add(x)
-                unique_symbols.append(x)
-        return unique_symbols
+        symbols = [
+            name
+            for _match_id, match_dict in matches
+            for name_node in match_dict.get("name", [])
+            if self._is_symbol_valid(
+                name := self._scoped_name(name_node),
+                name_node,
+                visibility,
+                decorator_filter,
+                framework_markers,
+            )
+        ]
+        return list(dict.fromkeys(symbols))  # de-duplicated, first-seen order preserved
 
     def extract_traceability_tags(self, code: str) -> set[str]:
         if not code.strip():
@@ -162,19 +179,9 @@ class SymbolReadingMixin:
         tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, self.SCM_COMMENT_QUERY)
         cursor = QueryCursor(query)
-        tags: set[str] = set()
-
-        import re
-
-        trace_pattern = re.compile(r"@trace\(([^)]+)\)")
-
-        for _, match_dict in cursor.matches(tree.root_node):
-            if "comment" in match_dict:
-                for comment_node in match_dict["comment"]:
-                    text = typing.cast("bytes", comment_node.text).decode("utf-8")
-                    match = trace_pattern.search(text)
-                    if match:
-                        content = match.group(1)
-                        for part in content.split(","):
-                            tags.add(part.strip())
-        return tags
+        return {
+            tag
+            for _, match_dict in cursor.matches(tree.root_node)
+            for comment_node in match_dict.get("comment", [])
+            for tag in _trace_tags(typing.cast("bytes", comment_node.text).decode("utf-8"))
+        }
