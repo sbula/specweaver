@@ -22,15 +22,31 @@ logger = logging.getLogger(__name__)
 class BaseTreeSitterParser(CodeStructureInterface, ABC):
     """Base class centralizing Tree-sitter AST mutation and extraction."""
 
-    @property
+    @staticmethod
     @abstractmethod
-    def language(self) -> Language:
-        """The Tree-sitter Language binding."""
+    def grammar() -> object:
+        """The tree-sitter language pointer for this parser.
+
+        Every parser had the identical five lines of `__init__` plus two pass-through properties to
+        hold this one value (`TECH-034`). Declared as a static method rather than a class attribute
+        because a bare callable in a class body is a method to the type checker, and would be
+        handed `self`; subclasses assign `grammar = staticmethod(tree_sitter_x.language)`.
+
+        TypeScript is the only parser needing a non-default entry point
+        (`language_typescript`), which a callable expresses and a module reference would not.
+        """
+
+    def __init__(self) -> None:
+        self._language = Language(self.grammar())
+        self._parser = Parser(self._language)
 
     @property
-    @abstractmethod
+    def language(self) -> Language:
+        return self._language
+
+    @property
     def parser(self) -> Parser:
-        """The initialized Tree-sitter Parser."""
+        return self._parser
 
     @property
     @abstractmethod

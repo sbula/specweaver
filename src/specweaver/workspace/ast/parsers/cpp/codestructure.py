@@ -7,7 +7,7 @@ import logging
 import typing
 
 import tree_sitter_cpp
-from tree_sitter import Language, Parser, Query, QueryCursor
+from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 
@@ -17,17 +17,7 @@ logger = logging.getLogger(__name__)
 class CppCodeStructure(BaseTreeSitterParser):
     """AST parser for C++ source files."""
 
-    def __init__(self) -> None:
-        self._language = Language(tree_sitter_cpp.language())
-        self._parser = Parser(self._language)
-
-    @property
-    def language(self) -> Language:
-        return self._language
-
-    @property
-    def parser(self) -> Parser:
-        return self._parser
+    grammar = staticmethod(tree_sitter_cpp.language)
 
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802

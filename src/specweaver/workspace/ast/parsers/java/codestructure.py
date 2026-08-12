@@ -7,7 +7,7 @@ import logging
 import typing
 
 import tree_sitter_java
-from tree_sitter import Language, Parser, Query, QueryCursor
+from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
@@ -16,17 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class JavaCodeStructure(BaseTreeSitterParser):
-    def __init__(self) -> None:
-        self._language = Language(tree_sitter_java.language())
-        self._parser = Parser(self._language)
-
-    @property
-    def language(self) -> Language:
-        return self._language
-
-    @property
-    def parser(self) -> Parser:
-        return self._parser
+    grammar = staticmethod(tree_sitter_java.language)
 
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
