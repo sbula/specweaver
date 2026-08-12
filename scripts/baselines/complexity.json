@@ -13,7 +13,6 @@
     "src/specweaver/assurance/validation/drift_detector.py::_extract_signatures": 40,
     "src/specweaver/assurance/validation/drift_detector.py::detect_drift": 19,
     "src/specweaver/assurance/validation/interfaces/cli.py::_display_results": 18,
-    "src/specweaver/assurance/validation/interfaces/cli_drift.py::drift_check_rot": 51,
     "src/specweaver/assurance/validation/rules/code/c13_contract_drift.py::C13ContractDriftRule::check": 16,
     "src/specweaver/assurance/validation/rules/spec/s12_archetype_spec_bounds.py::S12ArchetypeSpecBoundsRule::check": 18,
     "src/specweaver/core/config/archetype_resolver.py::ArchetypeResolver::resolve": 16,

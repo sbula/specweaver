@@ -149,31 +149,13 @@ def _present_result(result: Any, target_name: str, analyze: bool) -> None:
     raise typer.Exit(code=42)
 
 
-@drift_app.command("check-rot")
-def drift_check_rot(  # noqa: C901
-    staged: bool = typer.Option(
-        False,
-        "--staged",
-        help="Check only files currently staged in git.",
-    ),
-) -> None:
-    """Bi-Directional Spec Rot Interceptor (SF-1 Stub)."""
-    import yaml
-    from rich.table import Table
-
-    if not staged:
-        _core.console.print("Checking AST drift for all target files")
-        raise typer.Exit(code=0)
-
-    _core.console.print("Checking AST drift for staged files")
-
-    # TID251 exemption: a narrow, one-off CLI git query against the
-    # developer's own repo — not agent-facing/untrusted input, so
-    # SubprocessExecutor's env-isolation/credential-stripping doesn't carry
-    # the same security value here it does elsewhere. Routing this through
-    # sandbox.git's GitExecutor (rather than raw subprocess OR a direct
-    # SubprocessExecutor import, both of which would newly couple
-    # assurance.validation to sandbox) is tracked as future scope on TECH-009.
+def _staged_files() -> list[str]:
+    """The paths git has staged, or an exit if the index cannot be read."""
+    # TID251 exemption: a narrow, one-off CLI git query against the developer's own repo — not
+    # agent-facing/untrusted input, so SubprocessExecutor's env-isolation/credential-stripping
+    # doesn't carry the same security value here it does elsewhere. Routing this through
+    # sandbox.git's GitExecutor (rather than raw subprocess OR a direct SubprocessExecutor import,
+    # both of which would newly couple assurance.validation to sandbox) is future scope on TECH-009.
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
@@ -182,12 +164,130 @@ def drift_check_rot(  # noqa: C901
             check=True,
             encoding="utf-8",
         )
-        raw_files = result.stdout.splitlines()
     except subprocess.CalledProcessError as exc:
         _core.console.print(f"[red]Error:[/red] Failed to query git index: {exc}")
         raise typer.Exit(code=1) from exc
 
-    target_files = [f.strip() for f in raw_files if f.strip()]
+    return [f.strip() for f in result.stdout.splitlines() if f.strip()]
+
+
+def _plan_declaring(
+    target_path: Path, all_plans: list[Path], project_path: Path, target: str
+) -> Path | None:
+    """The plan whose `expected_signatures` name this file, by any of the three path spellings.
+
+    A plan may record a path relative to the project, as an absolute posix path, or in the host's
+    native form; all three are checked because plans are written by different producers.
+    """
+    import yaml
+
+    target_posix = target_path.as_posix()
+    try:
+        rel_posix = target_path.resolve().relative_to(project_path.resolve()).as_posix()
+    except ValueError:
+        rel_posix = target_posix
+
+    for plan_path in all_plans:
+        try:
+            with plan_path.open() as pf:
+                plan_data = yaml.safe_load(pf)
+            for task in plan_data.get("tasks", []):
+                sigs = task.get("expected_signatures", {})
+                if rel_posix in sigs or target_posix in sigs or str(target_path) in sigs:
+                    return plan_path
+        except Exception as e:
+            logger.warning(f"Failed to validate plan {plan_path} against {target}: {e}")
+    return None
+
+
+def _run_rot_check(target_path: Path, matched_plan: Path, project_path: Path) -> Any:
+    """Run the single-step drift pipeline for one file against its plan."""
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.run_context import AnalysisContext, RunContext
+
+    pipeline = PipelineDefinition.create_single_step(
+        name="check_rot",
+        action=StepAction.DETECT,
+        target=StepTarget.DRIFT,
+        description=f"Rot Check {target_path.name}",
+        params={
+            "target_path": str(target_path.absolute()),
+            "plan_path": str(matched_plan.absolute()),
+            "analyze": False,
+        },
+    )
+    context = RunContext(
+        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
+        project_path=project_path,
+        spec_path=matched_plan,
+        db=_core.get_db(),
+    )
+    return asyncio.run(PipelineRunner(pipeline, context).run())
+
+
+def _report_findings(last_record: Any, target: str, target_posix: str) -> None:
+    """Print the drift table for one file, when the step recorded actual findings."""
+    from rich.table import Table
+
+    res = last_record.result if last_record else None
+    if not (res and res.output and res.output.get("is_drifted")):
+        return
+
+    _core.console.print(f"[red]Failure: AST Drift Detected![/red] ({target_posix})")
+    table = Table(title=f"Drift Findings for {target}")
+    table.add_column("Severity", style="red")
+    table.add_column("Description")
+    for finding in res.output.get("findings", []):
+        table.add_row(finding.get("severity", "ERROR"), finding.get("description", ""))
+    _core.console.print(table)
+
+
+def _target_has_drifted(target: str, all_plans: list[Path], project_path: Path) -> bool:
+    """Check one staged file: locate its plan, run the check, report what it found."""
+    from specweaver.core.flow.engine.state import StepStatus
+
+    _core.console.print(f"DEBUG TARGET STR: {target}")
+    target_path = project_path / target
+    if not target_path.exists():
+        _core.console.print(f"DEBUG SKIP: {target_path} does not exist!")
+        return False
+
+    matched_plan = _plan_declaring(target_path, all_plans, project_path, target)
+    if not matched_plan:
+        matched_plan = _resolve_plan_by_lineage(target_path, all_plans, target)
+    if not matched_plan:
+        return False
+
+    run_state = _run_rot_check(target_path, matched_plan, project_path)
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+    status_code = getattr(last_record, "status", None) if last_record else None
+
+    _core.console.print(f"DEBUG PIPELINE: status_code={status_code}, last_record={last_record}")
+
+    if status_code not in (StepStatus.FAILED, StepStatus.ERROR):
+        return False
+
+    _report_findings(last_record, target, target_path.as_posix())
+    return True
+
+
+@drift_app.command("check-rot")
+def drift_check_rot(
+    staged: bool = typer.Option(
+        False,
+        "--staged",
+        help="Check only files currently staged in git.",
+    ),
+) -> None:
+    """Bi-Directional Spec Rot Interceptor (SF-1 Stub)."""
+    if not staged:
+        _core.console.print("Checking AST drift for all target files")
+        raise typer.Exit(code=0)
+
+    _core.console.print("Checking AST drift for staged files")
+
+    target_files = _staged_files()
     if not target_files:
         raise typer.Exit(code=0)
 
@@ -198,90 +298,11 @@ def drift_check_rot(  # noqa: C901
         raise typer.Exit(code=1) from exc
 
     specs_dir = project_path / "specs"
-    all_plans = []
-    if specs_dir.exists() and specs_dir.is_dir():
-        all_plans = list(specs_dir.glob("*_plan.yaml"))
+    all_plans = list(specs_dir.glob("*_plan.yaml")) if specs_dir.is_dir() else []
 
-    drift_found = False
+    drifted = [t for t in target_files if _target_has_drifted(t, all_plans, project_path)]
 
-    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.run_context import AnalysisContext, RunContext
-
-    for target in target_files:
-        _core.console.print(f"DEBUG TARGET STR: {target}")
-        target_path = project_path / target
-        if not target_path.exists():
-            _core.console.print(f"DEBUG SKIP: {target_path} does not exist!")
-            continue
-
-        matched_plan = None
-        target_posix = target_path.as_posix()
-        try:
-            rel_posix = target_path.resolve().relative_to(project_path.resolve()).as_posix()
-        except ValueError:
-            rel_posix = target_posix
-
-        for plan_path in all_plans:
-            try:
-                with plan_path.open() as pf:
-                    plan_data = yaml.safe_load(pf)
-                for task in plan_data.get("tasks", []):
-                    sigs = task.get("expected_signatures", {})
-                    if rel_posix in sigs or target_posix in sigs or str(target_path) in sigs:
-                        matched_plan = plan_path
-                        break
-                if matched_plan:
-                    break
-            except Exception as e:
-                logger.warning(f"Failed to validate plan {plan_path} against {target}: {e}")
-
-        if not matched_plan:
-            matched_plan = _resolve_plan_by_lineage(target_path, all_plans, target)
-
-        if not matched_plan:
-            continue
-
-        pipeline = PipelineDefinition.create_single_step(
-            name="check_rot",
-            action=StepAction.DETECT,
-            target=StepTarget.DRIFT,
-            description=f"Rot Check {target_path.name}",
-            params={
-                "target_path": str(target_path.absolute()),
-                "plan_path": str(matched_plan.absolute()),
-                "analyze": False,
-            },
-        )
-
-        context = RunContext(
-            analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-            project_path=project_path,
-            spec_path=matched_plan,
-            db=_core.get_db(),
-        )
-        runner_instance = PipelineRunner(pipeline, context)
-        run_state = asyncio.run(runner_instance.run())
-
-        last_record = run_state.step_records[-1] if run_state.step_records else None
-        status_code = getattr(last_record, "status", None) if last_record else None
-
-        _core.console.print(f"DEBUG PIPELINE: status_code={status_code}, last_record={last_record}")
-
-        if status_code in (StepStatus.FAILED, StepStatus.ERROR):
-            drift_found = True
-            res = last_record.result if last_record else None
-            if res and res.output and res.output.get("is_drifted"):
-                _core.console.print(f"[red]Failure: AST Drift Detected![/red] ({target_posix})")
-                table = Table(title=f"Drift Findings for {target}")
-                table.add_column("Severity", style="red")
-                table.add_column("Description")
-                for f in res.output.get("findings", []):
-                    table.add_row(f.get("severity", "ERROR"), f.get("description", ""))
-                _core.console.print(table)
-
-    if drift_found:
+    if drifted:
         _core.console.print("\n================================================================")
         _core.console.print("ERROR: SpecWeaver detected structural drift between Spec and Code!")
         _core.console.print("Fix the mismatch to proceed with this commit.")
