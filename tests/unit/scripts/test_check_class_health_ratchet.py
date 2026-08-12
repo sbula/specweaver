@@ -106,7 +106,11 @@ def test_the_census_finds_the_known_offenders() -> None:
 
     current = module.measure(REPO_ROOT / "src")
 
-    assert len(current) >= 15, f"expected the known offenders, found {len(current)}"
+    # Floor was 15 while the checker stranded callers of stateless helpers. `TECH-035` corrected
+    # that measurement and 7 classes left the census legitimately, so the floor moves with it.
+    # It stays a FLOOR and not an equality on purpose: this test exists to catch `measure`
+    # collapsing to nothing, not to pin a debt number that reduction work is meant to shrink.
+    assert len(current) >= 10, f"expected the known offenders, found {len(current)}"
     assert any("BaseTreeSitterParser" in name for name in current), (
         "the most incohesive class in the repo is missing from the census"
     )

@@ -259,6 +259,80 @@ class TestLcom4Exclusions:
         assert _analyse(ch, source).lcom4 == 2
 
 
+#: An intent dispatcher: `run` reaches its handlers through `getattr`, which no static analysis
+#: can resolve. `FileSystemAtom`, `GitAtom` and `QARunnerAtom` all have exactly this shape.
+DISPATCHER = """
+class C:
+    def __init__(self, executor):
+        self._executor = executor
+    def run(self, context):
+        handler = getattr(self, f"_intent_{context['intent']}", None)
+        if handler is None:
+            return sorted(self._known_intents())
+        return handler(context)
+    def _known_intents(self):
+        return {n[8:] for n in dir(self) if n.startswith("_intent_")}
+    def _intent_read(self, context):
+        return self._executor.read(context)
+    def _intent_write(self, context):
+        return self._executor.write(context)
+"""
+
+#: Two public methods whose only coupling is a shared private helper that touches no attribute.
+#: `GRPCParser` and `AsyncAPIParser` are exactly this.
+COUPLED_THROUGH_A_HELPER = """
+class C:
+    def _parse(self, text):
+        return text.split()
+    def extract_endpoints(self, text):
+        return [t for t in self._parse(text) if t.startswith("rpc")]
+    def extract_messages(self, text):
+        return [t for t in self._parse(text) if t.startswith("message")]
+"""
+
+
+class TestLcom4CouplingThroughExcludedMethods:
+    """`TECH-035`. Graph *admission* and graph *edges* disagreed, and callers were stranded.
+
+    `_is_stateless` admitted a method for calling a sibling, but edges were only drawn between
+    methods both in the graph — so a method whose only sibling call was to a stateless helper was
+    admitted and then left alone as its own component, inflating the score by one. It accounted for
+    11 of the 19 classes frozen in the baseline.
+    """
+
+    def test_a_dispatcher_is_not_split_from_the_handlers_it_dispatches_to(
+        self, ch: ModuleType
+    ) -> None:
+        """A metric that flips on whether a dispatcher publishes its intent list measures nothing.
+
+        `getattr(self, ...)` is a call to *some* sibling; the analyser cannot say which, so the
+        honest reading is that it may reach any of them.
+        """
+        assert _analyse(ch, DISPATCHER).lcom4 == 1
+
+    def test_two_methods_coupled_only_through_a_helper_are_one_component(
+        self, ch: ModuleType
+    ) -> None:
+        """They are coupled *through* `_parse`. Dropping it from the graph hid the edge."""
+        assert _analyse(ch, COUPLED_THROUGH_A_HELPER).lcom4 == 1
+
+    def test_a_class_with_no_instance_state_is_still_measured(self, ch: ModuleType) -> None:
+        """The anti-blinding requirement: it must not collapse to "nothing to measure".
+
+        An earlier candidate fix dropped stranded callers instead of connecting them, which scored
+        four real classes at 0 — and `incohesive()` is `lcom4 > 1`, so 0 *passes*. That would have
+        traded a false positive for a silent blind spot, which is this ticket's own subject.
+        """
+        report = _analyse(ch, COUPLED_THROUGH_A_HELPER)
+
+        assert report.lcom4 == 1, "a stateless class must be measured, not skipped"
+        assert report.components == [["_parse", "extract_endpoints", "extract_messages"]]
+
+    def test_a_genuinely_split_class_is_still_split(self, ch: ModuleType) -> None:
+        """The correction must not swallow the incohesion the metric exists to find."""
+        assert _analyse(ch, TWO_CLASSES_IN_A_TRENCHCOAT).lcom4 == 2
+
+
 class TestExemptions:
     def test_enum_members_are_not_god_object_attributes(self, ch: ModuleType) -> None:
         source = "class C(Enum):\n" + "".join(f"    M{i} = {i}\n" for i in range(40))
@@ -297,3 +371,25 @@ class TestDegradation:
         (tmp_path / "fat.py").write_text(source, encoding="utf-8")
 
         assert ch.main([str(tmp_path)]) == 1
+
+    def test_a_class_with_no_measurable_cohesion_is_said_out_loud(
+        self, ch: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """`TECH-035`. `incohesive()` is `lcom4 > 1`, so a score of 0 PASSES.
+
+        An abstract base whose every method is a stub has nothing for cohesion to be *of*, and
+        that is a fair reading — but "I could not measure this" and "I measured this and it was
+        fine" must not look identical on the way out. Reported, not blocked: 28 classes in `src`
+        are legitimately in this state.
+        """
+        (tmp_path / "abstract.py").write_text(
+            "class C:\n"
+            "    def read(self):\n        ...\n"
+            "    def write(self):\n        raise NotImplementedError\n",
+            encoding="utf-8",
+        )
+
+        assert ch.main([str(tmp_path)]) == 0
+        out = capsys.readouterr().out
+        assert "no instance state" in out, f"a stateless class passed silently:\n{out}"
+        assert "1 class(es)" in out

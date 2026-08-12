@@ -79,6 +79,15 @@ class ClassReport:
     def incohesive(self) -> bool:
         return self.lcom4 > MAX_LCOM4
 
+    def unmeasurable(self) -> bool:
+        """A class with methods but no cohesion graph — every one of them is stateless.
+
+        `incohesive()` is `lcom4 > MAX_LCOM4`, so a score of 0 **passes**. That is a fair reading
+        for an abstract base whose methods are all stubs, but it must not be indistinguishable
+        from "measured and fine" in the output — the exact confusion `TECH-035` exists to end.
+        """
+        return self.lcom4 == 0 and self.method_count >= 2
+
 
 def _load_sibling(module_name: str) -> ModuleType:
     """Load a same-directory script by path — `scripts/` is not an importable package."""
@@ -177,6 +186,25 @@ def _is_stateless(
     return not (touched - method_names) and not (called & method_names)
 
 
+def _dispatches_dynamically(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """True when the method looks up a sibling by name — `getattr(self, ...)`.
+
+    That IS a call to a sibling; the analyser simply cannot say which one, so the only honest
+    reading is that it may reach any of them. Without this, an intent dispatcher scores as its own
+    component and the metric reports a "split" whose two halves are `run` and everything `run`
+    calls -- a refactoring instruction nobody would follow. `TECH-035`.
+    """
+    return any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "getattr"
+        and node.args
+        and isinstance(node.args[0], ast.Name)
+        and node.args[0].id == "self"
+        for node in ast.walk(func)
+    )
+
+
 def _declared_attributes(node: ast.ClassDef) -> set[str]:
     """Class-body fields: dataclass and pydantic models declare state here, not in __init__."""
     found: set[str] = set()
@@ -234,34 +262,49 @@ def analyse_class(node: ast.ClassDef, path: Path) -> ClassReport:
         | (set().union(*touched.values()) - method_names if touched else set())
     ) - IGNORED_ATTRIBUTES
 
-    # LCOM4 over every method except the constructor (see module docstring) and except methods
-    # that carry no instance state at all.
+    # LCOM4 over every method except the constructor (see module docstring).
     #
-    # Excluding the stateless ones is not leniency, it is what makes the metric mean anything. A
-    # property returning a literal, an abstract stub, or a staticmethod touches no attribute and
-    # calls no sibling, so it is an isolated node BY CONSTRUCTION and adds one component no
-    # matter how cohesive the class is. Left in, `MarkdownCodeStructure` scored LCOM4=19 with 17
-    # of those components being a single accessor apiece -- a number that says nothing about
-    # where to cut, and so gets suppressed rather than acted on.
-    graph_nodes = [
-        m.name
-        for m in methods
-        if m.name != "__init__"
-        and not _is_stateless(m, touched[m.name], called[m.name], method_names)
-    ]
+    # A stateless method -- a property returning a literal, an abstract stub, a staticmethod --
+    # touches no attribute and so cannot couple to anything through state. Left counted, it is an
+    # isolated node BY CONSTRUCTION and adds one component no matter how cohesive the class is:
+    # `MarkdownCodeStructure` scored LCOM4=19 with 17 components being a single accessor apiece,
+    # a number that says nothing about where to cut and so gets suppressed rather than acted on.
+    #
+    # `TECH-035`: it is dropped from the COUNT, not from the GRAPH. Removing it outright also
+    # removed the edges that ran THROUGH it, stranding its callers as their own components --
+    # `extract_endpoints` and `extract_messages` both call `_parse_proto`, so they are coupled by
+    # it, and the checker reported them as two independent classes. That single defect accounted
+    # for 11 of the 19 classes in the frozen baseline. Keeping the node and ignoring it only when
+    # it ends up ALONE preserves the original intent and the edges both.
+    graph_nodes = [m.name for m in methods if m.name != "__init__"]
     if len(graph_nodes) < 2:
         report.lcom4 = 1 if graph_nodes else 0
         report.components = [graph_nodes] if graph_nodes else []
         return report
 
+    dynamic = {m.name for m in methods if _dispatches_dynamically(m)}
+
     edges: set[tuple[str, str]] = set()
     for i, a in enumerate(graph_nodes):
         for b in graph_nodes[i + 1 :]:
             shared = (touched[a] - method_names) & (touched[b] - method_names)
-            if shared or b in called[a] or a in called[b]:
+            if shared or b in called[a] or a in called[b] or a in dynamic or b in dynamic:
                 edges.add((a, b))
 
-    report.components = _components(graph_nodes, edges)
+    by_name = {m.name: m for m in methods}
+    report.components = [
+        component
+        for component in _components(graph_nodes, edges)
+        if not (
+            len(component) == 1
+            and _is_stateless(
+                by_name[component[0]],
+                touched[component[0]],
+                called[component[0]],
+                method_names,
+            )
+        )
+    ]
     report.lcom4 = len(report.components)
     return report
 
@@ -337,6 +380,21 @@ def _unfrozen_attributes(fat: list[ClassReport]) -> list[ClassReport]:
     return [report for name, report in scored.items() if name in worse]
 
 
+def _report_unmeasurable(reports: list[ClassReport]) -> None:
+    """Say so, on EVERY run, when a class could not be measured rather than measured and passed.
+
+    `TECH-035`: a check that silently does not run is indistinguishable from one that passes, and
+    a score of 0 passes. Reported rather than blocked — an abstract base whose methods are all
+    stubs is legitimately in this state, and 28 classes in `src` are.
+    """
+    unmeasurable = [r for r in reports if r.unmeasurable()]
+    if unmeasurable:
+        print(
+            f"  {len(unmeasurable)} class(es) hold no instance state — cohesion is not "
+            f"measurable for them, so they are reported rather than scored"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -380,6 +438,8 @@ def main(argv: list[str] | None = None) -> int:
     split = _unfrozen(split)
     fat = _unfrozen_attributes(fat)
     failures = {id(r): r for r in [*fat, *split]}
+
+    _report_unmeasurable(reports)
 
     if not failures:
         print(f"Class health: {len(reports)} class(es) in {len(files)} file(s), all within limits")
