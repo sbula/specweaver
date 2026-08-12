@@ -83,6 +83,24 @@ pytest -k "not validate"   # Runs tests except those containing "validate"
 5. Run type checking on modified files: `mypy src/specweaver/flow/engine.py --ignore-missing-imports`
 6. Once satisfied, run the full test suite: `pytest`
 
+## The polyglot toolchains are installed, but not on the default PATH
+
+Java, Kotlin and Rust are present on the Linux dev box (2026-08-12) and are **not** on a fresh
+shell's `PATH` — the same trap as `.venv/bin`. Export them before anything that shells out to a
+non-Python toolchain, or the tool looks absent and the check quietly reports nothing to do:
+
+```bash
+export PATH="$HOME/.cargo/bin:$HOME/.sdkman/candidates/java/current/bin:\
+$HOME/.sdkman/candidates/kotlin/current/bin:$PATH"
+```
+
+Verified present: `openjdk 25`, `kotlinc`, `rustc 1.97.1`, `cargo`, `clippy-driver`.
+
+This matters beyond convenience. `TECH-032` records **13 paths** across the Java, Kotlin, Rust and
+TypeScript QA runners that report an **absent toolchain as success** — so a run with the wrong
+`PATH` does not fail, it passes having done nothing. Until that ticket lands, an unexported `PATH`
+and a genuinely clean run are indistinguishable from the outside.
+
 ## A serial pass can hide a real failure — always confirm with `-n auto`
 
 **Measured 2026-08-12.** `test_fan_out_log_observability_context_isolation` passed serially and
