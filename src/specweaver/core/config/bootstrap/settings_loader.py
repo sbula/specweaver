@@ -98,6 +98,51 @@ def load_settings(
     )
 
 
+def _llm_settings(profile: dict[str, object], project_name: str) -> LLMSettings:
+    """The LLM settings for a resolved profile, with the provider's key read from the environment.
+
+    The key is looked up per provider (`GEMINI_API_KEY`, `OPENAI_API_KEY`, ...) and defaults to
+    empty rather than raising: a missing key is the adapter's error to report, with a message that
+    names which one, not this loader's.
+    """
+    provider = str(profile.get("provider", "gemini"))
+    logger.debug("Resolved provider=%s for project=%s", provider, project_name)
+    return LLMSettings(
+        model=str(profile["model"]),
+        temperature=float(profile["temperature"]),  # type: ignore[arg-type]
+        max_output_tokens=int(str(profile["max_output_tokens"])),
+        response_format=str(profile["response_format"]),  # type: ignore[arg-type]
+        provider=provider,
+        api_key=os.environ.get(f"{provider.upper()}_API_KEY", ""),
+    )
+
+
+def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
+    """The project's DAL impact matrix, or the built-in default.
+
+    A malformed file is logged and the default used: DAL only *escalates* isolation, so falling
+    back is the safe direction — a parse error must not leave a project unable to load at all.
+    """
+    if not root_path:
+        return DALImpactMatrix()
+
+    dal_file = Path(str(root_path)) / ".specweaver" / "dal_definitions.yaml"
+    if not dal_file.exists():
+        return DALImpactMatrix()
+
+    from ruamel.yaml import YAML
+
+    try:
+        dal_dict = YAML(typ="safe").load(dal_file) or {}
+        matrix = DALImpactMatrix(**deep_merge_dict({}, dal_dict))
+    except Exception:
+        logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
+        return DALImpactMatrix()
+
+    logger.debug("Loaded DAL configuration from %s", dal_file)
+    return matrix
+
+
 async def load_settings_async(
     db: Database, project_name: str, *, llm_role: str = "review"
 ) -> SpecWeaverSettings:
@@ -142,18 +187,7 @@ async def load_settings_async(
         msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
         raise ValueError(msg)
 
-    provider_val = str(profile.get("provider", "gemini"))
-    env_key = f"{provider_val.upper()}_API_KEY"
-    logger.debug("Resolved provider=%s for project=%s", provider_val, project_name)
-
-    llm = LLMSettings(
-        model=str(profile["model"]),
-        temperature=float(profile["temperature"]),  # type: ignore[arg-type]
-        max_output_tokens=int(str(profile["max_output_tokens"])),
-        response_format=str(profile["response_format"]),  # type: ignore[arg-type]
-        provider=provider_val,
-        api_key=os.environ.get(env_key, ""),
-    )
+    llm = _llm_settings(profile, project_name)
 
     stitch = StitchSettings(
         mode=stitch_mode or "off",  # type: ignore[arg-type]
@@ -164,23 +198,12 @@ async def load_settings_async(
     standards = _load_toml_standards(str(root_path) if root_path else None)
     sandbox = _load_toml_sandbox(str(root_path) if root_path else None)
 
-    dal_matrix = DALImpactMatrix()
-    if root_path:
-        dal_file = Path(str(root_path)) / ".specweaver" / "dal_definitions.yaml"
-        if dal_file.exists():
-            from ruamel.yaml import YAML
-
-            yaml_parser = YAML(typ="safe")
-            try:
-                dal_dict = yaml_parser.load(dal_file) or {}
-                merged_dal_dict = deep_merge_dict({}, dal_dict)
-                dal_matrix = DALImpactMatrix(**merged_dal_dict)
-                logger.debug("Loaded DAL configuration from %s", dal_file)
-            except Exception:
-                logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
-
     return SpecWeaverSettings(
-        llm=llm, stitch=stitch, dal_matrix=dal_matrix, standards=standards, sandbox=sandbox
+        llm=llm,
+        stitch=stitch,
+        dal_matrix=_load_dal_matrix(root_path),
+        standards=standards,
+        sandbox=sandbox,
     )
 
 

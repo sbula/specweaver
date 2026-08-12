@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
+from specweaver.assurance.standards._documentation import documentation_result
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +66,33 @@ def walk_node(node: tree_sitter.Node) -> list[tree_sitter.Node]:
         results.append(current)
         stack.extend(reversed(current.children))
     return results
+
+
+#: The block functions Jest and Mocha share. `x`-prefixed forms are skipped tests, which still
+#: evidence the framework.
+_TEST_BLOCK_NAMES = ("describe", "it", "xdescribe", "xit")
+
+
+def _has_jsdoc(node: tree_sitter.Node) -> bool:
+    """Whether a JSDoc comment immediately precedes this node.
+
+    Tree-sitter attaches leading comments as previous *siblings* rather than as children, so this
+    looks sideways rather than down.
+    """
+    prev = node.prev_sibling
+    if not (prev and prev.type == "comment" and prev.text is not None):
+        return False
+    return prev.text.decode("utf-8").startswith("/**")
+
+
+def _is_test_block_call(node: tree_sitter.Node) -> bool:
+    """Whether this call is a Jest/Mocha test block."""
+    if node.type != "call_expression":
+        return False
+    func = node.child_by_field_name("function")
+    if not (func and func.type == "identifier" and func.text):
+        return False
+    return func.text.decode("utf-8") in _TEST_BLOCK_NAMES
 
 
 class JSStandardsAnalyzer(TreeSitterAnalyzer):
@@ -210,39 +239,14 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_jsdoc(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        total_funcs = 0
-        documented = 0
-
-        for _path, _w, tree in parsed_files:
-            nodes = walk_tree(tree)
-            for node in nodes:
-                if node.type in ("function_declaration", "arrow_function", "method_definition"):
-                    total_funcs += 1
-                    # In tree-sitter, comments preceding a node are typically previous siblings
-                    prev = node.prev_sibling
-                    if prev and prev.type == "comment" and prev.text is not None:
-                        text = prev.text.decode("utf-8")
-                        if text.startswith("/**"):
-                            documented += 1
-
-        dominant: dict[str, str] = {}
-        if total_funcs > 0:
-            ratio = documented / total_funcs
-            if ratio >= 0.9:
-                dominant["coverage"] = "full"
-            elif ratio >= 0.5:
-                dominant["coverage"] = "high"
-            elif ratio >= 0.2:
-                dominant["coverage"] = "low"
-            else:
-                dominant["coverage"] = "none"
-
-        return CategoryResult(
-            category="jsdoc",
-            dominant=dominant,
-            confidence=documented / total_funcs if total_funcs > 0 else 0.0,
-            sample_size=total_funcs,
-        )
+        functions = [
+            node
+            for _path, _w, tree in parsed_files
+            for node in walk_tree(tree)
+            if node.type in ("function_declaration", "arrow_function", "method_definition")
+        ]
+        documented = sum(1 for node in functions if _has_jsdoc(node))
+        return documentation_result("jsdoc", documented, len(functions))
 
     def _extract_import_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
@@ -326,27 +330,17 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         frameworks: Counter[str] = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
-            if not path.name.endswith(".test.js") and not path.name.endswith(".spec.js"):
+        for path, weight, tree in parsed_files:
+            if not path.name.endswith((".test.js", ".spec.js")):
                 continue
-
-            nodes = walk_tree(tree)
-            for node in nodes:
-                if node.type == "call_expression":
-                    func = node.child_by_field_name("function")
-                    if func and func.type == "identifier" and func.text:
-                        name = func.text.decode("utf-8")
-                        if name in ("describe", "it", "xdescribe", "xit"):
-                            frameworks["jest/mocha"] += round(w)
-                            sample_size += 1
-
-        dominant: dict[str, str] = {}
-        if frameworks:
-            dominant["framework"] = frameworks.most_common(1)[0][0]
+            for node in walk_tree(tree):
+                if _is_test_block_call(node):
+                    frameworks["jest/mocha"] += round(weight)
+                    sample_size += 1
 
         return CategoryResult(
             category="test_patterns",
-            dominant=dominant,
+            dominant={"framework": frameworks.most_common(1)[0][0]} if frameworks else {},
             confidence=self._compute_confidence(frameworks) if frameworks else 0.0,
             sample_size=sample_size,
         )

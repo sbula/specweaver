@@ -25,6 +25,8 @@ from specweaver.assurance.standards.recency import recency_weight
 if TYPE_CHECKING:
     from pathlib import Path
 
+from specweaver.assurance.standards._documentation import documentation_result
+
 logger = logging.getLogger(__name__)
 
 _CATEGORIES = [
@@ -50,6 +52,19 @@ def _classify_name(name: str) -> str:
     if re.match(r"^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$", name):
         return "UPPER_SNAKE"
     return "other"
+
+
+#: Test frameworks recognised from an import, longest-prefix irrelevant — both are top-level names.
+_TEST_FRAMEWORKS = ("pytest", "unittest")
+
+
+def _framework_of(node: ast.AST) -> str | None:
+    """The test framework an import statement names, if it names one."""
+    if isinstance(node, ast.Import):
+        return next((a.name for a in node.names if a.name in _TEST_FRAMEWORKS), None)
+    if isinstance(node, ast.ImportFrom) and node.module:
+        return next((f for f in _TEST_FRAMEWORKS if node.module.startswith(f)), None)
+    return None
 
 
 class PythonStandardsAnalyzer(StandardsAnalyzer):
@@ -193,34 +208,14 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         self,
         parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        total_funcs = 0
-        documented = 0
-
-        for _path, _w, tree in parsed_files:
-            for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
-                    total_funcs += 1
-                    if ast.get_docstring(node):
-                        documented += 1
-
-        dominant: dict[str, str] = {}
-        if total_funcs > 0:
-            ratio = documented / total_funcs
-            if ratio >= 0.9:
-                dominant["coverage"] = "full"
-            elif ratio >= 0.5:
-                dominant["coverage"] = "high"
-            elif ratio >= 0.2:
-                dominant["coverage"] = "low"
-            else:
-                dominant["coverage"] = "none"
-
-        return CategoryResult(
-            category="docstrings",
-            dominant=dominant,
-            confidence=documented / total_funcs if total_funcs > 0 else 0.0,
-            sample_size=total_funcs,
-        )
+        functions = [
+            node
+            for _path, _w, tree in parsed_files
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
+        ]
+        documented = sum(1 for node in functions if ast.get_docstring(node))
+        return documentation_result("docstrings", documented, len(functions))
 
     def _extract_imports(
         self,
@@ -283,17 +278,9 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _detect_test_framework(tree: ast.Module) -> str | None:
         """Detect whether a parsed AST uses pytest or unittest."""
         for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    if alias.name == "pytest":
-                        return "pytest"
-                    if alias.name == "unittest":
-                        return "unittest"
-            elif isinstance(node, ast.ImportFrom):
-                if node.module and node.module.startswith("pytest"):
-                    return "pytest"
-                if node.module and node.module.startswith("unittest"):
-                    return "unittest"
+            framework = _framework_of(node)
+            if framework:
+                return framework
         return None
 
     # ------------------------------------------------------------------

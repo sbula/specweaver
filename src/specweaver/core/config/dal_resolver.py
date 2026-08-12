@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import yaml
 
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.core.config._context_walk import resolve_up_tree
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,52 +29,16 @@ class DALResolver:
         self._cache: dict[Path, DALLevel | None] = {}
 
     def resolve(self, target_path: Path) -> DALLevel | None:
-        """Walk up the directory tree to find the nearest DAL.
-
-        Args:
-            target_path: The file or directory to evaluate.
-
-        Returns:
-            The associated DALLevel, or None if project_root is exceeded.
+        """The nearest DAL declared at or above `target_path`, or None.
 
         Raises:
-            ValueError: If a dal_level exists but is malformed.
+            ValueError: If a `dal_level` exists but is malformed.
         """
-        current = target_path.resolve()
-        seen_paths: list[Path] = []
-
-        while True:
-            # Check cache for O(1) resolution
-            if current in self._cache:
-                dal = self._cache[current]
-                self._backfill_cache(seen_paths, dal)
-                return dal
-
-            seen_paths.append(current)
-
-            # Look for context.yaml in current dir
-            if current.is_dir():
-                context_file = current / "context.yaml"
-                if context_file.is_file():
-                    dal = self._parse_dal_from_context(context_file)
-                    if dal is not None:
-                        self._backfill_cache(seen_paths, dal)
-                        return dal
-
-            # Halt boundaries
-            if current == self._project_root:
-                break
-
-            parent = current.parent
-            if parent == current:
-                # Reached filesystem OS root without hitting project_root
-                break
-
-            current = parent
-
-        # Hit the top without finding anything
-        self._backfill_cache(seen_paths, None)
-        return None
+        dal, seen = resolve_up_tree(
+            target_path, self._project_root, self._cache, self._parse_dal_from_context
+        )
+        self._backfill_cache(seen, dal)
+        return dal
 
     def _backfill_cache(self, paths: list[Path], dal: DALLevel | None) -> None:
         """Populate the cache for all intermediate paths walked."""

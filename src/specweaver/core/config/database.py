@@ -106,6 +106,32 @@ class CQRSQueueManager:
         if self._queue is not None:
             await self._queue.join()
 
+    def _dlx_logger(self) -> logging.Logger:
+        """A rotating-file logger for writes that failed, created once per manager.
+
+        Set up lazily and defensively: a manager whose DLX path is unwritable must still drain its
+        queue, so a handler that cannot be created is reported and then done without.
+        """
+        from logging.handlers import RotatingFileHandler
+
+        dlx_logger = logging.getLogger(f"dlx_worker_{id(self)}")
+        if dlx_logger.handlers:
+            return dlx_logger
+        try:
+            handler = RotatingFileHandler(self._dlx_path, maxBytes=10 * 1024 * 1024, backupCount=3)
+            handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s: %(message)s"))
+            dlx_logger.addHandler(handler)
+        except Exception as setup_error:
+            logging.critical("Failed to setup DLX RotatingFileHandler: %s", setup_error)
+        return dlx_logger
+
+    def _record_to_dlx(self, error: Exception) -> None:
+        """Record a failed write to the dead-letter exchange, never raising."""
+        try:
+            self._dlx_logger().error("Error: %s", error)
+        except Exception as dlx_error:
+            logging.critical("DLX write failed: %s", dlx_error)
+
     async def _worker_loop(self) -> None:
         """Background worker loop that processes writes."""
         if self._queue is None:
@@ -121,27 +147,8 @@ class CQRSQueueManager:
                 # If cancelled while processing, exit cleanly
                 break
             except Exception as e:
-                # Dead Letter Exchange: Catch everything else
-                import logging
-                from logging.handlers import RotatingFileHandler
+                self._record_to_dlx(e)
 
-                dlx_logger = logging.getLogger(f"dlx_worker_{id(self)}")
-                if not dlx_logger.handlers:
-                    try:
-                        handler = RotatingFileHandler(
-                            self._dlx_path, maxBytes=10 * 1024 * 1024, backupCount=3
-                        )
-                        handler.setFormatter(
-                            logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
-                        )
-                        dlx_logger.addHandler(handler)
-                    except Exception as dlx_setup_e:
-                        logging.critical("Failed to setup DLX RotatingFileHandler: %s", dlx_setup_e)
-
-                try:
-                    dlx_logger.error("Error: %s", e)
-                except Exception as dlx_e:
-                    logging.critical("DLX write failed: %s", dlx_e)
             finally:
                 self._queue.task_done()
 

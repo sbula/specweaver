@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+from specweaver.core.config._context_walk import resolve_up_tree
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -27,49 +29,12 @@ class ArchetypeResolver:
         self._plugin_cache: dict[Path, list[str]] = {}
 
     def resolve(self, target_path: Path) -> str | None:
-        """Walk up the directory tree to find the nearest archetype.
-
-        Args:
-            target_path: The file or directory to evaluate.
-
-        Returns:
-            The associated archetype string defined in context.yaml, or None if project_root is exceeded.
-        """
-        current = target_path.resolve()
-        seen_paths: list[Path] = []
-
-        while True:
-            # Check cache for O(1) resolution
-            if current in self._cache:
-                archetype = self._cache[current]
-                self._backfill_cache(seen_paths, archetype)
-                return archetype
-
-            seen_paths.append(current)
-
-            # Look for context.yaml in current dir
-            if current.is_dir():
-                context_file = current / "context.yaml"
-                if context_file.is_file():
-                    archetype = self._parse_archetype_from_context(context_file)
-                    if archetype is not None:
-                        self._backfill_cache(seen_paths, archetype)
-                        return archetype
-
-            # Halt boundaries
-            if current == self._project_root:
-                break
-
-            parent = current.parent
-            if parent == current:
-                # Reached filesystem OS root without hitting project_root
-                break
-
-            current = parent
-
-        # Hit the top without finding anything
-        self._backfill_cache(seen_paths, None)
-        return None
+        """The nearest archetype declared at or above `target_path`, or None."""
+        archetype, seen = resolve_up_tree(
+            target_path, self._project_root, self._cache, self._parse_archetype_from_context
+        )
+        self._backfill_cache(seen, archetype)
+        return archetype
 
     def _backfill_cache(self, paths: list[Path], archetype: str | None) -> None:
         """Populate the cache for all intermediate paths walked."""
@@ -94,49 +59,13 @@ class ArchetypeResolver:
         return str(archetype).strip()
 
     def resolve_plugins(self, target_path: Path) -> list[str]:
-        """Walk up the directory tree to find the nearest context.yaml plugins array.
-
-        Args:
-            target_path: The file or directory to evaluate.
-
-        Returns:
-            A list of plugin string identifiers defined in context.yaml, or an empty list if none are found.
-        """
-        current = target_path.resolve()
-        seen_paths: list[Path] = []
-
-        while True:
-            # Check cache for O(1) resolution
-            if current in self._plugin_cache:
-                plugins = self._plugin_cache[current]
-                self._backfill_plugin_cache(seen_paths, plugins)
-                return plugins
-
-            seen_paths.append(current)
-
-            # Look for context.yaml in current dir
-            if current.is_dir():
-                context_file = current / "context.yaml"
-                if context_file.is_file():
-                    parsed_plugins = self._parse_plugins_from_context(context_file)
-                    if parsed_plugins is not None:
-                        self._backfill_plugin_cache(seen_paths, parsed_plugins)
-                        return parsed_plugins
-
-            # Halt boundaries
-            if current == self._project_root:
-                break
-
-            parent = current.parent
-            if parent == current:
-                # Reached filesystem OS root without hitting project_root
-                break
-
-            current = parent
-
-        # Hit the top without finding anything
-        self._backfill_plugin_cache(seen_paths, [])
-        return []
+        """The nearest `plugins` array declared at or above `target_path`, else empty."""
+        plugins, seen = resolve_up_tree(
+            target_path, self._project_root, self._plugin_cache, self._parse_plugins_from_context
+        )
+        resolved = plugins if plugins is not None else []
+        self._backfill_plugin_cache(seen, resolved)
+        return resolved
 
     def _backfill_plugin_cache(self, paths: list[Path], plugins: list[str]) -> None:
         """Populate the plugin cache for all intermediate paths walked."""
