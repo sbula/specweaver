@@ -50,15 +50,22 @@ defect does not wait on an unbuilt capability — and here the capability would 
   `_handle_retry` — never writes `record.attempt`, so the persisted counter is **already
   incomplete**. Seeding from it without fixing that would restore the budget for `retry` and
   silently keep resetting it for `loop_back`. This is a prerequisite, not an optional extra.
-- **Decide the semantics deliberately, not by implementation accident.** "3 attempts ever" and
-  "3 attempts per session" are both defensible; only the second is currently *documented*, and it
-  was documented as a limitation rather than a choice. Whichever wins should be stated in the gate
-  documentation, because a human resuming a run is entitled to know whether they are extending a
-  budget or exhausting one.
+
+## Settled: this is a bug, not a documented behaviour
+
+**Decided by the user, 2026-08-12.** `max_retries: 3` means **three attempts for that step, ever**.
+A resume continues a run; it does not hand back a fresh budget. The per-session reset is a defect
+in the counter's lifetime, not a design choice — it was never chosen, only observed and then
+written down as a limitation.
+
+This closes the one open question the ticket had, and it removes the "documented behaviour change"
+reading entirely: the gate documentation does not need a new rule, because the rule it already
+states is the correct one and the code does not honour it.
 
 ## Non-Goals (proposed, pending design)
 
-- **Not** a change to `gate.max_retries`' default or to any pipeline YAML.
+- **Not** a change to `gate.max_retries`' default or to any pipeline YAML. The number is right;
+  the counter's lifetime is wrong.
 - **Not** token-spend budgeting — that is `B-FLOW-05` (Token-Burn Circuit Breakers). This ticket
   bounds *attempts*; a spend cap is a different mechanism and neither substitutes for the other.
 - **Not** a rework of gate evaluation, which lives in `gates.py` and is out of scope beyond the
@@ -73,8 +80,9 @@ path's write side is the one that is missing.
 
 ## Next Step
 
-Run the `specweaver-design` skill. Settle the semantics question above **before** the
-implementation, since it decides whether this is a bug fix or a documented behaviour change.
+Run the `specweaver-design` skill. The semantics question that would have gated it is **settled**
+(see above), so the design's job is the sequencing: close `_handle_loop_back`'s missing write
+first, then seed from the persisted counter, then prove it across an actual resume.
 
 Related: `TECH-020` (which separated `attempts` into `LoopState` and made this a single field with
 a single construction site); `INT-US-21` NFR-2 (the original record, corrected above).
