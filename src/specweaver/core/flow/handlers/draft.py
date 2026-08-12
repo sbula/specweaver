@@ -182,22 +182,9 @@ class DraftSpecHandler:
         try:
             result_path = await drafter.draft(name, specs_dir, topology_contexts=topology_contexts)
 
-            import uuid
+            from specweaver.core.flow.handlers.artifact_identity import ensure_file_tagged
 
-            from specweaver.infrastructure.llm.lineage import (
-                extract_artifact_uuid,
-                wrap_artifact_tag,
-            )
-
-            artifact_uuid = None
-            if result_path.exists():
-                artifact_uuid = extract_artifact_uuid(result_path.read_text(encoding="utf-8"))
-            if not artifact_uuid:
-                artifact_uuid = str(uuid.uuid4())
-                tag_str = wrap_artifact_tag(artifact_uuid, "markdown")
-                if tag_str:
-                    content = result_path.read_text(encoding="utf-8")
-                    result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
+            artifact_uuid = ensure_file_tagged(result_path, "markdown")
 
             from specweaver.core.flow.store import FlowRepository
 
@@ -430,23 +417,9 @@ class DraftFeatureHandler:
     @staticmethod
     def _ensure_artifact_tag(result_path: Path) -> str:
         """Return the spec's lineage UUID, injecting a tag when it has none yet."""
-        import uuid
+        from specweaver.core.flow.handlers.artifact_identity import ensure_file_tagged
 
-        from specweaver.infrastructure.llm.lineage import (
-            extract_artifact_uuid,
-            wrap_artifact_tag,
-        )
-
-        content = result_path.read_text(encoding="utf-8")
-        existing = extract_artifact_uuid(content)
-        if existing:
-            return existing
-
-        artifact_uuid = str(uuid.uuid4())
-        tag_str = wrap_artifact_tag(artifact_uuid, "markdown")
-        if tag_str:
-            result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
-        return artifact_uuid
+        return ensure_file_tagged(result_path, "markdown")
 
     @staticmethod
     async def _log_lineage(context: RunContext, artifact_uuid: str, gen_config: Any) -> None:

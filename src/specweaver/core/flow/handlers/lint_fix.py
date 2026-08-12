@@ -251,8 +251,11 @@ class LintFixHandler:
         from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role, TaskType
 
         code = code_path.read_text(encoding="utf-8")
+        from specweaver.core.flow.handlers.artifact_identity import tag_content
         from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
 
+        # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
+        # and the LLM is being asked to preserve it. Minting one would fork the lineage.
         artifact_uuid = extract_artifact_uuid(code)
 
         error_summary = "\n".join(
@@ -320,11 +323,9 @@ class LintFixHandler:
             lines = [line for line in lines if not line.startswith("```")]
             fixed_code = "\n".join(lines)
 
-        # Safety fallback
-        if artifact_uuid and not extract_artifact_uuid(fixed_code):
-            tag_str = wrap_artifact_tag(artifact_uuid, "python")
-            if tag_str:
-                fixed_code = tag_str + "\n" + fixed_code
+        # Safety fallback: the prompt asked the LLM to reproduce the tag, and it may not have.
+        if artifact_uuid:
+            fixed_code = tag_content(fixed_code, artifact_uuid, "python")
 
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 

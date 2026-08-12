@@ -357,11 +357,13 @@ class PlanSpecHandler:
         self, planner: Any, context: RunContext, spec_content: str, base_prompt: PromptBuilder
     ) -> tuple[Path, str, Any]:
         import io
-        import uuid
 
         from ruamel.yaml import YAML
 
-        from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+        from specweaver.core.flow.handlers.artifact_identity import (
+            derive_artifact_uuid,
+            tag_content,
+        )
 
         try:
             if context.model.config and hasattr(context.model.config, "stitch"):
@@ -385,21 +387,14 @@ class PlanSpecHandler:
 
         plan_path = context.spec_path.with_name(context.spec_path.stem + "_plan.yaml")
 
-        artifact_uuid = None
-        if plan_path.exists():
-            artifact_uuid = extract_artifact_uuid(plan_path.read_text(encoding="utf-8"))
-        if not artifact_uuid:
-            artifact_uuid = str(uuid.uuid4())
+        artifact_uuid = derive_artifact_uuid(plan_path)
 
         yaml = YAML()
         yaml.default_flow_style = False
         buf = io.StringIO()
         yaml.dump(plan_artifact.model_dump(mode="json"), buf)
 
-        content = buf.getvalue()
-        tag_str = wrap_artifact_tag(artifact_uuid, "yaml")
-        if tag_str:
-            content = tag_str + "\n" + content
+        content = tag_content(buf.getvalue(), artifact_uuid, "yaml")
 
         plan_path.write_text(content, encoding="utf-8")
         logger.info(

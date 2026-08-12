@@ -2,11 +2,12 @@
 
 - **Feature ID**: TECH-016
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL 2026-08-12 — **§1 DELIVERED** (`f10ec587`): both writers now dump in
-  `mode="json"`, and `tests/unit/test_architecture.py::unsafe_model_dumps` makes bypassing it fail
-  the build. **§2 re-scoped** against the code — the stub's fix shape fits 2 of its 6 sites; see
-  §Correction. Not run through `specweaver-design`: §1 needed no design, and §2's decision space
-  was settled by measurement.
+- **Status**: **DELIVERED 2026-08-12.** §1 (`f10ec587`): both writers dump in `mode="json"`, and
+  `tests/unit/test_architecture.py::unsafe_model_dumps` makes bypassing it fail the build. §2:
+  `handlers/artifact_identity.py` unifies the lineage-tag tail across four sites — at a **corrected
+  scope**, since the stub's model-shaped fix fits 2 of its 6 sites (see §Correction). Not run
+  through `specweaver-design`: §1 needed no design, and §2's decision space was settled by
+  measurement. The `log_artifact_event` half is deliberately left to `TECH-036`.
 - **Origin**: INT-US-21 SF-02 implementation-plan Phase 0 (2026-07-25).
 
 ## Problem Statement
@@ -141,7 +142,46 @@ folded in here, per the scope rules in `specweaver-ticket` — filed as
 **[`TECH-036`](../TECH-036/TECH-036_design.md)**, which sequences after §2 so the two do not build
 competing tail helpers.
 
+## Delivery of §2, 2026-08-12
+
+`src/specweaver/core/flow/handlers/artifact_identity.py` — three primitives, not one writer:
+
+| | contract | callers |
+|---|---|---|
+| `derive_artifact_uuid(path)` | the uuid on disk, or a fresh one | `generation.py`, `decomposition_artifacts.py` |
+| `tag_content(content, uuid, language)` | tag on the first line, no-op if already tagged | those two, plus `lint_fix.py`'s safety fallback |
+| `ensure_file_tagged(path, language)` | tag a file already written; returns its uuid | `draft.py` ×2 |
+
+**The head stays where it is**, per the correction above: rendering a model, a dict, or an LLM's
+reply to bytes is genuinely different work at each site.
+
+**Two behaviours had to be reconciled, so both are now pinned by a test.** `draft.py`'s inline copy
+guarded on `.exists()` and its `_ensure_artifact_tag` twin did not — unifying them forced a choice.
+`ensure_file_tagged` mints an identity for a missing file but **does not create it**
+(`test_a_missing_file_is_not_created`). Likewise `tag_content` leaves content carrying a
+*different* uuid alone, because two tags in one file is a lineage fork and the identity already on
+disk wins.
+
+`derive_artifact_uuid` swallows `OSError`. Lineage is telemetry and must never be why a write
+fails — the same reasoning as `log_decomposition_lineage`'s never-raises contract, and the reason
+`TECH-036` exists.
+
+**A `TECH-023` violation fell out**: `LintFixHandler::_llm_fix` **18 → under threshold**, resolved
+rather than relocated. Baseline re-frozen at **40**; the diff is a single deletion with no
+additions. This is the sequencing argument from the session plan paying off — four of `TECH-023`'s
+eight `core/flow/handlers/` violations sit in files this ticket restructures, which is why the
+handler complexity cluster is measured *after* this and not before.
+
+`6504 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; cycles 0 across 335
+modules; class-health and suppression ratchets unmoved.
+
+### Not unified, deliberately
+
+The `log_artifact_event` tail is near-identical at five sites and looks like it belongs in the same
+module. It is **not** here, because one of the five (`lint_fix.py:333`) opens `context.db` with no
+`None` guard: unifying it as-is would copy that defect into shared code, and fixing it here would be
+`TECH-036` landing inside `TECH-016`. `TECH-036` owns both halves together.
+
 ## Next Step
 
-§2, at the corrected scope above. No `specweaver-design` run needed — the decision space is the
-table above, and it is measured.
+`TECH-036`, which should unify the lineage-event tail **and** fix the missing guard in one pass.

@@ -15,7 +15,6 @@
     "src/specweaver/core/flow/handlers/arbiter.py::ArbitrateVerdictHandler::execute": 19,
     "src/specweaver/core/flow/handlers/decomposition_artifacts.py::write_component_stubs": 20,
     "src/specweaver/core/flow/handlers/generation.py::_extract_prompt_feedback": 26,
-    "src/specweaver/core/flow/handlers/lint_fix.py::LintFixHandler::_llm_fix": 18,
     "src/specweaver/core/flow/handlers/lint_fix.py::LintFixHandler::execute": 26,
     "src/specweaver/core/flow/handlers/mcp_assembler.py::evaluate_and_fetch_mcp_context": 17,
     "src/specweaver/core/flow/handlers/review.py::ReviewCodeHandler::execute": 20,
