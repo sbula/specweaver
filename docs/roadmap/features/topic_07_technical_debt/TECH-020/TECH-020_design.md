@@ -124,7 +124,7 @@ signature rather than an obligation on the reader.
 `_execute_loop` entry, so a resumed run still gets a fresh three strikes. The ticket predicted this
 would be "easier to reason about once separated" — it is, and it is now one field with one
 construction site instead of a loop-local. Changing it would be a behaviour change, which this
-ticket forbids. **It needs its own ticket if it is to be fixed.**
+ticket forbids. **Minted as `TECH-033` on 2026-08-12**, which also corrects the two false reasons `INT-US-21`'s NFR-2 gave for parking it.
 
 ## Next Step
 
