@@ -2,7 +2,8 @@
 
 - **Feature ID**: TECH-023
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **93 of 97
+  violations remain frozen**. See §Delivery. This stays open as the reduction work.
 - **Origin**: Found while running `python scripts/quality.py cb` for TECH-001 SF-04
   (2026-08-02) — confirmed via `git stash` to be chronic and unrelated to that commit
   (identical failure list with or without SF-04's changes applied).
@@ -92,3 +93,59 @@ inside one bounded context and one reviewer's head.
   measures. Running both at once in one working tree will make it hard to tell which change moved
   which number. Do TECH-024 first (it is far smaller) or keep them in separate sessions.
 * `docs/dev_guides/` may describe functions this ticket splits. Check before finishing.
+
+## Delivery, 2026-08-12
+
+### The mechanism first, because the gate was the real problem
+
+`complexipy` had failed the commit gate continuously since 2026-08-02. A gate that is always red
+is one nobody reads — and nothing stopped a 98th violation appearing, which is the part that
+actually matters.
+
+`scripts/check_complexity.py` runs the same tool at the same threshold and compares against a
+frozen per-function baseline. **A new violation blocks the commit that introduces it, and so does
+an increase on a function already frozen.** Neither was true before. Same shape as
+`check_suppressions`, R6 and R7: frozen baseline, regression check, explicit `--update-baseline`
+whose diff is reviewed.
+
+It answers this ticket's open question — *"through what mechanism"* — and answers it as a
+**ratchet, not an allowlist**. There are no permanent exemptions: every entry is debt with a number
+attached, and the number can only fall. Improvements are reported but never auto-applied, so the
+baseline cannot silently drift above reality.
+
+Verified by planting both regression kinds rather than by reading the code: a new 24-complexity
+function, and an increase on an already-frozen one (17 → 21). Both exit 1; a clean tree exits 0.
+
+**`quality.py cb` now reports 0 failed of 12 for the first time.** `TECH-024` took the `cycles`
+gate green; this took the last one.
+
+### The `>=40` group, cleared
+
+| Function | Was | Now |
+|---|---|---|
+| `OrchestrateComponentsHandler::execute` | **79** | resolved — no function in `decompose.py` is over 15 |
+| `drift_check_rot` | 51 | resolved |
+| `find_by_glob` | 49 | resolved |
+| `_extract_signatures` | 40 | resolved |
+
+**None needed a behaviour change**, and every `# noqa: C901` in the touched files was deleted
+rather than relocated.
+
+Two things worth carrying into the remaining 93:
+
+- **Extraction alone is often not enough.** `find_by_glob` went 49 → 21 by extracting its per-entry
+  work, and only cleared the threshold once the nested walk became a generator. The `break`-then-
+  `if truncated: break` dance *was* the complexity.
+- **A large share of the cost is failure reporting, not logic.** `OrchestrateComponentsHandler`
+  had seven early `return StepResult(FAILED, ...)` sites, each a branch. Collapsing them behind a
+  private refusal exception — converted back to the identical `StepResult` — did most of the work.
+
+### What remains
+
+93 frozen violations: 16 in the 25–39 band, 32 at 20–24, 45 at 16–19. They are now bounded rather
+than growing, and each is one line in `scripts/baselines/complexity.json` with a number that can
+only go down. Reduce them in their own commits, in whatever domain a future session is already in.
+
+## Next Step
+
+Keep reducing. The gate no longer depends on it — that is the point of the ratchet.

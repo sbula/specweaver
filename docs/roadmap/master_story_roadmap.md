@@ -84,7 +84,7 @@ this section drift for a month.
 | 4 | `TECH-020` | ✅ Done 2026-08-12. Removed flow's largest complexity offender and added `engine/step_execution.py` — so 6 and 7 now measure the reshaped import graph, not the old one. |
 | 5 | `TECH-015` | ✅ Done 2026-08-12. Split three grab-bags into eleven contract-named modules and shipped R7 so they cannot regrow; 6 and 7 now measure that import graph. |
 | 6 | `TECH-024` | ✅ Done 2026-08-12. Zero cycles across 327 modules; the `cycles` gate is green for the first time. Was: measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
-| 7 | `TECH-023` | **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
+| 7 | `TECH-023` | 🟡 Partial 2026-08-12 — ratchet shipped, gate green, 4 worst resolved, 93 frozen. Was: **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
 
 `TECH-023` and `TECH-024` must not share a working tree (**discharged 2026-08-12** — `TECH-024` is committed, so `TECH-023` starts from a clean, attributable baseline): extracting helpers to cut complexity
 changes imports, which is exactly what the cycle check measures, so neither number stays
