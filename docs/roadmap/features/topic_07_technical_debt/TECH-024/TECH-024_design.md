@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-024
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-12 — see §Delivery. **Zero cycles across 327 modules.**
 - **Origin**: Found while running `python scripts/quality.py cb` for TECH-001 SF-04
   (2026-08-02) — confirmed via `git stash` to be chronic and unrelated to that commit
   (identical failure list with or without SF-04's changes applied).
@@ -54,10 +54,61 @@ SF-04's changes present or absent).
 - Cycle 2's file-size/complexity work stays `TECH-020`'s and `TECH-015`'s; this ticket owns only
   the import-cycle defect itself.
 
+## Delivery, 2026-08-12
+
+`python scripts/check_coupling.py --cycles-only src` reports **"none across 327 modules"**, and the
+`cycles` gate passes for the first time — it was one of the two chronically-red gates this repo had
+been living with.
+
+**Every one of the four had the same shape**, which the ticket did not anticipate: a module needed
+something from a module that depended on it, and each was worked around by **deferring the import
+inside a function**. That is precisely what `check_coupling`'s own message warns against, and it is
+worth stating plainly — deferring hides a cycle from the interpreter without removing it. The
+modules still could not be understood, tested or extracted independently, and `check_coupling` sees
+function-level imports anyway, so the workaround did not even suppress the report.
+
+| Cycle | Shared contract that had to move down | Landed in |
+|---|---|---|
+| 3 (llm, 2 modules) | `LLMAdapterError` — `factory` needed `_rate_limit`'s adapter, `_rate_limit` needed `factory`'s exception | the existing `llm/errors.py` leaf |
+| 1 (validation, 3) | the registry type and singleton — `registry` imported its own clients so built-ins would self-register | new `rule_registry.py`; `registry` stays the entry point *above* the rules |
+| 4 (api, 5) | the `EventBridge` singleton accessor — three route modules reached back into `app` for it | `event_bridge.py`, beside the class it hands out |
+| 2 (flow, 5) | **constructing a sub-runner** — four sites imported `PipelineRunner` to clone the parent's collaborators | `PipelineRunner.spawn()`; callers already hold the parent |
+
+Cycle 2's fix is the one that pays twice. All four sites were cloning `_context`, `_registry`,
+`_store` and `_on_event` verbatim, so a fifth collaborator would have had to be added in four
+places. `spawn()` removes the duplication *and* the import. `test_dual_pipeline`'s fixture had to
+set those same four private attributes on its mock, which is the same argument from the test side.
+
+### Semantics preserved where it mattered
+
+Validation's auto-registration was the risk: callers do `from ...registry import get_registry` and
+never mention the rules modules, so a fix that made them opt in would have failed **silently**,
+with rules simply missing rather than an error. Verified directly — a plain import of `registry`
+still yields 12 spec and 11 code rules. `factory`, `app` and `base` all re-export what moved, so no
+caller outside the cycle changed.
+
+### The standing gate the ticket asked for already exists
+
+`check_coupling --cycles-only` runs at `cb` and **exits 1** on a cycle — nothing needed adding, the
+baseline just had to become clean for that to mean anything. Verified by planting a two-module
+cycle in `commons` and confirming both the script and `quality.py cb --only cycles` exit 1, then
+0 once removed. A fifth cycle now blocks the commit that introduces it.
+
+### Test changes
+
+Only seams that moved with the code: patch targets for the API bridge accessor, and the sub-runner
+construction point in the two handler test modules. `dual_pipeline`'s fixture resolves
+`PipelineRunner` at **call** time so `@patch` stays effective, exactly as the handler's own
+deferred import used to; `decompose`'s routes `spawn` back through the patched class so its
+existing assertions about *which* sub-pipeline was launched still mean what they did.
+
+6448 tests pass, `mypy` clean, `tach` clean.
+
 ## Next Step
 
-Run through `specweaver-design` once `TECH-020`/`TECH-015`'s sequencing is clearer, so Cycle 2's
-fix isn't designed twice.
+Done. `TECH-023` (complexity) is now the only chronically-red gate, and per the debt-sequencing
+note it should not share a working tree with this work — that constraint is discharged, since this
+is committed.
 
 
 ## Re-verified 2026-08-08

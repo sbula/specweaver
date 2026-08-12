@@ -49,7 +49,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 * **`TECH-023` 🔴: Repo-Wide Cyclomatic Complexity Violations (complexipy)**
   > [Description](../features/topic_07_technical_debt/TECH-023/TECH-023_design.md) | _(new, 2026-08-02 — found running `quality.py cb` for TECH-001 SF-04, confirmed chronic and unrelated via `git stash`)_ | `complexipy` (threshold 15) fails for **98 functions across 68 files**, spanning nearly every domain — not localized to any recent feature. Worst offenders: `OrchestrateComponentsHandler::execute` (79, `handlers/decompose.py`), `drift_check_rot` (51, `cli_drift.py`), `find_by_glob` (49, `sandbox/filesystem/core/search.py`). Excludes `PipelineRunner::_execute_loop` (`TECH-020`'s target) and `RunContext::model_post_init` (`TECH-006` SF-02's target) — tracked there, not duplicated here.
 
-* **`TECH-024` 🔴: Repo-Wide Dependency Cycles (check_coupling)**
+* **`TECH-024` 🟢: Repo-Wide Dependency Cycles (check_coupling)**
   > [Description](../features/topic_07_technical_debt/TECH-024/TECH-024_design.md) | _(new, 2026-08-02 — found running `quality.py cb` for TECH-001 SF-04, confirmed chronic and unrelated via `git stash`)_ | `check_coupling.py --cycles-only` reports 4 live import cycles: `assurance.validation.registry`/`rules.code.register`/`rules.spec.register` (3); `core.flow.engine.runner`/`runner_utils`/`staleness`/`handlers.decompose`/`handlers.dual_pipeline`/`handlers.registry` (6, overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing, this ticket owns only the import-direction defect); `infrastructure.llm.adapters._rate_limit`/`factory` (2); `interfaces.api.app`/`ui.htmx`/`v1.pipelines`/`v1.router`/`v1.ws` (5).
 
 ## Schema & Data Layer

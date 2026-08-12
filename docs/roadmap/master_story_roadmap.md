@@ -83,10 +83,10 @@ this section drift for a month.
 | 3 | `TECH-014` | ✅ Done 2026-08-12. `RunHandle` did make it cheap, but narrowed the failure rather than closing it — a reader saw the wrong handle, not a torn one. Fixed in `PipelineRunner.run`, covering all four fan-out sites. |
 | 4 | `TECH-020` | ✅ Done 2026-08-12. Removed flow's largest complexity offender and added `engine/step_execution.py` — so 6 and 7 now measure the reshaped import graph, not the old one. |
 | 5 | `TECH-015` | ✅ Done 2026-08-12. Split three grab-bags into eleven contract-named modules and shipped R7 so they cannot regrow; 6 and 7 now measure that import graph. |
-| 6 | `TECH-024` | Measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
+| 6 | `TECH-024` | ✅ Done 2026-08-12. Zero cycles across 327 modules; the `cycles` gate is green for the first time. Was: measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
 | 7 | `TECH-023` | **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
 
-`TECH-023` and `TECH-024` must not share a working tree: extracting helpers to cut complexity
+`TECH-023` and `TECH-024` must not share a working tree (**discharged 2026-08-12** — `TECH-024` is committed, so `TECH-023` starts from a clean, attributable baseline): extracting helpers to cut complexity
 changes imports, which is exactly what the cycle check measures, so neither number stays
 attributable. `TECH-010`, `TECH-011`, `TECH-013`, `TECH-016` are independent of this chain and fit
 anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
@@ -696,7 +696,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
     *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
-    *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
+    *   `✅` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
     *   `✅` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
     *   `✅` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
     *   `✅` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
