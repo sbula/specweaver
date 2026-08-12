@@ -90,47 +90,59 @@ def _extract_param_names(parameters_node: Any) -> list[str]:  # noqa: C901
     return [p for p in params if p not in ("self", "cls")]
 
 
-def _extract_signatures(root_node: Any) -> list[ActualSignature]:  # noqa: C901
-    """Extract all function/method signatures from the given AST node, handling async and class scoping."""
+def _declared_name(node: Any) -> str | None:
+    """The identifier a definition node declares, decoded, or None when it has none."""
+    name_node = node.child_by_field_name("name")
+    if not (name_node and name_node.text):
+        return None
+    return str(name_node.text.decode("utf-8"))
+
+
+def _qualified(raw_name: str, current_scope: str) -> str:
+    """`Class.method` inside a class, bare otherwise."""
+    return f"{current_scope}.{raw_name}" if current_scope else raw_name
+
+
+def _signature_of(node: Any, current_scope: str) -> ActualSignature | None:
+    """The signature a function/method definition declares."""
+    raw_name = _declared_name(node)
+    if raw_name is None:
+        return None
+
+    parameters_node = node.child_by_field_name("parameters")
+    params = _extract_param_names(parameters_node) if parameters_node else []
+    return ActualSignature(name=_qualified(raw_name, current_scope), parameters=params)
+
+
+def _scope_within(node: Any, current_scope: str) -> str:
+    """The scope children are visited under — widened only by a class definition."""
+    if node.type != "class_definition":
+        return current_scope
+    raw_name = _declared_name(node)
+    return _qualified(raw_name, current_scope) if raw_name else current_scope
+
+
+def _extract_signatures(root_node: Any) -> list[ActualSignature]:
+    """Every function/method signature under `root_node`, async and class-scoped included."""
     signatures: list[ActualSignature] = []
 
-    def visit(node: Any, current_scope: str = "") -> None:  # noqa: C901
+    def visit(node: Any, current_scope: str = "") -> None:
         if not node:
             return
 
         if node.type in ("function_definition", "async_function_definition"):
-            name_node = node.child_by_field_name("name")
-            if name_node and name_node.text:
-                raw_name = name_node.text.decode("utf-8")
-                name = f"{current_scope}.{raw_name}" if current_scope else raw_name
-
-                params: list[str] = []
-                parameters_node = node.child_by_field_name("parameters")
-                if parameters_node:
-                    params = _extract_param_names(parameters_node)
-
-                signatures.append(ActualSignature(name=name, parameters=params))
-            # Critical: DO NOT recurse into function bodies (prevents extracting inner functions)
+            signature = _signature_of(node, current_scope)
+            if signature:
+                signatures.append(signature)
+            # Critical: DO NOT recurse into function bodies (prevents extracting inner functions).
             return
 
-        if node.type == "class_definition":
-            name_node = node.child_by_field_name("name")
-            if name_node and name_node.text:
-                raw_name = name_node.text.decode("utf-8")
-                new_scope = f"{current_scope}.{raw_name}" if current_scope else raw_name
-            else:
-                new_scope = current_scope
-
-            # We DO recurse into class bodies to find methods
-            if hasattr(node, "children"):
-                for child in node.children:
-                    visit(child, new_scope)
-            return
-
-        # Recurse for anything else (module, decorated_definition, block, expression_statement etc)
-        if hasattr(node, "children"):
-            for child in node.children:
-                visit(child, current_scope)
+        # Everything else recurses. A class widens the scope its children are named under; module,
+        # decorated_definition, block and the rest pass it through unchanged — the two branches
+        # differed only in that scope, so they are one branch now.
+        scope = _scope_within(node, current_scope)
+        for child in getattr(node, "children", []):
+            visit(child, scope)
 
     if root_node:
         visit(root_node, "")
