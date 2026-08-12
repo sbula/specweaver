@@ -394,7 +394,7 @@ class PlanSpecHandler:
         yaml = YAML()
         yaml.default_flow_style = False
         buf = io.StringIO()
-        yaml.dump(plan_artifact.model_dump(), buf)
+        yaml.dump(plan_artifact.model_dump(mode="json"), buf)
 
         content = buf.getvalue()
         tag_str = wrap_artifact_tag(artifact_uuid, "yaml")

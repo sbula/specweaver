@@ -324,6 +324,62 @@ def llm_database_coupling(root: Path) -> list[str]:
     return coupled
 
 
+def _is_yaml_dump(node: ast.Call) -> bool:
+    """`<something called yaml>.dump(...)`.
+
+    `_callee_name` returns the attribute alone, so it cannot tell `yaml.dump` from `json.dump` —
+    the receiver is the whole discriminator and has to be read here. Measured before choosing the
+    rule: every one of the five `yaml.dump(` call sites in `src/` binds its `YAML()` instance to a
+    local literally named `yaml`. Scoped to YAML on purpose — `ruamel` raises `RepresenterError` on
+    an enum, while `json.dump` accepts a `str`-mixin enum, so they are not the same defect.
+    """
+    func = node.func
+    if not (isinstance(func, ast.Attribute) and func.attr == "dump"):
+        return False
+    receiver = func.value
+    if isinstance(receiver, ast.Name):
+        return receiver.id == "yaml"
+    return isinstance(receiver, ast.Attribute) and receiver.attr == "yaml"
+
+
+def unsafe_model_dumps(root: Path) -> list[str]:
+    """Calls that serialise a Pydantic model to YAML in *python* mode.
+
+    `model_dump()` returns Python objects, so an enum field reaches `ruamel` as an enum and it
+    raises `RepresenterError: cannot represent an object`. `model_dump(mode="json")` coerces enums
+    to `str` (and tuples to lists) and dumps cleanly. Reproduced on `DecompositionPlan`, whose
+    `components[].proposed_dal: DALLevel` is required — so the python-mode dump fails on 100% of
+    real plans, not on an edge case.
+
+    Today `PlanArtifact` and `ScenarioSet` happen to have no enum fields, which is the whole
+    problem: both writers are correct by coincidence, and adding one enum field to either breaks
+    them with nothing to catch it. This is that something.
+
+    Resolved through the AST, not by substring: the call has to be an ARGUMENT to `yaml.dump(...)`,
+    because a bare `model_dump()` is perfectly correct anywhere else and this repo has ~40 of them.
+    A keyword `mode=` of any value counts as deliberate — `mode="python"` is then someone's stated
+    choice rather than the default nobody thought about.
+    """
+    offenders: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and _is_yaml_dump(node)):
+                continue
+            for arg in node.args:
+                if (
+                    isinstance(arg, ast.Call)
+                    and _callee_name(arg).endswith("model_dump")
+                    and not any(kw.arg == "mode" for kw in arg.keywords)
+                ):
+                    rel = path.relative_to(root).as_posix()
+                    offenders.append(f"{rel}:{arg.lineno}")
+    return offenders
+
+
 #: What the tree actually has. A floor, not an equality: adding a domain CLI is progress and must
 #: not go red, losing one is decentralisation running backwards and must. The previous value was 5,
 #: which let four domains re-centralise in silence.
@@ -346,6 +402,9 @@ def test_the_invariants_below_are_reading_the_real_tree() -> None:
     assert list((SRC_ROOT / "core" / "config").glob("*.py")), "config offender scans see no modules"
     for entry in ("factory.py", "router.py"):
         assert (SRC_ROOT / "infrastructure" / "llm" / entry).is_file(), f"llm/{entry} not found"
+    assert any(
+        "yaml.dump" in p.read_text(encoding="utf-8") for p in SRC_ROOT.rglob("*.py")
+    ), "unsafe_model_dumps is scanning a tree with no yaml.dump call in it"
 
 
 def test_cli_commands_live_in_their_own_domains() -> None:
@@ -409,6 +468,20 @@ def test_llm_entry_points_take_settings_not_a_database() -> None:
     assert "SpecWeaverSettings" in (SRC_ROOT / "infrastructure" / "llm" / "factory.py").read_text(
         encoding="utf-8"
     ), "create_llm_adapter no longer takes SpecWeaverSettings — FR-8's DI seam is gone"
+
+
+def test_no_model_is_dumped_to_yaml_in_python_mode() -> None:
+    """A model reaching `yaml.dump` in python mode is a `RepresenterError` waiting for an enum.
+
+    Proves: TECH-016 §1. The helper is only *available*; this is what makes it *required*.
+    """
+    offenders = unsafe_model_dumps(SRC_ROOT)
+
+    assert not offenders, (
+        "yaml.dump() given a bare model_dump() — passes today only because the model happens to "
+        "have no enum field, and raises RepresenterError the day one is added. Use "
+        'model_dump(mode="json"):\n  ' + "\n  ".join(offenders)
+    )
 
 
 # --- the same invariants, driven against synthetic trees -------------------
@@ -534,3 +607,46 @@ def test_database_work_inside_a_function_is_not_import_time(tmp_path: Path) -> N
     )
 
     assert config_bootstrapping_offenders(tmp_path) == []
+
+
+def test_a_bare_model_dump_planted_in_a_yaml_dump_is_detected(tmp_path: Path) -> None:
+    _plant(tmp_path, "handlers/writer.py", "yaml.dump(artifact.model_dump(), buf)\n")
+
+    assert unsafe_model_dumps(tmp_path) == ["handlers/writer.py:1"]
+
+
+def test_a_json_mode_model_dump_is_not_an_offender(tmp_path: Path) -> None:
+    """The fix has to read as clean, or the check reports on correct code forever."""
+    _plant(tmp_path, "handlers/writer.py", 'yaml.dump(artifact.model_dump(mode="json"), buf)\n')
+
+    assert unsafe_model_dumps(tmp_path) == []
+
+
+def test_an_explicit_python_mode_is_someone_s_stated_choice(tmp_path: Path) -> None:
+    """`mode=` of any value is deliberate. The defect is the default nobody thought about."""
+    _plant(tmp_path, "handlers/writer.py", 'yaml.dump(artifact.model_dump(mode="python"), buf)\n')
+
+    assert unsafe_model_dumps(tmp_path) == []
+
+
+def test_a_model_dump_outside_a_yaml_dump_is_not_an_offender(tmp_path: Path) -> None:
+    """Why this is an AST check and not a grep — the repo has ~40 correct bare `model_dump()`s."""
+    _plant(
+        tmp_path,
+        "handlers/writer.py",
+        "payload = artifact.model_dump()\njson.dump(other.model_dump(), buf)\n",
+    )
+
+    assert unsafe_model_dumps(tmp_path) == []
+
+
+def test_a_nested_call_is_still_reached(tmp_path: Path) -> None:
+    """`yaml.dump` inside a `with`/`try` is the shape every real call site actually has."""
+    _plant(
+        tmp_path,
+        "handlers/writer.py",
+        "def write(a, buf):\n    try:\n        yaml.dump(a.model_dump(), buf)\n"
+        "    except Exception:\n        pass\n",
+    )
+
+    assert unsafe_model_dumps(tmp_path) == ["handlers/writer.py:3"]

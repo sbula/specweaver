@@ -94,7 +94,7 @@ class GenerateScenarioHandler:
             yaml = YAML()
             yaml.default_flow_style = False
             buf = io.StringIO()
-            yaml.dump(scenario_set.model_dump(), buf)
+            yaml.dump(scenario_set.model_dump(mode="json"), buf)
             output_path.write_text(buf.getvalue(), encoding="utf-8")
 
             logger.info(
