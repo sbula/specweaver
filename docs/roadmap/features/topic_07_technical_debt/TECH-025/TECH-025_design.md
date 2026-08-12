@@ -262,7 +262,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF-02 | Test Naming Closure | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -342,7 +342,15 @@ Three things SF-04 found that were not in its plan, each fixed rather than defer
   first was a live false credit — the SF-01 defect class, found in the file this ticket was adding
   citations to.
 
-**Next step**: SF-05 (TECH-002) and SF-06 (TECH-005) — both unblocked, independent of each other,
+**SF-05 delivered 2026-08-12** across two commit boundaries. `check_fr_coverage.py TECH-002` now
+**exits 0** — the second subject ledger closed. CB-1 proved the two absence claims; CB-2 linked all
+six requirements and repaired two NFR-5 violations, one of them caught before it could pay out.
+Its Red/Blue found that the plan's chosen file already named `TECH-001`, so the intended citations
+would have credited TECH-002 with a borrowed FR-4 — and that the plan's own verification could not
+have detected it, because a count cannot distinguish a borrowed citation from a real one. Both the
+new test file and the verification method changed as a result.
+
+**Next step**: SF-06 (TECH-005) — unblocked,
 and may run in parallel sessions. Neither has an implementation plan yet. SF-07 waits on both.
 Note for whoever takes them: SF-04's CB-1 removed the wall that made a tests-and-docs boundary
 impossible to commit, so neither should hit it.
