@@ -171,18 +171,11 @@ class GenerateCodeHandler:
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
-            from specweaver.core.flow.store import FlowRepository
+            from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
-            if context.db:
-                async with context.db.async_session_scope() as session:
-                    repo = FlowRepository(session)
-                    await repo.log_artifact_event(
-                        artifact_id=artifact_uuid,
-                        parent_id=parent_id,
-                        run_id=context.run.run_id or "pipeline_run",
-                        event_type="generated_code",
-                        model_id=config.model,
-                    )
+            await log_artifact_lineage(
+                context, artifact_uuid, "generated_code", parent_id=parent_id, model_id=config.model
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -277,18 +270,11 @@ class GenerateTestsHandler:
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
-            from specweaver.core.flow.store import FlowRepository
+            from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
-            if context.db:
-                async with context.db.async_session_scope() as session:
-                    repo = FlowRepository(session)
-                    await repo.log_artifact_event(
-                        artifact_id=artifact_uuid,
-                        parent_id=parent_id,
-                        run_id=context.run.run_id or "pipeline_run",
-                        event_type="generated_tests",
-                        model_id=config.model,
-                    )
+            await log_artifact_lineage(
+                context, artifact_uuid, "generated_tests", parent_id=parent_id, model_id=config.model
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -360,7 +346,7 @@ class PlanSpecHandler:
 
         from ruamel.yaml import YAML
 
-        from specweaver.core.flow.handlers.artifact_identity import (
+        from specweaver.core.flow.handlers.artifact_lineage import (
             derive_artifact_uuid,
             tag_content,
         )
@@ -467,18 +453,11 @@ class PlanSpecHandler:
             if not parent_id:
                 parent_id = context.run.run_id or ""
 
-            from specweaver.core.flow.store import FlowRepository
+            from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
-            if context.db:
-                async with context.db.async_session_scope() as session:
-                    repo = FlowRepository(session)
-                    await repo.log_artifact_event(
-                        artifact_id=artifact_uuid,
-                        parent_id=parent_id,
-                        run_id=context.run.run_id or "pipeline_run",
-                        event_type="generated_plan",
-                        model_id=config.model,
-                    )
+            await log_artifact_lineage(
+                context, artifact_uuid, "generated_plan", parent_id=parent_id, model_id=config.model
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,

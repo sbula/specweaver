@@ -13,7 +13,7 @@ Call sequence through the atom:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -33,19 +33,31 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-def _make_context(tmp_path: Path, *, llm: MagicMock | None = None) -> RunContext:
-    """Build a RunContext for testing."""
+#: Sentinel meaning "build the usual mock database", so `db=None` can mean what it says.
+_DEFAULT_DB = object()
+
+
+def _make_context(
+    tmp_path: Path, *, llm: MagicMock | None = None, db: Any = _DEFAULT_DB
+) -> RunContext:
+    """Build a RunContext for testing.
+
+    `db` is a parameter because it did not used to be one: every test here handed the handler a
+    working database, so the `context.db is None` path — the default for any run without telemetry
+    — was never executed. That is how `TECH-036` survived.
+    """
     output_dir = tmp_path / "output"
     output_dir.mkdir(exist_ok=True)
-    mock_db = MagicMock()
-    mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
+    if db is _DEFAULT_DB:
+        db = MagicMock()
+        db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
     return RunContext(
         model=ModelAccess(llm=llm),
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         output_dir=output_dir,
-        db=mock_db,
+        db=db,
     )
 
 
@@ -394,6 +406,39 @@ class TestLintFixArtifactLineage:
             event_type="lint_fixed",
             model_id="gemini-3-flash-preview",
         )
+
+    async def test_a_fix_survives_having_no_telemetry_database(self, tmp_path: Path) -> None:
+        """`TECH-036`. `RunContext.db` defaults to None — telemetry is optional, fixing is not.
+
+        The handler used to open `context.db.async_session_scope()` unguarded, raising
+        `AttributeError` **after** the corrected file was already written. `execute`'s
+        `except Exception` turned that into `StepResult(status=ERROR)`, so a lint fix that
+        succeeded was reported as a failed step and the reader was sent to the LLM rather than to
+        the telemetry configuration.
+
+        Planted rather than read: every other test in this class hands the handler a working
+        database, which is exactly why nobody saw it.
+        """
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(1), _dirty(1), _dirty(1), _clean()]
+
+        out = tmp_path / "output"
+        out.mkdir(exist_ok=True)
+        py_file = out / "foo.py"
+        valid_uuid = "33333333-2222-3333-4444-999999999999"
+        py_file.write_text(f"# sw-artifact: {valid_uuid}\ndef bad(): pass\n", encoding="utf-8")
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed"))
+
+        ctx = _make_context(tmp_path, llm=mock_llm, db=None)
+
+        result = await _handler(mock_atom).execute(_make_step(), ctx)
+
+        assert result.status == StepStatus.PASSED, (
+            f"a successful fix was reported as {result.status}: {result.error_message}"
+        )
+        assert valid_uuid in py_file.read_text(encoding="utf-8"), "the fix is not on disk"
 
 
 # ---------------------------------------------------------------------------

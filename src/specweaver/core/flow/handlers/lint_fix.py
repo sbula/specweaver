@@ -251,7 +251,10 @@ class LintFixHandler:
         from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role, TaskType
 
         code = code_path.read_text(encoding="utf-8")
-        from specweaver.core.flow.handlers.artifact_identity import tag_content
+        from specweaver.core.flow.handlers.artifact_lineage import (
+            log_artifact_lineage,
+            tag_content,
+        )
         from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
 
         # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
@@ -330,14 +333,9 @@ class LintFixHandler:
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 
         if artifact_uuid:
-            from specweaver.core.flow.store import FlowRepository
-
-            async with context.db.async_session_scope() as session:
-                repo = FlowRepository(session)
-                await repo.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=None,
-                    run_id=context.run.run_id or "pipeline_run",
-                    event_type="lint_fixed",
-                    model_id=config.model if config else "unknown",
-                )
+            await log_artifact_lineage(
+                context,
+                artifact_uuid,
+                "lint_fixed",
+                model_id=config.model if config else "unknown",
+            )

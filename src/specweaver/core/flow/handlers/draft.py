@@ -182,22 +182,19 @@ class DraftSpecHandler:
         try:
             result_path = await drafter.draft(name, specs_dir, topology_contexts=topology_contexts)
 
-            from specweaver.core.flow.handlers.artifact_identity import ensure_file_tagged
+            from specweaver.core.flow.handlers.artifact_lineage import (
+                ensure_file_tagged,
+                log_artifact_lineage,
+            )
 
             artifact_uuid = ensure_file_tagged(result_path, "markdown")
 
-            from specweaver.core.flow.store import FlowRepository
-
-            if context.db:
-                async with context.db.async_session_scope() as session:
-                    repo = FlowRepository(session)
-                    await repo.log_artifact_event(
-                        artifact_id=artifact_uuid,
-                        parent_id=None,
-                        run_id=context.run.run_id or "pipeline_run",
-                        event_type="drafted_spec",
-                        model_id=gen_config.model if gen_config else "unknown",
-                    )
+            await log_artifact_lineage(
+                context,
+                artifact_uuid,
+                "drafted_spec",
+                model_id=gen_config.model if gen_config else "unknown",
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -417,24 +414,18 @@ class DraftFeatureHandler:
     @staticmethod
     def _ensure_artifact_tag(result_path: Path) -> str:
         """Return the spec's lineage UUID, injecting a tag when it has none yet."""
-        from specweaver.core.flow.handlers.artifact_identity import ensure_file_tagged
+        from specweaver.core.flow.handlers.artifact_lineage import ensure_file_tagged
 
         return ensure_file_tagged(result_path, "markdown")
 
     @staticmethod
     async def _log_lineage(context: RunContext, artifact_uuid: str, gen_config: Any) -> None:
         """Record the drafted-feature-spec lineage event when a telemetry DB is configured."""
-        if not context.db:
-            return
+        from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
-        from specweaver.core.flow.store import FlowRepository
-
-        async with context.db.async_session_scope() as session:
-            repo = FlowRepository(session)
-            await repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=None,
-                run_id=context.run.run_id or "pipeline_run",
-                event_type="drafted_feature_spec",
-                model_id=gen_config.model if gen_config else "unknown",
-            )
+        await log_artifact_lineage(
+            context,
+            artifact_uuid,
+            "drafted_feature_spec",
+            model_id=gen_config.model if gen_config else "unknown",
+        )

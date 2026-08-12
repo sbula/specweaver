@@ -67,7 +67,8 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 | `TECH-020` 🟢 | **Delivered 2026-08-12** — claim discharged. `runner.py` 599→292, `_execute_loop` 365→21, the `# noqa: C901` deleted; `C-FLOW-12` no longer pays the tax. | — |
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
-SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
+SF-03 committed — is now met), `TECH-015` 🟢, `TECH-016` 🟢 *(both delivered 2026-08-12; `TECH-016`
+also closed `TECH-036` 🟢, filed and resolved the same day)*.
 
 **Order among the debt tickets themselves (recorded 2026-08-08).** Distinct from the claims above,
 which are about feature candidates. This is a dependency order: seven tickets contend for the same
@@ -689,7 +690,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
     *   `✅` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
     *   `✅` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
-    *   `[ ]` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
+    *   `✅` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
     *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
     *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
     *   `✅` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
@@ -708,4 +709,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-033:** [A Step's Retry Budget Resets on Every `sw resume`](features/topic_07_technical_debt/TECH-033/TECH-033_design.md)
     *   `✅` **TECH-034:** [Split the AST Parser Hierarchy by Language Paradigm](features/topic_07_technical_debt/TECH-034/TECH-034_design.md)
     *   `[ ]` **TECH-035:** [Chronically Failing Class-Health Gate](features/topic_07_technical_debt/TECH-035/TECH-035_design.md)
-    *   `[ ]` **TECH-036:** [Lineage Telemetry Takes Down a Lint Fix That Already Succeeded](features/topic_07_technical_debt/TECH-036/TECH-036_design.md)
+    *   `✅` **TECH-036:** [Lineage Telemetry Takes Down a Lint Fix That Already Succeeded](features/topic_07_technical_debt/TECH-036/TECH-036_design.md)

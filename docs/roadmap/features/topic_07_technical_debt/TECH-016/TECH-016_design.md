@@ -4,10 +4,16 @@
 - **Epic**: Topic 07 (Technical Debt)
 - **Status**: **DELIVERED 2026-08-12.** §1 (`f10ec587`): both writers dump in `mode="json"`, and
   `tests/unit/test_architecture.py::unsafe_model_dumps` makes bypassing it fail the build. §2:
-  `handlers/artifact_identity.py` unifies the lineage-tag tail across four sites — at a **corrected
-  scope**, since the stub's model-shaped fix fits 2 of its 6 sites (see §Correction). Not run
-  through `specweaver-design`: §1 needed no design, and §2's decision space was settled by
-  measurement. The `log_artifact_event` half is deliberately left to `TECH-036`.
+  `handlers/artifact_lineage.py` unifies **both** halves of the tail — identity (4 sites) and
+  events (**7** sites) — leaving exactly one `log_artifact_event` call in the repo. Not run through
+  `specweaver-design`: §1 needed no design, and §2's decision space was settled by measurement.
+
+  > **Two status corrections, same day, kept because the failure mode is specific.**
+  > This was recorded DELIVERED after §1, then again after only the identity half of §2. Both
+  > times the §2 scope had been re-measured *correctly* — the six write sites really do not fit
+  > one model-shaped helper — and both times that true finding was used to shrink the deliverable
+  > rather than to re-plan it. **"The head differs per site" does not license skipping the tail.**
+  > `TECH-036` owns the missing `None` guard; it never owned the unification.
 - **Origin**: INT-US-21 SF-02 implementation-plan Phase 0 (2026-07-25).
 
 ## Problem Statement
@@ -175,13 +181,54 @@ handler complexity cluster is measured *after* this and not before.
 `6504 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; cycles 0 across 335
 modules; class-health and suppression ratchets unmoved.
 
-### Not unified, deliberately
+## Delivery of §2's event half, 2026-08-12
 
-The `log_artifact_event` tail is near-identical at five sites and looks like it belongs in the same
-module. It is **not** here, because one of the five (`lint_fix.py:333`) opens `context.db` with no
-`None` guard: unifying it as-is would copy that defect into shared code, and fixing it here would be
-`TECH-036` landing inside `TECH-016`. `TECH-036` owns both halves together.
+The remainder. `log_artifact_lineage(context, uuid, event_type, *, parent_id, model_id)` replaces
+**seven** hand-rolled sites — not the five first counted; `generation.py` has three, not one.
+
+| site | event | had a guard? |
+|---|---|---|
+| `draft.py` | `drafted_spec` | guard only |
+| `draft.py::_log_lineage` | `drafted_feature_spec` | guard only |
+| `generation.py` ×3 | `generated_code` / `_tests` / `_plan` | guard only |
+| `decomposition_artifacts.py` | `generated_decomposition` | guard **and** `try` |
+| `lint_fix.py` | `lint_fixed` | **neither** — `TECH-036` |
+
+`grep log_artifact_event src/specweaver/core/flow/` now returns **one** hit, inside the helper.
+
+**The never-raises contract had no test at all.** It lived in `log_decomposition_lineage`'s
+docstring, written after a real CB-1 failure against a non-bootstrapped database (2026-07-26), and
+nothing exercised it — one of the seven sites honoured it and six did not. It is now the shared
+default, with tests for a repository failure, a session-open failure, and a `context.db` that is
+not a database at all.
+
+**This resolves `TECH-036`** as a consequence: a shared helper cannot ship a known defect, so the
+guard had to come with it. Verified to `TECH-036`'s own stated bar — a handler-level test that
+*plants* `context.db = None` and asserts `PASSED` with the fix on disk — and the probe was checked
+against the pre-fix code:
+
+```
+'NoneType' object has no attribute 'async_session_scope'
+assert <StepStatus.ERROR> == <StepStatus.PASSED>
+```
+
+The first probe attempt was **invalid** and worth recording: reverting the whole file to `HEAD`
+also reverted the module rename, so it failed on `ModuleNotFoundError` rather than on the defect.
+Reverting *only* the lineage tail produced the failure above. Same trap as `TECH-035`'s first
+class-health probe — a probe that fails for the wrong reason proves nothing.
+
+Why it was reachable at all: `_make_context` in `test_lint_fix_handler.py` supplied a mock database
+unconditionally, so **every** test in that file took the branch that works. `db` is now a
+parameter.
+
+The module is `artifact_lineage.py`, renamed from `artifact_identity.py` one commit after it was
+created — identity plus events is one contract ("an artifact's lineage"), and the old name stopped
+describing it.
+
+`6519 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; 0 cycles; complexity
+ratchet **40**, suppressions **227**, class-health unmoved.
 
 ## Next Step
 
-`TECH-036`, which should unify the lineage-event tail **and** fix the missing guard in one pass.
+None — the ticket is closed. `TECH-036` closes with it, resolved by this work rather than on its
+own.

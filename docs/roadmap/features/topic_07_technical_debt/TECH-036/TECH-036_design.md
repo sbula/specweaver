@@ -2,7 +2,10 @@
 
 - **Feature ID**: TECH-036
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: **RESOLVED 2026-08-12 by `TECH-016` §2**, hours after being filed, and closed without
+  its own implementation. `TECH-016` unified the `log_artifact_event` tail across all seven sites;
+  a shared helper cannot ship a known defect, so `log_artifact_lineage` carries the `None` guard
+  **and** the never-raises `try` by construction. See §Resolution.
 - **Origin**: Found 2026-08-12 while measuring `TECH-016` §2's six write sites against the code.
   Not `TECH-016`'s subject — that ticket is serialization format and the duplicated write tail —
   so it is filed separately per the scope rules in `specweaver-ticket`.
@@ -93,7 +96,40 @@ failure (2026-07-26) and never generalised. This ticket is the generalisation.
 
 One commit, never bundled into a feature commit. Full suite green.
 
-## Next Step
+## Resolution, 2026-08-12
 
-Run through `specweaver-design`. Settle first whether the fix adopts the guard-only or the
-never-raises contract, and whether it lands before or inside `TECH-016` §2's tail extraction.
+Closed by `TECH-016` §2's event-tail unification, not by separate work.
+
+**Both open questions answered by construction.** The shared `log_artifact_lineage` adopts the
+**never-raises** contract, not guard-only — of the seven sites it replaced, one had the guard *and*
+the `try`, five had only the guard, and this one had neither, so guard-only would have left five
+sites still able to discard finished work on a *configured-but-broken* database. And it landed
+**inside** `TECH-016` §2 rather than after it: unifying a tail that contains a known defect would
+have copied the defect into shared code.
+
+**Verified to this ticket's own stated bar.** `test_a_fix_survives_having_no_telemetry_database`
+plants `context.db = None` with a tagged source file and asserts `PASSED` with the fix on disk.
+Probed against the pre-fix code:
+
+```
+'NoneType' object has no attribute 'async_session_scope'
+assert <StepStatus.ERROR> == <StepStatus.PASSED>
+```
+
+**The first probe was invalid**, and it is worth recording: reverting the whole file to `HEAD` also
+reverted `TECH-016`'s module rename, so the test failed with `ModuleNotFoundError` — right colour,
+wrong cause. Reverting *only* the lineage tail produced the failure above. Same trap as
+`TECH-035`'s first class-health probe.
+
+**Why it was reachable.** `_make_context` in `test_lint_fix_handler.py` supplied a mock database
+unconditionally, so every test in the file exercised the branch that works — the same shape as this
+repo's other silent-check findings. `db` is now a parameter, defaulting to the mock so existing
+tests are unchanged.
+
+## Why this ticket still earned its ID
+
+It was filed on the reading that `TECH-016` §2 would not touch the lineage tail. That reading was
+wrong — the tail is §2's own scope — and correcting it is what closed this. The ticket is kept
+rather than deleted because the *defect* was real, measured and reproduced, and the record of how
+it was found and fixed is worth more than a clean-looking registry. It also names the missing test
+that let it survive, which outlives the fix.

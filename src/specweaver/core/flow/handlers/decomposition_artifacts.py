@@ -93,7 +93,7 @@ def persist_decomposition(dumped: dict[str, Any], context: RunContext) -> tuple[
 
     from ruamel.yaml import YAML
 
-    from specweaver.core.flow.handlers.artifact_identity import derive_artifact_uuid, tag_content
+    from specweaver.core.flow.handlers.artifact_lineage import derive_artifact_uuid, tag_content
 
     artifact_path = context.spec_path.with_name(context.spec_path.stem + "_decomposition.yaml")
 
@@ -126,28 +126,9 @@ async def log_decomposition_lineage(context: RunContext, artifact_uuid: str) -> 
     gate (2026-07-26) against a non-bootstrapped database; the failure is logged at exception level
     so it is loud in logs while the run continues.
     """
-    if not context.db:
-        return
+    from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
-    from specweaver.core.flow.store import FlowRepository
-
-    try:
-        async with context.db.async_session_scope() as session:
-            repo = FlowRepository(session)
-            await repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=None,
-                run_id=context.run.run_id or "pipeline_run",
-                event_type="generated_decomposition",
-                model_id="unknown",
-            )
-    except Exception:
-        logger.exception(
-            "[run_id=%s] Decomposition lineage event failed for artifact %s — the artifact is "
-            "already on disk, so the step continues",
-            context.run.run_id,
-            artifact_uuid,
-        )
+    await log_artifact_lineage(context, artifact_uuid, "generated_decomposition")
 
 
 def load_component_template(project_path: Path) -> str:
