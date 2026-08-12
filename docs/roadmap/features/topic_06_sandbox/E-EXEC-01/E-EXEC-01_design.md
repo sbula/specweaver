@@ -164,7 +164,7 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 
 ## Sub-Feature Breakdown
 
-### SF-1: SubprocessExecutor Core
+### SF-01: SubprocessExecutor Core
 - **Scope**: Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult` dataclass, timeout escalation, env stripping, path validation, and telemetry logging.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10]
 - **Inputs**: Command list, cwd path, timeout, env allowlist, resource limits
@@ -172,29 +172,29 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
 
-### SF-2: Language Runner Migration
+### SF-02: Language Runner Migration
 - **Scope**: Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct `subprocess.run()` to `SubprocessExecutor.execute()`. Ensure backward compatibility across all 4900+ tests.
 - **FRs**: [FR-8]
-- **Inputs**: `SubprocessExecutor` from SF-1, existing runner.py files
+- **Inputs**: `SubprocessExecutor` from SF-01, existing runner.py files
 - **Outputs**: All runners using unified executor, all tests green
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. **SF-1** (no deps — start immediately): Build and fully test `SubprocessExecutor` in isolation.
-2. **SF-2** (depends on SF-1): Migrate all language runners. Run full regression.
+1. **SF-01** (no deps — start immediately): Build and fully test `SubprocessExecutor` in isolation.
+2. **SF-02** (depends on SF-01): Migrate all language runners. Run full regression.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Language Runner Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Language Runner Migration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: E-EXEC-01 COMPLETE (2026-07-12). Both SF-1 and SF-2 fully implemented, tested, reviewed (Red/Blue), and committed.
+**Current status**: E-EXEC-01 COMPLETE (2026-07-12). Both SF-01 and SF-02 fully implemented, tested, reviewed (Red/Blue), and committed.
 **Regression**: Unit 4482 passed / Integration 424 passed / E2e 139 passed. All clean.
 **Follow-up**: TECH-009 (git/filesystem subprocess migration) remains open.
 

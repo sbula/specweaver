@@ -289,7 +289,7 @@ This physical payload is explicitly injected into the `<environment_context>` bl
 
 ## 18. Idempotent Graph Tombstoning (The UPSERT Bypass)
 
-When flushing the in-memory NetworkX `TopologyGraph` to SQLite for the Persistent Storage Adapter (SF-2), we faced massive `UNIQUE constraint` deadlocks whenever an LLM agent requested to save an updated code file without deleting the previous version of the graph structure.
+When flushing the in-memory NetworkX `TopologyGraph` to SQLite for the Persistent Storage Adapter (SF-02), we faced massive `UNIQUE constraint` deadlocks whenever an LLM agent requested to save an updated code file without deleting the previous version of the graph structure.
 
 ### How it works:
 Instead of `SELECT`ing every node and deciding whether to `UPDATE` or `INSERT` in Python, we strictly enforce `sqlite3`'s mathematical `ON CONFLICT(semantic_hash) DO UPDATE SET is_active=1` within a single batch `executemany` chunk. Furthermore, nodes belonging to stale files are never `DELETE`d; instead they are explicitly "Tombstoned" (`is_active=0`).
@@ -346,7 +346,7 @@ Unlike PostgreSQL or MySQL, SQLite explicitly defaults `foreign_keys=OFF` on eve
 
 ## 22. Resolved-Path Interpreter Invocation (The Windows `System32` Shadowing Bug)
 
-When building `BashActionAtom` (C-EXEC-02 SF-1) to run `.specweaver/scripts/` shell scripts via `SubprocessExecutor`, TDD surfaced a genuine Windows-only bug: invoking `bash` by its bare command name silently ran the wrong interpreter.
+When building `BashActionAtom` (C-EXEC-02 SF-01) to run `.specweaver/scripts/` shell scripts via `SubprocessExecutor`, TDD surfaced a genuine Windows-only bug: invoking `bash` by its bare command name silently ran the wrong interpreter.
 
 ### How it works:
 On a Windows machine with both Git for Windows and WSL installed, `shutil.which("bash")` correctly resolves Git's `bash.exe` (it searches `%PATH%` in listed order). But `subprocess.Popen(["bash", ...])` (a list argv, `shell=False`) does **not** go through the same resolution — Windows' `CreateProcess` API, when given a bare command name with no directory, applies its own fixed search order that checks `C:\Windows\System32` (which contains a WSL launcher stub, if the "Windows Subsystem for Linux" feature is enabled) **before** it ever consults `%PATH%`. This silently invokes WSL's `bash` instead of Git's, regardless of `PATH` order, and regardless of an earlier `shutil.which("bash")` check having already found the right one — unless that resolved path is actually *used* as `argv[0]`.
@@ -422,7 +422,7 @@ tests were quietly bent to hide a still-present bug rather than genuinely provin
 change. `scripts/_refactor_diff_safety.py` (`_is_safe_file_diff`) implements the actual rule, and it
 has grown in deliberate, TDD-pinned stages rather than as one design: pure additions and dotted-path
 relocations (TECH-001 SF-04) are safe by construction; a *literal identifier rename* consistent
-across a whole file — the exact shape TECH-005 SF-3's database table renames produced across dozens
+across a whole file — the exact shape TECH-005 SF-03's database table renames produced across dozens
 of test-file SQL strings — needed a further extension (`_infer_token_rename_map`).
 
 ### How it works:

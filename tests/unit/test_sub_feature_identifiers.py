@@ -1,0 +1,104 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""A sub-feature identifier is spelled one way: `SF-` and exactly two zero-padded digits.
+
+Padded was already the overwhelming norm — 166 document filenames against 16 — so this pins
+existing practice rather than imposing a convention. The outliers predated any statement of the
+rule, and a reader searching for `SF-03` simply did not find `SF-3`.
+
+**Scope is deliberately the format half only.** The sibling rule — that a bare `SF-NN` outside its
+owning story's folder must name that story — is not checked here. Detecting it lexically was
+attempted and abandoned: three successive refinements each reported violations that turned out to
+be correct in context, and the surviving candidates were almost all legitimate references whose
+story is named in the same entry rather than the same clause. A rule that cannot be measured
+without judgement cannot be enforced by a regex, and asserting it badly would be worse than not
+asserting it. See `TECH-027`'s design.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+DOCS = Path(__file__).resolve().parents[2] / "docs"
+
+#: `SF-` followed by exactly one digit. The lookarounds keep `SF-01` and `_sf01_` out of it.
+SINGLE_DIGIT = re.compile(r"(?<![\w-])SF-\d(?![\d])")
+
+#: A reference tied to the pre-registry feature numbering (`Feature 3.32 SF-4`). Those sub-features
+#: belong to a scheme that no longer exists, so padding them would invent an identifier.
+LEGACY_CONTEXT = re.compile(r"[Ff]eature\s+\d+\.\d+")
+
+#: Wholly a historical record of the pre-registry scheme — its own filename says so.
+LEGACY_DOCUMENTS = {"legacy_feature_map.md"}
+
+#: The padded form, used to spot a line that is *demonstrating* the contrast rather than committing
+#: it. A document stating the rule has to quote the form it forbids — "`SF-01`, never `SF-1`" — and
+#: flagging that would make the contract unwritable, the same way R5 exempts citation tags from the
+#: registry-id ban it enforces on names. Narrow on purpose: the padded form must be on the SAME
+#: line, so a document cannot excuse a stray `SF-3` by mentioning `SF-03` somewhere else.
+PADDED = re.compile(r"(?<![\w-])SF-\d\d(?![\d])")
+
+
+def _offenders() -> list[str]:
+    found: list[str] = []
+    for path in sorted(DOCS.rglob("*.md")):
+        if path.name in LEGACY_DOCUMENTS:
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if LEGACY_CONTEXT.search(line):
+                continue
+            if SINGLE_DIGIT.search(line) and not PADDED.search(line):
+                rel = path.relative_to(DOCS.parent).as_posix()
+                found.append(f"{rel}:{number}: {line.strip()[:80]}")
+    return found
+
+
+def test_no_document_spells_a_sub_feature_with_one_digit() -> None:
+    """`SF-3` and `SF-03` are the same sub-feature spelled two ways, and only one is searchable."""
+    offenders = _offenders()
+
+    assert offenders == [], "single-digit sub-feature ids:\n  " + "\n  ".join(offenders[:20])
+
+
+def test_no_document_filename_spells_it_with_one_digit() -> None:
+    """The filename half, which landed first — `_sf1_` became `_sf01_` across 16 files.
+
+    Pinned separately because a filename is what inbound links resolve against: prose can be wrong
+    and merely confusing, a filename can be wrong and break a reference.
+    """
+    unpadded = sorted(p.name for p in DOCS.rglob("*_sf[0-9]_*"))
+
+    assert unpadded == [], f"unpadded filenames: {unpadded}"
+
+
+def test_the_legacy_scheme_is_left_alone() -> None:
+    """The exclusion is real, not a loophole — it must actually be exercised.
+
+    `legacy_feature_map.md` records a numbering scheme that predates the registry, where a
+    sub-feature belonged to `Feature 3.14a` rather than to a story id. Padding those would invent
+    identifiers for something that no longer exists. If this file ever stops containing them, the
+    exclusion should be deleted rather than left as an unexplained special case.
+    """
+    legacy = DOCS / "architecture" / "02_bounded_contexts" / "legacy_feature_map.md"
+
+    assert legacy.is_file(), "the excluded document has moved — revisit the exclusion"
+    assert SINGLE_DIGIT.search(legacy.read_text(encoding="utf-8")), (
+        "no single-digit ids remain in the legacy record, so the exclusion is now dead and should go"
+    )
+
+
+def test_the_demonstration_exemption_is_narrow() -> None:
+    """A line may show the forbidden form only while showing the correct one beside it.
+
+    Without this the exemption would be a hole: any document could carry a stray `SF-3` as long as
+    some other line mentioned a padded id.
+    """
+    from tests.unit.test_sub_feature_identifiers import PADDED, SINGLE_DIGIT
+
+    demonstrating = "the format is `SF-01`, never `SF-1`"
+    committing = "see `SF-3` for the details"
+
+    assert SINGLE_DIGIT.search(demonstrating) and PADDED.search(demonstrating)
+    assert SINGLE_DIGIT.search(committing) and not PADDED.search(committing)

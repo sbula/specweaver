@@ -1,9 +1,9 @@
-# Implementation Plan: Standard Local Execution [SF-2: Language Runner Migration]
+# Implementation Plan: Standard Local Execution [SF-02: Language Runner Migration]
 
 - **Feature ID**: E-EXEC-01
-- **Sub-Feature**: SF-2 — Language Runner Migration
+- **Sub-Feature**: SF-02 — Language Runner Migration
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-2
+- **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
 - **Status**: APPROVED
 
@@ -55,7 +55,7 @@ Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from dir
 
 **Mock target changes**: All `patch("subprocess.run")` → mock the `SubprocessExecutor.execute` method instead. The mock return value changes from `MagicMock(returncode=..., stdout=..., stderr=...)` to `SubprocessResult(exit_code=..., stdout=..., stderr=..., duration_seconds=..., timed_out=...)`.
 
-### SubprocessExecutor API (from SF-1, extended in Commit 0)
+### SubprocessExecutor API (from SF-01, extended in Commit 0)
 
 ```python
 executor = SubprocessExecutor(
@@ -357,8 +357,8 @@ Summary: 2 cycles, 14 findings, converged. 1 CRITICAL (fixed: input_text API gap
 - **Files**:
   - [MODIFY] `src/specweaver/sandbox/execution/executor.py`
   - [MODIFY] `tests/unit/sandbox/execution/test_executor.py`
-- **Message**: `feat(sandbox): add input_text support to SubprocessExecutor [E-EXEC-01 SF-2]`
-- **Verification**: All SF-1 existing tests pass. 3 new tests pass.
+- **Message**: `feat(sandbox): add input_text support to SubprocessExecutor [E-EXEC-01 SF-02]`
+- **Verification**: All SF-01 existing tests pass. 3 new tests pass.
 
 ### Commit 1: Python Runner Migration
 - **Files**:
@@ -366,7 +366,7 @@ Summary: 2 cycles, 14 findings, converged. 1 CRITICAL (fixed: input_text API gap
   - [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner.py`
   - [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py`
   - [NEW] `tests/unit/sandbox/language/core/test_runner_migration.py` (Python entries only)
-- **Message**: `refactor(sandbox): migrate PythonQARunner to SubprocessExecutor [E-EXEC-01 SF-2]`
+- **Message**: `refactor(sandbox): migrate PythonQARunner to SubprocessExecutor [E-EXEC-01 SF-02]`
 - **Verification**: All Python runner tests pass. Full suite regression.
 
 ### Commit 2: TypeScript + Rust Runner Migration
@@ -376,7 +376,7 @@ Summary: 2 cycles, 14 findings, converged. 1 CRITICAL (fixed: input_text API gap
   - [MODIFY] `tests/unit/sandbox/language/core/language/typescript/test_runner.py`
   - [MODIFY] `tests/unit/sandbox/language/core/language/rust/test_runner.py`
   - [MODIFY] `tests/unit/sandbox/language/core/test_runner_migration.py` (add TS + Rust entries)
-- **Message**: `refactor(sandbox): migrate TS and Rust runners to SubprocessExecutor [E-EXEC-01 SF-2]`
+- **Message**: `refactor(sandbox): migrate TS and Rust runners to SubprocessExecutor [E-EXEC-01 SF-02]`
 - **Verification**: TS rename `self.cwd` → `self._cwd` verified. Rust inline imports removed. All tests green.
 
 ### Commit 3: Java + Kotlin + Config + Docs + Final Regression
@@ -388,7 +388,7 @@ Summary: 2 cycles, 14 findings, converged. 1 CRITICAL (fixed: input_text API gap
   - [MODIFY] `tests/unit/sandbox/language/core/test_runner_migration.py` (add Java + Kotlin entries)
   - [MODIFY] `pyproject.toml` (subprocess ban rule)
   - [MODIFY] `docs/dev_guides/subprocess_execution.md` (fix cmd=, add input_text)
-- **Message**: `refactor(sandbox): migrate Java and Kotlin runners, ban subprocess import [E-EXEC-01 SF-2]`
+- **Message**: `refactor(sandbox): migrate Java and Kotlin runners, ban subprocess import [E-EXEC-01 SF-02]`
 - **Verification**: Full 4900+ test suite regression. ruff + mypy + C90 + tach clean.
 
 ---
@@ -423,7 +423,7 @@ tach check
 |---|------|---------------|
 | 1 | Broad `except Exception` in Java/Kotlin runners | Pre-existing issue. Out of scope for FR-8. Narrowed for Rust only (higher risk due to multi-stage pipes). Java/Kotlin deferred to TECH debt. |
 | 2 | Java/Kotlin stdout capture overhead for SARIF-based methods | Negligible overhead (< 1ms). Consistency outweighs micro-optimization. |
-| 3 | TOCTOU gap between `shutil.which()` and executor call | Same accepted risk as SF-1. Probability essentially zero. Executor catches OSError as fallback. |
+| 3 | TOCTOU gap between `shutil.which()` and executor call | Same accepted risk as SF-01. Probability essentially zero. Executor catches OSError as fallback. |
 
 ---
 

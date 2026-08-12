@@ -1,8 +1,8 @@
-# Implementation Plan: PromptBuilder Input Escaping & Pluggable Context Architecture [SF-1: Injection-Safe Escaping Engine & XML Attribute Escaping]
+# Implementation Plan: PromptBuilder Input Escaping & Pluggable Context Architecture [SF-01: Injection-Safe Escaping Engine & XML Attribute Escaping]
 - **Feature ID**: TECH-007
-- **Sub-Feature**: SF-1 — Injection-Safe Escaping Engine & XML Attribute Escaping
+- **Sub-Feature**: SF-01 — Injection-Safe Escaping Engine & XML Attribute Escaping
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf01_implementation_plan.md
 - **Status**: APPROVED
 

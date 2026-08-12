@@ -1,8 +1,8 @@
-# Implementation Plan: PromptBuilder Input Escaping & Pluggable Context Architecture [SF-2: Pluggable Context Architecture (Structural Protocol)]
+# Implementation Plan: PromptBuilder Input Escaping & Pluggable Context Architecture [SF-02: Pluggable Context Architecture (Structural Protocol)]
 - **Feature ID**: TECH-007
-- **Sub-Feature**: SF-2 — Pluggable Context Architecture (Structural Protocol)
+- **Sub-Feature**: SF-02 — Pluggable Context Architecture (Structural Protocol)
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-2
+- **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf02_implementation_plan.md
 - **Status**: DRAFT
 

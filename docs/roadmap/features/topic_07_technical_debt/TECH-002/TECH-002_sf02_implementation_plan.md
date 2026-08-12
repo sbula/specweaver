@@ -1,8 +1,8 @@
-# Implementation Plan: Sandbox Domain Alignment [SF-2]
+# Implementation Plan: Sandbox Domain Alignment [SF-02]
 - **Feature ID**: TECH-002
-- **Sub-Feature**: SF-2 — Sandbox Domain Alignment
+- **Sub-Feature**: SF-02 — Sandbox Domain Alignment
 - **Design Document**: [TECH-002_design.md](file:///c:/development/pitbula/specweaver/docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
-- **Design Section**: §Sub-Feature Breakdown → SF-2
+- **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Status**: COMPLETED
 
 ---
@@ -53,7 +53,7 @@ All 16 tool/facade classes that need `BaseTool` conformance (14 from design + `Q
 > **Decision: `NO_ROLE` sentinel constant on `BaseTool`.**
 > `role` stays abstract on `BaseTool`. Tools without RBAC return `BaseTool.NO_ROLE` (`"no_role"`).
 > This is semantically honest (explicit opt-out, not a fake role name), keeps the uniform contract,
-> requires no SF-1 ABC changes, and enables future defensive code like `if tool.role != BaseTool.NO_ROLE`.
+> requires no SF-01 ABC changes, and enables future defensive code like `if tool.role != BaseTool.NO_ROLE`.
 
 **Evidence:** 5 concrete use-case scenarios were evaluated. No current or near-future consumer
 reads `role` on non-RBAC tools. The sentinel makes the opt-out explicit and greppable.
@@ -66,11 +66,11 @@ reads `role` on non-RBAC tools. The sentinel makes the opt-out explicit and grep
 
 ### 1.4 Registry `type: ignore` Markers
 
-All 6 factory closures in `registry.py` have `# type: ignore[return-value]`. After SF-2 makes all tools inherit `BaseTool`, these are stale. **Remove all** (F-9 Option A).
+All 6 factory closures in `registry.py` have `# type: ignore[return-value]`. After SF-02 makes all tools inherit `BaseTool`, these are stale. **Remove all** (F-9 Option A).
 
 ### 1.5 External Dependencies
 
-No new external dependencies. Tach baseline: 95 violations. SF-2 must not increase this.
+No new external dependencies. Tach baseline: 95 violations. SF-02 must not increase this.
 
 ---
 
@@ -203,7 +203,7 @@ class WebTool(BaseTool):
 No other changes — already has `role` property (line 88-91) and `definitions()` (line 195-199).
 
 > [!NOTE]
-> `PlannerWebInterface` and `ReviewerWebInterface` in `web/interfaces/facades.py` are NOT in the design doc's 14-class list. They are NOT registered in `get_standard_registry()` — the registry directly returns `WebTool`, not a web facade. Therefore they do NOT need `BaseTool` inheritance in SF-2. If needed later, the pattern is established.
+> `PlannerWebInterface` and `ReviewerWebInterface` in `web/interfaces/facades.py` are NOT in the design doc's 14-class list. They are NOT registered in `get_standard_registry()` — the registry directly returns `WebTool`, not a web facade. Therefore they do NOT need `BaseTool` inheritance in SF-02. If needed later, the pattern is established.
 
 ---
 
@@ -538,7 +538,7 @@ def create_protocol(**kwargs: Any) -> BaseTool:
 File: `tests/unit/sandbox/test_registry.py`
 
 **Changes to existing tests:**
-- Remove `@pytest.mark.xfail` marker from `test_standard_registry_tools_are_basetool_instances` — it should pass after SF-2.
+- Remove `@pytest.mark.xfail` marker from `test_standard_registry_tools_are_basetool_instances` — it should pass after SF-02.
 
 File: `tests/unit/sandbox/mcp/interfaces/mcp/test_mcp_tool.py`
 
@@ -591,7 +591,7 @@ Tools to parametrize:
 
 ## 4. Commit Boundaries
 
-### Single Commit: SF-2 Sandbox Domain Alignment
+### Single Commit: SF-02 Sandbox Domain Alignment
 
 All changes are a single cohesive unit:
 

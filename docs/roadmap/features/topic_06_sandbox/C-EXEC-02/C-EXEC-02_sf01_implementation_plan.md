@@ -1,15 +1,15 @@
-# Implementation Plan: Native CLI Action Nodes [SF-1: BashActionAtom Core Execution]
+# Implementation Plan: Native CLI Action Nodes [SF-01: BashActionAtom Core Execution]
 
 - **Feature ID**: C-EXEC-02
-- **Sub-Feature**: SF-1 — BashActionAtom Core Execution
+- **Sub-Feature**: SF-01 — BashActionAtom Core Execution
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf01_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope
 
-Build `BashActionAtom` — a new, engine-internal Atom (never agent-facing) that resolves a script name to `.specweaver/scripts/<name>`, validates canonical-path containment, invokes it via `SubprocessExecutor` with default resource limits and explicit env opt-in, truncates output, and converts every failure mode into a structured `AtomResult` — never raises. No pipeline-engine wiring in this SF (that's SF-2); this SF is fully testable in isolation.
+Build `BashActionAtom` — a new, engine-internal Atom (never agent-facing) that resolves a script name to `.specweaver/scripts/<name>`, validates canonical-path containment, invokes it via `SubprocessExecutor` with default resource limits and explicit env opt-in, truncates output, and converts every failure mode into a structured `AtomResult` — never raises. No pipeline-engine wiring in this SF (that's SF-02); this SF is fully testable in isolation.
 
 **FRs covered**: FR-2, FR-3, FR-4, FR-8, FR-9, FR-11, FR-12, FR-13 (see design doc for full text).
 **Inputs**: `script` name, `args`, `working_dir`, `timeout_seconds`, `env`, `project_path` (constructor).
@@ -24,20 +24,20 @@ Build `BashActionAtom` — a new, engine-internal Atom (never agent-facing) that
 - **`SubprocessExecutor.execute()`** (`sandbox/execution/executor.py:90-190`) exact signature: `execute(cmd: list[str], *, timeout_seconds: int | None = None, extra_env: dict[str,str] | None = None, cwd_override: Path | None = None, input_text: str | None = None) -> SubprocessResult`. Raises `ValueError`/`FileNotFoundError` only for `cwd_override` boundary/existence problems. **Never raises for a missing command executable** — `Popen` failures are caught internally (`except OSError as exc: stderr = str(exc)`, executor.py:163-164) and returned as `SubprocessResult(exit_code=-1, stdout="", stderr=str(exc), ...)`. Confirmed: `PATH` is not in `_CREDENTIAL_VARS`/`_CREDENTIAL_PREFIXES` and `_build_env()` applies `extra_env` **before** stripping — so `SubprocessExecutor` itself provides no `PATH`-override protection; FR-12's rejection must be implemented by `BashActionAtom`.
 - **`bash`-not-found precedent already exists**: `sandbox/language/core/python/runner.py:434` does `if not shutil.which("tach"): ...` with the comment "Pre-check tool existence before calling executor" — itself the product of a prior Red/Blue finding (`H-1 \ RED-1.2`). `BashActionAtom` follows this exact pattern for `bash`.
 - **`WorkspaceBoundary`** (`sandbox/security.py`): `WorkspaceBoundary(roots: list[Path], api_paths: list[Path] | None = None)`; `validate_path(requested: Path) -> Path` resolves symlinks (`Path.resolve()`, non-strict) and raises `WorkspaceBoundaryError(msg)` (a plain `Exception` subclass) on escape. **Does not check file existence** — `resolve()` succeeds even for non-existent paths, and neither `__init__` nor `validate_path` calls `.exists()`. `BashActionAtom` must do its own explicit `.is_file()` check, separate from and after the containment check (a `..`-traversal to a real file outside the boundary must fail as "containment violation," not "not found").
-- **Containment check happens once per `run()` call, not twice** — the design doc's FR-2 requires validation "both at pipeline-load time and immediately before execution." The load-time check is SF-2's responsibility (pipeline YAML validation, out of scope here). `BashActionAtom.run()` **is** the "immediately before execution" checkpoint by construction — it re-resolves the path fresh from disk every time it's invoked, with nothing intervening between the check and the `execute()` call. A second internal check within the same function body would be pure redundancy (YAGNI), not an additional safety property.
+- **Containment check happens once per `run()` call, not twice** — the design doc's FR-2 requires validation "both at pipeline-load time and immediately before execution." The load-time check is SF-02's responsibility (pipeline YAML validation, out of scope here). `BashActionAtom.run()` **is** the "immediately before execution" checkpoint by construction — it re-resolves the path fresh from disk every time it's invoked, with nothing intervening between the check and the `execute()` call. A second internal check within the same function body would be pure redundancy (YAGNI), not an additional safety property.
 - **`ResourceLimits`** (`sandbox/execution/models.py`): frozen dataclass, `max_memory_bytes: int | None = None`, `max_processes: int | None = None`, `max_file_size_bytes: int | None = None` — all default `None` (unbounded). `SubprocessExecutor` has no built-in non-`None` defaults; FR-11's 2 GiB / 128-process defaults are `BashActionAtom`-local.
 - **Exception-handling style precedent**: `ProtocolAtom.run()` — specific excepts first (`ProtocolSchemaError`, `FileNotFoundError`), generic `except Exception as e` catch-all last, every branch returns `AtomResult`, never raises. `RuleAtom.run()` confirms the "always return, never raise" philosophy with `except Exception as exc: logger.exception(...); return AtomResult(FAILED, ...)`.
-- **`sandbox/execution/core/context.yaml`**: all 4 existing sibling `core/` submodules (`qa_runner/core`, `git/core`, `code_structure/core`, `mcp/core`) use a **bare one-liner** `archetype: adapter` — no `module:`/`consumes:`/`forbids:` block at that level (that richer structure only exists on domain-root `context.yaml` files, e.g. `sandbox/execution/context.yaml` itself). SF-1's new `context.yaml` follows this exact precedent, correcting the design doc's AD-1 wording (which implied a richer block).
-- **Test file convention**: `tests/unit/sandbox/<domain>/core/<domain>/test_<domain>_atom.py` (doubled segment, domain-named file — confirmed via `language/core/language/test_language_atom.py`, `mcp/core/mcp/test_mcp_atom.py`). SF-1's tests go in `tests/unit/sandbox/execution/core/execution/test_execution_atom.py`.
+- **`sandbox/execution/core/context.yaml`**: all 4 existing sibling `core/` submodules (`qa_runner/core`, `git/core`, `code_structure/core`, `mcp/core`) use a **bare one-liner** `archetype: adapter` — no `module:`/`consumes:`/`forbids:` block at that level (that richer structure only exists on domain-root `context.yaml` files, e.g. `sandbox/execution/context.yaml` itself). SF-01's new `context.yaml` follows this exact precedent, correcting the design doc's AD-1 wording (which implied a richer block).
+- **Test file convention**: `tests/unit/sandbox/<domain>/core/<domain>/test_<domain>_atom.py` (doubled segment, domain-named file — confirmed via `language/core/language/test_language_atom.py`, `mcp/core/mcp/test_mcp_atom.py`). SF-01's tests go in `tests/unit/sandbox/execution/core/execution/test_execution_atom.py`.
 - **Real-subprocess test precedent**: `tests/unit/sandbox/execution/test_executor.py` uses real `subprocess` calls (no `Popen` mocking) — real timeout tests, real symlink-escape tests. `BashActionAtom` wraps `SubprocessExecutor` directly (no further interface layer), so its own tests should follow the same real-execution style, one layer further out, against real fixture `.sh` scripts under `tmp_path`.
-- **`ruff` TID251** (`pyproject.toml`): the `subprocess`-import-ban exemption glob is `"src/specweaver/sandbox/execution/*.py"` — **single-level**, does not cover `sandbox/execution/core/*.py`. Not a problem for this SF: `BashActionAtom` only calls `SubprocessExecutor.execute()`, never imports `subprocess` directly, so TID251 never triggers. No `pyproject.toml` change needed for SF-1.
+- **`ruff` TID251** (`pyproject.toml`): the `subprocess`-import-ban exemption glob is `"src/specweaver/sandbox/execution/*.py"` — **single-level**, does not cover `sandbox/execution/core/*.py`. Not a problem for this SF: `BashActionAtom` only calls `SubprocessExecutor.execute()`, never imports `subprocess` directly, so TID251 never triggers. No `pyproject.toml` change needed for SF-01.
 
 ## Resolved Audit Findings
 
 (Full audit ran across Phase 2–4; see conversation history for the complete table. Two items were genuinely open and are resolved here per user confirmation to proceed with the proposals as presented.)
 
 1. **Real `bash` execution in tests, guarded by `skipif`.** `BashActionAtom`'s tests invoke real `bash` against fixture scripts, decorated `@pytest.mark.skipif(shutil.which("bash") is None, reason="bash not on PATH")` — matches the WSL-bridge environment today and costs nothing once the Ubuntu migration lands (see project memory on the migration timeline).
-2. **`PATH`-rejection (FR-12) is implemented in `BashActionAtom` itself**, not deferred to SF-2's pipeline-YAML validation alone — defense-in-depth, symmetric with FR-2's own multi-layer containment check. `BashActionAtom` must not assume upstream validation always ran.
+2. **`PATH`-rejection (FR-12) is implemented in `BashActionAtom` itself**, not deferred to SF-02's pipeline-YAML validation alone — defense-in-depth, symmetric with FR-2's own multi-layer containment check. `BashActionAtom` must not assume upstream validation always ran.
 
 All other audit items were resolved directly via codebase research (see Research Notes above) rather than requiring a decision — no further open questions.
 
@@ -51,7 +51,7 @@ All other audit items were resolved directly via codebase research (see Research
 | `tests/unit/sandbox/execution/core/execution/__init__.py` | `[NEW]` | Empty, package marker (test-directory doubled-segment convention) |
 | `tests/unit/sandbox/execution/core/execution/test_execution_atom.py` | `[NEW]` | Unit tests for `BashActionAtom` |
 
-No existing file is modified by this SF. `tach.toml` and `core/flow/context.yaml` edits (needed for SF-2 to legally import this module) are SF-3's responsibility, per the design doc's dependency graph — this SF's own tests import `specweaver.sandbox.execution.core.atom` from sandbox-internal test code and are unaffected by that gap.
+No existing file is modified by this SF. `tach.toml` and `core/flow/context.yaml` edits (needed for SF-02 to legally import this module) are SF-03's responsibility, per the design doc's dependency graph — this SF's own tests import `specweaver.sandbox.execution.core.atom` from sandbox-internal test code and are unaffected by that gap.
 
 ## `atom.py` — Implementation Sequence (pseudocode)
 
@@ -70,7 +70,7 @@ No existing file is modified by this SF. `tach.toml` and `core/flow/context.yaml
 9. Resolve `cwd_override = self._cwd / working_dir` if `working_dir` is set, else `None` — containment/existence for this is delegated entirely to `SubprocessExecutor._validate_cwd`, not re-implemented here.
 10. Construct `SubprocessExecutor(cwd=self._cwd, resource_limits=<2 GiB / 128 procs — FR-11>)` and call `.execute(["bash", str(resolved), *args], timeout_seconds=timeout_seconds, extra_env=env, cwd_override=cwd_override)`.
     - Wrap in `try`: catch `(ValueError, FileNotFoundError)` from step 10 (working_dir boundary/existence) → `FAILED` with the exception message; catch a final generic `Exception` → `FAILED` with a `"crashed: {type}: {msg}"` message (FR-13, mirrors `ProtocolAtom`'s multi-except structure — specific first, generic catch-all last, never re-raise).
-11. Map `result.exit_code == 0` → `AtomStatus.SUCCESS`, else `FAILED` (FR-5's exit-code convention, consumed later by SF-2).
+11. Map `result.exit_code == 0` → `AtomStatus.SUCCESS`, else `FAILED` (FR-5's exit-code convention, consumed later by SF-02).
 12. Return `AtomResult(status=..., message=f"bash script '{script}' exited {result.exit_code}", exports={"exit_code", "stdout": truncate(result.stdout), "stderr": truncate(result.stderr), "duration_seconds"})`.
 
 `truncate(text)` helper (module-level function, FR-8): if `text` encoded as UTF-8 exceeds 1 MiB (`1_048_576` bytes), slice to that byte length (`errors="ignore"` on decode to silently drop a possibly-split trailing multi-byte character — harmless) and append `...[TRUNCATED]`; otherwise return unchanged.
@@ -111,7 +111,7 @@ No existing file is modified by this SF. `tach.toml` and `core/flow/context.yaml
 | FR-2 | Bare-name validation + `WorkspaceBoundary` containment + `.is_file()` check (atom.py); tests: missing-script-key, separator-rejection, symlink-escape, missing-file |
 | FR-3 | `["bash", resolved, *args]` argv construction, `cwd_override` delegation to `SubprocessExecutor._validate_cwd`; tests: successful-execution, args-passed, working-dir tests |
 | FR-4 | `exports={exit_code, stdout, stderr, duration_seconds}`; test: successful-execution |
-| FR-5 | exit-code → `AtomStatus` mapping (SF-2 will further map `AtomStatus` → `StepStatus`); test: nonzero-exit |
+| FR-5 | exit-code → `AtomStatus` mapping (SF-02 will further map `AtomStatus` → `StepStatus`); test: nonzero-exit |
 | FR-8 | `_truncate()` helper, 1 MiB cap; test: stdout-truncated |
 | FR-9 | `timeout_seconds` passthrough to `execute()`; test: timeout-override |
 | FR-11 | `_DEFAULT_RESOURCE_LIMITS` (2 GiB / 128 procs) always passed to `SubprocessExecutor`; test: resource-limits-applied |
@@ -123,12 +123,12 @@ No existing file is modified by this SF. `tach.toml` and `core/flow/context.yaml
 
 NFR-1 (canonical containment, fail-closed), NFR-2 (no shell interpolation — fixed argv, `shell=False` inherited from `SubprocessExecutor`), NFR-3 (credential isolation — inherited), NFR-4 (timeout ceiling — implemented), NFR-5 (1 MiB cap — implemented), NFR-6 (bash literal invocation — implemented; WSL path-translation limitation is a documented accepted gap, no code mitigation in this SF), NFR-8 (DEBUG logging — inherited from `SubprocessExecutor`'s own `logger.debug` call in `execute()`, no additional logging needed in `BashActionAtom` itself beyond what it already gets for free), NFR-9 (distinct error messages — implemented per-branch), NFR-10 (zero changes to existing code — confirmed, this SF only adds new files.
 
-## Backlog (deferred, out of scope for SF-1)
+## Backlog (deferred, out of scope for SF-01)
 
 - FR-7's structured JSON stdout parsing — cut from MVP scope per the design doc's Red/Blue review (YAGNI); not part of this SF either.
 - WSL Windows-path translation for `bash`/`working_dir`/`args` — accepted transitional limitation (NFR-6), not solved here.
-- `tach.toml`/`core/flow/context.yaml` wiring — SF-3.
-- Pipeline-engine integration (`StepAction.BASH`, `BashActionHandler`) — SF-2.
+- `tach.toml`/`core/flow/context.yaml` wiring — SF-03.
+- Pipeline-engine integration (`StepAction.BASH`, `BashActionHandler`) — SF-02.
 
 ## Phase 5: Final Consistency Check
 
@@ -138,9 +138,9 @@ NFR-1 (canonical containment, fail-closed), NFR-2 (no shell interpolation — fi
 
 **5.1a Agent Handoff Risk**: A fresh agent starting only from this document has: the exact file list, a full reference implementation, exact test scenarios mapped to FRs, and all research-derived precedent (context.yaml shape, test path convention, exception style) cited with file:line evidence. The one thing NOT fully nailed down is the exact fixture-script authoring approach (inline heredoc vs. `tmp_path`-written `.sh` files) — left as an implementation-time choice for the `dev` skill since it's a mechanical test-authoring detail, not a design decision.
 
-**5.2 Architecture and future compatibility**: No circular imports (`BashActionAtom` → `sandbox.execution` + `sandbox.security`, both leaf-ward of `sandbox.execution.core`). `context.yaml` for the new module matches sibling precedent exactly. Compatible with SF-2 (consumes this Atom), SF-3 (wires the tach/context.yaml boundary), and `B-EXEC-01` (the `SubprocessExecutor.execute()` call site inside `BashActionAtom` remains the future container-routing swap point, untouched by this SF).
+**5.2 Architecture and future compatibility**: No circular imports (`BashActionAtom` → `sandbox.execution` + `sandbox.security`, both leaf-ward of `sandbox.execution.core`). `context.yaml` for the new module matches sibling precedent exactly. Compatible with SF-02 (consumes this Atom), SF-03 (wires the tach/context.yaml boundary), and `B-EXEC-01` (the `SubprocessExecutor.execute()` call site inside `BashActionAtom` remains the future container-routing swap point, untouched by this SF).
 
-**5.2a Architecture Principles**: **DDD** — stays entirely within the `sandbox` bounded context, uses existing ubiquitous language (`Atom`, `AtomResult`, `WorkspaceBoundary`). **KISS** — flat `run()`, no speculative dispatch machinery, no new abstractions beyond what FR-2/3/4/8/9/11/12/13 require. **DRY** — reuses `SubprocessExecutor` and `WorkspaceBoundary` directly rather than reimplementing either. **Hexagonal** — `BashActionAtom` is itself an adapter-tier component; no domain logic leaks into it, no I/O leaks into `core/flow` (this SF doesn't touch `core/flow` at all). **Separation of Concerns** — one class, one reason to change (how a bash step executes); status-mapping to `StepStatus` is explicitly SF-2's concern, not duplicated here.
+**5.2a Architecture Principles**: **DDD** — stays entirely within the `sandbox` bounded context, uses existing ubiquitous language (`Atom`, `AtomResult`, `WorkspaceBoundary`). **KISS** — flat `run()`, no speculative dispatch machinery, no new abstractions beyond what FR-2/3/4/8/9/11/12/13 require. **DRY** — reuses `SubprocessExecutor` and `WorkspaceBoundary` directly rather than reimplementing either. **Hexagonal** — `BashActionAtom` is itself an adapter-tier component; no domain logic leaks into it, no I/O leaks into `core/flow` (this SF doesn't touch `core/flow` at all). **Separation of Concerns** — one class, one reason to change (how a bash step executes); status-mapping to `StepStatus` is explicitly SF-02's concern, not duplicated here.
 
 **5.3 Internal consistency**: All 5 proposed files are tagged `[NEW]` (no `[MODIFY]`/`[DELETE]` — confirmed zero existing files touched). Every FR in the coverage table maps to a concrete code element and at least one test. Test names match what they test.
 
@@ -163,7 +163,7 @@ NFR-1 (canonical containment, fail-closed), NFR-2 (no shell interpolation — fi
 
 This plan is ready for your review. Summary: 5 new files, zero modifications to existing code, 18 planned tests mapped 1:1 to FRs/NFRs, all research-backed against real precedent in this codebase (not assumptions). Two Phase-4 judgment calls were resolved per your earlier "continue" (real-bash tests with `skipif`, dual-layer PATH rejection). Red/Blue review ran 2 cycles, converged with no required code changes.
 
-Reply with approval to mark this plan `APPROVED` and proceed to the `dev` skill for SF-1's TDD implementation.
+Reply with approval to mark this plan `APPROVED` and proceed to the `dev` skill for SF-01's TDD implementation.
 
 ---
 

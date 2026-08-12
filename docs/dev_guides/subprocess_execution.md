@@ -84,9 +84,9 @@ runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 > [!NOTE]
 > **`bash` must be resolved to an absolute path, never invoked as the bare string `"bash"`.** On Windows, `Popen(["bash", ...])` goes through `CreateProcess`'s default search order, which checks `C:\Windows\System32` (containing the WSL launcher stub, if WSL is installed) *before* consulting `%PATH%` — regardless of where Git Bash appears in `PATH`. This silently invokes the wrong interpreter. Always resolve via `shutil.which("bash")` first and use the returned path as `argv[0]`.
 
-Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-2) invoke `BashActionAtom` via `BashActionHandler` — see `docs/dev_guides/pipeline_engine_guide.md` §12 for the YAML shape and the `params:`-nesting requirement.
+Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-02) invoke `BashActionAtom` via `BashActionHandler` — see `docs/dev_guides/pipeline_engine_guide.md` §12 for the YAML shape and the `params:`-nesting requirement.
 
-`.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-3) with a placeholder `README.md` explaining the containment rule above — you don't need to create it by hand.
+`.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-03) with a placeholder `README.md` explaining the containment rule above — you don't need to create it by hand.
 
 > [!NOTE]
 > **Execution-root convention under worktree isolation (INT-US-09).** The `SubprocessExecutor`

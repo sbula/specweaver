@@ -1,8 +1,8 @@
-# Implementation Plan: Validation Layer Isolation [SF-4]
+# Implementation Plan: Validation Layer Isolation [SF-04]
 - **Feature ID**: TECH-002
-- **Sub-Feature**: SF-4 — Validation Layer Isolation
+- **Sub-Feature**: SF-04 — Validation Layer Isolation
 - **Design Document**: [TECH-002_design.md](file:///c:/development/pitbula/specweaver/docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
-- **Design Section**: §Sub-Feature Breakdown → SF-4
+- **Design Section**: §Sub-Feature Breakdown → SF-04
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf04_implementation_plan.md
 - **Status**: APPROVED
 
@@ -34,7 +34,7 @@ C05 also imports `from specweaver.core.config.dal_resolver import DALResolver` (
 
 ### 1.2 Three Call Sites
 
-The design doc (SF-4 scope) identifies three call sites that must route through a hydrated flow path:
+The design doc (SF-04 scope) identifies three call sites that must route through a hydrated flow path:
 
 | # | Call Site | File | Current Call |
 |---|-----------|------|-------------|
@@ -47,7 +47,7 @@ The design doc (SF-4 scope) identifies three call sites that must route through 
 The `Rule` ABC ([models.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/models.py)) already supports context injection:
 - `rule.context` is a `dict[str, Any]` property (getter returns `self._context`, setter assigns).
 - The [executor.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/executor.py#L184-L187) already merges `ast_payload` and any `context` dict into `rule.context = base_context` after instantiation (lines 184-187).
-- SF-4 rules will read QA results from `self.context` via the agreed keys.
+- SF-04 rules will read QA results from `self.context` via the agreed keys.
 
 ### 1.4 Context Data Shape (HITL-Resolved: H-1)
 
@@ -60,7 +60,7 @@ Where `status` is the **uppercase** `AtomStatus` enum value string (e.g., `"FAIL
 C03 needs `status` and `message` for timeout detection. C04 and C05 only need `exports`.
 
 > [!CAUTION]
-> **Bug fix in C04:** The current C04 (line 67) compares `result.status == "failed"` (lowercase string) against the `AtomStatus` enum. After SF-4, the status string is `"FAILED"` (uppercase, from `AtomStatus.FAILED.value`). Both C03 and C04 must compare against `"FAILED"` consistently.
+> **Bug fix in C04:** The current C04 (line 67) compares `result.status == "failed"` (lowercase string) against the `AtomStatus` enum. After SF-04, the status string is `"FAILED"` (uppercase, from `AtomStatus.FAILED.value`). Both C03 and C04 must compare against `"FAILED"` consistently.
 
 ### 1.5 Context Key Contract (from Design Doc)
 
@@ -72,7 +72,7 @@ C03 needs `status` and `message` for timeout detection. C04 and C05 only need `e
 ### 1.6 Tach Configuration
 
 - `specweaver.assurance.validation` currently `depends_on: ["specweaver.sandbox", ...]` ([tach.toml](file:///c:/development/pitbula/specweaver/tach.toml#L34-L36) line 35).
-- After SF-4, `specweaver.sandbox` MUST be removed from this `depends_on` list.
+- After SF-04, `specweaver.sandbox` MUST be removed from this `depends_on` list.
 - `specweaver.core.flow` already `depends_on: ["specweaver.sandbox", "specweaver.assurance.validation"]` — so the flow layer is allowed to bridge both.
 - `specweaver.assurance.validation.interfaces` `depends_on: ["specweaver.core.flow", ...]` (tach.toml line 40) — importing from `core.flow.handlers` is legal.
 - `specweaver.interfaces.api` `depends_on: ["specweaver.core.flow", ...]` (tach.toml line 81) — importing from `core.flow.handlers` is legal.
@@ -97,7 +97,7 @@ The hydration logic inspects `pipeline.steps` for active rule IDs (`C03`, `C04`,
 
 > [!IMPORTANT]
 > **HITL-Resolved (M-5): Test migration strategy is Option 2 — Replace with new files.**
-> The old test files will be replaced entirely with new test files that use context injection. Generator tests and runner filtering tests from `test_code_rules_execution.py` that are unaffected by SF-4 will be preserved in their original file.
+> The old test files will be replaced entirely with new test files that use context injection. Generator tests and runner filtering tests from `test_code_rules_execution.py` that are unaffected by SF-04 will be preserved in their original file.
 
 ### 1.10 C04 Target Path Bug
 
@@ -124,7 +124,7 @@ A systematic audit revealed that `dal_level` is broken at **every layer** betwee
 | **JavaRunner** | [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/java/runner.py#L235-L354) | ✅ Reads context.yaml forbids, generates ArchUnit test, runs per-file check |
 | **RustRunner / KotlinRunner** | stubs | ⚠️ Accept param, return empty result (deferred) |
 
-**Decision (H-9):** Fix all three layers in SF-4 (Option C — full fix):
+**Decision (H-9):** Fix all three layers in SF-04 (Option C — full fix):
 1. **Atom**: Extract `dal_level` from context, forward to runner (2 lines)
 2. **PythonQARunner**: Implement context.yaml forbids parsing + target-scoped AST import checking (matching TS/Java parity), with `dal_level` used for logging and potential strictness control
 3. **Tests**: Add atom dal_level forwarding tests and PythonQARunner DAL-awareness tests
@@ -893,7 +893,7 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 
 ## 4. Commit Boundaries
 
-### Single Commit: SF-4 Validation Layer Isolation
+### Single Commit: SF-04 Validation Layer Isolation
 
 **Production code (ordered):**
 1. `atom.py` — fix `_intent_run_architecture` to extract and forward `dal_level` (DAL gap fix, layer 2)
@@ -935,7 +935,7 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 1. **Indirection**: Rules can no longer self-execute QA checks — they depend on upstream hydration.
 2. **Test file churn**: 4 new test files, 4 modified test files. Total ~350 new test lines, ~400 removed mock-based lines.
 3. **~10 lines of duplicated logic**: Test-file-finding logic exists in both the hydrator and C03.
-4. **Scope increase**: DAL-level fix adds ~80 lines to PythonQARunner and ~100 lines of tests, increasing SF-4 blast radius slightly.
+4. **Scope increase**: DAL-level fix adds ~80 lines to PythonQARunner and ~100 lines of tests, increasing SF-04 blast radius slightly.
 
 ---
 
@@ -951,11 +951,11 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 | M-6 | MEDIUM | Hydrator exception handling | Catch → error dict per atom call |
 | L-7 | LOW | Status string casing | Uppercase (`"FAILED"`, `"SUCCESS"`) from `AtomStatus.value` |
 | L-8 | LOW | Documentation | Defer Guide-2 to pre-commit |
-| H-9 | HIGH | DAL-level three-layer gap | **Option C: Full fix in SF-4** — atom forwarding + PythonQARunner context.yaml forbids + target-scoped AST import checking. All in one commit. |
+| H-9 | HIGH | DAL-level three-layer gap | **Option C: Full fix in SF-04** — atom forwarding + PythonQARunner context.yaml forbids + target-scoped AST import checking. All in one commit. |
 | H-10 | HIGH | TYPE_CHECKING false positives (RED-5) | **Option A:** Skip imports inside `if TYPE_CHECKING:` blocks during AST walk. Adds ~10 lines. Prevents false positive `ForbiddenImport` violations for type-only imports. |
 
 > [!IMPORTANT]
-> **Pre-commit Reminder (L-8):** Guide-2 ("How to write a validation rule that receives injected context") MUST be written during the `/pre-commit` workflow. Add this to the pre-commit checklist. It is NOT part of the SF-4 development commit.
+> **Pre-commit Reminder (L-8):** Guide-2 ("How to write a validation rule that receives injected context") MUST be written during the `/pre-commit` workflow. Add this to the pre-commit checklist. It is NOT part of the SF-04 development commit.
 
 ---
 

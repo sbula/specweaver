@@ -65,7 +65,7 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 | FR-12 | Explicit env opt-in | `BashActionAtom` | Does **NOT** implicitly pass `RunContext.env_vars` into the bash script's environment. A pipeline author MAY declare an explicit `env: {KEY: value}` map on the step; each key is passed as `extra_env` to `SubprocessExecutor.execute()` (which already unconditionally strips credential vars per E-EXEC-01 AD-4). Any key matching `PATH` case-insensitively (`PATH`, `Path`, `path`, ...) in the step's `env:` map is rejected at pipeline-validation time | Prevents silent secret leakage from `RunContext.env_vars` into `stdout`/`step_records`/SQLite, and prevents a step from hijacking which `bash` executable resolves via a `PATH` override |
 | FR-13 | Exception containment | `BashActionAtom` / `BashActionHandler` | Catches every exception raised during containment validation, `working_dir` resolution, or `SubprocessExecutor` execution, and converts it into a `StepResult` with `StepStatus.ERROR` and a human-readable `error_message` (using the existing `_error_result` helper pattern from `handlers/base.py`) | No exception from a bash step may propagate unhandled and crash the pipeline run; only that one step fails |
 
-¹ *Corrected during SF-2 implementation (2026-07-14): `StepStatus` has no `COMPLETED` member. The actual mapping uses `StepStatus.PASSED`, consistent with every other handler in `core/flow/handlers/`. See the SF-2 implementation plan's Research Notes.*
+¹ *Corrected during SF-02 implementation (2026-07-14): `StepStatus` has no `COMPLETED` member. The actual mapping uses `StepStatus.PASSED`, consistent with every other handler in `core/flow/handlers/`. See the SF-02 implementation plan's Research Notes.*
 
 ## Non-Functional Requirements
 
@@ -107,9 +107,9 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 
 | Item | Effort | Risk |
 |------|--------|------|
-| `BashActionAtom` + containment check + unit tests (SF-1) | ~150 lines | Low — pure composition of existing, tested primitives |
-| `StepAction.BASH` + `BashActionHandler` + registry wiring + integration tests (SF-2) | ~120 lines | Low — well-trodden step-type extension mechanism |
-| Scaffold + `tach.toml`/`context.yaml` edits + dev-guide updates (SF-3) | ~40 lines + doc edits | Low |
+| `BashActionAtom` + containment check + unit tests (SF-01) | ~150 lines | Low — pure composition of existing, tested primitives |
+| `StepAction.BASH` + `BashActionHandler` + registry wiring + integration tests (SF-02) | ~120 lines | Low — well-trodden step-type extension mechanism |
+| Scaffold + `tach.toml`/`context.yaml` edits + dev-guide updates (SF-03) | ~40 lines + doc edits | Low |
 | **Total** | **~310 lines new** | **Low overall** |
 
 ### Returns
@@ -144,55 +144,55 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Guide-1 | New numbered section in `docs/dev_guides/pipeline_engine_guide.md` covering `action: bash` steps — how to declare one, the `.specweaver/scripts/` containment rule, output shape, and how downstream steps read `context.step_records` | ⬜ Deferred to SF-2's pre-commit gate — `action: bash` isn't a working pipeline step until SF-2 lands; documenting it now would describe a capability that doesn't exist yet |
-| Guide-2 | Note in `docs/dev_guides/subprocess_execution.md` cross-referencing the new `BashActionAtom` as the sanctioned way to run a script from a pipeline step | ✅ Written in SF-1's pre-commit (2026-07-13) |
+| Guide-1 | New numbered section in `docs/dev_guides/pipeline_engine_guide.md` covering `action: bash` steps — how to declare one, the `.specweaver/scripts/` containment rule, output shape, and how downstream steps read `context.step_records` | ⬜ Deferred to SF-02's pre-commit gate — `action: bash` isn't a working pipeline step until SF-02 lands; documenting it now would describe a capability that doesn't exist yet |
+| Guide-2 | Note in `docs/dev_guides/subprocess_execution.md` cross-referencing the new `BashActionAtom` as the sanctioned way to run a script from a pipeline step | ✅ Written in SF-01's pre-commit (2026-07-13) |
 
 ## Sub-Feature Breakdown
 
-### SF-1: BashActionAtom Core Execution
+### SF-01: BashActionAtom Core Execution
 - **Scope**: Build the `BashActionAtom` (in a new `sandbox/execution/core/` submodule) that validates script-path containment (at load-time and again pre-execution), invokes `SubprocessExecutor` with default resource limits and explicit env opt-in, truncates output, catches all exceptions, and returns a structured `AtomResult`. Fully testable in isolation with fixture scripts — no pipeline engine involvement yet.
 - **FRs**: [FR-2, FR-3, FR-4, FR-8, FR-9, FR-11, FR-12, FR-13] *(8 FRs — exceeds the usual ≤5 agent-sized heuristic; deliberately kept together rather than split, since FR-11/12/13 were added by the Red/Blue review as hardening constraints on the same single `execute()` call FR-3 already makes on the same class — they are not independently valuable or testable per the Phase 4.3 self-containment rule, so splitting them into a separate SF would add coordination overhead with no real parallelism benefit)*
-- **Inputs**: script name, args, working_dir, timeout_seconds, project_path (from caller — a unit test harness in this SF, the pipeline handler in SF-2)
+- **Inputs**: script name, args, working_dir, timeout_seconds, project_path (from caller — a unit test harness in this SF, the pipeline handler in SF-02)
 - **Outputs**: `AtomResult(status, exports={exit_code, stdout, stderr, duration_seconds})`
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf01_implementation_plan.md
 
-### SF-2: Pipeline Engine Integration
-- **Scope**: Add `StepAction.BASH`/`StepTarget.SCRIPT` to the pipeline models, register `BashActionHandler` (wraps SF-1's Atom, maps exit code → `StepStatus`), and confirm `RouterRule`/`GateDefinition`/`step_records` propagation work end-to-end via integration tests using real pipeline YAML.
+### SF-02: Pipeline Engine Integration
+- **Scope**: Add `StepAction.BASH`/`StepTarget.SCRIPT` to the pipeline models, register `BashActionHandler` (wraps SF-01's Atom, maps exit code → `StepStatus`), and confirm `RouterRule`/`GateDefinition`/`step_records` propagation work end-to-end via integration tests using real pipeline YAML.
 - **FRs**: [FR-1, FR-5, FR-6, FR-7]
-- **Inputs**: `BashActionAtom` from SF-1, existing `PipelineStep`/`StepHandlerRegistry`/`RunContext` machinery
+- **Inputs**: `BashActionAtom` from SF-01, existing `PipelineStep`/`StepHandlerRegistry`/`RunContext` machinery
 - **Outputs**: A pipeline YAML file with an `action: bash` step runs end-to-end, is routable, and its output is readable by later steps
-- **Depends on**: SF-1, SF-3 *(code depends only on SF-1's `BashActionAtom`; SF-3's `tach.toml`/`context.yaml` edits are additionally required for this SF's imports to pass `tach check` — not a code dependency on SF-3's FR-10 scaffold/docs work itself)*
+- **Depends on**: SF-01, SF-03 *(code depends only on SF-01's `BashActionAtom`; SF-03's `tach.toml`/`context.yaml` edits are additionally required for this SF's imports to pass `tach check` — not a code dependency on SF-03's FR-10 scaffold/docs work itself)*
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf02_implementation_plan.md
 
-### SF-3: Scaffold, Boundary Config, and Docs
+### SF-03: Scaffold, Boundary Config, and Docs
 - **Scope**: Extend `workspace/project/scaffold.py` to create `.specweaver/scripts/` on project init; add `sandbox/execution/core` to `tach.toml`'s sandbox interface expose-list and to `core/flow/context.yaml`'s `consumes`; correct `hard_dependency_rules.md` and `ORIGINS.md`'s Archon attribution; write the dev-guide sections.
 - **FRs**: [FR-10]
-- **Inputs**: none (parallelizable — does not require SF-1/SF-2 code, only the module *names* they will introduce)
-- **Outputs**: `.specweaver/scripts/` exists on every newly-scaffolded project; `tach check` passes once SF-1/SF-2 land; docs are accurate
+- **Inputs**: none (parallelizable — does not require SF-01/SF-02 code, only the module *names* they will introduce)
+- **Outputs**: `.specweaver/scripts/` exists on every newly-scaffolded project; `tach check` passes once SF-01/SF-02 land; docs are accurate
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. **SF-1** and **SF-3** in parallel (both have no dependencies — SF-1 builds the execution primitive, SF-3 prepares scaffolding/boundary config independently).
-2. **SF-2** (depends on **both** SF-1 and SF-3): wires the primitive into the pipeline engine. Requires SF-1's `BashActionAtom` to exist (code dependency) AND SF-3's `tach.toml`/`context.yaml` edits to exist (config dependency, so `sandbox/execution/core` is a tach-legal import for `core/flow`) before it can pass `tach check`.
+1. **SF-01** and **SF-03** in parallel (both have no dependencies — SF-01 builds the execution primitive, SF-03 prepares scaffolding/boundary config independently).
+2. **SF-02** (depends on **both** SF-01 and SF-03): wires the primitive into the pipeline engine. Requires SF-01's `BashActionAtom` to exist (code dependency) AND SF-03's `tach.toml`/`context.yaml` edits to exist (config dependency, so `sandbox/execution/core` is a tach-legal import for `core/flow`) before it can pass `tach check`.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | BashActionAtom Core Execution | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Pipeline Engine Integration | SF-1, SF-3 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Scaffold, Boundary Config, and Docs | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | BashActionAtom Core Execution | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Pipeline Engine Integration | SF-01, SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Scaffold, Boundary Config, and Docs | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status** (2026-07-14): **C-EXEC-02 is feature-complete.** SF-1, SF-2, and SF-3 are all designed, implemented, tested, pre-commit-gated, and committed. SF-2 (Pipeline Engine Integration) landed in commit `0b9a5b29` — `StepAction.BASH`/`StepTarget.SCRIPT`, `BashActionHandler`, and integration tests proving routing/gating/`step_records` propagation work end-to-end with zero pipeline-engine changes. (Note: SF-1's "Committed" column was previously left `⬜` in error — it was committed earlier in this same session; corrected here.)
+**Current status** (2026-07-14): **C-EXEC-02 is feature-complete.** SF-01, SF-02, and SF-03 are all designed, implemented, tested, pre-commit-gated, and committed. SF-02 (Pipeline Engine Integration) landed in commit `0b9a5b29` — `StepAction.BASH`/`StepTarget.SCRIPT`, `BashActionHandler`, and integration tests proving routing/gating/`step_records` propagation work end-to-end with zero pipeline-engine changes. (Note: SF-01's "Committed" column was previously left `⬜` in error — it was committed earlier in this same session; corrected here.)
 
-**Notable finding during SF-1's TDD (Task T6)**: `SubprocessExecutor.execute(["bash", ...])` with the bare string `"bash"` resolved to WSL's `bash.exe` stub in `C:\Windows\System32` instead of Git Bash, because Windows' `CreateProcess` default search order checks `System32` before `%PATH%` regardless of PATH order. Fixed by resolving `shutil.which("bash")` once per `run()` call and using the returned absolute path as argv[0]. This is now baked into `BashActionAtom`'s implementation; SF-2/SF-3 don't need to account for it further.
+**Notable finding during SF-01's TDD (Task T6)**: `SubprocessExecutor.execute(["bash", ...])` with the bare string `"bash"` resolved to WSL's `bash.exe` stub in `C:\Windows\System32` instead of Git Bash, because Windows' `CreateProcess` default search order checks `System32` before `%PATH%` regardless of PATH order. Fixed by resolving `shutil.which("bash")` once per `run()` call and using the returned absolute path as argv[0]. This is now baked into `BashActionAtom`'s implementation; SF-02/SF-03 don't need to account for it further.
 
-**Side effect of SF-1's pre-commit gate**: repo-wide `ruff check` (mandated by the pre-commit skill, "every error MUST be fixed regardless of pre-existing or newly introduced") surfaced 6 pre-existing `TID251` violations unrelated to C-EXEC-02. Resolved: `git/core/executor.py` and `filesystem/core/search.py` were migrated to `SubprocessExecutor` via constructor/parameter DI, implementing the already-designed **TECH-009** (previously design-complete but unimplemented) — see `docs/roadmap/features/topic_07_technical_debt/TECH-009/TECH-009_design.md`. `cli_drift.py` and `assurance/standards/discovery.py` kept raw `subprocess` with documented `noqa: TID251` exemptions (routing them through `sandbox` would cross a bounded-context line that doesn't exist today — a real architecture decision, deferred to TECH-009's backlog). `mcp/core/executor.py` also kept a documented exemption — its persistent, bidirectional subprocess pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design; tracked as new ticket **TECH-010**. A `C901` complexity violation in `tests/unit/test_architecture.py` (unrelated) was also fixed. None of this touched C-EXEC-02's own scope.
+**Side effect of SF-01's pre-commit gate**: repo-wide `ruff check` (mandated by the pre-commit skill, "every error MUST be fixed regardless of pre-existing or newly introduced") surfaced 6 pre-existing `TID251` violations unrelated to C-EXEC-02. Resolved: `git/core/executor.py` and `filesystem/core/search.py` were migrated to `SubprocessExecutor` via constructor/parameter DI, implementing the already-designed **TECH-009** (previously design-complete but unimplemented) — see `docs/roadmap/features/topic_07_technical_debt/TECH-009/TECH-009_design.md`. `cli_drift.py` and `assurance/standards/discovery.py` kept raw `subprocess` with documented `noqa: TID251` exemptions (routing them through `sandbox` would cross a bounded-context line that doesn't exist today — a real architecture decision, deferred to TECH-009's backlog). `mcp/core/executor.py` also kept a documented exemption — its persistent, bidirectional subprocess pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design; tracked as new ticket **TECH-010**. A `C901` complexity violation in `tests/unit/test_architecture.py` (unrelated) was also fixed. None of this touched C-EXEC-02's own scope.
 
-**Next step**: None — C-EXEC-02 is done. Two follow-on tickets were spun off during this work and remain open, tracked separately: **TECH-010** (MCP persistent-process executor migration, stub only) and **TECH-011** (load-time `params` validation for all pipeline step types, stub only, created per SF-2's Q1 resolution).
+**Next step**: None — C-EXEC-02 is done. Two follow-on tickets were spun off during this work and remain open, tracked separately: **TECH-010** (MCP persistent-process executor migration, stub only) and **TECH-011** (load-time `params` validation for all pipeline step types, stub only, created per SF-02's Q1 resolution).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate skill.

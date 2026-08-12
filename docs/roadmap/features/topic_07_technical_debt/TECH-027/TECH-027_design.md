@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-027
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: CLAUSE 1 DELIVERED (2026-08-12) — clause 2 open, see §Delivery
 - **Origin**: Raised by the user 2026-08-11 while reviewing `TECH-026`'s design. `TECH-026` had
   measured where `SF-NN` may appear in the roadmap but never asked what an `SF-NN` *is* — so a
   reader still cannot tell which story a given `SF-01` belongs to, and the repo spells the same
@@ -49,7 +49,7 @@ Naming Closure and the Class Naming Ratchet, none of which concern a citation ga
 
 ```
 716:  *  **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability
-         citation gap in SF-1/2 (found by SF-3's own closure gate) ...
+         citation gap in SF-01/2 (found by SF-03's own closure gate) ...
 ```
 
 Same sentence shape inside **TECH-005's** section, and unpadded on top — the two rules failing
@@ -194,3 +194,61 @@ places:
 > take the qualification precedent from `TECH-025`'s `FR-N` note. Both majorities are already right;
 > this ticket is writing down what the repo mostly already does, then enforcing it. Sampling the
 > offenders first is the failure `TECH-026`'s design documents at length.
+
+---
+
+## Delivery — clause 1 complete, clause 2 open (2026-08-12)
+
+### Scope decision
+
+**Option B, entry-scoped** (user). A bare `SF-NN` is acceptable where the enclosing entry names its
+story; only genuinely orphaned references must qualify. Chosen over the per-occurrence reading
+because that would have flagged 28 references in `topic_07` alone — inside entries whose own bullet
+opens with the story id, which is the structure `TECH-026` had just established as *correct*.
+
+### Clause 1 — delivered
+
+**418 single-digit references padded across 43 documents**, on top of the 16 filenames renamed
+earlier. Verified: the repo's dangling-relative-link count is **66 before and 66 after**, and all
+five FR ledgers still exit 0 after a sweep that touched five delivered stories' designs.
+
+Two exclusions, both earned rather than assumed:
+
+- **Legacy numbering.** `Feature 3.32 SF-4` and `3.14a … (SF-1)` belong to a pre-registry scheme
+  where a sub-feature hung off a decimal feature number, not a story id. Padding them would invent
+  identifiers for something that no longer exists. A first attempt excluded these by *line*, using
+  any decimal as the marker — which wrongly caught `**5.0 Pre-check**: All 4 FRs assigned to SF-2`,
+  where `5.0` is a section number and the reference is a real one. The marker is now the literal
+  word `Feature`.
+- **Demonstration lines.** A document stating the rule must quote the form it forbids. The sweep
+  turned *"(`SF-01`, never `SF-1`)"* into *"(`SF-01`, never `SF-01`)"* in this very file, and the
+  same in `TECH-026`'s. Both restored, and the guard now exempts a line showing the padded form
+  beside the single-digit one — the same carve-out `check_conventions` R5 makes for citation tags,
+  for the same reason: a rule that cannot be written down cannot be enforced.
+
+The guard is `tests/unit/test_sub_feature_identifiers.py`: prose, filenames, a test that the legacy
+exclusion is still exercised rather than dead, and one pinning that the demonstration exemption is
+narrow.
+
+### Clause 2 — deliberately not shipped
+
+**Detecting it lexically was attempted and abandoned, and that is the finding.** Four successive
+measurements each reported a different number, and each refinement showed the previous one had been
+counting correct references as violations:
+
+| Attempt | Reported | What was wrong |
+|---|---|---|
+| 1 | 122 | Missed the backtick form — `` `TECH-025` SF-05 `` counted as unqualified |
+| 2 | 113 | One population, actually three |
+| 3 | 79 / 19 / 15 | Split by category; the 79 are legal under option B |
+| 4 | 19 | Inspected individually — most name their story on the same line, just not adjacently (`` `TECH-001` corrected to 🟡 — SF-04 outstanding ``) |
+
+A rule whose violations cannot be counted without judgement cannot be enforced by a regex, and
+asserting it badly is worse than not asserting it — a checker that cries wolf gets disabled, and
+then the rule it protects is gone too. `TECH-026` reached the same conclusion from the other
+direction and solved it by going **structural** rather than lexical.
+
+**What clause 2 needs before it can ship:** a definition of "enclosing entry" precise enough to
+compute — almost certainly markdown structure (the nearest heading or list item), not a line window.
+That is the same walker `TECH-026`'s checker needs, which is the argument for building them together
+rather than guessing one now.

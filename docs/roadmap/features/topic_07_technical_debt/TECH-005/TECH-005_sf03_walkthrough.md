@@ -1,4 +1,4 @@
-# Walkthrough: TECH-005 SF-3 — Prefix Raw-SQLite3 Tables (FR-8)
+# Walkthrough: TECH-005 SF-03 — Prefix Raw-SQLite3 Tables (FR-8)
 
 - **Design**: `TECH-005_design.md` (APPROVED)
 - **Plan**: `TECH-005_sf03_implementation_plan.md` (APPROVED, Red/Blue reviewed, 2 cycles)
@@ -10,11 +10,11 @@
 
 ## What changed and why
 
-SF-1/SF-2 renamed every SQLAlchemy-managed table to a bounded-context prefix, but six tables
+SF-01/SF-02 renamed every SQLAlchemy-managed table to a bounded-context prefix, but six tables
 created via raw `CREATE TABLE IF NOT EXISTS` — never touched by SQLAlchemy — remained unprefixed:
 `nodes`/`edges` (graph store), `pipeline_runs`/`audit_log`/`state_schema_version` (pipeline state
 store), `sw_reservations` (reservation system). This contradicted TECH-005's own "all existing
-database tables" claim. SF-3 closes that gap.
+database tables" claim. SF-03 closes that gap.
 
 Because these back real, persistent, user-owned SQLite files (`graph.db`, `pipeline_state.db`,
 `reservations.db`), a blind `CREATE TABLE IF NOT EXISTS <new_name>` would have silently orphaned
@@ -101,15 +101,15 @@ No gate was skipped or auto-approved without user response.
 ## Deferred to T5 (story closure, not yet done)
 
 `check_fr_coverage.py TECH-005` — confirmed FR-8 will pass once this commit lands; FR-1–7
-(SF-1/SF-2, delivered before this citation gate existed) will still fail on citation, not on
+(SF-01/SF-02, delivered before this citation gate existed) will still fail on citation, not on
 missing behavior. Per finished-stories-immutable, routes to a new TECH ticket via
-`specweaver-ticket` (mandatory user confirmation), not a fix to SF-1/2's own files.
+`specweaver-ticket` (mandatory user confirmation), not a fix to SF-01/2's own files.
 
 ---
 # Red/Blue Team Review Report — Phase 7.5 (Code)
 
 ## Summary
-- **Target**: TECH-005 SF-3 code changes (`repository.py`, `store.py`, `reservation.py`,
+- **Target**: TECH-005 SF-03 code changes (`repository.py`, `store.py`, `reservation.py`,
   `_refactor_diff_safety.py`), post-implementation, pre-commit
 - **Cycles**: 2
 - **Findings**: 4 (Cycle 1) + 3 (Cycle 2) = 7
@@ -153,7 +153,7 @@ missing behavior. Per finished-stories-immutable, routes to a new TECH ticket vi
   (`ALTER TABLE ... ADD COLUMN parent_run_id` followed by a separate version-bump `INSERT`) has the
   same DDL-non-atomicity exposure RED-1.1 found — a crash between the two leaves `version` still
   `1` with the column already added, and the NEXT construction's retry of `ADD COLUMN` would raise
-  `duplicate column name`, uncaught. **Confirmed pre-existing** (this logic is unchanged by SF-3,
+  `duplicate column name`, uncaught. **Confirmed pre-existing** (this logic is unchanged by SF-03,
   only its table names were mechanically substituted) and unrelated to this ticket's own new rename
   logic. Not fixed here; flagged to the user as a candidate for a new TECH ticket rather than
   silently left undocumented.

@@ -1,4 +1,4 @@
-# Task Breakdown: TECH-005 SF-3 — Prefix Raw-SQLite3 Tables
+# Task Breakdown: TECH-005 SF-03 — Prefix Raw-SQLite3 Tables
 
 Implementation Plan: `TECH-005_sf03_implementation_plan.md`
 Story kind: TECH (refactor) → `python scripts/tests.py cb TECH-005 --kind refactor`
@@ -6,7 +6,7 @@ Story kind: TECH (refactor) → `python scripts/tests.py cb TECH-005 --kind refa
 **Commit boundary**: single commit after T0–T4. The three files rename structurally identical
 patterns (legacy-table detect-and-rename before schema creation); splitting into three commits
 would force three HITL stops over a ~150-line, tightly-coupled diff with no independent value in
-landing them separately — the design doc's own Progress Tracker only needs `SF-3` marked once.
+landing them separately — the design doc's own Progress Tracker only needs `SF-03` marked once.
 
 ## T0 — Extend `_refactor_diff_safety.py` to recognize a consistent literal-token rename ✅
 
@@ -140,22 +140,22 @@ Final story gate: 612 tests passed (500 unit + 112 integration), 0 failed. Commi
 
 ## T5 — Story closure ✅ (except full-suite run, backgrounded)
 
-SF-3 is the **last** row in TECH-005's Progress Tracker (SF-1 ✅, SF-2 ✅). Once SF-3 commits, every
+SF-03 is the **last** row in TECH-005's Progress Tracker (SF-01 ✅, SF-02 ✅). Once SF-03 commits, every
 row is `Committed ✅`, which per `specweaver-dev`'s own closure rule means the story is about to be
 declared finished and must run the closure gate first — `check_fr_coverage.py` + the full suite —
 before writing `Status: COMPLETE`.
 
 **Confirmed outcome**: `check_fr_coverage.py TECH-005` fails for **FR-1 through FR-7** — `NO PLAN
-NO TEST` for FR-1–5/7, `plan NO TEST` for FR-6 — because SF-1/SF-2 shipped before this gate
+NO TEST` for FR-1–5/7, `plan NO TEST` for FR-6 — because SF-01/SF-02 shipped before this gate
 existed/was wired into closure and never carried the `FR-N` + story-ID citation convention. FR-8
-(SF-3's own) passes with 3 citing test files.
+(SF-03's own) passes with 3 citing test files.
 
-Per finished-stories-immutable, SF-1/SF-2's delivered files are not edited to backfill citations
+Per finished-stories-immutable, SF-01/SF-02's delivered files are not edited to backfill citations
 under this ticket. Steps:
 1. ✅ Ran `check_fr_coverage.py TECH-005` for real post-commit — confirmed the outcome above.
 2. ✅ Asked the user whether to mint a new ticket (`TECH-026`) or fold into `TECH-025` (which was
    scoped to TECH-001 only). **User chose to widen `TECH-025`** — retitled and rewritten to cover
-   both TECH-001 SF-01/02/03 and TECH-005 SF-1/2's identical citation gap, rather than minting a
+   both TECH-001 SF-01/02/03 and TECH-005 SF-01/2's identical citation gap, rather than minting a
    second ID for the same systemic cause.
 3. Full suite (`python -m pytest -v --tb=short -q`) running in background as closure proof; the
    story-scoped gate (`tests.py cb TECH-005 --kind refactor`) already confirmed 612 passed, 0
@@ -169,7 +169,7 @@ under this ticket. Steps:
 # Red/Blue Team Review Report
 
 ## Summary
-- **Target**: TECH-005 SF-3 Task Breakdown (`TECH-005_sf03_task.md`)
+- **Target**: TECH-005 SF-03 Task Breakdown (`TECH-005_sf03_task.md`)
 - **Cycles**: 2
 - **Findings**: 4 (Cycle 1) + 0 (Cycle 2)
 - **Critical/High fixes applied**: 1
@@ -202,11 +202,11 @@ addition from weakening the gate's original purpose of catching a bug hidden beh
 **Category**: Maintainability
 **Severity**: MEDIUM
 **Target**: T5 / `check_fr_coverage.py TECH-005`
-**Finding**: SF-3 is the last Progress Tracker row — landing it triggers the closure gate. Running
-`check_fr_coverage.py TECH-005` now (read-only, to know what T5 will hit) shows FR-1–7 (SF-1/SF-2,
+**Finding**: SF-03 is the last Progress Tracker row — landing it triggers the closure gate. Running
+`check_fr_coverage.py TECH-005` now (read-only, to know what T5 will hit) shows FR-1–7 (SF-01/SF-02,
 delivered before this gate existed) already fail on citation. Left undocumented, T5 could either
 silently declare the story complete over a real gate failure, or block indefinitely on a gap this
-SF didn't create and per finished-stories-immutable must not fix by editing SF-1/2's own files.
+SF didn't create and per finished-stories-immutable must not fix by editing SF-01/2's own files.
 **Evidence**: `check_fr_coverage.py TECH-005` output, run during task planning.
 
 ### 🔵 BLUE-1.2: Response to RED-1.2
@@ -249,7 +249,7 @@ boundary precisely: two independent substitutions required → rejected.
 while doing the actual work must be fixed, not deferred — the same reasoning already applied
 mid-flight during TECH-001 SF-04 (which fixed `check_story_preconditions.py` and built this exact
 gate for the same reason: the mandated gate for THIS commit was wrong). Deferring T0 to a separate
-ticket would mean SF-3 cannot commit at all until that ticket lands, making the "separation" purely
+ticket would mean SF-03 cannot commit at all until that ticket lands, making the "separation" purely
 nominal.
 
 ## Corrections Made

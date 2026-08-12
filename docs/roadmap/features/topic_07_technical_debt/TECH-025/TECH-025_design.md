@@ -231,7 +231,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 ### SF-06: TECH-005 FR Ledger
 - **Scope**: Close TECH-005's ledger.
 - **FRs**: [FR-3]
-- **Inputs**: TECH-005's design FR table (FR-1..FR-7) and its SF-1/SF-2 plans; the renamed migration test, the bootstrap e2e and the lineage e2e.
+- **Inputs**: TECH-005's design FR table (FR-1..FR-7) and its SF-01/SF-02 plans; the renamed migration test, the bootstrap e2e and the lineage e2e.
 - **Outputs**: `check_fr_coverage.py TECH-005` exits 0.
 - **Depends on**: SF-01, SF-02 *(cites the renamed migration test)*
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_sf06_implementation_plan.md
@@ -296,7 +296,7 @@ claim is that it stays green on genuine proof alone. If it does not, SF-01 over-
 
 Found running `python scripts/check_fr_coverage.py TECH-001` as the closure gate for TECH-001 SF-04
 (2026-08-02). **Widened** the same day after `check_fr_coverage.py TECH-005` surfaced the identical
-gap while closing TECH-005 SF-3 — the user's explicit direction was to fold it in here rather than
+gap while closing TECH-005 SF-03 — the user's explicit direction was to fold it in here rather than
 mint `TECH-026`, since it is one systemic cause under a different story ID. **Widened again**
 (2026-08-08) when `check_fr_coverage.py TECH-002` was run while verifying whether that ticket's
 amber status still reflected outstanding work; it did not — the work is complete and code-verified —
@@ -361,7 +361,7 @@ new test file and the verification method changed as a result.
 ledgers are now closed**, which was this ticket's substantive goal. Five of its seven open
 requirements already had a genuine proof in the alembic migration test; only FR-4 and FR-5 needed
 new invariants. Its research found the plan-side twin of SF-05's false-credit trap: `FR-6` was
-reported as planned from a *disclaimer* in SF-3's plan, because `planned_frs` unions tokens without
+reported as planned from a *disclaimer* in SF-03's plan, because `planned_frs` unions tokens without
 asking which sub-feature claims them.
 
 **SF-07 delivered 2026-08-12, and the ticket is COMPLETE.** `check_fr_coverage.py TECH-025` exits

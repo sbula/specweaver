@@ -95,7 +95,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 
 ## Sub-Feature Breakdown
 
-### SF-1: Model Refactoring
+### SF-01: Model Refactoring
 - **Scope**: Update `__tablename__` attributes, raw queries, and ForeignKeys across the codebase to use new prefixes.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
 - **Inputs**: Existing SQLAlchemy models and queries.
@@ -103,47 +103,47 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf01_implementation_plan.md
 
-### SF-2: Alembic Migration
+### SF-02: Alembic Migration
 - **Scope**: Generate and apply the database schema migration via Alembic to rename tables and indexes.
 - **FRs**: [FR-6, FR-7]
-- **Inputs**: The updated SQLAlchemy models from SF-1.
+- **Inputs**: The updated SQLAlchemy models from SF-01.
 - **Outputs**: A new Alembic migration script.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 
-### SF-3: Prefix Raw-SQLite3 Tables
-- **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so SF-1/SF-2 never touched them) remain unprefixed: `nodes`, `edges` (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version` (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This contradicts the ticket's "all existing database tables" claim. Rename all six to their bounded-context-prefixed equivalents.
+### SF-03: Prefix Raw-SQLite3 Tables
+- **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so SF-01/SF-02 never touched them) remain unprefixed: `nodes`, `edges` (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version` (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This contradicts the ticket's "all existing database tables" claim. Rename all six to their bounded-context-prefixed equivalents.
 - **FRs**: [FR-8]
 - **Inputs**: Raw `CREATE TABLE` DDL strings in the three files above; any hand-written SQL referencing the old names.
 - **Outputs**: All six tables renamed and prefixed; no dangling references to the old names.
 - **Depends on**: none
 - **Impl Plan**: not yet written
-- **Note (2026-08-01)**: this ticket's original scope only ever covered SQLAlchemy-managed tables (SF-1/SF-2) — the raw-sqlite3 tables were never in its FRs despite the roadmap blurb claiming "all existing database tables." SF-3 closes that gap so the claim becomes true instead of overstated.
+- **Note (2026-08-01)**: this ticket's original scope only ever covered SQLAlchemy-managed tables (SF-01/SF-02) — the raw-sqlite3 tables were never in its FRs despite the roadmap blurb claiming "all existing database tables." SF-03 closes that gap so the claim becomes true instead of overstated.
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (no deps — can start any time, independent of SF-1/SF-2)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (no deps — can start any time, independent of SF-01/SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Alembic Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Prefix Raw-SQLite3 Tables | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Alembic Migration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Prefix Raw-SQLite3 Tables | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: All three sub-features committed (`4ebb89cf` for SF-3). All six raw-sqlite3
+**Current status**: All three sub-features committed (`4ebb89cf` for SF-03). All six raw-sqlite3
 tables (`nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations`)
-are renamed with a zero-data-loss migration path for pre-SF-3 installations, alongside SF-1/SF-2's
+are renamed with a zero-data-loss migration path for pre-SF-3 installations, alongside SF-01/SF-02's
 SQLAlchemy-managed renames. Every table in the SQLite database now follows the domain-prefix
 convention. Story-level closure gate (`check_fr_coverage.py TECH-005` + full suite) still needs to
 run before this can be marked `Status: COMPLETE` — see `TECH-005_sf03_task.md`'s T5 for the known,
-pre-existing FR-1–7 citation gap (SF-1/SF-2 predate the citation convention) that closure will
-surface and must route to a new ticket, not block SF-3's own delivery.
+pre-existing FR-1–7 citation gap (SF-01/SF-02 predate the citation convention) that closure will
+surface and must route to a new ticket, not block SF-03's own delivery.
 **Next step**: Run T5 (story closure) per `TECH-005_sf03_task.md`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
@@ -193,7 +193,7 @@ in any row and resume from there using the appropriate workflow.
 **Category**: Maintainability
 **Severity**: LOW
 **Target**: Sub-Feature Breakdown
-**Finding**: Mentioned FR-8 in SF-1, but the table only went up to FR-6.
+**Finding**: Mentioned FR-8 in SF-01, but the table only went up to FR-6.
 **Evidence**: Design document text.
 
 ### 🔵 BLUE-1.3: Response to RED-1.3

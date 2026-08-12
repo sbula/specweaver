@@ -12,12 +12,12 @@
 
 ## Overview
 
-`check_fr_coverage.py TECH-005` exits 1. Of its eight requirements, **FR-8 is already closed** — SF-3
+`check_fr_coverage.py TECH-005` exits 1. Of its eight requirements, **FR-8 is already closed** — SF-03
 delivered it in 2026-08-02 with three genuine citations. This sub-feature closes the other seven.
 
 **FRs**: FR-3 (close TECH-005's ledger).
 
-The substance is not in doubt. The renames shipped, the migration ran, and SF-3 already extended the
+The substance is not in doubt. The renames shipped, the migration ran, and SF-03 already extended the
 work to the six raw-sqlite3 tables. This is traceability.
 
 ## Research Notes
@@ -26,14 +26,14 @@ work to the six raw-sqlite3 tables. This is traceability.
 
 | TECH-005 SF | Owns | State |
 |---|---|---|
-| SF-1 Model Refactoring | `FR-1`…`FR-5` | delivered, uncited |
-| SF-2 Alembic Migration | `FR-6`, `FR-7` | delivered, uncited |
-| SF-3 Prefix Raw-SQLite3 Tables | `FR-8` | **closed** — 3 citations |
+| SF-01 Model Refactoring | `FR-1`…`FR-5` | delivered, uncited |
+| SF-02 Alembic Migration | `FR-6`, `FR-7` | delivered, uncited |
+| SF-03 Prefix Raw-SQLite3 Tables | `FR-8` | **closed** — 3 citations |
 
 **R2 — `FR-6`'s current "plan" status is spurious, and it is the plan-side twin of SF-05's trap.**
-The gate reports `TECH-005 FR-6` as planned. Nothing owns it: the token appears in **SF-3's** plan
-(`TECH-005_sf03_implementation_plan.md:26`) inside the sentence *"SF-2/FR-6, there is no
-index-rename sub-task here"* — a cross-reference explaining what SF-3 does **not** do.
+The gate reports `TECH-005 FR-6` as planned. Nothing owns it: the token appears in **SF-03's** plan
+(`TECH-005_sf03_implementation_plan.md:26`) inside the sentence *"SF-02/FR-6, there is no
+index-rename sub-task here"* — a cross-reference explaining what SF-03 does **not** do.
 `planned_frs` unions every plan's tokens without asking which sub-feature claims them, so a
 disclaimer reads as ownership.
 
@@ -174,5 +174,5 @@ linked?*
 | # | Question |
 |---|---|
 | Q1 ✅ | *Decided: text scan with word-boundary matching.* **Should FR-5's scan be an AST walk or a text scan?** The strings live in raw SQL inside Python string literals, so an AST walk finds them precisely but must handle f-strings and concatenation; a text scan is simpler and risks T6's substring trap. Recommend **text scan with word-boundary matching on the identifier**, since the thing being checked is a SQL identifier, not a Python expression. |
-| Q2 ✅ | *Decided: leave the sentence; record the gate limit.* **Does `FR-6`'s spurious plan status (R2) need fixing beyond adding the real citation?** Adding `FR-6` to `sf02` makes ownership true, but SF-3's disclaimer sentence still contributes the token. Recommend leaving the sentence — it is correct prose — and accepting that `planned_frs` cannot distinguish. Worth recording against `TECH-025` SF-07 or `TECH-026`, since it is a gate precision limit, not a document defect. |
+| Q2 ✅ | *Decided: leave the sentence; record the gate limit.* **Does `FR-6`'s spurious plan status (R2) need fixing beyond adding the real citation?** Adding `FR-6` to `sf02` makes ownership true, but SF-03's disclaimer sentence still contributes the token. Recommend leaving the sentence — it is correct prose — and accepting that `planned_frs` cannot distinguish. Worth recording against `TECH-025` SF-07 or `TECH-026`, since it is a gate precision limit, not a document defect. |
 | Q3 ✅ | *Decided: the new file.* **Where do FR-4/FR-5's invariants live** — the new `test_table_naming_convention.py` as planned, or extended into `tests/unit/alembic/`? Recommend the new file: the alembic directory is about migrations, and FR-4/FR-5 are about the current tree, not a revision. |

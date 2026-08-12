@@ -28,7 +28,7 @@ stop them reopening.
 ## The plan-side twin of SF-05's trap
 
 `FR-6` was already reported as **planned** before this boundary, and nothing owned it. The token
-appeared only in **SF-3's** plan, inside a sentence explaining that SF-3 has *no* index-rename
+appeared only in **SF-03's** plan, inside a sentence explaining that SF-03 has *no* index-rename
 sub-task. `planned_frs` unions every plan's tokens without asking which sub-feature claims them, so
 a disclaimer read as ownership.
 

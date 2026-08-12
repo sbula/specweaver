@@ -1,20 +1,20 @@
-# Implementation Plan: Native CLI Action Nodes [SF-2: Pipeline Engine Integration]
+# Implementation Plan: Native CLI Action Nodes [SF-02: Pipeline Engine Integration]
 
 - **Feature ID**: C-EXEC-02
-- **Sub-Feature**: SF-2 — Pipeline Engine Integration
+- **Sub-Feature**: SF-02 — Pipeline Engine Integration
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-2
+- **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf02_implementation_plan.md
 - **Status**: APPROVED
 
 ## Scope
 
-Wire SF-1's `BashActionAtom` into the pipeline engine: add `StepAction.BASH`/`StepTarget.SCRIPT` to the pipeline models, register a `BashActionHandler` that wraps the Atom and maps its result to a `StepResult`, and prove via integration tests that `RouterRule`/`GateDefinition`/`step_records` propagation work end-to-end for a real bash step — with no engine changes required for the last three (confirmed by research).
+Wire SF-01's `BashActionAtom` into the pipeline engine: add `StepAction.BASH`/`StepTarget.SCRIPT` to the pipeline models, register a `BashActionHandler` that wraps the Atom and maps its result to a `StepResult`, and prove via integration tests that `RouterRule`/`GateDefinition`/`step_records` propagation work end-to-end for a real bash step — with no engine changes required for the last three (confirmed by research).
 
 **FRs covered**: FR-1, FR-5, FR-6, FR-7.
-**Inputs**: `BashActionAtom` from SF-1 (committed), existing `PipelineStep`/`StepHandlerRegistry`/`RunContext` machinery.
+**Inputs**: `BashActionAtom` from SF-01 (committed), existing `PipelineStep`/`StepHandlerRegistry`/`RunContext` machinery.
 **Outputs**: A pipeline YAML file with an `action: bash` step runs end-to-end, is routable, and its output is readable by later steps.
-**Depends on**: SF-1, SF-3 (both committed).
+**Depends on**: SF-01, SF-03 (both committed).
 
 ## Research Notes
 
@@ -39,10 +39,10 @@ Wire SF-1's `BashActionAtom` into the pipeline engine: add `StepAction.BASH`/`St
   ```
   `BashActionAtom.run()`'s `exports` (`exit_code`, `stdout`, `stderr`, `duration_seconds` — `sandbox/execution/core/atom.py:126-131`) map directly to `StepResult.output` with **zero extra transformation** — this is exactly what FR-6/FR-7 need already present.
 - **`StepHandlerRegistry`** (`core/flow/handlers/registry.py:86-129`): plain dict literal in `__init__`, keyed by `(StepAction, StepTarget)` tuple, e.g. `(StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler()`. Also has a `.register(action, target, handler)` method (used by tests/extensions). New entry: `(StepAction.BASH, StepTarget.SCRIPT): BashActionHandler()`, imported at module top and added to `__all__` (lines 56-80).
-- **`RunContext.step_records`/`_error_result`/`_now_iso`** (`core/flow/handlers/base.py`): `step_records: list[dict[str, Any]] | None = None` (line 68) confirmed. `_now_iso()` (lines 162-163) and `_error_result(message, started_at) -> StepResult` (lines 166-172, maps to `StepStatus.ERROR`) confirmed exact signatures — not needed by `BashActionHandler` itself since `BashActionAtom.run()` never raises (FR-13, SF-1), but available if ever needed.
+- **`RunContext.step_records`/`_error_result`/`_now_iso`** (`core/flow/handlers/base.py`): `step_records: list[dict[str, Any]] | None = None` (line 68) confirmed. `_now_iso()` (lines 162-163) and `_error_result(message, started_at) -> StepResult` (lines 166-172, maps to `StepStatus.ERROR`) confirmed exact signatures — not needed by `BashActionHandler` itself since `BashActionAtom.run()` never raises (FR-13, SF-01), but available if ever needed.
 - **`RouterRule`/`GateDefinition` — confirmed zero engine changes needed**: `RouterEvaluator._get_nested_field()` (`core/flow/engine/routers.py:41-51`) walks dot-notation purely against `StepResult.output: dict[str, Any]`, called from `PipelineRunner._execute_loop()` as `self._router_evaluator.evaluate(router, result.output)`. Since `output.exit_code`/`output.stdout` are already flat top-level keys, a `router: {field: "exit_code", ...}` rule works today with no code changes — confirms the design doc's FR-7 claim precisely.
 - **`step_records` propagation — confirmed exact call site**: `runner.py:317`, `self._context.step_records = [r.model_dump() for r in run.step_records]`, refreshed immediately before every step's `handler.execute()` call — confirms FR-6's "no new plumbing" claim precisely.
-- **`tach.toml` — no changes needed**: `core.flow` already `depends_on` the whole `specweaver.sandbox` package; SF-3 already added `execution.core`/`execution.core.atom.BashActionAtom` to the sandbox interface's `expose` list. The new `from specweaver.sandbox.execution.core.atom import BashActionAtom` in `bash_action.py` is already tach-legal.
+- **`tach.toml` — no changes needed**: `core.flow` already `depends_on` the whole `specweaver.sandbox` package; SF-03 already added `execution.core`/`execution.core.atom.BashActionAtom` to the sandbox interface's `expose` list. The new `from specweaver.sandbox.execution.core.atom import BashActionAtom` in `bash_action.py` is already tach-legal.
 - **Unit test template — `test_validate_tests_handler.py`** (`tests/unit/core/flow/handlers/test_validate_tests_handler.py:34-51`), exact mocking pattern:
   ```python
   with patch.object(handler, "_get_atom", return_value=MagicMock()) as mock_get:
@@ -51,7 +51,7 @@ Wire SF-1's `BashActionAtom` into the pipeline engine: add `StepAction.BASH`/`St
   assert result.status == StepStatus.PASSED
   ```
 - **Integration test template — `test_feature_pipeline.py`** (`tests/integration/core/flow/engine/test_feature_pipeline.py`): real YAML → `PipelineDefinition.model_validate(data)` → `PipelineRunner(pipeline, ctx, registry=registry, store=store)` → `asyncio.run(runner.run())` → assert on `run.status`/`run.step_records`. Minimal `RunContext` only needs `project_path`+`spec_path`. `sample_project` fixture (`tests/integration/conftest.py:30-48`) copies a static fixture tree into `tmp_path` per test — a bash-step integration test creates `.specweaver/scripts/<name>.sh` there before running the pipeline. No existing test in this file exercises `RouterRule` end-to-end against a real `StepResult.output` — this SF's router integration test is new ground, following the same `PipelineRunner`-driven pattern.
-- **`pipeline_engine_guide.md`**: no clean "add a new step type" checklist exists (the guide is a chronological narrative, §1-§11). §2 ("Designing Handlers") is stale/inaccurate (wrong `execute()` signature, references a nonexistent file layout) — fixing it is explicitly out of SF-2's scope (Guide-1 only calls for a *new* section, not an audit of existing ones). §6 ("Dynamic Flow Control — Routers") is the closest relevant precedent style to follow for the new section.
+- **`pipeline_engine_guide.md`**: no clean "add a new step type" checklist exists (the guide is a chronological narrative, §1-§11). §2 ("Designing Handlers") is stale/inaccurate (wrong `execute()` signature, references a nonexistent file layout) — fixing it is explicitly out of SF-02's scope (Guide-1 only calls for a *new* section, not an audit of existing ones). §6 ("Dynamic Flow Control — Routers") is the closest relevant precedent style to follow for the new section.
 
 ## Resolved: Q1 (Phase 4 open question)
 
@@ -70,7 +70,7 @@ Wire SF-1's `BashActionAtom` into the pipeline engine: add `StepAction.BASH`/`St
 | `tests/integration/core/flow/engine/test_bash_action_integration.py` | `[NEW]` | Real-YAML end-to-end tests: `step_records` propagation (FR-6), router dot-notation (FR-7) |
 | `docs/dev_guides/pipeline_engine_guide.md` | `[MODIFY]` | New `## 12.` section for `action: bash` (Guide-1, now unblocked) |
 
-No changes to `sandbox/execution/core/` (SF-1's own files), `tach.toml`, or any `context.yaml` — all boundary wiring is already in place from SF-3.
+No changes to `sandbox/execution/core/` (SF-01's own files), `tach.toml`, or any `context.yaml` — all boundary wiring is already in place from SF-03.
 
 ## `bash_action.py` — Implementation Sequence (pseudocode)
 
@@ -78,11 +78,11 @@ No changes to `sandbox/execution/core/` (SF-1's own files), `tach.toml`, or any 
 
 1. `started = _now_iso()`.
 2. `atom = self._get_atom(context)` — lazy helper: `BashActionAtom(cwd=context.project_path)` (mirrors `ValidateTestsHandler._get_atom`'s lazy-construction style exactly).
-3. Build the `context: dict[str, Any]` passed to `atom.run()` directly from `step.params` — pass through whichever of `script`, `args`, `working_dir`, `timeout_seconds`, `env` are present; do not fill in defaults or validate here (that's `BashActionAtom.run()`'s job, per FR-13/AD-2 from SF-1 — this handler must not duplicate that logic).
+3. Build the `context: dict[str, Any]` passed to `atom.run()` directly from `step.params` — pass through whichever of `script`, `args`, `working_dir`, `timeout_seconds`, `env` are present; do not fill in defaults or validate here (that's `BashActionAtom.run()`'s job, per FR-13/AD-2 from SF-01 — this handler must not duplicate that logic).
 4. `result = atom.run(context_dict)`.
 5. If `result.status == AtomStatus.SUCCESS`: return `StepResult(status=StepStatus.PASSED, output=result.exports, started_at=started, completed_at=_now_iso())`.
 6. Else (`AtomStatus.FAILED`): return `StepResult(status=StepStatus.FAILED, output=result.exports, error_message=result.message, started_at=started, completed_at=_now_iso())`.
-7. No `try`/`except` needed — `BashActionAtom.run()` never raises (SF-1's FR-13 guarantee); `BashActionHandler` inherits that guarantee for free by construction, not by re-implementing exception containment.
+7. No `try`/`except` needed — `BashActionAtom.run()` never raises (SF-01's FR-13 guarantee); `BashActionHandler` inherits that guarantee for free by construction, not by re-implementing exception containment.
 
 `registry.py` changes: import `BashActionHandler` from the new module; add `(StepAction.BASH, StepTarget.SCRIPT): BashActionHandler()` to the `_handlers` dict literal in `__init__`, in the same style as every existing entry; add `"BashActionHandler"` to `__all__`.
 
@@ -115,34 +115,34 @@ No changes to `sandbox/execution/core/` (SF-1's own files), `tach.toml`, or any 
 | FR-6 | No new code (existing `step_records` mechanism); `test_downstream_step_reads_step_records` |
 | FR-7 | No new code (existing `RouterRule` mechanism); `test_router_branches_on_exit_code`, `test_router_branches_on_nonzero_exit` |
 
-No NFRs or ADs are assigned to SF-2 — all of NFR-1 through NFR-10 and AD-1 through AD-6 belong to SF-1's `BashActionAtom` runtime behavior, already implemented and committed.
+No NFRs or ADs are assigned to SF-02 — all of NFR-1 through NFR-10 and AD-1 through AD-6 belong to SF-01's `BashActionAtom` runtime behavior, already implemented and committed.
 
-## Backlog (deferred, out of scope for SF-2)
+## Backlog (deferred, out of scope for SF-02)
 
 - Fixing `pipeline_engine_guide.md` §2's stale handler-signature example — pre-existing inaccuracy, unrelated to adding the new §12 section.
 - TECH-011 (load-time params validation for all step types) — its own future design, not this SF's job.
-- Adding an `action: bash` example step to any of the bundled production pipelines (`new_feature.yaml`, `scenario_integration.yaml`, etc.) — the design doc's ROI section frames this as a future adoption benefit, not something SF-2 needs to retrofit now.
+- Adding an `action: bash` example step to any of the bundled production pipelines (`new_feature.yaml`, `scenario_integration.yaml`, etc.) — the design doc's ROI section frames this as a future adoption benefit, not something SF-02 needs to retrofit now.
 
 ## Phase 5: Final Consistency Check
 
-**5.0 Pre-check**: All 4 FRs assigned to SF-2 (FR-1, FR-5, FR-6, FR-7) are covered above. No NFRs/ADs assigned to this SF.
+**5.0 Pre-check**: All 4 FRs assigned to SF-02 (FR-1, FR-5, FR-6, FR-7) are covered above. No NFRs/ADs assigned to this SF.
 
 **5.1 Open questions**: None remaining — Q1 was resolved by explicit user direction (Option A + new TECH-011 ticket).
 
-**5.1a Agent Handoff Risk**: A fresh agent starting only from this document has the exact existing handler to clone (`ValidateTestsHandler`, cited with line numbers), the exact enum/registry insertion points, confirmation that FR-6/FR-7 require zero engine code (only tests proving it), and the exact test templates to mirror for both unit and integration levels. The one thing to watch: `BashActionAtom.run()`'s `context` dict keys (`script`, `args`, `working_dir`, `timeout_seconds`, `env`) must be passed through from `step.params` **verbatim** — the handler must resist the temptation to add defaulting/validation logic that duplicates SF-1's `_validate_cheap()`, which is explicitly Q1's resolved design intent (keep the handler thin).
+**5.1a Agent Handoff Risk**: A fresh agent starting only from this document has the exact existing handler to clone (`ValidateTestsHandler`, cited with line numbers), the exact enum/registry insertion points, confirmation that FR-6/FR-7 require zero engine code (only tests proving it), and the exact test templates to mirror for both unit and integration levels. The one thing to watch: `BashActionAtom.run()`'s `context` dict keys (`script`, `args`, `working_dir`, `timeout_seconds`, `env`) must be passed through from `step.params` **verbatim** — the handler must resist the temptation to add defaulting/validation logic that duplicates SF-01's `_validate_cheap()`, which is explicitly Q1's resolved design intent (keep the handler thin).
 
-**5.2 Architecture and future compatibility**: No circular imports — `bash_action.py` imports `specweaver.sandbox.execution.core.atom.BashActionAtom`, already tach-legal per SF-3's boundary wiring, verified by the existing `qa_runner`/`git`/`code_structure`/`mcp` handlers importing their respective Atoms the identical way. Compatible with `B-EXEC-01` (Podman) and `C-EXEC-04` (concurrent git merge) — both were already confirmed compatible at the SF-1 design stage, and SF-2 doesn't change `BashActionAtom` itself, only wires it up.
+**5.2 Architecture and future compatibility**: No circular imports — `bash_action.py` imports `specweaver.sandbox.execution.core.atom.BashActionAtom`, already tach-legal per SF-03's boundary wiring, verified by the existing `qa_runner`/`git`/`code_structure`/`mcp` handlers importing their respective Atoms the identical way. Compatible with `B-EXEC-01` (Podman) and `C-EXEC-04` (concurrent git merge) — both were already confirmed compatible at the SF-01 design stage, and SF-02 doesn't change `BashActionAtom` itself, only wires it up.
 
-**5.2a Architecture Principles**: **DDD** — stays within `core.flow`'s existing handler-per-domain convention (`handlers/bash_action.py`, one new file, matching `handlers/validation.py`/`handlers/lint_fix.py`). **KISS** — the handler is a thin, direct clone of an already-proven pattern; no new abstraction invented. **DRY** — reuses `ValidateTestsHandler`'s exact shape rather than inventing a new handler style; reuses `RouterRule`/`GateDefinition`/`step_records` entirely as-is (zero duplication of engine mechanics). **Hexagonal** — the handler is the adapter between the generic pipeline engine and `BashActionAtom`; no domain logic leaks into either direction. **Separation of Concerns** — the handler's only job is `AtomResult` ↔ `StepResult` translation; validation stays in `BashActionAtom` (SF-1), routing stays in `RouterEvaluator` (untouched), state propagation stays in `PipelineRunner` (untouched).
+**5.2a Architecture Principles**: **DDD** — stays within `core.flow`'s existing handler-per-domain convention (`handlers/bash_action.py`, one new file, matching `handlers/validation.py`/`handlers/lint_fix.py`). **KISS** — the handler is a thin, direct clone of an already-proven pattern; no new abstraction invented. **DRY** — reuses `ValidateTestsHandler`'s exact shape rather than inventing a new handler style; reuses `RouterRule`/`GateDefinition`/`step_records` entirely as-is (zero duplication of engine mechanics). **Hexagonal** — the handler is the adapter between the generic pipeline engine and `BashActionAtom`; no domain logic leaks into either direction. **Separation of Concerns** — the handler's only job is `AtomResult` ↔ `StepResult` translation; validation stays in `BashActionAtom` (SF-01), routing stays in `RouterEvaluator` (untouched), state propagation stays in `PipelineRunner` (untouched).
 
 **5.3 Internal consistency**: All 6 proposed files are tagged correctly (2 `[NEW]`, 4 `[MODIFY]`... note: `bash_action.py` and the two new test files are `[NEW]`, `models.py`/`registry.py`/`pipeline_engine_guide.md` are `[MODIFY]` — 3 new, 3 modified). Every FR maps to a concrete code element and at least one test at the appropriate level (unit for the handler mapping logic, integration for the "zero engine changes" claims).
 
 ### Red/Blue Team Review (2 cycles run)
 
 **Cycle 1**:
-- 🔴 **HIGH**: The design doc's `StepStatus.COMPLETED` error — has this typo propagated anywhere else in the design doc or SF-1's already-committed code that would need a matching fix? **Blue**: Checked — SF-1's own code (`atom.py`) never references `StepStatus` at all (it only knows about `AtomStatus`, a different enum, correctly so per the design's own separation of concerns). The `StepStatus.COMPLETED` reference is isolated to the design doc's FR-5 prose and this plan's own correction — no code fix needed anywhere, just this plan's correct usage of `StepStatus.PASSED` going forward. VALID finding, already fully addressed by using the correct enum value throughout this plan.
-- 🔴 **MEDIUM**: `test_params_passed_through_unchanged` and `test_missing_params_key_not_defaulted_by_handler` both assert "the handler doesn't add logic" — is this over-specified/testing an implementation detail rather than behavior? **Blue**: VALID — ACCEPTED as-is: this is deliberately testing a *design decision* (Q1's resolution: keep the handler thin, don't duplicate SF-1's validation), not an incidental implementation detail — a future maintainer adding "helpful" defaulting logic directly into the handler would be silently reintroducing the exact special-case validation Q1 explicitly rejected. The test is a guard against architectural drift, not overspecification.
-- 🔴 **LOW**: Should the integration tests also cover a `gate:` block (not just `router:`), given `GateDefinition` is mentioned in SF-2's scope line? **Blue**: VALID, clarify: `GateDefinition`'s `condition: all_passed`/`condition: completed` logic already operates generically on `StepResult.status` (confirmed via `GateEvaluator.passes()`, checked in Phase 0 research) — no bash-specific behavior exists to test beyond what `test_success_maps_to_passed`/`test_failure_maps_to_failed` (unit level) and `test_bash_step_runs_end_to_end` (integration, implicitly exercises the default gate) already cover. Not adding a dedicated gate-specific integration test — would be redundant with existing coverage, not a real gap.
+- 🔴 **HIGH**: The design doc's `StepStatus.COMPLETED` error — has this typo propagated anywhere else in the design doc or SF-01's already-committed code that would need a matching fix? **Blue**: Checked — SF-01's own code (`atom.py`) never references `StepStatus` at all (it only knows about `AtomStatus`, a different enum, correctly so per the design's own separation of concerns). The `StepStatus.COMPLETED` reference is isolated to the design doc's FR-5 prose and this plan's own correction — no code fix needed anywhere, just this plan's correct usage of `StepStatus.PASSED` going forward. VALID finding, already fully addressed by using the correct enum value throughout this plan.
+- 🔴 **MEDIUM**: `test_params_passed_through_unchanged` and `test_missing_params_key_not_defaulted_by_handler` both assert "the handler doesn't add logic" — is this over-specified/testing an implementation detail rather than behavior? **Blue**: VALID — ACCEPTED as-is: this is deliberately testing a *design decision* (Q1's resolution: keep the handler thin, don't duplicate SF-01's validation), not an incidental implementation detail — a future maintainer adding "helpful" defaulting logic directly into the handler would be silently reintroducing the exact special-case validation Q1 explicitly rejected. The test is a guard against architectural drift, not overspecification.
+- 🔴 **LOW**: Should the integration tests also cover a `gate:` block (not just `router:`), given `GateDefinition` is mentioned in SF-02's scope line? **Blue**: VALID, clarify: `GateDefinition`'s `condition: all_passed`/`condition: completed` logic already operates generically on `StepResult.status` (confirmed via `GateEvaluator.passes()`, checked in Phase 0 research) — no bash-specific behavior exists to test beyond what `test_success_maps_to_passed`/`test_failure_maps_to_failed` (unit level) and `test_bash_step_runs_end_to_end` (integration, implicitly exercises the default gate) already cover. Not adding a dedicated gate-specific integration test — would be redundant with existing coverage, not a real gap.
 
 **Cycle 2**: Re-examined Cycle 1's responses plus a fresh pass — no new findings above the continuation threshold. Review converges.
 
@@ -154,7 +154,7 @@ No NFRs or ADs are assigned to SF-2 — all of NFR-1 through NFR-10 and AD-1 thr
 
 This plan is ready for your review. Summary: 3 new files, 3 modified files, all changes clone an already-proven existing handler pattern (`ValidateTestsHandler`) exactly, confirmed zero engine changes needed for FR-6/FR-7 (only tests proving it). One factual error caught and corrected from the design doc (`StepStatus.COMPLETED` → `PASSED`). Q1 resolved per your direction (Option A + new TECH-011 ticket, now registered). Red/Blue review ran 2 cycles, converged with no required plan changes.
 
-Reply with approval to mark this plan `APPROVED` and proceed to the `dev` skill for SF-2's TDD implementation.
+Reply with approval to mark this plan `APPROVED` and proceed to the `dev` skill for SF-02's TDD implementation.
 
 ---
 

@@ -67,7 +67,7 @@ Feature TECH-007 adds a pluggable context loading architecture and an injection-
 
 ## Sub-Feature Breakdown
 
-### SF-1: Injection-Safe Escaping Engine & XML Attribute Escaping
+### SF-01: Injection-Safe Escaping Engine & XML Attribute Escaping
 - **Scope**: Implement the four escaping strategies (Raw, XML, CDATA with split mitigation, JSON) and XML attribute escaping.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: Raw input text strings, attribute keys/values.
@@ -75,27 +75,27 @@ Feature TECH-007 adds a pluggable context loading architecture and an injection-
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf01_implementation_plan.md
 
-### SF-2: Pluggable Context Architecture (Structural Protocol)
+### SF-02: Pluggable Context Architecture (Structural Protocol)
 - **Scope**: Define the `PromptContentSource` protocol and support adding arbitrary sources to `PromptBuilder`.
 - **FRs**: [FR-3, FR-4, FR-5]
 - **Inputs**: Any object structurally conforming to `PromptContentSource`.
 - **Outputs**: Adapted blocks inside `PromptBuilder`.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-007/TECH-007_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1: Escaping engine and attribute escaping (fundamental parser safety).
-2. SF-2: Pluggable Context and adapter integration.
+1. SF-01: Escaping engine and attribute escaping (fundamental parser safety).
+2. SF-02: Pluggable Context and adapter integration.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Escaping Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Pluggable Contexts | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Escaping Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Pluggable Contexts | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Both SF-1 and SF-2 are fully implemented, verified, and committed. All quality gates (linting, types, 88%+ test coverage, zero new tach violations) have passed.
+**Current status**: Both SF-01 and SF-02 are fully implemented, verified, and committed. All quality gates (linting, types, 88%+ test coverage, zero new tach violations) have passed.
 **Next step**: Proceed with topic-level technical debt cleanup or feature tasks.

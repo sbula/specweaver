@@ -22,7 +22,7 @@ The second of `TECH-025`'s three subject ledgers to close, after `TECH-001` in S
 | `test_dispatcher_registry_delegation.py` | Module tag → FR-3 |
 | `test_validation_hydrator.py` | Module tag → FR-5 (injection half) |
 | `test_dispatcher_domain_conformance.py` | NFR-5 repair — registry ID removed from prose |
-| `test_sandbox_registry.py` | NFR-5 repair — stale "TDD red-phase marker for SF-2" reworded |
+| `test_sandbox_registry.py` | NFR-5 repair — stale "TDD red-phase marker for SF-02" reworded |
 
 Per-class rather than one module tag, matching `TECH-006`'s precedent in `test_base.py` (Q3, user).
 Deleting a class now visibly drops its citation instead of leaving a module-level tag that still

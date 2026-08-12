@@ -94,10 +94,10 @@ anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
 2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
-mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-3 outstanding
+mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-03 outstanding
 (raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
 (commit `346f64c3`), all three circular dependencies eliminated. `TECH-005` corrected back to
-🟢 — SF-3 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
+🟢 — SF-03 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
 migration path. 2026-08-08: `TECH-002` corrected back to 🟢 — the description defect that caused
 the 🟡 was fixed in `cea3548c`; re-verified against code (explicit `ToolRegistry` in
 `sandbox/registry.py`, zero `__init_subclass__` anywhere, validation layer free of sandbox imports,

@@ -1,8 +1,8 @@
-# Implementation Plan: Database Table Prefix Harmonization [SF-1: Model Refactoring]
+# Implementation Plan: Database Table Prefix Harmonization [SF-01: Model Refactoring]
 - **Feature ID**: TECH-005
-- **Sub-Feature**: SF-1 — Model Refactoring
+- **Sub-Feature**: SF-01 — Model Refactoring
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf01_implementation_plan.md
 - **Status**: COMPLETED
 
@@ -51,7 +51,7 @@ Update all SQLAlchemy models and raw queries to use prefixed database table name
 - Update `assert "projects" in tables` to `assert "workspace_projects" in tables`.
 
 > [!NOTE]
-> Historical Alembic migrations (e.g. `037b85034bb0_init_monolith_schema.py`) will deliberately NOT be modified. Instead, SF-2 will create a new migration to rename the tables. Tests check the final schema.
+> Historical Alembic migrations (e.g. `037b85034bb0_init_monolith_schema.py`) will deliberately NOT be modified. Instead, SF-02 will create a new migration to rename the tables. Tests check the final schema.
 
 ## Verification Plan
 
@@ -62,7 +62,7 @@ Update all SQLAlchemy models and raw queries to use prefixed database table name
 # Red/Blue Team Review Report
 
 ## Summary
-- **Target**: TECH-005 SF-1 Implementation Plan
+- **Target**: TECH-005 SF-01 Implementation Plan
 - **Cycles**: 2
 - **Findings**: 1
 - **Critical/High fixes applied**: 0 (1 clarification)
@@ -84,4 +84,4 @@ Update all SQLAlchemy models and raw queries to use prefixed database table name
 
 ### 🔵 BLUE-1.1: Response to RED-1.1
 **Verdict**: VALID — FIX REQUIRED (Clarification)
-**Response**: Added a `[!NOTE]` explaining that historical migrations are never modified. The new migration (in SF-2) will transition the state, and tests verifying the final DB state will see `workspace_projects`.
+**Response**: Added a `[!NOTE]` explaining that historical migrations are never modified. The new migration (in SF-02) will transition the state, and tests verifying the final DB state will see `workspace_projects`.

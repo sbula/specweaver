@@ -21,7 +21,7 @@ This ordering is the single most important constraint on FR-4. Per iteration:
 
 1. `step_idx = run.current_step`; `attempts.setdefault(step_idx, 0)` (`:213-215`)
 2. Handler lookup; `None` → ERROR result + `fail_current_step` + return (`:217-247`)
-3. Staleness bypass (3.32 SF-4) — may `complete_current_step` and `continue` (`:263-293`)
+3. Staleness bypass (3.32 SF-04) — may `complete_current_step` and `continue` (`:263-293`)
 4. **`run.mark_step_running()`** (`:295`) — sets `record.status = RUNNING`
 5. Context injection: `run_id`, `step_records`, `pipeline_runner` (`:317-320`)
 6. Handler execution, optionally sandboxed (`:326-333`)

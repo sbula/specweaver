@@ -1,4 +1,4 @@
-# ARCHITECTURAL DISCUSSION: Domain Models vs. Prompt Adapters (TECH-007 SF-2)
+# ARCHITECTURAL DISCUSSION: Domain Models vs. Prompt Adapters (TECH-007 SF-02)
 
 This document outlines the architectural trade-offs, options, and proposals regarding pluggable context sources, domain models, and prompt adapters.
 

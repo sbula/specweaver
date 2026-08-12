@@ -1,8 +1,8 @@
-# Implementation Plan: Database Table Prefix Harmonization [SF-2: Alembic Migration]
+# Implementation Plan: Database Table Prefix Harmonization [SF-02: Alembic Migration]
 - **Feature ID**: TECH-005
-- **Sub-Feature**: SF-2 — Alembic Migration
+- **Sub-Feature**: SF-02 — Alembic Migration
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-2
+- **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 - **Status**: DONE
 
@@ -14,7 +14,7 @@
 > **Requirements delivered by this sub-feature: `FR-6`, `FR-7`.**
 >
 > `FR-6` was already reported as "planned" by `check_fr_coverage.py`, but not from here: the token
-> appeared only in **SF-3's** plan, inside a sentence explaining that SF-3 has *no* index-rename
+> appeared only in **SF-03's** plan, inside a sentence explaining that SF-03 has *no* index-rename
 > sub-task. `planned_frs` unions every plan's tokens without asking which sub-feature claims them,
 > so a disclaimer read as ownership. This line makes the ownership real.
 
@@ -44,7 +44,7 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 ## Verification Plan
 
 ### Automated Tests
-- `pytest tests/` (should pass 100% since SF-1 updated the models and this migration aligns the DB to the models).
+- `pytest tests/` (should pass 100% since SF-01 updated the models and this migration aligns the DB to the models).
 
 ### Manual Verification
 - Run `alembic upgrade head` locally.
@@ -54,7 +54,7 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 # Red/Blue Team Review Report
 
 ## Summary
-- **Target**: TECH-005 SF-2 Implementation Plan
+- **Target**: TECH-005 SF-02 Implementation Plan
 - **Cycles**: 2
 - **Findings**: 2
 - **Critical/High fixes applied**: 1

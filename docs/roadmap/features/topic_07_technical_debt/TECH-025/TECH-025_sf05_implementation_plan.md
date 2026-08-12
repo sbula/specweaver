@@ -23,7 +23,7 @@ and its amber status corrected back to 🟢 in `cea3548c`. This is traceability,
 ## Research Notes
 
 **R1 — No orphans.** Unlike TECH-001, every row of TECH-002's FR table belongs to exactly one
-sub-feature: SF-1 `[FR-1, FR-2]`, SF-2 `[FR-4]`, SF-3 `[FR-3]`, SF-4 `[FR-5, FR-6]`. There is no
+sub-feature: SF-01 `[FR-1, FR-2]`, SF-02 `[FR-4]`, SF-03 `[FR-3]`, SF-04 `[FR-5, FR-6]`. There is no
 TECH-025 FR-4 equivalent here and no design edit is needed.
 
 > ~~Note the plan filenames are `TECH-002_sf1_…`, not `sf01`. The gate's glob
@@ -77,14 +77,14 @@ share one scanner.
 
 **R6 — A live NFR-5 violation, and a latent false credit.**
 `tests/integration/sandbox/test_dispatcher_domain_conformance.py` opens with
-`"""Integration tests for TECH-002 SF-2 Sandbox Domain Alignment edge cases."""` — a registry ID in
+`"""Integration tests for TECH-002 SF-02 Sandbox Domain Alignment edge cases."""` — a registry ID in
 prose rather than on a `Proves:` line. It carries no `FR-N` token today, so it credits nothing *yet*;
 the moment anyone adds one it silently credits TECH-002. This is the same shape as the `TECH-022`
 defect SF-04 CB-3 found, caught here **before** it can pay out rather than after.
 
 `tests/unit/sandbox/test_sandbox_registry.py:162` also carries a stale `"TDD red-phase marker for
-SF-2"`. Not a registry ID, so not an NFR-5 violation — but it describes a state that stopped being
-true when SF-2 shipped, and the test now passes for real. Reword while adding the citation.
+SF-02"`. Not a registry ID, so not an NFR-5 violation — but it describes a state that stopped being
+true when SF-02 shipped, and the test now passes for real. Reword while adding the citation.
 
 ## Proposed Changes
 

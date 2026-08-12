@@ -1,8 +1,8 @@
-# Implementation Plan: Database Table Prefix Harmonization [SF-3: Prefix Raw-SQLite3 Tables]
+# Implementation Plan: Database Table Prefix Harmonization [SF-03: Prefix Raw-SQLite3 Tables]
 - **Feature ID**: TECH-005
-- **Sub-Feature**: SF-3 — Prefix Raw-SQLite3 Tables
+- **Sub-Feature**: SF-03 — Prefix Raw-SQLite3 Tables
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-3
+- **Design Section**: §Sub-Feature Breakdown → SF-03
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf03_implementation_plan.md
 - **Status**: APPROVED
 
@@ -23,7 +23,7 @@ allowlisted warning for `workspace_roots`, 0 failures).
 | `sw_reservations` | `flow_reservations` | `src/specweaver/core/flow/engine/reservation.py:35` | none |
 
 **No `CREATE INDEX` statements exist in any of the three files** (confirmed by full read) — unlike
-SF-2/FR-6, there is no index-rename sub-task here.
+SF-02/FR-6, there is no index-rename sub-task here.
 
 **These are real, persistent, user-owned files, not test-only artifacts** — renaming is a genuine
 data migration, not a code-only change:
@@ -34,8 +34,8 @@ data migration, not a code-only change:
 
 A blind `CREATE TABLE IF NOT EXISTS <new_name>` on an existing installation would create an empty
 new-named table alongside the old one, **silently orphaning every persisted graph, pipeline run,
-and audit event** — this violates TECH-005's own NFR-1 ("Zero data loss") which SF-1/SF-2 satisfied
-via Alembic's `op.rename_table` for the SQLAlchemy tables. SF-3 needs the raw-`sqlite3` equivalent:
+and audit event** — this violates TECH-005's own NFR-1 ("Zero data loss") which SF-01/SF-02 satisfied
+via Alembic's `op.rename_table` for the SQLAlchemy tables. SF-03 needs the raw-`sqlite3` equivalent:
 `ALTER TABLE <old> RENAME TO <new>`.
 
 **`store.py` already has a version-gated migration precedent** (`_ensure_schema()`: v1→v2 adds
@@ -135,7 +135,7 @@ and the seven test files).
 # Red/Blue Team Review Report
 
 ## Summary
-- **Target**: TECH-005 SF-3 Implementation Plan
+- **Target**: TECH-005 SF-03 Implementation Plan
 - **Cycles**: 2
 - **Findings**: 6 (Cycle 1) + 1 (Cycle 2) = 7
 - **Critical/High fixes applied**: 3

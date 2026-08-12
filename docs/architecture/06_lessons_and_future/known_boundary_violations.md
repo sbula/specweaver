@@ -18,7 +18,7 @@
 > - **Cache-Flush Dilemma**: We intentionally prevented `flow/engine` from consuming `assurance/graph/hasher.py` to trigger the actual metric flush post-pipeline. Instead, we shifted the operation purely to the `cli/pipelines.py` orchestrator which legally consumes both layer roots.
 
 > **Resolved in Feature 3.14 (Artifact Tagging Engine)**
-> The implementation plan for SF-2 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.sandbox.lineage`. However, `llm/` strictly forbids all imports from `sandbox/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
+> The implementation plan for SF-02 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.sandbox.lineage`. However, `llm/` strictly forbids all imports from `sandbox/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
 
 > **Resolved in Feature 3.11a:**
 > - Deleted `sandbox/research/` entirely

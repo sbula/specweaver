@@ -1,10 +1,10 @@
-# Implementation Plan: BaseTool & Registry Core [SF-1]
+# Implementation Plan: BaseTool & Registry Core [SF-01]
 - **Feature ID**: TECH-002
-- **Sub-Feature**: SF-1 — BaseTool and ToolRegistry Core
+- **Sub-Feature**: SF-01 — BaseTool and ToolRegistry Core
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf01_implementation_plan.md
-- **Status**: IMPLEMENTED (SF-1)
+- **Status**: IMPLEMENTED (SF-01)
 
 ---
 
@@ -25,9 +25,9 @@ This implementation plan has been successfully executed with zero deviations. Al
 - **Metaclass Registrations:** To preserve domain boundaries and prevent premature C-bindings or OS imports, all tools must be registered explicitly in a central registry utilizing lazy factory functions (no module-scope imports in `registry.py`).
 - **Import Chains:** Standard registry definition must perform imports dynamically inside closures (nested `def` or lambdas) rather than at module scope.
 - **Tach Exposure:** `specweaver.sandbox.registry` must be added to the sandbox interfaces expose block in `tach.toml`. It was **not** previously exposed (the `registry` at line 329 of tach.toml belongs to `specweaver.assurance.validation`, not sandbox).
-- **`BaseTool` contract (AD-2):** `BaseTool` exposes only `role` and `definitions()`. The `allowed_intents` property was removed — the facade RBAC pattern already enforces intent restrictions by physically removing methods. No caller reads `allowed_intents`. Removing it avoids redundancy and makes all existing facades conformant with minimal changes in SF-2.
-- **Red-phase tests:** The SF-1 test file intentionally includes `isinstance(tool, BaseTool)` assertions that are **RED** at the end of SF-1. These turn **GREEN** in SF-2 when domain facades inherit `BaseTool`. This is the explicit TDD contract between SF-1 and SF-2.
-- **Factory kwargs isolation (AD-7):** Each factory closure inside `get_standard_registry()` must cherry-pick **only** the kwargs it needs and discard the rest. Domain factories have wildly incompatible signatures (e.g. `ProtocolTool()` takes zero args, `create_filesystem_interface` needs `role/cwd/grants`, `MCPExplorerTool` needs `context`). A flat `**kwargs` passthrough would crash with `TypeError` at SF-3 integration time. The `ToolRegistry` itself stays dumb — it passes `**kwargs` to closures, and each closure owns its own parameter mapping.
+- **`BaseTool` contract (AD-2):** `BaseTool` exposes only `role` and `definitions()`. The `allowed_intents` property was removed — the facade RBAC pattern already enforces intent restrictions by physically removing methods. No caller reads `allowed_intents`. Removing it avoids redundancy and makes all existing facades conformant with minimal changes in SF-02.
+- **Red-phase tests:** The SF-01 test file intentionally includes `isinstance(tool, BaseTool)` assertions that are **RED** at the end of SF-01. These turn **GREEN** in SF-02 when domain facades inherit `BaseTool`. This is the explicit TDD contract between SF-01 and SF-02.
+- **Factory kwargs isolation (AD-7):** Each factory closure inside `get_standard_registry()` must cherry-pick **only** the kwargs it needs and discard the rest. Domain factories have wildly incompatible signatures (e.g. `ProtocolTool()` takes zero args, `create_filesystem_interface` needs `role/cwd/grants`, `MCPExplorerTool` needs `context`). A flat `**kwargs` passthrough would crash with `TypeError` at SF-03 integration time. The `ToolRegistry` itself stays dumb — it passes `**kwargs` to closures, and each closure owns its own parameter mapping.
 
 ---
 
@@ -76,7 +76,7 @@ This implementation plan has been successfully executed with zero deviations. Al
 ### Component: Config & Interface (L4)
 
 #### [MODIFY] [tach.toml](file:///c:/development/pitbula/specweaver/tach.toml)
-- Add `"registry"` to the `specweaver.sandbox` interfaces expose list so external consumers (e.g. `core.flow` in SF-3) can import it without tach violations.
+- Add `"registry"` to the `specweaver.sandbox` interfaces expose list so external consumers (e.g. `core.flow` in SF-03) can import it without tach violations.
 
 ---
 
@@ -85,7 +85,7 @@ This implementation plan has been successfully executed with zero deviations. Al
 ### Automated Tests
 File: `tests/unit/sandbox/test_registry.py`
 
-Tests that must be **GREEN** at end of SF-1:
+Tests that must be **GREEN** at end of SF-01:
 - `test_basetool_abc_instantiation_raises` — `BaseTool` cannot be instantiated directly (`TypeError`).
 - `test_incomplete_tool_subclass_raises` — A subclass missing `role` or `definitions` cannot be instantiated.
 - `test_conforming_tool_instantiation` — A fully conforming subclass can be instantiated.
@@ -96,8 +96,8 @@ Tests that must be **GREEN** at end of SF-1:
 - `test_registry_factory_exception_handling` — A crashing factory logs an exception and skips; other tools are still returned.
 - `test_registry_duplicate_registration_overwrites` — Registering the same key twice silently overwrites the factory.
 
-Tests that must be **RED** at end of SF-1 (turn GREEN in SF-2):
-- `test_standard_registry_tools_are_basetool_instances` — Each tool returned by `get_standard_registry().create_tools(...)` is `isinstance(tool, BaseTool)`. This is explicitly a red-phase marker for SF-2.
+Tests that must be **RED** at end of SF-01 (turn GREEN in SF-02):
+- `test_standard_registry_tools_are_basetool_instances` — Each tool returned by `get_standard_registry().create_tools(...)` is `isinstance(tool, BaseTool)`. This is explicitly a red-phase marker for SF-02.
 
 ### Manual Verification
 - Run tests (expect 9 green, 1 xfail):

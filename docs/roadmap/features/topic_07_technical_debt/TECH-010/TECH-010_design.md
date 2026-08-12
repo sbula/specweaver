@@ -3,7 +3,7 @@
 - **Feature ID**: TECH-010
 - **Epic**: Topic 07 (Technical Debt)
 - **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: Found during C-EXEC-02 SF-1's pre-commit gate (2026-07-13) while auditing repo-wide `ruff` `TID251` (banned raw `subprocess`) violations.
+- **Origin**: Found during C-EXEC-02 SF-01's pre-commit gate (2026-07-13) while auditing repo-wide `ruff` `TID251` (banned raw `subprocess`) violations.
 
 ## Problem Statement
 

@@ -1,9 +1,9 @@
-# Implementation Plan: Standard Local Execution [SF-1: SubprocessExecutor Core]
+# Implementation Plan: Standard Local Execution [SF-01: SubprocessExecutor Core]
 
 - **Feature ID**: E-EXEC-01
-- **Sub-Feature**: SF-1 — SubprocessExecutor Core
+- **Sub-Feature**: SF-01 — SubprocessExecutor Core
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
 - **Status**: APPROVED
 
@@ -13,7 +13,7 @@ Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult
 
 **FRs**: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10
 
-**Runners in scope** (all 5 existing language runners that will consume this in SF-2):
+**Runners in scope** (all 5 existing language runners that will consume this in SF-02):
 - `PythonQARunner` (`sandbox/language/core/python/runner.py`)
 - `TypeScriptRunner` (`sandbox/language/core/typescript/runner.py`)
 - `RustRunner` (`sandbox/language/core/rust/runner.py`)
@@ -364,7 +364,7 @@ Empty init.
   - [NEW] `tests/unit/sandbox/execution/__init__.py`
   - [NEW] `tests/unit/sandbox/execution/test_executor.py`
   - [NEW] `tests/unit/sandbox/execution/test_platform_limiter.py`
-- **Message**: `feat(sandbox): add SubprocessExecutor with cross-platform resource limits [E-EXEC-01 SF-1]`
+- **Message**: `feat(sandbox): add SubprocessExecutor with cross-platform resource limits [E-EXEC-01 SF-01]`
 - **Verification**: All new tests pass. Full 4900+ suite regression. Lint clean. Complexity clean.
 
 ## Verification Plan

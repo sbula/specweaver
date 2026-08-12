@@ -90,8 +90,8 @@ Phases 1–7 complete (`TECH-025_sf05_precommit_review_cb1.md`, `TECH-025_sf05_w
       → FR-5.
 - [x] **T8 — NFR-5 repairs.** Remove the registry ID from
       `test_dispatcher_domain_conformance.py`'s docstring; reword the stale `"TDD red-phase marker
-      for SF-2"` in `test_sandbox_registry.py:162`, which describes a state that stopped being true
-      when SF-2 shipped.
+      for SF-02"` in `test_sandbox_registry.py:162`, which describes a state that stopped being true
+      when SF-02 shipped.
 - [x] **T9 — Ledger verification, by file list not by count (C4).** `TECH-002` → 0 · `TECH-001`
       stays 0 · `TECH-005` stays 1 · `TECH-022` stays 1 · `INT-US-21` stays 0. **Plus the positive
       attribution check the plan lacked:** each TECH-002 FR must resolve to the file that genuinely
