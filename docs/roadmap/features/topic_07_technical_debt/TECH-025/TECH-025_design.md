@@ -263,7 +263,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Closure
