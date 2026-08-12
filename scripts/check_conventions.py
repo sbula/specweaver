@@ -49,6 +49,13 @@ Six rules:
                      so there is still one place to look. `--update-naming-baseline` rewrites the
                      baseline, and the diff is meant to be reviewed.
 
+  R7 MODULE NAMING   A module name states a contract, not a location — no `util(s)`, `helper(s)`,
+                     `misc`, `shared` or `common(s)` segment outside the L0 `specweaver/commons`
+                     leaf. A name that promises nothing cannot be contradicted, so it accretes:
+                     `runner_utils.py` grew 413 -> 469 lines between `TECH-015` being filed and
+                     being worked. Census against a frozen baseline like R6; the count may fall,
+                     never rise. `--update-grab-bag-baseline` rewrites it.
+
 Exit 1 on any violation.
 """
 
@@ -98,6 +105,15 @@ test_class_naming_census = _r6.census
 load_naming_baseline = _r6.load_baseline
 write_naming_baseline = _r6.write_baseline
 naming_regressions = _r6.regressions
+
+#: R7 lives in a sibling for the same reasons as R6 — a repo-wide census against a frozen baseline,
+#: and this file has no headroom. `TECH-015`: a module whose name promises nothing accretes.
+_r7 = _load_sibling("_grab_bag_names")
+GRAB_BAG_BASELINE_PATH = _r7.BASELINE_PATH
+grab_bag_census = _r7.census
+load_grab_bag_baseline = _r7.load_baseline
+write_grab_bag_baseline = _r7.write_baseline
+grab_bag_regressions = _r7.regressions
 
 #: Names with no contract of their own — they accrete whatever has no better home.
 GRAB_BAG_NAMES = {"util", "utils", "helper", "helpers", "misc", "shared", "common"}
@@ -451,6 +467,52 @@ def _naming_ratchet_failed() -> bool:
     return True
 
 
+def _grab_bag_ratchet_failed() -> bool:
+    """R7: fail only on module names that are NEW since the baseline."""
+    current = grab_bag_census(REPO_ROOT)
+    baseline = load_grab_bag_baseline()
+    if baseline is None:
+        print(
+            f"FAIL  R7: no baseline at {GRAB_BAG_BASELINE_PATH.relative_to(REPO_ROOT).as_posix()} "
+            "— run `python scripts/check_conventions.py --update-grab-bag-baseline`"
+        )
+        return True
+
+    new = grab_bag_regressions(current, baseline)
+    if not new:
+        return False
+    print(f"\nR7 -- module name promises nothing ({len(new)} new):\n")
+    for module in new:
+        print(f"  {module}")
+    print(
+        "\nBLOCKED: name the module for its contract, not its location. A name that promises "
+        "nothing cannot be contradicted, so it accretes. The count may fall, never rise."
+    )
+    return True
+
+
+def _rewrote_a_baseline(args: argparse.Namespace) -> bool:
+    """Handle the two `--update-*-baseline` flags, or report that neither was asked for.
+
+    Split out of `main` rather than inlined: two ratchets means two flags, and that was enough to
+    push `main` past the complexity ceiling. Suppressing it would have been the wrong lesson from
+    `TECH-020`, which this repo just finished paying for.
+    """
+    if args.update_grab_bag_baseline:
+        modules = grab_bag_census(REPO_ROOT)
+        write_grab_bag_baseline(modules)
+        print(f"R7 baseline written: {len(modules)} module(s)")
+        return True
+
+    if args.update_naming_baseline:
+        counts = test_class_naming_census()
+        write_naming_baseline(counts)
+        print(f"R6 baseline written: {sum(counts.values())} class(es) across {len(counts)} dir(s)")
+        return True
+
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -461,12 +523,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="rewrite the R6 baseline from the current tree; the diff is meant to be reviewed",
     )
+    ap.add_argument(
+        "--update-grab-bag-baseline",
+        action="store_true",
+        help="rewrite the R7 baseline from the current tree; the diff is meant to be reviewed",
+    )
     args = ap.parse_args(argv)
 
-    if args.update_naming_baseline:
-        counts = test_class_naming_census()
-        write_naming_baseline(counts)
-        print(f"R6 baseline written: {sum(counts.values())} class(es) across {len(counts)} dir(s)")
+    if _rewrote_a_baseline(args):
         return 0
 
     raw = [Path(p) for p in args.paths] if args.paths else [REPO_ROOT / "src", REPO_ROOT / "tests"]
@@ -496,8 +560,10 @@ def main(argv: list[str] | None = None) -> int:
     # the "repo-wide gate, not inner loop" line. Keying on `args.paths` being empty does NOT work —
     # the gate always passes paths, which silently disabled R6 until a probe caught it.
     r6_failed = _naming_ratchet_failed() if _whole_test_tree_in_scope(raw) else False
+    # R7 is a repo-wide census too, and gated the same way for the same reason.
+    r7_failed = _grab_bag_ratchet_failed() if _whole_test_tree_in_scope(raw) else False
 
-    if not violations and not r6_failed:
+    if not violations and not r6_failed and not r7_failed:
         print(f"Conventions: {len(files)} file(s) checked, {len(FAMILIES)} family(ies), all clean")
         return 0
 
