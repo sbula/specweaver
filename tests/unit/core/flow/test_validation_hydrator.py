@@ -2,7 +2,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for the validation hydrator — QA context bridge."""
+"""Tests for the validation hydrator — QA context bridge.
+
+The injection half of the requirement: handlers pre-run the QA atoms and place their results in
+`Rule.context`, so the rules read hydrated results instead of importing the sandbox themselves. The
+absence half — that nothing under `assurance/validation/` imports the sandbox — is proven in
+`tests/unit/test_layer_import_isolation.py`, which is a separate file on purpose.
+
+Proves: TECH-002 FR-5.
+"""
 
 from __future__ import annotations
 

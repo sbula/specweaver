@@ -12,6 +12,11 @@ from specweaver.sandbox.registry import ToolRegistry, get_standard_registry
 
 
 class TestBaseTool:
+    """`BaseTool` is an ABC that every tool must satisfy: `role` and `definitions`.
+
+    Proves: TECH-002 FR-1.
+    """
+
     def test_basetool_abc_instantiation_raises(self) -> None:
         with pytest.raises(TypeError):
             BaseTool()  # type: ignore
@@ -55,6 +60,14 @@ class TestBaseTool:
 
 
 class TestToolRegistry:
+    """`ToolRegistry` registers factories and instantiates them on demand.
+
+    Explicit registration, not `__init_subclass__` — the design rejected import-time auto-discovery
+    because it pollutes the memory space and bypasses isolation limits.
+
+    Proves: TECH-002 FR-2.
+    """
+
     def test_registry_happy_path(self) -> None:
         registry = ToolRegistry()
 
@@ -159,10 +172,13 @@ class TestToolRegistry:
         assert tools[0].role == "b"
 
     def test_standard_registry_tools_are_basetool_instances(self) -> None:
-        """TDD red-phase marker for SF-2: domain facades must inherit BaseTool."""
+        """Every tool the standard registry builds is a `BaseTool` instance.
+
+        This was written as a red-phase marker and its docstring still said so long after the work
+        landed — describing a state that stopped being true when the facades were made to conform.
+        The assertion below has been passing for real ever since.
+        """
         registry = get_standard_registry()
-        # Will crash or return non-BaseTool instances until SF-2 makes
-        # domain facades conform to BaseTool.
         tools = registry.create_tools(["web"], role="reviewer")
         assert len(tools) == 1
         assert isinstance(tools[0], BaseTool), "Domain tools must inherit from BaseTool"
@@ -174,6 +190,14 @@ class TestNoRoleSentinel:
 
 
 class TestBaseToolConformance:
+    """Every domain tool conforms to `BaseTool`.
+
+    Parametrized over the registry's tools rather than a hand-written list, so a new domain that
+    does not conform fails here without anyone remembering to extend the test.
+
+    Proves: TECH-002 FR-4.
+    """
+
     @pytest.mark.parametrize(
         "tool_factory",
         [
@@ -243,6 +267,13 @@ class TestBaseToolConformance:
 
 
 class TestFacadeConformance:
+    """Every domain facade conforms to `BaseTool` and registers its factory.
+
+    The facade half of the requirement above; parametrized for the same reason.
+
+    Proves: TECH-002 FR-4.
+    """
+
     @pytest.mark.parametrize(
         "facade_factory",
         [

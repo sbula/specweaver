@@ -2,6 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The dispatcher delegates tool creation to `ToolRegistry` instead of constructing tools itself.
+
+Asserts `create_standard_set` calls `ToolRegistry.create_tools` with the right tools, role and cwd,
+and that grant and archetype logic survive the delegation.
+
+Proves: TECH-002 FR-3.
+"""
+
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

@@ -82,24 +82,27 @@ Phases 1–7 complete (`TECH-025_sf05_precommit_review_cb1.md`, `TECH-025_sf05_w
 
 *Turns the ledger green. It answers: is it linked?*
 
-- [ ] **T6 — Plan-side citations.** 4 plans, no scope added, dated note naming TECH-025 as author
+- [x] **T6 — Plan-side citations.** 4 plans, no scope added, dated note naming TECH-025 as author
       under AD-4: `sf01` → `FR-1`, `FR-2` · `sf02` → `FR-4` · `sf03` → `FR-3` · `sf04` → `FR-5`, `FR-6`.
-- [ ] **T7 — Test-side citations.** Per-class in `test_sandbox_registry.py` (`TestBaseTool` → FR-1,
+- [x] **T7 — Test-side citations.** Per-class in `test_sandbox_registry.py` (`TestBaseTool` → FR-1,
       `TestToolRegistry` → FR-2, `TestBaseToolConformance` + `TestFacadeConformance` → FR-4);
       module-level on `test_dispatcher_registry_delegation.py` → FR-3; `test_validation_hydrator.py`
       → FR-5.
-- [ ] **T8 — NFR-5 repairs.** Remove the registry ID from
+- [x] **T8 — NFR-5 repairs.** Remove the registry ID from
       `test_dispatcher_domain_conformance.py`'s docstring; reword the stale `"TDD red-phase marker
       for SF-2"` in `test_sandbox_registry.py:162`, which describes a state that stopped being true
       when SF-2 shipped.
-- [ ] **T9 — Ledger verification, by file list not by count (C4).** `TECH-002` → 0 · `TECH-001`
+- [x] **T9 — Ledger verification, by file list not by count (C4).** `TECH-002` → 0 · `TECH-001`
       stays 0 · `TECH-005` stays 1 · `TECH-022` stays 1 · `INT-US-21` stays 0. **Plus the positive
       attribution check the plan lacked:** each TECH-002 FR must resolve to the file that genuinely
       proves it — `FR-4` → `test_sandbox_registry.py`, and **not** `test_architecture.py`. A count
       cannot tell a borrowed citation from a real one, which is exactly how RED-1.1 would have
       shipped green.
 
-**Gate:** `tests.py cb TECH-025 --kind tooling` → pre-commit skill → **HITL stop**.
+**Gate:** ✅ all three tiers run with `--all` (the default profile is unit-only and this boundary
+edits integration files). `check_fr_coverage.py TECH-002` **exit 0**; attribution verified by file
+list, 6/6 correct, none from `test_architecture.py`. Walkthrough:
+`TECH-025_sf05_walkthrough_cb2.md`. → **awaiting commit**.
 
 ## Out of scope
 

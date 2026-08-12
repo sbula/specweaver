@@ -2,7 +2,12 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for TECH-002 SF-2 Sandbox Domain Alignment edge cases."""
+"""Edge cases where a domain facade must still satisfy the tool contract at the boundary.
+
+Deliberately carries no registry ID. It previously named a story in prose, which the citation scan
+treats as a claim: the moment any requirement token appeared in this file it would have credited
+that story with it, for tests written to prove something else.
+"""
 
 from __future__ import annotations
 
@@ -22,8 +27,8 @@ def test_dispatcher_builds_fully_compliant_basetool_set(tmp_path) -> None:
     Ensures that when ToolDispatcher builds a complete standard set of tools,
     every single instantiated interface successfully inherits from BaseTool
     and returns a valid string for its role property.
-    This proves that the SF-2 alignment contract holds at the boundary
-    where tools enter the LLM Flow engine.
+    This proves the alignment contract holds at the boundary where tools enter the LLM Flow
+    engine.
     """
     boundary = WorkspaceBoundary(roots=[tmp_path])
     mock_topology = MagicMock()

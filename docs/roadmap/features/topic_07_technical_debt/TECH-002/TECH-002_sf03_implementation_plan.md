@@ -8,6 +8,14 @@
 
 ---
 
+> **Requirement citations added by `TECH-025` SF-05 on 2026-08-12 — no scope added.** This plan
+> shipped before the FR-traceability gate was wired into the closure process, so the requirements
+> it delivered were never named in it. The line below records what this sub-feature already built;
+> nothing here changes what was implemented, and no requirement is claimed that the plan did not
+> deliver. Editing a delivered story's plan is authorised for `TECH-025` only, by its AD-4.
+>
+> **Requirements delivered by this sub-feature: `FR-3`.**
+
 ## 1. Research Notes
 
 ### 1.1 Current `create_standard_set` Anatomy
