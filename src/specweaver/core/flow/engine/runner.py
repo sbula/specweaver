@@ -21,10 +21,8 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.approval import try_approve_parked_step
 from specweaver.core.flow.engine.gates import GateEvaluator
-from specweaver.core.flow.engine.hydration import hydrate_plan_context, rehydrate_from_records
-from specweaver.core.flow.engine.routers import resolve_route_target
+from specweaver.core.flow.engine.hydration import rehydrate_from_records
 from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
     _now_iso,
@@ -35,13 +33,15 @@ from specweaver.core.flow.engine.runner_utils import (
     setup_sandbox_caches,
     verify_vault_security,
 )
-from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,
     StepRecord,
-    StepResult,
-    StepStatus,
+)
+from specweaver.core.flow.engine.step_execution import (
+    LoopAction,
+    LoopState,
+    run_one_step,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
@@ -51,6 +51,12 @@ if TYPE_CHECKING:
     from specweaver.core.flow.handlers.base import RunContext
 
 logger = logging.getLogger(__name__)
+
+#: `resolve_should_isolate` is re-exported, not used here — `TECH-020` moved its only call site
+#: into `step_execution.execute_step`, but existing tests import it from this module and the
+#: refactor's contract is that they pass untouched. Explicit so the next `ruff --fix` does not
+#: quietly delete it again, which is exactly how it broke mid-refactor.
+__all__ = ["PipelineRunner", "resolve_should_isolate"]
 
 
 class PipelineRunner:
@@ -207,7 +213,7 @@ class PipelineRunner:
     # Core execution loop
     # ------------------------------------------------------------------
 
-    async def _execute_loop(  # noqa: C901
+    async def _execute_loop(
         self,
         run: PipelineRun,
         *,
@@ -234,328 +240,15 @@ class PipelineRunner:
         self._log(run, "run_started")
         self._emit("run_started", run=run, total_steps=total)
 
-        # Per-step attempt counters for retry tracking
-        attempts: dict[int, int] = {}
-        route_jumps: int = 0
+        state = LoopState(approve_parked=approve_parked)
 
         while run.current_step < len(run.step_records):
             step_idx = run.current_step
             step_def = self._pipeline.steps[step_idx]
-            attempts.setdefault(step_idx, 0)
+            state.attempts.setdefault(step_idx, 0)
 
-            # INT-US-21 FR-4 — MUST stay at the very top of the loop body. Two later blocks
-            # would otherwise destroy the evidence this decision reads:
-            #   * the staleness bypass below can complete the step as SKIPPED and `continue`,
-            #     discarding the human's approval and the stored result;
-            #   * mark_step_running() overwrites record.status WAITING_FOR_INPUT -> RUNNING.
-            # One-shot: consumed on the first iteration whether or not it approves, so a stale
-            # WAITING_FOR_INPUT record further down the pipeline can never be auto-approved.
-            if approve_parked:
-                approve_parked = False  # one-shot, consumed whether or not it approves
-                if try_approve_parked_step(self, run, step_def, step_idx, total):
-                    continue
-
-            # Look up handler
-            handler = self._registry.get(step_def.action, step_def.target)
-            if handler is None:
-                error_msg = (
-                    f"No handler registered for {step_def.action.value}+{step_def.target.value}"
-                )
-                logger.error(
-                    "[run_id=%s] Step %d/%d '%s': %s",
-                    run.run_id,
-                    step_idx + 1,
-                    total,
-                    step_def.name,
-                    error_msg,
-                )
-                error_result = StepResult(
-                    status=StepStatus.ERROR,
-                    error_message=error_msg,
-                    started_at=_now_iso(),
-                    completed_at=_now_iso(),
-                )
-                run.fail_current_step(error_result)
-                self._persist(run)
-                self._log(run, "step_failed", step_def.name)
-                self._emit(
-                    "step_failed",
-                    step_idx=step_idx,
-                    step_name=step_def.name,
-                    step_def=step_def,
-                    total_steps=total,
-                    result=error_result,
-                )
-                self._emit("run_failed", run=run)
+            if await run_one_step(self, run, state, step_def, step_idx, total) is LoopAction.RETURN:
                 return run
-
-            # Execute step
-
-            if try_staleness_bypass(self, run, step_def, step_idx, total):
-                continue
-
-            run.mark_step_running()
-            self._persist(run)
-            self._log(run, "step_started", step_def.name)
-            logger.info(
-                "[run_id=%s] Step %d/%d '%s' (%s+%s) — executing via %s",
-                run.run_id,
-                step_idx + 1,
-                total,
-                step_def.name,
-                step_def.action.value,
-                step_def.target.value,
-                type(handler).__name__,
-            )
-            self._emit(
-                "step_started",
-                step_idx=step_idx,
-                step_name=step_def.name,
-                step_def=step_def,
-                total_steps=total,
-            )
-
-            try:
-                # Inject flow state for downstream tracking
-                self._context.run = self._context.run.model_copy(
-                    update={
-                        "run_id": run.run_id,
-                        "pipeline_runner": self,
-                        "step_records": [r.model_dump() for r in run.step_records],
-                    }
-                )
-
-                # INT-US-09: tri-state isolation gate (see resolve_should_isolate).
-                # C-EXEC-06: inside an active session, ALL steps already run in the one session
-                # worktree — unconditionally bypass per-step isolation (even explicit
-                # use_worktree=True) so no nested worktree is created.
-                if not getattr(self, "_session_active", False) and resolve_should_isolate(
-                    step_def, self._context
-                ):
-                    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
-
-                    result = await execute_in_sandbox(self, handler, step_def, run, logger)
-                else:
-                    result = await handler.execute(step_def, self._context)
-            except Exception as exc:
-                logger.exception(
-                    "[run_id=%s] Step '%s' raised unhandled exception",
-                    run.run_id,
-                    step_def.name,
-                )
-                result = StepResult(
-                    status=StepStatus.ERROR,
-                    error_message=str(exc),
-                    started_at=_now_iso(),
-                    completed_at=_now_iso(),
-                )
-
-            # Process result: WAITING_FOR_INPUT always parks
-            if result.status == StepStatus.WAITING_FOR_INPUT:
-                logger.info(
-                    "[run_id=%s] Step '%s' waiting for user input — parking run",
-                    run.run_id,
-                    step_def.name,
-                )
-                run.park_current_step(result)
-                self._persist(run)
-                self._log(run, "run_parked", step_def.name)
-                self._emit(
-                    "step_parked",
-                    step_idx=step_idx,
-                    step_name=step_def.name,
-                    step_def=step_def,
-                    total_steps=total,
-                    result=result,
-                )
-                self._emit("run_parked", run=run, step_name=step_def.name)
-                return run
-
-            # Gate evaluation ------------------------------------------------
-            gate = step_def.gate
-            if gate is not None:
-                logger.debug(
-                    "[run_id=%s] Evaluating gate on step '%s' (type=%s, condition=%s)",
-                    run.run_id,
-                    step_def.name,
-                    gate.type.value,
-                    gate.condition.value,
-                )
-                verdict = self._gate_evaluator.evaluate(
-                    gate,
-                    result,
-                    step_def,
-                    run,
-                    attempts,
-                )
-                logger.info(
-                    "[run_id=%s] Gate verdict for step '%s': %s (result_status=%s)",
-                    run.run_id,
-                    step_def.name,
-                    verdict,
-                    result.status.value,
-                )
-                self._emit(
-                    "gate_result",
-                    step_idx=step_idx,
-                    step_name=step_def.name,
-                    step_def=step_def,
-                    total_steps=total,
-                    result=result,
-                    verdict=verdict,
-                )
-                # Handle side effects (persistence, logging, feedback)
-                if verdict == "park":
-                    logger.info(
-                        "[run_id=%s] HITL gate on '%s' — parking for human review",
-                        run.run_id,
-                        step_def.name,
-                    )
-                    self._persist(run)
-                    self._log(run, "gate_hitl_park", step_def.name)
-                    self._emit("run_parked", run=run, step_name=step_def.name)
-                    return run
-                if verdict == "stop":
-                    logger.error(
-                        "[run_id=%s] Gate on '%s' failed — stopping pipeline",
-                        run.run_id,
-                        step_def.name,
-                    )
-                    self._persist(run)
-                    self._log(run, "step_failed", step_def.name)
-                    self._emit(
-                        "step_failed",
-                        step_idx=step_idx,
-                        step_name=step_def.name,
-                        step_def=step_def,
-                        total_steps=total,
-                        result=result,
-                    )
-                    self._emit("run_failed", run=run)
-                    return run
-                if verdict == "retry":
-                    logger.info(
-                        "[run_id=%s] Retrying step '%s' (attempt %d)",
-                        run.run_id,
-                        step_def.name,
-                        attempts.get(run.current_step, 0),
-                    )
-                    self._persist(run)
-                    self._log(run, "step_retry", step_def.name)
-                    continue  # re-execute same step
-                if verdict == "loop_back":
-                    logger.info(
-                        "[run_id=%s] Looping back from '%s' to '%s'",
-                        run.run_id,
-                        step_def.name,
-                        gate.loop_target or "?",
-                    )
-                    # Inject feedback into context
-                    self._gate_evaluator.inject_feedback(
-                        self._context,
-                        step_def.name,
-                        gate.loop_target or "",
-                        result,
-                    )
-                    self._persist(run)
-                    self._log(run, "step_loop_back", step_def.name)
-                    continue  # current_step was moved
-                # verdict == "advance" → fall through
-                self._log(run, "gate_passed", step_def.name)
-            else:
-                # No gate: fail on error/failure (backwards compat)
-                if result.status in (StepStatus.FAILED, StepStatus.ERROR):
-                    logger.error(
-                        "[run_id=%s] Step '%s' %s: %s",
-                        run.run_id,
-                        step_def.name,
-                        result.status.value,
-                        result.error_message or "no error message",
-                    )
-                    run.fail_current_step(result)
-                    self._persist(run)
-                    self._log(run, "step_failed", step_def.name)
-                    self._emit(
-                        "step_failed",
-                        step_idx=step_idx,
-                        step_name=step_def.name,
-                        step_def=step_def,
-                        total_steps=total,
-                        result=result,
-                    )
-                    self._emit("run_failed", run=run)
-                    return run
-
-            # Success — advance.
-            # INT-US-21 FR-2: this is the join point BOTH advance paths reach — the gate's
-            # "advance" fall-through above and the no-gate else-branch. Hydrating inside the
-            # gate block would silently skip every gateless plan/decompose step.
-            hydrate_plan_context(step_def, result, self._context)
-
-            logger.debug(
-                "[run_id=%s] Step '%s' completed with status=%s",
-                run.run_id,
-                step_def.name,
-                result.status.value,
-            )
-
-            router = step_def.router
-            if router is not None:
-                target_idx, route_error, route_jumps = resolve_route_target(
-                    self._router_evaluator,
-                    router,
-                    result.output,
-                    self._pipeline,
-                    run.current_step,
-                    route_jumps,
-                )
-                if route_error is not None or target_idx is None:
-                    error_msg = route_error or "Router resolution failed"
-                    logger.error("[run_id=%s] %s", run.run_id, error_msg)
-                    run.fail_current_step(
-                        StepResult(
-                            status=StepStatus.ERROR,
-                            error_message=error_msg,
-                            started_at=_now_iso(),
-                            completed_at=_now_iso(),
-                        )
-                    )
-                    self._persist(run)
-                    self._emit("run_failed", run=run)
-                    return run
-
-                target_step_name = self._pipeline.steps[target_idx].name
-                logger.info(
-                    "[run_id=%s] Router resolved target '%s' (index %d). Routing.",
-                    run.run_id,
-                    target_step_name,
-                    target_idx,
-                )
-                self._emit(
-                    "step_routed",
-                    step_idx=step_idx,
-                    step_name=step_def.name,
-                    target_step=target_step_name,
-                    target_idx=target_idx,
-                    run=run,
-                )
-                self._log(run, "step_routed", step_def.name)
-                run.route_to_step(result, target_idx)
-            else:
-                run.complete_current_step(result)
-
-            run.updated_at = _now_iso()
-            self._persist(run)
-            if router is None:
-                self._log(run, "step_completed", step_def.name)
-            self._emit(
-                "step_completed",
-                step_idx=step_idx,
-                step_name=step_def.name,
-                step_def=step_def,
-                total_steps=total,
-                result=result,
-            )
 
         # All steps done
         logger.info(

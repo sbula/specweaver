@@ -64,7 +64,7 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 | `TECH-019` 🟢 | **Delivered 2026-08-08** — claim discharged. Twelve instruction sites repaired (six more than the ticket claimed) and `check_skill_references.py` now enforces the invariant in the `doc` gate. | — |
 | `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. | **Any** candidate's planning phase |
 | `TECH-014` 🟢 | **Delivered 2026-08-12** — claim discharged; `C-FLOW-12` is no longer gated on it. Four fan-out sites, not the one recorded. | — |
-| `TECH-020` 🔴 | `runner.py` at **exactly 600/600 RED**, `_execute_loop` 360 lines under `# noqa: C901`; sequence before `C-FLOW-12`'s fan-out work or that feature pays the tax. | Candidate 4 (`C-EXEC-07`) → `C-FLOW-12` |
+| `TECH-020` 🟢 | **Delivered 2026-08-12** — claim discharged. `runner.py` 599→292, `_execute_loop` 365→21, the `# noqa: C901` deleted; `C-FLOW-12` no longer pays the tax. | — |
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
@@ -81,7 +81,7 @@ this section drift for a month.
 | 1 | `TECH-019` | ✅ Done 2026-08-08. Fixed the instructions every later ticket is executed through, and shipped the checker that keeps them fixed. |
 | 2 | `TECH-025` | ✅ Done 2026-08-12. Established the citation convention each ticket below meets at its own closure gate. |
 | 3 | `TECH-014` | ✅ Done 2026-08-12. `RunHandle` did make it cheap, but narrowed the failure rather than closing it — a reader saw the wrong handle, not a torn one. Fixed in `PipelineRunner.run`, covering all four fan-out sites. |
-| 4 | `TECH-020` | Reshapes `runner.py`; removes flow's largest complexity offender and changes the import graph 6 and 7 measure. |
+| 4 | `TECH-020` | ✅ Done 2026-08-12. Removed flow's largest complexity offender and added `engine/step_execution.py` — so 6 and 7 now measure the reshaped import graph, not the old one. |
 | 5 | `TECH-015` | Moves/renames modules, changing those imports again. |
 | 6 | `TECH-024` | Measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
 | 7 | `TECH-023` | **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
@@ -687,13 +687,13 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
-    *   `[x]` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
+    *   `✅` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
     *   `[ ]` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
     *   `[ ]` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
     *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
     *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
     *   `✅` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
-    *   `[ ]` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
+    *   `✅` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
     *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)

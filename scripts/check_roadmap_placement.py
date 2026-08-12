@@ -18,6 +18,9 @@ R-LENGTH A line inside an entry is at most `MAX_ENTRY_LINE` characters. Detail l
 R-OWNER  A bare `SF-NN` must have its owner named — on the line, or by the entry it sits in.
          `SF-01` exists in six stories, so with neither it names nothing. Applies outside entries
          too: the Debt Sequencing prose is exactly where an unowned reference hides.
+R-MARKER A `TECH` line is `[ ]` when open and `✅` when delivered, never `[x]`. The contract
+         showed the open form and not the delivered one, beside an instruction to "check off the
+         boxes" that means user stories — so `[x]` got written twice before anyone noticed.
 
 **Structural, not lexical, and that distinction is the whole design.** An earlier attempt at
 R-PLACE tried to tell legal text from illegal text — `INT-US-NN-SFxx` good, bare `SF-NN` bad — and
@@ -82,6 +85,15 @@ NESTED_ITEM = re.compile(r"^ {8,}\*\s")
 #: …which is legal exactly when it names a bold registry ID.
 BOLD_ID = re.compile(rf"\*\*{STORY_ID}:\*\*")
 
+#: A `TECH` line carrying a checked user-story box. `[ ]` (open) and `✅` (delivered) are the only
+#: two legal markers; `[x]` appears nowhere else in the file.
+#:
+#: The rule exists because the contract showed what an OPEN TECH line looks like and never what a
+#: delivered one looks like, while the instruction beside it — "check off the boxes" — is user-story
+#: vocabulary. Read across, that yields `[x]`, which was written twice on 2026-08-12 before anyone
+#: noticed. Scoped to TECH ids on purpose: a real user story's boxes are legitimately `[x]`.
+CHECKED_TECH = re.compile(r"^\s*\*\s+`\[x\]`\s+\*\*(TECH-\d+):\*\*")
+
 #: A sub-feature reference.
 BARE_SF = re.compile(r"(?<![\w-])SF-\d+")
 #: Any registry id appearing on the line. Its presence is what makes an `SF-NN` on that line
@@ -115,6 +127,13 @@ def _violations(text: str) -> list[str]:
             out.append(
                 f"{number}: R-LENGTH line is {len(line)} chars (max {MAX_ENTRY_LINE}) — the "
                 f"detail belongs in the topic doc: {line.strip()[:60]}"
+            )
+
+        checked = CHECKED_TECH.match(line)
+        if checked:
+            out.append(
+                f"{number}: R-MARKER {checked.group(1)} uses `[x]` — a TECH line is `[ ]` when "
+                f"open and `✅` when delivered; `[x]` is user-story vocabulary"
             )
 
         if BARE_SF.search(line) and not ID_ON_LINE.search(line) and entry is None:

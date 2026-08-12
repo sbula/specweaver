@@ -51,7 +51,15 @@ vocabulary:
 ```
 ### 🔧 Technical Debt (TECH)
     *   `[ ]` **TECH-030:** [An Empty FolderGrant Path Diverges by Platform](features/…)
+    *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/…)
 ```
+
+**R-MARKER — a TECH line is `` `[ ]` `` when open and `` `✅` `` when delivered. Never `` `[x]` ``.**
+
+`[x]` is user-story vocabulary, and the instruction below to "check off the boxes" is about user
+stories and minted sub-stories only. Applied to a `TECH` line it produces a marker that exists
+nowhere else in the file — which is exactly how it got written twice on 2026-08-12 before anyone
+noticed. `check_roadmap_placement.py` now rejects it.
 
 ## Two things that look like exceptions and are not
 
