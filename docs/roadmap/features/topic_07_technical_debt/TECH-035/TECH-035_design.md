@@ -2,8 +2,11 @@
 
 - **Feature ID**: TECH-035
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL 2026-08-12 — the ratchet is delivered and the gate is green; **19 incohesive
-  classes and 1 oversized remain frozen**. See §Delivery. This stays open as the reduction work.
+- **Status**: PARTIAL 2026-08-12 — the ratchet is delivered and the gate is green; 19 incohesive
+  classes and 1 oversized remain frozen, but **11 of the 19 are a measurement defect, not debt** —
+  the dispatcher question is settled, see §The dispatcher question, answered. Real remaining
+  scope: **8 classes + 1 oversized**, and a checker fix that must land before the reduction work so
+  it is not measured against a knowingly-wrong baseline.
 - **Origin**: Found 2026-08-12 during `TECH-023` batch 2. The gate fired for the first time in the
   session because that commit finally *changed* a file it covers — see "Why nobody had seen this".
 
@@ -94,12 +97,10 @@ identical split, and three atoms that each separate intent-dispatch from executi
 - **Fix the groups, not the classes.** Roughly five decisions rather than 23 refactors. `TECH-034`
   has since taken the parsers, so the largest remaining group is **one class** —
   `BaseTreeSitterParser` — not eleven.
-- **Decide what `LCOM4` should mean for a dispatcher.** `FileSystemAtom`, `GitAtom` and
-  `QARunnerAtom` split into "the `_intent_*` handlers" and "`run`". That is arguably the *correct*
-  shape for an intent dispatcher, not a defect — in which case the answer is a documented,
-  reviewable exemption rather than a forced split. **This must be decided before any of the three
-  are touched**, because "the metric is wrong here" and "the class is wrong here" lead to opposite
-  work.
+- ~~**Decide what `LCOM4` should mean for a dispatcher.**~~ **SETTLED 2026-08-12 — see
+  §The dispatcher question, answered.** The answer is neither an exemption nor a split: the three
+  atoms are a **measurement defect** in `check_class_health.py`, and the same defect accounts for
+  **11 of the 19** frozen classes.
 
 ## Non-Goals (proposed, pending design)
 
@@ -198,3 +199,82 @@ the suppressions gate's own instruction. Against it, this session removed six `n
 threshold at `LCOM4=2`, deliberately: what is left is construction plus the per-language contract,
 which is one job stated two ways rather than two jobs. Squeezing it to 1 would be chasing the
 metric.
+
+## The dispatcher question, answered — 2026-08-12
+
+**Verdict: the metric is wrong there.** Not a documented exemption, and not a split. The three
+atoms' `LCOM4=2` is an artifact of how `check_class_health.py` builds its graph, and the same
+artifact accounts for **11 of the 19 frozen classes**. Measured, not read.
+
+### The mechanism
+
+`analyse_class` admits a method to the cohesion graph when it is not `_is_stateless` — and
+`_is_stateless` counts *calling a sibling* as coupling (`called & method_names`, line 177). But
+edges are only drawn **between methods that are both in `graph_nodes`** (lines 258–262). When the
+only sibling a method calls is itself excluded as stateless, the caller is **admitted and then
+stranded** as a singleton component. The two rules disagree, and the disagreement inflates `LCOM4`
+by exactly one per stranded caller.
+
+All three atoms hit it identically. `run` is not coupled to its `_intent_*` handlers by attribute
+(dispatch is `getattr(self, f"_intent_{intent}")`, invisible to AST analysis) — it is admitted
+solely because it calls `self._known_intents()`, which touches no attribute and is therefore
+excluded:
+
+```
+FileSystemAtom  LCOM4=2   comp 1: the 6 _intent_* + _validate_single_boundary + cwd   comp 2: run
+GitAtom         LCOM4=2   comp 1: the 15 _intent_* + cwd                              comp 2: run
+QARunnerAtom    LCOM4=2   comp 1: the 6 _intent_*                                     comp 2: run
+```
+
+**Probed, not inferred.** A synthetic dispatcher scores `LCOM4=1`; adding a single
+`self._known_intents()` call to its `run` — no other change, no design difference — drives it to
+2 with `run` alone in component 2. *A metric that flips on whether a dispatcher publishes its
+known-intent list is not measuring cohesion.*
+
+### It is not just the dispatchers — 11 of 19
+
+Re-scoring every frozen class with graph admission re-tested against surviving siblings:
+
+| Class | frozen | corrected |
+|---|---|---|
+| `PythonStandardsAnalyzer` | 6 | 0 † |
+| `JSStandardsAnalyzer` | 5 | 0 † |
+| `AsyncAPIParser`, `GRPCParser` | 2 | 0 † |
+| `FileSystemAtom`, `GitAtom`, `QARunnerAtom` | 2 | **1** |
+| `Java`/`Kotlin`/`Rust`/`TypeScript` `CodeStructure` | 2 | **1** |
+
+`GRPCParser` is the clearest case: `extract_endpoints` and `extract_messages` **both call
+`self._parse_proto`**. They are coupled *through* it — but `_parse_proto` touches no attribute, so
+it is excluded and both callers strand. The honest score is 1. The ticket's §"two protocol parsers
+with an identical split" reading was wrong for the same reason the dispatcher reading was.
+
+The 8 that survive correction are real and remain this ticket's scope: `TopologyGraph` (3),
+`TSStandardsAnalyzer` (3), `RichPipelineDisplay`, `MCPExplorerTool`, `BaseTreeSitterParser`,
+`GoCodeStructure`, `MarkdownCodeStructure`, `SqlCodeStructure` (2 each).
+
+### † The `0` is a second finding, and must not be shipped silently
+
+Four classes correct to **`LCOM4=0`** — an empty graph. That is the *correct* reading:
+`PythonStandardsAnalyzer` holds **no instance state at all** (every method's `self.` references are
+method names, never attributes), so there is nothing for cohesion to be *of*. But `incohesive()` is
+`lcom4 > 1`, so **0 passes** — and a stateless class would then be unmeasurable rather than
+measured.
+
+That is precisely this ticket's own subject: *a check that silently does not run is
+indistinguishable from one that passes*. Any fix must therefore decide, explicitly and in the
+output, what a stateless class means — report it under a separate rule, or exempt it with a stated
+reason. **It must not be allowed to score 0 and pass quietly.**
+
+### What this does not license
+
+This is **not** relaxing the threshold, which stays at `MAX_LCOM4 = 1` and remains a non-goal
+above. It is making graph *admission* agree with graph *edges*. The naive repair (iterate admission
+to a fixed point) was tried first and is wrong on its own — it produces the `0`s above with no
+signal that it did.
+
+### Consequence for the ticket
+
+The frozen baseline currently records 11 scores that are **not debt**, so "19 incohesive classes"
+overstates the real figure by more than half. The reduction work is **8 classes**, and the first
+deliverable is the checker fix plus a re-freeze — otherwise later work is measured against a
+baseline that is wrong in a known direction.
