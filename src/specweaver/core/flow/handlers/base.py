@@ -6,19 +6,24 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003 — Pydantic needs Path at runtime
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from specweaver.core.flow.engine.state import StepResult, StepStatus
+# Re-exports, NOT definitions. `TECH-015` moved these out; ~30 files import them from here and
+# the split is meant to be mechanical, so the old names keep resolving. New code should import
+# from the module that owns them. `_now_iso` was one of SIX identical definitions of
+# `datetime.now(UTC).isoformat()` in this repo — this one delegates to the L0 commons leaf
+# rather than being a seventh place to change.
+from specweaver.commons.timestamps import now_iso as _now_iso
+from specweaver.core.flow.handlers.prompting import _build_base_prompt
+from specweaver.core.flow.handlers.results import _error_result
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult  # noqa: F401
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.infrastructure.llm._prompt_profiles import RenderProfile
-    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+    from specweaver.core.flow.engine.state import StepResult
 
 logger = logging.getLogger(__name__)
 
@@ -247,88 +252,17 @@ class StepHandler(Protocol):
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult: ...
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _now_iso() -> str:
-    return datetime.now(UTC).isoformat()
-
-
-def _error_result(message: str, started_at: str) -> StepResult:
-    return StepResult(
-        status=StepStatus.ERROR,
-        error_message=message,
-        started_at=started_at,
-        completed_at=_now_iso(),
-    )
-
-
-async def _build_base_prompt(
-    context: RunContext,
-    instructions: str,
-    *,
-    profile: RenderProfile | None = None,
-    skeleton_files: dict[str, str] | None = None,
-) -> PromptBuilder:
-    """Build a PromptBuilder with base context (instructions, metadata, rules, memory).
-
-    Args:
-        context: The RunContext for this pipeline step.
-        instructions: Module-specific instruction text.
-        profile: The RenderProfile to use for rendering slots. Defaults to FULL.
-        skeleton_files: Optional skeleton files for PromptBuilder constructor.
-
-    Returns:
-        A partially-built PromptBuilder ready for domain-specific additions.
-
-    The memory hydration is fail-safe: any exception during hydration (db=None,
-    DB failure, Pydantic error) is caught and logged at WARNING. The returned
-    PromptBuilder simply lacks the agent_memory block.
-    """
-    from specweaver.core.flow.handlers._profiles import FULL
-    from specweaver.infrastructure.llm._prompt_profiles import PromptSlot
-    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
-    if profile is None:
-        profile = FULL
-
-    builder = PromptBuilder(profile=profile, skeleton_files=skeleton_files)
-    builder.add_instructions(instructions)
-    builder.add_project_metadata(context.project_metadata)
-
-    if context.guidance.constitution:
-        builder.add_constitution(context.guidance.constitution)
-    if context.guidance.standards:
-        builder.add_standards(context.guidance.standards)
-
-    # Memory Hydration — fail-safe
-    if (
-        PromptSlot.AGENT_MEMORY in profile.active_slots
-        and context.db is not None
-        and context.project_path is not None
-    ):
-        try:
-            from specweaver.workspace.memory.hydrator import MemoryHydrator
-
-            async with context.db.async_session_scope() as session:
-                hydrator = MemoryHydrator(session, context.project_path.name)
-                result = await hydrator.hydrate()
-                if result.task_count > 0:
-                    block = result.format_prompt_block()
-                    builder.add_context(
-                        block, "agent_memory", priority=2, slot=PromptSlot.AGENT_MEMORY
-                    )
-                    logger.info(
-                        "Hydration: %d tasks, %d tokens",
-                        result.task_count,
-                        result.token_estimate,
-                    )
-        except Exception:
-            logger.warning(
-                "Memory hydration failed — continuing without agent_memory",
-                exc_info=True,
-            )
-
-    return builder
+__all__ = [
+    "AnalysisContext",
+    "GraphContext",
+    "GuidanceContent",
+    "IsolationPolicy",
+    "ModelAccess",
+    "PlanContext",
+    "RunContext",
+    "RunHandle",
+    "StepHandler",
+    "_build_base_prompt",
+    "_error_result",
+    "_now_iso",
+]
