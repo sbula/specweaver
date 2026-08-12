@@ -110,8 +110,9 @@ tach check
 >   change could reach beyond unit, and measure all three tiers before calling a baseline complete.**
 > - **Put `.venv/bin` on `PATH`** — `tests/unit/test_architecture.py` shells out to a bare `tach`,
 >   which `.venv/bin/python -m pytest` cannot see.
-> - **`uv sync --all-extras`**, never a bare `uv sync` — `pyproject.toml` has two things named
->   `dev`, and the default installs `pytest-xdist` without `pytest` (see `TECH-028`).
+> - **`uv sync`** is now enough — `TECH-028` collapsed the two definitions named `dev` into one
+>   dependency-group, so the default command installs every tool the gates need and the whole suite
+>   runs on it. `--all-extras` is harmless but no longer required.
 
 ## Critical Rules
 

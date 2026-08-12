@@ -13,7 +13,7 @@ Thank you for your interest in contributing! This guide covers the development w
 ```bash
 git clone https://github.com/sbula/specweaver.git
 cd specweaver
-uv sync --all-extras
+uv sync
 ```
 
 ## Running Tests

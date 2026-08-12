@@ -91,8 +91,8 @@ If you are extending the core Engine:
 Want to build on the engine? SpecWeaver is built with Python 3.11+, `uv`, and SQLite.
 
 ```bash
-# Install with dev dependencies
-uv sync --all-extras
+# Install everything needed to develop and run the suite
+uv sync
 
 # Run the 4,900+ test suite
 uv run pytest

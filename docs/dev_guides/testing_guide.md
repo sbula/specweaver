@@ -3,7 +3,7 @@
 This guide covers how to execute the SpecWeaver test suite effectively using `pytest`. Following these commands ensures you only run what you intend to, avoiding side-effects on unrelated components.
 
 > [!WARNING]
-> Before running the tests, verify that you are running within your initialized Python virtual environment where your dependencies (`pip install -e .[dev]`) are configured. Do not run random `pip install` commands globally, as it will pollute your environment.
+> Before running the tests, verify that you are running within your initialized Python virtual environment where your dependencies (`uv sync`) are configured. Do not run random `pip install` commands globally, as it will pollute your environment.
 
 ## 1. Running the Whole Test Suite
 To run all tests across all layers (Unit, Integration, E2E), use the root command:

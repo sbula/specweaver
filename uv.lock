@@ -2442,16 +2442,6 @@ all-llm = [
 anthropic = [
     { name = "anthropic" },
 ]
-dev = [
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "respx" },
-    { name = "ruff" },
-    { name = "tach" },
-]
 mistral = [
     { name = "mistralai" },
 ]
@@ -2472,8 +2462,16 @@ serve = [
 [package.dev-dependencies]
 dev = [
     { name = "complexipy" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "respx" },
+    { name = "ruff" },
+    { name = "specweaver", extra = ["all-llm", "serve"] },
+    { name = "tach" },
     { name = "types-networkx" },
     { name = "types-pyyaml" },
 ]
@@ -2487,13 +2485,11 @@ requires-dist = [
     { name = "bleach", marker = "extra == 'serve'", specifier = ">=6.1" },
     { name = "fastapi", marker = "extra == 'serve'", specifier = ">=0.115" },
     { name = "google-genai", specifier = ">=1.0.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "junitparser", specifier = ">=3.1.2" },
     { name = "markdown", marker = "extra == 'serve'", specifier = ">=3.5" },
     { name = "mistralai", marker = "extra == 'all-llm'", specifier = ">=1.0" },
     { name = "mistralai", marker = "extra == 'mistral'", specifier = ">=1.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15" },
     { name = "networkx", specifier = "==3.6.1" },
     { name = "openai", marker = "extra == 'all-llm'", specifier = ">=1.5" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.5" },
@@ -2503,17 +2499,11 @@ requires-dist = [
     { name = "proto-schema-parser", specifier = ">=0.5.0" },
     { name = "pydantic", specifier = ">=2.12" },
     { name = "pydantic-settings", specifier = ">=2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-multipart", marker = "extra == 'serve'", specifier = ">=0.0.9" },
-    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.21.1" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11" },
     { name = "sarif-tools", specifier = ">=1.0.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.0" },
-    { name = "tach", marker = "extra == 'dev'" },
     { name = "tomlkit", specifier = ">=0.12.0" },
     { name = "tree-sitter", specifier = ">=0.25.2" },
     { name = "tree-sitter-c", specifier = ">=0.23.0" },
@@ -2530,13 +2520,22 @@ requires-dist = [
     { name = "typer", extras = ["all"], specifier = ">=0.21" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'serve'", specifier = ">=0.34" },
 ]
-provides-extras = ["openai", "anthropic", "mistral", "qwen", "all-llm", "serve", "dev"]
+provides-extras = ["openai", "anthropic", "mistral", "qwen", "all-llm", "serve"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "complexipy", specifier = ">=6.2.0" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "mypy", specifier = ">=1.15" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.25" },
+    { name = "pytest-cov", specifier = ">=6.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "respx", specifier = ">=0.21.1" },
+    { name = "ruff", specifier = ">=0.11" },
+    { name = "specweaver", extras = ["all-llm"] },
+    { name = "specweaver", extras = ["serve"] },
+    { name = "tach" },
     { name = "types-networkx", specifier = ">=3.6.1.20260408" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
 ]

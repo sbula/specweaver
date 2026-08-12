@@ -57,16 +57,6 @@ serve = [
     "markdown>=3.5",
     "bleach>=6.1",
 ]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=6.0",
-    "pytest-asyncio>=0.25",
-    "ruff>=0.11",
-    "mypy>=1.15",
-    "httpx>=0.28",
-    "tach",
-    "respx>=0.21.1",
-]
 
 [build-system]
 requires = ["hatchling"]
@@ -137,10 +127,33 @@ explicit_package_bases = true
 mypy_path = "src"
 
 [dependency-groups]
+# Everything the project needs to test, lint and boundary-check itself. `uv` installs
+# dependency-groups by DEFAULT and extras only on request, so this must be the whole set: a plain
+# `uv sync` has to produce an environment the gates can run in.
+#
+# These were previously split across this group and a `[project.optional-dependencies] dev` of the
+# same name, with `pytest-xdist` here and `pytest` there. A default sync therefore installed the
+# parallel-test plugin without the test runner and the suite reported 5347 errors. `tests/unit/
+# test_dependency_manifest.py` now fails if a name is ever declared in both places again.
+#
+# Extras below are reserved for genuine user-facing options (LLM providers, the REST server).
 dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "tach",
+    "complexipy>=6.2.0",
+    "respx>=0.21.1",
+    "httpx>=0.28",
     "types-networkx>=3.6.1.20260408",
     "types-pyyaml>=6.0.12.20260408",
-    "respx>=0.21.1",
-    "complexipy>=6.2.0",
-    "pytest-xdist>=3.8.0",
+    # The suite exercises the REST layer and every LLM adapter, so testing the project requires
+    # those features installed.
+    # Referenced rather than duplicated: listing fastapi/uvicorn here as well would be a second
+    # place to keep in step, which is the shape of the defect this ticket removes.
+    "specweaver[serve]",
+    "specweaver[all-llm]",
 ]

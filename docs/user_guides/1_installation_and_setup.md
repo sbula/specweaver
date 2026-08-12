@@ -12,7 +12,7 @@ To install SpecWeaver from source:
 ```bash
 git clone https://github.com/sbula/specweaver.git
 cd specweaver
-uv sync --all-extras
+uv sync
 ```
 Or via pip:
 ```bash

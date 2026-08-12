@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-028
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED (2026-08-12)
 - **Origin**: Found 2026-08-11 rebuilding the environment on a Linux server after the Windows
   laptop failed, during the `TECH-025`/`026`/`027` session. A plain `uv sync` produced an
   environment in which **5347 tests errored**. The cause was not the move, the Python version or the
@@ -130,3 +130,67 @@ design work is in two places:
 2. **Which guardrail to ship** — the cheap name-collision parse, or the stronger "a bare `uv sync`
    can run the suite" assertion. The second is the real invariant and the first is what will
    actually stay green in CI; the design should say why it picked one.
+
+---
+
+## Delivery (2026-08-12)
+
+### The stakes were higher than this document recorded
+
+The stub framed this as a developer-setup defect with a latent container consequence. Research found
+a third, live one: **`B-EXEC-01`'s prepare phase runs a bare `uv sync`**
+(`container_executor.py:215`) and the Python QA runner then invokes `python -m pytest`,
+`python -m ruff`, `python -m tach` from that venv. A project whose dev tooling sits in an extra
+therefore gets a sandbox venv with **no test runner**, so sandboxed QA cannot run at all.
+
+### What changed
+
+- **`pyproject.toml`** — one `dev`, in `[dependency-groups]`, holding everything the gates need.
+  The `[project.optional-dependencies] dev` is gone and `respx`'s duplicate with it. Extras keep
+  only genuine user-facing features.
+- The group **references** `specweaver[serve]` and `specweaver[all-llm]` rather than duplicating
+  their contents. The suite exercises the REST layer and every LLM adapter, so testing the project
+  requires those features installed — and listing them twice would be the same
+  two-places-to-keep-in-step defect one level down.
+- **`docs/dev_guides/testing_guide.md`** — `pip install -e .[dev]` no longer resolves; now `uv sync`.
+- **`README.md`, `CONTRIBUTING.md`, the installation guide** — simplified from `uv sync --all-extras`
+  to `uv sync`. They were not wrong, they were compensating; with the default correct there is
+  nothing to compensate for.
+- **`tests/unit/test_dependency_manifest.py`** — the guard.
+
+### `Containerfile` needed no change, which was not the expected outcome
+
+The stub proposed `--extra serve --no-dev`. Once `dev` stopped being an extra, the existing
+`--all-extras --no-dev --frozen` became correct on its own — `--all-extras` can no longer pull dev
+tooling back in because there is no dev extra to pull. Dry-run verified: it now removes `pytest`,
+`pytest-asyncio`, `pytest-cov`, `pytest-xdist`, `ruff`, `mypy`, `tach`, `complexipy`, `respx` and
+their transitive deps, while `fastapi`, `uvicorn`, `openai`, `anthropic` and `mistralai` all stay.
+
+Fixing the manifest fixed the image. Editing the `Containerfile` as planned would have been a second
+change papering over the first.
+
+### Measured
+
+```
+                    before a bare `uv sync`    after
+tests/unit          5347 errors                5633 passed, 0 failed
+```
+
+All three tiers green on a **default** `uv sync`: unit 5633/0, integration 591/0, e2e 191/0.
+
+### The guard
+
+Three tests, each pinning a distinct half of the defect: no name is both a group and an extra; every
+tool the gates invoke is installed by a default sync; and `dev` is not an extra. They assert against
+the **manifest**, not the live venv — deliberately, because the machine where someone already ran
+`--all-extras` is exactly the machine where the defect is invisible.
+
+### Recorded, not fixed
+
+`B-EXEC-01`'s prepare phase still assumes a target project's dev tooling is installed by a default
+`uv sync`. That is true for this repo now, and false for any project using the extras convention.
+Filed separately rather than widening what an untrusted project installs, which would cut against
+the sandbox's purpose.
+
+Also noticed: **`check_fr_coverage.py B-EXEC-01` exits 1** — its own FR ledger was never closed. It
+was never a `TECH-025` subject, so nobody has audited it.
