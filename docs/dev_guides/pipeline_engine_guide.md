@@ -79,7 +79,7 @@ This forces all commands—no matter how small—to persist their context, inher
 
 ## 4. Dynamic Risk-Based Rulesets (DAL Integration)
 
-When validation boundaries restrict capabilities based on runtime architecture (e.g. Flight Critical Data vs Backend Internal), the Pipeline leverages the **Fractal Resolution Engine (SF-02)**.
+When validation boundaries restrict capabilities based on runtime architecture (e.g. Flight Critical Data vs Backend Internal), the Pipeline leverages the **Fractal Resolution Engine** (`C-VAL-03`)**.
 
 Instead of overriding global settings, Handlers like `ValidateSpecHandler` and `ValidateCodeHandler` transparently extract the architectural boundary by locating the target module's `context.yaml`. 
 They read the `.operational.dal_level` context and deep-merge the global standard threshold parameters against the specific architectural assurance matrix bounds safely at runtime.

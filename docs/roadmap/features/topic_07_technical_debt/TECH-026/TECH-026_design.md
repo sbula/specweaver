@@ -495,7 +495,7 @@ where the id is already the bold key; four `Benefit` lines were simply overlong 
 
 ### The template was teaching the defect
 
-`specweaver-design`'s Sub-Feature Breakdown template used `### SF-1:` and `[ID]_sf1_…`. Every design
+`specweaver-design`'s Sub-Feature Breakdown template used `### SF-1:` rather than `### SF-01:`. Every design
 written from it inherited the single-digit form that `TECH-027` then swept. Corrected, and the
 clause-1 guard now scans the skill trees as well as `docs/` — it could not see the template that was
 propagating the error.

@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-027
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: CLAUSE 1 DELIVERED (2026-08-12) — clause 2 open, see §Delivery
+- **Status**: DELIVERED (2026-08-12)
 - **Origin**: Raised by the user 2026-08-11 while reviewing `TECH-026`'s design. `TECH-026` had
   measured where `SF-NN` may appear in the roadmap but never asked what an `SF-NN` *is* — so a
   reader still cannot tell which story a given `SF-01` belongs to, and the repo spells the same
@@ -252,3 +252,44 @@ direction and solved it by going **structural** rather than lexical.
 compute — almost certainly markdown structure (the nearest heading or list item), not a line window.
 That is the same walker `TECH-026`'s checker needs, which is the argument for building them together
 rather than guessing one now.
+
+---
+
+## Clause 2 delivered (2026-08-12)
+
+Enforced by `R-OWNER` in `scripts/check_roadmap_placement.py`, the shared walker `TECH-026` built —
+which is why clause 2 waited for it rather than getting a second scanner.
+
+**The rule as shipped.** A bare `SF-NN` is legal when the path supplies the owner
+(`features/<topic>/<ID>/`), when a registry id appears on the line, or when the enclosing structure —
+heading, list item, table row — names one. Otherwise it is flagged. Entry-scoped, per the decision
+taken at the scope gate.
+
+**Repo-wide repair: five references, not the 113 first measured.**
+
+- Three were the legacy record, excluded by name — its entries write the pre-registry number as
+  `3.14a`, without the word "Feature" the pattern looks for.
+- Two were narrative references in dev guides. Both now name the capability instead of a legacy
+  sub-feature number: `Fractal Resolution Engine` carries `C-VAL-03`, and the Persistent Storage
+  Adapter reference drops a number that means nothing under the current scheme. **Qualifying them as
+  `C-VAL-03 SF-02` was rejected** — the legacy `SF-2` was that scheme's numbering, not `C-VAL-03`'s,
+  so writing it would have invented a fact to satisfy a checker.
+- One was in the roadmap itself: *"`TECH-005` corrected back to 🟢 — SF-03 landed"*, where the
+  subject sits on the previous line. Now written `TECH-005 SF-03`.
+
+### Two bugs the probes caught that reading did not
+
+Both would have shipped a rule that silently never fires — the failure mode this ticket spent four
+measurements learning to fear.
+
+1. **`STORY_ID` matched `SF-03` itself.** Every unqualified reference looked like its own owner, so
+   R-OWNER returned zero on a corpus that had genuine violations. The first repo-wide measurement
+   said "0 across 0 files" and was meaningless.
+2. **The fix was steppable.** Adding `(?!SF-\d)` blocked a match starting at the `S`, and the engine
+   restarted one character later and matched `F-03`. A guard that can be stepped over is not a
+   guard; it needs the leading `(?<![\w-])` too.
+
+`R-OWNER` shipped inert in `TECH-026` for exactly reason 1, and was found here by planting an orphan
+and watching nothing happen. **Probing a new rule against a deliberate violation is what separates a
+checker from a decoration** — the same discipline that caught the vacuous `test_file_size_limit` and
+the never-run symlink test earlier in this work.

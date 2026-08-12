@@ -15,8 +15,9 @@ R-PLACE  A list item at the entry's nesting depth must name a **bold registry ID
          document's `SF-NN` decomposition has no registry ID and so cannot appear.
 R-LENGTH A line inside an entry is at most `MAX_ENTRY_LINE` characters. Detail lives in the topic
          doc and the design; this file carries names and prerequisites.
-R-OWNER  A bare `SF-NN` in prose must have its owning story named — adjacently, or by the entry it
-         sits in. `SF-01` exists in six stories, so outside its own folder it names nothing.
+R-OWNER  A bare `SF-NN` must have its owner named — on the line, or by the entry it sits in.
+         `SF-01` exists in six stories, so with neither it names nothing. Applies outside entries
+         too: the Debt Sequencing prose is exactly where an unowned reference hides.
 
 **Structural, not lexical, and that distinction is the whole design.** An earlier attempt at
 R-PLACE tried to tell legal text from illegal text — `INT-US-NN-SFxx` good, bare `SF-NN` bad — and
@@ -42,7 +43,34 @@ ROADMAP = Path("docs/roadmap/master_story_roadmap.md")
 MAX_ENTRY_LINE = 200
 
 #: A registry ID: `US-9`, `TECH-025`, `C-FLOW-02`, `INT-US-21-SF02`.
-STORY_ID = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?"
+#:
+#: The `(?!SF-)` guard is load-bearing and was missing on first release: without it the pattern
+#: matches a bare `SF-03`, so R-OWNER saw every unqualified reference as its own owner and could
+#: never fire. Caught by probing the rule against a planted orphan rather than by reading it.
+STORY_ID = r"(?<![\w-])(?!SF-\d)[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?(?![\w-])"
+
+DOCS = Path("docs")
+
+#: A document under `features/<topic>/<ID>/` has its owner supplied by the path, so a bare `SF-NN`
+#: there is unambiguous. This is what makes R-OWNER enforceable at all: the rule needs somewhere
+#: the short form is legal, or every design would have to qualify its own sub-features.
+OWNER_FROM_PATH = re.compile(rf"features/[^/]+/({STORY_ID})/")
+
+#: A heading, list item or table row — the structures that can carry an owner for the lines under
+#: them. Entry-scoped rather than clause-scoped, by decision: a topic-doc bullet opening with the
+#: story id owns the prose beneath it, and requiring every sentence to repeat the id was measured
+#: against the real corpus and reported correct references as violations four separate times.
+STRUCTURE = re.compile(r"^(#{1,6}\s|\s*[-*]\s|\s*\|)")
+
+#: Pre-registry numbering: `Feature 3.32 SF-4` names a scheme with no story ids at all.
+LEGACY = re.compile(r"[Ff]eature\s+\d+\.\d+")
+
+#: Wholly a record of that scheme — its own filename says so, and every sub-feature in it belongs
+#: to a decimal feature number rather than a story. Excluded by name because its entries write the
+#: number as `3.14a` without the word "Feature", which the pattern above cannot see. The clause-1
+#: guard in `tests/unit/test_sub_feature_identifiers.py` excludes the same document, for the same
+#: reason, and asserts there that the exclusion is still needed rather than dead.
+LEGACY_DOCUMENTS = {"legacy_feature_map.md"}
 
 #: An entry heading — `### 🟢 US-9: …`, `### 🔴 TECH-030: …`.
 ENTRY_HEADING = re.compile(rf"^###\s+\S*\s*({STORY_ID}):")
@@ -76,27 +104,51 @@ def _violations(text: str) -> list[str]:
             match = ENTRY_HEADING.match(line)
             entry = match.group(1) if match else None
             continue
-        if entry is None:
-            continue
 
-        if NESTED_ITEM.match(line) and not BOLD_ID.search(line):
+        if entry and NESTED_ITEM.match(line) and not BOLD_ID.search(line):
             out.append(
                 f"{number}: R-PLACE  nested item names no registry ID — a design's SF-NN "
                 f"decomposition belongs in its own design, not here: {line.strip()[:70]}"
             )
 
-        if len(line) > MAX_ENTRY_LINE:
+        if entry and len(line) > MAX_ENTRY_LINE:
             out.append(
                 f"{number}: R-LENGTH line is {len(line)} chars (max {MAX_ENTRY_LINE}) — the "
                 f"detail belongs in the topic doc: {line.strip()[:60]}"
             )
 
-        if BARE_SF.search(line) and not ID_ON_LINE.search(line) and entry not in line:
+        if BARE_SF.search(line) and not ID_ON_LINE.search(line) and entry is None:
             out.append(
                 f"{number}: R-OWNER  bare SF reference with no owner named — `SF-01` exists in "
                 f"six stories: {line.strip()[:70]}"
             )
 
+    return out
+
+
+def unowned_references(path: Path) -> list[str]:
+    """R-OWNER across a whole document — used for every doc outside the roadmap.
+
+    The roadmap gets the stricter entry model in `_violations`; everything else only needs to know
+    whether *some* enclosing structure names the story.
+    """
+    if OWNER_FROM_PATH.search(path.as_posix()) or path.name in LEGACY_DOCUMENTS:
+        return []
+
+    out: list[str] = []
+    enclosing: str | None = None
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if STRUCTURE.match(line):
+            found = ID_ON_LINE.search(line)
+            if found:
+                enclosing = found.group(0)
+            elif line.startswith("#"):
+                enclosing = None
+        if LEGACY.search(line) or not BARE_SF.search(line):
+            continue
+        if ID_ON_LINE.search(line) or enclosing:
+            continue
+        out.append(f"{path.as_posix()}:{number}: {line.strip()[:70]}")
     return out
 
 
@@ -110,6 +162,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     found = _violations(path.read_text(encoding="utf-8"))
+    if DOCS.is_dir():
+        for doc in sorted(DOCS.rglob("*.md")):
+            found.extend(f"R-OWNER  {ref}" for ref in unowned_references(doc))
     if not found:
         print("  placement, line length and sub-feature ownership all clean")
         return 0

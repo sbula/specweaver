@@ -289,7 +289,7 @@ This physical payload is explicitly injected into the `<environment_context>` bl
 
 ## 18. Idempotent Graph Tombstoning (The UPSERT Bypass)
 
-When flushing the in-memory NetworkX `TopologyGraph` to SQLite for the Persistent Storage Adapter (SF-02), we faced massive `UNIQUE constraint` deadlocks whenever an LLM agent requested to save an updated code file without deleting the previous version of the graph structure.
+When flushing the in-memory NetworkX `TopologyGraph` to SQLite for the Persistent Storage Adapter, we faced massive `UNIQUE constraint` deadlocks whenever an LLM agent requested to save an updated code file without deleting the previous version of the graph structure.
 
 ### How it works:
 Instead of `SELECT`ing every node and deciding whether to `UPDATE` or `INSERT` in Python, we strictly enforce `sqlite3`'s mathematical `ON CONFLICT(semantic_hash) DO UPDATE SET is_active=1` within a single batch `executemany` chunk. Furthermore, nodes belonging to stale files are never `DELETE`d; instead they are explicitly "Tombstoned" (`is_active=0`).

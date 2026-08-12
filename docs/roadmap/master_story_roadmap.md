@@ -97,7 +97,7 @@ anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
 mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-03 outstanding
 (raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
 (commit `346f64c3`), all three circular dependencies eliminated. `TECH-005` corrected back to
-🟢 — SF-03 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
+🟢 — `TECH-005` SF-03 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
 migration path. 2026-08-08: `TECH-002` corrected back to 🟢 — the description defect that caused
 the 🟡 was fixed in `cea3548c`; re-verified against code (explicit `ToolRegistry` in
 `sandbox/registry.py`, zero `__init_subclass__` anywhere, validation layer free of sandbox imports,
@@ -699,7 +699,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
     *   `✅` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
     *   `✅` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
-    *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
+    *   `✅` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
     *   `✅` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
     *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
     *   `✅` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
