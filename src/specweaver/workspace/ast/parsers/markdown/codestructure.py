@@ -9,7 +9,7 @@ import logging
 import typing
 
 import tree_sitter_markdown
-from tree_sitter import Language, Parser, Query, QueryCursor
+from tree_sitter import Language, Parser
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
@@ -112,44 +112,49 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
     ) -> bool:
         return True
 
+    def _heading_text(self, section: typing.Any) -> str | None:
+        """The inline text of a section's own ATX heading."""
+        for heading in self._children_of_type(section, "atx_heading"):
+            for inline in self._children_of_type(heading, "inline"):
+                return self._text_of(inline).strip()
+        return None
+
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        """The dotted path of enclosing headings, outermost first."""
         if not name_node.parent:
             return None
         section_node = name_node.parent.parent
         if not section_node or section_node.type != "section":
             return None
+
         scopes: list[str] = []
         parent_section = section_node.parent
         while parent_section and parent_section.type == "section":
-            for child in parent_section.children:
-                if child.type == "atx_heading":
-                    for gc in child.children:
-                        if gc.type == "inline":
-                            scopes.insert(0, typing.cast("bytes", gc.text).decode("utf-8").strip())
+            heading = self._heading_text(parent_section)
+            if heading is not None:
+                scopes.insert(0, heading)
             parent_section = parent_section.parent
 
-        if scopes:
-            return ".".join(scopes)
-        return None
+        return ".".join(scopes) if scopes else None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        """The section block a heading names. Scope splits on the LAST dot, unlike other parsers.
+
+        Markdown scopes nest arbitrarily deep (`A.B.C` is three heading levels), so the trailing
+        segment is the heading and everything before it is the path to it.
+        """
         target_scope = None
         target_name = symbol_name
         if "." in symbol_name:
             target_scope, target_name = symbol_name.rsplit(".", 1)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-        for _match_id, match_dict in matches:
-            if "name" in match_dict and "block" in match_dict:
-                for name_node, block_node in zip(
-                    match_dict["name"], match_dict["block"], strict=False
-                ):
-                    if typing.cast("bytes", name_node.text).decode("utf-8").strip() == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            return block_node
+        for name_node, match_dict in self._named_matches(tree, target_name, strip=True):
+            if "block" not in match_dict or self._get_symbol_scope(name_node) != target_scope:
+                continue
+            index = list(match_dict["name"]).index(name_node)
+            blocks = list(match_dict["block"])
+            if index < len(blocks):
+                return blocks[index]
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

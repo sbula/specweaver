@@ -112,6 +112,21 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
                 if typing.cast("bytes", name_node.text).decode("utf-8") == target_name:
                     yield name_node
 
+    def _named_matches(
+        self, tree: typing.Any, target_name: str, *, strip: bool = False
+    ) -> typing.Iterator[tuple[typing.Any, dict[str, typing.Any]]]:
+        """Like `_named_nodes`, but hands back the whole match.
+
+        Parsers that return a separately-captured `block` rather than the identifier's parent need
+        the other captures, not just the name node.
+        """
+        query = Query(self.language, self.SCM_SYMBOL_QUERY)
+        for _, match_dict in QueryCursor(query).matches(tree.root_node):
+            for name_node in match_dict.get("name", []):
+                text = typing.cast("bytes", name_node.text).decode("utf-8")
+                if (text.strip() if strip else text) == target_name:
+                    yield name_node, match_dict
+
     @staticmethod
     def _children_of_type(node: typing.Any, *types: str) -> typing.Iterator[typing.Any]:
         """Direct children of `node` whose type is one of `types`."""

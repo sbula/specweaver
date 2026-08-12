@@ -104,31 +104,23 @@ class JavaCodeStructure(BaseTreeSitterParser):
             parent = parent.parent
         return None
 
+    #: Declaration nodes a Java identifier may belong to.
+    _DECLARATION_TYPES = (
+        "method_declaration",
+        "class_declaration",
+        "interface_declaration",
+        "enum_declaration",
+    )
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        target_scope, target_name = self._split_scope(symbol_name)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            parent = name_node.parent
-                            if parent and parent.type in (
-                                "method_declaration",
-                                "class_declaration",
-                                "interface_declaration",
-                                "enum_declaration",
-                            ):
-                                return parent
+        for name_node in self._named_nodes(tree, target_name):
+            if self._get_symbol_scope(name_node) != target_scope:
+                continue
+            parent = name_node.parent
+            if parent and parent.type in self._DECLARATION_TYPES:
+                return parent
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
@@ -164,20 +156,18 @@ class JavaCodeStructure(BaseTreeSitterParser):
         if not code.strip():
             return []
 
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
+        tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, self.SCM_IMPORT_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        imports = set()
-        for _, match_dict in matches:
-            if "imp" in match_dict:
-                for node in match_dict["imp"]:
-                    for child in node.children:
-                        if child.type not in ("import", "static", ";"):
-                            imports.add(self._extract_marker_text(child))
-        return sorted(list(imports))
+        # Everything in the statement except its syntax IS the imported name.
+        return sorted(
+            {
+                self._extract_marker_text(child)
+                for _, match_dict in QueryCursor(query).matches(tree.root_node)
+                for node in match_dict.get("imp", [])
+                for child in node.children
+                if child.type not in ("import", "static", ";")
+            }
+        )
 
     def _extract_bases(self, target_node: typing.Any) -> list[str]:
         bases = []
@@ -193,21 +183,16 @@ class JavaCodeStructure(BaseTreeSitterParser):
         return bases
 
     def _extract_decorators(self, target_node: typing.Any) -> list[str]:
-        decorators = []
-        modifiers = None
-        for child in target_node.children:
-            if child.type == "modifiers":
-                modifiers = child
-                break
+        """Annotation names on a declaration, `@` stripped, first occurrence order preserved."""
+        modifiers = next(self._children_of_type(target_node, "modifiers"), None)
+        if modifiers is None:
+            return []
 
-        if modifiers:
-            for mod in modifiers.children:
-                if mod.type in ("marker_annotation", "annotation"):
-                    dec_text = self._extract_marker_text(mod)
-                    if dec_text.startswith("@"):
-                        dec_text = dec_text[1:]
-                    if dec_text not in decorators:
-                        decorators.append(dec_text)
+        decorators: list[str] = []
+        for mod in self._children_of_type(modifiers, "marker_annotation", "annotation"):
+            name = self._extract_marker_text(mod).removeprefix("@")
+            if name not in decorators:
+                decorators.append(name)
         return decorators
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:

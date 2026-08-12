@@ -103,20 +103,29 @@ class RustCodeStructure(BaseTreeSitterParser):
 
         return True
 
+    def _impl_type_name(self, impl_item: typing.Any) -> str | None:
+        """The type an `impl` block is for, unwrapping a generic to its base identifier."""
+        type_node = impl_item.child_by_field_name("type")
+        if not type_node:
+            return None
+        if type_node.type == "type_identifier":
+            return self._text_of(type_node)
+        if type_node.type == "generic_type":
+            base = next(self._children_of_type(type_node, "type_identifier"), None)
+            return self._text_of(base) if base else None
+        return None
+
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        """The `impl` type a function lives in — Rust's equivalent of a method's class."""
         if not name_node.parent or name_node.parent.type != "function_item":
             return None
+
         parent = name_node.parent.parent
         while parent:
             if parent.type == "impl_item":
-                type_node = parent.child_by_field_name("type")
-                if type_node:
-                    if type_node.type == "type_identifier":
-                        return typing.cast("bytes", type_node.text).decode("utf-8")
-                    elif type_node.type == "generic_type":
-                        for gc in type_node.children:
-                            if gc.type == "type_identifier":
-                                return typing.cast("bytes", gc.text).decode("utf-8")
+                name = self._impl_type_name(parent)
+                if name:
+                    return name
             parent = parent.parent
         return None
 
@@ -139,25 +148,23 @@ class RustCodeStructure(BaseTreeSitterParser):
         return None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        """The node declaring `symbol_name`, preferring an `impl_item` over a bare function.
 
+        An `impl` block wins because editing a method must land inside its impl, not on a
+        same-named free function elsewhere in the file.
+        """
+        target_scope, target_name = self._split_scope(symbol_name)
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
 
         best_match = None
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    parent = self._process_symbol_match(name_node, target_name, target_scope)
-                    if parent:
-                        if parent.type == "impl_item":
-                            return parent
-                        if not best_match:
-                            best_match = parent
+        for _, match_dict in QueryCursor(query).matches(tree.root_node):
+            for name_node in match_dict.get("name", []):
+                parent = self._process_symbol_match(name_node, target_name, target_scope)
+                if not parent:
+                    continue
+                if parent.type == "impl_item":
+                    return parent
+                best_match = best_match or parent
         return best_match
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
@@ -218,32 +225,27 @@ class RustCodeStructure(BaseTreeSitterParser):
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
+    @staticmethod
+    def _use_path(import_text: str) -> str:
+        """The crate path a `use` statement names, without the keyword, brace list or semicolon."""
+        text = import_text.removeprefix("pub use ").removeprefix("use ").strip()
+        if text.endswith(";"):
+            text = text[:-1].strip()
+        return text.split("{")[0].strip().rstrip(":")
+
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
             return []
 
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
+        tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, self.SCM_IMPORT_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        imports = set()
-        for _, match_dict in matches:
-            if "imp" in match_dict:
-                for node in match_dict["imp"]:
-                    import_text = typing.cast("bytes", node.text).decode("utf-8").strip()
-                    if import_text.startswith("pub use "):
-                        import_text = import_text[8:].strip()
-                    elif import_text.startswith("use "):
-                        import_text = import_text[4:].strip()
-
-                    if import_text.endswith(";"):
-                        import_text = import_text[:-1].strip()
-
-                    imports.add(import_text.split("{")[0].strip().rstrip(":"))
-
-        return sorted(list(imports))
+        return sorted(
+            {
+                self._use_path(self._text_of(node).strip())
+                for _, match_dict in QueryCursor(query).matches(tree.root_node)
+                for node in match_dict.get("imp", [])
+            }
+        )
 
     def _extract_decorators(self, target_node: typing.Any) -> list[str]:
         decorators: list[str] = []
@@ -261,39 +263,51 @@ class RustCodeStructure(BaseTreeSitterParser):
                 decorators.append(dec_text)
         return decorators
 
+    def _marker_entry(self, match_dict: dict[str, typing.Any]) -> tuple[str, dict[str, list[str]]]:
+        """One symbol's marker record, keyed by its scoped name."""
+        name_node = match_dict["name"][0]
+        symbol = self._extract_marker_text(name_node)
+        scope = self._get_symbol_scope(name_node)
+        full_name = f"{scope}.{symbol}" if scope else symbol
+
+        is_class = "cls" in match_dict
+        target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+        entry: dict[str, list[str]] = {"decorators": self._extract_decorators(target)}
+        if is_class:
+            entry["extends"] = []
+        return full_name, entry
+
+    def _record_trait_impls(
+        self, tree: typing.Any, markers: dict[str, dict[str, list[str]]]
+    ) -> None:
+        """Attach each `impl Trait for Type` to the type it extends, when that type is known."""
+        impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
+        for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):
+            if not ("trait" in impl_match and "type" in impl_match):
+                continue
+            type_name = self._extract_marker_text(impl_match["type"][0])
+            entry = markers.get(type_name)
+            if entry is not None and "extends" in entry:
+                entry["extends"].append(self._extract_marker_text(impl_match["trait"][0]))
+
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
         if not code.strip():
             return {}
 
         tree = self.parser.parse(code.encode("utf-8"))
-        query_str = "(struct_item name: (type_identifier) @name) @cls\n(function_item name: (identifier) @name) @fn"
-        cursor = QueryCursor(Query(self.language, query_str))
+        query_str = (
+            "(struct_item name: (type_identifier) @name) @cls\n"
+            "(function_item name: (identifier) @name) @fn"
+        )
 
         markers: dict[str, dict[str, list[str]]] = {}
-        for _, match_dict in cursor.matches(tree.root_node):
+        for _, match_dict in QueryCursor(Query(self.language, query_str)).matches(tree.root_node):
             if "name" not in match_dict:
                 continue
-            name_node = match_dict["name"][0]
-            symbol = self._extract_marker_text(name_node)
-            scope = self._get_symbol_scope(name_node)
-            full_name = f"{scope}.{symbol}" if scope else symbol
+            full_name, entry = self._marker_entry(match_dict)
+            markers.setdefault(full_name, entry)
 
-            is_class = "cls" in match_dict
-            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
-
-            if full_name not in markers:
-                markers[full_name] = {"decorators": self._extract_decorators(target)}
-                if is_class:
-                    markers[full_name]["extends"] = []
-
-        impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
-        for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):
-            if "trait" in impl_match and "type" in impl_match:
-                trait_name = self._extract_marker_text(impl_match["trait"][0])
-                type_name = self._extract_marker_text(impl_match["type"][0])
-                if type_name in markers and "extends" in markers[type_name]:
-                    markers[type_name]["extends"].append(trait_name)
-
+        self._record_trait_impls(tree, markers)
         return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:

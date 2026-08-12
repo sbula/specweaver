@@ -9,7 +9,7 @@ import logging
 import typing
 
 import tree_sitter_sql
-from tree_sitter import Language, Parser, Query, QueryCursor
+from tree_sitter import Language, Parser
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 
@@ -63,17 +63,11 @@ class SqlCodeStructure(BaseTreeSitterParser):
         return True
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type == "object_reference":
-                            return parent.parent
+        """SQL has no scoping, so the bare name is matched as given."""
+        for name_node in self._named_nodes(tree, symbol_name):
+            parent = name_node.parent
+            if parent and parent.type == "object_reference":
+                return parent.parent
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

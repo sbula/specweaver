@@ -65,22 +65,10 @@
     "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser::extract_skeleton": 16,
     "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser::extract_traceability_tags": 16,
     "src/specweaver/workspace/ast/parsers/base.py::BaseTreeSitterParser::list_symbols": 19,
-    "src/specweaver/workspace/ast/parsers/c/codestructure.py::CCodeStructure::_find_symbol_node": 16,
-    "src/specweaver/workspace/ast/parsers/cpp/codestructure.py::CppCodeStructure::_find_symbol_node": 16,
     "src/specweaver/workspace/ast/parsers/cpp/codestructure.py::CppCodeStructure::_get_symbol_visibility": 17,
-    "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure::_extract_decorators": 17,
-    "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure::_find_symbol_node": 23,
-    "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure::extract_imports": 16,
     "src/specweaver/workspace/ast/parsers/java/parsers.py::parse_pmd_complexity": 21,
     "src/specweaver/workspace/ast/parsers/kotlin/parsers.py::parse_detekt_complexity": 20,
-    "src/specweaver/workspace/ast/parsers/markdown/codestructure.py::MarkdownCodeStructure::_find_symbol_node": 17,
-    "src/specweaver/workspace/ast/parsers/markdown/codestructure.py::MarkdownCodeStructure::_get_symbol_scope": 20,
-    "src/specweaver/workspace/ast/parsers/rust/codestructure.py::RustCodeStructure::_find_symbol_node": 21,
-    "src/specweaver/workspace/ast/parsers/rust/codestructure.py::RustCodeStructure::_get_symbol_scope": 24,
-    "src/specweaver/workspace/ast/parsers/rust/codestructure.py::RustCodeStructure::extract_framework_markers": 21,
-    "src/specweaver/workspace/ast/parsers/rust/codestructure.py::RustCodeStructure::extract_imports": 16,
     "src/specweaver/workspace/ast/parsers/rust/parsers.py::parse_clippy_complexity": 21,
-    "src/specweaver/workspace/ast/parsers/sql/codestructure.py::SqlCodeStructure::_find_symbol_node": 16,
     "src/specweaver/workspace/memory/hydrator.py::MemoryHydrator::hydrate": 35
   }
 }

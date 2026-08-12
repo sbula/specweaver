@@ -187,20 +187,11 @@ class CppCodeStructure(BaseTreeSitterParser):
         return None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        target_scope, target_name = self._split_scope(symbol_name)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        for _, match_dict in cursor.matches(tree.root_node):
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            return match_dict.get("block", [None])[0]
+        for name_node, match_dict in self._named_matches(tree, target_name):
+            if self._get_symbol_scope(name_node) == target_scope:
+                return match_dict.get("block", [None])[0]
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
