@@ -83,6 +83,45 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
     def _extract_marker_text(self, node: typing.Any) -> str:
         return typing.cast("bytes", node.text).decode("utf-8").strip()
 
+    # -----------------------------------------------------------------------
+    # Tree-walking helpers shared by every language parser
+    # -----------------------------------------------------------------------
+    #
+    # `TECH-023`. Nine parsers each hand-rolled the same nested walk — query the tree, decode a
+    # captured name, compare it, then descend through two or three levels of `if child.type == ...`
+    # — and every one of them was over the complexity ceiling for it. The nesting *was* the
+    # complexity; the per-language part is only which node types matter, which stays in the
+    # subclass where it belongs.
+
+    @staticmethod
+    def _split_scope(symbol_name: str) -> tuple[str | None, str]:
+        """`("Class", "method")` for a dotted name, `(None, name)` for a bare one.
+
+        Splits on the FIRST dot, matching every parser's original behaviour.
+        """
+        if "." in symbol_name:
+            scope, name = symbol_name.split(".", 1)
+            return scope, name
+        return None, symbol_name
+
+    def _named_nodes(self, tree: typing.Any, target_name: str) -> typing.Iterator[typing.Any]:
+        """Every `name` capture in `SCM_SYMBOL_QUERY` whose text is exactly `target_name`."""
+        query = Query(self.language, self.SCM_SYMBOL_QUERY)
+        for _, match_dict in QueryCursor(query).matches(tree.root_node):
+            for name_node in match_dict.get("name", []):
+                if typing.cast("bytes", name_node.text).decode("utf-8") == target_name:
+                    yield name_node
+
+    @staticmethod
+    def _children_of_type(node: typing.Any, *types: str) -> typing.Iterator[typing.Any]:
+        """Direct children of `node` whose type is one of `types`."""
+        return (child for child in getattr(node, "children", []) if child.type in types)
+
+    @staticmethod
+    def _text_of(node: typing.Any) -> str:
+        """A node's source text, decoded."""
+        return typing.cast("bytes", node.text).decode("utf-8")
+
     def _auto_indent(self, new_code: str, margin: int) -> str:
         if not new_code:
             return new_code

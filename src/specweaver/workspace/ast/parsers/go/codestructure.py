@@ -59,16 +59,19 @@ class GoCodeStructure(BaseTreeSitterParser):
         """
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        """The receiver type of a Go method, which is the scope its name lives in.
+
+        `func (s *Server) Handle()` scopes `Handle` to `Server` — the pointer star is dropped so
+        value and pointer receivers name the same scope.
+        """
         parent = name_node.parent
-        if parent and parent.type == "method_declaration":
-            for child in parent.children:
-                if child.type == "parameter_list":
-                    for param in child.children:
-                        if param.type == "parameter_declaration":
-                            for type_node in param.children:
-                                if type_node.type in ("type_identifier", "pointer_type"):
-                                    type_str = typing.cast("bytes", type_node.text).decode("utf-8")
-                                    return type_str.replace("*", "")
+        if not (parent and parent.type == "method_declaration"):
+            return None
+
+        for params in self._children_of_type(parent, "parameter_list"):
+            for param in self._children_of_type(params, "parameter_declaration"):
+                for type_node in self._children_of_type(param, "type_identifier", "pointer_type"):
+                    return self._text_of(type_node).replace("*", "")
         return None
 
     def _is_symbol_valid(
@@ -134,21 +137,17 @@ class GoCodeStructure(BaseTreeSitterParser):
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
-        if node.type == "type_declaration":
-            for child in node.children:
-                if child.type == "type_spec":
-                    body = self._find_type_body(child)
-                    if body:
-                        return body
-        elif node.type == "type_spec":
-            body = self._find_type_body(node)
-            if body:
-                return body
+        """The body a symbol's edits apply to: a type's field list, else the function block."""
+        specs = (
+            [node] if node.type == "type_spec" else list(self._children_of_type(node, "type_spec"))
+        )
+        if node.type in ("type_declaration", "type_spec"):
+            for spec in specs:
+                body = self._find_type_body(spec)
+                if body:
+                    return body
 
-        for child in node.children:
-            if child.type == "block":
-                return child
-        return None
+        return next(self._children_of_type(node, "block"), None)
 
     def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
         margin = typing.cast("int", node.start_point[1])
@@ -179,19 +178,14 @@ class GoCodeStructure(BaseTreeSitterParser):
         return code_bytes[:start_byte] + indented_code.encode("utf-8") + code_bytes[end_byte:]
 
     def _process_import_node(self, imp_node: typing.Any, imports: set[str]) -> None:
-        for child in imp_node.children:
-            if child.type == "import_spec_list":
-                for spec in child.children:
-                    if spec.type == "import_spec":
-                        for path_node in spec.children:
-                            if path_node.type == "interpreted_string_literal":
-                                val = typing.cast("bytes", path_node.text).decode("utf-8")
-                                imports.add(val.strip('"'))
-            elif child.type == "import_spec":
-                for path_node in child.children:
-                    if path_node.type == "interpreted_string_literal":
-                        val = typing.cast("bytes", path_node.text).decode("utf-8")
-                        imports.add(val.strip('"'))
+        """Record every quoted import path, whether grouped in a block or written singly."""
+        specs: list[typing.Any] = list(self._children_of_type(imp_node, "import_spec"))
+        for spec_list in self._children_of_type(imp_node, "import_spec_list"):
+            specs.extend(self._children_of_type(spec_list, "import_spec"))
+
+        for spec in specs:
+            for path_node in self._children_of_type(spec, "interpreted_string_literal"):
+                imports.add(self._text_of(path_node).strip('"'))
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():

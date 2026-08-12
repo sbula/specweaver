@@ -95,30 +95,18 @@ class PythonCodeStructure(BaseTreeSitterParser):
         return None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        target_scope, target_name = self._split_scope(symbol_name)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            parent = name_node.parent
-                            if parent and parent.type in (
-                                "function_definition",
-                                "class_definition",
-                            ):
-                                if parent.parent and parent.parent.type == "decorated_definition":
-                                    return parent.parent
-                                return parent
+        for name_node in self._named_nodes(tree, target_name):
+            if self._get_symbol_scope(name_node) != target_scope:
+                continue
+            parent = name_node.parent
+            if not (parent and parent.type in ("function_definition", "class_definition")):
+                continue
+            # A decorated definition owns the decorators, so the extracted span must start there.
+            if parent.parent and parent.parent.type == "decorated_definition":
+                return parent.parent
+            return parent
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
@@ -148,20 +136,23 @@ class PythonCodeStructure(BaseTreeSitterParser):
         return code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
 
     def _process_import_node(self, node: typing.Any, imports: set[str]) -> None:
+        """Record the module an import statement names.
+
+        `import a.b` and `import a.b as c` both contribute `a.b`; `from a.b import x` contributes
+        `a.b` only — the FIRST dotted_name, since the imported names are dotted_names too.
+        """
         if node.type == "import_statement":
             for child in node.children:
                 if child.type == "dotted_name":
                     imports.add(self._extract_marker_text(child))
                 elif child.type == "aliased_import":
-                    for grandchild in child.children:
-                        if grandchild.type == "dotted_name":
-                            imports.add(self._extract_marker_text(grandchild))
-                            break
+                    for aliased in self._children_of_type(child, "dotted_name"):
+                        imports.add(self._extract_marker_text(aliased))
+                        break
         elif node.type == "import_from_statement":
-            for child in node.children:
-                if child.type == "dotted_name":
-                    imports.add(self._extract_marker_text(child))
-                    break
+            for child in self._children_of_type(node, "dotted_name"):
+                imports.add(self._extract_marker_text(child))
+                break
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():

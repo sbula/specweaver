@@ -100,40 +100,47 @@ class TypeScriptCodeStructure(BaseTreeSitterParser):
             parent = parent.parent
         return None
 
+    #: Declaration nodes an identifier may belong to. A `variable_declarator` counts because
+    #: `const f = () => {}` declares a function without a `function_declaration`.
+    _DECLARATION_TYPES = (
+        "function_declaration",
+        "method_definition",
+        "class_declaration",
+        "variable_declarator",
+    )
+
+    @classmethod
+    def _declaration_wrapper(cls, name_node: typing.Any) -> typing.Any | None:
+        """The declaration owning this identifier, widened outward to what the source exports.
+
+        Two widenings, both load-bearing for the returned span: `const f = ...` reports the whole
+        `lexical_declaration` rather than just the declarator, and an exported symbol reports the
+        `export_statement` so the `export` keyword is inside the extracted skeleton.
+        """
+        parent = name_node.parent
+        if not (parent and parent.type in cls._DECLARATION_TYPES):
+            return None
+
+        wrapper = parent
+        if (
+            wrapper.type == "variable_declarator"
+            and wrapper.parent
+            and wrapper.parent.type == "lexical_declaration"
+        ):
+            wrapper = wrapper.parent
+        if wrapper.parent and wrapper.parent.type == "export_statement":
+            wrapper = wrapper.parent
+        return wrapper
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        target_scope, target_name = self._split_scope(symbol_name)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            parent = name_node.parent
-                            if parent and parent.type in (
-                                "function_declaration",
-                                "method_definition",
-                                "class_declaration",
-                                "variable_declarator",
-                            ):
-                                wrapper = parent
-                                if (
-                                    wrapper.type == "variable_declarator"
-                                    and wrapper.parent
-                                    and wrapper.parent.type == "lexical_declaration"
-                                ):
-                                    wrapper = wrapper.parent
-                                if wrapper.parent and wrapper.parent.type == "export_statement":
-                                    wrapper = wrapper.parent
-                                return wrapper
+        for name_node in self._named_nodes(tree, target_name):
+            if self._get_symbol_scope(name_node) != target_scope:
+                continue
+            wrapper = self._declaration_wrapper(name_node)
+            if wrapper is not None:
+                return wrapper
         return None
 
     def _search_declarator(self, child: typing.Any) -> typing.Any | None:
@@ -197,54 +204,67 @@ class TypeScriptCodeStructure(BaseTreeSitterParser):
             + code_bytes[insert_end:]
         )
 
+    @staticmethod
+    def _module_of(import_text: str) -> str:
+        """The module an import statement names, stripped of syntax.
+
+        Handles both spellings the query captures: `import x from "m"` and a bare
+        `import "m"` / `require("m")`. Trailing semicolon and surrounding quotes come off last, so
+        both paths converge on the same cleanup.
+        """
+        if " from " in import_text:
+            module = import_text.split(" from ")[-1].strip()
+        else:
+            module = (
+                import_text.replace("import ", "").replace("require(", "").replace(")", "").strip()
+            )
+
+        if module.endswith(";"):
+            module = module[:-1].strip()
+        if module.startswith(("'", '"')) and module.endswith(("'", '"')):
+            module = module[1:-1]
+        return module
+
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
             return []
 
-        code_bytes = code.encode("utf-8")
-        tree = self.parser.parse(code_bytes)
+        tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, self.SCM_IMPORT_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
 
-        imports = set()
-        for _, match_dict in matches:
-            if "imp" in match_dict:
-                for node in match_dict["imp"]:
-                    import_text = typing.cast("bytes", node.text).decode("utf-8").strip()
-                    if " from " in import_text:
-                        module_part = import_text.split(" from ")[-1].strip()
-                    else:
-                        module_part = (
-                            import_text.replace("import ", "")
-                            .replace("require(", "")
-                            .replace(")", "")
-                            .strip()
-                        )
+        imports = {
+            self._module_of(typing.cast("bytes", node.text).decode("utf-8").strip())
+            for _, match_dict in QueryCursor(query).matches(tree.root_node)
+            for node in match_dict.get("imp", [])
+        }
+        return sorted(imports)
 
-                    if module_part.endswith(";"):
-                        module_part = module_part[:-1].strip()
-                    if module_part.startswith(("'", '"')) and module_part.endswith(("'", '"')):
-                        module_part = module_part[1:-1]
+    #: Nodes naming a base type directly, as opposed to holding a list of them.
+    _BASE_NAME_TYPES = ("identifier", "type_identifier")
 
-                    imports.add(module_part)
-
-        return sorted(list(imports))
+    def _base_names_in(self, clause: typing.Any) -> list[str]:
+        """Base types named by one extends/implements clause, flattening any `type_list`."""
+        names = []
+        for node in clause.children:
+            if node.type in self._BASE_NAME_TYPES:
+                names.append(self._extract_marker_text(node))
+            elif node.type == "type_list":
+                names.extend(
+                    self._extract_marker_text(sub)
+                    for sub in node.children
+                    if sub.type in self._BASE_NAME_TYPES
+                )
+        return names
 
     def _extract_bases(self, target_node: typing.Any) -> list[str]:
-        bases = []
-        for child in target_node.children:
-            if child.type == "class_heritage":
-                for clause in child.children:
-                    if clause.type in ("extends_clause", "implements_clause"):
-                        for t in clause.children:
-                            if t.type in ("identifier", "type_identifier"):
-                                bases.append(self._extract_marker_text(t))
-                            elif t.type == "type_list":
-                                for sub in t.children:
-                                    if sub.type in ("identifier", "type_identifier"):
-                                        bases.append(self._extract_marker_text(sub))
-        return bases
+        return [
+            name
+            for child in target_node.children
+            if child.type == "class_heritage"
+            for clause in child.children
+            if clause.type in ("extends_clause", "implements_clause")
+            for name in self._base_names_in(clause)
+        ]
 
     def _add_dec(self, child: typing.Any, decorators: list[str]) -> None:
         dec_text = self._extract_marker_text(child)

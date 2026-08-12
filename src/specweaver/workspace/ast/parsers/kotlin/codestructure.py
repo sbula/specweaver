@@ -104,30 +104,18 @@ class KotlinCodeStructure(BaseTreeSitterParser):
             parent = parent.parent
         return None
 
+    #: Declaration nodes a Kotlin identifier may belong to.
+    _DECLARATION_TYPES = ("function_declaration", "class_declaration", "object_declaration")
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.split(".", 1)
+        target_scope, target_name = self._split_scope(symbol_name)
 
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == target_name:
-                        scope = self._get_symbol_scope(name_node)
-                        if scope == target_scope:
-                            parent = name_node.parent
-                            if parent and parent.type in (
-                                "function_declaration",
-                                "class_declaration",
-                                "object_declaration",
-                            ):
-                                return parent
+        for name_node in self._named_nodes(tree, target_name):
+            if self._get_symbol_scope(name_node) != target_scope:
+                continue
+            parent = name_node.parent
+            if parent and parent.type in self._DECLARATION_TYPES:
+                return parent
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
@@ -186,32 +174,46 @@ class KotlinCodeStructure(BaseTreeSitterParser):
 
         return sorted(list(imports))
 
+    def _base_names_in(self, specifier: typing.Any) -> list[str]:
+        """Base types one delegation specifier names, directly or via a constructor invocation.
+
+        `class A : B` names `B` as a bare `user_type`; `class A : B()` wraps it in a
+        `constructor_invocation`. Both are the same base from the caller's point of view.
+        """
+        names = []
+        for node in specifier.children:
+            if node.type == "user_type":
+                names.append(self._extract_marker_text(node))
+            elif node.type == "constructor_invocation":
+                names.extend(
+                    self._extract_marker_text(sub)
+                    for sub in node.children
+                    if sub.type == "user_type"
+                )
+        return names
+
     def _extract_bases(self, target_node: typing.Any) -> list[str]:
-        bases = []
-        for child in target_node.children:
-            if child.type == "delegation_specifiers":
-                for specifier in child.children:
-                    if specifier.type == "delegation_specifier":
-                        for c in specifier.children:
-                            if c.type == "user_type":
-                                bases.append(self._extract_marker_text(c))
-                            elif c.type == "constructor_invocation":
-                                for cc in c.children:
-                                    if cc.type == "user_type":
-                                        bases.append(self._extract_marker_text(cc))
-        return bases
+        return [
+            name
+            for child in target_node.children
+            if child.type == "delegation_specifiers"
+            for specifier in child.children
+            if specifier.type == "delegation_specifier"
+            for name in self._base_names_in(specifier)
+        ]
 
     def _extract_decorators(self, target_node: typing.Any) -> list[str]:
-        decorators = []
+        """Annotation names on a declaration, `@` stripped, first occurrence order preserved."""
+        decorators: list[str] = []
         for child in target_node.children:
-            if child.type == "modifiers":
-                for mod in child.children:
-                    if mod.type == "annotation":
-                        dec_text = self._extract_marker_text(mod)
-                        if dec_text.startswith("@"):
-                            dec_text = dec_text[1:]
-                        if dec_text not in decorators:
-                            decorators.append(dec_text)
+            if child.type != "modifiers":
+                continue
+            for mod in child.children:
+                if mod.type != "annotation":
+                    continue
+                name = self._extract_marker_text(mod).removeprefix("@")
+                if name not in decorators:
+                    decorators.append(name)
         return decorators
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
