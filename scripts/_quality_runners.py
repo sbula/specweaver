@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from _venv import venv_python, venv_tool
+from _venv import venv_python
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,17 +46,14 @@ def _tach(_paths: list[Path]) -> list[str]:
 
 
 def _complexipy(paths: list[Path]) -> list[str]:
-    exe = venv_tool("complexipy")
-    head = [exe] if exe else [PY, "-m", "complexipy"]
-    return [
-        *head,
-        *(str(p) for p in paths),
-        "--failed",
-        "--color",
-        "no",
-        "--max-complexity-allowed",
-        str(MAX_COGNITIVE_COMPLEXITY),
-    ]
+    """`TECH-023`: the ratchet, not raw complexipy.
+
+    Running the tool directly meant the gate was red on all 97 known violations forever, so it was
+    read as background noise and nothing blocked a 98th. `check_complexity.py` runs the same tool
+    with the same threshold and compares against a frozen per-function baseline: the known set may
+    fall, never rise, and nothing new may join it.
+    """
+    return [*_script("check_complexity.py"), *(str(p) for p in paths)]
 
 
 def _file_sizes(paths: list[Path]) -> list[str]:
