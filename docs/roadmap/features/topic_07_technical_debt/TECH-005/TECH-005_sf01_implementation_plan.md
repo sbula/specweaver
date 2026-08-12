@@ -6,6 +6,13 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf01_implementation_plan.md
 - **Status**: COMPLETED
 
+> **Requirement citations added by `TECH-025` SF-06 on 2026-08-12 — no scope added.** This plan
+> shipped before the FR-traceability gate was wired into the closure process, so the requirements it
+> delivered were never named in it. The line below records what this sub-feature already built.
+> Editing a delivered story's plan is authorised for `TECH-025` only, by its AD-4.
+>
+> **Requirements delivered by this sub-feature: `FR-1`, `FR-2`, `FR-3`, `FR-4`, `FR-5`.**
+
 ## Goal
 Update all SQLAlchemy models and raw queries to use prefixed database table names (`workspace_projects`, `workspace_active_state`, `workspace_project_standards`, `flow_artifact_events`, `llm_project_links`).
 

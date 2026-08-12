@@ -6,6 +6,18 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 - **Status**: DONE
 
+> **Requirement citations added by `TECH-025` SF-06 on 2026-08-12 — no scope added.** This plan
+> shipped before the FR-traceability gate was wired into the closure process, so the requirements it
+> delivered were never named in it. The line below records what this sub-feature already built.
+> Editing a delivered story's plan is authorised for `TECH-025` only, by its AD-4.
+>
+> **Requirements delivered by this sub-feature: `FR-6`, `FR-7`.**
+>
+> `FR-6` was already reported as "planned" by `check_fr_coverage.py`, but not from here: the token
+> appeared only in **SF-3's** plan, inside a sentence explaining that SF-3 has *no* index-rename
+> sub-task. `planned_frs` unions every plan's tokens without asking which sub-feature claims them,
+> so a disclaimer read as ownership. This line makes the ownership real.
+
 ## Proposed Changes
 
 ### Database Migration

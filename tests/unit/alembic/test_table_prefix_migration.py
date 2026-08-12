@@ -31,6 +31,13 @@ def migration() -> Any:
 
 @patch("af60fd3509a2.op")
 def test_upgrade_renames_tables_and_indexes(mock_op: MagicMock, migration: Any) -> None:
+    """Upgrading renames every workspace, flow and llm table, and the indexes tied to them.
+
+    Proves: TECH-005 FR-1.
+    Proves: TECH-005 FR-2.
+    Proves: TECH-005 FR-3.
+    Proves: TECH-005 FR-6.
+    """
     # Mock op.f to just return the string format name (it's normally a naming convention formatter)
     mock_op.f.side_effect = lambda name: name
 
@@ -125,7 +132,13 @@ def test_downgrade_restores_schema(mock_op: MagicMock, migration: Any) -> None:
 
 
 def test_live_sqlite_migration(migration: Any) -> None:
-    """Execute the migration against a live in-memory SQLite database to verify native compatibility."""
+    """Execute the migration against a live in-memory SQLite database.
+
+    The mocked tests above prove the migration asks for the right renames; this one proves the
+    revision actually runs, which is the requirement's real claim.
+
+    Proves: TECH-005 FR-7.
+    """
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
     from sqlalchemy import create_engine, text

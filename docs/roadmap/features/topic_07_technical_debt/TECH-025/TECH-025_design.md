@@ -263,7 +263,7 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 | SF-03 | Unit Test Class Naming Ratchet | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | TECH-001 FR Ledger | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | TECH-002 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-06 | TECH-005 FR Ledger | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Ledger Regression Guard | SF-04, SF-05, SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Closure
@@ -350,7 +350,14 @@ would have credited TECH-002 with a borrowed FR-4 — and that the plan's own ve
 have detected it, because a count cannot distinguish a borrowed citation from a real one. Both the
 new test file and the verification method changed as a result.
 
-**Next step**: SF-06 (TECH-005) — unblocked,
+**SF-06 delivered 2026-08-12.** `check_fr_coverage.py TECH-005` exits 0 — **all three subject
+ledgers are now closed**, which was this ticket's substantive goal. Five of its seven open
+requirements already had a genuine proof in the alembic migration test; only FR-4 and FR-5 needed
+new invariants. Its research found the plan-side twin of SF-05's false-credit trap: `FR-6` was
+reported as planned from a *disclaimer* in SF-3's plan, because `planned_frs` unions tokens without
+asking which sub-feature claims them.
+
+**Next step**: SF-07 — the regression manifest,
 and may run in parallel sessions. Neither has an implementation plan yet. SF-07 waits on both.
 Note for whoever takes them: SF-04's CB-1 removed the wall that made a tests-and-docs boundary
 impossible to commit, so neither should hit it.
