@@ -334,38 +334,17 @@ class GeminiAdapter(LLMAdapter):
             total_calls += 1
 
             tool_calls = self._extract_tool_calls(response)
-            if tool_calls:
-                logger.debug(
-                    "GeminiAdapter: %d tool call(s) in round %d: %s",
-                    len(tool_calls),
-                    round_num + 1,
-                    [tc.name for tc in tool_calls],
-                )
-                tool_results = []
-                for tc in tool_calls:
-                    # Provider-agnostic call: (name, args)
-                    result = await tool_executor.execute(tc.name, tc.args)  # type: ignore[attr-defined]
-                    tool_results.append((tc, result))
+            if not tool_calls:
+                # The model produced its final text response.
+                return self._final_response(response, config.model, cumulative_usage)
 
-                # Append in Gemini-specific format (only here, inside the adapter)
-                contents.append(response.candidates[0].content)  # type: ignore[index,arg-type]
-                contents.append(
-                    types.Content(
-                        role="user",
-                        parts=[
-                            types.Part.from_function_response(
-                                name=tc.name,
-                                response=r,
-                            )
-                            for tc, r in tool_results
-                        ],
-                    )
-                )
-            else:
-                # LLM produced final text response
-                resp = self._parse_response(response, config.model)
-                resp.usage = cumulative_usage
-                return resp
+            logger.debug(
+                "GeminiAdapter: %d tool call(s) in round %d: %s",
+                len(tool_calls),
+                round_num + 1,
+                [tc.name for tc in tool_calls],
+            )
+            await self._run_tool_round(tool_calls, tool_executor, response, contents)
 
         # Max rounds reached — log warning and return
         if total_calls > 5:
@@ -374,9 +353,39 @@ class GeminiAdapter(LLMAdapter):
                 total_calls,
                 config.max_tool_rounds,
             )
-        resp = self._parse_response(response, config.model)
-        resp.usage = cumulative_usage
-        return resp
+        return self._final_response(response, config.model, cumulative_usage)
+
+    def _final_response(self, response: Any, model: str, usage: Any) -> LLMResponse:
+        """The parsed response, carrying the tokens accumulated across every round."""
+        parsed = self._parse_response(response, model)
+        parsed.usage = usage
+        return parsed
+
+    async def _run_tool_round(
+        self,
+        tool_calls: list[Any],
+        tool_executor: object,
+        response: Any,
+        contents: list[Any],
+    ) -> None:
+        """Execute the requested tools and append the exchange in Gemini's content format.
+
+        The executor call is provider-agnostic — `(name, args)` — and only the appending here knows
+        about `types.Content`, which is the boundary this adapter exists to hold.
+        """
+        results = [
+            (tc, await tool_executor.execute(tc.name, tc.args))  # type: ignore[attr-defined]
+            for tc in tool_calls
+        ]
+        contents.append(response.candidates[0].content)
+        contents.append(
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_function_response(name=tc.name, response=r) for tc, r in results
+                ],
+            )
+        )
 
     async def count_tokens(
         self,

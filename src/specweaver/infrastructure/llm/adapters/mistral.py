@@ -29,6 +29,35 @@ if TYPE_CHECKING:
     )
 
 
+def _accumulate_usage(cumulative: Any, usage: Any) -> None:
+    """Add one response's token counts to the running total.
+
+    Every field is read defensively: Mistral's usage object has varied across SDK versions, and a
+    missing count should not abort a run that otherwise succeeded.
+    """
+    if not usage:
+        return
+    cumulative.prompt_tokens += getattr(usage, "prompt_tokens", 0)
+    cumulative.completion_tokens += getattr(usage, "completion_tokens", 0)
+    cumulative.total_tokens += getattr(usage, "total_tokens", 0)
+
+
+def _assistant_message(msg: Any) -> dict[str, Any]:
+    """The assistant turn to echo back, carrying the tool calls the model asked for."""
+    return {
+        "role": "assistant",
+        "content": msg.content or "",
+        "tool_calls": [
+            {
+                "id": getattr(tc, "id", ""),
+                "type": "function",
+                "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+            }
+            for tc in msg.tool_calls
+        ],
+    }
+
+
 class MistralAdapter(LLMAdapter):
     """Adapter for Mistral models."""
 
@@ -210,12 +239,7 @@ class MistralAdapter(LLMAdapter):
             except Exception as e:
                 self._handle_error(e)
 
-            if hasattr(response, "usage") and response.usage:
-                cumulative_usage.prompt_tokens += getattr(response.usage, "prompt_tokens", 0)
-                cumulative_usage.completion_tokens += getattr(
-                    response.usage, "completion_tokens", 0
-                )
-                cumulative_usage.total_tokens += getattr(response.usage, "total_tokens", 0)
+            _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
 
             choice = response.choices[0]
             msg = choice.message
@@ -228,22 +252,7 @@ class MistralAdapter(LLMAdapter):
                     finish_reason=getattr(choice, "finish_reason", "stop") or "stop",
                 )
 
-            assistant_msg: dict[str, Any] = {
-                "role": "assistant",
-                "content": msg.content or "",
-                "tool_calls": [
-                    {
-                        "id": getattr(tc, "id", ""),
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        },
-                    }
-                    for tc in msg.tool_calls
-                ],
-            }
-            mistral_messages.append(assistant_msg)
+            mistral_messages.append(_assistant_message(msg))
 
             await self._execute_mistral_tools(msg.tool_calls, tool_executor, mistral_messages)
 

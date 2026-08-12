@@ -32,6 +32,31 @@ if TYPE_CHECKING:
     )
 
 
+def _accumulate_usage(cumulative: Any, usage: Any) -> None:
+    """Add one response's token counts to the running total, if the provider reported any."""
+    if not usage:
+        return
+    cumulative.prompt_tokens += usage.prompt_tokens
+    cumulative.completion_tokens += usage.completion_tokens
+    cumulative.total_tokens += usage.total_tokens
+
+
+def _assistant_message(msg: Any) -> dict[str, Any]:
+    """The assistant turn to echo back, carrying the tool calls the model asked for."""
+    return {
+        "role": "assistant",
+        "content": msg.content or "",
+        "tool_calls": [
+            {
+                "id": tc.id,
+                "type": "function",
+                "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+            }
+            for tc in msg.tool_calls
+        ],
+    }
+
+
 class OpenAIAdapter(LLMAdapter):
     """Adapter for OpenAI models."""
 
@@ -170,6 +195,24 @@ class OpenAIAdapter(LLMAdapter):
                 }
             )
 
+    def _apply_on_tool_round(
+        self,
+        messages: list[Message],
+        oai_messages: list[dict[str, Any]],
+        round_num: int,
+        on_tool_round: Callable[[int, list[Message]], None],
+    ) -> None:
+        """Invoke the caller's hook and sync any messages it appended into the provider payload.
+
+        Matches the extraction the Anthropic, Gemini and Mistral adapters already had — this one
+        was the only adapter still doing it inline (`TECH-023`).
+        """
+        old_len = len(messages)
+        on_tool_round(round_num, messages)
+        for new_msg in messages[old_len:]:
+            if str(new_msg.role.value) != "system":
+                oai_messages.append({"role": str(new_msg.role.value), "content": new_msg.content})
+
     async def generate_with_tools(
         self,
         messages: list[Message],
@@ -197,23 +240,14 @@ class OpenAIAdapter(LLMAdapter):
 
         for _total_calls, round_num in enumerate(range(config.max_tool_rounds)):
             if on_tool_round:
-                old_len = len(messages)
-                on_tool_round(round_num, messages)
-                for new_msg in messages[old_len:]:
-                    if str(new_msg.role.value) != "system":
-                        oai_messages.append(
-                            {"role": str(new_msg.role.value), "content": new_msg.content}
-                        )
+                self._apply_on_tool_round(messages, oai_messages, round_num, on_tool_round)
 
             try:
                 response = await client.chat.completions.create(**kwargs)
             except Exception as e:
                 self._handle_error(e)
 
-            if response.usage:
-                cumulative_usage.prompt_tokens += response.usage.prompt_tokens
-                cumulative_usage.completion_tokens += response.usage.completion_tokens
-                cumulative_usage.total_tokens += response.usage.total_tokens
+            _accumulate_usage(cumulative_usage, response.usage)
 
             choice = response.choices[0]
             msg = choice.message
@@ -226,22 +260,7 @@ class OpenAIAdapter(LLMAdapter):
                     finish_reason=choice.finish_reason or "stop",
                 )
 
-            assistant_msg: dict[str, Any] = {
-                "role": "assistant",
-                "content": msg.content or "",
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        },
-                    }
-                    for tc in msg.tool_calls
-                ],
-            }
-            oai_messages.append(assistant_msg)
+            oai_messages.append(_assistant_message(msg))
 
             await self._execute_tool_calls(msg.tool_calls, tool_executor, oai_messages)
 

@@ -191,29 +191,71 @@ class PromptBuilder(PromptBuilderAddersMixin):
             priority_groups.setdefault(block.priority, []).append(block)
 
         result = [b for b in blocks if b.priority == 0]
-        budget_left = remaining
+        result.extend(self._fit_groups(priority_groups, remaining))
 
+        self._budget.add(sum(b.tokens for b in result))
+        return result
+
+    def _fit_groups(
+        self, priority_groups: dict[int, list[_ContentBlock]], budget: int
+    ) -> list[_ContentBlock]:
+        """Take whole priority groups while they fit, then truncate the one that straddles.
+
+        Once a group has to be truncated the budget is spent, so every lower-priority group is
+        dropped rather than partially included — priority order is the point of the exercise.
+        """
+        taken: list[_ContentBlock] = []
         for prio in sorted(priority_groups):
             group = priority_groups[prio]
             group_tokens = sum(b.tokens for b in group)
-
-            if group_tokens <= budget_left:
-                # Entire group fits
-                result.extend(group)
-                budget_left -= group_tokens
+            if group_tokens <= budget:
+                taken.extend(group)
+                budget -= group_tokens
             else:
-                # Proportional redistribution within this priority
-                result.extend(
-                    self._truncate_group(group, budget_left),
-                )
-                budget_left = 0
-                break  # No budget left for lower-priority groups
+                taken.extend(self._truncate_group(group, budget))
+                break
+        return taken
 
-        # Update budget tracking
-        total_used = sum(b.tokens for b in result)
-        self._budget.add(total_used)
+    @staticmethod
+    def _truncated_text(block: _ContentBlock, char_limit: int) -> str:
+        """The block's content cut to `char_limit`, preferring its source's own truncation.
 
-        return result
+        A source that predates the `char_limit` parameter raises `TypeError`; falling back to a
+        raw slice keeps an older adapter working rather than failing the whole prompt build.
+        """
+        if block.source is None:
+            return block.text[:char_limit] + "\n[truncated]"
+        try:
+            return str(block.source.get_prompt_content(char_limit=char_limit))
+        except TypeError:
+            return block.text[:char_limit] + "\n[truncated]"
+
+    def _truncated_block(self, block: _ContentBlock, share: int) -> _ContentBlock:
+        """A copy of `block` cut down to its token share.
+
+        A source-backed block re-counts as `raw`: its source already returns prompt-ready text, so
+        escaping it again would double-encode. A plain block is sliced before escaping and then
+        re-counted through it, because the escaped form is what the model actually pays for.
+        """
+        truncated_text = self._truncated_text(block, share * 4)  # reverse of the len//4 estimate
+        escaping = "raw" if block.source is not None else block.escaping
+        counted = (
+            truncated_text
+            if block.source is not None
+            else apply_escaping(truncated_text, block.escaping)
+        )
+        return _ContentBlock(
+            text=truncated_text,
+            priority=block.priority,
+            kind=block.kind,
+            label=block.label,
+            language=block.language,
+            file_path=block.file_path,
+            tokens=self._count(counted),
+            truncated=True,
+            escaping=escaping,
+            source=block.source,
+        )
 
     def _truncate_group(
         self,
@@ -241,51 +283,10 @@ class PromptBuilder(PromptBuilderAddersMixin):
         for i, block in enumerate(group):
             share = shares[i]
             if block.tokens <= share:
-                # Block fits within its share — no truncation
+                # Fits within its share — no truncation.
                 result.append(block)
             elif share > 0:
-                # Truncate to share
-                char_limit = share * 4  # reverse of len//4 estimate
-                if block.source is not None:
-                    try:
-                        truncated_text = block.source.get_prompt_content(char_limit=char_limit)
-                    except TypeError:
-                        # Fallback for adapters without char_limit support
-                        truncated_text = block.text[:char_limit] + "\n[truncated]"
-                    tokens = self._count(truncated_text)
-                    result.append(
-                        _ContentBlock(
-                            text=truncated_text,
-                            priority=block.priority,
-                            kind=block.kind,
-                            label=block.label,
-                            language=block.language,
-                            file_path=block.file_path,
-                            tokens=tokens,
-                            truncated=True,
-                            escaping="raw",
-                            source=block.source,
-                        )
-                    )
-                else:
-                    # Perform character slicing on the raw text before escaping is applied
-                    truncated_text = block.text[:char_limit] + "\n[truncated]"
-                    # Recalculate escaped token footprint of the truncated block
-                    escaped_text = apply_escaping(truncated_text, block.escaping)
-                    tokens = self._count(escaped_text)
-                    result.append(
-                        _ContentBlock(
-                            text=truncated_text,
-                            priority=block.priority,
-                            kind=block.kind,
-                            label=block.label,
-                            language=block.language,
-                            file_path=block.file_path,
-                            tokens=tokens,
-                            truncated=True,
-                            escaping=block.escaping,
-                        ),
-                    )
+                result.append(self._truncated_block(block, share))
             # else: share == 0, block is dropped entirely
 
         return result

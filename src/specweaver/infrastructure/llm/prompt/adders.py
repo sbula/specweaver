@@ -420,41 +420,52 @@ class PromptBuilderAddersMixin:
             path_str = str(mention.resolved_path)
             if path_str in existing_paths:
                 continue
-            try:
-                content = mention.resolved_path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+
+            content = self._mention_content(mention, path_str, skeleton=skeleton)
+            if content is None:
                 continue
-            lang = detect_language(mention.resolved_path)
 
-            if skeleton:
-                # Flow engine pre-evaluates and caches bounds
-                if path_str in self._skeleton_files:
-                    content = self._skeleton_files[path_str]
-                else:
-                    try:
-                        from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
-
-                        content = extract_ast_skeleton(mention.resolved_path, content)
-                    except ImportError:
-                        pass
-
-            tokens = self._count(apply_escaping(content, actual_escaping))
             self._blocks.append(
                 _ContentBlock(
                     text=content,
                     priority=4,
                     kind="mentioned",
                     label=f"[auto] {mention.resolved_path.name}",
-                    language=lang,
+                    language=detect_language(mention.resolved_path),
                     file_path=path_str,
                     role="reference",
-                    tokens=tokens,
+                    tokens=self._count(apply_escaping(content, actual_escaping)),
                     escaping=actual_escaping,
                 ),
             )
             existing_paths.add(path_str)
             added += 1
         return self  # type: ignore[return-value]
+
+    def _mention_content(
+        self, mention: ResolvedMention, path_str: str, *, skeleton: bool
+    ) -> str | None:
+        """A mentioned file's prompt text, or None when it cannot be read.
+
+        An unreadable file is skipped rather than raised: a mention is a *guess* extracted from LLM
+        output, so a path that no longer resolves is expected traffic, not an error.
+        """
+        try:
+            content = mention.resolved_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return None
+
+        if not skeleton:
+            return content
+
+        # The flow engine pre-evaluates and caches bounds, so prefer its answer.
+        if path_str in self._skeleton_files:
+            return self._skeleton_files[path_str]
+        try:
+            from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+        except ImportError:
+            return content
+        return str(extract_ast_skeleton(mention.resolved_path, content))
 
     def add_artifact_tagging(
         self,

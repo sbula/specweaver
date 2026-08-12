@@ -89,6 +89,26 @@ def extract_mentions(text: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+def _closes_fence(line: str, fence_marker: str) -> bool:
+    """Whether this line closes the open fence.
+
+    A closing fence is the marker and nothing else — the one-character slack allows a stray
+    trailing character without matching a *nested* opening fence that carries a language tag.
+    """
+    stripped = line.strip()
+    return stripped.startswith(fence_marker) and len(stripped) <= len(fence_marker) + 1
+
+
+def _kept_block(block_lines: list[str]) -> list[str]:
+    """The block's lines if it is small enough to keep, else nothing.
+
+    Small blocks often carry real file references; large ones are generated output and produce
+    false positives, which is the whole reason this stripping exists.
+    """
+    content_lines = block_lines[1:-1]  # excluding both fences
+    return block_lines if len(content_lines) <= _LARGE_BLOCK_LINE_THRESHOLD else []
+
+
 def _strip_large_code_blocks(text: str) -> str:
     """Remove fenced code blocks longer than the threshold.
 
@@ -96,34 +116,27 @@ def _strip_large_code_blocks(text: str) -> str:
     meaningful file references.  Large blocks are typically generated code
     output and produce false-positive matches.
     """
-    lines = text.split("\n")
     result: list[str] = []
     block_lines: list[str] = []
     fence_marker: str | None = None
 
-    for line in lines:
+    for line in text.split("\n"):
         if fence_marker is None:
-            # Not inside a block — check for opening fence
-            m = _FENCE_OPEN.match(line.strip())
-            if m:
-                fence_marker = m.group(1)[:3]  # ``` or ~~~
+            opened = _FENCE_OPEN.match(line.strip())
+            if opened:
+                fence_marker = opened.group(1)[:3]  # ``` or ~~~
                 block_lines = [line]
             else:
                 result.append(line)
-        else:
-            # Inside a block — check for closing fence
-            block_lines.append(line)
-            stripped = line.strip()
-            if stripped.startswith(fence_marker) and len(stripped) <= len(fence_marker) + 1:
-                # Block closed — keep if small, discard if large
-                content_lines = block_lines[1:-1]  # exclude fences
-                if len(content_lines) <= _LARGE_BLOCK_LINE_THRESHOLD:
-                    result.extend(block_lines)
-                # else: discard the entire block
-                fence_marker = None
-                block_lines = []
+            continue
 
-    # If block was never closed, include remaining lines
+        block_lines.append(line)
+        if _closes_fence(line, fence_marker):
+            result.extend(_kept_block(block_lines))
+            fence_marker = None
+            block_lines = []
+
+    # An unclosed block keeps its lines: truncated output is still worth scanning.
     result.extend(block_lines)
     return "\n".join(result)
 

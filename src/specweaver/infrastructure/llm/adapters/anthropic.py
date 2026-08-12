@@ -31,6 +31,25 @@ if TYPE_CHECKING:
     )
 
 
+def _accumulate_usage(cumulative: Any, usage: Any) -> None:
+    """Add one response's token counts to the running total.
+
+    Anthropic reports `input_tokens`/`output_tokens` and no total, so the total is derived — the
+    other adapters read a provider-supplied `total_tokens`, which is why this is per-adapter rather
+    than shared.
+    """
+    if not usage:
+        return
+    cumulative.prompt_tokens += usage.input_tokens
+    cumulative.completion_tokens += usage.output_tokens
+    cumulative.total_tokens += usage.input_tokens + usage.output_tokens
+
+
+def _finish_reason(response: Any) -> str:
+    """`max_tokens` when the model was cut off, `stop` otherwise."""
+    return "max_tokens" if getattr(response, "stop_reason", None) == "max_tokens" else "stop"
+
+
 class AnthropicAdapter(LLMAdapter):
     """Adapter for Anthropic Claude models."""
 
@@ -234,25 +253,15 @@ class AnthropicAdapter(LLMAdapter):
             except Exception as e:
                 self._handle_error(e)
 
-            if hasattr(response, "usage") and response.usage:
-                cumulative_usage.prompt_tokens += response.usage.input_tokens
-                cumulative_usage.completion_tokens += response.usage.output_tokens
-                cumulative_usage.total_tokens += (
-                    response.usage.input_tokens + response.usage.output_tokens
-                )
+            _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
 
-            # Anthropic tool use works via stop_reason == "tool_use"
+            # Anthropic signals tool use via stop_reason, not a tool_calls field.
             if getattr(response, "stop_reason", None) != "tool_use":
-                text = self._extract_text(response.content)
-                finish_reason = "stop"
-                if getattr(response, "stop_reason", None) == "max_tokens":
-                    finish_reason = "max_tokens"
-
                 return LLMResponse(
-                    text=text,
+                    text=self._extract_text(response.content),
                     model=config.model,
                     usage=cumulative_usage,
-                    finish_reason=finish_reason,
+                    finish_reason=_finish_reason(response),
                 )
 
             # Isolate tool_use blocks and text blocks

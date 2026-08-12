@@ -121,43 +121,43 @@ _SLOT_RENDERERS: dict[str, Callable[[list[_ContentBlock]], str | None]] = {
 }
 
 
+#: The order slots appear in when the caller does not specify one. Instructions first so the model
+#: reads them before any content; `agent_memory` last because it is the most truncatable.
+_DEFAULT_TAG_ORDER = (
+    "instructions",
+    "dictator-overrides",
+    "project_metadata",
+    "constitution",
+    "standards",
+    "plan",
+    "topology",
+    "file",
+    "mentioned",
+    "context",
+    "reminder",
+    "agent_memory",
+)
+
+
+def _render_slot(blocks: list[_ContentBlock], tag: str) -> str:
+    """One slot's rendered text — a registered renderer if there is one, else generic tagging."""
+    renderer = _SLOT_RENDERERS.get(tag)
+    rendered = renderer(blocks) if renderer else _render_tagged_blocks(blocks, tag, tag)
+    return rendered or ""
+
+
 def render_blocks(
     blocks: list[_ContentBlock],
     order: tuple[PromptSlot, ...] | None = None,
 ) -> str:
-    """Render blocks into XML-tagged prompt text."""
-    logger.debug("Rendering %d prompt blocks", len(blocks))
-    parts: list[str] = []
+    """Render blocks into XML-tagged prompt text.
 
-    if order is None:
-        ordered_tags = [
-            "instructions",
-            "dictator-overrides",
-            "project_metadata",
-            "constitution",
-            "standards",
-            "plan",
-            "topology",
-            "file",
-            "mentioned",
-            "context",
-            "reminder",
-            "agent_memory",
-        ]
-        for tag in ordered_tags:
-            if tag in _SLOT_RENDERERS:
-                rendered = _SLOT_RENDERERS[tag](blocks)
-            else:
-                rendered = _render_tagged_blocks(blocks, tag, tag)
-            if rendered:
-                parts.append(rendered)
-    else:
-        for slot in order:
-            if slot.value in _SLOT_RENDERERS:
-                rendered = _SLOT_RENDERERS[slot.value](blocks)
-            else:
-                rendered = _render_tagged_blocks(blocks, slot.value, slot.value)
-            if rendered:
-                parts.append(rendered)
+    The two arms differed only in which tag sequence they walked, so the sequence is the variable
+    and the walk is written once.
+    """
+    logger.debug("Rendering %d prompt blocks", len(blocks))
+
+    tags = [slot.value for slot in order] if order is not None else list(_DEFAULT_TAG_ORDER)
+    parts = [rendered for tag in tags if (rendered := _render_slot(blocks, tag))]
 
     return "\n\n".join(parts)
