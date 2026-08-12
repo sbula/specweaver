@@ -199,3 +199,68 @@ async def test_a_top_level_run_still_writes_to_the_caller_s_own_context(tmp_path
         "a top-level run was given a copy — the caller's own context no longer sees the run"
     )
     assert context.run.run_id == result.run_id
+
+
+# ---------------------------------------------------------------------------
+# The one thing that must NOT be isolated
+# ---------------------------------------------------------------------------
+
+
+def test_the_gate_evaluator_keeps_the_context_it_was_built_with(tmp_path: Path) -> None:
+    """`GateEvaluator` holds the context from `__init__`, and that is correct — do not "fix" it.
+
+    It looks like a stale-reference bug: the runner may replace `self._context` — with a sub-run
+    copy under `TECH-014`, or with the ephemeral-worktree context under `C-EXEC-06` — while the
+    evaluator keeps pointing at the original. The obvious tidy-up is to re-point it at
+    `runner._context`.
+
+    **That tidy-up would silently break the RESERVE gate**, which is a *cross-pipeline mutex*
+    keyed `pipeline:<name>`. It resolves its lock database as
+    `context.project_path / ".specweaver" / "reservations.db"`, so contention exists only while
+    every contender resolves the SAME path. `C-EXEC-06` rewrites `project_path` to a per-run
+    worktree; an evaluator following that would hand each run a private database, every acquire
+    would succeed, and the mutex would be gone — with no test failing and nothing logged.
+
+    The companion test below demonstrates that failure mode rather than asserting it.
+    """
+    registry = StepHandlerRegistry()
+    registry.register(StepAction.VALIDATE, StepTarget.SPEC, RunIdObservingHandler())
+
+    context = _shared_context(tmp_path)
+    runner = PipelineRunner(_labelled_pipeline("solo", step_count=1), context, registry=registry)
+
+    # Exactly what `runner_utils` does for a C-EXEC-06 session: point the run at a worktree.
+    worktree_context = context.model_copy()
+    worktree_context.project_path = tmp_path / ".worktrees" / "wt-1"
+    runner._context = worktree_context
+
+    assert runner._gate_evaluator._context is context, (
+        "the gate evaluator followed the runner's swapped context — RESERVE would resolve its "
+        "lock database inside the per-run worktree and stop being a mutex"
+    )
+    assert runner._gate_evaluator._context.project_path == tmp_path
+
+
+def test_a_per_run_lock_database_would_destroy_the_reserve_mutex(tmp_path: Path) -> None:
+    """Why the test above matters, shown rather than claimed.
+
+    Two contenders on one database: the second is refused. The same two contenders on separate
+    databases — which is what a per-worktree `project_path` produces — both succeed. That second
+    outcome is the silent failure the shared context prevents.
+    """
+    from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
+
+    shared = tmp_path / ".specweaver" / "reservations.db"
+
+    assert SQLiteReservationSystem(shared).acquire("pipeline:build", "run-a") is True
+    assert SQLiteReservationSystem(shared).acquire("pipeline:build", "run-b") is False, (
+        "a shared reservation database must serialise contenders"
+    )
+
+    per_worktree_a = SQLiteReservationSystem(tmp_path / "wt-a" / ".specweaver" / "reservations.db")
+    per_worktree_b = SQLiteReservationSystem(tmp_path / "wt-b" / ".specweaver" / "reservations.db")
+
+    assert per_worktree_a.acquire("pipeline:build", "run-a") is True
+    assert per_worktree_b.acquire("pipeline:build", "run-b") is True, (
+        "sanity: separate databases do NOT contend — this is the failure mode, not the fix"
+    )

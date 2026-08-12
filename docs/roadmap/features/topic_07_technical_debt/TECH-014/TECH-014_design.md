@@ -104,10 +104,28 @@ back — pinned by its own test, so the discriminator is load-bearing in **both*
 The copy is **shallow**: only `run` is rebound per step, so paths, providers and adapters stay
 shared by reference as the read-only infrastructure they are.
 
-Two collaborators were checked rather than assumed. `GateEvaluator` retains the *original* context
-from `__init__`, but reads only `project_path`, which a shallow copy shares. The C-EXEC-06 worktree
-swap in `runner_utils.py` captures `original = runner._context` **at call time**, which is after
-the copy, so its `finally:` restores the sub-run's own context and not the shared one.
+Two collaborators were checked rather than assumed. The C-EXEC-06 worktree swap in
+`runner_utils.py` captures `original = runner._context` **at call time**, which is after the copy,
+so its `finally:` restores the sub-run's own context and not the shared one.
+
+`GateEvaluator` retains the *original* context from `__init__`, and that turned out to be
+**load-bearing, not a leak**. It reads only `project_path`, and a RESERVE gate is a
+*cross-pipeline mutex* keyed `pipeline:<name>` whose lock database resolves to
+`project_path / ".specweaver" / "reservations.db"`. Contention exists only while every contender
+resolves the same path — and C-EXEC-06 rewrites `project_path` to a per-run worktree. **Re-pointing
+the evaluator at `runner._context`, which is the obvious tidy-up, would hand each run a private
+database, make every acquire succeed, and delete the mutex with nothing failing and nothing
+logged.** Pinned by two tests: one asserting the evaluator keeps its original context, and one
+demonstrating that separate databases do not contend, so the reason is visible and not folklore.
+
+### Isolation covers more than the three fields named
+
+The shallow copy isolates **all** per-run state, not only `run` — including the `plan_context`
+fields INT-US-21 FR-2 widened the blast radius to. That holds because **no code anywhere in `src/`
+mutates a `RunContext` sub-model in place**; every write rebinds the whole sub-model
+(`context.plan_context = context.plan_context.model_copy(update=...)`, and the same for `isolation`
+and `run`). Verified by search rather than assumed, because a single in-place mutation would defeat
+a shallow copy silently.
 
 ### Verification
 
