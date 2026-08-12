@@ -139,7 +139,45 @@ executed as truth — and the same shape of fix: repair the instances, then ship
 - **Not** `TECH-025`'s own roadmap entry beyond reverting the sub-features added on 2026-08-08 and
   the title drift noted below.
 
-## Measured hierarchy (2026-08-08) — carry this into the design phase
+## Hierarchy — CORRECTED BY THE USER (2026-08-12). Read this before the section below.
+
+> [!CAUTION]
+> **"TECH-XXX are NOT user stories. These are comparable to features like `E-INTL-02`,
+> `C-FLOW-01`, …"** — user, 2026-08-12.
+>
+> **This supersedes the "Measured hierarchy" section below**, which concluded that `TECH-NNN` and
+> `US-N` are peers. They are not. A `TECH-NNN` sits at **capability level**, alongside
+> `E-INTL-02` / `C-FLOW-01` / `B-INTL-09` — the things that appear as **one line** inside a `US-N`
+> entry's Core Required list.
+
+**Why the measurement got it wrong.** The section below is not factually incorrect — `TECH-NNN`
+entries *are* top-level `###` sections in the file today, and the line counts are real. It inferred
+the hierarchy from that formatting, and the formatting is the defect. Measuring what the file does
+cannot tell you what the file should do when the file is what is broken. That is the same trap this
+ticket documents twice already, arriving a third time.
+
+**What this changes.** The repair is materially larger than §Problem Statement says:
+
+| | Under the old reading | Under the correction |
+|---|---|---|
+| Defect | 11 nested `SF-NN` lines inside 4 entries | **24 `TECH-NNN` entries formatted as stories** |
+| Fix | Delete 11 lines | Convert each to capability-level, then decide where they live |
+| Vocabulary | Kept | `Benefit:` / `Core Required (MVS)` / `Verifiable Proof:` are **user-story fields**; a capability line carries none of them |
+
+**Open for the design phase — do not guess this.** A capability line lives *inside* a `US-N`
+section's Core Required or Add-Ons list, and a `TECH-NNN` belongs to no user story. So converting
+them raises a question the file cannot answer today: **where does a capability-level entry live when
+it has no parent story?** Candidates: a single Technical Debt section holding one line per ticket;
+or the master roadmap referencing `topic_07` only, since that document already carries the full
+prose for all 24. The second matches this ticket's own thesis — one home per fact — and would make
+the master roadmap's TECH region a list of links.
+
+**Sequencing note.** `TECH-027`, `TECH-028` and `TECH-029` were registered with `###` sections
+matching their 24 siblings, before this correction. They are not exceptions to be fixed one-off;
+they are part of the same 24 and convert with the rest. Adding a lone one-liner now would leave the
+file *more* inconsistent, not less, and would pre-empt the placement decision above.
+
+## Measured hierarchy (2026-08-08) — SUPERSEDED, see the correction above
 
 Recorded because the minting session got it wrong twice, in opposite directions, and the design
 phase should not have to re-derive it.
