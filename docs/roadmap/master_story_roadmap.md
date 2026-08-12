@@ -846,3 +846,9 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
 *   **Sequencing:** Found 2026-08-11 rebuilding the environment on Linux. Manifest and `Containerfile` change land in one commit. Docs-and-build only; unranked in the debt chain above.
+
+### 🔴 TECH-029: Sandbox Process Cap Uses `RLIMIT_NPROC`, Which Bounds the User and Not the Sandbox
+**Benefit:** *The sandbox's process cap bounds the sandbox instead of the whole login session, so an isolated run stops failing because the developer had other things open.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
+*   **Sequencing:** Found 2026-08-12 on Linux; explains 18 of 29 failures. Live `src/` defect in `C-EXEC-02`/`B-EXEC-01` territory — not `TECH-025`'s.
