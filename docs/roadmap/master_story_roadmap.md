@@ -89,8 +89,8 @@ this section drift for a month.
 
 `TECH-023` and `TECH-024` must not share a working tree (**discharged 2026-08-12** — `TECH-024` is committed, so `TECH-023` starts from a clean, attributable baseline): extracting helpers to cut complexity
 changes imports, which is exactly what the cycle check measures, so neither number stays
-attributable. `TECH-010`, `TECH-011`, `TECH-013`, `TECH-016` are independent of this chain and fit
-anywhere; `TECH-017` and `TECH-018` are audits and want the code still first.
+attributable. `TECH-010`, `TECH-011`, `TECH-013` are independent of this chain and fit
+anywhere (`TECH-016` was too, and is now 🟢); `TECH-017` and `TECH-018` are audits and want the code still first.
 **Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.

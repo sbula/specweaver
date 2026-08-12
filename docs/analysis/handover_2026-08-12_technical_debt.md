@@ -65,8 +65,12 @@ outside it on stdlib `ast` **on purpose**. Do not refactor them toward uniformit
 
 ### Stub — never run through `specweaver-design`
 
-`TECH-010`, `TECH-011`, `TECH-013`, `TECH-016`, `TECH-017`, `TECH-018`. Problem statements only.
+`TECH-010`, `TECH-011`, `TECH-013`, `TECH-017`, `TECH-018`. Problem statements only.
 Any of these needs the design skill before implementation, not a direct attempt.
+
+*(`TECH-016` left this list on 2026-08-12 — delivered without a `specweaver-design` run, because
+measuring its six claimed call sites against the code settled the whole decision space: the
+model-shaped helper it proposed fitted two of them. It also closed `TECH-036`, filed the same day.)*
 
 ### Designed but not built
 

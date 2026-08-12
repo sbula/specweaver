@@ -7,11 +7,11 @@ Split out of ``handlers/decompose.py`` by INT-US-21 SF-02 CB-2, which took that 
 against a 450-line threshold and CB-3 adds more. Named for the contract it owns — the artifacts a
 decomposition emits — rather than for what the code is, so it cannot accrete unrelated helpers.
 
-Scope note: this is **not** ``TECH-016``. That ticket unifies the
-derive-path -> uuid -> tag -> write -> lineage sequence *across* handlers and owns its own commits;
-D5 forbids doing it inside a feature commit. This module keeps that sequence local to decomposition
-and simply gives it a home. When TECH-016 lands it replaces the body of
-:func:`persist_decomposition`; the stub writer and feature-name derivation stay here regardless.
+``TECH-016`` has since landed (2026-08-12) and did what this note predicted: the uuid/tag and
+lineage-event halves of the sequence now live in :mod:`~specweaver.core.flow.handlers.artifact_lineage`
+and are called from here. What stays is what the note said would stay -- the YAML rendering, the
+stub writer and the feature-name derivation, because the *head* of an artifact write differs at
+every site.
 """
 
 from __future__ import annotations
