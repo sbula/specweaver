@@ -22,6 +22,7 @@ from specweaver.sandbox.execution.container_executor import (
     ContainerEngineUnavailableError,
     ContainerSubprocessExecutor,
 )
+from specweaver.sandbox.language.core.python.toolchain import did_not_run
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -152,6 +153,19 @@ class PythonQARunner(QARunnerInterface):
             )
 
         parsed = _parse_pytest_output(result.stdout)
+
+        reason = did_not_run(result, "pytest")
+        if reason:
+            return TestRunResult(
+                passed=0,
+                failed=0,
+                errors=1,
+                skipped=0,
+                total=1,
+                failures=[TestFailure(nodeid="<toolchain>", message=reason)],
+                duration_seconds=result.duration_seconds,
+            )
+
         logger.info(
             "PythonQARunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",
             parsed["passed"],
@@ -212,6 +226,24 @@ class PythonQARunner(QARunnerInterface):
         if result.timed_out:
             logger.warning("PythonQARunner: ruff linting timed out (target=%s)", target)
             return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
+
+        # `_parse_ruff_json` swallows the JSONDecodeError from an empty stdout and returns no
+        # errors — which is exactly what ruff's own `[]` means, so an absent ruff read as clean.
+        reason = did_not_run(result, "ruff")
+        if reason:
+            return LintRunResult(
+                error_count=1,
+                fixable_count=0,
+                fixed_count=fixed_count,
+                errors=[
+                    LintError(
+                        file="<validation_engine>",
+                        line=0,
+                        code="ToolchainUnavailable",
+                        message=reason,
+                    )
+                ],
+            )
 
         return self._build_lint_result(result.stdout, fixed_count)
 
@@ -467,6 +499,22 @@ class PythonQARunner(QARunnerInterface):
                         file="<validation_engine>",
                         code="TimeoutExpired",
                         message="Architecture check timed out while executing tach.",
+                    )
+                ],
+            )
+
+        # The `shutil.which` guard above asks about the *host* PATH, and container mode skips it
+        # because the host is irrelevant there — so the one configuration where the prepared
+        # environment can genuinely lack tach is the one with no guard of its own.
+        reason = did_not_run(result, "tach")
+        if reason:
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="ToolchainUnavailable",
+                        message=reason,
                     )
                 ],
             )

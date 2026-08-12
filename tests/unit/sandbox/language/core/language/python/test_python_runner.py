@@ -373,3 +373,140 @@ class TestParsePytestSummaryOrderings:
         assert len(out["failures"]) == 2
         assert out["failures"][0].nodeid.endswith("test_a[row1]")
         assert out["failures"][1].message == "AssertionError: boom"
+
+
+class TestPythonQARunnerMissingToolchain:
+    """A toolchain that is not installed must not read as a clean run."""
+
+    def test_absent_pytest_reports_an_error_rather_than_zero_tests(self, tmp_path: Path) -> None:
+        """`No module named pytest` produced `passed=0 failed=0 errors=0` — indistinguishable
+        from a project that simply has no tests, and from a caller's view, nothing wrong.
+
+        The sandbox reaches this state for real: `B-EXEC-01`'s prepare phase runs a bare
+        `uv sync`, which does not install a project whose dev tooling sits in an extra. The QA
+        gate then reports success for a run that never happened.
+
+        The discriminator is empty stdout: a pytest that never started says nothing at all,
+        whereas every verdict pytest can reach — including "no tests" — it prints.
+        """
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=1, stdout="", stderr="/usr/bin/python3: No module named pytest"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_tests(target=".")
+
+        assert result.errors == 1, "an unusable toolchain must be reported, not silently passed"
+        assert result.total == 1
+        assert "pytest" in result.failures[0].message
+
+    def test_an_empty_suite_is_still_reported_as_empty(self, tmp_path: Path) -> None:
+        """The control. pytest exits 5 when it collects nothing, and that is not an error.
+
+        Without this the fix above would turn every genuinely empty target into a failure, which
+        is the obvious over-correction.
+        """
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(exit_code=5, stdout="no tests ran", stderr="")
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_tests(target=".")
+
+        assert result.errors == 0
+        assert result.total == 0
+
+    def test_a_target_directory_that_does_not_exist_is_not_a_toolchain_failure(
+        self, tmp_path: Path
+    ) -> None:
+        """Exit **4**, and the regression that caught the first version of this guard.
+
+        `sw implement` runs the QA gate against a project whose `tests/` directory does not exist
+        yet — the tests are what it is about to generate. pytest exits 4 there, having started
+        and run correctly. Keying the guard on the exit code failed that whole pipeline, which is
+        why it keys on empty stdout instead: pytest printed `no tests ran in 0.00s`.
+        """
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=4, stdout="no tests ran in 0.00s", stderr=""
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_tests(target="tests/")
+
+        assert result.errors == 0
+        assert result.total == 0
+
+    def test_a_normal_failing_run_is_untouched(self, tmp_path: Path) -> None:
+        """A real test failure exits non-zero with parseable output and must stay a failure."""
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=1, stdout="1 failed, 2 passed in 0.10s", stderr=""
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_tests(target=".")
+
+        assert result.failed == 1
+        assert result.passed == 2
+
+    def test_absent_ruff_reports_an_error_rather_than_a_clean_lint(self, tmp_path: Path) -> None:
+        """The same hole in the lint path, and this one had no guard of any kind.
+
+        `_parse_ruff_json` swallows a `JSONDecodeError` and returns no errors, so an empty stdout
+        from an uninstalled ruff was indistinguishable from `[]` — ruff's own way of saying the
+        target is clean.
+        """
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=1, stdout="", stderr="/usr/bin/python3: No module named ruff"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_linter(target=".")
+
+        assert result.error_count == 1, "an unusable linter must be reported, not read as clean"
+        assert "ruff" in result.errors[0].message
+
+    def test_a_clean_ruff_run_is_untouched(self, tmp_path: Path) -> None:
+        """The control: ruff exits 0 and prints `[]` when there is nothing to report."""
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_linter(target=".")
+
+        assert result.error_count == 0
+
+    def test_absent_tach_in_a_container_reports_an_error(self, tmp_path: Path) -> None:
+        """The architecture path guards on `shutil.which`, which is the wrong filesystem.
+
+        That check asks whether tach is on the *host* PATH, and `B-EXEC-01` skips it entirely in
+        container mode precisely because the host is irrelevant there. So the one configuration
+        where the prepared environment can actually lack tach is the one configuration with no
+        guard — and an empty stdout means clean to `_build_architecture_result`.
+        """
+        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+
+        executor = MagicMock(spec=ContainerSubprocessExecutor)
+        executor.execute.return_value = _make_result(
+            exit_code=1, stdout="", stderr="/usr/bin/python3: No module named tach"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_architecture_check(target=".")
+
+        assert result.violation_count == 1, "an unusable checker is not a clean architecture"
+        assert "tach" in result.violations[0].message
+
+    def test_a_clean_tach_run_is_untouched(self, tmp_path: Path) -> None:
+        """The control: tach exits 0 with an empty violation list when the boundaries hold."""
+        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+
+        executor = MagicMock(spec=ContainerSubprocessExecutor)
+        executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=executor)
+
+        result = runner.run_architecture_check(target=".")
+
+        assert result.violation_count == 0
