@@ -172,10 +172,24 @@ or the master roadmap referencing `topic_07` only, since that document already c
 prose for all 24. The second matches this ticket's own thesis — one home per fact — and would make
 the master roadmap's TECH region a list of links.
 
-**Converted 2026-08-12.** `TECH-026` through `TECH-030` — the five registered by this session — now
-sit as capability-level lines under a single `### Technical Debt` grouping: ID, short name, link,
-status box, and no story fields. The remaining **19** `TECH-NNN` entries still carry `Benefit:` /
-`Core Required (MVS)` / `Sequencing:` and are this ticket's repair list.
+**Converted 2026-08-12 — all 29, not just the new five.** Every `TECH-NNN` now sits as a
+capability-level line under one `### 🔧 Technical Debt (TECH)` grouping: ID, short name, link,
+status box, no story fields. `master_story_roadmap.md` went from 839 lines to 704.
+
+**Two of this ticket's measured defects closed as a side effect:**
+
+| Defect | Before | After |
+|---|---|---|
+| Nested `SF-NN` lines (§Problem Statement's repair list) | 11 across `TECH-001`/`005`/`006`/`009` | **0** |
+| Lines over 200 chars in the TECH region (§Third rule) | 12 | **0** |
+
+The 11 nested lines lived inside the `Core Required (MVS)` blocks of four TECH sections; removing
+the story scaffolding removed them with it. That is the stronger argument for the capability-line
+reading than anything measured earlier — the placement defect and the sub-feature-leak defect turn
+out to be **the same defect**, which is why deleting 11 lines was never going to be the whole fix.
+
+**What remains for this ticket** is therefore not the roadmap file. It is writing the contract down
+once, pointing the callers at it, and shipping the checker — so the shape cannot regrow.
 
 **The tooling was enforcing the wrong shape, which is why this kept regrowing.**
 `check_story_preconditions.py::_story_block` looked only for a `^### .*<ID>:` heading, so writing a

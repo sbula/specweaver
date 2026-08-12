@@ -669,169 +669,34 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
-### 🟢 TECH-001: Domain-Driven Design Unification
-**Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
-*   **Core Required (MVS):**
+### 🔧 Technical Debt (TECH)
+*Capability-level, like `C-FLOW-02` or `E-INTL-02`: one line each — ID, short name, link, status.*
+*Benefit, sequencing, proof and full rationale live in [topic_07](topics/topic_07_technical_debt.md) and each design doc.*
+
     *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
-        *   `✅` SF-01: Deconstruct Config Monolith
-        *   `✅` SF-02: Decentralize CLI Layer
-        *   `✅` SF-03: Consolidate Sandbox
-        *   `✅` SF-04: Eliminate `core.config` Circular Dependencies — commit `346f64c3` (2026-08-02); `core.config` now has `depends_on = []` in `tach.toml`.
-*   **Verifiable Proof:**
-    *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
-    *   `tests/unit/test_architecture.py::test_core_config_has_no_cross_domain_runtime_imports`
-*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-01/02/03 (found by SF-04's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
-
-### 🟢 TECH-002: BaseTool Registry
-**Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry`. The originally-described `__init_subclass__` mechanism was never built — the approved design deliberately rejected it in favor of the registry actually shipped.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-002:** [BaseTool Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
-*   **Verifiable Proof:**
-    *   `tests/integration/sandbox/test_dispatcher_registry_delegation.py`
-*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in all four sub-features — unrelated to this ticket's substantive claim, which is code-verified.
-
-### 🟢 TECH-003: Structural Refactoring of Workspace AST Module
-**Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_design.md)
-
-### 🟢 TECH-004: Architectural Analysis & Refactoring of `sw graph build` CLI
-**Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
-
-### 🟢 TECH-005: Database Table Prefix Harmonization
-**Benefit:** *Every database table — SQLAlchemy-managed and raw-sqlite3 alike — uses a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
-        *   `✅` SF-1: Model Refactoring
-        *   `✅` SF-2: Alembic Migration
-        *   `✅` SF-3: Prefix Raw-SQLite3 Tables — commit `4ebb89cf` (2026-08-02); `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations` renamed with a zero-data-loss migration path for pre-SF-3 installations.
-*   **Verifiable Proof:**
-    *   `tests/unit/alembic/test_table_prefix_migration.py`
-    *   `tests/unit/graph/core/store/test_repository_schema.py`
-    *   `tests/unit/core/flow/engine/test_engine_store.py::TestStoreSchema`
-    *   `tests/unit/core/flow/engine/test_reservation.py`
-*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-1/2 (found by SF-3's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
-
-### 🟢 TECH-006: Context Loading Pipeline Refactoring
-**Benefit:** *Eliminates business logic from CLI layers and kills the cross-interface spider web of private helper imports. `RunContext` is down from 32 flat fields to 15 attributes — 10 flat plus 7 frozen sub-models — and `check_class_health.py` no longer reports the file at all.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
-        *   `✅` SF-01: Delete All CLI Wrappers
-        *   `✅` SF-02: Reduce `RunContext` God Object — 32 fields → 15 attributes.
-*   **Dependency:** D-INTL-06 SF-02 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
-*   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
-
-### 🟢 TECH-007: PromptBuilder Input Escaping
-**Benefit:** *Hardens the prompt assembly layer against prompt injection by ensuring all string rendering uses proper escaping.*
-*   **Core Required (MVS):**
-    *   `✅` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md) (Tracked as cross-cutting tech debt)
-*   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
-
-### 🟢 TECH-008: Architectural Documentation Modularization
-**Benefit:** *Transforms the impenetrable 46KB `architecture_reference.md` monolith into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design.*
-*   **Core Required (MVS):**
+    *   `✅` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md)
     *   `✅` **TECH-008:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-008/TECH-008_design.md)
-
-### 🟢 TECH-009: Git & Filesystem Subprocess Migration
-**Benefit:** *Eliminates the last raw `subprocess.run()` calls from the sandbox by migrating GitExecutor and ripgrep search to SubprocessExecutor, gaining env isolation, credential stripping, telemetry, and timeout escalation for free.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
-        *   `✅` SF-01: GitExecutor Subprocess Migration (constructor-injected `SubprocessExecutor`, backward-compatible default)
-        *   `✅` SF-02: Filesystem Search (ripgrep) Subprocess Migration (`grep_content`/`_grep_ripgrep` gain an optional `executor` param)
-*   **Deferred future scope:** see [TECH-009_design.md](features/topic_07_technical_debt/TECH-009/TECH-009_design.md) (two documented `noqa: TID251` git queries in `assurance/`).
-
-### 🔴 TECH-010: MCP Persistent-Process Executor Migration
-**Benefit:** *Closes the last raw `subprocess.Popen()` in the sandbox via a persistent/streaming-process executor mode for the MCP bridge.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
-
-### 🔴 TECH-011: Load-Time Params Validation for All Pipeline Step Types
-**Benefit:** *Fast, load-time validation of every step type's `params` instead of confusing runtime handler errors.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
-
-### 🟢 TECH-012: Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)
-**Benefit:** *Multi-step untrusted loops actually run in isolation instead of crashing on step 2.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
-
-### 🔴 TECH-013: API Composition Roots Do Not Resolve Worktree-Isolation Policy
-**Benefit:** *REST-triggered pipeline runs honor the operator's `[sandbox]` worktree-isolation policy.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
-
-### 🔴 TECH-014: Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)
-**Benefit:** *Lineage and telemetry from concurrent sub-runs are attributed to the sub-run that actually produced them.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
-*   **Sequencing:** Live defect in shipped `C-FLOW-03` fan-out; should land before `C-FLOW-12`.
-
-### 🔴 TECH-015: Retire Grab-Bag Modules (Name-Says-Nothing Refactor)
-**Benefit:** *Every module is named for its contract, so the next addition has something to violate instead of somewhere to hide.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
-
-### 🔴 TECH-016: Unified Artifact Writer & Serialization Format Enforcement
-**Benefit:** *One artifact writer, and a check that makes it required — an enum field can no longer silently break a YAML writer.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
-
-### 🔴 TECH-017: Integration-Contract Proof Audit (Test Tier Must Match Story Tier)
-**Benefit:** *Every `INT-US-NN` contract is proven by integration/e2e tests, and capability stories that shipped incomplete are named.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
-*   **Sequencing:** Ships a tier-ratio guardrail at *planning* time — precedes whatever candidate is planned next.
-
-### 🔜 TECH-018: Delivered Add-On Re-Validation Against an Integrated Base (INT-US-21-SUB / C-INTL-01)
-**Benefit:** *A delivered add-on's integration claim is re-checked against the base that now exists underneath it.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
-*   **Sequencing:** Audit-only; precondition (INT-US-21 SF-03 committed) met 2026-07-28. Findings become NEW stories.
-
-### 🟢 TECH-019: Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders
-**Benefit:** *Skill instructions cannot order the agent to read files that do not exist, and two phases cannot both mandate opposite formats.*
-*   **Core Required (MVS):**
-    *   `[x]` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
-*   **Verifiable Proof:**
-    *   `tests/unit/scripts/test_check_skill_references.py`
-*   **Sequencing:** Delivered 2026-08-08 (`ffaa4a8b`, `fdc4eac2`).
-
-### 🔴 TECH-020: Extract the Step-Execution Loop from PipelineRunner
-**Benefit:** *`runner.py` has headroom again, and `_execute_loop`'s complexity is fixed rather than suppressed.*
-*   **Core Required (MVS):**
+    *   `✅` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
     *   `[ ]` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
-*   **Sequencing:** File sits at exactly 600/600 RED; sequence before `C-FLOW-12`'s fan-out work. The `# noqa: C901` must be removed, not relocated.
-
-### 🟢 TECH-021: `loop_back` Discards the Failing Step's Result
-**Benefit:** *A human parked at a loop-back target can see which step failed and why, instead of an identical prompt every resume.*
-*   **Core Required (MVS):**
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
-*   **Verifiable Proof:**
-    *   `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
-
-### 🔴 TECH-023: Repo-Wide Cyclomatic Complexity Violations (complexipy)
-**Benefit:** *`complexipy` reports a clean baseline instead of 98 chronic failures, so a NEW violation is visible instead of lost in noise.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
-*   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. Excludes `TECH-020`'s and `TECH-006` SF-02's already-owned functions.
-
-### 🔴 TECH-024: Repo-Wide Dependency Cycles (check_coupling)
-**Benefit:** *`check_coupling.py --cycles-only` reports zero cycles instead of 4 chronic ones, so modules can be understood, tested, and extracted independently.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
-*   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. One cycle overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing rather than duplicating.
-
-### 🟡 TECH-025: Registry IDs Leaking Into Proofs — FR Traceability Gap and Story-Named Tests
-**Benefit:** *`check_fr_coverage.py` passes cleanly for TECH-001, TECH-002 and TECH-005 instead of reporting 21 uncited FRs between them, and no test is named after the ticket that paid for it — closing the loop between each design's promises and what actually proves them.*
-*   **Core Required (MVS):**
     *   `[ ]` **TECH-025:** [Registry IDs Leaking Into Proofs](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
-*   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02), then again for `TECH-005` the same day, and for `TECH-002` on 2026-08-08 while verifying whether its amber status still reflected outstanding work (it did not). Three stories, 21 FRs, one cause: all shipped before this gate was wired into the closure process. FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
-
-### 🔴 Technical Debt — registered, not yet scheduled
-*A TECH ticket is capability-level, like `C-FLOW-02` or `E-INTL-02`: one line, no story fields. Detail lives in [topic_07](topics/topic_07_technical_debt.md) and each design doc.*
-
     *   `[ ]` **TECH-026:** [Roadmap Placement Contract](features/topic_07_technical_debt/TECH-026/TECH-026_design.md)
     *   `[ ]` **TECH-027:** [Sub-Feature Identifier Contract](features/topic_07_technical_debt/TECH-027/TECH-027_design.md)
     *   `[ ]` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)

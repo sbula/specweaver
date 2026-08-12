@@ -189,3 +189,78 @@ def test_model_copy_of_a_different_field_does_not_count(
     mod.check_no_dead_promises(report)
 
     assert any("'plan' is documented" in f for f in report.failures), report.failures
+
+
+#: A roadmap where TECH tickets are capability-level lines rather than `###` sections — the shape
+#: the user mandated (2026-08-12): a TECH ticket sits alongside `C-FLOW-02`, not alongside a user
+#: story, so it carries no `Benefit:` / `Core Required (MVS)` / `Verifiable Proof:` fields.
+CAPABILITY_ROADMAP_FIXTURE = """\
+# Master User Story Roadmap
+
+### \U0001f7e2 US-1: The Validation Engine
+*   **Core Required (MVS):**
+    *   `✅` **US-1:** placeholder
+
+### \U0001f534 Technical Debt — registered, not yet scheduled
+
+    *   `[ ]` **TECH-042:** [Example](features/topic_07_technical_debt/TECH-042/TECH-042_design.md)
+    *   `[ ]` **TECH-043:** [Another](features/topic_07_technical_debt/TECH-043/TECH-043_design.md)
+"""
+
+
+def test_story_block_finds_a_tech_ticket_written_as_a_capability_line(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A TECH ticket with no `###` section of its own must still resolve.
+
+    Before this fallback existed, `_story_block` searched only for a `^### .*<ID>:` heading, so
+    writing a TECH entry in the mandated capability shape made every gate report "no roadmap
+    section found" and block the ticket. Following the convention produced a red gate while
+    breaking it produced green — which is why TECH entries kept being rewritten as user stories.
+    """
+    path = tmp_path / "roadmap.md"
+    path.write_text(CAPABILITY_ROADMAP_FIXTURE, encoding="utf-8")
+    monkeypatch.setattr(mod, "ROADMAP", path)
+
+    block = mod._story_block("TECH-042")
+
+    assert block is not None, "a capability-line TECH entry must resolve"
+    assert "TECH-042" in block
+    assert "TECH-043" not in block, "must return only the line asked for, not its neighbours"
+
+
+def test_capability_line_lookup_does_not_match_a_different_ticket(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The fallback must not resolve an ID that is absent just because siblings are present.
+
+    Without this, a regex loose enough to find any list line would report success for every ID in
+    the family and the "no roadmap section found" guard would stop guarding anything.
+    """
+    path = tmp_path / "roadmap.md"
+    path.write_text(CAPABILITY_ROADMAP_FIXTURE, encoding="utf-8")
+    monkeypatch.setattr(mod, "ROADMAP", path)
+
+    assert mod._story_block("TECH-099") is None
+
+
+def test_the_section_form_still_wins_when_both_shapes_are_present(
+    mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """During the conversion both shapes coexist; the richer `###` block must take precedence.
+
+    A one-line entry carries no `Verifiable Proof:`, so preferring it over a real section would
+    silently drop proof discovery for every ticket not yet converted.
+    """
+    path = tmp_path / "roadmap.md"
+    path.write_text(
+        ROADMAP_FIXTURE + "\n### \U0001f534 Technical Debt\n\n"
+        "    *   `[ ]` **TECH-042:** [Dup](features/topic_07_technical_debt/TECH-042/x.md)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "ROADMAP", path)
+
+    block = mod._story_block("TECH-042")
+
+    assert block is not None
+    assert "Verifiable Proof" in block, "the ### section must win over the capability line"
