@@ -139,13 +139,15 @@ class TestBatch2LoggingRollout:
 
     def test_validation_modules_have_loggers(self):
         """assurance/validation modules should declare loggers."""
+        # TECH-024 split `registry` into a contract module (`rule_registry`, which carries the
+        # logger) and an entry point that only triggers rule self-registration.
         from specweaver.assurance.validation import (
             executor,
             inheritance,
             loader,
             pipeline,
             pipeline_loader,
-            registry,
+            rule_registry,
             runner,
             spec_kind,
         )
@@ -156,7 +158,7 @@ class TestBatch2LoggingRollout:
             loader,
             pipeline,
             pipeline_loader,
-            registry,
+            rule_registry,
             runner,
             spec_kind,
         ):

@@ -7,7 +7,7 @@ Structure tests and completeness tests from the 11-test battery.
 Auto-registers all built-in spec rules in the global RuleRegistry.
 """
 
-from specweaver.assurance.validation.registry import get_registry
+from specweaver.assurance.validation.rule_registry import get_registry
 
 from .s01_one_sentence import OneSentenceRule
 from .s02_single_setup import SingleSetupRule

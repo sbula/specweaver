@@ -7,7 +7,7 @@ Static analysis rules for generated code quality.
 Auto-registers all built-in code rules in the global RuleRegistry.
 """
 
-from specweaver.assurance.validation.registry import get_registry
+from specweaver.assurance.validation.rule_registry import get_registry
 
 from .c01_syntax_valid import SyntaxValidRule
 from .c02_tests_exist import TestsExistRule
