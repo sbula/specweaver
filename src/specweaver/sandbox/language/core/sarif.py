@@ -1,0 +1,60 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""Reading lint findings out of a SARIF report.
+
+`TECH-032`. PMD (Java) and detekt (Kotlin) both emit SARIF, and both runners walked it with the
+same four-deep loop — `runs` → `results` → `locations` → `physicalLocation` — differing only in the
+substring used to skip complexity rules, which each runner reports through its own
+`run_complexity` instead.
+
+Extracted because adding a toolchain guard to each pushed both past the complexity ceiling: the
+walk was already at the limit, and the duplication meant paying for it twice.
+
+Note the shadowing this removes. Both runners wrote `for result in run.get("results", [])` inside a
+method whose subprocess result was also called `result` — harmless as written, but the kind of
+reuse that turns a later edit into a silent bug.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from specweaver.sandbox.qa_runner.core.interface import LintError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+
+def _findings(report: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    """Every finding in the report, flattening the runs that contain them."""
+    for run in report.get("runs", []):
+        yield from run.get("results", [])
+
+
+def lint_errors_from_sarif(
+    report: dict[str, Any], *, skip_rules_containing: str
+) -> list[LintError]:
+    """Lint findings from a SARIF report, minus the rules another QA surface owns.
+
+    `skip_rules_containing` drops the complexity rules, which the runners report through
+    `run_complexity` — counting them here would report every one of them twice.
+    """
+    errors: list[LintError] = []
+    for finding in _findings(report):
+        rule_id = finding.get("ruleId", "")
+        if skip_rules_containing in rule_id.lower():
+            continue
+
+        message = finding.get("message", {}).get("text", "")
+        for location in finding.get("locations", []):
+            physical = location.get("physicalLocation", {})
+            errors.append(
+                LintError(
+                    file=physical.get("artifactLocation", {}).get("uri", ""),
+                    line=physical.get("region", {}).get("startLine", 0),
+                    code=rule_id,
+                    message=message,
+                )
+            )
+    return errors

@@ -22,7 +22,7 @@ from specweaver.sandbox.execution.container_executor import (
     ContainerEngineUnavailableError,
     ContainerSubprocessExecutor,
 )
-from specweaver.sandbox.language.core.python.toolchain import did_not_run
+from specweaver.sandbox.language.core.toolchain import did_not_run
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,

@@ -14,6 +14,13 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
+from specweaver.sandbox.language.core.toolchain import (
+    did_not_run,
+    failed_complexity,
+    failed_lint,
+    failed_tests,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileRunResult,
@@ -33,6 +40,26 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _harvest_junit(search_path: Path) -> tuple[int, int, int]:
+    """(passed, failed, skipped) across every JUnit XML report under `search_path`.
+
+    A report that cannot be parsed is skipped rather than failing the run: a partially-written
+    file from a killed build should not be reported as a test failure.
+    """
+    import junitparser
+
+    passed = failed = skipped = 0
+    for xml_file in search_path.rglob("*.xml"):
+        try:
+            xml = junitparser.JUnitXml.fromfile(str(xml_file))
+        except Exception:
+            continue
+        passed += xml.tests - xml.failures - xml.skipped - xml.errors
+        failed += xml.failures + xml.errors
+        skipped += xml.skipped
+    return passed, failed, skipped
 
 
 class JavaRunner(QARunnerInterface):
@@ -98,18 +125,12 @@ class JavaRunner(QARunnerInterface):
                 stale_xml.unlink(missing_ok=True)
             search_path = self._cwd / "target" / "surefire-reports"
 
-        self._executor.execute(cmd, timeout_seconds=timeout)
+        result = self._executor.execute(cmd, timeout_seconds=timeout)
+        reason = did_not_run(result, "the Java build tool")
+        if reason:
+            return failed_tests(reason)
 
-        import junitparser
-
-        for xml_file in search_path.rglob("*.xml"):
-            try:
-                xml = junitparser.JUnitXml.fromfile(str(xml_file))
-                passed += xml.tests - xml.failures - xml.skipped - xml.errors
-                failed += xml.failures + xml.errors
-                skipped += xml.skipped
-            except Exception:
-                pass
+        passed, failed, skipped = _harvest_junit(search_path)
 
         return TestRunResult(
             passed=passed,
@@ -138,30 +159,15 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "pmd.sarif"
 
-        self._executor.execute(cmd)
+        result = self._executor.execute(cmd)
+        reason = did_not_run(result, "pmd")
+        if reason:
+            return failed_lint(reason)
 
         if sarif_path.exists():
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
-                for run in data.get("runs", []):
-                    for result in run.get("results", []):
-                        rule_id = result.get("ruleId", "")
-                        if "complexity" in rule_id.lower():
-                            continue
-
-                        msg = result.get("message", {}).get("text", "")
-                        for loc in result.get("locations", []):
-                            ploc = loc.get("physicalLocation", {})
-                            uri = ploc.get("artifactLocation", {}).get("uri", "")
-                            line = ploc.get("region", {}).get("startLine", 0)
-                            errors.append(
-                                LintError(
-                                    file=uri,
-                                    line=line,
-                                    code=rule_id,
-                                    message=msg,
-                                )
-                            )
+                errors.extend(lint_errors_from_sarif(data, skip_rules_containing="complexity"))
             except json.JSONDecodeError:
                 pass
 
@@ -187,7 +193,10 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "pmd.sarif"
 
-        self._executor.execute(cmd)
+        result = self._executor.execute(cmd)
+        reason = did_not_run(result, "pmd")
+        if reason:
+            return failed_complexity(reason, max_complexity)
 
         if sarif_path.exists():
             try:

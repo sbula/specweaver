@@ -10,8 +10,14 @@ from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.toolchain import (
+    did_not_run,
+    failed_architecture,
+    failed_compile,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
+    ArchitectureViolation,
     CompileError,
     CompileRunResult,
     ComplexityRunResult,
@@ -24,6 +30,34 @@ from specweaver.sandbox.qa_runner.core.interface import (
 from specweaver.workspace.ast.parsers.typescript.parsers import extract_tsc_errors
 
 logger = logging.getLogger(__name__)
+
+
+def _restricted_import_violations(stdout: str) -> list[ArchitectureViolation]:
+    """Boundary violations in an ESLint JSON report.
+
+    Only `no-restricted-imports` counts: that is the rule the generated config uses to encode
+    `C05`'s layer boundaries, and every other finding belongs to `run_linter`.
+    """
+    import json
+
+    if not stdout.strip():
+        return []
+
+    try:
+        report = json.loads(stdout)
+    except json.JSONDecodeError:
+        return []
+
+    return [
+        ArchitectureViolation(
+            file=entry.get("filePath", ""),
+            code="C05",
+            message=message.get("message", "Restricted import"),
+        )
+        for entry in report
+        for message in entry.get("messages", [])
+        if message.get("ruleId") == "no-restricted-imports"
+    ]
 
 
 class TypeScriptRunner(QARunnerInterface):
@@ -107,6 +141,10 @@ class TypeScriptRunner(QARunnerInterface):
                     )
                 ],
             )
+
+        reason = did_not_run(result, "tsc")
+        if reason:
+            return failed_compile(reason)
 
         if result.timed_out:
             logger.error("tsc process timed out after 120s")
@@ -284,6 +322,10 @@ class TypeScriptRunner(QARunnerInterface):
         finally:
             config_path.unlink(missing_ok=True)
 
+        reason = did_not_run(result, "the TypeScript architecture checker")
+        if reason:
+            return failed_architecture(reason)
+
         if result.timed_out:
             return ArchitectureRunResult(
                 violation_count=1,
@@ -292,23 +334,7 @@ class TypeScriptRunner(QARunnerInterface):
                 ],
             )
 
-        violations = []
-        if result.stdout.strip():
-            try:
-                results = json.loads(result.stdout)
-                for res in results:
-                    file_path = res.get("filePath", "")
-                    for msg in res.get("messages", []):
-                        if msg.get("ruleId") == "no-restricted-imports":
-                            violations.append(
-                                ArchitectureViolation(
-                                    file=file_path,
-                                    code="C05",
-                                    message=msg.get("message", "Restricted import"),
-                                )
-                            )
-            except json.JSONDecodeError:
-                pass
+        violations = _restricted_import_violations(result.stdout)
 
         return ArchitectureRunResult(
             violation_count=len(violations),

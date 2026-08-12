@@ -6,10 +6,17 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.toolchain import (
+    did_not_run,
+    failed_compile,
+    failed_complexity,
+    failed_lint,
+    failed_tests,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
@@ -28,6 +35,47 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
+
+
+def _tally_junit(xml_stdout: str) -> tuple[int, int, int, int, list[Any]]:
+    """(passed, failed, errors, skipped, failures) from a cargo2junit report.
+
+    A case with no `result` element passed — junitparser only attaches one for a non-success — and
+    an unrecognised result type is counted as a pass for the same reason.
+    """
+    import junitparser
+
+    from specweaver.sandbox.qa_runner.core.interface import TestFailure
+
+    passed = failed = errors = skipped = 0
+    failures: list[Any] = []
+
+    xml_str = xml_stdout.strip()
+    if not xml_str:
+        return passed, failed, errors, skipped, failures
+
+    for suite in junitparser.JUnitXml.fromstring(xml_str):
+        for case in suite:
+            outcome = getattr(case, "result", None)
+            if isinstance(outcome, junitparser.Failure):
+                failed += 1
+                failures.append(
+                    # `nodeid`, not `name`: TestFailure has no `name` field, so this raised
+                    # TypeError for every failing Rust test and the bare `except` below reported
+                    # a flat `failed=1` instead of the real tally. Pre-existing; surfaced by
+                    # moving the loop to module scope where mypy could see it.
+                    TestFailure(
+                        nodeid=f"{case.classname}::{case.name}",
+                        message=outcome.message or "Failed",
+                    )
+                )
+            elif isinstance(outcome, junitparser.Error):
+                errors += 1
+            elif isinstance(outcome, junitparser.Skipped):
+                skipped += 1
+            else:
+                passed += 1
+    return passed, failed, errors, skipped, failures
 
 
 class RustRunner(QARunnerInterface):
@@ -53,49 +101,23 @@ class RustRunner(QARunnerInterface):
     ) -> TestRunResult:
         import time
 
-        import junitparser
-
-        from specweaver.sandbox.qa_runner.core.interface import TestFailure, TestRunResult
+        from specweaver.sandbox.qa_runner.core.interface import TestRunResult
 
         try:
             start_time = time.time()
             cmd = ["cargo", "test", "--format=json", "-q"]
 
             test_result = self._executor.execute(cmd)
+            reason = did_not_run(test_result, "cargo")
+            if reason:
+                return failed_tests(reason)
 
             junit_result = self._executor.execute(
                 ["cargo2junit"],
                 input_text=test_result.stdout,
             )
 
-            passed = 0
-            failed = 0
-            errors = 0
-            skipped = 0
-            failures: list[TestFailure] = []
-
-            xml_str = junit_result.stdout.strip()
-            if xml_str:
-                xml = junitparser.JUnitXml.fromstring(xml_str)
-                for suite in xml:
-                    for case in suite:
-                        if not hasattr(case, "result"):
-                            passed += 1
-                        elif isinstance(case.result, junitparser.Failure):
-                            failed += 1
-                            failures.append(
-                                TestFailure(
-                                    name=f"{case.classname}::{case.name}",
-                                    message=case.result.message or "Failed",
-                                )
-                            )
-                        elif isinstance(case.result, junitparser.Error):
-                            errors += 1
-                        elif isinstance(case.result, junitparser.Skipped):
-                            skipped += 1
-                        else:
-                            passed += 1
-
+            passed, failed, errors, skipped, failures = _tally_junit(junit_result.stdout)
             total = passed + failed + errors + skipped
             return TestRunResult(
                 passed=passed,
@@ -130,6 +152,9 @@ class RustRunner(QARunnerInterface):
                 clippy_cmd.insert(3, "--allow-staged")
 
             clippy_result = self._executor.execute(clippy_cmd)
+            reason = did_not_run(clippy_result, "cargo clippy")
+            if reason:
+                return failed_lint(reason)
 
             sarif_result = self._executor.execute(
                 ["clippy-sarif"],
@@ -177,6 +202,9 @@ class RustRunner(QARunnerInterface):
             ]
 
             clippy_result = self._executor.execute(clippy_cmd)
+            reason = did_not_run(clippy_result, "cargo clippy")
+            if reason:
+                return failed_complexity(reason, max_complexity)
 
             sarif_result = self._executor.execute(
                 ["clippy-sarif"],
@@ -207,7 +235,10 @@ class RustRunner(QARunnerInterface):
             if target != "src/":
                 cmd.extend(["--bin", target.strip("/")])
 
-            self._executor.execute(cmd)
+            result = self._executor.execute(cmd)
+            reason = did_not_run(result, "cargo")
+            if reason:
+                return failed_compile(reason)
             return CompileRunResult(error_count=0, warning_count=0, errors=[])
         except Exception as e:
             return CompileRunResult(

@@ -10,10 +10,17 @@ Delegates subprocess execution to SubprocessExecutor.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
+from specweaver.sandbox.language.core.toolchain import (
+    did_not_run,
+    failed_complexity,
+    failed_lint,
+    failed_tests,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileError,
@@ -67,28 +74,11 @@ class KotlinRunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
     ) -> TestRunResult:
-        tool = self._get_build_tool()
-
-        if tool == "gradle":
-            cmd = ["gradlew", "test"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-
-            search_path = self._cwd / "build" / "test-results"
-            if search_path.exists():
-                for stale_xml in search_path.rglob("*.xml"):
-                    stale_xml.unlink(missing_ok=True)
-        else:
-            cmd = ["mvnw", "test"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-
-            search_path = self._cwd / "target" / "surefire-reports"
-            if search_path.exists():
-                for stale_xml in search_path.rglob("*.xml"):
-                    stale_xml.unlink(missing_ok=True)
-
-        self._executor.execute(cmd, timeout_seconds=timeout)
+        cmd, search_path = self._test_command()
+        result = self._executor.execute(cmd, timeout_seconds=timeout)
+        reason = did_not_run(result, "the Kotlin build tool")
+        if reason:
+            return failed_tests(reason)
 
         passed, failed = self._parse_junit_results(search_path)
 
@@ -102,6 +92,35 @@ class KotlinRunner(QARunnerInterface):
             coverage_pct=0.0,
             duration_seconds=0.0,
         )
+
+    #: Per build tool: the wrapper script, its fallback on PATH, the goal, and where reports land.
+    _TEST_INVOCATIONS: ClassVar[dict[str, tuple[tuple[str, ...], str, str, tuple[str, ...]]]] = {
+        "gradle": (("gradlew", "gradlew.bat"), "gradle", "test", ("build", "test-results")),
+        "maven": (("mvnw", "mvnw.cmd"), "mvn", "test", ("target", "surefire-reports")),
+    }
+
+    def _test_command(self) -> tuple[list[str], Path]:
+        """The test command for this project's build tool, and where its reports will land.
+
+        The two build tools differed only in four values, so they are a table rather than two
+        branches — which is what took this past the complexity ceiling once a toolchain guard was
+        added above it.
+        """
+        wrappers, fallback, goal, report_dir = self._TEST_INVOCATIONS[
+            "gradle" if self._get_build_tool() == "gradle" else "maven"
+        ]
+        launcher = wrappers[0] if any((self._cwd / w).exists() for w in wrappers) else fallback
+        search_path = self._cwd.joinpath(*report_dir)
+        self._clear_stale_reports(search_path)
+        return [launcher, goal], search_path
+
+    @staticmethod
+    def _clear_stale_reports(search_path: Path) -> None:
+        """Delete previous reports — the harvest globs whatever it finds, so they would be counted."""
+        if not search_path.exists():
+            return
+        for stale_xml in search_path.rglob("*.xml"):
+            stale_xml.unlink(missing_ok=True)
 
     def _parse_junit_results(self, search_path: Path) -> tuple[int, int]:
         import junitparser
@@ -134,30 +153,15 @@ class KotlinRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "detekt.sarif"
 
-        self._executor.execute(cmd)
+        result = self._executor.execute(cmd)
+        reason = did_not_run(result, "detekt")
+        if reason:
+            return failed_lint(reason)
 
         if sarif_path.exists():
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
-                for run in data.get("runs", []):
-                    for result in run.get("results", []):
-                        rule_id = result.get("ruleId", "")
-                        if "complex" in rule_id.lower():
-                            continue
-
-                        msg = result.get("message", {}).get("text", "")
-                        for loc in result.get("locations", []):
-                            ploc = loc.get("physicalLocation", {})
-                            uri = ploc.get("artifactLocation", {}).get("uri", "")
-                            line = ploc.get("region", {}).get("startLine", 0)
-                            errors.append(
-                                LintError(
-                                    file=uri,
-                                    line=line,
-                                    code=rule_id,
-                                    message=msg,
-                                )
-                            )
+                errors.extend(lint_errors_from_sarif(data, skip_rules_containing="complex"))
             except json.JSONDecodeError:
                 pass
 
@@ -183,7 +187,10 @@ class KotlinRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "detekt.sarif"
 
-        self._executor.execute(cmd)
+        result = self._executor.execute(cmd)
+        reason = did_not_run(result, "detekt")
+        if reason:
+            return failed_complexity(reason, max_complexity)
 
         if sarif_path.exists():
             try:
