@@ -61,17 +61,5 @@ async def run_fan_out(
     """
     import asyncio
 
-    # Needs to be imported inside or passed properly
-    from specweaver.core.flow.engine.runner import PipelineRunner
-
-    runners = [
-        PipelineRunner(
-            pipe,
-            runner._context,
-            registry=runner._registry,
-            store=runner._store,
-            on_event=runner._on_event,
-        )
-        for pipe in sub_pipelines
-    ]
+    runners = [runner.spawn(pipe) for pipe in sub_pipelines]
     return list(await asyncio.gather(*[r.run(parent_run_id=parent_run_id) for r in runners]))

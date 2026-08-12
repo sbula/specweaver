@@ -115,12 +115,4 @@ class ArbitrateDualPipelineHandler:
         pipe_data["steps"] = valid_steps
         pipe = PipelineDefinition(**pipe_data)
 
-        from specweaver.core.flow.engine.runner import PipelineRunner
-
-        return PipelineRunner(
-            pipeline=pipe,
-            context=context.run.pipeline_runner._context,
-            registry=context.run.pipeline_runner._registry,
-            store=context.run.pipeline_runner._store,
-            on_event=context.run.pipeline_runner._on_event,
-        )
+        return context.run.pipeline_runner.spawn(pipe)

@@ -39,6 +39,17 @@ def run_context():
     ctx.run.pipeline_runner._registry = MagicMock()
     ctx.run.pipeline_runner._store = MagicMock()
     ctx.run.pipeline_runner._on_event = MagicMock()
+
+    # TECH-024: the handler no longer imports PipelineRunner — it asks the parent runner it
+    # already holds to `spawn` a sibling, which is what broke the five-module cycle. Resolving the
+    # class here at CALL time is what keeps `@patch(...runner.PipelineRunner)` effective, exactly
+    # as the handler's own deferred import used to.
+    def _spawn(pipe: object) -> object:
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        return PipelineRunner(pipeline=pipe)
+
+    ctx.run.pipeline_runner.spawn = _spawn
     return ctx
 
 

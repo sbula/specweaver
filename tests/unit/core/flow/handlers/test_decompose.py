@@ -17,6 +17,20 @@ from specweaver.core.flow.handlers.decompose import (
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 
 
+def _spawning_parent(runner_cls: MagicMock) -> MagicMock:
+    """A parent-runner mock whose `spawn` routes through the patched `PipelineRunner`.
+
+    `TECH-024` removed the handlers' import of `PipelineRunner` — they now ask the parent runner
+    they already hold to `spawn` a sibling, which is what broke the five-module cycle. The seam
+    these tests exercise therefore moved from "the class" to "the parent's method".
+
+    Routing `spawn` back through the patched class keeps every existing assertion meaningful
+    (`call_count`, `call_args[1]["pipeline"]`) rather than rewriting them to inspect a different
+    mock — the tests still assert which sub-pipeline was launched, which is what they are for.
+    """
+    return MagicMock(spawn=lambda pipe: runner_cls(pipeline=pipe))
+
+
 @pytest.fixture
 def mock_context(tmp_path: Path) -> RunContext:
     workspace = tmp_path / "workspace"
@@ -234,7 +248,11 @@ async def test_orchestrate_components_handler_success_dag(
     mock_pipeline_runner_cls.return_value = mock_runner_instance
 
     # To satisfy not None check in handler
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
 
     # Provide a dummy TopologyGraph
     mock_topology = MagicMock()
@@ -322,7 +340,11 @@ async def test_orchestrate_components_handler_child_failure(
     mock_runner_instance.run.return_value = mock_run_result
     mock_pipeline_runner_cls.return_value = mock_runner_instance
 
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
 
     mock_topology = MagicMock()
     mock_topology.impact_of.return_value = set()
@@ -345,6 +367,8 @@ async def test_orchestrate_components_malicious_name(
     mock_context.plan_context = mock_context.plan_context.model_copy(
         update={"decomposition": '{ "components": [{"component": "../../../etc/shadow"}] }'}
     )
+    # A plain mock: the traversal guard rejects the name before anything is spawned, so this only
+    # has to be non-None.
     mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
@@ -371,7 +395,11 @@ async def test_orchestrate_loads_new_feature_yaml(
     mock_runner_instance.run.return_value = mock_run_result
     mock_pipeline_runner_cls.return_value = mock_runner_instance
 
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
 
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.PASSED
@@ -413,7 +441,11 @@ async def test_orchestrate_components_preserves_params_gap_1(
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
     mock_pipeline_runner_cls.return_value = mock_runner_instance
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
 
     mock_topology = MagicMock()
     mock_topology.impact_of.return_value = set()
@@ -452,7 +484,11 @@ async def test_orchestrate_components_handles_gate_gaps_2_3_4(
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
     mock_pipeline_runner_cls.return_value = mock_runner_instance
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
     mock_context.graph = mock_context.graph.model_copy(
         update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
     )
@@ -502,7 +538,11 @@ async def test_orchestrate_components_skips_wave_n_if_failed_gap_5(
     mock_fail = MagicMock(status=StepStatus.FAILED, run_id="child")
     mock_runner_instance.run.return_value = mock_fail
     mock_pipeline_runner_cls.return_value = mock_runner_instance
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
     mock_context.graph = mock_context.graph.model_copy(
         update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
     )
@@ -539,7 +579,11 @@ async def test_orchestrate_components_skips_wave_n_if_empty_gap_6(
     mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
     mock_runner_instance.run.return_value = mock_success
     mock_pipeline_runner_cls.return_value = mock_runner_instance
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
     mock_context.graph = mock_context.graph.model_copy(
         update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
     )
@@ -577,7 +621,11 @@ async def test_orchestrate_components_wave_n_crash_gap_7(
 
     mock_runner_instance.run.side_effect = [mock_success, mock_fail]
     mock_pipeline_runner_cls.return_value = mock_runner_instance
-    mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
+    mock_context.run = mock_context.run.model_copy(
+        update={
+            "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
+        }
+    )
     mock_context.graph = mock_context.graph.model_copy(
         update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
     )

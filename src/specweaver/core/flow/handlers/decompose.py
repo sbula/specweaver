@@ -278,16 +278,7 @@ class OrchestrateComponentsHandler(StepHandler):
                         pipe_data["steps"] = valid_steps
                         pipe = PipelineDefinition(**pipe_data)
 
-                        # We use PipelineRunner.run dynamically
-                        from specweaver.core.flow.engine.runner import PipelineRunner
-
-                        isolated_runner = PipelineRunner(
-                            pipeline=pipe,
-                            context=context.run.pipeline_runner._context,
-                            registry=context.run.pipeline_runner._registry,
-                            store=context.run.pipeline_runner._store,
-                            on_event=context.run.pipeline_runner._on_event,
-                        )
+                        isolated_runner = context.run.pipeline_runner.spawn(pipe)
 
                         task = asyncio.create_task(
                             isolated_runner.run(parent_run_id=context.run.run_id)
@@ -338,15 +329,7 @@ class OrchestrateComponentsHandler(StepHandler):
                     steps=deferred_joins,
                 )
 
-                from specweaver.core.flow.engine.runner import PipelineRunner
-
-                wave_n_runner = PipelineRunner(
-                    pipeline=wave_n_pipe,
-                    context=context.run.pipeline_runner._context,
-                    registry=context.run.pipeline_runner._registry,
-                    store=context.run.pipeline_runner._store,
-                    on_event=context.run.pipeline_runner._on_event,
-                )
+                wave_n_runner = context.run.pipeline_runner.spawn(wave_n_pipe)
 
                 wave_res = await wave_n_runner.run(parent_run_id=context.run.run_id)
                 sub_runs.append(wave_res)

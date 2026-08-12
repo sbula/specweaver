@@ -94,6 +94,30 @@ class PipelineRunner:
         # SF-2 (FR-3): Intrinsically load the DALLevel of the execution target
         seed_dal_level(self._context)
 
+    def spawn(self, pipeline: PipelineDefinition) -> PipelineRunner:
+        """A sibling runner for a sub-pipeline, sharing this run's collaborators.
+
+        `TECH-024` cycle 2. Four sites — both fan-out paths in `handlers/decompose`,
+        `handlers/dual_pipeline`, and `engine/fan_out` — each imported `PipelineRunner` purely to
+        re-construct one from this runner's `_context` / `_registry` / `_store` / `_on_event`. Those
+        imports were the back-edges of a five-module cycle, and they were deferred inside functions
+        to hide it, which is the workaround `check_coupling` names rather than a fix.
+
+        The callers already hold this object (via `context.run.pipeline_runner`), so asking it to
+        spawn removes the import entirely — and the "clone my collaborators" logic stops being
+        copied four times, where a fifth collaborator would have had to be added in four places.
+
+        The sub-run gets its own `RunContext` when it runs, not here: `run(parent_run_id=...)` is
+        what marks it as a sub-run (`TECH-014`).
+        """
+        return PipelineRunner(
+            pipeline,
+            self._context,
+            registry=self._registry,
+            store=self._store,
+            on_event=self._on_event,
+        )
+
     def _setup_sandbox_caches(self, wt_dir: str) -> None:
         setup_sandbox_caches(self._context, wt_dir, logger)
 
