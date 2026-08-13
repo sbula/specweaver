@@ -19,7 +19,16 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
      Checks covered: `ruff` (lint, including `PLR0913` / `FBT` / `PGH`), **`ruff format --check`**,
      `mypy`, `complexipy` (cognitive complexity — this REPLACED the C901 cyclomatic gate), `tach`,
      file sizes, the suppression ratchet, class health (god-object + LCOM4), import cycles,
-     coupling metrics, coding conventions, and the two test-source guards.
+     **duplicate-code detection** (`jscpd`, ratcheted — `TECH-037`), coupling metrics, coding
+     conventions, and the two test-source guards.
+
+     > [!WARNING]
+     > **Run the gate. Do not hand-roll its parts.** `ruff check src tests scripts` is NOT a
+     > substitute: it omits **`ruff format --check`**, which is a separate check and was the one
+     > silently skipped through a whole 2026-08-12 session that ran `ruff check` by hand every
+     > time and never once saw the fifteen unformatted files it had produced. The gate caught them
+     > the first time it was actually invoked. The same applies to `mypy`, `tach` and the
+     > ratchets — the point of one command is that you cannot forget one of thirteen.
 
      If the `format` check fails, the fix is one command — `python -m ruff format src tests
      scripts` — and it is safe to run unprompted. It is a gate because `pyproject.toml` disables

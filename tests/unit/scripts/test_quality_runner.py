@@ -28,6 +28,15 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
+#: Checkers that take a STORY ID rather than a tree, so they cannot be battery members: they answer
+#: "is this story closable", not "is the repo healthy". Kept as an explicit allowlist rather than a
+#: pattern so adding one is a decision somebody makes, and `test_the_story_scoped_allowlist_is_not_
+#: stale` stops a deleted name masking a real gap.
+STORY_SCOPED_CHECKERS = {
+    "check_fr_coverage.py",  # `check_fr_coverage.py <STORY>` — FR ledger closure (TECH-025)
+    "check_story_preconditions.py",  # `<STORY>` — prerequisites green in code, not documents
+}
+
 
 def _load(name: str) -> ModuleType:
     path = REPO_ROOT / "scripts" / f"{name}.py"
@@ -245,6 +254,38 @@ class TestGateValidation:
         reachable = {p.check for gate in q.GATES for p in q.resolve_plans(gate)}
 
         assert set(q.CHECKS) == reachable
+
+    def test_every_checker_on_disk_is_wired_into_a_gate(self, q: ModuleType) -> None:
+        """The direction the two tests above do NOT cover: a checker nobody registered.
+
+        They both start from the registry, so a `scripts/check_*.py` that was written and never
+        added to `CHECKS` is invisible to them — the battery lints the file and never runs it.
+        Probed: planting `check_probe_unwired.py` left all 71 tests in this file and
+        `test_architecture.py` green.
+
+        That is this repo's most repeated failure shape — `R-OWNER` shipped inert, `-p no:randomly`
+        was a no-op for an uninstalled plugin, `check_class_health` reported `nothing in scope` for
+        a session. **A check that silently does not run is indistinguishable from one that passes.**
+        """
+        on_disk = {p.name for p in (REPO_ROOT / "scripts").glob("check_*.py")}
+        wired = {c.script for c in q.CHECKS.values() if c.script}
+
+        unwired = on_disk - wired - STORY_SCOPED_CHECKERS
+
+        assert not unwired, (
+            "checker(s) on disk that no gate runs: " + ", ".join(sorted(unwired)) + ". "
+            "Register it in quality.py's CHECKS and MATRIX, or add it to "
+            "STORY_SCOPED_CHECKERS in this test with the reason."
+        )
+
+    def test_the_story_scoped_allowlist_is_not_stale(self, q: ModuleType) -> None:
+        """An allowlisted checker that no longer exists would hide a real gap behind a stale name."""
+        del q
+        on_disk = {p.name for p in (REPO_ROOT / "scripts").glob("check_*.py")}
+
+        assert on_disk >= STORY_SCOPED_CHECKERS, (
+            f"allowlisted but absent: {sorted(STORY_SCOPED_CHECKERS - on_disk)}"
+        )
 
 
 class TestOnlyFilter:

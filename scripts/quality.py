@@ -196,7 +196,10 @@ CHECKS: dict[str, Check] = {
     "format": Check("format", ("src", "tests", "scripts"), _r._format),
     "mypy": Check("mypy", ("src",), _r._mypy),
     "tach": Check("tach", ("src",), _r._tach, ignores_paths=True),
-    "complexipy": Check("complexipy", ("src",), _r._complexipy),
+    # `script=` is not decoration: it is the pre-flight that reports MISSING instead of letting
+    # the shell-out fail with a confusing error. This entry declared None while its runner
+    # shells out to check_complexity.py, so complexipy alone lacked that guard (`TECH-037`).
+    "complexipy": Check("complexipy", ("src",), _r._complexipy, script="check_complexity.py"),
     "file_sizes": Check(
         "file_sizes", ("src", "tests", "scripts"), _r._file_sizes, script="check_file_sizes.py"
     ),
