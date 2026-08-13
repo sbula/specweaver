@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **9 of 40 TECH tickets are open**, and only one still asserts a claim against a candidate
+> done: **10 of 41 TECH tickets are open**, and only one still asserts a claim against a candidate
 > below — see **Debt Sequencing**.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
@@ -51,7 +51,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **9 of 40 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **10 of 41 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -70,6 +70,7 @@ it was closed is what let this section drift for a month.*
 | `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
 | `TECH-038` 🔴 | `INT-US-21-SUB` is registered as *Recursive Planning*; the decomposer is one flat LLM call returning a non-nestable plan. Registry-accuracy, not live — goes live when `C-FLOW-12` plans against it. From `TECH-018`. |
 | `TECH-039` 🔴 | `INT-US-05-SUB` names two different delivered add-ons. The roadmap already has the right IDs (`SF03`/`SF04`); one document disagrees with the registry. Ambiguous by construction — tools route around it. |
+| `TECH-044` 🔴 | 2341 over-long registry lines, frozen by R-DEPTH. The backlog it froze — redistribution across six layers, not a wrap. |
 | `TECH-041` 🔴 | `C-VAL-03`'s code-level DAL override is proven link by link and never as a chain. Needs a scripted LLM; the lenient-DAL control is the load-bearing half. |
 | `TECH-040` 🔴 | `sw run --verbose` is documented, threaded, stored — and never read. A lie in `--help`; a strict xfail already waits for the fix. |
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
@@ -697,3 +698,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-039:** [One Identifier Names Two Delivered Add-Ons (`INT-US-05-SUB` Collision)](features/topic_07_technical_debt/TECH-039/TECH-039_design.md)
     *   `[ ]` **TECH-040:** [`sw run --verbose` Is a Dead Flag](features/topic_07_technical_debt/TECH-040/TECH-040_design.md)
     *   `[ ]` **TECH-041:** [The Code-Level DAL Override Is Unproven End to End](features/topic_07_technical_debt/TECH-041/TECH-041_design.md)
+    *   `[ ]` **TECH-044:** [Registry Entries Carry Content Belonging Four Layers Down](features/topic_07_technical_debt/TECH-044/TECH-044_design.md)

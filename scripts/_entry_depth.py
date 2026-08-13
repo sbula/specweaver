@@ -57,10 +57,22 @@ MAX_LINE = 200
 #: flagging it teaches nothing and would be worked around rather than fixed.
 _UNBREAKABLE = re.compile(r"\S{120,}")
 
+#: A markdown table row has **no legal wrap point** — a newline ends the row. Flagging one leaves
+#: only bad options: destroy the table, or split a cell across rows that no longer align. Found by
+#: this rule firing on five rows moved into `TECH-035`'s build record during the first
+#: redistribution it was written to enable.
+#:
+#: Honest limitation, stated rather than hidden: a 379-character row IS too much detail in a cell,
+#: and this exemption cannot say so. It is not an invitation to write prose as a one-column table —
+#: that is a review question, not a mechanical one.
+_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
+
 
 def _violating_lines(text: str) -> int:
     return sum(
-        1 for line in text.splitlines() if len(line) > MAX_LINE and not _UNBREAKABLE.search(line)
+        1
+        for line in text.splitlines()
+        if len(line) > MAX_LINE and not _UNBREAKABLE.search(line) and not _TABLE_ROW.match(line)
     )
 
 
@@ -126,11 +138,15 @@ def main(argv: list[str] | None = None) -> int:
         for path, was, now in grown:
             print(f"  {path}: {was} -> {now}")
         print(
-            "\nA line this long is usually content at the wrong depth: move the detail into the "
-            "feature's `<ID>_design.md` and leave the summary in the topic doc. Run "
-            "`python scripts/check_entry_orphans.py` first — it names the facts that would be lost "
-            "so they are moved rather than dropped. Where the content is already at the right "
-            "depth, wrap it; markdown renders that identically. The count may fall, never rise."
+            "\nA line this long is usually content at the wrong depth. The spine has FOUR layers, "
+            "so 'move it to the design' is rarely the whole answer: roadmap line -> topic entry "
+            "-> design -> build record (plan / walkthrough / review). Separately, and NOT deeper: "
+            "docs/analysis/, 06_lessons_and_future/, 07_architectural_decision_records/ and "
+            "dev_guides/ hold what outlives the ticket — a different audience, not more detail.\n"
+            "Run `python scripts/check_entry_orphans.py` FIRST — it names the facts that would be "
+            "lost, so they are moved rather than dropped. Where the content is already at the "
+            "right depth, wrap it; markdown renders that identically. See `TECH-044` for the "
+            "layer map. The count may fall, never rise."
         )
         return 1
 

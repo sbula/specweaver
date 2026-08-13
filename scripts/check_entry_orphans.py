@@ -6,9 +6,12 @@
 
 `R-DEPTH` says an over-long registry line is content at the wrong depth, and the remedy is to move
 it down rather than delete it. This is the tool that makes "move" verifiable instead of hopeful:
-for each topic-doc entry it lists the distinctive facts present there and **absent from the linked
-design doc**. Anything printed must be moved first; anything not printed already lives at design
-depth and the entry can be trimmed with nothing lost.
+for each topic-doc entry it lists the distinctive facts present there and **absent from every
+document in the feature's folder**. Anything printed must be moved first; anything not printed
+already lives deeper and the entry can be trimmed with nothing lost.
+
+The folder rather than the design alone, because the spine has four layers: a fact correctly moved
+into a build record would otherwise be reported as lost and pushed back up into the entry.
 
 Measured on first run (2026-08-13): 39 over-long entries in `topic_07`, and **62 facts a naive trim
 would have dropped** — among them `engine/runner.py:404-406`, `handlers/decompose.py:238-241`,
@@ -44,9 +47,14 @@ _FACT = re.compile(
     r"`([^`]{3,80})`|\b([a-z_][\w/]*\.(?:py|md|yaml|toml)(?::[\d\-]+)?)\b|\b(\d{2,5})\b"
 )
 
-#: Entry lines look like `> [Description](../features/<topic>/<ID>/<ID>_design.md) | ...`.
+#: An entry is the `> [Description](...)` blockquote, which may span MANY lines — a redistributed
+#: entry is a block of short lines rather than one long one, which is the whole point of R-DEPTH.
+#: Matching a single line read only the first 84 characters of the first entry rewritten this way,
+#: and reported it clean; caught immediately because that entry was known to be 1228 characters.
 _ENTRY = re.compile(
-    r"^\s*> \[Description\]\((\.\./features/[^)]*?/([A-Z][\w-]*-\d+)/[^)]*)\).*$", re.M
+    r"^\s*> \[Description\]\((\.\./features/[^)]*?/([A-Z][\w-]*-\d+)/[^)]*)\)"
+    r"(?:.*(?:\n\s*>.*)*)",
+    re.M,
 )
 
 
@@ -74,13 +82,19 @@ def scan(only: str | None = None) -> list[tuple[str, str, int, list[str]]]:
                 continue
             if len(entry) <= MIN_ENTRY and not only:
                 continue
-            design_path = (topic.parent / rel).resolve()
-            design = (
-                design_path.read_text(encoding="utf-8", errors="replace")
-                if design_path.is_file()
+            # The whole feature FOLDER, not just the design: under the four-layer model a fact
+            # may legitimately have been redistributed into the build record instead. Reading
+            # only the design would report a correctly-moved fact as lost and push it back up.
+            folder = (topic.parent / rel).resolve().parent
+            deeper = (
+                "\n".join(
+                    f.read_text(encoding="utf-8", errors="replace")
+                    for f in sorted(folder.glob("*.md"))
+                )
+                if folder.is_dir()
                 else ""
             )
-            out.append((topic.name, ticket, len(entry), orphans(entry, design)))
+            out.append((topic.name, ticket, len(entry), orphans(entry, deeper)))
     return sorted(out, key=lambda row: -row[2])
 
 

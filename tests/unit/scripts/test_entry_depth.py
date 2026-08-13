@@ -83,6 +83,26 @@ class TestCensus:
 
         assert ed.census(tmp_path) == {}
 
+    def test_a_markdown_table_row_is_not_counted(self, ed: ModuleType, tmp_path: Path) -> None:
+        """A table row has no legal wrap point — a newline ends the row.
+
+        Found by the rule firing on five rows moved into `TECH-035`'s build record during the very
+        first redistribution it was written to enable. Flagging them left only bad options: destroy
+        the table, or split a cell across rows that no longer align.
+        """
+        row = "| " + _prose(240) + " |"
+        (tmp_path / "a.md").write_text(row + "\n", encoding="utf-8")
+
+        assert ed.census(tmp_path) == {}
+
+    def test_prose_that_merely_mentions_a_pipe_is_still_counted(
+        self, ed: ModuleType, tmp_path: Path
+    ) -> None:
+        """The exemption is for rows, not for any line containing a pipe — otherwise it is a hole."""
+        (tmp_path / "a.md").write_text(f"{_prose(240)} | and more\n", encoding="utf-8")
+
+        assert ed.census(tmp_path) == {"a.md": 1}
+
     def test_counts_are_per_file_not_per_line(self, ed: ModuleType, tmp_path: Path) -> None:
         """Line numbers shift under every edit; a baseline keyed on them would never hold."""
         (tmp_path / "a.md").write_text((_prose(250) + "\n") * 3, encoding="utf-8")
