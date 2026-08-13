@@ -65,9 +65,26 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
      python scripts/quality.py doc
      ```
 
-     This runs the roadmap-registry sync and the skill-tree sync together. It is a **separate
-     track from 5.1 on purpose** — it checks registries, not code, and a stale roadmap checkbox
-     must not fail a code gate. Both steps are required; neither substitutes for the other.
+     This runs the roadmap-registry sync, the roadmap placement contract, the skill-tree sync,
+     the skill-reference check and the **proof-tier ratchet** together. It is a **separate track
+     from 5.1 on purpose** — it checks registries, not code, and a stale roadmap checkbox must not
+     fail a code gate. Both steps are required; neither substitutes for the other.
+
+     **Proof tier** (`TECH-017`). Every DELIVERED `INT-US-NN` contract entry must cite at least one
+     integration or e2e test **file**. Unit tests alongside them are fine; unit tests instead of
+     them are the defect. So is naming a directory, a bare `pytest -m integration`, or a suite in
+     prose — a place is not a proof, and nothing pins which test carries the claim. Ratcheted:
+     three known violations are frozen in `scripts/baselines/proof_tier.json`, each with a reason
+     and an owner, and only NEW ones block.
+
+     > [!NOTE]
+     > This check deliberately takes **no story argument**, and that is the whole design.
+     > `check_story_preconditions.py` has held a check since it was written that fails an
+     > `INT-US-NN` marked delivered whose proof is `[Pending]` — it would have caught `INT-US-25`
+     > any day, and never did, because it only runs when a human passes that story ID and nobody
+     > ever passed `INT-US-25`. **A guardrail that must be invoked to fire reports success by not
+     > running.** Prefer a sweep over a story-scoped check whenever the subject is the whole
+     > registry.
 
      **Roadmap sync.** STALE errors (an unchecked dep box whose capability/story is done in the
      registry) MUST be fixed by syncing the box. OVERCLAIM warnings (a checked box not done in

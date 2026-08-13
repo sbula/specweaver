@@ -129,6 +129,10 @@ EXPECTED: dict[str, dict[str, str]] = {
         "roadmap_placement": "all",
         "skill_sync": "all",
         "skill_references": "all",
+        # `TECH-017`: every delivered integration contract's proof, judged in one sweep. Takes no
+        # story ID on purpose -- a story-scoped check only fires when someone remembers to pass the
+        # story, which is exactly how INT-US-25 stayed wrong.
+        "proof_tier": "all",
     },
 }
 
@@ -183,6 +187,7 @@ class TestDocTrackIsSeparate:
             "roadmap_placement",
             "skill_sync",
             "skill_references",
+            "proof_tier",
         }
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:

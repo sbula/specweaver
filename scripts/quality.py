@@ -140,6 +140,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*
     # commit deleting a referenced document is not caught until the next doc-gate run.
     "skill_references": {"doc": "all"},
+    # Same track. Takes no story argument ON PURPOSE: `check_story_preconditions.py` holds a check
+    # that would have caught INT-US-25's `✅`-with-no-proof from the day it was written, and never
+    # fired because it only runs when a human passes that story ID. A sweep cannot be forgotten.
+    "proof_tier": {"doc": "all"},
 }
 
 
@@ -251,6 +255,13 @@ CHECKS: dict[str, Check] = {
         _r._whole_repo("check_skill_references.py"),
         ignores_paths=True,
         script="check_skill_references.py",
+    ),
+    "proof_tier": Check(
+        "proof_tier",
+        ("docs",),
+        _r._whole_repo("check_proof_tier.py"),
+        ignores_paths=True,
+        script="check_proof_tier.py",
     ),
     # `tests` is in scope so R5 (e2e naming) can see e2e files; R2 stays src/scripts-only.
     "conventions": Check(
