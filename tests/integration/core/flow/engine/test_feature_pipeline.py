@@ -42,6 +42,24 @@ PIPELINES_DIR = (
 )
 
 
+def _bundled(name: str) -> Path:
+    """Resolve a pipeline this repo SHIPS, failing loudly if it is not there.
+
+    This replaced `if not path.exists(): pytest.skip(...)`. That guard is why the comment above
+    exists: `PIPELINES_DIR` pointed at a nonexistent path for months and both tests in this file
+    skipped silently rather than failing, so the wrong constant was invisible. Recording the
+    incident in a comment while leaving the mechanism in place is not a fix — a bundled pipeline
+    that has gone missing is a defect in this repo, and the suite must say so.
+    """
+    path = PIPELINES_DIR / name
+    if not path.exists():
+        raise AssertionError(
+            f"bundled pipeline missing: {path}. This repo ships it, so its absence is a defect "
+            f"here, not a reason to skip. Check PIPELINES_DIR before assuming the file is gone."
+        )
+    return path
+
+
 # ---------------------------------------------------------------------------
 # Fixture specs
 # ---------------------------------------------------------------------------
@@ -138,11 +156,7 @@ class TestFeatureDecompositionPipelineIntegration:
     def test_pipeline_yaml_loads_and_parks_at_hitl(self, sample_project: Path) -> None:
         """Load pipeline YAML → run → PARKED at first HITL gate (draft_feature)."""
         yaml = YAML(typ="safe")
-        path = PIPELINES_DIR / "feature_decomposition.yaml"
-        if not path.exists():
-            import pytest
-
-            pytest.skip(f"Pipeline YAML not found: {path}")
+        path = _bundled("feature_decomposition.yaml")
 
         data = yaml.load(path)
         pipeline = PipelineDefinition.model_validate(data)
@@ -234,11 +248,7 @@ class TestFeatureDecompositionPipelineIntegration:
     def test_pipeline_step_params_preserved_in_definition(self) -> None:
         """step.params (e.g. kind=feature) are preserved in the PipelineDefinition."""
         yaml = YAML(typ="safe")
-        path = PIPELINES_DIR / "feature_decomposition.yaml"
-        if not path.exists():
-            import pytest
-
-            pytest.skip(f"Pipeline YAML not found: {path}")
+        path = _bundled("feature_decomposition.yaml")
 
         data = yaml.load(path)
         pipeline = PipelineDefinition.model_validate(data)

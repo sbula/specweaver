@@ -10,7 +10,7 @@ quietly omits what the other ten all do. Nothing else in the battery can see tha
 lints clean, types clean, and is under every threshold -- it is simply not the same shape as its
 family, and the divergence is invisible until something calls the method that is not there.
 
-Six rules:
+Eight rules:
 
   R1 GRAB-BAG NAMES  Module and package names matching util(s)/helper(s)/misc/shared/common are
                      rejected outside the L0 `commons` leaf. Named as a required guardrail by
@@ -55,6 +55,10 @@ Six rules:
                      `runner_utils.py` grew 413 -> 469 lines between `TECH-015` being filed and
                      being worked. Census against a frozen baseline like R6; the count may fall,
                      never rise. `--update-grab-bag-baseline` rewrites it.
+
+  R8 NO SILENT SKIP  A `pytest.skip()` may cite an environment capability and nothing else.
+                     Skipping on something the repo CONTROLS converts a defect into a green run.
+                     Rationale and the incident behind it live in the sibling `_silent_skips.py`.
 
 Exit 1 on any violation.
 """
@@ -105,6 +109,12 @@ test_class_naming_census = _r6.census
 load_naming_baseline = _r6.load_baseline
 write_naming_baseline = _r6.write_baseline
 naming_regressions = _r6.regressions
+
+#: R8 lives in a sibling for the headroom reason alone — inline it pushed this file past its
+#: 600-line ceiling and blocked the very commit shipping the rule.
+_r8 = _load_sibling("_silent_skips")
+offending_skips = _r8.offending_skips
+
 
 #: R7 lives in a sibling for the same reasons as R6 — a repo-wide census against a frozen baseline,
 #: and this file has no headroom. `TECH-015`: a module whose name promises nothing accretes.
@@ -433,6 +443,7 @@ RULE_TITLES = {
     "R3": "Family shape",
     "R4": "Family contract",
     "R5": "test named for a registry ID, not its subject",
+    "R8": "test skips for something this repo controls",
 }
 
 
@@ -557,6 +568,7 @@ def main(argv: list[str] | None = None) -> int:
         violations.extend(check_grab_bag_name(path))
         violations.extend(check_header(path))
         violations.extend(check_registry_ids_in_names(path))
+        violations.extend(Violation("R8", path, m) for m in offending_skips(path))
 
     # Families are checked whole: conformance is a statement about siblings, so a diff-scoped run
     # still compares the changed member against every other member of its family.

@@ -123,8 +123,11 @@ class TestAcceptStandards:
         )
         assert scan_resp.status_code == 200
         scanned = scan_resp.json()
-        if not scanned:
-            pytest.skip("No standards detected from test file")
+        assert scanned, (
+            "the scan returned no standards, so there is nothing to accept. Skipping here made "
+            "this test's outcome conditional on the very endpoint it exercises: a scanner that "
+            "regressed to finding nothing would turn the accept-flow test green by not running it."
+        )
 
         # Step 2: accept all
         accept_resp = client.post(

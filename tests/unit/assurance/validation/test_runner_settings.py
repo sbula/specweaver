@@ -195,8 +195,11 @@ class TestPipelineSettingsThresholds:
         )
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
         s07_step = next((s for s in pipeline.steps if s.rule == "S07"), None)
-        if s07_step is None:
-            pytest.skip("S07 not in default spec pipeline")
+        assert s07_step is not None, (
+            "S07 is not in the default spec pipeline. The repo controls that pipeline, so this is "
+            "a defect rather than a reason to skip — skipping here would silently stop proving "
+            "the warn_threshold -> warn_score mapping the moment S07 moved."
+        )
         assert s07_step.params.get("warn_score") == 9
         assert s07_step.params.get("fail_score") == 2
 

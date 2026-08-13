@@ -613,3 +613,86 @@ class TestRealFamilies:
     @pytest.mark.parametrize("index", [0, 1])
     def test_the_real_families_conform_today(self, cv: ModuleType, index: int) -> None:
         assert cv.check_family(cv.FAMILIES[index]) == []
+
+
+class TestCheckSilentSkips:
+    """R8. `TECH-017`: a test may skip for a capability the repo does not control — nothing else.
+
+    The rule exists because of a measured incident, not a theory. `PIPELINES_DIR` in
+    `test_feature_pipeline.py` pointed at a nonexistent path for months; both tests in the file
+    were guarded by `if not path.exists(): pytest.skip(...)`, so they skipped silently instead of
+    failing and the wrong constant stayed invisible. When it was found (2026-07-25) the incident
+    was written into a comment above the constant and **the guard was left in place** — still armed
+    on 2026-08-13, eighteen days and thirty tickets later. Recording a lesson is not removing its
+    cause.
+    """
+
+    def test_a_skip_on_a_repo_controlled_path_is_flagged(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        path = _member(
+            tmp_path,
+            "tests/unit/alpha/test_a.py",
+            "import pytest\n\n\ndef test_x() -> None:\n"
+            "    if not p.exists():\n"
+            '        pytest.skip("Pipeline YAML not found")\n',
+        )
+
+        found = cv.offending_skips(path, tmp_path)
+
+        assert len(found) == 1
+        assert "does not cite an environment capability" in found[0]
+
+    def test_a_platform_capability_skip_is_allowed(self, cv: ModuleType, tmp_path: Path) -> None:
+        """A symlink needing elevation is genuinely not the repo's to control."""
+        path = _member(
+            tmp_path,
+            "tests/unit/alpha/test_b.py",
+            "import pytest\n\n\ndef test_x() -> None:\n"
+            '    pytest.skip("Cannot create symlinks (requires admin on Windows)")\n',
+        )
+
+        assert cv.offending_skips(path, tmp_path) == []
+
+    def test_a_missing_credential_skip_is_allowed(self, cv: ModuleType, tmp_path: Path) -> None:
+        path = _member(
+            tmp_path,
+            "tests/manual/test_live.py",
+            "import pytest\n\n\ndef test_x() -> None:\n"
+            '    pytest.skip("GEMINI_API_KEY not set. Cannot run live test.")\n',
+        )
+
+        assert cv.offending_skips(path, tmp_path) == []
+
+    def test_a_skipif_marker_is_not_this_rule_s_business(
+        self, cv: ModuleType, tmp_path: Path
+    ) -> None:
+        """`skipif` is declarative and visible in the report; R8 is about imperative skips.
+
+        Deliberately out of scope rather than forgotten: the 11 `skipif`-gated suites are a real
+        `TECH-017` finding, but what they SHOULD do on a machine without git/bash is a separate
+        decision from whether an inline skip may hide a repo defect.
+        """
+        path = _member(
+            tmp_path,
+            "tests/unit/alpha/test_c.py",
+            "import pytest\n\n\n@pytest.mark.skipif(True, reason='whatever')\n"
+            "def test_x() -> None:\n    pass\n",
+        )
+
+        assert cv.offending_skips(path, tmp_path) == []
+
+    def test_source_files_are_out_of_scope(self, cv: ModuleType, tmp_path: Path) -> None:
+        path = _member(tmp_path, "src/specweaver/thing.py", "x = 1\n")
+
+        assert cv.offending_skips(path, tmp_path) == []
+
+    def test_the_repo_has_no_unexplained_skips(self, cv: ModuleType) -> None:
+        """The live invariant. Four guards were removed on 2026-08-13 to reach zero."""
+        found = [
+            f"{p.relative_to(REPO_ROOT)}: {m}"
+            for p in (REPO_ROOT / "tests").rglob("*.py")
+            for m in cv.offending_skips(p, REPO_ROOT)
+        ]
+
+        assert found == [], "\n".join(found)

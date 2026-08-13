@@ -71,8 +71,10 @@ class TestExistingPipelines:
     def test_existing_pipeline_validates(self, filename: str) -> None:
         yaml = YAML(typ="safe")
         path = PIPELINES_DIR / filename
-        if not path.exists():
-            pytest.skip(f"{filename} not found")
+        assert path.exists(), (
+            f"bundled pipeline missing: {path}. This repo ships it, so its absence is a defect "
+            f"here rather than a reason to skip."
+        )
         data = yaml.load(path)
         pipeline = PipelineDefinition.model_validate(data)
         errors = pipeline.validate_flow()
