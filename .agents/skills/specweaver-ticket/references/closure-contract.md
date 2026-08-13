@@ -96,6 +96,28 @@ Before filing, answer out loud:
 A ticket that only records a fact you could have checked is a note, and notes belong in the design
 document of the thing they concern.
 
+## An audit's findings are verified, not filed
+
+An audit ticket is the shape most likely to end in a ticket pile: it exists to look, so its natural
+output feels like a list of things for someone else to do. **It is not.**
+
+Decided 2026-08-13 while designing `TECH-017`, whose own Goal — written in July — said *"each
+unproven claim becoming a filed finding"*. Followed literally across 13 delivered contracts that
+would have produced dozens of tickets, none of them verified.
+
+**The order to work in:**
+
+1. **Verify.** Record each claim as proven / unproven / unprovable, with the evidence. The matrix
+   is the deliverable, and it is a record, not a queue.
+2. **Cite** where the behaviour is genuinely tested elsewhere and only the pointer is missing — but
+   only after reading the test and confirming it proves the claim.
+3. **Write the test** where the claim is genuinely untested. This is the audit's work, not a
+   follow-up's.
+4. **File** only where a decision is needed that you cannot take — a scope change, a descope,
+   anything that alters what the product does. Name the decision and who takes it.
+
+An audit that ends with more open tickets than it started with has moved work, not done it.
+
 ## Do not rush the close
 
 The pressure runs the other way: closing looks like delivery. Two counters worth keeping.

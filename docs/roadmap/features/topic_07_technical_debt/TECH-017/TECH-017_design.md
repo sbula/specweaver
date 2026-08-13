@@ -2,9 +2,20 @@
 
 - **Feature ID**: TECH-017
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: APPROVED 2026-08-13 — designed via `specweaver-design`, Phase 6 gate passed.
+- **Design Doc**: `docs/roadmap/features/topic_07_technical_debt/TECH-017/TECH-017_design.md`
 - **Origin**: User mandate, 2026-07-26, after INT-US-21 SF-02 CB-1 was implemented with 16 unit
   tests and **zero** integration or e2e tests.
+
+## Feature Overview
+
+`TECH-017` adds a **per-story proof matrix** to the integration-contract registry. It solves
+contracts claiming coverage that no test provides, by recording for each delivered claim whether an
+integration or e2e test proves it — and **verifying or fixing in place rather than filing**. It
+covers the 13 delivered entries in `topic_08_integration` and their 30 cited proof files, and does
+not touch `INT-US-21-SUB` (`TECH-018`), capability FR coverage (`TECH-047`), or the wording of
+delivered entries. Key constraints: findings are verified, cited or tested — never filed unless a
+decision is needed that the auditor cannot take; finished-stories-immutable.
 
 ## The Principle Being Enforced
 
@@ -28,6 +39,161 @@ gap:
 
 So this audit must produce findings against the **capability** stories too, not only the integration
 contracts. A unit-test-heavy integration story is a *symptom*; the ticket exists to find the disease.
+
+## Research Findings
+
+### What has already shipped
+
+Three of this ticket's four phasing steps were delivered on 2026-08-13 and are **not** re-designed
+here:
+
+| Step | Outcome |
+|---|---|
+| `INT-US-25` marker contradiction | Corrected; the roadmap said `✅` while the contract said `⬜ Pending`. Real delivered count was 8 of 28, not 9. |
+| Skip-guard | `R8 NO SILENT SKIP` in `check_conventions.py`; four armed guards converted to hard failures. |
+| Tier guardrail | `scripts/check_proof_tier.py` in the `doc` gate — a **sweep**, because the story-scoped check it replaced never fired. |
+
+### The registry as it stands
+
+13 delivered entries, 30 cited proof files, all of which exist.
+
+| Entry | Proof files | Tests | Tiers |
+|---|---|---|---|
+| `INT-US-01` | 1 | 5 | e2e |
+| `INT-US-02` | 1 | 7 | e2e |
+| `INT-US-03` | 2 | 7 | e2e + integration |
+| `INT-US-04` | 1 | 4 | e2e |
+| `INT-US-05` | 1 | 6 | e2e |
+| `INT-US-09` | 1 | 5 | e2e |
+| `INT-US-21` | 3 | 61 | e2e + integration |
+| `INT-US-24` | 2 | 13 | e2e + integration |
+| `INT-US-25` | 9 | 75 | e2e + integration |
+| `INT-US-28` | 9 | 88 | **integration + unit** |
+| `INT-US-05-SF03`, `-SF04`, `INT-US-21-SUB` | 0 | 0 | — (frozen in `proof_tier.json`) |
+
+### New finding this research surfaced
+
+**`INT-US-28` cites 5 unit-tier files of 9.** The mix passes `check_proof_tier` because it is not
+unit-*only*, but for an integration contract more than half the proof being unit-tier is precisely
+the defect this ticket names. `TECH-017`'s 2026-07-26 assessment called `INT-US-28` *"Strong (OCC
+races, DAG cycles, zombies)"* — that judgement was made on the integration files and did not look at
+the tier split.
+
+### What no gate can answer
+
+`check_proof_tier` proves a contract cites integration/e2e **files**. It cannot read the contract's
+prose claims and decide whether those files prove *them*. That gap is the whole of this ticket, and
+it is why the deliverable is a human-read matrix rather than another checker.
+
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Claim extraction | Auditor | Decompose each delivered contract's Integration Description into discrete, individually checkable claims | Every entry has a numbered claim list; a claim is one assertion about behaviour. |
+| FR-2 | Per-claim verdict | Auditor | Read the cited tests and mark each claim proven / unproven / unprovable, naming the test function that proves it | No verdict without a named test function or an explicit statement that none exists. |
+| FR-3 | Tier verdict | Auditor | Record, per entry, the tier of each proving test | An entry whose claims are carried by unit tests is reported even when `check_proof_tier` passes it. |
+| FR-4 | Fix in place | Auditor | For an unproven claim: cite an existing test after reading it, or write the missing test | The matrix's unproven count falls by work, not by re-wording claims. |
+| FR-5 | Escalate only decisions | Auditor | File a ticket only where a scope or descope decision is required | Every filed item names the decision and who takes it. |
+| FR-6 | Capability findings | Auditor | Where an entry's gap traces to an incomplete capability, record it against that capability | The diagnostic half is captured, not just the contract half. |
+
+## Non-Functional Requirements
+
+| # | NFR | Threshold / Constraint |
+|---|-----|------------------------|
+| NFR-1 | Immutability | No delivered entry's claims are re-worded to match its tests. The matrix records the mismatch; it does not erase it. |
+| NFR-2 | Evidence | Every verdict names a test function or states that none exists. A verdict without evidence is an opinion. |
+| NFR-3 | No net ticket growth | The audit must not end with more open tickets than it started with, absent a genuine decision. |
+| NFR-4 | Incremental | Each entry is independently auditable and committable; the audit must not require one large landing. |
+
+## External Dependencies
+
+None. `check_proof_tier.py`, `check_fr_coverage.py` and `check_fr_sweep.py` already exist and are
+inputs, not dependencies to build.
+
+## Architectural Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|---|---|---|
+| AD-1 | The matrix is a document, not a checker | Reading a prose claim against a test is a judgement; a mechanical proxy for it would be argued with rather than obeyed | No |
+| AD-2 | Findings are verified and fixed in place, not filed | Reverses the July Goal. 13 entries × several claims would have produced dozens of unverified tickets — the inflation `closure-contract.md` now forbids | No |
+| AD-3 | `docs/analysis/` is the matrix's home | It is a standalone measurement with a different audience from the ticket, per the layer map | No |
+| AD-4 | Audit entry by entry, worst-first | NFR-4; also lets the diagnostic half surface capability findings early | No |
+
+## ROI Analysis
+
+**Investment.** 13 entries; the four largest (`INT-US-21`, `25`, `28`, `24`) carry 237 of the 271
+tests. Realistically several sessions, one entry per commit.
+
+**Returns.** The registry currently asserts 13 delivered contracts. After the audit it asserts what
+is actually proven — and every unproven claim either gains a test or gains a stated decision. The
+diagnostic half is the larger return: each gap that traces to an incomplete capability is a defect
+found without waiting for it to bite.
+
+**Risk.** The main one is scope creep into remediation of capability defects. NFR-3 and the
+non-goals bound it.
+
+**Refactoring opportunities.** None sought; this ticket writes tests and records verdicts.
+
+## Developer Guides Required
+
+None new. `closure-contract.md` already states the standard the matrix applies. The tier rule it
+enforces is also stated at planning time in `.agents/AGENTS.md` and the `specweaver-dev` /
+`specweaver-implementation-plan` skills — recording a rule only as a review check is what let
+SF-02 CB-1 be planned unit-only the day after the rule was written, and is why `TECH-032`'s
+silent-success lesson applies here too.
+
+## Sub-Feature Breakdown
+
+### SF-01: Matrix skeleton and the two largest contracts
+Claim extraction for all 13 entries (FR-1), then full verdicts for `INT-US-28` and `INT-US-21`.
+`INT-US-28` first because the tier finding above is already open against it.
+
+### SF-02: The thin proofs
+`INT-US-01`, `03`, `04`, `05`, `09` — the entries flagged in 2026-07-26 as citing capability suites
+or being happy-path only. Highest expected yield of unproven claims.
+
+### SF-03: The remainder and the capability findings
+`INT-US-02`, `24`, `25`, the three zero-proof entries, and consolidation of FR-6 findings.
+
+## Execution Order
+
+SF-01 → SF-02 → SF-03. Strictly sequential: SF-01 establishes the claim-extraction format the
+others follow, and re-cutting that format mid-audit would invalidate earlier verdicts.
+
+## Progress Tracker
+
+| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
+|----|------|-----------|--------|-----------|-----|------------|-----------|
+| SF-01 | Skeleton + two largest | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The thin proofs | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Remainder + capability findings | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+
+## Non-Goals
+
+- **`INT-US-21-SUB`** — `TECH-018` audited it 2026-08-13; its finding 2 is this ticket's result for
+  that add-on.
+- **Capability FR coverage** — `TECH-047` swept it; 251 uncited requirements are its matrix, not
+  this one.
+- **Remediating capability defects** the audit exposes. Record them (FR-6); fixing them is theirs.
+- **Re-wording any delivered contract** to match its tests (NFR-1).
+- **A checker for claim-vs-proof.** AD-1.
+
+## Session Handoff
+
+Next action: Phase 6 approval, then `specweaver-implementation-plan TECH-017 SF-01`. The matrix
+lands at `docs/analysis/integration_contract_proof_matrix.md`. Read the 2026-08-13 annotations in
+git history for the three delivered steps before touching anything.
+
+
+---
+
+# Appendix — the measurement this design is built on
+
+Preserved verbatim from the pre-design stub (2026-07-26, re-measured 2026-08-13) when
+`specweaver-design` restructured this document. **Not superseded:** the FRs above are derived from
+these findings, and a reader who plans SF-01 without them will re-measure a tree that has already
+been measured twice. The annotations are the live worklist; the 2026-07-26 body is the record of
+what was found then.
 
 ## Problem Statement — measured 2026-07-26, **re-measured 2026-08-13**
 
@@ -182,55 +348,3 @@ multi-level decomposition that was never built and never descoped.
 ratchet would then mean nothing, which is the failure mode `check_useless_asserts.py`'s docstring
 warns about for detectors. It is audit input, not a guardrail — the per-story matrix this ticket
 already owes is where each of the 46 gets a verdict.
-
-## Goal
-
-For **every** delivered integration contract, a per-story matrix of *what the contract claims* versus
-*what an integration or e2e test actually proves* — with each unproven claim becoming a filed finding.
-Plus findings against the capability stories whose incompleteness the audit exposes.
-
-## Candidate Approaches (not yet designed)
-
-1. **Per-story audit, `INT-US-24` as the benchmark.** For each contract: read its FRs and Verifiable
-   Proof, then read the cited tests and classify each FR as proven-by-e2e / proven-by-integration /
-   **claimed-only**. Cheapest and directly actionable; produces one findings list per story.
-2. **Traceability enforcement.** Require every `INT-US-NN` FR to name the integration/e2e test that
-   proves it, and add a check that the named test exists and is not skipped. Stronger, but needs a
-   convention for the linkage.
-3. **Tier-ratio guardrail.** A check that flags an `INT-US` commit boundary adding unit tests but no
-   integration/e2e tests. Mechanical, catches the exact regression that triggered this ticket, and
-   its false positives are the cases worth a human glance anyway.
-
-## Non-Goals (proposed, pending design)
-
-- Rewriting the capability-level unit suites. Their unit tests are correct *for units*.
-- Retro-fixing every thin proof in one pass — expect a phased breakdown, delivered story by story.
-- Changing any delivered story's entry. **Findings become new stories or TECH tickets**
-  (finished-stories-immutable), never edits to the delivered contract.
-
-## Guardrail to Ship With the Fix
-
-Approach 3, plus wording in `.agents/AGENTS.md` and the `specweaver-implementation-plan` /
-`specweaver-dev` skills making the tier rule explicit **at planning time**, not just at review time.
-Recording it as a review check was already tried on 2026-07-25 (the pre-commit Vacuous Proof Check)
-and did not prevent SF-02 CB-1 from being planned unit-only the very next day — because the test plan
-had already deferred all integration work to a single later commit boundary.
-
-## Next Step
-
-Run the `specweaver-design` skill against this stub before any implementation. **Start from the
-2026-08-13 annotations, not the 2026-07-26 body.**
-
-Suggested phasing, cheapest-first — each is independently shippable, so the ticket does not have to
-be planned as one multi-session block:
-
-1. **The `INT-US-25` marker contradiction** (§1). One line of evidence, no test reading. Also
-   corrects the delivered-contract count the rest of the audit is scoped by: **8 of 28, not 9**.
-2. **The skip-guard guardrail** (§4). Mechanical, and the finding this ticket has now watched
-   survive its own written-down lesson. Turn a `pytest.skip` on a repo-controlled path into a
-   failure; decide separately what the 11 `skipif`-gated suites should do on a machine without
-   `git`/`bash` (fail loudly beats vanishing behind a green suite — same shape as `TECH-032`).
-3. **The tier-ratio guardrail** (Approach 3 below), which is the half that stops the regression
-   recurring while the audit itself is still unscheduled.
-4. **The per-story matrix**, the expensive half — 8 contracts, `INT-US-21`/`24`/`28` as the
-   benchmark, `INT-US-21-SUB` excluded (`TECH-018`).
