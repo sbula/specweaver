@@ -98,7 +98,8 @@ double-covered.
 Audit-only: each becomes a NEW ticket, never an edit to `INT-US-21-SUB`'s entry
 (finished-stories-immutable). None is a live defect; both are registry-accuracy defects.
 
-1. **`INT-US-21-SUB` / `C-INTL-01` claims recursion the code does not implement.** The registry
+1. **`INT-US-21-SUB` / `C-INTL-01` claims recursion the code does not implement.** → filed as
+   **[`TECH-038`](../TECH-038/TECH-038_design.md)** (2026-08-13). The registry
    describes a recursive/iterative decomposer resolving the AST graph into sub-tasks; the shipped
    capability is a single flat LLM call returning a non-nestable plan. Decide which is wrong — the
    description or the scope — and correct the one that is. Note the naming divergence already

@@ -55,8 +55,16 @@ Audit of their declared proof and of the 104 integration / 44 e2e test files fou
 > `Status: ⬜ Pending`, `Integration Description: [Pending definition...]`, `Verifiable Proof:
 > [Pending]`. So this is not a delivered contract missing its proof — it is a contract that was
 > **never started** and is marked delivered in the roadmap. The roadmap ✅ is the wrong one, which
-> makes the real count **8 of 28 delivered, not 9**. Cheapest finding in the ticket and the only
-> one fixable without reading a test: correct the marker, or state what INT-US-25 delivered.
+> makes the real count **8 of 28 delivered, not 9**. **Marker corrected 2026-08-13** — the roadmap
+> line is now `[ ]`, matching its contract file and the convention every other pending contract
+> follows.
+>
+> **Left standing deliberately, for this audit to rule on:** `US-25` the *epic* is still headed
+> `### 🟢`, and all five of its capabilities (`C-VAL-01`, `C-VAL-02`, `D-VAL-02`, `D-VAL-04`,
+> `C-VAL-03`) genuinely are ✅. So the capability work shipped and the integration contract was
+> never written — **built-but-not-integrated, the exact shape `INT-US-21` exposed and closed**. That
+> is a finding about the epic, not a marker typo, so it was not changed silently. Whether a 🟢 epic
+> may have an undefined integration contract is this audit's call.
 
 ### 2. Contracts whose "proof" is a capability suite, not a contract journey
 

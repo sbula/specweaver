@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **6 of 36 TECH tickets are open**, and only one still asserts a claim against a candidate
+> done: **6 of 37 TECH tickets are open**, and only one still asserts a claim against a candidate
 > below — see **Debt Sequencing**.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
@@ -51,7 +51,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **5 of 36 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **6 of 37 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -68,6 +68,7 @@ it was closed is what let this section drift for a month.*
 | Ticket | Where it fits |
 |---|---|
 | `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
+| `TECH-038` 🔴 | `INT-US-21-SUB` is registered as *Recursive Planning*; the decomposer is one flat LLM call returning a non-nestable plan. Registry-accuracy, not live — goes live when `C-FLOW-12` plans against it. From `TECH-018`. |
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
 | `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
 | `TECH-013` 🔴 | Not queue-eligible — fold into the next API-touching story. |
@@ -596,7 +597,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟢 US-25: Compliance & Constitution Governance
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-25:** Base Integration Contract defined in [US-25_integration.md](topics/topic_08_integration/US-25_integration.md)
+    *   `[ ]` **INT-US-25:** Base Integration Contract defined in [US-25_integration.md](topics/topic_08_integration/US-25_integration.md)
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
@@ -689,3 +690,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-035:** [Chronically Failing Class-Health Gate](features/topic_07_technical_debt/TECH-035/TECH-035_design.md)
     *   `✅` **TECH-036:** [Lineage Telemetry Takes Down a Lint Fix That Already Succeeded](features/topic_07_technical_debt/TECH-036/TECH-036_design.md)
     *   `✅` **TECH-037:** [Duplicated Code Is Found Only By Accident](features/topic_07_technical_debt/TECH-037/TECH-037_design.md)
+    *   `[ ]` **TECH-038:** [Registry Claims Recursive Decomposition the Capability Does Not Implement](features/topic_07_technical_debt/TECH-038/TECH-038_design.md)
