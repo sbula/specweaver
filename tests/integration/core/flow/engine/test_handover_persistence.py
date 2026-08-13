@@ -6,13 +6,23 @@ import json
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
 
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.handover import save_handover_context
+from specweaver.core.flow.engine.models import (
+    PipelineDefinition,
+    PipelineStep,
+    StepAction,
+    StepTarget,
+)
+from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult, StepStatus
+from specweaver.core.flow.handlers.base import IsolationPolicy, ModelAccess
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
@@ -189,3 +199,97 @@ async def test_handover_noop_when_no_task(tmp_path: Path):
 
     await save_handover_context(ctx, run)
     # If no exception is raised, test passes
+
+
+@pytest.mark.asyncio
+async def test_runner_finally_persists_handover_end_to_end(tmp_path: Path):
+    """[Seam] the REAL PipelineRunner's `finally` reaches the REAL database.
+
+    `INT-US-28` claims *"`save_handover_context()` ... persists pipeline telemetry to the Memory
+    Bank in the runner's `finally` block."* Before this test that claim was proven in two halves
+    that met at a mock, and so was not proven at all:
+
+    * `tests/unit/core/flow/engine/test_runner_handover.py` drives a real `PipelineRunner` and
+      asserts the `finally` calls `_save_handover` — with `_save_handover` replaced by an
+      `AsyncMock`, so nothing reaches a database;
+    * the tests above call `save_handover_context()` directly against a real database — so the
+      runner is never involved.
+
+    Either half can pass while the wiring between them is broken. This drives the runner over a
+    real registered step and then reads the row back out of SQLite. `TECH-017` SF-01 CB-2.
+    """
+    db_path = tmp_path / "seam.db"
+    db = Database(db_path)
+    sync_engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(sync_engine)
+    with sync_engine.begin() as conn:
+        conn.execute(
+            Base.metadata.tables["workspace_projects"]
+            .insert()
+            .values(
+                name="seam",
+                root_path=".",
+                created_at=datetime.now(UTC),
+                last_used_at=datetime.now(UTC),
+            )
+        )
+    sync_engine.dispose()
+
+    task_id = uuid.uuid4()
+    async with db.async_session_scope() as session:
+        session.add(
+            Task(
+                id=task_id,
+                title="Seam Task",
+                project_name="seam",
+                status=TaskStatus.IN_PROGRESS,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
+        await session.commit()
+
+    ctx = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md",
+        db=db,
+        run=RunHandle(task_id=str(task_id)),
+        model=ModelAccess(config=MagicMock()),
+    )
+    ctx.isolation = IsolationPolicy(dal_level="DAL_A")
+
+    class _TouchesAFile:
+        """Minimal real handler — the runner must execute a step for telemetry to exist."""
+
+        async def execute(self, step, context):
+            return StepResult(
+                status=StepStatus.PASSED,
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+                output={"files_touched": ["seam_file.py"]},
+            )
+
+    registry = StepHandlerRegistry()
+    registry.register(StepAction.BASH, StepTarget.SCRIPT, _TouchesAFile())
+    pipeline = PipelineDefinition(
+        name="seam",
+        steps=[
+            PipelineStep(
+                name="touch",
+                action=StepAction.BASH,
+                target=StepTarget.SCRIPT,
+                params={"script": "noop.sh"},
+                use_worktree=None,
+            )
+        ],
+    )
+
+    run_state = await PipelineRunner(pipeline, ctx, registry=registry).run()
+    assert run_state.status == RunStatus.COMPLETED, run_state
+
+    # No mock anywhere between the runner's `finally` and this row.
+    async with db.async_session_scope() as session:
+        task = await session.get(Task, task_id)
+        assert task is not None
+        assert task.handover_context is not None, "the runner's finally never reached the DB"
+        assert "seam_file.py" in json.loads(task.handover_context)["files_touched"]

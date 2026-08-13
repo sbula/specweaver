@@ -1,6 +1,7 @@
 # Integration-contract proof matrix
 
-`TECH-017` SF-01, CB-1. **Skeleton only — no verdict is asserted yet.**
+`TECH-017` SF-01. CB-1 built the skeleton; **CB-2 has assessed `INT-US-28`** — its six claims below
+carry verdicts and evidence. The other 12 entries remain `unassessed` pending CB-3 and SF-02/03.
 
 For every delivered integration contract, what it *claims* versus what a test *proves*. One claim
 is **one assertion about behaviour at a seam**, not one sentence (`SF-01` D-1) — otherwise verdicts
@@ -203,12 +204,45 @@ are not comparable between entries.
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `B-INTL-09` provides a persistent SQLite schema with CRUD, a formal state machine, OCC concurrency, circuit breakers, zombie recovery and upstream DAG propagation. | `unassessed` | — |
-| C2 | `D-INTL-06` provides read-side retrieval, trust-tagged XML formatting with 8KB payload limits, and fail-safe handover (save on completion, bootstrap on hydration). | `unassessed` | — |
-| C3 | **Seam:** the `handover_context` JSON column on `Task` is the shared surface — `B-INTL-09` owns write-side validation (Pydantic schema, 8KB limit, truncation on ARCHIVED), `D-INTL-06` owns read-side. | `unassessed` | — |
-| C4 | **Seam:** `_build_base_prompt()` calls `MemoryHydrator` to inject memory context into **every** LLM prompt. | `unassessed` | — |
-| C5 | **Seam:** `save_handover_context()` persists pipeline telemetry in the runner's `finally` block. | `unassessed` | — |
-| C6 | **Boundary:** `core.flow` consumes `workspace.memory` via `core/flow/context.yaml`, clean under `tach check`. | `unassessed` | — |
+| C1 | `B-INTL-09` provides a persistent SQLite schema with CRUD, a formal state machine, OCC concurrency, circuit breakers, zombie recovery and upstream DAG propagation. | `proven` | integration — `test_int_1_orchestrator_happy_path` (schema+CRUD), `test_int_9_occ_concurrent_race` (OCC), `test_int_6_circuit_breaker` + `test_int_12_circuit_breaker_three_strikes`, `test_int_2_zombie_reaper` + `test_int_11_zombie_reaper_full_cycle`, `test_int_17_upstream_propagation_cascade` + `test_int_20_diamond_dependency_propagation`. All in `test_memory_integration.py`. |
+| C2 | `D-INTL-06` provides read-side retrieval, trust-tagged XML formatting with 8KB payload limits, and fail-safe handover (save on completion, bootstrap on hydration). | `proven` | **unit** — `test_hydrate_standard`, `test_format_prompt_block_standard`, `test_bootstrap_trust_tagging`, `test_handover_under_8kb`, `test_bootstrap_hydrates_existing_handover`. Integration only for the read side (`test_memory_hydration_integration_flow`). |
+| C3 | **Seam:** the `handover_context` JSON column on `Task` is the shared surface — `B-INTL-09` owns write-side validation (Pydantic schema, 8KB limit, truncation on ARCHIVED), `D-INTL-06` owns read-side. | `proven` | integration — `test_memory_hydration_integration_flow`, *"end-to-end compatibility between the Write-Side (MemoryRepository) and the Read-Side (MemoryHydrator)"*, plus `test_build_base_prompt_with_corrupted_handover` for the invalid-payload path. **Partial:** the 8KB cap and ARCHIVED truncation are proven only in the provider's own unit tests (`B-INTL-09` NFR-6, FR-7), never across the seam. |
+| C4 | **Seam:** `_build_base_prompt()` calls `MemoryHydrator` to inject memory context into **every** LLM prompt. | `proven` | integration — `test_build_base_prompt_with_hydration` proves the injection. The **"every"** was unproven and is now `test_no_prompt_is_built_outside_build_base_prompt` (written at this boundary): `PromptBuilder` is constructed nowhere outside its own module and `_build_base_prompt`. |
+| C5 | **Seam:** `save_handover_context()` persists pipeline telemetry in the runner's `finally` block. | `proven` | integration — `test_runner_finally_persists_handover_end_to_end`, **written at this boundary**. Was `unproven`: see the finding below. |
+| C6 | **Boundary:** `core.flow` consumes `workspace.memory` via `core/flow/context.yaml`, clean under `tach check`. | `proven` | unit — `test_tach_architectural_boundaries` shells out to `tach check`. Correct instrument: this is an `[proof: arch]` claim, provable by the boundary tool and not by a pytest assertion about behaviour. |
+
+### Finding: C5 was proven in two halves that met at a mock
+
+The strongest result of CB-2, and it took a probe rather than a reading to establish.
+
+`INT-US-28` claims *"`save_handover_context()` … persists pipeline telemetry to the Memory Bank in
+the runner's `finally` block."* The description is accurate — `runner.py:175` and `:229` both call
+`_save_handover` from a `finally:`. Two sets of tests appeared to cover it:
+
+* `tests/unit/core/flow/engine/test_runner_handover.py` drives a **real** `PipelineRunner` and
+  asserts the `finally` fires on success, failure, park and empty pipeline — with
+  `runner._save_handover = AsyncMock()`, so nothing reaches a database;
+* `tests/integration/core/flow/engine/test_handover_persistence.py` writes to a **real** database —
+  by calling `save_handover_context(ctx, run)` directly, so the runner is never involved.
+
+Each half passes while the wiring between them is broken. **Probed:** severing `_save_handover` with
+an early `return` leaves all three pre-existing integration tests green.
+`test_runner_finally_persists_handover_end_to_end` was written here — real runner, real registered
+step, real SQLite, no mock between them — and fails on that same break with *"the runner's finally
+never reached the DB"*.
+
+### Finding: the C4 guard was itself vacuous on the first attempt
+
+Written to make *"every LLM prompt"* falsifiable, the guard resolved its repo root with
+`parents[4]` — which lands on `tests/`, not the repository. It globbed a directory that does not
+exist, found no offenders, and **passed with a deliberate bypass planted in `decompose.py`**. Fixed
+to `parents[5]` and given an explicit assertion that the source tree was found at all, per
+`TECH-032`: a check that cannot find its subject must say so, not pass. It now fails on the planted
+bypass and passes clean.
+
+Worth recording because it is this audit's own thesis landing on the auditor twice in one sitting —
+first the `failed == 1` grep that reported a control missing when it existed, now a guard that
+proved nothing while reporting success.
 
 ### Finding: 5 of the 9 cited files are capability tests, not seam tests (`FR-6`)
 
