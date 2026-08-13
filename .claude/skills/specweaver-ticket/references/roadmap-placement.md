@@ -1,23 +1,36 @@
 # Where a thing is written down
 
 One home per fact. This is the contract for `docs/roadmap/master_story_roadmap.md` and the documents
-around it, enforced by `scripts/check_roadmap_placement.py` in the `doc` gate.
+around it, enforced by `scripts/check_roadmap_placement.py` and `scripts/_entry_depth.py` in the `doc` gate.
 
 It exists because it did not. Every rule below was already the convention in the file and written
 down nowhere, so each agent derived it from whatever it happened to grep — and what it grepped was
 Topic 07, where the convention was broken in four of twenty-four entries. Precedent in the artifact
 beat the rule, repeatedly, because there was no rule to beat.
 
-## The three documents
+## The four layers
 
-| Document | Holds | Does not hold |
-|---|---|---|
-| `master_story_roadmap.md` | One line per registry ID: id, short name, link, status. Plus a story's `Benefit` and `Sequencing` as a clause each | Measurements, `file:line` references, out-of-scope lists, rationale, a design's sub-features |
-| `topics/topic_NN_*.md` | The full prose for each entry — origin, evidence, fix shape, out-of-scope | Anything the design document owns |
-| `features/<topic>/<ID>/<ID>_design.md` | Everything about the ticket, including its `SF-NN` decomposition | — |
+One home per fact. Each layer is narrower than the one above; if the same fact belongs in two, it
+goes in the lower one and the upper links to it.
 
-If you are about to write the same fact in two of these, it belongs in the lower one and the upper
-one links to it.
+| # | Document | Holds | Does not hold |
+|---|---|---|---|
+| 1 | `master_story_roadmap.md` | One line per registry ID: id, short name, link, status. A story's `Benefit` and `Sequencing` as a clause each | Measurements, `file:line` refs, out-of-scope lists, rationale, a design's sub-features |
+| 2 | `topics/topic_NN_*.md` | A **summary**: what the problem is, why it matters, how it is sequenced, current status. Four lines | Evidence tables, approach comparisons, out-of-scope lists, delivery narrative |
+| 3 | `features/<topic>/<ID>/<ID>_design.md` | Problem statement, evidence, candidate approaches, non-goals, guardrail — the case for doing it | The log of having done it |
+| 4 | `features/<topic>/<ID>/<ID>_*.md` | The build record: implementation plan (before), delivery record / walkthrough (after), review records | — |
+
+**Layer 2 is where this goes wrong.** An earlier version of this contract said the topic entry
+holds *"the full prose for each entry — origin, evidence, fix shape, out-of-scope"*. Agents followed
+it, and topic entries grew to **5624 characters** — twenty times the median capability entry. If you
+are writing evidence or comparing approaches, you are at layer 3 and should be in the design.
+
+### Not a deeper layer: the knowledge tree
+
+`docs/analysis/`, `docs/architecture/06_lessons_and_future/`,
+`docs/architecture/07_architectural_decision_records/` and `docs/dev_guides/` are a different
+**audience**, not more detail. A lesson in `anti_patterns.md` is not "deeper than the design"; it is
+the part that outlives the ticket. Put a generalisable lesson there, not at layer 4.
 
 ## The rules
 
@@ -32,10 +45,29 @@ appears here.
 > Sub-Feature Breakdown is *internal decomposition* — it never does. `US-21` lists the first and not
 > the second. Getting this backwards is the original defect this contract was written for.
 
-**R-LENGTH — a line inside an entry is at most 200 characters.**
+**R-DEPTH — no line in any markdown file exceeds 200 characters.**
 
-The file is an overview. The number comes from the file's own distribution — median 58–96, p90 ~190
-— so the rule ratifies what the document already does rather than imposing something new.
+Every `.md` in the repo, ratcheted per file. Exempt: a line whose length is one unbreakable token
+(a long URL), and a markdown table row, which has no legal wrap point. This replaced `R-LENGTH`,
+which capped the same 200 characters on roadmap entries alone — a strict subset, so keeping both
+meant two rules and one number.
+
+Wrapping is free: markdown renders a wrapped line identically. **Split only at spaces outside
+backtick spans and outside `[text](url)` links**, or you will break a code span or a link.
+
+**R-ENTRY — a topic entry is at most 4 lines' worth of content.**
+
+Measured in *effective* lines — content length over the line limit — so **not wrapping is not an
+escape**. Ratcheted per entry; a NEW entry gets no free first offence.
+
+The 4 comes from pre-drift practice, not from taste: capability entries across topics 01–06 have a
+median of 247 characters, and the oldest TECH cohort (`TECH-001..013`, before the inflation began)
+588. A TECH entry is legitimately ~2.4× a capability entry — and not the 10× later cohorts reached.
+One number covers both kinds; there is no per-kind allowance.
+
+**When an entry is too long, redistribute — never delete.** Move each fact to the layer that owns
+it and check it survives there before cutting. 39 entries were redistributed on 2026-08-13 and
+**21 facts** would have been lost to a trim-by-eye.
 
 **R-OWNER — a bare `SF-NN` must have its owner named.**
 

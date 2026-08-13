@@ -73,8 +73,8 @@ already is; how much content belongs there is a layer question, not a character 
 
 ## Non-Goals (proposed, pending design)
 
-- **Deleting anything.** The remedy is redistribution. `scripts/check_entry_orphans.py` exists to
-  make that checkable and must report zero orphans for an entry before it is shortened.
+- **Deleting anything.** The remedy is redistribution: each fact must be verified to survive
+  somewhere deeper before an entry is cut.
 - Re-wording delivered entries' *claims*. Moving text is not licence to revise what it says.
 - Lowering `MAX_LINE`, or adding a second threshold per layer. One rule, one number.
 - The `topic_08_integration` contracts, which have their own shape and their own gate
@@ -82,8 +82,8 @@ already is; how much content belongs there is a layer question, not a character 
 
 ## Candidate Approaches (not yet designed)
 
-1. **Worst-first, ticket by ticket**, each one: run `check_entry_orphans.py <ID>`, move each orphan
-   fact to the layer that owns it, shorten the entry, re-freeze the ratchet down. Slow, verifiable,
+1. **Worst-first, ticket by ticket** (this is what was done): list the facts absent from the
+   deeper documents, move each to the layer that owns it, shorten the entry, re-freeze downward. Slow, verifiable,
    and each step is independently committable. `TECH-035` (5624), `TECH-017` (4963) and `TECH-037`
    (4284) are the top three.
 2. **Layer-at-a-time**, e.g. all of `topic_07` before any design docs. Fewer context switches,
@@ -96,8 +96,8 @@ already is; how much content belongs there is a layer question, not a character 
 
 **R-ENTRY: 41 over-long entries -> 2.** All 39 fixed were redistributed rather than trimmed: facts
 absent from the deeper layers were carried down first, verbatim, under a *Carried down from the
-topic entry* heading in the relevant design (14 designs updated). `check_entry_orphans.py` reports
-zero for every entry that was shortened.
+topic entry* heading in the relevant design (16 designs updated), verified absent-then-present
+for every entry that was shortened.
 
 **R-DEPTH: every topic document is now clean.** 103 entry lines and 1 prose line wrapped; the seven
 `topic_*.md` files have a maximum line length of 199-200. Total census 2057 -> 1904, the remainder
@@ -111,17 +111,21 @@ redistribute to, and shortening them would be deletion. They stay frozen until s
 whether to write the missing design or accept the entry as the only record. Naming that is the
 point: it is a different kind of work from the other 39, not the tail of it.
 
-## The scaffolding is deleted when this ticket closes — enforced, not promised
+## The scaffolding was deleted when the backlog closed — enforced, not promised
 
-`scripts/check_entry_orphans.py` exists only to make this redistribution safe. When the R-DEPTH
-backlog reaches zero there is nothing left to redistribute and it has no job.
+`scripts/check_entry_orphans.py` existed only to make this redistribution safe: for each topic
+entry it listed the facts present there and absent from every document in the feature's folder, so
+they were moved rather than dropped. It found **21 genuinely missing facts across 39 entries**.
 
-That deletion is a **failing test**, not a note:
-`test_entry_depth.py::TestTheOrphanCheckerIsDeletedWhenDone` asserts the checker exists **exactly
-while** the baseline is non-empty, so the suite demands its removal the moment the backlog empties
-— and demands its restoration if it is deleted early. A promise in a docstring would not survive
-the session that made it; this repo watched a `pytest.skip` guard outlive its own written-down
-lesson by eighteen days.
+Its deletion was a **failing test**, not a note. `TestTheOrphanCheckerIsDeletedWhenDone` asserted
+the checker existed *exactly while* the R-ENTRY baseline was non-empty. On 2026-08-13 the backlog
+reached zero, the test failed with instructions to delete the file, and it was deleted along with
+its allowlist entry and the test class itself.
+
+One bug worth recording: the test first keyed on the **R-DEPTH** baseline, which would have kept
+the scaffolding alive for a backlog it has nothing to do with — R-DEPTH's remainder is line
+wrapping in deeper documents, which needs no orphan check. Caught when R-ENTRY hit zero and the
+test stayed silent.
 
 ## Known gap: nothing bounds a delivery record's SIZE
 
@@ -135,7 +139,7 @@ common number.
 ## Guardrail
 
 Already shipped with the finding: `R-DEPTH` (`scripts/_entry_depth.py`, `doc` gate, ratcheted per
-file) and the advisory `scripts/check_entry_orphans.py`. What is missing is a written statement of
+file). What is missing is a written statement of
 the layer map above — `TECH-026` wrote down what belongs in the *roadmap* and stopped there, which
 is the same one-level-only mistake in the documentation of the rule as in the rule itself. The
 design should decide where that map lives so it is findable: a `specweaver-ticket` reference is the

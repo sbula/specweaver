@@ -32,16 +32,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 #: explicit allowlist rather than a pattern so adding one is a decision somebody makes, and
 #: `test_the_ungated_allowlist_is_not_stale` stops a deleted name masking a real gap.
 #:
-#: Two kinds live here, and the distinction matters: the first two take a STORY ID rather than a
-#: tree, so they answer "is this story closable" rather than "is the repo healthy". The third is
-#: ADVISORY — it reports on a judgement a human then makes, and gating on a heuristic would get it
-#: argued with rather than obeyed.
+#: Both take a STORY ID rather than a tree, so they answer "is this story closable" rather than "is
+#: the repo healthy". (A third lived here until 2026-08-13: `check_entry_orphans.py`, advisory
+#: scaffolding for `TECH-044`'s redistribution, deleted by the test that demanded it once the
+#: R-ENTRY backlog reached zero.)
 UNGATED_CHECKERS = {
     "check_fr_coverage.py",  # `check_fr_coverage.py <STORY>` — FR ledger closure (TECH-025)
     "check_story_preconditions.py",  # `<STORY>` — prerequisites green in code, not documents
-    # Advisory (TECH-017): names the facts a topic entry would lose if trimmed, so R-DEPTH's
-    # remedy stays redistribution rather than deletion. Its notion of a "fact" is a heuristic.
-    "check_entry_orphans.py",
 }
 
 

@@ -19,9 +19,10 @@ down and stopped there, so the level below grew 5624-character lines.
 **The remedy is redistribution, never deletion.** A topic entry that long is holding design-doc
 content — measurements, approach tables, out-of-scope lists — which belongs in `<ID>_design.md`
 while the topic entry keeps the summary. Where the content is already at the right depth, the
-remedy is simply wrapping, which markdown renders identically. Either way nothing is dropped:
-`scripts/check_entry_orphans.py` exists to prove that, listing facts present in an entry and absent
-from its design so they are moved before the entry is cut.
+remedy is simply wrapping, which markdown renders identically. Either way nothing is dropped. A throwaway checker
+(`check_entry_orphans.py`, 2026-08-13) listed facts present in an entry and absent from every
+deeper document; it found 21 real ones across 39 entries and was deleted by its own test once the
+R-ENTRY backlog reached zero.
 
 **Ratcheted per FILE, not per line.** Line numbers shift under every edit, so a baseline keyed on
 them would report false regressions constantly and be re-frozen until nobody read it — the same
@@ -223,10 +224,10 @@ def main(argv: list[str] | None = None) -> int:
             "-> design -> build record (plan / walkthrough / review). Separately, and NOT deeper: "
             "docs/analysis/, 06_lessons_and_future/, 07_architectural_decision_records/ and "
             "dev_guides/ hold what outlives the ticket — a different audience, not more detail.\n"
-            "Run `python scripts/check_entry_orphans.py` FIRST — it names the facts that would be "
-            "lost, so they are moved rather than dropped. Where the content is already at the "
-            "right depth, wrap it; markdown renders that identically. See `TECH-044` for the "
-            "layer map. The count may fall, never rise."
+            "Move the detail down and leave the summary, or — where it is already at the right "
+            "depth — simply wrap it; markdown renders that identically. Never delete: check that "
+            "each fact survives somewhere deeper before cutting it. See `TECH-044` for the layer "
+            "map. The count may fall, never rise."
         )
         return 1
 
@@ -240,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{MAX_ENTRY_LINES} lines. Pre-drift practice is a median of 247 characters for a "
             "capability and 588 for a TECH ticket; anything near ten times that is carrying a "
             "deeper layer's content. Move it into the design or the delivery record — run "
-            "`python scripts/check_entry_orphans.py <ID>` first so nothing is dropped. Measured "
+            "each fact survives somewhere deeper before cutting it. Measured "
             "as content length, so wrapping does not change the verdict."
         )
         return 1
