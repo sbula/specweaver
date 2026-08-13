@@ -62,6 +62,27 @@ Before modifying ANY module, you MUST:
 - Test the 4 adversarial buckets: Happy Path, Boundary/Edge Case, Graceful Degradation, Hostile/Wrong Input.
 - Every branch, guard clause, error path, and boundary condition MUST have a test.
 
+## Closing Something
+
+A `🟢`/`✅` is a claim that the implementation stands up to the specification — not that work
+happened, not that a commit landed, and **not that a follow-up ticket was filed**.
+
+Before any status changes: `python scripts/check_fr_coverage.py <ID>` must exit 0, every FR you are
+not building must be **deleted** from the design's FR table so the descope is visible, and the
+`Verifiable Proof` must name test FILES that pass and do not skip.
+
+Measured 2026-08-13: **46 of 103 capabilities are marked delivered while failing that check.**
+`C-INTL-01` is marked ✅ with five FRs, zero tests, and two never carried by any plan — its design
+specifies recursive decomposition that was never built and never descoped.
+
+**A specification is a claim under test, not a given.** Read the FRs against the code, then against
+the tests. Where they disagree, the code is what shipped.
+
+**Do not file a ticket instead of doing the work.** Can you verify it now? Verify it. Can you fix it
+now? Fix it. File only when a decision is needed that you cannot take, and name that decision.
+
+Full contract: `.claude/skills/specweaver-ticket/references/closure-contract.md`.
+
 ## Shell Rules
 
 - **NO shell compounding**: `&&`, `||`, `;`, `|`, `>` are FORBIDDEN. Execute EACH command as a SEPARATE `run_command` tool call.

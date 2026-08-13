@@ -46,6 +46,21 @@ ticket's identity. This skill exists because that failure has actually happened.
 
 ---
 
+> [!CAUTION]
+> **A ticket is a last resort, not a reflex — and filing one is not resolving anything.**
+> Six tickets were filed on 2026-08-13 in a single day, several as the "outcome" of resolving an
+> earlier one. The backlog grew; the verification did not. Before Phase 1, answer out loud:
+>
+> 1. **Can I verify this now?** Then verify it. A finding backed by a failing test beats a ticket
+>    saying someone should look.
+> 2. **Can I fix this now?** Then fix it. "Out of scope for this commit" is a real answer;
+>    "deserves its own ticket" usually is not.
+> 3. **Does this need a decision I cannot take** — scope, descope, anything changing what the
+>    product does? That is the one good reason to file. Name the decision and who takes it.
+>
+> A ticket that only records a fact you could have checked is a note, and a note belongs in the
+> design document of the thing it concerns. Full contract: `references/closure-contract.md`.
+
 ## Phase 1: Identify the Registry (do NOT skip)
 
 Each ID family has a **different** authoritative source. Pick the right one:
@@ -144,6 +159,14 @@ subject.
   name the origin commit where there is one, list explicit out-of-scope items so the ticket cannot
   expand into a crusade, and state the execution constraint (e.g. "one module per commit, never
   bundled into a feature commit").
+- **Closing is a claim about the implementation, not about the work.** A `🟢`/`✅` asserts the
+  implementation stands up to the ticket's promise: every FR proven by a test
+  (`check_fr_coverage.py <ID>` exits 0), every unbuilt FR deleted from the FR table so the descope
+  is visible, and the `Verifiable Proof` naming test FILES that pass and do not skip. Measured
+  2026-08-13: **46 of 103 capabilities fail that bar while marked delivered.** Full contract:
+  `references/closure-contract.md`.
+- **Filing a follow-up is not a closure condition.** Resolving a ticket by filing another one
+  defers the work and inflates the backlog.
 - **Ship the guardrail with the fix.** If the ticket removes a pattern, it should also add the check
   that stops it regrowing — otherwise it will.
 

@@ -152,6 +152,10 @@ python scripts/tests.py feature <STORY-ID>
   cited by at least one test file. An uncited FR means either the proof is missing, or the FR was
   silently descoped while the design still claims it. Fix the proof, or delete the row from the
   design's FR table so the descoping is a visible decision.
+- **Filing a follow-up ticket does not satisfy this gate.** If an FR is unproven, the story is not
+  finished — a new ticket defers the work rather than discharging it. Six tickets were filed on
+  2026-08-13 in one day, several as the "outcome" of resolving an earlier one. Full contract:
+  `.claude/skills/specweaver-ticket/references/closure-contract.md`.
 - The **suite** carries the always-on reachability invariants
   (`tests/unit/core/flow/engine/test_handler_reachability.py`): every declared step combination
   resolves to a registered handler, and every bundled pipeline step is executable.

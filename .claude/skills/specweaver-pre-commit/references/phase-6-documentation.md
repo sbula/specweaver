@@ -28,6 +28,15 @@ maintain graphical Mermaid mappings during pre-commit.
        **MUST** paste the exact filepath of the passing E2E integration test into the
        `Verifiable Proof:` field for that Story or Add-On. Do not check the box if no E2E test
        exists.
+     - **[🚨 CLOSURE CONTRACT]** The filepath is necessary and **not sufficient**. Before the
+       status changes, `python scripts/check_fr_coverage.py <ID>` must exit 0 — every FR carried by
+       a plan and proven by a test — and any FR you are not building must be **deleted** from the
+       design's FR table so the descope is visible. Measured 2026-08-13: **46 of 103 capabilities
+       are marked delivered while failing that check**, `C-INTL-01` among them with five FRs, zero
+       tests and two never planned. Full contract:
+       `.claude/skills/specweaver-ticket/references/closure-contract.md`.
+     - **Filing a follow-up ticket does not close anything.** If the promise is not met, the status
+       does not change — a new ticket defers the work, it does not discharge it.
      - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
 
 6.3. **MANDATORY: Update the architecture documentation** if this feature
