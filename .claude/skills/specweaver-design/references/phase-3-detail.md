@@ -26,6 +26,23 @@ A.1. Using the working definition (Phase 1) and research brief (Phase 2),
        Example: "The system SHALL record model_id, prompt_tokens, and completion_tokens
        for every LLM call and persist them to the telemetry DB."
 
+A.1a. **Seams are FRs on THIS capability — `ADR-003`.** If this feature calls, reads from, or
+     persists through another module, that is a requirement of *yours*, not an observation about
+     two other modules and not work for a later integration story. There is no later integration
+     story; the family was retired precisely because it became a second place to claim things no
+     gate compared against code (`INT-US-21-SUB` advertised recursive decomposition that was never
+     built, through delivery and an epic closure).
+
+     Write it as an FR like any other, naming the provider and the surface:
+
+     > *"FR-6: `MemoryHydrator` SHALL deserialise `Task.handover_context` (written by `B-INTL-09`)
+     > via `HandoverContext.from_json_str()`, logging at WARNING and returning empty on invalid
+     > payloads."*
+
+     Its proof tier is **integration** (see the dev and implementation-plan skills), and
+     `check_fr_coverage.py` then enforces it exactly as it does every other FR — a plan that owns
+     it, a test that cites it.
+
 A.2. Review each FR for vagueness:
      - Does it use words like "fast", "good", "some", "various", "appropriate"? → vague.
      - Does it have multiple interpretations? → vague.

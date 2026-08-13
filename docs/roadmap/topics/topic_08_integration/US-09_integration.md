@@ -97,3 +97,8 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
   (today's `_derive_allowed_paths` is implement-shaped — scenario artifacts would be dropped at
   reconcile) and dual-fan-out-in-worktree semantics. Supersedes AD-8's per-caller opt-out by a new
   decision; `INT-US-03`'s finished record stays untouched.
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Not deleted and not descoped — the scope below is real
+  > and stays. What changed is the owner: `C-EXEC-07` builds it and owns its integration and e2e
+  > proof as FRs of its own, rather than a separate add-on restating them. Seam claims become
+  > FRs on the consumer; any user-visible journey becomes a journey proof.

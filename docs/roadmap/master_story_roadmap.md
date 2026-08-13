@@ -42,16 +42,16 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
    * **ROI:** **Risk-driven** — medium effort vs. closing the platform's widest-known attack class
      while three autonomous LLM loops are already live; value grows with every new LLM-consuming
      feature shipped before it.
-3. **Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
-   * **Features:** `B-FLOW-05` + `INT-US-04-SF02`. Prereqs: none. Details: [topic_03](topics/topic_03_flow_engine.md).
+3. **Token-Burn Circuit Breakers (`B-FLOW-05`)** ← FINANCIAL SAFETY
+   * **Features:** `B-FLOW-05`. Prereqs: none. Details: [topic_03](topics/topic_03_flow_engine.md).
    * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance:
      the autonomous US-3 loop AND the US-24 dual-pipeline loop (which re-runs whole verification
      rounds on loop_back) are live; `C-FLOW-11`'s budget-cap NFR needs exactly this substrate.
    * **Cons:** Hardening; no epic unlock.
    * **ROI:** **Risk-driven** — modest effort caps the worst-case cost of every existing and future loop; currently the only guards are per-step `max_retries`, not spend.
-4. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** ← DAL PARITY (minted 2026-07-24)
+4. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY (minted 2026-07-24)
    * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree +
-     `sw run`/`sw resume` escalation wiring) integrated by `INT-US-09-SF06`. Prereqs: `C-EXEC-06` ✅.
+     `sw run`/`sw resume` escalation wiring), integration owned by `C-EXEC-07` per `ADR-003`. Prereqs: `C-EXEC-06` ✅.
      Details: [topic_06](topics/topic_06_sandbox.md) /
      [US-09_integration.md](topics/topic_08_integration/US-09_integration.md).
    * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution
@@ -140,23 +140,18 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
-        *   `[ ]` **INT-US-01-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-VAL-03:** AST Prompt Injection Sanitization
     *   🟡 **Enforce Internal Architecture:**
-        *   `[ ]` **INT-US-01-SF02:** Sub-Story Integration (Pending Design)
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
         *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
         *   `[ ]` **E-UI-04:** CLI Command Arch Separation (Discovery vs Validation)
     *   🟡 **Configurable Multi-Stage Reviews:**
-        *   `[ ]` **INT-US-01-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
     *   🔴 **Rubrics-as-Content:**
-        *   `[ ]` **INT-US-01-SF05:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-VAL-05:** Rubrics-as-Content Validation
     *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
 
 ### 🟢 US-2: The Interactive Drafter
@@ -171,13 +166,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   🔴 **Surgical Spec Refactoring:**
-        *   `[ ]` **INT-US-02-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-SENS-05:** Markdown AST Mutators
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **INT-US-02-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-04:** REST API - Interactive Authoring
     *   🔴 **Grill-Style Agentic Drafting** *(blocked on `C-FLOW-11`)*:
-        *   `[ ]` **INT-US-02-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-INTL-07:** Agentic Interview Drafting (Grill-Style) — needs `C-FLOW-11` (hard), `C-VAL-05` (soft)
 
 ### 🟢 US-3: Autonomous Implementation
@@ -192,13 +184,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🔴 **Multi-Language Test Support:**
-        *   `[ ]` **INT-US-03-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
-        *   `[ ]` **INT-US-03-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
     *   🔴 **Graduated Autonomy:**
-        *   `[ ]` **INT-US-03-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial) — needs `C-EXEC-06` ✅; sequenced behind `C-VAL-05`
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
@@ -217,7 +206,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
-        *   `[ ]` **INT-US-04-SF02:** [Security Defenses](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-02-security-defenses-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF02:** RETIRED by `ADR-003` — requirements move to `B-FLOW-05`
         *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **INT-US-04-SF03:** [Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
@@ -226,23 +215,21 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-04-SF04:** [Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-04-context-mention-highlighting-integration-pending-design)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
-        *   `[ ]` **INT-US-04-SF05:** [Advanced Routing](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-05-advanced-routing--conditional-flows-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF05:** RETIRED by `ADR-003` — requirements move to `C-FLOW-10`
         *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
-        *   `[ ]` **INT-US-04-SF06:** [Infinite Memory Management](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-06-infinite-memory-management-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF06:** RETIRED by `ADR-003` — requirements move to `C-INTL-04`
         *   `[ ]` **C-INTL-04:** Conversation Summarization (Token compression)
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **INT-US-04-SF07:** [Remote UI Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-07-remote-ui-integration-pending-design)
+        *   `[ ]` **INT-US-04-SF07:** RETIRED by `ADR-003` — requirements move to `D-UI-05`
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** [Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
         *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
     *   🔴 **Envelope-vs-Content Prompt Externalization:**
-        *   `[ ]` **INT-US-04-SF10:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-INTL-06:** Envelope-vs-Content Prompt Externalization — sequenced behind `C-VAL-05`
     *   🔴 **Declarative Dynamic Prompt Routing:**
-        *   `[ ]` **INT-US-04-SF09:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-10:** Declarative Prompt Optimization
 
 ### 🟢 US-5: Polyglot Code Understanding
@@ -257,10 +244,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infrastructure Understanding:**
-        *   `[ ]` **INT-US-05-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
     *   🔴 **API Contract Understanding:**
-        *   `[ ]` **INT-US-05-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
     *   🟢 **Intelligent Code Exclusions:**
         *   `✅` **INT-US-05-SF03:** Sub-Story Integration (Complete)
@@ -269,7 +254,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-05-SF04:** Sub-Story Integration (Complete)
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **INT-US-05-SF05:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-SENS-04:** Parallel AST Extraction Engine
 
 ---
@@ -284,13 +268,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-UI-02:** Web dashboard
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict UI Data Contracts:**
-        *   `[ ]` **INT-US-06-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-02:** Structured output schemas
     *   🔴 **Live Pipeline Streaming:**
-        *   `[ ]` **INT-US-06-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-UI-01:** Real-Time Feedback Sensor Dashboard
     *   🔴 **Remote Systems Integration:**
-        *   `[ ]` **INT-US-06-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-07:** REST API - Systems Integration
 
 
@@ -304,10 +285,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **D-UI-03:** VS Code Extension
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict UI Data Contracts:**
-        *   `[ ]` **INT-US-07-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-02:** Structured output schemas
     *   🔴 **Real-time File Tracking:**
-        *   `[ ]` **INT-US-07-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-UI-03:** File watcher (Auto-re-validate specs on save)
 
 ### 🟡 US-8: The Greenfield Bootstrap Wizard
@@ -319,10 +298,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
 *   **Sub-Story Add-Ons:**
     *   🔴 **Socratic Context Gathering:**
-        *   `[ ]` **INT-US-08-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-INTL-03:** Socratic drafting flow
     *   🔴 **Architectural De-duplication:**
-        *   `[ ]` **INT-US-08-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-03:** Synthetic Commons Extraction
 
 ### 🟢 US-9: The Zero-Trust Sandbox
@@ -334,24 +311,20 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟡 **Containerized Isolation:**
-        *   `[ ]` **INT-US-09-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
         *   `✅` **B-EXEC-01:** Ephemeral Podman Sub-Containers
     *   🔴 **Security Defenses:**
-        *   `[ ]` **INT-US-09-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control
         *   `[ ]` **B-EXEC-04:** [Kernel-Enforced Resource Bounds (cgroups v2)](features/topic_06_sandbox/B-EXEC-04/B-EXEC-04_design.md)
     *   🔴 **Extreme Execution Paranoia:**
-        *   `[ ]` **INT-US-09-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-01:** Functional Agent Sandboxing (Black Box Ledgers)
     *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **INT-US-09-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
     *   🟢 **Per-Run (Session) Worktree Isolation:**
         *   `✅` **INT-US-09-SF05:** Sub-Story Integration — delivered by `C-EXEC-06`; see [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
-        *   `[ ]` **INT-US-09-SF06:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **INT-US-09-SF06:** RETIRED by `ADR-003` — integration owned by `C-EXEC-07`
         *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
@@ -363,7 +336,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Code-to-Spec Drift Checking:**
-        *   `[ ]` **INT-US-10-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **B-VAL-01:** AST Drift Detection
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
@@ -377,20 +349,16 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
-        *   `[ ]` **INT-US-11-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring)
         *   `[ ]` **A-SENS-03:** Event-driven knowledge graph updates
     *   🔴 **Static Code Flow Analysis:**
-        *   `[ ]` **INT-US-11-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
     *   🔴 **Infinite Scale Management:**
-        *   `[ ]` **INT-US-11-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` **A-FLOW-02:** Hash-based garbage collection
         *   `[ ]` **A-INTL-04:** Memory consolidation
     *   🔴 **Microservice Federation:**
-        *   `[ ]` **INT-US-11-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-SENS-04:** Federated Microservice Linkage (Cross-Repo API Graphing via strict ID prefixes)
 
 ### 🟡 US-12: Legacy Spec Extraction (Reverse-Weaving)
@@ -403,10 +371,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **C-INTL-03:** Reverse-Weaving (`sw capture`)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Massive Scale Context Retrieval:**
-        *   `[ ]` **INT-US-12-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   🔴 **Automated Code Purging:**
-        *   `[ ]` **INT-US-12-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-FLOW-03:** Dead Code Detection & Analysis (finding unreachable functions using the graph for human review)
 
 ### 🟡 US-13: Financial-Grade Math Proofs
@@ -418,11 +384,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **A-VAL-02:** Symbolic Math Validation
 *   **Sub-Story Add-Ons:**
     *   🔴 **Symbolic Tree Traversal:**
-        *   `[ ]` **INT-US-13-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-INTL-02:** LLM-Guided Symbolic Execution
         *   `[ ]` **C-SENS-03:** Symbol index + anti-hallucination gate
     *   🔴 **Dynamic Memory Attacks:**
-        *   `[ ]` **INT-US-13-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-02:** Tool-Augmented Security Fuzzing Harnesses
 
 ### 🟡 US-14: Adversarial Red-Teaming
@@ -434,14 +398,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **A-INTL-01:** Pre-Generation Adversarial Spec Review
 *   **Sub-Story Add-Ons:**
     *   🔴 **Mathematical Mutation Checks:**
-        *   `[ ]` **INT-US-14-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-VAL-03:** Semantic Test Completeness — *(2026-07-21) design rubric-first on the `C-VAL-05` substrate*
         *   `[ ]` **A-VAL-03:** Mutation testing
     *   🔴 **Architectural Sandboxing:**
-        *   `[ ]` **INT-US-14-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
-        *   `[ ]` **INT-US-14-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` ✅
 
 ### 🟡 US-15: Enterprise Audit & Traceability
@@ -454,11 +415,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   🔴 **Enterprise Compliance Protocols:**
-        *   `[ ]` **INT-US-15-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **B-SENS-01:** Artifact lineage graph
         *   `[ ]` **A-UI-01:** 'Dark Factory' Compliance Logging
     *   🔴 **Zero-Trust ACL:**
-        *   `[ ]` **INT-US-15-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-EXEC-02:** Tiered access rights & Provenance tracking
 
 ### 🟡 US-16: AI Operations & Cost Routing
@@ -471,19 +430,15 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Data-Driven Routing:**
-        *   `[ ]` **INT-US-16-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations
         *   `[ ]` **B-INTL-04:** Dynamic AI Arbiter
     *   🔴 **Friction Analytics Dashboard:**
-        *   `[ ]` **INT-US-16-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-UI-03:** Task-type cost analytics dashboard
         *   `[ ]` **B-FLOW-03:** Deterministic friction detection (git diff math)
         *   `[ ]` **C-FLOW-07:** HITL Root-Cause Tagging
     *   🔴 **Enterprise Thought Observability:**
-        *   `[ ]` **INT-US-16-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-FLOW-02:** OpenTelemetry Agent Tracing
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **INT-US-16-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-06:** REST API - Telemetry & Auditing
 
 ### 🟡 US-17: The SWE-Bench Guarantee
@@ -495,7 +450,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **B-VAL-04:** Agent Platform Benchmarking (`sw eval`)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Continuous Integration:**
-        *   `[ ]` **INT-US-17-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-UI-02:** Standardized Benchmarking CI
 
 ### 🟡 US-18: Productionizing External Targets
@@ -511,10 +465,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **B-UI-02:** External Proprietary Validation
 *   **Sub-Story Add-Ons:**
     *   🔴 **Secure Sandboxed Operations:**
-        *   `[ ]` **INT-US-18-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
     *   🔴 **CI/CD Pipeline Integration:**
-        *   `[ ]` **INT-US-18-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-08:** Pluggable Webhook & CI Invocation
 
 ### 🟡 US-19: Microservice Fleet Orchestration
@@ -529,13 +481,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **C-FLOW-04:** Work Packet Bundling (Coordinated multi-agent dispatch)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Cross-Service Contract Validation:**
-        *   `[ ]` **INT-US-19-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-06:** Industry Standard Bridges
     *   🔴 **Parallel Execution Safety:**
-        *   `[ ]` **INT-US-19-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-EXEC-04:** Concurrent Git Merge Orchestration
     *   🔴 **Distributed Topology Scaling:**
-        *   `[ ]` **INT-US-19-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
@@ -550,14 +499,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Test Intensity Gating:**
-        *   `[ ]` **INT-US-20-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-VAL-03:** Semantic Test Completeness (Required for DAL-B) — *(2026-07-21) design rubric-first on the `C-VAL-05` substrate*
         *   `[ ]` **A-VAL-03:** Mutation Testing Gates (Required for DAL-A)
     *   🔴 **Automated Degradation Prevention:**
-        *   `[ ]` **INT-US-20-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-09:** DAL CI/CD Risk Evaluation (Auto-rejects PRs on degradation)
     *   🔴 **DAG Visualization:**
-        *   `[ ]` **INT-US-20-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-UI-01:** Pipeline visualizer (Color-codes DAG by DAL risk)
 
 
@@ -573,10 +519,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
     *   🔴 **Multi-Level Recursive Decomposition** *(the `AD-2` half `C-INTL-01` never built)*:
-        *   `[ ]` **INT-US-21-SF03:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **INT-US-21-SF03:** RETIRED by `ADR-003` — integration owned by `C-INTL-07`
         *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition
     *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`; `TECH-014` cleared 2026-08-12)*:
-        *   `[ ]` **INT-US-21-SF02:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **INT-US-21-SF02:** RETIRED by `ADR-003` — integration owned by `C-FLOW-12`
         *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution
 
 ### 🟡 US-22: Polyglot Contract Enforcement
@@ -588,7 +534,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-VAL-04:** Traceability Matrix Check
 *   **Sub-Story Add-Ons:**
     *   🔴 **Mathematical Speed & Security:**
-        *   `[ ]` **INT-US-22-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-04:** Rust PyO3 Validations (Massive performance scale for deep contract checking)
 
 ### 🟡 US-23: Enterprise Tool Extension (MCP)
@@ -599,7 +544,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-INTL-02:** MCP Client Architecture
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict Security Gating:**
-        *   `[ ]` **INT-US-23-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes — design jointly with `C-FLOW-11`
 
 ### 🟢 US-24: Behavioral Scenario Verification
@@ -611,7 +555,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**
-        *   `[ ]` **INT-US-24-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-07:** Error Attribution Arbiter
 
 ### 🟢 US-25: Compliance & Constitution Governance
@@ -622,7 +565,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Risk Controls:**
-        *   `[ ]` **INT-US-25-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **D-VAL-02:** Custom Rule Paths
         *   `✅` **D-VAL-04:** Adaptive Assurance Standards
         *   `✅` **C-VAL-03:** Dynamic Risk Rulesets
@@ -638,7 +580,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **B-SENS-06:** OSV Vulnerability Feed Ingestion
 *   **Sub-Story Add-Ons:**
     *   🔴 **Massive Scale Orchestration:**
-        *   `[ ]` **INT-US-26-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-INTL-05:** Multi-Repo Refactoring Orchestration
 
 ### 🟡 US-27: Autonomous Production Self-Healing
@@ -650,7 +591,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **A-SENS-05:** APM Telemetry Ingestion (Sentry/Datadog)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infinite Loop Protection:**
-        *   `[ ]` **INT-US-27-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-FLOW-04:** Blast-Radius Circuit Breaker (Prevents bad hotfixes from cascading)
 
 ### 🟢 US-28: Agent-Native Issue & State Tracker
@@ -661,7 +601,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md) (Complete)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
-        *   `[ ]` **INT-US-28-SF01:** Sub-Story Integration
+        *   `[ ]` **INT-US-28-SF01:** RETIRED by `ADR-003` — integration owned by `A-EXEC-04`
         *   `[ ]` **A-EXEC-04:** Advanced Row-Level Task Locking (Pessimistic Locks, WAL2, Deadlock Detection)
 
 ---

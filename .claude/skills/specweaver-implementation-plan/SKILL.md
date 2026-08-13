@@ -39,13 +39,28 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    to plan. Do NOT plan all sub-features at once.
 
 > [!IMPORTANT]
-> **TEST TIER MUST MATCH STORY TIER (`TECH-017`).** For an `INT-US-NN` integration contract the
-> proof is **integration and e2e** tests. Unit tests belong in an integration story only to fix a
-> specific behaviour or fill a narrow gap found while integrating. Decide this when drawing the
-> commit boundaries — **every** boundary carries integration coverage. Never defer all integration
-> work to one later boundary; that is how SF-02 CB-1 came to ship 16 unit tests and zero others.
-> And treat unit-test-heaviness as a **diagnostic**: it means the capability stories you are
-> integrating shipped incomplete, which is a finding against *them*.
+> **TEST TIER MUST MATCH THE CLAIM, NOT THE STORY TYPE (`TECH-017`, `ADR-003`).** Decide the tier
+> per requirement when drawing the commit boundaries:
+>
+> | The requirement claims | Proof tier |
+> |---|---|
+> | behaviour of this module alone | unit |
+> | **a seam** — this module calling, reading or persisting through another | **integration** |
+> | a user-visible journey across capabilities | **e2e** |
+>
+> `ADR-003` folded integration into the story that creates the seam, so a plan that touches another
+> module's surface **owns** the integration test for it — there is no later story that will do it.
+> Never defer all integration work to one final boundary; that is how SF-02 CB-1 came to ship 16
+> unit tests and zero others.
+>
+> **Write the seam test at the boundary where the interface first exists and the behaviour does
+> not.** Where step *n*'s interface depends on step *n−1*'s output, the test goes **between** them —
+> that is the only moment a red means anything. Record the red and its reason in the plan: it is the
+> one piece of evidence a `Proves:` tag can never supply, that the test CAN fail.
+>
+> Unit-test-heaviness where a seam was expected is a **diagnostic**: the capability you are building
+> on shipped incomplete, and that is a finding against *it* (`TECH-017` FR-6), not a reason to
+> write its tests here under your own story's name.
 
 **Output header block** — write this at the top of every impl plan produced:
 ```markdown

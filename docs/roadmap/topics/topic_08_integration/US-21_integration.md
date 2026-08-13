@@ -54,6 +54,11 @@
   * **Verifiable Proof:** [Pending — writes its own seam pin as its first commit, against a contract
     it can see. The base deliberately does **not** ship a forward-compatibility pin on its behalf:
     `FR-9(a)` attempted that and was descoped.]
+  > **RETIRED 2026-08-13 by `ADR-003`.** Not deleted and not descoped — the scope below is real
+  > and stays. What changed is the owner: `C-FLOW-12` builds it and owns its integration and e2e
+  > proof as FRs of its own, rather than a separate add-on restating them. Seam claims become
+  > FRs on the consumer; any user-visible journey becomes a journey proof.
+
 
 * **Multi-Level Recursive Decomposition (`INT-US-21-SF03`)**
   * **Status:** ⬜ Pending Design
@@ -71,6 +76,11 @@
     explicit, because shipping without one is why `TECH-046` exists: a recursion capability whose
     recursion is untested is the defect being corrected. At minimum an e2e that decomposes a
     feature deep enough to split, asserting the tree's shape and the termination rule firing.]
+  > **RETIRED 2026-08-13 by `ADR-003`.** Not deleted and not descoped — the scope below is real
+  > and stays. What changed is the owner: `C-INTL-07` builds it and owns its integration and e2e
+  > proof as FRs of its own, rather than a separate add-on restating them. Seam claims become
+  > FRs on the consumer; any user-visible journey becomes a journey proof.
+
 
 ---
 

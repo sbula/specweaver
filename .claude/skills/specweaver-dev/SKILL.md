@@ -61,12 +61,21 @@ d. **Pre-condition checks — HARD STOP if any fail:**
    - All sub-features in `depends_on` have `Committed ✅`? If not → tell the user which dep is incomplete.
 
 > [!CAUTION]
-> **TEST TIER MUST MATCH STORY TIER (`TECH-017`).** In an `INT-US-NN` story every commit boundary
-> is proven by **integration and e2e** tests. Unit tests are legitimate here only to fix a specific
-> behaviour or fill a narrow gap found while integrating — if you are writing many of them, the
-> capability being integrated shipped incomplete, and that is a finding against *it*. Before Phase 2,
-> check whether a CLI surface already works well enough for an e2e: an explicit spec path often
-> works long before bare-name resolution does.
+> **TEST TIER MUST MATCH THE CLAIM (`TECH-017`, `ADR-003`).** Tier is chosen per requirement, not
+> per story type: behaviour of this module alone → **unit**; a **seam** (calling, reading or
+> persisting through another module) → **integration**; a user-visible journey across capabilities →
+> **e2e**.
+>
+> `ADR-003` folded integration into the story that creates the seam, so if your commit boundary
+> touches another module's surface, **this boundary owns that integration test** — no later story
+> will write it. Where step *n*'s interface depends on step *n−1*'s output, write the seam test
+> BETWEEN the two: that is the only moment it can fail for the right reason. Note the red and its
+> reason in the walkthrough.
+>
+> Writing many unit tests where a seam was expected is a **diagnostic**: the capability you build on
+> shipped incomplete, and that is a finding against *it*, not tests to adopt under your own name.
+> Before Phase 2, check whether a CLI surface already works well enough for an e2e: an explicit spec
+> path often works long before bare-name resolution does.
 
 **1.0e. MANDATORY**: Read ALL relevant files in `docs/dev_guides/` and `docs/user_guides/`.
        These contain established patterns, conventions, and extension points.

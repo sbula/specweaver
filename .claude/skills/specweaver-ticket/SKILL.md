@@ -71,6 +71,23 @@ Each ID family has a **different** authoritative source. Pick the right one:
 | Capability | `C-FLOW-12` | `docs/roadmap/capability_matrix.md` **and** `docs/roadmap/topics/topic_NN_*.md` |
 | Sub-story add-on | `INT-US-21-SF02` | `docs/roadmap/topics/topic_08_integration/US-NN_integration.md` |
 
+> [!CAUTION]
+> **`ADR-003`: do NOT mint a new `INT-US-NN` / `INT-US-NN-SFNN` for seam or capability work.**
+> Integration now belongs to the capability that creates the seam, as one of **its own FRs** — which
+> `check_fr_coverage.py` and `check_fr_sweep.py` already enforce. Before minting anything in this
+> family, classify the claim:
+>
+> * **restates what a capability does** → it belongs in that capability's design. Mint nothing.
+> * **a seam** (this module calls/reads/persists through another) → an FR on the **consumer**
+>   capability. Mint nothing.
+> * **a user-visible journey across capabilities** (*"the journey costs exactly one LLM call"*) →
+>   still legitimate, as a **journey proof**: e2e tests only, declares no FRs, implements nothing.
+>
+> Measured 2026-08-13: 63 pre-allocated `Sub-Story Integration (Pending Design)` entries existed and
+> **not one had a design document or a feature directory**. The family's failure mode is a second
+> place to make claims that no gate compares against code — `INT-US-21-SUB` advertised recursive
+> decomposition that was never built, through delivery and an epic closure (`TECH-038`).
+
 > [!WARNING]
 > For **TECH** IDs the topic doc is NOT authoritative — it has historically listed only a subset.
 > For **capability** IDs the matrix and topic docs *are* authoritative, and

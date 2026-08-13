@@ -78,13 +78,21 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf01_implementation_plan.md
 
-### SF-02: Security Defenses Integration (Pending Design)
+### SF-02: Security Defenses Integration — RETIRED by `ADR-003` (was Pending Design)
 - **Scope**: Token-Burn Circuit Breakers (EDoS Prevention) integration contract.
 - **FRs**: [FR-1: Record aggregate token usage per `run_id`, FR-2: Halt execution and throw `CircuitBreakerException` if budget exceeded]
 - **Inputs**: Token usage metrics from `LLMAdapter` responses.
 - **Outputs**: `CircuitBreakerEvent` logged to the Config DB; Pipeline halts securely.
 - **Depends on**: SF-01
 - **Impl Plan**: ⬜
+
+> **Retired 2026-08-13 by `ADR-003`.** Never designed, and its requirements above are
+> `B-FLOW-05`'s (Token-Burn Circuit Breakers (EDoS Prevention)) — recording token usage, halting on budget,
+> persisting suspension state, summarising history, serving read-only state are things that
+> capability does, not observations a third document makes about it. **The FR text above is
+> kept, not deleted**: it is the intake for `B-FLOW-05`'s design, where each becomes an FR that
+> `check_fr_coverage.py` enforces. Any seam it needs is an FR on the consumer; any
+> user-visible journey is a journey proof. Nothing is lost — the owner changed.
 
 ### SF-03: Parallel Multi-Spec Execution Integration (✅ Integrated)
 - **Scope**: Multi-Spec Pipeline Fan-Out integration contract.
@@ -102,7 +110,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: SF-01
 - **Impl Plan**: ✅
 
-### SF-05: Advanced Routing & Conditional Flows Integration (Pending Design)
+### SF-05: Advanced Routing & Conditional Flows Integration — RETIRED by `ADR-003` (was Pending Design)
 - **Scope**: Deferred Router Mapping & Interactive Gate Variables integration contract.
 - **FRs**: [FR-1: Persist pipeline suspension states (`GATE_PENDING`, etc.), FR-2: Serialize `RunContext` to DB and terminate thread, FR-3: Restore `RunContext` from DB on resume trigger]
 - **Inputs**: `GateDefinition` rules; CLI/API approval events.
@@ -110,7 +118,15 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
-### SF-06: Infinite Memory Management Integration (Pending Design)
+> **Retired 2026-08-13 by `ADR-003`.** Never designed, and its requirements above are
+> `C-FLOW-10`'s (Deferred Router Mapping Capabilities) — recording token usage, halting on budget,
+> persisting suspension state, summarising history, serving read-only state are things that
+> capability does, not observations a third document makes about it. **The FR text above is
+> kept, not deleted**: it is the intake for `C-FLOW-10`'s design, where each becomes an FR that
+> `check_fr_coverage.py` enforces. Any seam it needs is an FR on the consumer; any
+> user-visible journey is a journey proof. Nothing is lost — the owner changed.
+
+### SF-06: Infinite Memory Management Integration — RETIRED by `ADR-003` (was Pending Design)
 - **Scope**: Conversation Summarization (Token compression) integration contract.
 - **FRs**: [FR-1: Trigger summarization handler when token count exceeds threshold, FR-2: Persist compressed summary and mark raw history events as `ARCHIVED`]
 - **Inputs**: Token count metrics from `RunContext`; Raw history array.
@@ -118,13 +134,29 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
-### SF-07: Remote UI Integration (Pending Design)
+> **Retired 2026-08-13 by `ADR-003`.** Never designed, and its requirements above are
+> `C-INTL-04`'s (Conversation Summarization (Token compression)) — recording token usage, halting on budget,
+> persisting suspension state, summarising history, serving read-only state are things that
+> capability does, not observations a third document makes about it. **The FR text above is
+> kept, not deleted**: it is the intake for `C-INTL-04`'s design, where each becomes an FR that
+> `check_fr_coverage.py` enforces. Any seam it needs is an FR on the consumer; any
+> user-visible journey is a journey proof. Nothing is lost — the owner changed.
+
+### SF-07: Remote UI Integration — RETIRED by `ADR-003` (was Pending Design)
 - **Scope**: REST API - Enterprise Configuration integration contract.
 - **FRs**: [FR-1: Expose structured query boundaries for REST API fetching without executing Runner logic, FR-2: Flush real-time progress events to DB]
 - **Inputs**: HTTP GET requests from the UI.
 - **Outputs**: Read-only JSON serialization of `ArtifactEvent` and `ValidationResult` states.
 - **Depends on**: SF-01
 - **Impl Plan**: ⬜
+
+> **Retired 2026-08-13 by `ADR-003`.** Never designed, and its requirements above are
+> `D-UI-05`'s (REST API - Enterprise Configuration) — recording token usage, halting on budget,
+> persisting suspension state, summarising history, serving read-only state are things that
+> capability does, not observations a third document makes about it. **The FR text above is
+> kept, not deleted**: it is the intake for `D-UI-05`'s design, where each becomes an FR that
+> `check_fr_coverage.py` enforces. Any seam it needs is an FR on the consumer; any
+> user-visible journey is a journey proof. Nothing is lost — the owner changed.
 
 ### SF-08: Configurable Prompt Render Profiles Integration
 - **Scope**: Integrating C-INTL-05 `RenderProfile` capabilities into the pipeline orchestration layer via Step Parameter Injection and a `ProfileRegistry`.
