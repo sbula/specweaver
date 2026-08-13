@@ -126,3 +126,37 @@ class TestUnattributedRequirements:
         """
         text = '"""RT-3: round trip.\n\nFR-7: ARCHIVED clears handover_context.\n"""\n'
         assert cit.unattributed_requirements(text, _KNOWN) == {"FR-7"}
+
+
+class TestCreditedRequirements:
+    """`credited_requirements` — a tagged file's tag is the whole of its claim for that story.
+
+    This exists because the same mistake was made three times in one day, twice after the rule
+    against it had been written down. A file explaining *"NFR-2 is deliberately NOT claimed here"*
+    credited NFR-2, because the legacy rule reads any id in a file that names the story. The third
+    time it hid a real defect: `E-EXEC-01` NFR-2 requires `< 5ms` and its only test asserts
+    `< 200ms`, and the requirement read as proven.
+
+    Documentation did not stop it, so the grammar does. Once an author demonstrates they know the
+    tag syntax, prose in that file stops being evidence — for that story only. Untagged files keep
+    the legacy behaviour untouched.
+    """
+
+    def test_a_tag_excludes_requirements_mentioned_only_in_prose(self, cit: ModuleType) -> None:
+        text = '"""T.\n\nProves: E-EXEC-01 FR-7.\n\nNFR-2 is deliberately NOT claimed here.\n"""\n'
+        assert cit.credited_requirements(text, "E-EXEC-01") == {"FR-7"}
+
+    def test_an_untagged_file_keeps_the_legacy_credit(self, cit: ModuleType) -> None:
+        assert cit.credited_requirements("E-EXEC-01 and NFR-2 in prose", "E-EXEC-01") == {"NFR-2"}
+
+    def test_a_tag_for_another_story_does_not_gag_this_one(self, cit: ModuleType) -> None:
+        """Exhaustive per story, not per file — a file may tag one capability and legacy-cite another."""
+        text = '"""T.\n\nProves: D-INTL-06 FR-4.\n\nB-INTL-09 NFR-2 discussed.\n"""\n'
+        # D-INTL-06 is tagged, so its claim is exactly the tag.
+        assert cit.credited_requirements(text, "D-INTL-06") == {"FR-4"}
+        # B-INTL-09 is not tagged here, so it keeps the legacy credit -- which is deliberately
+        # permissive and returns every id in the file, exactly as it did before tags existed.
+        assert "NFR-2" in cit.credited_requirements(text, "B-INTL-09")
+
+    def test_a_file_not_naming_the_story_credits_nothing(self, cit: ModuleType) -> None:
+        assert cit.credited_requirements("FR-4 alone", "D-INTL-06") == set()

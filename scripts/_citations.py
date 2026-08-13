@@ -84,6 +84,27 @@ def loose_mentions(text: str, story: str) -> set[str]:
     return set(_REQ.findall(text))
 
 
+def credited_requirements(text: str, story: str) -> set[str]:
+    """What this file may credit to ``story`` — the single rule both sweeps should use.
+
+    **A `Proves:` tag is exhaustive for the story it names.** If the file tags that story, the tag is
+    the whole claim and prose adds nothing; otherwise the legacy loose credit applies unchanged.
+
+    This is not a refinement, it is a defect fix. The same mistake was made three times in one day,
+    twice after the rule against it was written down: a docstring saying *"NFR-2 is deliberately NOT
+    claimed here"* credits NFR-2, because the legacy rule reads every id in a file that names the
+    story. The third time it concealed a real defect — `E-EXEC-01` NFR-2 requires ``< 5ms`` overhead
+    and its only test asserts ``< 200ms``, so a 40x-looser test made the requirement read as proven.
+
+    Prose is not evidence once an author has shown they know the syntax. Untagged files are
+    untouched, so nothing already credited is revoked except where a tag deliberately excluded it.
+    """
+    tags = strict_citations(text)
+    if story in tags:
+        return set(tags[story])
+    return loose_mentions(text, story)
+
+
 def _prose_lines(text: str) -> list[str]:
     """Comment and docstring lines only — never string literals used as test data."""
     out: list[str] = []

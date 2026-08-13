@@ -197,7 +197,8 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
             continue
         relative = path.relative_to(tests_root).as_posix()
         strict = _cit.strict_citations(text).get(story, set())
-        for fr in sorted(collect_frs(text)):
+        # A `Proves:` tag is EXHAUSTIVE for the story it names: prose in a tagged file adds nothing.
+        for fr in sorted(_cit.credited_requirements(text, story)):
             cited.setdefault(fr, []).append(relative)
             if fr in strict:
                 STRICTLY_CITED.setdefault(story, set()).add(fr)

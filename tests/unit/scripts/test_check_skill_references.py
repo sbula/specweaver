@@ -3,7 +3,7 @@
 
 """Tests for scripts/check_skill_references.py -- TECH-019 SF-02.
 
-Proves: TECH-019 FR-1, FR-4, FR-5.
+Proves: TECH-019 FR-1, FR-2, FR-3, FR-4, FR-5, NFR-2.
 
 `TECH-008` deleted `docs/architecture/architecture_reference.md` and six live instruction sites
 went on ordering the agent to read it, so every design, implementation-plan and pre-commit run

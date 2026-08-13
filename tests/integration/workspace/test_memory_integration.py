@@ -4,7 +4,7 @@
 
 """Integration tests for the memory store, repository and DAG propagation.
 
-Proves: B-INTL-09 FR-2, FR-3, FR-4, FR-5, FR-8, FR-9.
+Proves: B-INTL-09 FR-2, FR-3, FR-4, FR-5, FR-8, FR-9, NFR-1.
 
 Cited by `INT-US-28` as integration proof, and it is — but these are `B-INTL-09`'s OWN requirements,
 so that capability read as having zero tests while this file proved six of its nine. Attributed

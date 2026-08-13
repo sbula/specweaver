@@ -50,10 +50,19 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
 from pathlib import Path
+
+_cit_spec = importlib.util.spec_from_file_location(
+    "_citations", Path(__file__).parent / "_citations.py"
+)
+assert _cit_spec is not None and _cit_spec.loader is not None
+_cit = importlib.util.module_from_spec(_cit_spec)
+sys.modules["_citations"] = _cit
+_cit_spec.loader.exec_module(_cit)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FEATURES = REPO_ROOT / "docs" / "roadmap" / "features"
@@ -135,7 +144,8 @@ def cited_nfrs_in_tests(tests_root: Path, story: str) -> set[str]:
             continue
         if story not in text or is_fixture_data(text):
             continue
-        cited |= set(_NFR.findall(text))
+        # Same rule as the FR sweep: a `Proves:` tag is exhaustive for the story it names.
+        cited |= {r for r in _cit.credited_requirements(text, story) if r.startswith("NFR-")}
     return cited
 
 
