@@ -11,6 +11,31 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 
 ---
 
+> [!IMPORTANT]
+> **This template is what Phase 5 PRODUCES — it is not what a newly registered capability carries.**
+>
+> A capability minted by `specweaver-ticket` but not yet designed carries a **stub**, and that is
+> correct rather than a shortfall. Measured across 107 design documents on 2026-08-13: **36 have 11
+> or 12 of the mandatory sections and every one of them is built work** (`C-INTL-01`, `C-EXEC-06`,
+> `INT-US-21`, `INT-US-24`, `TECH-001`, `TECH-025`…); **46 have none, and every one of them is
+> un-designed**. The convention was already consistent and simply written down nowhere, which is
+> how stub sections came to be improvised.
+>
+> **A stub uses these six sections**, as `C-INTL-06`, `C-VAL-05` and `C-INTL-07` do:
+>
+> | Section | Holds |
+> |---|---|
+> | `Problem Statement` | what is wrong or missing, with evidence |
+> | `Goal` | what the capability does once built, in a sentence or two |
+> | `Relationship` | the neighbouring capabilities and what each owns instead |
+> | `Candidate Approaches (not yet designed)` | the decisions the design must take |
+> | `Non-Goals (proposed, pending design)` | what must not expand into this |
+> | `Next Step` | which skill to run, and any question that gates the rest |
+>
+> Header carries `**Status**: STUB — not yet run through the `specweaver-design` skill`. Running
+> this skill replaces the stub with the full structure below; the stub's Problem Statement and
+> Non-Goals normally survive into it.
+
 ## Write the Design Document
 
 5.1. Write the Design Document to:
