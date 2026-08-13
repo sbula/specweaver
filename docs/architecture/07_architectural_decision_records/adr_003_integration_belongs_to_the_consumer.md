@@ -150,3 +150,49 @@ regressed"*), which nothing currently checks.
 *"Is US-21 integrated?"* stops having a one-document answer and becomes *"are these FRs proven?"*.
 That is only as trustworthy as the ratchets, and it is a deliberate trade: the one-document answer
 was wrong for `INT-US-21-SUB` for months, and the ratchets are now measured, probed and blocking.
+
+## Addendum, same day: how a seam is DISCOVERED
+
+The decision above says a seam becomes an FR on the consumer. It did not say how anyone finds the
+seam in the first place — and an FR is a leaf. You only write *"SHALL deserialise
+`handover_context` via `HandoverContext.from_json_str()`"* once you already know the seam exists.
+That discovery step is what the integration story used to supply: late, and in the wrong document.
+
+The first attempt to fix this put a "surfaces and interactions" section **before** FR derivation.
+That is wrong. The dependency runs both ways: an FR determines the data you need, which names the
+surface you consume — but the surface that *actually exists* constrains what the FR can promise,
+which rewrites the FR. Ordering it either way fails. It is a **fixpoint iteration**:
+
+```
+FR states an outcome -> data it must read/send -> whose module provides it
+                     -> what that surface really offers -> back to a now-DIFFERENT FR
+```
+
+The loop already happens informally — the design skill has always derived FRs and validated APIs in
+one pass. **What was missing is a record of where it converged**, so nobody could tell an FR whose
+data dependency was verified from one where it was assumed.
+
+`D-INTL-06` FR-3 is the cost of that. It reads *"Selective Filtering | MemoryHydrator | Filter out
+ARCHIVED tasks, tasks outside the project, DONE tasks > 24h old"* — and the hydrator does not filter
+at all. It passes `max_age_hours=24` to the repository (`hydrator.py:162`). The FR and the interface
+disagreed, the FR was never updated, and it surfaced only in this audit as *"FR-3's proof would have
+to live in the provider's test file."*
+
+**Encoded as a Requirement–Surface Bindings table**, one row per FR that crosses a module boundary,
+whose termination condition is that every row names a surface someone has **read** — citing the file
+or symbol opened, never "per the design". That is the standard `check_story_preconditions.py`
+already applies to prerequisites, and for the same reason: `INT-US-21` recorded three prerequisites
+as `✅` and all three were materially broken.
+
+Three non-convergent outcomes, all findings rather than failures: the surface provides it (the FR
+stands, and its proof tier is integration); the wrong side owns it (rewrite the FR — this is FR-3);
+the surface does not exist (the **provider** needs a new FR, which is a cross-story dependency and
+fires a HITL gate rather than being deferred to "integration", the exact deferral this ADR removed).
+
+NFRs fall out of the same table: a surface's latency budget, payload cap or failure mode becomes
+your NFR. `D-INTL-06`'s 2048-token and 8KB bounds came from the surface, not from a guess.
+
+Encoded in: design skill Phase 2 A.7 (record surfaces with real signatures), Phase 3 A.1b–A.1d
+(the loop, the table, the outcomes, the gate), Phase 5 (the template section), Phase 6.0 (the
+convergence check), and implementation-plan Phase 1.1 (the bindings say where integration tests go).
+

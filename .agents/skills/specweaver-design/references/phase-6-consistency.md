@@ -8,6 +8,14 @@ After the Design Document is written, evaluate and present the following consist
 
 ---
 
+6.0. **Requirement–Surface Bindings converged?** For every FR that crosses a module boundary,
+     the design carries a binding row whose "Verified how" cites a **file or symbol that was
+     opened** (Phase 3 A.1b). Evidence, not assertion: name the rows and what was read.
+     - Any row still reading "unresolved", "assumed available" or "per the design" means the
+       fixpoint did not converge — resolve it or raise A.1d's gate. Do not approve around it.
+     - No boundary-crossing FRs at all? Say so explicitly. Silence is indistinguishable from
+       having skipped the question.
+
 6.1. **Open questions**: Are there still open questions or unresolved ambiguities?
      - If yes: list them explicitly with their severity. For each, you MUST provide:
        - Options for resolution

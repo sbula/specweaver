@@ -55,7 +55,7 @@ When available, prefer these MCP tools over grep/file-reading for code discovery
 |-------|------|-------------|------------|
 | **1** | `.agents/skills/specweaver-design/references/phase-1-intake.md` | Read feature entry + clarify scope | ⚠️ If unclear |
 | **2** | `.agents/skills/specweaver-design/references/phase-2-research.md` | Parallel: codebase + internet research + ROI | No |
-| **3** | `.agents/skills/specweaver-design/references/phase-3-detail.md` | FR/NFR + API validation + arch alignment | ⚠️ On gap or arch switch |
+| **3** | `.agents/skills/specweaver-design/references/phase-3-detail.md` | FR/NFR ⇄ surface fixpoint, bindings, API validation, arch alignment | ⚠️ On gap, missing surface, or arch switch |
 | **4** | `.agents/skills/specweaver-design/references/phase-4-decompose.md` | Sub-feature breakdown + dependency graph | No |
 | **5** | `.agents/skills/specweaver-design/references/phase-5-document.md` | Write design.md | No |
 | **6** | `.agents/skills/specweaver-design/references/phase-6-consistency.md` | Final checks + Red/Blue + HITL approval | ⚠️ Always |

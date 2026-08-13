@@ -11,10 +11,23 @@ description: "Phase 1: Preparation — read the Design Document, architecture re
 1.1. **Read the Design Document in full** (path from the impl plan header block).
      This is the primary authoritative source. It defines:
      - FRs and NFRs for this sub-feature
+     - **Requirement–Surface Bindings** — the FRs that cross a module boundary, and the provider
+       surface each one consumes
      - External dependencies and validated versions
      - Architectural decisions and HITL-approved switches
      - Sub-feature scope, inputs, and outputs
      - Other sub-features this one depends on
+
+     > [!IMPORTANT]
+     > **The bindings table tells you where the integration tests go.** Every binding row is a seam
+     > this sub-feature owns (`ADR-003`) — there is no later integration story to write it. Draw the
+     > commit boundaries so each binding is proven at the boundary where its interface first exists
+     > and its behaviour does not yet, and where step *n*'s interface depends on step *n−1*'s output,
+     > put the test **between** them.
+     >
+     > A binding row whose "Verified how" says "assumed" or "unresolved" is a **precondition
+     > failure, not a note**: the design did not converge, and planning on it repeats `INT-US-21`,
+     > whose three prerequisites were all marked `✅` and all three materially broken.
 
 1.2. **Read the architecture documentation in full** — one document per thing you need:
      - `docs/architecture/03_system_topology/module_dependency_graph.md` — module map

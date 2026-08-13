@@ -84,7 +84,23 @@ what boundary rules constrain the design>
 |---|-----|-------|--------|---------|
 | FR-1 | ... | ... | ... | ... |
 
+## Requirement–Surface Bindings
+
+One row per FR that crosses a module boundary (`ADR-003`, Phase 3 A.1b). Omit the section only if
+this feature touches nothing outside itself — say so explicitly rather than leaving it out silently.
+
+**"Verified how" must cite the file or symbol that was opened.** "Per the design" and "assumed
+available" are not verifications; `INT-US-21` recorded three prerequisites as `✅` and all three
+were materially broken.
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-1 | ... | `<CAP-ID>` · `symbol(args)` | read `path/to/file.py` |
+
 ## Non-Functional Requirements
+
+Thresholds a consumed surface imposes belong here, carried from the bindings above rather than
+invented (`D-INTL-06`'s 2048-token and 8KB bounds came from the surface, not from a guess).
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|

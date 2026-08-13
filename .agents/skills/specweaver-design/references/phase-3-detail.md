@@ -43,6 +43,59 @@ A.1a. **Seams are FRs on THIS capability — `ADR-003`.** If this feature calls,
      `check_fr_coverage.py` then enforces it exactly as it does every other FR — a plan that owns
      it, a test that cites it.
 
+A.1b. **Iterate FR ↔ surface until it converges. This is a fixpoint, NOT an ordering.**
+
+     An FR states an outcome, which determines the data you need, which names the surface you
+     consume. But the surface that *actually exists* constrains what the FR can promise — which
+     rewrites the FR. Ordering it either way fails: surfaces first has you inventing APIs for
+     requirements you have not derived; surfaces strictly after has you writing requirements
+     against APIs you have not checked.
+
+     ```
+     FR states an outcome -> data it must read/send -> whose module provides it
+                          -> what that surface really offers -> back to a now-DIFFERENT FR
+     ```
+
+     Loop that until it settles, then **record where it settled**. One row per FR that crosses a
+     module boundary — not every FR, or a diagnostic becomes paperwork:
+
+     | FR | Data needed | Provider · surface | Verified how |
+     |---|---|---|---|
+     | FR-5 | open defects for a BLOCKED task | `B-INTL-09` · `list_defects(task_id, status=OPEN)` | read `repository/core.py` |
+
+     > [!IMPORTANT]
+     > **Termination condition: every row names a surface someone has READ, not assumed.**
+     > This is the standard `check_story_preconditions.py` already applies to prerequisites, and for
+     > the same reason — `INT-US-21` recorded three prerequisites as `✅` and all three were
+     > materially broken. Document state lies; reading does not. "Verified how" must cite the file
+     > or symbol you opened, never "per the design" or "assumed available".
+
+     **NFRs fall out of this table for free.** A surface's latency budget, payload cap or failure
+     mode becomes your NFR — which is where `D-INTL-06`'s 2048-token and 8KB bounds actually came
+     from. Carry them into Section B rather than inventing thresholds there.
+
+A.1c. **Three outcomes when a row does not converge. All are findings, none is a failure.**
+
+     | Outcome | What it means | What you do |
+     |---|---|---|
+     | **Surface provides it** | the FR stands | note its proof tier is **integration**, not unit |
+     | **Wrong side owns it** | the responsibility sits with the provider | **rewrite the FR** |
+     | **Surface does not exist** | the provider needs a new FR | a cross-story dependency — **HITL, A.1d** |
+
+     The middle one is not hypothetical. `D-INTL-06` FR-3 reads *"Selective Filtering |
+     MemoryHydrator | Filter out ARCHIVED tasks, tasks outside the project, DONE tasks > 24h old"* —
+     and the hydrator does not filter at all. It passes `max_age_hours=24` to the repository
+     (`hydrator.py:162`). The FR and the interface disagreed and the FR was never updated; it
+     surfaced two capability-releases later as *"FR-3's proof would have to live in the provider's
+     test file"*. One iteration of **which side actually owns this?** catches it at design time.
+
+A.1d. **HITL gate** (fires when a surface this feature needs does not exist):
+     Name the FR, the data it needs, and the provider that would have to supply it. State plainly
+     that the provider needs a new FR and that this feature is blocked on it or must descope.
+     **STOP. Wait.** Do not design around it silently, and do not defer it to "integration" — that
+     is exactly the deferral `ADR-003` removed, and it is how a capability ships with a promise
+     nothing implements.
+
 A.2. Review each FR for vagueness:
      - Does it use words like "fast", "good", "some", "various", "appropriate"? → vague.
      - Does it have multiple interpretations? → vague.

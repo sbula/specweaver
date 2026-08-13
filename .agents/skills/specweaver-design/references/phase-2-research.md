@@ -51,6 +51,16 @@ A.6. Record:
      - What would be duplicated if we build from scratch?
      - What boundary rules constrain the design?
 
+A.7. **Record the SURFACES those modules expose, with their real signatures.** Phase 3 iterates
+     FR ↔ surface to a fixpoint (A.1b) and cannot converge on surfaces nobody looked up. For each
+     module this feature will likely read from, call, or persist through, note the function or
+     column it would use, its actual signature, and **the file you read it in** — that file
+     reference is what Phase 3's "Verified how" column carries, and it is the difference between a
+     verified binding and `INT-US-21`'s three green-but-broken prerequisites.
+
+     Quote signatures; do not paraphrase them. A surface that turns out not to provide what an FR
+     assumes is a finding worth having now, while the FR is still cheap to change.
+
 ---
 
 ## Track B — External Research (autonomous)
