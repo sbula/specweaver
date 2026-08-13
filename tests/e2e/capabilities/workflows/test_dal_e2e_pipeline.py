@@ -128,10 +128,10 @@ class TestImplementUnderDal:
     """Story 8: `sw implement` under a strict DAL.
 
     > [!IMPORTANT]
-    > **The DAL-override half of Story 8 is still NOT proven here**, and that is stated rather than
-    > implied. `sw implement` reaches the LLM before any code-level DAL enforcement can run, so
-    > proving "implement triggers strict code-handler DAL overrides" needs a scripted adapter of the
-    > kind `test_feature_decomposition_e2e.py` builds. Filed rather than faked.
+    > **The DAL-override half of Story 8 is still NOT proven here** — filed as `TECH-041` rather
+    > than faked or left implied. `sw implement` reaches the LLM before any code-level DAL
+    > enforcement can run, so proving "implement triggers strict code-handler DAL overrides" needs
+    > a scripted adapter of the kind `test_feature_decomposition_e2e.py` builds.
     >
     > What the old test actually exercised was **nothing**: it passed `"specs/test.md"` as a
     > relative path while the project lived in `tmp_path`, so `sw implement` exited 1 on
