@@ -25,7 +25,7 @@ It cannot keep a process alive across multiple calls, has no concept of "send mo
 output, the process is still running." Forcing `MCPExecutor` through it would break the MCP bridge
 outright — not a regression risk, a certain break.
 
-## What This Needs (not yet designed)
+## Candidate Approaches (not yet designed)
 
 A persistent/streaming-process execution mode — either:
 1. **Extend `SubprocessExecutor`** with a new mode/method for long-lived processes (e.g. an
@@ -40,6 +40,28 @@ A persistent/streaming-process execution mode — either:
 Either approach should give `MCPExecutor` the same env allowlisting + credential stripping +
 structured telemetry the rest of the sandbox already has, without changing its public API
 (`call_rpc()`, `is_alive()`, `close()`).
+
+## Non-Goals (proposed, pending design)
+
+Written 2026-08-13. This ticket sits in the sandbox execution layer, which is the easiest place in
+the repo for a fix to become a rewrite — so the boundaries are stated before anyone starts.
+
+- **Changing `MCPExecutor`'s public API.** `call_rpc()`, `is_alive()` and `close()` stay as they
+  are. Callers must not need editing; if they do, the new executor's shape is wrong.
+- **Touching `SubprocessExecutor.execute()`'s one-shot behaviour.** Every existing caller depends on
+  `communicate()` semantics. A persistent mode is *additive*, whether it lands as a new method or a
+  sibling class.
+- **The MCP protocol or transport.** JSON-RPC over stdio stays; this is about how the process is
+  spawned and supervised, not how it is spoken to. Anything about HTTP or SSE transports is a
+  different capability.
+- **The other sandbox executors.** `TECH-009` already migrated `GitExecutor` and the ripgrep path,
+  and they are one-shot — they gain nothing here.
+- **Removing the `noqa: TID251`** before the replacement is proven. The suppression is the honest
+  marker of a known architectural mismatch; deleting it early would hide the gap rather than close
+  it, and it must be **removed rather than relocated** when the fix lands — `TECH-020`'s rule.
+
+Execution constraint: its own commit, never bundled into a feature commit. The reader thread and
+the queue drain are the risky part, and a bisect needs them isolated.
 
 ## Current State (interim)
 
