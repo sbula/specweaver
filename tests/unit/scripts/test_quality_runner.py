@@ -28,13 +28,20 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-#: Checkers that take a STORY ID rather than a tree, so they cannot be battery members: they answer
-#: "is this story closable", not "is the repo healthy". Kept as an explicit allowlist rather than a
-#: pattern so adding one is a decision somebody makes, and `test_the_story_scoped_allowlist_is_not_
-#: stale` stops a deleted name masking a real gap.
-STORY_SCOPED_CHECKERS = {
+#: Checkers deliberately outside the battery, each with the reason it cannot be a gate. Kept as an
+#: explicit allowlist rather than a pattern so adding one is a decision somebody makes, and
+#: `test_the_ungated_allowlist_is_not_stale` stops a deleted name masking a real gap.
+#:
+#: Two kinds live here, and the distinction matters: the first two take a STORY ID rather than a
+#: tree, so they answer "is this story closable" rather than "is the repo healthy". The third is
+#: ADVISORY — it reports on a judgement a human then makes, and gating on a heuristic would get it
+#: argued with rather than obeyed.
+UNGATED_CHECKERS = {
     "check_fr_coverage.py",  # `check_fr_coverage.py <STORY>` — FR ledger closure (TECH-025)
     "check_story_preconditions.py",  # `<STORY>` — prerequisites green in code, not documents
+    # Advisory (TECH-017): names the facts a topic entry would lose if trimmed, so R-DEPTH's
+    # remedy stays redistribution rather than deletion. Its notion of a "fact" is a heuristic.
+    "check_entry_orphans.py",
 }
 
 
@@ -133,6 +140,9 @@ EXPECTED: dict[str, dict[str, str]] = {
         # story ID on purpose -- a story-scoped check only fires when someone remembers to pass the
         # story, which is exactly how INT-US-25 stayed wrong.
         "proof_tier": "all",
+        # R-DEPTH: `R-LENGTH` capped the roadmap, its rationale pushed detail into the topic doc,
+        # and nothing checked that level -- 33.5% of topic lines over 200, longest 5624.
+        "entry_depth": "all",
     },
 }
 
@@ -188,6 +198,7 @@ class TestDocTrackIsSeparate:
             "skill_sync",
             "skill_references",
             "proof_tier",
+            "entry_depth",
         }
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:
@@ -275,21 +286,21 @@ class TestGateValidation:
         on_disk = {p.name for p in (REPO_ROOT / "scripts").glob("check_*.py")}
         wired = {c.script for c in q.CHECKS.values() if c.script}
 
-        unwired = on_disk - wired - STORY_SCOPED_CHECKERS
+        unwired = on_disk - wired - UNGATED_CHECKERS
 
         assert not unwired, (
             "checker(s) on disk that no gate runs: " + ", ".join(sorted(unwired)) + ". "
             "Register it in quality.py's CHECKS and MATRIX, or add it to "
-            "STORY_SCOPED_CHECKERS in this test with the reason."
+            "UNGATED_CHECKERS in this test with the reason."
         )
 
-    def test_the_story_scoped_allowlist_is_not_stale(self, q: ModuleType) -> None:
+    def test_the_ungated_allowlist_is_not_stale(self, q: ModuleType) -> None:
         """An allowlisted checker that no longer exists would hide a real gap behind a stale name."""
         del q
         on_disk = {p.name for p in (REPO_ROOT / "scripts").glob("check_*.py")}
 
-        assert on_disk >= STORY_SCOPED_CHECKERS, (
-            f"allowlisted but absent: {sorted(STORY_SCOPED_CHECKERS - on_disk)}"
+        assert on_disk >= UNGATED_CHECKERS, (
+            f"allowlisted but absent: {sorted(UNGATED_CHECKERS - on_disk)}"
         )
 
 

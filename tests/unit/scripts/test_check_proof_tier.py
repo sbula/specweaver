@@ -179,3 +179,42 @@ class TestMain:
         """A frozen violation with no owner is a suppression, not a ratchet."""
         for key, entry in mod.load_baseline().items():
             assert entry.get("reason"), f"{key} is frozen with no reason"
+
+
+LONG_CONTRACT = """\
+## Base Story Contract (`INT-US-98`)
+* **Status:** ✅ Complete
+* **Integration Description:** Something.
+* **Verifiable Proof:**
+  * `tests/unit/a/test_a.py` — a unit test listed first, and padded out so that any
+    character-window parser gives up before reaching the line that follows it. {pad}
+  * `tests/e2e/b/test_b_e2e.py` — the integration-tier proof, deliberately last.
+* **Notes:** the field after the proof, which is where the read must stop.
+
+## Sub-Story Add-Ons
+""".replace("{pad}", "x" * 900)
+
+
+class TestFieldBoundedProof:
+    """The proof field is read to its own end, not for a fixed number of characters.
+
+    `check_story_preconditions.py` read `(.{0,600})` and `check_proof_tier.py` `(.{0,900})`. A
+    character window standing in for a field means a LONGER, more thorough declaration is verified
+    LESS than a short one — and both gates print PASS either way. Found 2026-08-13 when
+    `INT-US-25`'s 1886-character proof line was verified 3 files of 9, 29 tests of 75.
+    """
+
+    def test_a_late_path_is_still_seen(self, mod: ModuleType) -> None:
+        """The e2e path sits past 900 characters. A window parser calls this contract unit-only."""
+        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98_integration.md"))
+
+        assert "tests/e2e/b/test_b_e2e.py" in entries[0].proof
+
+    def test_the_verdict_is_therefore_correct(self, mod: ModuleType) -> None:
+        assert mod.violations_in(LONG_CONTRACT, Path("US-98_integration.md")) == []
+
+    def test_the_read_stops_at_the_next_field(self, mod: ModuleType) -> None:
+        """Unbounded is not the fix either — it would swallow the rest of the document."""
+        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98_integration.md"))
+
+        assert "the field after the proof" not in entries[0].proof

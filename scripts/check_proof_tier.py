@@ -51,6 +51,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -58,6 +59,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+#: Reading the proof field is shared with `check_story_preconditions.py` — both used a character
+#: window and both under-verified because of it. `TECH-017`; see `_proof_field.py`.
+_spec = importlib.util.spec_from_file_location(
+    "_proof_field", Path(__file__).parent / "_proof_field.py"
+)
+assert _spec is not None and _spec.loader is not None
+_proof_field = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_proof_field)
+proof_segment = _proof_field.proof_segment
 CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
 BASELINE = REPO_ROOT / "scripts" / "baselines" / "proof_tier.json"
 
@@ -72,7 +83,6 @@ NO_TEST_FILE = "no_test_file"
 _ENTRY = re.compile(r"^(?:##\s+(?P<h>.*?)|\*\s+\*\*(?P<b>.*?))\(`(?P<id>INT-US-[\w\-]+)`\)", re.M)
 
 _STATUS = re.compile(r"\*\*Status:\*\*\s*(\S+)")
-_PROOF = re.compile(r"\*\*Verifiable Proof[^:]*:\*\*(.{0,900})", re.S)
 _TEST_FILE = re.compile(r"tests/[\w/]+\.py")
 
 
@@ -122,7 +132,7 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         block = text[m.end() : end]
         status = _STATUS.search(block)
-        proof = _PROOF.search(block)
+        proof = proof_segment(block)
         raw_title = (m.group("h") or m.group("b") or "").strip()
         title = raw_title.removeprefix("Base Story Contract").strip("* ").strip() or "Base Contract"
         entries.append(
@@ -131,7 +141,7 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
                 entry_id=m.group("id"),
                 title=title,
                 delivered=bool(status and "✅" in status.group(1)),
-                proof=proof.group(1) if proof else "",
+                proof=proof or "",
             )
         )
     return entries

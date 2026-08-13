@@ -30,12 +30,23 @@ a habit.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+#: Shared with `check_proof_tier.py`: this gate read `(.{0,600})` of the proof field, so a long
+#: declaration was verified less than a short one and it still printed PASS. `TECH-017`.
+_spec = importlib.util.spec_from_file_location(
+    "_proof_field", Path(__file__).parent / "_proof_field.py"
+)
+assert _spec is not None and _spec.loader is not None
+_proof_field = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_proof_field)
+proof_segment = _proof_field.proof_segment
 ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
 CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
 PIPELINES = REPO_ROOT / "src" / "specweaver" / "workflows" / "pipelines"
@@ -132,12 +143,11 @@ def _check_proof_in_roadmap_block(story_id: str, report: Report, *, fast: bool) 
         report.fail(f"no roadmap section found for {story_id}")
         return []
 
-    m = re.search(r"\*\*Verifiable Proof[^:]*:\*\*(.{0,600})", block, re.S)
-    if not m:
+    segment = proof_segment(block)
+    if segment is None:
         report.warn(f"{story_id}: no 'Verifiable Proof' field in its roadmap section")
         return []
 
-    segment = m.group(1)
     declared = [REPO_ROOT / p for p in re.findall(r"tests/[\w/]+\.py", segment)]
     if not declared:
         report.warn(f"{story_id}: Verifiable Proof field names no test path")
@@ -178,12 +188,11 @@ def _check_int_us_contract_and_proof(story_id: str, report: Report, *, fast: boo
     report.ok(f"contract document present: {contract.name}")
 
     text = contract.read_text(encoding="utf-8", errors="replace")
-    m = re.search(r"\*\*Verifiable Proof[^:]*:\*\*(.{0,600})", text, re.S)
-    if not m:
+    segment = proof_segment(text)
+    if segment is None:
         report.fail(f"{contract.name} has no 'Verifiable Proof' field")
         return []
 
-    segment = m.group(1)
     declared = [REPO_ROOT / p for p in re.findall(r"tests/[\w/]+\.py", segment)]
     block = _story_block(story_id) or ""
     # NB: the roadmap wraps the marker in backticks — `✅` **INT-US-25:** — so the backtick must be

@@ -144,6 +144,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # that would have caught INT-US-25's `✅`-with-no-proof from the day it was written, and never
     # fired because it only runs when a human passes that story ID. A sweep cannot be forgotten.
     "proof_tier": {"doc": "all"},
+    # R-DEPTH. `R-LENGTH` capped the roadmap and its rationale pushed the detail into the topic
+    # doc, which nothing then checked -- 33.5% of topic lines over 200 chars, longest 5624.
+    # Ratcheted per file; the remedy is redistribution into the design doc, not deletion.
+    "entry_depth": {"doc": "all"},
 }
 
 
@@ -255,6 +259,13 @@ CHECKS: dict[str, Check] = {
         _r._whole_repo("check_skill_references.py"),
         ignores_paths=True,
         script="check_skill_references.py",
+    ),
+    "entry_depth": Check(
+        "entry_depth",
+        ("docs",),
+        _r._whole_repo("_entry_depth.py"),
+        ignores_paths=True,
+        script="_entry_depth.py",
     ),
     "proof_tier": Check(
         "proof_tier",
