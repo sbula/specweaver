@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-048
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **DELIVERED 2026-08-13.** Approaches 1 and 2; approach 3 deliberately not taken.
 - **Origin**: 2026-08-13, from `docs/analysis/test_coverage_audit_2026-08-13.md`. The second of the
   two systemic causes it isolated; the first is `TECH-047`.
 
@@ -44,7 +44,7 @@ every new design format variation silently removes a capability from the gate's 
 reports that the reach shrank. `TECH-047` is about to make this gate sweep everything — a sweep
 whose blind spots are invisible is worse than one that admits them.
 
-## Candidate Approaches (not yet designed)
+## Candidate Approaches — 1 and 2 taken
 
 1. **Split the outcome.** `no requirements stated` and `requirements present but unparseable`
    become different exits with different messages. The second should be a hard failure: the parser
@@ -60,7 +60,7 @@ whose blind spots are invisible is worse than one that admits them.
 
 (1) is the load-bearing one. (2) without (1) fixes two instances and leaves the blindness.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals — all held
 
 - Adding FR tables to delivered capability designs. That is specification archaeology on finished
   work and needs its own decision; `finished-stories-immutable` applies.
@@ -68,8 +68,45 @@ whose blind spots are invisible is worse than one that admits them.
 - The sweep itself — `TECH-047`.
 - The 40 capabilities the gate CAN run on and fails — verification work, `TECH-017`'s matrix.
 
-## Next Step
+## Delivery, 2026-08-13
 
-Run the `specweaver-design` skill against this stub before any implementation. Start by reading
-`C-SENS-02` and `D-SENS-03`'s FR tables and establishing whether the parser or the design is wrong;
-the answer decides whether this is a checker fix or a convention fix.
+### The deciding question: the parser was wrong, not the designs
+
+`specweaver-design` phase-3 Section A requires each FR to be **numbered, unambiguous, testable and
+structured** — and says **nothing about a table**. `C-SENS-02` and `D-SENS-03` declare theirs as
+bullets (`- **FR-1:** ...`), which is conforming. The table-only rule was invented by the parser.
+
+So this was a checker fix. The table-only rule was not arbitrary, though: it stopped prose like
+`- **FRs**: [FR-1, FR-2]` in a sub-feature breakdown from inventing ledger entries a story can
+never satisfy. That protection is preserved by requiring the id to be the **subject** of the line —
+directly after the marker, followed by a colon — rather than merely present on it.
+
+### Approach 1, the load-bearing half: the outcome is split
+
+`no FR rows parsed` collapsed two situations calling for opposite responses. They are now separate
+messages: **states no Functional Requirements** (the design needs work) and **mentions FR-N but
+cannot read them as declarations** (the parser or the design's shape needs work, and *the gate's
+reach has shrunk silently*). Both still block — reporting zero FRs as full coverage would be a
+vacuous pass either way.
+
+### A false positive found by measuring instead of trusting
+
+Running the new message across all 61 capability designs, its only two hits were **both wrong**:
+`B-EXEC-04` cites `C-EXEC-02 FR-11` and `C-FLOW-12` cites ``INT-US-21's `FR-9(a)` `` — neighbours'
+requirements, correctly referenced. Telling a reader to go fix a parser bug that is not there is
+exactly the noise that gets a checker ignored. Foreign references are now excluded, and a design
+citing a neighbour reads as the stub it is.
+
+### Result
+
+| | before | after |
+|---|---|---|
+| gate cannot run | 5 | **0 unreadable**, 14 "no requirements" (all undelivered stubs) |
+| `BLOCKED` | 43 | 45 — `C-SENS-02` and `D-SENS-03` moved here, which is an actionable verdict |
+
+### Approach 3 deliberately not taken
+
+Requiring an FR table in a capability design would need to tell a **stub** from a **delivered**
+capability: all 14 remaining "no requirements" are stubs for unbuilt work, which legitimately have
+none. That distinction is `TECH-047`'s — it is the ticket about sweeping *delivered* work — and
+building it here would duplicate the harder half of it.

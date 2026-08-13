@@ -45,7 +45,20 @@ FEATURES_ROOT = REPO_ROOT / "docs" / "roadmap" / "features"
 TESTS_ROOT = REPO_ROOT / "tests"
 
 #: An FR row in the design's Functional Requirements table: `| FR-7 | ... |`.
-_FR_TABLE_ROW = re.compile(r"^\s*\|\s*\**(FR-\d+)\**\s*\|", re.MULTILINE)
+#: An FR **declaration**, in either shape a design actually uses: a table row, or a bullet whose
+#: subject is the id. `TECH-048`: the table-only rule was invented by this parser — `specweaver-
+#: design` phase-3 Section A requires each FR to be numbered, unambiguous, testable and structured,
+#: and says nothing about a table. `C-SENS-02` and `D-SENS-03` declare theirs as bullets and were
+#: both reported as `no FR rows parsed`, which reads exactly like a design with no requirements.
+#:
+#: The id must be the SUBJECT of the line — directly after the marker, followed by a colon. That is
+#: what preserves the protection the table-only rule was really carrying: a sub-feature breakdown
+#: line such as `- **FRs**: [FR-1, FR-2]`, or prose like `see FR-5's correction`, must not invent
+#: ledger entries the story can never satisfy.
+_FR_DECLARATION = re.compile(
+    r"^\s*(?:\|\s*\**(?P<row>FR-\d+)\**\s*\||[-*+]\s+\**(?P<bullet>FR-\d+)\**\s*:)",
+    re.MULTILINE,
+)
 
 #: A bare FR mention anywhere in free text. Uppercase only — `fr-1` in prose is not a citation.
 _FR_MENTION = re.compile(r"(?<![\w-])(FR-\d+)(?![\w-])")
@@ -91,15 +104,16 @@ def normalize_story_id(raw: str) -> str:
 
 
 def parse_design_frs(text: str) -> list[str]:
-    """FR ids from the design's FR *table*, in document order, deduplicated.
+    """FR ids **declared** by the design, in document order, deduplicated.
 
-    Only table rows count. Prose such as ``**FRs**: [FR-1, FR-2]`` in the sub-feature breakdown, or
-    ``see FR-5's correction``, must not invent ledger entries — otherwise the ledger grows by
-    citation and can never be satisfied.
+    A declaration is a table row or a bullet whose subject is the id; a mention is neither. Prose
+    such as ``**FRs**: [FR-1, FR-2]`` in the sub-feature breakdown, or ``see FR-5's correction``,
+    must not invent ledger entries — otherwise the ledger grows by citation and can never be
+    satisfied.
     """
     seen: list[str] = []
-    for match in _FR_TABLE_ROW.finditer(text):
-        fr = match.group(1)
+    for match in _FR_DECLARATION.finditer(text):
+        fr = match.group("row") or match.group("bullet")
         if fr not in seen:
             seen.append(fr)
     return seen
@@ -181,15 +195,60 @@ def declared_frs(features_root: Path, story: str) -> tuple[list[str], str | None
     if text is None:
         return [], f"design document is unreadable: {design}"
 
-    frs = parse_design_frs(text)
-    if not frs:
-        return [], (
-            f"no FR rows parsed from {design.name}. Either the design has no Functional "
-            "Requirements table, or its shape changed and this parser needs updating. Reporting "
-            "zero FRs as full coverage would be a vacuous pass, so this blocks."
-        )
+    frs, error = declared_frs_from_text(text, design.name)
+    if error is not None:
+        return [], error
     print(f"  {len(frs)} FR(s) declared in {design.name}: {', '.join(frs)}")
     return frs, None
+
+
+#: An FR belonging to ANOTHER story: `C-EXEC-02 FR-11`, or ``INT-US-21's `FR-9(a)` ``. A design that
+#: cites a neighbour's requirement is doing the right thing, and saying so must not read as a
+#: defect. Caught by running the "cannot read" message across all 61 capabilities instead of
+#: trusting it — both of its only two hits were this, pointing readers at a parser bug that is not
+#: there. The window is short so an unrelated id earlier in a sentence cannot adopt an FR.
+_FOREIGN_FR = re.compile(
+    r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?['\u2019]?s?\s*`?\s*(FR-\d+)"
+)
+
+
+def _own_fr_mentions(text: str) -> set[str]:
+    """FR ids mentioned that are not explicitly another story's."""
+    return collect_frs(text) - set(_FOREIGN_FR.findall(text))
+
+
+def declared_frs_from_text(text: str, name: str) -> tuple[list[str], str | None]:
+    """Declared FRs, or an error that says WHICH kind of nothing was found. `TECH-048`.
+
+    Two situations used to share one message, and they call for opposite responses:
+
+    * the design **states no requirements** — then there is nothing to verify against, and the
+      design is what needs work;
+    * the design **states requirements this parser cannot read** — then the gate's reach has
+      silently shrunk, and the parser (or the design's shape) is what needs work.
+
+    From the outside those were indistinguishable, which is the more dangerous of the two: every
+    unfamiliar design format removes a capability from coverage while reporting the same words as a
+    design that genuinely promised nothing. Reporting zero FRs as full coverage would be a vacuous
+    pass either way, so both still block.
+    """
+    frs = parse_design_frs(text)
+    if frs:
+        return frs, None
+    mentioned = sorted(_own_fr_mentions(text), key=lambda fr: int(fr.split("-")[1]))
+    if mentioned:
+        return [], (
+            f"{name} mentions {', '.join(mentioned)} but this parser cannot read them as "
+            "declarations. A declaration is a table row `| FR-1 | ... |` or a bullet whose subject "
+            "is the id, `- **FR-1:** ...`. Either the design's shape is new and the parser needs "
+            "updating, or the requirements are stated in prose and should be declared. This is NOT "
+            "the same as a design with no requirements — the gate's reach has shrunk silently."
+        )
+    return [], (
+        f"{name} states no Functional Requirements. There is nothing to verify the implementation "
+        "against, so no coverage claim about it can be true. Reporting zero FRs as full coverage "
+        "would be a vacuous pass, so this blocks."
+    )
 
 
 def planned_frs(features_root: Path, story: str) -> set[str]:

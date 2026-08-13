@@ -170,14 +170,10 @@ critical for long-term project viability.
   > ("nothing in scope" for a session). The hard part is not the sweep — it is that turning it on
   > produces 40 failures, and a ratchet nobody can act on says "40 unverified is fine".
 
-* **`TECH-048` 🔴: A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"**
-  > [Description](../features/topic_07_technical_debt/TECH-048/TECH-048_design.md) |
-  > _(2026-08-13 — same audit.)_ | `no FR rows parsed` collapses two different situations: a design
-  > that states no requirements, and one whose requirements the parser **cannot read**.
-  > `C-SENS-02` and `D-SENS-03` are the latter — from the outside indistinguishable from having
-  > nothing to check. Small now; the failure mode scales, because every new design format silently
-  > removes a capability from the gate's reach and nothing reports the reach shrinking. Must not
-  > apply to `TECH` tickets, whose stub has no FR table by design.
+* **`TECH-048` 🟢: A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"**
+  > [Description](../features/topic_07_technical_debt/TECH-048/TECH-048_design.md) | _(2026-08-13 — from the coverage audit.)_ | `no FR rows parsed` collapsed two situations: a design stating no
+  > requirements, and one whose requirements the parser could not read. **DELIVERED 2026-08-13:** outcomes split, and the parser widened — the table-only rule was its own invention, since the design
+  > skill mandates numbered testable FRs and no table. Unreadable designs: 5 → 0.
 
 * **`TECH-046` 🔴: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
   > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) |

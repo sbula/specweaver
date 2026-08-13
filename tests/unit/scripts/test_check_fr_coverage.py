@@ -305,3 +305,158 @@ class TestMain:
             )
             == 0
         )
+
+
+class TestParseDesignFrsBulletForm:
+    """`TECH-048`: an FR declared as a bullet counts. The parser required a table; nothing else did.
+
+    `specweaver-design` phase-3 Section A mandates that each FR be numbered, unambiguous, testable
+    and structured (Actor + Action + Outcome). It says **nothing about a table**. So `C-SENS-02` and
+    `D-SENS-03`, which declare their FRs as bullets, are conforming — and the checker reported
+    `no FR rows parsed` for both, which from the outside is indistinguishable from a design that
+    states no requirements at all.
+
+    The table-only rule was not arbitrary: it kept prose like `**FRs**: [FR-1, FR-2]` in a
+    sub-feature breakdown from inventing ledger entries the story can never satisfy. That
+    protection is preserved by requiring the id to be the SUBJECT of the line — `FR-N` directly
+    after the bullet marker, followed by a colon — rather than merely present on it.
+    """
+
+    def test_a_bold_bullet_declaration_counts(self, mod: ModuleType) -> None:
+        text = "- **FR-1:** The Engine must enforce structural exclusions.\n"
+
+        assert mod.parse_design_frs(text) == ["FR-1"]
+
+    def test_the_asterisk_bullet_form_counts(self, mod: ModuleType) -> None:
+        """`D-SENS-03` uses `*   **FR-1:**` — a different marker and padding."""
+        text = "*   **FR-2:** The system SHALL parse C and C++ source files.\n"
+
+        assert mod.parse_design_frs(text) == ["FR-2"]
+
+    def test_table_rows_still_count(self, mod: ModuleType) -> None:
+        text = "| FR-1 | Execution | System | Parses a spec |\n"
+
+        assert mod.parse_design_frs(text) == ["FR-1"]
+
+    def test_a_plural_reference_does_not_declare(self, mod: ModuleType) -> None:
+        """The protection the table-only rule was carrying: a breakdown line is not a declaration."""
+        text = "- **FRs**: [FR-1, FR-2, FR-3]\n"
+
+        assert mod.parse_design_frs(text) == []
+
+    def test_a_prose_reference_does_not_declare(self, mod: ModuleType) -> None:
+        text = "- See FR-5's correction, which supersedes FR-2.\n"
+
+        assert mod.parse_design_frs(text) == []
+
+    def test_declaration_and_table_forms_deduplicate(self, mod: ModuleType) -> None:
+        text = "- **FR-1:** Stated as a bullet.\n\n| FR-1 | and again as a row |\n"
+
+        assert mod.parse_design_frs(text) == ["FR-1"]
+
+    def test_document_order_is_preserved_across_forms(self, mod: ModuleType) -> None:
+        text = "- **FR-2:** second.\n| FR-1 | first by number, second in the document |\n"
+
+        assert mod.parse_design_frs(text) == ["FR-2", "FR-1"]
+
+    def test_the_two_real_designs_now_parse(self, mod: ModuleType) -> None:
+        """The live cases. Both were reported as having no requirements at all."""
+        import pathlib
+
+        root = (
+            pathlib.Path(__file__).resolve().parents[3] / "docs/roadmap/features/topic_02_sensors"
+        )
+        c = mod.parse_design_frs(
+            (root / "C-SENS-02/C-SENS-02_design.md").read_text(encoding="utf-8")
+        )
+        d = mod.parse_design_frs(
+            (root / "D-SENS-03/D-SENS-03_design.md").read_text(encoding="utf-8")
+        )
+
+        assert c == ["FR-1", "FR-2", "FR-3", "FR-4", "FR-5"]
+        assert len(d) >= 6
+
+
+class TestDeclaredFrsFromText:
+    """`TECH-048`: "no FRs declared" and "FRs present but unreadable" are different failures.
+
+    Collapsed into one message they are indistinguishable from outside — and the second is the one
+    that matters, because it means the gate's reach silently shrank. Every new design format that
+    the parser does not know removes a capability from coverage while reporting the same words as a
+    design that genuinely promised nothing.
+    """
+
+    def test_a_design_with_no_requirements_says_so(self, mod: ModuleType) -> None:
+        frs, err = mod.declared_frs_from_text("# Design\n\nProse only.\n", "X_design.md")
+
+        assert frs == []
+        assert "states no Functional Requirements" in err
+
+    def test_a_design_with_unreadable_requirements_says_that_instead(self, mod: ModuleType) -> None:
+        """`FR-` ids are present, so something was promised — the parser just cannot read it."""
+        text = "# Design\n\nRequirements: FR-1 and FR-2 are handled inline in the prose.\n"
+
+        frs, err = mod.declared_frs_from_text(text, "X_design.md")
+
+        assert frs == []
+        assert "cannot read" in err
+        assert "FR-1" in err
+
+    def test_the_unreadable_message_names_the_ids_it_saw(self, mod: ModuleType) -> None:
+        """So a reader can check the design against the parser without opening both."""
+        text = "Mentions FR-3 and FR-7 without declaring either.\n"
+
+        _, err = mod.declared_frs_from_text(text, "X_design.md")
+
+        assert "FR-3" in err and "FR-7" in err
+
+    def test_a_readable_design_reports_no_error(self, mod: ModuleType) -> None:
+        frs, err = mod.declared_frs_from_text("- **FR-1:** Something testable.\n", "X_design.md")
+
+        assert frs == ["FR-1"]
+        assert err is None
+
+
+class TestOwnFrMentions:
+    """An FR belonging to ANOTHER story is a reference, not an unreadable declaration.
+
+    `TECH-048`, caught by running the new message across all 61 capabilities rather than trusting
+    it: `B-EXEC-04` cites `C-EXEC-02 FR-11` and `C-FLOW-12` cites `INT-US-21's FR-9(a)`. Both are
+    stubs with no requirements of their own, and both were reported as "cannot read them as
+    declarations" — pointing a reader at a parser bug that does not exist.
+
+    A design that references a neighbour's requirement is doing the right thing; saying so must not
+    look like a defect.
+    """
+
+    def test_a_foreign_fr_does_not_imply_unreadable(self, mod: ModuleType) -> None:
+        text = "`C-EXEC-02 FR-11` promises that a fork-bombing script is capped by default.\n"
+
+        frs, err = mod.declared_frs_from_text(text, "B-EXEC-04_design.md")
+
+        assert frs == []
+        assert "states no Functional Requirements" in err
+
+    def test_the_possessive_form_is_also_foreign(self, mod: ModuleType) -> None:
+        text = "INT-US-21's `FR-9(a)` attempted exactly that and was descoped.\n"
+
+        _, err = mod.declared_frs_from_text(text, "C-FLOW-12_design.md")
+
+        assert "states no Functional Requirements" in err
+
+    def test_an_unqualified_mention_is_still_unreadable(self, mod: ModuleType) -> None:
+        """The real case must survive: an unowned `FR-1` in prose is this design's, and unreadable."""
+        text = "Requirements: FR-1 and FR-2 are handled inline in the prose.\n"
+
+        _, err = mod.declared_frs_from_text(text, "X_design.md")
+
+        assert "cannot read" in err
+
+    def test_a_design_with_both_reports_only_its_own(self, mod: ModuleType) -> None:
+        text = "Builds on `C-EXEC-02 FR-11`. Our own FR-4 is described in prose below.\n"
+
+        _, err = mod.declared_frs_from_text(text, "X_design.md")
+
+        assert "cannot read" in err
+        assert "FR-4" in err
+        assert "FR-11" not in err
