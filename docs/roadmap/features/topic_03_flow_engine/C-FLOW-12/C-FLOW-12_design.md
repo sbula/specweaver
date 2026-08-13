@@ -24,6 +24,23 @@ What is missing:
   sub-run's execution posture. The base guarantees the *data* contract only; escalation is
   `C-EXEC-07` / `INT-US-09-SF06`.
 
+## Functional Requirements
+
+Added 2026-08-13 (`TECH-046`). `C-INTL-01`'s `FR-3` — *"Component Fan-out: automatically spawns a
+sub-pipeline iteration (generate Component Spec) for each approved component; N individual L3
+pipelines are launched"* — was descoped there because it was never built and the work belongs here.
+
+**That descope is only honest if the requirement is re-stated at its new owner.** It was not: this
+design described the work in prose and declared no requirements, so deleting the row would have
+turned a testable claim into a mention. `FR-1` below is that requirement, carried across.
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Component Fan-out | System | Spawn a sub-run per approved component in the `DecompositionPlan` | One sub-run per node, launched from the persisted plan rather than re-derived. |
+| FR-2 | Per-component spec synthesis | System | Turn each never-overwritten stub component spec into a real one | A stub becomes a spec its sub-run can act on; a hand-authored spec is left untouched. |
+| FR-3 | Race-hardened fan-out | System | Give each concurrent sub-run its own `RunContext` | Concurrent sub-runs cannot corrupt each other's state or mis-attribute telemetry (`TECH-014`'s fix, exercised for the first time). |
+| FR-4 | DAL-driven isolation | System | Apply each component's `proposed_dal` to its sub-run's execution posture | A component rated at or above the escalation threshold runs isolated; below it, on host. |
+
 ## Seams the base already froze
 
 These are defined and tested as they stand, so this capability builds on them rather than

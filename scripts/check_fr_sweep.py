@@ -41,12 +41,29 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FEATURES = REPO_ROOT / "docs" / "roadmap" / "features"
 BASELINE = REPO_ROOT / "scripts" / "baselines" / "fr_uncited.json"
+ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
+
+#: A story counts only once it is DELIVERED. An unbuilt capability's requirements are correctly
+#: uncited — there is nothing to test yet — so counting them would punish the one thing this repo
+#: most wants: writing requirements down before building. Found immediately: adding the fan-out
+#: requirement to `C-FLOW-12` (unbuilt, and the new owner of `C-INTL-01`'s descoped `FR-3`) raised
+#: the total and the ratchet blocked the commit that improved the specification.
+_DELIVERED = re.compile(r"`(?:✅|🟢)`?\s*\*\*([A-Z][\w-]*-\d+(?:-SF\d+)?):")
+
+
+def delivered_stories() -> set[str]:
+    """Story ids the master roadmap marks delivered."""
+    if not ROADMAP.is_file():
+        return set()
+    return set(_DELIVERED.findall(ROADMAP.read_text(encoding="utf-8", errors="replace")))
+
 
 _spec = importlib.util.spec_from_file_location(
     "check_fr_coverage", Path(__file__).parent / "check_fr_coverage.py"
@@ -71,10 +88,13 @@ def uncited(story: str) -> tuple[int, int]:
 
 
 def census() -> dict[str, int]:
-    """`story -> uncited FR count`, omitting stories with nothing uncited."""
+    """`story -> uncited FR count`, for DELIVERED stories with something uncited."""
+    delivered = delivered_stories()
     found: dict[str, int] = {}
     for design in sorted(FEATURES.rglob("*_design.md")):
         story = design.parent.name
+        if story not in delivered:
+            continue
         count, _ = uncited(story)
         if count:
             found[story] = count

@@ -98,3 +98,24 @@ model — the single-pass journey costs exactly one LLM call and recursion multi
 
 Its design also fixes its own closure bar up front, because shipping without one is why this ticket
 exists: **a recursion capability whose recursion is untested is the exact defect being corrected.**
+
+### Correction, same day: a descope is only honest if the requirement is re-stated
+
+The first version of this decision said `FR-3`'s scope "moved to `C-FLOW-12`" and deleted the row.
+That was asserted, not verified. **`C-FLOW-12` declared no Functional Requirements at all** — its
+design is Problem Statement / Seams / Non-Goals / Sequencing, describing per-component spec
+synthesis and race-hardened fan-out in prose only.
+
+So the descope had converted a **testable stated requirement** into a **prose mention**. Nothing
+would have failed if the fan-out were never built; there was no longer a requirement to be uncited.
+That is a traceability regression wearing the appearance of a tidy hand-off.
+
+`C-FLOW-12` now declares four FRs, `FR-1` being `C-INTL-01`'s `FR-3` carried across verbatim in
+substance. The rule this establishes: **deleting an FR row is legitimate when the work is genuinely
+out of scope, or when the receiving capability states it as a requirement — never merely because
+another document mentions the subject.**
+
+It also exposed a flaw in `TECH-047`'s ratchet, fixed the same day. It counted uncited FRs across
+*every* design, so adding these four to an unbuilt capability raised the total and blocked the
+commit — **punishing the act of writing requirements down before building**. The sweep now counts
+delivered stories only; an unbuilt capability's requirements are correctly uncited.
