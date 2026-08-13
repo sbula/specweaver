@@ -6,11 +6,9 @@ This document tracks all capabilities related to the User Interface, visual dash
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)<br>
   > CLI Scaffold
 * **`E-UI-02` ✅: Web Dashboard** (Legacy: 3.8 / 4.10)<br>
-  > _(new)_ | Lightweight FastAPI + Jinja2/HTMX dashboard served by `sw serve`. Views: project list, pipeline status, pending HITL reviews with approve/reject buttons, review verdict display, remarks
-  > text area. Mobile-responsive — works on tablet (the "train" scenario). No heavy JS framework; server-rendered HTML. **Complete:** 3142 tests. _Future: after 3.12a, dashboard gains cost-override
-  > editing via existing REST endpoints — zero new backend code._ SpecWeaver as a daemon with REST/WebSocket API and browser-based UI. Includes **per-project pipeline storage** (layer 2): SQLite
-  > `pipelines` table, CRUD via `sw pipeline` CLI + REST API. _(See also: [A2UI](https://github.com/google/A2UI) declarative component catalog for agent-generated UI, Phase 3.19 structured output
-  > schemas as foundation — ORIGINS.md § A2UI)_
+  > [Description](../features/topic_01_ui_glass/E-UI-02/E-UI-02_design.md) | _(new)_ | Lightweight FastAPI + Jinja2/HTMX dashboard served by `sw serve`: project list, pipeline status, pending HITL
+  > reviews with approve/reject, verdict display. Mobile-responsive for the tablet "train" scenario; server-rendered, no heavy JS framework. Includes per-project pipeline storage. **Complete:** 3142
+  > tests.
 * **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37)<br>
   > _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring
 * **`E-UI-04` 🔜: CLI Command Arch Separation** (Legacy: Backlog)<br>

@@ -38,13 +38,9 @@ This document tracks all capabilities related to process isolation, execution bo
   > steps runs inside one ephemeral git worktree with a single end-of-run reconcile, instead of `D-EXEC-02`'s per-step cycle. **DAL-C rather than DAL-D** because it accumulates a whole run's untrusted
   > mutations behind a single authorization gate — the `allowed_paths` strip-merge is the sole decision on what reaches the real repo.
 * **`C-EXEC-07` 🔜: DAL-Escalated Isolation for Pipeline Runs**<br>
-  > _(new; minted 2026-07-24, origin: INT-US-24 SF-03 intake — "would a PO be happy we don't use DAL here?")_ | Extends the shipped INT-US-03 AD-8 escalation (`dal_auto_escalate` in
-  > `apply_session_policy`) from the `sw implement` composition root to the **`sw run`/`sw resume`** roots, so ANY journey that executes generated code (`scenario_integration`, `new_feature`)
-  > auto-escalates into `C-EXEC-06` session isolation at/above `auto_isolate_min_dal` — closing the asymmetry where the tool's most untrusted execution surface (LLM-derived scenario tests over
-  > LLM-generated code) has the weakest default. **Why this is capability work, not a one-line flip:** `_derive_allowed_paths` is implement-shaped (`[src/{stem}.py, tests/test_{stem}.py]`), so under
-  > session isolation the scenario chain's artifacts (`contracts/`, `scenarios/definitions/`, `scenarios/generated/`) would be silently dropped by the reconcile authorization gate; C-EXEC-07 owns
-  > **pipeline-aware allow-list derivation**, dual-fan-out-in-one-worktree semantics, and a proof that includes a real `scenario_integration` run. DAL-C for the same reason as `C-EXEC-06` (it widens
-  > what the single reconcile gate authorizes). Supersedes AD-8's per-caller opt-out via a new recorded decision — `INT-US-03`'s finished docs remain untouched. Integrated by `INT-US-09-SF06`.
+  > [Description](../features/topic_06_sandbox/C-EXEC-07/C-EXEC-07_design.md) | _(2026-07-24 — minted from INT-US-24 SF-03 intake.)_ | Extends the shipped `AD-8` escalation from the `sw implement`
+  > root to `sw run`/`sw resume`, so any journey executing generated code auto-escalates into `C-EXEC-06` session isolation. Closes the asymmetry where the most untrusted surface has the weakest
+  > default. **Not a one-line flip:** `_derive_allowed_paths` is implement-shaped, so scenario artifacts would be silently dropped by the reconcile gate. Integrated by `INT-US-09-SF06`.
 
 
 ## DAL-B: High-Assurance
