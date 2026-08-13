@@ -99,11 +99,10 @@ class CCodeStructure(FunctionBasedParser):
             return node.child_by_field_name("body")
         return node
 
-    def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-        new_code_bytes = new_code.encode("utf-8")
-        return code_bytes[:start_byte] + new_code_bytes + code_bytes[end_byte:]
+    def _replacement_bytes(self, new_code: str, node: typing.Any) -> bytes:
+        """Verbatim: brace blocks carry their own indentation."""
+        del node
+        return new_code.encode("utf-8")
 
     def _format_body_injection(
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int

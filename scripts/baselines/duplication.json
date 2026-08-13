@@ -119,11 +119,6 @@
     "first": "src/specweaver/core/flow/handlers/generation.py:234",
     "second": "src/specweaver/core/flow/handlers/generation.py:135"
   },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/generation.py @5538c6a43d6b": {
-    "lines": 12,
-    "first": "src/specweaver/core/flow/handlers/generation.py:298",
-    "second": "src/specweaver/core/flow/handlers/generation.py:199"
-  },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/generation.py @f4112bcd01c2": {
     "lines": 8,
     "first": "src/specweaver/core/flow/handlers/generation.py:277",
@@ -131,7 +126,7 @@
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @01db673bf237": {
     "lines": 12,
-    "first": "src/specweaver/core/flow/handlers/generation.py:330",
+    "first": "src/specweaver/core/flow/handlers/generation.py:334",
     "second": "src/specweaver/core/flow/handlers/review.py:33"
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @0c499027e118": {
@@ -141,7 +136,7 @@
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @35aa7bcb5f19": {
     "lines": 9,
-    "first": "src/specweaver/core/flow/handlers/generation.py:341",
+    "first": "src/specweaver/core/flow/handlers/generation.py:345",
     "second": "src/specweaver/core/flow/handlers/review.py:42"
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @a95082fd55df": {
@@ -376,12 +371,12 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/java/runner.py @1672fe6890f5": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:210",
-    "second": "src/specweaver/sandbox/language/core/java/runner.py:176"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:208",
+    "second": "src/specweaver/sandbox/language/core/java/runner.py:174"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @1ccf828f6eac": {
     "lines": 11,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:245",
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:243",
     "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:212"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @2b19c94956a2": {
@@ -391,22 +386,17 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @72fefb91c7e5": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:197",
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:195",
     "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:164"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @deaa968128c0": {
     "lines": 14,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:232",
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:230",
     "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:198"
-  },
-  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/forbids_checker.py @f4722cabaf29": {
-    "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:76",
-    "second": "src/specweaver/sandbox/language/core/python/forbids_checker.py:45"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @c9747b237b21": {
     "lines": 8,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:95",
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:93",
     "second": "src/specweaver/sandbox/language/core/python/runner.py:74"
   },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
@@ -529,45 +519,45 @@
     "first": "src/specweaver/workspace/analyzers/factory.py:302",
     "second": "src/specweaver/workspace/analyzers/factory.py:283"
   },
+  "src/specweaver/workspace/ast/parsers/_editing.py <-> src/specweaver/workspace/ast/parsers/_reading.py @a2f865a2cb54": {
+    "lines": 6,
+    "first": "src/specweaver/workspace/ast/parsers/_editing.py:30",
+    "second": "src/specweaver/workspace/ast/parsers/_reading.py:79"
+  },
   "src/specweaver/workspace/ast/parsers/_reading.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @334888c424ed": {
     "lines": 21,
     "first": "src/specweaver/workspace/ast/parsers/_reading.py:95",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:148"
   },
-  "src/specweaver/workspace/ast/parsers/_reading.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @9edec9e2721a": {
-    "lines": 8,
-    "first": "src/specweaver/workspace/ast/parsers/_reading.py:147",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:166"
-  },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @8cb7e87444a0": {
     "lines": 16,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:115",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:218"
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:114",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:217"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @bf4861f88399": {
     "lines": 14,
     "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:83",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:181"
   },
-  "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @c38639af11c6": {
-    "lines": 16,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:96",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:199"
-  },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @c893c7a91c18": {
     "lines": 53,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:142",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:316"
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:141",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:315"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @df64c311a46b": {
     "lines": 24,
     "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:45",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:55"
   },
+  "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @fe6b5ecf7277": {
+    "lines": 15,
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:96",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:199"
+  },
   "src/specweaver/workspace/ast/parsers/cpp/codestructure.py <-> src/specweaver/workspace/ast/parsers/go/codestructure.py @1039e76f7618": {
     "lines": 11,
-    "first": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:223",
-    "second": "src/specweaver/workspace/ast/parsers/go/codestructure.py:160"
+    "first": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:222",
+    "second": "src/specweaver/workspace/ast/parsers/go/codestructure.py:153"
   },
   "src/specweaver/workspace/ast/parsers/cpp/codestructure.py <-> src/specweaver/workspace/ast/parsers/python/codestructure.py @ec2f5e88b712": {
     "lines": 8,
@@ -581,93 +571,73 @@
   },
   "src/specweaver/workspace/ast/parsers/cpp/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @cbc57abe1dc4": {
     "lines": 7,
-    "first": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:293",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:270"
+    "first": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:292",
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:246"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/python/codestructure.py @572a363ef837": {
     "lines": 9,
-    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:184",
-    "second": "src/specweaver/workspace/ast/parsers/python/codestructure.py:152"
+    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:177",
+    "second": "src/specweaver/workspace/ast/parsers/python/codestructure.py:145"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @382e2bfaae2f": {
     "lines": 18,
-    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:200",
+    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:193",
     "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:49"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @8d10417d784a": {
     "lines": 9,
-    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:178",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:203"
-  },
-  "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @eff70fcd1f8c": {
-    "lines": 11,
-    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:142",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:152"
+    "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:171",
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:179"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/kotlin/codestructure.py @ab922960cd02": {
     "lines": 10,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:162",
-    "second": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:183"
+    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:138",
+    "second": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:159"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/kotlin/codestructure.py @eaf3f4e54884": {
     "lines": 16,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:82",
-    "second": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:77"
-  },
-  "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @af74743bed70": {
-    "lines": 9,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:122",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:203"
-  },
-  "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @c2bf2b74f5bc": {
-    "lines": 32,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:97",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:141"
+    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:81",
+    "second": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:76"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @ce69bddf3fcb": {
     "lines": 23,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:207",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:297"
+    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:183",
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:273"
+  },
+  "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @2b8f38622b5a": {
+    "lines": 7,
+    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:100",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:173"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @ae28fab8a61a": {
     "lines": 36,
-    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:172",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:270"
+    "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:148",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:247"
   },
   "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py <-> src/specweaver/workspace/ast/parsers/python/codestructure.py @200e28a6c006": {
     "lines": 11,
-    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:123",
-    "second": "src/specweaver/workspace/ast/parsers/python/codestructure.py:147"
-  },
-  "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @840d3dcf8ec2": {
-    "lines": 28,
-    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:96",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:141"
+    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:99",
+    "second": "src/specweaver/workspace/ast/parsers/python/codestructure.py:140"
   },
   "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @17be39804d89": {
     "lines": 54,
-    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:194",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:270"
+    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:170",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:247"
   },
   "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @1fff4d54b502": {
     "lines": 8,
-    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:79",
+    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:78",
     "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:103"
   },
   "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @9275c3b88d38": {
     "lines": 9,
-    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:185",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:261"
-  },
-  "src/specweaver/workspace/ast/parsers/python/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @3a7226164538": {
-    "lines": 16,
-    "first": "src/specweaver/workspace/ast/parsers/python/codestructure.py:109",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:141"
+    "first": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py:161",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:238"
   },
   "src/specweaver/workspace/ast/parsers/python/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @193b2f4993db": {
     "lines": 36,
-    "first": "src/specweaver/workspace/ast/parsers/python/codestructure.py:191",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:270"
+    "first": "src/specweaver/workspace/ast/parsers/python/codestructure.py:184",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:247"
   },
   "src/specweaver/workspace/ast/parsers/python/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @c38bf463bbdb": {
     "lines": 7,
@@ -676,38 +646,33 @@
   },
   "src/specweaver/workspace/ast/parsers/python/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @e916ceab35cd": {
     "lines": 8,
-    "first": "src/specweaver/workspace/ast/parsers/python/codestructure.py:183",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:261"
+    "first": "src/specweaver/workspace/ast/parsers/python/codestructure.py:176",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:238"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @06362f043a5c": {
     "lines": 8,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:237",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:276"
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:213",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:253"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @0959c40cb9f0": {
     "lines": 6,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:262",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:265"
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:238",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:242"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @65e47359e187": {
     "lines": 17,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:279",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:287"
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:255",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:264"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @7d66bfa89f19": {
     "lines": 19,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:301",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:305"
-  },
-  "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @9fd318a23f50": {
-    "lines": 26,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:143",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:150"
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:277",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:282"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @a0a7175c6043": {
     "lines": 7,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:205",
-    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:196"
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:181",
+    "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:173"
   },
   "src/specweaver/workspace/memory/repository/resilience.py <-> src/specweaver/workspace/memory/repository/resilience.py @e205271391ca": {
     "lines": 20,

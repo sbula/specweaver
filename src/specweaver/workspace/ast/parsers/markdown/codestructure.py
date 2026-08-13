@@ -156,14 +156,10 @@ class MarkdownCodeStructure(DeclarativeParser):
 
         return MarkdownBodyBlock(start_byte, end_byte, text)
 
-    def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-
-        prefix = code_bytes[:start_byte]
-        suffix = code_bytes[end_byte:]
-
-        return prefix + new_code.encode("utf-8") + suffix
+    def _replacement_bytes(self, new_code: str, node: typing.Any) -> bytes:
+        """Verbatim: a section's layout is its content, not decoration."""
+        del node
+        return new_code.encode("utf-8")
 
     def _format_body_injection(
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int

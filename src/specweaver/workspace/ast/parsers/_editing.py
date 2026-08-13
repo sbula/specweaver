@@ -31,12 +31,56 @@ class SymbolEditingMixin:
 
         def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None: ...
         def _find_target_block(self, node: typing.Any) -> typing.Any | None: ...
-        def _format_replacement(
-            self, code_bytes: bytes, node: typing.Any, new_code: str
-        ) -> bytes: ...
-        def _format_body_injection(
-            self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
-        ) -> bytes: ...
+
+    def _replacement_bytes(self, new_code: str, node: typing.Any) -> bytes:
+        """The bytes to splice in, re-indented to the node's column.
+
+        The ONE thing the ten per-language copies of `_format_replacement` varied by. C, C++ and
+        Markdown override this to splice verbatim: brace blocks and Markdown sections carry their
+        own layout, so re-indenting them corrupts the block rather than aligning it.
+        """
+        margin = typing.cast("int", node.start_point[1])
+        return self._auto_indent(new_code, margin).encode("utf-8")
+
+    def _format_body_injection(
+        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
+    ) -> bytes:
+        """Insert `new_code` inside a brace-delimited block, indented one level in.
+
+        `TECH-037`: byte-for-byte identical in `java`, `kotlin`, `rust` and `typescript`. The `+1`
+        and `-1` step over the block's own braces, so this is the **brace-block** form; a language
+        whose block is not brace-delimited overrides it — `python` splices the whole suite, `go`,
+        `c` and `cpp` hunt for the brace children, `sql` and `markdown` have no executable body at
+        all. A default, never a prohibition.
+        """
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+        insert_start = target_block.start_byte + 1
+        insert_end = target_block.end_byte - 1
+        return (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
+
+    def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
+        """Replace the node's byte span with `new_code`.
+
+        `TECH-037`: written out ten times — six character-for-character identical, `sql` the same
+        logic with two lines reordered, and three differing only in :meth:`_replacement_bytes`.
+        A **default, not a prohibition** (`TECH-034`'s tier rule): a language whose splice is
+        genuinely different still overrides this outright.
+        """
+        start_byte = typing.cast("int", node.start_byte)
+        end_byte = typing.cast("int", node.end_byte)
+        return (
+            code_bytes[:start_byte]
+            + self._replacement_bytes(new_code, node)
+            + code_bytes[end_byte:]
+        )
 
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         if not code.strip():

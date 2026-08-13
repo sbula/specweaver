@@ -149,29 +149,6 @@ class TypeScriptCodeStructure(ClassBasedParser):
                     return res
         return None
 
-    def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
-        margin = typing.cast("int", node.start_point[1])
-        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-        return code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
-
-    def _format_body_injection(
-        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
-    ) -> bytes:
-        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
-        insert_start = target_block.start_byte + 1
-        insert_end = target_block.end_byte - 1
-        return (
-            code_bytes[:insert_start]
-            + b"\n"
-            + (b" " * (margin + 4))
-            + indented_code
-            + b"\n"
-            + (b" " * margin)
-            + code_bytes[insert_end:]
-        )
-
     @staticmethod
     def _module_of(import_text: str) -> str:
         """The module an import statement names, stripped of syntax.

@@ -72,16 +72,6 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
         """Finds the inner block/body node of a given symbol node."""
 
-    @abstractmethod
-    def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
-        """Hook to format a full symbol replacement."""
-
-    @abstractmethod
-    def _format_body_injection(
-        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
-    ) -> bytes:
-        """Hook to format injecting new code into an existing block body."""
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         """Returns the scope (e.g., class name or receiver) of a symbol."""
         return None

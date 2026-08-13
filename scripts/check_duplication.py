@@ -123,6 +123,29 @@ def _measure(paths: list[str], *, jscpd: str, min_tokens: int) -> dict[str, dict
         return load_report(report) if report else None
 
 
+def _report_new(added: list[str], current: dict[str, dict], *, after_removals: bool) -> None:
+    """Print the clones that are new, and the caveat that applies when some were also removed."""
+    print(f"NEW duplication ({len(added)} clone(s)):\n")
+    for key in added:
+        entry = current[key]
+        print(f"  {entry['lines']:3d} lines  {entry['first']}")
+        print(f"             <-> {entry['second']}")
+    print("\nExtract the shared code, or re-freeze deliberately if the repetition is the point.")
+
+    if not after_removals:
+        return
+    # Learned the first time this ratchet was used in anger. jscpd reports MAXIMAL blocks, so
+    # deleting one duplicated method can split the block it sat in and re-key what is left --
+    # which surfaces here as "new" duplication in code the commit never touched. Ten clones went
+    # and three "new" ones appeared, all three untouched. `git diff` on the reported lines settles
+    # it in one command.
+    print(
+        "\nNote: this run also REMOVED clones. Deleting part of a duplicated block re-keys the "
+        "remainder, so some of the above may be pre-existing code reported for the first time. "
+        "Check `git diff` on those lines before treating them as newly introduced."
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -188,12 +211,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Duplication ratchet: {len(current)} clone(s), none new")
         return 0
 
-    print(f"NEW duplication ({len(added)} clone(s)):\n")
-    for key in added:
-        entry = current[key]
-        print(f"  {entry['lines']:3d} lines  {entry['first']}")
-        print(f"             <-> {entry['second']}")
-    print("\nExtract the shared code, or re-freeze deliberately if the repetition is the point.")
+    _report_new(added, current, after_removals=bool(gone))
     return 1
 
 
