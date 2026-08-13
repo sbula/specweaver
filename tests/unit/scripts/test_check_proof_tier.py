@@ -218,3 +218,58 @@ class TestFieldBoundedProof:
         entries = mod.contract_entries(LONG_CONTRACT, Path("US-98_integration.md"))
 
         assert "the field after the proof" not in entries[0].proof
+
+
+COLLIDING = """\
+## Base Story Contract (`INT-US-97`)
+* **Status:** ✅ Complete
+* **Verifiable Proof:** `tests/e2e/a/test_a_e2e.py`
+
+## Sub-Story Add-Ons
+
+* **First Thing (`INT-US-97-SF01`)**
+  * **Status:** ✅ Complete
+  * **Verifiable Proof:** `tests/e2e/b/test_b_e2e.py`
+
+* **Second Thing (`INT-US-97-SF01`)**
+  * **Status:** ⬜ Pending
+  * **Verifiable Proof:** [Pending]
+"""
+
+
+class TestDuplicateIds:
+    """`TECH-039`: one identifier must name at most one entry.
+
+    `INT-US-05-SUB` named two different delivered add-ons — Intelligent Code Exclusions
+    (`C-SENS-02`) and Framework Native Understanding (`B-INTL-02`). Ambiguous by construction:
+    `check_story_preconditions.py INT-US-05-SUB` resolved to whichever entry its regex reached
+    first and could never check the other, and this very module had to key its ratchet on
+    file+title instead of ID to route around it.
+
+    Distinct from the accepted `OQ-1` divergence — two names for ONE thing is unambiguous and stays
+    legal; one name for two things does not.
+    """
+
+    def test_a_repeated_id_is_reported(self, mod: ModuleType) -> None:
+        found = mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))
+
+        assert [d.entry_id for d in found] == ["INT-US-97-SF01"]
+
+    def test_both_titles_are_named(self, mod: ModuleType) -> None:
+        """The message has to say which two entries collided, or it cannot be acted on."""
+        found = mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))
+
+        assert found[0].titles == ["First Thing", "Second Thing"]
+
+    def test_delivery_status_is_irrelevant(self, mod: ModuleType) -> None:
+        """One entry above is Pending. A collision is a defect whatever the entries' status."""
+        assert len(mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))) == 1
+
+    def test_distinct_ids_are_clean(self, mod: ModuleType) -> None:
+        assert mod.duplicate_ids(CONTRACT, Path("US-99_integration.md")) == []
+
+    def test_the_repo_has_no_colliding_identifiers(self, mod: ModuleType) -> None:
+        """The live invariant. `INT-US-05-SUB` was the only one, repaired 2026-08-13."""
+        found = mod.all_duplicate_ids()
+
+        assert found == [], "\n".join(f"{d.source}: {d.entry_id} — {d.titles}" for d in found)

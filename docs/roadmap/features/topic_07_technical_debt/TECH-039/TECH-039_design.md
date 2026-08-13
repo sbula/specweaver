@@ -1,14 +1,16 @@
-# Design: One Identifier Names Two Delivered Add-Ons (`INT-US-05-SUB` Collision)
+# Design: One Identifier Named Two Delivered Add-Ons (`INT-US-05-SUB` Collision)
 
 - **Feature ID**: TECH-039
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **DELIVERED 2026-08-13.** Approach 1 (adopt the roadmap's ids) plus approach 3
+  (ship the guardrail). The rename-vs-repair question is answered below.
 - **Origin**: Found by `scripts/check_proof_tier.py` on its **first run**, 2026-08-13, while
   shipping `TECH-017`'s guardrail slice. Not looked for.
 
 ## Problem Statement
 
-`US-05_integration.md` gives **two different delivered add-ons the same identifier**:
+`US-05_integration.md` gave **two different delivered add-ons the same identifier** (repaired
+2026-08-13; the problem statement is kept in the present tense of its filing):
 
 ```
 * **Intelligent Code Exclusions (`INT-US-05-SUB`)**      -> C-SENS-02, .specweaverignore engine
@@ -53,7 +55,7 @@ construction*:
 - `check_story_preconditions.py INT-US-05-SUB` resolves to whichever entry its regex reaches first.
   The other add-on's preconditions cannot be checked at all.
 
-## Candidate Approaches (not yet designed)
+## Candidate Approaches — 1 and 3 were taken
 
 1. **Adopt the roadmap's IDs in the contract file** (`SF03` / `SF04`). The registry already
    declares them, so this is reconciling a document *to* the registry rather than minting anything.
@@ -68,7 +70,7 @@ construction*:
    second one impossible: no identifier may name two entries. That is mechanical, has no false
    positives, and the sweep that found this already walks every contract.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals — all held
 
 - `OQ-1` itself (`INT-US-21-SUB` vs `INT-US-21-SF01`). A divergence, already accepted and
   documented; reopening it is `TECH-038`'s business, which touches that same entry.
@@ -88,6 +90,43 @@ defect regrows unless a check stops it.
 Note for the design: the check must key on the *parsed entry*, not on a text grep, or it will
 report the two legal mentions of an ID (heading plus a prose reference) as a collision.
 
-## Next Step
+## Delivery, 2026-08-13
 
-Run the `specweaver-design` skill against this stub before any implementation.
+### The question this ticket existed to answer
+
+**Is correcting a duplicated identifier on a delivered entry a forbidden rename, or the repair of
+something that was never a valid identifier?**
+
+**Repair.** `finished-stories-immutable` protects the *record of what was delivered*; it does not
+require preserving a token that cannot identify anything. `INT-US-05-SUB` was never an identifier:
+nothing reading `US-05_integration.md` could tell the two entries apart, `check_story_preconditions.
+py INT-US-05-SUB` resolved to whichever its regex reached first and could never check the other,
+and `check_proof_tier.py` keys its ratchet on file+title rather than ID *specifically* to route
+around this entry.
+
+Nothing was minted, which is what makes this safe. `master_story_roadmap.md` already declared both
+add-ons — `INT-US-05-SF03` (Intelligent Code Exclusions, `C-SENS-02`) and `INT-US-05-SF04`
+(Framework Native Understanding, `B-INTL-02`) — with titles matching the contract file word for
+word. The document was reconciled TO the registry.
+
+**`OQ-1` is not the same defect and keeps its accepted answer.** `INT-US-21-SUB` versus
+`INT-US-21-SF01` is two names for ONE thing: ugly, unambiguous, deliberately left alone. This was
+one name for TWO things. The guardrail encodes exactly that line — it forbids the collision and
+permits the divergence.
+
+### Guardrail
+
+`check_proof_tier.py` gained a duplicate-identifier rule, in the `doc` gate, sharing the parser
+that already walks every contract. **Not ratcheted**, unlike the proof-tier rule beside it: a weak
+proof can be true-but-thin while someone schedules the work, whereas an identifier naming two
+entries is never acceptable debt to freeze.
+
+Probed rather than assumed: re-planting the collision makes the gate exit 1 and name both colliding
+titles; restoring returns it to 0.
+
+### Left standing
+
+Both entries remain in the proof-tier baseline — their proofs still name directories rather than
+files, which is `TECH-017`'s business, not this ticket's. Only their keys moved, with the reasons
+carried across.
+

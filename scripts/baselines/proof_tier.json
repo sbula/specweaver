@@ -1,11 +1,11 @@
 {
-  "US-05_integration.md :: Intelligent Code Exclusions (`INT-US-05-SUB`)": {
+  "US-05_integration.md :: Intelligent Code Exclusions (`INT-US-05-SF03`)": {
     "verdict": "no_test_file",
-    "reason": "Delivered entry, so finished-stories-immutable forbids editing it. Proof names a directory (`tests/e2e/capabilities/core/`) and a bare `pytest -m integration`, not a file. ALSO half of a live ID collision: this and 'Framework Native Understanding' below are two different add-ons sharing `INT-US-05-SUB`. Owner: TECH-017's per-story matrix (US-05 is one of the 8 delivered contracts it audits); the collision is TECH-027's family and was reported 2026-08-13."
+    "reason": "Delivered entry, so finished-stories-immutable forbids editing it. Proof names a directory (`tests/e2e/capabilities/core/`) and a bare `pytest -m integration`, not a file. Was half of an ID collision — this and 'Framework Native Understanding' both spelled `INT-US-05-SUB`; repaired 2026-08-13 by TECH-039 to the ids the master roadmap already declared. Owner: TECH-017's per-story matrix (US-05 is one of the 8 delivered contracts it audits); the collision is TECH-027's family and was reported 2026-08-13."
   },
-  "US-05_integration.md :: Framework Native Understanding (`INT-US-05-SUB`)": {
+  "US-05_integration.md :: Framework Native Understanding (`INT-US-05-SF04`)": {
     "verdict": "no_test_file",
-    "reason": "Delivered entry; same collision as the entry above, and the reason this checker keys on file+title rather than ID. Proof names `tests/e2e/capabilities/intelligence/` and `tests/integration/` as directories, not files. Owner: TECH-017's per-story matrix."
+    "reason": "Delivered entry; was the other half of that collision, and the reason this checker keys on file+title rather than ID. Proof names `tests/e2e/capabilities/intelligence/` and `tests/integration/` as directories, not files. Owner: TECH-017's per-story matrix."
   },
   "US-21_integration.md :: Recursive Planning (`INT-US-21-SUB`)": {
     "verdict": "no_test_file",

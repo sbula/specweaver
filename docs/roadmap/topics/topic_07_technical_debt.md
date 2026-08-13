@@ -181,10 +181,10 @@ critical for long-term project viability.
   > identical with and without the flag. **DELIVERED 2026-08-13:** step output now renders as a dimmed row under each step. The ticket's own headline overstated the defect as "does nothing" —
   > corrected in the design.
 
-* **`TECH-039` 🔴: One Identifier Names Two Delivered Add-Ons (`INT-US-05-SUB` Collision)**
-  > [Description](../features/topic_07_technical_debt/TECH-039/TECH-039_design.md) | _(2026-08-13 — found by `check_proof_tier.py` on its first run.)_ | `US-05_integration.md` gives **two different
-  > delivered add-ons the same identifier**, `INT-US-05-SUB`. The master roadmap already names them distinctly (`SF03`/`SF04`), so one document disagrees with the registry. Ambiguous by construction —
-  > tooling has already had to route around it.
+* **`TECH-039` 🟢: One Identifier Named Two Delivered Add-Ons (`INT-US-05-SUB` Collision)**
+  > [Description](../features/topic_07_technical_debt/TECH-039/TECH-039_design.md) | _(2026-08-13 — found by `check_proof_tier.py` on its first run.)_ | `US-05_integration.md` gave **two different
+  > delivered add-ons the same identifier**. **DELIVERED 2026-08-13:** repair, not a rename — the token never identified anything, and the master roadmap already declared both ids (`SF03`/`SF04`), so
+  > the document was reconciled to the registry. Guardrail shipped: an identifier may name at most one entry, un-ratcheted. `OQ-1`'s divergence stays legal.
 
 * **`TECH-038` 🔴: Registry Claims Recursive Decomposition the Capability Does Not Implement**
   > [Description](../features/topic_07_technical_debt/TECH-038/TECH-038_design.md) | _(2026-08-13 — `TECH-018` audit finding 1.)_ | `INT-US-21-SUB` / `C-INTL-01` is registered as *Recursive Planning*

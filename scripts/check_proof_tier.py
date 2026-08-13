@@ -147,6 +147,46 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
     return entries
 
 
+@dataclass(frozen=True)
+class Collision:
+    """One identifier used by more than one entry in the same contract document."""
+
+    source: str
+    entry_id: str
+    titles: list[str]
+
+
+def duplicate_ids(text: str, source: Path) -> list[Collision]:
+    """Identifiers naming more than one entry. `TECH-039`.
+
+    An identifier that names two things identifies neither. `INT-US-05-SUB` named two different
+    delivered add-ons, so `check_story_preconditions.py INT-US-05-SUB` resolved to whichever its
+    regex reached first and could never check the other — and this module keys its own ratchet on
+    file+title rather than ID precisely because of that entry.
+
+    Status is deliberately ignored: a collision is a defect whether or not the entries shipped.
+
+    NOT the same defect as the accepted `OQ-1` divergence, where one add-on carries a different
+    identifier in two documents. Two names for one thing is unambiguous and stays legal here; one
+    name for two things does not.
+    """
+    seen: dict[str, list[str]] = {}
+    for entry in contract_entries(text, source):
+        seen.setdefault(entry.entry_id, []).append(entry.title)
+    return [
+        Collision(source=source.name, entry_id=key, titles=titles)
+        for key, titles in seen.items()
+        if len(titles) > 1
+    ]
+
+
+def all_duplicate_ids() -> list[Collision]:
+    found: list[Collision] = []
+    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
+        found.extend(duplicate_ids(path.read_text(encoding="utf-8", errors="replace"), path))
+    return found
+
+
 def violations_in(text: str, source: Path) -> list[Entry]:
     """Only DELIVERED entries are judged — undelivered work does not yet owe a proof."""
     return [e for e in contract_entries(text, source) if e.delivered and e.verdict != OK]
@@ -202,6 +242,23 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{len(found)} violation(s) total")
         return 0
 
+    # `TECH-039`: not ratcheted. There was exactly one collision, it is repaired, and an
+    # identifier naming two entries is never acceptable debt to freeze — unlike a weak proof,
+    # which can be true-but-thin while someone schedules the work.
+    collisions = all_duplicate_ids()
+    if collisions:
+        print(f"Duplicate identifiers: {len(collisions)}\n")
+        for c in collisions:
+            print(
+                f"  {c.source}: `{c.entry_id}` names {len(c.titles)} entries — {', '.join(c.titles)}"
+            )
+        print(
+            "\nAn identifier that names two things identifies neither: a story-scoped check "
+            "resolves to whichever entry it reaches first and can never see the other. Give each "
+            "entry its own id — the master roadmap usually already has them."
+        )
+        return 1
+
     baseline = load_baseline()
     if not baseline and found:
         print(
@@ -228,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"Proof-tier ratchet: {len(found)} violation(s), none new")
+    print(f"Proof-tier ratchet: {len(found)} violation(s), none new. No duplicate identifiers.")
     return 0
 
 
