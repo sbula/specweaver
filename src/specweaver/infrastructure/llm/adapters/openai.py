@@ -79,9 +79,6 @@ class OpenAIAdapter(LLMAdapter):
             self._client = openai.AsyncOpenAI(api_key=self._api_key)
         return self._client
 
-    def available(self) -> bool:
-        return bool(self._api_key)
-
     def _handle_error(self, e: Exception) -> None:
         import openai
 

@@ -103,10 +103,6 @@ class GeminiAdapter(LLMAdapter):
             self._client = genai.Client(api_key=self._api_key)
         return self._client
 
-    def available(self) -> bool:
-        """Check if the adapter has a valid API key configured."""
-        return bool(self._api_key)
-
     async def generate(
         self,
         messages: list[Message],

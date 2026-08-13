@@ -72,9 +72,6 @@ class AnthropicAdapter(LLMAdapter):
             self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
         return self._client
 
-    def available(self) -> bool:
-        return bool(self._api_key)
-
     def _handle_error(self, e: Exception) -> None:
         import anthropic
 

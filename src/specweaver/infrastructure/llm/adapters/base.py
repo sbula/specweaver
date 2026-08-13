@@ -86,14 +86,14 @@ class LLMAdapter(ABC):
         # Make this a valid async generator for type checking
         yield ""  # pragma: no cover
 
-    @abstractmethod
     def available(self) -> bool:
-        """Check if this adapter is configured and ready to use.
+        """Whether this adapter is configured and ready to use.
 
-        Returns:
-            True if the adapter has valid credentials and can make requests.
+        `TECH-037`: this was abstract, and all four concrete adapters answered it identically with
+        `bool(self._api_key)` — obliging each to restate a rule none of them varied. It is now the
+        default; an adapter whose readiness is not just "a key is set" still overrides it.
         """
-        ...
+        return bool(getattr(self, "_api_key", None))
 
     @abstractmethod
     async def count_tokens(
