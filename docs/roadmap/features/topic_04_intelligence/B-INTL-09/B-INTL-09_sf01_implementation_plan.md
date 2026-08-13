@@ -7,7 +7,9 @@
 - **Status**: COMPLETED
 
 > [!NOTE]
-> **Implementation Complete**: All schemas, migrations, enums, and TDD checks (100% coverage) have been fully executed. The `MissingGreenlet` async fixture lifecycle issues were resolved by disabling `expire_on_commit`. Pre-commit checks (Tach, Ruff, Mypy) pass.
+> **Implementation Complete**: All schemas, migrations, enums, and TDD checks (100% coverage) have
+> been fully executed. The `MissingGreenlet` async fixture lifecycle issues were resolved by
+> disabling `expire_on_commit`. Pre-commit checks (Tach, Ruff, Mypy) pass.
 
 ---
 
@@ -37,7 +39,9 @@ SF-01 defines the persistent SQLAlchemy schema for the Agent Memory Bank. It cov
 
 ## Research Notes
 
-1. **DeclarativeBase Pattern**: The project uses 3 separate `Base(DeclarativeBase)` classes, one per domain. Memory models MUST import from `workspace.store.Base` to share MetaData registry with `Project` for FK cross-references (AD-12).
+1. **DeclarativeBase Pattern**: The project uses 3 separate `Base(DeclarativeBase)` classes, one per
+   domain. Memory models MUST import from `workspace.store.Base` to share MetaData registry with
+   `Project` for FK cross-references (AD-12).
 2. **StrictISODateTime**: All datetime columns across stores use `StrictISODateTime` from `specweaver.core.config.database`.
 3. **PRAGMA Gap**: `create_async_engine()` does NOT attach a PRAGMA event listener. The listener will be added as a reusable function `register_fk_pragma_listener` in `core.config.database`.
 4. **UUID on SQLite**: SQLAlchemy's `Uuid` type stores UUIDs as `CHAR(32)` hex strings on SQLite. Use `from sqlalchemy import Uuid` and `Mapped[uuid.UUID]` with `default=uuid.uuid4`.
@@ -269,10 +273,16 @@ class Defect(Base):
 
 > [!NOTE]
 > **Hallucination Mitigation for `handover_context`**: 
-> The DB stores `handover_context` as a plain `String` rather than `JSON`. This is an intentional "dumb storage" layer. To minimize hallucination pollution, validation occurs strictly at the Application Boundary (SF-03) using Pydantic models. SF-03 will sanitize the JSON, strip invalid keys, and enforce an 8KB truncation limit *before* handing the payload to the MemoryRepository.
+> The DB stores `handover_context` as a plain `String` rather than `JSON`. This is an intentional
+> "dumb storage" layer. To minimize hallucination pollution, validation occurs strictly at the
+> Application Boundary (SF-03) using Pydantic models. SF-03 will sanitize the JSON, strip invalid
+> keys, and enforce an 8KB truncation limit *before* handing the payload to the MemoryRepository.
 
 > [!NOTE]
-> **Epic Deletion Behavior**: `Task.epic_id` uses `ondelete="SET NULL"`. Tasks can exist independently; deleting an Epic removes the grouping but preserves the tasks. Explicit deletion of a task (which cascades to dependencies via `ON DELETE CASCADE`) is managed by repo workflows, not by deleting its parent epic.
+> **Epic Deletion Behavior**: `Task.epic_id` uses `ondelete="SET NULL"`. Tasks can exist
+> independently; deleting an Epic removes the grouping but preserves the tasks. Explicit deletion of
+> a task (which cascades to dependencies via `ON DELETE CASCADE`) is managed by repo workflows, not
+> by deleting its parent epic.
 
 ---
 
@@ -325,23 +335,31 @@ class Defect(Base):
 | 17 | `test_defect_status_enum_values` | Both DefectStatus values roundtrip correctly |
 
 > [!IMPORTANT]
-> **PRAGMA in Tests**: The `engine` fixture in `test_memory_store.py` MUST explicitly call `register_fk_pragma_listener(engine.sync_engine)` to enable cascade tests (9 and 10) to actually verify DB-level FK constraint enforcement.
+> **PRAGMA in Tests**: The `engine` fixture in `test_memory_store.py` MUST explicitly call
+> `register_fk_pragma_listener(engine.sync_engine)` to enable cascade tests (9 and 10) to actually
+> verify DB-level FK constraint enforcement.
 
 ---
 
 ## Phase 5: Final Consistency Check Responses
 
 1. **Open questions**: Are there still any unresolved decisions or ambiguities?
-   - **No.** All findings from the HITL gate have been resolved and merged into the plan. `DefectStatus` is formalized, `PRAGMA` placement is centralized, and `handover_context` hallucination mitigation is clearly delegated to the SF-03 application boundary.
+   - **No.** All findings from the HITL gate have been resolved and merged into the plan.
+     `DefectStatus` is formalized, `PRAGMA` placement is centralized, and `handover_context`
+     hallucination mitigation is clearly delegated to the SF-03 application boundary.
 
 1a. **Agent Handoff Risk**: If a new agent in a new session were to continue starting *only* with this document:
-   - The plan is explicit and contains literal code blocks for the core schema and the PRAGMA utility. The instruction to run `alembic revision --autogenerate` is clear. No guessing is required for table names, field types, or FK behaviors.
+   - The plan is explicit and contains literal code blocks for the core schema and the PRAGMA
+     utility. The instruction to run `alembic revision --autogenerate` is clear. No guessing is
+     required for table names, field types, or FK behaviors.
 
 2. **Architecture and future compatibility**: Does the plan respect all `context.yaml` dependency rules?
    - **Yes.** As verified in Phase 3, `workspace/memory/store.py` only imports from `workspace.store` and `core.config.database`, both of which are strictly allowed by `workspace/context.yaml`.
 
 3. **Internal consistency**: Does the plan contradict itself anywhere?
-   - **No.** Every new file mentioned is tagged `[NEW]`, modifications are `[MODIFY]`. The enums match the schema exactly. The tests cover the specific cascade behaviors configured in the SQLAlchemy `ForeignKey` definitions.
+   - **No.** Every new file mentioned is tagged `[NEW]`, modifications are `[MODIFY]`. The enums
+     match the schema exactly. The tests cover the specific cascade behaviors configured in the
+     SQLAlchemy `ForeignKey` definitions.
 
 ---
 
@@ -365,6 +383,8 @@ Verify the generated file produces exactly 5 tables with `memory_` prefixes.
 
 ## Backlog / Deferred Items
 
-1. **`register_fk_pragma_listener()` integration with `Database.async_session_scope()`** → Deferred to SF-02. SF-01 provides the function; SF-02's `MemoryRepository` will call it when creating sessions.
+1. **`register_fk_pragma_listener()` integration with `Database.async_session_scope()`** → Deferred
+   to SF-02. SF-01 provides the function; SF-02's `MemoryRepository` will call it when creating
+   sessions.
 2. **`tach.toml` registration for `workspace.memory`** → Addressed only if `tach check` fails natively.
 3. **TECH-005 Database Prefix Harmonization** → Created a dedicated tech debt feature document to retroactively align all existing monolithic tables to the `memory_` prefix pattern established here.

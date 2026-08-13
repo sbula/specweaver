@@ -231,7 +231,12 @@ not block SF-01 or SF-02.
 - **Scope**: Make the engine able to run the journey — the four inherited engine gaps fixed.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4]
 - **Inputs**: Shipped `feature_decomposition.yaml`; existing `FeatureDrafter`, `ValidateSpecHandler`, `DecomposeFeatureHandler`, `OrchestrateComponentsHandler`; persisted step records.
-- **Outputs**: Registered `(DRAFT,FEATURE)`/`(VALIDATE,FEATURE)` (with FR-1's spec-path reconciliation); `RunContext.decomposition` + one shared hydration function driving both the post-step hook and resume rehydration (decompose→`context.decomposition`, plan→`context.plan`), keyed on stored-result status; approve-on-resume engine semantics bypassing handler AND gate, emitting `approved_on_resume`; the `known_boundary_violations.md` row for the `forbids: drafting` breach (NFR-6); honest INT-US-02 E6/E7; migrated orchestrate consumption.
+- **Outputs**: Registered `(DRAFT,FEATURE)`/`(VALIDATE,FEATURE)` (with FR-1's spec-path
+  reconciliation); `RunContext.decomposition` + one shared hydration function driving both the
+  post-step hook and resume rehydration (decompose→`context.decomposition`, plan→`context.plan`),
+  keyed on stored-result status; approve-on-resume engine semantics bypassing handler AND gate,
+  emitting `approved_on_resume`; the `known_boundary_violations.md` row for the `forbids: drafting`
+  breach (NFR-6); honest INT-US-02 E6/E7; migrated orchestrate consumption.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf01_implementation_plan.md
 
@@ -239,7 +244,10 @@ not block SF-01 or SF-02.
 - **Scope**: Make the journey's output durable and PO-visible, and freeze the add-on's integration surface.
 - **FRs**: [FR-5, FR-6, FR-7, FR-9]
 - **Inputs**: SF-01's hydration bridge; `PlanSpecHandler` persist/lineage pattern; component spec template; DecompositionPlan model.
-- **Outputs**: `<stem>_decomposition.yaml` + lineage; stub component specs (never-overwrite, `.specweaver/templates/component_spec.md` read as a file with a local skeleton fallback — no new consumes edge); DAL summary in the step output; hook-driven plan→generate seam pin (FR-9). The orchestrate/fan-out pin was descoped 2026-07-26 — see FR-9.
+- **Outputs**: `<stem>_decomposition.yaml` + lineage; stub component specs (never-overwrite,
+  `.specweaver/templates/component_spec.md` read as a file with a local skeleton fallback — no new
+  consumes edge); DAL summary in the step output; hook-driven plan→generate seam pin (FR-9). The
+  orchestrate/fan-out pin was descoped 2026-07-26 — see FR-9.
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf02_implementation_plan.md
 
@@ -247,7 +255,14 @@ not block SF-01 or SF-02.
 - **Scope**: Prove the full journey on the real CLI, update docs, close the epic. (Delivered-add-on re-validation is `TECH-018`, sequenced after this — see AD-9.)
 - **FRs**: [FR-8, FR-10]
 - **Inputs**: SF-01 + SF-02 committed; INT-US-24 e2e harness pattern (scripted adapter, fresh CliRunner per session, persisted-run-record assertions).
-- **Outputs**: e2e suite (first bundled-pipeline-through-HITL proof); dev/user guide currency (Guides 1–2); registry closure: US-21 🟢, `C-FLOW-12` minted in topic_03 (verified free — `C-FLOW-11` is the current maximum in `capability_matrix.md`), `INT-US-21-SF02` minted in US-21_integration.md alongside the untouched `INT-US-21-SUB` (both Pending Design; OQ-1 Option B). **Closure gate (2026-07-26):** `python scripts/check_fr_coverage.py INT-US-21` must exit 0 — every FR the design declares is owned by a plan and cited by a test — together with a green full suite, which carries the always-on handler-reachability invariants. The delivered-add-on re-validation is `TECH-018` and does **not** gate 🟢 (see AD-9).
+- **Outputs**: e2e suite (first bundled-pipeline-through-HITL proof); dev/user guide currency
+  (Guides 1–2); registry closure: US-21 🟢, `C-FLOW-12` minted in topic_03 (verified free —
+  `C-FLOW-11` is the current maximum in `capability_matrix.md`), `INT-US-21-SF02` minted in
+  US-21_integration.md alongside the untouched `INT-US-21-SUB` (both Pending Design; OQ-1 Option B).
+  **Closure gate (2026-07-26):** `python scripts/check_fr_coverage.py INT-US-21` must exit 0 — every
+  FR the design declares is owned by a plan and cited by a test — together with a green full suite,
+  which carries the always-on handler-reachability invariants. The delivered-add-on re-validation is
+  `TECH-018` and does **not** gate 🟢 (see AD-9).
 - **Depends on**: SF-01, SF-02
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf03_implementation_plan.md
 

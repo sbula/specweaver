@@ -8,7 +8,10 @@
 
 ## 1. Scope & Objective
 
-SF-01 extends the SpecWeaver flow engine and `PromptBuilder` to dynamically isolate and inject HITL rejection remarks. The primary objective is to grant human feedback strict promotional priority (Priority 0) over generalized lint failures during the loop-back mechanism, bypassing standard prompt truncations by placing the feedback inside a `<dictator-overrides>` boundary.
+SF-01 extends the SpecWeaver flow engine and `PromptBuilder` to dynamically isolate and inject HITL
+rejection remarks. The primary objective is to grant human feedback strict promotional priority
+(Priority 0) over generalized lint failures during the loop-back mechanism, bypassing standard
+prompt truncations by placing the feedback inside a `<dictator-overrides>` boundary.
 
 ## 2. Approach
 
@@ -24,7 +27,10 @@ Based on the Phase 0 technical research, this plan modifies three domain-isolate
    - Similarly parse generalized `results` objects for automated lint failures to place as `priority=2` warnings.
 
 3. **Generator Protocol Bridge**
-   - Modify `Generator.generate_code` mapping (`src/specweaver/workflows/implementation/generator.py`) to accept optional `dictator_overrides` strings and `automated_findings` generic errors, bridging the state machine payload to the LLM construction mechanism.
+   - Modify `Generator.generate_code` mapping
+     (`src/specweaver/workflows/implementation/generator.py`) to accept optional
+     `dictator_overrides` strings and `automated_findings` generic errors, bridging the state
+     machine payload to the LLM construction mechanism.
 
 ## 3. Code Modifications
 
@@ -86,7 +92,9 @@ Based on the Phase 0 technical research, this plan modifies three domain-isolate
 ## 4. Test Strategy
 
 1. **Unit Tests** `tests/infrastructure/llm/test_prompt_builder.py`: Validates `#add_dictator_overrides` operates at priority 0.
-2. **Integration Tests** `tests/core/flow/test_generation.py`: Supply mocked context feedback dict matching UI CLI behavior to ensure `dictator_overrides` triggers inside the Generation class bridge without raising validation limits.
+2. **Integration Tests** `tests/core/flow/test_generation.py`: Supply mocked context feedback dict
+   matching UI CLI behavior to ensure `dictator_overrides` triggers inside the Generation class
+   bridge without raising validation limits.
 
 ## 5. Security & Risk Assessment
 

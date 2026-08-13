@@ -17,7 +17,9 @@ Key constraints: zero data loss during the migration, explicitly rename any inde
 ### Codebase Patterns
 Existing modules (`specweaver.workspace`, `specweaver.infrastructure.llm`, `specweaver.core.flow`) have tables that lack bounded context prefixes. 
 These tables must be renamed to align with the architectural standard set by `memory_` prefix. 
-The renames are: `projects` -> `workspace_projects`, `active_state` -> `workspace_active_state`, `project_standards` -> `workspace_project_standards`, `artifact_events` -> `flow_artifact_events`, and `project_llm_links` -> `llm_project_links`. 
+The renames are: `projects` -> `workspace_projects`, `active_state` -> `workspace_active_state`,
+`project_standards` -> `workspace_project_standards`, `artifact_events` -> `flow_artifact_events`,
+and `project_llm_links` -> `llm_project_links`. 
 Existing tables like `llm_usage_log`, `llm_cost_overrides`, and `llm_profiles` already follow the convention and are left intact.
 This change aligns with the `context.yaml` boundaries and does not duplicate any functionality.
 
@@ -112,13 +114,21 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf02_implementation_plan.md
 
 ### SF-03: Prefix Raw-SQLite3 Tables
-- **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so SF-01/SF-02 never touched them) remain unprefixed: `nodes`, `edges` (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version` (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This contradicts the ticket's "all existing database tables" claim. Rename all six to their bounded-context-prefixed equivalents.
+- **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so
+  SF-01/SF-02 never touched them) remain unprefixed: `nodes`, `edges`
+  (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version`
+  (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This
+  contradicts the ticket's "all existing database tables" claim. Rename all six to their
+  bounded-context-prefixed equivalents.
 - **FRs**: [FR-8]
 - **Inputs**: Raw `CREATE TABLE` DDL strings in the three files above; any hand-written SQL referencing the old names.
 - **Outputs**: All six tables renamed and prefixed; no dangling references to the old names.
 - **Depends on**: none
 - **Impl Plan**: not yet written
-- **Note (2026-08-01)**: this ticket's original scope only ever covered SQLAlchemy-managed tables (SF-01/SF-02) — the raw-sqlite3 tables were never in its FRs despite the roadmap blurb claiming "all existing database tables." SF-03 closes that gap so the claim becomes true instead of overstated.
+- **Note (2026-08-01)**: this ticket's original scope only ever covered SQLAlchemy-managed tables
+  (SF-01/SF-02) — the raw-sqlite3 tables were never in its FRs despite the roadmap blurb claiming
+  "all existing database tables." SF-03 closes that gap so the claim becomes true instead of
+  overstated.
 
 ## Execution Order
 

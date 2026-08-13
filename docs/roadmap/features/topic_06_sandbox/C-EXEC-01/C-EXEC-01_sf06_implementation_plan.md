@@ -7,7 +7,9 @@
 - **Status**: COMPLETED
 
 ## 1. Description
-This plan executes SF-06: The final completion of SpecWeaver's transition into a PEP-420 architecture. We will delete all remaining `__init__.py` boilerplate encapsulation proxy files inside `src/specweaver/` and enforce global strict topology checks using Tach. 
+This plan executes SF-06: The final completion of SpecWeaver's transition into a PEP-420
+architecture. We will delete all remaining `__init__.py` boilerplate encapsulation proxy files
+inside `src/specweaver/` and enforce global strict topology checks using Tach. 
 
 ---
 
@@ -21,13 +23,17 @@ Hard-delete the 20 internal `__init__.py` files physically inside the `src/specw
 
 ### Step 2: Pytest PYTHONPATH Fix
 #### [MODIFY] `pyproject.toml`
-Turning `src/specweaver/` into an implicit namespace package removes its inherent discoverability. To prevent all 3,700+ tests from catastrophically failing with `ModuleNotFoundError`, we must point pytest to our runtime root.
+Turning `src/specweaver/` into an implicit namespace package removes its inherent discoverability.
+To prevent all 3,700+ tests from catastrophically failing with `ModuleNotFoundError`, we must point
+pytest to our runtime root.
 - Add `pythonpath = ["src"]` explicitly inside the `[tool.pytest.ini_options]` block.
 
 ### Step 3: Global Strict Topology (Tach)
 #### [MODIFY] `tach.toml`
 Currently, SpecWeaver defines layer boundaries but doesn't strictly shut out undeclared lateral crossings.
-- Set global `strict = true` or `exact = true` globally for strict enforcement depending on our exact Tach configuration to mathematically lock down remaining isolation barriers. Ensure any newly flagged implicit dependencies are documented or explicitly whitelisted.
+- Set global `strict = true` or `exact = true` globally for strict enforcement depending on our
+  exact Tach configuration to mathematically lock down remaining isolation barriers. Ensure any
+  newly flagged implicit dependencies are documented or explicitly whitelisted.
 
 ---
 

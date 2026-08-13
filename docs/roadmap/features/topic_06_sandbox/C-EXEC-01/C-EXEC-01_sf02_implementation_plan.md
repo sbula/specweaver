@@ -58,7 +58,9 @@ strict = true
 
 ## User Review Required
 > [!IMPORTANT]
-> The DAG mapping has been determined via rigorous codebase inspection (`llm` imports `config` and `graph`; `graph` imports `context`). If any underlying code is using dynamic or hidden upstream imports (e.g. `llm` importing `cli`), it will break in runtime after Tach enforces this isolation.
+> The DAG mapping has been determined via rigorous codebase inspection (`llm` imports `config` and
+> `graph`; `graph` imports `context`). If any underlying code is using dynamic or hidden upstream
+> imports (e.g. `llm` importing `cli`), it will break in runtime after Tach enforces this isolation.
 
 ## Open Questions
 - None.

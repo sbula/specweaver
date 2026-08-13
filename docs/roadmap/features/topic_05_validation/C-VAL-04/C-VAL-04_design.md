@@ -7,14 +7,23 @@
 
 ## Feature Overview
 
-Feature 3.21 adds an Automated Traceability Matrix (`@traces`) to the validation layer. It solves "Correlated Hallucinations" (where tests pass but don't map to actual requirements) by mathematically counting Functional and Non-Functional Requirements in the L3 Spec and asserting exact matching `@traces(req_id)` tags in the AST of generated test files. It interacts natively with the Markdown spec parser, AST extraction tools, and validation pipelines, and does NOT touch execution logic or runtime behavior.
+Feature 3.21 adds an Automated Traceability Matrix (`@traces`) to the validation layer. It solves
+"Correlated Hallucinations" (where tests pass but don't map to actual requirements) by
+mathematically counting Functional and Non-Functional Requirements in the L3 Spec and asserting
+exact matching `@traces(req_id)` tags in the AST of generated test files. It interacts natively with
+the Markdown spec parser, AST extraction tools, and validation pipelines, and does NOT touch
+execution logic or runtime behavior.
 Key constraints: Hard-fails the validation pipeline if coverage is incomplete. Must use structural AST parsing instead of naive text search.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **AST Parsing**: The codebase already leverages `tree-sitter` for `standards/tree_sitter_base.py` and AST drift detection (`validation/drift_detector.py`). The existing architecture can be cleanly reused to extract decorators/tags from Python test files.
-- **Validation Engine**: SpecWeaver's 10-test battery resides in `validation/rules/`. There are currently 8 code rules (`c01`–`c08`). This feature perfectly aligns with creating `C09: Traceability`, checking test coverage against spec requirements via AST extraction.
+- **AST Parsing**: The codebase already leverages `tree-sitter` for `standards/tree_sitter_base.py`
+  and AST drift detection (`validation/drift_detector.py`). The existing architecture can be cleanly
+  reused to extract decorators/tags from Python test files.
+- **Validation Engine**: SpecWeaver's 10-test battery resides in `validation/rules/`. There are
+  currently 8 code rules (`c01`–`c08`). This feature perfectly aligns with creating
+  `C09: Traceability`, checking test coverage against spec requirements via AST extraction.
 - **Pipelines**: The new rule will be integrated directly into `pipelines/validation_code_default.yaml` and appropriate domain profiles.
 - **Boundaries**: Must reside within `validation` (pure-logic archetype) without importing from `loom/*`. The feature acts purely as a static post-generation verification step.
 

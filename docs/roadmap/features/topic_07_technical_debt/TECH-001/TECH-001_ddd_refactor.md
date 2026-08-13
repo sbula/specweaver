@@ -5,18 +5,26 @@
 
 ## Background
 
-As SpecWeaver has evolved, the architecture has drifted into a hybrid state. Some modules (e.g., `drafting/`, `review/`, `planning/`) successfully follow Domain-Driven Design (Package by Feature) principles, encapsulating their models, orchestrators, and logic within a single Bounded Context.
+As SpecWeaver has evolved, the architecture has drifted into a hybrid state. Some modules (e.g.,
+`drafting/`, `review/`, `planning/`) successfully follow Domain-Driven Design (Package by Feature)
+principles, encapsulating their models, orchestrators, and logic within a single Bounded Context.
 
 However, other modules have fallen into the "Package by Layer" trap, specifically:
-1. **The `config/` Dumping Ground:** `config/` is currently acting as a global database bucket for all SQLite storage (e.g., `config/database.py`, `llm_telemetry_mixin`, profile storage). This violates DDD, as feature-specific persistence logic is physically ripped away from its feature.
+1. **The `config/` Dumping Ground:** `config/` is currently acting as a global database bucket for
+   all SQLite storage (e.g., `config/database.py`, `llm_telemetry_mixin`, profile storage). This
+   violates DDD, as feature-specific persistence logic is physically ripped away from its feature.
 2. **The `cli/` Monolith:** All CLI presentation code is stuffed into `cli/` rather than being nested within the respective domain folders (e.g., `cli/lineage.py` instead of `lineage/cli/`).
-3. **The `loom/` Hybrid:** The Sandbox is split by layer (`commons/`, `tools/`, `atoms/`) but sub-split by feature (`git/`, `qa_runner/`), leading to "High Scatter" where modifying a single tool requires traversing three separate directories.
+3. **The `loom/` Hybrid:** The Sandbox is split by layer (`commons/`, `tools/`, `atoms/`) but
+   sub-split by feature (`git/`, `qa_runner/`), leading to "High Scatter" where modifying a single
+   tool requires traversing three separate directories.
 
 With the introduction of the B-SENS-02 Graph Triad (`graph/`, `graph_store/`, `graph_builder/`), we established the first truly pure DDD implementation that enforces Semantic Boundary Compliance. 
 
 ## Scope & Objective
 
-The objective of this Epic is to execute a massive refactoring effort to align the legacy codebase with the B-SENS-02 DDD principles, preparing SpecWeaver for extraction into independent microservices.
+The objective of this Epic is to execute a massive refactoring effort to align the legacy codebase
+with the B-SENS-02 DDD principles, preparing SpecWeaver for extraction into independent
+microservices.
 
 ### FR-1: Deconstruct the `config/` Database Monolith
 *   Extract LLM telemetry DB logic into an `llm_store/` adapter.

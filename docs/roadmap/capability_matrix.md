@@ -1,6 +1,8 @@
 # SpecWeaver Capability Matrix
 
-This matrix acts as the "Periodic Table" of SpecWeaver's internal architecture. It maps every atomic capability against its **Domain Assurance Level (DAL)** to guarantee we are scaling safety alongside complexity.
+This matrix acts as the "Periodic Table" of SpecWeaver's internal architecture. It maps every atomic
+capability against its **Domain Assurance Level (DAL)** to guarantee we are scaling safety alongside
+complexity.
 
 ## Naming Convention
 Capabilities use a strict identifier: `[DAL]-[Topic]-[Sequence]` (e.g., `✅ C-SENS-01`).

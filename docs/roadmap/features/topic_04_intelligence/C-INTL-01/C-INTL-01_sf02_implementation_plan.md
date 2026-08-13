@@ -8,8 +8,12 @@
 
 ## Goal Description
 
-Integrate the `fan_out()` orchestration capability into the core pipeline layer through a verified execution loop. This satisfies FR-2 (HITL presentation), FR-4 (Quality Automation loop limits), and FR-5 (Blast Radius Coverage assertion). 
-To align strictly with the pipeline State Machine, we will split the operation into two distinct pipeline phases: `DECOMPOSE` (generation via LLM) and `ORCHESTRATE` (triggering sub-pipelines via `fan_out`). 
+Integrate the `fan_out()` orchestration capability into the core pipeline layer through a verified
+execution loop. This satisfies FR-2 (HITL presentation), FR-4 (Quality Automation loop limits), and
+FR-5 (Blast Radius Coverage assertion). 
+To align strictly with the pipeline State Machine, we will split the operation into two distinct
+pipeline phases: `DECOMPOSE` (generation via LLM) and `ORCHESTRATE` (triggering sub-pipelines via
+`fan_out`). 
 Furthermore, we will document the rigid DMZ coverage assertion logic prominently to ensure all future developers are aware of this specific validation boundary.
 
 ## Proposed Changes
@@ -25,7 +29,9 @@ Furthermore, we will document the rigid DMZ coverage assertion logic prominently
 - Implements `DecomposeFeatureHandler(StepHandler)`:
     - Reads the `feature_spec.md` target.
     - Triggers the `FeatureDecomposer` (see Drafting Layer).
-    - **Coverage Assertion (FR-5)**: Receives the `DecompositionPlan`. If the `coverage_score` is `< 1.0` or blast radius topologies don't align, returns `FAILED`. This triggers the pipeline's native 3-strike loop-back securely without invoking the HITL gate natively.
+    - **Coverage Assertion (FR-5)**: Receives the `DecompositionPlan`. If the `coverage_score` is
+      `< 1.0` or blast radius topologies don't align, returns `FAILED`. This triggers the pipeline's
+      native 3-strike loop-back securely without invoking the HITL gate natively.
     - Saves the `DecompositionPlan` to an artifact/database and returns `PASSED` (which proceeds to the HITL Gate).
 - Implements `OrchestrateComponentsHandler(StepHandler)`:
     - Reads the approved `DecompositionPlan`.
@@ -68,4 +74,6 @@ Furthermore, we will document the rigid DMZ coverage assertion logic prominently
 - **Integration**: Verify `feature_decomposition.yaml` successfully loops back upon draft failures within `test_feature_pipeline.py`.
 
 ### Manual Verification
-- Execute `sw pipeline run feature_decomposition` to observe the HITL output prompt natively rendering the Decomposition JSON output, simulating approval, and triggering the underlying asynchronous pipeline log events for fan-out.
+- Execute `sw pipeline run feature_decomposition` to observe the HITL output prompt natively
+  rendering the Decomposition JSON output, simulating approval, and triggering the underlying
+  asynchronous pipeline log events for fan-out.

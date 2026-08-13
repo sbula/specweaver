@@ -2,7 +2,10 @@
 
 - **Feature ID**: INT-US-09
 - **Phase**: 6
-- **Status**: APPROVED — approved by Steve Bula on 2026-07-16 (amended 2026-07-16 during impl-planning: rebind scope narrowed to surfaces that *execute* untrusted content — `action: bash` and `run_tests`/pytest — explicitly excluding static-analysis QA like `lint_fix`/ruff, which parses but never executes code)
+- **Status**: APPROVED — approved by Steve Bula on 2026-07-16 (amended 2026-07-16 during
+  impl-planning: rebind scope narrowed to surfaces that *execute* untrusted content — `action: bash`
+  and `run_tests`/pytest — explicitly excluding static-analysis QA like `lint_fix`/ruff, which
+  parses but never executes code)
 - **Design Doc**: docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_design.md
 
 ## Feature Overview

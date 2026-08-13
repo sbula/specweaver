@@ -32,10 +32,15 @@ SF-A establishes the two foundational inputs for the scenario pipeline:
 ## Research Notes
 
 ### RN-1: Project uses `ruamel.yaml`, NOT `pyyaml`
-The design doc mentions `pyyaml` in External Dependencies, but `pyproject.toml` declares `ruamel.yaml>=0.18`. The codebase uses `ruamel.yaml` everywhere (e.g., `PlanSpecHandler` at `_generation.py:299`). The S07 scenario YAML validation MUST use `ruamel.yaml.YAML(typ="safe")`, NOT `yaml.safe_load()`.
+The design doc mentions `pyyaml` in External Dependencies, but `pyproject.toml` declares
+`ruamel.yaml>=0.18`. The codebase uses `ruamel.yaml` everywhere (e.g., `PlanSpecHandler` at
+`_generation.py:299`). The S07 scenario YAML validation MUST use `ruamel.yaml.YAML(typ="safe")`, NOT
+`yaml.safe_load()`.
 
 ### RN-2: S07 already has `_extract_contract()` (different from S06's)
-S07 has its own `_extract_contract()` at line 203-219 with a slightly different regex than S06's version. The new `_extract_scenarios()` should follow S07's pattern (returns `str | None`, uses `re.MULTILINE | re.IGNORECASE`), not S06's (returns `str`, uses `re.DOTALL`).
+S07 has its own `_extract_contract()` at line 203-219 with a slightly different regex than S06's
+version. The new `_extract_scenarios()` should follow S07's pattern (returns `str | None`, uses
+`re.MULTILINE | re.IGNORECASE`), not S06's (returns `str`, uses `re.DOTALL`).
 
 ### RN-3: `GenerateCodeHandler` uses `Generator` from `implementation/`
 The contract handler needs a different approach — it's NOT LLM-based code generation. It's mechanical extraction from spec markdown. It should NOT use the `Generator` class. Instead, it should:
@@ -46,19 +51,31 @@ The contract handler needs a different approach — it's NOT LLM-based code gene
 This is a **pure-logic** operation, not an LLM call. No adapter/config needed.
 
 ### RN-4: `StepHandler` is a `Protocol` (structural typing)
-`StepHandler` at `_base.py:135-138` is a `@runtime_checkable Protocol` with a single method: `async def execute(self, step: PipelineStep, context: RunContext) -> StepResult`. The new handler MUST match this signature exactly.
+`StepHandler` at `_base.py:135-138` is a `@runtime_checkable Protocol` with a single method:
+`async def execute(self, step: PipelineStep, context: RunContext) -> StepResult`. The new handler
+MUST match this signature exactly.
 
 ### RN-5: Existing S07 test patterns
-`tests/unit/assurance/validation/rules/test_s07_test_first.py` has 192 lines with 5 test classes: `TestExtractContract`, `TestAnalyseContract`, `TestTestabilityScore`, `TestTestFirstRuleCheck`. Each uses string fixtures (`_GOOD_CONTRACT`, `_NO_CONTRACT_SPEC`, etc.). New tests follow this exact pattern.
+`tests/unit/assurance/validation/rules/test_s07_test_first.py` has 192 lines with 5 test classes:
+`TestExtractContract`, `TestAnalyseContract`, `TestTestabilityScore`, `TestTestFirstRuleCheck`. Each
+uses string fixtures (`_GOOD_CONTRACT`, `_NO_CONTRACT_SPEC`, etc.). New tests follow this exact
+pattern.
 
 ### RN-6: `RunContext.api_contract_paths` already exists
-`_base.py:57` has `api_contract_paths: list[str] | None = None`. This field was designed for neighboring API surfaces. The contract handler MUST append the generated contract path to this list so SF-B's `ScenarioGenerator` can consume it downstream.
+`_base.py:57` has `api_contract_paths: list[str] | None = None`. This field was designed for
+neighboring API surfaces. The contract handler MUST append the generated contract path to this list
+so SF-B's `ScenarioGenerator` can consume it downstream.
 
 ### RN-7: Validation module is `pure-logic` archetype
-`validation/context.yaml` declares `archetype: pure-logic`. This means S07 MUST NOT import `ruamel.yaml` at module level if it's considered I/O. However, `ruamel.yaml.YAML(typ="safe").load()` is a pure parsing operation (no I/O), and `validation/` already consumes `config/` which uses pydantic. The YAML parsing is acceptable as in-memory string parsing, not file I/O.
+`validation/context.yaml` declares `archetype: pure-logic`. This means S07 MUST NOT import
+`ruamel.yaml` at module level if it's considered I/O. However, `ruamel.yaml.YAML(typ="safe").load()`
+is a pure parsing operation (no I/O), and `validation/` already consumes `config/` which uses
+pydantic. The YAML parsing is acceptable as in-memory string parsing, not file I/O.
 
 ### RN-8: Scenario YAML schema (contract between SF-A and SF-B)
-The `## Scenarios` YAML must follow the `TestExpectation` model from `workflows/planning/models.py:133-152`. SF-B will extend this with `req_id`. SF-A's validator MUST check for required keys to prevent garbage YAML from reaching SF-B's generator. Expected schema:
+The `## Scenarios` YAML must follow the `TestExpectation` model from
+`workflows/planning/models.py:133-152`. SF-B will extend this with `req_id`. SF-A's validator MUST
+check for required keys to prevent garbage YAML from reaching SF-B's generator. Expected schema:
 ```yaml
 - name: "happy_path_login"          # required, str
   function_under_test: "login"      # required, str
@@ -68,7 +85,9 @@ The `## Scenarios` YAML must follow the `TestExpectation` model from `workflows/
 ```
 
 ### RN-9: FR-2 requires docstrings in generated Protocol
-FR-2's Outcome column says: "Produces `contracts/api_contract.py` with typed method signatures **and docstrings**." The `_render_protocol()` method must extract docstrings from Contract code blocks and include them in the generated Protocol stubs.
+FR-2's Outcome column says: "Produces `contracts/api_contract.py` with typed method signatures **and
+docstrings**." The `_render_protocol()` method must extract docstrings from Contract code blocks and
+include them in the generated Protocol stubs.
 
 ### RN-10: AD-2 and AD-6 govern SF-A directly
 - AD-2: "Contract generation handler lives in `flow/` (new handler)"
@@ -191,7 +210,9 @@ The design doc's External Dependencies table lists `pyyaml 6.0+` but the project
 3. Modify `TestFirstRule.check()` to add scenario validation after the existing contract scoring logic (line 81-120). Insert after the final `return self._pass(...)`:
 
    > [!CAUTION]
-   > The scenario check is **additive** — it runs AFTER the existing contract scoring. A spec can pass the contract check but fail the scenario check. The scenario check returns its own findings independent of the contract score.
+   > The scenario check is **additive** — it runs AFTER the existing contract scoring. A spec can
+   > pass the contract check but fail the scenario check. The scenario check returns its own
+   > findings independent of the contract score.
 
    ```python
    # After existing contract scoring (before the final return):
@@ -217,7 +238,9 @@ The design doc's External Dependencies table lists `pyyaml 6.0+` but the project
    ```
 
 > [!NOTE]
-> The missing `## Scenarios` section produces a WARNING, not FAIL. This ensures backward compatibility — existing specs without scenarios continue to pass S07 (they already have no scenario section today). Only malformed YAML in an existing section produces ERROR-level findings.
+> The missing `## Scenarios` section produces a WARNING, not FAIL. This ensures backward
+> compatibility — existing specs without scenarios continue to pass S07 (they already have no
+> scenario section today). Only malformed YAML in an existing section produces ERROR-level findings.
 
 ---
 
@@ -393,7 +416,10 @@ class GenerateContractHandler:
 ```
 
 > [!WARNING]
-> The `_extract_signatures` regex handles single-line signatures. Multi-line signatures (with parentheses spanning multiple lines) are NOT supported in this first cut. This is acceptable because spec Contract sections typically use compact single-line signatures. If multi-line support is needed, tree-sitter parsing (already available) can be added in a follow-up.
+> The `_extract_signatures` regex handles single-line signatures. Multi-line signatures (with
+> parentheses spanning multiple lines) are NOT supported in this first cut. This is acceptable
+> because spec Contract sections typically use compact single-line signatures. If multi-line support
+> is needed, tree-sitter parsing (already available) can be added in a follow-up.
 
 #### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers.py)
 

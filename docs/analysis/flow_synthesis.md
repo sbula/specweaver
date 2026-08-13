@@ -1,7 +1,9 @@
 # Flow Synthesis: Secure Agent-Driven Development Workflows
 
 > **Research Date:** 2026-03-08  
-> **Purpose:** Analyze how engineers, companies, and open-source projects design workflows for writing **secure** code (not vibe coding) using AI agents. Focus on requirement decomposition, spec granularity, and code review/acceptance gates.
+> **Purpose:** Analyze how engineers, companies, and open-source projects design workflows for
+> writing **secure** code (not vibe coding) using AI agents. Focus on requirement decomposition,
+> spec granularity, and code review/acceptance gates.
 
 ---
 
@@ -14,7 +16,9 @@
 - **Untestable code** due to missing contracts and unclear boundaries
 - **Technical debt** that costs 10x more to fix later
 
-Every serious agent-driven workflow is fundamentally a response to this problem. The common insight: **AI agents are powerful junior developers who need structured constraints, clear specs, and mandatory review gates.**
+Every serious agent-driven workflow is fundamentally a response to this problem. The common insight:
+**AI agents are powerful junior developers who need structured constraints, clear specs, and
+mandatory review gates.**
 
 ---
 
@@ -24,7 +28,10 @@ Every serious agent-driven workflow is fundamentally a response to this problem.
 
 **Source:** [github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz)
 
-What initially looked like a single script (`auto-develop.sh`) is actually a **complete, production-grade agent ecosystem** for building a real product (a cybersecurity training game). Deep-diving the full repository reveals a layered architecture of governance, memory, specialization, and automation that is the most comprehensive working example found.
+What initially looked like a single script (`auto-develop.sh`) is actually a **complete,
+production-grade agent ecosystem** for building a real product (a cybersecurity training game).
+Deep-diving the full repository reveals a layered architecture of governance, memory,
+specialization, and automation that is the most comprehensive working example found.
 
 #### The Full Stack (not just the script)
 
@@ -76,7 +83,9 @@ What initially looked like a single script (`auto-develop.sh`) is actually a **c
 | **Security Principles** | OWASP Top 10, no secrets in code, CSP headers, Trusted Types, input validation at every boundary, rate limiting, AI content safety rules |
 | **Key Documents** | Index of all design documents with line counts |
 
-**Key Insight:** Every agent — whether research, implement, review, or specialized sub-agent — is instructed to read `SOUL.md` first. This ensures all agents share the same non-negotiable constraints regardless of their role.
+**Key Insight:** Every agent — whether research, implement, review, or specialized sub-agent — is
+instructed to read `SOUL.md` first. This ensures all agents share the same non-negotiable
+constraints regardless of their role.
 
 ---
 
@@ -141,7 +150,9 @@ Each sub-agent file has:
 | **devops** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **reviewer** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
 
-**The reviewer agent is explicitly read-only for code** (no Edit, no Write) — it can only read code and run tests via Bash. This prevents the reviewer from "fixing" code and bypassing the implement→review separation.
+**The reviewer agent is explicitly read-only for code** (no Edit, no Write) — it can only read code
+and run tests via Bash. This prevents the reviewer from "fixing" code and bypassing the
+implement→review separation.
 
 **Reviewer's 15-Point Checklist (from `reviewer.md`):**
 1. Issue fit
@@ -181,7 +192,9 @@ MILESTONES.md + DDs + BRD → AI Agent → GitHub Issues (one at a time)
 5. Loop continues until agent outputs `DONE` 3 consecutive times (3-strike termination)
 6. Special mode: `--milestone 1337` = bug-fix discovery mode (finds real bugs in the codebase and creates issues for them)
 
-**Key Insight:** Issues are not written manually. They're generated from the documentation by an AI agent, which ensures they inherit the right level of detail from the design documents. This is the missing "spec → tasks" bridge that GitHub Spec Kit describes.
+**Key Insight:** Issues are not written manually. They're generated from the documentation by an AI
+agent, which ensures they inherit the right level of detail from the design documents. This is the
+missing "spec → tasks" bridge that GitHub Spec Kit describes.
 
 ---
 
@@ -331,7 +344,9 @@ This is essentially an **externalized working memory** that survives context win
 - **Focus Chain:** A persistent to-do list re-injected into context at regular intervals to prevent agent drift.
 
 #### Key Insight
-The separation of investigation context from implementation context prevents the agent from being biased by the paths it explored during research. This is similar to how human code reviewers should ideally not be the same person who wrote the code.
+The separation of investigation context from implementation context prevents the agent from being
+biased by the paths it explored during research. This is similar to how human code reviewers should
+ideally not be the same person who wrote the code.
 
 ---
 
@@ -386,7 +401,10 @@ A complementary approach focused on **behavioral guardrails** rather than workfl
 
 #### How This Relates to Constitution.md
 
-Cursor rules are a tool-specific implementation of the same principle as GitHub Spec Kit's `constitution.md`: **codified behavioral constraints that the agent must follow**. The key difference is that Cursor rules are automatically applied based on file patterns, while `constitution.md` must be explicitly referenced.
+Cursor rules are a tool-specific implementation of the same principle as GitHub Spec Kit's
+`constitution.md`: **codified behavioral constraints that the agent must follow**. The key
+difference is that Cursor rules are automatically applied based on file patterns, while
+`constitution.md` must be explicitly referenced.
 
 ---
 

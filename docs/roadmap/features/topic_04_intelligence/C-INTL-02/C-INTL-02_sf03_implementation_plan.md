@@ -7,7 +7,10 @@
 - **Status**: APPROVED
 
 ## Feature Summary
-SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow engine. It statically maps architectural dependencies (MCP resources), securely triggers the `MCPAtom` to fetch external strings via standard IPC channels, and parses the output natively into the `PromptBuilder` for zero-latency LLM context tracking.
+SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow engine. It
+statically maps architectural dependencies (MCP resources), securely triggers the `MCPAtom` to fetch
+external strings via standard IPC channels, and parses the output natively into the `PromptBuilder`
+for zero-latency LLM context tracking.
 
 ---
 
@@ -20,7 +23,9 @@ SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow
 
 ### [MODIFY] `src/specweaver/assurance/graph/topology.py`
 **Rationale**: `RunContext.topology` is a read-only `TopologyContext` record that currently drops all knowledge of `mcp_servers` originally defined in the `TopologyNode`.
-- Update the frozen `TopologyContext` dataclass constructor to accept `mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)` and `consumes_resources: list[str] = field(default_factory=list)`.
+- Update the frozen `TopologyContext` dataclass constructor to accept
+  `mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)` and
+  `consumes_resources: list[str] = field(default_factory=list)`.
 - Update `format_context_summary()` in `TopologyGraph` to properly serialize this state into the context payload when `TopologyContext` maps are generated.
 
 ---
@@ -32,8 +37,13 @@ SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow
 - Create `async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:`
 - Retrieve `context.topology.mcp_servers` and `consumes_resources`.
 - Iterate through each active server, physically invoking `MCPAtom.run()` targeting the string URIs.
-- **Critical SLA Guard**: Wrap `MCPAtom.run()` execution explicitly in `asyncio.to_thread(_sync_fetch, ...)` because `MCPAtom`'s internal standard I/O byte transmission blocks standard Unix thread event loops (NFR-2).
-- **JSON-RPC Shredding**: Iteratively unpack `AtomResult.contents`, extracting only `result.contents.text`. Fully strip out raw JSON protocol payloads (`jsonrpc="2.0"`) prior to returning. Format string as YAML dict of `{URI: block}` to natively assist LLM Markdown context formatting.
+- **Critical SLA Guard**: Wrap `MCPAtom.run()` execution explicitly in
+  `asyncio.to_thread(_sync_fetch, ...)` because `MCPAtom`'s internal standard I/O byte transmission
+  blocks standard Unix thread event loops (NFR-2).
+- **JSON-RPC Shredding**: Iteratively unpack `AtomResult.contents`, extracting only
+  `result.contents.text`. Fully strip out raw JSON protocol payloads (`jsonrpc="2.0"`) prior to
+  returning. Format string as YAML dict of `{URI: block}` to natively assist LLM Markdown context
+  formatting.
 
 ---
 
@@ -63,7 +73,9 @@ SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow
 ### Test Modifications
 - **[MODIFY]** `tests/unit/core/flow/handlers/test_generation.py`: Update mocks ensuring `MCPAtom` interactions behave properly.
 - **[MODIFY]** `tests/unit/core/flow/handlers/test_review.py`: Mirror generation tests.
-- **[MODIFY]** `tests/integration/core/flow/engine/test_generation_loopback_integration.py`: Integrate mock `TopologyContext` mappings verifying MCP contexts physically traverse via `environment_context` natively without system panic limit failures.
+- **[MODIFY]** `tests/integration/core/flow/engine/test_generation_loopback_integration.py`:
+  Integrate mock `TopologyContext` mappings verifying MCP contexts physically traverse via
+  `environment_context` natively without system panic limit failures.
 
 ### Automated Checks
 - `tach check`: Confirm `core/flow` correctly imports the atom.

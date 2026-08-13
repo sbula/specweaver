@@ -217,13 +217,18 @@ feature.
 ## Sub-Feature Breakdown
 
 ### SF-01: Core Containerized Execution Engine
-- **Scope**: `ContainerSubprocessExecutor` (`ContainerMounts`, engine detection/liveness caching, deterministic naming + guaranteed cleanup, RO/RW mount flags, `--network none`, non-root `--user`, resource limits, the AD-7/AD-9 prepare/execute phase split).
+- **Scope**: `ContainerSubprocessExecutor` (`ContainerMounts`, engine detection/liveness caching,
+  deterministic naming + guaranteed cleanup, RO/RW mount flags, `--network none`, non-root `--user`,
+  resource limits, the AD-7/AD-9 prepare/execute phase split).
 - **FRs**: [FR-2, FR-3, FR-5, FR-6, FR-7, FR-8]
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf01_implementation_plan.md
 
 ### SF-02: QA-Runner DI Wiring
-- **Scope**: `factory.resolve_runner`/`QARunnerAtom` DI widening to inject `ContainerSubprocessExecutor`; `PythonQARunner`'s tach pre-check skip, `ContainerEngineUnavailableError` handling, and artifact-path redirection (FR-4) across all 6 QA-runner methods.
+- **Scope**: `factory.resolve_runner`/`QARunnerAtom` DI widening to inject
+  `ContainerSubprocessExecutor`; `PythonQARunner`'s tach pre-check skip,
+  `ContainerEngineUnavailableError` handling, and artifact-path redirection (FR-4) across all 6
+  QA-runner methods.
 - **FRs**: [FR-1, FR-4]
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf02_implementation_plan.md

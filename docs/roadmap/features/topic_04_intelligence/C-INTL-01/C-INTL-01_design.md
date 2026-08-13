@@ -8,7 +8,9 @@
 ## Feature Overview
 
 Feature 3.24 (Automated iterative decomposition) adds recursive, multi-level decomposition (feature → sub-features → components) to the `flow` engine.
-It solves the manual bottleneck of building component specs by taking DMZ-style iterative loop principles, wrapping decomposition in an automated loop with quality gates, and fanning out until all components are mapped.
+It solves the manual bottleneck of building component specs by taking DMZ-style iterative loop
+principles, wrapping decomposition in an automated loop with quality gates, and fanning out until
+all components are mapped.
 It interacts with `pipeline` and `flow` runners, `drafting/decomposition.py`, and the CLI. It does NOT touch unrelated feature areas.
 Key constraints: The decomposition process must pause and request HITL review for every structural generation step (never auto-decompose without verification).
 
@@ -34,10 +36,16 @@ Key constraints: The decomposition process must pause and request HITL review fo
 To ensure this knowledge persists across agent handoffs, the following architectural constants define how automated decomposition behaves:
 
 1. **Global vs Local Maxima:** 
-   - The *L2 Architect Agent* is explicitly exempt from feature size limits (`> 5 FRs`). During the `plan` and `decompose` steps, it ingests the entire monolithic scope to determine the absolute global optimum (shared data models, core modules).
-   - The *L4 Developer Agents* are strictly confined to the resulting subdivided Component Specs (the local scope). They may locally optimize functions but are mathematically restricted from cross-polluting architecture via the `ValidationGate`.
+   - The *L2 Architect Agent* is explicitly exempt from feature size limits (`> 5 FRs`). During the
+     `plan` and `decompose` steps, it ingests the entire monolithic scope to determine the absolute
+     global optimum (shared data models, core modules).
+   - The *L4 Developer Agents* are strictly confined to the resulting subdivided Component Specs
+     (the local scope). They may locally optimize functions but are mathematically restricted from
+     cross-polluting architecture via the `ValidationGate`.
 2. **Mock-First Interface Definition:** 
-   - Slicing relies on `IntegrationSeam` structs produced during the decomposition step. Interfaces (API endpoints, public class signatures, events) MUST be defined and agreed upon *before* any sub-feature code generation begins (`future_capabilities_reference.md` §7).
+   - Slicing relies on `IntegrationSeam` structs produced during the decomposition step. Interfaces
+     (API endpoints, public class signatures, events) MUST be defined and agreed upon *before* any
+     sub-feature code generation begins (`future_capabilities_reference.md` §7).
 3. **Granularity Thresholds:**
    - A sub-feature is recursively split if it fails the "Agent-Sized Heuristic" (e.g., handles $>5$ FRs, touches $>3$ modules, or integrates $>1$ external API).
 

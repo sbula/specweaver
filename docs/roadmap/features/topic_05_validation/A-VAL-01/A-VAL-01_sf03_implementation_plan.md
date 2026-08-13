@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement the `ProtocolAtom` and `ProtocolTool` components inside the Flow Orchestrator layers. This feature safely exposes the `ProtocolSchemaInterface` mapping capabilities established in SF-01/SF-02 upward to automated pipelines and agent-LLM contexts.
+Implement the `ProtocolAtom` and `ProtocolTool` components inside the Flow Orchestrator layers. This
+feature safely exposes the `ProtocolSchemaInterface` mapping capabilities established in SF-01/SF-02
+upward to automated pipelines and agent-LLM contexts.
 
 ## Proposed Changes
 
@@ -20,7 +22,9 @@ This boundary controls raw programmatic execution bounds, interacting purely wit
 #### [NEW] `src/specweaver/core/loom/atoms/protocol/atom.py`
 - **What it does**: Implements `ProtocolAtom(Atom)`.
 - **Intents Handled**:
-  - `extract_schema_endpoints`: Opens the file, dynamically loads the correct Schema Parser from the `ProtocolParserFactory`, parses it, and safely returns `.model_dump()` dictionaries of `ProtocolEndpoint`.
+  - `extract_schema_endpoints`: Opens the file, dynamically loads the correct Schema Parser from the
+    `ProtocolParserFactory`, parses it, and safely returns `.model_dump()` dictionaries of
+    `ProtocolEndpoint`.
   - `extract_schema_messages`: Returns `.model_dump()` dictionaries of `ProtocolMessage`.
 > [!NOTE] 
 > Based on HITL approval, Atom results rigidly supply structural JSON/Dictionary shapes to support mathematical array intersections inside downstream Validators.
@@ -29,7 +33,9 @@ This boundary controls raw programmatic execution bounds, interacting purely wit
 #### [NEW] `src/specweaver/core/loom/commons/protocol/factory.py`
 - **What it does**: Isolates the AST protocol identification logic entirely inside the adapter layer.
 > [!TIP]
-> Based on HITL approval, rather than polluting the Atom with file-reading logic, this factory parses `Code` content (`ruamel.yaml` loads) looking for root keys like `openapi: "3.0"` or `asyncapi: "3.0"`, mapping them seamlessly to the underlying split parsers.
+> Based on HITL approval, rather than polluting the Atom with file-reading logic, this factory
+> parses `Code` content (`ruamel.yaml` loads) looking for root keys like `openapi: "3.0"` or
+> `asyncapi: "3.0"`, mapping them seamlessly to the underlying split parsers.
 
 ### `core/loom/tools/protocol/`
 This boundary wraps the Atom securely exposing it to LLMs inside `core/agents/`.
@@ -38,7 +44,9 @@ This boundary wraps the Atom securely exposing it to LLMs inside `core/agents/`.
 - **What it does**: Declares `archetype: tool`. Consumes `atoms/protocol`.
 
 #### [NEW] `src/specweaver/core/loom/tools/protocol/tool.py`
-- **What it does**: Generates `ProtocolTool(StructuredLLMTool)` securely wrapping the `ProtocolAtom` using Strict Object schemas. Allows an Agent to issue intent actions mapping inputs dynamically via string reasoning to physical File execution bounds.
+- **What it does**: Generates `ProtocolTool(StructuredLLMTool)` securely wrapping the `ProtocolAtom`
+  using Strict Object schemas. Allows an Agent to issue intent actions mapping inputs dynamically
+  via string reasoning to physical File execution bounds.
 
 ## Verification Plan
 

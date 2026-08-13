@@ -7,7 +7,13 @@
 
 ## Feature Overview
 
-Feature 3.26a adds Domain-Driven Module Consolidation to the core SpecWeaver architecture. It solves the problem of flat, decoupled directories by restructuring root modules into explicit macro-domains (`workflows`, `assurance`, `workspace`, `interfaces`). It interacts meticulously with every single Python file across `src` and `tests` to update absolute import paths, and `tach.toml` to enforce boundaries, and does NOT touch the internal execution logic or behavior of the application itself. Key constraints: All 3884 tests must pass, `tach check` must be updated and pass successfully, and no information or functional implementation can be lost.
+Feature 3.26a adds Domain-Driven Module Consolidation to the core SpecWeaver architecture. It solves
+the problem of flat, decoupled directories by restructuring root modules into explicit macro-domains
+(`workflows`, `assurance`, `workspace`, `interfaces`). It interacts meticulously with every single
+Python file across `src` and `tests` to update absolute import paths, and `tach.toml` to enforce
+boundaries, and does NOT touch the internal execution logic or behavior of the application itself.
+Key constraints: All 3884 tests must pass, `tach check` must be updated and pass successfully, and
+no information or functional implementation can be lost.
 
 ## Research Findings
 
@@ -20,10 +26,14 @@ Feature 3.26a adds Domain-Driven Module Consolidation to the core SpecWeaver arc
 - **Group 5 (Core)**: Internal state, orchestration, and executors map to `core` (`flow`, `loom`, `config`).
 - **Group 6 (Infrastructure)**: External network mappings map to `infrastructure` (`llm`).
 
-The system heavily utilizes `tach.toml` to enforce architectural imports across implicit namespace packages. Changing root folders will forcibly break all internal `import src.specweaver.<app>` syntaxes natively.
+The system heavily utilizes `tach.toml` to enforce architectural imports across implicit namespace
+packages. Changing root folders will forcibly break all internal `import src.specweaver.<app>`
+syntaxes natively.
 
 ### Blueprint References
-This refactoring directly reflects the `context.yaml` topological layering principles detailed in `docs/architecture/architecture_reference.md` and aligns closely with clean Domain-Driven Design (DDD). 
+This refactoring directly reflects the `context.yaml` topological layering principles detailed in
+`docs/architecture/architecture_reference.md` and aligns closely with clean Domain-Driven Design
+(DDD). 
 
 ## Functional Requirements
 

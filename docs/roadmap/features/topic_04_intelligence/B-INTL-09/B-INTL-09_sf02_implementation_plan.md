@@ -20,7 +20,9 @@ SF-02 implements the foundational `MemoryRepository` class providing core CRUD o
 
 - **1 new class**: `MemoryRepository` in `src/specweaver/workspace/memory/repository.py` (16 public methods)
 - **2 custom exceptions**: `IllegalStateTransitionError`, `DefectBlocksCompletionError` in `src/specweaver/workspace/memory/errors.py`
-- **Core CRUD methods**: `create_task`, `create_epic`, `get_task`, `get_epic`, `list_tasks`, `list_epics`, `update_task`, `create_defect`, `resolve_defect`, `list_defects`, `update_handover_context`, `add_task_dependency`, `remove_task_dependency`
+- **Core CRUD methods**: `create_task`, `create_epic`, `get_task`, `get_epic`, `list_tasks`,
+  `list_epics`, `update_task`, `create_defect`, `resolve_defect`, `list_defects`,
+  `update_handover_context`, `add_task_dependency`, `remove_task_dependency`
 - **State machine enforcement**: `transition_state` (matrix validation + audit trail + defect invariants)
 - **Epic lifecycle**: `close_epic` (dedicated, per AD-18 — no state machine)
 - **Audit trail**: `get_task_transitions`
@@ -49,29 +51,50 @@ SF-02 implements the foundational `MemoryRepository` class providing core CRUD o
 
 ### Codebase Pattern Analysis
 
-1. **Repository Pattern**: The codebase uses a consistent pattern across all domain stores. Each repository takes an `AsyncSession` as its constructor argument and uses `await self.session.flush()` (not `commit()`) to push changes within a caller-managed transaction boundary. See:
+1. **Repository Pattern**: The codebase uses a consistent pattern across all domain stores. Each
+   repository takes an `AsyncSession` as its constructor argument and uses
+   `await self.session.flush()` (not `commit()`) to push changes within a caller-managed transaction
+   boundary. See:
    - `WorkspaceRepository.__init__(self, session: AsyncSession)` in `workspace/store.py:73`
    - `FlowRepository.__init__(self, session: AsyncSession)` in `core/flow/store.py:29`
 
-2. **Session Lifecycle**: The `session_scope()` context manager in `database.py:176-192` handles commit/rollback. Repositories do NOT call `session.commit()` directly — they call `session.flush()`. The `session_scope()` caller commits at the end.
+2. **Session Lifecycle**: The `session_scope()` context manager in `database.py:176-192` handles
+   commit/rollback. Repositories do NOT call `session.commit()` directly — they call
+   `session.flush()`. The `session_scope()` caller commits at the end.
 
-3. **Return Format**: `WorkspaceRepository` returns `dict[str, object]` from `get_*` and `list_*` methods rather than ORM model instances. `FlowRepository` also uses this pattern. **SF-02 MUST follow this pattern** to maintain consistency.
+3. **Return Format**: `WorkspaceRepository` returns `dict[str, object]` from `get_*` and `list_*`
+   methods rather than ORM model instances. `FlowRepository` also uses this pattern. **SF-02 MUST
+   follow this pattern** to maintain consistency.
 
-4. **Logging Convention**: The codebase uses `logger = logging.getLogger(__name__)` with `%s` lazy formatting (Pattern #20 in `special_patterns_and_adaptations.md`). All critical events use appropriate severity levels.
+4. **Logging Convention**: The codebase uses `logger = logging.getLogger(__name__)` with `%s` lazy
+   formatting (Pattern #20 in `special_patterns_and_adaptations.md`). All critical events use
+   appropriate severity levels.
 
-5. **PRAGMA Integration**: SF-01 created `register_fk_pragma_listener()` in `database.py`. The repository itself does NOT need to call this — it is the session creator's responsibility (either `session_scope()` or test fixtures).
+5. **PRAGMA Integration**: SF-01 created `register_fk_pragma_listener()` in `database.py`. The
+   repository itself does NOT need to call this — it is the session creator's responsibility (either
+   `session_scope()` or test fixtures).
 
 6. **No `__init__.py`**: The project is a PEP 420 Implicit Namespace Package. No `__init__.py` files should be created.
 
-7. **`tach.toml` Boundary**: `src.specweaver.workspace` is registered as a module with `depends_on = []`. The new `memory/repository.py` file falls under this existing boundary and only imports from `workspace.memory.store` (same boundary) and `core.config.database` (allowed by `workspace/context.yaml`).
+7. **`tach.toml` Boundary**: `src.specweaver.workspace` is registered as a module with
+   `depends_on = []`. The new `memory/repository.py` file falls under this existing boundary and
+   only imports from `workspace.memory.store` (same boundary) and `core.config.database` (allowed by
+   `workspace/context.yaml`).
 
 ### SQLAlchemy Async Patterns (External Research)
 
-1. **OCC with `version_id_col`**: SQLAlchemy 2.0 natively supports OCC via `__mapper_args__ = {"version_id_col": version}`. However, this auto-increments `version` on **every flush**, not just on specific state transitions. Since SF-02's scope is basic CRUD + state machine (without OCC acquisition), we will NOT use `version_id_col` mapper args in SF-02. We will manually manage the `version` column. SF-03 will implement the transactional OCC `acquire_task` with explicit version checking and `StaleDataError`-style retry logic.
+1. **OCC with `version_id_col`**: SQLAlchemy 2.0 natively supports OCC via
+   `__mapper_args__ = {"version_id_col": version}`. However, this auto-increments `version` on
+   **every flush**, not just on specific state transitions. Since SF-02's scope is basic CRUD +
+   state machine (without OCC acquisition), we will NOT use `version_id_col` mapper args in SF-02.
+   We will manually manage the `version` column. SF-03 will implement the transactional OCC
+   `acquire_task` with explicit version checking and `StaleDataError`-style retry logic.
 
 2. **`select()` + `session.get()`**: For single-entity lookups by PK, `session.get(Model, pk)` is the correct async pattern (uses identity map). For filtered queries, use `select(Model).where(...)`.
 
-3. **`session.flush()` vs `session.commit()`**: `flush()` pushes changes to the DB within the current transaction without committing. This is the correct pattern when the repository is embedded within a larger transactional scope managed by `session_scope()`.
+3. **`session.flush()` vs `session.commit()`**: `flush()` pushes changes to the DB within the
+   current transaction without committing. This is the correct pattern when the repository is
+   embedded within a larger transactional scope managed by `session_scope()`.
 
 ---
 
@@ -93,13 +116,22 @@ All 10 findings from the Phase 2/3 audit were reviewed and approved by HITL on 2
 | 10 | Architecture verification | ✅ PASS | No violations found. |
 
 > [!WARNING]
-> **HITL Action Item (Finding #1)**: User approved but flagged that `FlowRepository` coexisting with its schema in `core/flow/store.py` should be refactored to follow the same separation pattern. **Tech Debt: TECH-006** added to Backlog.
+> **HITL Action Item (Finding #1)**: User approved but flagged that `FlowRepository` coexisting with
+> its schema in `core/flow/store.py` should be refactored to follow the same separation pattern.
+> **Tech Debt: TECH-006** added to Backlog.
 
 > [!WARNING]
-> **HITL Action Item (Finding #4)**: The pre-validation pattern (SELECT before INSERT to produce clean `ValueError` instead of opaque `IntegrityError`) MUST be documented in `docs/dev_guides/special_patterns_and_adaptations.md` during `/pre-commit` Phase 6. This is a DB-portability concern: if SpecWeaver ever migrates from SQLite to PostgreSQL, this pattern may need revisiting since Postgres provides richer error codes.
+> **HITL Action Item (Finding #4)**: The pre-validation pattern (SELECT before INSERT to produce
+> clean `ValueError` instead of opaque `IntegrityError`) MUST be documented in
+> `docs/dev_guides/special_patterns_and_adaptations.md` during `/pre-commit` Phase 6. This is a
+> DB-portability concern: if SpecWeaver ever migrates from SQLite to PostgreSQL, this pattern may
+> need revisiting since Postgres provides richer error codes.
 
 > [!WARNING]
-> **HITL Action Item (Finding #6)**: User requested an **MVP Decision Register** — a living document that explicitly tracks design decisions that are acceptable for MVP but may need changing for production scale. To be created as `docs/roadmap/mvp_decision_register.md` during `/pre-commit` Phase 6. First entries: no pagination on `list_*` methods, pre-validation SELECT pattern.
+> **HITL Action Item (Finding #6)**: User requested an **MVP Decision Register** — a living document
+> that explicitly tracks design decisions that are acceptable for MVP but may need changing for
+> production scale. To be created as `docs/roadmap/mvp_decision_register.md` during `/pre-commit`
+> Phase 6. First entries: no pagination on `list_*` methods, pre-validation SELECT pattern.
 
 ---
 
@@ -233,7 +265,9 @@ class MemoryRepository:
 > **`transition_state` Implementation Detail (Critical)**:
 > The method MUST:
 > 1. Fetch the task by ID (raise ValueError if not found).
-> 2. **Defensive guard (RT-1)**: If `task.status not in ALLOWED_TRANSITIONS`, raise `IllegalStateTransitionError`. This prevents `KeyError` crashes if a future enum value is added without updating the matrix.
+> 2. **Defensive guard (RT-1)**: If `task.status not in ALLOWED_TRANSITIONS`, raise
+>    `IllegalStateTransitionError`. This prevents `KeyError` crashes if a future enum value is added
+>    without updating the matrix.
 > 3. Check `ALLOWED_TRANSITIONS[current_status]` for `to_status` — raise `IllegalStateTransitionError` if not allowed.
 > 4. If `to_status == DONE`: query `Defect` table for any `status == OPEN` with this `task_id`. If count > 0, raise `DefectBlocksCompletionError` (AD-8).
 > 5. Update `task.status`, `task.updated_at = datetime.now(UTC)` **(RT-4: explicit timestamp).**
@@ -244,28 +278,51 @@ class MemoryRepository:
 > 10. Return the updated task as dict.
 
 > [!NOTE]
-> **RT-2: Defect invariant race condition**: The defect check (step 4) and status update (step 5) are non-atomic within the same `flush()`. This is a theoretical gap that is practically mitigated by SQLite's WAL write serialization and `NullPool` connection isolation. SF-03's transactional OCC will close this gap for true multi-process concurrent access.
+> **RT-2: Defect invariant race condition**: The defect check (step 4) and status update (step 5)
+> are non-atomic within the same `flush()`. This is a theoretical gap that is practically mitigated
+> by SQLite's WAL write serialization and `NullPool` connection isolation. SF-03's transactional OCC
+> will close this gap for true multi-process concurrent access.
 
 > [!CAUTION]
-> **RT-19: Explicit Timestamp Initialization Rule**: The `Task`, `Epic`, and `Defect` models have NO `default=` on `created_at` or `updated_at` columns. All `create_*` methods MUST explicitly set `created_at = datetime.now(UTC)` (and `updated_at` for Task/Epic) at creation time. `StateTransition.timestamp` must also be explicitly set. Failing to do this will crash with `IntegrityError: NOT NULL constraint failed`. This follows the pattern established in `WorkspaceRepository.register_project()` (store.py:82).
+> **RT-19: Explicit Timestamp Initialization Rule**: The `Task`, `Epic`, and `Defect` models have NO
+> `default=` on `created_at` or `updated_at` columns. All `create_*` methods MUST explicitly set
+> `created_at = datetime.now(UTC)` (and `updated_at` for Task/Epic) at creation time.
+> `StateTransition.timestamp` must also be explicitly set. Failing to do this will crash with
+> `IntegrityError: NOT NULL constraint failed`. This follows the pattern established in
+> `WorkspaceRepository.register_project()` (store.py:82).
 
 > [!IMPORTANT]
-> **RT-4 & RT-23: Explicit `updated_at` Rule**: Every mutation method (`update_task`, `transition_state`, `update_handover_context`, `close_epic`) MUST explicitly set `entity.updated_at = datetime.now(UTC)` before calling `flush()`. SQLAlchemy does NOT auto-update timestamps — there is no `onupdate` hook on the column.
+> **RT-4 & RT-23: Explicit `updated_at` Rule**: Every mutation method (`update_task`,
+> `transition_state`, `update_handover_context`, `close_epic`) MUST explicitly set
+> `entity.updated_at = datetime.now(UTC)` before calling `flush()`. SQLAlchemy does NOT auto-update
+> timestamps — there is no `onupdate` hook on the column.
 
 > [!IMPORTANT]
-> **RT-13: Cross-Entity Integrity Rule**: `create_task` MUST verify that if an `epic_id` is provided, the associated Epic has the exact same `project_name` as the new task. If not, raise `ValueError("Epic belongs to a different project")`.
+> **RT-13: Cross-Entity Integrity Rule**: `create_task` MUST verify that if an `epic_id` is
+> provided, the associated Epic has the exact same `project_name` as the new task. If not, raise
+> `ValueError("Epic belongs to a different project")`.
 
 > [!IMPORTANT]
-> **RT-3 & RT-14: Title Validation Rule**: `create_task`, `create_epic`, `create_defect`, and `update_task` (if title is not None) MUST call `_validate_non_empty("title", title)` before mutating the entity. SQLAlchemy `nullable=False` does NOT reject empty strings.
+> **RT-3 & RT-14: Title Validation Rule**: `create_task`, `create_epic`, `create_defect`, and
+> `update_task` (if title is not None) MUST call `_validate_non_empty("title", title)` before
+> mutating the entity. SQLAlchemy `nullable=False` does NOT reject empty strings.
 
 > [!IMPORTANT]
-> **RT-10: Defect Logging Rule (NFR-8)**: `create_defect` MUST emit `logger.info("Defect created: task_id=%s, defect_id=%s, title=%s", ...)`. `resolve_defect` MUST emit `logger.info("Defect resolved: defect_id=%s, task_id=%s", ...)`.
+> **RT-10: Defect Logging Rule (NFR-8)**: `create_defect` MUST emit
+> `logger.info("Defect created: task_id=%s, defect_id=%s, title=%s", ...)`. `resolve_defect` MUST
+> emit `logger.info("Defect resolved: defect_id=%s, task_id=%s", ...)`.
 
 > [!NOTE]
-> **RT-17 & RT-18: Architectural Boundaries**: The repository intentionally lacks semantic validation for `TransitionReason` (this belongs in the Flow orchestrator) and intentionally lacks `delete_*` methods (hard deletion destroys the forensic audit trail, use `ARCHIVED`/`RESOLVED` states instead).
+> **RT-17 & RT-18: Architectural Boundaries**: The repository intentionally lacks semantic
+> validation for `TransitionReason` (this belongs in the Flow orchestrator) and intentionally lacks
+> `delete_*` methods (hard deletion destroys the forensic audit trail, use `ARCHIVED`/`RESOLVED`
+> states instead).
 
 > [!NOTE]
-> **`version` Column Handling in SF-02**: SF-02 does NOT increment `task.version` during state transitions. The `version` column is reserved for Optimistic Concurrency Control in SF-03's `acquire_task`. SF-02 sets `version=1` on creation and leaves it unchanged. SF-03 will use it to prevent dual-acquisition race conditions.
+> **`version` Column Handling in SF-02**: SF-02 does NOT increment `task.version` during state
+> transitions. The `version` column is reserved for Optimistic Concurrency Control in SF-03's
+> `acquire_task`. SF-02 sets `version=1` on creation and leaves it unchanged. SF-03 will use it to
+> prevent dual-acquisition race conditions.
 
 > [!NOTE]
 > **`attempt_count` Column Handling in SF-02**: SF-02 does NOT modify `attempt_count`. It is set to `0` on creation and managed exclusively by SF-04's zombie recovery and circuit breaker logic.
@@ -293,10 +350,15 @@ def _task_to_dict(task: Task) -> dict[str, object]:
     }
 ```
 
-Similar `_epic_to_dict`, `_defect_to_dict`, `_transition_to_dict` helpers. All UUID fields MUST use `str()` conversion (RT-5). All Enum fields (like `transition.from_status`, `transition.reason`) MUST use `.value` conversion to prevent `json.dumps()` crashes (RT-16).
+Similar `_epic_to_dict`, `_defect_to_dict`, `_transition_to_dict` helpers. All UUID fields MUST use
+`str()` conversion (RT-5). All Enum fields (like `transition.from_status`, `transition.reason`) MUST
+use `.value` conversion to prevent `json.dumps()` crashes (RT-16).
 
 > [!NOTE]
-> **RT-6: `list_*` Convention**: `list_tasks` and `list_epics` return an empty list `[]` for nonexistent project names. They do NOT raise `ValueError`. This matches `WorkspaceRepository.get_standards()` and is the established convention for list operations. Callers should check project existence separately if needed.
+> **RT-6: `list_*` Convention**: `list_tasks` and `list_epics` return an empty list `[]` for
+> nonexistent project names. They do NOT raise `ValueError`. This matches
+> `WorkspaceRepository.get_standards()` and is the established convention for list operations.
+> Callers should check project existence separately if needed.
 
 ---
 
@@ -307,7 +369,9 @@ Similar `_epic_to_dict`, `_defect_to_dict`, `_transition_to_dict` helpers. All U
 **Test fixture strategy**: Reuse the same `engine`/`session`/`base_project` fixture pattern from `test_memory_store.py` (SF-01). The test file will use `@pytest.mark.asyncio` class-based grouping.
 
 > [!NOTE]
-> **RT-25: Second Project for Cross-Entity Tests**: `test_create_task_epic_project_mismatch` (test #5) requires an Epic from a different project. This test must create a second project inline within the test body (not via a shared fixture) to keep the fixture simple.
+> **RT-25: Second Project for Cross-Entity Tests**: `test_create_task_epic_project_mismatch` (test
+> #5) requires an Epic from a different project. This test must create a second project inline
+> within the test body (not via a shared fixture) to keep the fixture simple.
 
 | # | Test | Category | What it verifies |
 |---|------|----------|-----------------|
@@ -368,7 +432,9 @@ Similar `_epic_to_dict`, `_defect_to_dict`, `_transition_to_dict` helpers. All U
 | 55 | `test_create_task_sets_timestamps` | RT-19 | Verifies `created_at` and `updated_at` are set on creation |
 
 > [!IMPORTANT]
-> **Exhaustive Matrix Tests (49 & 50)**: These tests parametrize over ALL 30 cells (6×5 excluding diagonal) of the State Transition Matrix. For each `(from, to)` pair, they verify either success or `IllegalStateTransitionError`. This mathematically proves the state machine is airtight.
+> **Exhaustive Matrix Tests (49 & 50)**: These tests parametrize over ALL 30 cells (6×5 excluding
+> diagonal) of the State Transition Matrix. For each `(from, to)` pair, they verify either success
+> or `IllegalStateTransitionError`. This mathematically proves the state machine is airtight.
 
 ---
 
@@ -396,6 +462,8 @@ ruff check src/specweaver/workspace/memory/
 3. **`WITH RECURSIVE` cycle detection on dependency insert** → Deferred to SF-03.
 4. **Zombie recovery + circuit breaker + upstream propagation** → Deferred to SF-04.
 5. **`tach.toml` registration for `workspace.memory`** → Only if `tach check` requires it. Currently `workspace` covers it.
-6. **TECH-006: FlowRepository separation** → Refactor `core/flow/store.py` to separate `FlowRepository` into its own `core/flow/repository.py`, matching the `workspace/memory/` separation pattern. Low priority, no functional impact.
+6. **TECH-006: FlowRepository separation** → Refactor `core/flow/store.py` to separate
+   `FlowRepository` into its own `core/flow/repository.py`, matching the `workspace/memory/`
+   separation pattern. Low priority, no functional impact.
 7. **MVP Decision Register** → Create `docs/roadmap/mvp_decision_register.md` during `/pre-commit` to track MVP-acceptable decisions that should be revisited for production.
 8. **Pre-validation pattern documentation** → Document the SELECT-before-INSERT pattern in `docs/dev_guides/special_patterns_and_adaptations.md` as a DB-portability concern.

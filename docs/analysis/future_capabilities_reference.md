@@ -2,7 +2,10 @@
 
 > **Status**: REFERENCE — Ideas to revisit when building RAG, agent isolation, verification gates, and multi-project support.
 > **Date**: 2026-03-08
-> **Sources**: flowManager `rag_analysis.md`, `rag_architecture.md`, `agent_isolation.md`, `verification_gates_backlog.md`, `validation_gate_proposal.md`, `verifiable_agentic_orchestration.md`, `methodology_open_research.md`, `v_next_architecture_proposal.md`, `bad_ideas_and_traps_to_avoid.md`
+> **Sources**: flowManager `rag_analysis.md`, `rag_architecture.md`, `agent_isolation.md`,
+> `verification_gates_backlog.md`, `validation_gate_proposal.md`,
+> `verifiable_agentic_orchestration.md`, `methodology_open_research.md`,
+> `v_next_architecture_proposal.md`, `bad_ideas_and_traps_to_avoid.md`
 > **MVP Impact**: None — all items are post-MVP. This doc exists so we don't lose good ideas.
 
 ---
@@ -19,7 +22,9 @@ Every RAG query includes an `agent_scope` parameter. The knowledge service filte
 | **Contract** | Other module/service | Public API only: interfaces, exported types, event schemas | Private methods, internal classes, implementation logic |
 | **Architectural** | System-wide consulting | Service topology, event schemas, data flow direction | Any code, any implementation details |
 
-**Why this matters for SpecWeaver**: When agents generate code, they should only see the **public interfaces** of other modules, not their internals. This enforces contract-driven development and prevents tight coupling.
+**Why this matters for SpecWeaver**: When agents generate code, they should only see the **public
+interfaces** of other modules, not their internals. This enforces contract-driven development and
+prevents tight coupling.
 
 **Implementation sketch**:
 - All symbols in the index carry a `visibility` field and a `namespace` (owning module)
@@ -227,7 +232,9 @@ Tool wrappers resolve absolute paths and validate against `allowed_paths` BEFORE
 
 *Source: `validation_gate_proposal.md`*
 
-**The Core Idea**: A deterministic, git-committed directory containing the machine-readable representation of the codebase. The Validation Gate intercepts all agent write operations and validates against this index.
+**The Core Idea**: A deterministic, git-committed directory containing the machine-readable
+representation of the codebase. The Validation Gate intercepts all agent write operations and
+validates against this index.
 
 ```
 .machine-doc/
@@ -243,7 +250,9 @@ Tool wrappers resolve absolute paths and validate against `allowed_paths` BEFORE
 3. **Incremental** — only changed files are re-parsed via content hash comparison
 4. **Not an LLM artifact** — purely AST-based extraction, no embeddings
 
-**Gate behavior**: When an agent writes code referencing `UserService.deleteAccount()` and that symbol doesn't exist → structured JSON error back to agent. No prose, just actionable data for targeted correction.
+**Gate behavior**: When an agent writes code referencing `UserService.deleteAccount()` and that
+symbol doesn't exist → structured JSON error back to agent. No prose, just actionable data for
+targeted correction.
 
 **Phased implementation**: Python `ast` (Phase 1) → Tree-sitter (Phase 3) → polyglot (future).
 
@@ -267,7 +276,9 @@ Tool wrappers resolve absolute paths and validate against `allowed_paths` BEFORE
 
 *Source: `verification_gates_backlog.md` — F3, F4*
 
-**Diff-Explosion Guard**: If an agent rewrites >X% of a file (default: 40%) to fix a small error, reject the edit. Massive rewrites signal context pollution — the agent has lost track and is "shotgun rewriting."
+**Diff-Explosion Guard**: If an agent rewrites >X% of a file (default: 40%) to fix a small error,
+reject the edit. Massive rewrites signal context pollution — the agent has lost track and is
+"shotgun rewriting."
 
 **Assertion Density Gate**: Count assertion calls vs. lines of code in test files:
 ```
@@ -283,7 +294,9 @@ Density = AssertionCalls / TestLOC
 
 *Source: `verification_gates_backlog.md` — F11, `verifiable_agentic_orchestration.md` §5*
 
-**The Core Idea**: After tests pass, inject small logic bugs (operator swaps, boundary shifts) into the diff and re-run tests. If tests still pass (failing to catch the mutant), the test suite is fraudulent.
+**The Core Idea**: After tests pass, inject small logic bugs (operator swaps, boundary shifts) into
+the diff and re-run tests. If tests still pass (failing to catch the mutant), the test suite is
+fraudulent.
 
 ```
 Mutation Score = Killed / (Total - Equivalent)
@@ -312,7 +325,9 @@ Target: MS > 85%
 
 *Source: `verifiable_agentic_orchestration.md` §4*
 
-**The Core Idea**: When an agent is authorized to modify `calculateAlpha()`, reject any diff that also touches unrelated `saveToDatabase()`. AST locality checks enforce that modifications stay within the assigned scope.
+**The Core Idea**: When an agent is authorized to modify `calculateAlpha()`, reject any diff that
+also touches unrelated `saveToDatabase()`. AST locality checks enforce that modifications stay
+within the assigned scope.
 
 ```
 Error: Locality violation. You modified lines outside your assigned scope.

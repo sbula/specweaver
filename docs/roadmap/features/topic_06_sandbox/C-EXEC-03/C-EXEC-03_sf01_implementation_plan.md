@@ -5,13 +5,21 @@
 - **Design Doc**: `docs/roadmap/phase_3/feature_3.26a/feature_3.26a_design.md`
 
 ## Overview
-Physically migrates the flat root Source directories and Tests to the 6 explicit macro-domains (`workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure`) and systematically patches all Python absolute imports in parallel. Additionally executes the movement of the `roadmap` and `design` directories under `docs/`.
+Physically migrates the flat root Source directories and Tests to the 6 explicit macro-domains
+(`workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure`) and systematically
+patches all Python absolute imports in parallel. Additionally executes the movement of the `roadmap`
+and `design` directories under `docs/`.
 
 ## Resolved Technical Audits
 > [!NOTE]
-> **Resolution 1 (Implicit Namespaces):** We will strictly adhere to the Feature 3.20a architecture and create exactly zero `__init__.py` files for the structural boundaries. We are physically moving folders, but retaining implicit topologies.
+> **Resolution 1 (Implicit Namespaces):** We will strictly adhere to the Feature 3.20a architecture
+> and create exactly zero `__init__.py` files for the structural boundaries. We are physically
+> moving folders, but retaining implicit topologies.
 >
-> **Resolution 2 (String Replace Scope):** We will aggressively execute the string replacements across Python (`.py`), Markdown (`.md`), and Configuration (`.yaml`) files using global shell scripting to ensure the legacy absolute paths (like `specweaver.workflows.drafting`) are permanently erased physically and documented.
+> **Resolution 2 (String Replace Scope):** We will aggressively execute the string replacements
+> across Python (`.py`), Markdown (`.md`), and Configuration (`.yaml`) files using global shell
+> scripting to ensure the legacy absolute paths (like `specweaver.workflows.drafting`) are
+> permanently erased physically and documented.
 
 ## Proposed Changes
 
@@ -70,7 +78,9 @@ mv tests/unit/flow tests/unit/core/
 - Execute a global find-and-replace sweep across all `src/specweaver/`, `tests/`, and `docs/`.
 - `specweaver.workflows.drafting` becomes `specweaver.workflows.drafting`.
 - `specweaver.assurance.validation` becomes `specweaver.assurance.validation`.
-- This definitively targets `.py` files (imports), `.md` files (documentation references), and `.yaml` files (including `context.yaml` topological `consumes`/`forbids` arrays) to ensure clean system-wide handoffs.
+- This definitively targets `.py` files (imports), `.md` files (documentation references), and
+  `.yaml` files (including `context.yaml` topological `consumes`/`forbids` arrays) to ensure clean
+  system-wide handoffs.
 - Enforce NFR-3: Validate via file counts before/after that exactly 0 logic or models are lost during the raw `mv` operations.
 
 ### Component: Documentation Refactoring

@@ -2,15 +2,25 @@
 
 > **Date**: April 2026
 > **Context**: Evolution of Feature 3.33 inspired by structural analysis models (e.g., Graphify).
-> **Objective**: Definitively establish the SpecWeaver methodology for capturing codebase relationships, proving that explicit Graph Topology surpasses Vector Embeddings for code structures, and outline the multi-modal integration patterns.
+> **Objective**: Definitively establish the SpecWeaver methodology for capturing codebase
+> relationships, proving that explicit Graph Topology surpasses Vector Embeddings for code
+> structures, and outline the multi-modal integration patterns.
 
 ## Concept Overview
-Traditional Code-RAG relies heavily on Vector Embeddings stored in databases (Chroma, pgvector). This approach fundamentally breaks on large codebases because chunking destroys exact logical boundaries (e.g., AST bounds). 
+Traditional Code-RAG relies heavily on Vector Embeddings stored in databases (Chroma, pgvector).
+This approach fundamentally breaks on large codebases because chunking destroys exact logical
+boundaries (e.g., AST bounds). 
 
-By leaning into rigorous Graph Theory methodologies, SpecWeaver shifts the anchor from Nearest-Neighbor search to Breadth-First-Search (BFS) structural traversals, only leveraging vectors as a secondary semantic fallback.
+By leaning into rigorous Graph Theory methodologies, SpecWeaver shifts the anchor from
+Nearest-Neighbor search to Breadth-First-Search (BFS) structural traversals, only leveraging vectors
+as a secondary semantic fallback.
 
 ## 1. Feature 3.32f: Knowledge Graph Builder & Persistence
-Before we can abstract database providers, we must actually build and store the Graph. We extract the deep AST logic (classes/functions) and construct the graph. Crucially, the graph is **persisted** directly to local specweaver.db (SQLite) upon extraction. When SpecWeaver boots, it deserializes the edges into a NetworkX memory object for fast traversal, completely eliminating the need to rebuild from source code constantly on every startup.
+Before we can abstract database providers, we must actually build and store the Graph. We extract
+the deep AST logic (classes/functions) and construct the graph. Crucially, the graph is
+**persisted** directly to local specweaver.db (SQLite) upon extraction. When SpecWeaver boots, it
+deserializes the edges into a NetworkX memory object for fast traversal, completely eliminating the
+need to rebuild from source code constantly on every startup.
 
 ## 2. Feature 3.33 Framework: Topology Provider Abstraction (Bicycle vs Rocket Mode)
 To ensure SpecWeaver's topology operations remain scalable, the backend abstraction is split:
@@ -22,23 +32,32 @@ To ensure SpecWeaver's topology operations remain scalable, the backend abstract
 
 ### Rocket Mode (PostgreSQL + Apache AGE + pgvector)
 - **Mechanism:** Persistent, enterprise-grade architecture.
-- **Why it matters:** Utilizes `Apache AGE` (Cypher queries on Postgres) to perform cross-service cluster analysis and edge walking. Uses `pgvector` purely as a supplemental lookup for fuzzy logic unmapped by native AST trees.
+- **Why it matters:** Utilizes `Apache AGE` (Cypher queries on Postgres) to perform cross-service
+  cluster analysis and edge walking. Uses `pgvector` purely as a supplemental lookup for fuzzy logic
+  unmapped by native AST trees.
 
 ## 3. Degree Centrality and "God Nodes" (Feature 3.38)
 Instead of forcing AI to guess which context files map highest weight, SpecWeaver will introduce local centrality math against AST graphs.
 
 - **The Metric:** By calculating the **Degree Centrality** of a node (counting incoming call edges and outgoing dependency edges), the system can mathematically classify architectural pillars.
 - **"God Nodes":** The top-ranked centralized nodes are flagged explicitly as "God Nodes". These signify dangerous classes where changes yield massive ripple effects.
-- **Visualization:** `sw graph` will render a completely standalone `.html` web graph (using PyVis/D3.js). Engineers can drag, zoom, and visually identify community clusters and "God Nodes" locally, eliminating the need to wait for the Heavy Dashboard API.
+- **Visualization:** `sw graph` will render a completely standalone `.html` web graph (using
+  PyVis/D3.js). Engineers can drag, zoom, and visually identify community clusters and "God Nodes"
+  locally, eliminating the need to wait for the Heavy Dashboard API.
 
 ## 4. Leiden Community Clustering
 When constructing Prompt boundaries, finding optimal combinations of `context_files` is difficult. BFS expansion allows us to use clustering algorithms (like Leiden detection). 
 
-- **Execution:** Applying these math bounds on topological dependencies allows SpecWeaver to feed LLMs dense, logically intertwined `context_files` that share a "neighborhood" rather than just similar naming schemas.
+- **Execution:** Applying these math bounds on topological dependencies allows SpecWeaver to feed
+  LLMs dense, logically intertwined `context_files` that share a "neighborhood" rather than just
+  similar naming schemas.
 
 ## 5. Multi-Modal Edges & Reverse-Weaving (Feature 3.43)
 While Tree-sitter enforces precise Extracted Edges between code files, we must map arbitrary architecture knowledge.
 
 - **Expanding Inputs:** Pipelining Whiteboard diagrams, PDFs, and Markdown documentation through Vision/LLM extractors.
-- **Inferred Edges:** The system will dynamically inject these unstructured concepts into the Postgres/NetworkX graph using specialized LLM evaluations, explicitly tagging the relationship edges as `[semantically_similar]` or `[inferred]`. This allows humans or agents to confidently distinguish between strict AST realities and AI-inferred logic. 
+- **Inferred Edges:** The system will dynamically inject these unstructured concepts into the
+  Postgres/NetworkX graph using specialized LLM evaluations, explicitly tagging the relationship
+  edges as `[semantically_similar]` or `[inferred]`. This allows humans or agents to confidently
+  distinguish between strict AST realities and AI-inferred logic. 
 - **Application:** Powering Feature 3.43 (Reverse-Weaving), allowing developers to drop legacy diagrams into the CLI to bootstrap raw implementations dynamically.

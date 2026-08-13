@@ -42,8 +42,12 @@ graph TD
 
 **Break Conditions:**
 - **Part 2 loop**: Terminates when the Architect responds `NOPE` (zero issues found). All fixes are applied directly to `[SPEC_FILE]` during the loop — the document accumulates all corrections.
-- **Part 3 → Part 2 feedback**: If the Junior has questions, they feed into Part 2's next iteration. The Architect receives both the questions AND the already-hardened spec (with all prior fixes intact). If the Junior has zero questions after the second pass, the spec is approved.
-- **Part 3 second-pass failure**: If the Junior still has questions after a full Part 2 re-loop, the problem is structural — iterative fixing cannot resolve it. Escalate to HITL triage, which decides whether to restart from Part 1 or apply a targeted fix cycle.
+- **Part 3 → Part 2 feedback**: If the Junior has questions, they feed into Part 2's next iteration.
+  The Architect receives both the questions AND the already-hardened spec (with all prior fixes
+  intact). If the Junior has zero questions after the second pass, the spec is approved.
+- **Part 3 second-pass failure**: If the Junior still has questions after a full Part 2 re-loop, the
+  problem is structural — iterative fixing cannot resolve it. Escalate to HITL triage, which decides
+  whether to restart from Part 1 or apply a targeted fix cycle.
 
 ---
 
@@ -59,7 +63,10 @@ graph TD
 
 **Part 1 is the exception**: The PO stage is interactive and conversational. It runs in a single session with the HITL until the draft is approved.
 
-**HITL Checkpoint Rule**: After every 3 iterations of Part 2 within a single loop, the pipeline MUST pause for HITL review of the accumulated changes before continuing. This prevents excessive spec drift from unchecked automated fixes (up to 5 fixes × 10 iterations = 50 changes without human oversight).
+**HITL Checkpoint Rule**: After every 3 iterations of Part 2 within a single loop, the pipeline MUST
+pause for HITL review of the accumulated changes before continuing. This prevents excessive spec
+drift from unchecked automated fixes (up to 5 fixes × 10 iterations = 50 changes without human
+oversight).
 
 ---
 
@@ -173,7 +180,9 @@ find zero, respond NOPE.
 For each issue found, apply the fix directly to the spec document.
 ```
 
-**Conditional Block**: The `<insert_if_junior_questions_available>` section is only included when Part 3 has produced questions. On the first pass (before any Junior review), this block is omitted entirely. This injection is handled automatically by the SpecWeaver orchestration engine at runtime.
+**Conditional Block**: The `<insert_if_junior_questions_available>` section is only included when
+Part 3 has produced questions. On the first pass (before any Junior review), this block is omitted
+entirely. This injection is handled automatically by the SpecWeaver orchestration engine at runtime.
 
 ---
 
@@ -214,7 +223,10 @@ Only the **final approved spec** is committed to git.
 
 ### 5.2 Review Artifacts Directory
 
-All review artifacts are stored in a top-level `.review/` directory, **outside of `docs/`**. This is critical to prevent context pollution — Part 2's prompt instructs the agent to "scan the folder docs/", so any review artifacts inside `docs/` would bias successive iterations and break the fresh-session guarantee.
+All review artifacts are stored in a top-level `.review/` directory, **outside of `docs/`**. This is
+critical to prevent context pollution — Part 2's prompt instructs the agent to "scan the folder
+docs/", so any review artifacts inside `docs/` would bias successive iterations and break the
+fresh-session guarantee.
 
 ```
 docs/specs/01_08_flows_spec.md                       ← the real spec (agent reads and modifies)
@@ -239,11 +251,15 @@ The baseline file enables visual diffing at HITL checkpoints:
 | **Final pipeline approval** | Baseline and review notes may be deleted or kept for audit. |
 
 > [!IMPORTANT]
-> The HITL always reviews and modifies `[SPEC_FILE]` directly — the live spec under `docs/`. The baseline file (`.review/...baseline.md`) is **read-only reference material** and must never be edited by the HITL or the agent. It exists solely as the left side of the diff.
+> The HITL always reviews and modifies `[SPEC_FILE]` directly — the live spec under `docs/`. The
+> baseline file (`.review/...baseline.md`) is **read-only reference material** and must never be
+> edited by the HITL or the agent. It exists solely as the left side of the diff.
 
 ### 5.4 Review Notes (Change Reasoning)
 
-Each Architect iteration appends its reasoning to `.review/[SPEC_BASENAME].review_notes.md`. This file is **never read by the agent** (it lives outside `docs/` and is not referenced in any prompt). It exists only for the HITL to understand *why* changes were made.
+Each Architect iteration appends its reasoning to `.review/[SPEC_BASENAME].review_notes.md`. This
+file is **never read by the agent** (it lives outside `docs/` and is not referenced in any prompt).
+It exists only for the HITL to understand *why* changes were made.
 
 Format (appended per iteration):
 
@@ -263,7 +279,10 @@ Format (appended per iteration):
 ```
 
 > [!NOTE]
-> The agent does **not** write to this file directly. The SpecWeaver orchestrator extracts findings from the Architect agent's output after each iteration and appends them to the review notes. The agent's prompt never mentions `.review/` or the review notes file — it remains completely unaware of their existence.
+> The agent does **not** write to this file directly. The SpecWeaver orchestrator extracts findings
+> from the Architect agent's output after each iteration and appends them to the review notes. The
+> agent's prompt never mentions `.review/` or the review notes file — it remains completely unaware
+> of their existence.
 
 At the HITL checkpoint, the human has two complementary views:
 1. **Diff tool**: `.review/[SPEC_BASENAME].baseline.md` vs `[SPEC_FILE]` → the visual **"what changed"**
@@ -280,7 +299,9 @@ After HITL approval, the review notes are **cleared** (not appended further) so 
 
 The pipeline is designed to converge:
 
-- **Part 2 (Architect)** produces diminishing returns: each iteration fixes issues, leaving fewer for the next pass. The severity gate ("implementation failure, data corruption, or security bypass") filters out nitpicks.
+- **Part 2 (Architect)** produces diminishing returns: each iteration fixes issues, leaving fewer
+  for the next pass. The severity gate ("implementation failure, data corruption, or security
+  bypass") filters out nitpicks.
 - **Part 3 (Junior)** acts as a binary gate: questions exist or they don't. After the Architect addresses the questions and re-loops to NOPE, the Junior's second pass is a confirmation check.
 - **Worst case**: If the Junior's second pass still produces questions, the spec has a structural problem that iterative fixing cannot solve. Escalate to HITL triage.
 

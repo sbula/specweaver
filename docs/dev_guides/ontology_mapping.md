@@ -24,4 +24,6 @@ To prevent contextual handoff failures between agents, all language-specific par
 
 1. **Syntax Errors:** If the underlying parser detects syntax errors, the `OntologyMapper` must gracefully drop `ERROR` blocks rather than crashing the ingestion pipeline.
 2. **API Contracts:** Ensure HTTP endpoints (e.g., `@GET`, `/api/`) are mapped to `API_CONTRACT` at the `APPLICATION` granularity level.
-3. **Lazy Polyglot Edges:** When extracting imports, you often don't know the `target_id`. Map edges with `target_id = -1` and supply the raw import string in the metadata. The Engine will lazily resolve these "Dangling Edges" later.
+3. **Lazy Polyglot Edges:** When extracting imports, you often don't know the `target_id`. Map edges
+   with `target_id = -1` and supply the raw import string in the metadata. The Engine will lazily
+   resolve these "Dangling Edges" later.

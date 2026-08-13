@@ -10,7 +10,10 @@
 
 ## 1. Problem Statement
 
-Different project domains have fundamentally different validation needs. A web-app needs strict ambiguity checking and high code coverage, while an ML model training pipeline tolerates more complexity and can't easily achieve 90% coverage. Currently, users must manually set each override one by one:
+Different project domains have fundamentally different validation needs. A web-app needs strict
+ambiguity checking and high code coverage, while an ML model training pipeline tolerates more
+complexity and can't easily achieve 90% coverage. Currently, users must manually set each override
+one by one:
 
 ```bash
 sw config set S05 --warn 50 --fail 80      # Day Test
@@ -48,7 +51,9 @@ Code defaults → SpecKind presets → DB overrides → CLI --set flags
 
 ### Where profiles fit
 
-Domain profiles are a **named preset bundle** — a single name that maps to a complete set of `RuleOverride` values. Applying a profile writes those overrides to the DB using the existing `set_validation_override()` mechanism.
+Domain profiles are a **named preset bundle** — a single name that maps to a complete set of
+`RuleOverride` values. Applying a profile writes those overrides to the DB using the existing
+`set_validation_override()` mechanism.
 
 ```
 Code defaults → SpecKind presets → DB overrides (incl. profile values) → CLI --set flags
@@ -58,7 +63,9 @@ Code defaults → SpecKind presets → DB overrides (incl. profile values) → C
 ```
 
 > [!IMPORTANT]
-> Profiles don't add a new layer to the cascade — they're a **convenience mechanism** that bulk-writes to the existing DB override layer. After applying a profile, individual `sw config set` commands can still fine-tune specific rules on top.
+> Profiles don't add a new layer to the cascade — they're a **convenience mechanism** that
+> bulk-writes to the existing DB override layer. After applying a profile, individual
+> `sw config set` commands can still fine-tune specific rules on top.
 
 ---
 
@@ -253,7 +260,9 @@ Rules not listed use code defaults.
 ### 6.4 Runner Integration (None Required)
 
 > [!TIP]
-> **No changes to `runner.py`.** Since profiles write to the existing DB override layer, the runner's `_build_rule_kwargs()` and `get_spec_rules()` already pick them up automatically. This is the key insight that makes this feature a quick win.
+> **No changes to `runner.py`.** Since profiles write to the existing DB override layer, the
+> runner's `_build_rule_kwargs()` and `get_spec_rules()` already pick them up automatically. This is
+> the key insight that makes this feature a quick win.
 
 ---
 

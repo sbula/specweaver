@@ -66,11 +66,15 @@ def detect_language(cwd: Path) -> str:
     return "python"
 ```
 
-The factory's `resolve_runner()` is not changed — it continues to work as before. `detect_language()` is a separate pure helper that can be called by converters and filters without constructing a full runner.
+The factory's `resolve_runner()` is not changed — it continues to work as before.
+`detect_language()` is a separate pure helper that can be called by converters and filters without
+constructing a full runner.
 
 ### RN-2: `language_name` property on `QARunnerInterface`
 
-Adding an abstract `language_name: str` property to `QARunnerInterface` is the cleanest design but requires updating all 5 runner classes. This is safe — the existing runners don't have `language_name` defined and won't conflict.
+Adding an abstract `language_name: str` property to `QARunnerInterface` is the cleanest design but
+requires updating all 5 runner classes. This is safe — the existing runners don't have
+`language_name` defined and won't conflict.
 
 ```python
 # In QARunnerInterface:
@@ -95,13 +99,23 @@ Each language has a build-tool-enforced convention for where test files must liv
 | TypeScript | Jest | `test.each([...])` | `scenarios/generated/` | `{stem}.scenarios.test.ts` |
 | Rust | `#[cfg(test)]` mod | `#[test]` per scenario | `tests/` | `{stem}_scenarios.rs` |
 
-**Why Java and Kotlin use `src/test/java/` / `src/test/kotlin/`:** Maven and Gradle only compile files under the declared test source roots. A `.java` or `.kt` file placed in `scenarios/generated/` would never be compiled — the build tool would silently ignore it. The package declaration inside the file (`package scenarios.generated;`) keeps the scenario namespace visible.
+**Why Java and Kotlin use `src/test/java/` / `src/test/kotlin/`:** Maven and Gradle only compile
+files under the declared test source roots. A `.java` or `.kt` file placed in `scenarios/generated/`
+would never be compiled — the build tool would silently ignore it. The package declaration inside
+the file (`package scenarios.generated;`) keeps the scenario namespace visible.
 
-**Why Python and TypeScript use `scenarios/generated/`:** pytest discovers tests in any directory. Jest's default `testMatch: ["**/*.test.ts"]` covers `scenarios/generated/` as long as `rootDir` is the project root (the default).
+**Why Python and TypeScript use `scenarios/generated/`:** pytest discovers tests in any directory.
+Jest's default `testMatch: ["**/*.test.ts"]` covers `scenarios/generated/` as long as `rootDir` is
+the project root (the default).
 
-**Why Rust uses `tests/`:** Rust's compiler treats files in `tests/` as independent integration test crates. There is no configuration — it is enforced at the compiler level. Unit tests could live in `src/` under `#[cfg(test)]`, but integration tests (which scenario tests are) belong in `tests/`.
+**Why Rust uses `tests/`:** Rust's compiler treats files in `tests/` as independent integration test
+crates. There is no configuration — it is enforced at the compiler level. Unit tests could live in
+`src/` under `#[cfg(test)]`, but integration tests (which scenario tests are) belong in `tests/`.
 
-**Key principle:** All conventions are an implementation detail of each `ScenarioConverterInterface`. `ConvertScenarioHandler` calls `converter.output_path(stem, project_root)` and writes there — zero language-specific branching in the handler itself.
+**Key principle:** All conventions are an implementation detail of each
+`ScenarioConverterInterface`. `ConvertScenarioHandler` calls
+`converter.output_path(stem, project_root)` and writes there — zero language-specific branching in
+the handler itself.
 
 ### RN-4: Java contract format
 
@@ -150,7 +164,9 @@ The scenario frame marker in each language's stack trace is derived directly fro
 
 ### RN-6: `ScenarioConverter` refactoring impact on existing tests
 
-`tests/unit/workflows/scenarios/test_scenario_converter.py` tests `ScenarioConverter.convert()` directly. After refactoring, `ScenarioConverter` becomes `PythonScenarioConverter`. The test file must be updated to import from the new location. The test logic itself doesn't change.
+`tests/unit/workflows/scenarios/test_scenario_converter.py` tests `ScenarioConverter.convert()`
+directly. After refactoring, `ScenarioConverter` becomes `PythonScenarioConverter`. The test file
+must be updated to import from the new location. The test logic itself doesn't change.
 
 ---
 
@@ -286,7 +302,10 @@ Keep `ScenarioConverter = PythonScenarioConverter` alias for backward compatibil
 `output_path(stem, project_root)` returns:
 `project_root / "src" / "test" / "java" / "scenarios" / "generated" / f"{class_name}ScenariosTest.java"`
 
-**Why `src/test/java/`:** Maven and Gradle only compile test sources from declared test source roots. Files outside this directory are not compiled — Maven/Gradle ignores them entirely. Package declaration in the generated file is `package scenarios.generated;` to match the directory structure.
+**Why `src/test/java/`:** Maven and Gradle only compile test sources from declared test source
+roots. Files outside this directory are not compiled — Maven/Gradle ignores them entirely. Package
+declaration in the generated file is `package scenarios.generated;` to match the directory
+structure.
 
 Output format (JUnit 5, package-declared, parametrized):
 ```java
@@ -394,7 +413,9 @@ describe('payment scenarios', () => {
 `output_path(stem, project_root)` returns:
 `project_root / "tests" / f"{stem}_scenarios.rs"`
 
-**Why `tests/`:** Rust's compiler treats files in `tests/` as independent integration test crates — this is a compiler-level convention, not a configurable convention. Rust does not support parametrized tests natively, so one `#[test]` function is generated per scenario.
+**Why `tests/`:** Rust's compiler treats files in `tests/` as independent integration test crates —
+this is a compiler-level convention, not a configurable convention. Rust does not support
+parametrized tests natively, so one `#[test]` function is generated per scenario.
 
 Output format (Rust integration tests):
 ```rust

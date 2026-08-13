@@ -7,15 +7,29 @@
 
 ## Goal
 
-Provide O(1) cached directory-tree walking to incrementally resolve the exact Design Assurance Level (DAL) of any target file. Instead of defaulting to project-wide settings, the engine will search up from the target file directory to locate the nearest `context.yaml` and parse its `operational.dal_level`. 
-Additionally, manage the Global Fallback Default behavior: If no target file context exists, gracefully fallback to a DB-backed global threshold, seeded safely to the maximum security setting (DAL_A) upon setup.
+Provide O(1) cached directory-tree walking to incrementally resolve the exact Design Assurance Level
+(DAL) of any target file. Instead of defaulting to project-wide settings, the engine will search up
+from the target file directory to locate the nearest `context.yaml` and parse its
+`operational.dal_level`. 
+Additionally, manage the Global Fallback Default behavior: If no target file context exists,
+gracefully fallback to a DB-backed global threshold, seeded safely to the maximum security setting
+(DAL_A) upon setup.
 
 ## Architectural Decisions & HITL Responses (Merged)
 
-1. **Resolution Engine Placement (Zero-Trust):** The resolution engine (`dal_resolver.py`) will live inside the `specweaver/config/` module, safely serving as a leaf node which `flow` handles correctly without cyclical dependency boundary violations.
-2. **Orchestration Bridging:** The `ValidateSpecHandler` and `ValidateCodeHandler` (`flow/_validation.py`) will directly invoke the DAL lookup locally, check defaults if necessary, and manually map the DAL matrices into standard `apply_settings_to_pipeline()`.
-3. **Boundary Condition (Root Detection):** The resolver will walk from the target file upward but aggressively halt precisely at the system `project_root` returning `None` instead of infinitely scanning outside the project.
-4. **Configurable Default DAL:** If the scanner returns `None`, the Orchestrator will query the database for the newly supported `default_dal` field to use as the fallback. During project initialization, this field seeds to `DAL_A` (Flight-Critical) to ensure extreme governance adoption for new and legacy project onboarding.
+1. **Resolution Engine Placement (Zero-Trust):** The resolution engine (`dal_resolver.py`) will live
+   inside the `specweaver/config/` module, safely serving as a leaf node which `flow` handles
+   correctly without cyclical dependency boundary violations.
+2. **Orchestration Bridging:** The `ValidateSpecHandler` and `ValidateCodeHandler`
+   (`flow/_validation.py`) will directly invoke the DAL lookup locally, check defaults if necessary,
+   and manually map the DAL matrices into standard `apply_settings_to_pipeline()`.
+3. **Boundary Condition (Root Detection):** The resolver will walk from the target file upward but
+   aggressively halt precisely at the system `project_root` returning `None` instead of infinitely
+   scanning outside the project.
+4. **Configurable Default DAL:** If the scanner returns `None`, the Orchestrator will query the
+   database for the newly supported `default_dal` field to use as the fallback. During project
+   initialization, this field seeds to `DAL_A` (Flight-Critical) to ensure extreme governance
+   adoption for new and legacy project onboarding.
 5. **Config DB Scope:** Feature 3.5's massive Validation DB Overrides Cleanup is successfully quarantined to sub-feature **SF-03** to eliminate regression risks and preserve testability.
 
 ## Proposed Changes
@@ -31,7 +45,10 @@ Additionally, manage the Global Fallback Default behavior: If no target file con
 - Implement `DALResolver` class.
 - Accepts `project_root: Path` in construction.
 - Contains an internal `self._cache: dict[Path, DALLevel | None]` instance dictionary.
-- Method `resolve(target_path: Path) -> DALLevel | None`: Walk `target_path.parents`, parsing `context.yaml` sequentially. Halts immediately and returns `None` upon breaking out of `project_root`. **NOTE:** If a `dal_level` string is found but is invalid (not in `DALLevel` enum), raise a `ValueError` immediately (Fail-Secure).
+- Method `resolve(target_path: Path) -> DALLevel | None`: Walk `target_path.parents`, parsing
+  `context.yaml` sequentially. Halts immediately and returns `None` upon breaking out of
+  `project_root`. **NOTE:** If a `dal_level` string is found but is invalid (not in `DALLevel`
+  enum), raise a `ValueError` immediately (Fail-Secure).
 - *Deviation/Addition (Task 2)*: Implemented fail-safe resilience against malformed YAML structures to prevent `context.yaml` syntax errors from aborting traversal.
 
 ### `specweaver/flow/_validation.py` -> [COMPLETED]
@@ -48,7 +65,9 @@ Additionally, manage the Global Fallback Default behavior: If no target file con
 ## Verification Plan
 
 ### Automated Tests
-- `tests/unit/config/test_dal_resolver.py`: Ensure parsing of valid/invalid/missing `.yaml` structures, verify memoization performance against patches, and ensure strict `project_root` boundary cutoffs.
+- `tests/unit/config/test_dal_resolver.py`: Ensure parsing of valid/invalid/missing `.yaml`
+  structures, verify memoization performance against patches, and ensure strict `project_root`
+  boundary cutoffs.
 - `tests/unit/config/test_database.py`: Verify `SCHEMA_V13` SQLite schema migrations construct seamlessly natively across both fresh DB instances and upgraded instances.
 
 ### Pre-commit Validation

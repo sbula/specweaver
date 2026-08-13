@@ -7,18 +7,36 @@
 
 ## Feature Overview
 
-Feature TECH-001 adds Domain-Driven Design (DDD) compliance to the SpecWeaver core system by dismantling legacy monolithic layers (`core/config/`, `interfaces/cli/`, and `core/loom/`). It solves the "Package by Layer" anti-pattern by extracting and relocating database mixins, CLI commands, and Sandbox executors into their respective feature-bounded contexts (e.g., `llm_store/`, `sandbox/git/`, `graph/cli.py`). It interacts with the Typer CLI root, the LLM telemetry database, and the execution engine, but does NOT touch actual business logic. Key constraints: Zero Regression Guarantee (the entire E2E test suite must pass with zero modifications to test assertions) and strict DAL Context Enforcement via `context.yaml` files.
+Feature TECH-001 adds Domain-Driven Design (DDD) compliance to the SpecWeaver core system by
+dismantling legacy monolithic layers (`core/config/`, `interfaces/cli/`, and `core/loom/`). It
+solves the "Package by Layer" anti-pattern by extracting and relocating database mixins, CLI
+commands, and Sandbox executors into their respective feature-bounded contexts (e.g., `llm_store/`,
+`sandbox/git/`, `graph/cli.py`). It interacts with the Typer CLI root, the LLM telemetry database,
+and the execution engine, but does NOT touch actual business logic. Key constraints: Zero Regression
+Guarantee (the entire E2E test suite must pass with zero modifications to test assertions) and
+strict DAL Context Enforcement via `context.yaml` files.
 
 ## Research Findings
 
 ### Codebase Patterns
-Currently, `core/config/` houses a monolithic SQLite connection pool and multiple mixins (`_db_llm_mixin.py`, `_db_telemetry_mixin.py`) serving disparate features. This must be decentralized into specific data access layers per domain.
-The `interfaces/cli/` directory contains commands for every system feature (e.g., `lineage.py`, `graph.py`, `review.py`). These will be moved into domain-specific subdirectories (e.g., `src/specweaver/graph/cli.py`) and dynamically loaded.
-The `core/loom/` Sandbox groups files by layer (`atoms/`, `tools/`, `commons/`) rather than by domain (`sandbox/git/`, `sandbox/qa/`). We will refactor this to align with the 4-layer Agentic Architecture pattern (Executor → Tool → Interface → Atom) and physically colocate these layers inside feature-specific packages.
+Currently, `core/config/` houses a monolithic SQLite connection pool and multiple mixins
+(`_db_llm_mixin.py`, `_db_telemetry_mixin.py`) serving disparate features. This must be
+decentralized into specific data access layers per domain.
+The `interfaces/cli/` directory contains commands for every system feature (e.g., `lineage.py`,
+`graph.py`, `review.py`). These will be moved into domain-specific subdirectories (e.g.,
+`src/specweaver/graph/cli.py`) and dynamically loaded.
+The `core/loom/` Sandbox groups files by layer (`atoms/`, `tools/`, `commons/`) rather than by
+domain (`sandbox/git/`, `sandbox/qa/`). We will refactor this to align with the 4-layer Agentic
+Architecture pattern (Executor → Tool → Interface → Atom) and physically colocate these layers
+inside feature-specific packages.
 
 **ROI Analysis & Beneficiaries:**
-1. **Microservice Readiness (High ROI):** Features like the Knowledge Graph (`graph/`) or Telemetry will profit immensely because their API, Database, and CLI layers will be strictly decoupled, making extraction into a standalone microservice trivial.
-2. **Security & RBAC (High ROI):** Organizing `loom/` into bounded domains (`sandbox/git/`) ensures that security executors and role-based interfaces are isolated, severely reducing the blast radius of any Sandbox escape.
+1. **Microservice Readiness (High ROI):** Features like the Knowledge Graph (`graph/`) or Telemetry
+   will profit immensely because their API, Database, and CLI layers will be strictly decoupled,
+   making extraction into a standalone microservice trivial.
+2. **Security & RBAC (High ROI):** Organizing `loom/` into bounded domains (`sandbox/git/`) ensures
+   that security executors and role-based interfaces are isolated, severely reducing the blast
+   radius of any Sandbox escape.
 3. **Developer Experience (Medium ROI):** Future engineers will no longer have to jump between 4 different root directories to add a single feature.
 
 ### External Tools
@@ -165,13 +183,22 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-001/TECH-001_sf03_implementation_plan.md
 
 ### SF-04: Eliminate `core.config` Circular Dependencies
-- **Scope**: `tach.toml` currently declares `core.config` ⇄ `infrastructure.llm` and `core.config` ⇄ `core.flow` as live mutual dependencies. A declared cycle is still a cycle, and it directly contradicts this feature's own "preventing circular dependencies" claim — `core.config` must become a pure leaf module with no outbound dependency on higher-level bounded contexts.
+- **Scope**: `tach.toml` currently declares `core.config` ⇄ `infrastructure.llm` and `core.config` ⇄
+  `core.flow` as live mutual dependencies. A declared cycle is still a cycle, and it directly
+  contradicts this feature's own "preventing circular dependencies" claim — `core.config` must
+  become a pure leaf module with no outbound dependency on higher-level bounded contexts.
 - **FRs**: [FR-9]
-- **Inputs**: `tach.toml` dependency declarations (`core.config` at line 34 depends on `core.flow` and `infrastructure.llm`; `core.flow` at line 42 and `infrastructure.llm` at line 54 depend back on `core.config`) and the concrete imports each declares.
+- **Inputs**: `tach.toml` dependency declarations (`core.config` at line 34 depends on `core.flow`
+  and `infrastructure.llm`; `core.flow` at line 42 and `infrastructure.llm` at line 54 depend back
+  on `core.config`) and the concrete imports each declares.
 - **Outputs**: Both cycles removed from `tach.toml`; `core.config` has no outbound dependency on `infrastructure.llm` or `core.flow`.
 - **Depends on**: none
 - **Impl Plan**: not yet written
-- **Note (2026-08-01)**: this scope was briefly split into a standalone `TECH-022` ticket (minted 2026-07-31 under the finished-stories-immutable rule, since TECH-001 was — incorrectly — considered fully delivered at the time). Once TECH-001 itself was corrected to reflect that it was never actually finished, `TECH-022` was retired and its scope folded back in here as SF-04, rather than left to live on as a permanently "tracked" gap next to a story marked done.
+- **Note (2026-08-01)**: this scope was briefly split into a standalone `TECH-022` ticket (minted
+  2026-07-31 under the finished-stories-immutable rule, since TECH-001 was — incorrectly —
+  considered fully delivered at the time). Once TECH-001 itself was corrected to reflect that it was
+  never actually finished, `TECH-022` was retired and its scope folded back in here as SF-04, rather
+  than left to live on as a permanently "tracked" gap next to a story marked done.
 
 ## Execution Order
 

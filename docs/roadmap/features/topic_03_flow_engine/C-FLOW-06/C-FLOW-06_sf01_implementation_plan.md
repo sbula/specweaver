@@ -6,7 +6,9 @@
 - **Status**: APPROVED
 
 ## 1. Description
-Implements AST Skeleton generation via Context Condensation to prevent context-window saturation (NFR-1). Also natively generates `context.yaml` baseline topologies directly during `sw init` scaffolding (FR-4) to immediately ground project boundaries.
+Implements AST Skeleton generation via Context Condensation to prevent context-window saturation
+(NFR-1). Also natively generates `context.yaml` baseline topologies directly during `sw init`
+scaffolding (FR-4) to immediately ground project boundaries.
 
 ## 2. Component Modifications
 
@@ -22,7 +24,9 @@ Implements AST Skeleton generation via Context Condensation to prevent context-w
 - **FR-1 Implementation**:
   - For each language (Python, TS, Java, Kotlin, Rust), add method: `produce_skeleton_string(source_code: bytes) -> str`
   - Ensure the method iterates over tree-sitter nodes mathematically and deletes ONLY implementation block boundaries (`{ body }` / `def: ...`).
-  - **CRITICAL**: The string slicing MUST explicitly preserve all docstrings, inline comments, and framework decorators (`@RestController`, `@pytest`, etc.) to prevent LLM intent hallucination downstream.
+  - **CRITICAL**: The string slicing MUST explicitly preserve all docstrings, inline comments, and
+    framework decorators (`@RestController`, `@pytest`, etc.) to prevent LLM intent hallucination
+    downstream.
 
 ### C. Atom Delegation (`src/specweaver/core/loom/atoms/code_structure/atom.py`)
 - **Archetype**: Orchestrator (Internal sandbox boundary)

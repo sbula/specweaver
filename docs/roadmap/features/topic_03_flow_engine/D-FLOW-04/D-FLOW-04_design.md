@@ -7,7 +7,14 @@
 
 ## Feature Overview
 
-Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw review`, `sw draft`, `sw implement`) by refactoring them to use dynamic 1-step pipelines via `PipelineRunner`. It solves execution inconsistency by standardizing telemetry, state tracking, and execution paths across all CLI operations. As part of this, it conducts a project-wide logging reform by introducing `rich.logging.RichHandler` for colorized console output and a JSON-formatted `RotatingFileHandler` for persistent DEBUG logging. Finally, it rolls out structured logging calls across every module in the codebase, ensuring every class and public method emits appropriate log messages for observability and post-mortem debugging.
+Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw review`, `sw draft`,
+`sw implement`) by refactoring them to use dynamic 1-step pipelines via `PipelineRunner`. It solves
+execution inconsistency by standardizing telemetry, state tracking, and execution paths across all
+CLI operations. As part of this, it conducts a project-wide logging reform by introducing
+`rich.logging.RichHandler` for colorized console output and a JSON-formatted `RotatingFileHandler`
+for persistent DEBUG logging. Finally, it rolls out structured logging calls across every module in
+the codebase, ensuring every class and public method emits appropriate log messages for
+observability and post-mortem debugging.
 
 ## Research Findings
 
@@ -18,7 +25,12 @@ Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw rev
 > SF-01 and SF-02 are COMMITTED. The ONLY remaining work is SF-03 (Logging Rollout).
 > Do NOT re-implement or modify any PipelineRunner, CLI command routing, or logging infrastructure code.
 
-Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g., `Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically. Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without creating new architectural patterns. The existing `telemetry_logger.py` uses standard library Python logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
+Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g.,
+`Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates
+multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically.
+Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without
+creating new architectural patterns. The existing `telemetry_logger.py` uses standard library Python
+logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -81,7 +93,10 @@ No external blueprint references are strictly required, though this follows the 
 - **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf02_implementation_plan.md
 
 ### SF-03: Logging Rollout
-- **Scope**: Add structured logging calls (`logger.debug`, `logger.info`, `logger.warning`, `logger.error`) to every module, class, and public method across the entire `src/specweaver/` tree. Ensure every module declares `logger = logging.getLogger(__name__)` and every public function/method emits at least method-entry debug logs and error-path logs.
+- **Scope**: Add structured logging calls (`logger.debug`, `logger.info`, `logger.warning`,
+  `logger.error`) to every module, class, and public method across the entire `src/specweaver/`
+  tree. Ensure every module declares `logger = logging.getLogger(__name__)` and every public
+  function/method emits at least method-entry debug logs and error-path logs.
 - **FRs**: [FR-6]
 - **Inputs**: Existing module source code, logging infrastructure from SF-01.
 - **Outputs**: All modules instrumented with structured logging calls.

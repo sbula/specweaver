@@ -77,9 +77,17 @@ Implement SQLite persistence for the artifact lineage graph and propagate state 
 - Update `log_usage` INSERT statement to correctly persist `run_id` if present in the record dict.
 
 ## Research Notes
-- **DB Schema Handling**: The `Database._ensure_schema()` logic smoothly handles numerical schema versioning via the `_MIGRATIONS` table list. V11 hooks straight in without disruption. SQLite's `ALTER TABLE ADD COLUMN` is natively supported.
-- **Context Passing**: Passing `step_records` as a list of serialized dictionaries via `model_dump()` guarantees handlers cannot accidentally mutate the runner's internal models, maintaining tight encapsulation.
-- **Correlation Power**: By tracking `run_id` uniformly across `artifact_events` (this SF), `llm_usage_log` (telemetry), and `pipeline_runs` (state store), we can perfectly execute the `JOIN` queries needed to see exactly which agents generated the artifact, including the `task_type` (e.g. `research`, `review`, `implement`), addressing committee-generation edge cases flawlessly.
+- **DB Schema Handling**: The `Database._ensure_schema()` logic smoothly handles numerical schema
+  versioning via the `_MIGRATIONS` table list. V11 hooks straight in without disruption. SQLite's
+  `ALTER TABLE ADD COLUMN` is natively supported.
+- **Context Passing**: Passing `step_records` as a list of serialized dictionaries via
+  `model_dump()` guarantees handlers cannot accidentally mutate the runner's internal models,
+  maintaining tight encapsulation.
+- **Correlation Power**: By tracking `run_id` uniformly across `artifact_events` (this SF),
+  `llm_usage_log` (telemetry), and `pipeline_runs` (state store), we can perfectly execute the
+  `JOIN` queries needed to see exactly which agents generated the artifact, including the
+  `task_type` (e.g. `research`, `review`, `implement`), addressing committee-generation edge cases
+  flawlessly.
 
 ---
 
@@ -87,12 +95,20 @@ Implement SQLite persistence for the artifact lineage graph and propagate state 
 
 ### 5.1 Open questions
 **Are there still any unresolved decisions or ambiguities?**
-All decisions are resolved and documented inline in the plan. SF-01 solely deals with establishing the database channel and providing the contextual wiring for SF-02 to actually inject UUIDs into code.
+All decisions are resolved and documented inline in the plan. SF-01 solely deals with establishing
+the database channel and providing the contextual wiring for SF-02 to actually inject UUIDs into
+code.
 
 ### 5.1a Agent Handoff Risk
 **If a new agent in a new session were to continue starting only with this document:**
-A fresh agent will likely stumble on this critical question: *"How does the `TelemetryCollector` inside the `llm` module know what the current `run_id` is, since `llm` correctly forbids importing `flow/state.py`?"*
-**Mitigation:** The plan explicitly dictates adding `run_id` to `GenerationConfig` inside `llm/models.py`. The generation handlers inside `flow/handlers.py` will read `context.run_id` and assign it to `config.run_id` before calling the LLM. The `TelemetryCollector` simply extracts it from the `GenerationConfig`. Doing this preserves the strict one-way dependency rules established in the architecture documentation.
+A fresh agent will likely stumble on this critical question: *"How does the `TelemetryCollector`
+inside the `llm` module know what the current `run_id` is, since `llm` correctly forbids importing
+`flow/state.py`?"*
+**Mitigation:** The plan explicitly dictates adding `run_id` to `GenerationConfig` inside
+`llm/models.py`. The generation handlers inside `flow/handlers.py` will read `context.run_id` and
+assign it to `config.run_id` before calling the LLM. The `TelemetryCollector` simply extracts it
+from the `GenerationConfig`. Doing this preserves the strict one-way dependency rules established in
+the architecture documentation.
 
 ### 5.2 Architecture and future compatibility
 **Does the plan respect all context.yaml dependency rules and support upcoming roadmap features?**

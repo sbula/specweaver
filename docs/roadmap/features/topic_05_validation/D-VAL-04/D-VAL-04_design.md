@@ -15,8 +15,16 @@ Key constraints: must rigorously adhere to all `.yaml` contexts, enable ROI-driv
 ## Research Findings
 
 ### Codebase Patterns
-Currently, `StandardsAnalyzer` heavily relies on AST extraction across all scopes to extract naming and architecture constraints. For greenfield repos, this results in an "Empty Repository" vacuum since it expects legacy code. We can reuse the `tree-sitter` bindings inside `commons/language/ast_parser.py` but we must build a secondary pipeline logic layer inside `assurance/standards` to provide built-in profiles.  
-Based on the explicit request for **ROI analysis and optimization**, an analysis of the Phase 3 Optimizations (`docs/architecture/feature_3_32d_refactoring_design.md`) reveals a massive architectural return in embedding **AST Skeleton Condensation** (1.1). Replacing raw contiguous content dumps with deterministic signatures directly limits the token blast radius and speeds up context resolution, providing immediate structural speed enhancements when injecting standards.
+Currently, `StandardsAnalyzer` heavily relies on AST extraction across all scopes to extract naming
+and architecture constraints. For greenfield repos, this results in an "Empty Repository" vacuum
+since it expects legacy code. We can reuse the `tree-sitter` bindings inside
+`commons/language/ast_parser.py` but we must build a secondary pipeline logic layer inside
+`assurance/standards` to provide built-in profiles.  
+Based on the explicit request for **ROI analysis and optimization**, an analysis of the Phase 3
+Optimizations (`docs/architecture/feature_3_32d_refactoring_design.md`) reveals a massive
+architectural return in embedding **AST Skeleton Condensation** (1.1). Replacing raw contiguous
+content dumps with deterministic signatures directly limits the token blast radius and speeds up
+context resolution, providing immediate structural speed enhancements when injecting standards.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

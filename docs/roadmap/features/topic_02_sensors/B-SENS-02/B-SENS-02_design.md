@@ -8,7 +8,10 @@
 ## Feature Overview
 
 Feature B-SENS-02 adds a persistent, semantic Knowledge Graph to the Workspace Context system.
-It solves the problem of LLM hallucination and expensive graph recalculation by persistently storing AST nodes (files, classes, functions, variables) and their edges (imports, def-use chains, Control Flow) in a project-local SQLite database (`.specweaver/specweaver.db`), wrapped in `NetworkX` for fast traversal.
+It solves the problem of LLM hallucination and expensive graph recalculation by persistently storing
+AST nodes (files, classes, functions, variables) and their edges (imports, def-use chains, Control
+Flow) in a project-local SQLite database (`.specweaver/specweaver.db`), wrapped in `NetworkX` for
+fast traversal.
 It interacts with `D-SENS-02` (Tree-Sitter Parsers) to ingest the raw AST, and does NOT touch orchestration pipelines or remote cloud databases.
 Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Semantic Hashing (`A-SENS-01`), and must be extremely fast to query locally.
 
@@ -119,7 +122,9 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 
 ## Core Data Model & Ontology
 
-To prevent contextual handoff failures between implementation agents, the Knowledge Graph MUST strictly adhere to this universal ontology. Raw Tree-Sitter CST nodes must be translated into these constraints before ingestion.
+To prevent contextual handoff failures between implementation agents, the Knowledge Graph MUST
+strictly adhere to this universal ontology. Raw Tree-Sitter CST nodes must be translated into these
+constraints before ingestion.
 
 ### Allowed Node Types
 *   `FILE`: A physical source code file.
@@ -136,20 +141,38 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 *   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
 
 ### Microservice Graph Federation (Future-Proofing)
-To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
+To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG
+for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
 Instead of building a single centralized monolithic `specweaver.db`, each microservice maintains its own local `.specweaver/specweaver.db` within its own repository.
-*   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph layer that links all microservices together *exclusively* via their interfaces (REST APIs, Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices' internal logic.
-    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in `~/.specweaver/specweaver.db`.
-*   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
-*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
+*   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph
+    layer that links all microservices together *exclusively* via their interfaces (REST APIs,
+    Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices'
+    internal logic.
+    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT
+        stored in a microservice's local DB. It is housed either in the company's central
+        GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in
+        `~/.specweaver/specweaver.db`.
+*   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with
+    local databases without global ID collisions, every single Node ID MUST be prefixed with its
+    microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
+*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in
+    the System Graph, it will dynamically mount the remote SQLite database and fuse the internal
+    subgraphs only when explicit drill-down is requested.
 
 ### Monorepo & Strongly Modularized Application Support
 For Monorepos (containing multiple microservices) or strongly modularized monoliths, the architecture offers two deployment patterns:
-1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
+1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable
+    microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain
+    its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model
+    above, linking via `API_CONTRACT` nodes.
 2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/specweaver.db` at the repository root.
-    *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
+    *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses
+        `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define
+        internal architectural borders.
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
-    *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
+    *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g.,
+        `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the
+        monolith is ever refactored or communicates with an external microservice.
 
 ### SQLite Schema Contract (SF-02)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
@@ -171,19 +194,29 @@ When a file is flagged as `DIRTY`, the engine avoids rebuilding the entire file'
 2.  **Hash Diffing:** Compare the `semantic_hash` of the new nodes against the existing nodes stored in memory/SQLite for `file_id = X`.
 3.  **Insert (New):** If a new hash appears, INSERT the new node and calculate/insert its edges.
 4.  **Purge (Deleted/Ghost):** If a hash exists in the DB but is missing from the new AST (e.g., function was deleted or renamed), DELETE that specific node and sever only its attached edges.
-5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain perfectly intact.
+5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line
+    elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain
+    perfectly intact.
 
 ### 3. The Synchronization Cycle (Async Flush)
 Once the NetworkX graph is updated, SF-02 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
 
 ### 4. Handling Refactoring (Moving Functions)
-Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code preserves its hash. 
-The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. Any external edges (like `CALLS`) pointing to that `semantic_hash` will seamlessly reconnect without manual graph patching.
+Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather
+than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code
+preserves its hash. 
+The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. Any external edges
+(like `CALLS`) pointing to that `semantic_hash` will seamlessly reconnect without manual graph
+patching.
 
 ## Sub-Feature Breakdown
 
 ### SF-01: In-Memory Knowledge Graph Engine & Enterprise Ontology
-- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic). It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries as Edges. Exposes the read query API.
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds
+  the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic).
+  It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts
+  passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries
+  as Edges. Exposes the read query API.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
 - **Outputs**: Expanded `GraphNode` schema, new Edge types, in-memory `NetworkX` graph, and `.graphml` export.
@@ -191,7 +224,11 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: ⬜
 
 ### SF-02: Persistent Storage Adapter (SQLite)
-- **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
+- **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely
+  isolated from `config/` to keep structural graph data separate from application settings.
+  Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit,
+  indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the
+  `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
 - **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
@@ -199,10 +236,19 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf02_implementation_plan.md
 
 ### SF-03: Graph Builder Orchestration & Harmonization
-- **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and `graph_store/`.
+- **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to
+  coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a
+  generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the
+  `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator
+  enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and
+  `graph_store/`.
   Second, it aggressively refactors the project's existing legacy graphs to use this exact same triad by establishing feature-specific graph sub-modules:
-  1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module. `assurance` delegates to this module for computation.
-  2. **Lineage Graph (`B-SENS-01`)**: Migrates the SQLite `artifact_events` table schema out of `config/database.py` and the tree-traversal math out of `cli/lineage.py` into a new `specweaver.graph.lineage` module. The CLI remains a thin router.
+  1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from
+     `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module.
+     `assurance` delegates to this module for computation.
+  2. **Lineage Graph (`B-SENS-01`)**: Migrates the SQLite `artifact_events` table schema out of
+     `config/database.py` and the tree-traversal math out of `cli/lineage.py` into a new
+     `specweaver.graph.lineage` module. The CLI remains a thin router.
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: File system paths, legacy graph generators.
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
@@ -314,7 +360,9 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 ## Core Data Model & Ontology
 
-To prevent contextual handoff failures between implementation agents, the Knowledge Graph MUST strictly adhere to this universal ontology. Raw Tree-Sitter CST nodes must be translated into these constraints before ingestion.
+To prevent contextual handoff failures between implementation agents, the Knowledge Graph MUST
+strictly adhere to this universal ontology. Raw Tree-Sitter CST nodes must be translated into these
+constraints before ingestion.
 
 ### Allowed Node Types
 *   `FILE`: A physical source code file.
@@ -331,20 +379,38 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 *   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
 
 ### Microservice Graph Federation (Future-Proofing)
-To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
+To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG
+for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
 Instead of building a single centralized monolithic `specweaver.db`, each microservice maintains its own local `.specweaver/specweaver.db` within its own repository.
-*   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph layer that links all microservices together *exclusively* via their interfaces (REST APIs, Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices' internal logic.
-    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in `~/.specweaver/specweaver.db`.
-*   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
-*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
+*   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph
+    layer that links all microservices together *exclusively* via their interfaces (REST APIs,
+    Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices'
+    internal logic.
+    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT
+        stored in a microservice's local DB. It is housed either in the company's central
+        GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in
+        `~/.specweaver/specweaver.db`.
+*   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with
+    local databases without global ID collisions, every single Node ID MUST be prefixed with its
+    microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
+*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in
+    the System Graph, it will dynamically mount the remote SQLite database and fuse the internal
+    subgraphs only when explicit drill-down is requested.
 
 ### Monorepo & Strongly Modularized Application Support
 For Monorepos (containing multiple microservices) or strongly modularized monoliths, the architecture offers two deployment patterns:
-1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
+1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable
+    microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain
+    its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model
+    above, linking via `API_CONTRACT` nodes.
 2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/specweaver.db` at the repository root.
-    *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
+    *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses
+        `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define
+        internal architectural borders.
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
-    *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
+    *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g.,
+        `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the
+        monolith is ever refactored or communicates with an external microservice.
 
 ### SQLite Schema Contract (SF-02)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
@@ -366,19 +432,29 @@ When a file is flagged as `DIRTY`, the engine avoids rebuilding the entire file'
 2.  **Hash Diffing:** Compare the `semantic_hash` of the new nodes against the existing nodes stored in memory/SQLite for `file_id = X`.
 3.  **Insert (New):** If a new hash appears, INSERT the new node and calculate/insert its edges.
 4.  **Purge (Deleted/Ghost):** If a hash exists in the DB but is missing from the new AST (e.g., function was deleted or renamed), DELETE that specific node and sever only its attached edges.
-5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain perfectly intact.
+5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line
+    elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain
+    perfectly intact.
 
 ### 3. The Synchronization Cycle (Async Flush)
 Once the NetworkX graph is updated, SF-02 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
 
 ### 4. Handling Refactoring (Moving Functions)
-Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code preserves its hash. 
-The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. Any external edges (like `CALLS`) pointing to that `semantic_hash` will seamlessly reconnect without manual graph patching.
+Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather
+than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code
+preserves its hash. 
+The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. Any external edges
+(like `CALLS`) pointing to that `semantic_hash` will seamlessly reconnect without manual graph
+patching.
 
 ## Sub-Feature Breakdown
 
 ### SF-01: In-Memory Knowledge Graph Engine & Enterprise Ontology
-- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic). It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries as Edges. Exposes the read query API.
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds
+  the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic).
+  It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts
+  passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries
+  as Edges. Exposes the read query API.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
 - **Outputs**: Expanded `GraphNode` schema, new Edge types, in-memory `NetworkX` graph, and `.graphml` export.
@@ -386,7 +462,11 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: ⬜
 
 ### SF-02: Persistent Storage Adapter (SQLite)
-- **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
+- **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely
+  isolated from `config/` to keep structural graph data separate from application settings.
+  Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit,
+  indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the
+  `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
 - **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
@@ -394,10 +474,19 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf02_implementation_plan.md
 
 ### SF-03: Graph Builder Orchestration & Harmonization
-- **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and `graph_store/`.
+- **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to
+  coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a
+  generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the
+  `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator
+  enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and
+  `graph_store/`.
   Second, it aggressively refactors the project's existing legacy graphs to use this exact same triad by establishing feature-specific graph sub-modules:
-  1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module. `assurance` delegates to this module for computation.
-  2. **Lineage Graph (`B-SENS-01`)**: Migrates the SQLite `artifact_events` table schema out of `config/database.py` and the tree-traversal math out of `cli/lineage.py` into a new `specweaver.graph.lineage` module. The CLI remains a thin router.
+  1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from
+     `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module.
+     `assurance` delegates to this module for computation.
+  2. **Lineage Graph (`B-SENS-01`)**: Migrates the SQLite `artifact_events` table schema out of
+     `config/database.py` and the tree-traversal math out of `cli/lineage.py` into a new
+     `specweaver.graph.lineage` module. The CLI remains a thin router.
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: File system paths, legacy graph generators.
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.

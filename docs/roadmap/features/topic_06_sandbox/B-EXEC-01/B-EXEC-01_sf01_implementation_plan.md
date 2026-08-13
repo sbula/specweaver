@@ -83,12 +83,46 @@ ephemeral, auto-removed container.
 `cache_root: Path`.
 
 `ContainerSubprocessExecutor(SubprocessExecutor)`:
-1. `__init__(self, cwd, mounts: ContainerMounts, image: str | None = None, timeout_seconds=120, resource_limits=None)`: call `super().__init__(cwd=cwd, timeout_seconds=timeout_seconds, resource_limits=resource_limits)`; validate `mounts.source_root` via `ReadOnlyWorkspaceBoundary(api_paths=[mounts.source_root])`, `mounts.scratch_root`/`cache_root` via `WorkspaceBoundary(roots=[...])` (AD-3); create `scratch_root`/`cache_root` on disk if missing (`mkdir(parents=True, exist_ok=True)`); resolve `image` if `None` by reading `requires-python` from `cwd / "pyproject.toml"` (best-effort regex/`tomllib` parse; map to closest of `{3.11, 3.12, 3.13}`, default `3.13` on absence/parse failure); store `self._engine: str | None = None` (unresolved).
-2. `_ensure_engine(self) -> str` (lazy, memoized): if `self._engine` is set, return it. Else, for `"podman"` then `"docker"`: resolve via `shutil.which(name)` (absolute path, never the bare string); if found, run a liveness probe (`[resolved_path, "info"]`) through `super().execute(..., timeout_seconds=5)`; if `exit_code == 0`, memoize and return. If neither engine is live, raise `ContainerEngineUnavailableError` naming both attempted engines.
-3. `_ensure_prepared(self) -> None`: compute a hash of `cwd / "uv.lock"` (fallback `pyproject.toml`) if present; compare against a stamp file at `.specweaver/.sandbox/.prepared_hash` (a **sibling** of `cache_root`, not inside it — see Red/Blue Cycle 1 below); if unchanged, return immediately. Else run a **network-enabled** prepare container (`--network` default, i.e. omit `--network none`) invoking `uv sync` with `cwd`'s source mounted RO at `/workspace`, `cache_root` mounted RW at `/cache` (`UV_CACHE_DIR=/cache`), no scratch mount, no LLM-generated code executed — write the new hash to the stamp file on success (AD-7/AD-9's two-phase split).
-4. `execute(self, cmd, *, timeout_seconds=None, extra_env=None, cwd_override=None, input_text=None) -> SubprocessResult` (override): call `self._ensure_engine()` (propagates `ContainerEngineUnavailableError`); call `self._ensure_prepared()`; build `name = f"specweaver-qa-{run_id}-{uuid4().hex[:8]}"`; pre-emptively `[engine, "rm", "-f", name]` via `super().execute(...)`, ignoring its result (idempotent, AD-8); build the wrapped argv (see below); call `result = super().execute(wrapped, timeout_seconds=timeout_seconds, input_text=input_text)` — `extra_env` entries become `-e KEY=VAL` flags baked into `wrapped` (they must reach the *container's* env, not the local CLI client's); `cwd_override` is ignored with a `logger.warning` if non-`None`; in a `finally` block, run `[engine, "rm", "-f", name]` again via `super().execute()` unconditionally (post-run cleanup, AD-8), swallowing any error from the cleanup call itself.
-5. `_build_container_cmd(self, name, cmd, extra_env) -> list[str]`: `[engine, "run", "--rm", "--name", name, "--read-only", "-v", f"{source_root}:/workspace:ro", "-v", f"{scratch_root}:/scratch:rw", "--tmpfs", "/tmp:size=100m,mode=1777", "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--memory", "2147483648", "--pids-limit", "128", *user_flag, *(f"-e" then f"{k}={v}" for k, v in (extra_env or {}).items()), "--workdir", "/workspace", image, *cmd]`.
-   - **`user_flag` (NFR-4 — non-root, not deferred; see Post-Planning Correction)**: on non-Windows (`sys.platform != "win32"`), `["--user", f"{os.getuid()}:{os.getgid()}"]` — tractable at low complexity because `scratch_root`/`cache_root` are created by `ContainerSubprocessExecutor.__init__` itself as the invoking host user, so the container runs as the same UID that already owns every mount it touches. On Windows, `user_flag = []` (falls back to image default/root), with a one-time `logger.warning`.
+1. `__init__(self, cwd, mounts: ContainerMounts, image: str | None = None, timeout_seconds=120, resource_limits=None)`:
+   call
+   `super().__init__(cwd=cwd, timeout_seconds=timeout_seconds, resource_limits=resource_limits)`;
+   validate `mounts.source_root` via `ReadOnlyWorkspaceBoundary(api_paths=[mounts.source_root])`,
+   `mounts.scratch_root`/`cache_root` via `WorkspaceBoundary(roots=[...])` (AD-3); create
+   `scratch_root`/`cache_root` on disk if missing (`mkdir(parents=True, exist_ok=True)`); resolve
+   `image` if `None` by reading `requires-python` from `cwd / "pyproject.toml"` (best-effort
+   regex/`tomllib` parse; map to closest of `{3.11, 3.12, 3.13}`, default `3.13` on absence/parse
+   failure); store `self._engine: str | None = None` (unresolved).
+2. `_ensure_engine(self) -> str` (lazy, memoized): if `self._engine` is set, return it. Else, for
+   `"podman"` then `"docker"`: resolve via `shutil.which(name)` (absolute path, never the bare
+   string); if found, run a liveness probe (`[resolved_path, "info"]`) through
+   `super().execute(..., timeout_seconds=5)`; if `exit_code == 0`, memoize and return. If neither
+   engine is live, raise `ContainerEngineUnavailableError` naming both attempted engines.
+3. `_ensure_prepared(self) -> None`: compute a hash of `cwd / "uv.lock"` (fallback `pyproject.toml`)
+   if present; compare against a stamp file at `.specweaver/.sandbox/.prepared_hash` (a **sibling**
+   of `cache_root`, not inside it — see Red/Blue Cycle 1 below); if unchanged, return immediately.
+   Else run a **network-enabled** prepare container (`--network` default, i.e. omit
+   `--network none`) invoking `uv sync` with `cwd`'s source mounted RO at `/workspace`, `cache_root`
+   mounted RW at `/cache` (`UV_CACHE_DIR=/cache`), no scratch mount, no LLM-generated code executed
+   — write the new hash to the stamp file on success (AD-7/AD-9's two-phase split).
+4. `execute(self, cmd, *, timeout_seconds=None, extra_env=None, cwd_override=None, input_text=None) -> SubprocessResult`
+   (override): call `self._ensure_engine()` (propagates `ContainerEngineUnavailableError`); call
+   `self._ensure_prepared()`; build `name = f"specweaver-qa-{run_id}-{uuid4().hex[:8]}"`;
+   pre-emptively `[engine, "rm", "-f", name]` via `super().execute(...)`, ignoring its result
+   (idempotent, AD-8); build the wrapped argv (see below); call
+   `result = super().execute(wrapped, timeout_seconds=timeout_seconds, input_text=input_text)` —
+   `extra_env` entries become `-e KEY=VAL` flags baked into `wrapped` (they must reach the
+   *container's* env, not the local CLI client's); `cwd_override` is ignored with a `logger.warning`
+   if non-`None`; in a `finally` block, run `[engine, "rm", "-f", name]` again via
+   `super().execute()` unconditionally (post-run cleanup, AD-8), swallowing any error from the
+   cleanup call itself.
+5. `_build_container_cmd(self, name, cmd, extra_env) -> list[str]`:
+   `[engine, "run", "--rm", "--name", name, "--read-only", "-v", f"{source_root}:/workspace:ro", "-v", f"{scratch_root}:/scratch:rw", "--tmpfs", "/tmp:size=100m,mode=1777", "--network", "none", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--memory", "2147483648", "--pids-limit", "128", *user_flag, *(f"-e" then f"{k}={v}" for k, v in (extra_env or {}).items()), "--workdir", "/workspace", image, *cmd]`.
+   - **`user_flag` (NFR-4 — non-root, not deferred; see Post-Planning Correction)**: on non-Windows
+     (`sys.platform != "win32"`), `["--user", f"{os.getuid()}:{os.getgid()}"]` — tractable at low
+     complexity because `scratch_root`/`cache_root` are created by
+     `ContainerSubprocessExecutor.__init__` itself as the invoking host user, so the container runs
+     as the same UID that already owns every mount it touches. On Windows, `user_flag = []` (falls
+     back to image default/root), with a one-time `logger.warning`.
 
 ## Test Plan
 

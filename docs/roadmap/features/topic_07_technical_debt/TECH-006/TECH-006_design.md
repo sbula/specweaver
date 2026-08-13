@@ -15,7 +15,13 @@
 
 ## Feature Overview
 
-Feature TECH-006 eliminates **5 misplaced private helper functions** (in 2 copies = 6 total) from the CLI interface layer. These functions contain domain logic, infrastructure wiring, or string-dispatched repository calls that have nothing to do with the CLI. Because they are in the wrong layer, the REST API and 10+ CLI modules import them cross-interface, creating a massive spider web of forbidden boundary violations — including the REST API depending on the CLI. The fix: delete all 6 function definitions and replace them with direct calls to existing public Domain APIs. Key constraints: full backward compatibility, zero new modules, `tach check` compliance.
+Feature TECH-006 eliminates **5 misplaced private helper functions** (in 2 copies = 6 total) from
+the CLI interface layer. These functions contain domain logic, infrastructure wiring, or
+string-dispatched repository calls that have nothing to do with the CLI. Because they are in the
+wrong layer, the REST API and 10+ CLI modules import them cross-interface, creating a massive spider
+web of forbidden boundary violations — including the REST API depending on the CLI. The fix: delete
+all 6 function definitions and replace them with direct calls to existing public Domain APIs. Key
+constraints: full backward compatibility, zero new modules, `tach check` compliance.
 
 ## Research Findings
 
@@ -32,7 +38,9 @@ Feature TECH-006 eliminates **5 misplaced private helper functions** (in 2 copie
 
 ### `_run_workspace_op` Replacement: Typed `run_repo_op()`
 
-The string-dispatched `_run_workspace_op` cannot be replaced by inlining 5 lines × 20 call sites (that's 100 lines of boilerplate — a worse DRY violation). Instead, a **typed** replacement is added to `interfaces/cli/_core.py`:
+The string-dispatched `_run_workspace_op` cannot be replaced by inlining 5 lines × 20 call sites
+(that's 100 lines of boilerplate — a worse DRY violation). Instead, a **typed** replacement is added
+to `interfaces/cli/_core.py`:
 
 ```python
 def run_repo_op(fn: Callable[[WorkspaceRepository], Awaitable[T]]) -> T:
@@ -68,7 +76,9 @@ proj = _core.run_repo_op(lambda r: r.get_project(name))
 - `core/flow/interfaces/cli.py`, `workflows/review/interfaces/cli.py`, `workflows/implementation/interfaces/cli.py`, `assurance/validation/interfaces/cli_drift.py`
 
 **`_run_workspace_op`** — 6 cross-domain imports + 1 duplicate definition:
-- **Definition 1** (workspace): `interfaces/cli/_core.py`, `interfaces/cli/main.py`, `infrastructure/llm/interfaces/cli.py`, `graph/interfaces/cli.py`, `assurance/validation/interfaces/cli.py`, `assurance/standards/interfaces/cli.py`
+- **Definition 1** (workspace): `interfaces/cli/_core.py`, `interfaces/cli/main.py`,
+  `infrastructure/llm/interfaces/cli.py`, `graph/interfaces/cli.py`,
+  `assurance/validation/interfaces/cli.py`, `assurance/standards/interfaces/cli.py`
 - **Definition 2** (config): used internally by `core/config/interfaces/cli.py`
 
 **`_load_topology` / `_select_topology_contexts`** — 4 cross-interface imports (3 CLI + 1 API 🚨):
@@ -177,20 +187,35 @@ whether/how to actually wire a writer for them is explicitly **out of scope** �
 ## Sub-Feature Breakdown
 
 ### SF-01: Delete All CLI Wrappers (Single Atomic Commit)
-- **Scope**: Delete all 6 function definitions. Replace all 23 import sites. Add `run_repo_op()` to `_core.py`. Add topology facade to `assurance/graph/`. One atomic commit — all files touched in one pass to avoid merge conflicts.
+- **Scope**: Delete all 6 function definitions. Replace all 23 import sites. Add `run_repo_op()` to
+  `_core.py`. Add topology facade to `assurance/graph/`. One atomic commit — all files touched in
+  one pass to avoid merge conflicts.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
 - **Affected files** (~15 files):
   - **Delete from**: `workspace/project/interfaces/cli.py`, `assurance/standards/interfaces/cli.py`, `infrastructure/llm/interfaces/cli.py`, `graph/interfaces/cli.py`, `core/config/interfaces/cli.py`
-  - **Update imports**: `core/flow/interfaces/cli.py`, `workflows/review/interfaces/cli.py`, `workflows/implementation/interfaces/cli.py`, `assurance/validation/interfaces/cli.py`, `assurance/validation/interfaces/cli_drift.py`, `interfaces/api/v1/review.py`, `interfaces/api/v1/implement.py`, `interfaces/cli/_core.py`, `interfaces/cli/main.py`
+  - **Update imports**: `core/flow/interfaces/cli.py`, `workflows/review/interfaces/cli.py`,
+    `workflows/implementation/interfaces/cli.py`, `assurance/validation/interfaces/cli.py`,
+    `assurance/validation/interfaces/cli_drift.py`, `interfaces/api/v1/review.py`,
+    `interfaces/api/v1/implement.py`, `interfaces/cli/_core.py`, `interfaces/cli/main.py`
   - **Add to**: `interfaces/cli/_core.py` (run_repo_op), `assurance/graph/` (topology facade)
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_sf01_implementation_plan.md
 
 ### SF-02: Reduce `RunContext` God Object
-- **Scope**: Finding 3 from the original topic-doc entry (RunContext god object) was documented but never incorporated into this design's FRs — SF-01 only ever covered Findings 1 & 2. `RunContext` (`core/flow/handlers/base.py`) has grown from the 23 fields the topic-doc entry named as the problem to 32 fields today, with a 68-line `model_post_init` handling parser injection, project-metadata construction, and config introspection as side effects. Per the 2026-07-21 direction update, the destination is NOT further centralization into the prompt factory — split `RunContext`'s responsibilities into 6 cohesive nested sub-models (AD-5/AD-6) so new fields have somewhere better to land than one shared bag, while `RunContext` itself stays the single object every handler receives.
+- **Scope**: Finding 3 from the original topic-doc entry (RunContext god object) was documented but
+  never incorporated into this design's FRs — SF-01 only ever covered Findings 1 & 2. `RunContext`
+  (`core/flow/handlers/base.py`) has grown from the 23 fields the topic-doc entry named as the
+  problem to 32 fields today, with a 68-line `model_post_init` handling parser injection,
+  project-metadata construction, and config introspection as side effects. Per the 2026-07-21
+  direction update, the destination is NOT further centralization into the prompt factory — split
+  `RunContext`'s responsibilities into 6 cohesive nested sub-models (AD-5/AD-6) so new fields have
+  somewhere better to land than one shared bag, while `RunContext` itself stays the single object
+  every handler receives.
 - **FRs**: [FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12]
 - **Inputs**: `RunContext`'s current 32 fields and `model_post_init` body in `core/flow/handlers/base.py` (full field-by-field map in Research Findings, above).
-- **Outputs**: `RunContext` reduced to ≤16 top-level attributes (10 flat + 6 sub-models); `model_post_init` shortened via two extracted private methods; 3 confirmed-dead fields removed; zero behavior change to any existing CLI command, API endpoint, or pipeline run.
+- **Outputs**: `RunContext` reduced to ≤16 top-level attributes (10 flat + 6 sub-models);
+  `model_post_init` shortened via two extracted private methods; 3 confirmed-dead fields removed;
+  zero behavior change to any existing CLI command, API endpoint, or pipeline run.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_sf02_implementation_plan.md (not yet written)
 - **Commit boundaries** (one sub-feature, AD-7 — the implementation plan owns the exact sequencing;
@@ -218,7 +243,9 @@ whether/how to actually wire a writer for them is explicitly **out of scope** �
   - Fixing `enforce_isolation`'s wiring asymmetry (only `sw run`/`resume` set it) or `sw resume`'s `topology`-reload asymmetry — real bugs, unrelated to field grouping.
   - Splitting `feedback`'s two entangled usage patterns into typed channels — real opportunity, deferred; `feedback` stays one flat dict field in SF-02.
   - Widening the API's near-empty `RunContext` construction (`interfaces/api/v1/pipelines.py`) — pre-existing, already tracked via that file's own `INT-US-09 Backlog` comment.
-- **Note (2026-08-01)**: the roadmap blurb claiming this ticket "reduces RunContext from a 23-field God Object to a lean execution context" was never true — Finding 3 was never designed or built. SF-02 is the actual work needed to make that claim true.
+- **Note (2026-08-01)**: the roadmap blurb claiming this ticket "reduces RunContext from a 23-field
+  God Object to a lean execution context" was never true — Finding 3 was never designed or built.
+  SF-02 is the actual work needed to make that claim true.
 
 ## Execution Order
 

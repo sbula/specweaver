@@ -203,7 +203,10 @@ class WebTool(BaseTool):
 No other changes — already has `role` property (line 88-91) and `definitions()` (line 195-199).
 
 > [!NOTE]
-> `PlannerWebInterface` and `ReviewerWebInterface` in `web/interfaces/facades.py` are NOT in the design doc's 14-class list. They are NOT registered in `get_standard_registry()` — the registry directly returns `WebTool`, not a web facade. Therefore they do NOT need `BaseTool` inheritance in SF-02. If needed later, the pattern is established.
+> `PlannerWebInterface` and `ReviewerWebInterface` in `web/interfaces/facades.py` are NOT in the
+> design doc's 14-class list. They are NOT registered in `get_standard_registry()` — the registry
+> directly returns `WebTool`, not a web facade. Therefore they do NOT need `BaseTool` inheritance in
+> SF-02. If needed later, the pattern is established.
 
 ---
 

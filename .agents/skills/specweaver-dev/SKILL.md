@@ -1,6 +1,8 @@
 ---
 name: specweaver-dev
-description: "TDD development skill for implementing features. Load context → read spec → break down → red/green/refactor → pre-commit → commit (per commit boundary). Use when the user asks to implement, develop, code, or build a sub-feature from its implementation plan."
+description: "TDD development skill for implementing features. Load context → read spec → break down
+→ red/green/refactor → pre-commit → commit (per commit boundary). Use when the user asks to
+implement, develop, code, or build a sub-feature from its implementation plan."
 ---
 
 # Development Skill (TDD)
@@ -115,8 +117,12 @@ For each task in the breakdown:
 ### 3.1 Red — Write Failing Tests First
 
 > [!CAUTION]
-> **STRICT SEQUENCING MANDATE:** You MUST write the test file(s) in `tests/` and run `pytest` to verify they fail (Red) **BEFORE** you are allowed to write or modify ANY implementation code in `src/`. 
-> You are permitted to batch this: you may write 20 failing test cases at once. But you MUST run them and confirm they fail before moving to Phase 3.2. Generating `src/` implementation code before proving the tests fail is a severe process violation.
+> **STRICT SEQUENCING MANDATE:** You MUST write the test file(s) in `tests/` and run `pytest` to
+> verify they fail (Red) **BEFORE** you are allowed to write or modify ANY implementation code in
+> `src/`. 
+> You are permitted to batch this: you may write 20 failing test cases at once. But you MUST run
+> them and confirm they fail before moving to Phase 3.2. Generating `src/` implementation code
+> before proving the tests fail is a severe process violation.
 
 > [!CAUTION]
 > **ADVERSARIAL TEST MATRIX MANDATE:** Before generating any tests, you MUST explicitly output a test matrix classifying your proposed tests into exactly 4 buckets:

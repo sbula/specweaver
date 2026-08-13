@@ -7,13 +7,21 @@
 - **Status**: COMPLETED
 
 ## Goal Description
-Implement the `CodeStructureInterface` for Standard SQL by leveraging the unified `BaseTreeSitterParser`. This enables SpecWeaver to structurally parse SQL schemas (tables/views) and functions, providing critical context for data-centric AI agent tasks.
+Implement the `CodeStructureInterface` for Standard SQL by leveraging the unified
+`BaseTreeSitterParser`. This enables SpecWeaver to structurally parse SQL schemas (tables/views) and
+functions, providing critical context for data-centric AI agent tasks.
 
 > **Implementation Note:** Added `test_polyglot_ast_sql.py` in Phase 2 to ensure full Integration test coverage parity with other supported languages.
 
 ## Research Notes
-- **tree-sitter-sql limitations**: The standard `tree-sitter-sql` grammar (v0.3.11) natively supports `create_table`, `create_view`, and `create_function`, but fails to parse ANSI `CREATE PROCEDURE`, returning an `ERROR` node. Per HITL decision (Phase 4), we will adhere strictly to NFR-3 (Dialect Agnosticism) and drop support for `procedure` extraction, documenting it as a known limitation.
-- **Framework markers & Visibility**: SQL does not support code-level decorators or typical OOP visibility modifiers. Per HITL decision (Phase 4), `extract_framework_markers` will return `{}`. `supported_parameters` will return `[]`.
+- **tree-sitter-sql limitations**: The standard `tree-sitter-sql` grammar (v0.3.11) natively
+  supports `create_table`, `create_view`, and `create_function`, but fails to parse ANSI
+  `CREATE PROCEDURE`, returning an `ERROR` node. Per HITL decision (Phase 4), we will adhere
+  strictly to NFR-3 (Dialect Agnosticism) and drop support for `procedure` extraction, documenting
+  it as a known limitation.
+- **Framework markers & Visibility**: SQL does not support code-level decorators or typical OOP
+  visibility modifiers. Per HITL decision (Phase 4), `extract_framework_markers` will return `{}`.
+  `supported_parameters` will return `[]`.
 - **Dependencies**: We will install `tree-sitter-sql>=0.3.11` via `pyproject.toml`.
 
 ## Proposed Changes

@@ -12,11 +12,29 @@
 
 SF-04 implements three resilience mechanisms on top of the `MemoryRepository` foundation (SF-02) and the DAG/OCC extensions (SF-03):
 
-1. **Zombie Recovery (`recycle_zombies`)** — Scans for tasks with `status = IN_PROGRESS` where `now() - last_heartbeat_at > 15 minutes` OR `last_heartbeat_at IS NULL` (NFR-4, RT-7). Resets them to `PENDING`, increments `attempt_count` and `version`, clears `assigned_worker_id`, `locked_at`, and `last_heartbeat_at`. Records a `StateTransition` with reason `ZOMBIE_TIMEOUT`. Emits `INFO` structured log. Zombie recycling intentionally preserves `handover_context` to enable failure-aware handover (RT2-2).
+1. **Zombie Recovery (`recycle_zombies`)** — Scans for tasks with `status = IN_PROGRESS` where
+   `now() - last_heartbeat_at > 15 minutes` OR `last_heartbeat_at IS NULL` (NFR-4, RT-7). Resets
+   them to `PENDING`, increments `attempt_count` and `version`, clears `assigned_worker_id`,
+   `locked_at`, and `last_heartbeat_at`. Records a `StateTransition` with reason `ZOMBIE_TIMEOUT`.
+   Emits `INFO` structured log. Zombie recycling intentionally preserves `handover_context` to
+   enable failure-aware handover (RT2-2).
 
-2. **3-Strike Circuit Breaker (`circuit_breaker`)** — During zombie recycling, if `attempt_count >= 3` after increment, auto-transitions the task to `BLOCKED` (not `PENDING`), creates an auto-generated `Defect` with title `"circuit_breaker: max retries exceeded"`, and emits an `ERROR` structured log. The task is permanently halted from automatic retries. **Semantics (RT-1):** `attempt_count` tracks ALL failure paths (zombie recycling AND `transition_state` → BLOCKED), and the circuit breaker fires at `>= 3` total failures.
+2. **3-Strike Circuit Breaker (`circuit_breaker`)** — During zombie recycling, if
+   `attempt_count >= 3` after increment, auto-transitions the task to `BLOCKED` (not `PENDING`),
+   creates an auto-generated `Defect` with title `"circuit_breaker: max retries exceeded"`, and
+   emits an `ERROR` structured log. The task is permanently halted from automatic retries.
+   **Semantics (RT-1):** `attempt_count` tracks ALL failure paths (zombie recycling AND
+   `transition_state` → BLOCKED), and the circuit breaker fires at `>= 3` total failures.
 
-3. **Upstream DAG Propagation (`propagate_blocked` / `clear_upstream_blocked`)** (FR-9, AD-11) — When a task transitions to `BLOCKED`, **all transitive upstream ancestor tasks** are automatically transitioned to `UPSTREAM_BLOCKED` via BFS traversal (RT-4). `propagate_blocked` validates the source task is actually `BLOCKED` before propagating (RT2-3). Conversely, when a `BLOCKED` task is unblocked (transitions to `PENDING`), `clear_upstream_blocked` performs a transitive BFS to reverse-propagate `UPSTREAM_BLOCKED` parents back to `PENDING` with reason `UPSTREAM_CLEARED`, but **only if all their other children are also no longer blocked**. `clear_upstream_blocked` validates the source task is no longer blocked before processing (RT2-4).
+3. **Upstream DAG Propagation (`propagate_blocked` / `clear_upstream_blocked`)** (FR-9, AD-11) —
+   When a task transitions to `BLOCKED`, **all transitive upstream ancestor tasks** are
+   automatically transitioned to `UPSTREAM_BLOCKED` via BFS traversal (RT-4). `propagate_blocked`
+   validates the source task is actually `BLOCKED` before propagating (RT2-3). Conversely, when a
+   `BLOCKED` task is unblocked (transitions to `PENDING`), `clear_upstream_blocked` performs a
+   transitive BFS to reverse-propagate `UPSTREAM_BLOCKED` parents back to `PENDING` with reason
+   `UPSTREAM_CLEARED`, but **only if all their other children are also no longer blocked**.
+   `clear_upstream_blocked` validates the source task is no longer blocked before processing
+   (RT2-4).
 
 **FRs covered**: FR-5 (Zombie Recovery), FR-8 (Circuit Breaker), FR-9 (Deadlock Propagation).
 
@@ -35,11 +53,22 @@ SF-04 implements three resilience mechanisms on top of the `MemoryRepository` fo
 
 ### Codebase Pattern Analysis
 
-1. **Existing `transition_state`** (repository.py:439-511): The state machine enforcer already handles `BLOCKED` → clears `locked_at`, `last_heartbeat_at`, increments `attempt_count`. **Resolved (RT2-8):** SF-04's `recycle_zombies` bypasses `transition_state` intentionally to avoid double-incrementing `attempt_count` and to support batch-flush semantics. See the `[!IMPORTANT]` note in Method 2 for the full rationale and the `[!CAUTION]` note for the defensive assertions guarding this bypass.
+1. **Existing `transition_state`** (repository.py:439-511): The state machine enforcer already
+   handles `BLOCKED` → clears `locked_at`, `last_heartbeat_at`, increments `attempt_count`.
+   **Resolved (RT2-8):** SF-04's `recycle_zombies` bypasses `transition_state` intentionally to
+   avoid double-incrementing `attempt_count` and to support batch-flush semantics. See the
+   `[!IMPORTANT]` note in Method 2 for the full rationale and the `[!CAUTION]` note for the
+   defensive assertions guarding this bypass.
 
-2. **Existing `insert_dependency`** (repository.py:368-408): The DAG junction table `memory_task_dependencies` uses `parent_task_id` / `child_task_id` columns. For propagation, a "parent" is upstream (depends on the child completing). When a child becomes `BLOCKED`, its parents (rows where `child_task_id == blocked_task.id`) should be marked `UPSTREAM_BLOCKED`.
+2. **Existing `insert_dependency`** (repository.py:368-408): The DAG junction table
+   `memory_task_dependencies` uses `parent_task_id` / `child_task_id` columns. For propagation, a
+   "parent" is upstream (depends on the child completing). When a child becomes `BLOCKED`, its
+   parents (rows where `child_task_id == blocked_task.id`) should be marked `UPSTREAM_BLOCKED`.
 
-3. **Existing indexes** (store.py:126-127): `idx_task_heartbeat` on `(status, last_heartbeat_at)` — directly supports the zombie scan query. `idx_dep_child` on `(child_task_id)` — supports the propagation query to find parents. `idx_dep_parent` on `(parent_task_id)` — supports the reverse-clear query.
+3. **Existing indexes** (store.py:126-127): `idx_task_heartbeat` on `(status, last_heartbeat_at)` —
+   directly supports the zombie scan query. `idx_dep_child` on `(child_task_id)` — supports the
+   propagation query to find parents. `idx_dep_parent` on `(parent_task_id)` — supports the
+   reverse-clear query.
 
 4. **Session lifecycle**: Repository uses `session.flush()`, never `session.commit()`. Transaction boundary is caller-managed.
 
@@ -51,17 +80,28 @@ SF-04 implements three resilience mechanisms on top of the `MemoryRepository` fo
 
 8. **Error classes**: `IllegalStateTransitionError`, `DefectBlocksCompletionError`, `CyclicDependencyError`, `StaleTaskVersionError` all in `errors.py`. No new error types are needed for SF-04.
 
-9. **`SELECT FOR UPDATE` inapplicable**: SQLite does not support `SELECT FOR UPDATE` natively. The existing OCC pattern (version column) and SQLite's serialized write access handle concurrency. The zombie scan is intended to run from a single orchestrator, not multiple competing workers.
+9. **`SELECT FOR UPDATE` inapplicable**: SQLite does not support `SELECT FOR UPDATE` natively. The
+   existing OCC pattern (version column) and SQLite's serialized write access handle concurrency.
+   The zombie scan is intended to run from a single orchestrator, not multiple competing workers.
 
 10. **`tach.toml`**: `src.specweaver.workspace` has `depends_on = []`. All imports stay within `workspace.memory.*`, `workspace.store`, and `core.config.database`. No boundary violations.
 
 ### External API Research
 
-1. **SQLAlchemy `select().where()` for heartbeat comparison**: Use `Task.last_heartbeat_at < threshold` where `threshold = datetime.now(UTC) - timedelta(minutes=15)`. The `StrictISODateTime` type adapter handles the comparison correctly in SQLite.
+1. **SQLAlchemy `select().where()` for heartbeat comparison**: Use
+   `Task.last_heartbeat_at < threshold` where
+   `threshold = datetime.now(UTC) - timedelta(minutes=15)`. The `StrictISODateTime` type adapter
+   handles the comparison correctly in SQLite.
 
-2. **No new dependencies**: SF-04 uses only `sqlalchemy`, `datetime` (including `timedelta`), `logging`, and `uuid` — all already in the codebase. The `sqlalchemy.or_` function is needed for the zombie NULL heartbeat query (RT-7).
+2. **No new dependencies**: SF-04 uses only `sqlalchemy`, `datetime` (including `timedelta`),
+   `logging`, and `uuid` — all already in the codebase. The `sqlalchemy.or_` function is needed for
+   the zombie NULL heartbeat query (RT-7).
 
-3. **`WITH RECURSIVE` for propagation**: Already proven in SF-03 for cycle detection. The upstream propagation will use a non-recursive query first (find direct parents), then optionally recurse for multi-hop propagation. However, per FR-9, propagation is explicitly defined as "dynamically flag all upstream parent tasks" — this implies recursive traversal of the entire dependency graph above the blocked task.
+3. **`WITH RECURSIVE` for propagation**: Already proven in SF-03 for cycle detection. The upstream
+   propagation will use a non-recursive query first (find direct parents), then optionally recurse
+   for multi-hop propagation. However, per FR-9, propagation is explicitly defined as "dynamically
+   flag all upstream parent tasks" — this implies recursive traversal of the entire dependency graph
+   above the blocked task.
 
 ---
 
@@ -117,13 +157,17 @@ async def pulse_heartbeat(
 ```
 
 > [!NOTE]
-> Heartbeat pulsing is a lightweight operation. It does NOT increment `version` (no OCC needed — only the owning worker pulses its own tasks, validated by `worker_id` check). It logs at `DEBUG` level per NFR-8.
+> Heartbeat pulsing is a lightweight operation. It does NOT increment `version` (no OCC needed —
+> only the owning worker pulses its own tasks, validated by `worker_id` check). It logs at `DEBUG`
+> level per NFR-8.
 
 ---
 
 ##### Method 0 (private): `_build_defect(task_id, title, description) -> Defect`
 
-**Purpose**: Build a validated `Defect` instance without flushing. Shared by `create_defect` and `recycle_zombies` to avoid the RT2-5 conflict where calling `create_defect` (which flushes) inside a batch loop would break atomicity.
+**Purpose**: Build a validated `Defect` instance without flushing. Shared by `create_defect` and
+`recycle_zombies` to avoid the RT2-5 conflict where calling `create_defect` (which flushes) inside a
+batch loop would break atomicity.
 
 ```python
 CIRCUIT_BREAKER_DEFECT_TITLE = "circuit_breaker: max retries exceeded"
@@ -305,7 +349,10 @@ async def recycle_zombies(
 > This is a self-contained resilience operation with its own state mutation logic.
 
 > [!CAUTION]
-> **State Machine Bypass Guard (RT-2):** `recycle_zombies` bypasses the `ALLOWED_TRANSITIONS` matrix check. Defensive assertions at the top of the method validate that `IN_PROGRESS → PENDING` and `IN_PROGRESS → BLOCKED` are still legal. If the matrix is ever changed, these assertions will fire immediately. Unit test U-25 validates these matrix entries exist.
+> **State Machine Bypass Guard (RT-2):** `recycle_zombies` bypasses the `ALLOWED_TRANSITIONS` matrix
+> check. Defensive assertions at the top of the method validate that `IN_PROGRESS → PENDING` and
+> `IN_PROGRESS → BLOCKED` are still legal. If the matrix is ever changed, these assertions will fire
+> immediately. Unit test U-25 validates these matrix entries exist.
 
 ---
 
@@ -404,7 +451,11 @@ async def propagate_blocked(self, task_id: uuid.UUID) -> list[dict[str, object]]
 ```
 
 > [!NOTE]
-> **BFS traversal (RT-4)**: FR-9 says "dynamically flag **all** upstream parent tasks". The BFS visits every transitive ancestor reachable from `task_id`, transitioning eligible PENDING ones to UPSTREAM_BLOCKED. Non-PENDING ancestors (DONE, ARCHIVED, IN_PROGRESS, already UPSTREAM_BLOCKED) are skipped — they either cannot transition or are already blocked. The BFS naturally handles diamond patterns via the `visited` set.
+> **BFS traversal (RT-4)**: FR-9 says "dynamically flag **all** upstream parent tasks". The BFS
+> visits every transitive ancestor reachable from `task_id`, transitioning eligible PENDING ones to
+> UPSTREAM_BLOCKED. Non-PENDING ancestors (DONE, ARCHIVED, IN_PROGRESS, already UPSTREAM_BLOCKED)
+> are skipped — they either cannot transition or are already blocked. The BFS naturally handles
+> diamond patterns via the `visited` set.
 
 ---
 
@@ -512,7 +563,10 @@ async def clear_upstream_blocked(self, task_id: uuid.UUID) -> list[dict[str, obj
 ```
 
 > [!IMPORTANT]
-> **Critical invariant**: `clear_upstream_blocked` checks ALL children of each ancestor, not just the one that was unblocked. This prevents premature unblocking when a parent depends on multiple children and only one is resolved. The BFS traversal continues upward through cleared parents to handle multi-level DAGs (RT-4).
+> **Critical invariant**: `clear_upstream_blocked` checks ALL children of each ancestor, not just
+> the one that was unblocked. This prevents premature unblocking when a parent depends on multiple
+> children and only one is resolved. The BFS traversal continues upward through cleared parents to
+> handle multi-level DAGs (RT-4).
 
 ---
 
@@ -588,11 +642,19 @@ Add integration and E2E scenarios:
 
 Add three new sections:
 
-1. **5. Heartbeat Pulsing** — How agents must call `pulse_heartbeat(task_id, worker_id)` during long-running work to prevent zombie collection. Cadence recommendation (every 5 minutes). Note: `worker_id` must match the assigned worker (RT-3).
+1. **5. Heartbeat Pulsing** — How agents must call `pulse_heartbeat(task_id, worker_id)` during
+   long-running work to prevent zombie collection. Cadence recommendation (every 5 minutes). Note:
+   `worker_id` must match the assigned worker (RT-3).
 
-2. **6. Zombie Recovery & Circuit Breaker** — How the orchestrator calls `recycle_zombies` on a schedule. Explanation of the 3-strike rule (`attempt_count >= 3` across ALL failure paths) and auto-defect creation. Returned dicts include `resilience_action` key. How to manually unblock circuit-broken tasks. Note: `handover_context` is intentionally preserved during recycling (RT2-2).
+2. **6. Zombie Recovery & Circuit Breaker** — How the orchestrator calls `recycle_zombies` on a
+   schedule. Explanation of the 3-strike rule (`attempt_count >= 3` across ALL failure paths) and
+   auto-defect creation. Returned dicts include `resilience_action` key. How to manually unblock
+   circuit-broken tasks. Note: `handover_context` is intentionally preserved during recycling
+   (RT2-2).
 
-3. **7. DAG Propagation** — How `propagate_blocked` and `clear_upstream_blocked` work with BFS transitive traversal (RT-4). When the orchestrator should call them. Precondition requirements (source must be BLOCKED / not-blocked respectively).
+3. **7. DAG Propagation** — How `propagate_blocked` and `clear_upstream_blocked` work with BFS
+   transitive traversal (RT-4). When the orchestrator should call them. Precondition requirements
+   (source must be BLOCKED / not-blocked respectively).
 
 ---
 
@@ -648,8 +710,14 @@ tach check
 
 This plan has been hardened through **three formal Red Team / Blue Team adversarial audit cycles**:
 
-- **Round 1**: 14 findings, 7 modifications accepted. Key fixes: `attempt_count` semantics (RT-1), defensive matrix assertions (RT-2), `worker_id` validation (RT-3), BFS propagation (RT-4), NULL heartbeat handling (RT-7).
-- **Round 2**: 13 findings, 8 modifications accepted. Key fixes: post-flush serialization (RT2-1), `propagate_blocked` precondition (RT2-3), `_build_defect` extraction (RT2-5), `resilience_action` return key (RT2-7), research note contradiction fix (RT2-8).
-- **Round 3**: 4 findings, 3 modifications accepted. Key fixes: OCC contract violation fix in propagation (RT3-1), unbounded batch limit fix (RT3-2), N+1 query elimination in reverse propagation (RT3-3).
+- **Round 1**: 14 findings, 7 modifications accepted. Key fixes: `attempt_count` semantics (RT-1),
+  defensive matrix assertions (RT-2), `worker_id` validation (RT-3), BFS propagation (RT-4), NULL
+  heartbeat handling (RT-7).
+- **Round 2**: 13 findings, 8 modifications accepted. Key fixes: post-flush serialization (RT2-1),
+  `propagate_blocked` precondition (RT2-3), `_build_defect` extraction (RT2-5), `resilience_action`
+  return key (RT2-7), research note contradiction fix (RT2-8).
+- **Round 3**: 4 findings, 3 modifications accepted. Key fixes: OCC contract violation fix in
+  propagation (RT3-1), unbounded batch limit fix (RT3-2), N+1 query elimination in reverse
+  propagation (RT3-3).
 
 **Cumulative**: 31 findings, 18 modifications, 13 additional tests (U-25–U-37), 5 findings rejected as correct-by-design. The plan is verified production-ready.

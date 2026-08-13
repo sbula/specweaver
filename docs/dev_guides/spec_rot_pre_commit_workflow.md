@@ -4,20 +4,29 @@
 
 SpecWeaver implements a **Bi-Directional Spec Rot Interceptor** (Feature 3.23) using standard Git Hooks. 
 
-The goal of this interceptor is to solve the "2nd-Day Problem" where developers hot-fix code in their IDE but forget to update the associated markdown specification (e.g., `Spec.md`) to reflect the new realities of the implementation.
+The goal of this interceptor is to solve the "2nd-Day Problem" where developers hot-fix code in
+their IDE but forget to update the associated markdown specification (e.g., `Spec.md`) to reflect
+the new realities of the implementation.
 
-SpecWeaver intercepts every `git commit` to mathematically compare the AST signatures of the staged code files against the structural contracts defined in the Spec. If the structures don't match, the commit is blocked!
+SpecWeaver intercepts every `git commit` to mathematically compare the AST signatures of the staged
+code files against the structural contracts defined in the Spec. If the structures don't match, the
+commit is blocked!
 
 ## Installation
 
-You must install the SpecWeaver pre-commit hook in your local `.git` repository for this to work natively. Once installed, the Interceptor will automatically trigger its `sw drift check-rot --staged` hook phase on commits. If it breaks, it deterministically raises a fatal **Exit Code 42** to the underlying OS.
+You must install the SpecWeaver pre-commit hook in your local `.git` repository for this to work
+natively. Once installed, the Interceptor will automatically trigger its
+`sw drift check-rot --staged` hook phase on commits. If it breaks, it deterministically raises a
+fatal **Exit Code 42** to the underlying OS.
 
 ```bash
 # From the root of your project
 sw hooks install --pre-commit
 ```
 
-*Note: This command will attempt to determine the path of your active Python/UV executable (`sys.executable`) to ensure that native bash execution triggers the correct environment when you use traditional git CLI clients or IDE integrated source controls.*
+*Note: This command will attempt to determine the path of your active Python/UV executable
+(`sys.executable`) to ensure that native bash execution triggers the correct environment when you
+use traditional git CLI clients or IDE integrated source controls.*
 
 ## Workflow during a blocked commit
 
@@ -52,7 +61,11 @@ When blocked, you have two options:
 ## Troubleshooting
 
 ### "The SpecWeaver pipeline crashed"
-If the hook script emits `ERROR: The SpecWeaver pipeline crashed`, it indicates an environment error rather than spec drift. Check that your Python virtual environment still has SpecWeaver installed. You may need to run `sw hooks install --pre-commit` again if you moved the project directory.
+If the hook script emits `ERROR: The SpecWeaver pipeline crashed`, it indicates an environment error
+rather than spec drift. Check that your Python virtual environment still has SpecWeaver installed.
+You may need to run `sw hooks install --pre-commit` again if you moved the project directory.
 
 ### Bypassing the Hook
-SpecWeaver strongly discourages bypassing the interceptor (it violates the Constitution). However, for emergency operational rollbacks, you can use standard Git bypass mechanisms: `git commit --no-verify`.  This action will be flagged by the CI pipeline anyway!
+SpecWeaver strongly discourages bypassing the interceptor (it violates the Constitution). However,
+for emergency operational rollbacks, you can use standard Git bypass mechanisms:
+`git commit --no-verify`.  This action will be flagged by the CI pipeline anyway!

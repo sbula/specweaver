@@ -155,7 +155,10 @@ Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolat
 ## Sub-Feature Breakdown
 
 ### SF-01: Session Worktree Lifecycle + Context Rebind
-- **Scope**: The new run-level isolation mode — create ONE worktree (unique branch/path) at span start, rebind the session workspace root to it for all steps, tear down once (worktree + branch) in a guaranteed `finally`; fail-closed on creation failure; add the `RunContext.allowed_paths` field (unpopulated). No reconcile yet.
+- **Scope**: The new run-level isolation mode — create ONE worktree (unique branch/path) at span
+  start, rebind the session workspace root to it for all steps, tear down once (worktree + branch)
+  in a guaranteed `finally`; fail-closed on creation failure; add the `RunContext.allowed_paths`
+  field (unpopulated). No reconcile yet.
 - **FRs**: [FR-1, FR-2, FR-5 (field), FR-6, FR-7 (park-guard)]
 - **Inputs**: A run flagged for per-run isolation; git repo.
 - **Outputs**: All span steps execute in one worktree; generated code persists across steps in-tree; guaranteed cleanup.
@@ -163,7 +166,9 @@ Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolat
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf01_implementation_plan.md
 
 ### SF-02: Commit-Before-Reconcile + Authorized Strip-Merge
-- **Scope**: New `worktree_commit` GitAtom primitive; orchestrate commit → single `strip_merge` (respecting `allowed_paths` + the README/docs hard-block) at span end; **surface** any failure as a run failure (fixes Gap 1, Gap 2 mechanics, and the swallowed failure).
+- **Scope**: New `worktree_commit` GitAtom primitive; orchestrate commit → single `strip_merge`
+  (respecting `allowed_paths` + the README/docs hard-block) at span end; **surface** any failure as
+  a run failure (fixes Gap 1, Gap 2 mechanics, and the swallowed failure).
 - **FRs**: [FR-3, FR-4]
 - **Inputs**: The session worktree from SF-01 with accumulated changes; `allowed_paths`.
 - **Outputs**: Only authorized generated paths committed back to the real repo; loud failure on a broken reconcile.
@@ -171,7 +176,10 @@ Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolat
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf02_implementation_plan.md
 
 ### SF-03: Composition-Root Policy + Allow-List Population + Verifiable Proof
-- **Scope**: Select per-run isolation via policy (default-off, opt-in); populate `allowed_paths` at the composition root from the pipeline's generation targets (AD-2, with config override); keep per-step single-step isolation unchanged; deliver the multi-step generated-file e2e (FR-8) + NFR-4 adversarial reconcile-authorization tests.
+- **Scope**: Select per-run isolation via policy (default-off, opt-in); populate `allowed_paths` at
+  the composition root from the pipeline's generation targets (AD-2, with config override); keep
+  per-step single-step isolation unchanged; deliver the multi-step generated-file e2e (FR-8) + NFR-4
+  adversarial reconcile-authorization tests.
 - **FRs**: [FR-5 (populate), FR-7 (policy/default-off), FR-8]
 - **Inputs**: SF-01 + SF-02; `SandboxSettings`; pipeline generation targets.
 - **Outputs**: Opt-in per-run isolation wired end-to-end; verifiable-proof e2e green.

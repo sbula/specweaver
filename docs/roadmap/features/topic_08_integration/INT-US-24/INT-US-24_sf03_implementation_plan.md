@@ -5,7 +5,9 @@
 - **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-24/INT-US-24_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-03
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-24/INT-US-24_sf03_implementation_plan.md
-- **Status**: APPROVED <!-- Phase 4 (Q1-Q4 all (a) + sweep additions A1-A5/E7/E8) and Phase 5 (R/B: stem-source pin, @trace preservation, double pop-contract, E1 counter, sequencing-test retitle) approved by user 2026-07-24 -->
+- **Status**: APPROVED <!-- Phase 4 (Q1-Q4 all (a) + sweep additions A1-A5/E7/E8) and Phase 5 (R/B:
+  stem-source pin, @trace preservation, double pop-contract, E1 counter, sequencing-test retitle)
+  approved by user 2026-07-24 -->
 
 ## Scope (from design)
 

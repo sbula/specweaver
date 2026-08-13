@@ -30,6 +30,13 @@
 - Add tests to ensure that a `DAL_E` target correctly exits with `0` despite minor warnings.
 
 ## Research & Audit Notes
-- **DAL Native Enforcement**: The Phase 4 architectural audit determined that hiding safety constraints behind a CLI `--ci` flag is an anti-pattern. Instead, `DALResolver` bounds will be injected deeply into `PipelineRunner` so that strictness is enforced natively on the developer's machine and the CI server equally.
-- **Fail-at-end**: To prevent poor developer UX (having to fix errors one-by-one), pipelines will complete their full run, aggregate all violations, print a comprehensive summary, and then evaluate the final exit code.
-- **CLI Architecture Debt**: The confusion over `sw scan` vs `sw check` revealed significant technical debt in the CLI verb architecture. A new backlog item has been added to isolate Discovery commands from Validation commands in a future refactor.
+- **DAL Native Enforcement**: The Phase 4 architectural audit determined that hiding safety
+  constraints behind a CLI `--ci` flag is an anti-pattern. Instead, `DALResolver` bounds will be
+  injected deeply into `PipelineRunner` so that strictness is enforced natively on the developer's
+  machine and the CI server equally.
+- **Fail-at-end**: To prevent poor developer UX (having to fix errors one-by-one), pipelines will
+  complete their full run, aggregate all violations, print a comprehensive summary, and then
+  evaluate the final exit code.
+- **CLI Architecture Debt**: The confusion over `sw scan` vs `sw check` revealed significant
+  technical debt in the CLI verb architecture. A new backlog item has been added to isolate
+  Discovery commands from Validation commands in a future refactor.

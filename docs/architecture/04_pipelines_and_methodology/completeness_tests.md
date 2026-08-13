@@ -41,7 +41,9 @@ TOO BIG ◄───────────────┼───────
 
 **Both axes must pass.** Structure Tests (1-5) ensure the spec is small and focused enough to work with. Completeness Tests (6-10) ensure it contains enough information to actually build from.
 
-The axes are **independent**: fixing structure doesn't fix completeness, and vice versa. Splitting a vague spec into 4 smaller vague specs produces 4 specs that are still un-implementable. Adding detail to a monolithic spec makes it bigger without making it more focused.
+The axes are **independent**: fixing structure doesn't fix completeness, and vice versa. Splitting a
+vague spec into 4 smaller vague specs produces 4 specs that are still un-implementable. Adding
+detail to a monolithic spec makes it bigger without making it more focused.
 
 ---
 
@@ -51,7 +53,10 @@ The axes are **independent**: fixing structure doesn't fix completeness, and vic
 
 > **Does the spec include at least one concrete input → output example with real values — not abstract descriptions?**
 
-**Why it matters**: Concrete examples force precision. Writing `f("hello ${name}", {name: "Alice"}) → "hello Alice"` exposes edge cases (what about nested keys? missing keys? type mismatches?) that prose hides. If the author can't produce one worked example, they don't understand the problem well enough to specify it.
+**Why it matters**: Concrete examples force precision. Writing
+`f("hello ${name}", {name: "Alice"}) → "hello Alice"` exposes edge cases (what about nested keys?
+missing keys? type mismatches?) that prose hides. If the author can't produce one worked example,
+they don't understand the problem well enough to specify it.
 
 **Pass**:
 ```
@@ -70,7 +75,10 @@ The second form is a wish. It doesn't tell the implementer what the delimiter sy
 
 > **Can you write a failing test FROM the spec BEFORE writing any implementation code?**
 
-**Why it matters**: This is the strongest single signal of completeness. If the spec gives you enough information to write a test, it has defined the interface, the behavior, and the expected output — which is everything you need to implement. If you can't write a test, the spec is missing one of those three.
+**Why it matters**: This is the strongest single signal of completeness. If the spec gives you
+enough information to write a test, it has defined the interface, the behavior, and the expected
+output — which is everything you need to implement. If you can't write a test, the spec is missing
+one of those three.
 
 **Pass**: Reading the spec, you can immediately write:
 ```python
@@ -82,13 +90,17 @@ def test_resolve_missing_key():
         resolve("${missing}", {})
 ```
 
-**Fail**: Reading the spec, you stare at it and think: "but what's the function signature? What does it return on error? A string? None? An exception?" If you're guessing, it's not a spec — it's a suggestion.
+**Fail**: Reading the spec, you stare at it and think: "but what's the function signature? What does
+it return on error? A string? None? An exception?" If you're guessing, it's not a spec — it's a
+suggestion.
 
 ### Test 8: The Ambiguity Test
 
 > **Does the spec contain weasel words that leave decisions unmade?**
 
-**Why it matters**: Every ambiguous word is a decision deferred to the implementer. Two different agents (or developers) will resolve the ambiguity differently, producing inconsistent code. Weasel words are the #1 source of "it works but not how I expected."
+**Why it matters**: Every ambiguous word is a decision deferred to the implementer. Two different
+agents (or developers) will resolve the ambiguity differently, producing inconsistent code. Weasel
+words are the #1 source of "it works but not how I expected."
 
 **Weasel word taxonomy**:
 
@@ -108,7 +120,10 @@ def test_resolve_missing_key():
 
 > **Does the spec define what happens when the operation fails — not just the happy path?**
 
-**Why it matters**: Most agent-generated code fails on error paths. If the spec says "resolve variables from context" but never mentions missing keys, type mismatches, circular references, or malformed templates, the agent will either ignore errors (silent bugs) or invent error handling (hallucinated behavior). Both are wrong.
+**Why it matters**: Most agent-generated code fails on error paths. If the spec says "resolve
+variables from context" but never mentions missing keys, type mismatches, circular references, or
+malformed templates, the agent will either ignore errors (silent bugs) or invent error handling
+(hallucinated behavior). Both are wrong.
 
 **Minimum error coverage per level**:
 
@@ -133,7 +148,9 @@ Errors:
 
 > **Does the spec state an unambiguous condition under which the work is COMPLETE?**
 
-**Why it matters**: Without a done definition, work expands forever. An agent (or developer) will gold-plate, add features, or iterate endlessly because there's no stop signal. Conversely, they might stop too early because "it works for my one test case."
+**Why it matters**: Without a done definition, work expands forever. An agent (or developer) will
+gold-plate, add features, or iterate endlessly because there's no stop signal. Conversely, they
+might stop too early because "it works for my one test case."
 
 **What a done definition must include**:
 1. An observable outcome (not a process — "all tests pass", not "thorough testing was performed")
@@ -177,7 +194,9 @@ The **principle** is also identical at every level: a spec is a **contract betwe
 | **10. Done Definition** | Acceptance criteria observable by user/PO | All public methods pass test suite | All defined examples + error cases pass | Single assertion + edge cases pass |
 
 > [!NOTE]
-> **Ambiguity tolerance decreases sharply**. A feature spec can say "the exact retry delay strategy will be defined in the module spec" (ambiguity deferred to a lower level). A function spec cannot defer anything — it's the leaf of the fractal.
+> **Ambiguity tolerance decreases sharply**. A feature spec can say "the exact retry delay strategy
+> will be defined in the module spec" (ambiguity deferred to a lower level). A function spec cannot
+> defer anything — it's the leaf of the fractal.
 
 #### Nature of Evidence Changes
 
@@ -197,7 +216,9 @@ The **principle** is also identical at every level: a spec is a **contract betwe
 | **L3 Class** | Developer — they're implementing it |
 | **L4 Function** | Developer — can often fill the gap themselves during implementation |
 
-At L3-L4, the implementer and the spec author are often the same person. At L1-L2, they're usually different people — which makes completeness testing MORE important (the gap between "what the author meant" and "what the implementer understood" is wider).
+At L3-L4, the implementer and the spec author are often the same person. At L1-L2, they're usually
+different people — which makes completeness testing MORE important (the gap between "what the author
+meant" and "what the implementer understood" is wider).
 
 ---
 
@@ -350,7 +371,9 @@ Document saved/committed
       (semantic quality, not structure or completeness)
 ```
 
-**Why structure first**: A bloated spec will produce false positives on completeness tests — it may contain examples buried in 107KB that the static scanner can't contextualize. Fix structure, THEN check completeness.
+**Why structure first**: A bloated spec will produce false positives on completeness tests — it may
+contain examples buried in 107KB that the static scanner can't contextualize. Fix structure, THEN
+check completeness.
 
 **Token flow**: Static tests (Tests 1-10) cost 0 tokens. Only when ALL 10 pass does the spec proceed to LLM-based semantic review. Estimated total savings: ~85% vs. running everything through an LLM.
 
@@ -376,7 +399,9 @@ Document saved/committed
 ### The Interaction Between Axes
 
 > [!WARNING]
-> **Fixing one axis can break the other.** Splitting a spec (to fix structure) can produce sub-specs that are too vague because the context is now scattered. Adding examples (to fix completeness) can push a spec past its size budget.
+> **Fixing one axis can break the other.** Splitting a spec (to fix structure) can produce sub-specs
+> that are too vague because the context is now scattered. Adding examples (to fix completeness) can
+> push a spec past its size budget.
 
 The correct workflow handles this iteratively:
 
@@ -432,6 +457,10 @@ For reference, the complete set of tests across both axes:
 
 3. **Error path discovery**: The spec author may not know all failure modes upfront. Should completeness tests account for "known unknowns" by requiring at least a "known risks" section?
 
-4. **Cross-domain calibration**: Are the weasel word lists universal? Different domains may use "should" normatively (as in RFCs: "SHOULD" has a specific meaning in RFC 2119). The ambiguity scanner needs domain-aware calibration.
+4. **Cross-domain calibration**: Are the weasel word lists universal? Different domains may use
+   "should" normatively (as in RFCs: "SHOULD" has a specific meaning in RFC 2119). The ambiguity
+   scanner needs domain-aware calibration.
 
-5. **Code-level completeness**: For L3-L4 (class/function), completeness is usually expressed as docstrings, type hints, and test coverage rather than separate spec documents. Should SpecWeaver check code-level completeness using the same tests applied to docstrings + type signatures?
+5. **Code-level completeness**: For L3-L4 (class/function), completeness is usually expressed as
+   docstrings, type hints, and test coverage rather than separate spec documents. Should SpecWeaver
+   check code-level completeness using the same tests applied to docstrings + type signatures?

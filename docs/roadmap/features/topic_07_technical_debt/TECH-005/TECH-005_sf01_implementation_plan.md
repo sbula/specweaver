@@ -14,7 +14,9 @@
 > **Requirements delivered by this sub-feature: `FR-1`, `FR-2`, `FR-3`, `FR-4`, `FR-5`.**
 
 ## Goal
-Update all SQLAlchemy models and raw queries to use prefixed database table names (`workspace_projects`, `workspace_active_state`, `workspace_project_standards`, `flow_artifact_events`, `llm_project_links`).
+Update all SQLAlchemy models and raw queries to use prefixed database table names
+(`workspace_projects`, `workspace_active_state`, `workspace_project_standards`,
+`flow_artifact_events`, `llm_project_links`).
 
 ## Proposed Changes
 
@@ -51,7 +53,9 @@ Update all SQLAlchemy models and raw queries to use prefixed database table name
 - Update `assert "projects" in tables` to `assert "workspace_projects" in tables`.
 
 > [!NOTE]
-> Historical Alembic migrations (e.g. `037b85034bb0_init_monolith_schema.py`) will deliberately NOT be modified. Instead, SF-02 will create a new migration to rename the tables. Tests check the final schema.
+> Historical Alembic migrations (e.g. `037b85034bb0_init_monolith_schema.py`) will deliberately NOT
+> be modified. Instead, SF-02 will create a new migration to rename the tables. Tests check the
+> final schema.
 
 ## Verification Plan
 
@@ -84,4 +88,6 @@ Update all SQLAlchemy models and raw queries to use prefixed database table name
 
 ### 🔵 BLUE-1.1: Response to RED-1.1
 **Verdict**: VALID — FIX REQUIRED (Clarification)
-**Response**: Added a `[!NOTE]` explaining that historical migrations are never modified. The new migration (in SF-02) will transition the state, and tests verifying the final DB state will see `workspace_projects`.
+**Response**: Added a `[!NOTE]` explaining that historical migrations are never modified. The new
+migration (in SF-02) will transition the state, and tests verifying the final DB state will see
+`workspace_projects`.

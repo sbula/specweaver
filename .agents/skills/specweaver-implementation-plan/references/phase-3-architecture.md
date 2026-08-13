@@ -10,7 +10,9 @@ description: "Phase 3: Architecture Verification — verify layer placement, dep
 > as CRITICAL items and presented together in Phase 4.
 
 3.1. **Mechanism vs. Constraint Matrix (MANDATORY)**:
-     For every new feature or module proposed in the plan, you MUST explicitly extract the technical mechanisms it requires, and map them against the target module's `context.yaml` constraints (`archetype` and `forbids`). 
+     For every new feature or module proposed in the plan, you MUST explicitly extract the technical
+     mechanisms it requires, and map them against the target module's `context.yaml` constraints
+     (`archetype` and `forbids`). 
      
      You MUST analyze every mechanism across these 5 categories:
      - **I/O & State**: Reading/writing files, SQLite access, network requests, environment variables, global state.
@@ -25,9 +27,13 @@ description: "Phase 3: Architecture Verification — verify layer placement, dep
      - If the module is `pure-logic`, it strictly forbids ALL I/O, Execution, and State mechanisms.
      - If the module `forbids: [specweaver/loom/*]`, it strictly forbids Execution.
      - If the module `forbids: [specweaver/llm]`, it strictly forbids LLM/AI.
-     - **Domain Check**: Verify the feature's domain topic strictly matches the `purpose` declared in `context.yaml`. Do NOT mix distinct domains (e.g., financial math inside a graph topology module), even if both are `pure-logic`.
+     - **Domain Check**: Verify the feature's domain topic strictly matches the `purpose` declared
+       in `context.yaml`. Do NOT mix distinct domains (e.g., financial math inside a graph topology
+       module), even if both are `pure-logic`.
      
-     If a mechanism conflicts with the constraints, it is a CRITICAL violation. The proposed location MUST be rejected, or the design refactored (e.g. by extracting the violating I/O mechanism into an `adapter` and returning pure payloads).
+     If a mechanism conflicts with the constraints, it is a CRITICAL violation. The proposed
+     location MUST be rejected, or the design refactored (e.g. by extracting the violating I/O
+     mechanism into an `adapter` and returning pure payloads).
 
 3.2. **Zoom-out test** — for EACH new module, file, or capability proposed:
      - Does a similar capability already exist elsewhere in the codebase?

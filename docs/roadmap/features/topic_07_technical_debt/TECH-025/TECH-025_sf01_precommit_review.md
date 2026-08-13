@@ -50,10 +50,17 @@ Comment inline under any row. Nothing proceeds to Phase 3 until you reply.
 
 ### Why the 🟡 / ❌ cells are what they are
 
-- **`is_fixture_data()` 🟡** — seven unit tests cover recognised / unrecognised / empty / in-window / past-window / prefix-collision. Two branches of the `line.strip()` behaviour are unexercised (stories U1, U2).
-- **`cited_frs_in_tests()` integration 🟡** — proven against `tmp_path` trees, never against the real `tests/` tree. The end-to-end claim ("INT-US-21 still closes, counts drop") was verified **by hand** this session, not by a test. Per the design that permanent guard is SF-07's manifest, so this is a *scheduled* gap, not an unowned one. Story I1 closes the cheap half now.
+- **`is_fixture_data()` 🟡** — seven unit tests cover recognised / unrecognised / empty / in-window /
+  past-window / prefix-collision. Two branches of the `line.strip()` behaviour are unexercised
+  (stories U1, U2).
+- **`cited_frs_in_tests()` integration 🟡** — proven against `tmp_path` trees, never against the real
+  `tests/` tree. The end-to-end claim ("INT-US-21 still closes, counts drop") was verified **by
+  hand** this session, not by a test. Per the design that permanent guard is SF-07's manifest, so
+  this is a *scheduled* gap, not an unowned one. Story I1 closes the cheap half now.
 - **`_src_relative()` 🟡** — the three new cases are covered, but a nested `scripts/<pkg>/x.py` has undefined-by-test behaviour (story U3).
-- **Marker-applied ❌** — nothing asserts the marker is actually present on `test_check_fr_coverage.py`. Delete that one line and every test in this boundary still passes; only the manual ledger check would notice. This is the weakest point in the change (story I1).
+- **Marker-applied ❌** — nothing asserts the marker is actually present on
+  `test_check_fr_coverage.py`. Delete that one line and every test in this boundary still passes;
+  only the manual ledger check would notice. This is the weakest point in the change (story I1).
 
 ### Vacuous-proof check (§2.5b)
 
@@ -71,7 +78,10 @@ Manual half — every test relied on was read, not name-matched:
 | 6 Assertion weaker than the name | Absent. `test_marker_skips_only_the_marked_file` asserts the whole returned dict by equality, not just membership |
 | 7 Self-referential expectation | **Live risk, handled.** Tests build fixtures from `mod.FIXTURE_DATA_MARKER`. `test_the_marker_constant_matches_the_documented_text` pins the literal text separately, so renaming the marker is a visible decision rather than a silently-passing refactor |
 
-**Probe (mandatory, performed):** replaced the skip with `if False`. Exactly `test_marked_file_contributes_no_citations` and `test_marker_skips_only_the_marked_file` went red; the other 10 stayed green — including the control, which is the point. Restored; residue check for `PROBE` / `if False` returns clean; 345 tests pass in `tests/unit/scripts/`.
+**Probe (mandatory, performed):** replaced the skip with `if False`. Exactly
+`test_marked_file_contributes_no_citations` and `test_marker_skips_only_the_marked_file` went red;
+the other 10 stayed green — including the control, which is the point. Restored; residue check for
+`PROBE` / `if False` returns clean; 345 tests pass in `tests/unit/scripts/`.
 
 > Comment:
 
@@ -94,17 +104,29 @@ Manual half — every test relied on was read, not name-matched:
 | I1 | [Happy Path] The checker's own test file is fixture data **on the real tree** — reads the actual file and asserts the predicate is True, plus a sibling in the same directory asserting False | file on disk → `is_fixture_data` | `check_fr_coverage.py:108-117` |
 
 ### E2E
-None proposed. There is no user-facing workflow here; `check_fr_coverage.py` is invoked by the `specweaver-feature` closure gate, and the real-tree behaviour is covered by I1 now and SF-07's manifest guard permanently.
+None proposed. There is no user-facing workflow here; `check_fr_coverage.py` is invoked by the
+`specweaver-feature` closure gate, and the real-tree behaviour is covered by I1 now and SF-07's
+manifest guard permanently.
 
 ### §2.5a Mandatory challenge — is this set sufficient?
 
-**U1 and U2 are one decision, not two tests.** `line.strip() == MARKER` currently accepts an indented marker. That is what makes U2 possible: a module docstring in the first 10 lines that *quotes* the marker would silently exclude a genuine proof file — the precise failure mode the marker's own comment warns about, and one that fails **silently**, the worst kind here. Requiring column 0 (`line.rstrip() == MARKER`, no leading space) kills U2 outright and makes U1's answer explicit.
+**U1 and U2 are one decision, not two tests.** `line.strip() == MARKER` currently accepts an
+indented marker. That is what makes U2 possible: a module docstring in the first 10 lines that
+*quotes* the marker would silently exclude a genuine proof file — the precise failure mode the
+marker's own comment warns about, and one that fails **silently**, the worst kind here. Requiring
+column 0 (`line.rstrip() == MARKER`, no leading space) kills U2 outright and makes U1's answer
+explicit.
 
-**I1 is the one I care most about.** Without it, the marker line on `test_check_fr_coverage.py` is unprotected: deleting it breaks nothing any test can see. Everything else in this boundary would still be green while the defect quietly returned. It is ~8 lines and needs no story ID.
+**I1 is the one I care most about.** Without it, the marker line on `test_check_fr_coverage.py` is
+unprotected: deleting it breaks nothing any test can see. Everything else in this boundary would
+still be green while the defect quietly returned. It is ~8 lines and needs no story ID.
 
 **U3 is cheap and I'd take it**, but it pins behaviour rather than fixing a risk.
 
-**Deliberately not proposed:** a test asserting INT-US-21's ledger stays closed. It cannot be written without naming that story alongside an `FR-N` token, which would re-credit it — the defect under repair. That belongs in SF-07's manifest, where the story ids live in data instead of source. Recorded here so the absence is a decision, not an oversight.
+**Deliberately not proposed:** a test asserting INT-US-21's ledger stays closed. It cannot be
+written without naming that story alongside an `FR-N` token, which would re-credit it — the defect
+under repair. That belongs in SF-07's manifest, where the story ids live in data instead of source.
+Recorded here so the absence is a decision, not an oversight.
 
 > Comment:
 
@@ -112,6 +134,8 @@ None proposed. There is no user-facing workflow here; `check_fr_coverage.py` is 
 
 ## My recommendation
 
-Implement **U1+U2 (as the single column-0 change), I1, and U3** in Phase 3. Total ≈ 25 lines of test plus a one-token source change. I1 is the only one closing a real hole; the rest harden a predicate that is about to be trusted by three more sub-features.
+Implement **U1+U2 (as the single column-0 change), I1, and U3** in Phase 3. Total ≈ 25 lines of test
+plus a one-token source change. I1 is the only one closing a real hole; the rest harden a predicate
+that is about to be trusted by three more sub-features.
 
 > Comment:

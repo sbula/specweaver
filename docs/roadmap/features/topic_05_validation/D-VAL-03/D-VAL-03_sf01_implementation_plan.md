@@ -7,7 +7,10 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Expand the engine internals (`atoms`, `tools`, `interface`) to securely broker universal compile, debug, lint, and test execution formats. This foundational sub-feature standardizes compiler outputs via SARIF protocols and debug outputs via DAP standards. It implements the Python and TS runners and explicitly ensures LLM Agents can safely trigger these actions themselves.
+Expand the engine internals (`atoms`, `tools`, `interface`) to securely broker universal compile,
+debug, lint, and test execution formats. This foundational sub-feature standardizes compiler outputs
+via SARIF protocols and debug outputs via DAP standards. It implements the Python and TS runners and
+explicitly ensures LLM Agents can safely trigger these actions themselves.
 
 ## 1. Interface & Data Models (`interface.py`)
 Add models to standardize compiler errors (SARIF-inspired) and debug streams (DAP-inspired).
@@ -76,11 +79,17 @@ Implement the base logic for Python and the new TypeScript handler.
 
 ## 5. Documentation
 ### [MODIFY] `docs/architecture/architecture_reference.md`
-- Add a new section titled 'Updating 3rd Party Software and Protocols within SpecWeaver'. Define the Adapter Pattern strategy which explicitly insulates SpecWeaver's internal data models (`CompileError`, `OutputEvent`) from underlying schema breakages in protocols like DAP and SARIF.
+- Add a new section titled 'Updating 3rd Party Software and Protocols within SpecWeaver'. Define the
+  Adapter Pattern strategy which explicitly insulates SpecWeaver's internal data models
+  (`CompileError`, `OutputEvent`) from underlying schema breakages in protocols like DAP and SARIF.
 
 ## Research Notes
-- **SARIF (Static Analysis Results Interchange Format)**: Research confirms this is the industry-standard JSON target for compiler outputs globally (GCC 13+, MSVC, Clang). We molded the `CompileError` tightly around its diagnostic block logic.
-- **DAP (Debug Adapter Protocol)**: We adopted the `OutputEvent` from the DAP standard format to uniformly stream logs back to agents (`category` handles stdout, stderr, exception boundaries seamlessly).
+- **SARIF (Static Analysis Results Interchange Format)**: Research confirms this is the
+  industry-standard JSON target for compiler outputs globally (GCC 13+, MSVC, Clang). We molded the
+  `CompileError` tightly around its diagnostic block logic.
+- **DAP (Debug Adapter Protocol)**: We adopted the `OutputEvent` from the DAP standard format to
+  uniformly stream logs back to agents (`category` handles stdout, stderr, exception boundaries
+  seamlessly).
 
 ## Backlog / Deferred
 - Implementation of SARIF compilation parsing natively for C++/GCC targets (handled once standard parsers integrate fully to compiler specs natively).

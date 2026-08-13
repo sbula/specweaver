@@ -8,9 +8,17 @@
 
 ## Feature Overview
 
-Feature TECH-004 is a comprehensive architectural cleanup of the `specweaver.graph` bounded context. Three rounds of adversarial audit revealed **11 anti-patterns** including two **data integrity bugs**, a premature optimization that is the root cause of all ID confusion, systematic encapsulation violations, and a YAGNI abstract class.
+Feature TECH-004 is a comprehensive architectural cleanup of the `specweaver.graph` bounded context.
+Three rounds of adversarial audit revealed **11 anti-patterns** including two **data integrity
+bugs**, a premature optimization that is the root cause of all ID confusion, systematic
+encapsulation violations, and a YAGNI abstract class.
 
-**The central insight (Round 3)**: The `InMemoryGraphEngine`'s integer remapping layer (`_hash_to_int`, `_int_to_hash`, `_next_int_id`) provides zero performance benefit — there is no matrix math in the codebase — and is the **sole root cause** of all three data integrity bugs. The fix is not to patch the integer layer with more methods, but to **delete it entirely** and use semantic hash strings as native NetworkX node keys. This eliminates 70+ lines of translation code and makes all three bugs structurally impossible.
+**The central insight (Round 3)**: The `InMemoryGraphEngine`'s integer remapping layer
+(`_hash_to_int`, `_int_to_hash`, `_next_int_id`) provides zero performance benefit — there is no
+matrix math in the codebase — and is the **sole root cause** of all three data integrity bugs. The
+fix is not to patch the integer layer with more methods, but to **delete it entirely** and use
+semantic hash strings as native NetworkX node keys. This eliminates 70+ lines of translation code
+and makes all three bugs structurally impossible.
 
 Additionally, a `GraphEngineProtocol` is introduced as the Rust readiness seam — 15 lines of code that makes the future Rust engine (petgraph via PyO3) a mechanical drop-in replacement.
 
@@ -59,7 +67,10 @@ After dropping the integer remapping, only **two** independent ID spaces remain,
 
 #### AP-1: Orchestration Logic in CLI (50+ lines) — DDD violation
 
-The `build()` command in `graph/interfaces/cli.py` (lines 63–134) contains the full graph ingestion pipeline: engine creation, DB path resolution, topology loading, service name resolution, repository creation, stale purging, state loading, builder injection, file iteration, persistence. None of this is CLI-specific.
+The `build()` command in `graph/interfaces/cli.py` (lines 63–134) contains the full graph ingestion
+pipeline: engine creation, DB path resolution, topology loading, service name resolution, repository
+creation, stale purging, state loading, builder injection, file iteration, persistence. None of this
+is CLI-specific.
 
 **Fix**: Distribute logic to natural owners (builder method, repository method, topology facade). CLI remains sole Composition Root per ADR-002.
 
@@ -135,7 +146,11 @@ One implementation. Uses `Any` everywhere, erasing type safety. Directly enabled
 
 #### AP-12: Premature Integer Optimization — KISS violation (Root Cause)
 
-The `_hash_to_int` / `_int_to_hash` / `_next_int_id` infrastructure (70+ lines) was designed for "RT-17: fast matrix math" that does not exist. The engine uses NetworkX for: `add_node`, `add_edge`, `remove_node`, `remove_edge`, `has_node`, `has_edge`, `nodes()`, `edges()`, `ego_graph`, `generate_graphml`. None of these benefit from integer keys over string keys. NetworkX uses Python dicts internally — O(1) hash lookup regardless of key type.
+The `_hash_to_int` / `_int_to_hash` / `_next_int_id` infrastructure (70+ lines) was designed for
+"RT-17: fast matrix math" that does not exist. The engine uses NetworkX for: `add_node`, `add_edge`,
+`remove_node`, `remove_edge`, `has_node`, `has_edge`, `nodes()`, `edges()`, `ego_graph`,
+`generate_graphml`. None of these benefit from integer keys over string keys. NetworkX uses Python
+dicts internally — O(1) hash lookup regardless of key type.
 
 **Fix**: Delete the integer remapping. Use semantic hash strings as native `nx.DiGraph` node keys.
 
@@ -151,11 +166,18 @@ Engine has both `threading.Lock` (sync) and `asyncio.Semaphore` (async) in `__in
 
 ### Honest Architecture Assessment
 
-**NetworkX is overkill.** The engine uses 9 of ~500+ NetworkX functions. The actual API surface is an adjacency list with attribute storage — equivalent to `dict[str, dict]` + `dict[str, set[str]]`. This is exactly what `TopologyEngine` already implements with raw Python dicts.
+**NetworkX is overkill.** The engine uses 9 of ~500+ NetworkX functions. The actual API surface is
+an adjacency list with attribute storage — equivalent to `dict[str, dict]` + `dict[str, set[str]]`.
+This is exactly what `TopologyEngine` already implements with raw Python dicts.
 
-**Two graph engines exist** in the same bounded context (`InMemoryGraphEngine` + `TopologyEngine`) doing the same thing differently. This is the deeper DRY violation. Not addressed in TECH-004, but documented as future TECH-005 candidate.
+**Two graph engines exist** in the same bounded context (`InMemoryGraphEngine` + `TopologyEngine`)
+doing the same thing differently. This is the deeper DRY violation. Not addressed in TECH-004, but
+documented as future TECH-005 candidate.
 
-**Scale ceiling.** At 100K files (~1M nodes), Python's memory overhead (~2GB for 1M-node DiGraph) and GIL (no true concurrent ingestion) become hard limits. The `GraphEngineProtocol` introduced here ensures the Rust engine (via PyO3) can replace the Python engine mechanically when that threshold is reached.
+**Scale ceiling.** At 100K files (~1M nodes), Python's memory overhead (~2GB for 1M-node DiGraph)
+and GIL (no true concurrent ingestion) become hard limits. The `GraphEngineProtocol` introduced here
+ensures the Rust engine (via PyO3) can replace the Python engine mechanically when that threshold is
+reached.
 
 ### What Already Exists & Can Be Reused
 
@@ -281,7 +303,9 @@ class GraphEngineProtocol(Protocol):
     def clear_cache(self) -> None: ...
 ```
 
-When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to builder, repository, or CLI. The Rust engine will use compact integer IDs internally (petgraph), but that translation stays inside the Rust boundary.
+When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to builder, repository,
+or CLI. The Rust engine will use compact integer IDs internally (petgraph), but that translation
+stays inside the Rust boundary.
 
 ## Developer Guides Required
 
@@ -293,7 +317,14 @@ When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to b
 
 ### SF-01: Engine Simplification, ID Safety & Rust Seam
 
-- **Scope**: Delete integer remapping (`_hash_to_int`, `_int_to_hash`, `_next_int_id`). Use semantic hashes as native NetworkX keys. Rename `_graph` → `_nx_graph`. Add `_file_index` for O(1) file lookup. Add `export_semantic_digraph()` / `load_semantic_digraph()` (trivial with hash keys). Add `get_nodes_for_file()` / `get_edges_involving()`. Remove `asyncio.Semaphore` from engine. Add `GraphEngineProtocol`. Refactor builder to use public API only. Delete `AbstractGraphRepository`. Fix `load_from_db` to return hash-keyed graph. Rename `flush_to_db` → `persist_semantic_digraph`. Add `busy_timeout=5000`. Make `normalize_path` public. Hoist lazy imports. Apply naming convention.
+- **Scope**: Delete integer remapping (`_hash_to_int`, `_int_to_hash`, `_next_int_id`). Use semantic
+  hashes as native NetworkX keys. Rename `_graph` → `_nx_graph`. Add `_file_index` for O(1) file
+  lookup. Add `export_semantic_digraph()` / `load_semantic_digraph()` (trivial with hash keys). Add
+  `get_nodes_for_file()` / `get_edges_involving()`. Remove `asyncio.Semaphore` from engine. Add
+  `GraphEngineProtocol`. Refactor builder to use public API only. Delete `AbstractGraphRepository`.
+  Fix `load_from_db` to return hash-keyed graph. Rename `flush_to_db` → `persist_semantic_digraph`.
+  Add `busy_timeout=5000`. Make `normalize_path` public. Hoist lazy imports. Apply naming
+  convention.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-9, FR-11]
 - **Inputs**: `graph/core/engine/core.py`, `graph/core/store/repository.py`, `graph/core/builder/orchestrator.py`, `graph/core/engine/hashing.py`
 - **Outputs**: Simplified engine (~80 lines), `GraphEngineProtocol`, typed repository, builder using public API only
@@ -302,7 +333,10 @@ When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to b
 
 ### SF-02: CLI Logic Extraction, Cross-Interface Fix & LineageRepository Cleanup
 
-- **Scope**: Distribute CLI logic to natural owners: (a) `GraphBuilder.ingest_target()`, (b) `SqliteGraphRepository.purge_stale_entries(known_file_ids)`, (c) `resolve_service_name()` in `assurance/graph/loader.py`. Move `check_lineage` to `graph/lineage/scanner.py`. Slim CLI to thin adapter. Fix `LineageRepository` sync-over-async. **No `helpers.py` file.**
+- **Scope**: Distribute CLI logic to natural owners: (a) `GraphBuilder.ingest_target()`, (b)
+  `SqliteGraphRepository.purge_stale_entries(known_file_ids)`, (c) `resolve_service_name()` in
+  `assurance/graph/loader.py`. Move `check_lineage` to `graph/lineage/scanner.py`. Slim CLI to thin
+  adapter. Fix `LineageRepository` sync-over-async. **No `helpers.py` file.**
 - **FRs**: [FR-6, FR-7, FR-8, FR-10, FR-12]
 - **Inputs**: SF-01 output, `graph/interfaces/cli.py`, `graph/lineage/store/lineage_repository.py`, `assurance/graph/loader.py`
 - **Outputs**: Thin CLI, builder with `ingest_target()`, repo with `purge_stale_entries()`, loader with `resolve_service_name()`, moved `check_lineage`, clean lineage repository

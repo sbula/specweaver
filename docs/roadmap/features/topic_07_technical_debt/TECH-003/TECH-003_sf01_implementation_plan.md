@@ -7,17 +7,23 @@
 - **Status**: APPROVED
 
 ## Context
-This sub-feature executes the physical directory migration of `workspace/ast/parsers` and `workspace/ast/adapters` into a unified `workspace/ast` boundary to enforce Domain-Driven Design. It also updates the manifest files (`context.yaml`) and exacts the explicit boundaries in `tach.toml`. 
+This sub-feature executes the physical directory migration of `workspace/ast/parsers` and
+`workspace/ast/adapters` into a unified `workspace/ast` boundary to enforce Domain-Driven Design. It
+also updates the manifest files (`context.yaml`) and exacts the explicit boundaries in `tach.toml`. 
 
 > [!CAUTION]
-> **COMMIT BOUNDARY ALERT**: SF-01 and SF-02 must be executed sequentially but squash-merged into a **SINGLE ATOMIC COMMIT**. Committing SF-01 independently will break the build due to orphaned import paths.
+> **COMMIT BOUNDARY ALERT**: SF-01 and SF-02 must be executed sequentially but squash-merged into a
+> **SINGLE ATOMIC COMMIT**. Committing SF-01 independently will break the build due to orphaned
+> import paths.
 
 ## Proposed Changes
 
 ### `src/specweaver/workspace/ast/`
 We will create this new unifying parent boundary. (No `__init__.py` is used, as we rely on native Python namespace packages enforced by `tach`.)
 #### [NEW] `src/specweaver/workspace/ast/context.yaml`
-A lightweight manifest explicitly declaring the purpose of this folder: Unifying AST extraction (`parsers`) and translation (`adapters`). No hard `forbids` or `consumes` restrictions are necessary here, as it inherits from `workspace` and delegates specifics to its children.
+A lightweight manifest explicitly declaring the purpose of this folder: Unifying AST extraction
+(`parsers`) and translation (`adapters`). No hard `forbids` or `consumes` restrictions are necessary
+here, as it inherits from `workspace` and delegates specifics to its children.
 
 ### `tach.toml`
 #### [MODIFY] `tach.toml`
@@ -53,5 +59,7 @@ We will execute standard `git mv` commands to physically relocate the source and
 - N/A. All verification is handled by the automated test suite.
 
 ## Research Notes
-- `tach.toml` did not previously have explicit rules for `workspace.parsers`. The addition of `ast.parsers` and `ast.adapters` into the root `modules` list is a new explicit constraint, dramatically improving the structural rigidity.
+- `tach.toml` did not previously have explicit rules for `workspace.parsers`. The addition of
+  `ast.parsers` and `ast.adapters` into the root `modules` list is a new explicit constraint,
+  dramatically improving the structural rigidity.
 - Test paths must be explicitly moved. Moving `src/` without moving `tests/unit/workspace/...` will orphan the test suite and cause future developers to write tests in the wrong location.

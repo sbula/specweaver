@@ -8,15 +8,21 @@
 ## Feature Overview
 
 Feature 3.26c adds support for strictly isolated human `GateType.HITL` rejections into the generation sequence prompts.
-It solves the issue where human feedback is sometimes ignored or outweighed by linter errors in loop-back generation sequences by placing that feedback into a `<dictator-overrides>` XML section with the highest priority weighting ("never truncated").
+It solves the issue where human feedback is sometimes ignored or outweighed by linter errors in
+loop-back generation sequences by placing that feedback into a `<dictator-overrides>` XML section
+with the highest priority weighting ("never truncated").
 It interacts with `PromptBuilder` and the Flow Engine's pipeline handlers (`_generation.py`, `_draft.py`, etc.), and does NOT touch the underlying LLM structural adapters themselves.
 Key constraints: Must use `<dictator-overrides>` XML section, must grant strict promotional weight above standard linter error findings, and must fit seamlessly within the existing adapter archetype.
 
 ## Research Findings
 
 ### Codebase Patterns
-- `src/specweaver/infrastructure/llm/prompt_builder.py` provides an `add_instructions` and similar methods with token-aware truncation logic based on integer priority levels. Priority 0 is "never truncated".
-- `context.feedback` is used by the Flow Engine (`src/specweaver/core/flow/runner.py` and `gates.py`) to pipe output from `loop_back` actions to target steps. By modifying handlers (e.g. `GenerateCodeHandler`), this feedback can be unpacked and directed into the prompt.
+- `src/specweaver/infrastructure/llm/prompt_builder.py` provides an `add_instructions` and similar
+  methods with token-aware truncation logic based on integer priority levels. Priority 0 is "never
+  truncated".
+- `context.feedback` is used by the Flow Engine (`src/specweaver/core/flow/runner.py` and
+  `gates.py`) to pipe output from `loop_back` actions to target steps. By modifying handlers (e.g.
+  `GenerateCodeHandler`), this feedback can be unpacked and directed into the prompt.
 - The `RunContext` cleanly isolates feedback state, making the implementation natively compatible with the existing `Flow` routing mechanisms without an architectural switch.
 
 ### External Tools

@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement the core boundaries and YAML-based extractions for `ProtocolSchemaInterface`. This securely introduces OpenAPI and AsyncAPI schema parsing via `ruamel.yaml` into the system architecture without breaking programming Code Structure workflows.
+Implement the core boundaries and YAML-based extractions for `ProtocolSchemaInterface`. This
+securely introduces OpenAPI and AsyncAPI schema parsing via `ruamel.yaml` into the system
+architecture without breaking programming Code Structure workflows.
 
 ## Proposed Changes
 
@@ -15,7 +17,9 @@ Implement the core boundaries and YAML-based extractions for `ProtocolSchemaInte
 This module defines the boundaries, data models, and the YAML-based parsers.
 
 #### [NEW] `src/specweaver/core/loom/commons/protocol/context.yaml`
-- **What it does**: Establishes the `adapter` archetype for the new protocol package allowing external format ingestion, declares strict `consumes`/`forbids` boundaries preventing downward leaks into the flow Engine or Atom structures.
+- **What it does**: Establishes the `adapter` archetype for the new protocol package allowing
+  external format ingestion, declares strict `consumes`/`forbids` boundaries preventing downward
+  leaks into the flow Engine or Atom structures.
 - **Constraints**: 
   - `archetype: adapter`
   - `consumes: [specweaver/commons]`
@@ -28,7 +32,9 @@ This module defines the boundaries, data models, and the YAML-based parsers.
   - `ProtocolMessage`: represents payload structures/schemas.
   - `ProtocolSchemaSet`: a collection encompassing the parsed outputs.
 > [!NOTE]
-> Based on HITL approval, we are explicitly enforcing strict Pydantic structures right out of the parser (rather than raw dictionaries) to prevent type hallucination later inside the Engine's AST difference checkers.
+> Based on HITL approval, we are explicitly enforcing strict Pydantic structures right out of the
+> parser (rather than raw dictionaries) to prevent type hallucination later inside the Engine's AST
+> difference checkers.
 
 #### [NEW] `src/specweaver/core/loom/commons/protocol/interfaces.py`
 - **What it does**: Defines the `ProtocolSchemaError` and the ABC `ProtocolSchemaInterface`.
@@ -39,7 +45,9 @@ This module defines the boundaries, data models, and the YAML-based parsers.
 #### [NEW] `src/specweaver/core/loom/commons/protocol/openapi_parser.py`
 - **What it does**: Adheres to `ProtocolSchemaInterface` specifically for OpenAPI `3.x`. Uses `ruamel.yaml` safely.
 > [!CAUTION]
-> Based on HITL approval, embedded generic validation via `jsonschema` is avoided to honor NFR-1 speed budgets. Instead, if `openapi.yaml` structural keys like `paths` are completely malformed, failure relies natively on `ProtocolSchemaError` raised via key misses.
+> Based on HITL approval, embedded generic validation via `jsonschema` is avoided to honor NFR-1
+> speed budgets. Instead, if `openapi.yaml` structural keys like `paths` are completely malformed,
+> failure relies natively on `ProtocolSchemaError` raised via key misses.
 
 #### [NEW] `src/specweaver/core/loom/commons/protocol/asyncapi_parser.py`
 - **What it does**: Adheres to `ProtocolSchemaInterface` specifically for AsyncAPI `3.x`. Uses `ruamel.yaml` safely. Focuses structurally on `channels` and `messages`.

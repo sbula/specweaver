@@ -1,6 +1,8 @@
 ---
 name: specweaver-implementation-plan
-description: "Create or audit an implementation plan for a sub-feature. Deep research, audit across 16 categories, architecture verification, Red/Blue team analysis, consistency check. Use when the user asks to create an implementation plan, plan a sub-feature, or prepare for development."
+description: "Create or audit an implementation plan for a sub-feature. Deep research, audit across
+16 categories, architecture verification, Red/Blue team analysis, consistency check. Use when the
+user asks to create an implementation plan, plan a sub-feature, or prepare for development."
 ---
 
 # Implementation Plan Skill

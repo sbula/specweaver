@@ -7,7 +7,10 @@
 - **Status**: COMPLETED
 
 ## Goal Description
-Perform structural technical debt sweeps across the repository to seamlessly integrate the new polyglot orchestrator boundaries created in SF-02. This involves removing all temporary hardcoded Python glob exclusions and integrating pure polyglot hooks into `validation`, file system tooling (`loom`), boundary discovery (`assurance.standards`), and graph hashing (`assurance.graph.hasher`).
+Perform structural technical debt sweeps across the repository to seamlessly integrate the new
+polyglot orchestrator boundaries created in SF-02. This involves removing all temporary hardcoded
+Python glob exclusions and integrating pure polyglot hooks into `validation`, file system tooling
+(`loom`), boundary discovery (`assurance.standards`), and graph hashing (`assurance.graph.hasher`).
 
 ## Proposed Changes
 
@@ -24,7 +27,9 @@ Extends the tree-sitter abstraction layer to support polyglot AST traversal for 
 - **Modifications**:
   - `[x]` Implement `extract_traceability_tags` for Python by inspecting tree-sitter `comment` nodes for `@trace()` patterns.
 
-#### [MODIFY] `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` / `typescript/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/.../codestructure.py)
+#### [MODIFY] `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` /
+`typescript/codestructure.py`
+(file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/.../codestructure.py)
 - **Modifications**:
   - `[x]` Implement `extract_traceability_tags` using respective tree-sitter semantics for each language's comment nodes.
 
@@ -36,7 +41,9 @@ Polyglot context analyzer wrappers for the parsers.
 #### [MODIFY] `analyzers.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/analyzers.py)
 - **Modifications**:
   - `[x]` Add `extract_test_mapped_requirements(self, directory: Path) -> set[str]` to the `LanguageAnalyzer` ABC.
-  - `[x]` Implement it in `TreeSitterAnalyzerBase`. It will natively iterate over standard test file patterns for its language (e.g. `*Test.java` vs `test_*.py`) from the `directory`, invoke the parser's `extract_traceability_tags`, and return the unified mapping.
+  - `[x]` Implement it in `TreeSitterAnalyzerBase`. It will natively iterate over standard test file
+    patterns for its language (e.g. `*Test.java` vs `test_*.py`) from the `directory`, invoke the
+    parser's `extract_traceability_tags`, and return the unified mapping.
 
 ---
 
@@ -55,7 +62,10 @@ Physical execution adapters (`search.py` ripgrep timeout prevention and dispatch
 
 #### [MODIFY] `dispatcher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/core/loom/dispatcher.py)
 - **Modifications**:
-  - Inside `create_standard_set`, instantiate `AnalyzerFactory.get_all_analyzers()` and aggregate both `get_default_directory_ignores()` and `get_binary_ignore_patterns()` dynamically. Inject these arrays exclusively into the filesystem interface payload context as `exclude_dirs` and `exclude_patterns`.
+  - Inside `create_standard_set`, instantiate `AnalyzerFactory.get_all_analyzers()` and aggregate
+    both `get_default_directory_ignores()` and `get_binary_ignore_patterns()` dynamically. Inject
+    these arrays exclusively into the filesystem interface payload context as `exclude_dirs` and
+    `exclude_patterns`.
 
 ---
 
@@ -65,7 +75,10 @@ Discovery boundary implementation.
 #### [MODIFY] `discovery.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/standards/discovery.py)
 - **Modifications**:
   - Delete `_SKIP_DIRS`.
-  - In `_walk_with_skips`, fetch the aggregated global Polyglot Exclusions (`get_default_directory_ignores` and `get_binary_ignore_patterns`) dynamically via `AnalyzerFactory.get_all_analyzers()`. Replace `_SKIP_DIRS` with this mathematically correct set + explicit dotfile checks. Filter files by extensions not in binary ignores.
+  - In `_walk_with_skips`, fetch the aggregated global Polyglot Exclusions
+    (`get_default_directory_ignores` and `get_binary_ignore_patterns`) dynamically via
+    `AnalyzerFactory.get_all_analyzers()`. Replace `_SKIP_DIRS` with this mathematically correct set
+    + explicit dotfile checks. Filter files by extensions not in binary ignores.
 
 ---
 
@@ -74,7 +87,9 @@ Semantic topological hashing operations.
 
 #### [MODIFY] `hasher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/graph/hasher.py)
 - **Modifications**:
-  - Replace the unbounded `directory.rglob("*")` inside `DependencyHasher._hash_directory` with `os.walk` or a bounded directory-pruning operation using `AnalyzerFactory` exceptions and `pathspec` for `.specweaverignore`.
+  - Replace the unbounded `directory.rglob("*")` inside `DependencyHasher._hash_directory` with
+    `os.walk` or a bounded directory-pruning operation using `AnalyzerFactory` exceptions and
+    `pathspec` for `.specweaverignore`.
 
 ---
 
@@ -84,7 +99,9 @@ C09 validation Rule logic.
 #### [MODIFY] `rules/code/c09_traceability.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/code/c09_traceability.py)
 - **Modifications**:
   - `[x]` Remove direct `tree_sitter_python` logic and hardcoded Python `test_*.py` globs.
-  - `[x]` Change `_find_and_parse_tests` to iterate across all instances from `AnalyzerFactory.get_all_analyzers()` and accumulate `mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))`.
+  - `[x]` Change `_find_and_parse_tests` to iterate across all instances from
+    `AnalyzerFactory.get_all_analyzers()` and accumulate
+    `mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))`.
   - `[x]` The validation algorithm, comparisons, and rule constraints remain permanently untouched in `validation`.
 
 ---

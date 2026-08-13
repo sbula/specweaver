@@ -38,10 +38,14 @@ SpecWeaver currently requires a local Python environment with `uv sync --all-ext
 | 13 | **Image size** | Soft target ≤ 400MB | Track in CI, don't enforce as gate. |
 
 > [!IMPORTANT]
-> **CLI ↔ API symmetry**: Every path/config change to the CLI layer must also be applied to the API layer (`api/app.py`, `api/v1/pipelines.py`, `api/ui/routes.py`). Both use `Path.home()` directly today.
+> **CLI ↔ API symmetry**: Every path/config change to the CLI layer must also be applied to the API
+> layer (`api/app.py`, `api/v1/pipelines.py`, `api/ui/routes.py`). Both use `Path.home()` directly
+> today.
 
 > [!NOTE]
-> **Future IDE integration**: The entrypoint auto-registers projects under `/projects`, but future IDE plugins (VS Code, IntelliJ) will need an "Add Project" UI action that calls `POST /api/v1/projects` to register additional project paths at runtime.
+> **Future IDE integration**: The entrypoint auto-registers projects under `/projects`, but future
+> IDE plugins (VS Code, IntelliJ) will need an "Add Project" UI action that calls
+> `POST /api/v1/projects` to register additional project paths at runtime.
 
 ---
 

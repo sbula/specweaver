@@ -88,10 +88,17 @@
 ## Pre-Commit Gate (CB-1)
 - [x] Phase 1 — architecture: converter repair pure-logic; parser fix in its runner home; resume wiring at the CLI composition root; additive interface params; tach ✅; no new boundaries
 - [x] Phase 2 — test gap analysis: matrix presented; gaps G-a/G-b/G-c/G-d approved
-- [x] Phase 3 — G-a (parametrized error group + underscore-stem reject), G-b (mixed None rows, emission + real execution), G-c (E7b: resume adapter-failure warns + degrades loud), G-d (stem-kwarg parity across all 5 language converters) — all green
+- [x] Phase 3 — G-a (parametrized error group + underscore-stem reject), G-b (mixed None rows,
+  emission + real execution), G-c (E7b: resume adapter-failure warns + degrades loud), G-d
+  (stem-kwarg parity across all 5 language converters) — all green
 - [x] Phase 4 — full suite re-run from scratch AFTER the size refactor: unit 4843 · integration 511 · e2e 166 = 5520 passed, 0 failures
-- [x] Phase 5 — ruff ✅ · mypy ✅ (304 files) · C901 ✅ · tach ✅ · roadmap-sync ✅ · file-size: 2 RED introduced by SF-03 fixed by EXTRACTION (flow CLI `_wire_llm` dedup shared by run+resume; parser split to `python/pytest_output.py` with re-export) → 0 errors
+- [x] Phase 5 — ruff ✅ · mypy ✅ (304 files) · C901 ✅ · tach ✅ · roadmap-sync ✅ · file-size: 2 RED
+  introduced by SF-03 fixed by EXTRACTION (flow CLI `_wire_llm` dedup shared by run+resume; parser
+  split to `python/pytest_output.py` with re-export) → 0 errors
 - [x] Phase 6 — scenario_pipelines.md currency update (CLI journey, evidence contract, real bodies, host-posture facts); sequencing test retitled honestly; task.md + impl-plan records
 - [x] Phase 7 — INT-US-24_sf03_walkthrough.md written
-- [x] Phase 7.5 — emitted-test injection surface (NEW) mechanically guarded (identifier validation + repr, hostile pins); prompt-injection via LLM text = pre-existing E-VAL-03 class, unchanged; heal-through-loop cost bounded by max_retries; cross-session semantics corrected in design FR-2; no fix-required findings
+- [x] Phase 7.5 — emitted-test injection surface (NEW) mechanically guarded (identifier validation +
+  repr, hostile pins); prompt-injection via LLM text = pre-existing E-VAL-03 class, unchanged;
+  heal-through-loop cost bounded by max_retries; cross-session semantics corrected in design FR-2;
+  no fix-required findings
 - [x] Phase 8 — CB-1 committed `08cffe0d` (direct to main, 2026-07-24). **INT-US-24 COMPLETE → US-24 epic 🟢.**

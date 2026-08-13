@@ -7,7 +7,12 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement strict architectural decoupling for the pure-logic engine. Move all concrete Tree-Sitter powered language analyzers out of the pure-logic `context` domain and into a new `workspace/analyzers` adapter module. Construct Pure-logic Protocols and leverage global Dependency Injection natively through the `/flow` orchestrator to pass the active Factory into `DependencyHasher` and others, permanently eliminating the `Path.read_text`, `open()`, and Tree-Sitter C-binding architecture violations.
+Implement strict architectural decoupling for the pure-logic engine. Move all concrete Tree-Sitter
+powered language analyzers out of the pure-logic `context` domain and into a new
+`workspace/analyzers` adapter module. Construct Pure-logic Protocols and leverage global Dependency
+Injection natively through the `/flow` orchestrator to pass the active Factory into
+`DependencyHasher` and others, permanently eliminating the `Path.read_text`, `open()`, and
+Tree-Sitter C-binding architecture violations.
 
 ## Proposed Changes
 
@@ -56,7 +61,10 @@ Pure logic code structure and ignore parsing protocols.
 
 #### [MODIFY] `exclusions.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/exclusions.py)
 - **Modifications**:
-  - **HITL Gate Resolution (Option A)**: To clear the I/O violation inside `pure-logic` without pulling in `loom`, define a minimalist `IgnoreIOHandler` Protocol exclusively inside `exclusions.py` with `read_text(path) -> str`, `append_lines(path, lines)`, and `exists(path) -> bool`.
+  - **HITL Gate Resolution (Option A)**: To clear the I/O violation inside `pure-logic` without
+    pulling in `loom`, define a minimalist `IgnoreIOHandler` Protocol exclusively inside
+    `exclusions.py` with `read_text(path) -> str`, `append_lines(path, lines)`, and
+    `exists(path) -> bool`.
   - Update `SpecWeaverIgnoreParser.__init__` to strictly require `io_handler: IgnoreIOHandler`.
   - Replace physical `open()`, `.read_text()`, and `.exists()` calls within `SpecWeaverIgnoreParser` with calls to the injected `io_handler`.
 
@@ -77,7 +85,9 @@ The Orchestrator.
 
 #### [MODIFY] `hasher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/graph/hasher.py)
 - **Modifications**:
-  - **HITL Gate Resolution (Option B)**: Modify `DependencyHasher.__init__` to explicitly demand `analyzer_factory: AnalyzerFactoryProtocol` via Point-to-Point injection. This ensures pure-logic architectural decoupling is physically visible.
+  - **HITL Gate Resolution (Option B)**: Modify `DependencyHasher.__init__` to explicitly demand
+    `analyzer_factory: AnalyzerFactoryProtocol` via Point-to-Point injection. This ensures
+    pure-logic architectural decoupling is physically visible.
   - Update `compute_hashes` and `_hash_directory` to use `self.analyzer_factory` instead of importing globally.
 
 #### [MODIFY] `discovery.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/standards/discovery.py)
@@ -97,7 +107,9 @@ The Orchestrator.
 ## Design Validation & Verification Plan
 
 ### FR/NFR Alignment Check
-- **FRs Supported:** The `pathspec` ignores, token suppression bounds, and automatic scaffolding logic remaining 100% untouched algorithmically confirms zero functional regression for FR-1 through FR-5.
+- **FRs Supported:** The `pathspec` ignores, token suppression bounds, and automatic scaffolding
+  logic remaining 100% untouched algorithmically confirms zero functional regression for FR-1
+  through FR-5.
 - **NFR-1 (Extensibility):** Dependency Injecting the `AnalyzerFactoryProtocol` through the `flow` engine means new language bounds can be plugged in instantly without modifying `hasher.py`.
 - **NFR-2 (Performance):** Point-to-point DI has `< 1ms` static overhead, honoring `< 50ms` NFRs.
 

@@ -14,6 +14,8 @@
 **Runnable:** `sw --help`, `sw init --project ./test-project`
 
 > [!NOTE]
-> CLI uses level-oriented commands: `sw check --level=component spec.md` replaces the earlier `sw validate spec`. MVP supports `--level=component` (spec) and `--level=code` only. Future: `--level=feature`, `--level=class`, `--level=function`, and language-specific code rules.
+> CLI uses level-oriented commands: `sw check --level=component spec.md` replaces the earlier
+> `sw validate spec`. MVP supports `--level=component` (spec) and `--level=code` only. Future:
+> `--level=feature`, `--level=class`, `--level=function`, and language-specific code rules.
 
 ---

@@ -9,7 +9,13 @@
 
 ## 1. Goal
 
-Implement the native ecosystem YAML Evaluation schemas covering major framework lifecycles for Java/Kotlin (Spring Boot, Quarkus), TypeScript (NestJS), Python (FastAPI, Django), and Rust (Actix-Web). Instead of outputting english explanations, these declarative mapping schemas will **unroll** complex meta-annotations into their deterministic, literal compiler-equivalent counterparts (e.g., `@RestController` unrolls into `@Controller` and `@ResponseBody`). This effectively serves as a static compiler dictionary proxy, resolving NFR-1 limits on heavy runtime process spawning.
+Implement the native ecosystem YAML Evaluation schemas covering major framework lifecycles for
+Java/Kotlin (Spring Boot, Quarkus), TypeScript (NestJS), Python (FastAPI, Django), and Rust
+(Actix-Web). Instead of outputting english explanations, these declarative mapping schemas will
+**unroll** complex meta-annotations into their deterministic, literal compiler-equivalent
+counterparts (e.g., `@RestController` unrolls into `@Controller` and `@ResponseBody`). This
+effectively serves as a static compiler dictionary proxy, resolving NFR-1 limits on heavy runtime
+process spawning.
 
 ## 2. Proposed Changes
 
@@ -41,7 +47,10 @@ All files will be created inside the core evaluator static package boundary esta
 
 ### `docs/dev_guides/language_support_guide.md`
 #### [MODIFY]
-- **Documentation Step**: As requested, append a specific design rationale explaining *why* we maintain these meta-annotation graphs natively (lack of open-source static compiler dictionaries) rather than extracting them dynamically at compile time, explicitly referencing latency reduction and static reliability.
+- **Documentation Step**: As requested, append a specific design rationale explaining *why* we
+  maintain these meta-annotation graphs natively (lack of open-source static compiler dictionaries)
+  rather than extracting them dynamically at compile time, explicitly referencing latency reduction
+  and static reliability.
 
 ## 3. Verification Plan
 

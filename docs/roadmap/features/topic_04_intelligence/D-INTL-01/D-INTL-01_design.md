@@ -7,7 +7,9 @@
 
 ## Feature Overview
 
-Feature D-INTL-01 provides the core generation routines for writing application code and unit tests based entirely on previously validated design specifications. It integrates directly into the pipeline orchestration and includes the corresponding LLM Code Review loops.
+Feature D-INTL-01 provides the core generation routines for writing application code and unit tests
+based entirely on previously validated design specifications. It integrates directly into the
+pipeline orchestration and includes the corresponding LLM Code Review loops.
 
 ## Functional Requirements
 

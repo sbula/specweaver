@@ -1,6 +1,9 @@
 ---
 name: specweaver-ticket
-description: "Mint a new registry ID (TECH-NNN technical-debt ticket, capability ID like C-FLOW-12, or an INT-US-NN-SFxx sub-story) without colliding with an existing one, and register it everywhere that must know about it. Use when the user asks to file/create/mint a TECH ticket, a new capability, or a sub-story, or when work spins off a defect that needs its own ID."
+description: "Mint a new registry ID (TECH-NNN technical-debt ticket, capability ID like C-FLOW-12,
+or an INT-US-NN-SFxx sub-story) without colliding with an existing one, and register it everywhere
+that must know about it. Use when the user asks to file/create/mint a TECH ticket, a new capability,
+or a sub-story, or when work spins off a defect that needs its own ID."
 ---
 
 # Ticket / ID Minting Skill

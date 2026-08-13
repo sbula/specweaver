@@ -155,16 +155,23 @@ No new files, no new module, no DB migration, no YAML pipeline file (inline pipe
 ## Test Plan (4 Adversarial Buckets — per `tests/CLAUDE.md`)
 
 **Unit — pipeline construction** (no LLM, no pytest exec):
-- Happy: `implement` builds a pipeline whose steps are `[generate_code, generate_tests, run_tests, validate_code]`; `run_tests` has the loop-back gate (`loop_target="generate_code"`, `max_retries=2`); `validate_code` gate is `CONTINUE`; targets are `tests/test_<stem>.py` / `src/<stem>.py`.
+- Happy: `implement` builds a pipeline whose steps are
+  `[generate_code, generate_tests, run_tests, validate_code]`; `run_tests` has the loop-back gate
+  (`loop_target="generate_code"`, `max_retries=2`); `validate_code` gate is `CONTINUE`; targets are
+  `tests/test_<stem>.py` / `src/<stem>.py`.
 - Boundary: spec name with `_spec` suffix / nested/odd stem → correct relative targets.
 
 **Unit — `ValidateCodeHandler._find_code_path`:**
 - Happy: `params["target"]="src/x.py"` (exists) → returns that path.
-- Boundary/Hostile: `target` missing → falls back to `output_dir` glob (unchanged); `target` points outside project / nonexistent → returns None (→ handler's existing "No code file found" path); path-traversal `../` string → not resolved outside project.
+- Boundary/Hostile: `target` missing → falls back to `output_dir` glob (unchanged); `target` points
+  outside project / nonexistent → returns None (→ handler's existing "No code file found" path);
+  path-traversal `../` string → not resolved outside project.
 
 **Integration — `test_cli_implement.py` (QA atom stubbed):**
 - Happy: stub `QARunnerAtom.run` → tests pass + coverage ≥ threshold; `validate_code` stubbed pass → `exit_code==0`, report shows pass counts + coverage.
-- Graceful degradation: stub `run_tests` → fail twice → loop-back retries exhausted → `exit_code==1`, report shows failure; `validate_code` fails but gate `CONTINUE` → run still completes, failure reported, does not alone force exit-1.
+- Graceful degradation: stub `run_tests` → fail twice → loop-back retries exhausted →
+  `exit_code==1`, report shows failure; `validate_code` fails but gate `CONTINUE` → run still
+  completes, failure reported, does not alone force exit-1.
 - Backward-compat: the three existing tests updated to the stubbed-QA world still assert files created + "Implementation complete".
 
 **Deferred to SF-03 (documented, not silently skipped):** real pytest execution + worktree-bounded proof (FR-8). SF-01 asserts wiring/reporting only; it does not run real pytest in CI.

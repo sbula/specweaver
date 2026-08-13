@@ -1,6 +1,9 @@
 # Knowledge Graph Querying
 
-The graph boundary is strictly governed by the `GraphEngineProtocol`. Whether you are backed by the `InMemoryGraphEngine` (NetworkX) or the future `RustGraphEngine` (petgraph via PyO3), all operations use **semantic hash strings** as native Node IDs. Integer IDs are strictly prohibited outside the repository storage layer.
+The graph boundary is strictly governed by the `GraphEngineProtocol`. Whether you are backed by the
+`InMemoryGraphEngine` (NetworkX) or the future `RustGraphEngine` (petgraph via PyO3), all operations
+use **semantic hash strings** as native Node IDs. Integer IDs are strictly prohibited outside the
+repository storage layer.
 
 ## GraphEngineProtocol
 Any engine powering the platform must adhere to this standard contract:

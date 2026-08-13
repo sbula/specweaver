@@ -7,7 +7,15 @@
 
 ## Feature Overview
 
-Feature E-EXEC-01 introduces a **unified, standardized subprocess execution layer** (`SubprocessExecutor`) into the `specweaver.sandbox` bounded context. It solves the critical problem that each of the 5 language runners (Python, TypeScript, Rust, Java, Kotlin) independently reimplements raw `subprocess.run()` calls with inconsistent timeout handling, signal propagation, environment isolation, and output capture patterns. By extracting a single, battle-tested executor that enforces uniform resource limits, structured output capture, DAP-compatible event streaming, and security boundaries, all language runners gain hardened execution semantics automatically. This is the foundational prerequisite for US-9 (Zero-Trust Sandbox) and directly enables `C-EXEC-02` (Native CLI Action Nodes) and `B-EXEC-01` (Ephemeral Podman Sub-Containers).
+Feature E-EXEC-01 introduces a **unified, standardized subprocess execution layer**
+(`SubprocessExecutor`) into the `specweaver.sandbox` bounded context. It solves the critical problem
+that each of the 5 language runners (Python, TypeScript, Rust, Java, Kotlin) independently
+reimplements raw `subprocess.run()` calls with inconsistent timeout handling, signal propagation,
+environment isolation, and output capture patterns. By extracting a single, battle-tested executor
+that enforces uniform resource limits, structured output capture, DAP-compatible event streaming,
+and security boundaries, all language runners gain hardened execution semantics automatically. This
+is the foundational prerequisite for US-9 (Zero-Trust Sandbox) and directly enables `C-EXEC-02`
+(Native CLI Action Nodes) and `B-EXEC-01` (Ephemeral Podman Sub-Containers).
 
 ## Research Findings
 
@@ -27,7 +35,9 @@ Feature E-EXEC-01 introduces a **unified, standardized subprocess execution laye
 
 **Key observations:**
 1. **DRY Violation**: 7 files independently call `subprocess.run()`. Each reimplements timeout, capture, text encoding, and error handling differently.
-2. **Inconsistent timeouts**: Python uses per-method timeout values (120s for tests, 300s for debugger, 60s for linting). Rust/Java/Kotlin have **no timeout at all** — a hanging `cargo test` or `mvn test` will block the pipeline indefinitely.
+2. **Inconsistent timeouts**: Python uses per-method timeout values (120s for tests, 300s for
+   debugger, 60s for linting). Rust/Java/Kotlin have **no timeout at all** — a hanging `cargo test`
+   or `mvn test` will block the pipeline indefinitely.
 3. **No resource limits**: None of the runners enforce CPU/memory/process-count limits. A fork bomb in LLM-generated test code can crash the host.
 4. **No execution telemetry**: Start/stop times, peak memory, exit signals are not systematically captured.
 5. **Path traversal**: Only `QARunnerAtom._intent_run_tests` checks path traversal (`is_relative_to`). The individual runners blindly execute whatever target is passed.
@@ -40,7 +50,9 @@ Feature E-EXEC-01 introduces a **unified, standardized subprocess execution laye
 - The DAP `OutputEvent` pattern already in `run_debugger` methods
 
 **What should be refactored to benefit multiple features:**
-1. **Extract `SubprocessExecutor`**: A centralized subprocess wrapper in `sandbox/` that all language runners delegate to. This instantly provides uniform timeout, resource limits, signal handling, and telemetry to ALL languages.
+1. **Extract `SubprocessExecutor`**: A centralized subprocess wrapper in `sandbox/` that all
+   language runners delegate to. This instantly provides uniform timeout, resource limits, signal
+   handling, and telemetry to ALL languages.
 2. **Centralize path validation**: Move the `is_relative_to` check from `QARunnerAtom` into `SubprocessExecutor`, making it impossible to bypass for any subprocess.
 3. **Unify timeout configuration**: Replace hardcoded per-method timeouts with a DAL-aware configuration structure (e.g., DAL-E = 300s max, DAL-B = 60s max).
 
@@ -64,7 +76,9 @@ Feature E-EXEC-01 introduces a **unified, standardized subprocess execution laye
 | Windows Job Objects | Win32 API | `win32job` via `pywin32` or ctypes | MSDN |
 
 > [!NOTE]
-> Resource limiting via `resource` module is Unix-only. For Windows, we use a best-effort `psutil` poll-and-kill pattern (already standard practice in CI). We MUST NOT add `pywin32` as a hard dependency — optional graceful degradation.
+> Resource limiting via `resource` module is Unix-only. For Windows, we use a best-effort `psutil`
+> poll-and-kill pattern (already standard practice in CI). We MUST NOT add `pywin32` as a hard
+> dependency — optional graceful degradation.
 
 ### Blueprint References
 
@@ -154,7 +168,10 @@ No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) st
 | Performance regression from extra abstraction layer | Very Low | Low | Benchmarked at < 5ms overhead |
 
 ### Follow-Up: TECH-009
-Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/filesystem/core/search.py`) subprocess migration is out of scope for E-EXEC-01. A separate ticket **TECH-009** will be created to consolidate these subprocess users under `SubprocessExecutor`.
+Git executor (`sandbox/git/core/executor.py`) and filesystem search
+(`sandbox/filesystem/core/search.py`) subprocess migration is out of scope for E-EXEC-01. A separate
+ticket **TECH-009** will be created to consolidate these subprocess users under
+`SubprocessExecutor`.
 
 ## Developer Guides Required
 
@@ -173,7 +190,9 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 - **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
 
 ### SF-02: Language Runner Migration
-- **Scope**: Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct `subprocess.run()` to `SubprocessExecutor.execute()`. Ensure backward compatibility across all 4900+ tests.
+- **Scope**: Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct
+  `subprocess.run()` to `SubprocessExecutor.execute()`. Ensure backward compatibility across all
+  4900+ tests.
 - **FRs**: [FR-8]
 - **Inputs**: `SubprocessExecutor` from SF-01, existing runner.py files
 - **Outputs**: All runners using unified executor, all tests green

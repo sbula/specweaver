@@ -1,6 +1,8 @@
 # User Handbook 2: Drafting Effective Specs
 
-Traditional Natural Language prompts result in flaky LLM reasoning. SpecWeaver enforces a strict **Specification-Driven Development** loop. If the spec logic is flawed, your generated source code will break predictably.
+Traditional Natural Language prompts result in flaky LLM reasoning. SpecWeaver enforces a strict
+**Specification-Driven Development** loop. If the spec logic is flawed, your generated source code
+will break predictably.
 
 ## 1. The 6-Section L3 Component Spec Structure
 SpecWeaver is bound to a strict 6-section template layout that the `sw check` mathematically assesses utilizing static regex thresholds and contextual semantic NLP.
@@ -44,4 +46,6 @@ sw check specs/onboarding-feature.md --level feature
 
 ## 4. Lineage Tracking via `%traces`
 When code is finally generated via `sw implement`, SpecWeaver physically assigns semantic tags across all tests asserting what capability trace it belongs to.
-If you manually delete an implementation file without updating its `.md` parent trace, the Ast Drift component will block repository commits automatically indicating the project architecture is out of phase!
+If you manually delete an implementation file without updating its `.md` parent trace, the Ast Drift
+component will block repository commits automatically indicating the project architecture is out of
+phase!

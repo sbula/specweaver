@@ -1,6 +1,8 @@
 # User Handbook 6: AST Surgical Editing & Context Management
 
-Traditional AI coding assistants struggle with large enterprise codebases. Attempting to repair a single function in a 2,000-line `.java` or `.ts` file using basic tools like `cat` or string replacement results in two massive failures:
+Traditional AI coding assistants struggle with large enterprise codebases. Attempting to repair a
+single function in a 2,000-line `.java` or `.ts` file using basic tools like `cat` or string
+replacement results in two massive failures:
 1. **Context Window Bloat:** Passing millions of unnecessary tokens costs massive amounts of compute.
 2. **Hallucination & Prompt Forgetting:** Forcing the LLM to process thousands of lines before a tiny fix makes it lose track of the original architecture.
 
@@ -8,7 +10,9 @@ To solve this, **SpecWeaver uses polyglot AST (Abstract Syntax Tree) manipulatio
 
 ## The CodeStructureTool
 
-Instead of viewing files as raw text, SpecWeaver mounts Native Tree-Sitter boundaries across Python, Java, Kotlin, Javascript, Typescript, Rust, C/C++, Go, SQL, and Markdown. Let's look at how agents surgically interact with your codebase.
+Instead of viewing files as raw text, SpecWeaver mounts Native Tree-Sitter boundaries across Python,
+Java, Kotlin, Javascript, Typescript, Rust, C/C++, Go, SQL, and Markdown. Let's look at how agents
+surgically interact with your codebase.
 
 ### 1. Minimal Reads (Skeletal Mapping)
 Instead of executing a full `read_file`, SpecWeaver agents prefer using `read_file_structure`. 
@@ -19,8 +23,12 @@ This mechanically slices the file:
 You get a perfectly accurate blueprint of what the file does without paying token costs for details you aren't currently editing.
 
 ### 2. Deep Focus (`read_symbol_body`)
-If an agent only needs to fix the `calculateHash()` method, it uses `list_symbols` to find its exact Dot-Notation scope (e.g., `CryptoUtils.calculateHash`), and then calls `read_symbol`. That extracts just the target method.
-Better yet, using `read_symbol_body` extracts only the inside iteration loops, hiding external framework decorators (like Spring Boot annotations) from the agent entirely so it won't get them wrong during reproduction.
+If an agent only needs to fix the `calculateHash()` method, it uses `list_symbols` to find its exact
+Dot-Notation scope (e.g., `CryptoUtils.calculateHash`), and then calls `read_symbol`. That extracts
+just the target method.
+Better yet, using `read_symbol_body` extracts only the inside iteration loops, hiding external
+framework decorators (like Spring Boot annotations) from the agent entirely so it won't get them
+wrong during reproduction.
 
 ### 3. Surgical Splicing (`replace_symbol_body`)
 This is SpecWeaver's primary coding advantage. 

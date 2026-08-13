@@ -1,6 +1,8 @@
 ---
 name: specweaver-design
-description: "Feature design skill. Intake → Research → Feature Detail → Decompose → Document → Consistency Check. Produces a self-contained Design Document with Progress Tracker. Use when the user asks to design a feature, create a design document, or analyze requirements for a feature."
+description: "Feature design skill. Intake → Research → Feature Detail → Decompose → Document →
+Consistency Check. Produces a self-contained Design Document with Progress Tracker. Use when the
+user asks to design a feature, create a design document, or analyze requirements for a feature."
 ---
 
 # Design Skill

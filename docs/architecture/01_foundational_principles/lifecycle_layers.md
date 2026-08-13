@@ -12,7 +12,9 @@
 
 ## Overview
 
-SpecWeaver spans the entire software development lifecycle, from business idea to deployed software. Each layer receives input from the layer above, applies the 10-test battery at the appropriate fractal level, and produces output for the layer below.
+SpecWeaver spans the entire software development lifecycle, from business idea to deployed software.
+Each layer receives input from the layer above, applies the 10-test battery at the appropriate
+fractal level, and produces output for the layer below.
 
 ```
 L1: Business Engineering   → Feature Spec
@@ -23,7 +25,9 @@ L5: Review/Verification    → Reviewed, validated code
 L6: Integration/Deploy     → Released software
 ```
 
-**Key principle**: Every layer transition is gated by the 10-test battery. A Feature Spec must pass structure + completeness tests before it flows to L2. A Component Spec must pass before it flows to L4. Code must pass before it flows to L5.
+**Key principle**: Every layer transition is gated by the 10-test battery. A Feature Spec must pass
+structure + completeness tests before it flows to L2. A Component Spec must pass before it flows to
+L4. Code must pass before it flows to L5.
 
 ---
 
@@ -99,7 +103,9 @@ L6: Integration/Deploy     → Released software
 - Build sequence (what depends on what)
 
 ### Reference Implementation
-The DMZ repository's `auto-create-issues.sh` ([source](https://github.com/TheMorpheus407/the-dmz)) implements a version of this: an agent reads all documentation and creates GitHub issues from it. Key patterns to adopt:
+The DMZ repository's `auto-create-issues.sh` ([source](https://github.com/TheMorpheus407/the-dmz))
+implements a version of this: an agent reads all documentation and creates GitHub issues from it.
+Key patterns to adopt:
 - Agent reads ALL project context before proposing decomposition
 - One issue (component change) at a time — not batch
 - Deduplication against existing work

@@ -33,7 +33,9 @@ The existing `ToolDispatcher.create_standard_set` (dispatcher.py:99–239) is a 
 
 There are exactly **2 call sites** for `create_standard_set`:
 
-1. **`core/flow/handlers/review.py:91`** — `_build_tool_dispatcher(context, role)` in the review handler. Passes: `boundary`, `role`, `allowed_tools=["fs", "ast", "web"?]`, `analyzer_factory`, `topology`.
+1. **`core/flow/handlers/review.py:91`** — `_build_tool_dispatcher(context, role)` in the review
+   handler. Passes: `boundary`, `role`, `allowed_tools=["fs", "ast", "web"?]`, `analyzer_factory`,
+   `topology`.
 2. **`core/flow/handlers/generation.py:15`** — imports `_build_tool_dispatcher` from `review.py` and reuses it for `PlanSpecHandler`.
 
 Both go through the same `_build_tool_dispatcher` helper which:
@@ -54,7 +56,12 @@ Both go through the same `_build_tool_dispatcher` helper which:
 | **Intent dispatch** | `ToolDispatcher.execute` | `ToolDispatcher.execute` (unchanged) |
 
 > [!IMPORTANT]
-> **Key Insight:** The design doc says "Remove `create_standard_set` hardcoded factory logic." However, the grant-building, archetype-resolution, and analyzer-exclusion logic is **not** factory logic — it is orchestrator-level business logic that must remain in the dispatcher (AD-7: registry stays dumb). What SF-03 removes is the **hardcoded import + instantiation** of each tool class. The dispatcher will call `registry.create_tools(...)` instead of inline `from ... import; tool = Tool(...)`.
+> **Key Insight:** The design doc says "Remove `create_standard_set` hardcoded factory logic."
+> However, the grant-building, archetype-resolution, and analyzer-exclusion logic is **not** factory
+> logic — it is orchestrator-level business logic that must remain in the dispatcher (AD-7: registry
+> stays dumb). What SF-03 removes is the **hardcoded import + instantiation** of each tool class.
+> The dispatcher will call `registry.create_tools(...)` instead of inline
+> `from ... import; tool = Tool(...)`.
 
 ### 1.4 Missing Registry Entries
 
@@ -85,7 +92,9 @@ AD-9 says "Register `ProtocolTool` in standard registry" — already done in SF-
 - The integration test passing `"qa"` in `allowed_tools` works today because it's silently skipped.
 - Registering it would require the dispatcher to instantiate `QARunnerAtom`, which adds complexity but no clear consumer benefit.
 
-**Decision: Do NOT register `QARunnerTool` in SF-03.** It remains a flow-engine-internal tool. The `"qa"` key in integration tests should be documented as a no-op (silently skipped per existing `ToolRegistry` behavior).
+**Decision: Do NOT register `QARunnerTool` in SF-03.** It remains a flow-engine-internal tool. The
+`"qa"` key in integration tests should be documented as a no-op (silently skipped per existing
+`ToolRegistry` behavior).
 
 ### 1.7 Git Role Fallback (AD-10)
 
@@ -95,7 +104,9 @@ The `create_git_interface` factory in `git/interfaces/facades.py` already handle
 
 ### 1.8 Existing Test Coverage
 
-- **Unit tests** (`test_dispatcher.py`): 52 assertions across 16 test cases covering tool definitions, execute dispatch, protocol compliance, path grant matching, scenario agent isolation, AST initialization, analyzer factory DI, and MCP integration.
+- **Unit tests** (`test_dispatcher.py`): 52 assertions across 16 test cases covering tool
+  definitions, execute dispatch, protocol compliance, path grant matching, scenario agent isolation,
+  AST initialization, analyzer factory DI, and MCP integration.
 - **Unit tests** (`test_dispatcher_arbiter.py`): Arbiter agent grant logic and read-only boundary handling.
 - **Unit tests** (`test_dispatcher_schema_hiding.py`): Hidden intent schema filtering and plugin-driven tool gate suppression.
 - **Unit tests** (`test_registry.py`): 26 assertions across 14 test cases covering BaseTool ABC, ToolRegistry operations, lazy resolution, conformance, facade conformance.
@@ -109,7 +120,9 @@ The `create_git_interface` factory in `git/interfaces/facades.py` already handle
 
 #### [MODIFY] [dispatcher.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/dispatcher.py)
 
-**Goal:** Refactor `create_standard_set` to delegate tool instantiation to `ToolRegistry` while retaining orchestrator-level business logic (grant building, archetype resolution, analyzer exclusion extraction).
+**Goal:** Refactor `create_standard_set` to delegate tool instantiation to `ToolRegistry` while
+retaining orchestrator-level business logic (grant building, archetype resolution, analyzer
+exclusion extraction).
 
 **Changes:**
 
@@ -166,12 +179,23 @@ def create_standard_set(
 > time on first call. This is acceptable — the same work was previously done inline in `create_standard_set`.
 
 > [!WARNING]
-> The `CodeStructureAtom` instantiation logic currently lives in `create_standard_set`. After SF-03, it moves into `_build_registry_kwargs`. This is still within `dispatcher.py` (same module), so no boundary violation occurs. The registry closure for `"ast"` receives the pre-built `atom` as a kwarg — **`atom` is a live object instance, not a serializable primitive.** The registry closure cherry-picks it via `kwargs["atom"]` and passes it directly to the `CodeStructureTool` constructor. It does NOT build atoms itself (AD-7 compliance).
+> The `CodeStructureAtom` instantiation logic currently lives in `create_standard_set`. After SF-03,
+> it moves into `_build_registry_kwargs`. This is still within `dispatcher.py` (same module), so no
+> boundary violation occurs. The registry closure for `"ast"` receives the pre-built `atom` as a
+> kwarg — **`atom` is a live object instance, not a serializable primitive.** The registry closure
+> cherry-picks it via `kwargs["atom"]` and passes it directly to the `CodeStructureTool`
+> constructor. It does NOT build atoms itself (AD-7 compliance).
 
 **Signature preservation:** The public API of `create_standard_set` is unchanged. All existing call sites in `review.py` and `generation.py` continue to work without modification.
 
 > [!IMPORTANT]
-> **Tach compliance:** All sandbox domain imports inside `_build_registry_kwargs` (e.g. `from specweaver.sandbox.security import ...`, `from specweaver.sandbox.code_structure.core.atom import ...`) MUST remain **lazy** (inside the method body, not at module scope). Flow handlers import `ToolDispatcher` from `specweaver.sandbox.dispatcher`; if `dispatcher.py` had module-scope imports from `specweaver.sandbox.*.interfaces`, those would transitively violate `core.flow`'s `forbids: specweaver/sandbox/*/interfaces` boundary.
+> **Tach compliance:** All sandbox domain imports inside `_build_registry_kwargs` (e.g.
+> `from specweaver.sandbox.security import ...`,
+> `from specweaver.sandbox.code_structure.core.atom import ...`) MUST remain **lazy** (inside the
+> method body, not at module scope). Flow handlers import `ToolDispatcher` from
+> `specweaver.sandbox.dispatcher`; if `dispatcher.py` had module-scope imports from
+> `specweaver.sandbox.*.interfaces`, those would transitively violate `core.flow`'s
+> `forbids: specweaver/sandbox/*/interfaces` boundary.
 
 ---
 
@@ -179,7 +203,9 @@ def create_standard_set(
 
 #### No changes to [registry.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/registry.py)
 
-Per §1.6: `QARunnerTool` is NOT registered. It remains a flow-engine-internal tool. The `ToolRegistry` already handles unknown keys gracefully (logs warning, skips). No changes to `registry.py` are needed.
+Per §1.6: `QARunnerTool` is NOT registered. It remains a flow-engine-internal tool. The
+`ToolRegistry` already handles unknown keys gracefully (logs warning, skips). No changes to
+`registry.py` are needed.
 
 ---
 
@@ -187,7 +213,9 @@ Per §1.6: `QARunnerTool` is NOT registered. It remains a flow-engine-internal t
 
 #### No changes required
 
-Both call sites (`_build_tool_dispatcher` in `review.py` and its reuse in `generation.py`) already pass exactly the parameters that `create_standard_set` accepts. The refactored `create_standard_set` preserves the same signature, so no call-site changes are needed.
+Both call sites (`_build_tool_dispatcher` in `review.py` and its reuse in `generation.py`) already
+pass exactly the parameters that `create_standard_set` accepts. The refactored `create_standard_set`
+preserves the same signature, so no call-site changes are needed.
 
 ---
 
@@ -222,8 +250,12 @@ All 3 existing integration tests must remain GREEN.
 
 New integration tests to verify the registry delegation:
 
-1. `test_create_standard_set_delegates_to_registry` — Monkey-patch `get_standard_registry` to return a mock `ToolRegistry`, verify `create_tools` is called with the correct `allowed_tools` and kwargs containing `role`, `cwd`, `grants`, etc.
-2. `test_create_standard_set_preserves_grant_logic` — Create a dispatcher with `role="scenario_agent"` and verify the resulting tool grants are identical to the pre-SF-3 behavior (scenarios + contracts dirs, not full root).
+1. `test_create_standard_set_delegates_to_registry` — Monkey-patch `get_standard_registry` to return
+   a mock `ToolRegistry`, verify `create_tools` is called with the correct `allowed_tools` and
+   kwargs containing `role`, `cwd`, `grants`, etc.
+2. `test_create_standard_set_preserves_grant_logic` — Create a dispatcher with
+   `role="scenario_agent"` and verify the resulting tool grants are identical to the pre-SF-3
+   behavior (scenarios + contracts dirs, not full root).
 3. `test_create_standard_set_preserves_archetype_resolution` — Create a project with `context.yaml` specifying an archetype, verify the `CodeStructureAtom` receives the correct archetype.
 
 ### Manual Verification
@@ -270,7 +302,9 @@ New integration tests to verify the registry delegation:
 
 ### Refactoring Opportunities for Existing Features
 
-1. **`_build_tool_dispatcher` in review.py**: Currently duplicates the `WorkspaceBoundary.from_run_context` + `allowed_tools` + `ToolDispatcher.create_standard_set` pattern. After SF-03, this helper becomes even thinner since the dispatcher handles everything.
+1. **`_build_tool_dispatcher` in review.py**: Currently duplicates the
+   `WorkspaceBoundary.from_run_context` + `allowed_tools` + `ToolDispatcher.create_standard_set`
+   pattern. After SF-03, this helper becomes even thinner since the dispatcher handles everything.
 2. **Validation rules C03/C04/C05**: SF-04 will remove their direct `QARunnerAtom` imports. SF-03 establishes the pattern that tools are only accessed through the registry/dispatcher composition root.
 3. **Future tool additions**: Any new tool domain (e.g., Docker, Terraform) would follow the same pattern: add a factory closure in `registry.py`, done.
 

@@ -7,7 +7,12 @@
 
 ## 1. Goal Description
 
-Implement SF-01: Polyglot AST Extractor to solve "Context Window Bloat" without triggering LLM memory hallucinations. We are introducing a new **CodeStructureTool** and its backing **AstAtom** to provide `read_file_structure` and `read_symbol` capabilities. All language-specific definitions (such as `.scm` Tree-Sitter queries and AST parsers) will be housed within the newly consolidated `loom/commons/language/` registry to ensure strict separation between Pure Logic consumption and C-Binary I/O execution.
+Implement SF-01: Polyglot AST Extractor to solve "Context Window Bloat" without triggering LLM
+memory hallucinations. We are introducing a new **CodeStructureTool** and its backing **AstAtom** to
+provide `read_file_structure` and `read_symbol` capabilities. All language-specific definitions
+(such as `.scm` Tree-Sitter queries and AST parsers) will be housed within the newly consolidated
+`loom/commons/language/` registry to ensure strict separation between Pure Logic consumption and
+C-Binary I/O execution.
 
 ## 2. Proposed Changes
 
@@ -66,7 +71,9 @@ This is a required structural refactor. The current `qa_runner` acts as a vertic
 
 > [!WARNING]
 > **Missing SCM Queries Fallback:**
-> If `AstAtom` encounters a file type (e.g., `.yaml`) with no registered parser, it must NOT fail silently or default to full-file reading. It must raise an explicit `CodeStructureError`: `"AST Structure Extraction not supported for .yaml files. Please use read_file."`
+> If `AstAtom` encounters a file type (e.g., `.yaml`) with no registered parser, it must NOT fail
+> silently or default to full-file reading. It must raise an explicit `CodeStructureError`:
+> `"AST Structure Extraction not supported for .yaml files. Please use read_file."`
 
 > [!WARNING]
 > **No Write Capabilities (Deferred to SF-02):**
@@ -81,4 +88,6 @@ This is a required structural refactor. The current `qa_runner` acts as a vertic
    - Provide a dummy project workspace. Fire `read_file_structure` intent from the tool. Assert JSON output limits and folder-grant boundary enforcement.
 
 ### Manual Verification
-- Execute `sw review` against a dirty spec. Ensure the Agent chooses to use `read_file_structure` instead of `read_file`, and successfully reads the returned skeleton without hallucinating the file's remaining body.
+- Execute `sw review` against a dirty spec. Ensure the Agent chooses to use `read_file_structure`
+  instead of `read_file`, and successfully reads the returned skeleton without hallucinating the
+  file's remaining body.

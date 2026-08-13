@@ -1,8 +1,12 @@
 # Developer Guide: Layer Isolation & Dependency Injection
 
-This guide explains how SpecWeaver maintains strict separation between **Pure Logic** (mathematical, deterministic rules) and **Side-Effects** (I/O, Subprocesses, C-bindings) without creating circular dependencies.
+This guide explains how SpecWeaver maintains strict separation between **Pure Logic** (mathematical,
+deterministic rules) and **Side-Effects** (I/O, Subprocesses, C-bindings) without creating circular
+dependencies.
 
-A common misunderstanding when building new features is assuming that if a Pure Logic layer (like `validation/` or `standards/`) needs to read a file or parse an AST, it should import an OS or `tree-sitter` module directly. **This is an architectural violation.**
+A common misunderstanding when building new features is assuming that if a Pure Logic layer (like
+`validation/` or `standards/`) needs to read a file or parse an AST, it should import an OS or
+`tree-sitter` module directly. **This is an architectural violation.**
 
 ---
 
@@ -12,7 +16,9 @@ A common misunderstanding when building new features is assuming that if a Pure 
 
 But `Loom` has a second, equally important purpose: **It is the centralized Side-Effect Sandbox for the entire SpecWeaver Engine.**
 
-- **Pure Logic Layers** (`validation`, `graph`): Are explicitly classified as `archetype: pure-logic`. They are mathematically forbidden from importing anything that touches the disk, network, or external C-bindings. They `forbid: sandbox/*`.
+- **Pure Logic Layers** (`validation`, `graph`): Are explicitly classified as
+  `archetype: pure-logic`. They are mathematically forbidden from importing anything that touches
+  the disk, network, or external C-bindings. They `forbid: sandbox/*`.
 - **Loom Atoms** (`sandbox/`): Are unrestricted, trusted I/O executors. They are allowed to read files, run `pytest`, and execute `tree-sitter`.
 
 ## 2. Inversion of Control (Dependency Injection)
@@ -55,5 +61,9 @@ The `Loom Atoms` and validation controllers depend explicitly on Dependency Inje
 
 ### PromptBuilder Context Injection Pattern
 
-The PromptBuilder (src/specweaver/infrastructure/llm/prompt_builder.py) strictly adheres to dependency isolation. It is expressly restricted from resolving file system hierarchies or invoking Atoms directly.
-Features requiring parsed context (e.g., target mentions or skeletonization) must be injected directly into the PromptBuilder instance by the Engine layer. For instance, the **ContextAssembler** pre-condenses CodeStructureAtom skeletons and maps them into PromptBuilder(skeleton_files=...).
+The PromptBuilder (src/specweaver/infrastructure/llm/prompt_builder.py) strictly adheres to
+dependency isolation. It is expressly restricted from resolving file system hierarchies or invoking
+Atoms directly.
+Features requiring parsed context (e.g., target mentions or skeletonization) must be injected
+directly into the PromptBuilder instance by the Engine layer. For instance, the **ContextAssembler**
+pre-condenses CodeStructureAtom skeletons and maps them into PromptBuilder(skeleton_files=...).

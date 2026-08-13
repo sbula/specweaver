@@ -10,9 +10,15 @@
 
 ## Scope Summary
 
-SF-02 centralizes prompt assembly via **Inversion of Control** in the Application Layer. A module-level async function `_build_base_prompt()` in `core.flow.handlers.base` builds a base `PromptBuilder` (instructions, project metadata, constitution, standards, memory hydration) and each handler passes it down to its Domain Layer workflow method. Each workflow method adds only its domain-specific blocks on top.
+SF-02 centralizes prompt assembly via **Inversion of Control** in the Application Layer. A
+module-level async function `_build_base_prompt()` in `core.flow.handlers.base` builds a base
+`PromptBuilder` (instructions, project metadata, constitution, standards, memory hydration) and each
+handler passes it down to its Domain Layer workflow method. Each workflow method adds only its
+domain-specific blocks on top.
 
-This eliminates a ~150-line DRY violation across the codebase and establishes a single integration point for all future context sources — without introducing a `workflows/commons` module, which would violate DDD bounded context isolation.
+This eliminates a ~150-line DRY violation across the codebase and establishes a single integration
+point for all future context sources — without introducing a `workflows/commons` module, which would
+violate DDD bounded context isolation.
 
 ### Modified Files
 
@@ -85,7 +91,10 @@ Analyzing the exact assembly chain per module reveals significant variation:
 | drafter._generate_section | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | feature_drafter._generate_section | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-**Impact**: The `_build_base_prompt()` method produces a **base** PromptBuilder (instructions + project_metadata + constitution + standards + memory context). Each handler then adds handler-specific blocks (plan, topology, skeleton_files) before passing the builder to the workflow method. The workflow method adds only domain-specific blocks (file, dictator, validation, etc.).
+**Impact**: The `_build_base_prompt()` method produces a **base** PromptBuilder (instructions +
+project_metadata + constitution + standards + memory context). Each handler then adds
+handler-specific blocks (plan, topology, skeleton_files) before passing the builder to the workflow
+method. The workflow method adds only domain-specific blocks (file, dictator, validation, etc.).
 
 ### RN-3: PromptBuilder `add_context()` Signature (Verified)
 
@@ -110,21 +119,33 @@ Per design: `_build_base_prompt` calls `builder.add_context(block, "agent_memory
 
 **Source**: `tach.toml:15`
 
-`core.flow` currently has `depends_on = []`. To legally import `MemoryHydrator` from `workspace.memory`, we must add `src.specweaver.workspace.memory` to its `depends_on` list. The `workspace.memory` module already has an `[[interfaces]]` entry exposing `hydrator` (line 243-244).
+`core.flow` currently has `depends_on = []`. To legally import `MemoryHydrator` from
+`workspace.memory`, we must add `src.specweaver.workspace.memory` to its `depends_on` list. The
+`workspace.memory` module already has an `[[interfaces]]` entry exposing `hydrator` (line 243-244).
 
 ### RN-6: `standards` Param Not Passed by Generator Handler
 
 **Source**: `core/flow/handlers/generation.py:146-158`
 
-The `GenerateCodeHandler` passes `constitution=context.constitution` but NOT `standards=context.standards` at lines 146-158 (`generate_code()`) and lines 236-250 (`generate_tests()`). This is currently a bug/missing feature — the generator's `generate_code()` signature accepts `standards` but the handler doesn't pass it. The `_generate_plan_artifact()` method (line 352-361) DOES pass both `constitution` and `standards`. The reviewer handler also passes both.
+The `GenerateCodeHandler` passes `constitution=context.constitution` but NOT
+`standards=context.standards` at lines 146-158 (`generate_code()`) and lines 236-250
+(`generate_tests()`). This is currently a bug/missing feature — the generator's `generate_code()`
+signature accepts `standards` but the handler doesn't pass it. The `_generate_plan_artifact()`
+method (line 352-361) DOES pass both `constitution` and `standards`. The reviewer handler also
+passes both.
 
-**Impact**: Pre-SF-02 Hotfix. A separate commit will add `standards=context.standards` to both `GenerateCodeHandler._execute()` and `GenerateTestsHandler._execute()`. The SF-02 refactoring will then centralize this fix inside `_build_base_prompt()`.
+**Impact**: Pre-SF-02 Hotfix. A separate commit will add `standards=context.standards` to both
+`GenerateCodeHandler._execute()` and `GenerateTestsHandler._execute()`. The SF-02 refactoring will
+then centralize this fix inside `_build_base_prompt()`.
 
 ### RN-11: ScenarioGenerator Does NOT Use PromptBuilder
 
 **Source**: `workflows/scenarios/scenario_generator.py:47-86, 183-227`
 
-`ScenarioGenerator.generate_scenarios()` builds a raw string prompt via `_build_prompt()` (static method) and calls `self._llm.generate(prompt)` directly — it does NOT use `PromptBuilder`. The handler (`core/flow/handlers/scenario.py`) passes `constitution` and `project_metadata` as individual params. This module is completely outside the `_build_base_prompt()` refactoring scope.
+`ScenarioGenerator.generate_scenarios()` builds a raw string prompt via `_build_prompt()` (static
+method) and calls `self._llm.generate(prompt)` directly — it does NOT use `PromptBuilder`. The
+handler (`core/flow/handlers/scenario.py`) passes `constitution` and `project_metadata` as
+individual params. This module is completely outside the `_build_base_prompt()` refactoring scope.
 
 **Resolved**: Explicitly excluded. No PromptBuilder usage, no refactoring needed.
 
@@ -176,13 +197,18 @@ The `ArbiterHandler` builds prompts using raw `Message` construction, NOT via `P
 
 **Source**: `core/flow/context.yaml:18-31`
 
-`core.flow` currently consumes `specweaver/config`, `specweaver/llm`, `specweaver/review`, `specweaver/implementation`, `specweaver/planning`, `specweaver/validation`, and several sandbox modules. It does NOT currently consume `specweaver/workspace/memory`. This must be added.
+`core.flow` currently consumes `specweaver/config`, `specweaver/llm`, `specweaver/review`,
+`specweaver/implementation`, `specweaver/planning`, `specweaver/validation`, and several sandbox
+modules. It does NOT currently consume `specweaver/workspace/memory`. This must be added.
 
 No workflow `context.yaml` files need updating — workflow modules receive a pre-built `PromptBuilder` and do not import `workspace.memory` themselves.
 
 ### RN-10: Inline Import Pattern Is Established
 
-All 5 workflow modules import `PromptBuilder` inside their methods (inline imports). This is acknowledged tech debt (anti-pattern in architecture reference) but is the established codebase pattern for breaking circular imports. `_build_base_prompt()` will use the same inline import pattern for `PromptBuilder` and `MemoryHydrator`.
+All 5 workflow modules import `PromptBuilder` inside their methods (inline imports). This is
+acknowledged tech debt (anti-pattern in architecture reference) but is the established codebase
+pattern for breaking circular imports. `_build_base_prompt()` will use the same inline import
+pattern for `PromptBuilder` and `MemoryHydrator`.
 
 ---
 
@@ -285,7 +311,9 @@ Add `workspace.memory` to `core.flow` depends_on:
 - Pre-SF-02 Hotfix: Add `standards=context.standards` to `generate_code()` and `generate_tests()` calls (RN-6)
 - `GenerateCodeHandler._execute()`: Call `_build_base_prompt(context, CODE_GEN_INSTRUCTIONS, skeleton_files=...)`, add plan/topology/env_context, pass builder
 - `GenerateTestsHandler._execute()`: Same pattern
-- `_generate_plan_artifact()`: Call `_build_base_prompt(context, plan_instructions)` (note: the planner uses inline instruction strings, not a module-level constant), pass builder to `planner.generate_plan()`
+- `_generate_plan_artifact()`: Call `_build_base_prompt(context, plan_instructions)` (note: the
+  planner uses inline instruction strings, not a module-level constant), pass builder to
+  `planner.generate_plan()`
 
 #### [MODIFY] `workflows/implementation/generator.py`
 - `generate_code()`: Replace parameter list (`constitution`, `standards`, `plan`, `topology`, `project_metadata`, `skeleton_files`) with `base_prompt: PromptBuilder`

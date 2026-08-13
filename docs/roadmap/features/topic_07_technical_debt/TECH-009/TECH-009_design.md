@@ -7,7 +7,9 @@
 
 ## Business Context & Goal
 
-E-EXEC-01 introduced `SubprocessExecutor` — a unified, cross-platform subprocess execution layer with timeout escalation, environment isolation, credential stripping, path validation, and telemetry logging. All five language runners were migrated to use it.
+E-EXEC-01 introduced `SubprocessExecutor` — a unified, cross-platform subprocess execution layer
+with timeout escalation, environment isolation, credential stripping, path validation, and telemetry
+logging. All five language runners were migrated to use it.
 
 However, two additional subprocess consumers were explicitly scoped out:
 
@@ -49,12 +51,16 @@ These two files represent the **last remaining raw `subprocess.run()` calls** in
 
 **Current**: `GitExecutor.run()` builds `cmd = ["git", "-C", str(self._cwd), command, *args]` and calls `subprocess.run(cmd, ...)` directly.
 
-**After**: `GitExecutor` receives a `SubprocessExecutor` via constructor injection. `run()` delegates to `self._subprocess_executor.execute(cmd)` and maps the `SubprocessResult` back to `ExecutorResult`.
+**After**: `GitExecutor` receives a `SubprocessExecutor` via constructor injection. `run()`
+delegates to `self._subprocess_executor.execute(cmd)` and maps the `SubprocessResult` back to
+`ExecutorResult`.
 
 Key considerations:
 - `EngineGitExecutor` subclasses `GitExecutor` — it inherits the migrated `run()` method automatically.
 - The `SubprocessExecutor` must be configured with `GIT_EXEC_PATH` and `GIT_DIR` in its env allowlist (already included per E-EXEC-01 H-3).
-- `GitExecutor.__init__` gains an optional `subprocess_executor` parameter. If not provided, it creates a default one internally (preserving backward compatibility for tests and existing call sites that don't inject one).
+- `GitExecutor.__init__` gains an optional `subprocess_executor` parameter. If not provided, it
+  creates a default one internally (preserving backward compatibility for tests and existing call
+  sites that don't inject one).
 - `ExecutorResult` remains unchanged — the mapping is `SubprocessResult.exit_code → ExecutorResult.exit_code`, etc.
 
 ### SF-02: Filesystem Search (ripgrep) Migration
@@ -73,7 +79,9 @@ Key considerations:
 ### SF-01: GitExecutor Subprocess Migration
 - **Scope**: Inject `SubprocessExecutor` into `GitExecutor`, replace `subprocess.run()` in `run()` method, maintain `ExecutorResult` API, ensure `EngineGitExecutor` inherits cleanly.
 - **FRs**: Env isolation, credential stripping, telemetry, timeout escalation for git commands.
-- **Files**: `sandbox/git/core/executor.py`, `sandbox/git/core/engine_executor.py` (verify inheritance), `sandbox/git/core/atom.py` (inject executor), `sandbox/git/interfaces/facades.py` (inject executor).
+- **Files**: `sandbox/git/core/executor.py`, `sandbox/git/core/engine_executor.py` (verify
+  inheritance), `sandbox/git/core/atom.py` (inject executor), `sandbox/git/interfaces/facades.py`
+  (inject executor).
 - **Depends on**: E-EXEC-01 (complete)
 
 ### SF-02: Filesystem Search Subprocess Migration
@@ -119,14 +127,32 @@ Both SFs are independent — they can be implemented in either order. SF-01 is r
 | SF-01 | GitExecutor Migration | E-EXEC-01 | ✅ | — | ✅ | ✅ (folded into C-EXEC-02 SF-01's pre-commit gate) | ⬜ |
 | SF-02 | Filesystem Search Migration | E-EXEC-01 | ✅ | — | ✅ | ✅ (folded into C-EXEC-02 SF-01's pre-commit gate) | ⬜ |
 
-**Implementation note (2026-07-13)**: SF-01/SF-02 were implemented directly (no separate implementation-plan document) during C-EXEC-02 SF-01's pre-commit quality gate, when repo-wide `ruff check` surfaced these as pre-existing TID251 violations. Both follow this design's constructor/parameter-injection approach exactly (`GitExecutor.__init__(subprocess_executor: SubprocessExecutor | None = None)`, `grep_content(..., executor: SubprocessExecutor | None = None)`), preserving full backward compatibility — no call site (`atom.py`, `facades.py`, `tool.py`) required changes. New tests were added for the ripgrep path, which previously had zero coverage. Will be committed together with C-EXEC-02 SF-01.
+**Implementation note (2026-07-13)**: SF-01/SF-02 were implemented directly (no separate
+implementation-plan document) during C-EXEC-02 SF-01's pre-commit quality gate, when repo-wide
+`ruff check` surfaced these as pre-existing TID251 violations. Both follow this design's
+constructor/parameter-injection approach exactly
+(`GitExecutor.__init__(subprocess_executor: SubprocessExecutor | None = None)`,
+`grep_content(..., executor: SubprocessExecutor | None = None)`), preserving full backward
+compatibility — no call site (`atom.py`, `facades.py`, `tool.py`) required changes. New tests were
+added for the ripgrep path, which previously had zero coverage. Will be committed together with
+C-EXEC-02 SF-01.
 
 ## Backlog (found during implementation, not in original design scope)
 
-Two additional raw-`subprocess` call sites were found in the same repo-wide scan that are thematically related (git queries) but are **not** simple `SubprocessExecutor`-injection cases like SF-01/SF-02 — each requires opening a new cross-module dependency that doesn't exist today, which is an architecture decision, not a lint fix:
+Two additional raw-`subprocess` call sites were found in the same repo-wide scan that are
+thematically related (git queries) but are **not** simple `SubprocessExecutor`-injection cases like
+SF-01/SF-02 — each requires opening a new cross-module dependency that doesn't exist today, which is
+an architecture decision, not a lint fix:
 
-- **`assurance/validation/interfaces/cli_drift.py`** (`git diff --cached` query) — the correct fix is routing through `sandbox.git`'s `GitExecutor` (narrower, more domain-appropriate coupling than a raw `SubprocessExecutor` import), but `assurance.validation.interfaces` isn't allowed to depend on `sandbox` in `tach.toml` today. Currently exempted via a documented `noqa: TID251`.
-- **`assurance/standards/discovery.py`** (`git ls-files` query) — same treatment. This module's `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at all. Currently exempted via a documented `noqa: TID251`.
+- **`assurance/validation/interfaces/cli_drift.py`** (`git diff --cached` query) — the correct fix
+  is routing through `sandbox.git`'s `GitExecutor` (narrower, more domain-appropriate coupling than
+  a raw `SubprocessExecutor` import), but `assurance.validation.interfaces` isn't allowed to depend
+  on `sandbox` in `tach.toml` today. Currently exempted via a documented `noqa: TID251`.
+- **`assurance/standards/discovery.py`** (`git ls-files` query) — same treatment. This module's
+  `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never
+  bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing
+  through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at
+  all. Currently exempted via a documented `noqa: TID251`.
 
 Neither is scoped as a numbered SF here — they need their own design decision (see `master_story_roadmap.md`'s TECH-009 entry) before implementation.
 

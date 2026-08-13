@@ -1,6 +1,8 @@
 # Feature 3.8 — Web Dashboard (Minimal)
 
-A lightweight, server-rendered HTML dashboard powered by FastAPI + Jinja2 + HTMX, served alongside the existing REST API (`sw serve`). Designed for mobile-responsive use on a tablet ("the train scenario") to monitor pipelines and perform HITL (Human-in-the-Loop) gate approvals.
+A lightweight, server-rendered HTML dashboard powered by FastAPI + Jinja2 + HTMX, served alongside
+the existing REST API (`sw serve`). Designed for mobile-responsive use on a tablet ("the train
+scenario") to monitor pipelines and perform HITL (Human-in-the-Loop) gate approvals.
 
 > **Depends on**: Feature 3.7 (REST API)
 > **Stack**: FastAPI, [Jinja2](https://jinja.palletsprojects.com/), [HTMX](https://htmx.org/), Vanilla CSS or lightweight CSS framework (e.g., PicoCSS)
@@ -9,7 +11,10 @@ A lightweight, server-rendered HTML dashboard powered by FastAPI + Jinja2 + HTMX
 
 ## Motivation
 
-SpecWeaver is powerful on the CLI, but pipeline execution and HITL reviews (especially long semantic reviews) often require waiting. The "train scenario" envisions a developer starting a long pipeline from their laptop, then taking their tablet on the commute to review the LLM's work (code, specs, plans) and clicking "Approve" or "Reject" with remarks.
+SpecWeaver is powerful on the CLI, but pipeline execution and HITL reviews (especially long semantic
+reviews) often require waiting. The "train scenario" envisions a developer starting a long pipeline
+from their laptop, then taking their tablet on the commute to review the LLM's work (code, specs,
+plans) and clicking "Approve" or "Reject" with remarks.
 
 A heavy SPA (React/Vue/Angular) is overkill. SpecWeaver requires a simple, interactive, fast-loading dashboard that ships in the same Python package without requiring Node.js build steps.
 
@@ -70,7 +75,9 @@ Endpoints that return `HTMLResponse` via `Jinja2Templates`. These functions impo
 
 ### 4. API Endpoints for HTMX
 HTMX expects HTML fragments in response to mutations.
-We will either create UI-specific HTMX endpoints (e.g., `POST /dashboard/runs/{id}/gate`), or rely on the UI intercepting the REST API JSON and triggering a page reload. Given HTMX patterns, dedicated UI endpoints that return HTML fragments are preferred.
+We will either create UI-specific HTMX endpoints (e.g., `POST /dashboard/runs/{id}/gate`), or rely
+on the UI intercepting the REST API JSON and triggering a page reload. Given HTMX patterns,
+dedicated UI endpoints that return HTML fragments are preferred.
 #### [NEW] `src/specweaver/api/ui/htmx.py`
 - `POST /ui/gate/{run_id}` -> Calls `event_bridge`, returns an updated `#run-status-card` HTML fragment.
 

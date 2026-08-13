@@ -11,7 +11,9 @@
 > All Phase 4 audit questions resolved securely via HITL approval.
 
 ### 1. Architecture (CRITICAL)
-- **Decision**: **Option B**. Build the DTO inside `RunContext.__init__` so it's globally available to all execution contexts (pipelines and single-shot commands). (Note: A full refactor to push all commands through `PipelineRunner` will be handled in Feature 3.13a).
+- **Decision**: **Option B**. Build the DTO inside `RunContext.__init__` so it's globally available
+  to all execution contexts (pipelines and single-shot commands). (Note: A full refactor to push all
+  commands through `PipelineRunner` will be handled in Feature 3.13a).
 
 ### 2. Data Model & Serialization (HIGH)
 - **Decision**: **Option B**. Create a strictly typed `PromptSafeConfig` in `llm/models.py` rather than a brittle dynamic dictionary.
@@ -34,13 +36,22 @@
 #### [MODIFY] 
 - **Action**: Add `add_project_metadata(self, metadata: ProjectMetadata | None) -> PromptBuilder`.
 - **Logic**: Construct a YAML representation of the metadata and insert it securely inside `<project_metadata>` tags. Add it as a `_ContentBlock` with `priority=1`.
-- **Handoff Directive 1**: Serialize visually as YAML using simple `f-string` concatenation or `json.dumps(dict, indent=2)` masquerading as YAML. Do NOT use external libraries like `PyYAML` or `ruamel.yaml` to avoid stream I/O buffer compatibility issues.
+- **Handoff Directive 1**: Serialize visually as YAML using simple `f-string` concatenation or
+  `json.dumps(dict, indent=2)` masquerading as YAML. Do NOT use external libraries like `PyYAML` or
+  `ruamel.yaml` to avoid stream I/O buffer compatibility issues.
 
 ### `src/specweaver/flow/_base.py`
 #### [MODIFY] Update `RunContext`
-- **Action**: Update `RunContext.__init__` to automatically synthesize the `ProjectMetadata` DTO during creation. Use `platform.platform()` and `sys.version` wrapped in a `try/except` block to gracefully degrade if unavailable. Pass the configured subset from `SpecWeaverSettings` to `PromptSafeConfig`.
-- **Handoff Directive 2**: Extract `archetype` securely by calling `specweaver.workspace.project.scaffold.load_context_yaml(project_path).archetype` if the file exists, with a safe fallback to `'generic'`.
-- **Handoff Directive 3**: `language_target` must strictly default to the literal string `'Unknown Environment'` if `sys` or `platform` modules raise exceptions (do NOT use `None` as it violates the Pydantic schema).
+- **Action**: Update `RunContext.__init__` to automatically synthesize the `ProjectMetadata` DTO
+  during creation. Use `platform.platform()` and `sys.version` wrapped in a `try/except` block to
+  gracefully degrade if unavailable. Pass the configured subset from `SpecWeaverSettings` to
+  `PromptSafeConfig`.
+- **Handoff Directive 2**: Extract `archetype` securely by calling
+  `specweaver.workspace.project.scaffold.load_context_yaml(project_path).archetype` if the file
+  exists, with a safe fallback to `'generic'`.
+- **Handoff Directive 3**: `language_target` must strictly default to the literal string
+  `'Unknown Environment'` if `sys` or `platform` modules raise exceptions (do NOT use `None` as it
+  violates the Pydantic schema).
 - **Action**: Make `project_metadata: ProjectMetadata` an accessible property of `RunContext`.
 
 ### `src/specweaver/flow/*` (Handlers)

@@ -10,7 +10,9 @@
 
 ## Scope Summary
 
-SF-01 implements the read-side context hydration layer for the Agent Memory Bank. It introduces a shared query service (CQRS read-side), a hydrator service, and a DTO for structured prompt injection. All code lives in `workspace/memory/`.
+SF-01 implements the read-side context hydration layer for the Agent Memory Bank. It introduces a
+shared query service (CQRS read-side), a hydrator service, and a DTO for structured prompt
+injection. All code lives in `workspace/memory/`.
 
 - **1 new class**: `MemoryQueryService` in `workspace/memory/queries.py` (3 query methods)
 - **1 new class**: `MemoryHydrator` in `workspace/memory/hydrator.py` (1 public method: `hydrate()`)
@@ -37,13 +39,19 @@ SF-01 implements the read-side context hydration layer for the Agent Memory Bank
 
 ### RN-1: `list_tasks()` has wrong semantics for hydration
 **Source**: `workspace/memory/repository/core.py:225-235`
-The existing `list_tasks()` accepts a single `TaskStatus`, returns `dict[str, object]`, and orders by `created_at DESC`. The hydrator needs: multi-status `in_()` filter, ORM model instances (not dicts), `updated_at DESC` ordering, and `limit(10)`.
+The existing `list_tasks()` accepts a single `TaskStatus`, returns `dict[str, object]`, and orders
+by `created_at DESC`. The hydrator needs: multi-status `in_()` filter, ORM model instances (not
+dicts), `updated_at DESC` ordering, and `limit(10)`.
 
-**Decision**: Create `MemoryQueryService` as a shared read-side layer (CQRS separation). The repository stays write-side only. Future context enrichers (C-INTL-04, A-INTL-04, B-FLOW-04) reuse the query service — no duplication.
+**Decision**: Create `MemoryQueryService` as a shared read-side layer (CQRS separation). The
+repository stays write-side only. Future context enrichers (C-INTL-04, A-INTL-04, B-FLOW-04) reuse
+the query service — no duplication.
 
 ### RN-2: Defect batch query
 **Source**: `workspace/memory/repository/core.py:285-294`
-The existing `list_defects()` takes a single `task_id`. The hydrator needs defects for multiple blocked tasks. Batch query via `Defect.task_id.in_(blocked_ids)` in `MemoryQueryService.get_open_defects_for_tasks()`.
+The existing `list_defects()` takes a single `task_id`. The hydrator needs defects for multiple
+blocked tasks. Batch query via `Defect.task_id.in_(blocked_ids)` in
+`MemoryQueryService.get_open_defects_for_tasks()`.
 
 ### RN-3: `HandoverContext.from_json_str()` validation
 **Source**: `workspace/memory/models.py:78-81`
@@ -51,7 +59,11 @@ Raises `pydantic.ValidationError` on invalid JSON. The hydrator MUST catch this 
 
 ### RN-4: Content format — JSON, not XML
 **Source**: Phase 4 HITL discussion
-The design originally specified XML inner tags with `html.escape()`. After tracing the PromptBuilder rendering chain, `project_metadata` already uses `json.dumps()` for structured data. The hydrator follows this pattern: `format_prompt_block()` returns JSON, wrapped by PromptBuilder in `<context label="agent_memory">`. This dissolves the escaping problem — `json.dumps()` handles all special characters automatically. No `html.escape()`, no `ElementTree`.
+The design originally specified XML inner tags with `html.escape()`. After tracing the PromptBuilder
+rendering chain, `project_metadata` already uses `json.dumps()` for structured data. The hydrator
+follows this pattern: `format_prompt_block()` returns JSON, wrapped by PromptBuilder in
+`<context label="agent_memory">`. This dissolves the escaping problem — `json.dumps()` handles all
+special characters automatically. No `html.escape()`, no `ElementTree`.
 
 ### RN-5: Task model fields
 **Source**: `workspace/memory/store.py:96-132`
@@ -65,10 +77,14 @@ Reuse: `engine` (in-memory SQLite + FK pragmas), `session`, `base_project` fixtu
 `workspace/memory/` CANNOT import from `infrastructure.llm` (forbidden by `workspace/context.yaml`). Token estimation `len(text) // 4` must be inline, matching PromptBuilder's default `_count()`.
 
 ### RN-8: tach.toml registration verified in code
-`workflows.review.interfaces` and `workflows.implementation.interfaces` already consume `workspace.project` — establishing the `workflows → workspace` precedent. Import is legal. SF-01 registers `workspace.memory` as the producer; SF-02 adds `depends_on` as the consumer.
+`workflows.review.interfaces` and `workflows.implementation.interfaces` already consume
+`workspace.project` — establishing the `workflows → workspace` precedent. Import is legal. SF-01
+registers `workspace.memory` as the producer; SF-02 adds `depends_on` as the consumer.
 
 ### RN-9: PromptBuilder escaping gap — TECH-007
-The `_prompt_render.py` rendering functions use raw f-strings with no escaping. Currently safe (all inputs are internal). Must be documented as TECH-007 tech debt. D-INTL-06 sidesteps it by using `json.dumps()`.
+The `_prompt_render.py` rendering functions use raw f-strings with no escaping. Currently safe (all
+inputs are internal). Must be documented as TECH-007 tech debt. D-INTL-06 sidesteps it by using
+`json.dumps()`.
 
 ---
 
@@ -90,10 +106,14 @@ All findings reviewed and approved by HITL on 2026-05-08.
 | 10 | Import chains | LOW | ✅ Clean — no circular imports |
 
 > [!WARNING]
-> **TECH-007 (NEW)**: PromptBuilder input escaping gap documented as tech debt. `_prompt_render.py` uses raw f-strings with no escaping. Currently safe but must be hardened before any feature injects user-generated content directly into `add_context()` labels.
+> **TECH-007 (NEW)**: PromptBuilder input escaping gap documented as tech debt. `_prompt_render.py`
+> uses raw f-strings with no escaping. Currently safe but must be hardened before any feature
+> injects user-generated content directly into `add_context()` labels.
 
 > [!NOTE]
-> **LLM-Optimized Format (Backlog)**: Investigate LLM-optimized handover format (token-efficient notation, prompt-compression) that works across providers. Research item for future feature (C-INTL-04 or A-INTL-04).
+> **LLM-Optimized Format (Backlog)**: Investigate LLM-optimized handover format (token-efficient
+> notation, prompt-compression) that works across providers. Research item for future feature
+> (C-INTL-04 or A-INTL-04).
 
 ---
 
@@ -103,7 +123,9 @@ All findings reviewed and approved by HITL on 2026-05-08.
 
 #### [NEW] queries.py — `src/specweaver/workspace/memory/queries.py`
 
-**Purpose**: Shared read-side query service for the Memory Bank (CQRS separation). Returns ORM model instances, not dicts. Future context enrichers (C-INTL-04, A-INTL-04, B-FLOW-04) add methods here incrementally.
+**Purpose**: Shared read-side query service for the Memory Bank (CQRS separation). Returns ORM model
+instances, not dicts. Future context enrichers (C-INTL-04, A-INTL-04, B-FLOW-04) add methods here
+incrementally.
 
 ```python
 class MemoryQueryService:
@@ -131,10 +153,14 @@ class MemoryQueryService:
 | `get_open_defects_for_tasks` | `(task_ids: list[uuid.UUID]) → dict[uuid.UUID, list[Defect]]` | Batch-fetch OPEN defects via single `in_()` query, grouped by `task_id` in Python. Eliminates N+1 (RN-2). |
 
 > [!IMPORTANT]
-> **Returns ORM Models**: Unlike `MemoryRepository` which returns `dict[str, object]`, the query service returns `Task` and `Defect` ORM model instances. This is intentional — consumers format data their own way (hydrator → JSON, future RAG → embeddings).
+> **Returns ORM Models**: Unlike `MemoryRepository` which returns `dict[str, object]`, the query
+> service returns `Task` and `Defect` ORM model instances. This is intentional — consumers format
+> data their own way (hydrator → JSON, future RAG → embeddings).
 
 > [!IMPORTANT]
-> **`order_by` parameter**: Must be validated to prevent SQL injection. Accept only `"updated_at"` or `"created_at"` as literal strings. Map to `Task.updated_at` / `Task.created_at` via a dict lookup. Raise `ValueError` for unknown values.
+> **`order_by` parameter**: Must be validated to prevent SQL injection. Accept only `"updated_at"`
+> or `"created_at"` as literal strings. Map to `Task.updated_at` / `Task.created_at` via a dict
+> lookup. Raise `ValueError` for unknown values.
 
 ---
 
@@ -222,7 +248,9 @@ class MemoryHydrator:
 > **Fail-safe (NFR-9)**: The `hydrate()` method catches ALL exceptions internally and returns an empty `HydrationResult` on failure. It MUST NOT propagate exceptions to the caller. Logs at WARNING.
 
 > [!IMPORTANT]
-> **HandoverContext deserialization (NFR-4)**: Each task's `handover_context` (JSON string from DB) is deserialized via `HandoverContext.from_json_str()`. If Pydantic validation fails, the task's handover is silently dropped with a WARNING log. The task itself is still included in the result.
+> **HandoverContext deserialization (NFR-4)**: Each task's `handover_context` (JSON string from DB)
+> is deserialized via `HandoverContext.from_json_str()`. If Pydantic validation fails, the task's
+> handover is silently dropped with a WARNING log. The task itself is still included in the result.
 
 > [!IMPORTANT]
 > **Token truncation (FR-4)**: If `token_estimate > self.token_limit`:
@@ -232,10 +260,16 @@ class MemoryHydrator:
 > Set `truncated = True` on the result.
 
 > [!NOTE]
-> **Token estimation**: Uses `len(text) // 4` inline. Cannot import from `infrastructure.llm`. To avoid expensive repeated JSON serialization during the truncation loop, use a coarse heuristic based on raw field lengths (e.g., `sum(len(t.title) + len(t.handover_summary) ...) // 4`) to determine if truncation is needed, then serialize ONCE at the end. Matches PromptBuilder's default `_count()` heuristic.
+> **Token estimation**: Uses `len(text) // 4` inline. Cannot import from `infrastructure.llm`. To
+> avoid expensive repeated JSON serialization during the truncation loop, use a coarse heuristic
+> based on raw field lengths (e.g., `sum(len(t.title) + len(t.handover_summary) ...) // 4`) to
+> determine if truncation is needed, then serialize ONCE at the end. Matches PromptBuilder's default
+> `_count()` heuristic.
 
 > [!NOTE]
-> **JSON format**: `format_prompt_block()` uses `json.dumps(payload, indent=2, ensure_ascii=False)` where `payload` is a dict built from the dataclass fields. This matches the `project_metadata` pattern in PromptBuilder. No XML escaping needed.
+> **JSON format**: `format_prompt_block()` uses `json.dumps(payload, indent=2, ensure_ascii=False)`
+> where `payload` is a dict built from the dataclass fields. This matches the `project_metadata`
+> pattern in PromptBuilder. No XML escaping needed.
 
 > [!CAUTION]
 > **Prompt Injection Defense (5-layer model)**:
@@ -248,7 +282,10 @@ class MemoryHydrator:
 > SF-02 adds Layer 6: **System instruction framing** around the `<context label="agent_memory">` block.
 
 > [!IMPORTANT]
-> **Sanitization module**: A `_sanitize(text: str, *, max_length: int) -> str` helper handles both truncation (NFR-12) and pattern stripping (NFR-13). It lives in `hydrator.py` as a module-level function. The injection pattern blocklist is a module-level constant `_INJECTION_PATTERNS: list[re.Pattern]`.
+> **Sanitization module**: A `_sanitize(text: str, *, max_length: int) -> str` helper handles both
+> truncation (NFR-12) and pattern stripping (NFR-13). It lives in `hydrator.py` as a module-level
+> function. The injection pattern blocklist is a module-level constant
+> `_INJECTION_PATTERNS: list[re.Pattern]`.
 
 **Sanitization constants**:
 ```python

@@ -2,7 +2,9 @@
 **Status:** Design Phase Approved
 
 ## 1. Feature Description & Context
-The SpecWeaver engine heavily relies on cross-repo I/O for LLM file searching (Agents) and Semantic Hashing (`DependencyHasher`). We require a 3-tier file exclusion strategy to strictly protect agent token windows from binary hallucination and accelerate `< 50ms` NFR pipeline caching bounds.
+The SpecWeaver engine heavily relies on cross-repo I/O for LLM file searching (Agents) and Semantic
+Hashing (`DependencyHasher`). We require a 3-tier file exclusion strategy to strictly protect agent
+token windows from binary hallucination and accelerate `< 50ms` NFR pipeline caching bounds.
 
 ## 2. Functional Requirements (FRs)
 - **FR-1:** The Engine must enforce structural exclusions for Polyglot build paths (`target/`, `node_modules/`, `build/`).
@@ -33,20 +35,27 @@ The feature will be rolled out by updating native modules while simultaneously r
 - **Refactor `discovery.py`**: Delete the hardcoded Python-centric `_SKIP_DIRS` block entirely. Bind the `discover_files` loop to the new Polyglot Engine via `AnalyzerFactory`.
 - **Refactor `search.py`**: Intercept `iter_text_files` and `find_by_glob` in `loom` to utilize injected exclusion matrices, preventing token timeouts.
 - **Refactor `hasher.py`**: Remove redundant manual string `rglob` filtering natively in favor of the unified orchestrator payload.
-- **Refactor `c09_traceability.py`**: Rip out the hardcoded `test_*.py` iteration block. Bind it to the `AnalyzerFactory` to correctly query `*Test.java` and `*_scenarios.rs` tests natively, resolving polyglot isolation violations.
+- **Refactor `c09_traceability.py`**: Rip out the hardcoded `test_*.py` iteration block. Bind it to
+  the `AnalyzerFactory` to correctly query `*Test.java` and `*_scenarios.rs` tests natively,
+  resolving polyglot isolation violations.
 
 ### SF-04: Analyzer Dependency Injection (Strict Decoupling)
 - Abstract `workspace/context/analyzers.py` entirely out of the Contract layer.
 - Move Polyglot Tree-sitter implementations seamlessly into `workspace/analyzers/` (Adapter Layer).
 - Construct `AnalyzerFactoryProtocol` in the pure-logic layer.
 - Thread the instance completely through the `/flow` orchestrator via Dependency Injection to cure the legacy `hasher.py` I/O boundary violation structurally.
-- **CRITICAL NOTE (From SF-01 Phase 1 Gate):** Ensure that the `SpecWeaverIgnoreParser` physical OS I/O traversal (e.g., calling `Path.read_text()` or `open()`) introduced inside the `pure-logic` `exclusions.py` engine is fully abstracted away via DI to definitively resolve its architectural violation!
+- **CRITICAL NOTE (From SF-01 Phase 1 Gate):** Ensure that the `SpecWeaverIgnoreParser` physical OS
+  I/O traversal (e.g., calling `Path.read_text()` or `open()`) introduced inside the `pure-logic`
+  `exclusions.py` engine is fully abstracted away via DI to definitively resolve its architectural
+  violation!
 - **CRITICAL NOTE (From SF-01 Phase 2 Test Gaps):** The two skipped placeholder tests inside `test_exclusions.py` MUST be solidly implemented during SF-04 integration:
   1. `test_deferred_integration_orchestrator_initializes_ignores_sf4`
   2. `test_deferred_e2e_topological_spec_bypass_hidden_binary_sf4`
 
 ### SF-05: Integration Debt Remediation (DI Consistency)
-- Refactor the orchestrating nodes `ToolDispatcher`, `PipelineRunner`, and `C09TraceabilityRule` which statically imported `AnalyzerFactory`, skipping the rigorous DI checks originally scoped in SF-04.
+- Refactor the orchestrating nodes `ToolDispatcher`, `PipelineRunner`, and `C09TraceabilityRule`
+  which statically imported `AnalyzerFactory`, skipping the rigorous DI checks originally scoped in
+  SF-04.
 - Route `AnalyzerFactoryProtocol` sequentially down the Flow Handlers using `RunContext`.
 - Ensure all tests correctly mock or pass dependencies downward without violating the orchestrator barrier.
 
@@ -62,4 +71,6 @@ The feature will be rolled out by updating native modules while simultaneously r
 
 ## 6. Session Handoff
 
-**Next Action:** Sub-Feature 5 Implementation Plan is Approved! The immediately actionable step for the subsequent session is to execute the `/dev docs/roadmap/features/topic_02_sensors/C-SENS-02_sf05_impl_plan.md` workflow.
+**Next Action:** Sub-Feature 5 Implementation Plan is Approved! The immediately actionable step for
+the subsequent session is to execute the
+`/dev docs/roadmap/features/topic_02_sensors/C-SENS-02_sf05_impl_plan.md` workflow.

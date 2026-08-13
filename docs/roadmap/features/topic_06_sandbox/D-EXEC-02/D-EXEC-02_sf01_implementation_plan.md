@@ -12,8 +12,12 @@ This implementation plan covers the core Atom and Executor mechanics to safely c
 
 ## Architectural Approvals & Constraints
 1. **Cache Symlinking Discovery (Q1):** Approved to add `cache_dirs` configuration array to pipeline YAML.
-2. **File System Bounds (Q2):** Approved strictly adhering to Archetypes. Domain purity will be protected: `os.symlink` will be executed by `EngineFileExecutor`, heavily orchestrating `FileSystemAtom`.
-3. **Windows Safety Hook (Q3):** Approved aggressive teardown to prevent Windows locks. We will use a mixed `git worktree remove --force` fallback pipeline combining `shutil.rmtree` and `git worktree prune`.
+2. **File System Bounds (Q2):** Approved strictly adhering to Archetypes. Domain purity will be
+   protected: `os.symlink` will be executed by `EngineFileExecutor`, heavily orchestrating
+   `FileSystemAtom`.
+3. **Windows Safety Hook (Q3):** Approved aggressive teardown to prevent Windows locks. We will use
+   a mixed `git worktree remove --force` fallback pipeline combining `shutil.rmtree` and
+   `git worktree prune`.
 
 ## File Modifications
 
@@ -40,8 +44,12 @@ This implementation plan covers the core Atom and Executor mechanics to safely c
   - Define `_ENGINE_WHITELIST` additions to include `"worktree"`.
   - Add `_intent_worktree_add(self, context)` executing `git worktree add -b <branch> <path> <main>`.
   - Add `_intent_worktree_remove(self, context)`.
-  - **[NFR-1 / Q3 Teardown Logic]:** Wrap in a 5-iteration retry loop checking for non-zero exit codes. Under failure, implement explicit `shutil.rmtree(path, ignore_errors=True)` followed by `git worktree prune`.
+  - **[NFR-1 / Q3 Teardown Logic]:** Wrap in a 5-iteration retry loop checking for non-zero exit
+    codes. Under failure, implement explicit `shutil.rmtree(path, ignore_errors=True)` followed by
+    `git worktree prune`.
 
 ## Verification & Testing Strategy
-- **Unit Testing**: Add explicit test cases in `tests/loom/atoms/test_git_atom.py` asserting `_intent_worktree_remove` successfully survives mock simulated OS Access Denied failures by routing successfully into the `shutil.rmtree` + prune hook.
+- **Unit Testing**: Add explicit test cases in `tests/loom/atoms/test_git_atom.py` asserting
+  `_intent_worktree_remove` successfully survives mock simulated OS Access Denied failures by
+  routing successfully into the `shutil.rmtree` + prune hook.
 - **Unit Testing**: Add `test_engine_file_executor_symlink` to verify path traversal bounding logic is correctly enforced on cache symlinks.

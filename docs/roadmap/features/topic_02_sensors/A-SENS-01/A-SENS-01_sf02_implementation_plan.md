@@ -18,7 +18,9 @@ Implements a dedicated utility for computing and persisting shallow and structur
 [NEW] `src/specweaver/assurance/graph/hasher.py`
 
 **Purpose**: Responsible for generating hashes from `context.yaml` directories and maintaining the `topology.cache.json`.
-**Key Algorithm**: Must recursively map a directory's files to `hashlib.sha256()`. Then parse local boundary dependencies. A directory's final Merkle Hash is defined as: `hash(file_hashes + imported_module_hashes)`.
+**Key Algorithm**: Must recursively map a directory's files to `hashlib.sha256()`. Then parse local
+boundary dependencies. A directory's final Merkle Hash is defined as:
+`hash(file_hashes + imported_module_hashes)`.
 
 **Key Signatures**:
 ```python
@@ -43,15 +45,23 @@ def compute_hashes(self, manifests: list[Path]) -> dict[str, Any]:
 - Because `orjson` is now a core dependency, we must not mix standards. We performed a universal codebase sweep replacing `import json` with the `specweaver.commons.json` facade everywhere.
 
 > [!WARNING]
-> **ORJSON DECODE TRAP:** Standard `json.dumps()` returns `str`. Fast `orjson.dumps()` natively returns `bytes`. The implementing agent explicitly utilized the facade `commons.json` which appends `.decode('utf-8')` to any payload passed into LLM prompt builders, Pydantic initializers, or logging frameworks, successfully proving zero crashes.
+> **ORJSON DECODE TRAP:** Standard `json.dumps()` returns `str`. Fast `orjson.dumps()` natively
+> returns `bytes`. The implementing agent explicitly utilized the facade `commons.json` which
+> appends `.decode('utf-8')` to any payload passed into LLM prompt builders, Pydantic initializers,
+> or logging frameworks, successfully proving zero crashes.
 
 ### D. OS Protection (`src/specweaver/workspace/project/git.py` or `.gitignore` injection hook) [DONE]
 [MODIFY/NEW] `src/specweaver/assurance/graph/hasher.py`
-- Exposes `_ensure_gitignore(project_root: Path)`. Walk up from `project_root` until finding a `.git/` directory. If found, safely append `\n/.specweaver/\n` inside a tracked `# SpecWeaver Auto-Generated` comment block to ensure NFR-2 repository purity. Silently ignore if no `.git` is found.
+- Exposes `_ensure_gitignore(project_root: Path)`. Walk up from `project_root` until finding a
+  `.git/` directory. If found, safely append `\n/.specweaver/\n` inside a tracked
+  `# SpecWeaver Auto-Generated` comment block to ensure NFR-2 repository purity. Silently ignore if
+  no `.git` is found.
 
 ## 3. Resolving HITL Decisions (Phase 4 Audit)
 1. **Schema Parsing via `orjson`**: We will explicitly utilize `orjson.dumps()` and `orjson.loads()` for lightning-fast graph serialization, easily achieving the `< 50ms` NFR constraint natively.
-2. **Orphan Key Pruning**: The Hasher will explicitly receive the active list of valid manifests directly from `TopologyGraph.from_project()`. During cache compilation, the hasher will intersect valid keys, instantly pruning orphaned/deleted OS files.
+2. **Orphan Key Pruning**: The Hasher will explicitly receive the active list of valid manifests
+   directly from `TopologyGraph.from_project()`. During cache compilation, the hasher will intersect
+   valid keys, instantly pruning orphaned/deleted OS files.
 3. **`.gitignore` Climbing**: Implemented exactly via hierarchical path-climbing.
 
 ## 4. Verification Constraints

@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## 1. Overview
-Feature 3.29 SF-02 requires extracting polyglot framework markers (decorators, annotations, macros, and inheritance) from user code safely into a JSON structure, without polluting the Pure Logic `assurance` layer with C-bindings. 
+Feature 3.29 SF-02 requires extracting polyglot framework markers (decorators, annotations, macros,
+and inheritance) from user code safely into a JSON structure, without polluting the Pure Logic
+`assurance` layer with C-bindings. 
 This plan extends the `CodeStructureInterface` to return rich mapping payloads dynamically using generalized `.scm` Tree-Sitter queries. 
 
 ## 2. Proposed Changes
@@ -28,7 +30,10 @@ We expand the core DI contract so that Validation has access to structured JSON 
 
 ### 2.2 Validation Ingress Update (SF-01 Refinement)
 #### [MODIFY] src/specweaver/core/flow/_validation.py
-- **Changes**: In `ValidateCodeHandler._run_validation`, the `ast_payload` is natively built via `extract_skeleton`. We must now run **both** intents sequentially or in parallel against the `CodeStructureAtom` so the `ast_payload` passed to the Rule contains both the structural string and the framework dictionaries:
+- **Changes**: In `ValidateCodeHandler._run_validation`, the `ast_payload` is natively built via
+  `extract_skeleton`. We must now run **both** intents sequentially or in parallel against the
+  `CodeStructureAtom` so the `ast_payload` passed to the Rule contains both the structural string
+  and the framework dictionaries:
   ```python
   payload_res = atom.run({"intent": "extract_skeleton", "path": str(code_path)})
   markers_res = atom.run({"intent": "extract_framework_markers", "path": str(code_path)})
@@ -64,7 +69,9 @@ To do this, each module must define an `SCM_MARKERS_QUERY` string that groups id
 
 ### Automated Tests
 - Run `pytest tests/unit/core/flow/test_handlers_di_payload.py` to ensure `ast_payload` merging works smoothly.
-- Create tests for Python/Java in `tests/integration/loom/test_polyglot_ast_edge_cases.py` passing generic class files and asserting the dictionaries contain accurate `{"decorators": [...], "extends": [...]}` captures.
+- Create tests for Python/Java in `tests/integration/loom/test_polyglot_ast_edge_cases.py` passing
+  generic class files and asserting the dictionaries contain accurate
+  `{"decorators": [...], "extends": [...]}` captures.
 
 ### Manual Verification
 - Execution of this plan fully enables SF-03, which builds the `C12` pure logic boundary rule. Successful manual verification will happen when building out SF-03 next.

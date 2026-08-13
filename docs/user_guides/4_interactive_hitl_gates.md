@@ -1,6 +1,8 @@
 # User Handbook 4: Interactive HITL Gates & Dictator Overrides
 
-SpecWeaver assumes LLMs are intelligent but unpredictable. Every sequence of changes executed by generation agents must route formally through a **Human-In-The-Loop (HITL)** interception gate prior to executing Git operations.
+SpecWeaver assumes LLMs are intelligent but unpredictable. Every sequence of changes executed by
+generation agents must route formally through a **Human-In-The-Loop (HITL)** interception gate prior
+to executing Git operations.
 
 ## 1. The Dual-Agent Pipeline Wait (`GateType.HITL`)
 When `sw implement` or `sw review` hits an evaluation dead-end (the Agent encounters a bug it cannot systematically fix via the linter outputs), it immediately pauses execution and yields to the CLI.

@@ -7,7 +7,11 @@
 - **Status**: COMPLETED
 
 ## Goal
-Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace it with a generalized architecture boundary check on the target project. To ensure SpecWeaver remains strictly polyglot-capable, C05 will delegate to the `QARunnerInterface` rather than executing `tach` directly. This requires expanding the L4/L5 QA Runner capabilities and fixing existing L2 Architectural DMZ violations.
+Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace it with a
+generalized architecture boundary check on the target project. To ensure SpecWeaver remains strictly
+polyglot-capable, C05 will delegate to the `QARunnerInterface` rather than executing `tach`
+directly. This requires expanding the L4/L5 QA Runner capabilities and fixing existing L2
+Architectural DMZ violations.
 
 ---
 
@@ -59,7 +63,9 @@ Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace
 
 ### [MODIFY] `context.yaml`
 - **Architectural Cleanup**: Formalize `specweaver/loom/commons/qa_runner` into the `consumes` array.
-- Current rules C03 (Tests Pass) and C04 (Coverage) implicitly bypass global DMZ guards by importing L4 components. Allowing this formally stabilizes the Validation engine's usage of external interface wrappers without opening up broad I/O gaps.
+- Current rules C03 (Tests Pass) and C04 (Coverage) implicitly bypass global DMZ guards by importing
+  L4 components. Allowing this formally stabilizes the Validation engine's usage of external
+  interface wrappers without opening up broad I/O gaps.
 
 ### [MODIFY] `rules/code/c05_import_direction.py`
 - **Tear Down**: Remove all dependency on `ast.parse` and statically scoped `_FORBIDDEN_RULES` mappings.
@@ -68,14 +74,23 @@ Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace
 - **Parsing**: 
   - If output counts equal 0: return `self._pass("All structural architecture boundaries verified")`.
   - Iterate through `ArchitectureViolation` structures returned by the interface, mapping them exactly to `Finding(message=..., severity=Severity.ERROR)`.
-  - *Mitigation strategy*: If the workspace lacks underlying configuration (missing `tach.toml`), detect empty results / specific fallback exceptions and return `self._skip(...)` to safely defer execution until SF-08 automaps boundaries in newer topologies.
+  - *Mitigation strategy*: If the workspace lacks underlying configuration (missing `tach.toml`),
+    detect empty results / specific fallback exceptions and return `self._skip(...)` to safely defer
+    execution until SF-08 automaps boundaries in newer topologies.
 
 ---
 
 ## Technical Audit & Gotchas (Phase 2 & 3 Notes)
-*   **JSON Schema**: Tach's output shape features nested `Located -> details -> Code -> UndeclaredDependency` dictionaries. The parsing step inside `PythonQARunner` must fail cleanly if Tach bumps APIs, using standard `.get()` defaulting to prevent `KeyError` crashes deep inside the workflow engine.
-*   **Performance Cache**: Evaluating constraints using the AST historically takes ms. If passing boundaries to subprocesses generates > 400ms lag across unit tests, C05's testing footprint must be heavily mocked during unit runs outside E2E.
-*   **`tach` System Requirement**: Assumes `tach` is resolvable inside the venv executing the codebase. Because SpecWeaver controls the execution environments and provides Tach as a dev-dependency, tests will pass locally.
+*   **JSON Schema**: Tach's output shape features nested
+    `Located -> details -> Code -> UndeclaredDependency` dictionaries. The parsing step inside
+    `PythonQARunner` must fail cleanly if Tach bumps APIs, using standard `.get()` defaulting to
+    prevent `KeyError` crashes deep inside the workflow engine.
+*   **Performance Cache**: Evaluating constraints using the AST historically takes ms. If passing
+    boundaries to subprocesses generates > 400ms lag across unit tests, C05's testing footprint must
+    be heavily mocked during unit runs outside E2E.
+*   **`tach` System Requirement**: Assumes `tach` is resolvable inside the venv executing the
+    codebase. Because SpecWeaver controls the execution environments and provides Tach as a
+    dev-dependency, tests will pass locally.
 
 ## Verification
 - Complete standard Pre-Commit Workflow phases.

@@ -7,7 +7,9 @@
 
 ## 1. Purpose
 
-The service should properly handle user requests and might optionally validate inputs as needed. It could also potentially cache results for efficiency, and should seamlessly integrate with the backend as appropriate. Additionally, it may consider rate limiting.
+The service should properly handle user requests and might optionally validate inputs as needed. It
+could also potentially cache results for efficiency, and should seamlessly integrate with the
+backend as appropriate. Additionally, it may consider rate limiting.
 
 ---
 

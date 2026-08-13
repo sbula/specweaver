@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Feature Scope Overview
-This Sub-Feature initializes `Tach` into SpecWeaver and formally defines the bottom-most dependencies (the "Base Layer"). It guarantees that `config`, `standards`, and `logging.py` operate completely stateless and free from any upward dependency entanglements.
+This Sub-Feature initializes `Tach` into SpecWeaver and formally defines the bottom-most
+dependencies (the "Base Layer"). It guarantees that `config`, `standards`, and `logging.py` operate
+completely stateless and free from any upward dependency entanglements.
 
 ## Proposed Changes
 
@@ -49,10 +51,15 @@ strict = true
 
 #### [DELETE] Base Layer Boilerplate
 - Delete `src/specweaver/config/__init__.py` and `src/specweaver/standards/__init__.py`. 
-- *Context: As we formalize each layer into Tach, we must systematically clean up the legacy, manual `__all__ = [...]` export logic behind us. This prevents two conflicting architectural systems from existing simultaneously.*
+- *Context: As we formalize each layer into Tach, we must systematically clean up the legacy, manual
+  `__all__ = [...]` export logic behind us. This prevents two conflicting architectural systems from
+  existing simultaneously.*
 
 > [!CAUTION]  
-> If `tach check` throws any violation indicating that `config` or `standards` accidentally references a domain model from `src/specweaver/validation` or `src/specweaver/flow`, **the workflow must fail**. Those upstream references must be surgically severed and passed via arguments to maintain strict Base Layer statelessness.
+> If `tach check` throws any violation indicating that `config` or `standards` accidentally
+> references a domain model from `src/specweaver/validation` or `src/specweaver/flow`, **the
+> workflow must fail**. Those upstream references must be surgically severed and passed via
+> arguments to maintain strict Base Layer statelessness.
 
 ## Verification Plan
 

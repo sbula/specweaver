@@ -12,10 +12,17 @@
 Implement the pluggable context loading architecture using a duck-typed structural protocol `PromptContentSource`. This decouples domain models and context objects from the LLM infrastructure. 
 
 Following user feedback & Red/Blue team analysis:
-* **Adapters are the Single Place of Formatting**: Adapters are responsible for transforming specific input types into the exact output format (including XML tag wrapping, escaping, and validation) used 1:1 by the prompt builder.
-* **Truncation Safety**: To prevent slicing pre-rendered XML tags/boundaries during prompt truncation, the `PromptContentSource` protocol and adapters accept an optional `char_limit` parameter. Truncation happens on the raw payload *before* formatting/escaping, guaranteeing well-formed XML closures (e.g. `]]>`, `</file>`).
+* **Adapters are the Single Place of Formatting**: Adapters are responsible for transforming
+  specific input types into the exact output format (including XML tag wrapping, escaping, and
+  validation) used 1:1 by the prompt builder.
+* **Truncation Safety**: To prevent slicing pre-rendered XML tags/boundaries during prompt
+  truncation, the `PromptContentSource` protocol and adapters accept an optional `char_limit`
+  parameter. Truncation happens on the raw payload *before* formatting/escaping, guaranteeing
+  well-formed XML closures (e.g. `]]>`, `</file>`).
 * **Option B (Explicit Builder API)**: Introduce explicit strongly-typed methods on `PromptBuilder` to map directly to each adapter, removing generic runtime type checking.
-* **Security & Injection Mitigation**: Enforce XML attribute escaping, label character validation (regex), and CDATA block wrapping inside the adapters to prevent attribute injection and semantic spoofing.
+* **Security & Injection Mitigation**: Enforce XML attribute escaping, label character validation
+  (regex), and CDATA block wrapping inside the adapters to prevent attribute injection and semantic
+  spoofing.
 * **Native Conformance**: Dataclasses like `TopologyContext` natively implement the protocol to avoid unnecessary wrapping.
 
 ---

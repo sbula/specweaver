@@ -7,7 +7,10 @@
 - **Status**: DRAFT
 
 ## Goal Description
-Implement the `MCPExplorerTool` inside the Agent tooling layer (`loom/tools/mcp`). It provides targeted insights into external proxy configurations mapping JSON-RPC boundaries securely, allowing the L2 Architect specifically to survey external databases or tools natively without needing manual `FileSystemTool` sweeps or massive token overheads. 
+Implement the `MCPExplorerTool` inside the Agent tooling layer (`loom/tools/mcp`). It provides
+targeted insights into external proxy configurations mapping JSON-RPC boundaries securely, allowing
+the L2 Architect specifically to survey external databases or tools natively without needing manual
+`FileSystemTool` sweeps or massive token overheads. 
 
 It explicitly utilizes transient `MCPExecutor` sessions to prevent persistent `npx/docker` leaks, complying with ZERO-TRUST boundaries.
 
@@ -33,7 +36,9 @@ It explicitly utilizes transient `MCPExecutor` sessions to prevent persistent `n
 - Looks up target `docker run` environments from `self.context.topology.mcp_servers`.
 - Rapidly spins up `MCPExecutor()`, executes the required query with a safe timeout (10s), and forcefully closes the stream before returning the JSON block to the agent.
 > [!CAUTION]
-> **Implementation Caveat (Q1 & Q4 Resolution)**: The `mcp/tool.py` must physically construct the `/commons/` Executor inside the `_intent` method scope using a context block or try/finally. Hard-coded 10s timeouts protect against dead servers.
+> **Implementation Caveat (Q1 & Q4 Resolution)**: The `mcp/tool.py` must physically construct the
+> `/commons/` Executor inside the `_intent` method scope using a context block or try/finally.
+> Hard-coded 10s timeouts protect against dead servers.
 
 ### Unit Tests
 #### [NEW] `tests/unit/core/loom/tools/mcp/test_tool.py`

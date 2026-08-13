@@ -19,7 +19,9 @@ Modify Pydantic models to ingest TOML based configurations securely.
 #### [MODIFY] src/specweaver/core/config/settings.py
 - [x] Define `StandardsSettings(BaseModel)` containing the configurable parameter `mode: Literal["mimicry", "best_practice"] = "mimicry"`.
 - [x] Augment `SpecWeaverSettings` to incorporate `standards: StandardsSettings = StandardsSettings()`.
-- [x] In `load_settings()`, parse `specweaver.toml` leveraging Python's built-in `tomllib`. If file is present within the project root, retrieve its values safely to load into the settings dictionary and merge it into the Pydantic payload, overriding base defaults.
+- [x] In `load_settings()`, parse `specweaver.toml` leveraging Python's built-in `tomllib`. If file
+  is present within the project root, retrieve its values safely to load into the settings
+  dictionary and merge it into the Pydantic payload, overriding base defaults.
 - > [!IMPORTANT]
   > Centralization via `core/config/settings.py` isolates our architectural parsing logic directly out from `StandardsAnalyzer` bounds. (Option B Approved).
 
@@ -27,12 +29,18 @@ Modify Pydantic models to ingest TOML based configurations securely.
 Connect the config state dynamically into the Scanner.
 #### [MODIFY] src/specweaver/assurance/standards/scanner.py
 - [x] Update the injection signature for scanning capabilities.
-- [x] Intervene before returning an empty array logic execution: If `mode == "best_practice"` and `analyzer_to_files` triggers empty AST extractions (Empty repo), hydrate `CategoryResult` matrix directly from injected configurations.
+- [x] Intervene before returning an empty array logic execution: If `mode == "best_practice"` and
+  `analyzer_to_files` triggers empty AST extractions (Empty repo), hydrate `CategoryResult` matrix
+  directly from injected configurations.
 - > [!CAUTION]
-  > Execute the hydration mapping cleanly without embedding the SQLite `Database()` dependency directly into the module. Let higher-layer callers resolve settings.standards parameters before invoking `scan`. (Option A Approved).
+  > Execute the hydration mapping cleanly without embedding the SQLite `Database()` dependency
+  > directly into the module. Let higher-layer callers resolve settings.standards parameters before
+  > invoking `scan`. (Option A Approved).
 
 #### [MODIFY] src/specweaver/core/flow/handlers/standards.py (Deviated from Plan)
-- [x] Added dynamic passing of `mode` and `built_in_defaults` directly within `EnrichStandardsHandler` to securely connect the configurations to the Orchestrator without importing database components into the pure-logic configuration layer.
+- [x] Added dynamic passing of `mode` and `built_in_defaults` directly within
+  `EnrichStandardsHandler` to securely connect the configurations to the Orchestrator without
+  importing database components into the pure-logic configuration layer.
 
 ## Verification Plan
 

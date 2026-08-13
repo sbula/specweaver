@@ -3,7 +3,11 @@
 - **Phase**: 3
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-Currently, SpecWeaver relies on standard Python linting (`ruff`) and `__init__.py` boilerplate encapsulation to prevent architectural spaghetti. This is insufficient to guarantee that L3 Capabilities do not accidentally depend on L1 Interface dependencies. Feature 3.20a formally adopts `Tach` (a Rust-based Python architectural linter) to mathematically enforce a strict Domain-Driven "Layer Cake" architecture across the `src/specweaver/` directory.
+Currently, SpecWeaver relies on standard Python linting (`ruff`) and `__init__.py` boilerplate
+encapsulation to prevent architectural spaghetti. This is insufficient to guarantee that L3
+Capabilities do not accidentally depend on L1 Interface dependencies. Feature 3.20a formally adopts
+`Tach` (a Rust-based Python architectural linter) to mathematically enforce a strict Domain-Driven
+"Layer Cake" architecture across the `src/specweaver/` directory.
 
 ## 2. Requirements & Constraints
 ### Functional Requirements

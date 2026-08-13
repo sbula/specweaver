@@ -7,12 +7,22 @@
 - **Status**: APPROVED
 
 ## 1. Goal
-Implement the `C12` and `S12` generic Archetype validation rules. To maintain Trunk-based Layer bounds and pure mathematical safety, Markdown Documentation will be parsed structurally as a Native Language using `tree-sitter-markdown`. Support for modular baseline Plugin Yamls will be natively integrated into `workflows/pipelines/frameworks/`.
+Implement the `C12` and `S12` generic Archetype validation rules. To maintain Trunk-based Layer
+bounds and pure mathematical safety, Markdown Documentation will be parsed structurally as a Native
+Language using `tree-sitter-markdown`. Support for modular baseline Plugin Yamls will be natively
+integrated into `workflows/pipelines/frameworks/`.
 
 ## 2. Research Notes
-- **Resolving the `S12` LLM Ban:** The `rules/spec/context.yaml` completely forbids LLM boundaries for pure logic rules. To prevent violating this Architecture, `S12` will rely precisely on the `CodeStructureAtom` to extract Markdown AST boundaries exactly identical to `C12` extracting Python boundaries. 
-- **Rule.context Initialization:** The executor directly maps dictionary parameters via `**kwargs`. We will formally append `self.context: dict` into the abstract `Rule` baseline class to seamlessly intercept orchestrator engine payloads.
-- **Workflow Pipeline Modularity:** All framework archetype Yamls (e.g., `spring-boot`, `fastapi`) will completely leave `loom/` (execution bounds) and formally reside directly inside `workflows/pipelines/frameworks/<language>/`.
+- **Resolving the `S12` LLM Ban:** The `rules/spec/context.yaml` completely forbids LLM boundaries
+  for pure logic rules. To prevent violating this Architecture, `S12` will rely precisely on the
+  `CodeStructureAtom` to extract Markdown AST boundaries exactly identical to `C12` extracting
+  Python boundaries. 
+- **Rule.context Initialization:** The executor directly maps dictionary parameters via `**kwargs`.
+  We will formally append `self.context: dict` into the abstract `Rule` baseline class to seamlessly
+  intercept orchestrator engine payloads.
+- **Workflow Pipeline Modularity:** All framework archetype Yamls (e.g., `spring-boot`, `fastapi`)
+  will completely leave `loom/` (execution bounds) and formally reside directly inside
+  `workflows/pipelines/frameworks/<language>/`.
 
 ## 3. Proposed Changes
 
@@ -54,7 +64,9 @@ Implement the `C12` and `S12` generic Archetype validation rules. To maintain Tr
 
 ### `src/specweaver/assurance/validation/pipeline_loader.py`
 #### [MODIFY] `_load_raw_yaml` ✓
-- Incorporate `importlib.resources.files("specweaver.workflows.pipelines.frameworks").iterdir()` searching mechanisms cleanly extending `ArchetypeResolver` parameters to natively fall back on plugin libraries.
+- Incorporate `importlib.resources.files("specweaver.workflows.pipelines.frameworks").iterdir()`
+  searching mechanisms cleanly extending `ArchetypeResolver` parameters to natively fall back on
+  plugin libraries.
 
 ### `src/specweaver/workflows/pipelines/frameworks/java/`
 #### [NEW] `validation_code_spring-boot.yaml` ✓
@@ -63,7 +75,11 @@ Implement the `C12` and `S12` generic Archetype validation rules. To maintain Tr
 - Base Native configuration logic bounding Spec.md architectural formatting blocks.
 
 ## 4. Backlog / Tech Debt
-- **[Backlog] Markdown AST Mutators:** Formally implement `extract_symbols()` and `rewrite_symbol_body()` on the newly established `MarkdownCodeStructure` module. This treats Markdown headings (e.g. `## Intent`) natively as code block symbols, enabling surgical LLM refactoring of documentation to completely eliminate the blind-overwrite truncation risk for large Spec documents.
+- **[Backlog] Markdown AST Mutators:** Formally implement `extract_symbols()` and
+  `rewrite_symbol_body()` on the newly established `MarkdownCodeStructure` module. This treats
+  Markdown headings (e.g. `## Intent`) natively as code block symbols, enabling surgical LLM
+  refactoring of documentation to completely eliminate the blind-overwrite truncation risk for large
+  Spec documents.
 
 ## 5. Verification Plan
 

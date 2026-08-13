@@ -1,6 +1,8 @@
 # Feature 3.11a Implementation Plan: Architecture Cleanup
 
-The goal of this feature is to address the accumulated architectural debt from Features 3.10 and 3.11. This cleanup aligns the tool-execution engine with the established Atom/Tool layer boundaries and unlocks mid-loop injection capabilities for the LLM review/planning agents.
+The goal of this feature is to address the accumulated architectural debt from Features 3.10 and
+3.11. This cleanup aligns the tool-execution engine with the established Atom/Tool layer boundaries
+and unlocks mid-loop injection capabilities for the LLM review/planning agents.
 
 ## Proposed Changes
 
@@ -19,7 +21,10 @@ Refactor the Planner to use `PromptBuilder` instead of raw string formatting. Th
 Expose a callback hook in the agentic tool-use loop so that orchestrators can scan intermediate responses and inject new context (like file mentions) between tool rounds.
 
 #### [MODIFY] adapters/base.py(file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/base.py)
-- Update `generate_with_tools` signature to accept `on_tool_round: Callable[[list[Message]], Awaitable[list[Message]]] | None = None`. (The callback will return *new* `Message` blocks, which the adapter appends, rather than mutating the list in place).
+- Update `generate_with_tools` signature to accept
+  `on_tool_round: Callable[[list[Message]], Awaitable[list[Message]]] | None = None`. (The callback
+  will return *new* `Message` blocks, which the adapter appends, rather than mutating the list in
+  place).
 
 #### [MODIFY] adapters/gemini.py(file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/gemini.py)
 - Inside the `for round_num in range(max_tool_rounds):` loop, after appending tool results to `messages`, add `if on_tool_round: await on_tool_round(messages)`.
@@ -56,7 +61,9 @@ Update the pipeline handlers to accommodate the ToolDispatcher changes and utili
 
 #### [MODIFY] _review.py(file:///c:/development/pitbula/specweaver/src/specweaver/flow/_review.py)
 - Update imports from `loom.commons.research.executor` to `loom.dispatcher`.
-- Pass a `on_tool_round` callback closing over the `Reviewer` and `RunContext` to `generate_with_tools`. In the callback, perform mention scanning on the latest LLM message and append `PromptBuilder.add_mentioned_files()` blocks directly to the message history.
+- Pass a `on_tool_round` callback closing over the `Reviewer` and `RunContext` to
+  `generate_with_tools`. In the callback, perform mention scanning on the latest LLM message and
+  append `PromptBuilder.add_mentioned_files()` blocks directly to the message history.
 
 #### [MODIFY] context.yaml(file:///c:/development/pitbula/specweaver/src/specweaver/flow/context.yaml)
 - Remove `loom/commons/research` from `consumes`.

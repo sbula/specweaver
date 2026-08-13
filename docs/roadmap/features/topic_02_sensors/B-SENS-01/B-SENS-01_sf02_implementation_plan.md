@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement SF-02 to orchestrate the injection of `# sw-artifact: <uuid>` lineage trackers into any artifact generated or reviewed by the system. This allows the CLI to track origin (Spec -> Plan -> Code) independent of Git.
+Implement SF-02 to orchestrate the injection of `# sw-artifact: <uuid>` lineage trackers into any
+artifact generated or reviewed by the system. This allows the CLI to track origin (Spec -> Plan ->
+Code) independent of Git.
 
 ## User Review Required
 > [!CAUTION]
@@ -18,7 +20,10 @@ Implement SF-02 to orchestrate the injection of `# sw-artifact: <uuid>` lineage 
 ---
 
 ### 1. `src/specweaver/loom/commons.py` [✅ COMPLETED IN CB-1]
-> **Deviation Note**: Discovered and fixed a critical formatting edge case where upstream PromptBuilder uppercase language strings (e.g. `'PYTHON'`) would bypass formatting and swallow the UUID entirely. Applied `language.lower()` during extraction. 14 explicit Unit tests implemented across `tests/unit/loom/commons/test_lineage.py`.
+> **Deviation Note**: Discovered and fixed a critical formatting edge case where upstream
+> PromptBuilder uppercase language strings (e.g. `'PYTHON'`) would bypass formatting and swallow the
+> UUID entirely. Applied `language.lower()` during extraction. 14 explicit Unit tests implemented
+> across `tests/unit/loom/commons/test_lineage.py`.
 
 To avoid regex bleed into the flow orchestrator, introduce a safe utility matching standard parsing methods.
 
@@ -46,7 +51,10 @@ Allows upstream handler tasks to safely hand their UUIDs to the `PipelineRunner`
 ---
 
 ### 3. `src/specweaver/llm/prompt_builder.py` [✅ COMPLETED IN CB-2]
-> **Deviation Note**: The original plan mandated `llm/prompt_builder.py` import `wrap_artifact_tag` from `loom.commons.lineage`. However, `llm/context.yaml` explicitly forbids importing from the `loom/` DMZ. To resolve this architecture boundary violation, `lineage.py` and its tests were natively migrated to `src/specweaver/llm/lineage.py`.
+> **Deviation Note**: The original plan mandated `llm/prompt_builder.py` import `wrap_artifact_tag`
+> from `loom.commons.lineage`. However, `llm/context.yaml` explicitly forbids importing from the
+> `loom/` DMZ. To resolve this architecture boundary violation, `lineage.py` and its tests were
+> natively migrated to `src/specweaver/llm/lineage.py`.
 
 Ensuring the LLM writes exact syntax without hallucinating JSON comments or breaking markdown headers.
 
@@ -64,7 +72,9 @@ Orchestrating the UUID extraction, parent linkage, minting, and logging logic du
 
 #### [MODIFY] `_generation.py`
 - Inside `GenerateCodeHandler.execute`:
-  1. **Find `parent_id`**: Load `context.spec_path.read_text()` if the file exists, and run `extract_artifact_uuid()`. If it returns `None`, fallback to `parent_id = context.run_id` to ensure graph edges maintain connectivity to the active session.
+  1. **Find `parent_id`**: Load `context.spec_path.read_text()` if the file exists, and run
+     `extract_artifact_uuid()`. If it returns `None`, fallback to `parent_id = context.run_id` to
+     ensure graph edges maintain connectivity to the active session.
   2. **Mint/Find `artifact_uuid`**: Load the target string `output_path` (if the file exists) and `extract_artifact_uuid()`. If present, reuse it. If missing, generate `str(uuid.uuid4())`.
   3. **Inject Prompt**: Call `config.prompt_builder.add_artifact_tagging(artifact_uuid, language)`.
   4. **Log Lineage Db**: Call `context.db.log_artifact_event` with `artifact_uuid`, `parent_id`, `context.run_id`, and `event_type` ("modified" or "created"). 

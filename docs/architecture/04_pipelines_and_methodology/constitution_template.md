@@ -11,7 +11,9 @@
 
 ## Purpose
 
-A Constitution is a **read-only, human-authored document** that defines the non-negotiable rules for a project. Every agent, every persona, every flow reads this document first. It cannot be modified by agents — only by the HITL through explicit, deliberate action.
+A Constitution is a **read-only, human-authored document** that defines the non-negotiable rules for
+a project. Every agent, every persona, every flow reads this document first. It cannot be modified
+by agents — only by the HITL through explicit, deliberate action.
 
 The Constitution answers: *"What is always true about this project, regardless of which feature we're building?"*
 
@@ -29,7 +31,10 @@ With a Constitution:
 - Security invariants are explicitly stated and checkable
 
 ### Reference: DMZ's SOUL.md
-The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz)) uses `SOUL.md` as its constitution. It covers: project identity, tech stack table, 7 architecture principles, coding standards, security principles, and a key documents index. Every agent in the DMZ ecosystem is instructed to read `SOUL.md` first.
+The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz))
+uses `SOUL.md` as its constitution. It covers: project identity, tech stack table, 7 architecture
+principles, coding standards, security principles, and a key documents index. Every agent in the DMZ
+ecosystem is instructed to read `SOUL.md` first.
 
 ---
 

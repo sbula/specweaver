@@ -5,10 +5,14 @@ To make the Domain-Driven Design (DDD) refactoring concrete, here is exactly wha
 > [!IMPORTANT]
 > **Timeline & Validity Context:** 
 > - **Before (Outdated):** The "Package by Layer" architecture (Monolith) represents the system state prior to May 2026. This architecture is now **deprecated and invalid**.
-> - **After (Current & Valid):** The "Package by Feature" architecture (Bounded Contexts) represents the system state from May 2026 onwards. This is the **current, valid source of truth** for all new development.
+> - **After (Current & Valid):** The "Package by Feature" architecture (Bounded Contexts) represents
+>   the system state from May 2026 onwards. This is the **current, valid source of truth** for all
+>   new development.
 
 ## The Problem: "Package by Layer" (BEFORE)
-Currently, code that belongs to the *same feature* is scattered across 4 different root folders based on its *technical layer*. If you want to understand the "LLM" feature, you have to hunt through `infrastructure/llm`, `core/config`, and `interfaces/cli`.
+Currently, code that belongs to the *same feature* is scattered across 4 different root folders
+based on its *technical layer*. If you want to understand the "LLM" feature, you have to hunt
+through `infrastructure/llm`, `core/config`, and `interfaces/cli`.
 
 ```text
 src/specweaver/
@@ -70,6 +74,12 @@ src/specweaver/
 ```
 
 ## Why this matters (The Impact):
-1. **Developer Sanity:** If you are assigned to fix a bug in the Git Sandbox, you open `src/specweaver/sandbox_git/`. You don't need to look anywhere else. The Tools, Atoms, and configurations are all colocated.
-2. **Microservices:** Notice how the `llm/` folder now contains its own `cli.py` and its own database `store.py`. You could literally cut the `src/specweaver/llm` folder out of the project, drop it onto a new server, and run it as an independent microservice tomorrow.
-3. **Security:** The `sandbox_git` domain is strictly isolated. A bug in the core `graph` engine cannot accidentally import a dangerous `GitTool` because it's physically segregated into a distinct domain package.
+1. **Developer Sanity:** If you are assigned to fix a bug in the Git Sandbox, you open
+   `src/specweaver/sandbox_git/`. You don't need to look anywhere else. The Tools, Atoms, and
+   configurations are all colocated.
+2. **Microservices:** Notice how the `llm/` folder now contains its own `cli.py` and its own
+   database `store.py`. You could literally cut the `src/specweaver/llm` folder out of the project,
+   drop it onto a new server, and run it as an independent microservice tomorrow.
+3. **Security:** The `sandbox_git` domain is strictly isolated. A bug in the core `graph` engine
+   cannot accidentally import a dangerous `GitTool` because it's physically segregated into a
+   distinct domain package.

@@ -1,6 +1,8 @@
 ---
 name: specweaver-feature
-description: "Master feature lifecycle. Orchestrates design → implementation-plan (per sub-feature) → dev (per sub-feature, per commit boundary) → commit. Fully resumable via the Progress Tracker in the Design Document. Use when the user asks to implement, build, or work on a feature end-to-end."
+description: "Master feature lifecycle. Orchestrates design → implementation-plan (per sub-feature)
+→ dev (per sub-feature, per commit boundary) → commit. Fully resumable via the Progress Tracker in
+the Design Document. Use when the user asks to implement, build, or work on a feature end-to-end."
 ---
 
 # Feature Lifecycle Skill

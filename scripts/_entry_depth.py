@@ -94,12 +94,39 @@ _UNBREAKABLE = re.compile(r"\S{120,}")
 _TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
 
 
+#: A fenced code block is not prose. Wrapping a line inside one CHANGES THE CODE — a shell command
+#: gains a newline, a JSON blob stops parsing — so flagging it offers no legal fix, exactly like a
+#: table row. Found by the rule reporting 54 over-long lines when only 24 were prose: the other 30
+#: were inside fences and every one of them was unfixable.
+_FENCE = re.compile(r"^\s*(?:```|~~~)")
+
+#: An inline code span cannot be broken across lines — a newline inside backticks changes the
+#: literal. So a line whose length is carried by ONE such span has no legal wrap point either.
+#:
+#: Deliberately narrow, because "wrap it in backticks" must not become an escape hatch: the line is
+#: exempt only if removing its LONGEST single span brings it under the limit. A line that is still
+#: over-long without that span is ordinary prose and stays flagged.
+_CODE_SPAN = re.compile(r"`[^`]+`")
+
+
+def _dominated_by_one_span(line: str) -> bool:
+    longest = max((len(m.group(0)) for m in _CODE_SPAN.finditer(line)), default=0)
+    return longest > 0 and len(line) - longest <= MAX_LINE
+
+
 def _violating_lines(text: str) -> int:
-    return sum(
-        1
-        for line in text.splitlines()
-        if len(line) > MAX_LINE and not _UNBREAKABLE.search(line) and not _TABLE_ROW.match(line)
-    )
+    count = 0
+    in_fence = False
+    for line in text.splitlines():
+        if _FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence or len(line) <= MAX_LINE:
+            continue
+        if _UNBREAKABLE.search(line) or _TABLE_ROW.match(line) or _dominated_by_one_span(line):
+            continue
+        count += 1
+    return count
 
 
 def census(root: Path) -> dict[str, int]:

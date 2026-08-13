@@ -7,14 +7,29 @@
 
 ## Feature Overview
 
-Feature 3.26 adds a Git Worktree Bouncer capability to the pipeline orchestrator. It solves the problem of LLM hallucinations modifying untouchable/forbidden files by cloning the active task to an isolated ephemeral git worktree, and using strict diff striping to block/delete out-of-bounds changes before merging back into the trunk. Based on Trunk-Based Development workflows, it minimizes branch juggling overhead via proactive TDD isolation, continuous micro-rebasing to keep the worktree strictly synced with the master branch, and enforcing a reactive "Main Branch Wins" auto-resolution strategy. It touches the Workflow flow engine (`flow/`) and the Loom git execution atom (`loom/atoms/git/`). Key constraints: must aggressively block out-of-bounds file edits, must handle Windows file-locking cleanly to prevent zombie trees, and must prevent heavy cache duplication.
+Feature 3.26 adds a Git Worktree Bouncer capability to the pipeline orchestrator. It solves the
+problem of LLM hallucinations modifying untouchable/forbidden files by cloning the active task to an
+isolated ephemeral git worktree, and using strict diff striping to block/delete out-of-bounds
+changes before merging back into the trunk. Based on Trunk-Based Development workflows, it minimizes
+branch juggling overhead via proactive TDD isolation, continuous micro-rebasing to keep the worktree
+strictly synced with the master branch, and enforcing a reactive "Main Branch Wins" auto-resolution
+strategy. It touches the Workflow flow engine (`flow/`) and the Loom git execution atom
+(`loom/atoms/git/`). Key constraints: must aggressively block out-of-bounds file edits, must handle
+Windows file-locking cleanly to prevent zombie trees, and must prevent heavy cache duplication.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **Atoms vs. Tools**: As established in the architecture reference, the Flow engine (`specweaver/flow`) forbids consuming `loom/tools/*` because agents interact with tools. Instead, it must directly consume `loom/atoms/git/` to execute powerful, engine-internal git operations like `worktree add`, diffing, and merging.
-- **Context Boundaries**: The allowed files for any implementation task are formally declared via `context.yaml` and the `Spec.md` artifact. These existing manifests act as the dictionary parameter for the mathematical diff striping algorithm without requiring a new security protocol.
-- **Workflow Pipeline Runner**: Feature 3.26 logically integrates into `src/specweaver/flow/runner.py` or as a distinct Step Handler wrapper (`GitBouncerHandler`) so that `generate+code` actions run wrapped inside the worktree setup/teardown sequence.
+- **Atoms vs. Tools**: As established in the architecture reference, the Flow engine
+  (`specweaver/flow`) forbids consuming `loom/tools/*` because agents interact with tools. Instead,
+  it must directly consume `loom/atoms/git/` to execute powerful, engine-internal git operations
+  like `worktree add`, diffing, and merging.
+- **Context Boundaries**: The allowed files for any implementation task are formally declared via
+  `context.yaml` and the `Spec.md` artifact. These existing manifests act as the dictionary
+  parameter for the mathematical diff striping algorithm without requiring a new security protocol.
+- **Workflow Pipeline Runner**: Feature 3.26 logically integrates into
+  `src/specweaver/flow/runner.py` or as a distinct Step Handler wrapper (`GitBouncerHandler`) so
+  that `generate+code` actions run wrapped inside the worktree setup/teardown sequence.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

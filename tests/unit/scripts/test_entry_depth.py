@@ -135,3 +135,61 @@ class TestMain:
         stale = sorted(set(ed.load_baseline()) - set(live))
 
         assert stale == [], f"baseline names files with no violations: {stale}"
+
+
+class TestViolatingLinesFencedCode:
+    """A line inside a fenced code block is exempt: wrapping it would change the code.
+
+    Found by the rule reporting 54 over-long lines when only 24 were prose — the other 30 sat
+    inside fences, and every one of them was unfixable. Same shape as the table-row exemption: a
+    rule that flags what it cannot let you legally fix teaches people to ignore it.
+    """
+
+    def test_a_long_line_inside_a_fence_is_not_counted(
+        self, ed: ModuleType, tmp_path: Path
+    ) -> None:
+        doc = f"# T\n\n```bash\n{_prose(240)}\n```\n"
+        (tmp_path / "a.md").write_text(doc, encoding="utf-8")
+
+        assert ed.census(tmp_path) == {}
+
+    def test_prose_after_a_closed_fence_is_counted_again(
+        self, ed: ModuleType, tmp_path: Path
+    ) -> None:
+        """The toggle must close, or one fence anywhere silences the rest of the file."""
+        doc = f"# T\n\n```\nshort\n```\n\n{_prose(240)}\n"
+        (tmp_path / "a.md").write_text(doc, encoding="utf-8")
+
+        assert ed.census(tmp_path) == {"a.md": 1}
+
+    def test_a_tilde_fence_counts_too(self, ed: ModuleType, tmp_path: Path) -> None:
+        doc = f"# T\n\n~~~\n{_prose(240)}\n~~~\n"
+        (tmp_path / "a.md").write_text(doc, encoding="utf-8")
+
+        assert ed.census(tmp_path) == {}
+
+
+class TestDominatedByOneSpan:
+    """A line carried by one inline code span has no legal wrap point either.
+
+    A newline inside backticks changes the literal, so a 254-character `uv run pytest ...` cannot
+    be split. Narrow on purpose: "wrap it in backticks" must not become an escape hatch.
+    """
+
+    def test_a_line_carried_by_one_span_is_exempt(self, ed: ModuleType, tmp_path: Path) -> None:
+        (tmp_path / "a.md").write_text(f"see `{_prose(230)}` now\n", encoding="utf-8")
+
+        assert ed.census(tmp_path) == {}
+
+    def test_prose_that_is_long_without_the_span_is_still_counted(
+        self, ed: ModuleType, tmp_path: Path
+    ) -> None:
+        """The escape hatch closed: a long line does not become legal by containing some code."""
+        (tmp_path / "a.md").write_text(f"{_prose(230)} `x` {_prose(60)}\n", encoding="utf-8")
+
+        assert ed.census(tmp_path) == {"a.md": 1}
+
+    def test_a_line_with_no_span_is_unaffected(self, ed: ModuleType, tmp_path: Path) -> None:
+        (tmp_path / "a.md").write_text(_prose(240) + "\n", encoding="utf-8")
+
+        assert ed.census(tmp_path) == {"a.md": 1}

@@ -76,9 +76,25 @@ is injected; unchanged host-mode behavior otherwise.
 
 ## Implementation Sequence (pseudocode)
 
-1. `factory.resolve_runner(cwd: Path, executor: SubprocessExecutor | None = None) -> QARunnerInterface`: thread `executor` through to whichever language-runner constructor is selected (all 5 already accept it). After selection, if `executor` is a `ContainerSubprocessExecutor` and the selected class is not `PythonQARunner`, `logger.warning("container sandboxing is validated for Python projects only; %s may not have its toolchain available in the sandbox image", runner.language_name)` — centralizes Finding #9's warning in one place.
-2. `QARunnerAtom.__init__(self, cwd: Path, language: str = "python", sandbox_settings: SandboxSettings | None = None) -> None`: if `sandbox_settings is None or sandbox_settings.execution_mode == "host"`, behavior is byte-for-byte identical to today (`executor=None` passed to `resolve_runner`, preserving NFR-7). Else, build `mounts = ContainerMounts(source_root=cwd, scratch_root=cwd/".specweaver"/".sandbox"/"scratch", cache_root=cwd/".specweaver"/".sandbox"/"cache")`, construct `ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)`, pass it as `executor=` to `resolve_runner`.
-3. `PythonQARunner`: `_run_tach_check()` skips the host-side `shutil.which("tach")` pre-check when `isinstance(self._executor, ContainerSubprocessExecutor)`. All 6 methods catch `ContainerEngineUnavailableError` and convert it to the same synthetic-failure shape each already builds for its `<timeout>` case. Artifact-writing paths (`COVERAGE_FILE`, `--junitxml`, `--cache-dir`/`PYTHONDONTWRITEBYTECODE`) redirect into `/scratch` when the executor is a `ContainerSubprocessExecutor` (FR-4/AD-5).
+1. `factory.resolve_runner(cwd: Path, executor: SubprocessExecutor | None = None) -> QARunnerInterface`:
+   thread `executor` through to whichever language-runner constructor is selected (all 5 already
+   accept it). After selection, if `executor` is a `ContainerSubprocessExecutor` and the selected
+   class is not `PythonQARunner`,
+   `logger.warning("container sandboxing is validated for Python projects only; %s may not have its toolchain available in the sandbox image", runner.language_name)`
+   — centralizes Finding #9's warning in one place.
+2. `QARunnerAtom.__init__(self, cwd: Path, language: str = "python", sandbox_settings: SandboxSettings | None = None) -> None`:
+   if `sandbox_settings is None or sandbox_settings.execution_mode == "host"`, behavior is
+   byte-for-byte identical to today (`executor=None` passed to `resolve_runner`, preserving NFR-7).
+   Else, build
+   `mounts = ContainerMounts(source_root=cwd, scratch_root=cwd/".specweaver"/".sandbox"/"scratch", cache_root=cwd/".specweaver"/".sandbox"/"cache")`,
+   construct `ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)`, pass it as `executor=` to
+   `resolve_runner`.
+3. `PythonQARunner`: `_run_tach_check()` skips the host-side `shutil.which("tach")` pre-check when
+   `isinstance(self._executor, ContainerSubprocessExecutor)`. All 6 methods catch
+   `ContainerEngineUnavailableError` and convert it to the same synthetic-failure shape each already
+   builds for its `<timeout>` case. Artifact-writing paths (`COVERAGE_FILE`, `--junitxml`,
+   `--cache-dir`/`PYTHONDONTWRITEBYTECODE`) redirect into `/scratch` when the executor is a
+   `ContainerSubprocessExecutor` (FR-4/AD-5).
 
 ## Test Plan
 

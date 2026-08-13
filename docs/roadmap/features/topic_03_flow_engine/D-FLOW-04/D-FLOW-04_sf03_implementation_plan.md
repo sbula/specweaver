@@ -8,14 +8,24 @@
 
 ## Goal Description
 
-Instrument every module in `src/specweaver/` with structured logging calls. SF-01 (committed) established the logging infrastructure: `RichHandler` for colorized console output (WARNING+) and `JSONFormatter` with `RotatingFileHandler` for persistent DEBUG-level JSON logs to `~/.specweaver/logs/<project>/specweaver.log`. SF-03 rolls out actual `logger.debug()`, `logger.info()`, `logger.warning()`, and `logger.error()` calls across every class and public method in the codebase.
+Instrument every module in `src/specweaver/` with structured logging calls. SF-01 (committed)
+established the logging infrastructure: `RichHandler` for colorized console output (WARNING+) and
+`JSONFormatter` with `RotatingFileHandler` for persistent DEBUG-level JSON logs to
+`~/.specweaver/logs/<project>/specweaver.log`. SF-03 rolls out actual `logger.debug()`,
+`logger.info()`, `logger.warning()`, and `logger.error()` calls across every class and public method
+in the codebase.
 
 > [!NOTE]
 > **Research Notes Synthesis**
-> - ~47 modules already have `logger = logging.getLogger(__name__)` AND active log calls (e.g., `core/flow/runner.py`, `context/inferrer.py`, `config/database.py`). These need an **audit pass** — verify their logging is comprehensive (method entry, error paths, key decisions).
+> - ~47 modules already have `logger = logging.getLogger(__name__)` AND active log calls (e.g.,
+>   `core/flow/runner.py`, `context/inferrer.py`, `config/database.py`). These need an **audit
+>   pass** — verify their logging is comprehensive (method entry, error paths, key decisions).
 > - ~10 modules have `logger = logging.getLogger(__name__)` declared but minimal/no actual log calls. These need log calls **added**.
 > - ~30+ modules have neither `import logging` nor a logger declaration. These need the full treatment (import, declaration, and calls).
-> - The logging infrastructure is in `src/specweaver/telemetry_logger.py`. All modules under the `specweaver` namespace automatically route to this infrastructure via Python's logger hierarchy (`logging.getLogger(__name__)` → `specweaver.core.config.settings` → propagates to root `specweaver` logger).
+> - The logging infrastructure is in `src/specweaver/telemetry_logger.py`. All modules under the
+>   `specweaver` namespace automatically route to this infrastructure via Python's logger hierarchy
+>   (`logging.getLogger(__name__)` → `specweaver.core.config.settings` → propagates to root
+>   `specweaver` logger).
 
 ## Resolved Design Decisions
 
@@ -51,25 +61,39 @@ Instrument every module in `src/specweaver/` with structured logging calls. SF-0
 - `src/specweaver/assurance/validation/rules/code/*.py` — pure validation functions (input→finding), too granular for logging
 
 > [!NOTE]
-> **How to determine if a file should be excluded**: Open the file. If it contains ONLY: Pydantic `BaseModel` classes, `TypedDict` definitions, `Enum` definitions, `Protocol` definitions, string constants, `ToolDefinition` lists, or `@abstractmethod` stubs — it is excluded. If it has ANY method with real control flow (if/else, try/except, loops, function calls), it is included.
+> **How to determine if a file should be excluded**: Open the file. If it contains ONLY: Pydantic
+> `BaseModel` classes, `TypedDict` definitions, `Enum` definitions, `Protocol` definitions, string
+> constants, `ToolDefinition` lists, or `@abstractmethod` stubs — it is excluded. If it has ANY
+> method with real control flow (if/else, try/except, loops, function calls), it is included.
 
 ## What "Audit Existing Logging" Means — Concrete Checklist
 
 > [!IMPORTANT]
-> **When a file is marked "Has logger" with "Audit" instructions, follow this checklist for EVERY public method in the file.** Do NOT just check that a logger exists and move on. The goal is to verify that every public method has adequate logging coverage.
+> **When a file is marked "Has logger" with "Audit" instructions, follow this checklist for EVERY
+> public method in the file.** Do NOT just check that a logger exists and move on. The goal is to
+> verify that every public method has adequate logging coverage.
 
 For each public method (no leading `_`) in the file, verify:
 
 1. **Entry log exists?** — Is there a `logger.debug("method_name called ...")` at or near the top of the method? If not → add one.
-2. **Error paths logged?** — For every `raise` statement: is there a `logger.error()` or `logger.warning()` before it? For every `except` clause: is there a `logger.warning()`, `logger.error()`, or `logger.exception()`? If not → add one.
-3. **Key decision points logged?** — For if/else branches that choose between fundamentally different behaviors (e.g., fallback to default, skip vs. process): is there a `logger.info()` or `logger.debug()` on the chosen branch? If not → add one.
-4. **Result/exit log exists?** — For methods that return a meaningful result (not `None`): is there a `logger.debug("method_name completed ...")` near the return? This is OPTIONAL — add only if the method is complex (5+ lines of logic). Simple methods need only an entry log.
+2. **Error paths logged?** — For every `raise` statement: is there a `logger.error()` or
+   `logger.warning()` before it? For every `except` clause: is there a `logger.warning()`,
+   `logger.error()`, or `logger.exception()`? If not → add one.
+3. **Key decision points logged?** — For if/else branches that choose between fundamentally
+   different behaviors (e.g., fallback to default, skip vs. process): is there a `logger.info()` or
+   `logger.debug()` on the chosen branch? If not → add one.
+4. **Result/exit log exists?** — For methods that return a meaningful result (not `None`): is there
+   a `logger.debug("method_name completed ...")` near the return? This is OPTIONAL — add only if the
+   method is complex (5+ lines of logic). Simple methods need only an entry log.
 
 If all 4 checks pass → the file needs no changes. Mark it as audited and move on.
 If any check fails → add the missing log call(s).
 
 > [!NOTE]
-> **Staleness warning**: The "Has logger" / "Missing logger" annotations in this plan reflect the codebase state as of 2026-03-29. The `/dev` workflow mandates re-reading each file before editing. Always verify the actual file state — do NOT trust these annotations blindly. A file marked "Has logger" might have been refactored since this plan was written.
+> **Staleness warning**: The "Has logger" / "Missing logger" annotations in this plan reflect the
+> codebase state as of 2026-03-29. The `/dev` workflow mandates re-reading each file before editing.
+> Always verify the actual file state — do NOT trust these annotations blindly. A file marked "Has
+> logger" might have been refactored since this plan was written.
 
 ## Scope Boundaries
 
@@ -203,7 +227,9 @@ Core domain modules that perform business logic.
 - `reviewer.py` — **Has logger**. Audit: ensure review invocation, LLM call, verdict parsing log at DEBUG/INFO.
 
 #### workflows/drafting/ (3 files)
-- `drafter.py` — **Missing logger entirely**. Add `import logging` + `logger = logging.getLogger(__name__)`. Add: `draft()` entry with component name at DEBUG, section iteration at DEBUG, file write at INFO. `_generate_section()` LLM call at DEBUG.
+- `drafter.py` — **Missing logger entirely**. Add `import logging` +
+  `logger = logging.getLogger(__name__)`. Add: `draft()` entry with component name at DEBUG, section
+  iteration at DEBUG, file write at INFO. `_generate_section()` LLM call at DEBUG.
 - `decomposition.py` — Add logger. Log decomposition steps at DEBUG.
 - `feature_drafter.py` — Add logger. Log feature drafting steps at DEBUG.
 
@@ -288,7 +314,9 @@ Core domain modules that perform business logic.
 - core/flow/interfaces/cli.py — Add logger if missing.
 
 > [!NOTE]
-> **CLI logging pattern**: CLI modules use console.print() for user-facing output. The logger.debug() calls added here capture operational state for post-mortem debugging. They are NOT visible to the terminal user.
+> **CLI logging pattern**: CLI modules use console.print() for user-facing output. The
+> logger.debug() calls added here capture operational state for post-mortem debugging. They are NOT
+> visible to the terminal user.
 
 #### interfaces/api/ (multiple files)
 - `app.py` — Add logger if missing. Log app startup/config at INFO.
@@ -323,7 +351,10 @@ logger = logging.getLogger(__name__)
 ```
 
 > [!CAUTION]
-> The `import logging` goes in the standard-library imports section (alphabetically). The `logger = logging.getLogger(__name__)` goes AFTER the last import, BEFORE any constants or class definitions. This is the existing project convention (see `core/flow/runner.py`, `config/database.py` for reference).
+> The `import logging` goes in the standard-library imports section (alphabetically). The
+> `logger = logging.getLogger(__name__)` goes AFTER the last import, BEFORE any constants or class
+> definitions. This is the existing project convention (see `core/flow/runner.py`,
+> `config/database.py` for reference).
 
 ### Log level guidance
 
@@ -457,7 +488,9 @@ Add the `import logging` + `logger = logging.getLogger(__name__)` + log calls to
 No refactoring needed for logging additions. Run lint (`ruff check`) and fix any issues.
 
 > [!NOTE]
-> **TDD mapping to tasks**: Each task in `task.md` maps to 1-3 closely related files. The test file `test_logging_rollout.py` grows incrementally — add the Red test for the current task batch, then Green the implementation. You do NOT need to write all tests upfront.
+> **TDD mapping to tasks**: Each task in `task.md` maps to 1-3 closely related files. The test file
+> `test_logging_rollout.py` grows incrementally — add the Red test for the current task batch, then
+> Green the implementation. You do NOT need to write all tests upfront.
 
 ---
 
@@ -595,7 +628,9 @@ python run_integ_tests.py
 python run_e2e_tests.py
 ```
 
-2. **Logging smoke test** — `tests/unit/test_logging_rollout.py` (created incrementally during TDD). Uses pytest `caplog` fixture. Skeleton provided in the "TDD Pattern" section above. Spot-checks from each batch:
+2. **Logging smoke test** — `tests/unit/test_logging_rollout.py` (created incrementally during TDD).
+   Uses pytest `caplog` fixture. Skeleton provided in the "TDD Pattern" section above. Spot-checks
+   from each batch:
    - Batch 1: `config/settings.py` → `load_settings()` emits DEBUG log (via `caplog`)
    - Batch 2: `workflows/drafting/drafter.py` → module-level `logger` attribute exists and is a `logging.Logger`
    - Batch 3: `infrastructure/llm/prompt_builder.py` → module-level `logger` attribute exists

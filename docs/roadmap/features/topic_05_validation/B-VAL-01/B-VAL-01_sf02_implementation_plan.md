@@ -7,7 +7,10 @@
 - **Status**: COMPLETED
 
 ## Goal Description
-Expose the previously built AST Drift Engine (SF-01) through the SpecWeaver CLI via the `sw drift` command. It integrates the pure-logic `detect_drift` capabilities into the intelligent execution flow (`flow/` layer), fetching the necessary lineage UUIDs, locating the parent Spec/Plan, doing the check, and optionally invoking an LLM via `--analyze` to root-cause any detected AST drifts. 
+Expose the previously built AST Drift Engine (SF-01) through the SpecWeaver CLI via the `sw drift`
+command. It integrates the pure-logic `detect_drift` capabilities into the intelligent execution
+flow (`flow/` layer), fetching the necessary lineage UUIDs, locating the parent Spec/Plan, doing the
+check, and optionally invoking an LLM via `--analyze` to root-cause any detected AST drifts. 
 
 ## Proposed Changes
 
@@ -41,7 +44,9 @@ Implementation of the `DriftCheckHandler`.
 - Resolves the baseline constraints from the `PlanArtifact`. (via `--plan` or DB fallback).
 - Reads the AST of the target file.
 - Executes `drift_detector.detect_drift(file_ast, expected_signatures)`.
-- **LLM Extension (FR-5)**: If `step.params.get("analyze")` is True, formats the structural failures into a prompt, invokes the LLM through `context.llm`, and outputs a Human-Readable Root-Cause Analysis.
+- **LLM Extension (FR-5)**: If `step.params.get("analyze")` is True, formats the structural failures
+  into a prompt, invokes the LLM through `context.llm`, and outputs a Human-Readable Root-Cause
+  Analysis.
 
 #### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/handlers.py)
 - Import `DriftCheckHandler` from `_drift.py` and map it to `(StepAction.DETECT, StepTarget.DRIFT)` in `StepHandlerRegistry`.
@@ -50,8 +55,13 @@ Implementation of the `DriftCheckHandler`.
 
 > [!WARNING]
 > **Plan Resolution Constraints**
-> Lineage DB tracks artifact parent/child UUIDs, but not exact file paths. To resolve a Plan for a target code file automatically (without demanding a `--plan` CLI flag), the Flow handler will trace `Code UUID` -> `Spec UUID` -> `Plan UUID`. It will then scan `specs/*_plan.yaml` to find the file matching `Plan UUID`. Is this file scan O(N) acceptable for our NFRs? 
-> **Recommendation**: Since standard validation demands `--spec`, we should just add `--plan` to `sw drift check <file> --plan <plan_yaml>`. This keeps it 100% fast, avoids globbing, and is explicit. Do you approve adding `--plan`?
+> Lineage DB tracks artifact parent/child UUIDs, but not exact file paths. To resolve a Plan for a
+> target code file automatically (without demanding a `--plan` CLI flag), the Flow handler will
+> trace `Code UUID` -> `Spec UUID` -> `Plan UUID`. It will then scan `specs/*_plan.yaml` to find the
+> file matching `Plan UUID`. Is this file scan O(N) acceptable for our NFRs? 
+> **Recommendation**: Since standard validation demands `--spec`, we should just add `--plan` to
+> `sw drift check <file> --plan <plan_yaml>`. This keeps it 100% fast, avoids globbing, and is
+> explicit. Do you approve adding `--plan`?
 
 ## Verification Plan
 

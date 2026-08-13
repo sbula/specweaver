@@ -4,11 +4,20 @@
 
 The system employs a multi-provider auto-discovery registry for its underlying LLM backends (introduced in Feature 3.12a).
 
-- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the `registry.py` module. No hardcoded imports or central dictionary registrations are needed, and the folder functions as a PEP 420 Implicit Namespace Package.
+- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an
+  `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the
+  `registry.py` module. No hardcoded imports or central dictionary registrations are needed, and the
+  folder functions as a PEP 420 Implicit Namespace Package.
 - **Supported Providers**: Natively supports `gemini`, `openai`, `anthropic`, `mistral`, and `qwen`.
-- **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the factory cleanly falls back to `gemini`.
-- **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry, totally invisible to the underlying adapter logic.
-- **Cost Aggregation**: The registry dynamically aggregates `default_costs` mappings from all discovered adapters into a unified tier-sheet, ensuring new providers automatically inject their pricing rules without central hardcoding.
+- **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database
+  profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the
+  factory cleanly falls back to `gemini`.
+- **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a
+  `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry,
+  totally invisible to the underlying adapter logic.
+- **Cost Aggregation**: The registry dynamically aggregates `default_costs` mappings from all
+  discovered adapters into a unified tier-sheet, ensuring new providers automatically inject their
+  pricing rules without central hardcoding.
 
 ## LLM Function-Calling Dispatch
 
@@ -48,7 +57,9 @@ respective tools in `sandbox/{domain}/`, NOT centralized in a separate module.
 
 The system leverages a structured, token-aware `PromptBuilder` to assemble LLM system prompts, instructions, files, and modular boundaries into XML-tagged blocks. 
 
-To resolve the vulnerability to XML/HTML injection and the tight compile-time coupling between domain layers (like graph topology) and LLM infrastructure layers, the architecture implements a **Pluggable Context Protocol** and an **Injection-Safe Escaping Engine**.
+To resolve the vulnerability to XML/HTML injection and the tight compile-time coupling between
+domain layers (like graph topology) and LLM infrastructure layers, the architecture implements a
+**Pluggable Context Protocol** and an **Injection-Safe Escaping Engine**.
 
 ### Modularity & Dependency Inversion (Duck-Typing Protocol)
 
@@ -62,10 +73,14 @@ This directory isolates:
 * `adapter.py`: Consolidates all input prompt adapters (`StringPromptAdapter`, `FilePromptAdapter`, `ProjectMetadataPromptAdapter`).
 
 The core interface is the `PromptContentSource` protocol:
-* **`get_prompt_content(char_limit: int | None = None)`**: Returns the text content to inject into the prompt, with optional raw content slicing before formatting/escaping to prevent XML/CDATA breakout on dynamic budget truncation.
+* **`get_prompt_content(char_limit: int | None = None)`**: Returns the text content to inject into
+  the prompt, with optional raw content slicing before formatting/escaping to prevent XML/CDATA
+  breakout on dynamic budget truncation.
 * **`get_prompt_label()`**: Returns the identifier/name of the context block.
 
-Domain models (like `TopologyContext` in `assurance/graph`) implement these two methods natively. Because Python protocols are structurally resolved (duck-typed), the domain models satisfy the prompt injection contract without importing any LLM classes or modules.
+Domain models (like `TopologyContext` in `assurance/graph`) implement these two methods natively.
+Because Python protocols are structurally resolved (duck-typed), the domain models satisfy the
+prompt injection contract without importing any LLM classes or modules.
 
 Below is the package layout and boundary graph showing this clean layer separation:
 

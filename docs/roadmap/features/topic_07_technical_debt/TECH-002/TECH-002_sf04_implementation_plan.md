@@ -30,7 +30,9 @@ Three validation rules in `assurance/validation/rules/code/` directly import fro
 | C04 `CoverageRule` | [c04_coverage.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/code/c04_coverage.py) | `from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom` (L52) | 52 |
 | C05 `ImportDirectionRule` | [c05_import_direction.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/code/c05_import_direction.py) | `from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom` (L40) | 40 |
 
-C05 also imports `from specweaver.core.config.dal_resolver import DALResolver` (L39). This import is legitimate for `assurance.validation` (`consumes: specweaver/config`) but moves to the hydrator because it is only needed for atom invocation context.
+C05 also imports `from specweaver.core.config.dal_resolver import DALResolver` (L39). This import is
+legitimate for `assurance.validation` (`consumes: specweaver/config`) but moves to the hydrator
+because it is only needed for atom invocation context.
 
 ### 1.2 Three Call Sites
 
@@ -46,7 +48,10 @@ The design doc (SF-04 scope) identifies three call sites that must route through
 
 The `Rule` ABC ([models.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/models.py)) already supports context injection:
 - `rule.context` is a `dict[str, Any]` property (getter returns `self._context`, setter assigns).
-- The [executor.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/executor.py#L184-L187) already merges `ast_payload` and any `context` dict into `rule.context = base_context` after instantiation (lines 184-187).
+- The
+  [executor.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/executor.py#L184-L187)
+  already merges `ast_payload` and any `context` dict into `rule.context = base_context` after
+  instantiation (lines 184-187).
 - SF-04 rules will read QA results from `self.context` via the agreed keys.
 
 ### 1.4 Context Data Shape (HITL-Resolved: H-1)
@@ -60,7 +65,9 @@ Where `status` is the **uppercase** `AtomStatus` enum value string (e.g., `"FAIL
 C03 needs `status` and `message` for timeout detection. C04 and C05 only need `exports`.
 
 > [!CAUTION]
-> **Bug fix in C04:** The current C04 (line 67) compares `result.status == "failed"` (lowercase string) against the `AtomStatus` enum. After SF-04, the status string is `"FAILED"` (uppercase, from `AtomStatus.FAILED.value`). Both C03 and C04 must compare against `"FAILED"` consistently.
+> **Bug fix in C04:** The current C04 (line 67) compares `result.status == "failed"` (lowercase
+> string) against the `AtomStatus` enum. After SF-04, the status string is `"FAILED"` (uppercase,
+> from `AtomStatus.FAILED.value`). Both C03 and C04 must compare against `"FAILED"` consistently.
 
 ### 1.5 Context Key Contract (from Design Doc)
 
@@ -81,11 +88,17 @@ C03 needs `status` and `message` for timeout detection. C04 and C05 only need `e
 
 The design doc (AD-5) mandates: "CLI and API will delegate validation checks to a new `execute_validation_flow` entry point in `core.flow`."
 
-This is implemented as a public function in a new module `core/flow/handlers/validation_hydrator.py`. The function `execute_validation_flow` performs hydration AND calls `execute_validation_pipeline` — it is a complete replacement for the direct `execute_validation_pipeline` call in CLI and API. This prevents CLI/API from needing to know about hydration at all.
+This is implemented as a public function in a new module
+`core/flow/handlers/validation_hydrator.py`. The function `execute_validation_flow` performs
+hydration AND calls `execute_validation_pipeline` — it is a complete replacement for the direct
+`execute_validation_pipeline` call in CLI and API. This prevents CLI/API from needing to know about
+hydration at all.
 
 ### 1.8 AD-8: Optimize QA Executions
 
-The hydration logic inspects `pipeline.steps` for active rule IDs (`C03`, `C04`, `C05`) BEFORE instantiating any `QARunnerAtom`. If all three are disabled, no atoms are created and no subprocesses are run.
+The hydration logic inspects `pipeline.steps` for active rule IDs (`C03`, `C04`, `C05`) BEFORE
+instantiating any `QARunnerAtom`. If all three are disabled, no atoms are created and no
+subprocesses are run.
 
 ### 1.9 Existing Test Coverage for Rules
 
@@ -97,11 +110,15 @@ The hydration logic inspects `pipeline.steps` for active rule IDs (`C03`, `C04`,
 
 > [!IMPORTANT]
 > **HITL-Resolved (M-5): Test migration strategy is Option 2 — Replace with new files.**
-> The old test files will be replaced entirely with new test files that use context injection. Generator tests and runner filtering tests from `test_code_rules_execution.py` that are unaffected by SF-04 will be preserved in their original file.
+> The old test files will be replaced entirely with new test files that use context injection.
+> Generator tests and runner filtering tests from `test_code_rules_execution.py` that are unaffected
+> by SF-04 will be preserved in their original file.
 
 ### 1.10 C04 Target Path Bug
 
-C04 line 59 passes `str(spec_path)` as the `target` to `QARunnerAtom`. But `spec_path` in the flow handler context is the *spec* file, not the code file. The hydrator fixes this by always using the correct `code_path`.
+C04 line 59 passes `str(spec_path)` as the `target` to `QARunnerAtom`. But `spec_path` in the flow
+handler context is the *spec* file, not the code file. The hydrator fixes this by always using the
+correct `code_path`.
 
 ### 1.11 Test File Path Derivation (HITL-Resolved: H-2)
 
@@ -130,7 +147,9 @@ A systematic audit revealed that `dal_level` is broken at **every layer** betwee
 3. **Tests**: Add atom dal_level forwarding tests and PythonQARunner DAL-awareness tests
 
 > [!CAUTION]
-> Without the atom fix, the hydrator would pass `dal_level` into a void — the same silent failure as today. Without the PythonQARunner fix, even a correctly forwarded `dal_level` would be ignored by the runner.
+> Without the atom fix, the hydrator would pass `dal_level` into a void — the same silent failure as
+> today. Without the PythonQARunner fix, even a correctly forwarded `dal_level` would be ignored by
+> the runner.
 
 ---
 
@@ -293,7 +312,9 @@ def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
 4. Replace with `self.context.get("qa_architecture_result")` lookup.
 5. If key is missing → `self._skip("Architecture check results not available")`.
 6. Parse `result_data["exports"]` dict directly for `violation_count` and `violations`.
-7. **Remove the `_FORBIDDEN_IMPORTS` list** (lines 17-19). It becomes dead code after refactoring — the `context.yaml` forbids patterns enforced by the hydrator/runner are the authoritative source now.
+7. **Remove the `_FORBIDDEN_IMPORTS` list** (lines 17-19). It becomes dead code after refactoring —
+   the `context.yaml` forbids patterns enforced by the hydrator/runner are the authoritative source
+   now.
 
 **New `check()` method structure:**
 ```python
@@ -333,7 +354,9 @@ def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
 ```
 
 > [!NOTE]
-> The `_FORBIDDEN_IMPORTS` list is removed (dead code after refactoring — H-3). The `import logging` and `logging.getLogger(__name__)` call that was inline inside `check()` can optionally be moved to module scope.
+> The `_FORBIDDEN_IMPORTS` list is removed (dead code after refactoring — H-3). The `import logging`
+> and `logging.getLogger(__name__)` call that was inline inside `check()` can optionally be moved to
+> module scope.
 
 ---
 
@@ -400,17 +423,29 @@ def execute_validation_flow(
 1. Extract active rule IDs: `active_rules = {step.rule for step in pipeline.steps}`.
 2. Instantiate `QARunnerAtom` only if any of `C03`, `C04`, `C05` are active. Reuse one atom instance.
 3. For each active rule, run the appropriate atom intent inside a try/except:
-   - `"C03"`: Derive test file path (project root → `tests/` rglob). If found, run `atom.run({"intent": "run_tests", "target": relative_test_path, "timeout": 60})`. Serialize: `{"status": result.status.value, "message": result.message, "exports": result.exports}`. If no test file found, set key to `None`.
-   - `"C04"`: Run `atom.run({"intent": "run_tests", "target": str(code_path), "coverage": True, "coverage_threshold": threshold, "timeout": 120})`. Same serialization. The `threshold` comes from pipeline step params (if available) or defaults to 70.
-   - `"C05"`: Resolve DAL via `DALResolver(project_root).resolve(code_path)`. Run `atom.run({"intent": "run_architecture", "target": str(code_path.absolute()), "dal_level": dal_enum})`. Same serialization.
-4. On exception per atom: Set context key to `{"status": "FAILED", "message": f"Hydration error: {e}", "exports": {}}`. This allows the rule to fail/skip with a descriptive message while other rules (C01, C02, C06, C07, C08) continue.
+   - `"C03"`: Derive test file path (project root → `tests/` rglob). If found, run
+     `atom.run({"intent": "run_tests", "target": relative_test_path, "timeout": 60})`. Serialize:
+     `{"status": result.status.value, "message": result.message, "exports": result.exports}`. If no
+     test file found, set key to `None`.
+   - `"C04"`: Run
+     `atom.run({"intent": "run_tests", "target": str(code_path), "coverage": True, "coverage_threshold": threshold, "timeout": 120})`.
+     Same serialization. The `threshold` comes from pipeline step params (if available) or defaults
+     to 70.
+   - `"C05"`: Resolve DAL via `DALResolver(project_root).resolve(code_path)`. Run
+     `atom.run({"intent": "run_architecture", "target": str(code_path.absolute()), "dal_level": dal_enum})`. Same serialization.
+4. On exception per atom: Set context key to
+   `{"status": "FAILED", "message": f"Hydration error: {e}", "exports": {}}`. This allows the rule
+   to fail/skip with a descriptive message while other rules (C01, C02, C06, C07, C08) continue.
 5. Return the context dict.
 
 > [!IMPORTANT]
 > **AD-8 compliance:** If C03/C04/C05 are ALL disabled in the pipeline (via settings), no `QARunnerAtom` is instantiated and no subprocesses run.
 
 > [!WARNING]
-> **C04 threshold extraction:** The hydrator must extract the `threshold` param from the C04 pipeline step (`step.params.get("threshold", 70)`) to pass to the atom. This matches the current behavior where C04 constructs `QARunnerAtom` with `coverage_threshold=self._threshold` from its constructor.
+> **C04 threshold extraction:** The hydrator must extract the `threshold` param from the C04
+> pipeline step (`step.params.get("threshold", 70)`) to pass to the atom. This matches the current
+> behavior where C04 constructs `QARunnerAtom` with `coverage_threshold=self._threshold` from its
+> constructor.
 
 ---
 
@@ -468,7 +503,9 @@ else:
 ```
 
 > [!NOTE]
-> The CLI is in `assurance/validation/interfaces/` which `depends_on: ["specweaver.core.flow"]` (tach.toml line 40). Importing from `core.flow.handlers` is legal. The import is lazy (inside the `if` branch) to avoid loading sandbox modules for non-code validation.
+> The CLI is in `assurance/validation/interfaces/` which `depends_on: ["specweaver.core.flow"]`
+> (tach.toml line 40). Importing from `core.flow.handlers` is legal. The import is lazy (inside the
+> `if` branch) to avoid loading sandbox modules for non-code validation.
 
 ---
 
@@ -497,7 +534,9 @@ else:
 > [!NOTE]
 > `specweaver.interfaces.api` `depends_on: ["specweaver.core.flow"]` (tach.toml line 81). The import is lazy for the same reason as the CLI.
 >
-> The API context.yaml has `forbids: specweaver/sandbox/*` (line 25). `execute_validation_flow` lives in `core.flow.handlers`, NOT in `sandbox`, so this import is legal. The sandbox imports happen inside the hydrator, which is in the flow layer.
+> The API context.yaml has `forbids: specweaver/sandbox/*` (line 25). `execute_validation_flow`
+> lives in `core.flow.handlers`, NOT in `sandbox`, so this import is legal. The sandbox imports
+> happen inside the hydrator, which is in the flow layer.
 
 ---
 
@@ -535,7 +574,9 @@ else:
 ```
 
 > [!NOTE]
-> This is a 2-line fix + docstring update (L-1). The `dal_level` value flows from the hydrator's context dict through the atom to the language-specific runner. Without this fix, the hydrator would pass `dal_level` into a void.
+> This is a 2-line fix + docstring update (L-1). The `dal_level` value flows from the hydrator's
+> context dict through the atom to the language-specific runner. Without this fix, the hydrator
+> would pass `dal_level` into a void.
 
 ---
 
@@ -549,7 +590,11 @@ else:
 3. Log `dal_level` for diagnostic purposes
 4. Continue running tach as before for global boundary violations
 
-**Design rationale:** TypeScript uses ESLint with `no-restricted-imports` and Java uses ArchUnit — both dynamically generated from `context.yaml` forbids. For Python, the equivalent is AST-based import scanning: parse the target file's `import` and `from ... import` statements and check them against the `context.yaml` forbids glob patterns. This supplements tach (which checks `tach.toml` module boundaries) with per-file `context.yaml` forbids checking.
+**Design rationale:** TypeScript uses ESLint with `no-restricted-imports` and Java uses ArchUnit —
+both dynamically generated from `context.yaml` forbids. For Python, the equivalent is AST-based
+import scanning: parse the target file's `import` and `from ... import` statements and check them
+against the `context.yaml` forbids glob patterns. This supplements tach (which checks `tach.toml`
+module boundaries) with per-file `context.yaml` forbids checking.
 
 **Changes to `run_architecture_check` (line 427-473):**
 
@@ -723,13 +768,20 @@ def run_architecture_check(
 ```
 
 > [!IMPORTANT]
-> **Two-phase architecture:** Phase 1 checks `context.yaml` forbids via AST import scanning (per-file, like TS/Java). Phase 2 runs tach globally (existing behavior). Results are merged. This means both tach boundary violations AND context.yaml forbids violations are reported.
+> **Two-phase architecture:** Phase 1 checks `context.yaml` forbids via AST import scanning
+> (per-file, like TS/Java). Phase 2 runs tach globally (existing behavior). Results are merged. This
+> means both tach boundary violations AND context.yaml forbids violations are reported.
 
 > [!IMPORTANT]
-> **H-1 clarification:** `_check_forbids` and `_run_tach_check` are **methods of `PythonQARunner`**, not standalone functions. The code above uses proper method indentation (4-space indent inside the class body). The `self` parameter confirms they access instance state (`self._cwd`, `self._build_architecture_result`).
+> **H-1 clarification:** `_check_forbids` and `_run_tach_check` are **methods of `PythonQARunner`**,
+> not standalone functions. The code above uses proper method indentation (4-space indent inside the
+> class body). The `self` parameter confirms they access instance state (`self._cwd`,
+> `self._build_architecture_result`).
 
 > [!NOTE]
-> The `_check_forbids` helper normalizes forbids patterns from path-style (`specweaver/sandbox/*`) to module-style (`specweaver.sandbox.*`) before matching with `fnmatch`. This matches the format used in `context.yaml` across the codebase.
+> The `_check_forbids` helper normalizes forbids patterns from path-style (`specweaver/sandbox/*`)
+> to module-style (`specweaver.sandbox.*`) before matching with `fnmatch`. This matches the format
+> used in `context.yaml` across the codebase.
 
 > [!NOTE]
 > `dal_level` is logged for diagnostics. Future enhancements (e.g., DAL_A/B treating warnings as errors) can key off this value without further plumbing changes.
@@ -833,14 +885,18 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 
 **Add `dal_level` forwarding tests** to `TestAtomRunArchitecture` (around line 536):
 
-1. `test_architecture_forwards_dal_level` — Pass `{"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B}`. Verify `run_architecture_check` is called with `dal_level=DALLevel.DAL_B`.
+1. `test_architecture_forwards_dal_level` — Pass
+   `{"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B}`. Verify
+   `run_architecture_check` is called with `dal_level=DALLevel.DAL_B`.
 2. `test_architecture_forwards_none_dal_level` — Pass `{"intent": "run_architecture", "target": "src/"}` (no dal_level key). Verify `run_architecture_check` is called with `dal_level=None`.
 
 #### [NEW] `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py`
 
 **Test PythonQARunner DAL-aware architecture checking:**
 
-1. `test_forbids_violation_detected` — Create a temp Python file with `from specweaver.sandbox.base import Atom` and a `context.yaml` with `forbids: ["specweaver/sandbox/*"]`. Verify violation is returned with code `"ForbiddenImport"`.
+1. `test_forbids_violation_detected` — Create a temp Python file with
+   `from specweaver.sandbox.base import Atom` and a `context.yaml` with
+   `forbids: ["specweaver/sandbox/*"]`. Verify violation is returned with code `"ForbiddenImport"`.
 2. `test_no_forbids_violation_when_clean` — Python file with only `import os`. Same `context.yaml`. Verify zero violations from forbids phase.
 3. `test_no_context_yaml_skips_forbids_check` — No `context.yaml` present. Only tach results returned.
 4. `test_forbids_pattern_glob_matching` — Verify `specweaver/sandbox/*` matches `specweaver.sandbox.anything.deep` but not `specweaver.core.config`.
@@ -850,7 +906,9 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 8. `test_non_python_file_skips_forbids` — Pass a `.txt` target. Verify only tach results returned.
 9. `test_directory_target_skips_forbids` — Pass a directory target. Verify only tach results returned.
 10. `test_syntax_error_in_target_skips_forbids` — Target file has invalid Python syntax. Verify forbids phase is skipped gracefully (no crash), tach results still returned.
-11. `test_type_checking_import_not_flagged` — Python file with `if TYPE_CHECKING: from specweaver.sandbox.base import Atom`. Same `context.yaml` with `forbids: ["specweaver/sandbox/*"]`. Verify **zero** forbids violations (RED-5 fix).
+11. `test_type_checking_import_not_flagged` — Python file with
+    `if TYPE_CHECKING: from specweaver.sandbox.base import Atom`. Same `context.yaml` with
+    `forbids: ["specweaver/sandbox/*"]`. Verify **zero** forbids violations (RED-5 fix).
 
 ### Manual Verification
 
@@ -928,7 +986,9 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 4. **Boundary enforcement**: Removes the last `specweaver.sandbox` dependency from `specweaver.assurance.validation` in tach.toml.
 5. **Single entry point** (AD-5): CLI and API both call `execute_validation_flow` — no risk of forgetting hydration.
 6. **Bug fix**: C04 status comparison (`"failed"` → `"FAILED"`) is corrected.
-7. **DAL-level end-to-end fix**: `dal_level` now flows from hydrator → atom → runner. The PythonQARunner checks `context.yaml` forbids (parity with TS/Java), closing a three-layer gap where the value was silently dropped.
+7. **DAL-level end-to-end fix**: `dal_level` now flows from hydrator → atom → runner. The
+   PythonQARunner checks `context.yaml` forbids (parity with TS/Java), closing a three-layer gap
+   where the value was silently dropped.
 8. **Cross-language parity**: All runners (Python, TypeScript, Java) now enforce `context.yaml` forbids boundaries per-file. Python adds AST-based import scanning alongside tach's global checks.
 
 ### Cons
@@ -955,10 +1015,14 @@ Test the new `hydrate_code_validation_context` and `execute_validation_flow` fun
 | H-10 | HIGH | TYPE_CHECKING false positives (RED-5) | **Option A:** Skip imports inside `if TYPE_CHECKING:` blocks during AST walk. Adds ~10 lines. Prevents false positive `ForbiddenImport` violations for type-only imports. |
 
 > [!IMPORTANT]
-> **Pre-commit Reminder (L-8):** Guide-2 ("How to write a validation rule that receives injected context") MUST be written during the `/pre-commit` workflow. Add this to the pre-commit checklist. It is NOT part of the SF-04 development commit.
+> **Pre-commit Reminder (L-8):** Guide-2 ("How to write a validation rule that receives injected
+> context") MUST be written during the `/pre-commit` workflow. Add this to the pre-commit checklist.
+> It is NOT part of the SF-04 development commit.
 
 ---
 
 ## 7. Backlog
 
-- **Guide-2 documentation**: To be written during pre-commit (L-8). Must document the context key contract, the `execute_validation_flow` entry point, and how new rules should read from `self.context`.
+- **Guide-2 documentation**: To be written during pre-commit (L-8). Must document the context key
+  contract, the `execute_validation_flow` entry point, and how new rules should read from
+  `self.context`.

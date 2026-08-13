@@ -4,7 +4,9 @@ This guide explains how to add new context elements (slots) to the `PromptBuilde
 
 ## Overview
 
-In SpecWeaver, the rendering sequence of context blocks (instructions, topology, memory, etc.) sent to the LLM is controlled by **Prompt Render Profiles**. This strictly isolates infrastructure mechanisms (XML rendering) from workflow policy (which context goes to which agent).
+In SpecWeaver, the rendering sequence of context blocks (instructions, topology, memory, etc.) sent
+to the LLM is controlled by **Prompt Render Profiles**. This strictly isolates infrastructure
+mechanisms (XML rendering) from workflow policy (which context goes to which agent).
 
 ## Step 1: Define the `PromptSlot`
 
@@ -50,7 +52,9 @@ FULL = RenderProfile(
 
 ## Step 3: Implement the Rendering Logic (If Custom)
 
-If your slot represents simple tagged text or standard XML attributes, **you do not need to write any rendering code**. The `render_blocks` function in `_prompt_render.py` will automatically render it using `_render_tagged_blocks`.
+If your slot represents simple tagged text or standard XML attributes, **you do not need to write
+any rendering code**. The `render_blocks` function in `_prompt_render.py` will automatically render
+it using `_render_tagged_blocks`.
 
 ### When to write a Custom Renderer:
 If your slot requires complex formatting (e.g., iterating over specific object structures, building a tree, grouping files), you must add a custom dispatch handler in `_prompt_render.py`:
@@ -87,7 +91,9 @@ builder.add_context(
 )
 ```
 
-If the active `RenderProfile` does not contain `PromptSlot.CONSOLIDATED_MEMORY` in its `active_slots`, the `add_context` call will safely ignore it, saving token budgets and eliminating unnecessary downstream I/O.
+If the active `RenderProfile` does not contain `PromptSlot.CONSOLIDATED_MEMORY` in its
+`active_slots`, the `add_context` call will safely ignore it, saving token budgets and eliminating
+unnecessary downstream I/O.
 
 ## Registering New Profiles
 

@@ -1,8 +1,12 @@
 # Feature 3.10 — Agentic Research Tools for Planning & Review
 
-Give the Planner and Reviewer agents the ability to **research** during their work — search the project's file system and the web — so they can make better-informed decisions, verify architecture fit, and discover best practices.
+Give the Planner and Reviewer agents the ability to **research** during their work — search the
+project's file system and the web — so they can make better-informed decisions, verify architecture
+fit, and discover best practices.
 
-> **Core mechanism**: LLM function calling via provider-agnostic abstraction. The LLM decides what to search, calls tools, reads results, and uses them in its output. No new CLI commands. No user-facing configuration.
+> **Core mechanism**: LLM function calling via provider-agnostic abstraction. The LLM decides what
+> to search, calls tools, reads results, and uses them in its output. No new CLI commands. No
+> user-facing configuration.
 > **Depends on**: Feature 3.6 (Plan phase)
 
 ---
@@ -95,9 +99,16 @@ class WorkspaceBoundary:
 
 > [!NOTE]
 > **How does the component-level boundary get determined?**
-> When Feature 3.1 (decomposition) decomposes a feature into sub-features per microservice, it stores the assignment in the DB: "sub-feature X belongs to microservice Y, hard boundaries = `services/auth/`". The `RunContext` is populated from this DB entry when spawning component pipelines. `WorkspaceBoundary.from_run_context()` reads `workspace_roots` (set by decomposition) and `api_contract_paths` (neighboring APIs).
+> When Feature 3.1 (decomposition) decomposes a feature into sub-features per microservice, it
+> stores the assignment in the DB: "sub-feature X belongs to microservice Y, hard boundaries =
+> `services/auth/`". The `RunContext` is populated from this DB entry when spawning component
+> pipelines. `WorkspaceBoundary.from_run_context()` reads `workspace_roots` (set by decomposition)
+> and `api_contract_paths` (neighboring APIs).
 >
-> API contract discovery uses `context.yaml` `exposes` sections from neighboring modules. For brownfield projects without `context.yaml`, convention-based discovery (`openapi.yaml`, `*_api.py`, `*_pb2.py`) is used as fallback. This will be refactored once hybrid RAG is implemented.
+> API contract discovery uses `context.yaml` `exposes` sections from neighboring modules. For
+> brownfield projects without `context.yaml`, convention-based discovery (`openapi.yaml`,
+> `*_api.py`, `*_pb2.py`) is used as fallback. This will be refactored once hybrid RAG is
+> implemented.
 >
 > If neither `workspace_roots` nor a nearby `context.yaml` exist, the boundary defaults to `project_path` (feature-level).
 
@@ -117,7 +128,10 @@ Add optional field for module-level boundary context:
 
 ## Sub-phase 3.10b: Research Tools + Agentic Loop
 
-**Goal**: Give Planner and Reviewer 6 research tools via LLM function calling (provider-agnostic). Convert their single-shot LLM calls into tool-assisted calls. The tools are **not** agents — they are simple utility functions that the agent (Planner/Reviewer) invokes via the LLM's function calling mechanism.
+**Goal**: Give Planner and Reviewer 6 research tools via LLM function calling (provider-agnostic).
+Convert their single-shot LLM calls into tool-assisted calls. The tools are **not** agents — they
+are simple utility functions that the agent (Planner/Reviewer) invokes via the LLM's function
+calling mechanism.
 
 ### Tool Definitions
 
@@ -140,7 +154,10 @@ All paths are **relative to the workspace root**. The tool implementation resolv
 | `read_url` | `url: str`, `max_chars: int` (default: 10000) | `{url, content}` — HTML stripped, truncated to max_chars |
 
 > [!IMPORTANT]
-> Web tools are **optional**. They only activate when search credentials are configured (`SEARCH_API_KEY` + `SEARCH_ENGINE_ID` env vars for Google Custom Search). When missing, the LLM simply doesn't have web tools available — no error, just fewer capabilities. Alternative backends (Brave Search, SerpAPI) can be swapped via the same interface.
+> Web tools are **optional**. They only activate when search credentials are configured
+> (`SEARCH_API_KEY` + `SEARCH_ENGINE_ID` env vars for Google Custom Search). When missing, the LLM
+> simply doesn't have web tools available — no error, just fewer capabilities. Alternative backends
+> (Brave Search, SerpAPI) can be swapped via the same interface.
 
 ### Architecture
 
@@ -169,7 +186,11 @@ def web_search(query: str, max_results: int = 5, ...) -> list[dict]: ...
 def read_url(url: str, max_chars: int = 10000) -> dict: ...
 ```
 
-File tools use `subprocess` to call `rg` (ripgrep) for grep and `fd` for find when available, falling back to Python stdlib (`pathlib.glob`, line-by-line read). All tool calls enforce a **10s timeout**. On timeout or file-count limits (1000 files for Python fallback), results include `"truncated": true` and `"warning": "..."` explaining the limitation. First fallback logs a recommendation to install ripgrep.
+File tools use `subprocess` to call `rg` (ripgrep) for grep and `fd` for find when available,
+falling back to Python stdlib (`pathlib.glob`, line-by-line read). All tool calls enforce a **10s
+timeout**. On timeout or file-count limits (1000 files for Python fallback), results include
+`"truncated": true` and `"warning": "..."` explaining the limitation. First fallback logs a
+recommendation to install ripgrep.
 
 #### [NEW] `src/specweaver/research/definitions.py`
 
@@ -360,7 +381,11 @@ async def generate_with_tools(
 ```
 
 > [!IMPORTANT]
-> **Abstraction boundary**: All Gemini-specific types (`types.FunctionDeclaration`, `types.Part.from_function_response`, `response.function_calls`) are confined to `gemini.py`. The `research/` module, `Planner`, `Reviewer`, and all shared models use only SpecWeaver's `ToolDefinition`, `ToolCall`, and `ToolExecutor`. Future adapters (OpenAI, Anthropic, etc.) implement the same conversion pattern inside their own adapter file.
+> **Abstraction boundary**: All Gemini-specific types (`types.FunctionDeclaration`,
+> `types.Part.from_function_response`, `response.function_calls`) are confined to `gemini.py`. The
+> `research/` module, `Planner`, `Reviewer`, and all shared models use only SpecWeaver's
+> `ToolDefinition`, `ToolCall`, and `ToolExecutor`. Future adapters (OpenAI, Anthropic, etc.)
+> implement the same conversion pattern inside their own adapter file.
 
 ### Planner & Reviewer Changes
 
@@ -426,7 +451,9 @@ plan = await planner.generate_plan(
 Same pattern — build `ToolExecutor` from `RunContext`, pass to `Reviewer`.
 
 > [!NOTE]
-> **Bug fix (existing)**: Both `ReviewSpecHandler` and `ReviewCodeHandler` currently do not pass `standards=context.standards` to the Reviewer. This will be fixed as part of 3.10 while modifying these handlers (one-line addition per handler).
+> **Bug fix (existing)**: Both `ReviewSpecHandler` and `ReviewCodeHandler` currently do not pass
+> `standards=context.standards` to the Reviewer. This will be fixed as part of 3.10 while modifying
+> these handlers (one-line addition per handler).
 
 ---
 

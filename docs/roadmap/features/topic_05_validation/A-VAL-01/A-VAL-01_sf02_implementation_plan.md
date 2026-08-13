@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement the gRPC Protocol parser relying on `proto-schema-parser` to extract AST schemas from `.proto` logic, mapping services directly into the normalized `ProtocolSchemaInterface` Pydantic bounds drafted in SF-01.
+Implement the gRPC Protocol parser relying on `proto-schema-parser` to extract AST schemas from
+`.proto` logic, mapping services directly into the normalized `ProtocolSchemaInterface` Pydantic
+bounds drafted in SF-01.
 
 ## Proposed Changes
 
@@ -17,7 +19,9 @@ Implement the gRPC Protocol parser relying on `proto-schema-parser` to extract A
 
 ### `core/loom/commons/protocol`
 #### [MODIFY] `src/specweaver/core/loom/commons/protocol/models.py`
-- **What it does**: Small addition if necessary (handled mostly dynamically via generic `payload: dict` or custom properties in existing models) to capture gRPC-specific semantics while resolving into standard `ProtocolEndpoint`.
+- **What it does**: Small addition if necessary (handled mostly dynamically via generic
+  `payload: dict` or custom properties in existing models) to capture gRPC-specific semantics while
+  resolving into standard `ProtocolEndpoint`.
 
 #### [NEW] `src/specweaver/core/loom/commons/protocol/grpc_parser.py`
 - **What it does**: Implements `ProtocolSchemaInterface` using `proto_schema_parser.parser.Parser`.
@@ -26,7 +30,9 @@ Implement the gRPC Protocol parser relying on `proto-schema-parser` to extract A
   - Each `rpc` method maps out to `ProtocolEndpoint` (`method` ="RPC", `path`="{service_name}/{rpc_name}").
   - `message` items are directly captured into `ProtocolMessage` models.
 > [!NOTE] 
-> Based on HITL approval, gRPC abstractions are forcibly mapped inside standard `ProtocolEndpoint` boundaries to maintain polymorphism for downstream Flow pipelines natively checking missing endpoints. 
+> Based on HITL approval, gRPC abstractions are forcibly mapped inside standard `ProtocolEndpoint`
+> boundaries to maintain polymorphism for downstream Flow pipelines natively checking missing
+> endpoints. 
 
 ## Verification Plan
 

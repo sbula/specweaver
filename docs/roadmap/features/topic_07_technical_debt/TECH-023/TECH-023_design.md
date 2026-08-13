@@ -2,7 +2,9 @@
 
 - **Feature ID**: TECH-023
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: **DELIVERED 2026-08-12 — `complexipy` reports 0 functions over 15**, from 98 when filed. See §Closed at zero. Was: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is green; **41 of 97
+- **Status**: **DELIVERED 2026-08-12 — `complexipy` reports 0 functions over 15**, from 98 when
+  filed. See §Closed at zero. Was: PARTIAL 2026-08-12 — the mechanism is delivered and the gate is
+  green; **41 of 97
   violations remain frozen** (was 93 when the ratchet shipped). See §Delivery. This stays open as
   the reduction work.
 - **Origin**: Found while running `python scripts/quality.py cb` for TECH-001 SF-04

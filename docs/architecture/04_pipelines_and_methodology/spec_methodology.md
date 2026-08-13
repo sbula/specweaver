@@ -9,7 +9,10 @@
 
 ## 1. The Problem This Solves
 
-Specifications tend to grow into monoliths. A spec starts as "define component X" and absorbs every related concern: how X works, how X fails, how X interacts with Y and Z, what X might do in the future. The result is a document that is too large to review, too tangled to implement, and too coupled to test.
+Specifications tend to grow into monoliths. A spec starts as "define component X" and absorbs every
+related concern: how X works, how X fails, how X interacts with Y and Z, what X might do in the
+future. The result is a document that is too large to review, too tangled to implement, and too
+coupled to test.
 
 **Root cause**: There is no organizing principle that tells the author "this concern belongs HERE, that concern belongs THERE, and when the document hits THIS threshold, split it."
 
@@ -37,11 +40,15 @@ When a stakeholder (customer, PO, architect) requests a feature, it typically cr
 
 **Key rule**: The Feature Spec decides *what goes where*. Individual Component Specs do not make this decision — they receive it.
 
-**Analogy**: The Feature Spec is the architect's floor plan. It says "the kitchen goes here, the bathroom goes there, and the plumbing connects them." Individual room specs describe the fixtures and finishes — not where the walls go.
+**Analogy**: The Feature Spec is the architect's floor plan. It says "the kitchen goes here, the
+bathroom goes there, and the plumbing connects them." Individual room specs describe the fixtures
+and finishes — not where the walls go.
 
 ### Level 2: Component Spec — "How does this piece work?"
 
-A Component Spec describes one isolated, implementable unit of the system. It is written **top-down**, driven by the Feature Spec's decomposition — not bottom-up by staring at the component in isolation.
+A Component Spec describes one isolated, implementable unit of the system. It is written
+**top-down**, driven by the Feature Spec's decomposition — not bottom-up by staring at the component
+in isolation.
 
 Component Specs use the **5-Section Template** (see §3).
 
@@ -126,7 +133,9 @@ Defines **rules and tunable parameters** that alter behavior without code change
 - Which component owns each excluded responsibility
 - Where to look for related concerns
 
-**Why this matters**: When someone (human or agent) wants to add "retry logic" to a data loader spec, Section 5 says *"Error recovery is NOT this component's responsibility — see the Executor component."* Without this section, every spec becomes a magnet for every related concern.
+**Why this matters**: When someone (human or agent) wants to add "retry logic" to a data loader
+spec, Section 5 says *"Error recovery is NOT this component's responsibility — see the Executor
+component."* Without this section, every spec becomes a magnet for every related concern.
 
 ---
 
@@ -229,7 +238,9 @@ When writing or reviewing a spec, use these rules to determine where a concern b
 
 > **Detailed analysis**: [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md)
 
-Most readiness tests can be partially or fully automated using **static code analysis** (no LLM tokens required). The static checks act as a gate: only borderline cases are escalated to an LLM for judgment.
+Most readiness tests can be partially or fully automated using **static code analysis** (no LLM
+tokens required). The static checks act as a gate: only borderline cases are escalated to an LLM for
+judgment.
 
 | Test | Static Accuracy | LLM Needed? |
 |------|----------------|-------------|
@@ -239,7 +250,9 @@ Most readiness tests can be partially or fully automated using **static code ana
 | **Dependency Direction** | ~90% (with component hierarchy map) | No |
 | **Day** | ~65% (composite score: size, sections, branches, states) | Only for borderline cases |
 
-**Gate model**: Static checks run on every save/commit (free, instant). LLM is invoked only when static analysis flags a borderline result and the author disputes the flag. Estimated token savings: ~80%.
+**Gate model**: Static checks run on every save/commit (free, instant). LLM is invoked only when
+static analysis flags a borderline result and the author disputes the flag. Estimated token savings:
+~80%.
 
 **Size budget enforcement** is trivially automatable: measure byte count per spec, alert on threshold exceeding.
 
@@ -249,7 +262,9 @@ Most readiness tests can be partially or fully automated using **static code ana
 
 > **Concrete walkthrough**: [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) — demonstrates all 5 tests at all 4 levels using real SpecWeaver examples.
 
-The 5 readiness tests are **not specific to specifications**. They are decomposition tests that apply at every level of software architecture. The tests are identical — only the thresholds and input format change.
+The 5 readiness tests are **not specific to specifications**. They are decomposition tests that
+apply at every level of software architecture. The tests are identical — only the thresholds and
+input format change.
 
 ### 8.1 The Levels
 
@@ -319,7 +334,9 @@ The 5 tests are not new ideas — they unify established software engineering pr
 | Dependency Direction | **Dependency Inversion Principle** (DIP) | Robert C. Martin, SOLID / Clean Architecture |
 | Day | **Right-Sizing** / task decomposition | Agile story slicing, Goldilocks principle |
 
-The contribution of this methodology is **not** inventing these principles — it's recognizing that they are **the same principles at every level**, and providing a single, automatable checklist that applies fractally from feature down to function.
+The contribution of this methodology is **not** inventing these principles — it's recognizing that
+they are **the same principles at every level**, and providing a single, automatable checklist that
+applies fractally from feature down to function.
 
 ### 8.5 Tooling Implication
 
@@ -344,14 +361,22 @@ The `--level` parameter selects the threshold set. The input type (`.md` vs `.py
 
 1. **Feature Spec ownership**: Who creates the Feature Spec — the PO, the architect, or the HITL during an agent-assisted session? What approval gates apply?
 
-2. **Versioning**: When a component's Contract changes (e.g., new field), how do we propagate that change to all Feature Specs that reference it? Manual cross-reference, or automated dependency tracking?
+2. **Versioning**: When a component's Contract changes (e.g., new field), how do we propagate that
+   change to all Feature Specs that reference it? Manual cross-reference, or automated dependency
+   tracking?
 
 3. **Legacy spec migration**: How do we migrate the existing 10 specs (~350KB) into this model? Big-bang rewrite, or incremental extraction as we implement each roadmap step?
 
 4. **Spec-to-code traceability**: Should each component spec link directly to the source files that implement it? If so, how do we keep these links accurate as code evolves?
 
-5. **The "too small" problem**: Can a spec be over-decomposed? At what point does splitting create more overhead (many tiny specs with heavy cross-referencing) than the monolith it replaced? What's the lower bound?
+5. **The "too small" problem**: Can a spec be over-decomposed? At what point does splitting create
+   more overhead (many tiny specs with heavy cross-referencing) than the monolith it replaced?
+   What's the lower bound?
 
-6. **Integration Specs**: When the Integration Seams between components are complex (e.g., the handoff between Flow Executor and State Store), does the interaction deserve its own spec? Or does it always live in the Feature Spec?
+6. **Integration Specs**: When the Integration Seams between components are complex (e.g., the
+   handoff between Flow Executor and State Store), does the interaction deserve its own spec? Or
+   does it always live in the Feature Spec?
 
-7. **Spec review sizing**: The `spec_review_pipeline.md` failed on 01_08 (107KB). What is the maximum spec size that can be reliably reviewed in one agent session? Is it defined by token limits, by conceptual complexity, or both?
+7. **Spec review sizing**: The `spec_review_pipeline.md` failed on 01_08 (107KB). What is the
+   maximum spec size that can be reliably reviewed in one agent session? Is it defined by token
+   limits, by conceptual complexity, or both?

@@ -7,12 +7,20 @@
 - **Status**: APPROVED
 
 ## 1. Goal
-Implement the core CLI entry points (`sw hooks install` and `sw drift check-rot --staged`) and the logic to deploy a robust, strict git `pre-commit` hook that intercepts commits for spec alignment checks.
+Implement the core CLI entry points (`sw hooks install` and `sw drift check-rot --staged`) and the
+logic to deploy a robust, strict git `pre-commit` hook that intercepts commits for spec alignment
+checks.
 
 ## 2. Research Notes & HITL Decisions
-- **Execution Consistency:** The `pre-commit` hook MUST use Python's `sys.executable` (determined dynamically during `sw hooks install`) to construct the hook command (e.g., `/absolute/path/to/venv/bin/python -m specweaver.interfaces.cli.main drift check-rot --staged`). This ensures the hook fires correctly regardless of virtual environment activation states.
+- **Execution Consistency:** The `pre-commit` hook MUST use Python's `sys.executable` (determined
+  dynamically during `sw hooks install`) to construct the hook command (e.g.,
+  `/absolute/path/to/venv/bin/python -m specweaver.interfaces.cli.main drift check-rot --staged`).
+  This ensures the hook fires correctly regardless of virtual environment activation states.
 - **Strict Adherence:** The bash hook MUST `exit 1` if it cannot resolve the python binary, strictly blocking the commit.
-- **CLI Namespace & Scope:** The hook deployment belongs in `cli/hooks.py` while the actual check command belongs in `cli/drift.py` (`check-rot --staged`). Because SF-02 implements the `AST` checking atom, the `check-rot` command in SF-01 simply validates CLI arguments and gracefully finishes, acting as a stable interface for SF-02 to wire the `PipelineRunner`.
+- **CLI Namespace & Scope:** The hook deployment belongs in `cli/hooks.py` while the actual check
+  command belongs in `cli/drift.py` (`check-rot --staged`). Because SF-02 implements the `AST`
+  checking atom, the `check-rot` command in SF-01 simply validates CLI arguments and gracefully
+  finishes, acting as a stable interface for SF-02 to wire the `PipelineRunner`.
 
 ## 3. Proposed Changes
 

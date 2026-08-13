@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Context
-This sub-feature executes the mass search-and-replace to update all import paths across the codebase from `specweaver.workspace.ast.parsers` to `specweaver.workspace.ast.parsers`, and `specweaver.workspace.ast.adapters` to `specweaver.workspace.ast.adapters`.
+This sub-feature executes the mass search-and-replace to update all import paths across the codebase
+from `specweaver.workspace.ast.parsers` to `specweaver.workspace.ast.parsers`, and
+`specweaver.workspace.ast.adapters` to `specweaver.workspace.ast.adapters`.
 It also fixes any test files that might be referencing these paths.
 
 ## Proposed Changes

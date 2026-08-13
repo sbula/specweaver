@@ -7,15 +7,32 @@
 
 ## Feature Overview
 
-Feature 3.32d adds Refactoring Phase 3 Optimizations to the core engine, flow pipeline, and validation architecture. It solves high latency, token over-spend, LLM "Blank Canvas" hallucination, and full-test suite slowness by applying Context Condensation (AST Skeletons), topology-based specific Pytest limiting, native DAL validation enforcement, and standard scaffolding upon `sw init`. It interacts with `PromptBuilder`, `PolyglotQARunner`, native DAL bounds, and project constraints engine, and does NOT touch git operations, front-ends, or remote LLM server configuration. Key constraints: Condensation preserves exact editing targets; DAL yields non-zero exits natively on bounds breaches; `sw init` scaffolding forbids LLM execution (`loom` boundary compliance).
+Feature 3.32d adds Refactoring Phase 3 Optimizations to the core engine, flow pipeline, and
+validation architecture. It solves high latency, token over-spend, LLM "Blank Canvas" hallucination,
+and full-test suite slowness by applying Context Condensation (AST Skeletons), topology-based
+specific Pytest limiting, native DAL validation enforcement, and standard scaffolding upon
+`sw init`. It interacts with `PromptBuilder`, `PolyglotQARunner`, native DAL bounds, and project
+constraints engine, and does NOT touch git operations, front-ends, or remote LLM server
+configuration. Key constraints: Condensation preserves exact editing targets; DAL yields non-zero
+exits natively on bounds breaches; `sw init` scaffolding forbids LLM execution (`loom` boundary
+compliance).
 
 ## Research Findings
 
 ### Codebase Patterns
-- **Context Condensation**: The `PromptBuilder` already exists at `src/specweaver/infrastructure/llm/prompt_builder.py`. The `CodeStructureTool` and `CodeStructureAtom` already extract AST sequences per language. We can reuse these tools by passing file blocks through `CodeStructureAtom` to degrade non-target contextual files.
-- **Impact-Aware Test Limiting**: `QARunnerAtom` executes pytest flows locally. We can inject limits by querying `TopologyGraph.stale_nodes()` in orchestrators like `ValidationRunner` or `PipelineRunner` and passing `--test-target` arguments to `QARunnerAtom.run_tests()`.
-- **Native DAL Enforcement**: We can integrate `DALResolver` deeply into `PipelineRunner` so that all validation natively respects DAL strictness thresholds, dynamically exiting with `typer.Exit(code=1)` upon threshold breaches without relying on CLI-specific flags.
-- **Project Standards Scaffolding**: `workspace/project/scaffold.py` handles `sw init`. It must be extended to scaffold standard `context.yaml` boundaries and rule templates statically without touching the `loom` (Agent) boundary to avoid cyclic LLM execution constraints.
+- **Context Condensation**: The `PromptBuilder` already exists at
+  `src/specweaver/infrastructure/llm/prompt_builder.py`. The `CodeStructureTool` and
+  `CodeStructureAtom` already extract AST sequences per language. We can reuse these tools by
+  passing file blocks through `CodeStructureAtom` to degrade non-target contextual files.
+- **Impact-Aware Test Limiting**: `QARunnerAtom` executes pytest flows locally. We can inject limits
+  by querying `TopologyGraph.stale_nodes()` in orchestrators like `ValidationRunner` or
+  `PipelineRunner` and passing `--test-target` arguments to `QARunnerAtom.run_tests()`.
+- **Native DAL Enforcement**: We can integrate `DALResolver` deeply into `PipelineRunner` so that
+  all validation natively respects DAL strictness thresholds, dynamically exiting with
+  `typer.Exit(code=1)` upon threshold breaches without relying on CLI-specific flags.
+- **Project Standards Scaffolding**: `workspace/project/scaffold.py` handles `sw init`. It must be
+  extended to scaffold standard `context.yaml` boundaries and rule templates statically without
+  touching the `loom` (Agent) boundary to avoid cyclic LLM execution constraints.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

@@ -1,6 +1,9 @@
 # Setup your Project DB Harness
 
-SpecWeaver utilizes Model Context Protocol (MCP) to safely interface with external infrastructure such as Postgres databases. Because database schemas and content are sensitive, SpecWeaver executes MCP connections through local, ephemeral Docker containers governed by a strict `vault.env` isolation layer.
+SpecWeaver utilizes Model Context Protocol (MCP) to safely interface with external infrastructure
+such as Postgres databases. Because database schemas and content are sensitive, SpecWeaver executes
+MCP connections through local, ephemeral Docker containers governed by a strict `vault.env`
+isolation layer.
 
 This guide explains how to initialize and configure an MCP Database harness for your repository.
 
@@ -19,10 +22,15 @@ This command will:
 
 ## 2. Configure Least-Privilege Access
 
-SpecWeaver requires read access to your database schema in order to synthesize `Architecture` limits, perform `Data` validation checks, and enrich the Context Assembler with true schema representations. 
+SpecWeaver requires read access to your database schema in order to synthesize `Architecture`
+limits, perform `Data` validation checks, and enrich the Context Assembler with true schema
+representations. 
 
 > [!CAUTION]
-> **Least Privilege Mandate**: You must never provide write-level or administrative credentials to the `vault.env` file. SpecWeaver AI Agents act probabilistically; protecting your database against accidental `DROP TABLE` or `UPDATE` statements is entirely enforced by database user authorization boundaries.
+> **Least Privilege Mandate**: You must never provide write-level or administrative credentials to
+> the `vault.env` file. SpecWeaver AI Agents act probabilistically; protecting your database against
+> accidental `DROP TABLE` or `UPDATE` statements is entirely enforced by database user authorization
+> boundaries.
 
 Create a read-only role on your Postgres instance explicitly for SpecWeaver:
 

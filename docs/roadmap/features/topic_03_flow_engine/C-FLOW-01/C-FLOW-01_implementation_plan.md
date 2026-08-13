@@ -3,13 +3,23 @@
 > **Analysis**: [LLM Routing & Cost Optimization](../../analysis/llm_routing_and_cost_analysis.md)
 > **Audit**: Completed 2026-03-27 — all questions resolved across 2 audit passes
 
-The goal of this feature is to log token usage and estimated cost for **every** LLM call (pipeline, CLI, API), persist the data in the project database, and expose it via CLI. This is the foundation for all downstream cost optimization features (3.12a multi-provider, 3.12b static routing, 4.5a cost analytics).
+The goal of this feature is to log token usage and estimated cost for **every** LLM call (pipeline,
+CLI, API), persist the data in the project database, and expose it via CLI. This is the foundation
+for all downstream cost optimization features (3.12a multi-provider, 3.12b static routing, 4.5a cost
+analytics).
 
 ## Key Design Decision: TelemetryCollector (Decorator Pattern)
 
-All telemetry is captured at the adapter level via a **decorator** that wraps any `LLMAdapter`. This guarantees a single collection point for ALL LLM calls regardless of caller (pipeline, direct CLI, REST API). The collector is **not** a subclass of `LLMAdapter` — it uses the decorator pattern and delegates all calls to the wrapped adapter. This works because `RunContext.llm` is typed `Any` (duck typing).
+All telemetry is captured at the adapter level via a **decorator** that wraps any `LLMAdapter`. This
+guarantees a single collection point for ALL LLM calls regardless of caller (pipeline, direct CLI,
+REST API). The collector is **not** a subclass of `LLMAdapter` — it uses the decorator pattern and
+delegates all calls to the wrapped adapter. This works because `RunContext.llm` is typed `Any` (duck
+typing).
 
-Each call to `generate()`, `generate_with_tools()`, or `generate_stream()` produces one `UsageRecord` — stored as an individual row in the DB. A pipeline that runs draft → review → implement produces 3 separate records, each with the correct `task_type` read from `config.task_type`.
+Each call to `generate()`, `generate_with_tools()`, or `generate_stream()` produces one
+`UsageRecord` — stored as an individual row in the DB. A pipeline that runs draft → review →
+implement produces 3 separate records, each with the correct `task_type` read from
+`config.task_type`.
 
 ```
                   ┌─────────────────────────┐
@@ -59,7 +69,9 @@ Pure-logic module (no I/O, no DB access) providing:
 
 - `CostEntry` — `NamedTuple(input_cost_per_1k: float, output_cost_per_1k: float)`
 - `DEFAULT_COST_TABLE: dict[str, CostEntry]` — built-in fallback prices, shipped with sensible defaults.
-- `estimate_cost(model: str, usage: TokenUsage, overrides: dict[str, CostEntry] | None = None) -> float` — looks up model in `overrides` first, then `DEFAULT_COST_TABLE`. Returns `0.0` for unknown models. The `overrides` parameter is loaded from DB by the caller, keeping this module pure.
+- `estimate_cost(model: str, usage: TokenUsage, overrides: dict[str, CostEntry] | None = None) -> float`
+  — looks up model in `overrides` first, then `DEFAULT_COST_TABLE`. Returns `0.0` for unknown
+  models. The `overrides` parameter is loaded from DB by the caller, keeping this module pure.
 - `UsageRecord` Pydantic model: `timestamp`, `project_name`, `task_type`, `model`, `provider`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost_usd`, `duration_ms`
 - `create_usage_record(config: GenerationConfig, response: LLMResponse, provider: str, project: str, duration_ms: int, cost_overrides: dict | None = None) -> UsageRecord`
 
@@ -171,10 +183,14 @@ class TelemetryCollector:
 ```
 
 > [!NOTE]
-> **task_type**: Read from `config.task_type` per call, not from the constructor. Each handler sets `config.task_type` when creating its `GenerationConfig`, so multi-step pipelines produce correctly labeled records.
+> **task_type**: Read from `config.task_type` per call, not from the constructor. Each handler sets
+> `config.task_type` when creating its `GenerationConfig`, so multi-step pipelines produce correctly
+> labeled records.
 
 > [!NOTE]
-> **Streaming telemetry**: `generate_stream` captures timing and estimates output tokens from concatenated text. Exact token counts require adapter-level support (deferred to backlog). `prompt_tokens` is `0` for streaming — this is a known gap.
+> **Streaming telemetry**: `generate_stream` captures timing and estimates output tokens from
+> concatenated text. Exact token counts require adapter-level support (deferred to backlog).
+> `prompt_tokens` is `0` for streaming — this is a known gap.
 
 > [!NOTE]
 > **Duration**: Measures wall-clock time (includes tool execution for `generate_with_tools`). Adapter-level API-only timing is deferred — see backlog.
@@ -269,7 +285,9 @@ No foreign key to `projects` — usage records survive project deletion for hist
 
 ### 3. Integration Points — Where the Collector is Created
 
-No changes to `RunContext`. No telemetry-related changes to handlers (the only handler-side change is setting `task_type` on `GenerationConfig` — see Section 1a). The collector wraps the adapter where it's created:
+No changes to `RunContext`. No telemetry-related changes to handlers (the only handler-side change
+is setting `task_type` on `GenerationConfig` — see Section 1a). The collector wraps the adapter
+where it's created:
 
 #### [MODIFY] [factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/factory.py)
 

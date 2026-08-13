@@ -12,22 +12,43 @@
 
 SF-03 implements two handover protocols that complete the Context Hydration & Handover Engine:
 
-1. **Save Protocol (FR-8)**: After each pipeline run exits the execution loop, the `PipelineRunner` internally calls `save_handover_context()` from a new `core/flow/engine/handover.py` module. This function collects pipeline telemetry from the `PipelineRun` step records and persists it as a `HandoverContext` on the active memory bank task via `MemoryRepository.update_handover_context()`. The call happens in the `run()`/`resume()` `finally` blocks (alongside existing `_flush_telemetry()`), guaranteeing execution even on `KeyboardInterrupt`. The function saves for all statuses except `PARKED` and `NOT_STARTED` — this ensures interrupted runs (`RUNNING` at time of `KeyboardInterrupt`) also persist their partial telemetry.
+1. **Save Protocol (FR-8)**: After each pipeline run exits the execution loop, the `PipelineRunner`
+   internally calls `save_handover_context()` from a new `core/flow/engine/handover.py` module. This
+   function collects pipeline telemetry from the `PipelineRun` step records and persists it as a
+   `HandoverContext` on the active memory bank task via
+   `MemoryRepository.update_handover_context()`. The call happens in the `run()`/`resume()`
+   `finally` blocks (alongside existing `_flush_telemetry()`), guaranteeing execution even on
+   `KeyboardInterrupt`. The function saves for all statuses except `PARKED` and `NOT_STARTED` — this
+   ensures interrupted runs (`RUNNING` at time of `KeyboardInterrupt`) also persist their partial
+   telemetry.
 
 2. **Bootstrap Protocol (FR-9)**: Already fully implemented by SF-01's `MemoryHydrator`. SF-03 adds **explicit verification tests** for the bootstrap scenario.
 
 ### Key Architectural Decision
 
 > [!IMPORTANT]
-> **No CLI or API changes required.** The design document stated "Wire callback at entry point layer" to avoid a boundary violation in `PipelineRunner`. However, SF-02 already added `specweaver/workspace/memory` to `core.flow`'s `consumes` list (`core/flow/context.yaml` line 20). The runner can legally import from `workspace.memory`. The handover save is a **pipeline completion concern**, not an entry-point concern. The runner already performs side-effects in its `finally` block (`_flush_telemetry()`). Adding handover save follows the identical pattern.
+> **No CLI or API changes required.** The design document stated "Wire callback at entry point
+> layer" to avoid a boundary violation in `PipelineRunner`. However, SF-02 already added
+> `specweaver/workspace/memory` to `core.flow`'s `consumes` list (`core/flow/context.yaml` line 20).
+> The runner can legally import from `workspace.memory`. The handover save is a **pipeline
+> completion concern**, not an entry-point concern. The runner already performs side-effects in its
+> `finally` block (`_flush_telemetry()`). Adding handover save follows the identical pattern.
 >
 > This eliminates: callback parameter, callback Protocol, callback propagation to sub-runners, CLI wiring, API wiring.
 
 > [!WARNING]
-> **Design Document Deviation (RT-1)**: FR-8's wiring details (callback injection, CLI entry point, "PipelineRunner does NOT import from workspace") and AD-10 are **superseded** by the post-SF-02 boundary reality. The FR-8 *intent* — save telemetry on pipeline completion in a fail-safe manner — is fully preserved. The implementation is strictly simpler and architecturally cleaner. See Red Team audit Round 1 for full rationale.
+> **Design Document Deviation (RT-1)**: FR-8's wiring details (callback injection, CLI entry point,
+> "PipelineRunner does NOT import from workspace") and AD-10 are **superseded** by the post-SF-02
+> boundary reality. The FR-8 *intent* — save telemetry on pipeline completion in a fail-safe manner
+> — is fully preserved. The implementation is strictly simpler and architecturally cleaner. See Red
+> Team audit Round 1 for full rationale.
 
 > [!NOTE]
-> **Static Summary (RT-8)**: FR-8 suggests an "LLM-generated 1-sentence status" for the summary field. This implementation uses a **static format string** instead (`"Pipeline '{name}' {status}. {N} steps executed."`). Rationale: calling an LLM from a `finally` cleanup path would add latency, require LLM access in a failure scenario, and risk hallucinating the summary. The factual static string is strictly safer and more reliable.
+> **Static Summary (RT-8)**: FR-8 suggests an "LLM-generated 1-sentence status" for the summary
+> field. This implementation uses a **static format string** instead
+> (`"Pipeline '{name}' {status}. {N} steps executed."`). Rationale: calling an LLM from a `finally`
+> cleanup path would add latency, require LLM access in a failure scenario, and risk hallucinating
+> the summary. The factual static string is strictly safer and more reliable.
 
 ### FRs Covered: FR-8, FR-9
 ### NFRs Covered: NFR-2 (arch placement), NFR-5 (backward compat), NFR-6 (observability), NFR-7 (test coverage), NFR-8 (file size), NFR-9 (fail-safe), NFR-11 (well-formedness)
@@ -39,8 +60,11 @@ SF-03 implements two handover protocols that complete the Context Hydration & Ha
 FR-9 states: *"When an agent acquires a task with non-null handover_context, the hydrator deserializes and validates it."*
 
 **Evidence from existing SF-01 code**:
-- [hydrator.py:154-169](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/memory/hydrator.py#L154-L169): Fetches tasks with `handover_context`, calls `HandoverContext.from_json_str()`, sanitizes summary, adds to `handover_notes`.
-- [hydrator.py:72-97](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/memory/hydrator.py#L72-L97): Includes `handover_notes` in JSON payload with `_trust: "low"` and `_trust_policy` fields.
+- [hydrator.py:154-169](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/memory/hydrator.py#L154-L169):
+  Fetches tasks with `handover_context`, calls `HandoverContext.from_json_str()`, sanitizes summary,
+  adds to `handover_notes`.
+- [hydrator.py:72-97](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/memory/hydrator.py#L72-L97):
+  Includes `handover_notes` in JSON payload with `_trust: "low"` and `_trust_policy` fields.
 - [hydrator.py:49-53](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/memory/hydrator.py#L49-L53): `HydratedTask.handover_summary` field serialized in `active_tasks`.
 
 **Conclusion**: FR-9 requires **no new code**. SF-03 adds **tests that explicitly verify the bootstrap scenario** (task with existing handover context → context appears in hydrated prompt block).
@@ -60,14 +84,21 @@ New module containing the `save_handover_context()` async function. Responsibili
    - If `len(run.step_records) == 0` → return (empty pipeline; no meaningful telemetry).
 
 > [!CAUTION]
-> **Status Guard (RT-3)**: The guard skips only `PARKED` and `NOT_STARTED`. All other statuses — including `RUNNING` — trigger a save. A `RUNNING` status in the `finally` block means the run was interrupted by `KeyboardInterrupt`. FR-8 requires saving on interrupt, so `RUNNING` must NOT be excluded.
+> **Status Guard (RT-3)**: The guard skips only `PARKED` and `NOT_STARTED`. All other statuses —
+> including `RUNNING` — trigger a save. A `RUNNING` status in the `finally` block means the run was
+> interrupted by `KeyboardInterrupt`. FR-8 requires saving on interrupt, so `RUNNING` must NOT be
+> excluded.
 
 > [!CAUTION]
 > **Empty Pipeline Guard (RT-15)**: Pipelines with 0 steps produce no meaningful telemetry. Saving an empty handover context would overwrite a previous non-empty context with useless data. Skip these.
 
 2. **Collect telemetry** from `PipelineRun` step records:
-   - `errors_encountered`: Deduplicated (order-preserved via `dict.fromkeys()`) list from `StepResult.error_message` fields where status is `FAILED` or `ERROR`. **Capped at 10 items, each string truncated to 500 chars** (RT-23).
-   - `files_touched`: Extracted from `StepResult.output["files_touched"]`. **Must explicitly check `isinstance(result.output, dict)`** before access (RT-19). Deduplicated (order-preserved). **Capped at 30 items, each string truncated to 150 chars** (RT-20, RT-23).
+   - `errors_encountered`: Deduplicated (order-preserved via `dict.fromkeys()`) list from
+     `StepResult.error_message` fields where status is `FAILED` or `ERROR`. **Capped at 10 items,
+     each string truncated to 500 chars** (RT-23).
+   - `files_touched`: Extracted from `StepResult.output["files_touched"]`. **Must explicitly check
+     `isinstance(result.output, dict)`** before access (RT-19). Deduplicated (order-preserved).
+     **Capped at 30 items, each string truncated to 150 chars** (RT-20, RT-23).
    - `summary`: Static format string: `f"Pipeline '{run.pipeline_name}' {run.status.value}. {len(run.step_records)} steps executed."`.
    - `metadata`: `run_id`, `pipeline_name`, `step_count`, `status` (all primitives — passes `HandoverContext.validate_metadata_primitives()`).
 
@@ -77,7 +108,9 @@ New module containing the `save_handover_context()` async function. Responsibili
    - If no active task found, log at DEBUG and return (graceful no-op).
 
 > [!NOTE]
-> **Single-Agent Limitation (RT-6)**: The `list_tasks` fallback picks the first IN_PROGRESS task. In multi-agent scenarios, this could update the wrong task. The forward path (`context.task_id` set by future orchestrator) eliminates this risk. Accepted for current single-agent usage.
+> **Single-Agent Limitation (RT-6)**: The `list_tasks` fallback picks the first IN_PROGRESS task. In
+> multi-agent scenarios, this could update the wrong task. The forward path (`context.task_id` set
+> by future orchestrator) eliminates this risk. Accepted for current single-agent usage.
 
 4. **Persist** via `MemoryRepository.update_handover_context(task_id, context)`.
 
@@ -93,13 +126,21 @@ async def save_handover_context(
 ) -> None:
 ```
 
-**Boundary compliance**: This module lives in `core.flow.engine` → child of `core.flow` → `core/flow/context.yaml` consumes `specweaver/workspace/memory` ✅. Uses lazy imports for `MemoryRepository` and `HandoverContext` inside the function body.
+**Boundary compliance**: This module lives in `core.flow.engine` → child of `core.flow` →
+`core/flow/context.yaml` consumes `specweaver/workspace/memory` ✅. Uses lazy imports for
+`MemoryRepository` and `HandoverContext` inside the function body.
 
 > [!WARNING]
-> **DB Session**: The function uses `context.db.async_session_scope()` to create an independent async session. This is the same pattern used by `_build_base_prompt()` in [base.py:213](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers/base.py#L213). It works in both CLI (`asyncio.run()` context) and API (FastAPI event loop). If `context.db is None`, the function returns immediately (no-op).
+> **DB Session**: The function uses `context.db.async_session_scope()` to create an independent
+> async session. This is the same pattern used by `_build_base_prompt()` in
+> [base.py:213](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers/base.py#L213).
+> It works in both CLI (`asyncio.run()` context) and API (FastAPI event loop). If
+> `context.db is None`, the function returns immediately (no-op).
 
 > [!IMPORTANT]
-> **Session Auto-Commit (RT-11 / RT-25)**: Codebase audit confirms `db.async_session_scope()` natively auto-commits on context exit via its internal `session_scope` wrapper. No explicit `await session.commit()` is needed after the `update_handover_context()` call.
+> **Session Auto-Commit (RT-11 / RT-25)**: Codebase audit confirms `db.async_session_scope()`
+> natively auto-commits on context exit via its internal `session_scope` wrapper. No explicit
+> `await session.commit()` is needed after the `update_handover_context()` call.
 
 ### [MODIFY] `src/specweaver/core/flow/engine/runner.py`
 
@@ -169,7 +210,10 @@ task_id: str | None = None  # Active memory bank task ID (set by future orchestr
 
 ### `files_touched` Convention
 
-Today, no handlers populate `output["files_touched"]`. The list will be empty for all current pipelines. The handover context is still valuable through `summary`, `errors_encountered`, and `metadata`. A convention note will be added to `pipeline_engine_guide.md` for future handler authors.
+Today, no handlers populate `output["files_touched"]`. The list will be empty for all current
+pipelines. The handover context is still valuable through `summary`, `errors_encountered`, and
+`metadata`. A convention note will be added to `pipeline_engine_guide.md` for future handler
+authors.
 
 ### 8KB Budget Safety
 
@@ -179,7 +223,10 @@ The assembled `HandoverContext` bounds are mathematically strictly enforced BEFO
 - `summary`: ~100 chars
 - `metadata`: ~100 chars
 
-The theoretical max payload is ~9.7KB. However, realistic file paths are ~50 chars, and most runs have 0-2 errors. The payload will comfortably stay under the 8KB limit in 99.9% of cases. If the `to_json_str()` limit is hit, the outer `try/except` gracefully catches the `ValueError`, logs a warning, and prevents a runner crash.
+The theoretical max payload is ~9.7KB. However, realistic file paths are ~50 chars, and most runs
+have 0-2 errors. The payload will comfortably stay under the 8KB limit in 99.9% of cases. If the
+`to_json_str()` limit is hit, the outer `try/except` gracefully catches the `ValueError`, logs a
+warning, and prevents a runner crash.
 
 ---
 
@@ -301,19 +348,35 @@ Update Progress Tracker: SF-03 Impl Plan ✅, Session Handoff updated.
 ## Research Notes
 
 ### RN-1: `_flush_telemetry()` is Synchronous, `_save_handover()` is Async
-The existing `_flush_telemetry()` in the `finally` block is synchronous (`def`, not `async def`). The new `_save_handover()` is async. In the `finally` block of an `async def` method (`run()`/`resume()`), `await` works correctly because we're still inside the async context — the `finally` block of an `async def` is itself awaitable.
+The existing `_flush_telemetry()` in the `finally` block is synchronous (`def`, not `async def`).
+The new `_save_handover()` is async. In the `finally` block of an `async def` method
+(`run()`/`resume()`), `await` works correctly because we're still inside the async context — the
+`finally` block of an `async def` is itself awaitable.
 
 ### RN-2: `await` in `finally` on `KeyboardInterrupt` (RT-2)
-When `KeyboardInterrupt` fires during `asyncio.run()`, Python's event loop is still active when the `finally` block of the top-level coroutine executes. `asyncio.run()` only shuts down the loop AFTER the main coroutine returns or raises — the `finally` block runs BEFORE that. Therefore, `await self._save_handover(run)` works correctly even during `KeyboardInterrupt`. Verified against Python 3.11+ `asyncio.run()` semantics.
+When `KeyboardInterrupt` fires during `asyncio.run()`, Python's event loop is still active when the
+`finally` block of the top-level coroutine executes. `asyncio.run()` only shuts down the loop AFTER
+the main coroutine returns or raises — the `finally` block runs BEFORE that. Therefore,
+`await self._save_handover(run)` works correctly even during `KeyboardInterrupt`. Verified against
+Python 3.11+ `asyncio.run()` semantics.
 
 ### RN-3: `cqrs_context()` Scope (RT-4)
-The handover save call is OUTSIDE the `cqrs_context()` block (it's in the `finally` after the `try`). This is intentional — `cqrs_context()` wraps the pipeline execution, not the cleanup. The handover save creates its own independent session via `db.async_session_scope()`, which creates sessions from the engine (not from a running CQRS transaction). The engine persists beyond the CQRS context. Verified safe.
+The handover save call is OUTSIDE the `cqrs_context()` block (it's in the `finally` after the
+`try`). This is intentional — `cqrs_context()` wraps the pipeline execution, not the cleanup. The
+handover save creates its own independent session via `db.async_session_scope()`, which creates
+sessions from the engine (not from a running CQRS transaction). The engine persists beyond the CQRS
+context. Verified safe.
 
 ### RN-4: Status Guard Logic (RT-3)
-The `save_handover_context()` function is called for ALL runs (the `finally` block always fires). The function skips only `PARKED` and `NOT_STARTED` statuses. Crucially, `RUNNING` is NOT skipped — a `RUNNING` status in the `finally` block means the run was interrupted by `KeyboardInterrupt`, and FR-8 requires saving on interrupt.
+The `save_handover_context()` function is called for ALL runs (the `finally` block always fires).
+The function skips only `PARKED` and `NOT_STARTED` statuses. Crucially, `RUNNING` is NOT skipped — a
+`RUNNING` status in the `finally` block means the run was interrupted by `KeyboardInterrupt`, and
+FR-8 requires saving on interrupt.
 
 ### RN-5: Resume Double-Save (RT-9)
-A run → save → park → resume → complete → save sequence overwrites the first handover context with the second. This is correct — the resumed run has more complete information. `update_handover_context()` is an idempotent overwrite.
+A run → save → park → resume → complete → save sequence overwrites the first handover context with
+the second. This is correct — the resumed run has more complete information.
+`update_handover_context()` is an idempotent overwrite.
 
 ---
 

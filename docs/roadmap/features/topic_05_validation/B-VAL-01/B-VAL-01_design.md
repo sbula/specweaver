@@ -7,7 +7,15 @@
 
 ## Feature Overview
 
-Feature 3.14a adds deep, parser-backed drift detection to SpecWeaver. It leverages the Artifact Lineage UUIDs established in Feature 3.14 to traverse the graph to the structured Plan JSON generated during Phase 3.6. By extracting the AST of the running code and comparing it structurally to this pure JSON representation of the spec's intent, it autonomously identifies human-introduced implementation drift and coverage gaps. Additionally, it offers an opt-in mode to use LLMs to pinpoint the root cause of any detected violations. It interacts with the existing validation pipeline and the flow engine, and does NOT touch real-time background file watching. Key constraints: The AST gap analysis must be fast (no LLM required for the core AST check) to keep the feedback loop tight.
+Feature 3.14a adds deep, parser-backed drift detection to SpecWeaver. It leverages the Artifact
+Lineage UUIDs established in Feature 3.14 to traverse the graph to the structured Plan JSON
+generated during Phase 3.6. By extracting the AST of the running code and comparing it structurally
+to this pure JSON representation of the spec's intent, it autonomously identifies human-introduced
+implementation drift and coverage gaps. Additionally, it offers an opt-in mode to use LLMs to
+pinpoint the root cause of any detected violations. It interacts with the existing validation
+pipeline and the flow engine, and does NOT touch real-time background file watching. Key
+constraints: The AST gap analysis must be fast (no LLM required for the core AST check) to keep the
+feedback loop tight.
 
 ## Research Findings
 

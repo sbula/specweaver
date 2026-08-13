@@ -7,14 +7,24 @@
 
 ## Feature Overview
 
-Feature TECH-007 adds a pluggable context loading architecture and an injection-safe prompt escaping engine to the PromptBuilder. It solves the vulnerability to XML/HTML injection and the tight compile-time coupling between domain layers and the LLM infrastructure by introducing structured, duck-typed protocols (PromptContentSource) and systematic escaping strategies (XML entities, CDATA breakout mitigation, JSON). It interacts with PromptBuilder and LLM rendering layers, and does not touch core LLM orchestration or adapter runtime clients. Key constraints: zero tach/context.yaml architectural violations and maintaining 70%-90% test coverage.
+Feature TECH-007 adds a pluggable context loading architecture and an injection-safe prompt escaping
+engine to the PromptBuilder. It solves the vulnerability to XML/HTML injection and the tight
+compile-time coupling between domain layers and the LLM infrastructure by introducing structured,
+duck-typed protocols (PromptContentSource) and systematic escaping strategies (XML entities, CDATA
+breakout mitigation, JSON). It interacts with PromptBuilder and LLM rendering layers, and does not
+touch core LLM orchestration or adapter runtime clients. Key constraints: zero tach/context.yaml
+architectural violations and maintaining 70%-90% test coverage.
 
 ## Research Findings
 
 ### Codebase Patterns
 - Currently, `PromptBuilder` accepts strings and formats them directly using raw f-strings in `_prompt_render.py`. This is vulnerable to XML tag breakouts if untrusted content is passed.
-- `assurance/graph/context.yaml` forbids `specweaver/llm`. Thus, domain models like `TopologyContext` cannot directly import a `PromptContentSource` interface if it is defined inside `specweaver.infrastructure.llm`.
-- Python's `Protocol` is duck-typed, which means domain models can implement the required methods (e.g. returning string values for slot names or contents) without importing any classes or enums from `specweaver.infrastructure.llm`, ensuring zero `tach check` violation.
+- `assurance/graph/context.yaml` forbids `specweaver/llm`. Thus, domain models like
+  `TopologyContext` cannot directly import a `PromptContentSource` interface if it is defined inside
+  `specweaver.infrastructure.llm`.
+- Python's `Protocol` is duck-typed, which means domain models can implement the required methods
+  (e.g. returning string values for slot names or contents) without importing any classes or enums
+  from `specweaver.infrastructure.llm`, ensuring zero `tach check` violation.
 - Standard CDATA breakout sequence is `]]>`. Escaping replaces `]]>` with `]]]]><![CDATA[>`.
 
 ### External Tools

@@ -7,14 +7,25 @@
 
 ## Feature Overview
 
-Feature 3.30 adds a specialized indexer capability to the Polyglot AST Extractor. It solves the problem of the LLM receiving only raw signatures (e.g., `#[derive(Clone)]` or `@RestController`) by unrolling Rust Procedural Macros, Kotlin Compiler Plugins, and backend annotations so the LLM understands the true runtime reality. 
-Instead of relying on slow, OS-level compiler invocations (like KSP or `cargo expand`), it adopts the highly successful Architecture pattern from Feature 3.29 (Archetype Rule Sets). It evaluates the AST markers (already natively extracted by `extract_framework_markers`) against modular, declarative YAML framework schemas (e.g., Spring Boot, Quarkus, NestJS) to translate raw annotations into concrete, unrolled runtime behaviors.
+Feature 3.30 adds a specialized indexer capability to the Polyglot AST Extractor. It solves the
+problem of the LLM receiving only raw signatures (e.g., `#[derive(Clone)]` or `@RestController`) by
+unrolling Rust Procedural Macros, Kotlin Compiler Plugins, and backend annotations so the LLM
+understands the true runtime reality. 
+Instead of relying on slow, OS-level compiler invocations (like KSP or `cargo expand`), it adopts
+the highly successful Architecture pattern from Feature 3.29 (Archetype Rule Sets). It evaluates the
+AST markers (already natively extracted by `extract_framework_markers`) against modular, declarative
+YAML framework schemas (e.g., Spring Boot, Quarkus, NestJS) to translate raw annotations into
+concrete, unrolled runtime behaviors.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **AST Marker Extraction**: The existing `CodeStructureTool` and `CodeStructureAtom` already possess a highly robust `extract_framework_markers` function across Java, Kotlin, Typescript, Rust, and Python. It correctly strips `@RestController`, `@PostMapping`, `impl Trait`, etc.
-- **Archetype Parallels**: Feature 3.29 loads framework rules dynamically from `workflows/pipelines/frameworks/`. We can use the exact same declarative pattern to define "unroll maps" (e.g., "If `@GetMapping(X)` is found, output `HTTP GET X`").
+- **AST Marker Extraction**: The existing `CodeStructureTool` and `CodeStructureAtom` already
+  possess a highly robust `extract_framework_markers` function across Java, Kotlin, Typescript,
+  Rust, and Python. It correctly strips `@RestController`, `@PostMapping`, `impl Trait`, etc.
+- **Archetype Parallels**: Feature 3.29 loads framework rules dynamically from
+  `workflows/pipelines/frameworks/`. We can use the exact same declarative pattern to define "unroll
+  maps" (e.g., "If `@GetMapping(X)` is found, output `HTTP GET X`").
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

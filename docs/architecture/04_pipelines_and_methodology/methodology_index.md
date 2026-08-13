@@ -8,7 +8,10 @@
 
 ## The Problem
 
-SpecWeaver's original specs (~350KB across 10 files) failed because they lacked an organizing principle. Specs grew into monoliths mixing data definitions, runtime behavior, policies, and future ideas. The 01_08 flows spec (107KB) was the worst case — 7 concerns in one document, un-reviewable and un-implementable.
+SpecWeaver's original specs (~350KB across 10 files) failed because they lacked an organizing
+principle. Specs grew into monoliths mixing data definitions, runtime behavior, policies, and future
+ideas. The 01_08 flows spec (107KB) was the worst case — 7 concerns in one document, un-reviewable
+and un-implementable.
 
 This session produced a universal methodology for writing, sizing, and validating specifications that applies at every level of software architecture and across any project domain.
 
@@ -144,4 +147,6 @@ All 9 items now have first drafts. They are marked DRAFT and require discussion.
 
 ### External References
 
-- **DMZ Repository**: [github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz) — production reference for L4-L5 patterns (auto-develop.sh, reviewer.md, SOUL.md, AGENTS.md, MEMORY.md). Analyzed in [flow_synthesis.md](../../analysis/flow_synthesis.md) §2.1.
+- **DMZ Repository**: [github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz)
+  — production reference for L4-L5 patterns (auto-develop.sh, reviewer.md, SOUL.md, AGENTS.md,
+  MEMORY.md). Analyzed in [flow_synthesis.md](../../analysis/flow_synthesis.md) §2.1.

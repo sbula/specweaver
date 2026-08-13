@@ -1,10 +1,33 @@
 # US-09 Integration - Integration Contracts
 
 ## Base Story Contract (`INT-US-09`)
-* **Status:** ✅ Done (2026-07-17) for the **single-step** case — implemented across 4 commit boundaries (`85d02be4`, `f4077870`, `bd6913c6`, `474490ae`). ✅ **Multi-step case resolved (2026-07-21, `TECH-012`):** the per-step reconcile was non-functional for **multi-step** isolated pipelines (second step crashed on a branch-name collision; generated uncommitted files never survived between steps). Resolved by the **per-run (session) worktree mode** (`C-EXEC-06`, integration `INT-US-09-SF05` — both ✅): a whole untrusted span runs in one worktree with a single authorized reconcile. The legacy **per-step** model remains single-step-only (multi-step per-step isolation is a documented limitation — use session mode). **Backlog (deferred, documented):** API-run policy wiring (`interfaces/api/v1/pipelines.py`, tracked as `TECH-013`); container add-on = `INT-US-09-SF01`.
+* **Status:** ✅ Done (2026-07-17) for the **single-step** case — implemented across 4 commit
+  boundaries (`85d02be4`, `f4077870`, `bd6913c6`, `474490ae`). ✅ **Multi-step case resolved
+  (2026-07-21, `TECH-012`):** the per-step reconcile was non-functional for **multi-step** isolated
+  pipelines (second step crashed on a branch-name collision; generated uncommitted files never
+  survived between steps). Resolved by the **per-run (session) worktree mode** (`C-EXEC-06`,
+  integration `INT-US-09-SF05` — both ✅): a whole untrusted span runs in one worktree with a single
+  authorized reconcile. The legacy **per-step** model remains single-step-only (multi-step per-step
+  isolation is a documented limitation — use session mode). **Backlog (deferred, documented):**
+  API-run policy wiring (`interfaces/api/v1/pipelines.py`, tracked as `TECH-013`); container add-on
+  = `INT-US-09-SF01`.
 * **Design:** [INT-US-09_design.md](../../features/topic_08_integration/INT-US-09/INT-US-09_design.md)
-* **Integration Description:** The three already-built Core-Required (MVS) capabilities — **US-5 Core** (Git Worktree Bouncer / `D-EXEC-02`), **E-EXEC-01** (Standard Local Execution / `SubprocessExecutor`), and **C-EXEC-02** (Native CLI Action Nodes / `BashActionAtom`) — must be wired into one enforceable, **container-free** host-execution flow. Untrusted execution runs inside an ephemeral git-worktree sandbox with the `SubprocessExecutor` security boundary (credential stripping, resource limits, `cwd` containment) rebound to the worktree path — so bash actions and QA execution operate worktree-bounded rather than against the real source root — and source changes are reconciled back via the existing "Main-Branch Wins" strip-merge (out-of-bounds hunks stripped per `context.yaml`). Isolation is enabled by an opt-in US-9 policy (`SandboxSettings`, resolved at the composition root); default-off preserves today's behavior exactly.
-* **Verifiable Proof:** `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py` — a real-worktree, unmocked e2e suite (5 scenarios): a real `action: bash` step and a real `run_tests`/pytest step each run bounded to an ephemeral git worktree under the opt-in US-9 policy (process `pwd`/`cwd` inside `.worktrees/`, real source root not mutated), with un-isolated controls proving the rebind is gated.
+* **Integration Description:** The three already-built Core-Required (MVS) capabilities — **US-5
+  Core** (Git Worktree Bouncer / `D-EXEC-02`), **E-EXEC-01** (Standard Local Execution /
+  `SubprocessExecutor`), and **C-EXEC-02** (Native CLI Action Nodes / `BashActionAtom`) — must be
+  wired into one enforceable, **container-free** host-execution flow. Untrusted execution runs
+  inside an ephemeral git-worktree sandbox with the `SubprocessExecutor` security boundary
+  (credential stripping, resource limits, `cwd` containment) rebound to the worktree path — so bash
+  actions and QA execution operate worktree-bounded rather than against the real source root — and
+  source changes are reconciled back via the existing "Main-Branch Wins" strip-merge (out-of-bounds
+  hunks stripped per `context.yaml`). Isolation is enabled by an opt-in US-9 policy
+  (`SandboxSettings`, resolved at the composition root); default-off preserves today's behavior
+  exactly.
+* **Verifiable Proof:** `tests/e2e/sandbox/test_step_worktree_isolation_e2e.py` — a real-worktree,
+  unmocked e2e suite (5 scenarios): a real `action: bash` step and a real `run_tests`/pytest step
+  each run bounded to an ephemeral git worktree under the opt-in US-9 policy (process `pwd`/`cwd`
+  inside `.worktrees/`, real source root not mutated), with un-isolated controls proving the rebind
+  is gated.
 
 > [!NOTE]
 > **Container-free scope.** This Base Contract is **strictly the non-container host-execution

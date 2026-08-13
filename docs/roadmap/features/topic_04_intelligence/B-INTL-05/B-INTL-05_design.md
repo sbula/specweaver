@@ -7,14 +7,27 @@
 
 ## Feature Overview
 
-Feature 3.30a adds Framework Plugin Composition and Targeted AST Searching to the CodeStructure Engine, alongside Dynamic Tool Gating. It solves three critical modularity risks: First, it allows `context.yaml` to define a list of `plugins` (e.g., `["spring-security", "spring-ai"]`) to merge multiple framework schemas concurrently instead of relying on a single monolithic archetype. Second, it expands the `list_symbols` tool intent with a `decorator_filter` argument, empowering Agents to explicitly search for security boundaries like `@PreAuthorize`. Third, it aggregates `intents.hide` blocks across all loaded plugins to mathematically restrict LLM tool capabilities at runtime.
+Feature 3.30a adds Framework Plugin Composition and Targeted AST Searching to the CodeStructure
+Engine, alongside Dynamic Tool Gating. It solves three critical modularity risks: First, it allows
+`context.yaml` to define a list of `plugins` (e.g., `["spring-security", "spring-ai"]`) to merge
+multiple framework schemas concurrently instead of relying on a single monolithic archetype. Second,
+it expands the `list_symbols` tool intent with a `decorator_filter` argument, empowering Agents to
+explicitly search for security boundaries like `@PreAuthorize`. Third, it aggregates `intents.hide`
+blocks across all loaded plugins to mathematically restrict LLM tool capabilities at runtime.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **Reuse opportunities**: `loader.py` already natively uses `deep_merge_dict`. Passing an array of schema names dynamically concatenates them perfectly without logic rewrites. `CodeStructureTool.list_symbols` delegates down to the AST Parser, which inherently extracts `framework_markers` dictionaries natively. Translating a string filter parameter directly into the array comprehension exposes the search natively.
+- **Reuse opportunities**: `loader.py` already natively uses `deep_merge_dict`. Passing an array of
+  schema names dynamically concatenates them perfectly without logic rewrites.
+  `CodeStructureTool.list_symbols` delegates down to the AST Parser, which inherently extracts
+  `framework_markers` dictionaries natively. Translating a string filter parameter directly into the
+  array comprehension exposes the search natively.
 - **Touched modules**: `src/specweaver/core/loom/dispatcher.py`, `src/specweaver/core/loom/tools/code_structure/tool.py`.
-- **Architecture rules**: `ToolDispatcher` dynamically wraps tools. Adding an intercept pattern where the schema YAML exposes `intents.hide` lists and forces `CodeStructureTool` to drop them from `definitions()` fits perfectly within the domain boundaries. `CodeStructureAtom` executes, `CodeStructureTool` routes.
+- **Architecture rules**: `ToolDispatcher` dynamically wraps tools. Adding an intercept pattern
+  where the schema YAML exposes `intents.hide` lists and forces `CodeStructureTool` to drop them
+  from `definitions()` fits perfectly within the domain boundaries. `CodeStructureAtom` executes,
+  `CodeStructureTool` routes.
 - **Constraints**: We must ensure no circular imports occur between the AST Atom execution layers and the LLM Tool wrapper interfaces.
 
 ### External Tools
@@ -65,7 +78,9 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 ## Sub-Feature Breakdown
 
 ### SF-01: Plugin Composition & AST Search
-- **Scope**: Update `ArchetypeResolver` and `dispatcher.py` to parse an expandable `plugins` array. Update `list_symbols` in Tool Definitions and AST parsers to support an optional string `decorator_filter` that reads from the `framework_markers` payload.
+- **Scope**: Update `ArchetypeResolver` and `dispatcher.py` to parse an expandable `plugins` array.
+  Update `list_symbols` in Tool Definitions and AST parsers to support an optional string
+  `decorator_filter` that reads from the `framework_markers` payload.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: `context.yaml` definitions and LLM Tool Calls.
 - **Outputs**: Agent can successfully retrieve target code blocks exclusively possessing specific Framework properties.

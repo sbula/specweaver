@@ -69,7 +69,10 @@ These are injected into LLM prompts so generated code matches existing style.
 
 ## Layer 8: Sandbox Validation (Worktree Bouncer)
 
-The `PipelineRunner` forces LLM modifications (`use_worktree=True`) logically into separated physical Git Sandboxes. Before code is permitted out of isolation, an `_intent_strip_merge` mathematical patch diff strips any hunks modifying targets not explicitly inside `context.yaml` topological bounds, dropping hallucinations before `git apply`.
+The `PipelineRunner` forces LLM modifications (`use_worktree=True`) logically into separated
+physical Git Sandboxes. Before code is permitted out of isolation, an `_intent_strip_merge`
+mathematical patch diff strips any hunks modifying targets not explicitly inside `context.yaml`
+topological bounds, dropping hallucinations before `git apply`.
 
 ## How Guardrails Compose
 
@@ -85,7 +88,13 @@ Sandbox Diff ───▶ pre-merge: violently enforces physical constraints
 
 ## Updating 3rd Party Software and Protocols within SpecWeaver
 
-To insulate SpecWeaver from breaking changes in standard compilation/debugging schemas (like DAP and SARIF), we utilize an **Adapter Pattern** strategy. External schemas must NEVER be consumed directly by LLM Agents or the workflow flow engine.
+To insulate SpecWeaver from breaking changes in standard compilation/debugging schemas (like DAP and
+SARIF), we utilize an **Adapter Pattern** strategy. External schemas must NEVER be consumed directly
+by LLM Agents or the workflow flow engine.
 
-1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `sandbox/qa_runner/interface.py`.
-2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonQARunner` stub implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target domain migration completes.
+1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed,
+   internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within
+   `sandbox/qa_runner/interface.py`.
+2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonQARunner` stub
+   implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target
+   domain migration completes.

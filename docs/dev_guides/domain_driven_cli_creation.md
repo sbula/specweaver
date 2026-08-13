@@ -1,6 +1,8 @@
 # Domain-Driven CLI Creation Guide
 
-With the completion of **TECH-001 (Domain-Driven Design Unification)**, SpecWeaver has moved away from a monolithic `interfaces/cli/` layer. All CLI commands are now strictly bound to their respective domains using Hexagonal Architecture principles.
+With the completion of **TECH-001 (Domain-Driven Design Unification)**, SpecWeaver has moved away
+from a monolithic `interfaces/cli/` layer. All CLI commands are now strictly bound to their
+respective domains using Hexagonal Architecture principles.
 
 This guide explains how to properly create, register, and test a new CLI command.
 
@@ -57,9 +59,15 @@ def run_task(
 ```
 
 ### Critical Rules for `cli.py`:
-- **No Heavy Global Imports:** Defer importing your core services, SQLAlchemy, or Heavy ML libraries until *inside* the command function. Typer parses all CLI scripts at boot; heavy global imports will slow down every single `sw` command.
-- **Use `_core.py` for shared CLI state:** If you need the `db` or the `active_project`, import `get_db` and `_require_active_project` from `specweaver.interfaces.cli._core`. This prevents circular imports back to `main.py`.
-- **Pure Adapters:** The CLI is an Adapter. It should parse arguments, call an Orchestrator/Service in your `core/` layer, and print the results. It should **never** contain business logic or SQL queries.
+- **No Heavy Global Imports:** Defer importing your core services, SQLAlchemy, or Heavy ML libraries
+  until *inside* the command function. Typer parses all CLI scripts at boot; heavy global imports
+  will slow down every single `sw` command.
+- **Use `_core.py` for shared CLI state:** If you need the `db` or the `active_project`, import
+  `get_db` and `_require_active_project` from `specweaver.interfaces.cli._core`. This prevents
+  circular imports back to `main.py`.
+- **Pure Adapters:** The CLI is an Adapter. It should parse arguments, call an Orchestrator/Service
+  in your `core/` layer, and print the results. It should **never** contain business logic or SQL
+  queries.
 
 ## 3. Registering the Domain App
 Once your domain CLI is ready, mount it to the root application in `src/specweaver/interfaces/cli/main.py`.
@@ -77,10 +85,14 @@ except ImportError as e:
     logger.error(f"Failed to load your_domain plugin: {e}")
     console.print(f"[yellow]Warning:[/yellow] your_domain plugin disabled due to error.")
 ```
-*Note: Always wrap plugin registration in a `try/except ImportError`. This enforces **NFR-4 (Native Healer Isolation)**. If your plugin crashes due to a bad dependency, the rest of the CLI (like `sw edit`) must still boot so the agent can fix the error.*
+*Note: Always wrap plugin registration in a `try/except ImportError`. This enforces **NFR-4 (Native
+Healer Isolation)**. If your plugin crashes due to a bad dependency, the rest of the CLI (like
+`sw edit`) must still boot so the agent can fix the error.*
 
 ## 4. Testing the CLI
-When writing integration tests for your CLI, **always import the root `app` locally** inside the test function to prevent state leakage and module reloading issues from other tests. Use the `_mock_db` fixture if you need database isolation.
+When writing integration tests for your CLI, **always import the root `app` locally** inside the
+test function to prevent state leakage and module reloading issues from other tests. Use the
+`_mock_db` fixture if you need database isolation.
 
 ```python
 # tests/integration/your_domain/interfaces/cli/test_cli.py

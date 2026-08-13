@@ -7,11 +7,20 @@
 
 ## Feature Overview
 
-Feature E-FLOW-03 extends SpecWeaver's LLM layer from a single hardcoded Gemini provider to a **multi-provider adapter registry** supporting OpenAI, Anthropic, Mistral, and Qwen — all selectable via DB-stored configuration. Adding a new provider = implementing one adapter file with `provider_name`, `api_key_env_var`, and `default_costs` as class attributes. Zero manual registration needed.
+Feature E-FLOW-03 extends SpecWeaver's LLM layer from a single hardcoded Gemini provider to a
+**multi-provider adapter registry** supporting OpenAI, Anthropic, Mistral, and Qwen — all selectable
+via DB-stored configuration. Adding a new provider = implementing one adapter file with
+`provider_name`, `api_key_env_var`, and `default_costs` as class attributes. Zero manual
+registration needed.
 
-It solves provider lock-in by abstracting all LLM interactions behind the `LLMAdapter` ABC. It interacts with `infrastructure/llm/adapters/`, `infrastructure/llm/factory.py`, `core/config/settings_loader.py`, and `core/config/profiles.py`. It does NOT touch the flow engine, validation, sandbox, or workspace layers.
+It solves provider lock-in by abstracting all LLM interactions behind the `LLMAdapter` ABC. It
+interacts with `infrastructure/llm/adapters/`, `infrastructure/llm/factory.py`,
+`core/config/settings_loader.py`, and `core/config/profiles.py`. It does NOT touch the flow engine,
+validation, sandbox, or workspace layers.
 
-Key constraints: Optional SDKs (only Gemini is required), backward compatibility (existing Gemini-only users unaffected), and cost layering (adapter code defaults → DB overrides — never overwrites user data).
+Key constraints: Optional SDKs (only Gemini is required), backward compatibility (existing
+Gemini-only users unaffected), and cost layering (adapter code defaults → DB overrides — never
+overwrites user data).
 
 ## Research Findings
 

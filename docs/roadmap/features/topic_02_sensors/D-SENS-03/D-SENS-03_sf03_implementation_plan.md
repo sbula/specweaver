@@ -7,8 +7,12 @@
 - **Status**: COMPLETED
 
 ## Research Notes
-- **Track A (Codebase):** `pyproject.toml` requires explicit additions for `tree-sitter-c` and `tree-sitter-cpp`. `get_default_parsers()` in `factory.py` needs registering `.c, .h, .cpp, .hpp, .cc, .cxx`.
-- **Track B (Grammar):** C AST uses `function_definition` and `struct_specifier`. C++ AST extends this with `class_specifier` and `namespace_definition`. C++ uses `access_specifier` (public/private) for visibility, which can be evaluated during `_is_symbol_valid`.
+- **Track A (Codebase):** `pyproject.toml` requires explicit additions for `tree-sitter-c` and
+  `tree-sitter-cpp`. `get_default_parsers()` in `factory.py` needs registering
+  `.c, .h, .cpp, .hpp, .cc, .cxx`.
+- **Track B (Grammar):** C AST uses `function_definition` and `struct_specifier`. C++ AST extends
+  this with `class_specifier` and `namespace_definition`. C++ uses `access_specifier`
+  (public/private) for visibility, which can be evaluated during `_is_symbol_valid`.
 
 ## Proposed Changes
 
@@ -27,7 +31,9 @@
 - Define `CppCodeStructure` inheriting from `BaseTreeSitterParser`.
 - Implement declarative `.scm` queries expanding C definitions to include `class_specifier` and `namespace_definition`.
 - Implement custom `_is_symbol_valid` to support C++ `access_specifier` bounding.
-- **[HITL Decision: Option C]**: Implement support for `decorator_filter` by querying `(attribute_declaration (attribute name: (identifier)))` and `(attribute_specifier)`. If a filter is provided, only return symbols possessing matching attributes.
+- **[HITL Decision: Option C]**: Implement support for `decorator_filter` by querying
+  `(attribute_declaration (attribute name: (identifier)))` and `(attribute_specifier)`. If a filter
+  is provided, only return symbols possessing matching attributes.
 
 ### Parser Factory
 #### [x] [MODIFY] src/specweaver/workspace/ast/parsers/factory.py

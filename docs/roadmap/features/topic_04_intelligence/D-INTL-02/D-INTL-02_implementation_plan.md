@@ -25,14 +25,18 @@ The decomposition step is the **bridge** where features cross into architecture.
 
 1. **Business features** — user value ("Sell My Shares"). The primary decomposition driver.
 2. **Technical features** — NFRs ("Add mTLS", "Parallelize pipeline"). Same Feature Spec template, different stakeholders (security team, ops team).
-3. **Architectural gravity** — existing structure pulls new features into established boundaries. Once an architecture is established, follow it. Exceptions are acceptable (1–2 deviations), but beyond that consider refactoring.
+3. **Architectural gravity** — existing structure pulls new features into established boundaries.
+   Once an architecture is established, follow it. Exceptions are acceptable (1–2 deviations), but
+   beyond that consider refactoring.
 
 ### 1.3 Rules Are Advisory
 
 The 10-test battery provides **signals**, not verdicts. They flag "you might need to split" or "this looks too detailed for this level". The decision gate (currently HITL) makes the call.
 
 > [!IMPORTANT]
-> All HITL gates are designed with **structured decision criteria** so they can be replaced by automated gates in the future. Each gate produces a machine-readable score/recommendation, not just "please review".
+> All HITL gates are designed with **structured decision criteria** so they can be replaced by
+> automated gates in the future. Each gate produces a machine-readable score/recommendation, not
+> just "please review".
 
 ### 1.4 Sweet Spot: Business-Driven Stopping Point
 
@@ -41,7 +45,10 @@ Decompose until each piece describes a **business outcome**, not a technical ste
 - ❌ "Parse the order JSON" (technical step — too far)
 - Feature Specs never decompose to class/function level
 
-If following the business view consistently, the decomposition naturally lands at services (in SOA/microservice architectures) and modules (within services). This is expected — the architecture should emerge from business needs. Only when business decomposition is exhausted does technical decomposition apply.
+If following the business view consistently, the decomposition naturally lands at services (in
+SOA/microservice architectures) and modules (within services). This is expected — the architecture
+should emerge from business needs. Only when business decomposition is exhausted does technical
+decomposition apply.
 
 ### 1.5 Confidence-Based Scoring
 
@@ -142,7 +149,9 @@ Implementation: regex scan for path-like patterns (`/`, `.py`, `::`, dotted impo
 
 #### [MODIFY] `src/specweaver/validation/rules/spec/s01_one_sentence.py`
 
-Add `kind: SpecKind | None = None` to constructor. When set, use kind-specific thresholds. **Header matching is configurable**: S01 uses `## Intent` for `FEATURE`, `## 1. Purpose` for `COMPONENT` (default). Implemented via `_HEADER_MAP[SpecKind] → regex`.
+Add `kind: SpecKind | None = None` to constructor. When set, use kind-specific thresholds. **Header
+matching is configurable**: S01 uses `## Intent` for `FEATURE`, `## 1. Purpose` for `COMPONENT`
+(default). Implemented via `_HEADER_MAP[SpecKind] → regex`.
 
 #### [MODIFY] `src/specweaver/validation/rules/spec/s03_stranger.py`
 
@@ -218,7 +227,9 @@ class DecompositionPlan(BaseModel):
     timestamp: str
 ```
 
-`coverage_score` = (ComponentChange entries matching Blast Radius entries) / (total Blast Radius entries). LLM-assisted matching since Blast Radius may be free-form. `alignment_notes` and per-item `confidence` scores exist so a future auto-gate can replace HITL.
+`coverage_score` = (ComponentChange entries matching Blast Radius entries) / (total Blast Radius
+entries). LLM-assisted matching since Blast Radius may be free-form. `alignment_notes` and per-item
+`confidence` scores exist so a future auto-gate can replace HITL.
 
 #### [MODIFY] `src/specweaver/flow/models.py`
 

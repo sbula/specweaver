@@ -7,14 +7,25 @@
 - **Status**: APPROVED
 
 ## 1. Goal Description
-Implement `C09_traceability.py`, a pure logic validation rule that ensures every Functional Requirement (FR) and Non-Functional Requirement (NFR) documented in an L3 Spec is explicitly covered by a target implementation/test file using autonomous, language-agnostic `# @trace(req_id)` or `// @trace(req_id)` abstract syntax tree (AST) meta-comments.
+Implement `C09_traceability.py`, a pure logic validation rule that ensures every Functional
+Requirement (FR) and Non-Functional Requirement (NFR) documented in an L3 Spec is explicitly covered
+by a target implementation/test file using autonomous, language-agnostic `# @trace(req_id)` or
+`// @trace(req_id)` abstract syntax tree (AST) meta-comments.
 
 ## 2. HITL Approvals & Caveats (Phase 4 Merge)
-* **Language-Agnostic File Discovery**: The rule will NOT assume python. It will crawl up to the project root (mirroring `C04_coverage`) and dispatch the workspace files to the respective `tree-sitter` language analyzers (Python, JS/TS, etc.) to extract `comment` nodes from the AST.
-* **Greedy Requirement Extraction**: The rule will parse the `spec_text` using a stateless regex (`(?:N)?FR-\d+`) to capture the aggregate set of requirement IDs safely, rather than relying on brittle Markdown table constraints. 
+* **Language-Agnostic File Discovery**: The rule will NOT assume python. It will crawl up to the
+  project root (mirroring `C04_coverage`) and dispatch the workspace files to the respective
+  `tree-sitter` language analyzers (Python, JS/TS, etc.) to extract `comment` nodes from the AST.
+* **Greedy Requirement Extraction**: The rule will parse the `spec_text` using a stateless regex
+  (`(?:N)?FR-\d+`) to capture the aggregate set of requirement IDs safely, rather than relying on
+  brittle Markdown table constraints. 
 
 > [!NOTE]
-> **Scope Clarification**: This feature strictly checks the *mathematical presence* of the trace link to prove it was addressed mechanically by the orchestrator. Verification of whether the requirement is *really* implemented is handled by **Feature 3.29**, where a completely independent scenario pipeline runs hidden, "black box" tests against the generated code. If the coding agent hallucinates the coverage, the hidden tests fail at the JOIN gate.
+> **Scope Clarification**: This feature strictly checks the *mathematical presence* of the trace
+> link to prove it was addressed mechanically by the orchestrator. Verification of whether the
+> requirement is *really* implemented is handled by **Feature 3.29**, where a completely independent
+> scenario pipeline runs hidden, "black box" tests against the generated code. If the coding agent
+> hallucinates the coverage, the hidden tests fail at the JOIN gate.
 
 ## 3. Proposed Changes
 
@@ -28,7 +39,9 @@ The core engine for traceability extraction, safely bound in the `validation/rul
 - **`check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult`**:
   1. **Extract Requirements**: Use `re.findall(r"\b(?:N)?FR-\d+\b", spec_text)` to build the target set. Pass early if the set is empty.
   2. **Find Project Root**: Use standard upward crawl (e.g., finding `pyproject.toml`, `package.json`, or `.git`) stopping at a safe limit, identical to `C04`.
-  3. **Discover & Parse AST**: Instantiate available language-specific Tree-Sitter parsers. Recursively walk test directories (or all files, depending on language configuration) to extract nodes of type `comment`.
+  3. **Discover & Parse AST**: Instantiate available language-specific Tree-Sitter parsers.
+     Recursively walk test directories (or all files, depending on language configuration) to
+     extract nodes of type `comment`.
   4. **Intersect Requirements**: Scan the text of AST comment nodes for the `@trace(FR-x)` pattern. Keep a set of successfully mapped IDs.
   5. **Validation Delta**: Subtract `mapped_ids` from `target_ids`. If any target IDs are missing, yield a `_fail()` rule result listing exactly which `FR-X` are unmapped. Otherwise, `_pass()`.
 

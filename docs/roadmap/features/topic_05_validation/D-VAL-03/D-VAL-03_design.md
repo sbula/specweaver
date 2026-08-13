@@ -7,20 +7,43 @@
 
 ## Feature Overview
 
-Feature 3.19 transforms the `QARunnerInterface` from a Python-only construct into a fully-implemented polyglot execution engine spanning both **Atoms** (engine-internal rules) and **Tools** (agent-facing actions). It wraps the target-language CLI commands for Python, Kotlin, Java, Rust, and TypeScript (React) into dedicated language runner implementations. Each implementation will deeply integrate with its language's standard tooling (`cargo`, `gradlew`, `mvn`, `npm`/`jest`, `pytest`). Beyond testing, linting, and complexity, the interface is expanded to govern **compiling** and **debugging**, parsing test results into `TestRunResult`, `LintRunResult`, and `ComplexityRunResult` via open-source protocols (JUnit XML and SARIF), while routing detailed compiler/debugger standard errors back to the LLM agent identically.
+Feature 3.19 transforms the `QARunnerInterface` from a Python-only construct into a
+fully-implemented polyglot execution engine spanning both **Atoms** (engine-internal rules) and
+**Tools** (agent-facing actions). It wraps the target-language CLI commands for Python, Kotlin,
+Java, Rust, and TypeScript (React) into dedicated language runner implementations. Each
+implementation will deeply integrate with its language's standard tooling (`cargo`, `gradlew`,
+`mvn`, `npm`/`jest`, `pytest`). Beyond testing, linting, and complexity, the interface is expanded
+to govern **compiling** and **debugging**, parsing test results into `TestRunResult`,
+`LintRunResult`, and `ComplexityRunResult` via open-source protocols (JUnit XML and SARIF), while
+routing detailed compiler/debugger standard errors back to the LLM agent identically.
 
 ## Research Findings
 
 ### Codebase Patterns
-Presently, the `PythonQARunner` (`src/specweaver/loom/commons/qa_runner/python.py`) interacts directly with `pytest` and `ruff`. We will extend `src/specweaver/loom/commons/qa_runner/` by creating dedicated modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) that implement the expanded `QARunnerInterface`. Crucially, we must also update the Agent-facing Tool (`src/specweaver/loom/tools/qa_runner/tool.py`) to expose these new capabilities (`compile`, `debug`) so the AI Agents themselves can trigger native builds and debug execution loops just like the Pipeline Engine does with Atoms. 
+Presently, the `PythonQARunner` (`src/specweaver/loom/commons/qa_runner/python.py`) interacts
+directly with `pytest` and `ruff`. We will extend `src/specweaver/loom/commons/qa_runner/` by
+creating dedicated modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) that implement the
+expanded `QARunnerInterface`. Crucially, we must also update the Agent-facing Tool
+(`src/specweaver/loom/tools/qa_runner/tool.py`) to expose these new capabilities (`compile`,
+`debug`) so the AI Agents themselves can trigger native builds and debug execution loops just like
+the Pipeline Engine does with Atoms. 
 
-**Runner Resolution Strategy**: The factory function `_resolve_runner` will aggressively determine which runner (and build tool variant) to instantiate by first checking for explicit overrides in the local `context.yaml` of the target directory or Database Config. If absent, it will fall back to **target-aware structural tracing**—scanning upwards from the specific file/directory being executed looking for anchor files (e.g., if testing `src/native/rust_lib.rs`, it traces up to find a nested `Cargo.toml` → Rust Cargo runner; if testing `tests/test_py.py`, it traces up to root `pyproject.toml` → Python runner). This guarantees that heterogeneous workspaces (like Python projects with Rust extensions) are natively supported.
+**Runner Resolution Strategy**: The factory function `_resolve_runner` will aggressively determine
+which runner (and build tool variant) to instantiate by first checking for explicit overrides in the
+local `context.yaml` of the target directory or Database Config. If absent, it will fall back to
+**target-aware structural tracing**—scanning upwards from the specific file/directory being executed
+looking for anchor files (e.g., if testing `src/native/rust_lib.rs`, it traces up to find a nested
+`Cargo.toml` → Rust Cargo runner; if testing `tests/test_py.py`, it traces up to root
+`pyproject.toml` → Python runner). This guarantees that heterogeneous workspaces (like Python
+projects with Rust extensions) are natively supported.
 
 ### External Tools & CLI Invocations
 The implementations MUST execute exact CLI patterns:
 - **JUnitParser / SARIF-tools**: Generalized outputs natively parsed.
 - **Rust (Cargo)**: Compile: `cargo build`. Test: `cargo test -- --format=json | cargo2junit > junit.xml`. Lint: `cargo clippy --message-format=json`.
-- **Java/Kotlin (Gradle)**: Compile: `gradlew classes` / `gradlew assemble`. Test: `gradlew test` (JUnit in `build/test-results/test/`). Lint: `gradlew detekt --report sarif...` / `gradlew pmdMain` (SARIF plugin).
+- **Java/Kotlin (Gradle)**: Compile: `gradlew classes` / `gradlew assemble`. Test: `gradlew test`
+  (JUnit in `build/test-results/test/`). Lint: `gradlew detekt --report sarif...` /
+  `gradlew pmdMain` (SARIF plugin).
 - **Java/Kotlin (Maven)**: Compile: `mvn compile`. Test: `mvn test` (JUnit in `target/surefire-reports/`). Lint: `mvn detekt:check` (SARIF) / `mvn pmd:pmd` (SARIF).
 - **TypeScript (NPM)**: Compile: `tsc --noEmit` or `npm run build`. Test: `jest --reporters=default --reporters=jest-junit`. Lint: `eslint -f sarif -o eslint.sarif`.
 
@@ -89,7 +112,14 @@ none stated
 - **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf03_implementation_plan.md
 
 ### SF-04: Polyglot Submodule Architecture Refactor
-- **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and integration test folders natively inside `tests/unit/.../java/` to prevent directory and module bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract values purely via structural SARIF properties instead of brittle string regex scraping (fixing compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity and structural coverage.**
+- **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package
+  submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and
+  integration test folders natively inside `tests/unit/.../java/` to prevent directory and module
+  bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract
+  values purely via structural SARIF properties instead of brittle string regex scraping (fixing
+  compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and
+  Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity
+  and structural coverage.**
 - **FRs**: [FR-1]
 - **Inputs**: Existing unified runner files.
 - **Outputs**: Clean domain-driven package modules mapping per-language correctly.

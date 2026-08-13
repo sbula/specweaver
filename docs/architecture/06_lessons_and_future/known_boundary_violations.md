@@ -14,11 +14,19 @@
 
 
 > **Resolved in Feature 3.32 SF-4 (Pipeline Execution Optimization):**
-> - **Sandbox Cache Caching (NFR-2)**: Initially, `flow/engine` utilized `os.symlink` locally. This was struck down as an architectural violation of the FileSystem boundaries. It was refactored strictly to trigger `FileSystemAtom` natively ensuring path traversal boundaries are enforced.
-> - **Cache-Flush Dilemma**: We intentionally prevented `flow/engine` from consuming `assurance/graph/hasher.py` to trigger the actual metric flush post-pipeline. Instead, we shifted the operation purely to the `cli/pipelines.py` orchestrator which legally consumes both layer roots.
+> - **Sandbox Cache Caching (NFR-2)**: Initially, `flow/engine` utilized `os.symlink` locally. This
+>   was struck down as an architectural violation of the FileSystem boundaries. It was refactored
+>   strictly to trigger `FileSystemAtom` natively ensuring path traversal boundaries are enforced.
+> - **Cache-Flush Dilemma**: We intentionally prevented `flow/engine` from consuming
+>   `assurance/graph/hasher.py` to trigger the actual metric flush post-pipeline. Instead, we
+>   shifted the operation purely to the `cli/pipelines.py` orchestrator which legally consumes both
+>   layer roots.
 
 > **Resolved in Feature 3.14 (Artifact Tagging Engine)**
-> The implementation plan for SF-02 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.sandbox.lineage`. However, `llm/` strictly forbids all imports from `sandbox/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
+> The implementation plan for SF-02 explicitly instructed `prompt_builder.py` to import
+> `wrap_artifact_tag` from `specweaver.sandbox.lineage`. However, `llm/` strictly forbids all
+> imports from `sandbox/`. I resolved this by immediately relocating `lineage.py` into the `llm`
+> module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
 
 > **Resolved in Feature 3.11a:**
 > - Deleted `sandbox/research/` entirely

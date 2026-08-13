@@ -11,7 +11,10 @@
 
 ### CB-1: Engine Simplification + Protocol (FR-1, FR-2, FR-3)
 
-Delete integer remapping from `InMemoryGraphEngine`. Use semantic hash strings as native NetworkX node keys. Add `_file_index`, public query methods, snapshot methods. Add `GraphEngineProtocol`. Make `normalize_path` public. Remove `asyncio.Semaphore`. Refactor `GraphBuilder` to use public API only.
+Delete integer remapping from `InMemoryGraphEngine`. Use semantic hash strings as native NetworkX
+node keys. Add `_file_index`, public query methods, snapshot methods. Add `GraphEngineProtocol`.
+Make `normalize_path` public. Remove `asyncio.Semaphore`. Refactor `GraphBuilder` to use public API
+only.
 
 #### Files Modified
 
@@ -113,8 +116,13 @@ Fix `load_from_db` to return semantic-hash-keyed graph. Rename `flush_to_db` →
 7. Fix `load_from_db()`:
    - Return type: `nx.DiGraph` (not `tuple[Any, dict[str, int]]`)
    - Use `semantic_hash` as node key: `nx_graph.add_node(semantic_hash, ...)` instead of `node_id`
-   - Build edges using SQL JOIN: `SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata FROM edges e JOIN nodes n1 ON e.source_id = n1.id AND n1.is_active = 1 JOIN nodes n2 ON e.target_id = n2.id AND n2.is_active = 1`. **CRITICAL (RT-1)**: Filtering by `is_active=1` prevents NetworkX from silently generating empty ghost nodes upon `add_edge`.
-   - **NOTE (RT-2)**: Loading directly into raw `nx.DiGraph` bypasses Pydantic `GraphNode` validation. This is an explicit performance optimization; we trust the DB schema perfectly mirrors `GraphNode.model_dump()`.
+   - Build edges using SQL JOIN:
+     `SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata FROM edges e JOIN nodes n1 ON e.source_id = n1.id AND n1.is_active = 1 JOIN nodes n2 ON e.target_id = n2.id AND n2.is_active = 1`.
+     **CRITICAL (RT-1)**: Filtering by `is_active=1` prevents NetworkX from silently generating
+     empty ghost nodes upon `add_edge`.
+   - **NOTE (RT-2)**: Loading directly into raw `nx.DiGraph` bypasses Pydantic `GraphNode`
+     validation. This is an explicit performance optimization; we trust the DB schema perfectly
+     mirrors `GraphNode.model_dump()`.
    - Drop `hash_to_id` from return
 8. Remove `Any` from all type hints — use `nx.DiGraph`, `str`, `int` explicitly
 
@@ -155,7 +163,10 @@ New test file covering:
 
 ### Phase 0 Findings
 
-1. **`flush_to_db` already expects semantic hash keys** (line 76: `for semantic_hash, data in nx_graph.nodes(data=True)`). After dropping integer remapping, the engine's `_nx_graph` will natively have hash keys — the flush method works as-is. Only rename needed.
+1. **`flush_to_db` already expects semantic hash keys** (line 76:
+   `for semantic_hash, data in nx_graph.nodes(data=True)`). After dropping integer remapping, the
+   engine's `_nx_graph` will natively have hash keys — the flush method works as-is. Only rename
+   needed.
 
 2. **`load_from_db` returns DB integer keys** (line 197: `nx_graph.add_node(node_id, ...)`). This is the primary change: iterate DB rows, but use `semantic_hash` as the node key instead of `node_id`.
 
@@ -169,7 +180,9 @@ New test file covering:
 
 7. **`extract_subgraph` is async with semaphore**. After making it sync, the `@pytest.mark.asyncio` and `await` in tests must be removed.
 
-8. **`GraphNode.model_dump()` includes `semantic_hash` as a field**. When stored as a node attribute AND used as the node key, there's redundancy but no conflict. The `semantic_hash` attribute is needed for downstream consumers that read node attributes.
+8. **`GraphNode.model_dump()` includes `semantic_hash` as a field**. When stored as a node attribute
+   AND used as the node key, there's redundancy but no conflict. The `semantic_hash` attribute is
+   needed for downstream consumers that read node attributes.
 
 ## Audit Findings (Red Team / Blue Team)
 
@@ -177,8 +190,19 @@ New test file covering:
 
 ### Key Architectural Decisions (Merged)
 
-1. **[CRITICAL] Ghost Node Injection (RT-1):** The SQL JOIN for edge loading must explicitly filter `WHERE n1.is_active=1 AND n2.is_active=1`. Without this, NetworkX's `add_edge` would silently instantiate empty ghost nodes in the engine's memory space, corrupting data integrity.
-2. **[HIGH] Pydantic Validation Bypass (RT-2):** `load_from_db` populates the engine's raw `nx.DiGraph` directly, bypassing the `GraphNode` domain model validation. This DDD violation is an accepted performance optimization (KISS), assuming the DB perfectly mirrors the Pydantic schema.
-3. **[HIGH] NetworkX Protocol Leak (RT-3):** `GraphEngineProtocol` exposes `nx.DiGraph`. This violates strict Hexagonal Architecture by leaking the internal DTO type. This is an accepted tradeoff; even the future Rust PyO3 engine will be forced to map its state to NetworkX to satisfy Python consumers.
+1. **[CRITICAL] Ghost Node Injection (RT-1):** The SQL JOIN for edge loading must explicitly filter
+   `WHERE n1.is_active=1 AND n2.is_active=1`. Without this, NetworkX's `add_edge` would silently
+   instantiate empty ghost nodes in the engine's memory space, corrupting data integrity.
+2. **[HIGH] Pydantic Validation Bypass (RT-2):** `load_from_db` populates the engine's raw
+   `nx.DiGraph` directly, bypassing the `GraphNode` domain model validation. This DDD violation is
+   an accepted performance optimization (KISS), assuming the DB perfectly mirrors the Pydantic
+   schema.
+3. **[HIGH] NetworkX Protocol Leak (RT-3):** `GraphEngineProtocol` exposes `nx.DiGraph`. This
+   violates strict Hexagonal Architecture by leaking the internal DTO type. This is an accepted
+   tradeoff; even the future Rust PyO3 engine will be forced to map its state to NetworkX to satisfy
+   Python consumers.
 4. **[LOW] Edge Delta Extraction (RT-4):** `get_edges_involving` leverages NetworkX's optimized `edges(nbunch)` API (O(k)) instead of O(E) manual iteration.
-5. **[LOW] Export Copy Depth (RT-5):** `export_semantic_digraph` uses `nx.DiGraph(self._nx_graph)` for a shallow copy instead of deep-copying node attribute dicts. This prevents a massive performance penalty during CLI export, under the strict assumption that callers treat the exported graph as read-only.
+5. **[LOW] Export Copy Depth (RT-5):** `export_semantic_digraph` uses `nx.DiGraph(self._nx_graph)`
+   for a shallow copy instead of deep-copying node attribute dicts. This prevents a massive
+   performance penalty during CLI export, under the strict assumption that callers treat the
+   exported graph as read-only.

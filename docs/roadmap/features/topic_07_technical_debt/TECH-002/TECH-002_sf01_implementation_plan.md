@@ -17,17 +17,33 @@
 > **Requirements delivered by this sub-feature: `FR-1`, `FR-2`.**
 
 **Implementation Note:**
-This implementation plan has been successfully executed with zero deviations. All components (BaseTool, ToolRegistry) were implemented as specified, tests are 100% passing (Unit, Integration, E2E), and architecture boundaries were strictly maintained.
+This implementation plan has been successfully executed with zero deviations. All components
+(BaseTool, ToolRegistry) were implemented as specified, tests are 100% passing (Unit, Integration,
+E2E), and architecture boundaries were strictly maintained.
 
 ---
 
 ## 1. Research Notes
-- **Metaclass Registrations:** To preserve domain boundaries and prevent premature C-bindings or OS imports, all tools must be registered explicitly in a central registry utilizing lazy factory functions (no module-scope imports in `registry.py`).
+- **Metaclass Registrations:** To preserve domain boundaries and prevent premature C-bindings or OS
+  imports, all tools must be registered explicitly in a central registry utilizing lazy factory
+  functions (no module-scope imports in `registry.py`).
 - **Import Chains:** Standard registry definition must perform imports dynamically inside closures (nested `def` or lambdas) rather than at module scope.
-- **Tach Exposure:** `specweaver.sandbox.registry` must be added to the sandbox interfaces expose block in `tach.toml`. It was **not** previously exposed (the `registry` at line 329 of tach.toml belongs to `specweaver.assurance.validation`, not sandbox).
-- **`BaseTool` contract (AD-2):** `BaseTool` exposes only `role` and `definitions()`. The `allowed_intents` property was removed — the facade RBAC pattern already enforces intent restrictions by physically removing methods. No caller reads `allowed_intents`. Removing it avoids redundancy and makes all existing facades conformant with minimal changes in SF-02.
-- **Red-phase tests:** The SF-01 test file intentionally includes `isinstance(tool, BaseTool)` assertions that are **RED** at the end of SF-01. These turn **GREEN** in SF-02 when domain facades inherit `BaseTool`. This is the explicit TDD contract between SF-01 and SF-02.
-- **Factory kwargs isolation (AD-7):** Each factory closure inside `get_standard_registry()` must cherry-pick **only** the kwargs it needs and discard the rest. Domain factories have wildly incompatible signatures (e.g. `ProtocolTool()` takes zero args, `create_filesystem_interface` needs `role/cwd/grants`, `MCPExplorerTool` needs `context`). A flat `**kwargs` passthrough would crash with `TypeError` at SF-03 integration time. The `ToolRegistry` itself stays dumb — it passes `**kwargs` to closures, and each closure owns its own parameter mapping.
+- **Tach Exposure:** `specweaver.sandbox.registry` must be added to the sandbox interfaces expose
+  block in `tach.toml`. It was **not** previously exposed (the `registry` at line 329 of tach.toml
+  belongs to `specweaver.assurance.validation`, not sandbox).
+- **`BaseTool` contract (AD-2):** `BaseTool` exposes only `role` and `definitions()`. The
+  `allowed_intents` property was removed — the facade RBAC pattern already enforces intent
+  restrictions by physically removing methods. No caller reads `allowed_intents`. Removing it avoids
+  redundancy and makes all existing facades conformant with minimal changes in SF-02.
+- **Red-phase tests:** The SF-01 test file intentionally includes `isinstance(tool, BaseTool)`
+  assertions that are **RED** at the end of SF-01. These turn **GREEN** in SF-02 when domain facades
+  inherit `BaseTool`. This is the explicit TDD contract between SF-01 and SF-02.
+- **Factory kwargs isolation (AD-7):** Each factory closure inside `get_standard_registry()` must
+  cherry-pick **only** the kwargs it needs and discard the rest. Domain factories have wildly
+  incompatible signatures (e.g. `ProtocolTool()` takes zero args, `create_filesystem_interface`
+  needs `role/cwd/grants`, `MCPExplorerTool` needs `context`). A flat `**kwargs` passthrough would
+  crash with `TypeError` at SF-03 integration time. The `ToolRegistry` itself stays dumb — it passes
+  `**kwargs` to closures, and each closure owns its own parameter mapping.
 
 ---
 
@@ -61,11 +77,15 @@ This implementation plan has been successfully executed with zero deviations. Al
 #### [NEW] [registry.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/registry.py)
 - Implement `ToolRegistry`:
   - `register(self, name: str, factory: Callable[..., BaseTool]) -> None`: Stores the factory. Duplicate keys silently overwrite (documented, tested).
-  - `create_tools(self, allowed_tools: list[str], **kwargs: Any) -> list[BaseTool]`: Look up allowed tool names, execute their factory callables with kwargs, and return the resolved `BaseTool` instances. Skip unregistered or missing tools with a `logger.warning` rather than crashing.
+  - `create_tools(self, allowed_tools: list[str], **kwargs: Any) -> list[BaseTool]`: Look up allowed
+    tool names, execute their factory callables with kwargs, and return the resolved `BaseTool`
+    instances. Skip unregistered or missing tools with a `logger.warning` rather than crashing.
 - Implement `get_standard_registry() -> ToolRegistry`:
   - Instantiates a `ToolRegistry`.
   - Registers the following keys with lazy local-importing factory closures (no module-scope imports).
-  - **Each factory closure cherry-picks only the kwargs it needs** from the superset passed by `create_tools()`, ignoring the rest (AD-7). This prevents `TypeError` crashes from incompatible factory signatures:
+  - **Each factory closure cherry-picks only the kwargs it needs** from the superset passed by
+    `create_tools()`, ignoring the rest (AD-7). This prevents `TypeError` crashes from incompatible
+    factory signatures:
     - `"fs"` / `"filesystem"`: imports `create_filesystem_interface` from `specweaver.sandbox.filesystem.interfaces.facades`. Cherry-picks: `role`, `cwd`, `grants`, `exclude_dirs`, `exclude_patterns`.
     - `"ast"` / `"codestructure"`: imports `CodeStructureTool` from `specweaver.sandbox.code_structure.interfaces.tool`. Cherry-picks: `atom`, `role`, `grants`, `hidden_intents`.
     - `"web"`: imports `WebTool` from `specweaver.sandbox.web.interfaces.tool`. Cherry-picks: `role`.
@@ -92,12 +112,16 @@ Tests that must be **GREEN** at end of SF-01:
 - `test_tool_boundary_empty_values` — Empty `role` string and empty `definitions` list are accepted (no validation on values, only on presence of implementation).
 - `test_registry_happy_path` — `register` + `create_tools` returns the correct tool.
 - `test_registry_missing_factory_logs_warning` — Missing tool name logs a warning, no crash.
-- `test_registry_lazy_resolution_preserves_namespace` — After `get_standard_registry()` creation, none of the domain modules (e.g., `specweaver.sandbox.filesystem.interfaces.facades`) are in `sys.modules`.
+- `test_registry_lazy_resolution_preserves_namespace` — After `get_standard_registry()` creation,
+  none of the domain modules (e.g., `specweaver.sandbox.filesystem.interfaces.facades`) are in
+  `sys.modules`.
 - `test_registry_factory_exception_handling` — A crashing factory logs an exception and skips; other tools are still returned.
 - `test_registry_duplicate_registration_overwrites` — Registering the same key twice silently overwrites the factory.
 
 Tests that must be **RED** at end of SF-01 (turn GREEN in SF-02):
-- `test_standard_registry_tools_are_basetool_instances` — Each tool returned by `get_standard_registry().create_tools(...)` is `isinstance(tool, BaseTool)`. This is explicitly a red-phase marker for SF-02.
+- `test_standard_registry_tools_are_basetool_instances` — Each tool returned by
+  `get_standard_registry().create_tools(...)` is `isinstance(tool, BaseTool)`. This is explicitly a
+  red-phase marker for SF-02.
 
 ### Manual Verification
 - Run tests (expect 9 green, 1 xfail):

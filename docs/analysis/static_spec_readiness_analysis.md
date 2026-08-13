@@ -11,7 +11,9 @@
 
 ## 1. Problem Statement
 
-The [Spec Methodology](../architecture/spec_methodology.md) defines 5 readiness tests that determine whether a spec is small enough to implement or needs further decomposition. Running all 5 tests via an LLM is expensive (tokens) and unreliable (LLMs are bad at structural counting tasks).
+The [Spec Methodology](../architecture/spec_methodology.md) defines 5 readiness tests that determine
+whether a spec is small enough to implement or needs further decomposition. Running all 5 tests via
+an LLM is expensive (tokens) and unreliable (LLMs are bad at structural counting tasks).
 
 **Question**: How much of the readiness testing can be done with static code analysis (zero LLM tokens) while maintaining useful accuracy?
 
@@ -83,7 +85,9 @@ def test_single_setup(spec_text: str) -> TestResult:
     return PASS()
 ```
 
-**Why this works well**: The keyword categories are domain-stable. A spec mentioning "crash recovery" AND "parallel mutex" AND "API endpoints" is structurally doing too many things regardless of the project.
+**Why this works well**: The keyword categories are domain-stable. A spec mentioning "crash
+recovery" AND "parallel mutex" AND "API endpoints" is structurally doing too many things regardless
+of the project.
 
 **Calibration data from existing specs**:
 - `01_02` (Status Domain): fixture, filesystem → 2 categories → ✅ PASS
@@ -118,7 +122,10 @@ def test_stranger(spec_text: str) -> TestResult:
     return PASS()
 ```
 
-**Limitation**: Cannot distinguish between *necessary* references (a spec SHOULD reference its interfaces) and *problematic* references (the spec can't stand alone). This is where the ~60% accuracy comes from. Borderline cases need LLM judgment: "are these references for context, or is the spec actually incomplete without them?"
+**Limitation**: Cannot distinguish between *necessary* references (a spec SHOULD reference its
+interfaces) and *problematic* references (the spec can't stand alone). This is where the ~60%
+accuracy comes from. Borderline cases need LLM judgment: "are these references for context, or is
+the spec actually incomplete without them?"
 
 ---
 
@@ -163,7 +170,10 @@ def test_dependency_direction(spec_text: str, this_component: str) -> TestResult
     return PASS()
 ```
 
-**Why this is ~90%**: The hierarchy map is human-curated, so the classification of levels is reliable. The only inaccuracy source is string matching (a spec might mention "executor" in prose without actually depending on the executor module). More precise matching (component name in backticks, or in link targets) pushes accuracy higher.
+**Why this is ~90%**: The hierarchy map is human-curated, so the classification of levels is
+reliable. The only inaccuracy source is string matching (a spec might mention "executor" in prose
+without actually depending on the executor module). More precise matching (component name in
+backticks, or in link targets) pushes accuracy higher.
 
 **Key insight**: The hierarchy map itself is a valuable architectural artifact — it forces the team to explicitly state "what depends on what," which is often implicit knowledge.
 
@@ -203,7 +213,9 @@ def test_day(spec_text: str) -> TestResult:
     return PASS()
 ```
 
-**Calibration needed**: The weights and thresholds above are initial estimates. After running against the 10 existing specs, calibrate empirically: which specs were actually implementable in ~1 day vs. which ones weren't? Adjust weights to match.
+**Calibration needed**: The weights and thresholds above are initial estimates. After running
+against the 10 existing specs, calibrate empirically: which specs were actually implementable in ~1
+day vs. which ones weren't? Adjust weights to match.
 
 ---
 
@@ -295,7 +307,9 @@ Result: 4/5 PASS, 1 BORDERLINE
 Action: Review cross-references manually or escalate to LLM
 ```
 
-**When to build this**: After the Steel Thread (roadmap Step 2) proves the engine works. This becomes a natural candidate for roadmap Step 10 (Spec Slicing Automation) or could be a standalone tool built even earlier as a pre-commit hook.
+**When to build this**: After the Steel Thread (roadmap Step 2) proves the engine works. This
+becomes a natural candidate for roadmap Step 10 (Spec Slicing Automation) or could be a standalone
+tool built even earlier as a pre-commit hook.
 
 ---
 
@@ -310,7 +324,10 @@ Before trusting the thresholds, run the static tests against all 10 existing spe
 | `01_06` (51KB) | ✅ Implementation is clean despite size | Size FAIL — needs calibration (the spec is detailed but well-focused) |
 | `01_08` (107KB) | ❌ Never implemented, monster spec | All FAIL |
 
-The 01_06 case is important: it's 51KB but the implementation is clean. This means file size alone isn't sufficient — the composite score (which accounts for section count, branch count, etc.) must compensate. If 01_06 has few decision branches and few test environments despite its size, the composite score should correctly classify it as BORDERLINE rather than FAIL.
+The 01_06 case is important: it's 51KB but the implementation is clean. This means file size alone
+isn't sufficient — the composite score (which accounts for section count, branch count, etc.) must
+compensate. If 01_06 has few decision branches and few test environments despite its size, the
+composite score should correctly classify it as BORDERLINE rather than FAIL.
 
 **Action**: Run the static tests against all 10 specs, compare with implementation reality, and adjust weights/thresholds.
 
@@ -322,6 +339,11 @@ The 01_06 case is important: it's 51KB but the implementation is clean. This mea
 
 2. **Project bootstrapping**: For a brand-new project with no hierarchy map, what are sensible defaults? Start with a flat hierarchy (all level 0) and promote components as structure emerges?
 
-3. **Cross-project calibration**: Are the thresholds (5 H2 sections, 3 test environments, etc.) universal, or do they need per-project tuning? Initial hypothesis: they're universal for "spec documents intended for agent implementation," but this needs validation across multiple projects.
+3. **Cross-project calibration**: Are the thresholds (5 H2 sections, 3 test environments, etc.)
+   universal, or do they need per-project tuning? Initial hypothesis: they're universal for "spec
+   documents intended for agent implementation," but this needs validation across multiple projects.
 
-4. **False positive cost**: A false positive (flagging a good spec as "too big") costs author time investigating. A false negative (passing a bad spec) costs LLM tokens downstream. Which is more expensive? This determines whether thresholds should be aggressive (more false positives, fewer false negatives) or conservative.
+4. **False positive cost**: A false positive (flagging a good spec as "too big") costs author time
+   investigating. A false negative (passing a bad spec) costs LLM tokens downstream. Which is more
+   expensive? This determines whether thresholds should be aggressive (more false positives, fewer
+   false negatives) or conservative.

@@ -14,7 +14,10 @@
 
 ### CB-1: Distribute CLI Logic to Natural Owners (FR-6, FR-7, FR-8, FR-12)
 
-Extract orchestration logic from `graph/interfaces/cli.py` into domain-owning modules. Move `check_lineage` to `graph/lineage/scanner.py`. Slim CLI to thin adapter. Delete `AbstractGraphRepository`. Fix repository `flush_to_db` / `load_from_db` signatures to use semantic digraphs properly.
+Extract orchestration logic from `graph/interfaces/cli.py` into domain-owning modules. Move
+`check_lineage` to `graph/lineage/scanner.py`. Slim CLI to thin adapter. Delete
+`AbstractGraphRepository`. Fix repository `flush_to_db` / `load_from_db` signatures to use semantic
+digraphs properly.
 
 ---
 
@@ -126,9 +129,13 @@ Extract orchestration logic from `graph/interfaces/cli.py` into domain-owning mo
             sys.exit(1)
     ```
 4. **No local file-collecting helper** in CLI module — globbing is fully encapsulated inside the `GraphBuilder.collect_files()` domain-logic orchestrator.
-5. **Update imports**: Add `from specweaver.assurance.graph.loader import resolve_service_name`. Remove `from specweaver.interfaces.cli._core import console, get_db` → keep only `console` import via `_core`. Remove `uuid` import (only used in lineage commands).
+5. **Update imports**: Add `from specweaver.assurance.graph.loader import resolve_service_name`.
+   Remove `from specweaver.interfaces.cli._core import console, get_db` → keep only `console` import
+   via `_core`. Remove `uuid` import (only used in lineage commands).
 6. **Lineage commands** (`tag`, `tree_command`, `lineage_app`) remain unchanged in this file — they are genuinely CLI adapter code for the lineage domain.
-7. **Update `load_from_db()` call**: `engine._graph = graph` → `semantic_digraph = repo.load_from_db()` then `engine.load_semantic_digraph(semantic_digraph)`. Note: `load_from_db()` now returns `nx.DiGraph` directly (no tuple).
+7. **Update `load_from_db()` call**: `engine._graph = graph` →
+   `semantic_digraph = repo.load_from_db()` then `engine.load_semantic_digraph(semantic_digraph)`.
+   Note: `load_from_db()` now returns `nx.DiGraph` directly (no tuple).
 8. **Update `flush_to_db()` call**: `repo.flush_to_db(engine)` → `repo.persist_semantic_digraph(engine.export_semantic_digraph())`.
 
 ##### [MODIFY] `src/specweaver/assurance/validation/interfaces/cli.py`
@@ -386,31 +393,49 @@ Fix the `LineageRepository` sync-over-async pattern (AP-8). Replace `anyio.run()
 ## Research Notes
 
 ### Finding 1: `load_from_db()` Still Returns Integer-Keyed Graph
-**Impact**: CRITICAL. Despite SF-01 converting the engine to hash-based keys, `load_from_db()` in `repository.py` (line 197-205) still uses `nx_graph.add_node(node_id, ...)` where `node_id` is the DB integer. The CLI then does `engine._graph = graph` which injects integer-keyed nodes into a hash-based engine. This is **AP-10 still alive**. SF-02 MUST fix this.
+**Impact**: CRITICAL. Despite SF-01 converting the engine to hash-based keys, `load_from_db()` in
+`repository.py` (line 197-205) still uses `nx_graph.add_node(node_id, ...)` where `node_id` is the
+DB integer. The CLI then does `engine._graph = graph` which injects integer-keyed nodes into a
+hash-based engine. This is **AP-10 still alive**. SF-02 MUST fix this.
 
 ### Finding 2: `flush_to_db(engine)` Type Mismatch Persists
-The CLI (line 125) calls `repo.flush_to_db(engine)` passing the engine object instead of a graph. The `flush_to_db` method has `nx_graph: Any` parameter. With SF-01's changes, `engine` no longer has `.nodes(data=True)` directly — it's on `engine._nx_graph`. This will crash at runtime. SF-02 must change to `repo.persist_semantic_digraph(engine.export_semantic_digraph())`.
+The CLI (line 125) calls `repo.flush_to_db(engine)` passing the engine object instead of a graph.
+The `flush_to_db` method has `nx_graph: Any` parameter. With SF-01's changes, `engine` no longer has
+`.nodes(data=True)` directly — it's on `engine._nx_graph`. This will crash at runtime. SF-02 must
+change to `repo.persist_semantic_digraph(engine.export_semantic_digraph())`.
 
 ### Finding 3: `AbstractGraphRepository` Still Exists
 SF-01 planned to delete it but deferred. SF-02 must do it now (FR-5 + AP-9).
 
 ### Finding 4: `anyio` Dependency in LineageRepository
-`anyio` is used solely for `anyio.run()` sync-over-async bridge. After replacing with direct `sqlite3`, the `anyio` import can be removed from this file. `anyio` remains in the project for other modules.
+`anyio` is used solely for `anyio.run()` sync-over-async bridge. After replacing with direct
+`sqlite3`, the `anyio` import can be removed from this file. `anyio` remains in the project for
+other modules.
 
 ### Finding 5: Tach Boundary for Scanner
-Currently `tach.toml` exposes `lineage.engine` and `lineage.repository` from the `graph` module. Adding `lineage.scanner` is required to allow `assurance.validation.interfaces.cli` to import from it without tach violations.
+Currently `tach.toml` exposes `lineage.engine` and `lineage.repository` from the `graph` module.
+Adding `lineage.scanner` is required to allow `assurance.validation.interfaces.cli` to import from
+it without tach violations.
 
 ### Finding 6: `_purge_stale_nodes` Cross-References Entire Disk
-The current `_purge_stale_nodes` iterates `target_path.rglob("*")` to build a set of on-disk files, then checks every DB file against this set AND also checks `Path(db_file).exists()`. This dual check is redundant — if a file is in `found_on_disk`, it exists. The new `purge_stale_entries` should only compare DB entries against the caller-provided set, without doing its own filesystem checks. The filesystem enumeration stays in the CLI (thin adapter responsibility).
+The current `_purge_stale_nodes` iterates `target_path.rglob("*")` to build a set of on-disk files,
+then checks every DB file against this set AND also checks `Path(db_file).exists()`. This dual check
+is redundant — if a file is in `found_on_disk`, it exists. The new `purge_stale_entries` should only
+compare DB entries against the caller-provided set, without doing its own filesystem checks. The
+filesystem enumeration stays in the CLI (thin adapter responsibility).
 
 ### Finding 7: Test Infrastructure for `load_from_db` Roundtrip
-The existing `test_repository_load.py` tests explicitly assert `isinstance(node_ids[0], int)` (line 46). This will break when we fix `load_from_db` to return hash-keyed graphs. All 5 tests in this file need updating.
+The existing `test_repository_load.py` tests explicitly assert `isinstance(node_ids[0], int)` (line
+46). This will break when we fix `load_from_db` to return hash-keyed graphs. All 5 tests in this
+file need updating.
 
 ### Finding 8: `test_repository_helpers.py` Also Uses Old API (RT-R1-02)
 Four `flush_to_db` calls and three `load_from_db()` calls in `test_repository_helpers.py`. Uses `id_map` return value in assertions. All need updating for rename + return type change.
 
 ### Finding 9: Cross-Platform Path Normalization (RT-R1-05)
-`_collect_known_file_ids` builds `{str(target_path)}` using raw `str(Path)` which on Windows produces backslashes. But `file_id` in the DB is normalized to forward-slash + lowercase. `purge_stale_entries` must normalize `known_file_ids` to match DB convention.
+`_collect_known_file_ids` builds `{str(target_path)}` using raw `str(Path)` which on Windows
+produces backslashes. But `file_id` in the DB is normalized to forward-slash + lowercase.
+`purge_stale_entries` must normalize `known_file_ids` to match DB convention.
 
 ### Finding 10: FR-4 Explicitly Says Drop `hash_to_id` (RT-R1-01)
 FR-4 states: *"drop `hash_to_id` tuple — unused"*. `load_from_db()` must return `nx.DiGraph` only. `persist_semantic_digraph` builds its own mapping via `_get_hash_to_id_map` internally.

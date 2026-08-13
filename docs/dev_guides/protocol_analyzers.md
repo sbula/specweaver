@@ -1,6 +1,9 @@
 # Protocol & Schema Analyzers
 
-SpecWeaver utilizes a purely native, zero-compilation protocol parsing layer located at `specweaver/sandbox/commons/protocol`. This module is designed to structurally map external API definitions (like OpenAPI `paths`, AsyncAPI `channels`, and gRPC `rpc` methods) into standard `ProtocolEndpoint` and `ProtocolMessage` Pydantic models.
+SpecWeaver utilizes a purely native, zero-compilation protocol parsing layer located at
+`specweaver/sandbox/commons/protocol`. This module is designed to structurally map external API
+definitions (like OpenAPI `paths`, AsyncAPI `channels`, and gRPC `rpc` methods) into standard
+`ProtocolEndpoint` and `ProtocolMessage` Pydantic models.
 
 Currently supported out of the box:
 - **OpenAPI 3.x**: Extracts `paths` and `components.schemas`.
@@ -11,8 +14,13 @@ Currently supported out of the box:
 
 The Protocol module operates inside the Execution layer (Loom) but acts as an **adapter**.
 1. **Zero I/O Logic**: The interface only accepts standard python `str` payloads. The logic to read files from disk is managed by `ProtocolTool` and passed downward.
-2. **Strict Typings**: Due to the heavily nested and chaotic nature of YAML dictionaries inside `components.schemas`, standard dictionaries are banned from passing the Loom boundary. Everything must be mapped to `ProtocolMessage` cleanly before extraction completes.
-3. **Speed over Validity**: We explicitly skip robust library-level semantic validation (e.g., `jsonschema` library validation) to maintain the strict < 50ms per-file parsing speed budget. If an API contract violates basic topological expectations, exceptions like `ProtocolSchemaError` are raised immediately natively.
+2. **Strict Typings**: Due to the heavily nested and chaotic nature of YAML dictionaries inside
+   `components.schemas`, standard dictionaries are banned from passing the Loom boundary. Everything
+   must be mapped to `ProtocolMessage` cleanly before extraction completes.
+3. **Speed over Validity**: We explicitly skip robust library-level semantic validation (e.g.,
+   `jsonschema` library validation) to maintain the strict < 50ms per-file parsing speed budget. If
+   an API contract violates basic topological expectations, exceptions like `ProtocolSchemaError`
+   are raised immediately natively.
 
 ## Integrating a New Protocol
 
@@ -28,8 +36,13 @@ If you need to add support for GraphQL, Avro, or Thrift, follow these steps:
 ## Atom and Tool Connectors
 
 The lower-level parsers are strictly encapsulated by the Orchestrator via native connectors:
-- **`ProtocolAtom`**: Accepts an intent (`extract_schema_endpoints` or `extract_schema_messages`) and the standard `file_path`, handling raw disk reads and returning mathematically bounded `AtomResult` representations of the payloads. Exception faults (OS or Runtime) are natively mapped to a `FAILED` result.
-- **`ProtocolTool`**: Wraps the Atom securely, returning standard `ToolDefinition` schemas directly usable by provider LLMs. Enables Agents to dynamically extract protocol intents securely inside the boundaries of the execution harness.
+- **`ProtocolAtom`**: Accepts an intent (`extract_schema_endpoints` or `extract_schema_messages`)
+  and the standard `file_path`, handling raw disk reads and returning mathematically bounded
+  `AtomResult` representations of the payloads. Exception faults (OS or Runtime) are natively mapped
+  to a `FAILED` result.
+- **`ProtocolTool`**: Wraps the Atom securely, returning standard `ToolDefinition` schemas directly
+  usable by provider LLMs. Enables Agents to dynamically extract protocol intents securely inside
+  the boundaries of the execution harness.
 
 ## Validation Execution Integration
 

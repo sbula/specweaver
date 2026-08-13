@@ -1,8 +1,33 @@
 # US-25: Compliance & Constitution Governance - Integration Contracts
 
 ## Base Story Contract (`INT-US-25`)
-* **Status:** ✅ Complete (2026-08-13) — contract written against already-delivered capabilities, not alongside new ones. `C-VAL-01`, `C-VAL-02`, `C-VAL-03`, `D-VAL-02` and `D-VAL-04` had all shipped ✅ and the epic was marked 🟢, while this document had never been written past `[Pending definition...]` and the roadmap marked the contract `✅` anyway — a **built-but-not-integrated** entry of exactly the shape `INT-US-21` exposed and closed. Found by `TECH-017`'s re-measurement (2026-08-13); the roadmap marker was corrected to `[ ]` the same day, then the seam was proven and it is now genuinely closed. Closing this contract closes the **US-25 epic**.
-* **Integration Description:** Two independent governance surfaces reach the agent, and both are proven to change its behaviour rather than merely to be storable. **(1) Constitution** — `sw constitution init/show/check` manages a project-wide `CONSTITUTION.md` (`C-VAL-01`) which is resolved by walk-up, size-capped via `sw config set-constitution-max-size`, and **injected into the prompt of every LLM-consuming command**: `review spec`, `review code` and `implement`. Absence of the file means no injection rather than a broken prompt, and a project-local file overrides the default. **(2) Domain profile** — `sw config set-profile <name>` (`C-VAL-02`) selects one of five preset bundles, and `sw check --level component` then loads **that profile's validation pipeline YAML** (`validation_spec_web_app`, `_library`, …) instead of `validation_spec_default`, with `--pipeline` and `--level feature` both overriding it. Each profile pipeline carries `extends: validation_spec_default`, so `D-VAL-02`'s YAML inheritance resolves as part of the same round trip. Layered on top, a nested `context.yaml` declaring `operational.dal_level` (`C-VAL-03`) makes the same spec that PASSES WITH WARNINGS under no boundary FAIL under `DAL_A`, while `DAL_E` leaves it passing — so the override is *strictness*, not merely *boundedness*. `D-VAL-04`'s standards scan upserts rather than duplicates across re-scans and honours `.specweaverignore`. **Deliberately delegated:** the code-level half of `C-VAL-03` — that a strict DAL changes the verdict on LLM-*generated* code — is `TECH-041`; it needs a scripted adapter because `sw implement` reaches the provider before any code-level enforcement runs, and it is named here rather than implied covered.
+* **Status:** ✅ Complete (2026-08-13) — contract written against already-delivered capabilities, not
+  alongside new ones. `C-VAL-01`, `C-VAL-02`, `C-VAL-03`, `D-VAL-02` and `D-VAL-04` had all shipped
+  ✅ and the epic was marked 🟢, while this document had never been written past
+  `[Pending definition...]` and the roadmap marked the contract `✅` anyway — a
+  **built-but-not-integrated** entry of exactly the shape `INT-US-21` exposed and closed. Found by
+  `TECH-017`'s re-measurement (2026-08-13); the roadmap marker was corrected to `[ ]` the same day,
+  then the seam was proven and it is now genuinely closed. Closing this contract closes the **US-25
+  epic**.
+* **Integration Description:** Two independent governance surfaces reach the agent, and both are
+  proven to change its behaviour rather than merely to be storable. **(1) Constitution** —
+  `sw constitution init/show/check` manages a project-wide `CONSTITUTION.md` (`C-VAL-01`) which is
+  resolved by walk-up, size-capped via `sw config set-constitution-max-size`, and **injected into
+  the prompt of every LLM-consuming command**: `review spec`, `review code` and `implement`. Absence
+  of the file means no injection rather than a broken prompt, and a project-local file overrides the
+  default. **(2) Domain profile** — `sw config set-profile <name>` (`C-VAL-02`) selects one of five
+  preset bundles, and `sw check --level component` then loads **that profile's validation pipeline
+  YAML** (`validation_spec_web_app`, `_library`, …) instead of `validation_spec_default`, with
+  `--pipeline` and `--level feature` both overriding it. Each profile pipeline carries
+  `extends: validation_spec_default`, so `D-VAL-02`'s YAML inheritance resolves as part of the same
+  round trip. Layered on top, a nested `context.yaml` declaring `operational.dal_level` (`C-VAL-03`)
+  makes the same spec that PASSES WITH WARNINGS under no boundary FAIL under `DAL_A`, while `DAL_E`
+  leaves it passing — so the override is *strictness*, not merely *boundedness*. `D-VAL-04`'s
+  standards scan upserts rather than duplicates across re-scans and honours `.specweaverignore`.
+  **Deliberately delegated:** the code-level half of `C-VAL-03` — that a strict DAL changes the
+  verdict on LLM-*generated* code — is `TECH-041`; it needs a scripted adapter because
+  `sw implement` reaches the provider before any code-level enforcement runs, and it is named here
+  rather than implied covered.
 * **Verifiable Proof:** 75 tests across 9 integration/e2e files, all on the real CLI, all green.
   Written one file per line: the gates read this field to its end, and a proof declared as a single
   prose line was verified 3 files of 9 before `TECH-017` fixed the parser on 2026-08-13.
@@ -36,7 +61,10 @@
 
 * **Dynamic Risk Controls (`INT-US-25-SF01`)**
   * **Status:** ⬜ Pending Design
-  * **Integration Description:** [Pending definition — the capabilities it would integrate (`D-VAL-02` Custom Rule Paths, `D-VAL-04` Adaptive Assurance Standards, `C-VAL-03` Dynamic Risk Rulesets) are all delivered ✅ and are exercised by the base contract above; what remains for this add-on is the scope decision, not the build.]
+  * **Integration Description:** [Pending definition — the capabilities it would integrate
+    (`D-VAL-02` Custom Rule Paths, `D-VAL-04` Adaptive Assurance Standards, `C-VAL-03` Dynamic Risk
+    Rulesets) are all delivered ✅ and are exercised by the base contract above; what remains for
+    this add-on is the scope decision, not the build.]
   * **Verifiable Proof:** [Pending]
 
 ---

@@ -14,9 +14,13 @@
 > Can an agent decompose a Feature Spec into Component Specs automatically?
 
 ### Current State
-The [DMZ repository](https://github.com/TheMorpheus407/the-dmz) proves this works at the **issue level**: `auto-create-issues.sh` reads all documentation and creates GitHub issues with acceptance criteria. This is effectively "automated decomposition from docs → tasks."
+The [DMZ repository](https://github.com/TheMorpheus407/the-dmz) proves this works at the **issue
+level**: `auto-create-issues.sh` reads all documentation and creates GitHub issues with acceptance
+criteria. This is effectively "automated decomposition from docs → tasks."
 
-SpecWeaver's framework defines the decomposition structure (Feature Spec → Component Specs) and the quality gate (10-test battery). What's missing is the **automation bridge**: can an agent read a Feature Spec and propose the decomposition?
+SpecWeaver's framework defines the decomposition structure (Feature Spec → Component Specs) and the
+quality gate (10-test battery). What's missing is the **automation bridge**: can an agent read a
+Feature Spec and propose the decomposition?
 
 ### Hypothesis
 Yes, but with constraints:
@@ -69,7 +73,9 @@ All thresholds in the methodology are initial estimates based on reasoning and t
 | 01_08 (107KB) | Monster | ❌ Never implemented | All FAIL |
 
 ### Key Calibration Question
-The 01_06 case (51KB but well-implemented) suggests file size alone is insufficient. The composite score formula needs weighting that accounts for **focused detail** (many concrete examples, one concern) vs. **scattered breadth** (many concerns, few examples).
+The 01_06 case (51KB but well-implemented) suggests file size alone is insufficient. The composite
+score formula needs weighting that accounts for **focused detail** (many concrete examples, one
+concern) vs. **scattered breadth** (many concerns, few examples).
 
 ---
 
@@ -106,7 +112,9 @@ Yes. Over-decomposition creates overhead:
 > How to link specs to source files and keep links accurate?
 
 ### Problem
-When a spec says "the FlowLoader must validate JSON Schema" and the code implements this in `src/specweaver/loader/validator.py`, there's no formal link between them. Over time, drift occurs: specs describe behavior the code no longer follows, or code implements features no spec describes.
+When a spec says "the FlowLoader must validate JSON Schema" and the code implements this in
+`src/specweaver/loader/validator.py`, there's no formal link between them. Over time, drift occurs:
+specs describe behavior the code no longer follows, or code implements features no spec describes.
 
 ### Proposed Approach: Bidirectional Links
 
@@ -177,7 +185,9 @@ The thresholds are **mostly universal** for "spec documents intended for agent i
 ### Known Domain Variations
 
 **RFC-style specs (networking, protocols)**:
-- The word "should" has a specific meaning per RFC 2119 (SHOULD = recommended but optional, distinct from MUST). The ambiguity scanner (Test 8) must be calibrated to NOT flag RFC-compliant use of "should."
+- The word "should" has a specific meaning per RFC 2119 (SHOULD = recommended but optional, distinct
+  from MUST). The ambiguity scanner (Test 8) must be calibrated to NOT flag RFC-compliant use of
+  "should."
 - Proposed fix: A domain flag `--rfc-mode` that adjusts the weasel word list.
 
 **Regulated industries (healthcare, finance)**:

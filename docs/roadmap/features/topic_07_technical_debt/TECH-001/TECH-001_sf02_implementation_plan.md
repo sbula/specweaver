@@ -12,13 +12,21 @@
 >
 > | FR | Delivered by | Proven by |
 > |---|---|---|
-> | FR-4 | §Proposed Changes — the domain-local `interfaces/cli.py` modules | `tests/unit/test_architecture.py::test_cli_commands_live_in_their_own_domains` — enumerates the domains from the tree rather than a list, so deleting a module cannot be hidden by deleting its entry |
-> | FR-5 | re-registering the decentralised apps on `interfaces/cli/main.py` | `tests/unit/test_architecture.py::test_every_domain_cli_is_mounted_on_the_root_app` — compares what is on disk against what `main.py` mounts, so a domain CLI nobody wired is a failure |
+> | FR-4 | §Proposed Changes — the domain-local `interfaces/cli.py` modules |
+> `tests/unit/test_architecture.py::test_cli_commands_live_in_their_own_domains` — enumerates the
+> domains from the tree rather than a list, so deleting a module cannot be hidden by deleting its
+> entry |
+> | FR-5 | re-registering the decentralised apps on `interfaces/cli/main.py` |
+> `tests/unit/test_architecture.py::test_every_domain_cli_is_mounted_on_the_root_app` — compares
+> what is on disk against what `main.py` mounts, so a domain CLI nobody wired is a failure |
 >
 > Editing a delivered story's plan is authorised for TECH-025 only, by its AD-4.
 
 ## Goal Description
-Refactor the monolithic `interfaces/cli/` layer by decentralizing Typer CLI commands into their respective domain packages. To maintain strict archetype enforcement, domains will adopt a Hexagonal Architecture (Vertical Slicing), utilizing a neutral top-level folder containing `core/` (pure-logic) and `interfaces/` (orchestrators/adapters) sub-packages.
+Refactor the monolithic `interfaces/cli/` layer by decentralizing Typer CLI commands into their
+respective domain packages. To maintain strict archetype enforcement, domains will adopt a Hexagonal
+Architecture (Vertical Slicing), utilizing a neutral top-level folder containing `core/`
+(pure-logic) and `interfaces/` (orchestrators/adapters) sub-packages.
 
 This eliminates the "Package by Layer" anti-pattern, ensuring that each domain is a self-contained microservice-ready slice.
 
@@ -98,14 +106,18 @@ Rather than keeping global helpers that cause upward dependencies or polluting c
 ### 10. Root CLI Re-Registration & Top-Down Injection
 #### [MODIFY] `src/specweaver/interfaces/cli/main.py`
 - Import all newly decentralized domain `typer.Typer()` apps and `app.add_typer()` them.
-- Resolve global state (like active project and console instantiations) centrally and pass them downward via `typer.Context.obj` ONLY for new commands. For existing commands, domain CLIs will instantiate their own local `rich.Console()`.
+- Resolve global state (like active project and console instantiations) centrally and pass them
+  downward via `typer.Context.obj` ONLY for new commands. For existing commands, domain CLIs will
+  instantiate their own local `rich.Console()`.
 
 ### 11. Boundary Enforcement (The Hexagon Seal)
 #### [MODIFY] `tach.toml`
 - Explicitly map every newly created `core` and `interfaces` sub-package to ensure the Rust static analyzer natively enforces the boundaries.
 
 #### [DELETE] Legacy CLI Files
-- Remove all migrated files from `src/specweaver/interfaces/cli/` including `_helpers.py` and `_db_utils.py`. The only files remaining in L6 should be `main.py`, `_core.py` (stripped down), and any internal CLI routers.
+- Remove all migrated files from `src/specweaver/interfaces/cli/` including `_helpers.py` and
+  `_db_utils.py`. The only files remaining in L6 should be `main.py`, `_core.py` (stripped down),
+  and any internal CLI routers.
 
 ## Verification Plan
 

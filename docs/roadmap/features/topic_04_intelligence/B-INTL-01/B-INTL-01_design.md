@@ -8,15 +8,24 @@
 ## Feature Overview
 
 Feature 3.29 introduces Archetype-Based Rule Sets, executing isolated framework bounds checking for multi-language monorepos.
-By reading the `context.yaml`'s `archetype` field (e.g., `spring-boot`, `rust-axum`), SpecWeaver seamlessly hot-swaps pipeline profiles to grade both the Design (Spec) and Implementation (AST) phases without custom Python wrappers.
-Crucially, this design heavily relies on **Dependency Injection**: The `flow` engine orchestrates `loom/atoms` for heavy OS/C-binding AST extraction, injecting purely memory-safe, parsed payloads down into the `assurance/` DMZ. This perfectly isolates pure-logic validation from side-effect Execution.
+By reading the `context.yaml`'s `archetype` field (e.g., `spring-boot`, `rust-axum`), SpecWeaver
+seamlessly hot-swaps pipeline profiles to grade both the Design (Spec) and Implementation (AST)
+phases without custom Python wrappers.
+Crucially, this design heavily relies on **Dependency Injection**: The `flow` engine orchestrates
+`loom/atoms` for heavy OS/C-binding AST extraction, injecting purely memory-safe, parsed payloads
+down into the `assurance/` DMZ. This perfectly isolates pure-logic validation from side-effect
+Execution.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **Layer Isolation:** `docs/dev_guides/layer_isolation_and_di.md` explicitly forbids `assurance/` from using C-bindings (`tree-sitter`) directly. Dependency Injection orchestrated by `flow/` is the absolute rule.
+- **Layer Isolation:** `docs/dev_guides/layer_isolation_and_di.md` explicitly forbids `assurance/`
+  from using C-bindings (`tree-sitter`) directly. Dependency Injection orchestrated by `flow/` is
+  the absolute rule.
 - **Language Commons:** Framework AST `.scm` extraction logic MUST reside exclusively in `loom/commons/language/<lang>/codestructure.py`.
-- **Overlay with 3.30:** Feature 3.30 adds macro/annotation unrolling to `CodeStructure`. 3.29 focuses purely on the Pipeline orchestration and boolean constraint checks, leaving structural AST unrolling upgrades to 3.30 seamlessly.
+- **Overlay with 3.30:** Feature 3.30 adds macro/annotation unrolling to `CodeStructure`. 3.29
+  focuses purely on the Pipeline orchestration and boolean constraint checks, leaving structural AST
+  unrolling upgrades to 3.30 seamlessly.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

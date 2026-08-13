@@ -1,6 +1,8 @@
 # Feature 3.7 — `sw serve` REST API Server
 
-Expose SpecWeaver CLI operations as REST endpoints via a FastAPI server. Foundation for all external UIs (web dashboard 3.8, VS Code extension 3.23, IntelliJ plugin). WebSocket channel for real-time pipeline progress events.
+Expose SpecWeaver CLI operations as REST endpoints via a FastAPI server. Foundation for all external
+UIs (web dashboard 3.8, VS Code extension 3.23, IntelliJ plugin). WebSocket channel for real-time
+pipeline progress events.
 
 > **Depends on**: All existing CLI commands (Phase 1–3.6)
 > **Downstream consumers**: Feature 3.8 (Web Dashboard), Feature 3.23 (VS Code Extension)

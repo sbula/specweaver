@@ -19,7 +19,9 @@
 SF-C delivers the Arbiter + Feedback Loop (FR-8, FR-9, FR-10):
 
 1. **`ArbitrateVerdictHandler`** (`flow/_arbiter.py`) — LLM-driven error attribution. Three-way verdict: `code_bug` / `scenario_error` / `spec_ambiguity`.
-2. **Vocabulary filter** (`flow/_arbiter.py`) — strips scenario vocabulary from coding agent feedback. Coding agent receives: spec clause reference + behavioral expectation + filtered stack trace. Coding agent NEVER receives any scenario vocabulary.
+2. **Vocabulary filter** (`flow/_arbiter.py`) — strips scenario vocabulary from coding agent
+   feedback. Coding agent receives: spec clause reference + behavioral expectation + filtered stack
+   trace. Coding agent NEVER receives any scenario vocabulary.
 3. **Language-aware stack trace filter** — dispatches to `StackTraceFilterInterface` implementations (Python, Java, Kotlin, TypeScript, Rust) provided by SF-B2.
 4. **`ArbitrateDualPipelineHandler`** (`flow/_dual_pipeline.py`) — fans out coding + scenario pipelines in parallel. Delegates from `OrchestrateComponentsHandler` via `params.mode == "dual_pipeline"`.
 5. **`scenario_integration.yaml`** — parent pipeline: orchestrate dual fan-out → run scenario tests → arbitrate verdict.
@@ -57,7 +59,10 @@ SF-C delivers the Arbiter + Feedback Loop (FR-8, FR-9, FR-10):
 
 ### Additional Resolution: Stack Trace Handling
 
-The coding agent receives its own stack trace (FR-9 explicitly allows it). The `ArbitrateVerdictHandler` uses `StackTraceFilterInterface` (provided by SF-B2) to strip scenario file path frames, keeping only frames from the project's source directory. Language frame format differs per language:
+The coding agent receives its own stack trace (FR-9 explicitly allows it). The
+`ArbitrateVerdictHandler` uses `StackTraceFilterInterface` (provided by SF-B2) to strip scenario
+file path frames, keeping only frames from the project's source directory. Language frame format
+differs per language:
 
 | Language | Scenario frame pattern | Source frame pattern |
 |----------|----------------------|---------------------|
@@ -73,7 +78,10 @@ The coding agent receives its own stack trace (FR-9 explicitly allows it). The `
 
 ### RN-1: `OrchestrateComponentsHandler` delegation strategy
 
-`_decompose.py` hardcodes `new_feature.yaml`. Rather than modifying it to accept a list of pipelines, `ArbitrateDualPipelineHandler` is invoked when `step.params.get("mode") == "dual_pipeline"`. The existing handler checks for this param and delegates:
+`_decompose.py` hardcodes `new_feature.yaml`. Rather than modifying it to accept a list of
+pipelines, `ArbitrateDualPipelineHandler` is invoked when
+`step.params.get("mode") == "dual_pipeline"`. The existing handler checks for this param and
+delegates:
 
 ```python
 # In OrchestrateComponentsHandler.execute():
@@ -135,7 +143,9 @@ class ReadOnlyWorkspaceBoundary(WorkspaceBoundary):
 
 ### RN-5: Scenario test execution pathing (monorepo safe)
 
-The `run_scenario_tests` step uses `intent="run_tests"` and `kind="scenario"`. The `ValidateTestsHandler` must dynamically resolve the path if the target is empty by heavily leveraging SF-B2 boundaries:
+The `run_scenario_tests` step uses `intent="run_tests"` and `kind="scenario"`. The
+`ValidateTestsHandler` must dynamically resolve the path if the target is empty by heavily
+leveraging SF-B2 boundaries:
 
 ```python
 target = step.params.get("target")

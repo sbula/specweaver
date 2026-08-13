@@ -7,7 +7,14 @@
 
 ## Feature Overview
 
-Feature 3.28 adds independent scenario-based verification to SpecWeaver's pipeline engine, using a dual-pipeline architecture where a coding pipeline and a scenario pipeline derive tests independently from the same spec, meeting at a JOIN gate. It solves the correlated hallucination problem — where the same agent producing both code and tests creates consistently wrong but matching outputs. It leverages existing infrastructure: `GateType.JOIN` (3.27), `OrchestrateComponentsHandler` with DAG wave scheduling (3.27), `FolderGrant`/`WorkspaceBoundary` (3.26), and C09 traceability rules (3.8). Key constraints: YAML scenarios (not Gherkin), mechanical (non-LLM) pytest conversion, zero-dependency `@trace` tags for C09 compatibility.
+Feature 3.28 adds independent scenario-based verification to SpecWeaver's pipeline engine, using a
+dual-pipeline architecture where a coding pipeline and a scenario pipeline derive tests
+independently from the same spec, meeting at a JOIN gate. It solves the correlated hallucination
+problem — where the same agent producing both code and tests creates consistently wrong but matching
+outputs. It leverages existing infrastructure: `GateType.JOIN` (3.27),
+`OrchestrateComponentsHandler` with DAG wave scheduling (3.27), `FolderGrant`/`WorkspaceBoundary`
+(3.26), and C09 traceability rules (3.8). Key constraints: YAML scenarios (not Gherkin), mechanical
+(non-LLM) pytest conversion, zero-dependency `@trace` tags for C09 compatibility.
 
 ## Research Findings
 
@@ -292,35 +299,56 @@ Every reused component is verified: **can the consuming module actually import i
 
 ## Sub-Feature Breakdown
 
-> **Consolidation (5→3)**: Original 11 sub-features (3.28a–j) were first consolidated to 5, then to 3 balanced SFs after identifying that SF-04 was too thin (~20 lines) for its own commit boundary, and SF-01/SF-02 were both small independent foundation work.
+> **Consolidation (5→3)**: Original 11 sub-features (3.28a–j) were first consolidated to 5, then to
+> 3 balanced SFs after identifying that SF-04 was too thin (~20 lines) for its own commit boundary,
+> and SF-01/SF-02 were both small independent foundation work.
 >
-> **Key reuse insight**: 3.28g (JOIN gate) and 3.28h (parallel orchestrator) are **already fully implemented** by Feature 3.27. The `scenario_agent` role (3.28e) is ~60% done — only a new role definition in the dispatcher factory is needed.
+> **Key reuse insight**: 3.28g (JOIN gate) and 3.28h (parallel orchestrator) are **already fully
+> implemented** by Feature 3.27. The `scenario_agent` role (3.28e) is ~60% done — only a new role
+> definition in the dispatcher factory is needed.
 
 ### SF-A: Foundation — Spec Enforcement + Contract Generation (3.28a + 3.28b)
 - **Scope**: Enhance S07 validation rule to require a `## Scenarios` section with structured YAML. New pipeline handler that extracts Python Protocol/ABC from a spec's `## Contract` section.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: Spec markdown text, validated spec with `## Contract` section
 - **Outputs**: S07 finding if `## Scenarios` section is missing or malformed. `contracts/api_contract.py` containing typed Protocol class.
-- **Reuse**: Clone S06's `_extract_contract()` regex → `_extract_section()`. Reuse S07's scoring. Clone `GenerateCodeHandler` pattern. `ui_extractor.py` Contract regex. `CodeStructureAtom` for signature extraction.
+- **Reuse**: Clone S06's `_extract_contract()` regex → `_extract_section()`. Reuse S07's scoring.
+  Clone `GenerateCodeHandler` pattern. `ui_extractor.py` Contract regex. `CodeStructureAtom` for
+  signature extraction.
 - **New code**: ~90 lines (YAML validation ~30 + contract file generator ~60)
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfa_implementation_plan.md
 
 ### SF-B: Scenario Pipeline — Generate + Convert + Wire (3.28c + 3.28d + 3.28e + 3.28f + 3.28g + 3.28h)
-- **Scope**: LLM-driven scenario generation from spec + API contract → structured YAML. Mechanical YAML → pytest conversion with `@trace` tags. Add `scenario_agent` role to dispatcher. Enforce **total information opacity** for the coding agent (FR-5b). Create `scenario_validation.yaml` pipeline. Wire dual-pipeline parallel execution. **Note**: 3.28g (JOIN gate) and 3.28h (parallel orchestrator) are already complete from 3.27.
+- **Scope**: LLM-driven scenario generation from spec + API contract → structured YAML. Mechanical
+  YAML → pytest conversion with `@trace` tags. Add `scenario_agent` role to dispatcher. Enforce
+  **total information opacity** for the coding agent (FR-5b). Create `scenario_validation.yaml`
+  pipeline. Wire dual-pipeline parallel execution. **Note**: 3.28g (JOIN gate) and 3.28h (parallel
+  orchestrator) are already complete from 3.27.
 - **FRs**: [FR-3, FR-4, FR-5a, FR-5b, FR-6, FR-7]
 - **Inputs**: Spec content, API contract (Protocol class), `req_id` list from spec
-- **Outputs**: `scenarios/definitions/*.yaml` + `scenarios/generated/*.py` (parametrized pytest). Two fully isolated parallel pipelines with JOIN synchronization. Coding agent has zero awareness of scenario pipeline.
-- **Reuse**: `TestExpectation` model (extend with `req_id`), `Planner` pattern, `_extract_prompt_feedback()`, C09 `@trace` format, all security infrastructure (WorkspaceBoundary, FolderGrant, AccessMode, ROLE_INTENTS, ToolDispatcher, OrchestrateComponentsHandler, GateType.JOIN).
+- **Outputs**: `scenarios/definitions/*.yaml` + `scenarios/generated/*.py` (parametrized pytest).
+  Two fully isolated parallel pipelines with JOIN synchronization. Coding agent has zero awareness
+  of scenario pipeline.
+- **Reuse**: `TestExpectation` model (extend with `req_id`), `Planner` pattern,
+  `_extract_prompt_feedback()`, C09 `@trace` format, all security infrastructure (WorkspaceBoundary,
+  FolderGrant, AccessMode, ROLE_INTENTS, ToolDispatcher, OrchestrateComponentsHandler,
+  GateType.JOIN).
 - **New code**: ~270 lines (ScenarioGenerator ~100 + YAML→pytest converter ~150 + pipeline YAML ~20)
 - **Depends on**: SF-A
 - **Impl Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfb_implementation_plan.md
 
 ### SF-C: Arbiter + Feedback Loop (3.28i + 3.28j)
-- **Scope**: Arbiter agent for error attribution on scenario test failures. Runs post-JOIN after `QARunnerAtom` executes scenario tests against code. The arbiter has **all-read, no-write** boundary (`api_paths` only, zero `roots`). Produces filtered feedback that preserves total information opacity — coding agent feedback reads like a reviewer finding (AD-9, AD-10). HITL escalation on spec ambiguity.
+- **Scope**: Arbiter agent for error attribution on scenario test failures. Runs post-JOIN after
+  `QARunnerAtom` executes scenario tests against code. The arbiter has **all-read, no-write**
+  boundary (`api_paths` only, zero `roots`). Produces filtered feedback that preserves total
+  information opacity — coding agent feedback reads like a reviewer finding (AD-9, AD-10). HITL
+  escalation on spec ambiguity.
 - **FRs**: [FR-8, FR-9, FR-10]
 - **Inputs**: Scenario test results (pass/fail from QARunnerAtom), spec content, API contract, coding pipeline's `src/` output, scenario pipeline's `scenarios/` output
-- **Outputs**: Filtered feedback reports (one per pipeline, vocabulary-filtered per NFR-8), or HITL escalation. Coding agent feedback contains NO scenario vocabulary — phrased as "Spec clause §X requires Y. Your implementation does Z."
+- **Outputs**: Filtered feedback reports (one per pipeline, vocabulary-filtered per NFR-8), or HITL
+  escalation. Coding agent feedback contains NO scenario vocabulary — phrased as "Spec clause §X
+  requires Y. Your implementation does Z."
 - **Reuse**: `Reviewer`/`ReviewResult` pattern, `PromptBuilder`, `QARunnerAtom._intent_run_tests()` (zero modifications), `_extract_prompt_feedback()` for loop-back mechanism.
 - **New code**: ~200 lines (ArbitrateVerdictHandler ~120 + vocabulary filter ~80)
 - **Depends on**: SF-B

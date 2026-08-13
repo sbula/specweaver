@@ -8,14 +8,29 @@
 - **Status**: COMPLETED
 
 ## Research Notes
-- **Cargo Test Formatting**: Running `cargo test -- --format=json | cargo2junit` violates the strict "NO PIPES" and "NO SHELL COMPOUNDING" rule of the sandbox. Therefore, we must run `cargo test -- -Z unstable-options --format=json` (or strictly parse `cargo test --format=json` depending on whether nightly is required) or better yet, run `cargo test --message-format=json` and capture stdout dynamically. Wait, standard `cargo test` text output is easily parsable or we can just parse the final `test result: ok. 10 passed; 0 failed` directly using regex to avoid unstable options.
+- **Cargo Test Formatting**: Running `cargo test -- --format=json | cargo2junit` violates the strict
+  "NO PIPES" and "NO SHELL COMPOUNDING" rule of the sandbox. Therefore, we must run
+  `cargo test -- -Z unstable-options --format=json` (or strictly parse `cargo test --format=json`
+  depending on whether nightly is required) or better yet, run `cargo test --message-format=json`
+  and capture stdout dynamically. Wait, standard `cargo test` text output is easily parsable or we
+  can just parse the final `test result: ok. 10 passed; 0 failed` directly using regex to avoid
+  unstable options.
 - **Cargo Clippy**: Returns standard JSON via `cargo clippy --message-format=json`. We can ingest this seamlessly into python's `json.loads` to map `LintError` paths accurately.
-- **Complexity**: Rust doesn't have a direct McCabe complexity built into Cargo, but `clippy::cognitive_complexity` rule acts identically to PMD's `too complex`. We can parse it seamlessly from clippy's JSON output!
-- **JVM vs Rust Standard Abstractions**: JVM organically produces `junit.xml` and `sarif`. To ensure Rust "*follows the same path*" and protects us against compiler JSON updates, we strictly employ `cargo2junit`. By bridging stable formats, we minimize upgrade maintenance efforts!
-- **Component Submodules**: The Rust handler will be placed natively under `src/specweaver/loom/commons/qa_runner/rust.py` for now, pending the execution of SF-04 (which refactors these into `__init__` packages later).
+- **Complexity**: Rust doesn't have a direct McCabe complexity built into Cargo, but
+  `clippy::cognitive_complexity` rule acts identically to PMD's `too complex`. We can parse it
+  seamlessly from clippy's JSON output!
+- **JVM vs Rust Standard Abstractions**: JVM organically produces `junit.xml` and `sarif`. To ensure
+  Rust "*follows the same path*" and protects us against compiler JSON updates, we strictly employ
+  `cargo2junit`. By bridging stable formats, we minimize upgrade maintenance efforts!
+- **Component Submodules**: The Rust handler will be placed natively under
+  `src/specweaver/loom/commons/qa_runner/rust.py` for now, pending the execution of SF-04 (which
+  refactors these into `__init__` packages later).
 
 ## Goal Description
-Implement the `RustRunner` class inheriting from `QARunnerInterface`. This runner will map the 5 polyglot intents (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`) using `cargo` paired with `cargo2junit` to perfectly mimic the architecture established by JVM handlers—strictly relying on stable `junit.xml` validation without arbitrary JSON parsing!
+Implement the `RustRunner` class inheriting from `QARunnerInterface`. This runner will map the 5
+polyglot intents (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`) using
+`cargo` paired with `cargo2junit` to perfectly mimic the architecture established by JVM
+handlers—strictly relying on stable `junit.xml` validation without arbitrary JSON parsing!
 
 ## Proposed Changes
 
@@ -32,9 +47,13 @@ Implement the `RustRunner` class inheriting from `QARunnerInterface`. This runne
 #### [NEW] `src/specweaver/loom/commons/qa_runner/rust.py`
 - Inherits `QARunnerInterface`.
 - Implements structural target anchoring (scans for `Cargo.toml` up the directory graph).
-- Resolves tests by executing `cargo test -- -Z unstable-options --format=json` natively fed into `cargo2junit` subprocess (avoiding pipes) ensuring a generated `junit.xml` file which natively parses exactly like JVM!
+- Resolves tests by executing `cargo test -- -Z unstable-options --format=json` natively fed into
+  `cargo2junit` subprocess (avoiding pipes) ensuring a generated `junit.xml` file which natively
+  parses exactly like JVM!
 - Evaluates `cargo clippy --message-format=json` passed securely into a `clippy-sarif` subprocess wrapper. This guarantees a stable `sarif` output mapping structurally identical to Detekt and PMD.
-- Injects complexity macros dynamically (`-W clippy::cognitive_complexity`) mapped straight into the `cargo clippy` execution layer to enforce `max_complexity` securely natively through the `clippy-sarif` boundary!
+- Injects complexity macros dynamically (`-W clippy::cognitive_complexity`) mapped straight into the
+  `cargo clippy` execution layer to enforce `max_complexity` securely natively through the
+  `clippy-sarif` boundary!
 
 ### `tests`
 

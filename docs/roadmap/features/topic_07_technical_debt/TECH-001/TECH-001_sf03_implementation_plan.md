@@ -9,7 +9,10 @@
 
 ## Goal
 
-Reorganize `core/loom/` from **Package-by-Layer** (`atoms/`, `tools/`, `commons/`) into **Package-by-Domain** under `src/specweaver/sandbox/`. Each domain adopts the SF-02 hexagonal architecture pattern (`core/` + `interfaces/` sub-packages) with machine-enforceable boundary sealing.
+Reorganize `core/loom/` from **Package-by-Layer** (`atoms/`, `tools/`, `commons/`) into
+**Package-by-Domain** under `src/specweaver/sandbox/`. Each domain adopts the SF-02 hexagonal
+architecture pattern (`core/` + `interfaces/` sub-packages) with machine-enforceable boundary
+sealing.
 
 > [!CAUTION]
 > **NFR-1 Zero Regression**: 546 import references across 152 files (54 src + 98 tests) must be rewritten. Zero test assertion changes allowed.
@@ -271,10 +274,14 @@ Create the hex directory structure, then move every file:
 
 #### Step 2: Rewrite all references
 
-**Python files** (`.py`): Apply the Import Path Mapping Table above to ALL occurrences of `specweaver.core.loom` — this includes `import` statements, `from` statements, `@patch()` decorators, and `patch()` context managers.
+**Python files** (`.py`): Apply the Import Path Mapping Table above to ALL occurrences of
+`specweaver.core.loom` — this includes `import` statements, `from` statements, `@patch()`
+decorators, and `patch()` context managers.
 
 > [!CAUTION]
-> **45+ `@patch()` string literals** exist across test files. These are NOT Python imports — a simple import-based find-replace will miss them. Search for ALL occurrences of the string `specweaver.core.loom` in `.py` files.
+> **45+ `@patch()` string literals** exist across test files. These are NOT Python imports — a
+> simple import-based find-replace will miss them. Search for ALL occurrences of the string
+> `specweaver.core.loom` in `.py` files.
 
 > [!WARNING]
 > **Files outside the loom test directories also import from `core.loom`** and need import rewrites (but NOT directory moves):
@@ -291,7 +298,9 @@ Create the hex directory structure, then move every file:
 **YAML files** (`context.yaml`): Exhaustive list of external context.yaml files requiring updates:
 
 > [!CAUTION]
-> `flow/context.yaml` uses SPECIFIC domain paths in `consumes` (e.g., `specweaver/loom/atoms/git`) — NOT just wildcard `loom/*`. These must be rewritten to the correct hex sub-package. Do NOT blindly replace `atoms` → `core` without checking the mapping table.
+> `flow/context.yaml` uses SPECIFIC domain paths in `consumes` (e.g., `specweaver/loom/atoms/git`) —
+> NOT just wildcard `loom/*`. These must be rewritten to the correct hex sub-package. Do NOT blindly
+> replace `atoms` → `core` without checking the mapping table.
 
 **`core/flow/context.yaml`** — MOST COMPLEX:
 ```yaml

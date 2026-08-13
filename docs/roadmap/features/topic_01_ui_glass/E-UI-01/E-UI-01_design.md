@@ -7,7 +7,9 @@
 
 ## Feature Overview
 
-Feature E-UI-01 establishes the foundational CLI Entry Point (`sw`) using Typer. It sets up the core routing for scaffolding projects, drafting specs, validating/reviewing specs, and generating implementations.
+Feature E-UI-01 establishes the foundational CLI Entry Point (`sw`) using Typer. It sets up the core
+routing for scaffolding projects, drafting specs, validating/reviewing specs, and generating
+implementations.
 
 ## Functional Requirements
 

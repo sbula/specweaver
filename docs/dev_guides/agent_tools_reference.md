@@ -1,6 +1,8 @@
 # Agent Tools & Atoms Reference
 
-SpecWeaver provides role-restricted tools for LLM agents, inspired by the `flowManager` atoms & tools architecture. This ensures that agents only have access to exactly what they need, eliminating the risk of rogue AI executions.
+SpecWeaver provides role-restricted tools for LLM agents, inspired by the `flowManager` atoms &
+tools architecture. This ensures that agents only have access to exactly what they need, eliminating
+the risk of rogue AI executions.
 
 ## FileSystemTool
 

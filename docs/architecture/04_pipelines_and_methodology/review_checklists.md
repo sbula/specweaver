@@ -12,7 +12,9 @@
 
 ## Purpose
 
-The 10-test battery (see [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md)) is **universal** — it works for any project. But every project also has **domain-specific** quality concerns that the universal tests don't cover.
+The 10-test battery (see [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md)) is
+**universal** — it works for any project. But every project also has **domain-specific** quality
+concerns that the universal tests don't cover.
 
 A Review Checklist is a **project-specific extension** of Test 10 (Done Definition). It turns "is completion verifiable?" into "does this code meet OUR project's specific quality bar?"
 
@@ -87,7 +89,9 @@ A checklist is a numbered list of review items. Each item has:
 
 ## Reference: DMZ's 15-Point Checklist
 
-The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz)) uses a 15-point reviewer checklist in `reviewer.md`. This is the most comprehensive working example found:
+The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz))
+uses a 15-point reviewer checklist in `reviewer.md`. This is the most comprehensive working example
+found:
 
 | # | DMZ Check | Universal Category | Our Equivalent |
 |---|-----------|-------------------|---------------|
@@ -107,7 +111,9 @@ The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMo
 | 14 | Environment config | Security | §4 — no .env committed, Zod validation |
 | 15 | Prohibited actions | Architecture | §6 — cross-reference AGENTS.md prohibitions |
 
-**Key insight**: Items 1-4, 7-8, 10-12, 14-15 are **universal** (every project needs them). Items 5-6, 9, 13 are **domain-specific** (only relevant to DMZ's cybersecurity game). This validates our template structure: universal categories (§1-§6) + a domain-specific extension slot (§7).
+**Key insight**: Items 1-4, 7-8, 10-12, 14-15 are **universal** (every project needs them). Items
+5-6, 9, 13 are **domain-specific** (only relevant to DMZ's cybersecurity game). This validates our
+template structure: universal categories (§1-§6) + a domain-specific extension slot (§7).
 
 ---
 
@@ -134,4 +140,6 @@ Following the DMZ pattern, the reviewer agent should be **read-only for code**:
 | Run tests | ✅ (via shell) | ✅ |
 | Search/grep | ✅ | ✅ |
 
-**Rationale**: If the reviewer can fix code, it bypasses the implement → review separation. The reviewer's job is to find problems and report them — not to silently fix them and hide the fact that the implementation was wrong.
+**Rationale**: If the reviewer can fix code, it bypasses the implement → review separation. The
+reviewer's job is to find problems and report them — not to silently fix them and hide the fact that
+the implementation was wrong.

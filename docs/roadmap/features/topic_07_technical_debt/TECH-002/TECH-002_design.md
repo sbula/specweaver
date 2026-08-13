@@ -4,12 +4,20 @@
 - **Phase**: 1
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md
-- **Note (2026-08-01)**: retitled from "BaseTool Metaclass Registry Refactoring" — no metaclass mechanism was ever built (see Research Findings below); this doc, `TECH-002_base_tool_registry.md`, and the roadmap entries all previously implied one existed. Corrected across all three plus `topic_07_technical_debt.md` and `master_story_roadmap.md`.
+- **Note (2026-08-01)**: retitled from "BaseTool Metaclass Registry Refactoring" — no metaclass
+  mechanism was ever built (see Research Findings below); this doc,
+  `TECH-002_base_tool_registry.md`, and the roadmap entries all previously implied one existed.
+  Corrected across all three plus `topic_07_technical_debt.md` and `master_story_roadmap.md`.
 
 ## Feature Overview
 
 Feature TECH-002 adds an explicit, decoupled ToolRegistry to the specweaver.sandbox component.
-It solves the tight coupling of dynamic imports and boundary bypasses in ToolDispatcher by building an explicit `ToolRegistry` and domain-level tool factory exports from the start — deliberately avoiding metaclass-based (`__init_subclass__`) auto-registration, which TECH-001 considered and rejected before this ticket began (see Research Findings). There was never an existing metaclass mechanism to "remove"; the original proposal (`TECH-002_base_tool_registry.md`) described that as the motivating problem, but it was aspirational, not shipped.
+It solves the tight coupling of dynamic imports and boundary bypasses in ToolDispatcher by building
+an explicit `ToolRegistry` and domain-level tool factory exports from the start — deliberately
+avoiding metaclass-based (`__init_subclass__`) auto-registration, which TECH-001 considered and
+rejected before this ticket began (see Research Findings). There was never an existing metaclass
+mechanism to "remove"; the original proposal (`TECH-002_base_tool_registry.md`) described that as
+the motivating problem, but it was aspirational, not shipped.
 It interacts with all sandbox domain tools (git, filesystem, qa_runner, mcp, protocol, web, code_structure) and does NOT touch actual LLM model adapters or core SQLite CQRS database schemas.
 Key constraints: zero regression (all tests must pass) and targeted enforcement of context.yaml boundaries in the validation rules layer (removing direct sandbox imports in c03, c04, c05).
 
@@ -18,8 +26,13 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 ### Codebase Patterns
 - Currently, `ToolDispatcher` contains hardcoded conditional imports and execution logic to assemble the set of tools for a given role and boundary.
 - The original design of `TECH-001` deferred implementing `BaseTool` metaclass auto-registration because global import-time auto-registration pollutes the memory space and bypasses isolation limits.
-- Validation layer rules `c03_tests_pass.py`, `c04_coverage.py`, and `c05_import_direction.py` import `QARunnerAtom` and `AtomStatus` directly, causing `context.yaml` violations. These are resolved by pre-running the atoms in the flow layer and injecting results into `Rule.context`.
-- The `sandbox` module depends on `specweaver.assurance.validation` via `rule_atom.py` (adapter pattern: wraps a `Rule` into an `Atom`). This is intentional and non-circular. The reverse dependency (`validation → sandbox`) is what is forbidden by `context.yaml` and is what TECH-002 removes.
+- Validation layer rules `c03_tests_pass.py`, `c04_coverage.py`, and `c05_import_direction.py`
+  import `QARunnerAtom` and `AtomStatus` directly, causing `context.yaml` violations. These are
+  resolved by pre-running the atoms in the flow layer and injecting results into `Rule.context`.
+- The `sandbox` module depends on `specweaver.assurance.validation` via `rule_atom.py` (adapter
+  pattern: wraps a `Rule` into an `Atom`). This is intentional and non-circular. The reverse
+  dependency (`validation → sandbox`) is what is forbidden by `context.yaml` and is what TECH-002
+  removes.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -81,7 +94,10 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 ## Sub-Feature Breakdown
 
 ### SF-01: BaseTool and ToolRegistry Core
-- **Scope**: Define `BaseTool` abstract base class (`role` + `definitions()` only — no `allowed_intents`) and implement `ToolRegistry` in `specweaver.sandbox`. Add `isinstance(tool, BaseTool)` assertions to the SF-01 test file — these tests will be **RED** until SF-02 makes all domain facades conform. This is the TDD red-phase for SF-02.
+- **Scope**: Define `BaseTool` abstract base class (`role` + `definitions()` only — no
+  `allowed_intents`) and implement `ToolRegistry` in `specweaver.sandbox`. Add
+  `isinstance(tool, BaseTool)` assertions to the SF-01 test file — these tests will be **RED** until
+  SF-02 makes all domain facades conform. This is the TDD red-phase for SF-02.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: Registry registrations.
 - **Outputs**: Instantiated tools list.
@@ -89,7 +105,14 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf01_implementation_plan.md
 
 ### SF-02: Sandbox Domain Alignment
-- **Scope**: Make all domain tool facades inherit `BaseTool` by adding `(BaseTool)` and a delegating `role` property where missing. Affected classes: `FileSystemTool`, `ReviewerFileInterface`, `ImplementerFileInterface`, `DrafterFileInterface`, `GitTool`, `ImplementerGitInterface`, `ReviewerGitInterface`, `DebuggerGitInterface`, `DrafterGitInterface`, `ConflictResolverGitInterface`, `WebTool`, `CodeStructureTool`, `ArchitectMCPInterface`, `ProtocolTool`. Also refactor `MCPExplorerTool.__init__` to accept `topology: Any = None` directly, removing all `DummyContext` wrapper usages from both `registry.py` and `dispatcher.py` (AD-6). The `isinstance(tool, BaseTool)` assertions in `test_registry.py` must turn GREEN.
+- **Scope**: Make all domain tool facades inherit `BaseTool` by adding `(BaseTool)` and a delegating
+  `role` property where missing. Affected classes: `FileSystemTool`, `ReviewerFileInterface`,
+  `ImplementerFileInterface`, `DrafterFileInterface`, `GitTool`, `ImplementerGitInterface`,
+  `ReviewerGitInterface`, `DebuggerGitInterface`, `DrafterGitInterface`,
+  `ConflictResolverGitInterface`, `WebTool`, `CodeStructureTool`, `ArchitectMCPInterface`,
+  `ProtocolTool`. Also refactor `MCPExplorerTool.__init__` to accept `topology: Any = None`
+  directly, removing all `DummyContext` wrapper usages from both `registry.py` and `dispatcher.py`
+  (AD-6). The `isinstance(tool, BaseTool)` assertions in `test_registry.py` must turn GREEN.
 - **FRs**: [FR-4]
 - **Inputs**: `BaseTool` ABC from SF-01.
 - **Outputs**: All domain facades are `BaseTool`-conformant; `isinstance` tests pass.
@@ -97,7 +120,10 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf02_implementation_plan.md
 
 ### SF-03: ToolDispatcher Integration
-- **Scope**: Refactor `ToolDispatcher` to build standard tool sets by delegating construction to `ToolRegistry`. Remove `create_standard_set` hardcoded factory logic. Wire `get_standard_registry()` into the flow engine entry points. Register `"protocol"` factory dynamically inside `get_standard_registry()` (AD-9) and handle Git role fallbacks (AD-10).
+- **Scope**: Refactor `ToolDispatcher` to build standard tool sets by delegating construction to
+  `ToolRegistry`. Remove `create_standard_set` hardcoded factory logic. Wire
+  `get_standard_registry()` into the flow engine entry points. Register `"protocol"` factory
+  dynamically inside `get_standard_registry()` (AD-9) and handle Git role fallbacks (AD-10).
 - **FRs**: [FR-3]
 - **Inputs**: Configured `ToolRegistry` from SF-01 (functionally does not require SF-02, but follows SF-02 in recommended order so the dispatcher can add `BaseTool` type assertions).
 - **Outputs**: Reusable configured `ToolDispatcher`.
@@ -105,7 +131,15 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_sf03_implementation_plan.md
 
 ### SF-04: Validation Layer Isolation
-- **Scope**: Remove direct `QARunnerAtom` and `AtomStatus` imports from `c03_tests_pass.py`, `c04_coverage.py`, and `c05_import_direction.py`. Rules must read execution results from `self.context` using agreed keys (see below). Refactor all three call sites to route through `specweaver.core.flow`'s new `execute_validation_flow` handler: (1) `ValidateCodeHandler._run_validation` in `core.flow.handlers.validation`, (2) the standalone CLI check command, (3) `interfaces.api.v1.validation`. Update rule check logic for C03 so that if test files exist but the context key is missing, it fails/warns instead of silently skipping. Remove the `forbids: specweaver/sandbox/*` violation from validation context files once no direct imports remain.
+- **Scope**: Remove direct `QARunnerAtom` and `AtomStatus` imports from `c03_tests_pass.py`,
+  `c04_coverage.py`, and `c05_import_direction.py`. Rules must read execution results from
+  `self.context` using agreed keys (see below). Refactor all three call sites to route through
+  `specweaver.core.flow`'s new `execute_validation_flow` handler: (1)
+  `ValidateCodeHandler._run_validation` in `core.flow.handlers.validation`, (2) the standalone CLI
+  check command, (3) `interfaces.api.v1.validation`. Update rule check logic for C03 so that if test
+  files exist but the context key is missing, it fails/warns instead of silently skipping. Remove
+  the `forbids: specweaver/sandbox/*` violation from validation context files once no direct imports
+  remain.
 
   **Context key contract** (rules read from `self.context`):
   - `"qa_tests_result"` → `AtomResult`-like dict from `QARunnerAtom.run({"intent": "run_tests", ...})`
@@ -138,4 +172,7 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 
 **Current status**: TECH-002 complete. All 4 sub-features committed.
 **Commit**: `f74f5844` — feat(TECH-002/SF-04): isolate validation layer from sandbox imports
-**Note (2026-08-01)**: the roadmap entries (`master_story_roadmap.md`, `topic_07_technical_debt.md`) previously described this ticket as "utilizing `__init_subclass__`" — that mechanism is not and was never part of this design (see line 19 above: it was deliberately rejected before SF-01 started). The roadmap wording has been corrected to match this doc; no code changes were needed.
+**Note (2026-08-01)**: the roadmap entries (`master_story_roadmap.md`, `topic_07_technical_debt.md`)
+previously described this ticket as "utilizing `__init_subclass__`" — that mechanism is not and was
+never part of this design (see line 19 above: it was deliberately rejected before SF-01 started).
+The roadmap wording has been corrected to match this doc; no code changes were needed.

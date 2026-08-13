@@ -34,7 +34,9 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 2.4. **Deliverable 1 — Coverage Matrix** (one table per source module/file):
 
      > [!CAUTION]
-     > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present the exact matrix table format below for the impacted files. 
+     > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only
+     > modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present
+     > the exact matrix table format below for the impacted files. 
      > **STRICT COMPACTNESS:** Do NOT generate scrolling paragraphs, do NOT generate Mermaid diagrams, and do NOT overcomplicate it. Use ONLY the compact markdown table format below.
 
      Rows = classes/functions in the module.
@@ -60,7 +62,9 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 2.5. **Deliverable 2 — Proposed Test Stories** (flat list, grouped by kind):
 
      > [!CAUTION]
-     > **ADVERSARIAL TEST MATRIX MANDATE:** When proposing new test stories, you MUST explicitly categorize them into the 4 Adversarial Matrix buckets: `[Happy Path]`, `[Boundary/Edge Case]`, `[Graceful Degradation]`, or `[Hostile/Wrong Input]`.
+     > **ADVERSARIAL TEST MATRIX MANDATE:** When proposing new test stories, you MUST explicitly
+     > categorize them into the 4 Adversarial Matrix buckets: `[Happy Path]`,
+     > `[Boundary/Edge Case]`, `[Graceful Degradation]`, or `[Hostile/Wrong Input]`.
      > Every single module with a gap MUST have at least one story covering each of these 4 buckets unless explicitly justified.
 
      Each proposed new test is written as a **story** with the kind clearly

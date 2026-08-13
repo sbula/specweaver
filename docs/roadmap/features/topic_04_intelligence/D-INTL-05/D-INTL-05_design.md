@@ -8,14 +8,20 @@
 ## Feature Overview
 
 Feature 3.13 adds project metadata injection to the system prompt.
-It solves the issue of the LLM lacking specific environmental context by injecting the project name, root archetype, language target (Python/OS version), current date/time, and active configuration settings (like LLM profile and validation thresholds) into the prompt.
+It solves the issue of the LLM lacking specific environmental context by injecting the project name,
+root archetype, language target (Python/OS version), current date/time, and active configuration
+settings (like LLM profile and validation thresholds) into the prompt.
 It interacts with `PromptBuilder` and the configuration module, and does NOT touch the core LLM adapters or backend dispatch mechanisms.
 Key constraints: The generated metadata block must remain concise as to avoid consuming too much of the LLM context window.
 
 ## Research Findings
 
 ### Codebase Patterns
-The `PromptBuilder` class in `src/specweaver/llm/prompt_builder.py` is the centralized place for assembling system prompts. It uses an XML-tagged structure mapping priority levels. We can extend it with an `add_project_metadata()` method and a new `_ContentBlock` for metadata. The active config can be retrieved from `SpecWeaverSettings`, and the project name from the database. Language target and OS info can be obtained via the standard Python `platform` and `sys` modules.
+The `PromptBuilder` class in `src/specweaver/llm/prompt_builder.py` is the centralized place for
+assembling system prompts. It uses an XML-tagged structure mapping priority levels. We can extend it
+with an `add_project_metadata()` method and a new `_ContentBlock` for metadata. The active config
+can be retrieved from `SpecWeaverSettings`, and the project name from the database. Language target
+and OS info can be obtained via the standard Python `platform` and `sys` modules.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

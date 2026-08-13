@@ -6,16 +6,23 @@
 
 ## Business Context & Goal
 
-SpecWeaver's architectural documentation has evolved into a monolithic 46KB `architecture_reference.md` file alongside 17 loosely structured markdown documents. This structural debt creates an impenetrable onboarding experience, makes GitHub publishing impossible, and obscures the strict Domain-Driven Design (DDD) boundaries the project enforces.
+SpecWeaver's architectural documentation has evolved into a monolithic 46KB
+`architecture_reference.md` file alongside 17 loosely structured markdown documents. This structural
+debt creates an impenetrable onboarding experience, makes GitHub publishing impossible, and obscures
+the strict Domain-Driven Design (DDD) boundaries the project enforces.
 
-The goal of TECH-008 is to execute a **Non-Destructive Copy-and-Verify** refactoring of `docs/architecture` into a modular, visually-rich, GitHub-publishable reference site aligned perfectly with DDD principles (Hexagonal Layers, Bounded Contexts).
+The goal of TECH-008 is to execute a **Non-Destructive Copy-and-Verify** refactoring of
+`docs/architecture` into a modular, visually-rich, GitHub-publishable reference site aligned
+perfectly with DDD principles (Hexagonal Layers, Bounded Contexts).
 
 ## Core Requirements
 
 1. **Zero Data Loss**: Every byte of the existing 18 files and 14 monolith sections must be mapped and preserved.
 2. **DDD Alignment**: The folder structure must explicitly represent horizontal layers (Foundational Principles) and vertical slices (Bounded Contexts).
 3. **Visual Clarity**: Integration of Mermaid sequence diagrams and graphs to explain complex concepts like Dependency Inversion (The Composition Root).
-4. **Historical Preservation**: Formalization of Architectural Decision Records (ADRs) to preserve the "why" behind decisions (e.g., CLI vs Atoms, Composition Root vs Factories) without cluttering the reference with chat noise.
+4. **Historical Preservation**: Formalization of Architectural Decision Records (ADRs) to preserve
+   the "why" behind decisions (e.g., CLI vs Atoms, Composition Root vs Factories) without cluttering
+   the reference with chat noise.
 
 ## Technical Details
 

@@ -8,11 +8,16 @@
 
 ## Overview
 
-SF-03 completes the C-INTL-05 feature by migrating **all** remaining callsites to use explicit `RenderProfile` constants and eliminating the last two "maintenance islands" — `ArbitrateVerdictHandler` (ad-hoc `PromptBuilder()`) and `DecomposeFeatureHandler` / `FeatureDecomposer` (ad-hoc `PromptBuilder()` bypassing `_build_base_prompt()`).
+SF-03 completes the C-INTL-05 feature by migrating **all** remaining callsites to use explicit
+`RenderProfile` constants and eliminating the last two "maintenance islands" —
+`ArbitrateVerdictHandler` (ad-hoc `PromptBuilder()`) and `DecomposeFeatureHandler` /
+`FeatureDecomposer` (ad-hoc `PromptBuilder()` bypassing `_build_base_prompt()`).
 
 **Primary scope** (from design doc §SF-03):
 - **FR-7**: Arbiter Handler Unification — replace ad-hoc `PromptBuilder()` construction with `_build_base_prompt(profile=ARBITER)`.
-- **FR-8**: Decomposer IoC Injection — `DecomposeFeatureHandler` pre-builds a `PromptBuilder` via `_build_base_prompt(profile=MINIMAL)` and injects it into `FeatureDecomposer.decompose(base_prompt=...)`.
+- **FR-8**: Decomposer IoC Injection — `DecomposeFeatureHandler` pre-builds a `PromptBuilder` via
+  `_build_base_prompt(profile=MINIMAL)` and injects it into
+  `FeatureDecomposer.decompose(base_prompt=...)`.
 
 **Secondary scope** (from design doc callers table):
 - **Draft handler**: Replace `include_rules=False` with `profile=INTERACTIVE`.
@@ -29,13 +34,19 @@ SF-03 completes the C-INTL-05 feature by migrating **all** remaining callsites t
 > [!WARNING]
 > **Deviation from FR-9 (Backward Compatibility)**: FR-9 mandates "zero breaking changes for callers that don't opt into profiles". This SF introduces two deliberate breaking changes approved by HITL:
 >
-> 1. **`_build_base_prompt()` signature**: The `include_rules: bool` parameter is removed entirely. All internal callers have been migrated to `profile=`. This function is internal to `core/flow/handlers/` — it is NOT a public API exposed via `context.yaml`.
+> 1. **`_build_base_prompt()` signature**: The `include_rules: bool` parameter is removed entirely.
+>    All internal callers have been migrated to `profile=`. This function is internal to
+>    `core/flow/handlers/` — it is NOT a public API exposed via `context.yaml`.
 >
-> 2. **`FeatureDecomposer.decompose()` signature**: The `project_metadata` parameter is removed. The `base_prompt` parameter becomes required (non-optional). The handler always provides it via `_build_base_prompt(profile=MINIMAL)`.
+> 2. **`FeatureDecomposer.decompose()` signature**: The `project_metadata` parameter is removed. The
+>    `base_prompt` parameter becomes required (non-optional). The handler always provides it via
+>    `_build_base_prompt(profile=MINIMAL)`.
 >
 > **Justification**: Zero active users. No external callers. Both changes eliminate dead code paths and enforce the profile-driven architecture as the only path.
 >
-> **FR-9's `PromptBuilder()` backward compatibility is NOT affected.** The `PromptBuilder()` constructor without a `profile` argument continues to use `_DEFAULT_PROFILE` with all slots active. This remains unchanged.
+> **FR-9's `PromptBuilder()` backward compatibility is NOT affected.** The `PromptBuilder()`
+> constructor without a `profile` argument continues to use `_DEFAULT_PROFILE` with all slots
+> active. This remains unchanged.
 
 ## Research Notes
 
@@ -107,7 +118,9 @@ async def _build_base_prompt(
 ```
 
 > [!CAUTION]
-> The `import warnings` and `from ... import INTERACTIVE` lines at the top of the function body can be removed since the deprecation path is deleted. The `INTERACTIVE` import is no longer needed inside `_build_base_prompt` — callers pass it explicitly.
+> The `import warnings` and `from ... import INTERACTIVE` lines at the top of the function body can
+> be removed since the deprecation path is deleted. The `INTERACTIVE` import is no longer needed
+> inside `_build_base_prompt` — callers pass it explicitly.
 
 ---
 
@@ -267,17 +280,27 @@ async def decompose(
 ```
 
 > [!CAUTION]
-> **RT-4 Fix**: The `TYPE_CHECKING` block (lines 19-22) MUST add `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder` so mypy resolves the type annotation. The inline `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder` that was inside the method body is removed. Also remove `ProjectMetadata` from the runtime import on line 16.
+> **RT-4 Fix**: The `TYPE_CHECKING` block (lines 19-22) MUST add
+> `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder` so mypy resolves the type
+> annotation. The inline `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder`
+> that was inside the method body is removed. Also remove `ProjectMetadata` from the runtime import
+> on line 16.
 
 > [!NOTE]
 > - `project_metadata` is removed — the cloned builder already contains it from `_build_base_prompt()`.
 > - `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder` inline import is removed — no longer needed since we don't construct a bare `PromptBuilder()`.
 > - The `TYPE_CHECKING` block must add `from specweaver.infrastructure.llm.prompt_builder import PromptBuilder` for the type annotation.
-> - The `ProjectMetadata` import in the module-level imports can be cleaned up if no longer used elsewhere in the file. **Check**: the `GenerationConfig` and `Message` imports on line 16 use models from `specweaver.infrastructure.llm.models` — `ProjectMetadata` is imported there too. Remove only `ProjectMetadata` from that import line since it's no longer used in the method signature.
+> - The `ProjectMetadata` import in the module-level imports can be cleaned up if no longer used
+>   elsewhere in the file. **Check**: the `GenerationConfig` and `Message` imports on line 16 use
+>   models from `specweaver.infrastructure.llm.models` — `ProjectMetadata` is imported there too.
+>   Remove only `ProjectMetadata` from that import line since it's no longer used in the method
+>   signature.
 
 #### [MODIFY] [decompose.py](../../../../../src/specweaver/core/flow/handlers/decompose.py)
 
-**Change**: Pre-build a `PromptBuilder` via `_build_base_prompt(profile=MINIMAL)` and inject it into `FeatureDecomposer.decompose(base_prompt=...)`. Remove `project_metadata=` from the `decompose()` call.
+**Change**: Pre-build a `PromptBuilder` via `_build_base_prompt(profile=MINIMAL)` and inject it into
+`FeatureDecomposer.decompose(base_prompt=...)`. Remove `project_metadata=` from the `decompose()`
+call.
 
 ```python
 # Before (lines 27-46):
@@ -369,7 +392,11 @@ builder = self._base_prompt.clone()
 ```
 
 > [!IMPORTANT]  
-> Changing `base_prompt` to be required means ~40 existing unit tests in `tests/unit/workflows/drafting/` will fail with `TypeError: missing 1 required positional argument: 'base_prompt'`. We will update all affected tests by injecting `base_prompt=PromptBuilder(profile=INTERACTIVE)` during the `dev.md` execution phase using an automated script.
+> Changing `base_prompt` to be required means ~40 existing unit tests in
+> `tests/unit/workflows/drafting/` will fail with
+> `TypeError: missing 1 required positional argument: 'base_prompt'`. We will update all affected
+> tests by injecting `base_prompt=PromptBuilder(profile=INTERACTIVE)` during the `dev.md` execution
+> phase using an automated script.
 
 ---
 
@@ -429,7 +456,9 @@ base_prompt=PromptBuilder(profile=MINIMAL)
 #### [MODIFY] tests/unit/core/flow/handlers/test_build_base_prompt.py
 
 > [!CAUTION]
-> **RT-19 Fix**: This file contains `test_build_base_prompt_include_rules_false` (line 87) which calls `_build_base_prompt(..., include_rules=False)`. Since `include_rules` is removed, this test MUST be migrated.
+> **RT-19 Fix**: This file contains `test_build_base_prompt_include_rules_false` (line 87) which
+> calls `_build_base_prompt(..., include_rules=False)`. Since `include_rules` is removed, this test
+> MUST be migrated.
 
 **Migrate 1 test** — replace `include_rules=False` with `profile=INTERACTIVE`:
 

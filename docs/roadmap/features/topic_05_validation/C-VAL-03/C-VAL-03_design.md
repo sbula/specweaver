@@ -3,15 +3,25 @@
 - **Phase**: 3
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md
-SpecWeaver must be able to support "Mixed Criticality" software systems where some modules require aerospace-grade validation (DAL A) while others run basic startup scripts (DAL E). Feature 3.20b implements a DO-178C / ISO 26262 compliant risk-based testing framework. It utilizes "Fractal Resolution" to evaluate risk independently per-file and employs Pydantic Deep-Merge to override execution profiles based on a standard corporate safety matrix. Furthermore, it explicitly outsources "Freedom from Interference" boundary checks to native linters (e.g., Tach, ArchUnit, ESLint).
+SpecWeaver must be able to support "Mixed Criticality" software systems where some modules require
+aerospace-grade validation (DAL A) while others run basic startup scripts (DAL E). Feature 3.20b
+implements a DO-178C / ISO 26262 compliant risk-based testing framework. It utilizes "Fractal
+Resolution" to evaluate risk independently per-file and employs Pydantic Deep-Merge to override
+execution profiles based on a standard corporate safety matrix. Furthermore, it explicitly
+outsources "Freedom from Interference" boundary checks to native linters (e.g., Tach, ArchUnit,
+ESLint).
 
 ## 2. Requirements & Constraints
 ### Functional Requirements
 *   **FR1 (Assignment):** Modules declare their risk tier inside `operational.dal_level: DAL_<X>` within `context.yaml`.
 *   **FR2 (Governance):** During SpecWeaver `/design` scaffolding, Agents perform topological HARA analysis to propose a DAL; Human Architects must approve it via a HITL gate.
 *   **FR3 (Resolution):** `ValidationRunner` uses Fractal Resolution to resolve the applicable DAL by walking up the directory tree on a per-file target basis.
-*   **FR4 (Impact Matrix):** Projects can provide a `.specweaver/dal_definitions.yaml`. Pydantic must safely Deep-Merge this over standard Domain Profiles, allowing rules to be augmented or disabled (`Rule_X: null`).
-*   **FR5 (FFI Isolation):** Dynamic cross-boundary Mixed Criticality isolation is outsourced via the Feature 3.19 `QARunner` orchestrator (e.g., executing `ArchUnit` / `Tach` against the target user project).
+*   **FR4 (Impact Matrix):** Projects can provide a `.specweaver/dal_definitions.yaml`. Pydantic
+    must safely Deep-Merge this over standard Domain Profiles, allowing rules to be augmented or
+    disabled (`Rule_X: null`).
+*   **FR5 (FFI Isolation):** Dynamic cross-boundary Mixed Criticality isolation is outsourced via
+    the Feature 3.19 `QARunner` orchestrator (e.g., executing `ArchUnit` / `Tach` against the target
+    user project).
 
 ### Non-Functional Requirements
 *   **NFR1:** LLMs are strictly forbidden from participating in the FFI Validation loop (Must remain strictly Deterministic).
@@ -30,9 +40,13 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 *   **Validation Override Consolidation (SF-03):**
     *   `src/specweaver/config/database.py` and `config/_schema.py`: Delete legacy SQLite `validation_overrides` tables and finalize the DAL-centric matrix workflow.
 *   **Generative HARA Governance (SF-04):**
-    *   `src/specweaver/drafting/decomposition.py` (or prompt templates): Inject HARA heuristics (Topology + Data Sensitivity) into the prompt building cycle so the AI proposes optimal DAL strings during `/design` scaffoldings.
+    *   `src/specweaver/drafting/decomposition.py` (or prompt templates): Inject HARA heuristics
+        (Topology + Data Sensitivity) into the prompt building cycle so the AI proposes optimal DAL
+        strings during `/design` scaffoldings.
 *   **Outsourced FFI Rules (SF-05):**
-    *   `src/specweaver/loom/commons/qa_runner/{language}/runner.py`: Implement the stubs for `run_architecture_check` in Java (ArchUnit) and TypeScript (ESLint) to actively enforce boundaries dynamically loaded from `context.yaml` and DAL overrides.
+    *   `src/specweaver/loom/commons/qa_runner/{language}/runner.py`: Implement the stubs for
+        `run_architecture_check` in Java (ArchUnit) and TypeScript (ESLint) to actively enforce
+        boundaries dynamically loaded from `context.yaml` and DAL overrides.
 
 ## 4. External Dependencies
 

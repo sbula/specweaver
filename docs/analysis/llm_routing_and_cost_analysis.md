@@ -8,13 +8,19 @@
 
 ## 1. Problem Statement
 
-SpecWeaver uses an abstracted `LLMAdapter` interface for LLM integration. To maximize cost efficiency and output quality, different tasks (drafting, reviewing, planning, implementing) should be routable to different models based on their strengths and price points. This requires:
+SpecWeaver uses an abstracted `LLMAdapter` interface for LLM integration. To maximize cost
+efficiency and output quality, different tasks (drafting, reviewing, planning, implementing) should
+be routable to different models based on their strengths and price points. This requires:
 
 1. **Cost visibility** — token usage and costs must be tracked per call, per task type, per model
 2. **Multi-provider support** — register and call multiple LLM providers through the existing adapter abstraction
 3. **Task optimization** — route tasks to the best model for the job (e.g., cheap model for simple validation, powerful model for complex architectural planning)
 
-The original 3.12 entry described the full end-state: "Route prompts to best model per task by result/cost ratio." This conflates simple plumbing (add more providers), observability (track costs), configuration (pick model per task), analytics (dashboard), and AI-driven optimization (dynamic routing) into a single feature — making it too large and too speculative to implement as one unit.
+The original 3.12 entry described the full end-state: "Route prompts to best model per task by
+result/cost ratio." This conflates simple plumbing (add more providers), observability (track
+costs), configuration (pick model per task), analytics (dashboard), and AI-driven optimization
+(dynamic routing) into a single feature — making it too large and too speculative to implement as
+one unit.
 
 ## 2. Why We Split
 
@@ -26,7 +32,9 @@ The feature contains work spanning three fundamentally different engineering pha
 | **Observability** — log tokens, costs, lineage | Medium. Needs data pipeline + visualization. | Phase 3 (logging) + Phase 4 (analytics) |
 | **Intelligence** — learn from history, auto-route | High. Unsolved research problem (credit assignment). | Phase 5 |
 
-Doing it all at once would mean Phase 3 features sit blocked behind Phase 5 research. By splitting, we get immediate value (use Claude for review tomorrow) while building toward the long-term vision incrementally.
+Doing it all at once would mean Phase 3 features sit blocked behind Phase 5 research. By splitting,
+we get immediate value (use Claude for review tomorrow) while building toward the long-term vision
+incrementally.
 
 ## 3. The North Star Vision
 
@@ -35,9 +43,13 @@ Doing it all at once would mean Phase 3 features sit blocked behind Phase 5 rese
 
 ### 3.1 The Credit Assignment Problem
 
-When multiple models collaborate across a pipeline (Model W writes the Spec, Model X drafts the Plan, Model Y writes the Code), and a failure occurs weeks later when Model Z tries to implement a downstream feature — **who is responsible for the failure?**
+When multiple models collaborate across a pipeline (Model W writes the Spec, Model X drafts the
+Plan, Model Y writes the Code), and a failure occurs weeks later when Model Z tries to implement a
+downstream feature — **who is responsible for the failure?**
 
-This is the **credit assignment problem**, one of the hardest unsolved challenges in multi-agent systems. It scales from single-pipeline attribution (easy) to cross-lifecycle attribution (extremely hard).
+This is the **credit assignment problem**, one of the hardest unsolved challenges in multi-agent
+systems. It scales from single-pipeline attribution (easy) to cross-lifecycle attribution (extremely
+hard).
 
 ### 3.2 Refactor-Adjusted Cost (RAC)
 
@@ -76,7 +88,9 @@ The conversation proposed an "Arbiter Agent" that performs **Root Cause Analysis
 
 **Why this is science fiction today:**
 
-1. **The Arbiter Paradox** — You're using an LLM to judge other LLMs. If the Arbiter hallucinates the root cause, your entire routing metric is poisoned. No current LLM can reliably perform deterministic RCA across weeks of multi-model development context.
+1. **The Arbiter Paradox** — You're using an LLM to judge other LLMs. If the Arbiter hallucinates
+   the root cause, your entire routing metric is poisoned. No current LLM can reliably perform
+   deterministic RCA across weeks of multi-model development context.
 
 2. **Cost of the metric** — Running the Arbiter with sufficient context (weeks of artifacts) could cost more than the rework it's trying to prevent.
 
@@ -103,7 +117,9 @@ Force the Planning model to declare shortcuts in structured JSON:
 }
 ```
 
-**Verdict:** ⚠️ The structure is feasible. Enforcing honest self-assessment from LLMs is not — they are notoriously bad at knowing what they don't know. A "debt budget" (max 2 items per plan) mitigates gaming but doesn't solve the honesty problem.
+**Verdict:** ⚠️ The structure is feasible. Enforcing honest self-assessment from LLMs is not — they
+are notoriously bad at knowing what they don't know. A "debt budget" (max 2 items per plan)
+mitigates gaming but doesn't solve the honesty problem.
 
 ## 4. The Pragmatic Path: 9 Sub-Features
 
@@ -177,7 +193,9 @@ Analyze accumulated telemetry + friction data to **suggest** (not auto-apply) mo
 
 #### 5.X — HITL Root-Cause Tagging
 
-When a pipeline fails or a human rejects output, prompt the developer: "Where did the root cause originate?" with options: `[Flawed Spec]`, `[Short-sighted Plan]`, `[Bad Code]`, `[Requirements Changed]`. Builds a labeled dataset of failures.
+When a pipeline fails or a human rejects output, prompt the developer: "Where did the root cause
+originate?" with options: `[Flawed Spec]`, `[Short-sighted Plan]`, `[Bad Code]`,
+`[Requirements Changed]`. Builds a labeled dataset of failures.
 
 - **Depends on**: Artifact lineage graph (Phase 4)
 - **Value alone**: Ground truth dataset for future ML/routing. Fits naturally with 5.5 (Provenance tracking)
@@ -193,7 +211,9 @@ The full ALS vision: automatic model selection based on lifecycle-attributed per
 - **ROI gate**: Only trigger Arbiter inference when `Σ(Rework_Cost) > Arbiter_Cost × τ` (risk-tolerance multiplier)
 
 > [!WARNING]
-> This sub-feature is speculative. The mathematical framework is sound, but the inputs (fault weights, honest self-assessment) cannot be reliably computed with current LLM capabilities. It should remain a north star, not a commitment.
+> This sub-feature is speculative. The mathematical framework is sound, but the inputs (fault
+> weights, honest self-assessment) cannot be reliably computed with current LLM capabilities. It
+> should remain a north star, not a commitment.
 
 ## 5. Dependency Graph
 

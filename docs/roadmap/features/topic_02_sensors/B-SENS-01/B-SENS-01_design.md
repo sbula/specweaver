@@ -8,7 +8,9 @@
 ## Feature Overview
 
 Feature 3.14 adds structural Spec-to-Code Traceability (Artifact Lineage) to the pipeline runner.
-It solves the credit assignment and traceability problem by recording a directional lineage graph (Spec → Plan → Code) in the SQLite database, tagging each artifact with a UUID, parent UUID, and generating LLM model.
+It solves the credit assignment and traceability problem by recording a directional lineage graph
+(Spec → Plan → Code) in the SQLite database, tagging each artifact with a UUID, parent UUID, and
+generating LLM model.
 It interacts with the `PipelineRunner`, DB telemetry layer, and code generators, and does NOT touch AST-based drift detection, coverage gap detection, or AI-powered root-cause analysis.
 Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per file), robust against manual file renames, and includes rapid orphan detection via CLI.
 

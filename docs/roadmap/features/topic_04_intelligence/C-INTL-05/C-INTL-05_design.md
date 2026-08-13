@@ -8,7 +8,15 @@
 
 ## Feature Overview
 
-Feature C-INTL-05 adds **configurable prompt render profiles** to the `PromptBuilder` / `_prompt_render.py` layer. It solves the Open-Closed Principle violation in the current hardcoded block render sequence by introducing an **Enum-based slot registry** (`PromptSlot`) and a **`RenderProfile` frozen dataclass** as domain-agnostic _mechanisms_ in `infrastructure/llm/`, while the **named profile constants** (FULL, MINIMAL, INTERACTIVE, ARBITER) encoding workflow orchestration _policy_ are owned by `core/flow/handlers/base.py`. This Mechanism/Policy split follows DDD's strict separation of infrastructure adapters from domain knowledge. The feature interacts with `infrastructure/llm/` and `core/flow/handlers/base.py` and does NOT touch `sandbox/*`, `validation/`, or `config/`. Zero new external dependencies are required.
+Feature C-INTL-05 adds **configurable prompt render profiles** to the `PromptBuilder` /
+`_prompt_render.py` layer. It solves the Open-Closed Principle violation in the current hardcoded
+block render sequence by introducing an **Enum-based slot registry** (`PromptSlot`) and a
+**`RenderProfile` frozen dataclass** as domain-agnostic _mechanisms_ in `infrastructure/llm/`, while
+the **named profile constants** (FULL, MINIMAL, INTERACTIVE, ARBITER) encoding workflow
+orchestration _policy_ are owned by `core/flow/handlers/base.py`. This Mechanism/Policy split
+follows DDD's strict separation of infrastructure adapters from domain knowledge. The feature
+interacts with `infrastructure/llm/` and `core/flow/handlers/base.py` and does NOT touch
+`sandbox/*`, `validation/`, or `config/`. Zero new external dependencies are required.
 
 ## Research Findings
 
@@ -16,7 +24,10 @@ Feature C-INTL-05 adds **configurable prompt render profiles** to the `PromptBui
 
 #### Current State — The Hardcoded Pipeline
 
-The rendering pipeline in `_prompt_render.py:73-80` defines 6 ordered tags (`instructions`, `dictator-overrides`, `project_metadata`, `constitution`, `standards`, `plan`) followed by inline handling for `topology`, `file`, `mentioned`, `context`, and `reminder` blocks. This is a total of **11 distinct block types**.
+The rendering pipeline in `_prompt_render.py:73-80` defines 6 ordered tags (`instructions`,
+`dictator-overrides`, `project_metadata`, `constitution`, `standards`, `plan`) followed by inline
+handling for `topology`, `file`, `mentioned`, `context`, and `reminder` blocks. This is a total of
+**11 distinct block types**.
 
 **What already exists and can be reused:**
 
@@ -43,16 +54,26 @@ The rendering pipeline in `_prompt_render.py:73-80` defines 6 ordered tags (`ins
 | `workflows/planning/decomposer.py:90-91` | Direct `PromptBuilder()` + instructions + metadata only | → `RenderProfile.MINIMAL` |
 
 **Key Observation — Redundancy Pattern:**
-The `include_rules: bool` parameter in `_build_base_prompt()` is a primitive boolean switch that implicitly encodes "profile selection". This is the exact design smell C-INTL-05 eliminates. Today there are effectively 4 implicit profiles scattered across the codebase:
+The `include_rules: bool` parameter in `_build_base_prompt()` is a primitive boolean switch that
+implicitly encodes "profile selection". This is the exact design smell C-INTL-05 eliminates. Today
+there are effectively 4 implicit profiles scattered across the codebase:
 1. **FULL** — constitution + standards + memory + plan + topology (generators, reviewers)
 2. **INTERACTIVE** — metadata + memory, no strict rules (drafter)
 3. **MINIMAL** — instructions + metadata only (decomposer, planner)
 4. **ARBITER** — instructions + context only, no rules/memory (arbiter)
 
 **Boundary Constraints (from `context.yaml` files):**
-- `infrastructure/llm/context.yaml`: archetype `adapter`, consumes `specweaver/config`, forbids `specweaver/sandbox/*`. **Mechanism types** (`PromptSlot` enum, `RenderProfile` dataclass) live here — they are domain-agnostic data structures.
-- `core/flow/handlers/` context: archetype `orchestrator`, consumes `specweaver/llm`. **Policy constants** (the 4 named profile instances: `FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`) live here — they encode workflow orchestration knowledge about which handlers need which context. This follows the existing IoC pattern (like `skeleton_files` injection).
-- `workflows/planning/context.yaml`: archetype `orchestrator`, consumes `specweaver/llm` but does **NOT** consume `specweaver/flow`. The `FeatureDecomposer` must receive a pre-built `PromptBuilder` via DI from its calling handler (`DecomposeFeatureHandler` in `core/flow/handlers/`), NOT call `_build_base_prompt()` itself.
+- `infrastructure/llm/context.yaml`: archetype `adapter`, consumes `specweaver/config`, forbids
+  `specweaver/sandbox/*`. **Mechanism types** (`PromptSlot` enum, `RenderProfile` dataclass) live
+  here — they are domain-agnostic data structures.
+- `core/flow/handlers/` context: archetype `orchestrator`, consumes `specweaver/llm`. **Policy
+  constants** (the 4 named profile instances: `FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`) live here
+  — they encode workflow orchestration knowledge about which handlers need which context. This
+  follows the existing IoC pattern (like `skeleton_files` injection).
+- `workflows/planning/context.yaml`: archetype `orchestrator`, consumes `specweaver/llm` but does
+  **NOT** consume `specweaver/flow`. The `FeatureDecomposer` must receive a pre-built
+  `PromptBuilder` via DI from its calling handler (`DecomposeFeatureHandler` in
+  `core/flow/handlers/`), NOT call `_build_base_prompt()` itself.
 - No new module dependencies are introduced. This is a purely internal refactoring.
 
 #### Refactoring ROI Analysis
@@ -82,11 +103,17 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 
 ### Blueprint References
 
-**LangChain `ChatPromptTemplate` (2025):** Composition via operator overloading (`+`), `MessagesPlaceholder` for slot injection, `configurable_fields` for runtime swapping. Relevant pattern: treating prompt sections as composable, independently configurable units.
+**LangChain `ChatPromptTemplate` (2025):** Composition via operator overloading (`+`),
+`MessagesPlaceholder` for slot injection, `configurable_fields` for runtime swapping. Relevant
+pattern: treating prompt sections as composable, independently configurable units.
 
-**Aider's Repo Map (2025):** Dynamic context sizing using graph-ranking. Relevant pattern: dynamic budget-based context scaling (already implemented in SpecWeaver's `_compute_auto_scale`). Aider's approach validates our existing proportional truncation strategy.
+**Aider's Repo Map (2025):** Dynamic context sizing using graph-ranking. Relevant pattern: dynamic
+budget-based context scaling (already implemented in SpecWeaver's `_compute_auto_scale`). Aider's
+approach validates our existing proportional truncation strategy.
 
-**DSPy Signatures (2025):** Typed input/output contracts for prompt modules. Relevant pattern: declarative "what goes in" vs "what comes out" specifications. Validates the `PromptSlot` enum approach — each slot is a typed, declared input to the LLM.
+**DSPy Signatures (2025):** Typed input/output contracts for prompt modules. Relevant pattern:
+declarative "what goes in" vs "what comes out" specifications. Validates the `PromptSlot` enum
+approach — each slot is a typed, declared input to the LLM.
 
 ### Pros / Cons Analysis
 
@@ -147,14 +174,18 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 ## Sub-Feature Breakdown
 
 ### SF-01: Slot Registry & Profile Mechanism
-- **Scope**: Define the `PromptSlot` enum and `RenderProfile` frozen dataclass (mechanism types, with `__post_init__` validation that `order ⊆ active_slots`) in `infrastructure/llm/`. Define the 4 named profile constants (policy) in `core/flow/handlers/_profiles.py`:
+- **Scope**: Define the `PromptSlot` enum and `RenderProfile` frozen dataclass (mechanism types,
+  with `__post_init__` validation that `order ⊆ active_slots`) in `infrastructure/llm/`. Define the
+  4 named profile constants (policy) in `core/flow/handlers/_profiles.py`:
   - `FULL`: All slots
   - `MINIMAL`: `{INSTRUCTIONS, METADATA, TOPOLOGY}`
   - `INTERACTIVE`: `{INSTRUCTIONS, DICTATOR_OVERRIDES, METADATA, PLAN, TOPOLOGY, FILE, MENTIONED, CONTEXT, REMINDER, AGENT_MEMORY}` (all slots except `CONSTITUTION` and `STANDARDS`)
   - `ARBITER`: `{INSTRUCTIONS, CONTEXT}`
 - **FRs**: [FR-1, FR-2, FR-3, FR-9]
 - **Inputs**: Current hardcoded block kinds from `_prompt_render.py`
-- **Outputs**: `PromptSlot` enum + `RenderProfile` dataclass in `infrastructure/llm/_prompt_profiles.py`. Profile constants (`FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`) in `core/flow/handlers/_profiles.py`
+- **Outputs**: `PromptSlot` enum + `RenderProfile` dataclass in
+  `infrastructure/llm/_prompt_profiles.py`. Profile constants (`FULL`, `MINIMAL`, `INTERACTIVE`,
+  `ARBITER`) in `core/flow/handlers/_profiles.py`
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf01_implementation_plan.md
 
@@ -167,7 +198,9 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf02_implementation_plan.md
 
 ### SF-03: Caller Migration & Unification
-- **Scope**: Migrate all handler callsites to use explicit profiles. Refactor `ArbitrateVerdictHandler` to call `_build_base_prompt(profile=ARBITER)`. Refactor `DecomposeFeatureHandler` to pre-build PromptBuilder and inject into `FeatureDecomposer` via DI.
+- **Scope**: Migrate all handler callsites to use explicit profiles. Refactor
+  `ArbitrateVerdictHandler` to call `_build_base_prompt(profile=ARBITER)`. Refactor
+  `DecomposeFeatureHandler` to pre-build PromptBuilder and inject into `FeatureDecomposer` via DI.
 - **FRs**: [FR-7, FR-8]
 - **Inputs**: Refactored `_build_base_prompt()` API from SF-02
 - **Outputs**: All 8+ callsites using explicit `RenderProfile` constants. Arbiter handler uses centralized assembly. Decomposer receives pre-built PromptBuilder via IoC.

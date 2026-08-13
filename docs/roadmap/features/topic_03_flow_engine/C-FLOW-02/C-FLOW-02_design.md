@@ -8,16 +8,26 @@
 ## Feature Overview
 
 Feature 3.25 adds conditional branching capabilities to the core Pipeline Engine.
-It solves the problem of "one-size-fits-all" execution by adding an explicit `router` YAML key, allowing specs to take optimized paths (e.g., bypass full decomposition for simple tasks based on the Planner output).
+It solves the problem of "one-size-fits-all" execution by adding an explicit `router` YAML key,
+allowing specs to take optimized paths (e.g., bypass full decomposition for simple tasks based on
+the Planner output).
 It interacts with the YAML pipeline parser, the base Handler classes, and the execution engine, and does NOT touch language-specific AST manipulation or external integrations.
 Key constraints: To prevent python evaluations on untrusted YAML, the routing condition must be configured using declarative structured operators.
 
 ## Research Findings
 
 ### Codebase Patterns
-- **`PipelineRunner`**: Currently uses `while run.current_step < len(run.step_records):`. After `run.complete_current_step()`, it advances. The new logic must evaluate `step.router` (if present) and mutate `run.current_step` using the matching `RouterDefinition.target` mapped to `PipelineDefinition.get_step_index(target)`.
-- **`PipelineDefinition`**: Currently `validate_flow`/`_validate_loop_back` prevents forward loops to maintain a simplistic DAG. `router` blocks are fundamentally forward-jumps (or lateral). We must add a specific exception for `router` while validating that their `target` step actually exists in the pipeline.
-- **`GateEvaluator` vs `RouterEvaluator`**: The `GateEvaluator` validates step success/approval (and can loop_back or park). The `RouterEvaluator` decides where to go *next* if the gate completely passed.
+- **`PipelineRunner`**: Currently uses `while run.current_step < len(run.step_records):`. After
+  `run.complete_current_step()`, it advances. The new logic must evaluate `step.router` (if present)
+  and mutate `run.current_step` using the matching `RouterDefinition.target` mapped to
+  `PipelineDefinition.get_step_index(target)`.
+- **`PipelineDefinition`**: Currently `validate_flow`/`_validate_loop_back` prevents forward loops
+  to maintain a simplistic DAG. `router` blocks are fundamentally forward-jumps (or lateral). We
+  must add a specific exception for `router` while validating that their `target` step actually
+  exists in the pipeline.
+- **`GateEvaluator` vs `RouterEvaluator`**: The `GateEvaluator` validates step success/approval (and
+  can loop_back or park). The `RouterEvaluator` decides where to go *next* if the gate completely
+  passed.
 
 ## Functional Requirements
 

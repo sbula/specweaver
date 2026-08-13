@@ -1,8 +1,12 @@
 # Developer Guide: Adding Framework-Specific Validation Rules (Archetypes)
 
-SpecWeaver leverages "Archetype-Based Rule Sets" to enforce framework-specific constraints (e.g., verifying a Spring Boot controller has the `@RestController` annotation, or ensuring React Router `loader` functions are separated).
+SpecWeaver leverages "Archetype-Based Rule Sets" to enforce framework-specific constraints (e.g.,
+verifying a Spring Boot controller has the `@RestController` annotation, or ensuring React Router
+`loader` functions are separated).
 
-Because SpecWeaver supports multi-language monorepos, and because its `assurance/validation` layer operates purely mathematically (no C-bindings or I/O allowed), adding a new Framework Rule follows a strict pattern using **CodeStructure Atoms** and **Dependency Injected Payloads**.
+Because SpecWeaver supports multi-language monorepos, and because its `assurance/validation` layer
+operates purely mathematically (no C-bindings or I/O allowed), adding a new Framework Rule follows a
+strict pattern using **CodeStructure Atoms** and **Dependency Injected Payloads**.
 
 ---
 
@@ -21,7 +25,10 @@ The Orchestrator (`flow/`) parses this string via `ArchetypeResolver` and automa
 
 ## 1b. Defining Framework Schema Evaluators (Macro Unrolling)
 
-When relying on polyglot agents, AI LLMs struggle to understand abstract macros or annotations like `@RestController`. Instead of starting heavy compilers to evaluate these decorators, SpecWeaver features a **LSP-Bypass Engine** which mathematically "unrolls" decorators structurally using YAML abstractions. 
+When relying on polyglot agents, AI LLMs struggle to understand abstract macros or annotations like
+`@RestController`. Instead of starting heavy compilers to evaluate these decorators, SpecWeaver
+features a **LSP-Bypass Engine** which mathematically "unrolls" decorators structurally using YAML
+abstractions. 
 
 Whenever you add a new Framework Archetype, you **must** supply a matching flat YAML configuration in `src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`.
 
@@ -42,11 +49,16 @@ evaluate:
       unroll: "HTTP GET Request Boundary endpoint bound to >>{0}<<"
 ```
 
-The system recursively evaluates these YAML files with a rigid depth protection (Max Depth 5), enabling agents querying the `CodeStructureTool.read_unrolled_symbol` to understand exact runtime behaviors deterministically within 5 milliseconds instead of 5,000 milliseconds.
+The system recursively evaluates these YAML files with a rigid depth protection (Max Depth 5),
+enabling agents querying the `CodeStructureTool.read_unrolled_symbol` to understand exact runtime
+behaviors deterministically within 5 milliseconds instead of 5,000 milliseconds.
 
 ## 1c. Composing Framework Plugins (Feature 3.30a)
 
-Often, a component uses an orchestration framework (like `spring-boot`) alongside orthogonal capability plugins (like `spring-security` or `flyway`). Instead of resolving a monolithic archetype representing a cross-product of all versions, users can declare a `plugins` array alongside their `archetype` in `context.yaml`:
+Often, a component uses an orchestration framework (like `spring-boot`) alongside orthogonal
+capability plugins (like `spring-security` or `flyway`). Instead of resolving a monolithic archetype
+representing a cross-product of all versions, users can declare a `plugins` array alongside their
+`archetype` in `context.yaml`:
 
 ```yaml
 version: "1.0"
@@ -55,7 +67,9 @@ plugins: ["spring-security"]
 consumes: ["database/"]
 ```
 
-The plugin schemas dynamically aggregate via mathematical supersets into the primary evaluator schema. Additionally, plugins can dynamically strip explicit behaviors from agent tool JSON boundaries without executing code:
+The plugin schemas dynamically aggregate via mathematical supersets into the primary evaluator
+schema. Additionally, plugins can dynamically strip explicit behaviors from agent tool JSON
+boundaries without executing code:
 
 ```yaml
 # frameworks/spring-security.yaml
@@ -74,7 +88,9 @@ When a pipeline executes, the `ValidateCodeHandler`:
 3. Takes that dictionary and injects it into `step.params["ast_payload"]` for the current pipeline.
 
 ### Step 3a: Bind the Native Rule in the YAML Pipeline Extender
-Because SpecWeaver natively bundles `C12ArchetypeCodeBoundsRule` (`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`), you do NOT need to write Python code to check simple structural metadata requirements!
+Because SpecWeaver natively bundles `C12ArchetypeCodeBoundsRule`
+(`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`), you do NOT need to
+write Python code to check simple structural metadata requirements!
 
 The `C12ArchetypeCodeBoundsRule` natively evaluates `self.context.get("framework_markers")` looking for arrays of symbols.
 
@@ -92,7 +108,9 @@ steps:
       forbidden_markers: ["Entity"]
 ```
 
-When the orchestrator triggers this pipeline, it automatically calculates the Native AST and binds the `ast_payload` markers dictionary explicitly into `C12ArchetypeCodeBoundsRule.context` for purely mathematical dictionary evaluation!
+When the orchestrator triggers this pipeline, it automatically calculates the Native AST and binds
+the `ast_payload` markers dictionary explicitly into `C12ArchetypeCodeBoundsRule.context` for purely
+mathematical dictionary evaluation!
 
 ### Step 3b: Creating Proprietary/Advanced Rules
 If `C12`'s simple inclusion/exclusion `PARAM_MAP` logic isn't complex enough for your proprietary framework, you can subclass `Rule` and read directly from `self.context`:
@@ -123,4 +141,8 @@ class MyEnterpriseRule(Rule):
 
 ## 4. Why this matters? (Domain Driven Design)
 
-By isolating the **extraction of syntax trees** in the `Loom` layer, and keeping the `assurance` layer **purely mathematical dictionary comparisons**, SpecWeaver completely prevents native C-bindings (like TreeSitter compiling Node.js/Rust) from crashing the static Python validation processes. It enforces absolute security and scalability, maintaining SpecWeaver's core architectural `forbid` boundaries natively.
+By isolating the **extraction of syntax trees** in the `Loom` layer, and keeping the `assurance`
+layer **purely mathematical dictionary comparisons**, SpecWeaver completely prevents native
+C-bindings (like TreeSitter compiling Node.js/Rust) from crashing the static Python validation
+processes. It enforces absolute security and scalability, maintaining SpecWeaver's core
+architectural `forbid` boundaries natively.

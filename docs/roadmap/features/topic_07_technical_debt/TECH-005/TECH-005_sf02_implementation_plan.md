@@ -61,7 +61,9 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 
 ## Corrections Made
 - Addressed RED-1.1: Clarified the exact operation order in `downgrade()` (drop new indexes, rename tables, create old indexes) to prevent 'index not found' or 'table not found' errors.
-- Addressed RED-1.2: Validated that SQLite supports `op.rename_table()` directly via `ALTER TABLE RENAME TO` without needing a full `batch_op` rebuild, but explicitly noted that index creation/dropping must reference the *current* table name at that point in the script.
+- Addressed RED-1.2: Validated that SQLite supports `op.rename_table()` directly via
+  `ALTER TABLE RENAME TO` without needing a full `batch_op` rebuild, but explicitly noted that index
+  creation/dropping must reference the *current* table name at that point in the script.
 
 ## Accepted Risks
 - None
@@ -72,13 +74,18 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 **Category**: Robustness & Edge Cases
 **Severity**: HIGH
 **Target**: `downgrade()` plan
-**Finding**: The plan states "Reverse all table renames. Drop the new indexes and re-create the old ones." If it renames the table back to `artifact_events` first, and *then* tries to drop `ix_flow_artifact_events_artifact_id` on table `flow_artifact_events`, Alembic will crash because the table no longer exists.
+**Finding**: The plan states "Reverse all table renames. Drop the new indexes and re-create the old
+ones." If it renames the table back to `artifact_events` first, and *then* tries to drop
+`ix_flow_artifact_events_artifact_id` on table `flow_artifact_events`, Alembic will crash because
+the table no longer exists.
 **Evidence**: Line "Reverse all table renames. Drop the new indexes..."
 **Attack Vector**: Downgrade fails, leaving the DB in a corrupted half-migrated state.
 
 ### 🔵 BLUE-1.1: Response to RED-1.1
 **Verdict**: VALID — FIX REQUIRED
-**Response**: The order must be strictly LIFO. We must drop the new indexes while the table is still named `flow_artifact_events`, then rename the table, then create the old indexes on `artifact_events`. The plan is updated to enforce this exact sequence.
+**Response**: The order must be strictly LIFO. We must drop the new indexes while the table is still
+named `flow_artifact_events`, then rename the table, then create the old indexes on
+`artifact_events`. The plan is updated to enforce this exact sequence.
 
 ### 🔴 RED-1.2: SQLite Batch Op Requirement for Index Drops
 **Category**: Architecture & Design
@@ -90,7 +97,9 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 
 ### 🔵 BLUE-1.2: Response to RED-1.2
 **Verdict**: INVALID — NO ACTION
-**Response**: SQLite natively supports `DROP INDEX` without table rebuilds. `batch_op` is only required for altering/dropping *columns* or *constraints*, not indexes. `op.drop_index` works perfectly fine globally in SQLite. No change needed to the plan.
+**Response**: SQLite natively supports `DROP INDEX` without table rebuilds. `batch_op` is only
+required for altering/dropping *columns* or *constraints*, not indexes. `op.drop_index` works
+perfectly fine globally in SQLite. No change needed to the plan.
 
 ### 🔴 RED-2.1: Missing `project_llm_links` constraints
 **Category**: Schema Data Layer
@@ -101,5 +110,7 @@ Generate an Alembic migration script using `alembic revision -m "TECH-005_rename
 
 ### 🔵 BLUE-2.1: Response to RED-2.1
 **Verdict**: INVALID — NO ACTION
-**Response**: SQLite's `ALTER TABLE RENAME TO` automatically updates foreign key references in other tables if `PRAGMA foreign_keys=ON` is active (SQLite 3.25+), which SpecWeaver uses. Alembic's `rename_table` wraps this cleanly.
+**Response**: SQLite's `ALTER TABLE RENAME TO` automatically updates foreign key references in other
+tables if `PRAGMA foreign_keys=ON` is active (SQLite 3.25+), which SpecWeaver uses. Alembic's
+`rename_table` wraps this cleanly.
 

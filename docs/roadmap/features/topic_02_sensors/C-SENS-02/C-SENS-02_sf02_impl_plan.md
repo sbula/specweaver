@@ -9,15 +9,25 @@
 ## Proposed Changes
 
 > [!WARNING]
-> **Strict Architectural Deferment**: `src/specweaver/workspace/context/context.yaml` maps the entire `context/` module as an `archetype: contract`. However, `analyzers.py` currently executes physical `.glob()` and `.read_text()` OS operations natively! This is a massive boundary violation that triggers the Pre-Commit Quality gates. 
-> **CRITICAL RULE FOR EXECUTING AGENT:** Do NOT attempt to refactor the file I/O operations out of `analyzers.py` during SF-02! This violation is **formally deferred to SF-04**, which physically moves the module out to `workspace/analyzers/` (Adapter Layer). Leave the violation as-is and strictly execute the SF-02 scope.
+> **Strict Architectural Deferment**: `src/specweaver/workspace/context/context.yaml` maps the
+> entire `context/` module as an `archetype: contract`. However, `analyzers.py` currently executes
+> physical `.glob()` and `.read_text()` OS operations natively! This is a massive boundary violation
+> that triggers the Pre-Commit Quality gates. 
+> **CRITICAL RULE FOR EXECUTING AGENT:** Do NOT attempt to refactor the file I/O operations out of
+> `analyzers.py` during SF-02! This violation is **formally deferred to SF-04**, which physically
+> moves the module out to `workspace/analyzers/` (Adapter Layer). Leave the violation as-is and
+> strictly execute the SF-02 scope.
 
 ---
 ### 1. Abstract Interfaces & Union Scaffolding
 #### [MODIFY] `src/specweaver/workspace/context/analyzers.py`
-- **`LanguageAnalyzer` ABC:** Add `@abstractmethod def get_binary_ignore_patterns(self)` and `@abstractmethod def get_default_directory_ignores(self)` to enforce exclusion guarantees across all integrated languages.
+- **`LanguageAnalyzer` ABC:** Add `@abstractmethod def get_binary_ignore_patterns(self)` and
+  `@abstractmethod def get_default_directory_ignores(self)` to enforce exclusion guarantees across
+  all integrated languages.
 - **`TreeSitterAnalyzerBase`:** Implement both methods linearly by delegating to `self.parser.get_binary_ignore_patterns()` and `self.parser.get_default_directory_ignores()`.
-- **`AnalyzerFactory`:** Introduce a robust classmethod `@classmethod def get_all_analyzers(cls) -> list[LanguageAnalyzer]` to expose the total internal Polyglot union seamlessly (Python, TS, Java, Rust, Kotlin).
+- **`AnalyzerFactory`:** Introduce a robust classmethod
+  `@classmethod def get_all_analyzers(cls) -> list[LanguageAnalyzer]` to expose the total internal
+  Polyglot union seamlessly (Python, TS, Java, Rust, Kotlin).
 
 #### [MODIFY] `tests/unit/workspace/context/test_analyzers.py`
 - Assert that `AnalyzerFactory.get_all_analyzers()` returns exactly 5 polyglot instances.

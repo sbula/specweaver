@@ -17,7 +17,9 @@ As SpecWeaver-managed projects grow in complexity (20+ microservices, multi-tena
 1. **Spec quality degrades** — Agents writing specs for Service B don't know that Service A has a latency constraint that makes their design infeasible.
 2. **Impact blindness** — Changing a spec or interface in one module silently breaks assumptions in downstream consumers.
 
-A flat vector database (Qdrant) finds *similar* code but cannot traverse *causal chains*. A graph database finds *dependencies* but cannot understand *semantics*. The solution is a hybrid architecture.
+A flat vector database (Qdrant) finds *similar* code but cannot traverse *causal chains*. A graph
+database finds *dependencies* but cannot understand *semantics*. The solution is a hybrid
+architecture.
 
 ---
 
@@ -288,7 +290,9 @@ Architect decisions stored as `constraints` in `context.yaml` are **hard invaria
 Even without building Phases C-D today, these decisions keep the path open:
 
 1. **Keep `context.yaml` as the single source of truth** for module topology. Don't create parallel dependency files.
-2. **Add operational metadata fields** to `context.yaml` schema (see [context_yaml_spec.md](../architecture/context_yaml_spec.md)):  `multi_tenant_ready`, `latency_critical`, `max_latency_ms`, `data_freshness`, `reliability_target`.
+2. **Add operational metadata fields** to `context.yaml` schema (see
+   [context_yaml_spec.md](../architecture/context_yaml_spec.md)):  `multi_tenant_ready`,
+   `latency_critical`, `max_latency_ms`, `data_freshness`, `reliability_target`.
 3. **Keep AST extraction patterns** in code rules (C05, C06, C08). These are the future Qdrant payload extractors.
 4. **Keep specs technology-agnostic** (the "what", not the "how"). This enables the graph to reason about business logic without parsing implementation details.
 5. **Maintain `consumes` validation** — `validate_boundaries()` atom already checks consumes references. This is the seed of graph integrity checking.

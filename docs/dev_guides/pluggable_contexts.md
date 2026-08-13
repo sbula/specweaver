@@ -6,7 +6,9 @@ This guide explains how to use and extend the **Pluggable Context** system in Sp
 
 To prevent compile-time coupling between domain modules (like `assurance/graph`) and the LLM infrastructure, SpecWeaver uses a duck-typed protocol `PromptContentSource`. 
 
-Domain classes can conform to this protocol natively without importing any LLM/infrastructure modules. This ensures clean boundary isolation and compliance with strict architectural validation (`tach check`).
+Domain classes can conform to this protocol natively without importing any LLM/infrastructure
+modules. This ensures clean boundary isolation and compliance with strict architectural validation
+(`tach check`).
 
 ---
 
@@ -63,7 +65,9 @@ class TopologyContext:
 For types that do not implement the protocol natively, SpecWeaver provides explicit adapters in `specweaver.infrastructure.llm.prompt.adapter`:
 
 1. **`StringPromptAdapter(content, label, escaping)`**: Wraps a raw string, validates the label, and formats it as `<context label="...">`.
-2. **`FilePromptAdapter(path, label, role, escaping, skeleton, skeleton_files)`**: Wraps file paths, validates sizes, optionally extracts AST skeletons, and formats as `<file path="..." language="...">`.
+2. **`FilePromptAdapter(path, label, role, escaping, skeleton, skeleton_files)`**: Wraps file paths,
+   validates sizes, optionally extracts AST skeletons, and formats as
+   `<file path="..." language="...">`.
 3. **`ProjectMetadataPromptAdapter(metadata)`**: Wraps `ProjectMetadata` models, serializing the safe config parameters as JSON inside `<project_metadata>` tags.
 
 ---
@@ -71,5 +75,7 @@ For types that do not implement the protocol natively, SpecWeaver provides expli
 ## Truncation Safety & CDATA Escaping
 
 When designing custom context sources:
-* **Pre-Escaping Truncation**: Truncate raw content inside `get_prompt_content()` *before* wrapping it in XML tags. Slicing raw text guarantees that tag boundaries (e.g. `</context>`, `</file>`, and CDATA blocks `]]>`) remain intact.
+* **Pre-Escaping Truncation**: Truncate raw content inside `get_prompt_content()` *before* wrapping
+  it in XML tags. Slicing raw text guarantees that tag boundaries (e.g. `</context>`, `</file>`, and
+  CDATA blocks `]]>`) remain intact.
 * **Escaping**: Always sanitize raw inputs against XML injection using `apply_escaping` and `escape_xml_attribute`.

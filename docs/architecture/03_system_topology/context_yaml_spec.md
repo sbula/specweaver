@@ -45,7 +45,11 @@ project/
 
 ## Relationship to CCS
 
-The [Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec) v1.1.0-RFC is an emerging community standard for embedding AI-readable metadata in codebases. SpecWeaver's `context.yaml` is designed to be CCS-compatible while extending it with enforcement capabilities.
+The
+[Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec)
+v1.1.0-RFC is an emerging community standard for embedding AI-readable metadata in codebases.
+SpecWeaver's `context.yaml` is designed to be CCS-compatible while extending it with enforcement
+capabilities.
 
 ### CCS recap
 
@@ -203,7 +207,9 @@ The `operational` section captures runtime and SLA characteristics of a boundary
 | `concurrency_model` | `enum` | `none` | Concurrency strategy. Values: `asyncio`, `threading`, `process`, `none` |
 
 > [!NOTE]
-> These fields are optional and only relevant for service/module boundaries with runtime behavior. Pure library or contract boundaries typically omit this section. Projects should define which fields are required for their domain in the system-level `context.yaml`.
+> These fields are optional and only relevant for service/module boundaries with runtime behavior.
+> Pure library or contract boundaries typically omit this section. Projects should define which
+> fields are required for their domain in the system-level `context.yaml`.
 
 ### Operational inheritance
 
@@ -243,7 +249,9 @@ Each boundary inherits its parent's context. Specifically:
 
 ## Archetype Enum
 
-An archetype defines what a boundary is structurally allowed to contain. Each boundary has **exactly one** archetype. If a directory naturally contains two patterns, it should be split into sub-directories.
+An archetype defines what a boundary is structurally allowed to contain. Each boundary has **exactly
+one** archetype. If a directory naturally contains two patterns, it should be split into
+sub-directories.
 
 ### Built-in archetypes
 
@@ -388,7 +396,9 @@ After code generation, SpecWeaver validates the result mechanically (no LLM need
 
 ## Ownership & Responsibility
 
-Who writes `context.yaml` depends on the lifecycle layer. The rule is simple: **no directory with source code should exist without a `context.yaml`.** Who creates it is gated by the next layer's review.
+Who writes `context.yaml` depends on the lifecycle layer. The rule is simple: **no directory with
+source code should exist without a `context.yaml`.** Who creates it is gated by the next layer's
+review.
 
 | Layer | Who writes `context.yaml`? | Gate |
 |---|---|---|
@@ -404,13 +414,17 @@ Who writes `context.yaml` depends on the lifecycle layer. The rule is simple: **
 
 **Existing projects adopting SpecWeaver** — An agent crawls the codebase, analyzes imports and folder structure, and proposes initial `context.yaml` files. The architect reviews and approves.
 
-**Ongoing evolution** — When an agent creates a new directory at L4, it must include a `context.yaml` in its proposal. If it attempts to create a directory without one, pre-code validation rejects the change.
+**Ongoing evolution** — When an agent creates a new directory at L4, it must include a
+`context.yaml` in its proposal. If it attempts to create a directory without one, pre-code
+validation rejects the change.
 
 ---
 
 ## Protection Model
 
-`context.yaml` files are architectural boundaries — if an agent can modify them, it can grant itself permissions. The protection model prevents this using the same interface-level invisibility pattern proven in the git tool layer.
+`context.yaml` files are architectural boundaries — if an agent can modify them, it can grant itself
+permissions. The protection model prevents this using the same interface-level invisibility pattern
+proven in the git tool layer.
 
 ### The filesystem tool parallel
 
@@ -450,7 +464,9 @@ BoundaryArchitectInterface:
 | **Role separation** | Only `BoundaryArchitectInterface` has write access to `context.yaml` | Free (architectural) |
 | **Hash verification** *(optional)* | `context.lock` stores SHA-256 hashes; validate before any run | Free (mechanical) |
 
-The key insight: `context.yaml` is simultaneously the **rule definition** and the **enforcement input**. Each file both declares what's allowed in its boundary and is itself protected by the system it defines.
+The key insight: `context.yaml` is simultaneously the **rule definition** and the **enforcement
+input**. Each file both declares what's allowed in its boundary and is itself protected by the
+system it defines.
 
 ---
 
@@ -473,4 +489,7 @@ This specification will be implemented through the following SpecWeaver componen
 2. **Version field** — Should `context.yaml` include a schema version for forward compatibility?
 3. **Tags** — Should there be a `tags` field for more flexible semantic search beyond `purpose`?
 4. **Conflict resolution** — When a child's `consumes` conflicts with a parent's `forbids`, which wins? (Current rule: `forbids` always wins.)
-5. **Spec → scaffold pipeline** — When the drafter/spec authoring workflow creates a new component spec, the spec must define boundary information (name, level, purpose, archetype, consumes, forbids). How this is formatted in the spec template, and how the Engine parses it to call `FileSystemAtom.scaffold()`, is not yet defined. This is a prerequisite for the drafter workflow.
+5. **Spec → scaffold pipeline** — When the drafter/spec authoring workflow creates a new component
+   spec, the spec must define boundary information (name, level, purpose, archetype, consumes,
+   forbids). How this is formatted in the spec template, and how the Engine parses it to call
+   `FileSystemAtom.scaffold()`, is not yet defined. This is a prerequisite for the drafter workflow.

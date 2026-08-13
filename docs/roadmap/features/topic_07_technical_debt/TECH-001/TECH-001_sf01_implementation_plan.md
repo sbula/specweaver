@@ -18,7 +18,10 @@
 > | FR-1 | §Proposed Changes — the `llm/store.py` extraction | `tests/unit/infrastructure/llm/test_llm_store.py` drives the store's models and constraints directly |
 > | FR-2 | the `core/flow/store.py` extraction | `tests/unit/core/flow/test_flow_store.py` |
 > | FR-3 | the `workspace/store.py` extraction | `tests/unit/workspace/test_workspace_store.py` |
-> | FR-7 | §4b "Dependency Inversion — The Monolith Fix": strips `settings.py` and `database.py` of control flow, adds `interfaces/cli/settings_loader.py` and `interfaces/cli/_db_utils.py` | `tests/unit/test_architecture.py::test_config_modules_hold_no_domain_orchestration` — asserts no domain imports **and** no import-time database work |
+> | FR-7 | §4b "Dependency Inversion — The Monolith Fix": strips `settings.py` and `database.py` of
+> control flow, adds `interfaces/cli/settings_loader.py` and `interfaces/cli/_db_utils.py` |
+> `tests/unit/test_architecture.py::test_config_modules_hold_no_domain_orchestration` — asserts no
+> domain imports **and** no import-time database work |
 > | FR-8 | §4b: modifies `llm/router.py` and `llm/factory.py` to take settings by injection | `tests/unit/test_architecture.py::test_llm_entry_points_take_settings_not_a_database` |
 >
 > FR-7 and FR-8 were assigned to this sub-feature by the same ticket — see the note in
@@ -26,10 +29,16 @@
 > Editing a delivered story's plan is authorised for TECH-025 only, by its AD-4.
 
 ## Overview
-Deconstruct the monolithic `core/config/database.py` and `_schema.py` raw SQLite strings into feature-bounded contexts (`llm/`, `flow/`, `workspace/`). Implement a highly concurrent `AsyncSession` architecture powered by SQLite WAL mode, `NullPool`, and an asynchronous Command Query Responsibility Segregation (CQRS) Write Queue to safely support massive orchestrator parallelism without OS File Descriptor exhaustion or SQLite locking.
+Deconstruct the monolithic `core/config/database.py` and `_schema.py` raw SQLite strings into
+feature-bounded contexts (`llm/`, `flow/`, `workspace/`). Implement a highly concurrent
+`AsyncSession` architecture powered by SQLite WAL mode, `NullPool`, and an asynchronous Command
+Query Responsibility Segregation (CQRS) Write Queue to safely support massive orchestrator
+parallelism without OS File Descriptor exhaustion or SQLite locking.
 
 > [!CAUTION]
-> **Zero Regression Warning:** All new SQLAlchemy models MUST mathematically map to the exact column names and types defined in the legacy `_schema.py` raw SQL strings to prevent breaking the existing `specweaver.db` files of our users.
+> **Zero Regression Warning:** All new SQLAlchemy models MUST mathematically map to the exact column
+> names and types defined in the legacy `_schema.py` raw SQL strings to prevent breaking the
+> existing `specweaver.db` files of our users.
 
 ## Proposed Changes
 
@@ -42,8 +51,13 @@ Deconstruct the monolithic `core/config/database.py` and `_schema.py` raw SQLite
 - [x] Remove all raw `sqlite3` connection logic and mixin inheritance.
 - [x] Implement `StrictISODateTime(TypeDecorator)` to guarantee SQLite timestamps exactly match the legacy `datetime.now(tz=UTC).isoformat()` format, preventing Zero Regression crashes.
 - [x] Implement `CQRSQueueManager`: an `asyncio.Queue` initialized with `maxsize=1000` to prevent OOM crashes.
-- [x] Implement a Write Worker with a Dead Letter Exchange (DLX) `try/except` loop. If an insert fails, it writes to `.dead_letter.log` (configured via `logging.handlers.RotatingFileHandler` with 10MB max size and 3 backups) and continues, guaranteeing the worker never dies and poisons the queue and preventing disk exhaustion.
-- [x] **Constraint**: The `CQRSQueueManager` MUST process pure DTO payloads (not callbacks capturing caller sessions). The worker loop MUST instantiate its own isolated `session_scope` to execute the writes to prevent `DetachedInstanceError`s.
+- [x] Implement a Write Worker with a Dead Letter Exchange (DLX) `try/except` loop. If an insert
+  fails, it writes to `.dead_letter.log` (configured via `logging.handlers.RotatingFileHandler` with
+  10MB max size and 3 backups) and continues, guaranteeing the worker never dies and poisons the
+  queue and preventing disk exhaustion.
+- [x] **Constraint**: The `CQRSQueueManager` MUST process pure DTO payloads (not callbacks capturing
+  caller sessions). The worker loop MUST instantiate its own isolated `session_scope` to execute the
+  writes to prevent `DetachedInstanceError`s.
 - [x] Implement `session_scope()`: an async context manager that yields a **read-only** `AsyncSession` powered by `aiosqlite`.
 - [x] **Constraint**: Wrap the internal yield of `session_scope` with an `asyncio.Semaphore(500)`. This guarantees we never exceed OS File Descriptor limits under massive concurrency.
 - [x] **Constraint**: Configure the SQLAlchemy async engine to use `poolclass=NullPool`. Disabling the pool entirely prevents `QueuePool overflow` crashes.
@@ -96,7 +110,9 @@ Deconstruct the monolithic `core/config/database.py` and `_schema.py` raw SQLite
 - **Constraint**: Absolutely NO programmatic `alembic.command.upgrade` calls at runtime. Alembic is reserved for explicit developer CLI migrations.
 
 #### [MODIFY] src/specweaver/interfaces/cli/*.py (All Handlers)
-- Update `projects.py`, `standards.py`, `usage_commands.py`, etc., to stop using `db.get_active_project()`. Instead, use `async with db.async_session_scope() as session:` to instantiate `WorkspaceRepository` natively and retrieve data.
+- Update `projects.py`, `standards.py`, `usage_commands.py`, etc., to stop using
+  `db.get_active_project()`. Instead, use `async with db.async_session_scope() as session:` to
+  instantiate `WorkspaceRepository` natively and retrieve data.
 
 ### 4c. Formalize Workspace Boundary (NFR-2)
 #### [NEW] src/specweaver/workspace/context.yaml

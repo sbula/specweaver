@@ -7,13 +7,22 @@
 
 ## Feature Overview
 
-Feature 3.31 adds Protocol & Schema Analyzers to the CodeStructure framework via a new Architecture-aligned `commons/protocol` module. It solves the problem of contract drift across microservices by parsing OpenAPI, AsyncAPI, and gRPC `.proto` files structurally without building heavy toolchains (using native Python `ruamel.yaml` and `tree-sitter-proto` respectively). It interacts with the existing validation engine and pipeline components to mathematically assert that backend API implementations match the externally facing contracts, without invoking `protoc` or C++ build extensions.
+Feature 3.31 adds Protocol & Schema Analyzers to the CodeStructure framework via a new
+Architecture-aligned `commons/protocol` module. It solves the problem of contract drift across
+microservices by parsing OpenAPI, AsyncAPI, and gRPC `.proto` files structurally without building
+heavy toolchains (using native Python `ruamel.yaml` and `tree-sitter-proto` respectively). It
+interacts with the existing validation engine and pipeline components to mathematically assert that
+backend API implementations match the externally facing contracts, without invoking `protoc` or C++
+build extensions.
 Key constraints: pure python/tree-sitter approach to avoid compilation errors; lightweight integration into existing `assurance/validation` engine.
 
 ## Research Findings
 
 ### Codebase Patterns
-Existing AST extraction uses `tree-sitter` in `core/loom/commons/language/` to enforce CodeStructure Interface for programming languages. To avoid forcing YAML or `.proto` into code interfaces, we will introduce `commons/protocol` designed specifically for APIs. We will reuse `ruamel.yaml` already defined in `pyproject.toml`.
+Existing AST extraction uses `tree-sitter` in `core/loom/commons/language/` to enforce CodeStructure
+Interface for programming languages. To avoid forcing YAML or `.proto` into code interfaces, we will
+introduce `commons/protocol` designed specifically for APIs. We will reuse `ruamel.yaml` already
+defined in `pyproject.toml`.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

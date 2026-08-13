@@ -197,7 +197,10 @@ No dependency upgrade required. No Podman/Docker dependency added.
 ## Sub-Feature Breakdown
 
 ### SF-01: Generation → QA Test Loop
-- **Scope**: Extend the inline `implement_spec` pipeline so generated code+tests are validated in-pipeline — append `run_tests` (`VALIDATE`/`TESTS`, coverage) and `validate_code` (`VALIDATE`/`CODE`, C01–C08), resolve QA targets to the generated files, add the loop-back-on-fail gate, and report QA results inline.
+- **Scope**: Extend the inline `implement_spec` pipeline so generated code+tests are validated
+  in-pipeline — append `run_tests` (`VALIDATE`/`TESTS`, coverage) and `validate_code`
+  (`VALIDATE`/`CODE`, C01–C08), resolve QA targets to the generated files, add the loop-back-on-fail
+  gate, and report QA results inline.
 - **FRs**: [FR-1, FR-3, FR-4, FR-6, FR-7]
 - **Inputs**: Approved spec path; generator outputs `src/<stem>.py`, `tests/test_<stem>.py`; `RunContext` (llm, config, db).
 - **Outputs**: `implement_spec` pipeline that runs tests + C01–C08 and surfaces `{passed, failed, coverage_pct, …}` inline.
@@ -213,7 +216,12 @@ No dependency upgrade required. No Podman/Docker dependency added.
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-03/INT-US-03_sf02_implementation_plan.md
 
 ### SF-03: Zero-Trust Isolation + Verifiable Proof
-- **Scope**: Thread the US-9 worktree-isolation policy into the `implement` `RunContext` (`enforce_isolation` from `SandboxSettings`; `use_worktree=None` on **all** steps incl. generate), thread the generated `src`/`tests` paths into `context.allowed_paths` so `strip_merge` preserves them (**AD-7 crux**), and deliver the e2e proof that **freshly generated** code runs QA worktree-bounded, plus the paired un-isolated control. **May require a short spike to confirm the per-step model carries generated artifacts (AD-7).**
+- **Scope**: Thread the US-9 worktree-isolation policy into the `implement` `RunContext`
+  (`enforce_isolation` from `SandboxSettings`; `use_worktree=None` on **all** steps incl. generate),
+  thread the generated `src`/`tests` paths into `context.allowed_paths` so `strip_merge` preserves
+  them (**AD-7 crux**), and deliver the e2e proof that **freshly generated** code runs QA
+  worktree-bounded, plus the paired un-isolated control. **May require a short spike to confirm the
+  per-step model carries generated artifacts (AD-7).**
 - **FRs**: [FR-5, FR-8]
 - **Inputs**: The full loop from SF-01 + SF-02; `SandboxSettings`; `allowed_paths`; git+bash.
 - **Outputs**: Sandboxed autonomous implement loop; `tests/e2e/.../test_int_us_03_*_e2e.py` proving worktree-bounded QA on **generated** (not pre-committed) code + control.

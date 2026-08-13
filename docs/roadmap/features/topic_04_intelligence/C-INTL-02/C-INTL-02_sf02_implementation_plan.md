@@ -8,7 +8,10 @@
 
 ## Background and Scope
 
-This sub-feature implements the execution and atomic orchestration components responsible for interacting with the Model Context Protocol (MCP) server endpoints via standard I/O (JSON-RPC). It bridges external infrastructure (e.g., PostgreSQL schema parsing configurations) natively down to the internal Flow Engine.
+This sub-feature implements the execution and atomic orchestration components responsible for
+interacting with the Model Context Protocol (MCP) server endpoints via standard I/O (JSON-RPC). It
+bridges external infrastructure (e.g., PostgreSQL schema parsing configurations) natively down to
+the internal Flow Engine.
 
 It explicitly isolates `subprocess.run` calls away from the pure-logic layers (`src/specweaver/flow`) using Loom bounding rules. 
 

@@ -1,7 +1,10 @@
 # Idea: Mathematical DAG Roadmap Generator
 
 ## The Problem
-Traditional roadmaps (like linear Markdown checklists or Jira backlogs) fail for complex software projects because they prioritize linear time over structural dependencies. They force developers to read flat lists to figure out what to build next, obscuring "God Features" (bottlenecks) and making it difficult to propagate changing business priorities down the dependency chain.
+Traditional roadmaps (like linear Markdown checklists or Jira backlogs) fail for complex software
+projects because they prioritize linear time over structural dependencies. They force developers to
+read flat lists to figure out what to build next, obscuring "God Features" (bottlenecks) and making
+it difficult to propagate changing business priorities down the dependency chain.
 
 ## The Concept
 A standalone project management tool that treats roadmaps as a **Directed Acyclic Graph (DAG)** rather than a checklist.
@@ -15,4 +18,7 @@ A standalone project management tool that treats roadmaps as a **Directed Acycli
    - **Next Best Action Table:** A strictly filtered "Ready for Dev" list. It only displays features whose dependencies are 100% complete, sorted by their inherited priority.
 
 ## Why it's a Separate Product
-Building this into a coding agent like SpecWeaver is severe scope creep. SpecWeaver's domain is reading ASTs and generating code. Project management, graph centrality calculations, and business priority tracking belong in an entirely separate tool (e.g., a CLI tool or GitHub Action) that can integrate with *any* repository, not just SpecWeaver projects.
+Building this into a coding agent like SpecWeaver is severe scope creep. SpecWeaver's domain is
+reading ASTs and generating code. Project management, graph centrality calculations, and business
+priority tracking belong in an entirely separate tool (e.g., a CLI tool or GitHub Action) that can
+integrate with *any* repository, not just SpecWeaver projects.

@@ -7,7 +7,9 @@
 
 **A Company-Grade Software Factory for Autonomous AI Generation.**
 
-Standard AI coding tools lack context, hallucinate architectures, and break builds. **SpecWeaver** solves this by mapping your project's dependency topology to guarantee safe, reviewable, and mathematically sound code generation. 
+Standard AI coding tools lack context, hallucinate architectures, and break builds. **SpecWeaver**
+solves this by mapping your project's dependency topology to guarantee safe, reviewable, and
+mathematically sound code generation. 
 
 Write a specification, review it with AI, and let autonomous agents safely implement the code inside zero-trust git boundaries.
 
@@ -53,7 +55,9 @@ graph LR
 
 ## 🛡️ Why SpecWeaver?
 
-*   **Zero-Trust Security**: Agents execute strictly inside isolated Git Worktrees with dictatorial folder-level grants. They physically cannot overwrite unauthorized files or hallucinate system commands.
+*   **Zero-Trust Security**: Agents execute strictly inside isolated Git Worktrees with dictatorial
+    folder-level grants. They physically cannot overwrite unauthorized files or hallucinate system
+    commands.
 *   **Context-Aware Topology**: Reads your databases and maps your polyglot code topology (Python, TS, Java, Rust, Go) so the LLM never hallucinates invalid dependencies or breaks SLA bounds.
 *   **Interactive "Interview" Mode**: Don't know how to write a spec? `sw draft` interviews you and generates the specification for you interactively.
 *   **Strangler Fig Adoption**: You don't need to map your 10-year-old legacy monolith. Start by running SpecWeaver in a single sub-folder and map the rest when you are ready.
@@ -66,7 +70,9 @@ Under the hood, SpecWeaver is powered by enterprise-grade mechanics:
 - **Knowledge Graph Engine** — In-Memory NetworkX code-topology graph with a Persistent SQLite Storage Adapter.
 - **External DB Context Harness** — Connect to Postgres via the Model Context Protocol (MCP) securely.
 
-> 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Master Story Roadmap](docs/roadmap/master_story_roadmap.md).*
+> 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming
+> architectural deployments, please view the active
+> [SpecWeaver Master Story Roadmap](docs/roadmap/master_story_roadmap.md).*
 
 ## 📚 Documentation
 

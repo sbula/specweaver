@@ -9,7 +9,9 @@
 
 Feature TECH-003 adds bounded context separation to the workspace component.
 It solves the mixing of mechanical extraction logic (Tree-Sitter) with output mapping (Universal Graph Ontology) by introducing a dedicated `ast` sub-boundary.
-It interacts with `workspace.parsers` (moving to `workspace.ast.parsers`), `workspace.ast.adapters`, and refactors imports in `assurance`, `flow`, `loom`, `llm`, and `tests` modules, and does NOT touch business logic.
+It interacts with `workspace.parsers` (moving to `workspace.ast.parsers`), `workspace.ast.adapters`,
+and refactors imports in `assurance`, `flow`, `loom`, `llm`, and `tests` modules, and does NOT touch
+business logic.
 Key constraints: High churn risk (touches ~85 files), MUST have 100% test suite parity, NO logic changes.
 
 ## Research Findings
@@ -17,7 +19,9 @@ Key constraints: High churn risk (touches ~85 files), MUST have 100% test suite 
 ### Codebase Patterns
 - `workspace/ast/parsers/` contains Tree-Sitter pure-logic AST extraction engines.
 - `workspace/ast/adapters/` contains `graph_adapter.py`, which maps ASTs to the Universal Graph Engine.
-- The `architecture_reference.md` explicitly lists `adapters` and `pure-logic` (parsers) as distinct archetypes. Mixing them or having them float alongside discovery modules (`project`) is less cohesive than a unified `ast` boundary.
+- The `architecture_reference.md` explicitly lists `adapters` and `pure-logic` (parsers) as distinct
+  archetypes. Mixing them or having them float alongside discovery modules (`project`) is less
+  cohesive than a unified `ast` boundary.
 - **Reuse**: The files already exist and are fully tested. We just need to move the directories (`git mv`) and create standard `__init__.py` files.
 - **Rules**: `tach.toml` currently entirely lacks boundary definitions for the parsers/adapters. We must explicitly *add* `src.specweaver.workspace.ast` to the `modules` and `[[interfaces]]` blocks.
 
@@ -65,7 +69,9 @@ None.
 ## Sub-Feature Breakdown
 
 ### SF-01: Workspace AST Directory Migration
-- **Scope**: Moves `src/specweaver/workspace/ast/parsers` and `src/specweaver/workspace/ast/adapters` (along with their corresponding `tests/unit/workspace/...` directories) into the new `workspace/ast/` boundary.
+- **Scope**: Moves `src/specweaver/workspace/ast/parsers` and
+  `src/specweaver/workspace/ast/adapters` (along with their corresponding `tests/unit/workspace/...`
+  directories) into the new `workspace/ast/` boundary.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: Existing directory structures.
 - **Outputs**: Relocated source and test directories, updated `context.yaml` definitions (e.g. `name: ast.parsers`), and new explicit `tach.toml` interface boundaries.

@@ -1,6 +1,8 @@
 # Developer Guide: Adding a New Tool & Atom
 
-This guide details the process of expanding SpecWeaver’s autonomous agent capabilities securely. Because we firmly enforce a zero-trust model for LLMs, capabilities are never directly exposed. Instead, they are routed through our 4-layer execution boundary.
+This guide details the process of expanding SpecWeaver’s autonomous agent capabilities securely.
+Because we firmly enforce a zero-trust model for LLMs, capabilities are never directly exposed.
+Instead, they are routed through our 4-layer execution boundary.
 
 ---
 
@@ -33,8 +35,14 @@ The **Tool** wraps the intent and strictly evaluates the Agent's credentials.
 ### Component: Interface (`tools/interfaces.py` & `dispatcher.py`)
 The **Interface** strips unauthorized commands out entirely prior to exposure.
 - **Role:** If a role shouldn’t use a command, it is physically absent from the dispatch table or dynamically removed from the configuration payload before the LLM can perceive it.
-- **Dynamic Masking (Feature 3.30a):** Orthogonal `plugins` (e.g., `spring-security`) defined in `context.yaml` can utilize `intents.hide` natively to instruct `ToolDispatcher` to mathematically erase tool methods (like `edit_file`) globally from the LLM without hard-coding Python changes.
-- **Dynamic System Exclusions (Feature 3.32b):** The `ToolDispatcher` orchestrates polyglot filesystem boundary exclusions on behalf of tools like `FileSystemTool`. It reads the injected `analyzer_factory.get_all_analyzers()` at runtime (provided via Flow Context DI) to deeply inject language-specific exclusions (e.g., `node_modules`, `target`) universally downward into the raw executors, bypassing the agent and adhering to strict architectural bounds.
+- **Dynamic Masking (Feature 3.30a):** Orthogonal `plugins` (e.g., `spring-security`) defined in
+  `context.yaml` can utilize `intents.hide` natively to instruct `ToolDispatcher` to mathematically
+  erase tool methods (like `edit_file`) globally from the LLM without hard-coding Python changes.
+- **Dynamic System Exclusions (Feature 3.32b):** The `ToolDispatcher` orchestrates polyglot
+  filesystem boundary exclusions on behalf of tools like `FileSystemTool`. It reads the injected
+  `analyzer_factory.get_all_analyzers()` at runtime (provided via Flow Context DI) to deeply inject
+  language-specific exclusions (e.g., `node_modules`, `target`) universally downward into the raw
+  executors, bypassing the agent and adhering to strict architectural bounds.
 
 ### Component: Atom (`atoms/`)
 The **Atom** provides unrestricted operations reserved solely for the SpecWeaver flow engine.
@@ -60,8 +68,17 @@ To add a new capability string (like `SearchWeb`):
 ### C. Construct the Atom (For the Engine)
 1. Build `src/specweaver/sandbox/web/atom.py`.
 2. Provide a clean `run(context)` method for the internal Flow Engine to use if it needs autonomous, non-LLM invocation of the capability.
-3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role constraints first).
-4. **Decide single-op vs. multi-op independently of "Atom" itself** — "Atom" only means *engine-internal, not agent-facing*; it says nothing about how many operations `run()` covers. If the domain has one operation, read your expected keys straight off `context` (see `RuleAtom`). If it has several closely-related operations, read an `intent`/`action` key from `context` and dispatch internally (see `QARunnerAtom`'s `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`, or `LanguageAtom`'s `detect_language`/`convert_scenario`). Don't infer the shape from other Atoms in the codebase without checking whether your domain actually has one operation or several.
+3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool
+   *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role
+   constraints first).
+4. **Decide single-op vs. multi-op independently of "Atom" itself** — "Atom" only means
+   *engine-internal, not agent-facing*; it says nothing about how many operations `run()` covers. If
+   the domain has one operation, read your expected keys straight off `context` (see `RuleAtom`). If
+   it has several closely-related operations, read an `intent`/`action` key from `context` and
+   dispatch internally (see `QARunnerAtom`'s
+   `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`, or
+   `LanguageAtom`'s `detect_language`/`convert_scenario`). Don't infer the shape from other Atoms in
+   the codebase without checking whether your domain actually has one operation or several.
 
 ### D. Wire It Up
 1. Your Tool facade must inherit from `BaseTool` (located in `specweaver.sandbox.base`) and implement the `role` property and `definitions()` method.
@@ -78,6 +95,8 @@ To add a new capability string (like `SearchWeb`):
 
 
 ### Exception: Dynamic Architect Injection (MCP)
-Certain tools, such as the MCPExplorerTool, are NOT permitted in standard pipelines due to zero-trust architecture rules. These tools implement specialized interfaces like ArchitectMCPInterface, mapped exclusively for L2 Architect intelligence roles.
+Certain tools, such as the MCPExplorerTool, are NOT permitted in standard pipelines due to
+zero-trust architecture rules. These tools implement specialized interfaces like
+ArchitectMCPInterface, mapped exclusively for L2 Architect intelligence roles.
 When designing tools with strict intent limitations, see mcp/tool.py as a reference for validating 
 ole_intents during ToolDispatcher binding routines within Flow Orchestration.

@@ -7,7 +7,9 @@
 
 ## 1. Purpose
 
-The Mega Service manages user authentication and also handles session management, additionally it provides rate limiting, and furthermore it controls access to protected resources, as well as logging all security events.
+The Mega Service manages user authentication and also handles session management, additionally it
+provides rate limiting, and furthermore it controls access to protected resources, as well as
+logging all security events.
 
 ---
 
@@ -53,11 +55,20 @@ Progressive lockout after failed authentication attempts.
 
 ## 3. Protocol
 
-The system processes authentication requests by first validating credentials against the database, then creating a session in Redis if successful, checking rate limits to prevent brute force, evaluating access control rules when accessing resources, logging all security events to the audit trail, managing JWT tokens for stateless API access, enforcing password policies during credential changes, optionally requiring two-factor verification when enabled, and implementing progressive account lockout after repeated failures.
+The system processes authentication requests by first validating credentials against the database,
+then creating a session in Redis if successful, checking rate limits to prevent brute force,
+evaluating access control rules when accessing resources, logging all security events to the audit
+trail, managing JWT tokens for stateless API access, enforcing password policies during credential
+changes, optionally requiring two-factor verification when enabled, and implementing progressive
+account lockout after repeated failures.
 
-If the authentication fails, the system MUST increment the failure counter. When the counter exceeds `MAX_FAILURES`, the account transitions to `LOCKED` state. The `LOCKED` state can only be cleared by an `ADMIN` user or by a `TIMEOUT` event after the configured `LOCKOUT_DURATION`.
+If the authentication fails, the system MUST increment the failure counter. When the counter exceeds
+`MAX_FAILURES`, the account transitions to `LOCKED` state. The `LOCKED` state can only be cleared by
+an `ADMIN` user or by a `TIMEOUT` event after the configured `LOCKOUT_DURATION`.
 
-Unless the request comes from a whitelisted IP, rate limiting is applied. If the rate limit is exceeded, the system returns a `429 TOO MANY REQUESTS` response. Otherwise, the request proceeds to authentication.
+Unless the request comes from a whitelisted IP, rate limiting is applied. If the rate limit is
+exceeded, the system returns a `429 TOO MANY REQUESTS` response. Otherwise, the request proceeds to
+authentication.
 
 ### 3.1 Mock Server Setup
 

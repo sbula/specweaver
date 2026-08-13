@@ -192,7 +192,9 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 - **Scope**: Close the false-citation hole in `check_fr_coverage.py` before any ledger is closed against it.
 - **FRs**: [FR-9]
 - **Inputs**: `scripts/check_fr_coverage.py`'s `cited_frs_in_tests`; `tests/unit/scripts/test_check_fr_coverage.py`, whose `FR-N` strings are fixture inputs.
-- **Outputs**: An explicit fixture-data marker honoured by the scanner; the one qualifying file marked; INT-US-21's inflated citation counts drop to their real values while its ledger stays closed on genuine proof.
+- **Outputs**: An explicit fixture-data marker honoured by the scanner; the one qualifying file
+  marked; INT-US-21's inflated citation counts drop to their real values while its ledger stays
+  closed on genuine proof.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_sf01_implementation_plan.md
 
@@ -240,7 +242,9 @@ duplicates infrastructure. Nothing under `src/` changes, so no module boundary m
 - **Scope**: Record the closed ledgers in a manifest and fail a test if any of them reopens.
 - **FRs**: [FR-5]
 - **Inputs**: The three ledgers closed by SF-04..SF-06; `check_fr_coverage.main`.
-- **Outputs**: `docs/roadmap/fr_traceability_closed.txt` — seeded with TECH-001, TECH-002, TECH-005 **and INT-US-21** (AD-5 as amended); a guard test carrying this ticket's `Proves:` tags and containing no subject-story literal.
+- **Outputs**: `docs/roadmap/fr_traceability_closed.txt` — seeded with TECH-001, TECH-002, TECH-005
+  **and INT-US-21** (AD-5 as amended); a guard test carrying this ticket's `Proves:` tags and
+  containing no subject-story literal.
 - **Depends on**: SF-04, SF-05, SF-06 *(a ledger cannot be listed as closed before it is closed)*
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-025/TECH-025_sf07_implementation_plan.md
 

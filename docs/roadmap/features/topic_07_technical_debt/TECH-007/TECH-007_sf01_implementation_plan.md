@@ -90,7 +90,9 @@ During design auditing, the following key threats and mitigation patterns were a
 
 ### 5.2 Threat: Escaped Text Truncation Corruption (Syntax & Structural Integrity)
 *   **Attack Vector**: Slicing the final formatted CDATA or JSON string in `_apply_truncation()` strips the trailing tags/quotes.
-*   **Mitigation**: Perform truncation on the raw text payload, append `\n[truncated]` to the raw string if needed, and apply escaping afterwards. This guarantees that CDATA blocks and JSON quotes are always well-formed.
+*   **Mitigation**: Perform truncation on the raw text payload, append `\n[truncated]` to the raw
+    string if needed, and apply escaping afterwards. This guarantees that CDATA blocks and JSON
+    quotes are always well-formed.
 
 ### 5.3 Threat: XML Attribute Injection (Security)
 *   **Attack Vector**: File paths or labels containing double quotes break early out of attribute quotes.

@@ -4,7 +4,9 @@
 > **Date**: 2026-03-08
 > **Related**: [Spec Methodology §8](../architecture/spec_methodology.md) — defines the fractal application of readiness tests
 > **Purpose**: Concrete demonstration of the 5 readiness tests applied at each level (Feature → Module → Class → Function), using real examples from the SpecWeaver project.
-> **Note**: The examples below use FlowManager component names (01_08, engine/core.py) from the predecessor project. The *methodology* is universal — the same tests apply to any SpecWeaver component spec. See [ORIGINS.md](../ORIGINS.md) for project history.
+> **Note**: The examples below use FlowManager component names (01_08, engine/core.py) from the
+> predecessor project. The *methodology* is universal — the same tests apply to any SpecWeaver
+> component spec. See [ORIGINS.md](../ORIGINS.md) for project history.
 
 ---
 
@@ -16,7 +18,10 @@
 
 > *Can you describe this feature in one sentence?*
 
-**Attempt**: "Flow Execution allows users to define multi-step workflows in YAML/JSON, execute them sequentially or in parallel, persist state for crash recovery, coordinate sub-flows with variable passing, handle errors with configurable retry policies, and manage mutex locks for shared resources."
+**Attempt**: "Flow Execution allows users to define multi-step workflows in YAML/JSON, execute them
+sequentially or in parallel, persist state for crash recovery, coordinate sub-flows with variable
+passing, handle errors with configurable retry policies, and manage mutex locks for shared
+resources."
 
 **Result**: ❌ **FAIL**. That sentence has 6 "and" clauses. It's at least 4 features pretending to be one:
 - Defining workflows (schema)
@@ -139,7 +144,9 @@ That's 5 external dependencies. A stranger reading 01_08 would be constantly los
 
 > *Could a new developer understand `core.py` from its code alone?*
 
-**Result**: ⚠️ **BORDERLINE**. At 28KB, a single file is readable with effort — but a new developer would struggle to find where "variable resolution" ends and "state persistence" begins within the file. The responsibilities are interleaved, not cleanly sectioned.
+**Result**: ⚠️ **BORDERLINE**. At 28KB, a single file is readable with effort — but a new developer
+would struggle to find where "variable resolution" ends and "state persistence" begins within the
+file. The responsibilities are interleaved, not cleanly sectioned.
 
 ### Test 4: Dependency Direction
 
@@ -147,7 +154,9 @@ That's 5 external dependencies. A stranger reading 01_08 would be constantly los
 
 **Expected imports**: atoms (below ✅), domain/models (below ✅), LLM provider (peer ⚠️), tools (peer ⚠️), skills (peer ⚠️).
 
-**Result**: ⚠️ **BORDERLINE to FAIL**. A monolithic engine file tends to import everything — it's the "god module" anti-pattern. After splitting, `executor.py` imports from `resolver.py` and `state_store.py` (both below it) — clean direction.
+**Result**: ⚠️ **BORDERLINE to FAIL**. A monolithic engine file tends to import everything — it's
+the "god module" anti-pattern. After splitting, `executor.py` imports from `resolver.py` and
+`state_store.py` (both below it) — clean direction.
 
 ### Test 5: Day Test
 

@@ -8,8 +8,13 @@
 - **Status**: COMPLETED_AND_VERIFIED (Phase 1-5 executed successfully. SF-B pipeline wired and functional. 4012 tests passing.)
 
 ## Deviations from Original Plan
-- During Phase 5 code complexity checks, `_generation.py` exceeded the 600 line threshold limit due to the addition of scenario handlers. To maintain clean architecture, `GenerateScenarioHandler` and `ConvertScenarioHandler` were refactored into a dedicated `_scenario.py` file, which was then exported via `handlers.py`.
-- We extracted `test_integration_physical_io_join_locks` from `test_planning_integration.py` to `test_orchestration_integration.py` to keep integration testing limits below the mandatory 900 line warning threshold.
+- During Phase 5 code complexity checks, `_generation.py` exceeded the 600 line threshold limit due
+  to the addition of scenario handlers. To maintain clean architecture, `GenerateScenarioHandler`
+  and `ConvertScenarioHandler` were refactored into a dedicated `_scenario.py` file, which was then
+  exported via `handlers.py`.
+- We extracted `test_integration_physical_io_join_locks` from `test_planning_integration.py` to
+  `test_orchestration_integration.py` to keep integration testing limits below the mandatory 900
+  line warning threshold.
 - `runner.py`'s `fan_out()` logic was relocated to `runner_utils.py` to drop the runner line count below the 600 line limit safely.
 
 ## Scope
@@ -21,7 +26,9 @@ SF-B builds the complete scenario pipeline atop SF-A's foundation (S07 enforceme
 3. **FR-5a (Scenario agent isolation)**: New `scenario_agent` role in `ROLE_INTENTS` with constrained filesystem grants: `specs/` (read), `contracts/` (read), `scenarios/` (read-write).
 4. **FR-5b (Coding agent opacity)**: Total information opacity — the coding agent MUST NOT know the scenario pipeline exists. Zero `scenarios/` grants, zero scenario vocabulary in prompts/feedback.
 5. **FR-6 (Scenario validation pipeline)**: New `scenario_validation.yaml` pipeline: `generate_contract → generate_scenarios → convert_to_pytest`.
-6. **FR-7 (Dual-pipeline parallel execution)**: Wire both pipelines for parallel execution via `OrchestrateComponentsHandler` + `GateType.JOIN`. **Note**: The JOIN gate mechanism is already 100% implemented from Feature 3.27.
+6. **FR-7 (Dual-pipeline parallel execution)**: Wire both pipelines for parallel execution via
+   `OrchestrateComponentsHandler` + `GateType.JOIN`. **Note**: The JOIN gate mechanism is already
+   100% implemented from Feature 3.27.
 
 > [!IMPORTANT]
 > **NFR Coverage:**
@@ -31,7 +38,9 @@ SF-B builds the complete scenario pipeline atop SF-A's foundation (S07 enforceme
 > - NFR-4 (no test collision): FolderGrant enforcement — scenario agent writes to `scenarios/` only
 > - NFR-6 (zero @trace dependency): Tags are comments, not imports
 > - NFR-7 (backward compatibility): All changes are additive; enum count assertions updated
-> - NFR-8 (total opacity): Coding agent's WorkspaceBoundary excludes `scenarios/`; no scenario vocabulary in any prompt or feedback; FR-5b enforcement is architectural (no code change needed in existing coding pipeline)
+> - NFR-8 (total opacity): Coding agent's WorkspaceBoundary excludes `scenarios/`; no scenario
+>   vocabulary in any prompt or feedback; FR-5b enforcement is architectural (no code change needed
+>   in existing coding pipeline)
 
 ### What's In Scope
 - `ScenarioGenerator` class (LLM-based, in `workflows/scenarios/`)
@@ -59,7 +68,10 @@ SF-B builds the complete scenario pipeline atop SF-A's foundation (S07 enforceme
 ## Research Notes
 
 ### RN-1: `StepAction.CONVERT` — new enum, HITL-approved
-The design doc AD-7 defines `GENERATE + SCENARIO` for scenario generation. The YAML→pytest conversion is a distinct action (mechanical, not LLM). HITL approved adding `StepAction.CONVERT` for clear semantics: `(GENERATE, SCENARIO)` = LLM generation, `(CONVERT, SCENARIO)` = mechanical conversion.
+The design doc AD-7 defines `GENERATE + SCENARIO` for scenario generation. The YAML→pytest
+conversion is a distinct action (mechanical, not LLM). HITL approved adding `StepAction.CONVERT` for
+clear semantics: `(GENERATE, SCENARIO)` = LLM generation, `(CONVERT, SCENARIO)` = mechanical
+conversion.
 
 ### RN-2: `ScenarioGenerator` follows `Planner` pattern exactly
 The `Planner` class at `workflows/planning/planner.py` is the canonical pattern:
@@ -71,7 +83,10 @@ The `Planner` class at `workflows/planning/planner.py` is the canonical pattern:
 `ScenarioGenerator` will clone this exact structure, producing `ScenarioSet` instead of `PlanArtifact`.
 
 ### RN-3: `ScenarioDefinition` — standalone model, HITL-approved
-`ScenarioDefinition` is a standalone Pydantic model in `workflows/scenarios/scenario_models.py`. It does NOT subclass `TestExpectation` from `planning/models.py`. This avoids coupling the scenario pipeline to the planning module. The 5 shared fields (`name`, `description`, `function_under_test`, `input_summary`, `expected_behavior`) are duplicated intentionally.
+`ScenarioDefinition` is a standalone Pydantic model in `workflows/scenarios/scenario_models.py`. It
+does NOT subclass `TestExpectation` from `planning/models.py`. This avoids coupling the scenario
+pipeline to the planning module. The 5 shared fields (`name`, `description`, `function_under_test`,
+`input_summary`, `expected_behavior`) are duplicated intentionally.
 
 ### RN-4: `ScenarioConverter` output format — C09 compatible
 C09 at `c09_traceability.py:132-147` extracts `@trace` tags from AST comment nodes using:
@@ -111,7 +126,10 @@ FR-5b says the coding agent must have zero awareness of the scenario pipeline. T
 - No code change required — this is enforced by how `OrchestrateComponentsHandler` creates isolated `RunContext` per sub-pipeline
 
 ### RN-9: FR-7 dual-pipeline — standalone scenario pipeline, HITL-approved
-SF-B delivers `scenario_validation.yaml` as a standalone pipeline that runs independently (generate_contract → generate_scenarios → convert_to_pytest). The dual-pipeline wiring (parent pipeline that spawns both coding + scenario sub-pipelines with JOIN gate) is deferred to SF-C, which owns the post-JOIN flow.
+SF-B delivers `scenario_validation.yaml` as a standalone pipeline that runs independently
+(generate_contract → generate_scenarios → convert_to_pytest). The dual-pipeline wiring (parent
+pipeline that spawns both coding + scenario sub-pipelines with JOIN gate) is deferred to SF-C, which
+owns the post-JOIN flow.
 
 ### RN-10: LLM prompt injection — HITL-approved: include FRs/NFRs
 The ScenarioGenerator prompt MUST inject:
@@ -123,10 +141,16 @@ The ScenarioGenerator prompt MUST inject:
 6. Contract file content (Protocol class from SF-A)
 
 > [!IMPORTANT]
-> FRs and NFRs are NOT part of the contract file. They must be extracted from the spec separately. The contract file only contains typed method signatures (Protocol class). The LLM needs both the behavioral requirements (FRs/NFRs) AND the API surface (contract) to generate meaningful scenarios.
+> FRs and NFRs are NOT part of the contract file. They must be extracted from the spec separately.
+> The contract file only contains typed method signatures (Protocol class). The LLM needs both the
+> behavioral requirements (FRs/NFRs) AND the API surface (contract) to generate meaningful
+> scenarios.
 
 ### RN-11: Scenario tests do NOT import contracts at runtime
-HITL-approved: generated pytest files do NOT import from `contracts/`. The contract is a *generation-time* artifact used by the ScenarioGenerator to understand the API surface. Generated tests use concrete inputs/outputs. The `# @trace` tag provides the traceability link. This keeps scenario tests zero-dependency.
+HITL-approved: generated pytest files do NOT import from `contracts/`. The contract is a
+*generation-time* artifact used by the ScenarioGenerator to understand the API surface. Generated
+tests use concrete inputs/outputs. The `# @trace` tag provides the traceability link. This keeps
+scenario tests zero-dependency.
 
 ### RN-12: `context.yaml` for `workflows/scenarios/`
 A new `context.yaml` is required for the `workflows/scenarios/` package because it's a new module with its own boundary:
@@ -374,7 +398,9 @@ def test_login_scenarios(input_data, expected):  # @trace(FR-1)
 ```
 
 > [!WARNING]
-> The `# @trace(FR-X)` tag MUST appear as an inline comment on the `def test_...` line or as a standalone comment directly above it. C09's tree-sitter AST parser extracts trace tags from `comment` nodes. The tag MUST be a Python comment (`#`), not a docstring.
+> The `# @trace(FR-X)` tag MUST appear as an inline comment on the `def test_...` line or as a
+> standalone comment directly above it. C09's tree-sitter AST parser extracts trace tags from
+> `comment` nodes. The tag MUST be a Python comment (`#`), not a docstring.
 
 > [!NOTE]
 > Generated pytest files do NOT import from `contracts/` at runtime (HITL decision). The contract

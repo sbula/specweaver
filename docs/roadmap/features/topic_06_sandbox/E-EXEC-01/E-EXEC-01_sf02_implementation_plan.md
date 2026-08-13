@@ -9,7 +9,9 @@
 
 ## Scope
 
-Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct `subprocess.run()` calls to `SubprocessExecutor.execute()`. Ensure backward compatibility across all 4900+ tests with zero public API changes.
+Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct
+`subprocess.run()` calls to `SubprocessExecutor.execute()`. Ensure backward compatibility across all
+4900+ tests with zero public API changes.
 
 **FRs**: FR-8
 **NFR-1**: All 4900+ existing tests MUST pass unchanged after migration.
@@ -53,7 +55,10 @@ Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from dir
 | **Java** | `tests/unit/sandbox/language/core/language/java/test_runner.py` | 9 | `patch("subprocess.run")` |
 | **Kotlin** | `tests/unit/sandbox/language/core/language/kotlin/test_runner.py` | 5 | `patch("subprocess.run")` |
 
-**Mock target changes**: All `patch("subprocess.run")` → mock the `SubprocessExecutor.execute` method instead. The mock return value changes from `MagicMock(returncode=..., stdout=..., stderr=...)` to `SubprocessResult(exit_code=..., stdout=..., stderr=..., duration_seconds=..., timed_out=...)`.
+**Mock target changes**: All `patch("subprocess.run")` → mock the `SubprocessExecutor.execute`
+method instead. The mock return value changes from
+`MagicMock(returncode=..., stdout=..., stderr=...)` to
+`SubprocessResult(exit_code=..., stdout=..., stderr=..., duration_seconds=..., timed_out=...)`.
 
 ### SubprocessExecutor API (from SF-01, extended in Commit 0)
 
@@ -247,7 +252,9 @@ def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> Non
 ```
 
 Method-specific notes:
-- `run_tests`: Two-stage pipe: `cargo test` → `cargo2junit`. Use `result = self._executor.execute(["cargo", "test", ...])`, then `junit_result = self._executor.execute(["cargo2junit"], input_text=result.stdout)`.
+- `run_tests`: Two-stage pipe: `cargo test` → `cargo2junit`. Use
+  `result = self._executor.execute(["cargo", "test", ...])`, then
+  `junit_result = self._executor.execute(["cargo2junit"], input_text=result.stdout)`.
 - `run_linter`: Two-stage pipe: `cargo clippy` → `clippy-sarif`. Same `input_text` pattern.
 - `run_complexity`: Two-stage pipe: `cargo clippy` → `clippy-sarif`. Same pattern.
 - `run_compiler`: Single call. Add `shutil.which("cargo")` pre-check.

@@ -1,6 +1,8 @@
 ---
 name: specweaver-pre-commit
-description: "Pre-commit quality gate. Architecture verification, test gap analysis, implement missing tests, run full test suite, code quality checks, documentation updates, walkthrough. Use when the user asks to run pre-commit checks, quality gates, or verify code before committing."
+description: "Pre-commit quality gate. Architecture verification, test gap analysis, implement
+missing tests, run full test suite, code quality checks, documentation updates, walkthrough. Use
+when the user asks to run pre-commit checks, quality gates, or verify code before committing."
 ---
 
 # Pre-Commit Quality Gate Skill
@@ -33,7 +35,9 @@ file size, and documentation.
 > > **WHAT "HITL GATE" TECHNICALLY MEANS:**
 > > A "HITL Gate" is a HARD STOP where you MUST yield your turn. 
 > > This means you are **FORBIDDEN** from making *any* further tool calls (e.g., executing commands, writing files, or moving to the next Phase) during the current cycle.
-> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply in the chat before you do ANYTHING else. If you string together Phase 2 and Phase 3 in a single chain of tool calls, you have violated the HITL Gate.
+> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply
+> > in the chat before you do ANYTHING else. If you string together Phase 2 and Phase 3 in a single
+> > chain of tool calls, you have violated the HITL Gate.
 > 
 > If you catch yourself about to run `pytest` or "verify everything works"
 > before completing Phase 2 and Phase 3 — **STOP immediately**.
@@ -43,7 +47,11 @@ file size, and documentation.
 > This is UNACCEPTABLE. You MUST explicitly write tests for every gap and branch you find.
 
 > [!IMPORTANT]
-> **NO RELIANCE ON PAST RUNS:** You are STRICTLY FORBIDDEN from relying on tests, lints, or architecture checks that you ran *before* starting this pre-commit skill. If you ran `pytest` 5 minutes ago, it DOES NOT MATTER. You **MUST** physically re-run every command required by Phases 1-7 identically from scratch every single time this gate is entered. "I already know it passes" is an unacceptable excuse.
+> **NO RELIANCE ON PAST RUNS:** You are STRICTLY FORBIDDEN from relying on tests, lints, or
+> architecture checks that you ran *before* starting this pre-commit skill. If you ran `pytest` 5
+> minutes ago, it DOES NOT MATTER. You **MUST** physically re-run every command required by Phases
+> 1-7 identically from scratch every single time this gate is entered. "I already know it passes" is
+> an unacceptable excuse.
 
 ## MCP Tool Guidance
 
@@ -76,7 +84,9 @@ Execute each phase by reading and following the instructions in its reference fi
 
 ## Phase 7.5: Red/Blue Cycle Check
 
-7.5.1 Execute the `specweaver-red-blue-review` skill against the code changes introduced in this commit boundary. Look for security flaws, unhandled edge cases, architecture violations, and incomplete requirements.
+7.5.1 Execute the `specweaver-red-blue-review` skill against the code changes introduced in this
+commit boundary. Look for security flaws, unhandled edge cases, architecture violations, and
+incomplete requirements.
 7.5.2 If the cycle produces findings, **STOP** and present them to the user for review. You must resolve critical findings before proceeding to Phase 8.
 
 ## Phase 8: Commit Boundary (HITL)

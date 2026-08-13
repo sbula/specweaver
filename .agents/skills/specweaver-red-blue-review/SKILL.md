@@ -1,6 +1,9 @@
 ---
 name: specweaver-red-blue-review
-description: "Adversarial Red Team / Blue Team architecture review. Multi-cycle review where Red Team attacks and Blue Team defends design/implementation decisions. Runs until no significant findings remain. Use when the user asks for red team, blue team, adversarial review, design review, or architecture review."
+description: "Adversarial Red Team / Blue Team architecture review. Multi-cycle review where Red
+Team attacks and Blue Team defends design/implementation decisions. Runs until no significant
+findings remain. Use when the user asks for red team, blue team, adversarial review, design review,
+or architecture review."
 ---
 
 # Red/Blue Team Review Skill

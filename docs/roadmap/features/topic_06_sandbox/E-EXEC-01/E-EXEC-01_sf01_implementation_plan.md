@@ -9,7 +9,9 @@
 
 ## Scope
 
-Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult` dataclass, cross-platform `PlatformLimiter`, timeout escalation, environment allowlisting, path validation, and structured telemetry logging.
+Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult` dataclass,
+cross-platform `PlatformLimiter`, timeout escalation, environment allowlisting, path validation, and
+structured telemetry logging.
 
 **FRs**: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10
 
@@ -163,7 +165,9 @@ class SubprocessExecutor:
 > [!WARNING]
 > Windows timeout is asymmetric: `proc.terminate()` IS the kill. There is no graceful shutdown for Win32 console processes. The 2s SIGTERM→SIGKILL grace period applies only on Unix/macOS.
 
-4. **Signal propagation** (H-5): Uses `os.setpgrp()` via `preexec_fn` on Unix/macOS to create a process group. The executor explicitly manages the child lifecycle — Ctrl+C won't independently kill a test subprocess.
+4. **Signal propagation** (H-5): Uses `os.setpgrp()` via `preexec_fn` on Unix/macOS to create a
+   process group. The executor explicitly manages the child lifecycle — Ctrl+C won't independently
+   kill a test subprocess.
 
 5. **Output events**: Converts stdout/stderr lines to `OutputEvent` objects (reusing `commons/qa.OutputEvent`).
 
@@ -233,7 +237,9 @@ def get_platform_limiter() -> PlatformLimiter:
 ```
 
 > [!NOTE]
-> **Cross-platform guarantee**: `UnixLimiter` works identically on Linux and macOS since both support `resource.setrlimit()`. `WindowsLimiter` uses only `ctypes` (stdlib). `NoOpLimiter` is the safe fallback for exotic platforms — logs a warning but does not block execution.
+> **Cross-platform guarantee**: `UnixLimiter` works identically on Linux and macOS since both
+> support `resource.setrlimit()`. `WindowsLimiter` uses only `ctypes` (stdlib). `NoOpLimiter` is the
+> safe fallback for exotic platforms — logs a warning but does not block execution.
 
 ---
 
@@ -304,7 +310,10 @@ Empty init.
 | `TestWindowsLimiter` | `test_make_preexec_fn_returns_none` | FR-10 | Windows preexec_fn is always None |
 
 > [!WARNING]
-> Unix-specific tests (`TestUnixLimiter`) will be skipped on Windows via `@pytest.mark.skipif(sys.platform == "win32")`. Windows-specific tests (`TestWindowsLimiter`) will be skipped on Unix/macOS via `@pytest.mark.skipif(sys.platform != "win32")`. Platform detection tests (`TestGetPlatformLimiter`) mock `sys.platform` to run on all platforms.
+> Unix-specific tests (`TestUnixLimiter`) will be skipped on Windows via
+> `@pytest.mark.skipif(sys.platform == "win32")`. Windows-specific tests (`TestWindowsLimiter`) will
+> be skipped on Unix/macOS via `@pytest.mark.skipif(sys.platform != "win32")`. Platform detection
+> tests (`TestGetPlatformLimiter`) mock `sys.platform` to run on all platforms.
 
 ## Red Team / Blue Team Cycles
 
@@ -312,11 +321,15 @@ Empty init.
 
 **Red Team Attack**: LLM-generated test code calls `os.environ["GEMINI_API_KEY"]` and sends it to an external URL.
 
-**Blue Team Defense**: SubprocessExecutor builds a clean env from allowlist. Even if the child code calls `os.environ`, `GEMINI_API_KEY` does not exist in the child's environment. The credential is invisible.
+**Blue Team Defense**: SubprocessExecutor builds a clean env from allowlist. Even if the child code
+calls `os.environ`, `GEMINI_API_KEY` does not exist in the child's environment. The credential is
+invisible.
 
 **Counter-attack**: Attacker uses `extra_env={"GEMINI_API_KEY": "..."}` to inject the key back.
 
-**Defense Enhancement**: `_build_env()` MUST enforce that `strip_credentials=True` blocks keys from `extra_env` too. Test `test_extra_env_does_not_override_stripped` verifies this. Even if a caller explicitly passes `GEMINI_API_KEY` in `extra_env`, the executor strips it.
+**Defense Enhancement**: `_build_env()` MUST enforce that `strip_credentials=True` blocks keys from
+`extra_env` too. Test `test_extra_env_does_not_override_stripped` verifies this. Even if a caller
+explicitly passes `GEMINI_API_KEY` in `extra_env`, the executor strips it.
 
 **Result**: ✅ Covered by FR-6 + test `test_extra_env_does_not_override_stripped`.
 
@@ -330,12 +343,17 @@ Empty init.
 
 **Counter-attack**: Attacker creates the symlink AFTER validation but BEFORE the subprocess starts (TOCTOU race).
 
-**Defense Enhancement**: The executor resolves the path at the moment of `Popen` creation (inside the same synchronous call). Additionally, the working directory for `Popen` is set to the resolved path, not the symlink. For full TOCTOU protection, B-EXEC-01 (container isolation) is the definitive solution. Document this as a known limitation.
+**Defense Enhancement**: The executor resolves the path at the moment of `Popen` creation (inside
+the same synchronous call). Additionally, the working directory for `Popen` is set to the resolved
+path, not the symlink. For full TOCTOU protection, B-EXEC-01 (container isolation) is the definitive
+solution. Document this as a known limitation.
 
 **Result**: ✅ Covered by FR-3 + test `test_path_traversal_symlink_blocked`. TOCTOU risk documented as out-of-scope (mitigated by B-EXEC-01).
 
 > [!NOTE]
-> **Known limitation (TOCTOU)**: Between `_validate_cwd()` and `Popen()`, a race condition is theoretically possible. This is fully mitigated by B-EXEC-01 (Podman container isolation). For DAL-E prototyping assurance level, the current defense is sufficient.
+> **Known limitation (TOCTOU)**: Between `_validate_cwd()` and `Popen()`, a race condition is
+> theoretically possible. This is fully mitigated by B-EXEC-01 (Podman container isolation). For
+> DAL-E prototyping assurance level, the current defense is sufficient.
 
 ---
 
@@ -349,7 +367,9 @@ Empty init.
 
 **Counter-attack**: Attacker spawns processes that each consume max memory within the per-process limit.
 
-**Defense Enhancement**: Both `max_memory_bytes` (per-process) AND timeout work together. Even if each child stays under memory limits, the timeout kills the entire tree after the deadline. The `os.setpgrp()` (H-5) ensures the entire process group is killed, not just the parent.
+**Defense Enhancement**: Both `max_memory_bytes` (per-process) AND timeout work together. Even if
+each child stays under memory limits, the timeout kills the entire tree after the deadline. The
+`os.setpgrp()` (H-5) ensures the entire process group is killed, not just the parent.
 
 **Result**: ✅ Covered by FR-10 + FR-2 + FR-7. UnixLimiter tests verify RLIMIT_NPROC. WindowsLimiter tests verify Job Object creation. Timeout tests verify kill-on-deadline.
 

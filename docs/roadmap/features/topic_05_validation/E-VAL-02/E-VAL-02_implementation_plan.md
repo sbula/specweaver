@@ -68,7 +68,11 @@ monorepo/
 
 **Goal**: Monorepo support (2-level scopes), interactive HITL review, scoped injection with token cap, re-scan diff.
 
-**Resolved decisions**: 2-level scopes (not just top-level). HITL on by default (one combined review, not per-file). Edit = JSON dict editing. Re-scan diff mode = configurable (`sw config set-rescan-mode approve|inform`, default: `inform`). Token cap = 2000 chars (scope-specific prioritized over root). Scope inheritance: merge scope-specific + root `"."`, HITL for conflicts unless already resolved.
+**Resolved decisions**: 2-level scopes (not just top-level). HITL on by default (one combined
+review, not per-file). Edit = JSON dict editing. Re-scan diff mode = configurable
+(`sw config set-rescan-mode approve|inform`, default: `inform`). Token cap = 2000 chars
+(scope-specific prioritized over root). Scope inheritance: merge scope-specific + root `"."`, HITL
+for conflicts unless already resolved.
 
 | Component | What |
 |---|---|
@@ -133,7 +137,9 @@ monorepo/
 **Tests**: ~20-30 tests.
 - **Unit** (~12): `generate_constitution_from_standards()` variations (Python-only, multi-lang, empty standards, idempotent, `--force`), schema v7 migration, get/set auto_bootstrap.
 - **Integration** (~8): scan→bootstrap flow, `sw init` hint for existing project, `sw constitution bootstrap` CLI, config round-trip.
-- **Edge cases** (~8): empty project scan, single-file scan, all-below-threshold scan, no-git fallback, mixed-languages-in-scope scan, bootstrap with zero standards, bootstrap with existing `CONSTITUTION.md`, bootstrap after `--force`.
+- **Edge cases** (~8): empty project scan, single-file scan, all-below-threshold scan, no-git
+  fallback, mixed-languages-in-scope scan, bootstrap with zero standards, bootstrap with existing
+  `CONSTITUTION.md`, bootstrap after `--force`.
 - **Verification**: `/pre-commit-test-gap` workflow after implementation.
 
 **Deliverable**: Feature 3.5a complete. All tests passing, documentation updated, roadmap marked ✅.
@@ -479,7 +485,9 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 ### Tests
 
 - **Unit** (~15): Profile YAML listing, profile-to-pipeline selection, `PARAM_MAP` self-declaration, `set_domain_profile()` simplified behavior, `clear_domain_profile()` preserves overrides
-- **Integration** (~10): `sw config set-profile` → pipeline selection, `sw check` with active profile, `--pipeline` overrides profile, `--level feature` ignores profile, DB override on top of profile pipeline
+- **Integration** (~10): `sw config set-profile` → pipeline selection, `sw check` with active
+  profile, `--pipeline` overrides profile, `--level feature` ignores profile, DB override on top of
+  profile pipeline
 - **Edge cases** (~5): Custom profile from `.specweaver/`, reset-profile keeps tweaks, unknown profile error, profile + `--set` combined
 
 **Verification**: `/pre-commit-test-gap` workflow (5 phases).

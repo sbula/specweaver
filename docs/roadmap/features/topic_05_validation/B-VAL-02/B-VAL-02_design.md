@@ -7,7 +7,13 @@
 
 ## Feature Overview
 
-Feature 3.23 solves the "2nd-Day Problem" by blocking builds/commits if the implementation AST diverges from `Spec.md`, forcing developers to reconcile documentation with hot-fixes. It is implemented as a git pre-commit hook mapping to a standalone `sw check-rot --staged` CLI command. It does NOT touch out-of-scope system modules or mutate existing pipelines, remaining orthogonal to internal LLM flows and validation state. Key constraints include no LLM/AI calls for checks (purely deterministic) and operating strictly within `tach` layer boundaries via Single-Step `flow` delegation.
+Feature 3.23 solves the "2nd-Day Problem" by blocking builds/commits if the implementation AST
+diverges from `Spec.md`, forcing developers to reconcile documentation with hot-fixes. It is
+implemented as a git pre-commit hook mapping to a standalone `sw check-rot --staged` CLI command. It
+does NOT touch out-of-scope system modules or mutate existing pipelines, remaining orthogonal to
+internal LLM flows and validation state. Key constraints include no LLM/AI calls for checks (purely
+deterministic) and operating strictly within `tach` layer boundaries via Single-Step `flow`
+delegation.
 
 ## Research Findings
 

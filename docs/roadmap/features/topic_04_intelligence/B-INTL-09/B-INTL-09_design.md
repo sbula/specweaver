@@ -12,17 +12,34 @@
 
 ## Feature Overview
 
-Feature B-INTL-09 is the persistent SQLite backend for the Agent Memory Bank (US-28). It defines `Task`, `Epic`, `TaskDependency` (DAG), `StateTransition`, and `Defect` entities in the `workspace` module, paired with a resilient `MemoryRepository` providing CRUD operations, a formal state machine, Optimistic Concurrency Control, circuit breakers, zombie recovery, and upstream DAG propagation. It solves context degradation and enables seamless task handover between AI Agents by storing session state, active tasks, and blockers in a persistent local SQLite Database with built-in reboot resilience (heartbeats). It integrates directly with the existing CQRS SQLite Engine.
+Feature B-INTL-09 is the persistent SQLite backend for the Agent Memory Bank (US-28). It defines
+`Task`, `Epic`, `TaskDependency` (DAG), `StateTransition`, and `Defect` entities in the `workspace`
+module, paired with a resilient `MemoryRepository` providing CRUD operations, a formal state
+machine, Optimistic Concurrency Control, circuit breakers, zombie recovery, and upstream DAG
+propagation. It solves context degradation and enables seamless task handover between AI Agents by
+storing session state, active tasks, and blockers in a persistent local SQLite Database with
+built-in reboot resilience (heartbeats). It integrates directly with the existing CQRS SQLite
+Engine.
 
 ## Research Findings
 
 ### Codebase Patterns
 - **Database Engine**: SpecWeaver utilizes `sqlalchemy[asyncio]` and `aiosqlite` via a robust CQRS queue in `specweaver.core.config.database`.
 - **Domain Boundaries**: According to `architecture_reference.md`, physical project state must reside in the `workspace/` module. The schema must not be placed in `intelligence/` or `graph/`.
-- **NetworkX Bottleneck**: The existing Knowledge Graph (`graph` module) was investigated for reuse. It loads the entire dataset into a `networkx.DiGraph` in RAM, which is an architectural anti-pattern for dynamic task tracking and was explicitly rejected.
-- **ActiveState Deprecation**: The existing `ActiveState` singleton table is mathematically incapable of supporting a multi-agent fan-out and must be refactored to use the new `worker_id` locking approach.
-- **DeclarativeBase Pattern**: The codebase uses **separate `Base(DeclarativeBase)` classes per domain** (`workspace/store.py`, `core/flow/store.py`, `infrastructure/llm/store.py`). New memory models MUST reuse `workspace.store.Base` to share the MetaData registry required for cross-table ForeignKey constraints (e.g., `Task → Project`).
-- **PRAGMA Gap**: The existing `create_async_engine()` factory (`database.py:160-172`) does NOT attach a `PRAGMA foreign_keys=ON` event listener. Synchronous `Database.connect()` does (`database.py:265`), but async connections silently ignore FK constraints. This must be fixed for cascade rules to work.
+- **NetworkX Bottleneck**: The existing Knowledge Graph (`graph` module) was investigated for reuse.
+  It loads the entire dataset into a `networkx.DiGraph` in RAM, which is an architectural
+  anti-pattern for dynamic task tracking and was explicitly rejected.
+- **ActiveState Deprecation**: The existing `ActiveState` singleton table is mathematically
+  incapable of supporting a multi-agent fan-out and must be refactored to use the new `worker_id`
+  locking approach.
+- **DeclarativeBase Pattern**: The codebase uses **separate `Base(DeclarativeBase)` classes per
+  domain** (`workspace/store.py`, `core/flow/store.py`, `infrastructure/llm/store.py`). New memory
+  models MUST reuse `workspace.store.Base` to share the MetaData registry required for cross-table
+  ForeignKey constraints (e.g., `Task → Project`).
+- **PRAGMA Gap**: The existing `create_async_engine()` factory (`database.py:160-172`) does NOT
+  attach a `PRAGMA foreign_keys=ON` event listener. Synchronous `Database.connect()` does
+  (`database.py:265`), but async connections silently ignore FK constraints. This must be fixed for
+  cascade rules to work.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -37,7 +54,9 @@ Feature B-INTL-09 is the persistent SQLite backend for the Agent Memory Bank (US
 
 ## Handoff Boundary: B-INTL-09 ↔ D-INTL-06
 
-B-INTL-09 (this feature) and `D-INTL-06` (Context Hydration & Handover) are the two MVS features of US-28. They share the `handover_context` JSON field as their integration surface. The boundary is strictly defined as follows:
+B-INTL-09 (this feature) and `D-INTL-06` (Context Hydration & Handover) are the two MVS features of
+US-28. They share the `handover_context` JSON field as their integration surface. The boundary is
+strictly defined as follows:
 
 | Concern | Owner | Responsibility |
 |---------|-------|---------------|
@@ -48,9 +67,15 @@ B-INTL-09 (this feature) and `D-INTL-06` (Context Hydration & Handover) are the 
 | **Prompt formatting** (injection into LLM system message) | D-INTL-06 | Structures the retrieved context into the LLM prompt template, managing token budgets. |
 | **Handover protocols** (when/what to hand over) | D-INTL-06 | Defines the rules for when an agent should save context and how the next agent bootstraps from it. |
 
-> **Rule:** B-INTL-09 ensures only valid, bounded data enters the database. D-INTL-06 ensures the data is correctly retrieved, formatted, and injected into the agent's prompt. Neither feature crosses the other's boundary.
+> **Rule:** B-INTL-09 ensures only valid, bounded data enters the database. D-INTL-06 ensures the
+> data is correctly retrieved, formatted, and injected into the agent's prompt. Neither feature
+> crosses the other's boundary.
 
-> **Architectural Import Note:** D-INTL-06 must import `MemoryRepository` from `workspace.memory.store`. The `workspace/context.yaml` does not forbid imports from `intelligence/`, and `workspace` is a foundation layer designed to be consumed by higher layers. However, the implementing agent MUST verify this path is allowed by `tach.toml` before writing code.
+> **Architectural Import Note:** D-INTL-06 must import `MemoryRepository` from
+> `workspace.memory.store`. The `workspace/context.yaml` does not forbid imports from
+> `intelligence/`, and `workspace` is a foundation layer designed to be consumed by higher layers.
+> However, the implementing agent MUST verify this path is allowed by `tach.toml` before writing
+> code.
 
 ## Functional Requirements
 
@@ -134,7 +159,10 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 ## Sub-Feature Breakdown
 
 ### SF-01: SQLAlchemy Schema & Alembic Definitions
-- **Scope**: Define the strict OCC/Cascade SQLAlchemy entity classes (Task with all columns/indexes, Epic with OPEN/CLOSED status, TaskDependency with indexed FKs, StateTransition with bounded `TransitionReason` enum, Defect) reusing `Base` from `workspace.store`. Register PRAGMA event listener. Add explicit model imports to `alembic/env.py`. Generate the DB migration.
+- **Scope**: Define the strict OCC/Cascade SQLAlchemy entity classes (Task with all columns/indexes,
+  Epic with OPEN/CLOSED status, TaskDependency with indexed FKs, StateTransition with bounded
+  `TransitionReason` enum, Defect) reusing `Base` from `workspace.store`. Register PRAGMA event
+  listener. Add explicit model imports to `alembic/env.py`. Generate the DB migration.
 - **FRs**: [FR-1, FR-2, FR-3, FR-6]
 - **Inputs**: `specweaver/workspace/store.py` Base class (import, do not redefine).
 - **Outputs**: `src/specweaver/workspace/memory/store.py` (Models + PRAGMA listener + indexes + TransitionReason enum) + updated `alembic/env.py` + `alembic/versions/` migration script.
@@ -142,15 +170,21 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf01_implementation_plan.md
 
 ### SF-02: Core CRUD & State Machine
-- **Scope**: Implement the foundational `MemoryRepository` with basic CRUD operations, the formal State Transition Matrix enforcement, defect invariants (no `DONE` with `OPEN` defects), and context cleanup on `ARCHIVED`.
+- **Scope**: Implement the foundational `MemoryRepository` with basic CRUD operations, the formal
+  State Transition Matrix enforcement, defect invariants (no `DONE` with `OPEN` defects), and
+  context cleanup on `ARCHIVED`.
 - **FRs**: [FR-4 (core CRUD + state matrix + defect invariants), FR-7]
 - **Inputs**: The SQLAlchemy models defined in SF-01.
-- **Outputs**: `MemoryRepository` class with `create_task`, `get_task`, `list_tasks`, `transition_state` (matrix enforcement + defect invariants), `update_handover_context` (basic), `mark_archived` (context truncation). Structured logging on state transitions.
+- **Outputs**: `MemoryRepository` class with `create_task`, `get_task`, `list_tasks`,
+  `transition_state` (matrix enforcement + defect invariants), `update_handover_context` (basic),
+  `mark_archived` (context truncation). Structured logging on state transitions.
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md
 
 ### SF-03: DAG & Context Validation
-- **Scope**: Implement dependency graph management with `WITH RECURSIVE` cycle detection, transactional OCC `acquire_task` with exponential backoff + jitter, and Pydantic `HandoverContext` validation with 8KB truncation.
+- **Scope**: Implement dependency graph management with `WITH RECURSIVE` cycle detection,
+  transactional OCC `acquire_task` with exponential backoff + jitter, and Pydantic `HandoverContext`
+  validation with 8KB truncation.
 - **FRs**: [FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation)]
 - **Inputs**: The `MemoryRepository` core CRUD from SF-02.
 - **Outputs**: `insert_dependency` (WITH RECURSIVE cycle check), `acquire_task` (transactional OCC + backoff), `update_handover_context` (Pydantic 8KB validation + truncation).
@@ -161,7 +195,9 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 - **Scope**: Implement Zombie Recovery with heartbeat scanning, 3-Strike Circuit Breaker, and upstream `BLOCKED` → `UPSTREAM_BLOCKED` DAG propagation with reverse-clear on unblock.
 - **FRs**: [FR-5, FR-8, FR-9]
 - **Inputs**: The `MemoryRepository` core CRUD and state machine from SF-02.
-- **Outputs**: `recycle_zombies` (heartbeat scan + attempt_count increment), `circuit_breaker` (auto-BLOCKED + Defect creation), `propagate_blocked` (upstream cascade), `clear_upstream_blocked` (reverse cascade). Structured logging on all resilience events.
+- **Outputs**: `recycle_zombies` (heartbeat scan + attempt_count increment), `circuit_breaker`
+  (auto-BLOCKED + Defect creation), `propagate_blocked` (upstream cascade), `clear_upstream_blocked`
+  (reverse cascade). Structured logging on all resilience events.
 - **Depends on**: SF-02
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf04_implementation_plan.md
 

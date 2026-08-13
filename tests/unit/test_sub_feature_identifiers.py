@@ -54,12 +54,27 @@ def _offenders() -> list[str]:
         for path in sorted(root.rglob("*.md")):
             if path.name in LEGACY_DOCUMENTS:
                 continue
-            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                if LEGACY_CONTEXT.search(line):
+            lines = path.read_text(encoding="utf-8").splitlines()
+            # Judged per PARAGRAPH, reported per line. Both exemptions — legacy context and the
+            # padded-form contrast — are properties of the surrounding sentence, and a sentence
+            # spans several lines once prose is wrapped to the 200-char rule. Judging per line
+            # made them depend on where the wrap happened to fall: re-wrapping
+            # `special_patterns_and_adaptations.md` moved the word "feature" off `3.32c SF-2`'s
+            # line and turned a legacy reference into a violation.
+            for number, line in enumerate(lines, 1):
+                if not (SINGLE_DIGIT.search(line) and not PADDED.search(line)):
                     continue
-                if SINGLE_DIGIT.search(line) and not PADDED.search(line):
-                    rel = path.relative_to(ROOT).as_posix()
-                    found.append(f"{rel}:{number}: {line.strip()[:80]}")
+                start = number - 1
+                while start > 0 and lines[start - 1].strip():
+                    start -= 1
+                end = number
+                while end < len(lines) and lines[end].strip():
+                    end += 1
+                block = " ".join(lines[start:end])
+                if LEGACY_CONTEXT.search(block) or PADDED.search(block):
+                    continue
+                rel = path.relative_to(ROOT).as_posix()
+                found.append(f"{rel}:{number}: {line.strip()[:80]}")
     return found
 
 

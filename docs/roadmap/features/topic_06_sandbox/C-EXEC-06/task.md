@@ -81,6 +81,8 @@
   - Phase 6 (docs): [x] pipeline_engine_guide §7 (per-run model), impl-plan as-built, design tracker Dev ✅.
   - Phase 7 (walkthrough): [x] C-EXEC-06_sf03_walkthrough.md.
   - Phase 7.5 (Red/Blue on code): [x] no critical findings (traversal-safe, NFR-2 preserved, C2/C3 fail-closed).
-  - Phase 8 (commit boundary): ✅ committed `bd5cedd2` (direct to master, 2026-07-21). Post-commit: C-EXEC-06 → ✅ in capability_matrix + master_story_roadmap (Verifiable Proof recorded); design tracker Pre-Commit ✅ + Committed ✅.
+  - Phase 8 (commit boundary): ✅ committed `bd5cedd2` (direct to master, 2026-07-21). Post-commit:
+    C-EXEC-06 → ✅ in capability_matrix + master_story_roadmap (Verifiable Proof recorded); design
+    tracker Pre-Commit ✅ + Committed ✅.
 
 ## SF-03 COMPLETE — C-EXEC-06 capability fully delivered (SF-01/02/03 all committed).

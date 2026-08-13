@@ -7,17 +7,28 @@
 - **Status**: APPROVED
 
 ## Goal
-To properly publish the `read_unrolled_symbol` integration capabilities and formally document the underlying Macro/Annotation Unroll pattern via the internal SpecWeaver Developer Guides for cross-team scalability.
+To properly publish the `read_unrolled_symbol` integration capabilities and formally document the
+underlying Macro/Annotation Unroll pattern via the internal SpecWeaver Developer Guides for
+cross-team scalability.
 
 ## Research Notes
-- **`CodeStructureTool` Intents**: During SF-01 and SF-02 development, the `read_unrolled_symbol` AST intent was automatically swept into `src/specweaver/core/loom/tools/code_structure/tool.py` and its corresponding LLM JSON schema in `definitions.py` to facilitate iterative evaluation constraints. The codebase logic already accurately routes the evaluator requests!
-- **Developer Guide Targets**: The existing `docs/dev_guides/adding_framework_guide.md` currently only describes mapping validation rules using predefined archetypes (the `spring-boot.yaml` pipeline structure). It completely lacks instructions for engineers on how to actually update or add the `frameworks/*.yaml` *Schema Evaluators* used by the `CodeStructureAtom` to unroll annotations. 
+- **`CodeStructureTool` Intents**: During SF-01 and SF-02 development, the `read_unrolled_symbol`
+  AST intent was automatically swept into `src/specweaver/core/loom/tools/code_structure/tool.py`
+  and its corresponding LLM JSON schema in `definitions.py` to facilitate iterative evaluation
+  constraints. The codebase logic already accurately routes the evaluator requests!
+- **Developer Guide Targets**: The existing `docs/dev_guides/adding_framework_guide.md` currently
+  only describes mapping validation rules using predefined archetypes (the `spring-boot.yaml`
+  pipeline structure). It completely lacks instructions for engineers on how to actually update or
+  add the `frameworks/*.yaml` *Schema Evaluators* used by the `CodeStructureAtom` to unroll
+  annotations. 
 
 ## Implementation Steps
 
 ### 1. Update `adding_framework_guide.md`
 - Provide a new section "Step 1b: Defining Framework Schema Evaluators (Macro Unrolling)" explaining the LSP-bypass architecture.
-- Document the schema mapping strategy for developers to translate things like `@RestController` (or their company's proprietary `@AuthBase` API classes) into explicit YAML abstractions, located sequentially inside `src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`.
+- Document the schema mapping strategy for developers to translate things like `@RestController` (or
+  their company's proprietary `@AuthBase` API classes) into explicit YAML abstractions, located
+  sequentially inside `src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`.
 - Cover the `metadata.supported_languages` binding constraint explicitly.
 
 ## Quality/Architecture Verification

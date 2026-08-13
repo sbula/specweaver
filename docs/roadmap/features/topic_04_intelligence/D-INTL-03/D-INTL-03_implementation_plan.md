@@ -1,19 +1,25 @@
 # Feature 3.6 — Explicit Plan Phase (Spec → Plan → Tasks)
 
-Insert a structured **Plan** artifact between spec validation/review and code generation. The Plan captures architecture decisions, tech stack choices, file layout, constraint reasoning, and (optionally) UI mockups — before code generation begins.
+Insert a structured **Plan** artifact between spec validation/review and code generation. The Plan
+captures architecture decisions, tech stack choices, file layout, constraint reasoning, and
+(optionally) UI mockups — before code generation begins.
 
 > **Inspired by**: [Spec Kit](https://github.com/github/spec-kit) (`/specify → /plan → /tasks` workflow)
 > **Optional enrichment**: [Google Stitch](https://stitch.withgoogle.com/) for web/UI mockup generation
 > **Lifecycle position**: bridges L2 (Architecture) → L4 (Implementation) in [lifecycle_layers.md](../../architecture/lifecycle_layers.md)
 
 > [!IMPORTANT]
-> **Prerequisite**: Before starting 3.6, complete a separate cleanup task to extract hardcoded model defaults (`gemini-2.5-flash`) from 6 locations into the hierarchical LLM config system. See [Decision #13](#13-llm-model-selection).
+> **Prerequisite**: Before starting 3.6, complete a separate cleanup task to extract hardcoded model
+> defaults (`gemini-2.5-flash`) from 6 locations into the hierarchical LLM config system. See
+> [Decision #13](#13-llm-model-selection).
 
 ---
 
 ## Motivation
 
-Today, `generate_code` receives only the spec + constitution + standards. Architecture decisions (folder structure, which libraries to use, how to split modules) are implicit — the LLM guesses. This leads to:
+Today, `generate_code` receives only the spec + constitution + standards. Architecture decisions
+(folder structure, which libraries to use, how to split modules) are implicit — the LLM guesses.
+This leads to:
 
 - Inconsistent file layouts across generated modules
 - Tech stack choices that conflict with project conventions
@@ -109,7 +115,10 @@ The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rende
 | Stitch config | `config/` | `STITCH_API_KEY` environment variable. `stitch_mode` DB setting: `auto\|prompt\|off` (default: `off`). |
 
 > [!IMPORTANT]
-> Stitch integration is **conditional**: only fires when spec has UI sections AND `STITCH_API_KEY` env var is set AND `stitch_mode != off`. Non-UI specs skip entirely. Missing SDK = graceful skip with log warning. **No new package dependencies** — MCP communication uses existing infrastructure.
+> Stitch integration is **conditional**: only fires when spec has UI sections AND `STITCH_API_KEY`
+> env var is set AND `stitch_mode != off`. Non-UI specs skip entirely. Missing SDK = graceful skip
+> with log warning. **No new package dependencies** — MCP communication uses existing
+> infrastructure.
 
 **Tests**: ~20-30 tests (mocked MCP calls, UI extraction from spec samples).
 

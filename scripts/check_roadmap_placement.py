@@ -146,16 +146,29 @@ def unowned_references(path: Path) -> list[str]:
 
     out: list[str] = []
     enclosing: str | None = None
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for number, line in enumerate(lines, 1):
         if STRUCTURE.match(line):
             found = ID_ON_LINE.search(line)
             if found:
                 enclosing = found.group(0)
             elif line.startswith("#"):
                 enclosing = None
-        if LEGACY.search(line) or not BARE_SF.search(line):
+        if not BARE_SF.search(line):
             continue
-        if ID_ON_LINE.search(line) or enclosing:
+        # Both the owner and the legacy marker may sit a line or two away once prose is wrapped to
+        # the 200-char rule, so the unit is the PARAGRAPH rather than the line. Line-based worked
+        # only while every paragraph was a single line: re-wrapping moved `B-EXEC-01` two lines
+        # above the `SF-02` it owns, and moved the word "feature" off `3.32c SF-2`'s line — turning
+        # two correct references into violations without a word changing.
+        start = number - 1
+        while start > 0 and lines[start - 1].strip():
+            start -= 1
+        end = number
+        while end < len(lines) and lines[end].strip():
+            end += 1
+        block = " ".join(lines[start:end])
+        if LEGACY.search(block) or ID_ON_LINE.search(block) or enclosing:
             continue
         out.append(f"{path.as_posix()}:{number}: {line.strip()[:70]}")
     return out

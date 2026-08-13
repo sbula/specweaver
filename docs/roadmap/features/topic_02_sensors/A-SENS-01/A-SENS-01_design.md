@@ -8,14 +8,23 @@
 ## Feature Overview
 
 Feature 3.32 introduces "Deep Semantic Hashing" via Merkle-trees to keep SpecWeaver's internal Topology Graph explicitly in sync without performing full project crawls on every initialization.
-Instead of relying strictly on full tree parsing, the topology tracks "Dependency Hashes"—meaning a module's hash changes mechanically if and only if its own content changes *or* any of its imported dependencies change. This provides massive speed improvements by isolating AST computations strictly to invalidated branches (incremental crawling).
+Instead of relying strictly on full tree parsing, the topology tracks "Dependency Hashes"—meaning a
+module's hash changes mechanically if and only if its own content changes *or* any of its imported
+dependencies change. This provides massive speed improvements by isolating AST computations strictly
+to invalidated branches (incremental crawling).
 
 ## Research Findings
 
 ### Codebase Patterns
 - **Current State:** `TopologyGraph.from_project()` directly executes `rglob` over all bounds recursively building the entire `DependencyGraph` into memory. 
-- **Legacy Technical Debt:** `LanguageAnalyzer.extract_imports()` exists in `specweaver/workspace/context/analyzers.py`, but it is heavily tethered to legacy Python `ast` and leaves Java/Kotlin/Rust commented out. To fulfill polyglot semantic hashing, we must adapt the `tree-sitter` pure-logic parsing proven in `core/loom`.
-- **Architectural Rules:** Because `assurance/graph/context.yaml` explicitly consumes `specweaver/context` (which represents `workspace/context`), placing hashing logic in `assurance/graph/hasher.py` fully obeys `dmz` L2-L1 topology downward consumption without violating `pure-logic` or `loom/*` isolation boundaries!
+- **Legacy Technical Debt:** `LanguageAnalyzer.extract_imports()` exists in
+  `specweaver/workspace/context/analyzers.py`, but it is heavily tethered to legacy Python `ast` and
+  leaves Java/Kotlin/Rust commented out. To fulfill polyglot semantic hashing, we must adapt the
+  `tree-sitter` pure-logic parsing proven in `core/loom`.
+- **Architectural Rules:** Because `assurance/graph/context.yaml` explicitly consumes
+  `specweaver/context` (which represents `workspace/context`), placing hashing logic in
+  `assurance/graph/hasher.py` fully obeys `dmz` L2-L1 topology downward consumption without
+  violating `pure-logic` or `loom/*` isolation boundaries!
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -53,28 +62,41 @@ None required. Uses native `hashlib` and `json`.
 ## Sub-Feature Breakdown
 
 ### SF-01: Polyglot Parser Decoupling
-- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language `codestructure.py` out of `loom/commons/language` and moves them downward into `workspace/ast/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`, and `workspace`.
+- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language
+  `codestructure.py` out of `loom/commons/language` and moves them downward into
+  `workspace/ast/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these
+  Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`,
+  and `workspace`.
 - **FRs**: [NFR-2]
 - **Inputs**: Existing tree-sitter bindings.
 - **Outputs**: Centralized `workspace/ast/parsers/` domain.
 - **Depends on**: none
 
 ### SF-02: Semantic State caching (DependencyHasher)
-- **Scope**: Implements a dedicated utility for computing and persisting shallow and structural Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely inject `/.specweaver/` into the `.gitignore` using a tracked comment block to prevent tracking pollution!
+- **Scope**: Implements a dedicated utility for computing and persisting shallow and structural
+  Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely
+  inject `/.specweaver/` into the `.gitignore` using a tracked comment block to prevent tracking
+  pollution!
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: OS file chunks, Tree-Sitter extracted dotted imports.
 - **Outputs**: Serialized pure-data cache map (with versions and mtime signatures to support NFR-1 incremental speeds).
 - **Depends on**: [SF-01]
 
 ### SF-03: Incremental Topology Crawler
-- **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the Semantic Cache, applying subtree invalidations natively via Tarjan's SCC cycle-loop breaking instead of global recursive parsing.
+- **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the
+  Semantic Cache, applying subtree invalidations natively via Tarjan's SCC cycle-loop breaking
+  instead of global recursive parsing.
 - **FRs**: [FR-3]
 - **Inputs**: Semantic Cache map.
 - **Outputs**: Instantiated TopologyGraph.
 - **Depends on**: [SF-02]
 
 ### SF-04: Pipeline Execution Optimization
-- **Scope**: Modifies the broader SpecWeaver orchestration engine (`QARunner`, `PipelineRunner`, and `EngineFileExecutor`) to exclusively consume `graph.stale_nodes`. Instructs downstream testing plugins to bypass `clean` nodes conditionally, and dictates explicit cache-flush persistence hooks to trigger strictly post-validation. Integrates `.specweaver` into ephemeral Worktree sandboxes natively.
+- **Scope**: Modifies the broader SpecWeaver orchestration engine (`QARunner`, `PipelineRunner`, and
+  `EngineFileExecutor`) to exclusively consume `graph.stale_nodes`. Instructs downstream testing
+  plugins to bypass `clean` nodes conditionally, and dictates explicit cache-flush persistence hooks
+  to trigger strictly post-validation. Integrates `.specweaver` into ephemeral Worktree sandboxes
+  natively.
 - **FRs**: [NFR-1]
 - **Inputs**: Instantiated `TopologyGraph`, `stale_nodes` set.
 - **Outputs**: High-speed incremental validation pipelines, updated Cache.

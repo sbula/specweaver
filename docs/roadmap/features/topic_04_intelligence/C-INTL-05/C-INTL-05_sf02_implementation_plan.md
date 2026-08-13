@@ -9,7 +9,10 @@
 
 ## Goal
 
-Refactor `PromptBuilder` and `_prompt_render.py` to use `RenderProfile` for slot filtering and rendering order. Refactor `_build_base_prompt()` signature to accept `profile: RenderProfile`. Ensure backward compatibility (FR-9) via an internal all-slots-active default profile and `DeprecationWarning`.
+Refactor `PromptBuilder` and `_prompt_render.py` to use `RenderProfile` for slot filtering and
+rendering order. Refactor `_build_base_prompt()` signature to accept `profile: RenderProfile`.
+Ensure backward compatibility (FR-9) via an internal all-slots-active default profile and
+`DeprecationWarning`.
 
 ## FRs Covered
 
@@ -119,7 +122,10 @@ def __init__(
 ) -> None:
 ```
 
-When `profile is None`: assign `_DEFAULT_PROFILE` and emit `warnings.warn("PromptBuilder created without explicit profile — using _DEFAULT_PROFILE. Pass a RenderProfile for explicit slot control.", DeprecationWarning, stacklevel=2)`. Store as `self._profile`. This uses the Python-standard `warnings.warn` mechanism so warnings are shown once per callsite and are filterable.
+When `profile is None`: assign `_DEFAULT_PROFILE` and emit
+`warnings.warn("PromptBuilder created without explicit profile — using _DEFAULT_PROFILE. Pass a RenderProfile for explicit slot control.", DeprecationWarning, stacklevel=2)`.
+Store as `self._profile`. This uses the Python-standard `warnings.warn` mechanism so warnings are
+shown once per callsite and are filterable.
 
 > [!IMPORTANT]
 > The deprecation warning fires ONCE per `PromptBuilder()` construction without
@@ -209,7 +215,10 @@ def add_context(
 ) -> PromptBuilder:
 ```
 
-When `slot` is provided, the gate checks that slot. The `_ContentBlock.kind` is set to `slot.value` instead of hardcoded `"context"`. This enables `_build_base_prompt()` to inject agent memory as `slot=PromptSlot.AGENT_MEMORY` with `kind="agent_memory"` so the profile system can filter it correctly.
+When `slot` is provided, the gate checks that slot. The `_ContentBlock.kind` is set to `slot.value`
+instead of hardcoded `"context"`. This enables `_build_base_prompt()` to inject agent memory as
+`slot=PromptSlot.AGENT_MEMORY` with `kind="agent_memory"` so the profile system can filter it
+correctly.
 
 > [!WARNING]
 > The `add_context(slot=...)` change means that `_build_base_prompt()` memory hydration
@@ -305,7 +314,10 @@ builder = PromptBuilder(profile=profile, skeleton_files=skeleton_files)
 
 **Conditional rule gating refactoring**:
 
-The old `if include_rules:` conditional branch is **completely removed**. The profile's `active_slots` is the sole control mechanism. `_build_base_prompt` now unconditionally calls `add_constitution()` and `add_standards()` — the builder's slot gate handles filtering via `_is_slot_active()`.
+The old `if include_rules:` conditional branch is **completely removed**. The profile's
+`active_slots` is the sole control mechanism. `_build_base_prompt` now unconditionally calls
+`add_constitution()` and `add_standards()` — the builder's slot gate handles filtering via
+`_is_slot_active()`.
 
 **Memory hydration** (slot fix + I/O gating):
 
@@ -402,21 +414,36 @@ if PromptSlot.AGENT_MEMORY in profile.active_slots:
 
 ### Phase 0 Synthesis
 
-1. **Current `render_blocks()` hardcoded order** (lines 73-116): `instructions → dictator-overrides → project_metadata → constitution → standards → plan → topology → file → mentioned → context → reminder`. This exactly matches `_STANDARD_ORDER` in `_profiles.py` and `tuple(PromptSlot)` in `_prompt_profiles.py`. Confirmed by test P12.
+1. **Current `render_blocks()` hardcoded order** (lines 73-116):
+   `instructions → dictator-overrides → project_metadata → constitution → standards → plan → topology → file → mentioned → context → reminder`.
+   This exactly matches `_STANDARD_ORDER` in `_profiles.py` and `tuple(PromptSlot)` in
+   `_prompt_profiles.py`. Confirmed by test P12.
 
-2. **`_ContentBlock.kind` field** (line 54-55): Currently a plain `str`. SF-02 does NOT change this to `PromptSlot` — that would be a breaking change across all existing tests. Instead, the slot gate compares `slot.value` (str) with the block's `kind` (str). The `PromptSlot` is a `StrEnum`, so `slot == block.kind` works directly.
+2. **`_ContentBlock.kind` field** (line 54-55): Currently a plain `str`. SF-02 does NOT change this
+   to `PromptSlot` — that would be a breaking change across all existing tests. Instead, the slot
+   gate compares `slot.value` (str) with the block's `kind` (str). The `PromptSlot` is a `StrEnum`,
+   so `slot == block.kind` works directly.
 
-3. **`add_context()` currently uses `kind="context"` for everything** including agent memory (base.py:219). The new `slot` parameter allows callers to set `kind=slot.value` so the rendering dispatch can distinguish `context` from `agent_memory` blocks.
+3. **`add_context()` currently uses `kind="context"` for everything** including agent memory
+   (base.py:219). The new `slot` parameter allows callers to set `kind=slot.value` so the rendering
+   dispatch can distinguish `context` from `agent_memory` blocks.
 
 4. **`clone()` currently does NOT propagate profile** (lines 89-103). Must add `profile=self._profile` to the constructor call.
 
-5. **Existing test count**: 869 lines in `test_prompt_builder.py`, 150 lines in `test_prompt_profiles.py`, 88 lines in `test_profiles.py`, 194 lines in `test_build_base_prompt.py`. All must continue passing (NFR-4).
+5. **Existing test count**: 869 lines in `test_prompt_builder.py`, 150 lines in
+   `test_prompt_profiles.py`, 88 lines in `test_profiles.py`, 194 lines in
+   `test_build_base_prompt.py`. All must continue passing (NFR-4).
 
-6. **`_build_base_prompt()` has 7 callers** (grep confirmed): `draft.py:80`, `generation.py:150`, `generation.py:252`, `generation.py:445`, `review.py:162`, `review.py:273`. All currently use `include_rules=True` (default) except `draft.py:83` which uses `include_rules=False`. SF-02 keeps `include_rules` working but deprecated. SF-03 migrates all callers.
+6. **`_build_base_prompt()` has 7 callers** (grep confirmed): `draft.py:80`, `generation.py:150`,
+   `generation.py:252`, `generation.py:445`, `review.py:162`, `review.py:273`. All currently use
+   `include_rules=True` (default) except `draft.py:83` which uses `include_rules=False`. SF-02 keeps
+   `include_rules` working but deprecated. SF-03 migrates all callers.
 
 7. **No new external dependencies**. All changes use stdlib + existing Pydantic.
 
-8. **Import chain safety**: `prompt_builder.py` will import from `_prompt_profiles.py` (same package — legal). `base.py` will import from `_prompt_profiles.py` (flow → llm — legal per flow's `context.yaml` `consumes: specweaver/llm`).
+8. **Import chain safety**: `prompt_builder.py` will import from `_prompt_profiles.py` (same package
+   — legal). `base.py` will import from `_prompt_profiles.py` (flow → llm — legal per flow's
+   `context.yaml` `consumes: specweaver/llm`).
 
 ---
 

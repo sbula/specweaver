@@ -33,7 +33,10 @@
 
 ### 4. Mathematical Pathspec Aggregator
 #### [x] [NEW] `src/specweaver/workspace/ast/parsers/exclusions.py`
-*(Note: Because `workspace/ast/parsers` is natively `pure-logic`, it legally hosts the mathematical Regex Tree generation for pathspec without violating the `contract` constraints of `workspace/context`. The actual OS traversal reading `.specweaverignore` from disk will be safely injected later during SF-04).*
+*(Note: Because `workspace/ast/parsers` is natively `pure-logic`, it legally hosts the mathematical
+Regex Tree generation for pathspec without violating the `contract` constraints of
+`workspace/context`. The actual OS traversal reading `.specweaverignore` from disk will be safely
+injected later during SF-04).*
 - Create `SpecWeaverIgnoreParser` class:
   - Takes `project_root: Path` solely for referencing the `.specweaverignore` physical read (Permitted lookup logic prior to cache locking).
   - Method `ensure_scaffolded(default_directories: list[str]) -> None`: Safe append logic.
@@ -58,11 +61,18 @@
 
 ### 5.1. Open Questions & Agent Handoff Risk
 - **Unresolved Decisions:** None. All design drift (Pathspec optionally vs strictly, SF-01 vs SF-03 overlap, and Workspace/Context I/O bounds) have been definitively boxed out. 
-- **Agent Handoff Risk:** None. The next Agent dropping into `/dev` will clearly see that it ONLY implements the `CodeStructureInterface` extensions and builds `exclusions.py`. The creation of SF-04 explicitly signals the subsequent agent *not* to refactor `discovery.py` or the `AnalyzerFactory` DI injection during SF-01.
+- **Agent Handoff Risk:** None. The next Agent dropping into `/dev` will clearly see that it ONLY
+  implements the `CodeStructureInterface` extensions and builds `exclusions.py`. The creation of
+  SF-04 explicitly signals the subsequent agent *not* to refactor `discovery.py` or the
+  `AnalyzerFactory` DI injection during SF-01.
 
 ### 5.2. Architecture and Future Compatibility
-- **Tach Bounds:** No circular dependencies introduced. Adding methods to `interfaces.py` and `codestructure` subclasses perfectly respects the `pure-logic` constraints. Creating `exclusions.py` does not cross into `loom/` (forbidden).
-- **Roadmap Soundness:** Because we deferred the strict decoupling of `AnalyzerFactory` into the discrete **SF-04**, SF-01 acts as a pure mathematical foundation for topological exclusion logic. This lays down identical prerequisites required by **Feature 3.33** (PostgreSQL Graph) bounding.
+- **Tach Bounds:** No circular dependencies introduced. Adding methods to `interfaces.py` and
+  `codestructure` subclasses perfectly respects the `pure-logic` constraints. Creating
+  `exclusions.py` does not cross into `loom/` (forbidden).
+- **Roadmap Soundness:** Because we deferred the strict decoupling of `AnalyzerFactory` into the
+  discrete **SF-04**, SF-01 acts as a pure mathematical foundation for topological exclusion logic.
+  This lays down identical prerequisites required by **Feature 3.33** (PostgreSQL Graph) bounding.
 
 ### 5.3. Internal Consistency
 - Every physical file proposed has concrete inputs and outputs tagged linearly in Section 3. 

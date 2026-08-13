@@ -5,7 +5,10 @@
 - **Status**: APPROVED
 
 ## 1. Goal
-Delete all remaining `__init__.py` proxy-export boilerplate files deep inside `src/specweaver` and enforce their replacement with native, computationally-evaluated Rust boundaries using Tach's `interfaces:` registry. With this, any new agent can systematically modify exactly what needs to be changed without any guesswork.
+Delete all remaining `__init__.py` proxy-export boilerplate files deep inside `src/specweaver` and
+enforce their replacement with native, computationally-evaluated Rust boundaries using Tach's
+`interfaces:` registry. With this, any new agent can systematically modify exactly what needs to be
+changed without any guesswork.
 
 ## 2. Proposed Changes
 
@@ -41,7 +44,10 @@ expose = ["atoms", "commons", "dispatcher", "security", "tools"]
 - Copy the dynamic plugin loader (`_ensure_discovered()`, `register_adapter()`) natively into this explicit file instead of burying it in an init module.
 #### [DELETE] `src/specweaver/llm/adapters/__init__.py`
 #### [MODIFY] Import Path Rewiring
-- Rewrite `from specweaver.infrastructure.llm.adapters import ...` to `from specweaver.infrastructure.llm.adapters.registry import ...` inside `src/specweaver/llm/factory.py`, `src/specweaver/llm/telemetry.py`, `src/specweaver/llm/router.py`.
+- Rewrite `from specweaver.infrastructure.llm.adapters import ...` to
+  `from specweaver.infrastructure.llm.adapters.registry import ...` inside
+  `src/specweaver/llm/factory.py`, `src/specweaver/llm/telemetry.py`,
+  `src/specweaver/llm/router.py`.
 
 ### Layer 3: Loom Boilerplate Extinction
 #### [DELETE] The Loom Proxy Sub-Tree
@@ -66,7 +72,9 @@ The following arbitrary proxies must be physically deleted:
 - `src/specweaver/loom/tools/web/__init__.py`
 
 #### [MODIFY] Loom Path Rewiring
-Consumers previously calling `from specweaver.core.loom.tools.git import GitTool` must explicitly call `from specweaver.core.loom.tools.git.tool import GitTool`. All boundary verification relies strictly on Tach.
+Consumers previously calling `from specweaver.core.loom.tools.git import GitTool` must explicitly
+call `from specweaver.core.loom.tools.git.tool import GitTool`. All boundary verification relies
+strictly on Tach.
 
 ## 3. Verification
 1. Run `tach check` to prove interfaces block illegal imports.

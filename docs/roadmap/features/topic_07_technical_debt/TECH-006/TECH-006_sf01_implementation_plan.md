@@ -50,7 +50,9 @@ Public APIs: `load_settings(db, project_name)` in `core/config/settings_loader.p
 - **Copy 1** `workspace/project/interfaces/cli.py`: string-dispatch via `getattr(repo, method_name)(*args)`
 - **Copy 2** `core/config/interfaces/cli.py` lines 24-32: identical implementation
 
-Replacement: typed `run_repo_op(fn)` in `interfaces/cli/_core.py`. `_core.py` already has: `get_db()`, `console`, `app`, `_require_active_project()` (but currently uses `_run_workspace_op` — must update too).
+Replacement: typed `run_repo_op(fn)` in `interfaces/cli/_core.py`. `_core.py` already has:
+`get_db()`, `console`, `app`, `_require_active_project()` (but currently uses `_run_workspace_op` —
+must update too).
 
 **FR-5: `_load_topology` + `_select_topology_contexts` in `graph/interfaces/cli.py`**
 - `_load_topology`: calls `TopologyEngine()` + `TopologyGraph.from_project(project_path, engine, auto_infer=False)`, then `console.print()` for feedback
@@ -322,7 +324,10 @@ if topo_graph is None:
 | `test_cli_telemetry_flush.py` | patches `_load_constitution_content` | patches `find_constitution` from `workspace.project.constitution` |
 
 **Test file to rewrite/delete**:
-- `tests/unit/interfaces/cli/test_cli_helpers.py` — directly imports and tests `_load_constitution_content`. The function is deleted; its behaviour is now tested in `test_constitution.py` (domain layer). Delete this test or convert to test `find_constitution` directly.
+- `tests/unit/interfaces/cli/test_cli_helpers.py` — directly imports and tests
+  `_load_constitution_content`. The function is deleted; its behaviour is now tested in
+  `test_constitution.py` (domain layer). Delete this test or convert to test `find_constitution`
+  directly.
 
 ---
 

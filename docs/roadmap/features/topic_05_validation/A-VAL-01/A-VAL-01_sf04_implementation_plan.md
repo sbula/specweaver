@@ -7,7 +7,9 @@
 - **Status**: APPROVED
 
 ## Goal Description
-Implement `c13_contract_drift.py` inside the Validation Engine framework. This rule programmatically compares codebase CodeStructure paths (extracted from backend Python/TS) with the expected `ProtocolEndpoint` topologies injected dynamically via context from the previous Schema tools.
+Implement `c13_contract_drift.py` inside the Validation Engine framework. This rule programmatically
+compares codebase CodeStructure paths (extracted from backend Python/TS) with the expected
+`ProtocolEndpoint` topologies injected dynamically via context from the previous Schema tools.
 
 ## Proposed Changes
 
@@ -28,13 +30,17 @@ Implement `c13_contract_drift.py` inside the Validation Engine framework. This r
 ## Verification Plan
 
 ### Automated Tests
-- Unit Test `test_c13_contract_drift.py`: Generates dummy `ProtocolEndpoint` contexts, tests rule `check` matching identical router stubs in test-bound file targets, asserting `Status.PASS` and identifying `Status.FAIL` drops correctly over missing path maps.
+- Unit Test `test_c13_contract_drift.py`: Generates dummy `ProtocolEndpoint` contexts, tests rule
+  `check` matching identical router stubs in test-bound file targets, asserting `Status.PASS` and
+  identifying `Status.FAIL` drops correctly over missing path maps.
 
 ### Manual Verification
 Ensure dummy Pipeline tests properly cascade Flow Engine Atoms (SF-03) payload assignments downward to Validation `step.params`.
 
 ## Research Notes
-- **Critical Dependency Alignment**: Because standard L2 Pure-Logic validation explicitly `forbids: specweaver/loom/*` dependencies, C13 avoids manual parser instantiations by strictly relying on `rule.context` `ast_payload` dictionary bridging.
+- **Critical Dependency Alignment**: Because standard L2 Pure-Logic validation explicitly
+  `forbids: specweaver/loom/*` dependencies, C13 avoids manual parser instantiations by strictly
+  relying on `rule.context` `ast_payload` dictionary bridging.
 
 ## Session Handoff
 - Run `/dev docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md` seamlessly.

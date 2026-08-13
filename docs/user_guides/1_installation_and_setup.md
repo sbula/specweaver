@@ -44,7 +44,13 @@ sw init my-app --path ./my-project
 # Or scaffold alongside an external Model Context Protocol integration
 sw init my-app --path ./my-project --mcp postgres
 ```
-This command physically scaffolds `.specweaver/` directories inside the target path, sets up the active connection, and automatically seeds starter templates for `CONSTITUTION.md` and `.specweaverignore`. It also creates `.specweaver/scripts/` (with a placeholder `README.md`) — the directory where scripts referenced by `action: bash` pipeline steps live. Furthermore, it dynamically scaffolds native topological bounds (`src/context.yaml` targeting `pure-logic` and `tests/context.yaml` targeting `adapter`) to permanently isolate your project's architectural core from unauthorized Engine access.
+This command physically scaffolds `.specweaver/` directories inside the target path, sets up the
+active connection, and automatically seeds starter templates for `CONSTITUTION.md` and
+`.specweaverignore`. It also creates `.specweaver/scripts/` (with a placeholder `README.md`) — the
+directory where scripts referenced by `action: bash` pipeline steps live. Furthermore, it
+dynamically scaffolds native topological bounds (`src/context.yaml` targeting `pure-logic` and
+`tests/context.yaml` targeting `adapter`) to permanently isolate your project's architectural core
+from unauthorized Engine access.
 
 If you have multiple projects, you can hot-swap the active context mapping:
 ```bash
@@ -65,10 +71,14 @@ podman run --env-file .env \
 *Note: SQLite requires standard disk boundaries. You cannot map network-attached volumes (like CIFS) over strict WAL modes without configuring exceptions.*
 
 ## 6. Smart Scan Exclusions (`.specweaverignore`)
-SpecWeaver's pipeline engines utilize deep polyglot AST traversal to map your project topology. To prevent SpecWeaver from unnecessarily scanning generated binaries, dependency files, or proprietary logic, it inherently restricts scope via an intelligent fallback sequence:
+SpecWeaver's pipeline engines utilize deep polyglot AST traversal to map your project topology. To
+prevent SpecWeaver from unnecessarily scanning generated binaries, dependency files, or proprietary
+logic, it inherently restricts scope via an intelligent fallback sequence:
 
 1. **Native Polyglot Exclusions:** The parser implicitly avoids known compiler artifacts mathematically mapd by Language type (e.g. `*.pyc`, `*.jar`, `node_modules/`, `target/`).
-2. **User Override:** You can strictly override these settings mathematically by creating a `.specweaverignore` physically within your project's root directory, matching the classic `.gitignore` syntax logic precisely.
+2. **User Override:** You can strictly override these settings mathematically by creating a
+   `.specweaverignore` physically within your project's root directory, matching the classic
+   `.gitignore` syntax logic precisely.
 
 ```bash
 # Example .specweaverignore implementation:
@@ -81,13 +91,17 @@ docs/legacy_drafts/
 Starting with Feature 3.32c, SpecWeaver supports context pre-fetching against live external tools (e.g. Postgres databases or Atlassian APIs) utilizing the Model Context Protocol.
 
 ### Setting Up Vault Credentials
-If your pipelines declare `mcp_servers` mappings inside `.specweaver/pipelines`, they will require physical runtime credentials. **It is incredibly dangerous to store database proxies natively inside codebases**. SpecWeaver protects you using the isolated Vault map. 
+If your pipelines declare `mcp_servers` mappings inside `.specweaver/pipelines`, they will require
+physical runtime credentials. **It is incredibly dangerous to store database proxies natively inside
+codebases**. SpecWeaver protects you using the isolated Vault map. 
 
 To inject credentials without causing a pipeline abortion:
 1. Use `sw init <name> --mcp postgres`. This automatically spins up `.specweaver/vault.env` and implicitly appends it to your root `.gitignore`.
 2. Alternatively, create `.specweaver/vault.env` yourself and ensure you immediately add it to your global `.gitignore` scope. 
 
-**The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate interpreter crash to prevent accidental credentials leakage.**
+**The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file
+is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate
+interpreter crash to prevent accidental credentials leakage.**
 
 ## 8. Telemetry & Logs
 

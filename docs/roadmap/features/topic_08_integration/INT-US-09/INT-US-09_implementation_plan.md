@@ -236,13 +236,30 @@ Exact current signatures/locations (research findings — quoted, not authored):
 ## Phase 5: Final Consistency Check
 
 - **5.0 FR/NFR/AD coverage** — all FR-1…FR-6, applicable NFRs, and AD-1…AD-5 mapped in the Coverage table. None missing.
-- **5.1 Open questions** — All resolved and documented inline. HITL-approved resolutions: H1 (wire `config` — CLI must-do, API best-effort-else-Backlog), H2 (isolate-all-by-default + explicit per-step opt-out), H3 (fail-closed with actionable message via GitAtom's real failure), H4 (scope = bash + `run_tests` only; `lint_fix`/static excluded), H5 (tri-state `use_worktree`), M1–M5 + L1–L3 as banked.
-- **5.1a Agent-handoff risk** — Low. Every seam has an exact `file:line` and current signature in Research Notes; the gate resolver, tri-state, and rebind are given as pseudocode. Residual flagged: the API `pipelines.py` `config` wiring feasibility is a runtime check the dev step must confirm (else Backlog) — documented, not hidden.
-- **5.2 Architecture & future compat** — Wiring only in `core.flow` + composition root; atom surfaces only; one-way `flow → sandbox.core`; new imports get `tach.toml` edges + `tach check` (CB-1.4). Forward-compatible: the `execution_root` + policy seam is exactly what SF01 (container) / SF02 (egress) would extend.
-- **5.2a Principles** — *DDD*: US-9 ubiquitous language (worktree/executor/bash), no new bounded context. *KISS*: reuses `execute_in_sandbox`/`GitAtom`/`BashActionAtom`; adds one field + one gate resolver, no new subsystem. *DRY*: `execution_root or project_path` is the single rebind idiom; policy read centralized in the gate. *Hexagonal*: engine orchestrates, atoms adapt I/O, config is a passive port. *SoC*: config change (settings), gate change (runner), rebind (handlers) are distinct CBs.
+- **5.1 Open questions** — All resolved and documented inline. HITL-approved resolutions: H1 (wire
+  `config` — CLI must-do, API best-effort-else-Backlog), H2 (isolate-all-by-default + explicit
+  per-step opt-out), H3 (fail-closed with actionable message via GitAtom's real failure), H4 (scope
+  = bash + `run_tests` only; `lint_fix`/static excluded), H5 (tri-state `use_worktree`), M1–M5 +
+  L1–L3 as banked.
+- **5.1a Agent-handoff risk** — Low. Every seam has an exact `file:line` and current signature in
+  Research Notes; the gate resolver, tri-state, and rebind are given as pseudocode. Residual
+  flagged: the API `pipelines.py` `config` wiring feasibility is a runtime check the dev step must
+  confirm (else Backlog) — documented, not hidden.
+- **5.2 Architecture & future compat** — Wiring only in `core.flow` + composition root; atom
+  surfaces only; one-way `flow → sandbox.core`; new imports get `tach.toml` edges + `tach check`
+  (CB-1.4). Forward-compatible: the `execution_root` + policy seam is exactly what SF01 (container)
+  / SF02 (egress) would extend.
+- **5.2a Principles** — *DDD*: US-9 ubiquitous language (worktree/executor/bash), no new bounded
+  context. *KISS*: reuses `execute_in_sandbox`/`GitAtom`/`BashActionAtom`; adds one field + one gate
+  resolver, no new subsystem. *DRY*: `execution_root or project_path` is the single rebind idiom;
+  policy read centralized in the gate. *Hexagonal*: engine orchestrates, atoms adapt I/O, config is
+  a passive port. *SoC*: config change (settings), gate change (runner), rebind (handlers) are
+  distinct CBs.
 - **5.2b Red/Blue** — 2 cycles run (below); corrections merged into CB-1/CB-4/Test Plan/CB-3 notes above.
 - **5.3 Internal consistency** — Proposed-Changes tags (`NEW`/`MODIFY`) match the sequence; test names map to the code they exercise; no DB migration involved.
-- **5.3a Code-detail limit** — Re-read every code block: all are pseudocode, gate-resolver logic, or signatures quoted from *existing* code (research findings). No ready-to-paste new-code class/algorithm bodies. ✅
+- **5.3a Code-detail limit** — Re-read every code block: all are pseudocode, gate-resolver logic, or
+  signatures quoted from *existing* code (research findings). No ready-to-paste new-code
+  class/algorithm bodies. ✅
 
 ### Red/Blue Team Review (2 cycles, pre-implementation)
 

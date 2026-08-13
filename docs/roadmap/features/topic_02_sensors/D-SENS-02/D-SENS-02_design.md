@@ -7,24 +7,43 @@
 
 ## Feature Overview
 
-Feature 3.22 solves the critical problem of LLM "Context Window Bloat" and API cost-explosion during long multi-turn agent sessions. Instead of returning a dangerous `[304 Not Modified]` that degrades the agent's attention span, the system provides an advanced, polyglot **CodeStructureTool**: providing `read_file_structure(file)` and `read_symbol(file, symbol)`. 
+Feature 3.22 solves the critical problem of LLM "Context Window Bloat" and API cost-explosion during
+long multi-turn agent sessions. Instead of returning a dangerous `[304 Not Modified]` that degrades
+the agent's attention span, the system provides an advanced, polyglot **CodeStructureTool**:
+providing `read_file_structure(file)` and `read_symbol(file, symbol)`. 
 
-These intents utilize `tree-sitter` and a consolidated `loom/commons/language/` registry to extract just the signatures/docstrings of a file, or the specific implementation of a requested class/function. It completely offloads syntax parsing to language-specific `.scm` node queries running in the isolated `Loom` Engine Sandbox via Atoms. Furthermore, a follow-up feature (SF-02) introduces `write_symbol` to allow surgical AST body patching.
+These intents utilize `tree-sitter` and a consolidated `loom/commons/language/` registry to extract
+just the signatures/docstrings of a file, or the specific implementation of a requested
+class/function. It completely offloads syntax parsing to language-specific `.scm` node queries
+running in the isolated `Loom` Engine Sandbox via Atoms. Furthermore, a follow-up feature (SF-02)
+introduces `write_symbol` to allow surgical AST body patching.
 
 ## Discarded Concepts (The "304" Problem)
 
-**Original Idea:** The feature was initially proposed as a SQLite-backed "Context Ledger" that would track files an agent had already read during a session. If the agent requested the file again, it would intercept the read and return `[304 Not Modified]` to save API tokens and prevent bloated prompts.
+**Original Idea:** The feature was initially proposed as a SQLite-backed "Context Ledger" that would
+track files an agent had already read during a session. If the agent requested the file again, it
+would intercept the read and return `[304 Not Modified]` to save API tokens and prevent bloated
+prompts.
 
-**The Problem:** LLM transformers suffer from extreme attention degradation ("Lost in the Middle") in long contexts. Even though a file is technically loaded in the message history from 20 turns ago, the LLM physically "forgets" or loses attention to those weights. When an agent loop asks to reread a file, it is actually successfully attempting to **refresh its attention mechanism**. 
+**The Problem:** LLM transformers suffer from extreme attention degradation ("Lost in the Middle")
+in long contexts. Even though a file is technically loaded in the message history from 20 turns ago,
+the LLM physically "forgets" or loses attention to those weights. When an agent loop asks to reread
+a file, it is actually successfully attempting to **refresh its attention mechanism**. 
 
-**Why it was discarded:** By returning `[304 Not Modified]` and blocking the reread, the system would maliciously force the agent to rely on fading memory, triggering catastrophic syntax hallucinations when generating code. The AST Skeleton pivot was chosen because sending only the interface safely refreshes the attention weights while permanently solving the token cost bloat problem.
+**Why it was discarded:** By returning `[304 Not Modified]` and blocking the reread, the system
+would maliciously force the agent to rely on fading memory, triggering catastrophic syntax
+hallucinations when generating code. The AST Skeleton pivot was chosen because sending only the
+interface safely refreshes the attention weights while permanently solving the token cost bloat
+problem.
 
 ## Research Findings
 
 ### Codebase Patterns
 SpecWeaver's domain-driven architecture demands a strict separation between Pure Logic and I/O.
 1. **Loom Commons Language Registry:** `src/specweaver/loom/commons/language/<lang>/` is the single source of truth for both QA testing binaries and AST C-binary parsing.
-2. **Dependency Injection:** Pure logic layers (like `drift_detector`) must not run tree-sitter themselves. The `flow` orchestrator must use `AstAtom` to generate AST structures and pass them via Dependency Injection to pure logic nodes.
+2. **Dependency Injection:** Pure logic layers (like `drift_detector`) must not run tree-sitter
+   themselves. The `flow` orchestrator must use `AstAtom` to generate AST structures and pass them
+   via Dependency Injection to pure logic nodes.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

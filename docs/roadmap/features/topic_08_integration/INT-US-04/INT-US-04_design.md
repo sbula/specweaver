@@ -8,7 +8,9 @@
 ## Feature Overview
 
 Feature INT-US-04 adds the integration layer connecting the Validation Engine (E-VAL-01) to the SQLite Config DB (E-FLOW-01).
-It solves the problem of stateless context passing by persisting validation outputs statefully, allowing the Pipeline Runner (D-FLOW-01) to fetch sanitized, verified context for subsequent prompt generation.
+It solves the problem of stateless context passing by persisting validation outputs statefully,
+allowing the Pipeline Runner (D-FLOW-01) to fetch sanitized, verified context for subsequent prompt
+generation.
 It interacts with the Config DB, Pipeline Runner, and Validation Engine, and does NOT touch external systems outside the Flow Execution domain.
 Key constraints: Must satisfy the E2E integration test `tests/e2e/capabilities/assurance/test_mcp_flow_e2e.py`.
 
@@ -16,7 +18,10 @@ Key constraints: Must satisfy the E2E integration test `tests/e2e/capabilities/a
 
 ### Codebase Patterns
 The `PipelineRunner` coordinates steps via `RunContext`. `ValidateSpecHandler` produces validation results which must be captured.
-The `Config DB` (`config/database.py`) and `flow/store.py` (`FlowRepository`) currently support generic `ArtifactEvent`. We will need to capture and link validation results against the `run_id` securely. The `RunContext` is already passed down, enabling robust integration. The boundary constraints enforce that `flow` can consume `config` and `validation`.
+The `Config DB` (`config/database.py`) and `flow/store.py` (`FlowRepository`) currently support
+generic `ArtifactEvent`. We will need to capture and link validation results against the `run_id`
+securely. The `RunContext` is already passed down, enabling robust integration. The boundary
+constraints enforce that `flow` can consume `config` and `validation`.
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |

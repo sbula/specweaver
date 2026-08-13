@@ -3,14 +3,18 @@
 This guide covers how to execute the SpecWeaver test suite effectively using `pytest`. Following these commands ensures you only run what you intend to, avoiding side-effects on unrelated components.
 
 > [!WARNING]
-> Before running the tests, verify that you are running within your initialized Python virtual environment where your dependencies (`uv sync`) are configured. Do not run random `pip install` commands globally, as it will pollute your environment.
+> Before running the tests, verify that you are running within your initialized Python virtual
+> environment where your dependencies (`uv sync`) are configured. Do not run random `pip install`
+> commands globally, as it will pollute your environment.
 
 ## 1. Running the Whole Test Suite
 To run all tests across all layers (Unit, Integration, E2E), use the root command:
 ```bash
 pytest
 ```
-*Tip:* To see shorter output, you can use: `pytest -q` (quiet) or `pytest -v` (verbose). For deep debugging of failures, inspect the `logs/<project_name>/specweaver.log` which outputs full NDJSON tracebacks.
+*Tip:* To see shorter output, you can use: `pytest -q` (quiet) or `pytest -v` (verbose). For deep
+debugging of failures, inspect the `logs/<project_name>/specweaver.log` which outputs full NDJSON
+tracebacks.
 
 ## 2. Running Specific Testing Layers
 SpecWeaver organizes tests into distinct layers. You can run them separately or combine them by passing multiple test paths.
@@ -192,7 +196,9 @@ ruff check --fix src/specweaver/
 | N806 | Function-scope variables must be lowercase |
 
 ### Architectural Boundaries (Tach)
-SpecWeaver enforces its Domain-Driven "Layer Cake" architecture and public interfaces using [Tach](https://github.com/gauge-sh/tach), rather than relying on legacy `__init__.py` encapsulation. SpecWeaver is structured as a PEP-420 Implicit Namespace Package.
+SpecWeaver enforces its Domain-Driven "Layer Cake" architecture and public interfaces using
+[Tach](https://github.com/gauge-sh/tach), rather than relying on legacy `__init__.py` encapsulation.
+SpecWeaver is structured as a PEP-420 Implicit Namespace Package.
 
 **Check architectural boundaries:**
 ```bash
@@ -236,7 +242,9 @@ pytest tests/unit/workspace/project/interfaces/test_project_cli_constitution.py 
 ```
 
 ### Async SQLite Data Stores (e.g. Agent Memory Bank)
-When testing async SQLAlchemy stores that rely on SQLite Foreign Keys (e.g., cascading deletes), you MUST explicitly register the PRAGMA hook on the test engine fixture, and set `expire_on_commit=False` to avoid `MissingGreenlet` errors:
+When testing async SQLAlchemy stores that rely on SQLite Foreign Keys (e.g., cascading deletes), you
+MUST explicitly register the PRAGMA hook on the test engine fixture, and set
+`expire_on_commit=False` to avoid `MissingGreenlet` errors:
 
 ```bash
 # Agent Memory Bank tests
@@ -303,19 +311,32 @@ These tests pass on Linux/macOS. No action needed.
 
 ### Empty Parameterized Set (1 test in `test_interfaces.py`)
 
-`TestImplementerMethodVisibility::test_missing_method` — the implementer role has **all** filesystem methods (`_ALL_METHODS == _IMPLEMENTER_METHODS`), so `_ALL_METHODS - _IMPLEMENTER_METHODS` is empty. Pytest skips parameterized tests with no parameters. This is correct by design — there are no methods the implementer should lack.
+`TestImplementerMethodVisibility::test_missing_method` — the implementer role has **all** filesystem
+methods (`_ALL_METHODS == _IMPLEMENTER_METHODS`), so `_ALL_METHODS - _IMPLEMENTER_METHODS` is empty.
+Pytest skips parameterized tests with no parameters. This is correct by design — there are no
+methods the implementer should lack.
 
 ### External-Tool Skips (`tests/integration/sandbox/execution/test_container_executor_integration.py`)
 
-All 5 tests in this file are module-wide `skipif`'d when neither a live `podman` nor `docker` engine is detected on the host (`shutil.which()` + an `<engine> info` liveness probe run once at collection time, not per-test). Unlike the `@pytest.mark.live` tier (real LLM API keys — always excluded by default), this file has no exclusion marker: if a container engine is present, the tests run for real against it (no mocking) and are included in a normal `pytest tests/integration/` run. This is intentional — see `docs/dev_guides/subprocess_execution.md`'s "Containerized QA Execution" section for the `ContainerSubprocessExecutor` this file validates.
+All 5 tests in this file are module-wide `skipif`'d when neither a live `podman` nor `docker` engine
+is detected on the host (`shutil.which()` + an `<engine> info` liveness probe run once at collection
+time, not per-test). Unlike the `@pytest.mark.live` tier (real LLM API keys — always excluded by
+default), this file has no exclusion marker: if a container engine is present, the tests run for
+real against it (no mocking) and are included in a normal `pytest tests/integration/` run. This is
+intentional — see `docs/dev_guides/subprocess_execution.md`'s "Containerized QA Execution" section
+for the `ContainerSubprocessExecutor` this file validates.
 
 ## 13. Impact-Aware Validation Testing
 
-SpecWeaver implements an advanced "Pristine Topology Bypass" during CI. If a module's AST hash has not changed (i.e. it is not in the `stale_nodes` set), the testing and linting atom execution skips immediately, returning a mathematically pure `SUCCESS` intent to save latency.
+SpecWeaver implements an advanced "Pristine Topology Bypass" during CI. If a module's AST hash has
+not changed (i.e. it is not in the `stale_nodes` set), the testing and linting atom execution skips
+immediately, returning a mathematically pure `SUCCESS` intent to save latency.
 
 Furthermore, SpecWeaver features **strict DAL (Data Assurance Level) enforcement**. 
 - Tests verifying `DAL_A` and `DAL_B` boundary violations mathematically upgrade soft-warnings to fatal `FAIL` exit codes.
-- E2E tests validating this architecture execute physically within temporary `git worktrees` and inject bespoke lightweight validation pipelines (e.g. `C06 - Bare Except`) to ensure testing occurs realistically without relying on `unittest.mock`. 
+- E2E tests validating this architecture execute physically within temporary `git worktrees` and
+  inject bespoke lightweight validation pipelines (e.g. `C06 - Bare Except`) to ensure testing
+  occurs realistically without relying on `unittest.mock`. 
 
 ---
 

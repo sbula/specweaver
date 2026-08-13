@@ -8,13 +8,27 @@
 
 ## Goal Description
 
-Build an adapter that bridges SpecWeaver's internal topological model (`context.yaml` defined via `TopologyGraph`) into Tach's native format (`tach.toml`). When SpecWeaver maps the internal bounded contexts of a target codebase, this capability synchronizes those architectural bounds into mathematical `.toml` configuration natively checked by CI/CD.
+Build an adapter that bridges SpecWeaver's internal topological model (`context.yaml` defined via
+`TopologyGraph`) into Tach's native format (`tach.toml`). When SpecWeaver maps the internal bounded
+contexts of a target codebase, this capability synchronizes those architectural bounds into
+mathematical `.toml` configuration natively checked by CI/CD.
 
 ## User Decisions (Phase 4 Audits Merged)
-- **Module Placement**: Implemented in `src/specweaver/project/tach_sync.py`. The `graph/` module is strictly `pure-logic` and cannot perform File I/O. The `project/` module (`adapter` archetype) owns `.specweaver/` directory setup and filesystem orchestration, making it the architecturally correct home for writing `.toml` configuration.
-- **Serialization Engine**: We will add `tomlkit` to `pyproject.toml`. Python 3.11's built-in `tomllib` is read-only, and `tomli-w` strips out developer comments. `tomlkit` safely preserves existing document formatting and comments, crucial for preserving root properties in `tach.toml`.
-- **Sync Strategy**: The system will read the existing `tach.toml` file (if any) using `tomlkit`. It will preserve root definitions (e.g. `exclude = []` and `source_roots = ["."]`), but it will perform a Destructive Overwrite on the `[[modules]]` and `[[interfaces]]` mappings. The single source of truth for dependencies is `context.yaml`; thus, the `tach.toml` internal structure must exactly mirror `TopologyGraph.nodes`.
-- **UX Integration**: This synchronization will be appended natively to `sw scan` inside `src/specweaver/cli/projects.py`. No new CLI flags or commands are needed. The execution mimics `scaffold.py`, returning a `TachSyncResult` to standard output indicating the modified counts.
+- **Module Placement**: Implemented in `src/specweaver/project/tach_sync.py`. The `graph/` module is
+  strictly `pure-logic` and cannot perform File I/O. The `project/` module (`adapter` archetype)
+  owns `.specweaver/` directory setup and filesystem orchestration, making it the architecturally
+  correct home for writing `.toml` configuration.
+- **Serialization Engine**: We will add `tomlkit` to `pyproject.toml`. Python 3.11's built-in
+  `tomllib` is read-only, and `tomli-w` strips out developer comments. `tomlkit` safely preserves
+  existing document formatting and comments, crucial for preserving root properties in `tach.toml`.
+- **Sync Strategy**: The system will read the existing `tach.toml` file (if any) using `tomlkit`. It
+  will preserve root definitions (e.g. `exclude = []` and `source_roots = ["."]`), but it will
+  perform a Destructive Overwrite on the `[[modules]]` and `[[interfaces]]` mappings. The single
+  source of truth for dependencies is `context.yaml`; thus, the `tach.toml` internal structure must
+  exactly mirror `TopologyGraph.nodes`.
+- **UX Integration**: This synchronization will be appended natively to `sw scan` inside
+  `src/specweaver/cli/projects.py`. No new CLI flags or commands are needed. The execution mimics
+  `scaffold.py`, returning a `TachSyncResult` to standard output indicating the modified counts.
 
 ## Proposed Changes
 

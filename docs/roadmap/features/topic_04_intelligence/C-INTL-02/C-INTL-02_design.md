@@ -73,7 +73,9 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf01_implementation_plan.md
 
 ### SF-02: MCP Execution Atom (Loom Layer)
-- **Scope**: Implements the raw subprocess connection logic bridging JSON-RPC via `stdio` inside `loom/commons/mcp/executor.py` and exposes it via `loom/atoms/mcp/atom.py` to strictly adhere to the `context.yaml` isolation boundaries.
+- **Scope**: Implements the raw subprocess connection logic bridging JSON-RPC via `stdio` inside
+  `loom/commons/mcp/executor.py` and exposes it via `loom/atoms/mcp/atom.py` to strictly adhere to
+  the `context.yaml` isolation boundaries.
 - **FRs**: [FR-2]
 - **Inputs**: Docker launch command
 - **Outputs**: active JSON-RPC Atom connection
@@ -81,7 +83,9 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf02_implementation_plan.md
 
 ### SF-03: The Pre-Fetch Assembler (Flow Engine)
-- **Scope**: Implements the context extraction logic inside `flow/handlers.py` (which is legally permitted to execute Atoms). Identifies `consumes_resources`, executes the `MCPAtom` pre-fetch, and binds the envelope to the LLM step config.
+- **Scope**: Implements the context extraction logic inside `flow/handlers.py` (which is legally
+  permitted to execute Atoms). Identifies `consumes_resources`, executes the `MCPAtom` pre-fetch,
+  and binds the envelope to the LLM step config.
 - **FRs**: [FR-3, FR-4]
 - **Inputs**: `MCPAtom`, `consumes_resources` array.
 - **Outputs**: Injected Context Envelope.
@@ -89,7 +93,9 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 - **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf03_implementation_plan.md
 
 ### SF-04: MCP Explorer Tool (Architect Layer)
-- **Scope**: Implements `MCPExplorerTool` in `loom/tools/mcp/tool.py`, exposing the MCP `resources/list` endpoint strictly to L2 Architect roles, allowing them to map available URIs to `context.yaml` dependencies without seeing heavy schemas.
+- **Scope**: Implements `MCPExplorerTool` in `loom/tools/mcp/tool.py`, exposing the MCP
+  `resources/list` endpoint strictly to L2 Architect roles, allowing them to map available URIs to
+  `context.yaml` dependencies without seeing heavy schemas.
 - **FRs**: [FR-1]
 - **Inputs**: MCP URIs, Agent queries
 - **Outputs**: Lightweight array of available URIs

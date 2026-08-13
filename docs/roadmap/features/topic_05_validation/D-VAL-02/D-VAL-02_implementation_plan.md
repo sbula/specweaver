@@ -9,13 +9,17 @@
 
 ## 1. Problem Statement
 
-Today, all 19 validation rules (S01-S11, C01-C08) are **hardcoded** via direct imports in [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/runner.py#L94-L118). Users cannot:
+Today, all 19 validation rules (S01-S11, C01-C08) are **hardcoded** via direct imports in
+[runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/runner.py#L94-L118).
+Users cannot:
 - Add domain-specific custom rules without modifying SpecWeaver source
 - Choose which rules to run per project
 - Configure rule thresholds at the pipeline level
 - Share validation rule sets across teams
 
-Domain profiles (Feature 3.3) introduced per-project threshold calibration, but thresholds are stored in a separate DB layer. The long-term model is a **single source of truth**: validation pipeline YAMLs that define both which rules run and their configuration.
+Domain profiles (Feature 3.3) introduced per-project threshold calibration, but thresholds are
+stored in a separate DB layer. The long-term model is a **single source of truth**: validation
+pipeline YAMLs that define both which rules run and their configuration.
 
 ---
 
@@ -47,11 +51,15 @@ Validation sub-pipeline (NEW — ValidationPipeline / ValidationStep)
 ```
 
 - **Orchestration level**: `PipelineStep` requires `action: StepAction` + `target: StepTarget`, dispatched via `StepHandlerRegistry`. This level stays unchanged.
-- **Validation level**: A sub-pipeline **internal to the handler**. Each step is a rule-atom: its action is always "check", its target is the spec/code being validated. This level gets a new, simpler model.
+- **Validation level**: A sub-pipeline **internal to the handler**. Each step is a rule-atom: its
+  action is always "check", its target is the spec/code being validated. This level gets a new,
+  simpler model.
 
 ### Rule as atom
 
-Rules ARE validation atoms — their action is always "check" on a target (file/folder). The `Rule` ABC is already the right interface. A `RuleAtom` adapter bridges `Rule.check()` to `Atom.run()` so rule-atoms are composable like any other atom.
+Rules ARE validation atoms — their action is always "check" on a target (file/folder). The `Rule`
+ABC is already the right interface. A `RuleAtom` adapter bridges `Rule.check()` to `Atom.run()` so
+rule-atoms are composable like any other atom.
 
 | | Rule ABC | Atom ABC |
 |-|----------|----------|
@@ -61,7 +69,9 @@ Rules ARE validation atoms — their action is always "check" on a target (file/
 
 ### Existing `step.params` infrastructure
 
-[PipelineStep.params](file:///c:/development/pitbula/specweaver/src/specweaver/flow/models.py#L138) already carries `dict[str, Any]`. Handlers read it today. The validation sub-pipeline uses the same pattern — each rule step carries its own `params`.
+[PipelineStep.params](file:///c:/development/pitbula/specweaver/src/specweaver/flow/models.py#L138)
+already carries `dict[str, Any]`. Handlers read it today. The validation sub-pipeline uses the same
+pattern — each rule step carries its own `params`.
 
 ---
 

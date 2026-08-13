@@ -7,7 +7,9 @@
 
 ## Feature Overview
 
-Feature E-INTL-02 introduces the interactive Human-In-The-Loop Spec Drafting orchestrator, enabling collaborative component specification authoring. It also implements the semantic LLM evaluation engine required for the `sw review` commands.
+Feature E-INTL-02 introduces the interactive Human-In-The-Loop Spec Drafting orchestrator, enabling
+collaborative component specification authoring. It also implements the semantic LLM evaluation
+engine required for the `sw review` commands.
 
 ## Functional Requirements
 
