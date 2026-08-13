@@ -132,3 +132,28 @@ scope"* for a whole session while 23 classes failed; `check_fr_coverage.py` coul
 `C-INTL-01` since it was written. All three are story-scoped, and a story-scoped check only fires
 when a human remembers the story. **Run it, read its output, and confirm it examined what you think
 it examined.**
+
+## Where a citation goes, and what it must not name
+
+`check_fr_coverage.py` credits **any** `FR-N` that appears in a test file naming the story. It reads
+text, not intent. Two consequences, both hit for real on 2026-08-13 while re-attributing
+`INT-US-28`'s tests (`TECH-017` SF-01):
+
+- **Put the citation in the *module* docstring.** Many test files have none, so "the first `"""`
+  in the file" is a fixture's or a helper's docstring. A citation buried there is still counted by
+  the gate — it looks green while being filed under the wrong thing.
+- **Never name a requirement you are NOT citing.** Writing *"FR-1, FR-6 and FR-7 are deliberately
+  not proven here"* in a test marks all three **covered**. The disclaimer is honest and its effect is
+  a lie: the sweep read 3 lower for a file that had just admitted a gap. Name the uncited
+  requirements in the capability's design document, where nothing scans for citations.
+
+The gate is not the problem and does not need loosening — measured the same day, **102 of 104**
+declared-FR credits across every delivered story carry a deliberate attribution. The hazard is
+specific: **a file that *discusses* requirements is credited as proving them.** A test about a
+checker, or a docstring explaining a gap, is discussion.
+
+**Corollary — a number that improves for a reason you cannot name in one sentence has not improved.**
+Re-run the ledger for the specific capability after citing, not just the repo-wide sweep: the
+per-capability output names which requirements are still uncited, and that list is the thing to check
+against what you actually read.
+

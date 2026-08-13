@@ -221,3 +221,28 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 **Current status**: SF-02 Implementation Plan is APPROVED.
 **Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md` to begin TDD development.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+
+## Test attribution repaired, 2026-08-13 (`TECH-017` SF-01)
+
+`B-INTL-09` read as **9 requirements with zero cited tests** — `check_fr_coverage.py B-INTL-09` reported
+`BLOCKED` — and it was never untested. Its tests were written under `INT-US-28`, the integration
+contract that consumed it, and credited only there. `tests/integration/workspace/test_memory_integration.py` (26 tests) proved this capability all along
+without naming it.
+
+The per-requirement mapping, read test by test before anything was cited:
+
+| Requirement | Proving tests in `tests/integration/workspace/test_memory_integration.py` |
+|---|---|
+| FR-2 DAG topology | `test_int_4_dag_resolution`, `test_int_10_deep_dag_cycle_protection`, `test_int_20_diamond_dependency_propagation` |
+| FR-3 heartbeat resilience | `test_e2e_7_heartbeat_survival`, `test_e2e_8_pulse_heartbeat_storm` |
+| FR-4 repository API / OCC `acquire_task` | `test_int_9_occ_concurrent_race`, `test_int_16_recycle_zombies_concurrent_occ_conflict` |
+| FR-5 zombie recovery | `test_int_2_zombie_reaper`, `test_int_11_zombie_reaper_full_cycle`, `test_e2e_9_zombie_reaping_boundary_jitter` |
+| FR-8 circuit breaker | `test_int_6_circuit_breaker`, `test_int_12_circuit_breaker_three_strikes` |
+| FR-9 deadlock propagation | `test_int_8_upstream_cascading_failure`, `test_int_17_upstream_propagation_cascade`, `test_int_18_reverse_propagation_partial`, `test_int_19_reverse_propagation_full_clear` |
+
+Each test was read against each requirement before anything was cited. FR-2, FR-3, FR-4, FR-5, FR-8 and FR-9 now carry a
+`Proves:` citation naming the specific test functions. **FR-1 (schema definition), FR-6 (alembic integration) and FR-7 (ARCHIVED cleanup) remain uncited** — no existing
+test proves them, and they are left visible rather than papered over.
+
+No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
+`docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.

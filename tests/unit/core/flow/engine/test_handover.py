@@ -2,6 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Unit tests for the handover save protocol.
+
+Proves: D-INTL-06 FR-8.
+
+The save protocol as an `on_pipeline_complete` callback: `test_handover_success_with_task_id`,
+`test_saves_on_failed_run`, `test_saves_running_on_interrupt`, `test_handover_under_8kb`,
+`test_handover_passes_pydantic_validation`. Written under `INT-US-28` and credited only there.
+Attributed 2026-08-13 (`TECH-017` SF-01) after reading each test against the requirement.
+"""
+
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path

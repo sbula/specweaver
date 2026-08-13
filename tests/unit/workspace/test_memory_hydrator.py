@@ -2,6 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Unit tests for `MemoryHydrator` sanitisation, formatting and truncation.
+
+Proves: D-INTL-06 FR-4, FR-5.
+
+FR-4 token budget guard — `test_hydrate_truncation_stages`, `test_hydrate_iterative_truncation`,
+`test_sanitize_truncates`. FR-5 defect surfacing for BLOCKED tasks — `test_hydrate_blocked_no_defects`,
+`test_hydrate_defect_none_description`, `test_hydrate_upstream_blocked_in_blockers`.
+
+Written under `INT-US-28` and credited only there, which left `D-INTL-06` reading as untested.
+Attributed 2026-08-13 (`TECH-017` SF-01) after reading each test against each requirement.
+"""
+
 import json
 import logging
 from datetime import UTC, datetime, timedelta

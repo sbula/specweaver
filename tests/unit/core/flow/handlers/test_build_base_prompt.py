@@ -2,6 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Unit tests for `_build_base_prompt()` assembly.
+
+Proves: D-INTL-06 FR-6.
+
+`test_build_base_prompt_happy_path`, `test_build_base_prompt_db_none`,
+`test_build_base_prompt_empty_memory`, `test_build_base_prompt_hydration_exception`.
+Written under `INT-US-28` and credited only there. Attributed 2026-08-13 (`TECH-017` SF-01)
+after reading each test against the requirement.
+"""
+
 import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch

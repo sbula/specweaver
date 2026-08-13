@@ -307,3 +307,17 @@ outcomes:
 **Current status**: SF-01 Committed ✅. SF-02 Committed ✅. SF-03 Committed ✅. Feature Complete!
 **Next step**: Proceed to next feature on the roadmap.
 **If resuming mid-feature**: D-INTL-06 is fully closed.
+
+## Test attribution repaired, 2026-08-13 (`TECH-017` SF-01)
+
+`D-INTL-06` read as **9 requirements with zero cited tests** — `check_fr_coverage.py D-INTL-06` reported
+`BLOCKED` — and it was never untested. Its tests were written under `INT-US-28`, the integration
+contract that consumed it, and credited only there. four unit files under `tests/unit/workspace/` and `tests/unit/core/flow/` (49 tests) proved this capability all along
+without naming it.
+
+Each test was read against each requirement before anything was cited. FR-4, FR-5, FR-6, FR-8 and FR-9 now carry a
+`Proves:` citation naming the specific test functions. **FR-1, FR-2, FR-3 and FR-7 remain uncited** — no existing
+test proves them, and they are left visible rather than papered over.
+
+No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
+`docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.

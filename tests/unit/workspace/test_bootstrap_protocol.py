@@ -2,6 +2,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Unit tests for the handover bootstrap protocol.
+
+Proves: D-INTL-06 FR-9.
+
+`INT-US-28`'s contract already described this file as *"Unit tests for the bootstrap scenario"* —
+the attribution existed in prose and never as a citation, so `D-INTL-06` read as untested.
+Attributed 2026-08-13 (`TECH-017` SF-01) after reading each test against the requirement.
+"""
+
 import json
 import logging
 import uuid

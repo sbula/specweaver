@@ -2,6 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Integration tests for the memory store, repository and DAG propagation.
+
+Proves: B-INTL-09 FR-2, FR-3, FR-4, FR-5, FR-8, FR-9.
+
+Cited by `INT-US-28` as integration proof, and it is — but these are `B-INTL-09`'s OWN requirements,
+so that capability read as having zero tests while this file proved six of its nine. Attributed
+2026-08-13 (`TECH-017` SF-01) after reading each test against each requirement; the per-test mapping,
+and the three requirements no test here proves, are recorded in `B-INTL-09`'s design.
+"""
+
 import uuid
 from datetime import UTC, datetime, timedelta
 

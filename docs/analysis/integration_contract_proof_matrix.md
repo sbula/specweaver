@@ -209,3 +209,47 @@ are not comparable between entries.
 | C4 | **Seam:** `_build_base_prompt()` calls `MemoryHydrator` to inject memory context into **every** LLM prompt. | `unassessed` | — |
 | C5 | **Seam:** `save_handover_context()` persists pipeline telemetry in the runner's `finally` block. | `unassessed` | — |
 | C6 | **Boundary:** `core.flow` consumes `workspace.memory` via `core/flow/context.yaml`, clean under `tach check`. | `unassessed` | — |
+
+### Finding: 5 of the 9 cited files are capability tests, not seam tests (`FR-6`)
+
+Raised 2026-08-13 when the tier column read `integration, unit` — the only entry in the matrix with
+a `unit` tier, which the plan's own guidance calls a **diagnostic** rather than a style choice.
+
+`git log` settles what happened. **4 of the 5 unit files were created 2026-05-10, the day
+`INT-US-28` was delivered** (`test_bootstrap_protocol.py` 5, `test_handover.py` 20,
+`test_runner_handover.py` 7, `test_build_base_prompt.py` 9); only `test_memory_hydrator.py` (15)
+predates it. So **41 of the 56 unit tests were written during the integration story** — the story
+did not merely cite existing unit tests, it wrote them.
+
+They are real tests and they pass. What was wrong was the **attribution**: they prove `B-INTL-09`
+and `D-INTL-06`'s own requirements (hydrator sanitisation and truncation, handover save fail-safes,
+`_build_base_prompt` assembly), and were credited only to the contract that consumed them. Both
+capabilities therefore read as having **9 FRs and zero cited tests** — `check_fr_coverage.py`
+reported both `BLOCKED` — while the contract read as proven by 88 tests when its seam has 6.
+
+**Handled, not filed.** Each file was read against each FR and given a `Proves:` citation for the
+requirements it actually demonstrates — `B-INTL-09` FR-2/3/4/5/8/9 (from the *integration* file,
+which is where that capability's proof genuinely lives) and `D-INTL-06` FR-4/5/6/8/9. The remaining
+seven (`B-INTL-09` FR-1/6/7, `D-INTL-06` FR-1/2/3/7) are **left uncited on purpose**: no test here
+proves them, and citing them to green a ledger is the gaming the sweep's failure message forbids.
+`check_fr_sweep` fell **251 → 240** as a result (11 requirements honestly cited), and the baseline
+was tightened to match.
+
+**A trap worth recording, because this audit walked into it.** The first attempt put the citations
+in the *first* `"""` of each file — which in all five was a fixture's or function's docstring, not
+the module's, because none of these files had a module docstring. The second put a disclaimer in the
+test naming the requirements deliberately left uncited. `check_fr_coverage.py` credits **any**
+`FR-N` mentioned in a file that names the story, so that disclaimer silently marked all three
+covered and the sweep read 237 instead of 240 — a *better* number produced by writing down that
+something was untested. Both are fixed; the uncited requirements are named in the capability
+designs, never in the tests.
+
+The gate was then checked rather than blamed: across all 18 delivered stories that cite anything,
+**102 of 104 declared-FR credits carry a deliberate attribution** (`Proves:`, `[Boundary/FR-5]`,
+`(FR-2 producer)`), and the two exceptions are attributions this sweep's own regex failed to
+recognise, not false credits. So the ledger is sound and no gate change is warranted — the hazard is
+narrow: **a file that *discusses* a story's requirements is credited as proving them.**
+
+This changes no verdict below and re-words nothing in `US-28_integration.md` (`NFR-1`). It is
+recorded here because C1 and C2 are claims **about the capabilities**, and CB-2 must not credit
+their seam with proof that belongs upstream of it.
