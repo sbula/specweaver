@@ -116,6 +116,61 @@ def load_baseline() -> int:
     return int(data.get("uncited_frs", 0))
 
 
+#: An NFR row, so a `Proves:` tag citing an NFR can be validated against the design too. Kept here
+#: rather than imported from `check_nfr_sweep.py` to avoid a cycle: that module already imports this
+#: one's delivered-story rule.
+_NFR_ROW = re.compile(r"^\s*\|\s*\**(NFR-\d+)\**\s*\|", re.MULTILINE)
+
+
+def all_declared() -> dict[str, set[str]]:
+    """`story -> every requirement id its design declares`, FRs and NFRs together."""
+    found: dict[str, set[str]] = {}
+    for design in sorted(FEATURES.rglob("*_design.md")):
+        text = design.read_text(encoding="utf-8", errors="replace")
+        frs, _ = _fr.declared_frs_from_text(text, design.name)
+        found[design.parent.name] = set(frs) | set(_NFR_ROW.findall(text))
+    return found
+
+
+def all_strict_tags() -> dict[str, set[str]]:
+    """`story -> requirements` claimed by `Proves:` tags across the test tree."""
+    found: dict[str, set[str]] = {}
+    for path in sorted((REPO_ROOT / "tests").rglob("*.py")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if _fr.is_fixture_data(text):
+            continue
+        for story, reqs in _cit.strict_citations(text).items():
+            found.setdefault(story, set()).update(reqs)
+    return found
+
+
+def dangling_citations(
+    tags: dict[str, set[str]], declared: dict[str, set[str]]
+) -> list[tuple[str, str]]:
+    """`Proves:` tags naming a requirement no design declares — sorted, so output is stable.
+
+    The machine cannot check a tag is TRUE; that is human judgment and stays human judgment. It can
+    check the tag is not nonsense, which matters most exactly when someone is adding tags in bulk:
+    a mistyped tag credits nothing and reports nothing, and *a check that silently does not run is
+    indistinguishable from one that passes*.
+
+    Zero-padding is the trap this was written for. Designs declare `NFR-3`; a tag reading `NFR-03`
+    is a different string and silently credits nothing.
+
+    **Not ratcheted**, following `TECH-039`: a weak proof can be true-but-thin while someone
+    schedules the work, whereas a citation pointing at a requirement that does not exist is never
+    acceptable debt to freeze.
+    """
+    bad: list[tuple[str, str]] = []
+    for story, reqs in tags.items():
+        known = declared.get(story, set())
+        bad.extend((story, req) for req in reqs if req not in known)
+    return sorted(bad)
+
+
 def known_stories() -> frozenset[str]:
     """Every id with a design directory — the registry the owner check trusts."""
     return frozenset(d.parent.name for d in FEATURES.rglob("*_design.md"))
@@ -186,6 +241,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {count:3}  {story}")
         print(f"\n{total} uncited FR(s) across {len(live)} design(s)")
         return 0
+
+    dangling = dangling_citations(all_strict_tags(), all_declared())
+    if dangling:
+        print(f"FR sweep: {len(dangling)} dangling `Proves:` citation(s) — these credit NOTHING\n")
+        for story, req in dangling:
+            print(f"  {story} {req}")
+        print(
+            "\nEach names a requirement no design declares. A mistyped tag is worse than a missing "
+            "one: it looks like proof and counts as none.\n"
+            "  * check the spelling — designs declare `NFR-3`, so a tag reading `NFR-03` matches "
+            "nothing;\n"
+            "  * or the requirement was renamed or descoped, and the tag was left behind."
+        )
+        return 1
 
     frozen = load_baseline()
     if total > frozen:
