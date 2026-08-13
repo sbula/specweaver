@@ -109,39 +109,19 @@
     "first": "src/specweaver/core/flow/handlers/dual_pipeline.py:16",
     "second": "src/specweaver/core/flow/handlers/standards.py:11"
   },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/generation.py @0fbd5917f86f": {
-    "lines": 9,
-    "first": "src/specweaver/core/flow/handlers/generation.py:223",
-    "second": "src/specweaver/core/flow/handlers/generation.py:124"
-  },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/generation.py @3204cb1b09b0": {
-    "lines": 36,
-    "first": "src/specweaver/core/flow/handlers/generation.py:234",
-    "second": "src/specweaver/core/flow/handlers/generation.py:135"
-  },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/generation.py @f4112bcd01c2": {
-    "lines": 8,
-    "first": "src/specweaver/core/flow/handlers/generation.py:277",
-    "second": "src/specweaver/core/flow/handlers/generation.py:178"
-  },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @01db673bf237": {
     "lines": 12,
-    "first": "src/specweaver/core/flow/handlers/generation.py:334",
+    "first": "src/specweaver/core/flow/handlers/generation.py:314",
     "second": "src/specweaver/core/flow/handlers/review.py:33"
-  },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @0c499027e118": {
-    "lines": 15,
-    "first": "src/specweaver/core/flow/handlers/generation.py:156",
-    "second": "src/specweaver/core/flow/handlers/review.py:164"
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @35aa7bcb5f19": {
     "lines": 9,
-    "first": "src/specweaver/core/flow/handlers/generation.py:345",
+    "first": "src/specweaver/core/flow/handlers/generation.py:325",
     "second": "src/specweaver/core/flow/handlers/review.py:42"
   },
   "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @a95082fd55df": {
     "lines": 10,
-    "first": "src/specweaver/core/flow/handlers/generation.py:41",
+    "first": "src/specweaver/core/flow/handlers/generation.py:46",
     "second": "src/specweaver/core/flow/handlers/review.py:33"
   },
   "src/specweaver/core/flow/handlers/review.py <-> src/specweaver/core/flow/handlers/review.py @c1a96d71c898": {

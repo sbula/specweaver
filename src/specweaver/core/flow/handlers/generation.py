@@ -7,9 +7,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
+from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.artifact_lineage import (
+    derive_artifact_uuid,
+    log_artifact_lineage,
+)
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
@@ -114,14 +119,45 @@ def _extract_prompt_feedback(
     return overrides, validation
 
 
-class GenerateCodeHandler:
-    """Handler for generate+code — LLM code generation."""
+class _GenerationHandler:
+    """Generate one artefact from a spec with the LLM, then record its lineage.
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
+    `TECH-037`: `GenerateCodeHandler` and `GenerateTestsHandler` ran the same eighty lines and
+    differed in six places, five of them data — where the file goes, what it is called, which
+    instructions the prompt carries, which generator method runs, and which lineage event is
+    emitted. The sixth is `INCLUDE_TRACEBACK`, and it is preserved rather than unified because it
+    changes what a failing step reports; see there.
+    """
+
+    #: Directory under the project root when the run does not supply one.
+    OUTPUT_SUBDIR: ClassVar[str]
+    #: Prepended to the spec stem to form the filename (`test_` for tests).
+    FILENAME_PREFIX: ClassVar[str] = ""
+    #: Lineage event recorded for the artefact this handler writes.
+    EVENT_TYPE: ClassVar[str]
+    #: What the log lines call the thing being produced.
+    ARTEFACT: ClassVar[str]
+    #: Whether a crash appends its traceback to the step's error message.
+    #:
+    #: The code handler does and the tests handler does not. That looks like drift rather than a
+    #: decision -- these two were otherwise the same method -- but it changes what a failed run
+    #: shows the user, so it is preserved as a flag rather than quietly unified.
+    INCLUDE_TRACEBACK: ClassVar[bool] = False
+
+    def _instructions(self) -> str:
+        """The instruction block for this artefact. Imported lazily by the subclass."""
+        raise NotImplementedError
+
+    async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
+        """Invoke the generator method for this artefact."""
+        raise NotImplementedError
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
+        name = type(self).__name__
         if context.model.llm is None:
-            logger.error("GenerateCodeHandler: LLM adapter required but not configured")
+            logger.error("%s: LLM adapter required but not configured", name)
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
@@ -129,60 +165,33 @@ class GenerateCodeHandler:
 
             adapter, config = _resolve_generation_routing(context, temperature=0.2)
             generator = Generator(llm=adapter, config=config)
-            output_dir = context.output_dir or context.project_path / "src"
-            output_path = output_dir / f"{context.spec_path.stem.replace('_spec', '')}.py"
+
+            output_dir = context.output_dir or context.project_path / self.OUTPUT_SUBDIR
+            stem = context.spec_path.stem.replace("_spec", "")
+            output_path = output_dir / f"{self.FILENAME_PREFIX}{stem}.py"
             logger.debug(
-                "GenerateCodeHandler: generating code to '%s' from spec '%s'",
+                "%s: generating %s to '%s' from spec '%s'",
+                name,
+                self.ARTEFACT,
                 output_path,
                 context.spec_path.name,
             )
 
-            import uuid
-
-            from specweaver.commons.lineage import extract_artifact_uuid
-
-            parent_id = None
-            if context.spec_path.exists():
-                parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
-            if not parent_id:
-                parent_id = context.run.run_id or ""
-
-            artifact_uuid = None
-            if output_path.exists():
-                artifact_uuid = extract_artifact_uuid(output_path.read_text(encoding="utf-8"))
-            if not artifact_uuid:
-                artifact_uuid = str(uuid.uuid4())
+            parent_id = _spec_lineage_id(context)
+            artifact_uuid = derive_artifact_uuid(output_path)
 
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import (
-                evaluate_and_fetch_skeleton_context,
-            )
-
-            targets = []
-            if context.graph.api_contract_paths:
-                targets.extend(context.graph.api_contract_paths)
-            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
-
-            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
-            from specweaver.core.flow.handlers.base import _build_base_prompt
-            from specweaver.workflows.implementation.generator import CODE_GEN_INSTRUCTIONS
-
             try:
-                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+                base_prompt = await _generation_prompt(
+                    context, step, instructions=self._instructions()
+                )
             except ValueError as e:
                 return _error_result(str(e), started)
 
-            base_prompt = await _build_base_prompt(
-                context, CODE_GEN_INSTRUCTIONS, profile=profile, skeleton_files=s_files
-            )
-            if context.plan_context.plan:
-                base_prompt.add_plan(context.plan_context.plan)
-            if context.graph.topology:
-                base_prompt.add_topology([context.graph.topology])
-
-            generated = await generator.generate_code(
+            generated = await self._generate(
+                generator,
                 context.spec_path,
                 output_path,
                 base_prompt=base_prompt,
@@ -191,113 +200,12 @@ class GenerateCodeHandler:
                 validation_findings=validation_findings,
                 environment_context=mcp_env,
             )
-            logger.info("GenerateCodeHandler: code generated at '%s'", generated)
-
-            from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
-
-            await log_artifact_lineage(
-                context, artifact_uuid, "generated_code", parent_id=parent_id, model_id=config.model
-            )
-
-            return StepResult(
-                status=StepStatus.PASSED,
-                output={"generated_path": str(generated)},
-                started_at=started,
-                completed_at=_now_iso(),
-                artifact_uuid=artifact_uuid,
-            )
-        except Exception as exc:
-            import traceback
-
-            logger.exception("GenerateCodeHandler: unhandled exception during code generation")
-            return _error_result(str(exc) + "\n" + traceback.format_exc(), started)
-
-
-class GenerateTestsHandler:
-    """Handler for generate+tests — LLM test generation."""
-
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
-        logger.debug("Executing %s", self.__class__.__name__)
-        started = _now_iso()
-        if context.model.llm is None:
-            logger.error("GenerateTestsHandler: LLM adapter required but not configured")
-            return _error_result("LLM adapter required for generate steps", started)
-
-        try:
-            from specweaver.workflows.implementation.generator import Generator
-
-            adapter, config = _resolve_generation_routing(context, temperature=0.2)
-            generator = Generator(llm=adapter, config=config)
-            output_dir = context.output_dir or context.project_path / "tests"
-            output_path = output_dir / f"test_{context.spec_path.stem.replace('_spec', '')}.py"
-            logger.debug(
-                "GenerateTestsHandler: generating tests to '%s' from spec '%s'",
-                output_path,
-                context.spec_path.name,
-            )
-
-            import uuid
-
-            from specweaver.commons.lineage import extract_artifact_uuid
-
-            parent_id = None
-            if context.spec_path.exists():
-                parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
-            if not parent_id:
-                parent_id = context.run.run_id or ""
-
-            artifact_uuid = None
-            if output_path.exists():
-                artifact_uuid = extract_artifact_uuid(output_path.read_text(encoding="utf-8"))
-            if not artifact_uuid:
-                artifact_uuid = str(uuid.uuid4())
-
-            dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
-            mcp_env = await evaluate_and_fetch_mcp_context(context)
-
-            from specweaver.core.flow.handlers.context_assembler import (
-                evaluate_and_fetch_skeleton_context,
-            )
-
-            targets = []
-            if context.graph.api_contract_paths:
-                targets.extend(context.graph.api_contract_paths)
-            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
-
-            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
-            from specweaver.core.flow.handlers.base import _build_base_prompt
-            from specweaver.workflows.implementation.generator import TEST_GEN_INSTRUCTIONS
-
-            try:
-                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
-            except ValueError as e:
-                return _error_result(str(e), started)
-
-            base_prompt = await _build_base_prompt(
-                context, TEST_GEN_INSTRUCTIONS, profile=profile, skeleton_files=s_files
-            )
-            if context.plan_context.plan:
-                base_prompt.add_plan(context.plan_context.plan)
-            if context.graph.topology:
-                base_prompt.add_topology([context.graph.topology])
-
-            generated = await generator.generate_tests(
-                context.spec_path,
-                output_path,
-                base_prompt=base_prompt,
-                artifact_uuid=artifact_uuid,
-                dictator_overrides=dictator_overrides,
-                validation_findings=validation_findings,
-                environment_context=mcp_env,
-            )
-            logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
-
-            from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
+            logger.info("%s: %s generated at '%s'", name, self.ARTEFACT, generated)
 
             await log_artifact_lineage(
                 context,
                 artifact_uuid,
-                "generated_tests",
+                self.EVENT_TYPE,
                 parent_id=parent_id,
                 model_id=config.model,
             )
@@ -310,8 +218,80 @@ class GenerateTestsHandler:
                 artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
-            logger.exception("GenerateTestsHandler: unhandled exception during test generation")
-            return _error_result(str(exc), started)
+            logger.exception("%s: unhandled exception during %s generation", name, self.ARTEFACT)
+            detail = str(exc)
+            if self.INCLUDE_TRACEBACK:
+                import traceback
+
+                detail += "\n" + traceback.format_exc()
+            return _error_result(detail, started)
+
+
+def _spec_lineage_id(context: RunContext) -> str:
+    """The spec's artifact uuid, falling back to the run id when the spec carries none."""
+    if context.spec_path.exists():
+        parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
+        if parent_id:
+            return parent_id
+    return context.run.run_id or ""
+
+
+async def _generation_prompt(context: RunContext, step: PipelineStep, *, instructions: str) -> Any:
+    """The prompt both generators build: base + skeletons + plan + topology.
+
+    Raises `ValueError` when the step names a render profile that does not exist -- the caller
+    turns that into an error result rather than a crash.
+    """
+    from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
+    from specweaver.core.flow.handlers.base import _build_base_prompt
+    from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+
+    targets = list(context.graph.api_contract_paths or [])
+    s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
+    profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+    base_prompt = await _build_base_prompt(
+        context, instructions, profile=profile, skeleton_files=s_files
+    )
+    if context.plan_context.plan:
+        base_prompt.add_plan(context.plan_context.plan)
+    if context.graph.topology:
+        base_prompt.add_topology([context.graph.topology])
+    return base_prompt
+
+
+class GenerateCodeHandler(_GenerationHandler):
+    """Handler for generate+code — LLM code generation."""
+
+    OUTPUT_SUBDIR: ClassVar[str] = "src"
+    EVENT_TYPE: ClassVar[str] = "generated_code"
+    ARTEFACT: ClassVar[str] = "code"
+    INCLUDE_TRACEBACK: ClassVar[bool] = True
+
+    def _instructions(self) -> str:
+        from specweaver.workflows.implementation.generator import CODE_GEN_INSTRUCTIONS
+
+        return str(CODE_GEN_INSTRUCTIONS)
+
+    async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
+        return await generator.generate_code(spec_path, output_path, **kw)
+
+
+class GenerateTestsHandler(_GenerationHandler):
+    """Handler for generate+tests — LLM test generation."""
+
+    OUTPUT_SUBDIR: ClassVar[str] = "tests"
+    FILENAME_PREFIX: ClassVar[str] = "test_"
+    EVENT_TYPE: ClassVar[str] = "generated_tests"
+    ARTEFACT: ClassVar[str] = "tests"
+
+    def _instructions(self) -> str:
+        from specweaver.workflows.implementation.generator import TEST_GEN_INSTRUCTIONS
+
+        return str(TEST_GEN_INSTRUCTIONS)
+
+    async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
+        return await generator.generate_tests(spec_path, output_path, **kw)
 
 
 class PlanSpecHandler:
