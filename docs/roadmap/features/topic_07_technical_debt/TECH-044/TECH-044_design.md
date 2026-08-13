@@ -2,16 +2,24 @@
 
 - **Feature ID**: TECH-044
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **DELIVERED 2026-08-13.** R-ENTRY 41 → 0 and R-DEPTH 2057 → 0; both baselines are
+  empty, so the rules are zero-tolerance rather than ratcheted. The layer map is written down in
+  `specweaver-ticket`'s `roadmap-placement.md`, which previously instructed the opposite. The
+  scaffolding built for the job deleted itself when its backlog closed.
 - **Origin**: 2026-08-13, raised by the user while reviewing `TECH-017`'s parser fix: a
   1886-character Verifiable Proof line prompted "should a line that long be legal at all?" —
   which is the right question, and a bigger one than the parser bug that exposed it.
 
-> **ID note.** `TECH-042` and `TECH-043` were skipped deliberately: both are live fixture IDs in
-> `tests/unit/scripts/test_check_story_preconditions.py`, and minting either as a real ticket would
-> manufacture exactly the one-ID-two-meanings collision `TECH-039` exists to fix. Freeing them by
-> renumbering those fixtures into an obviously-synthetic range is worth doing and is **not** this
-> ticket's job.
+> **ID note.** `TECH-042` and `TECH-043` were skipped when this ticket was minted, because both
+> were live fixture IDs in `tests/unit/scripts/test_check_story_preconditions.py` and using either
+> would have manufactured the one-ID-two-meanings collision `TECH-039` exists to fix.
+>
+> **Resolved 2026-08-13:** those fixtures moved to the reserved **`TECH-9xx`** band
+> (`901`/`902`/`903`), which is never minted. That was the real cost — not the two lost numbers,
+> but that the repo-wide collision grep `specweaver-ticket` Phase 2 mandates reported near-misses
+> a minter had to reason about every single time. `042` and `043` are now free; they are left
+> unused because the skill mints `max + 1` and chronological order is worth more than a dense
+> sequence — `TECH-022` is already a gap, retired into `TECH-001` SF-04.
 
 ## Problem Statement
 

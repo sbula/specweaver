@@ -414,8 +414,10 @@ re-verification, which is the cost this section exists to avoid.**
   `TECH-999` hits during this ticket's own minting.~~ **Resolved.** The directory is gone;
   repo-wide greps are clean and the Phase 2 collision check runs uncorrupted. Confirmed while
   minting `TECH-027` and `TECH-028`, both of which used that check. The only remaining
-  `TECH-042`/`TECH-999` hits are the deliberate fixtures in
-  `tests/unit/scripts/test_check_story_preconditions.py`.
+  synthetic hits are the deliberate fixtures in
+  `tests/unit/scripts/test_check_story_preconditions.py`. **Moved into the reserved `TECH-9xx`
+  band on 2026-08-13** — they were `TECH-042`/`043`/`099`, which burned the next two real IDs and
+  made every minter reason about a near-miss. A reserved band cannot be mistaken for a candidate.
 - ~~`TECH-025`'s roadmap title ("Pre-Existing FR Traceability Gap") has drifted from its design-doc
   title ("Registry IDs Leaking Into Proofs"). That is `TECH-025`'s to fix.~~ **Resolved.** All three
   registries now read "Registry IDs Leaking Into Proofs — FR Traceability Gap and Story-Named

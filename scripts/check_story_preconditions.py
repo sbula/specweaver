@@ -89,7 +89,7 @@ def _story_block(story_id: str) -> str | None:
 
     Two heading shapes exist. `INT-US-NN` contracts are headed "### US-N: ..." (unpadded, the
     "INT-" prefix dropped). Every other family — e.g. `TECH-NNN` — is headed with its own literal
-    ID, e.g. "### TECH-042: ...". Treating every ID as the INT-US shape mangled "TECH-042" into
+    ID, e.g. "### TECH-901: ...". Treating every ID as the INT-US shape mangled "TECH-901" into
     the token "TECH" and searched for a literal "US-TECH:" heading, which never matches — a
     failure mode that blocked every TECH-NNN ticket outright (found blocking TECH-001 SF-04
     planning, 2026-08-01).

@@ -1,11 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for scripts/check_story_preconditions.py's story-ID-shape handling.
+"""Reserved band `TECH-9xx`: these IDs are fixtures and are never minted.
+
+They were `TECH-042`/`043`/`099` until 2026-08-13, which burned the next two real IDs and made the
+repo-wide collision grep that `specweaver-ticket` Phase 2 mandates report near-misses a minter had
+to reason about every time. A reserved band cannot be confused with a candidate.
+
+Tests for scripts/check_story_preconditions.py's story-ID-shape handling.
 
 TECH-NNN tickets don't have an INT-US-style topic_08 integration contract, and their roadmap
-headers read "### TECH-042: <name>" rather than "### US-1: <name>". Before this fix,
-`_story_block` mangled "TECH-042" into the token "TECH" (`.replace("INT-US-", "").split("-")[0]`)
+headers read "### TECH-901: <name>" rather than "### US-1: <name>". Before this fix,
+`_story_block` mangled "TECH-901" into the token "TECH" (`.replace("INT-US-", "").split("-")[0]`)
 and searched for a literal "US-TECH:" heading, which never matches -- every TECH-NNN precondition
 check failed with "no roadmap section found" and "contract document missing", even though the
 real roadmap section and Verifiable Proof were present all along. Discovered blocking TECH-001
@@ -36,10 +42,10 @@ ROADMAP_FIXTURE = """\
 *   **Core Required (MVS):**
     *   `✅` **US-1:** placeholder
 
-### \U0001f7e1 TECH-042: Example Technical Debt Ticket
+### \U0001f7e1 TECH-901: Example Technical Debt Ticket
 **Benefit:** *Example.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-042:** [Example](features/topic_07_technical_debt/TECH-042/TECH-042_design.md)
+    *   `[ ]` **TECH-901:** [Example](features/topic_07_technical_debt/TECH-901/TECH-901_design.md)
 *   **Verifiable Proof:**
     *   `tests/unit/scripts/test_check_story_preconditions.py`
 """
@@ -73,7 +79,7 @@ def test_story_block_finds_tech_ticket_by_its_own_literal_id(
 ) -> None:
     monkeypatch.setattr(mod, "ROADMAP", roadmap)
 
-    block = mod._story_block("TECH-042")
+    block = mod._story_block("TECH-901")
 
     assert block is not None
     assert "Example Technical Debt Ticket" in block
@@ -107,7 +113,7 @@ def test_tech_ticket_proof_read_from_its_own_roadmap_section(
     monkeypatch.setattr(mod, "CONTRACTS", tmp_path / "does_not_exist")
 
     report = mod.Report()
-    mod.check_contract_and_proof("TECH-042", report, fast=True)
+    mod.check_contract_and_proof("TECH-901", report, fast=True)
 
     assert not report.failures, report.failures
     assert any("declared proof present" in p for p in report.passes)
@@ -119,7 +125,7 @@ def test_tech_ticket_declared_dependencies_use_its_own_section(
     monkeypatch.setattr(mod, "ROADMAP", roadmap)
 
     report = mod.Report()
-    mod.check_declared_dependencies("TECH-042", report)
+    mod.check_declared_dependencies("TECH-901", report)
 
     assert not report.failures, report.failures
 
@@ -203,8 +209,8 @@ CAPABILITY_ROADMAP_FIXTURE = """\
 
 ### \U0001f534 Technical Debt — registered, not yet scheduled
 
-    *   `[ ]` **TECH-042:** [Example](features/topic_07_technical_debt/TECH-042/TECH-042_design.md)
-    *   `[ ]` **TECH-043:** [Another](features/topic_07_technical_debt/TECH-043/TECH-043_design.md)
+    *   `[ ]` **TECH-901:** [Example](features/topic_07_technical_debt/TECH-901/TECH-901_design.md)
+    *   `[ ]` **TECH-902:** [Another](features/topic_07_technical_debt/TECH-902/TECH-902_design.md)
 """
 
 
@@ -222,11 +228,11 @@ def test_story_block_finds_a_tech_ticket_written_as_a_capability_line(
     path.write_text(CAPABILITY_ROADMAP_FIXTURE, encoding="utf-8")
     monkeypatch.setattr(mod, "ROADMAP", path)
 
-    block = mod._story_block("TECH-042")
+    block = mod._story_block("TECH-901")
 
     assert block is not None, "a capability-line TECH entry must resolve"
-    assert "TECH-042" in block
-    assert "TECH-043" not in block, "must return only the line asked for, not its neighbours"
+    assert "TECH-901" in block
+    assert "TECH-902" not in block, "must return only the line asked for, not its neighbours"
 
 
 def test_capability_line_lookup_does_not_match_a_different_ticket(
@@ -241,7 +247,7 @@ def test_capability_line_lookup_does_not_match_a_different_ticket(
     path.write_text(CAPABILITY_ROADMAP_FIXTURE, encoding="utf-8")
     monkeypatch.setattr(mod, "ROADMAP", path)
 
-    assert mod._story_block("TECH-099") is None
+    assert mod._story_block("TECH-903") is None
 
 
 def test_the_section_form_still_wins_when_both_shapes_are_present(
@@ -255,12 +261,12 @@ def test_the_section_form_still_wins_when_both_shapes_are_present(
     path = tmp_path / "roadmap.md"
     path.write_text(
         ROADMAP_FIXTURE + "\n### \U0001f534 Technical Debt\n\n"
-        "    *   `[ ]` **TECH-042:** [Dup](features/topic_07_technical_debt/TECH-042/x.md)\n",
+        "    *   `[ ]` **TECH-901:** [Dup](features/topic_07_technical_debt/TECH-901/x.md)\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(mod, "ROADMAP", path)
 
-    block = mod._story_block("TECH-042")
+    block = mod._story_block("TECH-901")
 
     assert block is not None
     assert "Verifiable Proof" in block, "the ### section must win over the capability line"

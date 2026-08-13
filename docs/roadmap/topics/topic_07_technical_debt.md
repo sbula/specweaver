@@ -161,10 +161,19 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
-* **`TECH-044` 🔴: Registry Entries Carry Content Belonging Four Layers Down**
+* **`TECH-044` 🟢: Registry Entries Carry Content Belonging Four Layers Down**
   > [Description](../features/topic_07_technical_debt/TECH-044/TECH-044_design.md) | _(2026-08-13 — raised by the user while reviewing `TECH-017`'s parser fix.)_ | `R-DEPTH` and `R-ENTRY` froze 2057
   > over-long lines and 41 over-long entries; this ticket is the backlog they froze. **"Move it to the design" is the wrong instruction** — the spine has four layers and one entry usually holds
   > content for three at once. Redistribution, never deletion.
+* **`TECH-045` 🔴: Nothing Bounds a Document's Size**
+  > [Description](../features/topic_07_technical_debt/TECH-045/TECH-045_design.md) |
+  > _(2026-08-13 — raised by the user while reviewing `TECH-044`'s first redistribution.)_ |
+  > `R-DEPTH` caps a line and `R-ENTRY` caps an entry; nothing caps a **file**, and
+  > `check_file_sizes.py` covers `src tests scripts` only. Two documents already exceed 45 KB.
+  > A single number will not fit — the same measurement that killed the entry-size cap applies —
+  > so the design must decide whether to threshold per kind, catch only the tail, detect mixed
+  > layers structurally, or accept that prose is unbounded.
+
 
 * **`TECH-040` 🔴: `sw run --verbose` Is a Dead Flag**
   > [Description](../features/topic_07_technical_debt/TECH-040/TECH-040_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `sw run --verbose` is documented as
