@@ -309,16 +309,6 @@
     "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:146",
     "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:49"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/models.py <-> src/specweaver/sandbox/security.py @0ed52fb1cd8b": {
-    "lines": 16,
-    "first": "src/specweaver/sandbox/security.py:17",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/models.py:16"
-  },
-  "src/specweaver/sandbox/filesystem/interfaces/models.py <-> src/specweaver/sandbox/security.py @65d6f46a256d": {
-    "lines": 34,
-    "first": "src/specweaver/sandbox/security.py:37",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/models.py:34"
-  },
   "src/specweaver/sandbox/filesystem/interfaces/tool.py <-> src/specweaver/sandbox/filesystem/interfaces/tool.py @f31f304d9f44": {
     "lines": 8,
     "first": "src/specweaver/sandbox/filesystem/interfaces/tool.py:222",

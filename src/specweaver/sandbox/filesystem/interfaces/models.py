@@ -10,58 +10,40 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Any
 
+# `AccessMode`, `FolderGrant` and the `MODE_ALLOWS_*` sets are re-exported, NOT redefined.
+#
+# `TECH-037`: they used to be declared here as well, which made them two distinct classes --
+# `isinstance` across them was False, and `AccessMode.READ == AccessMode.READ` held only because
+# `StrEnum` compares by value. Production imported the `sandbox.security` copy while several tests
+# built grants from this one and handed them over, which worked by duck typing alone.
+#
+# The security consequence is recorded on `FolderGrant.__post_init__`: a guard added to one copy
+# leaves the hole open through the other. One definition, one guard.
+from specweaver.sandbox.security import (
+    MODE_ALLOWS_CREATE,
+    MODE_ALLOWS_DELETE,
+    MODE_ALLOWS_READ,
+    MODE_ALLOWS_WRITE,
+    AccessMode,
+    FolderGrant,
+)
+
+#: Re-exported names, declared so the intent is explicit rather than suppressed.
+__all__ = [
+    "MODE_ALLOWS_CREATE",
+    "MODE_ALLOWS_DELETE",
+    "MODE_ALLOWS_READ",
+    "MODE_ALLOWS_WRITE",
+    "ROLE_INTENTS",
+    "AccessMode",
+    "FileSystemToolError",
+    "FolderGrant",
+    "ToolResult",
+]
+
 logger = logging.getLogger(__name__)
-
-
-class AccessMode(StrEnum):
-    """Access level for a folder grant."""
-
-    READ = "read"  # list, read, search
-    WRITE = "write"  # read + write + edit
-    FULL = "full"  # read + write + edit + create + delete
-
-
-# Permission hierarchy: which modes allow which operations
-MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
-MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
-MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
-MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
-
-
-@dataclass(frozen=True)
-class FolderGrant:
-    """A single folder access grant.
-
-    Args:
-        path: Relative path from project root (e.g., "src/domain/billing").
-        mode: Access level (READ, WRITE, or FULL).
-        recursive: If True, grant covers all subdirectories.
-    """
-
-    path: str
-    mode: AccessMode
-    recursive: bool
-
-    def __post_init__(self) -> None:
-        """Reject a grant that names no directory.
-
-        An empty path is not "the project root" — it is a bug or an unset config, and a security
-        primitive should fail closed on it. It was also not inert: the matcher compares path
-        segments against an absolute path, so on POSIX the leading `''` of `/tmp/proj/x` matched an
-        empty grant and granted the whole project, while on Windows `C:/proj/x` never matched.
-        One configuration, two security postures.
-
-        To grant the whole project, pass the project root's absolute path — which already works.
-        """
-        if not self.path.strip():
-            msg = (
-                "FolderGrant.path is empty. A grant must name a directory; pass the project "
-                "root's absolute path to grant the whole project."
-            )
-            raise ValueError(msg)
 
 
 # Role → allowed intents

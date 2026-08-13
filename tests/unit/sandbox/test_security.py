@@ -212,3 +212,48 @@ class TestFolderGrantPathValidation:
         grant = FolderGrant("src/domain/billing", AccessMode.READ, recursive=True)
 
         assert grant.path == "src/domain/billing"
+
+
+class TestFolderGrantHasOneDefinition:
+    """`TECH-037`. `AccessMode`, `FolderGrant` and the `MODE_ALLOWS_*` sets were declared twice.
+
+    Not merely repetition. They were two distinct classes: `isinstance` across them returned
+    False, and `AccessMode.READ == AccessMode.READ` held only because `StrEnum` compares by value.
+    Production imported the `sandbox.security` copy while several tests built grants from the
+    `filesystem.interfaces.models` copy and handed them to it — which worked by duck typing alone.
+
+    The security consequence was the one `test_an_empty_path_is_rejected` records: a guard added to
+    one copy leaves the hole open through the other. `models` now re-exports rather than redefines,
+    so there is one class and one guard.
+    """
+
+    def test_folder_grant_is_one_class(self) -> None:
+        from specweaver.sandbox.filesystem.interfaces.models import FolderGrant as FromModels
+        from specweaver.sandbox.security import FolderGrant as FromSecurity
+
+        assert FromModels is FromSecurity
+
+    def test_access_mode_is_one_enum(self) -> None:
+        from specweaver.sandbox.filesystem.interfaces.models import AccessMode as FromModels
+        from specweaver.sandbox.security import AccessMode as FromSecurity
+
+        assert FromModels is FromSecurity
+
+    def test_the_mode_sets_are_one_object(self) -> None:
+        from specweaver.sandbox import security
+        from specweaver.sandbox.filesystem.interfaces import models
+
+        for name in (
+            "MODE_ALLOWS_READ",
+            "MODE_ALLOWS_WRITE",
+            "MODE_ALLOWS_CREATE",
+            "MODE_ALLOWS_DELETE",
+        ):
+            assert getattr(models, name) is getattr(security, name), name
+
+    def test_a_grant_built_from_either_module_is_accepted_by_the_other(self) -> None:
+        """The duck-typing the old arrangement relied on is now real type identity."""
+        from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
+        from specweaver.sandbox.security import FolderGrant as FromSecurity
+
+        assert isinstance(FolderGrant("src", AccessMode.READ, recursive=True), FromSecurity)
