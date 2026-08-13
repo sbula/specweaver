@@ -100,8 +100,7 @@ alongside.
 | **NFR-1** | The checker's false-positive rate on the current tree is **zero, measured**. A checker that cries wolf is switched off within a day, and a naive "every backticked path must resolve" rule flags 34 distinct references of which 4 are real — an 88% false-positive rate. |
 | **NFR-2** | Failure output names the file, the line number and the unresolved reference, so the fix needs no second search. |
 | **NFR-3** | Runs in under a second over the instruction tree; it is in the per-commit gate. |
-| **NFR-4** | Both skill trees (`.agents/` and `.claude/`) are scanned or provably identical. `check_skill_sync.py` measured them as **separate files, not hardlinks** (2026-07-25); the stub's claim that "one edit covers both" is wrong, so repairs must land in both and be verified by that checker. |
-
+| **NFR-4** | Both skill trees (`.agents/` and `.claude/`) are scanned or provably identical. `check_skill_sync.py` measured them as **separate files, not hardlinks** (2026-07-25); the stub's claim that "one edit covers both" is wrong, so repairs must land in both and be verified by that checker. **[proof: meta — rule about tests, docs or the diff]** |
 ## The Checker's Rule (FR-4/FR-5/NFR-1)
 
 A path-shaped token — inline-backticked, fenced, or bare in prose — is **enforced** only when all

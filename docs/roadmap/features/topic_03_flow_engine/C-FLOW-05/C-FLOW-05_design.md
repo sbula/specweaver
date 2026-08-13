@@ -44,7 +44,7 @@ None specified in ORIGINS.md directly corresponding to `3.26c` beside the top-le
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Archetype Strictness | `llm/` module must remain an adapter and forbid `loom/*`. |
+| NFR-1 | Archetype Strictness | `llm/` module must remain an adapter and forbid `loom/*`. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-2 | Extensibility | `<dictator-overrides>` must be compatible with existing Gemini, OpenAI, Claude adapters implicitly. |
 
 ## External Dependencies

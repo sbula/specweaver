@@ -67,8 +67,8 @@ inside feature-specific packages.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Zero Regression | 100% of the existing E2E and Unit test suite MUST pass without changing test assertions. |
-| NFR-2 | Boundary Enforcement | All new bounded contexts MUST include a `context.yaml` enforcing `consumes`/`forbids` rules, and MUST be registered in `tach.toml` (including the new `workspace` boundary). |
+| NFR-1 | Zero Regression | 100% of the existing E2E and Unit test suite MUST pass without changing test assertions. **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-2 | Boundary Enforcement | All new bounded contexts MUST include a `context.yaml` enforcing `consumes`/`forbids` rules, and MUST be registered in `tach.toml` (including the new `workspace` boundary). **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | CQRS & SQLite WAL | Decentralized `store/` layers MUST use SQLite WAL mode. Concurrent Atoms MUST use read-only sessions. **True CQRS:** Repositories MUST pass pure DTOs to the Write Queue. The CQRS worker MUST own its own isolated write session to prevent `DetachedInstanceError`s. |
 | NFR-4 | Native Healer Isolation | `interfaces/cli/main.py` MUST hardcode the core agent commands AND the base File System tool. Plugin crashes must fail loudly but allow the core to boot so the agent can heal the broken plugin. |
 | NFR-5 | Safe Bootstrapping | Runtime DB bootstrapping MUST use safe, idempotent `run_sync(Base.metadata.create_all)` separated from the `Database` constructor. Programmatic Alembic execution at runtime is forbidden (Alembic is CLI-only). |

@@ -162,9 +162,9 @@ whether/how to actually wire a writer for them is explicitly **out of scope** �
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Compatibility | The refactoring SHALL NOT break any existing CLI commands or API endpoints. |
-| NFR-2 | Architecture | The refactoring SHALL pass `tach check` with zero boundary violations. |
-| NFR-3 | Architecture | No interface module SHALL import private helpers from another interface module. |
-| NFR-4 | Architecture | No API module SHALL import from any CLI module. |
+| NFR-2 | Architecture | The refactoring SHALL pass `tach check` with zero boundary violations. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-3 | Architecture | No interface module SHALL import private helpers from another interface module. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-4 | Architecture | No API module SHALL import from any CLI module. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-5 | Minimal new code | Only 2 new public functions: `run_repo_op()` in `_core.py` and a topology facade in `assurance/graph/`. |
 | NFR-6 | SF-02: Fail loudly, not silently | A missed migration SHALL fail loudly both at construction (`ValidationError` via FR-12's `extra="forbid"`) and at attribute access (`AttributeError` at the old flat path) — never a silent kwarg-drop or a silent `None`. |
 | NFR-7 | SF-02: Field count | `RunContext`'s own top-level attribute count SHALL decrease from 32 to **≤15** after FR-6/FR-8. **Corrected during implementation:** this requirement originally said ≤16, a number derived from the field grouping alone without ever being checked against the project's own god-object gate (`scripts/check_class_health.py`, `MAX_ATTRIBUTES = 15`). At ≤16 the ticket would have declared success while the god-object detector still fired on the very file it targeted. Reaching 15 needed two further changes beyond the original design: `model_config` excluded from the metric (it is Pydantic's own configuration, present on every Pydantic model, so it lowered the real budget by one for those classes and told you nothing — fixed separately in `check_class_health.py`), and `constitution`/`standards` grouped into `GuidanceContent` (AD-9). |

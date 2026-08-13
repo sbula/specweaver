@@ -51,7 +51,7 @@ delegation.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Latency | The `check-rot` command MUST execute within `<500ms` for average commits. No LLM calls allowed. |
-| NFR-2 | Architectural Bounds | The `cli` layer MUST NOT directly import or execute AST parsing tools from `loom/*`, utilizing the `PipelineRunner` mechanism instead. |
+| NFR-2 | Architectural Bounds | The `cli` layer MUST NOT directly import or execute AST parsing tools from `loom/*`, utilizing the `PipelineRunner` mechanism instead. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | Compatibility | The generated pre-commit hook MUST be compatible with standard POSIX bash shells (applicable to macOS, Linux, and Windows Git Bash environments). |
 
 ## External Dependencies

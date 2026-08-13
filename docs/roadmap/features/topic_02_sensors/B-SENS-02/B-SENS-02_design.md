@@ -49,8 +49,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | NFR-1 | Performance | Querying a subgraph of depth 3 MUST return within 50ms. |
 | NFR-2 | Scale | Local SQLite schema MUST support graphs of up to 100,000 nodes without deadlocks. |
 | NFR-3 | Concurrency | Parallel agent processes MUST NOT throw `database is locked` errors (solved via project-local DBs). |
-| NFR-4 | PostgreSQL Trigger | Switch to PostgreSQL sidecar IF total graph exceeds 500,000 edges or multi-repo cross-queries are required. |
-
+| NFR-4 | PostgreSQL Trigger | Switch to PostgreSQL sidecar IF total graph exceeds 500,000 edges or multi-repo cross-queries are required. **[proof: none — unfalsifiable as written]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
@@ -287,8 +286,7 @@ patching.
 | NFR-1 | Performance | Querying a subgraph of depth 3 MUST return within 50ms. |
 | NFR-2 | Scale | Local SQLite schema MUST support graphs of up to 100,000 nodes without deadlocks. |
 | NFR-3 | Concurrency | Parallel agent processes MUST NOT throw `database is locked` errors (solved via project-local DBs). |
-| NFR-4 | PostgreSQL Trigger | Switch to PostgreSQL sidecar IF total graph exceeds 500,000 edges or multi-repo cross-queries are required. |
-
+| NFR-4 | PostgreSQL Trigger | Switch to PostgreSQL sidecar IF total graph exceeds 500,000 edges or multi-repo cross-queries are required. **[proof: none — unfalsifiable as written]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

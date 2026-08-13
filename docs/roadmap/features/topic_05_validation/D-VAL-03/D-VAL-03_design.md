@@ -68,7 +68,7 @@ none stated
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Performance | Parsers MUST resolve external CLI results securely and within the defined timeout bounds. |
-| NFR-2 | Testability | Tests for all 5 runners MUST mock subprocess shell executions seamlessly to prevent needing Java/Rust/Node installed on the CI testing environment. |
+| NFR-2 | Testability | Tests for all 5 runners MUST mock subprocess shell executions seamlessly to prevent needing Java/Rust/Node installed on the CI testing environment. **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-3 | Graceful Degradation | If a specific language runner cannot parse a SARIF/JUnit file (e.g., compile error prevented generation), it MUST dump the raw stderr into a generic `TestFailure` block instead of crashing the flow engine, actively feeding compile failures straight to the LLM agent. |
 
 ## External Dependencies

@@ -47,9 +47,8 @@ context resolution, providing immediate structural speed enhancements when injec
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Boundary Compliance | `StandardsAnalyzer` must never invoke `loom/*` tools natively per `context.yaml` `forbids` rules. |
-| NFR-2 | Performance ROI | System must achieve token size reductions without decreasing accuracy. |
-
+| NFR-1 | Boundary Compliance | `StandardsAnalyzer` must never invoke `loom/*` tools natively per `context.yaml` `forbids` rules. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-2 | Performance ROI | System must achieve token size reductions without decreasing accuracy. **[proof: none — unfalsifiable as written]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

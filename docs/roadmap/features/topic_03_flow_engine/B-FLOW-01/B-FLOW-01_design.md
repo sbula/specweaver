@@ -87,15 +87,14 @@ outputs. It leverages existing infrastructure: `GateType.JOIN` (3.27),
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | YAML scenarios, not Gherkin | LLMs produce structured data more reliably than natural-language Gherkin |
+| NFR-1 | YAML scenarios, not Gherkin | LLMs produce structured data more reliably than natural-language Gherkin **[proof: none — unfalsifiable as written]** |
 | NFR-2 | Scenario → pytest is non-LLM | Mechanical conversion eliminates a failure mode and ensures reproducibility |
 | NFR-3 | Logging for all pipeline synchronization | Every JOIN wait, fan_out dispatch, and arbiter verdict must produce `logger.info` entries |
 | NFR-4 | No test collision | Parallel pipelines must not share filesystem write paths; existing `FolderGrant` enforcement is sufficient |
 | NFR-5 | Bounded arbiter retries | Max 3 arbiter-mediated loop-backs before HITL escalation |
 | NFR-6 | Zero `@trace` tag dependency | Tags are comments (`# @trace(FR-X)`), not imports — no runtime dependency |
 | NFR-7 | Backward compatibility | All existing pipeline YAML files, gate types, and handler registrations must continue to work unmodified |
-| NFR-8 | Total information opacity | The coding agent MUST NOT be able to infer, discover, or be told that a second verification pipeline exists. This includes: (a) no `scenarios/` path in grants, (b) no scenario-related vocabulary in prompts or feedback, (c) arbiter feedback to the coding agent is phrased as spec-derived behavioral assertions — indistinguishable from a reviewer finding. The arbiter feedback MUST read like a review verdict, not a test failure report |
-
+| NFR-8 | Total information opacity | The coding agent MUST NOT be able to infer, discover, or be told that a second verification pipeline exists. This includes: (a) no `scenarios/` path in grants, (b) no scenario-related vocabulary in prompts or feedback, (c) arbiter feedback to the coding agent is phrased as spec-derived behavioral assertions — indistinguishable from a reviewer finding. The arbiter feedback MUST read like a review verdict, not a test failure report **[proof: none — unfalsifiable as written]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

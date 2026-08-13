@@ -44,7 +44,7 @@ Inspired by Aider's `get_platform_info()`, which explicitly tells the LLM the op
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Token Budgeting | The metadata block should be concise (around 100-200 tokens typically). |
+| NFR-1 | Token Budgeting | The metadata block should be concise (around 100-200 tokens typically). **[proof: none — unfalsifiable as written]** |
 | NFR-2 | Stability | Core prompts should not break if a property (like project Name) is temporarily unavailable. |
 | NFR-3 | Zero Secret Leakage | The injected config MUST use a strict allowlist. Full Pydantic `model_dump_json()` on `SpecWeaverSettings` is FORBIDDEN as it leaks `api_key` to the LLM backend. |
 

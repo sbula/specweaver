@@ -228,15 +228,14 @@ reached.
 | NFR-1 | **Data Integrity** | `load → modify → persist` roundtrip SHALL preserve all nodes and edges with correct identity. |
 | NFR-2 | **ID Isolation** | DB autoincrement integers SHALL NEVER appear outside `SqliteGraphRepository`. |
 | NFR-3 | **Canonical ID** | ALL public APIs across engine, builder, repository SHALL use semantic hash strings as node identity. |
-| NFR-4 | Architecture | Must pass `tach check` with zero boundary violations. |
-| NFR-5 | Architecture | No interface module SHALL import domain functions from another interface module. |
-| NFR-6 | Architecture | CLI remains sole Composition Root (ADR-002). |
-| NFR-7 | Encapsulation | No module outside `graph/core/engine/` SHALL access `_nx_graph`, `_lock`, `_file_index`. |
-| NFR-8 | Testing | Coverage for new/modified code ≥ 80%. |
+| NFR-4 | Architecture | Must pass `tach check` with zero boundary violations. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-5 | Architecture | No interface module SHALL import domain functions from another interface module. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-6 | Architecture | CLI remains sole Composition Root (ADR-002). **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-7 | Encapsulation | No module outside `graph/core/engine/` SHALL access `_nx_graph`, `_lock`, `_file_index`. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-8 | Testing | Coverage for new/modified code ≥ 80%. **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-9 | Performance | No regression. `_file_index` for O(1) file-based lookups. |
-| NFR-10 | Rust Readiness | `GraphEngineProtocol` SHALL be satisfiable by a PyO3 Rust engine without changing builder/repo/CLI. |
-| NFR-11 | Scale Threshold | Document that Python engine is viable to ~10K files. Beyond that, Rust engine needed. |
-
+| NFR-10 | Rust Readiness | `GraphEngineProtocol` SHALL be satisfiable by a PyO3 Rust engine without changing builder/repo/CLI. **[proof: none — unfalsifiable as written]** |
+| NFR-11 | Scale Threshold | Document that Python engine is viable to ~10K files. Beyond that, Rust engine needed. **[proof: meta — rule about tests, docs or the diff]** |
 ## Architectural Decisions
 
 | # | Decision | Rationale | Arch Switch? |

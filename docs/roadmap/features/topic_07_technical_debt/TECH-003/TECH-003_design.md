@@ -45,9 +45,8 @@ None.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Logic Preservation | Zero functional logic changes to extraction engines or graph mappings. |
-| NFR-2 | Test Parity | 100% of existing unit, integration, and E2E tests MUST pass after refactoring. |
-
+| NFR-1 | Logic Preservation | Zero functional logic changes to extraction engines or graph mappings. **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-2 | Test Parity | 100% of existing unit, integration, and E2E tests MUST pass after refactoring. **[proof: meta — rule about tests, docs or the diff]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

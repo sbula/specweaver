@@ -142,6 +142,10 @@ EXPECTED: dict[str, dict[str, str]] = {
         "entry_depth": "all",
         # `TECH-047`: uncited-FR ratchet, swept rather than story-scoped.
         "fr_sweep": "all",
+        # `TECH-017`: the same for NFRs, which no script in this repo looked at until 2026-08-13.
+        # Behavioural rows only -- a row proved by `tach` or `file_sizes`, or unfalsifiable as
+        # written, is excused by an explicit `[proof: ...]` marker in the design.
+        "nfr_sweep": "all",
     },
 }
 
@@ -199,6 +203,7 @@ class TestDocTrackIsSeparate:
             "proof_tier",
             "entry_depth",
             "fr_sweep",
+            "nfr_sweep",
         }
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:

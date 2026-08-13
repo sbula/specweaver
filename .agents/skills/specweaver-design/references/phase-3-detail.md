@@ -48,6 +48,27 @@ B.1. List all NFRs. Each must have a concrete threshold where applicable:
      - **Error handling**: behavior on failure, retry policy, fallback behavior
      - **Data migration**: backward compat, migration strategy, rollback plan
 
+B.1a. **State how each NFR will be PROVED — `check_nfr_sweep.py` ratchets the ones a test could
+      prove, and only those.** Most NFRs are behavioural and need a test like any FR. Where a
+      pytest is genuinely the wrong instrument, mark the row so the excuse is visible in review
+      rather than hidden in a checker's skip-list:
+
+     | Marker | Use when | Example |
+     |---|---|---|
+     | `**[proof: arch — tach/lint gate, not pytest]**` | a boundary, placement or size rule another gate already enforces | *"`llm/` must remain an adapter and forbid `loom/*`"* → `tach check` |
+     | `**[proof: meta — rule about tests, docs or the diff]**` | a rule about the tests, the docs, or the change itself | *"unit tests SHALL mock at the `execute()` boundary"* |
+     | `**[proof: none — unfalsifiable as written]**` | no test could pass or fail it as phrased | *"token reductions without decreasing accuracy"* — no threshold |
+
+     > [!CAUTION]
+     > **`[proof: none]` is a confession, not a hiding place.** It says the requirement was written
+     > so that nothing can check it. Prefer fixing the wording — give it a threshold — and reach for
+     > the marker only when the row is a scope statement or a rationale rather than a requirement.
+     > Marking rows to make the ratchet fall is the same gaming as a bulk citation, with an audit
+     > trail pointing at you.
+
+     Measured 2026-08-13, before this rule existed: 224 NFRs on delivered stories, **37 cited**.
+     62 rows were genuinely non-behavioural; the other 123 were simply untested.
+
 B.2. **HITL gate** (fires if a critical NFR threshold is unknown):
      "Critical" means: security risk, data loss risk, or backward compatibility break.
      Ask for the specific threshold.

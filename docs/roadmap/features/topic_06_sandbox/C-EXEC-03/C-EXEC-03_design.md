@@ -56,8 +56,8 @@ This refactoring directly reflects the `context.yaml` topological layering princ
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Regression Integrity | 3,884 total test cases natively MUST pass under execution. |
-| NFR-2 | Architectural Viability | `tach check` MUST yield 0 architectural domain drift validations. |
+| NFR-1 | Regression Integrity | 3,884 total test cases natively MUST pass under execution. **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-2 | Architectural Viability | `tach check` MUST yield 0 architectural domain drift validations. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | File Integrity | 0 Loss of files, configs, logic, or models during physical move (Data Retention 100%). |
 
 ## External Dependencies

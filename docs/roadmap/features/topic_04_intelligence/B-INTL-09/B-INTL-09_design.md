@@ -96,7 +96,7 @@ strictly defined as follows:
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Concurrency | `database is locked` errors must be mitigated using `AsyncSession`, the CQRS engine, and Optimistic Concurrency Control (`version` column). OCC read-then-write must execute within a single `async with session.begin()` transaction. Retry logic must use exponential backoff with jitter (`sleep(random(0.1, 0.5) * 2^attempt)`). |
-| NFR-2 | Architectural Placement | Code MUST reside in `src/specweaver/workspace/memory/store.py`. Must import `Base` from `workspace.store`, not define a new `DeclarativeBase`. |
+| NFR-2 | Architectural Placement | Code MUST reside in `src/specweaver/workspace/memory/store.py`. Must import `Base` from `workspace.store`, not define a new `DeclarativeBase`. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | Type Safety | All SQLAlchemy mapped columns must use Mapped[T] strict typing (SQLAlchemy 2.0 style). |
 | NFR-4 | Zombie Timeout | Lock heartbeat timeout is strictly 15 minutes. |
 | NFR-5 | Context Structure | `handover_context` must be strictly typed JSON, bounded to factual telemetry (files touched, errors hit) to prevent hallucination transfer. |

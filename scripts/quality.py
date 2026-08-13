@@ -152,6 +152,11 @@ MATRIX: dict[str, dict[str, str]] = {
     # blocked capabilities -- a list of 45 names moves only when a whole capability is finished,
     # which is never, so it would say "45 unverified is fine" and be ignored.
     "fr_sweep": {"doc": "all"},
+    # `TECH-017`: the NFR ledger, unswept until 2026-08-13 -- no script in this repo contained the
+    # string `NFR` while 235 of them sat in 50 designs. Counts BEHAVIOURAL rows only; a row proved
+    # by `tach` or the `file_sizes` gate, or unfalsifiable as written, is excused by an explicit
+    # `[proof: ...]` marker in the design, where the excuse is reviewable.
+    "nfr_sweep": {"doc": "all"},
 }
 
 
@@ -270,6 +275,13 @@ CHECKS: dict[str, Check] = {
         _r._whole_repo("check_fr_sweep.py"),
         ignores_paths=True,
         script="check_fr_sweep.py",
+    ),
+    "nfr_sweep": Check(
+        "nfr_sweep",
+        ("docs",),
+        _r._whole_repo("check_nfr_sweep.py"),
+        ignores_paths=True,
+        script="check_nfr_sweep.py",
     ),
     "entry_depth": Check(
         "entry_depth",

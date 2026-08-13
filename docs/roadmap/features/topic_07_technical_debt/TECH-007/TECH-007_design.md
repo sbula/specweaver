@@ -52,9 +52,8 @@ architectural violations and maintaining 70%-90% test coverage.
 | NFR-1 | Security | Untrusted input sources must be escaped before being rendered. |
 | NFR-2 | Performance | Prompt compilation overhead must be < 1ms. |
 | NFR-3 | Compatibility | Full backward compatibility for string-based calls. |
-| NFR-4 | Architecture | Zero violations of `context.yaml` and `tach check` constraints. |
-| NFR-5 | Testing | Maintain 70% to 90% test coverage of modified/added code files. |
-
+| NFR-4 | Architecture | Zero violations of `context.yaml` and `tach check` constraints. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-5 | Testing | Maintain 70% to 90% test coverage of modified/added code files. **[proof: meta — rule about tests, docs or the diff]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

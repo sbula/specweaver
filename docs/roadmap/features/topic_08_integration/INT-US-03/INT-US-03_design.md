@@ -116,11 +116,10 @@ None. This feature is driven entirely by the existing SpecWeaver Flow + Sandbox 
 |---|-----|----------------------|
 | NFR-1 | Container-free | The base contract MUST NOT introduce any Podman/Docker code path (`execution_mode="container"`, `ContainerSubprocessExecutor`). Isolation is worktree-only (US-9 Core). |
 | NFR-2 | Backward compatibility | With the US-9 isolation policy **off**, `sw implement` MUST still succeed on hosts without git worktrees; QA runs on host as a normal in-pipeline step (existing default-off `INT-US-09` behavior preserved). |
-| NFR-3 | Architecture compliance | All changes confined to `workflows/implementation` + `tests/`; no new cross-layer import; `tach check`, `ruff`, `mypy --strict` MUST stay green. |
+| NFR-3 | Architecture compliance | All changes confined to `workflows/implementation` + `tests/`; no new cross-layer import; `tach check`, `ruff`, `mypy --strict` MUST stay green. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-4 | Graceful degradation | If git/bash are unavailable, the isolation path MUST skip cleanly (proof test skips, matching `INT-US-09` NFR-7); QA still runs on host. LLM-unavailable → `lint_fix` degrades to ruff-only (existing `LintFixHandler` behavior). |
 | NFR-5 | Bounded cost | `run_tests` loop-back `max_retries ≤ 2`; `lint_fix max_reflections` default 3 — no unbounded LLM/token spend in the autonomous loop. |
-| NFR-6 | Determinism of proof | The proof test MUST include the paired un-isolated control asserting `failed == 1` (probe ran) to prevent a vacuous 0-collected pass, per the `INT-US-09` proof pattern. |
-
+| NFR-6 | Determinism of proof | The proof test MUST include the paired un-isolated control asserting `failed == 1` (probe ran) to prevent a vacuous 0-collected pass, per the `INT-US-09` proof pattern. **[proof: meta — rule about tests, docs or the diff]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

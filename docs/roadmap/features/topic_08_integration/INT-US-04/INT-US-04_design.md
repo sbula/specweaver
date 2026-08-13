@@ -44,7 +44,7 @@ No external blueprint references. Driven by the existing Flow Architecture refer
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Performance | DB writes must use async session execution without locking the thread. |
-| NFR-2 | Architecture Compliance | Changes must occur in `core.flow` or `core.config` adhering to `consumes` boundaries. |
+| NFR-2 | Architecture Compliance | Changes must occur in `core.flow` or `core.config` adhering to `consumes` boundaries. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | Compatibility | Must pass existing E2E testing: `test_mcp_flow_e2e.py` without regressions. |
 
 ## External Dependencies

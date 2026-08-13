@@ -44,8 +44,7 @@ to invalidated branches (incremental crawling).
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Speed / Overhead | Graph verification from Cache must complete in under 50ms for a 1,000-module codebase natively. |
-| NFR-2 | Architectural Purity | The hashing logic MUST reside natively inside the Topology engine or Workspace layers without bleeding OS boundaries. |
-
+| NFR-2 | Architectural Purity | The hashing logic MUST reside natively inside the Topology engine or Workspace layers without bleeding OS boundaries. **[proof: arch — tach/lint gate, not pytest]** |
 ## External Dependencies
 None required. Uses native `hashlib` and `json`.
 

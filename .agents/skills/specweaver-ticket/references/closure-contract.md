@@ -157,3 +157,25 @@ Re-run the ledger for the specific capability after citing, not just the repo-wi
 per-capability output names which requirements are still uncited, and that list is the thing to check
 against what you actually read.
 
+## NFRs are part of the claim, and were exempt from it until 2026-08-13
+
+The contract above says *"every FR proven by a test"*. That silently excused **a third of the
+declared requirement surface**: measured on 2026-08-13, 235 NFRs across 50 designs, and **no script
+in the repo contained the string `NFR`** — while 49 test files carried 62 NFR attributions nobody
+ever read. NFRs are where the security, isolation, credential-stripping and performance claims live,
+so it was the worst third to leave unchecked.
+
+`check_nfr_sweep.py` now ratchets it, counting **behavioural** NFRs only. A row is excused solely by
+an explicit `[proof: arch|meta|none]` marker in the design — see the design skill's Phase 3 for
+which to use. Two rules:
+
+- **The excuse is per row and lives in the design.** Not a bucket, not a skip-list in the checker.
+  `C-FLOW-05` NFR-1 is proved by `tach check`; that is a fact about the requirement and belongs
+  next to it, in review and in git history.
+- **Do not mark a row to make the number fall.** `[proof: none]` admits the requirement was written
+  so nothing can check it; the fix is usually a threshold, not a marker.
+
+Baseline at introduction: **123 uncited behavioural NFRs across 41 delivered designs** (187 before
+the 62 non-behavioural rows were classified). Same caveat as every ratchet here — it measures
+attribution, never strength.
+

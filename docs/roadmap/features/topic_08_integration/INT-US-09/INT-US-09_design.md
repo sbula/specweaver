@@ -119,13 +119,12 @@ worktree-sandbox + bash-node model this contract integrates.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Backward compatibility | With the isolation policy absent/disabled and no per-step `use_worktree`, execution is byte-identical to today; no existing pipeline definition changes. |
-| NFR-2 | Architecture compliance | All wiring in `core.flow` (engine/handlers) + composition root; atom surfaces only (`GitAtom`, `BashActionAtom`); no raw `subprocess`/`os`/`git` in the engine; config as passive `SandboxSettings` (ADR-002); imports declared at module top and registered in `tach.toml` (no lazy-import boundary dodges). |
+| NFR-2 | Architecture compliance | All wiring in `core.flow` (engine/handlers) + composition root; atom surfaces only (`GitAtom`, `BashActionAtom`); no raw `subprocess`/`os`/`git` in the engine; config as passive `SandboxSettings` (ADR-002); imports declared at module top and registered in `tach.toml` (no lazy-import boundary dodges). **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | Security | Credential stripping + env allowlist + `cwd` containment preserved on every isolated path; `.specweaver/scripts/` canonical containment fail-closed (checked at load and immediately pre-exec); `bash` resolved to an absolute path via `shutil.which()` (never the bare string). |
 | NFR-4 | Platform | Works on Windows + Linux; reuse US-5's resilient worktree-teardown backoff for Windows file locks; no OS-specific regression. |
 | NFR-5 | Observability | DEBUG-level lazy `%s` logging of command / cwd / timeout / exit_code / duration; handlers surface `files_touched`. |
 | NFR-6 | Performance | Worktree add/teardown overhead is incurred only when isolation is active; the default (non-isolated) path adds zero overhead. |
-| NFR-7 | Proof tier | Verifiable Proof is a real e2e test using real git worktrees + at least one real unmocked execution; if any optional prerequisite is unavailable, skip cleanly at collection time (no exclusion marker) — none is expected since git is always present. |
-
+| NFR-7 | Proof tier | Verifiable Proof is a real e2e test using real git worktrees + at least one real unmocked execution; if any optional prerequisite is unavailable, skip cleanly at collection time (no exclusion marker) — none is expected since git is always present. **[proof: meta — rule about tests, docs or the diff]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

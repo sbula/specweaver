@@ -106,13 +106,13 @@ No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) st
 
 | # | NFR | Threshold / Constraint |
 |---|-----|------------------------|
-| NFR-1 | Backward compatibility | All 4900+ existing tests MUST pass unchanged after migration. No public API signature changes to `QARunnerInterface`. |
+| NFR-1 | Backward compatibility | All 4900+ existing tests MUST pass unchanged after migration. No public API signature changes to `QARunnerInterface`. **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-2 | Performance overhead | SubprocessExecutor wrapper adds < 5ms overhead per invocation compared to direct `subprocess.run()` |
-| NFR-3 | Cross-platform | Must work identically on Windows 11 (26H2+), Linux (kernel 7.1+), and macOS Tahoe (26+) without any code changes by the user. OS-specific internals are abstracted behind a `PlatformLimiter` strategy. |
-| NFR-4 | No new dependencies | All functionality uses Python stdlib only (`subprocess`, `resource`, `ctypes`, `sys.platform`). No third-party packages required. |
+| NFR-3 | Cross-platform | Must work identically on Windows 11 (26H2+), Linux (kernel 7.1+), and macOS Tahoe (26+) without any code changes by the user. OS-specific internals are abstracted behind a `PlatformLimiter` strategy. **[proof: none — unfalsifiable as written]** |
+| NFR-4 | No new dependencies | All functionality uses Python stdlib only (`subprocess`, `resource`, `ctypes`, `sys.platform`). No third-party packages required. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-5 | Logging | All executions logged at DEBUG level with command, cwd, timeout, exit_code, duration |
-| NFR-6 | File size | SubprocessExecutor module ≤ 300 lines |
-| NFR-7 | Testability | All subprocess behavior mockable via `subprocess.run` patching |
+| NFR-6 | File size | SubprocessExecutor module ≤ 300 lines **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-7 | Testability | All subprocess behavior mockable via `subprocess.run` patching **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-8 | Path traversal | MUST validate execution targets before spawning any process |
 | NFR-9 | Credential leakage prevention | MUST strip known LLM API key env vars from child environment |
 

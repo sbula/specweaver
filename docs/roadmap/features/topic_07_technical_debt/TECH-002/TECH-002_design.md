@@ -58,11 +58,10 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Zero Regression | 100% of unit, integration, and E2E tests must pass. |
+| NFR-1 | Zero Regression | 100% of unit, integration, and E2E tests must pass. **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-2 | No Side-Effects | Importing a tool module must not populate global registries or run registration side-effects. |
-| NFR-3 | Strict Isolation | Remove direct `sandbox` imports from `validation/rules/code/c03`, `c04`, `c05`. |
-| NFR-4 | Boundary Enforcement | TECH-002 must not introduce new `tach check` violations. The c03/c04/c05 violations must be resolved. Pre-existing baseline violations (95 at time of writing, unrelated to this feature) remain out of scope. |
-
+| NFR-3 | Strict Isolation | Remove direct `sandbox` imports from `validation/rules/code/c03`, `c04`, `c05`. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-4 | Boundary Enforcement | TECH-002 must not introduce new `tach check` violations. The c03/c04/c05 violations must be resolved. Pre-existing baseline violations (95 at time of writing, unrelated to this feature) remain out of scope. **[proof: arch — tach/lint gate, not pytest]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |

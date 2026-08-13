@@ -110,8 +110,8 @@ control-test pattern (`test_step_worktree_isolation_e2e.py`).
 | NFR-1 | Integration-only | No new capability, handler, or prompt machinery (middle-way: drafting/review guidance stays content-shaped; rubric externalization = `C-VAL-05`, out of scope). |
 | NFR-2 | Backward compatibility | Headless `sw run`/`resume` and existing `sw draft` happy path byte-identical except the added chain + report; parking semantics unchanged without TTY. |
 | NFR-3 | Bounded cost | All reflection loops `max_retries ≤ 2`; no unbounded LLM spend (fixes the found defect). |
-| NFR-4 | Architecture compliance | No `core.flow.interfaces → interfaces.cli` import (AD-2 injection); `tach`/`ruff`/`mypy --strict` green. |
-| NFR-5 | Deterministic proof | The e2e uses a scripted provider + mocked LLM (no live keys, no prompts blocking CI); includes the headless park control (INT-US-09 discriminator pattern). |
+| NFR-4 | Architecture compliance | No `core.flow.interfaces → interfaces.cli` import (AD-2 injection); `tach`/`ruff`/`mypy --strict` green. **[proof: arch — tach/lint gate, not pytest]** |
+| NFR-5 | Deterministic proof | The e2e uses a scripted provider + mocked LLM (no live keys, no prompts blocking CI); includes the headless park control (INT-US-09 discriminator pattern). **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-6 | Terminal-coupling containment | `HITLProvider` (Rich) stays in the delivery layer; core sees only the `ContextProvider` protocol. |
 
 ## External Dependencies

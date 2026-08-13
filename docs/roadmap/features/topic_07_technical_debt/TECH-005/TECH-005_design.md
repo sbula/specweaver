@@ -50,8 +50,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Data Loss | Zero data loss during the Alembic migration. Data must be preserved exactly as it was. |
-| NFR-2 | Test Integrity | 100% of existing tests must pass after the table renaming is applied. |
-
+| NFR-2 | Test Integrity | 100% of existing tests must pass after the table renaming is applied. **[proof: meta — rule about tests, docs or the diff]** |
 ## External Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
