@@ -14,6 +14,12 @@ Checks:
            or whose `US-N Core` story header is 🟢 in the roadmap.
   - WARNING (over-checked): a `✅` capability dep box NOT ✅ in the matrix — a
            possible over-claim; verify against the Proof Mandate.
+  - ERROR  (orphaned entry): an entry in a topic document with no entry in the master
+           roadmap — the two registries disagree about what EXISTS, not merely about
+           status. Delegated to `_registry_orphans.py`, which is ratcheted; see
+           its docstring for why 10 are frozen. Added by `ADR-003` after a sweep removed
+           63 roadmap lines and 20 of those ids still had real topic entries, with the
+           whole doc gate green throughout.
 
 Exit code 1 on any ERROR (blocks pre-commit Phase 5). Warnings do not block.
 
@@ -22,6 +28,7 @@ Usage: python scripts/check_roadmap_sync.py [roadmap_md] [matrix_md]
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import re
 import sys
@@ -35,6 +42,15 @@ UNCHECKED_CAP = re.compile(rf"`\[ \]` \*\*({CAP_ID}):")
 CHECKED_CAP = re.compile(rf"`✅` \*\*({CAP_ID}):")
 UNCHECKED_CORE = re.compile(r"`\[ \]` \*\*(US-\d+) Core\*\*")
 GREEN_HEADER = re.compile(r"### \U0001f7e2 (US-\d+):")
+
+
+_orphan_spec = importlib.util.spec_from_file_location(
+    "_registry_orphans", Path(__file__).parent / "_registry_orphans.py"
+)
+assert _orphan_spec is not None and _orphan_spec.loader is not None
+_orphans = importlib.util.module_from_spec(_orphan_spec)
+sys.modules["_registry_orphans"] = _orphans
+_orphan_spec.loader.exec_module(_orphans)
 
 
 def main(argv: list[str]) -> int:
@@ -77,7 +93,11 @@ def main(argv: list[str]) -> int:
         print(f"\nRoadmap sync check: {len(errors)} error(s), {len(warnings)} warning(s)")
     else:
         print("Roadmap sync check: dependency boxes fully in sync with the registry")
-    return 1 if errors else 0
+
+    # `ADR-003`: status agreement is not existence agreement. Runs even when the box checks fail,
+    # so one kind of drift never hides the other.
+    orphan_status = _orphans.main([])
+    return 1 if (errors or orphan_status) else 0
 
 
 if __name__ == "__main__":

@@ -18,3 +18,8 @@ master roadmap's US-4 add-on groups for the current status of each.
   `C-INTL-06` (unbuilt, middle-way): wires the externalized envelope/content split into the live
   prompt-assembly surfaces once the capability lands; sequenced behind `C-VAL-05` per the
   middle-way ordering.
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `C-INTL-06`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+

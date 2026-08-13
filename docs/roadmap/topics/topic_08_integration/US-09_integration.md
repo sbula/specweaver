@@ -46,12 +46,32 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
   Sub-Containers, built ✅) + `D-EXEC-01` (Podman/Docker Integration, built ✅) so container
   execution can become an enforced US-9 default. *Pending Design — container-scoped, out of scope
   for the Base Contract.*
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `E-EXEC-01`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-09-SF02` — Security Defenses:** blocked on `E-EXEC-02` (Air-Gapped Network Egress
   Control, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `E-EXEC-02`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-09-SF03` — Extreme Execution Paranoia:** blocked on `A-EXEC-01` (Functional Agent
   Sandboxing / Black Box Ledgers, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `A-EXEC-01`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-09-SF04` — Mathematical Speed & Security (Rust):** blocked on `A-EXEC-03` (Git Worktree
   Bouncer C-Bindings / Rust PyO3, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `A-EXEC-03`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-09-SF05` — Per-Run (Session) Worktree Isolation:** ✅ **Done (delivered by `C-EXEC-06`,
   2026-07-21).** No separate design was needed — this SF's entire integration scope was absorbed by the
   capability's own sub-features. Details below.

@@ -28,9 +28,24 @@
 *(Mirrored from the master roadmap 2026-07-24 — every add-on group carries its own integration story.)*
 
 * **`INT-US-03-SF01` — Multi-Language Test Support:** *Pending Design.* Integrates `D-VAL-03` (Polyglot QA Runner, built ✅) into the `sw implement` loop for non-Python targets.
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `D-VAL-03`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `A-VAL-05`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-03-SF03` — Graduated Autonomy (the "middle way" dial):** *Pending Design (minted
   2026-07-24 audit).* Integrates `C-FLOW-11` (unbuilt): the `mode: oneshot | agentic` dial into the
   `sw implement` inner loop (its named pilot consumer). **Add-on ID — distinct from the base
   contract's internal "INT-US-03 SF-03" sub-feature, which is committed** (SF vs sub-story numbering
   live in different namespaces; stated per the SF/CB terminology rule).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `C-FLOW-11`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+

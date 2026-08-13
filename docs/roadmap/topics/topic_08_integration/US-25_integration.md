@@ -82,3 +82,8 @@
 > one**, and only a contract journey tells them apart. Six tests spanned this seam and all six
 > asserted `exit_code in (0, 1)`; with the domain-profile lookup disabled the whole capability was
 > dead and the suite reported 10 passed.
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to the capability that builds it, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+

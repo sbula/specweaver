@@ -16,7 +16,17 @@
 ## Sub-Story Add-Ons
 
 * **`INT-US-02-SF01` — Surgical Spec Refactoring:** *Pending Design.* Depends on `D-SENS-05` (Markdown AST Mutators, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `D-SENS-05`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-02-SF02` — Remote UI Integration:** *Pending Design.* Depends on `D-UI-04` (REST API Interactive Authoring, unbuilt).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `D-UI-04`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
 * **`INT-US-02-SF03` — Grill-Style Agentic Drafting:** *Pending Design (minted 2026-07-22).* **Integrates the
   capability `D-INTL-07`** (Agentic Interview Drafting — adaptive grilling interview + `/to-spec`-style
   synthesis, rubric-content-driven) into the drafting flow via the `C-FLOW-11` draft-step dial. Like every
@@ -29,3 +39,8 @@
   file in git as the historical record (see `D-INTL-07` §Mandatory Decommission Duties). **Blocked on
   `C-FLOW-11`** (hard) + `C-VAL-05` (soft); deliberately sequenced AFTER the base contract closes US-2
   (timeline decision Option A, 2026-07-22).
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
+  > The scope above is NOT descoped — it moves to `D-INTL-07`, which owns its own
+  > integration and e2e proof as FRs rather than a separate add-on restating them.
+
