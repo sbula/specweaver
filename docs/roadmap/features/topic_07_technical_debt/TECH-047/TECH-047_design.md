@@ -33,7 +33,9 @@ The pattern is the point, not this instance of it:
 three were fixed by making the check a sweep — `check_proof_tier.py` takes no argument for exactly
 this reason, and `check_class_health` was widened. This is the third.
 
-## The hard part is NOT adding a sweep
+## Candidate Approaches — option 2 taken
+
+**The sweep is a dozen lines. The hard part is what to do with its output.**
 
 A sweep is a dozen lines. **The hard part is that turning it on today produces 43 failures**, which
 leaves only bad options:
@@ -70,8 +72,42 @@ actionable*. Candidates:
   `TECH-025` finding — but that is a separate change and would raise the 43, not lower it.
 - Anything about test *strength*. Coverage proves attribution only; see `closure-contract.md`.
 
-## Next Step
+## Delivery, 2026-08-13
 
-Run the `specweaver-design` skill against this stub before any implementation. The design must pick
-an option above and state plainly what happens to the 43 — a sweep shipped without that answer
-becomes a frozen list nobody reads.
+### The decision: count requirements, not capabilities
+
+**Option 2.** The ratchet holds one number — requirements cited by no test — rather than a list of
+blocked capabilities. A list of names moves only when a whole capability is finished, which is
+never, so it would have sat frozen saying *"45 unverified capabilities is fine"*. A requirement
+count moves the moment one real test lands, and **rises the moment a new FR ships untested**, which
+is the regression that actually matters.
+
+`scripts/check_fr_sweep.py`, in the `doc` gate. Probed: appending one untested FR gives
+`REGRESSION of 1` and exit 1.
+
+### The limitation, stated in the checker itself
+
+This measures **attribution**, not strength: a citation on an `assert True` counts. An increase is a
+real signal and blocks; **a decrease is not evidence of quality.** The failure message names the
+three legitimate answers — write the test, delete the FR row so the descope is visible, or cite an
+existing test **after reading it and confirming it proves the requirement** — and the one that is
+not: bulk citation without reading.
+
+That fourth line was a correction. The first draft forbade citing existing tests outright, which
+would have blocked the legitimate case: `D-VAL-01` FR-1 was already proven by
+`test_code_validation_pipeline`, which drives the real CLI and asserts the C-series rule ids appear.
+The proof existed; only the pointer was missing.
+
+### Fixed same day: the ratchet punished writing requirements down
+
+The first version counted uncited FRs across *every* design, so adding four FRs to `C-FLOW-12` —
+unbuilt, and the new owner of `C-INTL-01`'s descoped `FR-3` — raised the total and blocked the
+commit that **improved the specification**. An unbuilt capability's requirements are correctly
+uncited; there is nothing to test yet. The census now reads the roadmap's markers and counts
+delivered stories only: 263 → 251, a change in what is counted and **not** evidence of testing.
+
+### What this ticket did not do
+
+The remaining 251 are verification work, itemised per FR by `check_fr_coverage.py <ID>`, and belong
+to `TECH-017`'s matrix. Making them visible and stopping them growing is this ticket; closing them
+is not.

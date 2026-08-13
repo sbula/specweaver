@@ -54,7 +54,12 @@ note the two compound: an unbounded loop whose failures are also invisible.
 - Not a redesign of gate semantics — `loop_back` looping is correct; losing the evidence is not.
 - Not bundled into a feature commit.
 
-## Next Step
+## Next Step — none; this ticket is closed
+
+> **Not needed — fixed 2026-07-28 without a design pass.** `_handle_loop_back` now retains the
+> failing step's status and result before rewinding. The strict `xfail` flipped to `XPASS(strict)`
+> the instant the fix landed, which is what signalled the marker could be removed.
+
 
 Run the `specweaver-design` skill. The failing case is already reproducible from
 `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py`, where

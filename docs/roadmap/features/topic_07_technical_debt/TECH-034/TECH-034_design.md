@@ -61,7 +61,7 @@ Three tiers fall out:
 - **Declarative** — `markdown`, `sql`. Roughly half their surface is stubs. They are answering a
   contract written for programming languages.
 
-## Proposed shape (pending design)
+## Candidate Approaches (not yet designed) — proposed shape
 
 ```
 CodeStructureInterface

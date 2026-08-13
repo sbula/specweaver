@@ -51,7 +51,7 @@ scope"* for a whole session while 23 classes failed; and this gate has been able
 `C-INTL-01` since it was written. All three are story-scoped, and a story-scoped check only fires
 when a human remembers the story.
 
-## The decision this ticket needs
+## Candidate Approaches (not yet designed) — the decision this ticket needs
 
 Exactly one of these, and it should be taken explicitly rather than by default:
 

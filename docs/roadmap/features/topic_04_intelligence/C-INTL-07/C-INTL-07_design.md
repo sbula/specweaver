@@ -41,7 +41,7 @@ a small feature and silently under-describes a large one.
 - **`B-FLOW-05`** — token-burn circuit breakers, the natural substrate for the per-level cost cap.
 - **`INT-US-21-SF03`** — the integration contract for this capability.
 
-## Why this is not a small change
+## Why this is not a small change — read before scoping
 
 **Recursion is unrepresentable in the current type**, so it is a schema change before it is a
 control-flow change. `ComponentChange` has no field that can hold another `DecompositionPlan`, and

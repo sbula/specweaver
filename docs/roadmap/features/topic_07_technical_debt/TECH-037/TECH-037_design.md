@@ -53,7 +53,7 @@ four. These are the same `workspace/ast` cluster `TECH-034` left behind and `TEC
 exempt `Go` and `Sql` over, so clearing them is likely to close those two exemptions as a side
 effect — exactly as hoisting `_is_symbol_valid` closed four.
 
-## Tool selection — decided by measurement, not preference
+## Candidate Approaches — tool selection, decided by measurement not preference
 
 **`ruff` cannot do this.** Verified against its rule list: 115 Pylint rules are implemented and
 `R0801` (duplicate-code) is **not** among them; the only name-match is `duplicate-bases`

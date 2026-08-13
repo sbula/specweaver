@@ -66,6 +66,10 @@ multi-step in future, Gaps 1/3 need a direct fix here too.
 - Container isolation (that's `INT-US-09-SF01`).
 - Reworking the `strip_merge` allow-list semantics beyond adding the missing `allowed_paths` plumbing.
 
-## Next Step
+## Next Step — none; this ticket is closed
+
+> **Superseded 2026-07-21.** Resolved by `C-EXEC-06` (per-run/session worktree isolation)
+> rather than designed separately. Kept as the record of the defect and of what fixed it.
+
 Run `specweaver-design TECH-012` **or** fold the fix into `INT-US-09-SF05`'s design (recommended). Add a
 multi-step, freshly-generated-file e2e to the isolation proof either way.

@@ -37,7 +37,7 @@ depends on today — which is why the mismatch survived delivery and an epic clo
 live the moment a reader plans against the registry: `C-FLOW-12` / `INT-US-21-SF02` is the next
 consumer of the decomposition plan, and it is currently unplanned.
 
-## The Decision — answered 2026-08-13
+## Candidate Approaches — answered 2026-08-13
 
 Exactly one of the two sides is wrong, and the ticket must not assume which:
 

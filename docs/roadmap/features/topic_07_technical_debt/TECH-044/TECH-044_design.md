@@ -153,6 +153,10 @@ is the same one-level-only mistake in the documentation of the rule as in the ru
 design should decide where that map lives so it is findable: a `specweaver-ticket` reference is the
 obvious candidate, since that skill already owns registry placement.
 
-## Next Step
+## Next Step — none; this ticket is closed
+
+> **Not needed — delivered 2026-08-13.** R-ENTRY 41 → 0 and R-DEPTH 2057 → 0; both baselines are
+> empty. See the Progress and Delivery sections above.
+
 
 Run the `specweaver-design` skill against this stub before any implementation.
