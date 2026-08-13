@@ -71,7 +71,6 @@ class RustCodeStructure(FunctionBasedParser):
                     return False
         return True
 
-
     def _impl_type_name(self, impl_item: typing.Any) -> str | None:
         """The type an `impl` block is for, unwrapping a generic to its base identifier."""
         type_node = impl_item.child_by_field_name("type")

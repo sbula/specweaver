@@ -77,6 +77,10 @@ EXPECTED: dict[str, dict[str, str]] = {
         "suppressions": "all",
         "class_health": "changed",
         "cycles": "all",
+        # `TECH-037`. Cross-file by definition -- a clone's twin may be in a file the commit never
+        # touched -- so there is no meaningful `changed` scope and it never narrows. Absent from
+        # `quick` on purpose: it shells out to npx and the inner loop should stay fast.
+        "duplication": "all",
     },
     "sf": {
         "ruff": "all",
@@ -91,6 +95,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "suppressions": "all",
         "class_health": "module",
         "cycles": "all",
+        "duplication": "all",
         "coupling": "module",
     },
     "feature": {
@@ -106,6 +111,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "suppressions": "all",
         "class_health": "all",
         "cycles": "all",
+        "duplication": "all",
         "coupling": "all",
     },
     # A separate track, not a rung on the ladder above: registries, not code.

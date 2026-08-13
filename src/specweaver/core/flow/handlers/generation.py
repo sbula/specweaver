@@ -295,7 +295,11 @@ class GenerateTestsHandler:
             from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
             await log_artifact_lineage(
-                context, artifact_uuid, "generated_tests", parent_id=parent_id, model_id=config.model
+                context,
+                artifact_uuid,
+                "generated_tests",
+                parent_id=parent_id,
+                model_id=config.model,
             )
 
             return StepResult(

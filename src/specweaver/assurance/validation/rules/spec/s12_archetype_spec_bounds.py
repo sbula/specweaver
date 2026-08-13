@@ -33,8 +33,7 @@ class S12ArchetypeSpecBoundsRule(Rule):
             for header_kind, expected_list in self.required_headers.items()
             for expected in expected_list
             if not any(
-                expected.lower() in node_text.lower()
-                for node_text in skeleton.get(header_kind, [])
+                expected.lower() in node_text.lower() for node_text in skeleton.get(header_kind, [])
             )
         ]
 

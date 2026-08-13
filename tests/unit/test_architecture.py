@@ -402,9 +402,9 @@ def test_the_invariants_below_are_reading_the_real_tree() -> None:
     assert list((SRC_ROOT / "core" / "config").glob("*.py")), "config offender scans see no modules"
     for entry in ("factory.py", "router.py"):
         assert (SRC_ROOT / "infrastructure" / "llm" / entry).is_file(), f"llm/{entry} not found"
-    assert any(
-        "yaml.dump" in p.read_text(encoding="utf-8") for p in SRC_ROOT.rglob("*.py")
-    ), "unsafe_model_dumps is scanning a tree with no yaml.dump call in it"
+    assert any("yaml.dump" in p.read_text(encoding="utf-8") for p in SRC_ROOT.rglob("*.py")), (
+        "unsafe_model_dumps is scanning a tree with no yaml.dump call in it"
+    )
 
 
 def test_cli_commands_live_in_their_own_domains() -> None:

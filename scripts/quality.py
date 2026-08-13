@@ -123,6 +123,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # cycle cannot be seen in a diff at all, so this is global from the first commit point and
     # never narrows. Splitting it also lets the metrics start later without weakening cycles.
     "cycles": {"cb": "all", "sf": "all", "feature": "all"},
+    # Duplication is cross-file by definition: a clone's twin may be in a file the commit never
+    # touched, so there is no meaningful `changed` scope and this never narrows. `quick` is left
+    # out on purpose — it shells out to npx and the inner loop should stay fast.
+    "duplication": {"cb": "all", "sf": "all", "feature": "all"},
     # Fan-in likewise needs every importer, so the ANALYSIS is always global; `module` narrows
     # which modules are judged against thresholds, never what is computed.
     "coupling": {"sf": "module", "feature": "all"},
@@ -210,6 +214,13 @@ CHECKS: dict[str, Check] = {
     ),
     "coupling": Check("coupling", ("src",), _r._coupling, script="check_coupling.py"),
     "cycles": Check("cycles", ("src",), _r._cycles, script="check_coupling.py"),
+    "duplication": Check(
+        "duplication",
+        ("src",),
+        _r._duplication,
+        ignores_paths=True,
+        script="check_duplication.py",
+    ),
     "roadmap_placement": Check(
         "roadmap_placement",
         ("docs",),

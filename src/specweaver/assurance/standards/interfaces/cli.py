@@ -166,9 +166,7 @@ def standards_scan(
             db=db,
         )
 
-    scope_results = _scan_scopes(
-        scopes, all_files, project_path, _context, compare=compare
-    )
+    scope_results = _scan_scopes(scopes, all_files, project_path, _context, compare=compare)
 
     if not scope_results:
         _core.console.print(

@@ -60,7 +60,6 @@ class JavaCodeStructure(ClassBasedParser):
                     return False
         return True
 
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:
             return None

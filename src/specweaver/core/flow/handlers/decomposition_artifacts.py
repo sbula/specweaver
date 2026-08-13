@@ -143,9 +143,7 @@ def load_component_template(project_path: Path) -> str:
         return FALLBACK_COMPONENT_SPEC
 
 
-def _classify_stub(
-    component: dict[str, Any], context: RunContext
-) -> tuple[str, str, Path | None]:
+def _classify_stub(component: dict[str, Any], context: RunContext) -> tuple[str, str, Path | None]:
     """`(report bucket, name, target)`. A non-None target means "safe to write".
 
     The three refusals, in the order they must be checked (`TECH-023` moved them out of

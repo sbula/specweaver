@@ -2,9 +2,10 @@
 
 - **Feature ID**: TECH-037
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill. Tool selection and the
-  baseline are already **measured** (see §Measured and §Tool selection); what needs designing is
-  the gate's scope, its `min-tokens`, and the anomaly in §Preconditions.
+- **Status**: **DELIVERED 2026-08-13.** `scripts/check_duplication.py` + `scripts/baselines/duplication.json`,
+  wired into `quality.py` at `cb`/`sf`/`feature`. Baseline frozen at **148 clones**. Both
+  §Preconditions settled — see §Delivery. Not run through `specweaver-design`: the tool comparison
+  and the baseline were already measured on the ticket.
 - **Origin**: 2026-08-12. Raised by the user after `TECH-023` batch 7 and `TECH-035` each turned
   out to be duplication findings wearing a complexity or cohesion label.
 
@@ -125,8 +126,82 @@ network, which the design must account for before this becomes a commit-boundary
 Its own commits, never bundled into a feature commit. Land the detector and ratchet first with the
 baseline frozen at whatever the pinned measurement says; reduce afterwards, one cluster per commit.
 
+> **All three preconditions are settled** — see §Delivery. Precondition 1's anomaly was a missing
+> path argument in the measuring command, not a defect in the tool.
+
+## Delivery, 2026-08-13
+
+`scripts/check_duplication.py` — jscpd detects, we ratchet. Wired into `quality.py` as
+`duplication`, scope **`all`** at `cb`, `sf` and `feature`; deliberately absent from `quick`
+because it shells out to `npx` and the inner loop should stay fast. Runs in **1.9 s**.
+
+Baseline: **148 clones** frozen in `scripts/baselines/duplication.json`.
+
+### Precondition 1 — the anomaly was mine, not jscpd's
+
+The ticket blocked on a run that reproducibly reported **714 clones / 5.39%** where three others
+reported 150 / 3.98%. Cause found: the shell function used to take that measurement was **missing
+its `src/` path argument**, so jscpd scanned the whole repository. Reproduced deliberately:
+
+```
+with src/     148 clones   2128 lines   3.89%   333 files
+without       712 clones   9676 lines   5.36%   895 files
+```
+
+Not a defect in the tool, and not a reason to distrust it. The 148/150 difference between then and
+now is `TECH-023`'s reduction work removing real duplication in between.
+
+### Precondition 2 — `min-tokens` stays at 50, and says why
+
+Documented on the constant rather than left as a flag: below 50, jscpd reports import blocks and
+boilerplate signatures, and tuning it down surfaces per-language parser code where the differing
+**constants are the point** — the false-positive class that gets a check suppressed rather than
+acted on.
+
+### Precondition 3 — scope is `all`, always
+
+Duplication is cross-file by definition: a clone's twin may sit in a file the commit never touched,
+so a `changed` scope would report "nothing in scope" while the clone it exists to catch went in.
+That is exactly how `check_class_health` stayed invisible for a whole session, and the reasoning is
+recorded on the matrix entry so it is not narrowed later for speed.
+
+### The key, and why not jscpd's own threshold
+
+Each clone is identified by **its text plus the pair of files it spans**, whitespace-normalised and
+order-independent. jscpd's `--threshold` compares an aggregate percentage and was rejected on
+measurement: the planted regression moved it by 5 lines in 2168 — **0.01 pp** — so any commit that
+also removed five duplicated lines would mask it, and `TECH-023` batch 7 removed forty in one.
+
+### Verified by planting, not by reading
+
+| Probe | Result |
+|---|---|
+| Clean tree | 148 clones, none new — exit 0 |
+| A 7th copy of the 6-way `_format_replacement` planted | **exit 1**, named with both files and size |
+| **15 lines inserted above an existing clone** | 148 clones, **none new** — exit 0 |
+
+The third is the one a line-keyed baseline could not pass, and it is why the key is content.
+
+**It cannot fail open.** A detector that will not start, an unreadable report, or a missing
+baseline all exit **2** with "could not run", matching `quality.py`'s existing `MISSING` grade —
+rather than reporting "no new clones" over a measurement that never happened. Three tests pin it.
+
+### Two things the commit gate caught that I had missed
+
+- **`ruff format --check` is a separate gate from `ruff check`.** Fifteen files across this
+  session's work were unformatted; `ruff check` had been clean throughout. The `format` check at
+  `cb` is what surfaced it.
+- **`R6`** rejected the new test class names (`TestTheRatchet`, …) for not naming the function
+  under test. Renamed to `TestCloneKey` / `TestNewClones` / `TestMain` / `TestLoadReport`.
+
+`test_quality_runner.py`'s `EXPECTED` map — which pins the exact check set per gate so one cannot
+be added or dropped silently — was updated deliberately for all three gates.
+
+`6576 passed, 11 skipped, 0 failed`; `quality.py cb` **0 failed of 13**.
+
 ## Next Step
 
-Run through `specweaver-design`. Settle §Preconditions 1 (the anomaly) before anything is wired
-into `quality.py` — a gate that cannot be trusted to report the same number twice will be ignored,
-which is the state this ticket exists to end.
+Reduction. The detector and ratchet are in; the 148 clones are now bounded rather than growing.
+Largest cluster is `workspace/ast` (629 duplicated lines), and `_format_replacement` is
+**character-for-character identical across six parsers** — clearing it should also close the `Go`
+and `Sql` cohesion exemptions `TECH-035` had to record.

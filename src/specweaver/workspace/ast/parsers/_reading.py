@@ -113,7 +113,12 @@ class SymbolReadingMixin:
         genuinely different still overrides this outright, as C, C++, Go, Python and the
         declarative tier all do.
         """
-        if visibility and "public" in visibility and name_node and self._is_symbol_hidden(name_node.parent):
+        if (
+            visibility
+            and "public" in visibility
+            and name_node
+            and self._is_symbol_hidden(name_node.parent)
+        ):
             return False
 
         if decorator_filter:

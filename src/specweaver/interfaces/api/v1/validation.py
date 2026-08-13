@@ -82,9 +82,7 @@ async def run_check(
     content = abs_path.read_text(encoding="utf-8")
 
     active_profile = await _active_domain_profile(db)
-    pipeline_name = resolve_pipeline_name(
-        body.level, body.pipeline, active_profile=active_profile
-    )
+    pipeline_name = resolve_pipeline_name(body.level, body.pipeline, active_profile=active_profile)
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)
     if body.level == "code":

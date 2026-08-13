@@ -26,7 +26,9 @@ def _merge_schema(
     try:
         content = YAML(typ="safe").load(io.StringIO(text)) or {}
     except Exception as e:
-        logging.getLogger(__name__).warning("Failed to parse %s YAML schema %s: %s", origin, name, e)
+        logging.getLogger(__name__).warning(
+            "Failed to parse %s YAML schema %s: %s", origin, name, e
+        )
         return
     if isinstance(content, dict):
         schemas[language] = deep_merge_dict(schemas.get(language, {}), content)

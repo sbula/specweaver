@@ -56,6 +56,21 @@ def _complexipy(paths: list[Path]) -> list[str]:
     return [*_script("check_complexity.py"), *(str(p) for p in paths)]
 
 
+def _duplication(_paths: list[Path]) -> list[str]:
+    """`TECH-037`: jscpd for detection, our ratchet for the verdict.
+
+    Takes no paths. Duplication is inherently cross-file — a clone's twin may sit in a file the
+    commit never touched — so a diff-scoped run would report "nothing in scope" while the clone it
+    exists to catch went in. That is precisely how `check_class_health` stayed invisible for a
+    whole session.
+
+    jscpd's own `--threshold` is not used: it compares an aggregate percentage, and a planted
+    regression moved it by 0.01pp. The ratchet keys each clone on its TEXT plus its file pair, so
+    one added clone blocks regardless of what else the commit removed.
+    """
+    return _script("check_duplication.py")
+
+
 def _file_sizes(paths: list[Path]) -> list[str]:
     return [*_script("check_file_sizes.py"), *(str(p) for p in paths)]
 

@@ -144,9 +144,7 @@ class QARunnerAtom(Atom):
         "failures": [],
     }
 
-    def _resolve_test_targets(
-        self, context: dict[str, Any]
-    ) -> tuple[list[str], AtomResult | None]:
+    def _resolve_test_targets(self, context: dict[str, Any]) -> tuple[list[str], AtomResult | None]:
         """`(targets, early result)`. A non-None early result means stop.
 
         `targets=[]` is meaningful and distinct from `targets` being absent: an explicit empty list

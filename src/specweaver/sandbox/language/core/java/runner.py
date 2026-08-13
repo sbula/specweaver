@@ -72,9 +72,7 @@ def _forbids_for(target_path: Path, cwd: Path) -> list[str]:
     import yaml
 
     ctx_dir = target_path.parent if target_path.is_file() else target_path
-    while (
-        ctx_dir != cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists()
-    ):
+    while ctx_dir != cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
         ctx_dir = ctx_dir.parent
 
     ctx_file = ctx_dir / "context.yaml"

@@ -13,7 +13,6 @@ from specweaver.workspace.memory.store import TaskStatus
 logger = logging.getLogger(__name__)
 
 
-
 def _skip_reason(context: RunContext, run: PipelineRun) -> str | None:
     """Why this run has no handover to save, or None when it does.
 
