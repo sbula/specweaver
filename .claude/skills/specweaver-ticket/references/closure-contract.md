@@ -175,7 +175,18 @@ which to use. Two rules:
 - **Do not mark a row to make the number fall.** `[proof: none]` admits the requirement was written
   so nothing can check it; the fix is usually a threshold, not a marker.
 
-Baseline at introduction: **123 uncited behavioural NFRs across 41 delivered designs** (187 before
+Baseline at introduction: **128 uncited behavioural NFRs across 42 delivered designs** (187 before
 the 62 non-behavioural rows were classified). Same caveat as every ratchet here — it measures
 attribution, never strength.
+
+**It was frozen at 123 first, and 123 was wrong** — worth recording, because the mistake is the one
+this whole page is about. `test_check_nfr_sweep.py` quotes `C-FLOW-05 NFR-1`, `E-EXEC-01 NFR-6`,
+`TECH-025 NFR-3` and `D-VAL-04 NFR-2` as worked examples of rows a pytest cannot prove. The new
+sweep did not yet honour `# fr-coverage: fixture-data`, so it read those four worked examples as
+citations and credited five NFRs to stories that had none. **A test explaining why something is
+untestable made it look tested**, and the baseline was frozen on that number.
+
+So: **a checker's own tests must declare `# fr-coverage: fixture-data` before its baseline is
+frozen**, and a freeze is not a formality — measure once with the marker in place, and treat a
+suspiciously good number as a bug until explained.
 

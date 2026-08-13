@@ -36,6 +36,7 @@ that is a design decision, and it should be visible as one.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -84,6 +85,14 @@ _SKIP_DIRS = {"__pycache__", ".pytest_cache", ".git"}
 #: was measured and rejected: it reopens ``INT-US-24`` (two requirements) and ``TECH-019`` (two
 #: more), because the ``Proves:`` convention names the story once while a file's other citations
 #: sit on other lines. Do not revisit it without re-running that measurement.
+_cit_spec = importlib.util.spec_from_file_location(
+    "_citations", Path(__file__).parent / "_citations.py"
+)
+assert _cit_spec is not None and _cit_spec.loader is not None
+_cit = importlib.util.module_from_spec(_cit_spec)
+sys.modules["_citations"] = _cit
+_cit_spec.loader.exec_module(_cit)
+
 FIXTURE_DATA_MARKER = "# fr-coverage: fixture-data"
 
 #: Lines from the top of a file searched for the marker. Wide enough for the licence header plus a
@@ -158,6 +167,13 @@ def find_plans(features_root: Path, story: str) -> list[Path]:
     return sorted(features_root.glob(f"*/{story}/{story}*implementation_plan.md"))
 
 
+#: `story -> requirements` carried by an authoritative `Proves:` tag, filled in as
+#: :func:`cited_frs_in_tests` walks. The legacy loose credit still counts (26 of 719 test files
+#: carry a tag, so demanding the strict form today would revoke hundreds of credits and improve no
+#: test); this records the split so it can be drained. `TECH-017` finding 6.
+STRICTLY_CITED: dict[str, set[str]] = {}
+
+
 def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
     """Map ``FR-N`` → the test files citing it for this story.
 
@@ -180,8 +196,11 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
         if is_fixture_data(text):
             continue
         relative = path.relative_to(tests_root).as_posix()
+        strict = _cit.strict_citations(text).get(story, set())
         for fr in sorted(collect_frs(text)):
             cited.setdefault(fr, []).append(relative)
+            if fr in strict:
+                STRICTLY_CITED.setdefault(story, set()).add(fr)
     return cited
 
 
@@ -268,13 +287,29 @@ def planned_frs(features_root: Path, story: str) -> set[str]:
     return planned
 
 
-def print_ledger(frs: list[str], planned: set[str], cited: dict[str, list[str]]) -> None:
-    """One line per FR: whether a plan owns it and how many test files cite it."""
+def print_ledger(
+    frs: list[str], planned: set[str], cited: dict[str, list[str]], story: str = ""
+) -> None:
+    """One line per FR: whether a plan owns it, how many test files cite it, and how.
+
+    ``legacy`` marks a credit resting on a loose mention — the file names the story and the id
+    appears somewhere in it. That is how a docstring listing requirements it did NOT prove once
+    marked three of them covered. It still counts, and it is the column to drain.
+    """
+    strict = STRICTLY_CITED.get(story, set())
     for fr in frs:
         in_plan = "plan" if fr in planned else "NO PLAN"
         files = cited.get(fr, [])
-        proof = f"{len(files)} test file(s)" if files else "NO TEST"
+        if not files:
+            proof = "NO TEST"
+        else:
+            how = "Proves:" if fr in strict else "legacy"
+            proof = f"{len(files)} test file(s)  [{how}]"
         print(f"  {fr:<7} {in_plan:<8} {proof}")
+    if frs and strict:
+        print(
+            f"\n  {len(strict)} of {len(frs)} requirement(s) carry an authoritative `Proves:` tag"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
 
     missing_from_plan = [fr for fr in frs if fr not in planned]
     missing_from_tests = [fr for fr in frs if fr not in cited]
-    print_ledger(frs, planned, cited)
+    print_ledger(frs, planned, cited, story)
 
     print()
     if missing_from_plan:

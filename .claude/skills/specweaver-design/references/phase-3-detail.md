@@ -67,7 +67,7 @@ B.1a. **State how each NFR will be PROVED — `check_nfr_sweep.py` ratchets the 
      > trail pointing at you.
 
      Measured 2026-08-13, before this rule existed: 224 NFRs on delivered stories, **37 cited**.
-     62 rows were genuinely non-behavioural; the other 123 were simply untested.
+     62 rows were genuinely non-behavioural; the other 128 were simply untested.
 
 B.2. **HITL gate** (fires if a critical NFR threshold is unknown):
      "Critical" means: security risk, data loss risk, or backward compatibility break.

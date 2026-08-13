@@ -65,6 +65,14 @@ def delivered_stories() -> set[str]:
     return set(_DELIVERED.findall(ROADMAP.read_text(encoding="utf-8", errors="replace")))
 
 
+_cit_spec = importlib.util.spec_from_file_location(
+    "_citations", Path(__file__).parent / "_citations.py"
+)
+assert _cit_spec is not None and _cit_spec.loader is not None
+_cit = importlib.util.module_from_spec(_cit_spec)
+sys.modules["_citations"] = _cit
+_cit_spec.loader.exec_module(_cit)
+
 _spec = importlib.util.spec_from_file_location(
     "check_fr_coverage", Path(__file__).parent / "check_fr_coverage.py"
 )
@@ -108,9 +116,49 @@ def load_baseline() -> int:
     return int(data.get("uncited_frs", 0))
 
 
+def known_stories() -> frozenset[str]:
+    """Every id with a design directory — the registry the owner check trusts."""
+    return frozenset(d.parent.name for d in FEATURES.rglob("*_design.md"))
+
+
+def _report_unattributed() -> int:
+    """List proof that exists and the ledger cannot see. Reports; never blocks.
+
+    `TECH-017` finding 6. These files carry a deliberate `FR-N`/`NFR-N` claim in a docstring or
+    comment and name no story at all, so no citation rule can recover the owner — a human decides
+    which capability each belongs to. Reporting rather than failing is the point: the fix is an
+    attribution decision, not something an author can be told to do mechanically.
+    """
+    known = known_stories()
+    rows: list[tuple[str, list[str]]] = []
+    for path in sorted((REPO_ROOT / "tests").rglob("*.py")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        found = _cit.unattributed_requirements(text, known)
+        if found:
+            rows.append(
+                (
+                    path.relative_to(REPO_ROOT).as_posix(),
+                    sorted(found, key=lambda r: (r.startswith("N"), int(r.split("-")[1]))),
+                )
+            )
+    for name, reqs in rows:
+        print(f"  {','.join(reqs):<26} {name}")
+    claims = sum(len(r) for _, r in rows)
+    print(f"\n{claims} unattributed requirement claim(s) across {len(rows)} test file(s)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--list", action="store_true", help="per-design breakdown, worst first")
+    ap.add_argument(
+        "--unattributed",
+        action="store_true",
+        help="tests claiming a requirement while naming no story — `TECH-017` finding 6",
+    )
     ap.add_argument("--freeze", action="store_true", help="rewrite the baseline")
     args = ap.parse_args(argv)
 
@@ -118,6 +166,9 @@ def main(argv: list[str] | None = None) -> int:
     if not FEATURES.is_dir():
         print(f"could not run: features tree not found: {FEATURES}", file=sys.stderr)
         return 2
+
+    if args.unattributed:
+        return _report_unattributed()
 
     live = census()
     total = sum(live.values())

@@ -75,6 +75,22 @@ _NFR = re.compile(r"\bNFR-\d+\b")
 
 _SKIP_DIRS = {".venv", "__pycache__", ".git", "node_modules"}
 
+#: Same declaration `check_fr_coverage.py` has always honoured, now honoured here too. A test *of a
+#: requirement checker* names real stories and feeds them `NFR-N` strings as INPUT, which is
+#: indistinguishable from a citation. Missing this was not theoretical: `test_check_nfr_sweep.py`
+#: quotes `C-FLOW-05 NFR-1`, `E-EXEC-01 NFR-6`, `TECH-025 NFR-3` and `D-VAL-04 NFR-2` as worked
+#: examples, and silently credited all four the day this sweep was written.
+FIXTURE_DATA_MARKER = "# fr-coverage: fixture-data"
+_MARKER_SCAN_LINES = 10
+
+
+def is_fixture_data(text: str) -> bool:
+    """Whether a file declares its requirement ids to be inputs rather than citations."""
+    for line in text.splitlines()[:_MARKER_SCAN_LINES]:
+        if line.rstrip() == FIXTURE_DATA_MARKER:
+            return True
+    return False
+
 
 def delivered_stories() -> set[str]:
     """Story ids the master roadmap marks delivered."""
@@ -117,7 +133,7 @@ def cited_nfrs_in_tests(tests_root: Path, story: str) -> set[str]:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        if story not in text:
+        if story not in text or is_fixture_data(text):
             continue
         cited |= set(_NFR.findall(text))
     return cited
