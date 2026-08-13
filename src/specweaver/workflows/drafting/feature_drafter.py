@@ -13,32 +13,18 @@ Output: a *_feature_spec.md file in the target directory.
 from __future__ import annotations
 
 import logging
-from datetime import UTC
-from typing import TYPE_CHECKING, TypedDict
+from typing import ClassVar
 
 from jinja2 import Template
 
-from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from specweaver.assurance.graph.topology import TopologyContext
-    from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-    from specweaver.workspace.context.provider import ContextProvider
+from specweaver.workflows.drafting._base import BaseDrafter, SectionDef
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureSectionDef(TypedDict, total=False):
-    """A single feature spec section definition."""
-
-    name: str
-    heading: str
-    question: str
-    prompt: str
-    inject_topology: bool
+#: The feature sections have the same shape as any other; kept as a name so existing
+#: imports of `FeatureSectionDef` keep resolving (`TECH-037`).
+FeatureSectionDef = SectionDef
 
 
 # The 5 sections of a Feature Spec and their guiding questions
@@ -175,125 +161,10 @@ _FEATURE_SPEC_TEMPLATE = Template("""\
 """)
 
 
-class FeatureDrafter:
+class FeatureDrafter(BaseDrafter):
     """Interactive Feature Spec drafter using LLM + context providers."""
 
-    def __init__(
-        self,
-        base_prompt: PromptBuilder,
-        llm: LLMAdapter,
-        context_provider: ContextProvider,
-        config: GenerationConfig | None = None,
-    ) -> None:
-        self._llm = llm
-        self._context = context_provider
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.7,
-            max_output_tokens=4096,
-        )
-        self._base_prompt = base_prompt
-
-    async def draft(
-        self,
-        name: str,
-        output_dir: Path,
-        *,
-        topology_contexts: list[TopologyContext] | None = None,
-        project_metadata: ProjectMetadata | None = None,
-    ) -> Path:
-        """Draft a Feature Spec interactively.
-
-        Args:
-            name: Feature name (e.g., "sell_shares").
-            output_dir: Directory to write the spec file to.
-            topology_contexts: Optional topology context from the project graph.
-
-        Returns:
-            Path to the generated spec file.
-        """
-        from datetime import datetime
-
-        sections: list[dict[str, str]] = []
-        logger.debug("FeatureDrafter.draft: starting for name=%s, output=%s", name, output_dir)
-
-        for section_def in FEATURE_SECTIONS:
-            # Ask the user for context
-            user_input = await self._context.ask(
-                section_def["question"],
-                section=section_def["name"],
-            )
-
-            if not user_input:
-                # User skipped — use a placeholder
-                content = f"*TODO: Fill in {section_def['name']} section.*"
-            else:
-                # Decide whether to inject topology for this section
-                section_topology = topology_contexts if section_def.get("inject_topology") else None
-                # Generate content with LLM
-                content = await self._generate_section(
-                    name=name,
-                    section_name=section_def["name"],
-                    section_prompt=section_def["prompt"],
-                    user_input=user_input,
-                    topology_contexts=section_topology,
-                    project_metadata=project_metadata,
-                )
-
-            sections.append(
-                {
-                    "heading": section_def["heading"],
-                    "content": content,
-                }
-            )
-
-        # Render the full spec
-        date_str = datetime.now(tz=UTC).strftime("%Y-%m-%d")
-        spec_content = _FEATURE_SPEC_TEMPLATE.render(
-            name=name.replace("_", " ").title(),
-            date=date_str,
-            sections=sections,
-        )
-
-        # Write to file
-        output_dir.mkdir(parents=True, exist_ok=True)
-        spec_path = output_dir / f"{name}_feature_spec.md"
-        spec_path.write_text(spec_content, encoding="utf-8")
-
-        return spec_path
-
-    async def _generate_section(
-        self,
-        name: str,
-        section_name: str,
-        section_prompt: str,
-        user_input: str,
-        *,
-        topology_contexts: list[TopologyContext] | None = None,
-        project_metadata: ProjectMetadata | None = None,
-    ) -> str:
-        """Generate content for a single spec section using the LLM."""
-        instructions = _SECTION_INSTRUCTION_TEMPLATE.format(
-            name=name,
-            section_name=section_name,
-            section_prompt=section_prompt,
-        )
-
-        builder = self._base_prompt.clone()
-        builder.add_instructions(instructions)
-
-        if project_metadata:
-            builder.add_project_metadata(project_metadata)
-
-        builder.add_context(user_input, "user_context")
-
-        if topology_contexts:
-            builder.add_topology(topology_contexts)
-        prompt = builder.build()
-
-        messages = [
-            Message(role=Role.USER, content=prompt),
-        ]
-
-        response = await self._llm.generate(messages, self._config)
-        return response.text.strip()
+    SECTIONS: ClassVar[list[SectionDef]] = FEATURE_SECTIONS
+    TEMPLATE: ClassVar[Template] = _FEATURE_SPEC_TEMPLATE
+    FILENAME_SUFFIX: ClassVar[str] = "_feature_spec.md"
+    SECTION_INSTRUCTION: ClassVar[str] = _SECTION_INSTRUCTION_TEMPLATE

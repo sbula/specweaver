@@ -459,29 +459,9 @@
     "first": "src/specweaver/sandbox/web/interfaces/facades.py:55",
     "second": "src/specweaver/sandbox/web/interfaces/facades.py:34"
   },
-  "src/specweaver/workflows/drafting/drafter.py <-> src/specweaver/workflows/drafting/feature_drafter.py @096aa6af5204": {
-    "lines": 36,
-    "first": "src/specweaver/workflows/drafting/drafter.py:153",
-    "second": "src/specweaver/workflows/drafting/feature_drafter.py:179"
-  },
-  "src/specweaver/workflows/drafting/drafter.py <-> src/specweaver/workflows/drafting/feature_drafter.py @0e0eb1aaec85": {
-    "lines": 39,
-    "first": "src/specweaver/workflows/drafting/drafter.py:235",
-    "second": "src/specweaver/workflows/drafting/feature_drafter.py:261"
-  },
-  "src/specweaver/workflows/drafting/drafter.py <-> src/specweaver/workflows/drafting/feature_drafter.py @0ff7ae3ecdc5": {
-    "lines": 22,
-    "first": "src/specweaver/workflows/drafting/drafter.py:14",
-    "second": "src/specweaver/workflows/drafting/feature_drafter.py:13"
-  },
-  "src/specweaver/workflows/drafting/drafter.py <-> src/specweaver/workflows/drafting/feature_drafter.py @561e500a6bfa": {
-    "lines": 33,
-    "first": "src/specweaver/workflows/drafting/drafter.py:194",
-    "second": "src/specweaver/workflows/drafting/feature_drafter.py:220"
-  },
-  "src/specweaver/workflows/drafting/feature_drafter.py <-> src/specweaver/workflows/planning/decomposer.py @bf335e6991b2": {
+  "src/specweaver/workflows/drafting/_base.py <-> src/specweaver/workflows/planning/decomposer.py @bf335e6991b2": {
     "lines": 9,
-    "first": "src/specweaver/workflows/drafting/feature_drafter.py:26",
+    "first": "src/specweaver/workflows/drafting/_base.py:27",
     "second": "src/specweaver/workflows/planning/decomposer.py:20"
   },
   "src/specweaver/workflows/implementation/generator.py <-> src/specweaver/workflows/implementation/generator.py @f896f75da63b": {
