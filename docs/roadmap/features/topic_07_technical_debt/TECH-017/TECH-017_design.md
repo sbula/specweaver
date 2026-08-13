@@ -348,3 +348,62 @@ multi-level decomposition that was never built and never descoped.
 ratchet would then mean nothing, which is the failure mode `check_useless_asserts.py`'s docstring
 warns about for detectors. It is audit input, not a guardrail — the per-story matrix this ticket
 already owes is where each of the 46 gets a verdict.
+
+### 6. Proof that exists and cannot be seen — a decision this ticket must take
+
+Found 2026-08-13 while re-attributing `INT-US-28`'s tests. `check_fr_coverage.py` skips any test
+file that does not **name the story**, and collects `FR-N` only from the files that survive that
+filter. So a test can carry a perfectly good attribution and still be invisible:
+
+```
+tests/unit/workspace/test_memory_repository_core.py:700
+    """FR-7: Transition to ARCHIVED sets handover_context = None."""
+```
+
+That is `B-INTL-09` FR-7, deliberately labelled by whoever built it, and the file never says
+`B-INTL-09` — so the capability reports FR-7 as uncited. `tests/integration/sandbox/test_worktree_atoms.py`
+(*"Verifies FR-1, FR-2, FR-6 natively"*) is the same shape. This is a **third** failure mode beyond
+the two in `closure-contract.md`: a missing citation makes a requirement look unproven, and a
+citation in an unnamed file makes proof **invisible**.
+
+**The decision — do not implement either side before it is taken.**
+
+- **(a) Fix the naming.** Add the capability id to the files that already prove it. Keeps the gate's
+  rule simple and unambiguous — one story name, one ledger — and every citation stays greppable.
+  Costs a sweep over the offending files, and nothing stops the next author omitting the name again.
+- **(b) Fix the algorithm.** Let a test declare what it proves without naming the story: read a
+  structured attribution (`Proves: <ID> FR-N`, already the convention) wherever it appears, and drop
+  the file-must-name-the-story precondition for those. Richer, and it is the direction that makes
+  "this test tests this requirement" a first-class fact rather than a grep coincidence.
+
+**(b) is not free, and the risk is specific:** the story-name filter is what currently stops an
+`FR-2` belonging to one capability being credited to another, and it is also most of what keeps
+fixture data out — `test_c09_traceability.py` writes `"Hello FR-1 and NFR-2"` as test *input*, and
+`test_polyglot_validation_e2e.py` writes `"Requirements: FR-1, FR-2, FR-3"`. Loosen the precondition
+without a strict attribution grammar and those become citations. So (b) means *tightening* what
+counts as a citation at the same time as widening where it may live.
+
+Not filed as a ticket: it is a decision, and it belongs to the audit that found it.
+
+### 7. Requirements that are tested badly, or not at all — the audit's actual output
+
+Distinct from finding 6, and easy to conflate with it. Finding 6 is about proof that exists and is
+mis-filed. This one is about proof that is **thin or absent**, which no re-filing will fix.
+
+Two populations, and the audit owes a verdict on each rather than a count:
+
+- **Not tested at all.** Requirements with no test anywhere, once finding 6's invisible proof has
+  been accounted for. `B-INTL-09` FR-1 (schema definition) and FR-6 (alembic integration) are
+  open examples — neither assessed yet in either direction.
+- **Not tested well.** Requirements with a citation whose test does not actually establish the
+  claim. `D-INTL-06` FR-3 is the live candidate: the hydrator does not filter at all, it delegates
+  `max_age_hours=24` to the repository (`hydrator.py:162`), so a hydrator-level test cannot prove
+  the filtering rule, and the repository test that could is unnamed (finding 6).
+
+**Order matters.** Resolving finding 6 first is what makes this population measurable — until
+invisible proof is either surfaced or ruled out, "untested" and "unnamed" are indistinguishable, and
+this ticket already published one claim ("no existing test proves them") that was wrong for exactly
+that reason and had to be corrected the same day.
+
+The work is per-requirement verdicts in the matrix and the missing tests written, **not** a ticket
+per gap — that is the inflation this backlog was explicitly told to stop.
