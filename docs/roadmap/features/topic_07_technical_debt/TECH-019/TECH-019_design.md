@@ -214,3 +214,22 @@ working tree.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate workflow.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- **`TECH-008` deleted `docs/architecture/architecture_reference.md`; six LIVE instruction sites
+  still order the agent to read it** — `.agents/AGENTS.md:46`,
+  `specweaver-design/phase-2-research.md:24`,
+  `specweaver-implementation-plan/phase-1-preparation.md:20` and `phase-3-architecture.md:22`,
+  `specweaver-pre-commit/phase-1-architecture.md` (§1.1 read **and §1.8 as the place to record new
+  boundary violations**, when the live ledger is
+  `06_lessons_and_future/known_boundary_violations.md`) and `phase-6-documentation.md:27`.
+
+- Fix = repair the six references, reconcile the two format orders (delete the loser), and **ship
+  the guardrail**: `scripts/check_skill_references.py` asserting every repo-relative path in a skill
+  instruction resolves on disk — the same invariant class as the handler-reachability test in
+  `f7a0f34f`, *a declared reference must resolve*, applied to instructions.
+
+- Low risk, high blast radius: should land ahead of the next feature's design phase rather than queueing behind `TECH-017`/`TECH-018`.

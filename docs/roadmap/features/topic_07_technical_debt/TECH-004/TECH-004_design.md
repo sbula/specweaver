@@ -332,3 +332,9 @@ When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to b
 **Current status**: Impl Plan for SF-01 APPROVED.
 **Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-004/TECH-004_sf01_implementation_plan.md` to begin TDD implementation.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- _(2026-07-31: reworded — this previously read as an open question when the decision has been settled and shipped.)_

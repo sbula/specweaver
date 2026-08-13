@@ -129,3 +129,13 @@ Two additional raw-`subprocess` call sites were found in the same repo-wide scan
 - **`assurance/standards/discovery.py`** (`git ls-files` query) — same treatment. This module's `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at all. Currently exempted via a documented `noqa: TID251`.
 
 Neither is scoped as a numbered SF here — they need their own design decision (see `master_story_roadmap.md`'s TECH-009 entry) before implementation.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- _(2026-07-31: reworded — "Partially implemented" previously read as in-progress when the ticket is
+  complete and the two exemptions are deliberate.)_ ⚠️ **ID-collision note (see ADR-002):** the
+  2026-07-12 3-digit rename (`e73a58c9`) shifted the pre-scheme `TECH-08` — a *reference-only* ID in
+  `adr_002` for an **ABANDONED** `ApplicationService`-layer proposal — onto `TECH-009`, while this
+  design doc was added in the *same commit* and also took `TECH-009`.

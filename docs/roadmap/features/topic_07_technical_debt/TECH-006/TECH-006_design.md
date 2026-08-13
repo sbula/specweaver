@@ -320,3 +320,21 @@ Phase 6 HITL gate below asks for it explicitly.**
 beyond RED-2.1 itself, 0 LOW) — review complete.
 
 *(End of Red/Blue Team Review Report)*
+
+## Notes carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here rather than dropped when the entry was shortened to four lines.
+
+- **The God Object, measured:** `RunContext` in `core/flow/handlers/base.py` carried 23 fields and a
+  **67-line** `model_post_init` doing side-effect-heavy initialisation, with every new feature
+  adding another field.
+
+- **Highest-ROI shape:** once `D-INTL-06` SF-02 lands the shared `build_base_prompt()` factory in
+  `workflows/commons/`, constitution and standards loading moves INSIDE that factory — the same
+  pattern memory hydration already follows.
+- **But the direction may change under `C-INTL-06`** (Envelope-vs-Content) and `C-FLOW-11` (work
+  units read mounted files): constitution and standards would become domain loaders plus canonical
+  on-disk files consumed by both `oneshot` slots and agentic work units. Centralizing into the
+  factory would then deepen slot machinery that the new direction removes, so this sequencing is a
+  decision the design must take rather than assume.
+

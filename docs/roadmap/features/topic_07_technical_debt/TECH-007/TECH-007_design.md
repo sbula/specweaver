@@ -99,3 +99,11 @@ Feature TECH-007 adds a pluggable context loading architecture and an injection-
 
 **Current status**: Both SF-01 and SF-02 are fully implemented, verified, and committed. All quality gates (linting, types, 88%+ test coverage, zero new tach violations) have passed.
 **Next step**: Proceed with topic-level technical debt cleanup or feature tasks.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- _(2026-07-21: **unaffected by the middle-way direction** — escaping is a pure envelope concern
+  (`C-INTL-06`) and is required in both `oneshot` and agentic modes; if anything, externalized
+  content files raise its priority.)_

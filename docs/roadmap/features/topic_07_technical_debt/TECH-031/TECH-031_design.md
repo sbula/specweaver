@@ -155,3 +155,13 @@ Run through `specweaver-design`. Establish first:
    sync strategy, because a clear failure may be most of the value.
 3. **Whether the same assumption exists for the non-Python runners**, which resolve their toolchains
    differently.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- Container QA now fails loudly instead of silently, and `execution_mode` defaults to `"host"`, so the remaining chain is **latent, not live**.
+
+- Out of scope: `--all-extras` (rejected — widening what untrusted code installs cuts against the
+  sandbox's purpose); this repo's manifest (`TECH-028`); `B-EXEC-01`'s status; the non-Python
+  runners' own silent-success shape (`TECH-032`).

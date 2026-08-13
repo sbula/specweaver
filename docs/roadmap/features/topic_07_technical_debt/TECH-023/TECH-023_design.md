@@ -298,3 +298,9 @@ duplication is that ticket's subject.
 
 `6563 passed, 11 skipped, 0 failed`. `ruff`, `mypy` (335 files), `tach` clean; 0 cycles across 335
 modules; class health within limits.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- Several batches turned out to be duplication or cohesion findings wearing a complexity label, which is what raised `TECH-037` and `TECH-035`.

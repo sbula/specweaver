@@ -43,7 +43,8 @@ contracts. A unit-test-heavy integration story is a *symptom*; the ticket exists
 > double-cover it.
 
 **9 of 28 integration base contracts are delivered:** `INT-US-01, 02, 03, 04, 05, 09, 24, 25, 28`.
-Audit of their declared proof and of the 104 integration / 44 e2e test files found:
+Audit of their declared proof and of the **148** test files then present (104 integration / 44 e2e)
+found:
 
 ### 1. A delivered contract with no proof at all
 
@@ -110,7 +111,13 @@ someone else's test instead of proving the seam.
   > saved** and **telemetry is flushed** on the interrupt path — precisely the `finally:` contract
   > this finding said nothing verified. `KeyboardInterrupt` is now in **6** test files, not 2, and
   > `SIGBREAK` routes through the same graceful-cleanup handler so the SIGINT e2e branches
-  > per-platform instead of skipping on Windows *(that half was already noted 2026-08-01)*.
+  > per-platform instead of skipping on Windows.
+  >
+  > That Windows half was corrected earlier, on **2026-08-01**, and is recorded here so the
+  > original finding is not re-raised: `test_cqrs_e2e.py::test_story_9_sigint_survival` no longer
+  > skips on Windows because `_signals.py` now routes Ctrl+Break (`SIGBREAK`) through the same
+  > handler as SIGINT/SIGTERM. That closes ONE instance of "graceful shutdown effectively
+  > unproven", not the finding.
   > **What remains open:** `CancelledError` is still **0 files** and `atexit` still **0**, and the
   > fan-out still spawns `asyncio.Task`s that no test cancels. Scope this finding to task
   > cancellation only — the process-signal half is done.

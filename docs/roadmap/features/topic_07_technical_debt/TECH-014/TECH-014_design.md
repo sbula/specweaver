@@ -154,3 +154,14 @@ lives in `runner_utils.isolate_sub_run_context`'s docstring rather than as a com
 site — a structural move, not the comment-condensing that `TECH-020` names as the pattern to stop
 repeating. The file now sits at **599 of 600**. This is `TECH-020`'s second recorded data point,
 and the next contributor still pays with no warning.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- [Description](../features/topic_07_technical_debt/TECH-014/TECH-014_design.md) | _(new, 2026-07-25
+  — found during INT-US-21 SF-01 CB-2 pre-commit)_ | `OrchestrateComponentsHandler` hands **the same
+  `RunContext` object** to every concurrent sub-runner (`handlers/decompose.py:238-241`,
+  `context=context.pipeline_runner._context`), while `PipelineRunner._execute_loop` writes `run_id`,
+  `step_records` and `pipeline_runner` onto that context on **every step**
+  (`engine/runner.py:404-406`).

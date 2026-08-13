@@ -379,3 +379,16 @@ impossible to commit, so neither should hit it.
 
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- [Description](../features/topic_07_technical_debt/TECH-025/TECH-025_design.md) | _(2026-08-02,
+  widened same day — found running `check_fr_coverage.py TECH-001` as SF-04's closure gate, then
+  again running `check_fr_coverage.py TECH-005` as SF-03's closure gate; widened a second time
+  2026-08-08 when verifying TECH-002's status)_ | None of `TECH-001_design.md`'s FR-1–8
+  (SF-01/02/03), `TECH-002_design.md`'s FR-1–6 (all four sub-features) or `TECH-005_design.md`'s
+  FR-1–7 (SF-01/2) are cited by the literal string `FR-N` in any implementation plan or test file
+  naming their story — the citation *convention* was never followed for either, most plausibly
+  because this gate didn't exist yet when they shipped.

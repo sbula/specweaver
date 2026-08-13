@@ -86,3 +86,11 @@ asserting the broken behaviour: the tripwire tells you when it is obsolete.
 **Still open and NOT fixed here:** the retry budget does not accumulate across sessions —
 `_execute_loop` re-initialises `attempts` on every entry, so each `sw run --resume` grants a fresh
 3-strike allowance. That remains `C-FLOW-07`'s (via INT-US-21 `NFR-2`), unchanged.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- Measured on `feature_decomposition` with a spec failing 4 rules (S06, S07, S09, S10) — session 2
+  approves the draft gate, `validate_feature` FAILS, the gate loops back, and the run parks at
+  **draft** again with `validate_feature: status=running, result=None`.

@@ -133,3 +133,11 @@ wrong — the tail is §2's own scope — and correcting it is what closed this.
 rather than deleted because the *defect* was real, measured and reproduced, and the record of how
 it was found and fixed is worth more than a clean-looking registry. It also names the missing test
 that let it survive, which outlives the fix.
+
+## The observable failure, carried down from the topic entry (2026-08-13, `TECH-044`)
+
+`execute`'s blanket `except Exception` converts the `AttributeError` into
+`StepResult(status=ERROR)` — so a lint fix that **succeeded**, and whose corrected file is already
+on disk, is reported as a failed step. The reader is then sent to the LLM output and the lint
+results rather than to the telemetry configuration that actually caused it.
+

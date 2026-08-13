@@ -8,63 +8,89 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`E-FLOW-02` ✅: YAML Pipelines** (Legacy: Step 10)<br>
   > _(new)_ | Define what a pipeline IS — YAML schema, step model (action + target), gate definitions, parser. No execution yet, just the data model and parsing.
 * **`E-FLOW-03` ✅: Multi-Provider Registry** (Legacy: 3.13)<br>
-  > _(split from original 3.12)_ | Auto-discovery registry: each adapter is self-describing (`provider_name`, `api_key_env_var`, `default_costs`). System scans `llm/adapters/` at import → builds registry automatically. Adding a new provider = one file, zero other changes. **Complete**: Registry auto-discovery, schemas V10, 5 adapters (Gemini, OpenAI, Anthropic, Mistral, Qwen), factory integration, and `sw config set-provider`. 3531 tests.
+  > _(split from original 3.12)_ | Auto-discovery registry: each adapter is self-describing (`provider_name`, `api_key_env_var`, `default_costs`). System scans `llm/adapters/` at import → builds
+  > registry automatically. Adding a new provider = one file, zero other changes. **Complete**: Registry auto-discovery, schemas V10, 5 adapters (Gemini, OpenAI, Anthropic, Mistral, Qwen), factory
+  > integration, and `sw config set-provider`. 3531 tests.
 
 ## DAL-D: Internal Tooling
 * **`D-FLOW-01` ✅: Pipeline Runner** (Legacy: Step 11)<br>
   > SQLite Pipeline Runner & State Persistence
 * **`D-FLOW-02` ✅: sw run CLI** (Legacy: Step 13)<br>
-  > _(new)_ | `sw run` command to invoke pipelines from CLI. Rich step-by-step progress. `--verbose` / `--json` output. Robust error handling with friendly one-liners. Structured file-based logging across all SpecWeaver modules.
+  > _(new)_ | `sw run` command to invoke pipelines from CLI. Rich step-by-step progress. `--verbose` / `--json` output. Robust error handling with friendly one-liners. Structured file-based logging
+  > across all SpecWeaver modules.
 * **`D-FLOW-03` ✅: Static Model Routing** (Legacy: 3.14)<br>
-  > _(split from original 3.12)_ | Map task types to models in config: `review → claude`, `implement → gemini-pro`. Uses registry to resolve provider+model. No AI, no learning — pure user configuration. **Complete:** 3568 tests total.
+  > _(split from original 3.12)_ | Map task types to models in config: `review → claude`, `implement → gemini-pro`. Uses registry to resolve provider+model. No AI, no learning — pure user
+  > configuration. **Complete:** 3568 tests total.
 * **`D-FLOW-04` ✅: Unified Runner Architecture** (Legacy: 3.16)<br>
-  > _(new)_ | Refactor single-shot CLI commands (`sw review`, `sw draft`, etc.) to use dynamic 1-step pipelines via `PipelineRunner`. Standardizes execution, telemetry, and state tracking. Includes project-wide logging reform. **Complete**: 3589 tests.
+  > _(new)_ | Refactor single-shot CLI commands (`sw review`, `sw draft`, etc.) to use dynamic 1-step pipelines via `PipelineRunner`. Standardizes execution, telemetry, and state tracking. Includes
+  > project-wide logging reform. **Complete**: 3589 tests.
 
 ## DAL-C: Enterprise Standard
 * **`C-FLOW-01` ✅: Cost Telemetry** (Legacy: 3.12)<br>
-  > _(split from original 3.12)_ | Log `model_id`, `prompt_tokens`, `completion_tokens`, `estimated_cost` on every LLM call. `TelemetryCollector` (decorator), `UsageRecord`/`estimate_cost()`, `TelemetryMixin` (DB persistence), schema v9, factory telemetry wrapping, task_type attribution in flow handlers. CLI: `sw usage` (summary table with `--all`/`--since`), `sw costs` (view/set/reset overrides). Runner + CLI + API flush integration via `context.db`. **Complete**: 3451 tests.
+  > _(split from original 3.12)_ | Log `model_id`, `prompt_tokens`, `completion_tokens`, `estimated_cost` on every LLM call. `TelemetryCollector` (decorator), `UsageRecord`/`estimate_cost()`,
+  > `TelemetryMixin` (DB persistence), schema v9, factory telemetry wrapping, task_type attribution in flow handlers. CLI: `sw usage` (summary table with `--all`/`--since`), `sw costs` (view/set/reset
+  > overrides). Runner + CLI + API flush integration via `context.db`. **Complete**: 3451 tests.
 * **`C-FLOW-02` ✅: Router-Based Control** (Legacy: 3.25)<br>
-  > _(new)_ | Conditional branching in pipelines — route specs to different pipeline paths based on assessment (e.g., simple → fast track, complex → full decomposition). New `router` YAML key on steps. **Complete**: 3877 tests.
+  > _(new)_ | Conditional branching in pipelines — route specs to different pipeline paths based on assessment (e.g., simple → fast track, complex → full decomposition). New `router` YAML key on
+  > steps. **Complete**: 3877 tests.
 * **`C-FLOW-03` ✅: Multi-Spec Fan-Out** (Legacy: 3.27)<br>
-  > _(from 3.1 analysis)_ | Sub-pipeline spawning: decomposition outputs N component specs, each runs its own L3 pipeline. Parent pipeline waits for all children. **Critically:** Uses the Topology Graph to mathematically predict file blast radius. Safely runs disjoint components fully in parallel mapped to separate isolated sandboxes, injecting dynamic `SW_PORT_OFFSET` hashes to prevent test collision (port bounds, SQLite locks) without incurring git merge conflicts. **Complete**: 3986 tests.
+  > _(from 3.1 analysis)_ | Sub-pipeline spawning: decomposition outputs N component specs, each runs its own L3 pipeline. Parent pipeline waits for all children. **Critically:** Uses the Topology
+  > Graph to mathematically predict file blast radius. Safely runs disjoint components fully in parallel mapped to separate isolated sandboxes, injecting dynamic `SW_PORT_OFFSET` hashes to prevent
+  > test collision (port bounds, SQLite locks) without incurring git merge conflicts. **Complete**: 3986 tests.
 * **`C-FLOW-04` 🔜: Work Packet Bundling** (Legacy: 3.49)<br>
-  > _(inspired by Cavekit)_ | Optimizes the Dynamic DAG Topology Dispatcher (3.27) by bundling tiny, independent components into aggregated "Work Packets" assigned to a single Git Worktree. Reduces Git I/O overhead and LLM context initialization tokens drastically.
+  > _(inspired by Cavekit)_ | Optimizes the Dynamic DAG Topology Dispatcher (3.27) by bundling tiny, independent components into aggregated "Work Packets" assigned to a single Git Worktree. Reduces
+  > Git I/O overhead and LLM context initialization tokens drastically.
 * **`C-FLOW-05` ✅: Interactive Gate Variables (HITL)** (Legacy: 3.26c)<br>
-  > _(new)_ | Immediately actionable. Updates `PromptBuilder` to explicitly isolate human `GateType.HITL` rejections into a mathematically bound `<dictator-overrides>` XML section, granting them strict promotional weight above standard linter error findings in loop-back generation sequences. **Complete**: 3934 tests.
+  > _(new)_ | Immediately actionable. Updates `PromptBuilder` to explicitly isolate human `GateType.HITL` rejections into a mathematically bound `<dictator-overrides>` XML section, granting them
+  > strict promotional weight above standard linter error findings in loop-back generation sequences. **Complete**: 3934 tests.
 * **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)<br>
-  > _(new)_ | Execute High-ROI adaptations immediately: Context Condensation (AST Skeletons), Impact-Aware Test Limiting, DAL CI/CD Risk Evaluation, Standards Scaffolding, and Dynamic Context Routing. See [design doc](features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md). **Complete:** All refactorings, Impact-Aware gates, and DI boundaries successfully validated.
+  > _(new)_ | Execute High-ROI adaptations immediately: Context Condensation (AST Skeletons), Impact-Aware Test Limiting, DAL CI/CD Risk Evaluation, Standards Scaffolding, and Dynamic Context Routing.
+  > See [design doc](features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md). **Complete:** All refactorings, Impact-Aware gates, and DI boundaries successfully validated.
 * **`C-FLOW-07` 🔜: HITL Root-Cause Tagging** (Legacy: 5.5a)<br>
-  > _(new)_ | Direct integration with the Friction Analytics dashboard. When the Agent encounters friction, a human steps in (HITL) and actively tags *why* the pipeline failed (e.g., "Bad Spec", "Hallucination"), feeding the attribution engine.
+  > _(new)_ | Direct integration with the Friction Analytics dashboard. When the Agent encounters friction, a human steps in (HITL) and actively tags *why* the pipeline failed (e.g., "Bad Spec",
+  > "Hallucination"), feeding the attribution engine.
 * **`C-FLOW-08` 🔜: Pluggable Webhook & CI Invocation**
   > _(new)_ | Allows the runner to dispatch authenticated webhooks or trigger remote Jenkins/GitHub Actions upon successful validation.
 * **`C-FLOW-09` 🔜: DAL CI/CD Risk Evaluation**
   > _(new)_ | Auto-rejects PRs if changes cause architectural degradation (e.g., DAL-C attempting to import DAL-A).
 * **`C-FLOW-10` 🔜: Deferred Router Mapping (Advanced Routing & Conditional Flows)** (Legacy: 3.25)<br>
-  > _(new)_ | Advanced routing beyond basic `C-FLOW-02` Router-Based Control: deferred/suspended routing with `GATE_PENDING` state persistence and resume (the `INT-US-04-SF05` "Advanced Routing & Conditional Flows" integration target). Split from `C-FLOW-02` during capability-ID normalization — both were the legacy "3.25".
+  > _(new)_ | Advanced routing beyond basic `C-FLOW-02` Router-Based Control: deferred/suspended routing with `GATE_PENDING` state persistence and resume (the `INT-US-04-SF05` "Advanced Routing &
+  > Conditional Flows" integration target). Split from `C-FLOW-02` during capability-ID normalization — both were the legacy "3.25".
 * **`C-FLOW-11` 🔜: Graduated Autonomy (DAL-Driven Execution-Mode Dial)**<br>
-  > [Description](../features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) | _(new, 2026-07-21)_ | Execution rigidity becomes a DAL-driven **policy dial** instead of an architectural constant: pipeline work steps gain `mode: oneshot | agentic` (default `oneshot` — zero regression). `agentic` = a sandboxed **work unit** (agent + tools + mounted skills) iterating inside `C-EXEC-06` session isolation, budget-capped, then gated/verified/authorized like any step output. Mode resolved at the composition root from DAL policy (mirrors the approved `INT-US-03` AD-8 escalation pattern). Rationale: the zero-trust gates make the middle free — guarantees stay hardcoded at every dial position. Complements `C-VAL-05` (the "middle way" pair).
+  > [Description](../features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) | _(new, 2026-07-21)_ | Execution rigidity becomes a DAL-driven **policy dial** instead of an architectural constant:
+  > pipeline work steps gain `mode: oneshot | agentic` (default `oneshot` — zero regression). `agentic` = a sandboxed **work unit** (agent + tools + mounted skills) iterating inside `C-EXEC-06`
+  > session isolation, budget-capped, then gated/verified/authorized like any step output. Mode resolved at the composition root from DAL policy (mirrors the approved `INT-US-03` AD-8 escalation
+  > pattern). Rationale: the zero-trust gates make the middle free — guarantees stay hardcoded at every dial position. Complements `C-VAL-05` (the "middle way" pair).
 
 * **`C-FLOW-12` 🔜: Autonomous DAG Execution (Decompose → Orchestrate)**<br>
-  > [Description](../features/topic_03_flow_engine/C-FLOW-12/C-FLOW-12_design.md) | _(new, 2026-07-28 — minted at INT-US-21 epic closure per its `AD-4`)_ | `INT-US-21` delivers the decomposition *journey* — spec → reviewed `DecompositionPlan` → durable `<stem>_decomposition.yaml` → one stub spec per node — and deliberately stops there. **Executing** that DAG was never built by anybody, so `AD-4` split it out rather than let the base contract claim capability it did not have. Missing: per-component spec synthesis (the base writes stubs, something must make them real), race-hardened fan-out (`OrchestrateComponentsHandler` hands the **same mutable `RunContext`** to every concurrent sub-runner — latent because nothing exercises it, and `TECH-014` must land first), and `proposed_dal`-driven isolation (the base guarantees the DAL *data* contract; escalation is `C-EXEC-07`). The base's seams are defined and tested as they stand — `context.decomposition` via the shared `DECOMPOSITION_PLAN_KEY`, the artifact schema, stub paths, `proposed_dal` presence, approve-on-resume — but **"frozen" does not mean the base ships a forward-compatibility pin for this consumer**: `FR-9(a)` attempted that and was descoped, because a pin written against an undesigned consumer freezes a guess. This capability writes its own seam pin as its first commit. Sequenced behind `C-EXEC-07` and `TECH-014`. Integration contract: `INT-US-21-SF02`.
+  > [Description](../features/topic_03_flow_engine/C-FLOW-12/C-FLOW-12_design.md) | _(2026-07-28 — minted at INT-US-21 epic closure per its `AD-4`.)_ | `INT-US-21` delivers the decomposition *journey*
+  > and deliberately stops before executing the DAG. This builds that: per-component spec synthesis, race-hardened fan-out, and `proposed_dal`-driven isolation. Writes its own seam pin as its first
+  > commit — the base deliberately ships no forward-compatibility pin, since `FR-9(a)` tried and was descoped. Sequenced behind `C-EXEC-07` and `TECH-014`. Integration contract: `INT-US-21-SF02`.
 
 ## DAL-B: High-Assurance
 * **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)<br>
-  > _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. **Complete:** 4168 tests.
+  > _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter
+  > agent for error attribution. **Complete:** 4168 tests.
 * **`B-FLOW-02` 🔜: OpenTelemetry Agent Tracing** (Legacy: 3.44)<br>
-  > _(new)_ | Directly tracing hierarchical LLM workflow logic out of the `PipelineRunner` using the `OpenTelemetry (OTel)` standard to emit Spans into enterprise endpoints (Jaeger/Datadog) for comprehensive thought observability.
+  > _(new)_ | Directly tracing hierarchical LLM workflow logic out of the `PipelineRunner` using the `OpenTelemetry (OTel)` standard to emit Spans into enterprise endpoints (Jaeger/Datadog) for
+  > comprehensive thought observability.
 * **`B-FLOW-03` 🔜: Friction Detection** (Legacy: 4.5c)<br>
-  > _(split from original 3.12)_ — When downstream agent modifies >20% of upstream scaffolding (measured by `git diff`), flag "friction event" and attribute to upstream model. No LLM needed — pure diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
+  > _(split from original 3.12)_ — When downstream agent modifies >20% of upstream scaffolding (measured by `git diff`), flag "friction event" and attribute to upstream model. No LLM needed — pure
+  > diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)<br>
   > Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_
 * **`B-FLOW-05` 🔜: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
-  > _(new)_ | Cost/token circuit breakers that halt runaway LLM spend (Economic Denial-of-Service prevention); the `INT-US-04-SF02` "Security Defenses" integration target. Split from `B-FLOW-03` (Friction Detection) during capability-ID normalization.
+  > _(new)_ | Cost/token circuit breakers that halt runaway LLM spend (Economic Denial-of-Service prevention); the `INT-US-04-SF02` "Security Defenses" integration target. Split from `B-FLOW-03`
+  > (Friction Detection) during capability-ID normalization.
 
 ## DAL-A: Mission-Critical
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)<br>
-  > _(split from original 3.12)_ — Analyze telemetry + friction data to **suggest** (not auto-apply) model swaps. "Model X has 3× more friction on planning tasks than Model Y." See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
+  > _(split from original 3.12)_ — Analyze telemetry + friction data to **suggest** (not auto-apply) model swaps. "Model X has 3× more friction on planning tasks than Model Y." See
+  > [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`A-FLOW-02` 🔜: Hash GC** (Legacy: 5.3)<br>
   > Phase D | Hash-based garbage collection for graph nodes
 * **`A-FLOW-03` 🔜: Dead Code Detection & Analysis** (Legacy: 5.9)<br>
-  > _(new)_ | Utilize the `PostgreSQL` persistent topology graph to mathematically search and detect unreachable code (functions/methods) across the repository. Generates a report for human review to decide if the isolated code should be deleted or kept for future use.
+  > _(new)_ | Utilize the `PostgreSQL` persistent topology graph to mathematically search and detect unreachable code (functions/methods) across the repository. Generates a report for human review to
+  > decide if the isolated code should be deleted or kept for future use.
 * **`A-FLOW-04` 🔜: Blast-Radius Circuit Breaker**
   > _(new)_ | Failsafe mechanism that calculates the topological impact of an autonomous hotfix and halts execution if the blast radius exceeds threshold tolerances.

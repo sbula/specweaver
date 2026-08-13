@@ -171,3 +171,11 @@ tests/e2e           191 passed, 0 failed
 ```
 
 The Linux migration's 29 failures are closed.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- `_path_matches_grant` compares path **segments**, and `_resolve_access` builds an absolute path
+  first: on POSIX `/tmp/proj/x` splits to `['', 'tmp', …]` whose first element matches an empty
+  grant's `['']`, while on Windows `C:/proj/x` splits to `['C:', …]` and never matches.

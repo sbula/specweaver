@@ -92,6 +92,25 @@ already is; how much content belongs there is a layer question, not a character 
    fixing anything — the content stays at the wrong depth and the count says it is solved. Rejected
    for exactly that reason, and recorded so it is not re-proposed as an optimisation.
 
+## Progress — 2026-08-13
+
+**R-ENTRY: 41 over-long entries -> 2.** All 39 fixed were redistributed rather than trimmed: facts
+absent from the deeper layers were carried down first, verbatim, under a *Carried down from the
+topic entry* heading in the relevant design (14 designs updated). `check_entry_orphans.py` reports
+zero for every entry that was shortened.
+
+**R-DEPTH: every topic document is now clean.** 103 entry lines and 1 prose line wrapped; the seven
+`topic_*.md` files have a maximum line length of 199-200. Total census 2057 -> 1904, the remainder
+being design docs and other trees.
+
+### The 2 that remain, and why they are not "nearly done"
+
+`E-UI-02` (816 chars) and `C-EXEC-07` (1325) are the only entries with **no design document at
+all** — nothing links from them, and no `<ID>_design.md` exists. There is therefore nowhere to
+redistribute to, and shortening them would be deletion. They stay frozen until someone decides
+whether to write the missing design or accept the entry as the only record. Naming that is the
+point: it is a different kind of work from the other 39, not the tail of it.
+
 ## The scaffolding is deleted when this ticket closes — enforced, not promised
 
 `scripts/check_entry_orphans.py` exists only to make this redistribution safe. When the R-DEPTH

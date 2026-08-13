@@ -212,3 +212,9 @@ the actual contract. The other 17 tests fixed here were not touched.
 
 This is a best-effort backstop. The cap still applies to the whole UID and the baseline can drift
 between measurement and exec. Only a per-subtree mechanism makes `FR-11` true without qualification.
+
+## Carried down from the topic entry (2026-08-13, `TECH-044`)
+
+Moved here verbatim when the entry was shortened to four lines — recorded rather than dropped.
+
+- Measured: `max_processes=None` takes integration 14→4 failures and e2e 9→1, wall clock 67s→12s and 39s→14s.
