@@ -48,6 +48,33 @@ def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 
 
 @pytest.fixture()
+def _loaded(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Record which pipeline YAML `sw check` actually loads, without changing what it does.
+
+    A **spy, not a mock**: the real `load_pipeline_yaml` still runs, so the round-trip this file
+    claims to exercise stays real and the recorded name is the one validation actually used.
+
+    This exists because every test below used to assert `exit_code in (0, 1)` — which accepts
+    success AND failure — under docstrings claiming the profile pipeline was selected. One even
+    said so out loud: *"We verify by checking that the output mentions the expected pipeline (or
+    doesn't crash)"*. Nothing mentions it; `_build_result_label` prints "Spec" unless `--pipeline`
+    was passed explicitly, so the selected name is invisible in the output and the tests were
+    passing on the parenthesis. `TECH-017`.
+    """
+    from specweaver.assurance.validation import pipeline_loader
+
+    seen: list[str] = []
+    real = pipeline_loader.load_pipeline_yaml
+
+    def _spy(name: str, **kwargs: object) -> object:
+        seen.append(name)
+        return real(name, **kwargs)
+
+    monkeypatch.setattr(pipeline_loader, "load_pipeline_yaml", _spy)
+    return seen
+
+
+@pytest.fixture()
 def _project(tmp_path: Path, _mock_db: MagicMock) -> tuple[str, Path]:
     """Create and activate a test project."""
     name = "seam-proj"
@@ -251,78 +278,83 @@ def _get_cost_overrides_sync(db) -> dict:
 
 
 class TestProfileAwareCheckSeam:
-    """CLI check command uses profile YAML when a domain profile is active."""
+    """CLI check command uses profile YAML when a domain profile is active.
+
+    Every test here asserts **which pipeline was loaded**, not merely that the command survived.
+    `TECH-017`: `exit_code in (0, 1)` accepts a pass and a failure alike, so it cannot distinguish
+    "the profile selected the library pipeline" from "the profile was ignored entirely".
+    """
 
     def test_check_with_profile_uses_profile_pipeline(
         self,
         _project: tuple[str, Path],
         _mock_db: MagicMock,
         _spec_file: Path,
+        _loaded: list[str],
     ) -> None:
-        """sw check --level component routes to profile YAML (not default).
-
-        We verify by checking that the output mentions the expected pipeline
-        (or doesn't crash), and that the DB correctly reports the profile.
-        """
+        """An active `library` profile routes `--level component` to the library YAML."""
         name, _ = _project
         _set_domain_profile_sync(_mock_db, name, "library")
 
-        result = runner.invoke(
-            app,
-            [
-                "check",
-                str(_spec_file),
-                "--level",
-                "component",
-            ],
-        )
-        # Should succeed (maybe warnings, but not crash)
-        assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
-        # Profile is still stored
-        assert _get_domain_profile_sync(_mock_db, name) == "library"
+        runner.invoke(app, ["check", str(_spec_file), "--level", "component"])
+
+        assert _loaded[0] == "validation_spec_library"
+        # `validation_spec_library.yaml` carries `extends: validation_spec_default`, so the base is
+        # loaded second. Asserted rather than tolerated: it pins that inheritance actually resolves
+        # at this seam, which nothing else here proved.
+        assert _loaded == ["validation_spec_library", "validation_spec_default"]
 
     def test_check_with_web_app_profile(
         self,
         _project: tuple[str, Path],
         _mock_db: MagicMock,
         _spec_file: Path,
+        _loaded: list[str],
     ) -> None:
-        """Check with web-app profile completes without crashing."""
+        """A second profile proves the mapping varies with the profile, not a constant."""
         name, _ = _project
         _set_domain_profile_sync(_mock_db, name, "web-app")
 
-        result = runner.invoke(
-            app,
-            [
-                "check",
-                str(_spec_file),
-                "--level",
-                "component",
-            ],
-        )
-        assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
+        runner.invoke(app, ["check", str(_spec_file), "--level", "component"])
+
+        assert _loaded[0] == "validation_spec_web_app"
+        assert _loaded == ["validation_spec_web_app", "validation_spec_default"]
 
     def test_check_without_profile_uses_default_pipeline(
         self,
         _project: tuple[str, Path],
         _mock_db: MagicMock,
         _spec_file: Path,
+        _loaded: list[str],
     ) -> None:
-        """Check without any profile uses the spec_default pipeline."""
-        # No profile set
+        """No profile -> the default YAML. The control for the two tests above."""
         name, _ = _project
         assert _get_domain_profile_sync(_mock_db, name) is None
 
-        result = runner.invoke(
-            app,
-            [
-                "check",
-                str(_spec_file),
-                "--level",
-                "component",
-            ],
-        )
-        assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
+        runner.invoke(app, ["check", str(_spec_file), "--level", "component"])
+
+        # The default extends nothing, so exactly one load — the control that makes the two
+        # tests above meaningful rather than a description of whatever happened.
+        assert _loaded == ["validation_spec_default"]
+
+    def test_the_profile_survives_the_check(
+        self,
+        _project: tuple[str, Path],
+        _mock_db: MagicMock,
+        _spec_file: Path,
+    ) -> None:
+        """The DB read that used to be this file's only real assertion, kept as its own test.
+
+        It proves the profile was *written*, which is worth keeping — but it was never evidence
+        that the profile *did* anything, and standing beside an `exit_code in (0, 1)` it read as if
+        it were.
+        """
+        name, _ = _project
+        _set_domain_profile_sync(_mock_db, name, "library")
+
+        runner.invoke(app, ["check", str(_spec_file), "--level", "component"])
+
+        assert _get_domain_profile_sync(_mock_db, name) == "library"
 
 
 # ===========================================================================
@@ -331,19 +363,24 @@ class TestProfileAwareCheckSeam:
 
 
 class TestExplicitPipelineOverridesProfile:
-    """--pipeline beats active profile during sw check."""
+    """--pipeline beats active profile during sw check.
+
+    Both tests here name a profile whose pipeline is DIFFERENT from the expected winner, so a
+    regression that ignored the override would load the profile's YAML and fail the assertion.
+    """
 
     def test_explicit_pipeline_beats_profile(
         self,
         _project: tuple[str, Path],
         _mock_db: MagicMock,
         _spec_file: Path,
+        _loaded: list[str],
     ) -> None:
-        """Explicit --pipeline uses the given YAML even when profile is active."""
+        """`--pipeline` wins over an active `web-app` profile."""
         name, _ = _project
         _set_domain_profile_sync(_mock_db, name, "web-app")
 
-        result = runner.invoke(
+        runner.invoke(
             app,
             [
                 "check",
@@ -354,26 +391,23 @@ class TestExplicitPipelineOverridesProfile:
                 "validation_spec_default",
             ],
         )
-        # Should use validation_spec_default (not web-app), but shouldn't crash
-        assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
+
+        assert _loaded == ["validation_spec_default"]
+        assert "validation_spec_web_app" not in _loaded
 
     def test_feature_level_beats_profile(
         self,
         _project: tuple[str, Path],
         _mock_db: MagicMock,
         _spec_file: Path,
+        _loaded: list[str],
     ) -> None:
-        """--level feature ignores active profile."""
+        """`--level feature` wins over an active `microservice` profile."""
         name, _ = _project
         _set_domain_profile_sync(_mock_db, name, "microservice")
 
-        result = runner.invoke(
-            app,
-            [
-                "check",
-                str(_spec_file),
-                "--level",
-                "feature",
-            ],
-        )
-        assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
+        runner.invoke(app, ["check", str(_spec_file), "--level", "feature"])
+
+        assert _loaded[0] == "validation_spec_feature"
+        assert _loaded == ["validation_spec_feature", "validation_spec_default"]
+        assert "validation_spec_microservice" not in _loaded

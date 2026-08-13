@@ -298,8 +298,26 @@ class TestDomainProfileCLI:
         self,
         tmp_path: Path,
         _mock_db,
+        monkeypatch,
     ) -> None:
-        """Full flow: set-profile → check spec works with profile thresholds."""
+        """Full journey: `sw config set-profile` → `sw check` loads THAT profile's pipeline.
+
+        The epic's benefit is that a domain profile dynamically overrides agent behaviour, and
+        this is the only test that spans both capabilities — so it is the one place that claim is
+        proven end to end. It previously asserted `exit_code in (0, 1)` under a docstring saying it
+        verified profile thresholds; that accepts a pass and a failure alike, and stayed green with
+        the profile lookup disabled entirely. `TECH-017`.
+        """
+        from specweaver.assurance.validation import pipeline_loader
+
+        loaded: list[str] = []
+        real = pipeline_loader.load_pipeline_yaml
+
+        def _spy(name: str, **kwargs):
+            loaded.append(name)
+            return real(name, **kwargs)
+
+        monkeypatch.setattr(pipeline_loader, "load_pipeline_yaml", _spy)
         name = _unique_name("profcheck")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
         set_test_active_project(_mock_db, name)
@@ -326,8 +344,11 @@ class TestDomainProfileCLI:
                 str(tmp_path),
             ],
         )
-        # Should run (may pass or warn, but not crash)
         assert result.exit_code in (0, 1), f"Crashed: {result.output}"
+        # The assertion that carries the claim: the web-app profile chose the web-app pipeline,
+        # which then pulled in its `extends:` base. Exit code alone cannot tell that apart from
+        # the profile being ignored.
+        assert loaded == ["validation_spec_web_app", "validation_spec_default"], loaded
 
     def test_set_profile_no_active_project(self, _mock_db) -> None:
         """sw config set-profile without active project shows error."""
