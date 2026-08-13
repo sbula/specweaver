@@ -161,6 +161,24 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-047` 🔴: Nothing Runs the FR-Coverage Gate Across Delivered Work**
+  > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) |
+  > _(2026-08-13 — from `docs/analysis/test_coverage_audit_2026-08-13.md`.)_ |
+  > `check_fr_coverage.py` works and takes a story ID, so it fires only when a human remembers a
+  > story — and nobody remembers 47. **40 of 47 delivered capabilities exit `BLOCKED`.** Third
+  > instance of one disease, after `check_story_preconditions` (INT-US-25) and `check_class_health`
+  > ("nothing in scope" for a session). The hard part is not the sweep — it is that turning it on
+  > produces 40 failures, and a ratchet nobody can act on says "40 unverified is fine".
+
+* **`TECH-048` 🔴: A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"**
+  > [Description](../features/topic_07_technical_debt/TECH-048/TECH-048_design.md) |
+  > _(2026-08-13 — same audit.)_ | `no FR rows parsed` collapses two different situations: a design
+  > that states no requirements, and one whose requirements the parser **cannot read**.
+  > `C-SENS-02` and `D-SENS-03` are the latter — from the outside indistinguishable from having
+  > nothing to check. Small now; the failure mode scales, because every new design format silently
+  > removes a capability from the gate's reach and nothing reports the reach shrinking. Must not
+  > apply to `TECH` tickets, whose stub has no FR table by design.
+
 * **`TECH-046` 🔴: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
   > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) |
   > _(2026-08-13 — `TECH-038`'s follow-up, filed once the evidence said the scope was wrong.)_ |

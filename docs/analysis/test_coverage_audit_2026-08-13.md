@@ -10,21 +10,40 @@ single question per item: **can the implementation be shown to meet the specific
 > as a citation here. Strength is only answerable by mutation testing (`A-VAL-03`); see
 > `closure-contract.md`. So this is a list of **open points to check**, not a list of proven gaps.
 
+## Correction, same day
+
+**The first version of this document overstated category B by roughly ten times**, and the
+correction is worth more than the original number.
+
+It counted 31 delivered items with "no FR table". **26 of those are `TECH` tickets, which
+legitimately have none** — the `specweaver-ticket` stub is Problem Statement / Candidate Approaches
+/ Non-Goals, with no requirements table, because a defect report is not a feature specification.
+Only the `specweaver-design` skill mandates Functional Requirements (its phase-3 Section A).
+
+Counting capabilities alone, the real numbers are below. The error came from treating every
+directory under `features/` as the same kind of thing, which is the same mistake as reading a
+directory listing for a layer model — measure the population before measuring the property.
+
 ## Headline
 
-**82 capabilities are marked delivered. 8 of them can be shown to meet their specification.**
+**82 items are marked delivered, of which 47 are capabilities and 35 are `TECH` tickets.**
 
-| | Count |
+| Delivered **capabilities** (47) | Count |
 |---|---|
-| A — delivered, FR gate `BLOCKED` (requirements stated, not all planned or tested) | **43** |
-| B — delivered, **no FR table at all** in the design | **31** |
-| C — delivered and clean | **8** |
-| not delivered | 22 |
+| A — FR gate `BLOCKED`: requirements stated, not all planned or tested | **40** |
+| B — the gate cannot run at all | **5** |
+| C — clean | **2** |
+
+| Delivered **`TECH` tickets** (35) | Count |
+|---|---|
+| FR gate `BLOCKED` | 3 |
+| no FR table — **expected**, the ticket stub has none | 26 |
+| clean | 6 |
 
 Category A alone accounts for **266 declared FRs**, of which **133** are carried by no
 implementation plan and **241** are cited by no test file.
 
-## A — delivered, requirements stated, coverage incomplete (43)
+## A — delivered, requirements stated, coverage incomplete (43: 40 capabilities + 3 TECH)
 
 The gate runs and fails. Each has a concrete, per-FR answer already available from
 `python scripts/check_fr_coverage.py <ID>`.
@@ -47,11 +66,22 @@ The gate runs and fails. Each has a concrete, per-FR answer already available fr
 - **07 technical debt** — `TECH-003` (3/3 FRs untested), `TECH-004` (12/12 FRs untested), `TECH-007` (5/5 FRs untested)
 - **08 integration** — `INT-US-02` (1/8 FRs untested), `INT-US-03` (4/8 FRs untested), `INT-US-04` (3/3 FRs untested), `INT-US-09` (2/6 FRs untested)
 
-## B — delivered with no Functional Requirements table (31)
+## B — the gate cannot run at all (5 capabilities)
 
-**The more serious category.** There is nothing to verify the implementation against: the design
-states no requirements, so no gate can ever pass or fail for it. "Accurately tested" is not a
-question that can be asked here until the specification says what it promised.
+Small, and two different defects wearing one label:
+
+| Capability | |
+|---|---|
+| `C-EXEC-01` | no requirements of any kind in the design |
+| `C-VAL-03` | no requirements of any kind in the design |
+| `E-UI-02` | no requirements — but its design is a **record written after delivery** (`TECH-044`, 2026-08-13), so this one is expected |
+| `C-SENS-02` | **has `FR-` ids the parser cannot read** — the table format differs |
+| `D-SENS-03` | **has `FR-` ids the parser cannot read** — the table format differs |
+
+The last two matter more than the first three. A design with no requirements is visibly empty; a
+design whose requirements the checker **silently cannot parse** reports "cannot run" and is
+indistinguishable, from the outside, from one that passed. That is the same disease as a
+story-scoped check nobody invokes.
 
 - **01 ui glass** — `E-UI-02`
 - **02 sensors** — `C-SENS-02`, `D-SENS-03`
@@ -62,7 +92,7 @@ question that can be asked here until the specification says what it promised.
   `TECH-029`, `TECH-030`, `TECH-032`, `TECH-033`, `TECH-034`, `TECH-035`, `TECH-036`, `TECH-037`,
   `TECH-038`, `TECH-039`, `TECH-040`, `TECH-044`
 
-## C — delivered and clean (8)
+## C — delivered and clean (8: 2 capabilities + 6 TECH)
 
 - **07 technical debt** — `TECH-001`, `TECH-002`, `TECH-005`, `TECH-006`, `TECH-019`, `TECH-025`
 - **08 integration** — `INT-US-21`, `INT-US-24`
@@ -91,5 +121,8 @@ now forbids; the point of this list is to decide the shape first.
 3. **`TECH-017` already owns this.** Its stated principle is that the audit must produce findings
    against capability stories, not only contracts. This document is that audit's input; §5 of its
    design carries the summary.
-4. **Candidates for their own ticket** are the systemic causes, not the instances: no gate runs
-   `check_fr_coverage` across delivered work, and nothing requires a design to have an FR table.
+4. **Candidates for their own ticket** are the systemic causes, not the instances — filed
+   2026-08-13 as `TECH-047` (nothing runs the gate across delivered work) and `TECH-048` (a design
+   the gate cannot parse reports "cannot run", which is indistinguishable from passing).
+5. **The correction at the top is the durable lesson.** Category B looked like 31 and is 5. Measure
+   the population before measuring the property, or the headline number carries the error.
