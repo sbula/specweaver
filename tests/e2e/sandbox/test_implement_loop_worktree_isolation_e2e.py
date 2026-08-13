@@ -16,7 +16,13 @@ end-of-run reconcile lands ONLY `allowed_paths` back into the real repo.
 - [Control]      a DAL_E project → escalation OFF → loop on host, probe FAILS at the real root
                  (discriminator: proves the probe genuinely runs and DAL gates isolation).
 
-Requires only git + bash; skips cleanly otherwise (NFR-6 / NFR-4).
+Requires only git + bash; skips cleanly otherwise.
+
+Proves: INT-US-03 FR-8, NFR-4, NFR-6.
+
+NFR-6 demands *"the paired un-isolated control asserting `failed == 1` (probe ran) to prevent a
+false green"*. That control is `test_low_dal_project_runs_on_host_and_probe_fails` below, and it
+asserts exactly that. NFR-4 is the graceful skip above when git or bash is absent.
 """
 
 from __future__ import annotations

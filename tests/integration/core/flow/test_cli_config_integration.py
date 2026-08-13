@@ -123,7 +123,7 @@ def test_toml_session_allowed_paths_override_used_verbatim(tmp_path: Path) -> No
 def test_toml_per_step_isolation_on_but_session_off_keeps_allowed_paths_empty(
     tmp_path: Path,
 ) -> None:
-    """[Boundary/NFR-2] the regression guard: per-STEP isolation on but per-RUN off must
+    """[Boundary/C-EXEC-06 NFR-2] the regression guard: per-STEP isolation on but per-RUN off must
     NOT populate allowed_paths — the per-step INT-US-09 strip_merge reads it, so a leaked
     allow-list would silently change that path's behavior."""
     project_dir = _init_project(
@@ -272,7 +272,7 @@ def test_tty_run_gets_interactive_context_provider(tmp_path: Path) -> None:
 
 
 def test_headless_run_keeps_provider_none(tmp_path: Path) -> None:
-    """[Boundary/FR-5] no TTY (CliRunner default) -> provider stays None; the draft park
+    """[Boundary/INT-US-02 FR-5] no TTY (CliRunner default) -> provider stays None; the draft park
     contract is byte-identical."""
     project_dir = _init_project(tmp_path, "sf02-headless", None)
     context = _run_and_capture(project_dir)
@@ -317,7 +317,7 @@ def test_tty_resume_gets_interactive_context_provider(tmp_path: Path, monkeypatc
 
 
 def test_headless_new_feature_run_parks_at_draft(tmp_path: Path) -> None:
-    """[Boundary/FR-5 — G1] `sw run new_feature` headless (no TTY -> no provider) with a
+    """[Boundary/INT-US-02 FR-5 — G1] `sw run new_feature` headless (no TTY -> no provider) with a
     missing spec PARKS at the draft step through the REAL runner — the behavior-level
     proof that SF-02's wiring left the headless park contract byte-identical."""
     from unittest.mock import MagicMock

@@ -122,7 +122,7 @@ def _plan_json(components: list[str] | None = None, coverage: float = 1.0) -> st
 
 
 class ScriptedLLM:
-    """Returns queued payloads. Counts calls so NFR-3 (LLM economy) is assertable."""
+    """Returns queued payloads. Counts calls so INT-US-21 NFR-3 (LLM economy) is assertable."""
 
     def __init__(self, payloads: list[str]) -> None:
         self._payloads = list(payloads)

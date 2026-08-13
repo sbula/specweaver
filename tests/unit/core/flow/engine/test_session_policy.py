@@ -6,7 +6,7 @@
 `_derive_allowed_paths` derives the reconcile allow-list from the spec stem (AD-2),
 byte-matching `generation.py`'s target derivation. `apply_session_policy` freezes the
 per-run isolation policy + allow-list onto the RunContext at the composition root, with
-the NFR-2 guard: when the policy is off, `allowed_paths` MUST stay empty (the per-step
+the C-EXEC-06 NFR-2 guard: when the policy is off, `allowed_paths` MUST stay empty (the per-step
 INT-US-09 path also reads it).
 """
 

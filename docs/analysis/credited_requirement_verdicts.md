@@ -12,8 +12,11 @@ were inspected, not that the rest were sound. This one reads.
 | | |
 |---|---|
 | Credited requirements on delivered stories | **152** across 20 stories |
-| Survive the audit | **123** |
-| **Revoked — the credit was never evidence** | **29** |
+| Survive the audit | **127** |
+| **Revoked — the credit was never evidence** | **25** |
+
+29 fell to the ambiguity rule; 4 were then restored by *qualifying* the mention — writing
+`C-EXEC-06 FR-7` where the file said only `FR-7` — after reading each against its design row.
 
 How the 152 were being credited before the audit:
 
@@ -46,36 +49,65 @@ mount) and `INT-US-09` FR-3 (isolation enablement policy). It is about none of t
 
 **Fixed in the grammar, not by hand:** a bare requirement id in a file naming more than one story
 now credits nothing. Qualifying the mention (`B-EXEC-01 FR-5`) or adding a tag restores it, and both
-make the claim checkable. 29 credits fell away:
+make the claim checkable. After qualifying the mentions whose owner could be established by reading,
+**25 remain revoked**:
 
 | Story | Requirements revoked | n |
 |---|---|---|
 | `B-EXEC-01` | FR-2, FR-3, FR-5, FR-7, NFR-1, NFR-2 | 6 |
 | `INT-US-02` | FR-2, FR-4, NFR-2, NFR-3, NFR-5 | 5 |
-| `INT-US-09` | FR-3, FR-5, NFR-1, NFR-2, NFR-6 | 5 |
-| `C-EXEC-06` | FR-5, FR-7, NFR-1 | 3 |
+| `INT-US-09` | FR-3, FR-5, NFR-2, NFR-6 | 4 |
 | `INT-US-03` | FR-5, NFR-1, NFR-2 | 3 |
-| `INT-US-21` | NFR-3, NFR-6, NFR-8 | 3 |
+| `C-EXEC-06` | FR-5, NFR-1 | 2 |
+| `INT-US-21` | NFR-6, NFR-8 | 2 |
 | `INT-US-24` | FR-5, NFR-5 | 2 |
-| `TECH-006` | NFR-6, NFR-8 | 2 |
+| `TECH-006` | NFR-8 | 1 |
+
+### Qualified rather than revoked — owner established by reading
+
+Ten mentions were rewritten to name their owner, restoring the credit to the story that earned it
+and removing it from the ones that had not:
+
+| Was | Now | Owner confirmed by |
+|---|---|---|
+| `(NFR-1 backward compat)` | `(INT-US-09 NFR-1 …)` | *"isolation policy absent/disabled → byte-identical"* |
+| `(FR-7 / NFR-2)` | `(C-EXEC-06 FR-7 / C-EXEC-06 NFR-2)` | *"keep per-run isolation opt-in / default-off"* |
+| `[Boundary/NFR-2]` | `[Boundary/C-EXEC-06 NFR-2]` | *"no host-execution regression"* |
+| `[Boundary/FR-5]` ×2 | `[Boundary/INT-US-02 FR-5]` | *"headless behavior preserved … park byte-identical"* |
+| `the NFR-2 guard` | `the C-EXEC-06 NFR-2 guard` | same |
+| `"""NFR-6 half …` ×2 | `"""TECH-006 NFR-6 half …` | *"a missed migration SHALL fail loudly at construction"* |
+| `(NFR-2)` LLM calls | `(INT-US-24 NFR-2)` | *"happy path performs zero arbitration LLM calls"* |
+| `# FR-4 end-to-end` | `# INT-US-24 FR-4 end-to-end` | *"feedback-aware scenario regeneration"* |
+| `so NFR-3 (LLM economy)` | `so INT-US-21 NFR-3 (LLM economy)` | *"the journey costs exactly the decompose LLM call(s)"* |
 
 `B-EXEC-01` is the worst hit and the least surprising: it is the container-executor contract, and
 its requirements were being "proved" by the settings-loader and CLI-config tests, which mention it
 in passing while testing worktree isolation.
 
-## Finding 2: the requirement that exists to prevent a false green is itself unproven
+## Finding 2 — WITHDRAWN. The control exists; the audit's grep was wrong
 
-`INT-US-03` **NFR-6** — *"Determinism of proof: the proof test MUST include the paired un-isolated
-control asserting `failed == 1` (probe ran) to prevent a false green."*
+**This finding was published and is false.** It is kept, struck, because the way it was reached is
+the same error the rest of this document is about.
 
-Its credit came from a skip-condition note (*"Requires only git + bash; skips cleanly otherwise
-(NFR-6 / NFR-4)"*). Searched for the control it demands: **`failed == 1` appears once in the whole
-test tree, in `test_python_runner.py`, unrelated to worktree isolation.** The paired control does
-not exist.
+The claim was that `INT-US-03` **NFR-6** — *"the proof test MUST include the paired un-isolated
+control asserting `failed == 1` (probe ran) to prevent a false green"* — had no such control,
+because `grep -E "failed\s*==\s*1"` returned one unrelated hit in the whole test tree.
 
-So the isolation e2e can pass without ever demonstrating the probe ran — exactly the false green
-NFR-6 was written to prevent. Recorded, not repaired: writing that control is real test work and
-belongs to whoever owns `INT-US-03`, not to the audit that found it.
+The control exists. It is `test_low_dal_project_runs_on_host_and_probe_fails` in
+`tests/e2e/sandbox/test_implement_loop_worktree_isolation_e2e.py`, it runs a DAL_E project with
+escalation off so the worktree probe fails at the real root, and it asserts:
+
+```python
+assert probe.result.output.get("failed") == 1, probe.result.output
+```
+
+The pattern missed it because the code reads `.get("failed") == 1` — the token `failed` is followed
+by `")`, not by whitespace and `==`. Both tests in that file pass and neither skips.
+
+**The lesson is the document's own thesis, self-inflicted:** a search that finds nothing is not
+evidence of absence, it is evidence about the search. The requirement really was uncredited — but
+because its citation was a bare `NFR-6` in a skip note (Finding 1's ambiguity), not because the test
+was missing. Fixed by tagging the file `Proves: INT-US-03 FR-8, NFR-4, NFR-6.`
 
 ## Finding 3: a test 40x looser than the requirement
 
@@ -91,7 +123,7 @@ quality battery over each component spec. Different subject, revoked.
 
 ## What survives, and what that is worth
 
-123 credits stand. That means a test cites them and the citation is unambiguous — **not** that the
+127 credits stand. That means a test cites them and the citation is unambiguous — **not** that the
 test proves them. Attribution is all any of this measures; strength is only answerable by mutation
 testing (`A-VAL-03`). Four of the 123 were additionally checked against a stated numeric threshold
 and passed.

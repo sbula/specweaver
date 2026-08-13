@@ -38,7 +38,7 @@ class TestSandboxSettingsModel:
     # --- INT-US-09 T1: enforce_worktree_isolation ---------------------------
 
     def test_enforce_worktree_isolation_defaults_false(self):
-        # Happy path: opt-in policy is off by default (NFR-1 backward compat).
+        # Happy path: opt-in policy is off by default (INT-US-09 NFR-1 backward compat).
         assert SandboxSettings().enforce_worktree_isolation is False
 
     def test_enforce_worktree_isolation_accepts_true(self):
@@ -63,7 +63,7 @@ class TestSandboxSettingsModel:
     # --- C-EXEC-06 SF-03 T1: enforce_session_isolation + session_allowed_paths ---
 
     def test_enforce_session_isolation_defaults_false(self):
-        # Happy path: per-run isolation is opt-in, off by default (FR-7 / NFR-2).
+        # Happy path: per-run isolation is opt-in, off by default (C-EXEC-06 FR-7 / C-EXEC-06 NFR-2).
         assert SandboxSettings().enforce_session_isolation is False
 
     def test_enforce_session_isolation_accepts_true(self):

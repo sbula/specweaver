@@ -441,7 +441,7 @@ def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     # Behavioral verification genuinely EXECUTED tests (A4 + anti-false-green):
     assert record and record[0].output["total"] == 3 and record[0].output["passed"] == 3
-    # Green round costs zero arbitration LLM calls (NFR-2).
+    # Green round costs zero arbitration LLM calls (INT-US-24 NFR-2).
     assert adapter.arb_calls == 0
     # A4 artifact inventory: exactly the expected droppings, no strays.
     assert _snapshot(project) - before == EXPECTED_ARTIFACTS
@@ -494,7 +494,7 @@ def test_e3_scenario_error_regenerates_with_delta(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert adapter.scen_calls == 2
-    # FR-4 end-to-end: the second generation prompt carries the arbiter's delta.
+    # INT-US-24 FR-4 end-to-end: the second generation prompt carries the arbiter's delta.
     assert "Prior Verdict Feedback" in adapter.scen_prompts[1]
     assert "not 'Hi <name>'" in adapter.scen_prompts[1]
 

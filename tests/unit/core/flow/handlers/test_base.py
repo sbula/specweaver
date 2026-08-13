@@ -172,14 +172,14 @@ class TestIsolationPolicy:
             RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", bogus=1)
 
     def test_old_flat_kwarg_raises_instead_of_being_dropped(self, tmp_path: Path) -> None:
-        """NFR-6 half 1: a missed migration at a CONSTRUCTION site fails loudly."""
+        """TECH-006 NFR-6 half 1: a missed migration at a CONSTRUCTION site fails loudly."""
         with pytest.raises(ValidationError):
             RunContext(
                 project_path=tmp_path, spec_path=tmp_path / "spec.md", enforce_isolation=True
             )
 
     def test_old_flat_attribute_read_raises(self, tmp_path: Path) -> None:
-        """NFR-6 half 2: a missed migration at an ATTRIBUTE-READ site fails loudly."""
+        """TECH-006 NFR-6 half 2: a missed migration at an ATTRIBUTE-READ site fails loudly."""
         context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         for gone in ("enforce_isolation", "execution_root", "session_isolation", "allowed_paths"):
             with pytest.raises(AttributeError):
