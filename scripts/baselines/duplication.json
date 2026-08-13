@@ -224,11 +224,6 @@
     "first": "src/specweaver/infrastructure/llm/prompt/adders.py:364",
     "second": "src/specweaver/infrastructure/llm/prompt/adders.py:47"
   },
-  "src/specweaver/interfaces/api/ui/htmx.py <-> src/specweaver/interfaces/api/ui/routes.py @b28389b6b575": {
-    "lines": 30,
-    "first": "src/specweaver/interfaces/api/ui/htmx.py:31",
-    "second": "src/specweaver/interfaces/api/ui/routes.py:34"
-  },
   "src/specweaver/interfaces/api/v1/constitution.py <-> src/specweaver/interfaces/api/v1/standards.py @114ee626257a": {
     "lines": 6,
     "first": "src/specweaver/interfaces/api/v1/constitution.py:10",

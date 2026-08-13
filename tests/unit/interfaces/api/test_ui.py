@@ -33,14 +33,14 @@ def test_root_redirects_to_dashboard(client) -> None:
 
 def test_render_markdown_none() -> None:
     """_render_markdown handles None input."""
-    from specweaver.interfaces.api.ui.routes import _render_markdown
+    from specweaver.interfaces.api.ui._templates import render_markdown as _render_markdown
 
     assert _render_markdown(None) == ""
 
 
 def test_render_markdown_content() -> None:
     """_render_markdown parses basic markdown and sanitizes tags."""
-    from specweaver.interfaces.api.ui.routes import _render_markdown
+    from specweaver.interfaces.api.ui._templates import render_markdown as _render_markdown
 
     html = _render_markdown("**Bold** and <script>alert(1)</script>")
     assert "<strong>Bold</strong>" in html

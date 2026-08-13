@@ -6,58 +6,20 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
-import bleach  # type: ignore
-import markdown  # type: ignore
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from specweaver.core.config.database import Database  # noqa: TC001
 from specweaver.core.config.paths import state_db_path
 from specweaver.interfaces.api.deps import get_db
+from specweaver.interfaces.api.ui._templates import templates
 from specweaver.interfaces.api.v1.projects import list_projects
 
 logger = logging.getLogger(__name__)
 
 
 router = APIRouter(tags=["UI"])
-
-# Locate the templates directory relative to this file
-_templates_dir = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(_templates_dir))
-
-
-def _render_markdown(text: str | None) -> str:
-    """Safely render markdown to HTML."""
-    if not text:
-        return ""
-    html = markdown.markdown(text, extensions=["fenced_code", "tables"])
-    allowed_tags = bleach.ALLOWED_TAGS | {
-        "p",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "pre",
-        "div",
-        "span",
-        "br",
-        "hr",
-        "table",
-        "thead",
-        "tbody",
-        "tr",
-        "th",
-        "td",
-    }
-    return str(bleach.clean(html, tags=allowed_tags))
-
-
-templates.env.filters["markdown"] = _render_markdown
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

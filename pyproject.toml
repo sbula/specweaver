@@ -132,6 +132,14 @@ warn_unused_configs = true
 explicit_package_bases = true
 mypy_path = "src"
 
+# `bleach` and `markdown` ship no type stubs. Declared here -- ONE reviewable place -- rather than
+# as `# type: ignore` at each import, which is what `interfaces/api/ui/` carried twice over before
+# `TECH-037` unified the two UI modules. The suppressions gate exists to push exactly this way
+# round: configure the rule, do not silence the call site.
+[[tool.mypy.overrides]]
+module = ["bleach.*", "markdown.*"]
+ignore_missing_imports = true
+
 [dependency-groups]
 # Everything the project needs to test, lint and boundary-check itself. `uv` installs
 # dependency-groups by DEFAULT and extras only on request, so this must be the whole set: a plain
