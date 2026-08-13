@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for GitAtom — Flow-level git operations for the Engine."""
+"""Tests for GitAtom — Flow-level git operations for the Engine.
+
+Proves: D-EXEC-02 FR-8 — `doc_updates.md` preserved regardless of `allowed_paths` (`TECH-017`).
+"""
 
 from __future__ import annotations
 

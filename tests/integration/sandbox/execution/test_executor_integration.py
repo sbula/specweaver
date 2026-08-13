@@ -1,7 +1,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for SubprocessExecutor across OS boundaries."""
+"""Integration tests for SubprocessExecutor across OS boundaries.
+
+Proves: E-EXEC-01 FR-7, FR-10.
+
+FR-7 signal propagation — the design requires SIGINT/SIGTERM to reach the child process group
+with no orphaned zombies, which `test_...signal...` asserts. FR-10 cross-platform resource limits —
+`resource.setrlimit()` for process, memory and file-size caps.
+
+**`NFR-2` is deliberately NOT claimed here.** The design's threshold is *"< 5ms overhead per
+invocation compared to direct `subprocess.run()`"*; this file asserts `< 200ms`, which is 40x looser
+and does not establish the requirement. Recorded rather than cited — see `TECH-017` finding 7.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
 
 import os
 import sys

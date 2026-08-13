@@ -1,7 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for GitAtom and FileSystemAtom worktree orchestrations."""
+"""Integration tests for GitAtom and FileSystemAtom worktree orchestrations.
+
+Proves: D-EXEC-02 FR-1, FR-2, FR-6.
+
+Its own docstring — *"Verifies FR-1, FR-2, FR-6 natively: add worktree -> symlink cache ->
+teardown"* — lines up
+exactly with the design: FR-1 create worktree in `.worktrees/<task_id>`, FR-2 symlink heavy cache
+folders, FR-6 cleanup / zombie prevention via `git worktree remove --force`.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
 
 import os
 import subprocess

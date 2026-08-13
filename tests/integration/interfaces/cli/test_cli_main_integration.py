@@ -2,6 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Integration tests for the CLI composition root.
+
+Proves: TECH-001 NFR-4.
+
+NFR-4 native healer isolation, asserted directly against `interfaces/cli/main.py` — the module the
+requirement names. The file already said *"(Enforces NFR-4)"* without naming the capability.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
+
 import sys
 
 import pytest

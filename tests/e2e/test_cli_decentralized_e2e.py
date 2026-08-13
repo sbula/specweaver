@@ -2,6 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""End-to-end tests for the decentralized CLI.
+
+Proves: TECH-001 FR-8.
+
+FR-8 LLM factory dependency injection — the design requires the LLM domain to accept pure Pydantic
+`SpecWeaverSettings` via DI, severed from active project state. The test drives `sw run` and asserts
+the settings are injected.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
+
 from __future__ import annotations
 
 import sqlite3

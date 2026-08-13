@@ -2,7 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for the Feature Decomposition Loop."""
+"""Integration tests for the Feature Decomposition Loop.
+
+Proves: C-INTL-01 FR-5, NFR-1.
+
+FR-5 coverage check — the design requires components to cover 100% of the feature spec's blast
+radius and signal ERROR otherwise. NFR-1 resilience — *"3-strikes loop rule on failures before hard
+aborting"*, which the test names verbatim.
+
+`FR-4` is mentioned in this file for the sub-pipeline cascade case and is **not** claimed: the
+design's FR-4 is the 10-test quality battery over each component spec, which is a different subject.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
 
 import json
 from pathlib import Path

@@ -1,6 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""End-to-end tests for the decentralized CQRS stores.
+
+Proves: TECH-001 NFR-4.
+
+NFR-4 native healer isolation — the design requires `interfaces/cli/main.py` to hardcode the core
+agent commands and base filesystem tool so that plugin crashes cannot take the core down. This
+file's *"E2E Story 10: Plugin Failure Recovery"* is that scenario.
+
+Attributed 2026-08-13 (`TECH-017` finding 6).
+"""
+
 import signal
 import subprocess
 import sys

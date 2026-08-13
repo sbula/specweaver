@@ -2,6 +2,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Unit tests for `MemoryRepository` core operations.
+
+Proves: B-INTL-09 FR-7, NFR-8.
+
+FR-7 cleanup strategy — the test docstring *"FR-7: Transition to ARCHIVED sets handover_context =
+None"*
+matches the requirement word for word. NFR-8 observability — the design demands `WARNING` on OCC
+retry and `ERROR` on circuit-breaker action; the test verifies `logger.warning` on a BLOCKED
+transition.
+
+Attributed 2026-08-13 (`TECH-017` finding 6). The attributions were written by whoever built this;
+only the capability id was missing, so `B-INTL-09` read as having no proof for either.
+"""
+
 import uuid
 from datetime import UTC, datetime
 
