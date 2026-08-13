@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class _StepState:
     """Tracks display state for a single pipeline step."""
 
-    __slots__ = ("description", "elapsed", "name", "note", "start_time", "status")
+    __slots__ = ("description", "detail", "elapsed", "name", "note", "start_time", "status")
 
     def __init__(self, name: str, description: str = "") -> None:
         self.name = name
@@ -49,6 +49,8 @@ class _StepState:
         self.start_time: float | None = None
         self.elapsed: float = 0.0
         self.note: str = ""
+        #: `TECH-040`: handler output, rendered only under `--verbose`.
+        self.detail: str = ""
 
     def mark_running(self) -> None:
         self.status = "running"
@@ -73,6 +75,56 @@ _STATUS_ICONS = {
     "error": "[red]💥 [/red]",
     "parked": "[yellow]🅿️ [/yellow]",
 }
+
+
+def _format_output(result: StepResult | None) -> str:
+    """One line per key of a step's `output`, for `--verbose`. `TECH-040`.
+
+    Empty when there is nothing to show, so a handler that returns no output does not gain a blank
+    row — `--verbose` must add detail where detail exists, not add noise everywhere.
+
+    Values are truncated: a step's output can carry a whole review verdict or a rule-result list,
+    and a live-updating display that reflows on one long value is worse than one that elides it.
+    """
+    if result is None or not result.output:
+        return ""
+    lines = []
+    for key, value in result.output.items():
+        text = str(value).replace("\n", " ")
+        if len(text) > 160:
+            text = text[:157] + "..."
+        lines.append(f"{key}: {text}")
+    return "\n".join(lines)
+
+
+#: Row style per status. A mapping rather than an if-chain: `_render` gained a second row for
+#: `--verbose` detail (`TECH-040`) and tipped over the complexity limit, and the branch ladder was
+#: the part carrying no information — every arm did the same thing with a different colour.
+_STATUS_STYLES = {
+    "running": "bold cyan",
+    "passed": "green",
+    "failed": "red",
+    "error": "red",
+    "parked": "yellow",
+}
+
+
+def _step_label(step: _StepState, index: int) -> Text:
+    """The step's name, description and note, styled for its status."""
+    label = Text(f"{index + 1}. {step.name}", style=_STATUS_STYLES.get(step.status, "dim"))
+    if step.description:
+        label.append(f" — {step.description}", style="dim")
+    if step.note:
+        label.append(f"  ({step.note})", style="dim italic")
+    return label
+
+
+def _elapsed_text(step: _StepState) -> str:
+    if step.elapsed > 0:
+        return f"{step.elapsed:.1f}s"
+    if step.status == "running" and step.start_time:
+        return f"{time.monotonic() - step.start_time:.1f}s"
+    return ""
 
 
 class RichPipelineDisplay:
@@ -159,6 +211,8 @@ class RichPipelineDisplay:
     ) -> None:
         if step_idx is not None and step_idx < len(self._steps):
             self._steps[step_idx].mark_done("passed")
+            if self._verbose:
+                self._steps[step_idx].detail = _format_output(result)
 
     def _on_step_failed(
         self,
@@ -173,6 +227,8 @@ class RichPipelineDisplay:
                 note = result.error_message
             status = "error" if result and result.status.value == "error" else "failed"
             self._steps[step_idx].mark_done(status, note)
+            if self._verbose:
+                self._steps[step_idx].detail = _format_output(result)
 
     def _on_step_parked(
         self,
@@ -257,38 +313,16 @@ class RichPipelineDisplay:
         table.add_column("time", justify="right", style="dim", width=8)
 
         for i, step in enumerate(self._steps):
-            icon = _STATUS_ICONS.get(step.status, "   ")
-            num = f"{i + 1}."
+            table.add_row(
+                _STATUS_ICONS.get(step.status, "   "),
+                _step_label(step, i),
+                _elapsed_text(step),
+            )
 
-            # Step name + description
-            if step.status == "running":
-                label = Text(f"{num} {step.name}", style="bold cyan")
-            elif step.status in ("passed",):
-                label = Text(f"{num} {step.name}", style="green")
-            elif step.status in ("failed", "error"):
-                label = Text(f"{num} {step.name}", style="red")
-            elif step.status == "parked":
-                label = Text(f"{num} {step.name}", style="yellow")
-            else:
-                label = Text(f"{num} {step.name}", style="dim")
-
-            # Description
-            if step.description:
-                label.append(f" — {step.description}", style="dim")
-
-            # Note (gate result, error message)
-            if step.note:
-                label.append(f"  ({step.note})", style="dim italic")
-
-            # Elapsed time
-            time_str = ""
-            if step.elapsed > 0:
-                time_str = f"{step.elapsed:.1f}s"
-            elif step.status == "running" and step.start_time:
-                elapsed = time.monotonic() - step.start_time
-                time_str = f"{elapsed:.1f}s"
-
-            table.add_row(icon, label, time_str)
+            # `TECH-040`: the "detailed handler output" the --verbose help text promises. A second
+            # row rather than an appended clause, so a multi-key output stays readable.
+            if step.detail:
+                table.add_row("", Text(step.detail, style="dim"), "")
 
         return table
 

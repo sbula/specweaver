@@ -175,10 +175,11 @@ critical for long-term project viability.
   > layers structurally, or accept that prose is unbounded.
 
 
-* **`TECH-040` 🔴: `sw run --verbose` Is a Dead Flag**
-  > [Description](../features/topic_07_technical_debt/TECH-040/TECH-040_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `sw run --verbose` is documented as
-  > *"Show detailed handler output"*, threads into `RichPipelineDisplay` and is stored as `self._verbose` — which nothing in `src/` ever reads. A lie in the CLI's own `--help`; a strict xfail already
-  > waits for the fix.
+* **`TECH-040` 🟢: `sw run --verbose` Showed No Handler Output**
+  > [Description](../features/topic_07_technical_debt/TECH-040/TECH-040_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `--verbose` is documented as *"Show
+  > detailed handler output"*. Its traceback half always worked; the display half never did — `RichPipelineDisplay` stored `self._verbose` and nothing in `src/` read it, so a successful run looked
+  > identical with and without the flag. **DELIVERED 2026-08-13:** step output now renders as a dimmed row under each step. The ticket's own headline overstated the defect as "does nothing" —
+  > corrected in the design.
 
 * **`TECH-039` 🔴: One Identifier Names Two Delivered Add-Ons (`INT-US-05-SUB` Collision)**
   > [Description](../features/topic_07_technical_debt/TECH-039/TECH-039_design.md) | _(2026-08-13 — found by `check_proof_tier.py` on its first run.)_ | `US-05_integration.md` gives **two different

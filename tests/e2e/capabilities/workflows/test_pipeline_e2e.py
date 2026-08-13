@@ -141,14 +141,6 @@ class TestRunPipelineE2E:
         # JSON output should contain event data
         assert "{" in result.output  # at least some JSON
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "TECH-040: `--verbose` is a dead flag. It is documented as 'Show detailed handler "
-            "output', threads into RichPipelineDisplay and is stored as `self._verbose` — which "
-            "nothing in src/ ever reads. Strict, so this flips to XPASS the moment it is wired up."
-        ),
-    )
     def test_run_validate_only_verbose(
         self,
         project_with_spec: tuple[Path, Path],
@@ -157,8 +149,10 @@ class TestRunPipelineE2E:
         """`sw run validate_only --verbose` produces more output than the same run without it.
 
         `TECH-017`: this asserted `exit_code in (0, 1)` under a docstring claiming detailed output,
-        so it passed while the flag did nothing at all. Written now as the test that SHOULD pass —
-        the shape `TECH-021` used, where a strict xfail flips to XPASS the instant the fix lands.
+        so it passed while the display half of the flag did nothing at all. It was then written as
+        the test that SHOULD pass, marked `xfail(strict=True)` — and on 2026-08-13 `TECH-040` wired
+        the display up, the marker flipped to `XPASS(strict)` and failed the suite, which is what
+        signalled it could be removed. Same sequence `TECH-021` used.
         """
         project_dir, spec = project_with_spec
         _state_path = project_dir / ".specweaver" / "pipeline_state.db"

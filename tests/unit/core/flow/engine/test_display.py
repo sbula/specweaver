@@ -9,6 +9,8 @@ from __future__ import annotations
 import io
 import json
 
+from rich.console import Console
+
 from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay, _StepState
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 
@@ -430,3 +432,74 @@ class TestCLIRunEdgeCases:
         display("run_parked", run=None)
 
         display.stop()
+
+
+class TestRichPipelineDisplayVerbose:
+    """`TECH-040`: `--verbose` promises "Show detailed handler output" and showed nothing.
+
+    The flag was NOT entirely dead — `flow/interfaces/cli.py` uses it to print a full traceback on
+    the three error paths, and that half worked. What never worked is the half the help text
+    describes: `RichPipelineDisplay` took `verbose`, stored it as `self._verbose`, and no code in
+    `src/` ever read it. A successful run therefore looked identical with and without the flag,
+    which is what the e2e comparison caught.
+    """
+
+    @staticmethod
+    def _rendered(display: RichPipelineDisplay) -> str:
+        console = Console(file=io.StringIO(), width=200, force_terminal=False)
+        console.print(display._render())
+        return console.file.getvalue()
+
+    @staticmethod
+    def _run_one_step(*, verbose: bool) -> RichPipelineDisplay:
+        display = RichPipelineDisplay(console=Console(file=io.StringIO()), verbose=verbose)
+        display._steps = [_StepState("validate_spec", "Run spec rules")]
+        display("step_started", step_idx=0)
+        display(
+            "step_completed",
+            step_idx=0,
+            result=StepResult(
+                status=StepStatus.PASSED,
+                output={"rules_run": 11, "verdict": "pass"},
+                started_at="t0",
+                completed_at="t1",
+            ),
+        )
+        return display
+
+    def test_quiet_shows_no_handler_output(self) -> None:
+        out = self._rendered(self._run_one_step(verbose=False))
+
+        assert "validate_spec" in out
+        assert "rules_run" not in out
+
+    def test_verbose_shows_the_handler_output(self) -> None:
+        """The claim in the help text, asserted."""
+        out = self._rendered(self._run_one_step(verbose=True))
+
+        assert "rules_run" in out
+        assert "11" in out
+
+    def test_verbose_output_is_additive(self) -> None:
+        """Detail is added, not substituted — the step line must survive."""
+        out = self._rendered(self._run_one_step(verbose=True))
+
+        assert "validate_spec" in out
+
+    def test_a_step_with_no_output_adds_nothing(self) -> None:
+        """No empty detail row: a handler that returns nothing must not gain a blank line."""
+        display = RichPipelineDisplay(console=Console(file=io.StringIO()), verbose=True)
+        display._steps = [_StepState("noop", "")]
+        display(
+            "step_completed",
+            step_idx=0,
+            result=StepResult(status=StepStatus.PASSED, started_at="t0", completed_at="t1"),
+        )
+
+        assert self._rendered(display).count("\n") == 1
+
+    def test_verbose_and_quiet_differ_for_the_same_run(self) -> None:
+        """The property the e2e test asserts, pinned at unit level so it cannot regress silently."""
+        assert self._rendered(self._run_one_step(verbose=True)) != self._rendered(
+            self._run_one_step(verbose=False)
+        )

@@ -2,33 +2,53 @@
 
 - **Feature ID**: TECH-040
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **DELIVERED 2026-08-13.** Approach 1 — implemented rather than removed.
 - **Origin**: Found 2026-08-13 while fixing `TECH-017`'s vacuous-assertion findings — the test
   named `test_run_validate_only_verbose` asserted `exit_code in (0, 1)` under a docstring claiming
   *"produces detailed output"*, so the flag's deadness was invisible.
 
 ## Problem Statement
 
-`sw run --verbose` / `-v` is documented as **"Show detailed handler output."** It is declared on
-two commands (`core/flow/interfaces/cli.py:167` and `:488`), threaded through `_create_display`,
-and passed into `RichPipelineDisplay(verbose=verbose)`, which stores it:
+> [!IMPORTANT]
+> **This ticket was filed with its headline overstated, and the correction matters.** It said
+> `--verbose` "does nothing". It does: `flow/interfaces/cli.py` reads it on all three error paths
+> and prints a full traceback, which is the promise `cli.py`'s own *"Run with --verbose for full
+> traceback"* makes. That half always worked.
+>
+> What never worked is the half the **help text** describes — *"Show detailed handler output."*
+> `RichPipelineDisplay` accepted `verbose`, stored it as `self._verbose`, and no code in `src/`
+> read it. A repo-wide search returned exactly that one assignment.
+>
+> The overstatement came from grepping for `_verbose` and not for `verbose`. Recorded because a
+> ticket that overstates its defect gets fixed in the wrong place.
 
-```python
-self._verbose = verbose      # display.py:99
-```
-
-**`self._verbose` is never read.** A repo-wide search for the name across `src/` returns exactly
-one hit — that assignment. The flag changes nothing.
-
-Measured, not inferred: running `sw run validate_only <spec> --project <dir>` with and without
-`--verbose` produces byte-identical output once per-invocation noise is normalised away (run
-uuids, the short `run abc12345` form, and Rich's `[HH:MM:SS]` column, which it prints on the first
-log line and blanks thereafter). The last of those three is why an earlier naive comparison
-appeared to show a difference — worth recording, since it is the shape that would make a lazy fix
-look like it worked.
+Measured rather than inferred: running `sw run validate_only <spec>` with and without `--verbose`
+produced byte-identical output once per-invocation noise was normalised away — run uuids, the short
+`run abc12345` form, and Rich's `[HH:MM:SS]` column, which it prints on the first log line and
+blanks thereafter. That third one made a naive comparison look like the flag worked, and is the
+shape a lazy fix would also pass.
 
 **Severity: low, but it is a lie in the CLI's own `--help`.** A user reaching for `--verbose` while
-debugging a failing pipeline gets no more information and no indication that the flag is inert.
+debugging a *successful-but-wrong* run — the case where there is no traceback to print — gets
+nothing extra and no indication that the flag has nothing to give.
+
+## Delivery, 2026-08-13
+
+`_StepState` gained a `detail` field; `_on_step_completed` and `_on_step_failed` populate it from
+`StepResult.output` when verbose; `_render` emits it as a second, dimmed row beneath the step.
+
+Three judgements worth keeping:
+
+- **A step with no output adds no row.** `--verbose` must add detail where detail exists, not add
+  blank lines everywhere. Pinned by a test.
+- **Values are truncated at 160 characters.** A step's output can carry a whole review verdict or a
+  rule-result list, and a live-updating display that reflows on one long value is worse than one
+  that elides it.
+- **Detail is additive, not substitutive** — the step line survives. Also pinned, because the
+  obvious implementation replaces the label.
+
+Both commands that declare the flag benefit: `run_pipeline` and `resume` each build their display
+through `_create_display(use_json=..., verbose=verbose)`.
 
 ## Candidate Approaches (not yet designed)
 
@@ -57,10 +77,10 @@ than adding a new one.
 
 ## Verification
 
-`tests/e2e/.../test_pipeline_e2e.py::test_run_validate_only_verbose` is already written as the test
-that SHOULD pass, marked `xfail(strict=True)` — the shape `TECH-021` used, so it flips to
-`XPASS(strict)` and fails the suite the moment the flag is wired up, forcing the marker's removal.
+`test_run_validate_only_verbose` was written as the test that SHOULD pass, marked
+`xfail(strict=True)`. When the display was wired up it flipped to `XPASS(strict)` and failed the
+suite — which is what signalled the marker could be removed. Exactly the sequence `TECH-021` used,
+and the reason to prefer a strict xfail over a skip: it tells you when it is obsolete.
 
-## Next Step
-
-Run the `specweaver-design` skill against this stub before any implementation.
+Five unit tests in `test_display.py` cover the quiet/verbose split, the no-output case, additivity,
+and that the two renderings genuinely differ.
