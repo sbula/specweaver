@@ -18,13 +18,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
-> `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07` and `TECH-014`, so it does NOT enter
-> the queue yet). **This queue does not route technical debt, and the backlog now needs a pass —
-> 14 open tickets, not the eight this note previously claimed.** The earlier count was
-> `TECH-014`…`TECH-021`, i.e. only the ones INT-US-21 itself filed; `TECH-001`, `002`, `005`,
-> `009`, `010`, `011` and `013` predate it and have never been ranked here at all. `TECH-021` has
-> since been fixed (`a003b164`). Several are live defects rather than refactors, and four assert
-> sequencing claims against candidates below — see **Debt sequencing**.
+> `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
+> **This queue does not route technical debt.** The backlog pass this note used to call for is
+> done: **6 of 36 TECH tickets are open**, and only one still asserts a claim against a candidate
+> below — see **Debt Sequencing**.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
 
@@ -54,56 +51,32 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*No `TECH` ticket is a ranked candidate above — but four assert a sequencing claim on the
-candidates that are, so picking a candidate without reading this makes the choice blind. Claims
-are the tickets' own, restated; ranking them into the queue is a routing decision, not recorded
-here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
+*Open debt only — **6 of 36 tickets**. A delivered ticket leaves this section; the permanent
+record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
+entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
+Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
+it was closed is what let this section drift for a month.*
+
+**Asserts a claim on a queue candidate** — so picking a candidate without reading this is blind.
 
 | Ticket | Claim | Against |
 |---|---|---|
-| `TECH-019` 🟢 | **Delivered 2026-08-08** — claim discharged. Twelve instruction sites repaired (six more than the ticket claimed) and `check_skill_references.py` now enforces the invariant in the `doc` gate. | — |
 | `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. | **Any** candidate's planning phase |
-| `TECH-014` 🟢 | **Delivered 2026-08-12** — claim discharged; `C-FLOW-12` is no longer gated on it. Four fan-out sites, not the one recorded. | — |
-| `TECH-020` 🟢 | **Delivered 2026-08-12** — claim discharged. `runner.py` 599→292, `_execute_loop` 365→21, the `# noqa: C901` deleted; `C-FLOW-12` no longer pays the tax. | — |
 
-**Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
-SF-03 committed — is now met), `TECH-015` 🟢, `TECH-016` 🟢 *(both delivered 2026-08-12; `TECH-016`
-also closed `TECH-036` 🟢, filed and resolved the same day)*.
+**No claim on a candidate**
 
-**Order among the debt tickets themselves (recorded 2026-08-08).** Distinct from the claims above,
-which are about feature candidates. This is a dependency order: seven tickets contend for the same
-six files (`runner.py`, `runner_utils.py`, `staleness.py`, `decompose.py`, `dual_pipeline.py`,
-`handlers/registry.py`), so the wrong order means doing the work twice. No status markers here on
-purpose — they live on each ticket's own `### TECH-NNN` header, and duplicating them is what let
-this section drift for a month.
+| Ticket | Where it fits |
+|---|---|
+| `TECH-018` 🔜 | Audit-only, precondition met (INT-US-21 SF-03 committed). Wants the code work done first. Coordinate with `TECH-017` so the two do not double-cover `INT-US-21-SUB`. |
+| `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
+| `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
+| `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
+| `TECH-013` 🔴 | Not queue-eligible — fold into the next API-touching story. |
 
-| # | Ticket | Why it sits here |
-|---|---|---|
-| 1 | `TECH-019` | ✅ Done 2026-08-08. Fixed the instructions every later ticket is executed through, and shipped the checker that keeps them fixed. |
-| 2 | `TECH-025` | ✅ Done 2026-08-12. Established the citation convention each ticket below meets at its own closure gate. |
-| 3 | `TECH-014` | ✅ Done 2026-08-12. `RunHandle` did make it cheap, but narrowed the failure rather than closing it — a reader saw the wrong handle, not a torn one. Fixed in `PipelineRunner.run`, covering all four fan-out sites. |
-| 4 | `TECH-020` | ✅ Done 2026-08-12. Removed flow's largest complexity offender and added `engine/step_execution.py` — so 6 and 7 now measure the reshaped import graph, not the old one. |
-| 5 | `TECH-015` | ✅ Done 2026-08-12. Split three grab-bags into eleven contract-named modules and shipped R7 so they cannot regrow; 6 and 7 now measure that import graph. |
-| 6 | `TECH-024` | ✅ Done 2026-08-12. Zero cycles across 327 modules; the `cycles` gate is green for the first time. Was: measure cycles after 4 and 5. Its three isolated cycles (validation registry, llm rate-limit/factory, API layer) need no waiting; only the 6-module `core.flow` one does. |
-| 7 | `TECH-023` | 🟡 Partial 2026-08-12 — ratchet shipped, gate green, 4 worst resolved, 93 frozen. Was: **Last, not first.** 3, 4 and 5 each delete complexity as a side effect — it fell 98 → 97 from `TECH-006` alone. Starting here means redoing it. |
-
-`TECH-023` and `TECH-024` must not share a working tree (**discharged 2026-08-12** — `TECH-024` is committed, so `TECH-023` starts from a clean, attributable baseline): extracting helpers to cut complexity
-changes imports, which is exactly what the cycle check measures, so neither number stays
-attributable. `TECH-010`, `TECH-011`, `TECH-013` are independent of this chain and fit
-anywhere (`TECH-016` was too, and is now 🟢); `TECH-017` and `TECH-018` are audits and want the code still first.
-**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
-`TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
-`### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
-2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
-mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-03 outstanding
-(raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
-(commit `346f64c3`), all three circular dependencies eliminated. `TECH-005` corrected back to
-🟢 — `TECH-005` SF-03 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
-migration path. 2026-08-08: `TECH-002` corrected back to 🟢 — the description defect that caused
-the 🟡 was fixed in `cea3548c`; re-verified against code (explicit `ToolRegistry` in
-`sandbox/registry.py`, zero `__init_subclass__` anywhere, validation layer free of sandbox imports,
-proof test passing) and no work was ever outstanding. `TECH-006` closed 🟢 — SF-02 landed,
-`RunContext` 32 fields → 15 attributes.)*
+**Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
+is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
+by 2026-08-13. Nothing open contends for a shared file, so the remaining five are ordered only by
+the audits-last rule above.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
