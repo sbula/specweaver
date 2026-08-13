@@ -13,8 +13,9 @@ Three rules, applied to different line classes in a single pass:
 
 R-PLACE  A list item at the entry's nesting depth must name a **bold registry ID**. A design
          document's `SF-NN` decomposition has no registry ID and so cannot appear.
-R-LENGTH A line inside an entry is at most `MAX_ENTRY_LINE` characters. Detail lives in the topic
-         doc and the design; this file carries names and prerequisites.
+         (R-LENGTH was removed 2026-08-13: `R-DEPTH` in `_entry_depth.py` caps the same 200
+         characters across EVERY markdown file in the repo, so this rule enforced a strict subset
+         of it. Two rules, one number, one of them redundant.)
 R-OWNER  A bare `SF-NN` must have its owner named — on the line, or by the entry it sits in.
          `SF-01` exists in six stories, so with neither it names nothing. Applies outside entries
          too: the Debt Sequencing prose is exactly where an unowned reference hides.
@@ -39,11 +40,6 @@ import sys
 from pathlib import Path
 
 ROADMAP = Path("docs/roadmap/master_story_roadmap.md")
-
-#: Lines inside an entry may not exceed this. Chosen from the file's own distribution (median
-#: 58-96, p90 ~190), so the rule ratifies existing practice instead of imposing a new one — the
-#: same reasoning that set the two-digit sub-feature format.
-MAX_ENTRY_LINE = 200
 
 #: A registry ID: `US-9`, `TECH-025`, `C-FLOW-02`, `INT-US-21-SF02`.
 #:
@@ -121,12 +117,6 @@ def _violations(text: str) -> list[str]:
             out.append(
                 f"{number}: R-PLACE  nested item names no registry ID — a design's SF-NN "
                 f"decomposition belongs in its own design, not here: {line.strip()[:70]}"
-            )
-
-        if entry and len(line) > MAX_ENTRY_LINE:
-            out.append(
-                f"{number}: R-LENGTH line is {len(line)} chars (max {MAX_ENTRY_LINE}) — the "
-                f"detail belongs in the topic doc: {line.strip()[:60]}"
             )
 
         checked = CHECKED_TECH.match(line)

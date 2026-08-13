@@ -168,3 +168,84 @@ class TestTheOrphanCheckerIsDeletedWhenDone:
             "scripts/check_entry_orphans.py has no remaining job. Delete it, drop it from "
             "UNGATED_CHECKERS in test_quality_runner.py, and delete this test class."
         )
+
+
+ENTRY_DOC = """\
+## Section
+* **`C-FOO-01` ✅: Short One**
+  > A compact entry. Two sentences is the norm.
+* **`C-FOO-02` ✅: Long One**
+  > {long}
+"""
+
+
+class TestEntryCensus:
+    """R-ENTRY: an L2 topic entry is at most 4 lines' worth of content. `TECH-044`.
+
+    Measured in **effective** lines — content length divided by the R-DEPTH line limit — not in
+    physical newlines. A rule counting newlines is evaded by simply not wrapping: today 187 of 191
+    entries are a single physical line, several of them thousands of characters, so a newline rule
+    would report 4 offenders where there are 41.
+
+    The 4 comes from pre-drift practice: capability entries across topics 01-06 sit at a median of
+    247 characters, and the oldest TECH cohort (`TECH-001..013`, written before the inflation
+    started around `TECH-014`) at 588. A TECH entry is legitimately ~2.4x a capability entry; it is
+    not legitimately 10x, which is what the recent cohorts measure.
+    """
+
+    def test_a_normal_entry_passes(self, ed: ModuleType, tmp_path: Path) -> None:
+        (tmp_path / "topic_09_x.md").write_text(ENTRY_DOC.format(long="Also short."), "utf-8")
+
+        assert ed.entry_census(tmp_path) == {}
+
+    def test_an_over_long_entry_is_counted(self, ed: ModuleType, tmp_path: Path) -> None:
+        (tmp_path / "topic_09_x.md").write_text(ENTRY_DOC.format(long=_prose(1000)), "utf-8")
+
+        assert ed.entry_census(tmp_path) == {"topic_09_x.md::C-FOO-02": 5}
+
+    def test_wrapping_does_not_change_the_verdict(self, ed: ModuleType, tmp_path: Path) -> None:
+        """The evasion this rule exists to close: a newline count would call this entry 1 line."""
+        body = _prose(1000)
+        flat = tmp_path / "flat"
+        wrapped = tmp_path / "wrapped"
+        for d in (flat, wrapped):
+            d.mkdir()
+        (flat / "topic_09_x.md").write_text(ENTRY_DOC.format(long=body), "utf-8")
+        chunks = [body[i : i + 150] for i in range(0, len(body), 150)]
+        (wrapped / "topic_09_x.md").write_text(
+            ENTRY_DOC.format(long="\n  > ".join(chunks)), "utf-8"
+        )
+
+        assert ed.entry_census(flat) == ed.entry_census(wrapped)
+
+    def test_only_topic_documents_are_scanned(self, ed: ModuleType, tmp_path: Path) -> None:
+        """L3/L4 documents have no entries — the file itself is the unit there."""
+        (tmp_path / "some_design.md").write_text(ENTRY_DOC.format(long=_prose(1000)), "utf-8")
+
+        assert ed.entry_census(tmp_path) == {}
+
+
+class TestEntryRegressions:
+    def test_a_new_over_long_entry_blocks(self, ed: ModuleType) -> None:
+        """Absent from the baseline means new, and new must comply — no free first offence."""
+        assert ed.entry_regressions({"t.md::A-1": 9}, {}) == [("t.md::A-1", 4, 9)]
+
+    def test_a_frozen_entry_does_not_block(self, ed: ModuleType) -> None:
+        assert ed.entry_regressions({"t.md::A-1": 9}, {"t.md::A-1": 9}) == []
+
+    def test_a_frozen_entry_that_grows_blocks(self, ed: ModuleType) -> None:
+        assert ed.entry_regressions({"t.md::A-1": 11}, {"t.md::A-1": 9}) == [("t.md::A-1", 9, 11)]
+
+    def test_shrinking_never_blocks(self, ed: ModuleType) -> None:
+        assert ed.entry_regressions({"t.md::A-1": 5}, {"t.md::A-1": 9}) == []
+
+
+class TestEntryMain:
+    def test_the_repo_is_at_its_frozen_entry_baseline(self, ed: ModuleType) -> None:
+        assert ed.main([]) == 0
+
+    def test_no_stale_entry_baseline_keys(self, ed: ModuleType) -> None:
+        live = ed.entry_census(REPO_ROOT / "docs" / "roadmap" / "topics")
+        stale = sorted(set(ed.load_entry_baseline()) - set(live))
+
+        assert stale == [], f"baseline names entries that now comply or are gone: {stale}"

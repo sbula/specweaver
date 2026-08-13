@@ -37,17 +37,42 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-#: The registry tree. Design docs are included: there is no level below them, so their remedy is
-#: wrapping rather than redistribution — but an unreadable, undiffable line is a defect there too.
-TREE = Path("docs/roadmap")
+#: Every markdown document in the repo. One line-length rule for all of them, which is why
+#: `R-LENGTH` was deleted from `check_roadmap_placement.py` when this widened — it capped the same
+#: 200 characters on a strict subset (roadmap entries only), so keeping both meant two rules, one
+#: number, and one of them doing nothing the other did not.
+#:
+#: Design docs are in scope even though there is no level below them: their remedy is wrapping
+#: rather than redistribution, but an unreadable, undiffable line is a defect there too.
+TREE = Path(".")
+
+#: Not ours to wrap.
+_SKIP_DIRS = frozenset({".venv", "node_modules", ".git", "__pycache__", "site-packages"})
 
 BASELINE = REPO_ROOT / "scripts" / "baselines" / "entry_depth.json"
+ENTRY_BASELINE = REPO_ROOT / "scripts" / "baselines" / "entry_lines.json"
+
+#: R-ENTRY. An L2 topic entry is at most this many lines' worth of content.
+#:
+#: Chosen from pre-drift practice, not invented: capability entries across topics 01-06 have a
+#: median of 247 characters and a p90 of 493; the oldest TECH cohort (`TECH-001..013`, before the
+#: inflation that began around `TECH-014`) sits at a median of 588. So a TECH entry is legitimately
+#: ~2.4x a capability entry — and not the 10x the recent cohorts measure. One number covers both.
+MAX_ENTRY_LINES = 4
+
+#: Only L2 documents have entries. In a feature folder the FILE is the unit, so there is nothing
+#: here for L3/L4 — a different rule would be needed and none exists yet.
+_TOPIC_DOC = "topic_*.md"
+
+#: `* **`ID` …**` followed by its `>` blockquote, however many physical lines that spans.
+_ENTRY_BLOCK = re.compile(r"^\* \*\*`([A-Z][\w-]*-\d+)`.*$\n((?:\s*>.*\n?)*)", re.M)
 
 #: Same number as `R-LENGTH`. One rule, one limit — a second threshold would only invite arguing
 #: about which applies where.
@@ -80,10 +105,55 @@ def census(root: Path) -> dict[str, int]:
     """Map `path relative to root` -> number of over-long lines. Clean files are omitted."""
     found: dict[str, int] = {}
     for path in sorted(root.rglob("*.md")):
+        if _SKIP_DIRS.intersection(path.parts):
+            continue
         count = _violating_lines(path.read_text(encoding="utf-8", errors="replace"))
         if count:
             found[path.relative_to(root).as_posix()] = count
     return found
+
+
+def entry_census(root: Path) -> dict[str, int]:
+    """Map `<topic file>::<ID>` -> effective lines, for entries over `MAX_ENTRY_LINES`.
+
+    **Effective** lines: content length divided by the line limit, NOT physical newlines. A rule
+    counting newlines is evaded by not wrapping — 187 of 191 entries are a single physical line
+    today, several of them thousands of characters, so a newline rule finds 4 offenders where there
+    are 41.
+    """
+    found: dict[str, int] = {}
+    for path in sorted(root.rglob(_TOPIC_DOC)):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in _ENTRY_BLOCK.finditer(text):
+            body = " ".join(
+                line.strip().lstrip(">").strip()
+                for line in match.group(2).splitlines()
+                if line.strip()
+            )
+            lines = math.ceil(len(body) / MAX_LINE)
+            if lines > MAX_ENTRY_LINES:
+                found[f"{path.name}::{match.group(1)}"] = lines
+    return found
+
+
+def load_entry_baseline() -> dict[str, int]:
+    if not ENTRY_BASELINE.exists():
+        return {}
+    data: dict[str, int] = json.loads(ENTRY_BASELINE.read_text(encoding="utf-8"))
+    return data
+
+
+def entry_regressions(live: dict[str, int], baseline: dict[str, int]) -> list[tuple[str, int, int]]:
+    """`(entry, allowed, now)` for entries that grew — or that are NEW and already over.
+
+    A new entry gets no free first offence: absent from the baseline, its allowance is the limit
+    itself. Freezing on sight is how a ratchet becomes a rubber stamp.
+    """
+    return sorted(
+        (key, baseline.get(key, MAX_ENTRY_LINES), count)
+        for key, count in live.items()
+        if count > baseline.get(key, MAX_ENTRY_LINES)
+    )
 
 
 def load_baseline() -> dict[str, int]:
@@ -116,20 +186,30 @@ def main(argv: list[str] | None = None) -> int:
     root = REPO_ROOT / TREE
     # A checker that cannot find its subject must say so rather than pass — `TECH-032`'s lesson.
     if not root.is_dir():
-        print(f"could not run: registry tree not found: {root}", file=sys.stderr)
+        print(f"could not run: tree not found: {root}", file=sys.stderr)
         return 2
 
     live = census(root)
+    entries = entry_census(root / "docs" / "roadmap" / "topics")
 
     if args.freeze:
         write_baseline(live)
-        print(f"froze {sum(live.values())} over-long line(s) across {len(live)} file(s)")
+        ENTRY_BASELINE.write_text(
+            json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(
+            f"froze {sum(live.values())} over-long line(s) across {len(live)} file(s), "
+            f"and {len(entries)} over-long entr(y/ies)"
+        )
         return 0
 
     if args.list:
         for path, count in sorted(live.items(), key=lambda kv: -kv[1]):
             print(f"  {count:4}  {path}")
         print(f"\n{sum(live.values())} over-long line(s) in {len(live)} file(s)")
+        for key, count in sorted(entries.items(), key=lambda kv: -kv[1]):
+            print(f"  {count:4}  {key}")
+        print(f"{len(entries)} entr(y/ies) over {MAX_ENTRY_LINES} lines")
         return 0
 
     grown = regressions(live, load_baseline())
@@ -150,7 +230,25 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"R-DEPTH: {sum(live.values())} over-long line(s), none new")
+    grown_entries = entry_regressions(entries, load_entry_baseline())
+    if grown_entries:
+        print(f"R-ENTRY -- topic entries over {MAX_ENTRY_LINES} lines ({len(grown_entries)}):\n")
+        for key, allowed, now in grown_entries:
+            print(f"  {key}: {allowed} -> {now} lines")
+        print(
+            f"\nAn L2 topic entry is a SUMMARY: what, why, how sequenced, in about "
+            f"{MAX_ENTRY_LINES} lines. Pre-drift practice is a median of 247 characters for a "
+            "capability and 588 for a TECH ticket; anything near ten times that is carrying a "
+            "deeper layer's content. Move it into the design or the delivery record — run "
+            "`python scripts/check_entry_orphans.py <ID>` first so nothing is dropped. Measured "
+            "as content length, so wrapping does not change the verdict."
+        )
+        return 1
+
+    print(
+        f"R-DEPTH: {sum(live.values())} over-long line(s), none new. "
+        f"R-ENTRY: {len(entries)} over-long entr(y/ies), none new."
+    )
     return 0
 
 
