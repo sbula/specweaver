@@ -135,3 +135,36 @@ class TestMain:
         stale = sorted(set(ed.load_baseline()) - set(live))
 
         assert stale == [], f"baseline names files with no violations: {stale}"
+
+
+class TestTheOrphanCheckerIsDeletedWhenDone:
+    """`check_entry_orphans.py` is scaffolding for `TECH-044` and must not outlive it.
+
+    It exists to make the redistribution safe: before a topic entry is shortened, it names the
+    facts that appear nowhere deeper, so they are moved rather than dropped. When the R-DEPTH
+    backlog reaches zero there is nothing left to redistribute and the tool has no job.
+
+    A promise in a docstring would not survive the session that made it — this repo has watched a
+    `pytest.skip` guard survive its own written-down lesson by eighteen days. So the deletion is a
+    failing test instead: the moment the baseline empties, the suite demands the file go.
+    """
+
+    CHECKER = REPO_ROOT / "scripts" / "check_entry_orphans.py"
+
+    def test_the_checker_exists_exactly_while_the_backlog_does(self, ed: ModuleType) -> None:
+        """One assertion, failing in BOTH directions — deleted too early, or kept too long.
+
+        First written as two `pytest.skip`-guarded tests, which `R8` rejected on sight: a skip
+        conditioned on repo state turns a defect into a green run, and this file's own rule says so.
+        The equality is simpler than the pair it replaced and cannot be half-satisfied.
+        """
+        backlog = bool(ed.load_baseline())
+
+        assert self.CHECKER.is_file() == backlog, (
+            "check_entry_orphans.py is gone while the R-DEPTH backlog is not empty — "
+            "redistribution still needs its safety net; restore it or finish TECH-044."
+            if backlog
+            else "The R-DEPTH backlog is empty, so TECH-044 is finished and "
+            "scripts/check_entry_orphans.py has no remaining job. Delete it, drop it from "
+            "UNGATED_CHECKERS in test_quality_runner.py, and delete this test class."
+        )

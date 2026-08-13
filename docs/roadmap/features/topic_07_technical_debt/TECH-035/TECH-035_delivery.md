@@ -1,8 +1,13 @@
-# Build Record: TECH-035 — Chronically Failing Class-Health Gate
+# Delivery Record: TECH-035 — Chronically Failing Class-Health Gate
 
 - **Feature ID**: TECH-035
-- **Layer**: build record — what happened while delivering, kept out of the design so the design
+- **Layer**: delivery record — what happened while delivering, kept out of the design so the design
   stays the case for doing it rather than the log of having done it.
+- **NOT a Phase-7 walkthrough.** It was first named `_walkthrough.md` and that was wrong: a
+  walkthrough is defined by `specweaver-pre-commit` Phase 7 as a per-commit-boundary artifact
+  carrying exact test counts and **every HITL gate decision**. This has no commit boundary, no test
+  counts and no gate decisions. Reusing that name would have made 32 files claim to be something 31
+  of them are and this one is not.
 - **Delivered**: 2026-08-12, reopened and finished the same day; baseline traded 4 → 6 by
   `TECH-037` on 2026-08-13.
 

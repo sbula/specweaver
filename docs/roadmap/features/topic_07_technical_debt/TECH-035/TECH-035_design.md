@@ -135,4 +135,4 @@ being **assigned from outside the class**.
 ## Delivery
 
 Delivered 2026-08-12. The account of what was built, which probes were wrong and what remains is
-the build record: [`TECH-035_walkthrough.md`](TECH-035_walkthrough.md).
+the delivery record: [`TECH-035_delivery.md`](TECH-035_delivery.md).

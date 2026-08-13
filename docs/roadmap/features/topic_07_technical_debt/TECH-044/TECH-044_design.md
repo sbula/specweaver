@@ -92,6 +92,27 @@ already is; how much content belongs there is a layer question, not a character 
    fixing anything — the content stays at the wrong depth and the count says it is solved. Rejected
    for exactly that reason, and recorded so it is not re-proposed as an optimisation.
 
+## The scaffolding is deleted when this ticket closes — enforced, not promised
+
+`scripts/check_entry_orphans.py` exists only to make this redistribution safe. When the R-DEPTH
+backlog reaches zero there is nothing left to redistribute and it has no job.
+
+That deletion is a **failing test**, not a note:
+`test_entry_depth.py::TestTheOrphanCheckerIsDeletedWhenDone` asserts the checker exists **exactly
+while** the baseline is non-empty, so the suite demands its removal the moment the backlog empties
+— and demands its restoration if it is deleted early. A promise in a docstring would not survive
+the session that made it; this repo watched a `pytest.skip` guard outlive its own written-down
+lesson by eighteen days.
+
+## Known gap: nothing bounds a delivery record's SIZE
+
+R-DEPTH caps line length, not file length, and `check_file_sizes.py` runs on `src tests scripts`
+only — `docs/` is not covered by anything. So `TECH-035_delivery.md` (21 KB) can grow without
+limit, and so can any design doc; the largest today is 45 KB. Raised by the user while reviewing
+the first redistribution and recorded rather than fixed, because a size rule for prose needs the
+same per-kind argument that killed the entry-size cap: a design and a one-paragraph stub have no
+common number.
+
 ## Guardrail
 
 Already shipped with the finding: `R-DEPTH` (`scripts/_entry_depth.py`, `doc` gate, ratcheted per

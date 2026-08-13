@@ -44,7 +44,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 
 * **`TECH-035` 🟢: Chronically Failing Class-Health Gate**
   > [Description](../features/topic_07_technical_debt/TECH-035/TECH-035_design.md) ·
-  > [build record](../features/topic_07_technical_debt/TECH-035/TECH-035_walkthrough.md)
+  > [delivery record](../features/topic_07_technical_debt/TECH-035/TECH-035_delivery.md)
   > | _(2026-08-12 — surfaced during `TECH-023` batch 2, the session's first commit to touch a
   > file the gate covers.)_
   >
