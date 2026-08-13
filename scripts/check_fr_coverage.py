@@ -173,6 +173,17 @@ def find_plans(features_root: Path, story: str) -> list[Path]:
 #: test); this records the split so it can be drained. `TECH-017` finding 6.
 STRICTLY_CITED: dict[str, set[str]] = {}
 
+_KNOWN: frozenset[str] | None = None
+
+
+def _known_stories() -> frozenset[str]:
+    """Every id with a design directory, cached — used to detect an ambiguous bare requirement id."""
+    global _KNOWN
+    if _KNOWN is None:
+        root = Path(__file__).resolve().parents[1] / "docs" / "roadmap" / "features"
+        _KNOWN = frozenset(d.parent.name for d in root.rglob("*_design.md"))
+    return _KNOWN
+
 
 def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
     """Map ``FR-N`` → the test files citing it for this story.
@@ -198,7 +209,7 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
         relative = path.relative_to(tests_root).as_posix()
         strict = _cit.strict_citations(text).get(story, set())
         # A `Proves:` tag is EXHAUSTIVE for the story it names: prose in a tagged file adds nothing.
-        for fr in sorted(_cit.credited_requirements(text, story)):
+        for fr in sorted(_cit.credited_requirements(text, story, _known_stories())):
             cited.setdefault(fr, []).append(relative)
             if fr in strict:
                 STRICTLY_CITED.setdefault(story, set()).add(fr)

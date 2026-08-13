@@ -101,6 +101,17 @@ def is_fixture_data(text: str) -> bool:
     return False
 
 
+_KNOWN: frozenset[str] | None = None
+
+
+def _known_stories() -> frozenset[str]:
+    """Every id with a design directory, cached — shared rule with the FR sweep."""
+    global _KNOWN
+    if _KNOWN is None:
+        _KNOWN = frozenset(d.parent.name for d in FEATURES.rglob("*_design.md"))
+    return _KNOWN
+
+
 def delivered_stories() -> set[str]:
     """Story ids the master roadmap marks delivered."""
     if not ROADMAP.is_file():
@@ -145,7 +156,11 @@ def cited_nfrs_in_tests(tests_root: Path, story: str) -> set[str]:
         if story not in text or is_fixture_data(text):
             continue
         # Same rule as the FR sweep: a `Proves:` tag is exhaustive for the story it names.
-        cited |= {r for r in _cit.credited_requirements(text, story) if r.startswith("NFR-")}
+        cited |= {
+            r
+            for r in _cit.credited_requirements(text, story, _known_stories())
+            if r.startswith("NFR-")
+        }
     return cited
 
 

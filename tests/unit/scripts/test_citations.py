@@ -160,3 +160,48 @@ class TestCreditedRequirements:
 
     def test_a_file_not_naming_the_story_credits_nothing(self, cit: ModuleType) -> None:
         assert cit.credited_requirements("FR-4 alone", "D-INTL-06") == set()
+
+
+class TestCreditedRequirementsAmbiguity:
+    """A bare requirement id in a file naming SEVERAL stories attributes to none of them.
+
+    Requirement ids are only unique WITHIN a story: nine designs declare an `FR-5`. The legacy rule
+    credited a bare `FR-5` to every story the file happened to name, which is not a heuristic that
+    is sometimes wrong — it is wrong for all but at most one of them, by construction.
+
+    Measured 2026-08-13 across the delivered tree: 37 of 152 credited requirements rested on a bare
+    id in a multi-story file. Spot-checks showed the damage plainly — `B-EXEC-01` FR-5 is the
+    container executor's exit-code contract, and its credit came from
+    `test_headless_run_keeps_provider_none` (*"no TTY -> provider stays None"*), a test about
+    interactive drafting that shares only the token `FR-5`.
+
+    So ambiguity yields no credit. The author fixes it by qualifying the mention (`B-EXEC-01 FR-5`)
+    or adding a tag — both cheap, both make the claim checkable.
+    """
+
+    ONE = frozenset({"B-EXEC-01"})
+    TWO = frozenset({"B-EXEC-01", "INT-US-09"})
+
+    def test_a_bare_id_credits_when_only_one_story_is_named(self, cit: ModuleType) -> None:
+        text = "B-EXEC-01 behaviour, see FR-5."
+        assert cit.credited_requirements(text, "B-EXEC-01", self.ONE) == {"FR-5"}
+
+    def test_a_bare_id_credits_nothing_when_two_stories_are_named(self, cit: ModuleType) -> None:
+        # The real shape: both ids in a module header, the requirement named far below in a test.
+        text = "Covers B-EXEC-01 and INT-US-09.\n\n" + "x\n" * 20 + "FR-5 is asserted here."
+        assert cit.credited_requirements(text, "B-EXEC-01", self.TWO) == set()
+        assert cit.credited_requirements(text, "INT-US-09", self.TWO) == set()
+
+    def test_a_qualified_id_still_credits_in_a_multi_story_file(self, cit: ModuleType) -> None:
+        text = "Covers INT-US-09 too.\n\nB-EXEC-01 FR-5 is asserted."
+        assert cit.credited_requirements(text, "B-EXEC-01", self.TWO) == {"FR-5"}
+        assert cit.credited_requirements(text, "INT-US-09", self.TWO) == set()
+
+    def test_a_tag_beats_ambiguity(self, cit: ModuleType) -> None:
+        text = '"""T.\n\nProves: B-EXEC-01 FR-5.\n\nINT-US-09 also discussed.\n"""\n'
+        assert cit.credited_requirements(text, "B-EXEC-01", self.TWO) == {"FR-5"}
+
+    def test_omitting_the_registry_keeps_the_legacy_behaviour(self, cit: ModuleType) -> None:
+        """Back-compatible default: callers that pass no registry cannot detect ambiguity."""
+        text = "Covers B-EXEC-01 and INT-US-09.\n\n" + "x\n" * 20 + "FR-5 is asserted here."
+        assert cit.credited_requirements(text, "B-EXEC-01") == {"FR-5"}

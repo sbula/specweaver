@@ -84,7 +84,18 @@ def loose_mentions(text: str, story: str) -> set[str]:
     return set(_REQ.findall(text))
 
 
-def credited_requirements(text: str, story: str) -> set[str]:
+#: How far back from a requirement id the owning story may sit for the mention to count as
+#: qualified. Wide enough for ``B-EXEC-01 FR-5`` and ``INT-US-24 SF-01 T3 (FR-2 producer)``, narrow
+#: enough to exclude a story id merely mentioned earlier in the sentence. The NEAREST story in that
+#: window wins: a first attempt asked only whether the story appeared anywhere in a 45-character
+#: window, which read ``B-EXEC-01 and INT-US-09 both matter here. FR-5`` as owned by B-EXEC-01.
+#: 25 was then too tight and dropped a genuine one — ``INT-US-02 Verifiable Proof (FR-8)`` needs 28.
+_QUALIFY_WINDOW = 32
+
+
+def credited_requirements(
+    text: str, story: str, known_stories: frozenset[str] | None = None
+) -> set[str]:
     """What this file may credit to ``story`` — the single rule both sweeps should use.
 
     **A `Proves:` tag is exhaustive for the story it names.** If the file tags that story, the tag is
@@ -102,7 +113,29 @@ def credited_requirements(text: str, story: str) -> set[str]:
     tags = strict_citations(text)
     if story in tags:
         return set(tags[story])
-    return loose_mentions(text, story)
+    loose = loose_mentions(text, story)
+    if known_stories is None or not loose:
+        return loose
+    # Requirement ids are unique only WITHIN a story -- nine designs declare an `FR-5`. If this file
+    # names more than one story, a BARE id cannot be attributed to any of them, so only mentions
+    # qualified by the owning story count. Measured 2026-08-13: 37 of 152 credited requirements
+    # rested on a bare id in a multi-story file, and the spot-checks were unrelated tests sharing
+    # nothing but the token.
+    if len({s for s in known_stories if s in text}) < 2:
+        return loose
+    qualified: set[str] = set()
+    for req in loose:
+        for match in re.finditer(rf"\b{re.escape(req)}\b", text):
+            window = text[max(0, match.start() - _QUALIFY_WINDOW) : match.start()]
+            nearest, at = None, -1
+            for candidate in known_stories:
+                found = window.rfind(candidate)
+                if found > at:
+                    nearest, at = candidate, found
+            if nearest == story:
+                qualified.add(req)
+                break
+    return qualified
 
 
 def _prose_lines(text: str) -> list[str]:
