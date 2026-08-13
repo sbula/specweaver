@@ -55,9 +55,24 @@ To ensure this knowledge persists across agent handoffs, the following architect
 |---|-----|-------|--------|---------|
 | FR-1 | Execution | System | Parses a Feature Spec and triggers `drafting/decomposition.py` | A `DecompositionPlan` object is produced containing component changes and integration seams. |
 | FR-2 | Decision Gate | System | Presents the decomposition plan | A HITL gate waits for user approval/rejection. |
-| FR-3 | Component Fan-out | System | Automatically spawns a sub-pipeline iteration (generate Component Spec) for each approved component | N individual L3 pipelines are launched (Multi-spec Pipeline Fan-out). |
 | FR-4 | Quality Automation | System | Applies standard 10-test battery (Structure Tests 1-5 + Code Quality) against each Component Spec | The pipeline advances only if all gates pass. |
 | FR-5 | Coverage Check | System | Verifies that the resulting combined components cover 100% of the Feature Spec's Blast Radius | Will signal ERROR or Loop Back if coverage is incomplete. |
+
+> **`FR-3` descoped 2026-08-13 (`TECH-046`).** It read: *"Component Fan-out — automatically spawns
+> a sub-pipeline iteration (generate Component Spec) for each approved component; N individual L3
+> pipelines are launched."* It was never built and never carried by an implementation plan, while
+> this capability was marked ✅.
+>
+> The row is **deleted rather than annotated** so the descoping is visible in the artifact, which is
+> what `check_fr_coverage.py`'s own failure message instructs. The scope did not vanish — it moved:
+> per-component spec synthesis and race-hardened fan-out are **`C-FLOW-12`**, registered and
+> sequenced behind `C-EXEC-07` and `TECH-014`.
+>
+> **`AD-2` below is a different and larger gap.** *"Automated Recursive Spawn"*, together with this
+> design's title (*multi-level*) and its agent-sized split heuristic, describes recursion —
+> feature → sub-features → components. `DecompositionPlan.components` is a flat
+> `list[ComponentChange]` with no nesting, so that is a schema change, not a control-flow one. It is
+> **`C-INTL-07`**, minted the same day to build it properly rather than leave it implied here.
 
 ## Non-Functional Requirements
 

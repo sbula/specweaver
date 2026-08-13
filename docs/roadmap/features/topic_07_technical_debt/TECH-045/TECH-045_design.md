@@ -2,7 +2,8 @@
 
 - **Feature ID**: TECH-045
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **CLOSED 2026-08-13 — approach 4, decided against.** A close, not a deferral: the
+  question was asked, measured and answered no.
 - **Origin**: 2026-08-13, raised by the user while reviewing `TECH-044`'s first redistribution:
   *"what prevents it to grow indefinitely?"* Recorded there as a known gap and split out here so it
   is scheduled rather than remembered.
@@ -71,7 +72,22 @@ lesson `TECH-044` actually learned: **length is a symptom, misplaced content is 
   being at the wrong layer, not by its byte count.
 - `check_file_sizes.py`'s existing `src tests scripts` thresholds.
 
-## Next Step
+## Decision, 2026-08-13 — approach 4: no size rule
 
-Run the `specweaver-design` skill against this stub before any implementation. Approach 4 is a real
-candidate: decide whether this should exist at all before deciding what it measures.
+**Decided against, by the user, on the measurement.** Every kind has a median under 11 KB and a
+p90 under 24 KB with a long thin tail — four documents over 45 KB. A thin tail is not a systemic
+problem, and each candidate rule costs more than it buys:
+
+- **per-kind thresholds** — a design stub and an eight-boundary implementation plan are the same
+  "kind", so the numbers would be arbitrary and argued with;
+- **one generous threshold** — catches about five documents and ratifies nothing about the middle;
+- **structural, flagging mixed layers** — the most interesting, and still another mechanical proxy
+  for a judgement a reader makes better.
+
+**The evidence for "no" is that the problem already went away without this rule.** `TECH-044`'s
+redistribution removed the worst cases — `TECH-035_design.md` fell 28.6 KB → 8.4 KB — driven by
+content being at the wrong *layer*, never by its byte count. `R-DEPTH` and `R-ENTRY` cover
+readability and depth; a third numeric rule for prose would buy the appearance of rigour, which is
+worse than none.
+
+Recorded rather than deleted so the question is not re-opened as if it were new.

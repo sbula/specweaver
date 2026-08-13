@@ -59,6 +59,12 @@ This document tracks all capabilities related to LLM integration, specification 
   > `C-VAL-05`.
 
 ## DAL-B: High-Assurance
+
+* **`C-INTL-07` 🔜: Multi-Level Recursive Decomposition**<br>
+  > [Description](../features/topic_04_intelligence/C-INTL-07/C-INTL-07_design.md) | _(2026-08-13 — minted from `TECH-046`.)_ | `C-INTL-01` was designed as *"iterative decomposition (multi-level)"*
+  > and shipped **single-pass**; `AD-2` and the agent-sized split heuristic were never built and never descoped. This builds them. A **schema change before a control-flow one** —
+  > `DecompositionPlan.components` is flat, and the persisted artifact is a frozen `INT-US-21` seam `C-FLOW-12` consumes. Fan-out execution is `C-FLOW-12`, not this.
+
 * **`B-INTL-01` ✅: Archetype Rule Sets** (Legacy: 3.29)<br>
   > _(new)_ | Auto-provisioned rules for specific architectural profiles (`kotlin-service`, `rust-worker`) to enforce framework-specific standards inherently. **Complete**: SF-01 (Injection), SF-02
   > (Language Commons Framework Schemas), and SF-03 (Archetype Rule Bounds + Plugins).

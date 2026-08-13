@@ -171,27 +171,19 @@ critical for long-term project viability.
   > requirements, and one whose requirements the parser could not read. **DELIVERED 2026-08-13:** outcomes split, and the parser widened — the table-only rule was its own invention, since the design
   > skill mandates numbered testable FRs and no table. Unreadable designs: 5 → 0.
 
-* **`TECH-046` 🔴: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
-  > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) |
-  > _(2026-08-13 — `TECH-038`'s follow-up, filed once the evidence said the scope was wrong.)_ |
-  > `C-INTL-01`'s design is titled *"Automated iterative decomposition (multi-level)"* and specifies
-  > recursion three ways — FR-3, AD-2 and an agent-sized split heuristic. None was built, and no
-  > plan records a descope, while the entry says ✅. `check_fr_coverage.py C-INTL-01` has reported
-  > `BLOCKED` since `TECH-025`; nothing ran it. Decide explicitly: build it, or delete the unbuilt
-  > FR rows so the descoping is visible.
+* **`TECH-046` 🟢: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
+  > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) | _(2026-08-13 — `TECH-038`'s follow-up.)_ | `C-INTL-01` was designed multi-level and shipped single-pass, with no
+  > descope recorded. **RESOLVED 2026-08-13:** `FR-3` (component fan-out) deleted from the FR table so the descoping is visible — that scope is `C-FLOW-12` — and the recursion itself minted as
+  > **`C-INTL-07`** to be built properly rather than quietly redefined away.
 
 * **`TECH-044` 🟢: Registry Entries Carry Content Belonging Four Layers Down**
   > [Description](../features/topic_07_technical_debt/TECH-044/TECH-044_design.md) | _(2026-08-13 — raised by the user while reviewing `TECH-017`'s parser fix.)_ | `R-DEPTH` and `R-ENTRY` froze 2057
   > over-long lines and 41 over-long entries; this ticket is the backlog they froze. **"Move it to the design" is the wrong instruction** — the spine has four layers and one entry usually holds
   > content for three at once. Redistribution, never deletion.
-* **`TECH-045` 🔴: Nothing Bounds a Document's Size**
-  > [Description](../features/topic_07_technical_debt/TECH-045/TECH-045_design.md) |
-  > _(2026-08-13 — raised by the user while reviewing `TECH-044`'s first redistribution.)_ |
-  > `R-DEPTH` caps a line and `R-ENTRY` caps an entry; nothing caps a **file**, and
-  > `check_file_sizes.py` covers `src tests scripts` only. Two documents already exceed 45 KB.
-  > A single number will not fit — the same measurement that killed the entry-size cap applies —
-  > so the design must decide whether to threshold per kind, catch only the tail, detect mixed
-  > layers structurally, or accept that prose is unbounded.
+* **`TECH-045` 🟢: Nothing Bounds a Document's Size**
+  > [Description](../features/topic_07_technical_debt/TECH-045/TECH-045_design.md) | _(2026-08-13 — raised while reviewing `TECH-044`.)_ | `R-DEPTH` caps a line, `R-ENTRY` an entry; nothing caps a
+  > file. **CLOSED 2026-08-13 — decided against.** Medians are under 11 KB with a four-document tail, and `TECH-044`'s redistribution already removed the worst cases without a size rule existing,
+  > driven by wrong-layer content rather than byte count.
 
 
 * **`TECH-040` 🟢: `sw run --verbose` Showed No Handler Output**

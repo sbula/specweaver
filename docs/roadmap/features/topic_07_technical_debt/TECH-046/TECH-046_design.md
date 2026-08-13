@@ -2,7 +2,8 @@
 
 - **Feature ID**: TECH-046
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **RESOLVED 2026-08-13.** Both halves of the decision taken: `FR-3` descoped, and
+  the recursion minted as `C-INTL-07` to be built properly.
 - **Origin**: `TECH-038`, 2026-08-13. That ticket asked which of two sides was wrong — the registry
   description, or the scope. The evidence says the scope. This is the follow-up it promised to
   file rather than implement.
@@ -75,6 +76,25 @@ a documentation edit, which is why this is a ticket rather than a fix.
 - The 46-of-103 capability-wide FR-coverage failure measured on 2026-08-13 — recorded in
   `TECH-017`, whose per-story matrix is that work.
 
-## Next Step
+## Decision, 2026-08-13
 
-Run the `specweaver-design` skill against this stub before any implementation.
+**Neither option alone — both, split along the line the evidence actually drew.**
+
+**`FR-3` descoped.** *"Component Fan-out — spawns a sub-pipeline per approved component"* was never
+built and never planned, but the scope did not vanish: it is `C-FLOW-12`, registered and sequenced.
+The row is **deleted** from `C-INTL-01`'s FR table rather than annotated, so the descoping is
+visible in the artifact — which is what `check_fr_coverage.py`'s own failure message instructs.
+`C-INTL-01` now declares 4 FRs, not 5.
+
+**The recursion is minted as `C-INTL-07`, not descoped.** `AD-2` (Automated Recursive Spawn), the
+design's *multi-level* title and the agent-sized split heuristic describe a capability nothing else
+covers — `C-FLOW-12` executes a flat DAG and says nothing about splitting a sub-feature. Option 2
+alone would have quietly redefined `C-INTL-01` as what it turned out to be, and lost the intent.
+
+`C-INTL-07` carries the three things that make it more than a control-flow change: the schema
+(`DecompositionPlan.components` is flat, and the persisted artifact is a frozen `INT-US-21` seam
+`C-FLOW-12` consumes, so migration is required), termination with an explicit depth cap, and a cost
+model — the single-pass journey costs exactly one LLM call and recursion multiplies that per level.
+
+Its design also fixes its own closure bar up front, because shipping without one is why this ticket
+exists: **a recursion capability whose recursion is untested is the exact defect being corrected.**

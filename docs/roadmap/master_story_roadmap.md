@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **8 of 48 TECH tickets are open**, and only one still asserts a claim against a candidate
+> done: **6 of 48 TECH tickets are open**, and only one still asserts a claim against a candidate
 > below — see **Debt Sequencing**.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
@@ -68,7 +68,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **8 of 48 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **6 of 48 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -85,8 +85,6 @@ it was closed is what let this section drift for a month.*
 | Ticket | Where it fits |
 |---|---|
 | `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
-| `TECH-046` 🔴 | `C-INTL-01` designed multi-level recursion three ways and shipped none of it, with no descope recorded and the entry marked ✅. |
-| `TECH-045` 🔴 | `R-DEPTH` caps a line, `R-ENTRY` an entry; nothing caps a file, and `docs/` is outside `check_file_sizes.py`. Two documents exceed 45 KB. |
 | `TECH-041` 🔴 | `C-VAL-03`'s code-level DAL override is proven link by link and never as a chain. Needs a scripted LLM; the lenient-DAL control is the load-bearing half. |
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
 | `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
@@ -574,6 +572,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟢 **Recursive Planning:**
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
+        *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition *(the `AD-2` half `C-INTL-01` never built)*
     *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`; `TECH-014` cleared 2026-08-12)*:
         *   `[ ]` **INT-US-21-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution
@@ -714,7 +713,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-040:** [`sw run --verbose` Showed No Handler Output](features/topic_07_technical_debt/TECH-040/TECH-040_design.md)
     *   `[ ]` **TECH-041:** [The Code-Level DAL Override Is Unproven End to End](features/topic_07_technical_debt/TECH-041/TECH-041_design.md)
     *   `✅` **TECH-044:** [Registry Entries Carry Content Belonging Four Layers Down](features/topic_07_technical_debt/TECH-044/TECH-044_design.md)
-    *   `[ ]` **TECH-045:** [Nothing Bounds a Document's Size](features/topic_07_technical_debt/TECH-045/TECH-045_design.md)
-    *   `[ ]` **TECH-046:** [`C-INTL-01` Shipped Without the Recursion It Was Designed For](features/topic_07_technical_debt/TECH-046/TECH-046_design.md)
+    *   `✅` **TECH-045:** [Nothing Bounds a Document's Size](features/topic_07_technical_debt/TECH-045/TECH-045_design.md)
+    *   `✅` **TECH-046:** [`C-INTL-01` Shipped Without the Recursion It Was Designed For](features/topic_07_technical_debt/TECH-046/TECH-046_design.md)
     *   `✅` **TECH-047:** [Nothing Runs the FR-Coverage Gate Across Delivered Work](features/topic_07_technical_debt/TECH-047/TECH-047_design.md)
     *   `✅` **TECH-048:** [A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"](features/topic_07_technical_debt/TECH-048/TECH-048_design.md)
