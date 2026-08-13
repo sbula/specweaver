@@ -316,8 +316,17 @@ contract that consumed it, and credited only there. four unit files under `tests
 without naming it.
 
 Each test was read against each requirement before anything was cited. FR-4, FR-5, FR-6, FR-8 and FR-9 now carry a
-`Proves:` citation naming the specific test functions. **FR-1, FR-2, FR-3 and FR-7 remain uncited** — no existing
-test proves them, and they are left visible rather than papered over.
+`Proves:` citation naming the specific test functions. **FR-1, FR-2, FR-3 and FR-7 remain uncited**
+and are left visible rather than papered over.
+
+**Corrected 2026-08-13, same day: "uncited" is not "untested".** `FR-3` (selective filtering —
+ARCHIVED, cross-project, DONE older than 24h) is not implemented *in* the hydrator at all: it
+delegates, passing `max_age_hours=24` to the repository (`hydrator.py:162`). So its proof, if it
+exists, sits in the repository's test file — which never names `D-INTL-06`, so the gate cannot see
+it. Confirming that, rather than assuming it, is `CB-2`'s work.
+
+The general shape is recorded against `B-INTL-09`: a citation living in a file that names no story
+makes proof **invisible** to the ledger, which is a different defect from proof being absent.
 
 No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
 `docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.

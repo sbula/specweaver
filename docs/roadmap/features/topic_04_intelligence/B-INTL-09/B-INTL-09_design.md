@@ -241,8 +241,21 @@ The per-requirement mapping, read test by test before anything was cited:
 | FR-9 deadlock propagation | `test_int_8_upstream_cascading_failure`, `test_int_17_upstream_propagation_cascade`, `test_int_18_reverse_propagation_partial`, `test_int_19_reverse_propagation_full_clear` |
 
 Each test was read against each requirement before anything was cited. FR-2, FR-3, FR-4, FR-5, FR-8 and FR-9 now carry a
-`Proves:` citation naming the specific test functions. **FR-1 (schema definition), FR-6 (alembic integration) and FR-7 (ARCHIVED cleanup) remain uncited** — no existing
-test proves them, and they are left visible rather than papered over.
+`Proves:` citation naming the specific test functions. **FR-1 (schema definition), FR-6 (alembic
+integration) and FR-7 (ARCHIVED cleanup) remain uncited** and are left visible rather than papered
+over.
+
+**Corrected 2026-08-13, same day: "uncited" is not "untested", and the first wording said the wrong
+one.** `FR-7` *is* tested — `tests/unit/workspace/test_memory_repository_core.py:700` is docstringed
+`"""FR-7: Transition to ARCHIVED sets handover_context = None."""`, a deliberate attribution
+written by whoever built it. `check_fr_coverage.py` cannot see it: the gate skips any file that does
+not **name the story**, and that file never says `B-INTL-09`. The proof exists and the ledger is
+blind to it.
+
+That is a third failure mode, distinct from the two already recorded. A missing citation makes a
+requirement look unproven; a citation in a file that names no story makes proof **invisible** — and
+the fix is not to cite harder here but to name the capability in the file that already proves it.
+`FR-1` and `FR-6` are not yet assessed either way.
 
 No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
 `docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
