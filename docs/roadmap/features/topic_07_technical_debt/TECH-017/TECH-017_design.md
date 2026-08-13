@@ -29,7 +29,18 @@ gap:
 So this audit must produce findings against the **capability** stories too, not only the integration
 contracts. A unit-test-heavy integration story is a *symptom*; the ticket exists to find the disease.
 
-## Problem Statement — measured 2026-07-26
+## Problem Statement — measured 2026-07-26, **re-measured 2026-08-13**
+
+> [!IMPORTANT]
+> **Re-measured 2026-08-13 before planning, against a tree ~30 tickets younger.** Four of the six
+> findings below are unchanged, one is substantially closed by work this ticket did not do, and one
+> is no longer comparable. Each is annotated inline. **Plan from the annotations, not from the
+> 2026-07-26 body** — the original numbers are kept as the record of what was found, not as a
+> current worklist. The same re-measurement discharged `TECH-018` in one session.
+>
+> One scope change: **`INT-US-21-SUB` is out of scope here** — `TECH-018` audited it on 2026-08-13
+> and its finding 2 is this ticket's result for that add-on. The two were required not to
+> double-cover it.
 
 **9 of 28 integration base contracts are delivered:** `INT-US-01, 02, 03, 04, 05, 09, 24, 25, 28`.
 Audit of their declared proof and of the 104 integration / 44 e2e test files found:
@@ -39,6 +50,14 @@ Audit of their declared proof and of the 104 integration / 44 e2e test files fou
 `US-25_integration.md` — **`Verifiable Proof: [Pending]`**, while `master_story_roadmap.md` marks
 `INT-US-25` as `✅`. The proof mandate was simply never satisfied.
 
+> **2026-08-13 — still open, and worse than recorded: the two documents contradict each other.**
+> `master_story_roadmap.md:594` still marks `INT-US-25` `✅`, while `US-25_integration.md` reads
+> `Status: ⬜ Pending`, `Integration Description: [Pending definition...]`, `Verifiable Proof:
+> [Pending]`. So this is not a delivered contract missing its proof — it is a contract that was
+> **never started** and is marked delivered in the roadmap. The roadmap ✅ is the wrong one, which
+> makes the real count **8 of 28 delivered, not 9**. Cheapest finding in the ticket and the only
+> one fixable without reading a test: correct the marker, or state what INT-US-25 delivered.
+
 ### 2. Contracts whose "proof" is a capability suite, not a contract journey
 
 `INT-US-01` → `test_standards_e2e.py` · `INT-US-04` → `test_mcp_flow_e2e.py` ·
@@ -47,6 +66,10 @@ Audit of their declared proof and of the 104 integration / 44 e2e test files fou
 These are pre-existing suites proving the *capability* works. None was written to prove the
 *integration contract's journey* works. This is the same tier-mismatch one level up: pointing at
 someone else's test instead of proving the seam.
+
+> **2026-08-13 — unchanged.** All three contracts still cite the same three files, which still
+> exist (relocated under `tests/e2e/capabilities/`) at 6, 4 and 6 tests respectively. No
+> contract-journey test has been added for any of them.
 
 ### 3. Thin or happy-path-dominated contract proofs
 
@@ -58,6 +81,13 @@ someone else's test instead of proving the seam.
 | `INT-US-24` | 9 e2e | **The standard to hold others to** — includes retries-exhausted, zero-collected, resume-heals, resume-without-LLM-degrades, generator exhaustion |
 | `INT-US-28` | 20 integration | Strong (OCC races, DAG cycles, zombies) |
 
+> **2026-08-13 — unchanged.** `INT-US-03` still cites 3 e2e (plus 5 integration tests in
+> `test_cli_implement_isolation.py`); `INT-US-09` still 6 e2e, still all isolation happy paths.
+> `INT-US-21` has since joined `INT-US-24` and `INT-US-28` as a benchmark: **24 e2e scenarios**
+> including interrupt survival, and every assertion reads the persisted run status rather than the
+> exit code — because `PARKED` and `COMPLETED` both exit `0`, which is why `INT-US-02`'s E6/E7 were
+> green for months without advancing past their first gate. Hold the thin proofs to that.
+
 ### 4. Systemic holes in the flow suite
 
 - **Graceful shutdown is effectively unproven.** `CancelledError`: **0 files**. `atexit`: **0**.
@@ -65,19 +95,55 @@ someone else's test instead of proving the seam.
   (`test_cqrs_e2e.py:44`) **skips on Windows**, the development platform. `PipelineRunner`
   saves handover and flushes telemetry in a `finally:`; nothing verifies either survives a Ctrl-C.
   The fan-out spawns `asyncio.Task`s and no test cancels one.
+
+  > **2026-08-13 — substantially CLOSED, by work this ticket did not do.** `INT-US-21` SF-03 CB-4
+  > (`39aa3860`, 2026-07-28) shipped `TestE12InterruptSurvival` (4 tests) and
+  > `TestTeardownActuallyRuns` in `test_feature_decomposition_e2e.py`, which assert **handover is
+  > saved** and **telemetry is flushed** on the interrupt path — precisely the `finally:` contract
+  > this finding said nothing verified. `KeyboardInterrupt` is now in **6** test files, not 2, and
+  > `SIGBREAK` routes through the same graceful-cleanup handler so the SIGINT e2e branches
+  > per-platform instead of skipping on Windows *(that half was already noted 2026-08-01)*.
+  > **What remains open:** `CancelledError` is still **0 files** and `atexit` still **0**, and the
+  > fan-out still spawns `asyncio.Task`s that no test cancels. Scope this finding to task
+  > cancellation only — the process-signal half is done.
+
 - **11 of 43 flow/workflow test files have zero failure-path tests**, including
   `test_orchestration_integration.py` — the *only* integration coverage of the fan-out that
   `TECH-014` says is already mis-attributing telemetry — and
   `test_session_policy_fullchain.py`, where the C-EXEC-06 policy layer is unprotected while the
   mechanism layer beneath it is tested.
+
+  > **2026-08-13 — re-derive before using.** `TECH-014` has since shipped, so the fan-out race this
+  > cites is fixed and the file's coverage question is now "does it prove the fix", not "does it
+  > guard the race". The 11/43 ratio itself is not comparable: the test tree was reorganized
+  > (`tests/e2e/capabilities/…`) and there are now 149 files matching `*flow*`.
+
 - **12 tests verify essentially nothing** — 3 with no assertion of any kind, 9 asserting only
   `exit_code == 0` (which cannot distinguish PARKED from COMPLETED from "did nothing"). Includes a
   **zombie-process** test whose sole assertion is an exit code.
+
+  > **2026-08-13 — NOT comparable; re-derive.** The tree reorganization means the original 12 cannot
+  > be tracked by path. A fresh repo-wide AST scan finds **38** test functions with no assertion of
+  > any kind (excluding `tests/manual/`), but most are legitimate *does-not-raise* shapes
+  > (`test_stop_is_noop`, `test_..._never_reaches_the_caller`) whose assertion is the absence of an
+  > exception. The finding is still real — `test_output_is_valid_python` and `test_registry` assert
+  > nothing and name a claim they do not check — but the number must be re-derived with a
+  > discriminator that separates *no assertion* from *no-raise is the assertion*, or the audit will
+  > report 38 defects where there are a handful.
+
 - **Latent skip guards.** `test_feature_pipeline.py:144,240` still carry
   `if not path.exists(): pytest.skip(...)`. A wrong `PIPELINES_DIR` made two tests skip **silently
   for months** until 2026-07-25; the guard that allowed it is still armed. Separately, four suites
   are `skipif`-gated on `git`+`bash` — on a machine lacking them, the entire delivered proof for
   `INT-US-03`, `INT-US-09` and `C-EXEC-06` vanishes behind a green suite.
+
+  > **2026-08-13 — still armed, unchanged.** Both guards survive verbatim at
+  > `tests/integration/core/flow/engine/test_feature_pipeline.py:145` and `:241` (the file moved;
+  > the guards did not). The file now carries a comment at `:39` **describing the very incident**
+  > and leaves the mechanism that caused it in place — the strongest single argument in this ticket
+  > that recording a lesson is not the same as removing its cause. The `skipif` gate is now **11**
+  > suites, not four. This is the cheapest guardrail in the ticket: a `pytest.skip` for a path the
+  > repo controls should be a failure, not a skip.
 
 ## Goal
 
@@ -114,4 +180,19 @@ had already deferred all integration work to a single later commit boundary.
 
 ## Next Step
 
-Run the `specweaver-design` skill against this stub before any implementation.
+Run the `specweaver-design` skill against this stub before any implementation. **Start from the
+2026-08-13 annotations, not the 2026-07-26 body.**
+
+Suggested phasing, cheapest-first — each is independently shippable, so the ticket does not have to
+be planned as one multi-session block:
+
+1. **The `INT-US-25` marker contradiction** (§1). One line of evidence, no test reading. Also
+   corrects the delivered-contract count the rest of the audit is scoped by: **8 of 28, not 9**.
+2. **The skip-guard guardrail** (§4). Mechanical, and the finding this ticket has now watched
+   survive its own written-down lesson. Turn a `pytest.skip` on a repo-controlled path into a
+   failure; decide separately what the 11 `skipif`-gated suites should do on a machine without
+   `git`/`bash` (fail loudly beats vanishing behind a green suite — same shape as `TECH-032`).
+3. **The tier-ratio guardrail** (Approach 3 below), which is the half that stops the regression
+   recurring while the audit itself is still unscheduled.
+4. **The per-story matrix**, the expensive half — 8 contracts, `INT-US-21`/`24`/`28` as the
+   benchmark, `INT-US-21-SUB` excluded (`TECH-018`).

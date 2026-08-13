@@ -51,7 +51,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **6 of 36 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **5 of 36 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -61,13 +61,12 @@ it was closed is what let this section drift for a month.*
 
 | Ticket | Claim | Against |
 |---|---|---|
-| `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. | **Any** candidate's planning phase |
+| `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. Evidence **re-measured 2026-08-13** — plan from the design doc's annotations, not its 2026-07-26 body, and take its cheapest-first phasing rather than one multi-session block. | **Any** candidate's planning phase |
 
 **No claim on a candidate**
 
 | Ticket | Where it fits |
 |---|---|
-| `TECH-018` 🔜 | Audit-only, precondition met (INT-US-21 SF-03 committed). Wants the code work done first. Coordinate with `TECH-017` so the two do not double-cover `INT-US-21-SUB`. |
 | `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
 | `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
@@ -75,8 +74,14 @@ it was closed is what let this section drift for a month.*
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
-by 2026-08-13. Nothing open contends for a shared file, so the remaining five are ordered only by
-the audits-last rule above.
+by 2026-08-13. Nothing open contends for a shared file, so the remaining four are independent and
+`TECH-017` is the only one wanting the code work first.
+
+> **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against
+> evidence that INT-US-21 SF-03 invalidated **two days later**, by shipping the 24-test CLI journey
+> that was the ticket's own second candidate approach; re-measuring closed it in one session
+> instead of the "unknown size" it feared, and the same pass corrected three of `TECH-017`'s
+> findings. Filing-day evidence for a ticket gated on *story X ships* is stale by construction.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -665,7 +670,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
     *   `✅` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
     *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
-    *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
+    *   `✅` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
     *   `✅` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
     *   `✅` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
