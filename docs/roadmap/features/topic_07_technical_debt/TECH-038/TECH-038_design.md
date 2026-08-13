@@ -2,7 +2,9 @@
 
 - **Feature ID**: TECH-038
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **RESOLVED 2026-08-13.** The question is answered — **(b), the scope is wrong** —
+  and the substantive follow-up is filed as `TECH-046`. No registry wording was changed, because
+  which wording is correct now depends on a scope decision this ticket deliberately does not take.
 - **Origin**: `TECH-018` audit, 2026-08-13, finding 1. Filed separately because `TECH-018` is
   audit-only and forbids editing `INT-US-21-SUB`'s entry (finished-stories-immutable).
 
@@ -35,7 +37,7 @@ depends on today — which is why the mismatch survived delivery and an epic clo
 live the moment a reader plans against the registry: `C-FLOW-12` / `INT-US-21-SF02` is the next
 consumer of the decomposition plan, and it is currently unplanned.
 
-## The Decision This Ticket Exists To Make
+## The Decision — answered 2026-08-13
 
 Exactly one of the two sides is wrong, and the ticket must not assume which:
 
@@ -62,7 +64,7 @@ registry wording alone — that wording is the artefact under suspicion.
   identifier would breach finished-stories-immutable. Two accepted inaccuracies on one entry is
   worth resolving in one pass, not two.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals — all held
 
 - Building recursive decomposition. If (b) is the answer, this ticket files the story; it does not
   implement it.
@@ -71,7 +73,7 @@ registry wording alone — that wording is the artefact under suspicion.
   files that patch `FeatureDecomposer` out). That is `TECH-018` finding 2 and is handed to
   `TECH-017` as its result for this add-on. Do not double-cover it here.
 
-## Guardrail to Ship With the Fix
+## Guardrail — see the Resolution for why it was not shipped
 
 A registry entry describing behaviour that does not exist is the same defect class as `TECH-019`
 (instructions ordering the agent to read a deleted file) and `TECH-026` (registry placement with no
@@ -83,6 +85,32 @@ does not cover. Candidate: a delivered capability whose registered description n
 property (recursive, streaming, incremental, parallel) must cite the test that demonstrates it —
 the same shape as `check_fr_coverage.py`, applied to capability descriptions rather than FRs.
 
-## Next Step
+## Resolution, 2026-08-13
 
-Run the `specweaver-design` skill against this stub before any implementation.
+**(b). The scope is wrong, not the description.** Decided from the evidence the ticket demanded —
+the `C-INTL-01` design and its plans — rather than from the registry wording, which was the
+artefact under suspicion.
+
+`C-INTL-01`'s design is titled **"Automated iterative decomposition (multi-level)"** and specifies
+recursion three separate ways: FR-3 (component fan-out spawning sub-pipelines), AD-2 (*"Automated
+Recursive Spawn"*), and an agent-sized heuristic for splitting a sub-feature that handles more than
+5 FRs. So the registry description is faithful to what was **designed**. What is untrue is that it
+shipped.
+
+Neither implementation plan records a descope. `check_fr_coverage.py C-INTL-01` — a gate that has
+existed since `TECH-025` — reports `BLOCKED`, with FR-1 and FR-3 carried by no plan and all five
+FRs cited by no test. The evidence was mechanically available the whole time; nothing ran it.
+
+**Therefore this ticket changes no wording.** Correcting the description would assert that
+single-pass decomposition is the intended scope, which is precisely the decision `TECH-046` exists
+to take. Editing the text first would have made the ticket's own warning come true — *exactly one
+side is wrong and the ticket must not assume which* — by quietly assuming.
+
+**Guardrail: deliberately not shipped, and the reason is a finding.** The check this ticket wanted
+already exists and already works; what does not exist is anything that runs it across delivered
+capabilities. Sweeping it would report **46 of 103** capabilities BLOCKED (8 clean, 49 unable to
+run), which would be ratcheted on sight and thereafter mean nothing. That measurement is recorded
+in `TECH-017` §5 as audit input instead.
+
+`OQ-1` was considered as the ticket required and is untouched: it is a naming divergence on the
+same entry, and `TECH-039` settled that a divergence stays legal where a collision does not.

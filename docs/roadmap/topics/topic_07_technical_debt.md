@@ -161,6 +161,15 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-046` 🔴: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
+  > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) |
+  > _(2026-08-13 — `TECH-038`'s follow-up, filed once the evidence said the scope was wrong.)_ |
+  > `C-INTL-01`'s design is titled *"Automated iterative decomposition (multi-level)"* and specifies
+  > recursion three ways — FR-3, AD-2 and an agent-sized split heuristic. None was built, and no
+  > plan records a descope, while the entry says ✅. `check_fr_coverage.py C-INTL-01` has reported
+  > `BLOCKED` since `TECH-025`; nothing ran it. Decide explicitly: build it, or delete the unbuilt
+  > FR rows so the descoping is visible.
+
 * **`TECH-044` 🟢: Registry Entries Carry Content Belonging Four Layers Down**
   > [Description](../features/topic_07_technical_debt/TECH-044/TECH-044_design.md) | _(2026-08-13 — raised by the user while reviewing `TECH-017`'s parser fix.)_ | `R-DEPTH` and `R-ENTRY` froze 2057
   > over-long lines and 41 over-long entries; this ticket is the backlog they froze. **"Move it to the design" is the wrong instruction** — the spine has four layers and one entry usually holds
@@ -186,10 +195,10 @@ critical for long-term project viability.
   > delivered add-ons the same identifier**. **DELIVERED 2026-08-13:** repair, not a rename — the token never identified anything, and the master roadmap already declared both ids (`SF03`/`SF04`), so
   > the document was reconciled to the registry. Guardrail shipped: an identifier may name at most one entry, un-ratcheted. `OQ-1`'s divergence stays legal.
 
-* **`TECH-038` 🔴: Registry Claims Recursive Decomposition the Capability Does Not Implement**
-  > [Description](../features/topic_07_technical_debt/TECH-038/TECH-038_design.md) | _(2026-08-13 — `TECH-018` audit finding 1.)_ | `INT-US-21-SUB` / `C-INTL-01` is registered as *Recursive Planning*
-  > and described as iterative decomposition resolving the AST graph into sub-tasks. The shipped capability is one flat LLM call returning a non-nestable plan. Registry-accuracy defect: exactly one
-  > side is wrong, and the ticket must not assume which.
+* **`TECH-038` 🟢: Registry Claims Recursive Decomposition the Capability Does Not Implement**
+  > [Description](../features/topic_07_technical_debt/TECH-038/TECH-038_design.md) | _(2026-08-13 — `TECH-018` audit finding 1.)_ | `INT-US-21-SUB` is registered as *Recursive Planning*; the shipped
+  > decomposer is one flat LLM call returning a non-nestable plan. **RESOLVED 2026-08-13: the scope is wrong, not the description.** `C-INTL-01` designed recursion three ways and never built it, so no
+  > wording was changed — which wording is right depends on a scope decision, filed as `TECH-046`.
 
 * **`TECH-026` 🟢: Roadmap Placement Contract — One Registry ID, One Line**
   > [Description](../features/topic_07_technical_debt/TECH-026/TECH-026_design.md) | _(2026-08-08 — found during `TECH-025` SF-02.)_ | No document stated what belongs in `master_story_roadmap.md`

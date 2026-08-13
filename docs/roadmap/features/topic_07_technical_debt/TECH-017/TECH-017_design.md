@@ -160,6 +160,29 @@ someone else's test instead of proving the seam.
   > suites, not four. This is the cheapest guardrail in the ticket: a `pytest.skip` for a path the
   > repo controls should be a failure, not a skip.
 
+### 5. The capability side, measured 2026-08-13
+
+This ticket's own principle says the audit *"must produce findings against the **capability**
+stories too, not only the integration contracts"*. That half now has a number.
+
+`scripts/check_fr_coverage.py` run across all **103** capabilities with a design document:
+
+| Result | Count |
+|---|---|
+| clean | **8** |
+| `BLOCKED` — an FR carried by no plan, or cited by no test | **46** |
+| could not run | 49 |
+
+The gate has existed since `TECH-025` and is story-scoped, so it only ever fires when a human
+passes an ID. `C-INTL-01` is the worked example (`TECH-046`): FR-1 and FR-3 carried by no plan, all
+five FRs cited by no test, and the capability marked ✅ — while its design specifies recursive
+multi-level decomposition that was never built and never descoped.
+
+**Do not turn this into a gate as-is.** 46 blocked capabilities would be ratcheted on sight and the
+ratchet would then mean nothing, which is the failure mode `check_useless_asserts.py`'s docstring
+warns about for detectors. It is audit input, not a guardrail — the per-story matrix this ticket
+already owes is where each of the 46 gets a verdict.
+
 ## Goal
 
 For **every** delivered integration contract, a per-story matrix of *what the contract claims* versus
