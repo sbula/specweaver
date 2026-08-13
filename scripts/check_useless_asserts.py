@@ -21,6 +21,16 @@ detector you cannot trust is as bad as a test you cannot trust.
   4. vacuous isinstance  assert isinstance(x, object)
   5. mock truthiness     assert m / assert m.attr  where m = MagicMock()
                          — every MagicMock attribute is truthy, so it always passes
+  6. vacuous outcome     a test whose ONLY assertions are outcome codes, at least one of them
+                         permissive: assert r.exit_code in (0, 1). Such a test cannot fail on the
+                         thing its name claims — `TECH-017`: six stood over the US-25 seam and all
+                         stayed green with the capability disabled outright.
+
+                         Function-level, and narrow on purpose. A permissive check STANDING BESIDE
+                         real assertions is a weak guard, not a vacuous test; scoring per-assertion
+                         instead flags 24 of those and is the noise this module refuses. Scoped to
+                         exit/status attributes for the same reason — `x in (0, 1)` on an ordinary
+                         value is an ordinary assertion.
 
 Usage:
     python scripts/check_useless_asserts.py [tests_root]
@@ -39,6 +49,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 MOCK_FACTORIES = {"Mock", "MagicMock", "AsyncMock", "NonCallableMock"}
+
+#: Attribute names whose value encodes success-vs-failure. Pattern 6 applies only to these.
+OUTCOME_ATTRS = {"exit_code", "returncode", "status_code"}
+
+#: What counts as success for each. Everything else in the collection is a failure.
+_SUCCESS = {"exit_code": {0}, "returncode": {0}, "status_code": {200, 201, 202, 204}}
 
 
 class UselessAssertVisitor(ast.NodeVisitor):
@@ -93,6 +109,50 @@ class UselessAssertVisitor(ast.NodeVisitor):
                 self.hits.append((node.lineno, "always-true-bound", ast.unparse(test)))
 
 
+def _is_outcome_compare(test: ast.expr) -> tuple[bool, bool]:
+    """Return ``(touches_outcome_code, is_permissive)`` for one assertion."""
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1:
+        return False, False
+    attr = getattr(test.left, "attr", None)
+    if attr not in OUTCOME_ATTRS:
+        return False, False
+    if not isinstance(test.ops[0], ast.In):
+        return True, False
+    right = test.comparators[0]
+    if not isinstance(right, ast.Tuple | ast.List | ast.Set):
+        return True, False
+    values = [e.value for e in right.elts if isinstance(e, ast.Constant)]
+    if len(values) != len(right.elts) or len(values) < 2:
+        return True, False
+    success = _SUCCESS[attr]
+    return True, any(v in success for v in values) and any(v not in success for v in values)
+
+
+def vacuous_outcome_tests(tree: ast.AST) -> list[tuple[int, str, str]]:
+    """Pattern 6: test functions proven by nothing but a permissive outcome code.
+
+    Mock assertions and ``pytest.raises`` count as real proof, so a function using either is left
+    alone even if its only bare ``assert`` is an exit code.
+    """
+    hits: list[tuple[int, str, str]] = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)):
+            continue
+        if not node.name.startswith("test_"):
+            continue
+        body = ast.unparse(node)
+        if "assert_called" in body or "assert_awaited" in body or "pytest.raises" in body:
+            continue
+        asserts = [n for n in ast.walk(node) if isinstance(n, ast.Assert)]
+        if not asserts:
+            continue
+        verdicts = [_is_outcome_compare(a.test) for a in asserts]
+        if all(touches for touches, _ in verdicts) and any(loose for _, loose in verdicts):
+            offender = next(a for a, (_, loose) in zip(asserts, verdicts, strict=True) if loose)
+            hits.append((offender.lineno, "permissive-exit-code", ast.unparse(offender.test)))
+    return hits
+
+
 def scan_source(source: str) -> list[tuple[int, str, str]]:
     """Findings for one file's source text. Unparseable input yields nothing."""
     try:
@@ -101,7 +161,7 @@ def scan_source(source: str) -> list[tuple[int, str, str]]:
         return []
     visitor = UselessAssertVisitor()
     visitor.visit(tree)
-    return visitor.hits
+    return sorted(visitor.hits + vacuous_outcome_tests(tree))
 
 
 def iter_test_files(paths: list[Path]) -> list[Path]:

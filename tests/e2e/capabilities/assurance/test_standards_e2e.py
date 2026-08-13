@@ -11,6 +11,7 @@ Exercises:
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 from typer.testing import CliRunner
@@ -74,6 +75,29 @@ def _create_python_project(tmp_path: Path, name: str) -> Path:
     r = runner.invoke(app, ["init", name, "--path", str(project)])
     assert r.exit_code == 0, f"init failed: {r.output}"
     return project
+
+
+def _stored_standards(project: str) -> list[dict]:
+    """Read the standards the scan persisted, as the CLI's own `show` does.
+
+    Asserted against instead of the rendered table because Rich sizes columns to content: for the
+    richer fixtures the `Dominant Patterns` value is truncated to `function_styl…`, so a table
+    assertion would be testing column widths rather than what was stored.
+    """
+    from specweaver.interfaces.cli import _core
+
+    return _core.run_repo_op(lambda r: r.get_standards(project, scope="src", language="python"))
+
+
+def _naming_row_count(project: str) -> int:
+    return sum(1 for s in _stored_standards(project) if s.get("category") == "naming")
+
+
+def _stored_naming(project: str) -> dict:
+    rows = [s for s in _stored_standards(project) if s.get("category") == "naming"]
+    assert rows, f"no naming standard stored for {project}"
+    data = rows[0].get("data")
+    return data if isinstance(data, dict) else json.loads(str(data))
 
 
 # ---------------------------------------------------------------------------
@@ -186,6 +210,7 @@ class TestStandardsInjectionE2E:
         runner.invoke(app, ["standards", "scan", "--no-review"])
         show1 = runner.invoke(app, ["standards", "show"])
         assert show1.exit_code == 0
+        before = _stored_naming(name)
 
         # Change all code to a different style
         src = project / "src" / "service.py"
@@ -198,4 +223,16 @@ class TestStandardsInjectionE2E:
         runner.invoke(app, ["standards", "scan", "--no-review"])
         show2 = runner.invoke(app, ["standards", "show"])
         assert show2.exit_code == 0
-        # No crash, no duplicates — upsert works
+
+        # `TECH-017`: the trailing comment claimed "no crash, no duplicates — upsert works" while
+        # only exit codes were asserted. Both halves are checked here against STORED state rather
+        # than the rendered table — Rich truncates the Dominant Patterns column to fit, and for
+        # this fixture the value is cut off before it is readable, so asserting on the table would
+        # be asserting on column widths.
+        after = _stored_naming(name)
+
+        assert before["function_style"] == "snake_case", before
+        assert after["function_style"] == "camelCase", after
+        assert _naming_row_count(name) == 1, (
+            "re-scan inserted a second naming row instead of upserting"
+        )

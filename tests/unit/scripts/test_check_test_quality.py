@@ -206,3 +206,62 @@ class TestUselessAssertGuard:
 
     def test_the_repo_itself_is_clean(self, useless: ModuleType) -> None:
         assert useless.main([str(REPO_ROOT / "tests")]) == 0
+
+
+class TestVacuousOutcomeTests:
+    """Pattern 6. `TECH-017`: `assert r.exit_code in (0, 1)` cannot fail on the thing it names.
+
+    Found by sweeping `tests/integration` and `tests/e2e` for tests whose only assertions touch an
+    exit or status code. That sweep returned 28, of which 21 are legitimate — their claim IS the
+    exit code ("exits 1 on a missing spec", "still exits 130"). What separates the rest is
+    mechanical: a membership test containing BOTH a success and a failure code is satisfied by
+    either outcome, so it cannot distinguish them.
+
+    Six such assertions stood over the US-25 seam. With the domain-profile lookup disabled outright
+    they all stayed green — the capability was dead and the suite could not tell.
+    """
+
+    def test_a_zero_and_nonzero_collection_is_flagged(self, useless: ModuleType) -> None:
+        source = "def test_x():\n    assert result.exit_code in (0, 1)\n"
+
+        hits = useless.scan_source(source)
+
+        assert [h[1] for h in hits] == ["permissive-exit-code"]
+
+    def test_a_list_collection_is_flagged_too(self, useless: ModuleType) -> None:
+        source = "def test_x():\n    assert res.returncode in [0, 2]\n"
+
+        assert [h[1] for h in useless.scan_source(source)] == ["permissive-exit-code"]
+
+    def test_a_status_code_is_flagged(self, useless: ModuleType) -> None:
+        """HTTP responses have the same shape: `in (200, 404)` proves nothing about which."""
+        source = "def test_x():\n    assert resp.status_code in (200, 404)\n"
+
+        assert [h[1] for h in useless.scan_source(source)] == ["permissive-exit-code"]
+
+    def test_all_failure_codes_is_legitimate(self, useless: ModuleType) -> None:
+        """ "It failed somehow" is a real claim — every member means failure, none means success."""
+        source = "def test_x():\n    assert result.exit_code in (1, 2)\n"
+
+        assert useless.scan_source(source) == []
+
+    def test_a_single_code_is_legitimate(self, useless: ModuleType) -> None:
+        source = "def test_x():\n    assert result.exit_code == 0\n"
+
+        assert useless.scan_source(source) == []
+
+    def test_a_membership_test_on_something_else_is_ignored(self, useless: ModuleType) -> None:
+        """Scoped to exit/status codes on purpose — a broad rule returned unusable noise before."""
+        source = "def test_x():\n    assert value in (0, 1)\n"
+
+        assert useless.scan_source(source) == []
+
+    def test_the_repo_has_no_permissive_exit_codes_left(self, useless: ModuleType) -> None:
+        """Seven were fixed on 2026-08-13 to reach zero."""
+        hits = [
+            (path, line, src)
+            for path, line, pattern, src in useless.scan_tree(REPO_ROOT / "tests")
+            if pattern == "permissive-exit-code"
+        ]
+
+        assert hits == [], "\n".join(f"{p}:{ln}  {s}" for p, ln, s in hits)

@@ -11,6 +11,7 @@ Only the LLM adapter is mocked.
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -75,6 +76,25 @@ def project_with_spec(tmp_path: Path) -> tuple[Path, Path]:
 # ---------------------------------------------------------------------------
 
 
+def _without_run_ids(output: str) -> str:
+    """Strip per-invocation noise so two runs of the same command compare equal.
+
+    Three kinds, each found by watching this comparison report a difference that was not the flag:
+    run uuids, the short `run abc12345` form, and Rich's `[HH:MM:SS]` column — which it prints on
+    the first log line of a run and blanks thereafter, so it moves between otherwise identical
+    outputs. Whitespace runs are collapsed last; that still shows added lines and added words,
+    which is what "detailed output" would mean.
+    """
+    cleaned = re.sub(
+        r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}"
+        r"|\brun [0-9a-f]{8}\b"
+        r"|\[\d{2}:\d{2}:\d{2}\]",
+        "",
+        output,
+    )
+    return re.sub(r"[ \t]+", " ", cleaned)
+
+
 class TestRunPipelineE2E:
     """Execute real pipelines through the CLI."""
 
@@ -121,12 +141,25 @@ class TestRunPipelineE2E:
         # JSON output should contain event data
         assert "{" in result.output  # at least some JSON
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "TECH-040: `--verbose` is a dead flag. It is documented as 'Show detailed handler "
+            "output', threads into RichPipelineDisplay and is stored as `self._verbose` — which "
+            "nothing in src/ ever reads. Strict, so this flips to XPASS the moment it is wired up."
+        ),
+    )
     def test_run_validate_only_verbose(
         self,
         project_with_spec: tuple[Path, Path],
         monkeypatch,
     ) -> None:
-        """sw run validate_only --verbose produces detailed output."""
+        """`sw run validate_only --verbose` produces more output than the same run without it.
+
+        `TECH-017`: this asserted `exit_code in (0, 1)` under a docstring claiming detailed output,
+        so it passed while the flag did nothing at all. Written now as the test that SHOULD pass —
+        the shape `TECH-021` used, where a strict xfail flips to XPASS the instant the fix lands.
+        """
         project_dir, spec = project_with_spec
         _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
@@ -134,11 +167,20 @@ class TestRunPipelineE2E:
             lambda: _state_path,
         )
 
-        result = runner.invoke(
+        plain = runner.invoke(
+            app,
+            ["run", "validate_only", str(spec), "--project", str(project_dir)],
+        )
+        verbose = runner.invoke(
             app,
             ["run", "validate_only", str(spec), "--project", str(project_dir), "--verbose"],
         )
-        assert result.exit_code in (0, 1)
+
+        assert plain.exit_code == 0, plain.output
+        assert verbose.exit_code == 0, verbose.output
+        # Run ids differ between invocations, so compare with them removed — otherwise "the
+        # outputs differ" is true no matter what the flag does.
+        assert _without_run_ids(verbose.output) != _without_run_ids(plain.output)
 
     def test_run_nonexistent_spec_fails(
         self,

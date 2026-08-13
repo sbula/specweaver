@@ -193,8 +193,11 @@ class TestRunErrors:
                 str(project_dir),
             ],
         )
-        # validate_only should complete (may pass or fail based on rules)
-        assert "S01" in result.output or result.exit_code in (0, 1)
+        # `TECH-017`: this was `assert "S01" in result.output or result.exit_code in (0, 1)` —
+        # a meaningful left side neutralised by a tautological right, so it could never fail.
+        assert result.exit_code == 0, result.output
+        assert "Pipeline completed" in result.output
+        assert "validate_spec" in result.output
 
 
 # ---------------------------------------------------------------------------

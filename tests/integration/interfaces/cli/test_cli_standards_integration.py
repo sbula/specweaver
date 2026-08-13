@@ -184,7 +184,8 @@ class TestStandardsRescan:
         r1 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert r1.exit_code == 0
 
-        runner.invoke(app, ["standards", "show"])
+        show1 = runner.invoke(app, ["standards", "show"])
+        assert show1.exit_code == 0
 
         # Change code style and re-scan
         src = project_dir / "src" / "module_a.py"
@@ -197,7 +198,14 @@ class TestStandardsRescan:
         assert r2.exit_code == 0
 
         show2 = runner.invoke(app, ["standards", "show"])
-        # Both should succeed — no duplicate key errors
+
+        # `TECH-017`: this used to assert exit codes only, under a comment claiming "no duplicate
+        # key errors" — which it never checked. The claim is UPSERT, so both halves are asserted:
+        # the stored standard CHANGED, and it was replaced rather than added alongside.
+        assert "function_style=sna" in show1.output, show1.output
+        assert "function_style=cam" in show2.output, show2.output
+        assert "function_style=sna" not in show2.output
+        assert show2.output.count("naming") == 1, "re-scan inserted a second naming row"
         assert show2.exit_code == 0
 
 
@@ -254,6 +262,14 @@ class TestStandardsWithIgnore:
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
+
+        # `TECH-017`: the claim is that `generated/auto.py` was NOT analyzed. Exit code cannot show
+        # that. `GeneratedFunc` is camelCase and every other function in the fixture is snake_case,
+        # so if the ignore were disregarded the dominant naming pattern would shift.
+        show = runner.invoke(app, ["standards", "show"])
+
+        assert "function_style=sna" in show.output, show.output
+        assert "function_style=cam" not in show.output
 
 
 # ---------------------------------------------------------------------------
