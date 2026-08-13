@@ -35,6 +35,46 @@ All four, before any status becomes `🟢` / `✅`:
    is integration and e2e tests. Unit tests belong there only to fill a narrow gap found while
    integrating.
 
+## What FR coverage proves, and what it cannot
+
+**`check_fr_coverage.py` proves attribution, never strength.** It answers *which FR does this test
+claim to cover*. It cannot answer *does the claim hold* — an `assert True` tagged to an FR satisfies
+it exactly.
+
+That is not a gap to be closed with a stricter tagging rule, and the reason matters: for an LLM
+agent under a gate, **the cheapest correct solution to "every FR needs a tagged passing test" is a
+tagged passing test that asserts nothing.** Strictly less work than proving the FR, and it satisfies
+the constraint perfectly. This is `E-VAL-05`'s thesis applied to proof rather than to suppressions.
+
+`check_useless_asserts.py` raises the cost and cannot close it. It reports six mechanically-decidable
+patterns, deliberately — a broader hollow-test detector was prototyped and returned 630 candidates,
+mostly noise. This passes all six and proves close to nothing:
+
+```python
+def test_fr3():
+    """Proves: C-INTL-01 FR-3."""
+    plan = decompose(spec)
+    assert plan is not None
+```
+
+**The only mechanical answer to strength is mutation testing** — mutate the code an FR covers; if
+the FR's tests still pass, they do not test it. That is `A-VAL-03` (Mutation Testing Gates), and it
+is expensive on purpose.
+
+Two proposals that look like cheaper substitutes and are not:
+
+- **Per-test-function `Proves:` tags.** Worth building **only** as the addressing layer `A-VAL-03`
+  needs — tags tell mutation testing which tests must die when which code is mutated. Shipped alone
+  they are a checkbox that makes the ledger look better while proving nothing, which is the shape
+  of the 46 capabilities already marked delivered.
+- **Red-green evidence** (a new test must fail against the pre-change code). Catches vacuous tests
+  on *existing* code paths, but a test calling a new function fails with `ImportError` when `src/`
+  is reverted — which reads as red while proving nothing.
+
+**So the lever is not a checker.** A gate can tell you a test exists; only a reader can tell you it
+matters. Ask what breaks if the test is deleted — that is what `specweaver-red-blue-review` is for.
+Do not add another mechanical proxy for it; the appearance of rigour is worse than none.
+
 ## Filing a follow-up ticket is not one of the conditions
 
 **A new ticket is not a resolution. It is a deferral, and deferrals do not close anything.**
