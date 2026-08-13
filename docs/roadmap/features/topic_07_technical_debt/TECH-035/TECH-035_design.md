@@ -428,3 +428,24 @@ Same trade as the candidate rejected earlier in this ticket, and refused for the
 no-target branch is identical to both**. That is a *duplication* finding rather than a cohesion one
 — it does not move either class's `LCOM4` — so folding it in would repeat the scope-muddle this
 session already had to correct once in `TECH-016`. It wants `TECH-023`'s bucket or its own ticket.
+
+## Baseline moved 4 → 6 by `TECH-037`, deliberately — 2026-08-13
+
+`KotlinCodeStructure` and `TypeScriptCodeStructure` re-entered the baseline at `LCOM4=2` when
+`TECH-037` hoisted `extract_framework_markers` onto `SymbolReadingMixin`. **The cohesion metric is
+right and the change is still correct**, which is worth stating rather than smoothing over.
+
+`extract_framework_markers` was the only method in those two classes that touched *both* the
+node-finding group and `{_extract_bases, _extract_decorators, _base_names_in}`. It was the
+connector. Moving it to the mixin — where it is written once instead of four times — leaves each
+language class holding two groups joined by nothing local, because **the thing that joined them now
+lives one level up and calls into both.**
+
+This is the same trade `TECH-034` recorded when it concentrated the parsers' mechanics into
+`BaseTreeSitterParser`: *"The base got worse, and that is the honest trade."* Four copies of a
+23-line walk became one; two classes gained a component. The alternative — keeping four copies to
+hold a cohesion number down — optimises the metric against the design it exists to serve.
+
+Both are reviewable in `scripts/baselines/class_health.json` rather than exempted in prose, and the
+components name a real seam if anyone later wants to act on it: node structure versus declaration
+metadata.

@@ -100,6 +100,9 @@ class TypeScriptCodeStructure(ClassBasedParser):
             wrapper = wrapper.parent
         return wrapper
 
+    #: Class and function declarations this language exposes to the framework walk.
+    SCM_FRAMEWORK_QUERY = "(class_declaration name: (type_identifier) @name) @cls\n(method_definition name: (property_identifier) @name) @fn\n(function_declaration name: (identifier) @name) @fn"
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         target_scope, target_name = self._split_scope(symbol_name)
 
@@ -238,31 +241,6 @@ class TypeScriptCodeStructure(ClassBasedParser):
                 self._add_dec(dec_node, decorators)
 
         return decorators
-
-    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        if not code.strip():
-            return {}
-        tree = self.parser.parse(code.encode("utf-8"))
-        query_str = "(class_declaration name: (type_identifier) @name) @cls\n(method_definition name: (property_identifier) @name) @fn\n(function_declaration name: (identifier) @name) @fn"
-        cursor = QueryCursor(Query(self.language, query_str))
-
-        markers: dict[str, dict[str, list[str]]] = {}
-        for _, match_dict in cursor.matches(tree.root_node):
-            if "name" not in match_dict:
-                continue
-            name_node = match_dict["name"][0]
-            symbol = self._extract_marker_text(name_node)
-            scope = self._get_symbol_scope(name_node)
-            full_name = f"{scope}.{symbol}" if scope else symbol
-
-            is_class = "cls" in match_dict
-            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
-
-            if full_name not in markers:
-                markers[full_name] = {"decorators": self._extract_decorators(target)}
-                if is_class:
-                    markers[full_name]["extends"] = self._extract_bases(target)
-        return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")

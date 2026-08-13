@@ -208,20 +208,6 @@ class RustCodeStructure(FunctionBasedParser):
                 decorators.append(dec_text)
         return decorators
 
-    def _marker_entry(self, match_dict: dict[str, typing.Any]) -> tuple[str, dict[str, list[str]]]:
-        """One symbol's marker record, keyed by its scoped name."""
-        name_node = match_dict["name"][0]
-        symbol = self._extract_marker_text(name_node)
-        scope = self._get_symbol_scope(name_node)
-        full_name = f"{scope}.{symbol}" if scope else symbol
-
-        is_class = "cls" in match_dict
-        target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
-        entry: dict[str, list[str]] = {"decorators": self._extract_decorators(target)}
-        if is_class:
-            entry["extends"] = []
-        return full_name, entry
-
     def _record_trait_impls(
         self, tree: typing.Any, markers: dict[str, dict[str, list[str]]]
     ) -> None:
@@ -235,24 +221,17 @@ class RustCodeStructure(FunctionBasedParser):
             if entry is not None and "extends" in entry:
                 entry["extends"].append(self._extract_marker_text(impl_match["trait"][0]))
 
+    #: Rust exposes structs and free functions; `impl` blocks are handled separately below.
+    SCM_FRAMEWORK_QUERY = (
+        "(struct_item name: (type_identifier) @name) @cls\n"
+        "(function_item name: (identifier) @name) @fn"
+    )
+
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        if not code.strip():
-            return {}
-
-        tree = self.parser.parse(code.encode("utf-8"))
-        query_str = (
-            "(struct_item name: (type_identifier) @name) @cls\n"
-            "(function_item name: (identifier) @name) @fn"
-        )
-
-        markers: dict[str, dict[str, list[str]]] = {}
-        for _, match_dict in QueryCursor(Query(self.language, query_str)).matches(tree.root_node):
-            if "name" not in match_dict:
-                continue
-            full_name, entry = self._marker_entry(match_dict)
-            markers.setdefault(full_name, entry)
-
-        self._record_trait_impls(tree, markers)
+        """The shared walk, plus the trait impls that only Rust has."""
+        markers = super().extract_framework_markers(code)
+        if markers:
+            self._record_trait_impls(self.parser.parse(code.encode("utf-8")), markers)
         return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:

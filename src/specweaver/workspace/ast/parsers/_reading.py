@@ -81,7 +81,9 @@ class SymbolReadingMixin:
         def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None: ...
         def _find_target_block(self, node: typing.Any) -> typing.Any | None: ...
         def _get_symbol_scope(self, name_node: typing.Any) -> str | None: ...
-        def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]: ...
+        def _extract_marker_text(self, node: typing.Any) -> str: ...
+        def _extract_bases(self, target_node: typing.Any) -> list[str]: ...
+        def _extract_decorators(self, target_node: typing.Any) -> list[str]: ...
 
     def _is_symbol_hidden(self, parent: typing.Any) -> bool:
         """Whether this declaration is hidden from outside its module.
@@ -127,6 +129,45 @@ class SymbolReadingMixin:
                 return False
 
         return True
+
+    #: The tree-sitter query naming this language's class and function declarations, captured as
+    #: `@name` plus `@cls`/`@fn`. Data, because it is the ONLY thing four parsers varied by
+    #: (`TECH-037`); the walk below had been written out four times. Empty means "report nothing",
+    #: so a language that never sets it is not obliged to.
+    SCM_FRAMEWORK_QUERY: str = ""
+
+    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        """Decorators, and bases for a class, per declared symbol.
+
+        A **default, not a prohibition**: `go`, `c` and `cpp` override it outright, and `rust`
+        extends it — it calls `super()` and then records trait impls, which is why this lives on
+        the reading mixin rather than on one tier. The declarative tier reports nothing.
+        """
+        from tree_sitter import Query, QueryCursor
+
+        if not code.strip() or not self.SCM_FRAMEWORK_QUERY:
+            return {}
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        cursor = QueryCursor(Query(self.language, self.SCM_FRAMEWORK_QUERY))
+
+        markers: dict[str, dict[str, list[str]]] = {}
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "name" not in match_dict:
+                continue
+            name_node = match_dict["name"][0]
+            symbol = self._extract_marker_text(name_node)
+            scope = self._get_symbol_scope(name_node)
+            full_name = f"{scope}.{symbol}" if scope else symbol
+
+            is_class = "cls" in match_dict
+            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+
+            if full_name not in markers:
+                markers[full_name] = {"decorators": self._extract_decorators(target)}
+                if is_class:
+                    markers[full_name]["extends"] = self._extract_bases(target)
+        return markers
 
     def extract_skeleton(self, code: str) -> str:
         if not code.strip():
