@@ -161,14 +161,10 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
-* **`TECH-047` 🔴: Nothing Runs the FR-Coverage Gate Across Delivered Work**
-  > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) |
-  > _(2026-08-13 — from `docs/analysis/test_coverage_audit_2026-08-13.md`.)_ |
-  > `check_fr_coverage.py` works and takes a story ID, so it fires only when a human remembers a
-  > story — and nobody remembers 47. **40 of 47 delivered capabilities exit `BLOCKED`.** Third
-  > instance of one disease, after `check_story_preconditions` (INT-US-25) and `check_class_health`
-  > ("nothing in scope" for a session). The hard part is not the sweep — it is that turning it on
-  > produces 40 failures, and a ratchet nobody can act on says "40 unverified is fine".
+* **`TECH-047` 🟢: Nothing Runs the FR-Coverage Gate Across Delivered Work**
+  > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) | _(2026-08-13 — from the coverage audit.)_ | `check_fr_coverage.py` takes a story ID, so it fired only when a human
+  > remembered a story. **DELIVERED 2026-08-13:** `check_fr_sweep.py` in the `doc` gate, ratcheting the count of **uncited requirements** (265) rather than of blocked capabilities (45) — a list of
+  > names moves only when a capability is finished, which is never. An increase blocks; a decrease is explicitly not evidence of quality.
 
 * **`TECH-048` 🟢: A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"**
   > [Description](../features/topic_07_technical_debt/TECH-048/TECH-048_design.md) | _(2026-08-13 — from the coverage audit.)_ | `no FR rows parsed` collapsed two situations: a design stating no

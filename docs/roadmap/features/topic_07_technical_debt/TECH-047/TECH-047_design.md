@@ -2,7 +2,8 @@
 
 - **Feature ID**: TECH-047
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: 🟢 **DELIVERED 2026-08-13.** Option 2 taken — the ratchet counts requirements, not
+  capabilities. `scripts/check_fr_sweep.py`, in the `doc` gate.
 - **Origin**: 2026-08-13, from the audit in
   `docs/analysis/test_coverage_audit_2026-08-13.md`. One of the two systemic causes it isolated;
   the other is `TECH-048`.
@@ -59,7 +60,7 @@ actionable*. Candidates:
 
 (2) is the most promising and the cheapest to trust.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals — all held
 
 - **Fixing the 43.** That is verification work, itemised per FR by the existing tool, and belongs to
   `TECH-017`'s matrix — not to the ticket that makes it visible.

@@ -148,6 +148,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # doc, which nothing then checked -- 33.5% of topic lines over 200 chars, longest 5624.
     # Ratcheted per file; the remedy is redistribution into the design doc, not deletion.
     "entry_depth": {"doc": "all"},
+    # `TECH-047`: the FR ledger swept repo-wide. Ratchets the count of uncited REQUIREMENTS, not of
+    # blocked capabilities -- a list of 45 names moves only when a whole capability is finished,
+    # which is never, so it would say "45 unverified is fine" and be ignored.
+    "fr_sweep": {"doc": "all"},
 }
 
 
@@ -259,6 +263,13 @@ CHECKS: dict[str, Check] = {
         _r._whole_repo("check_skill_references.py"),
         ignores_paths=True,
         script="check_skill_references.py",
+    ),
+    "fr_sweep": Check(
+        "fr_sweep",
+        ("docs",),
+        _r._whole_repo("check_fr_sweep.py"),
+        ignores_paths=True,
+        script="check_fr_sweep.py",
     ),
     "entry_depth": Check(
         "entry_depth",

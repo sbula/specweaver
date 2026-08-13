@@ -294,7 +294,15 @@ class TestCodeValidationPipeline:
     """sw check --level code fires C01-C08 code rules on a Python file."""
 
     def test_code_validation_pipeline(self, tmp_path: Path) -> None:
-        """Check a clean Python file at code level — all Cx rule IDs appear."""
+        """Check a clean Python file at code level — all Cx rule IDs appear.
+
+        Proves: D-VAL-01 FR-1.
+
+        FR-1 is *"Execute `sw check code` → the system runs all deterministic C-series (C01-C08)
+        rules against target files."* This drives the real CLI and asserts the rule ids appear in
+        its output, which is that requirement. The citation was added 2026-08-13 (`TECH-047`) after
+        reading the test — the proof already existed and only the pointer was missing.
+        """
         project_dir = tmp_path / _unique_name("proj")
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])

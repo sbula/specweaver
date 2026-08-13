@@ -140,6 +140,8 @@ EXPECTED: dict[str, dict[str, str]] = {
         # R-DEPTH: `R-LENGTH` capped the roadmap, its rationale pushed detail into the topic doc,
         # and nothing checked that level -- 33.5% of topic lines over 200, longest 5624.
         "entry_depth": "all",
+        # `TECH-047`: uncited-FR ratchet, swept rather than story-scoped.
+        "fr_sweep": "all",
     },
 }
 
@@ -196,6 +198,7 @@ class TestDocTrackIsSeparate:
             "skill_references",
             "proof_tier",
             "entry_depth",
+            "fr_sweep",
         }
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:
