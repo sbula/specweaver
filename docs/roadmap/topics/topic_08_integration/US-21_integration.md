@@ -55,6 +55,23 @@
     it can see. The base deliberately does **not** ship a forward-compatibility pin on its behalf:
     `FR-9(a)` attempted that and was descoped.]
 
+* **Multi-Level Recursive Decomposition (`INT-US-21-SF03`)**
+  * **Status:** ⬜ Pending Design
+  * **Integration Description:** Integrates `C-INTL-07` — the recursive half `C-INTL-01` was
+    designed for and never built (`TECH-046`). Where the base proves a **flat** journey costing
+    exactly one LLM call, this proves a **tree**: the migrated `<stem>_decomposition.yaml` schema,
+    the termination rule firing end to end, and the per-level cost cap. Two base seams change
+    rather than extend, which is why this is a separate contract and not an amendment: the
+    persisted artifact's shape, and the HITL gate — `FR-2` gates one plan, and a tree implies
+    either one gate at the end or a gate per level, which alters the approve-on-resume journey the
+    base contract proved. Sequenced behind `C-INTL-07` (nothing to integrate until it exists) and
+    behind `INT-US-21-SF02` / `C-FLOW-12`, which consumes the same artifact and must not be
+    integrated against a schema about to change.
+  * **Verifiable Proof:** [Pending — the bar is set in `C-INTL-07`'s design and is deliberately
+    explicit, because shipping without one is why `TECH-046` exists: a recursion capability whose
+    recursion is untested is the defect being corrected. At minimum an e2e that decomposes a
+    feature deep enough to split, asserting the tree's shape and the termination rule firing.]
+
 ---
 
 > **Re-validation of the delivered add-on — `TECH-018`.** `INT-US-21-SUB` was proven against a

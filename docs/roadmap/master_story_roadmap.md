@@ -572,7 +572,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟢 **Recursive Planning:**
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
-        *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition *(the `AD-2` half `C-INTL-01` never built)*
+    *   🔴 **Multi-Level Recursive Decomposition** *(the `AD-2` half `C-INTL-01` never built)*:
+        *   `[ ]` **INT-US-21-SF03:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition
     *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`; `TECH-014` cleared 2026-08-12)*:
         *   `[ ]` **INT-US-21-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution

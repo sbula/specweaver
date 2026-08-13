@@ -2,6 +2,7 @@
 
 - **Feature ID**: C-INTL-07
 - **Epic**: Topic 04 (Intelligence)
+- **Design Doc**: `docs/roadmap/features/topic_04_intelligence/C-INTL-07/C-INTL-07_design.md`
 - **Status**: STUB — not yet run through the `specweaver-design` skill
 - **Origin**: 2026-08-13, from `TECH-046`. `C-INTL-01` was designed as *"Automated iterative
   decomposition (multi-level)"* and shipped single-pass. Rather than quietly redefine that
@@ -24,6 +25,22 @@ Its design promised more, in three places:
 None was built, and none was descoped. `TECH-046` established that with evidence and this
 capability is its answer.
 
+## Goal
+
+Decomposition that goes deeper than one level: a feature splits into sub-features, each of which
+splits again until the agent-sized heuristic says stop, and the result is a tree the fan-out can
+walk. Today `sw run feature_decomposition` returns a flat list of components, which is correct for
+a small feature and silently under-describes a large one.
+
+## Relationship
+
+- **`C-INTL-01`** — the single-pass planner this extends. Its `AD-2`, its *multi-level* title and
+  its agent-sized heuristic are the promise; its `FR-3` was descoped to `C-FLOW-12` (`TECH-046`).
+- **`C-FLOW-12`** — executes the plan and consumes the persisted artifact. It owns fan-out; this
+  owns depth. Its `FR-1..FR-4` were written on 2026-08-13 so the descope had a stated home.
+- **`B-FLOW-05`** — token-burn circuit breakers, the natural substrate for the per-level cost cap.
+- **`INT-US-21-SF03`** — the integration contract for this capability.
+
 ## Why this is not a small change
 
 **Recursion is unrepresentable in the current type**, so it is a schema change before it is a
@@ -35,7 +52,7 @@ The single-pass journey also costs **exactly one LLM call**, which `INT-US-21`'s
 and proves. Recursion multiplies that by the number of nodes that fail the heuristic, at every
 level. Cost is a design input here, not an afterthought.
 
-## What the design must decide
+## Candidate Approaches (not yet designed) — the decisions this design must take
 
 1. **The schema.** Does a `ComponentChange` gain an optional child plan, or does the plan become a
    tree with typed nodes? The second is cleaner and breaks the persisted
@@ -68,6 +85,12 @@ Per `closure-contract.md`: **every FR proven by a test, and any FR not built del
 rather than left standing.** A recursion capability whose recursion is untested is the exact defect
 being corrected — at minimum an e2e that decomposes a feature deep enough to split, and asserts the
 tree's shape and the termination rule firing.
+
+## Integration
+
+Integrated by **`INT-US-21-SF03`**, minted 2026-08-13. Its contract owns the journey — the migrated
+artifact schema, the HITL gate's behaviour across levels, and the termination rule firing end to
+end — while this capability owns the planner.
 
 ## Next Step
 
