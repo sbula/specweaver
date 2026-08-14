@@ -33,15 +33,25 @@ import io
 import re
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROADMAP = Path("docs/roadmap/master_story_roadmap.md")
 MATRIX = Path("docs/roadmap/capability_matrix.md")
+TOPIC_TECH = Path("docs/roadmap/topics/topic_07_technical_debt.md")
 
 CAP_ID = r"[A-E]-(?:UI|SENS|FLOW|INTL|VAL|EXEC)-\d+"
 UNCHECKED_CAP = re.compile(rf"`\[ \]` \*\*({CAP_ID}):")
 CHECKED_CAP = re.compile(rf"`✅` \*\*({CAP_ID}):")
 UNCHECKED_CORE = re.compile(r"`\[ \]` \*\*(US-\d+) Core\*\*")
 GREEN_HEADER = re.compile(r"### \U0001f7e2 (US-\d+):")
+#: A TECH ticket's status lives in three places with three spellings: `🟢` in the topic doc, `✅` in
+#: the roadmap checkbox list, prose in the routing table. `TECH-017` stayed `[ ]` here after closing
+#: because a sweep for `🔴` cannot see a `[ ]` two hundred lines away.
+GREEN_TECH = re.compile(r"\*\*`(TECH-\d+)` \U0001f7e2")
+UNCHECKED_TECH = re.compile(r"`\[ \]` \*\*(TECH-\d+):")
 
 
 _orphan_spec = importlib.util.spec_from_file_location(
@@ -51,6 +61,30 @@ assert _orphan_spec is not None and _orphan_spec.loader is not None
 _orphans = importlib.util.module_from_spec(_orphan_spec)
 sys.modules["_registry_orphans"] = _orphans
 _orphan_spec.loader.exec_module(_orphans)
+
+
+def stale_tech_tickets(road: str, topic: str) -> list[str]:
+    """TECH ids closed (`🟢`) in the topic doc but still unticked (`[ ]`) in the roadmap.
+
+    The capability half of this check has existed for months; TECH tickets simply had no
+    equivalent, which is why three stale markers were found by hand in two days. A ticket absent
+    from the roadmap entirely is NOT reported here — that is existence drift and belongs to
+    `_registry_orphans`. One checker, one question.
+    """
+    green = set(GREEN_TECH.findall(topic))
+    return [t for t in UNCHECKED_TECH.findall(road) if t in green]
+
+
+def _stale_tech_errors(road: str, line_of: Callable[[int], int]) -> list[str]:
+    """Report every TECH id closed in the topic doc but still unticked in the roadmap."""
+    topic_text = TOPIC_TECH.read_text(encoding="utf-8") if TOPIC_TECH.is_file() else ""
+    stale = set(stale_tech_tickets(road, topic_text))
+    return [
+        f"  STALE:      line {line_of(m.start())}: `[ ]` {m.group(1)} — ticket is CLOSED "
+        "(\U0001f7e2) in topic_07_technical_debt.md"
+        for m in UNCHECKED_TECH.finditer(road)
+        if m.group(1) in stale
+    ]
 
 
 def main(argv: list[str]) -> int:
@@ -81,6 +115,8 @@ def main(argv: list[str]) -> int:
             errors.append(
                 f"  STALE:      line {line_of(m.start())}: `[ ]` {m.group(1)} Core — story is CLOSED (green header)"
             )
+    errors.extend(_stale_tech_errors(road, line_of))
+
     for m in CHECKED_CAP.finditer(road):
         if m.group(1) not in done_in_matrix:
             warnings.append(

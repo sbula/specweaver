@@ -124,10 +124,10 @@ it is why the deliverable is a human-read matrix rather than another checker.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|------------------------|
-| NFR-1 | Immutability | No delivered entry's claims are re-worded to match its tests. The matrix records the mismatch; it does not erase it. |
-| NFR-2 | Evidence | Every verdict names a test function or states that none exists. A verdict without evidence is an opinion. |
-| NFR-3 | No net ticket growth | The audit must not end with more open tickets than it started with, absent a genuine decision. |
-| NFR-4 | Incremental | Each entry is independently auditable and committable; the audit must not require one large landing. |
+| NFR-1 | Immutability | No delivered entry's claims are re-worded to match its tests. The matrix records the mismatch; it does not erase it. **[proof: meta — rule about tests, docs or the diff]** Constrains edits to *other* documents; no test can show a human did not re-word a contract. Partially backstopped: `check_audit_matrix.py`'s ratchet fails if the claim count ever falls. |
+| NFR-2 | Evidence | Every verdict names a test function or states that none exists. A verdict without evidence is an opinion. Enforced mechanically by `check_audit_matrix.py` rule 2 and proven by `tests/unit/scripts/test_check_audit_matrix.py`. |
+| NFR-3 | No net ticket growth | The audit must not end with more open tickets than it started with, absent a genuine decision. **[proof: meta — rule about tests, docs or the diff]** Same shape as the descoped `FR-5`: the artifact is the **absence** of tickets, a historical fact about a period of work. Outcome: **zero filed** across four sub-features. |
+| NFR-4 | Incremental | Each entry is independently auditable and committable; the audit must not require one large landing. **[proof: meta — rule about tests, docs or the diff]** A property of how the work was committed; git history is the artifact. Outcome: 14 commits across four sub-features, none bundling two entries. |
 
 ## External Dependencies
 

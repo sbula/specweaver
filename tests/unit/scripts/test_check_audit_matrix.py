@@ -25,7 +25,11 @@ demanding a test name. Five proven rows legitimately say *"same test"* or *"the 
 pointing at the row above; requiring a function name there would force copy-paste, and whitelisting
 the prose would be brittle. Both spellings were measured against the real matrix before choosing.
 
-Proves: TECH-017 FR-1, FR-2, FR-3, FR-4, FR-6.
+Proves: TECH-017 FR-1, FR-2, FR-3, FR-4, FR-6, NFR-2.
+
+`NFR-2` (*every verdict names a test function or states that none exists*) is rule 2, and is the
+only one of the four NFRs a pytest can own; the other three constrain the auditor's editing,
+filing and committing behaviour and are marked `[proof: meta]` in the design.
 
 `FR-5` is **not** claimed, and no longer exists. It constrained what the auditor may file, and the
 artifact that would prove it is the absence of tickets — a historical fact, not a property of any
