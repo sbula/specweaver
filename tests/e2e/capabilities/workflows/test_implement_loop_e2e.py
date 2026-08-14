@@ -67,9 +67,14 @@ Greet a person by name.
 _BUGGY = 'def greet(name: str) -> str:\n    return f"Hi {name}"\n'
 _FIXED = 'def greet(name: str) -> str:\n    return f"Hello {name}"\n'
 _UNCOLLECTABLE_TESTS = (
-    "from greeter import greet\n\n\n"
-    "def test_greet() -> None:\n"
-    '    assert greet("Ada") == "Hello Ada"\n'
+    "import importlib.util\n"
+    "from pathlib import Path\n\n"
+    "_src = Path(__file__).resolve().parents[1] / 'src' / 'greeter.py'\n"
+    "_spec = importlib.util.spec_from_file_location('greeter', _src)\n"
+    "_mod = importlib.util.module_from_spec(_spec)\n"
+    "_spec.loader.exec_module(_mod)\n\n\n"
+    "def test_greet_uses_the_specified_salutation() -> None:\n"
+    '    assert _mod.greet("Ada") == "Hello Ada"\n'
 )
 _TESTS = (
     "import sys\n"
@@ -147,51 +152,73 @@ def _run_implement(project: Path):
     )
 
 
-def test_the_loop_regenerates_when_qa_does_not_pass(project: Path) -> None:
-    """[Happy] `INT-US-03` C4 — the loop-back LOOPS. Real generator, real ruff, real pytest.
+def test_the_real_generator_writes_code_and_tests(project: Path) -> None:
+    """[Happy] `INT-US-03` C1/C6 — the REAL `GenerateCodeHandler` runs and its output lands.
 
-    **Probed, per the plan's Done-when:** removing `loop_target="generate_code"` from the
-    `run_tests` gate fails this test. A green run alone would prove only that the pipeline is
-    declared, which `test_implement_pipeline.py` already covers.
-    """
-    llm = _LoopAwareLLM(collectable=False)
-    with _scripted(llm), _no_router():
-        result = _run_implement(project)
+    Modest, and it is the part that holds. The three prior tests of this pipeline each doubled the
+    generator; here only the LLM is doubled, so `D-INTL-01` genuinely produces both files and the
+    pipeline carries them onward.
 
-    assert llm.code_calls >= 2, (
-        f"generate_code ran {llm.code_calls}x — the loop-back never looped: {result.output[-600:]}"
-    )
-    assert (project / "src" / "greeter.py").is_file(), "the generator never wrote code"
-
-
-def test_the_generated_code_reaches_the_code_rules(project: Path) -> None:
-    """[Happy] `INT-US-03` C3/C6 — `validate_code` runs the C-series over generated code.
-
-    The pipe the contract names: `D-INTL-01` writes the file, `D-VAL-05` grades it. Before this,
-    `validate_code` was declared in the pipeline and had never been observed running.
+    `INT-US-03` C4 (*"in one autonomous loop"*) is **not** asserted here and stays `unproven`: the
+    loop cannot be driven red, because generated tests are never collected — see
+    `test_generated_tests_are_never_collected`. An earlier draft did assert the loop and killed a
+    `loop_target` mutant, but only in a configuration where the run failed for an unrelated reason.
+    Keeping that would have been a proof of the wrong thing.
     """
     llm = _LoopAwareLLM(collectable=True)
     with _scripted(llm), _no_router():
         result = _run_implement(project)
 
-    rules = re.search(r"code validation: (\d+)/(\d+) rules", result.output)
-    assert rules, f"validate_code never reported: {result.output[-600:]}"
-    assert int(rules.group(2)) > 0, "the C-series ran zero rules over the generated code"
-    assert (project / "src" / "greeter.py").read_text(encoding="utf-8") == _BUGGY
+    assert llm.code_calls >= 1 and llm.test_calls >= 1, result.output[-600:]
+    assert (project / "src" / "greeter.py").read_text(encoding="utf-8") == _BUGGY, (
+        "the file on disk is not what the generator was given"
+    )
+    assert (project / "tests" / "test_greeter.py").is_file()
+
+
+def test_generated_tests_are_never_collected(project: Path) -> None:
+    """[Finding, pinned] `run_tests` collects ZERO tests from the generated file, whatever it holds.
+
+    Established by SF-04 CB-2 across three payload shapes — a plain import, a `sys.path` insert, and
+    an `importlib` load by absolute path. All three collect nothing, so the content is not the
+    variable. Whatever `run_tests` points pytest at, it is not the file `generate_tests` just wrote.
+
+    **This is the root cause behind two other symptoms**, not a separate bug:
+
+    * it is why the loop could never be observed going red-then-GREEN — the gate cannot turn green
+      on tests that never run, so `INT-US-03` C4 is provable only as *the loop iterates*;
+    * it is why `tests: 0 passed, 0 failed` used to render as a tick — the false green now fixed.
+
+    Pinned rather than fixed: repairing collection means changing what the QA step targets, which is
+    a product decision with a blast radius beyond this audit. If this test starts failing, the
+    collection was fixed — delete it and re-verdict `INT-US-03` C3, which stays `unproven` until
+    then because `validate_code` grades `0/0` rules on a run that never went green.
+    """
+    llm = _LoopAwareLLM(collectable=True)
+    with _scripted(llm), _no_router():
+        result = _run_implement(project)
+
+    assert "0 passed, 0 failed" in result.output, (
+        f"generated tests are being collected now — see this test's docstring: {result.output[-600:]}"
+    )
+    assert (project / "tests" / "test_greeter.py").is_file(), "the test file was written"
 
 
 def test_zero_collected_is_reported_as_a_passing_qa_step(project: Path) -> None:
     """[Finding, pinned] `run_tests` reports SUCCESS when pytest collected nothing.
 
-    Found by SF-04 CB-2 while trying to drive the loop red-then-green. With a test file pytest
-    cannot collect, the step still renders `tests: 0 passed, 0 failed` as a **tick** and the run
-    completes. Nothing ran, and the gate agreed.
+    **The fix was attempted and reverted, deliberately.** `INT-US-24` FR-3 already fails loud on
+    `kind="scenario"`; widening that guard to any step naming a specific `.py` target is the right
+    rule and it lands correctly here — but with collection broken (see
+    `test_generated_tests_are_never_collected`) it makes **every** `sw implement` run fail, taking
+    9 tests with it including `INT-US-24`'s own zero-collected guards.
 
-    `INT-US-24`'s scenario pipeline has an explicit *zero-collected fails loud* guard (its E6). The
-    implement loop has none, so a generated test file that fails to import reads as a clean QA pass.
+    Converting a false green into a universal red is not a fix. The guard cannot land until
+    collection works, so the ordering is: fix what `run_tests` points pytest at, **then** widen the
+    guard. Recorded here so the sequence is not rediscovered.
 
-    This test **pins the current behaviour** rather than asserting it is correct — changing it is a
-    product decision, and pinning it means the change cannot happen silently.
+    This pins the current behaviour rather than endorsing it. If it starts failing, the guard landed
+    — delete this test and re-verdict `INT-US-03` C3.
     """
     llm = _LoopAwareLLM(collectable=True)
     with _scripted(llm), _no_router():
@@ -199,6 +226,5 @@ def test_zero_collected_is_reported_as_a_passing_qa_step(project: Path) -> None:
 
     assert "0 passed, 0 failed" in result.output, result.output[-600:]
     assert "Implementation complete" in result.output, (
-        "if this now fails, zero-collected has started failing loud — a fix, not a regression; "
-        "update INT-US-03's matrix entry rather than restoring this assertion"
+        "zero-collected now fails loud — that is the fix, not a regression; delete this test"
     )
