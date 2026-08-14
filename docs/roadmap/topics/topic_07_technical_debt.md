@@ -130,11 +130,12 @@ critical for long-term project viability.
   > `C-EXEC-06 SF-03` wired session-isolation policy on the **CLI** composition root only. The API run sites (`interfaces/api/v1/pipelines.py`) resolve neither `enforce_isolation` nor the session
   > policy, so a run started through the REST API silently gets a different execution posture than the same run started from the CLI. `apply_session_policy` was written to be reusable verbatim here.
 
-* **`TECH-017` 🔴: Integration-Contract Proof Audit (Test Tier Must Match Story Tier)**
+* **`TECH-017` 🟢: Integration-Contract Proof Audit (Test Tier Must Match Story Tier)**
   > [Description](../features/topic_07_technical_debt/TECH-017/TECH-017_design.md) | _(2026-07-26 — user mandate after INT-US-21 SF-02 CB-1 shipped 16 unit tests and **zero** integration/e2e.)_ | An
   > `INT-US-NN` story is an integration contract, so its proof must be integration and e2e tests. The valuable corollary: an integration story needing heavy unit testing means the capability stories
-  > it integrates shipped incomplete. Deliverable is a per-story matrix of contract claims vs what a test proves, plus a tier-ratio guardrail at **planning** time. Evidence re-measured 2026-08-13 —
-  > plan from the design's annotations, not its 2026-07-26 body, and take its cheapest-first phasing.
+  > it integrates shipped incomplete. **DELIVERED 2026-08-14:** all 64 claims on 13 contracts carry a verdict with evidence (51 proven / 9 unproven / 4 unprovable) in
+  > [the matrix](../../analysis/integration_contract_proof_matrix.md), ratcheted by `check_audit_matrix.py`; five live defects fixed in place, zero tickets filed. `🟢` = the audit is complete, not that
+  > every contract is proven.
 
 * **`TECH-018` 🟢: Delivered Add-On Re-Validation Against an Integrated Base (INT-US-21-SUB / C-INTL-01)**
   > [Description](../features/topic_07_technical_debt/TECH-018/TECH-018_design.md) | _(Origin: INT-US-21 design `AD-9`, user mandate 2026-07-25; relocated out of the feature 2026-07-26 so an audit of

@@ -78,7 +78,7 @@ it was closed is what let this section drift for a month.*
 
 | Ticket | Claim | Against |
 |---|---|---|
-| `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. Evidence **re-measured 2026-08-13** — plan from the design doc's annotations, not its 2026-07-26 body, and take its cheapest-first phasing rather than one multi-session block. | **Any** candidate's planning phase |
+| `TECH-017` 🟢 | **DELIVERED 2026-08-14.** The tier-ratio guardrail is no longer a pending claim — it ships and runs: `check_proof_tier.py` and `check_audit_matrix.py` in the `doc` gate, and the tier-by-claim rule in the implementation-plan skill. Planning a candidate now means satisfying it, not remembering it. | **Any** candidate's planning phase |
 
 **No claim on a candidate**
 
@@ -92,8 +92,8 @@ it was closed is what let this section drift for a month.*
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
-by 2026-08-13. Nothing open contends for a shared file, so the remaining four are independent and
-`TECH-017` is the only one wanting the code work first.
+by 2026-08-13, and `TECH-017` followed on 2026-08-14. Nothing open contends for a shared file, so
+every remaining ticket is independent and none needs code work sequenced ahead of it.
 
 > **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against
 > evidence that INT-US-21 SF-03 invalidated **two days later**, by shipping the 24-test CLI journey
