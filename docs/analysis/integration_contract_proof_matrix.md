@@ -1,7 +1,23 @@
 # Integration-contract proof matrix
 
-`TECH-017` SF-01. CB-1 built the skeleton; **CB-2 assessed `INT-US-28` and CB-3 `INT-US-21`** — their claims below
-carry verdicts and evidence. The other 11 entries remain `unassessed` pending SF-02/03.
+`TECH-017`, complete 2026-08-14. **All 64 claims on all 13 delivered contracts carry a verdict with
+evidence.** The count began at 42: three rounds of re-extraction found that claim extraction had
+been reading the first sentence of each Integration Description, and that contract length predicted
+the miss every time.
+
+| | |
+|---|---|
+| `proven` | 47 |
+| `unproven` | 13 |
+| `unprovable` | 4 (one of them *as written*) |
+
+`unprovable` means the claim cannot be tested **as written** — a scope statement, a universal
+negative over data-defined pipelines, or behaviour that was never built. It is never a synonym for
+*failed*, and no contract was re-worded to make one provable (`NFR-1`).
+
+Three live defects were found and fixed in place: a context assembler wired to a key the atom never
+exports, and two cited proofs whose assertions depended on terminal width. **Zero tickets were
+filed** (`NFR-3`).
 
 For every delivered integration contract, what it *claims* versus what a test *proves*. One claim
 is **one assertion about behaviour at a seam**, not one sentence (`SF-01` D-1) — otherwise verdicts
@@ -16,6 +32,46 @@ are not comparable between entries.
 > **An `unproven` verdict is not a ticket.** The boundary that finds one cites an existing test
 > after reading it, or writes the missing integration/e2e test. A ticket is filed only where a
 > decision is needed that the auditor cannot take.
+
+## Capability findings (`FR-6`) — consolidated
+
+`TECH-017` SF-03 CB-5, the audit's second deliverable. Every finding that belongs to a **capability**
+rather than to the contract that surfaced it, gathered once so the owners can act. None of these is
+a ticket (`FR-5`, `NFR-3`); the entry that found each is named so the evidence is one hop away.
+
+| Capability | Finding | Surfaced by | State |
+|---|---|---|---|
+| `B-INTL-09` | Its own tests were written under `INT-US-28` and credited to the contract, so it read as 9 requirements with **zero** cited tests for three months. Re-attributed; FR-1/6/7 remain uncited. | `INT-US-28` | **fixed in place** |
+| `D-INTL-06` | Same shape — 5 of 9 now cited; FR-1/2/3/7 remain uncited. FR-3 assigns filtering to the hydrator, which **delegates** it (`max_age_hours=24`), so the FR and the code disagree. | `INT-US-28` | **fixed in place**; FR-3 wording is a live mismatch |
+| `D-SENS-02` | `evaluate_and_fetch_skeleton_context` read `res.exports["skeleton"]` while the atom exports `"structure"` — the assembler returned `{}` for every caller, so **skeleton context never reached a generation or review prompt**. | `INT-US-05` C1, via mutation | **fixed in place** |
+| `D-EXEC-02` | The Main-Branch-Wins reconcile seam (strip-merge, out-of-bounds hunks) is proven **only at unit tier**, in the capability's own tests. No integration proof of the seam exists. | `INT-US-09` C8/C9 | open |
+| `D-INTL-01` | No test drives the Implementation Generator into the QA Runner. The autonomous loop is proven as a **declared pipeline shape** and has never been observed looping. | `INT-US-03` C1/C6, `INT-US-24` C5 | open — owned by **SF-04** |
+| `D-VAL-05` | `validate_code` is declared in the implement pipeline and never exercised through it. | `INT-US-03` C3 | open — owned by **SF-04** |
+| `E-FLOW-01` | The config DB has **no table for validation output**, and `ValidationResult` does not appear in `src/`. The persistence surface `INT-US-04` claims does not exist. | `INT-US-04` C1, via mutation | open — a scope question, not a coverage gap |
+| `C-SENS-02` | The `.specweaverignore` **engine** is proven; the **seam** feeding exclusions into the Extractor is exercised by nothing. | `INT-US-05-SF03` | open |
+| `B-INTL-02` | **No `MacroEvaluator` exists in `src/`.** Framework-marker extraction is proven at unit tier on the parsers; the seam into context extraction is unexercised. | `INT-US-05-SF04` | open |
+| `C-INTL-01` | Recursive decomposition was designed, never built, never descoped — one LLM call, no recursion, a flat `list[ComponentChange]`. | `INT-US-21-SUB` / `TECH-038` | open — `C-INTL-07` now owns the scope |
+| `C-VAL-01` | Walk-up resolution of `CONSTITUTION.md` is claimed and untested. | `INT-US-25` C1 | open |
+| `C-VAL-02` | *Five* preset bundles is claimed and unasserted; the pipelines directory holds **7** `validation_spec_*.yaml`, so the number can drift silently. | `INT-US-25` C11 | open |
+
+### Single points of protection, found by mutation
+
+Not gaps, and not comfortable either. Each is one flaky or skipped test away from nothing:
+
+| What | Only protector |
+|---|---|
+| `sw check --lineage` orphan detection | `test_lineage_e2e.py::…::test_sw_check_lineage_flag_detects_orphans` — and it failed at `COLUMNS=80` until 2026-08-14 |
+| Run journeys never DAL-escalate (`INT-US-24` C6's exclusion) | `test_session_policy.py::TestApplySessionPolicyDalEscalation::test_no_escalate_parameter…` |
+
+### What this list is, and is not
+
+It is **not** a backlog. Nine of the twelve rows are statements that a capability's proof is thinner
+than its contract implied; three were live defects and are fixed. Turning each into a ticket is the
+inflation `NFR-3` forbids and `AD-2` rejects — the audit's job was to make them visible and
+attributable, which is done.
+
+The two rows marked *owned by SF-04* are the only ones with scheduled work. `E-FLOW-01`'s is a scope
+question for a human: whether validation-output persistence was ever intended.
 
 ## Coverage at a glance
 

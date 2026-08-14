@@ -191,7 +191,7 @@ rather than assesses, and its scope was fixed by SF-02 CB-3; it may be taken bef
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Skeleton + two largest | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The thin proofs | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Remainder + capability findings | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Remainder + capability findings | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | The `sw implement` loop e2e | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
@@ -230,7 +230,14 @@ ordered worst-first per `AD-4`; it starts at CB-1, re-extraction of all five thi
 verdicts, C6 `unprovable` as written); CB-3 `INT-US-03` (8 verdicts, 4 unproven → scoped as SF-04);
 CB-4 the thin trio (7 verdicts, 4 unproven with no candidate proof anywhere). Two decisions were
 escalated rather than filed: the `sw implement` loop e2e (now SF-04) and whether `INT-US-04`'s and
-`INT-US-05`'s claimed integrations were ever built. SF-03 remains.
+`INT-US-05`'s claimed integrations were ever built — the second was then answered by mutation
+(no validation-output table exists).
+
+**2026-08-14 — SF-03 delivered, and the audit is complete.** CB-1 re-extracted the last three
+(57 → 64 claims); CB-2 `INT-US-25` (13 verdicts), CB-3 `INT-US-24` (6), CB-4 `INT-US-02` and the
+three zero-proof entries (5); CB-5 consolidated the `FR-6` findings across 12 capabilities.
+**All 64 claims on all 13 entries carry a verdict.** Zero tickets were filed across all three
+sub-features; the only scheduled work is SF-04.
 
 ## Problem Statement — measured 2026-07-26, **re-measured 2026-08-13**
 
