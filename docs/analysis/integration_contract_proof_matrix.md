@@ -184,6 +184,39 @@ width-independent at COLUMNS 20/40/60/80/100/200.
 (`orp\nhan.py`), not a truncated one, so this is a renderer artefact and not a product defect.
 `git diff` confirms `src/` is untouched.
 
+### Mutation run, 2026-08-14 — the four claims, measured instead of grepped
+
+`scripts/_mutate_campaign.py`, full suite per mutant, 3m21s. CB-4's verdicts rested on
+subject-word counts (*"`worktree` appears 0 times"*), which is absence of evidence. This changes
+each behaviour and asks whether anything objects.
+
+| Claim | Mutant | Result |
+|---|---|---|
+| `INT-US-04` C1 — the config DB persists Validation Engine outputs | **none possible** | see below |
+| `INT-US-04` C2 — the runner passes context into subsequent prompt steps | assembler always returns empty | `KILLED` ×2 |
+| `INT-US-05` C2 — extracted context reflects the filesystem | skeleton content replaced by a constant | `KILLED` ×1 |
+| `INT-US-05` C1 — the extractor resolves edges against a bounded root | containment root widened to `project_path.parent` | **`SURVIVED`** |
+
+**`INT-US-04` C1 has nothing to mutate.** The config DB's tables are `flow_artifact_events`,
+`llm_*`, `memory_*` and `workspace_*`. **There is no table for validation output**, and
+`ValidationResult` does not appear in `src/` at all. The claim is not unproven-but-built; the
+persistence surface it names does not exist. That settles the escalated question for this half.
+
+**`INT-US-05` C1 survived, and the mutant is not equivalent — checked before recording.**
+`cwd` is not decorative: it constructs `FileExecutor(cwd=...)`, whose `_cwd` **is the containment
+root** — `candidate = (self._cwd / path).resolve()` then `candidate.relative_to(self._cwd)` is the
+traversal guard, and the class docstring says *"path traversal is always prevented"*. Widening it by
+one directory lets the skeleton extractor read outside the project root, and **not one of 6853 tests
+noticed**. Production passes the right value; nothing would catch a regression that stopped.
+
+**The two kills are narrower than they look.** Both killers are unit tests of the assembler function
+itself (`test_context_assembler.py`). So the *function* is protected — but `INT-US-04` C2's claim is
+about the **runner passing context into subsequent prompt steps**, and no test died at that seam.
+The kill confirms the assembler works, not that the contract's journey does. Verdict unchanged.
+
+**All four verdicts stand.** The value of the run is that three now rest on a measurement, and the
+fourth on the absence of a database table rather than the absence of a grep hit.
+
 ### A second decision escalated by this sub-feature
 
 `INT-US-04` C1/C2 and `INT-US-05` C1/C2 have **no proof and no candidate**. Unlike `INT-US-03`'s
