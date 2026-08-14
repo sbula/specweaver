@@ -90,14 +90,44 @@ contract asserting *"X must not happen"* is falsifiable, so it earns a verdict l
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `sw implement` generates code **and** tests. | `unassessed` | — |
-| C2 | It runs the generated tests. | `unassessed` | — |
-| C3 | It runs code rules C01-C08. | `unassessed` | — |
-| C4 | It auto-fixes lint, all in one autonomous loop. | `unassessed` | — |
-| C5 | QA/test execution runs **exclusively** inside the US-9 zero-trust worktree sandbox, container-free. | `unassessed` | — |
-| C6 | The Implementation Generator (`D-INTL-01`) pipes natively into the QA Runner (`D-VAL-01`) **and** the Code Validation Rules (`D-VAL-05`). | `unassessed` | — |
-| C7 | **Exclusion:** container/Podman execution (`D-EXEC-01` / `B-EXEC-01`) is OUT of scope for this base contract — no container code path is reachable from the implement loop. | `unassessed` | — |
-| C8 | Untrusted high-assurance (DAL_A/B) code is executed worktree-bounded via **DAL-driven auto-escalation**; small/non-git projects stay on host. | `unassessed` | — |
+| C1 | `sw implement` generates code **and** tests. | `unproven` | The cited e2e **fakes generation** with a bash script (`gen.sh`), so `D-INTL-01` never runs. Only the pipeline's declared shape is tested — `test_generate_steps_unchanged` (**unit**). |
+| C2 | It runs the generated tests. | `proven` | e2e — `test_dal_b_escalation_runs_generated_qa_bounded_and_reconciles` runs real pytest over the freshly written code. |
+| C3 | It runs code rules C01-C08. | `unproven` | No test runs `validate_code`. Only its declaration — `test_validate_code_targets_generated_code_report_only` (**unit**). |
+| C4 | It auto-fixes lint, all in one autonomous loop. | `unproven` | No test runs the loop. Only its shape — `test_lint_fix_runs_before_run_tests`, `test_run_tests_has_loopback_gate` (**unit**). The loop-back has never been observed to loop. |
+| C5 | QA/test execution runs **exclusively** inside the US-9 zero-trust worktree sandbox, container-free. | `proven` | e2e — worktree-bounded QA in `test_dal_b_escalation_runs_generated_qa_bounded_and_reconciles`; *container-free* by C7's guard. |
+| C6 | The Implementation Generator (`D-INTL-01`) pipes natively into the QA Runner (`D-VAL-01`) **and** the Code Validation Rules (`D-VAL-05`). | `unproven` | The pipe is a pipeline declaration, tested as such at **unit** tier (`test_pipeline_has_five_steps_in_order`). No test drives `D-INTL-01` into `D-VAL-01`/`D-VAL-05`. |
+| C7 | **Exclusion:** container/Podman execution (`D-EXEC-01` / `B-EXEC-01`) is OUT of scope for this base contract — no container code path is reachable from the implement loop. | `proven` | integration — `test_container_execution_mode_stays_dormant_on_implement`, **written at this boundary**. **Probed:** adding a `use_container` field to `IsolationPolicy` fails it. |
+| C8 | Untrusted high-assurance (DAL_A/B) code is executed worktree-bounded via **DAL-driven auto-escalation**; small/non-git projects stay on host. | `proven` | integration — the five DAL cases in `test_cli_implement_isolation.py`, plus the e2e DAL_E control `test_low_dal_project_runs_on_host_and_probe_fails`. |
+
+### Finding: the autonomous loop is proven as a **shape**, never as a loop
+
+Four of eight claims — C1, C3, C4, C6 — are unproven, and all four fail for the same reason. The
+contract's core promise is that *"`sw implement` generates code + tests, runs the tests, runs
+C01–C08, and auto-fixes lint **in one autonomous loop**."* What exists is:
+
+* `test_implement_pipeline.py` (**unit**) — the pipeline *declares* five steps in order, `lint_fix`
+  before `run_tests`, a loop-back gate on `run_tests`, report-only `validate_code`. Structure only.
+* `test_implement_loop_worktree_isolation_e2e.py` (**e2e**) — real, but it **substitutes a bash
+  script for `D-INTL-01`**, so generation never happens and only the isolation half is exercised.
+
+Between them: the loop has never been observed to loop, `validate_code` has never been observed to
+run, and the `D-INTL-01 → D-VAL-01/D-VAL-05` pipe has never carried anything. This is the exact
+shape the 2026-07-26 review meant by *"happy-path only / cites capability suites"*, and it is a
+larger gap than anything SF-01 found: `INT-US-28`'s seam was proven in two halves that met at a
+mock, whereas here the central journey has no end-to-end proof at all.
+
+**Not closed at this boundary.** Writing it means a scripted-LLM e2e driving `sw implement` through
+generate → lint_fix → run_tests → validate_code including a loop-back iteration, with real `ruff`
+and real `pytest`. The harness pattern exists (`ScriptedLLM` / `scripted_world` in
+`test_feature_decomposition_e2e.py`) but is file-local and would need extracting. That is a
+sub-feature's worth of work, not a boundary's, and it is the **one decision SF-02 escalates**
+(NFR-3): it needs scope, not a note.
+
+### FR-6 — capability findings
+
+C1 and C6 trace to `D-INTL-01` (Implementation Generator): it has no test that drives it into the QA
+runner. C3 traces to `D-VAL-05` (Code Validation Rules) — `validate_code` is declared and never
+exercised through the loop. Recorded against those capabilities; `SF-03` consolidates.
 
 ## `INT-US-04` — Base Contract
 

@@ -63,7 +63,12 @@ def _mock_adapter() -> MagicMock:
 
 
 def _run_and_capture_context(
-    tmp_path, *, dal: str | None, min_dal: str = "DAL_B", git: bool = True
+    tmp_path,
+    *,
+    dal: str | None,
+    min_dal: str = "DAL_B",
+    git: bool = True,
+    execution_mode: str | None = None,
 ):
     """Invoke `sw implement` with a real settings object; capture the RunContext handed to
     PipelineRunner (mocked, so the pipeline never runs)."""
@@ -72,6 +77,11 @@ def _run_and_capture_context(
     spec = _scaffold(tmp_path, dal=dal, git=git)
     settings = SpecWeaverSettings(llm={"model": "test-model"})
     settings.sandbox.auto_isolate_min_dal = min_dal  # enforce_session_isolation stays False
+    if execution_mode is not None:
+        # Set on the settings object the CLI actually receives. Writing a specweaver.toml here
+        # would prove nothing: this harness injects settings through the mocked adapter factory,
+        # so a toml on disk is never read (established by probe, TECH-017 SF-02 CB-3).
+        settings.sandbox.execution_mode = execution_mode
 
     with (
         patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_adapter,
@@ -118,3 +128,39 @@ def test_dal_a_but_non_git_project_degrades_to_host(tmp_path) -> None:
     must never break `sw implement`."""
     context = _run_and_capture_context(tmp_path, dal="DAL_A", git=False)
     assert context.isolation.session_isolation is False
+
+
+def test_container_execution_mode_stays_dormant_on_implement(tmp_path) -> None:
+    """[Hostile/Scope guard] `INT-US-03`'s container EXCLUSION, on the implement path.
+
+    The base contract states container/Podman execution (`D-EXEC-01` / `B-EXEC-01`) is explicitly
+    OUT of scope — it belongs to `INT-US-09-SF01`. A contract asserting *"X must not happen"* is
+    falsifiable and earns a verdict like any other claim (`TECH-017` SF-02 CB-3).
+
+    `test_cli_config_integration.py::test_container_execution_mode_stays_dormant_on_run` guards the
+    same invariant for `sw run` and says so in its own docstring; it cannot speak for
+    `sw implement`, which builds its own pipeline and resolves its own policy — and which is the
+    path that actually runs QA over freshly generated untrusted code.
+
+    Container mode is set on the settings object the CLI receives, so the opt-in genuinely reaches
+    the code under test. What must hold is that DAL escalation routes to a **git worktree** and the
+    isolation decision never becomes a container one.
+    """
+    context = _run_and_capture_context(tmp_path, dal="DAL_B", execution_mode="container")
+
+    # Escalation still happens — this guards the container path, not isolation itself.
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths == ["src/greeter.py", "tests/test_greeter.py"]
+
+    # The structural invariant behind the exclusion: `IsolationPolicy` cannot EXPRESS a container
+    # decision. Its whole vocabulary is worktree-shaped, so a container-mode opt-in has nowhere to
+    # land on the path `sw implement` resolves. Adding such a field and wiring it fails here.
+    container_fields = [
+        name
+        for name in type(context.isolation).model_fields
+        if "container" in name or "podman" in name or "docker" in name
+    ]
+    assert container_fields == [], (
+        f"IsolationPolicy gained a container concept: {container_fields} — INT-US-03's exclusion "
+        "of D-EXEC-01/B-EXEC-01 no longer holds structurally"
+    )
