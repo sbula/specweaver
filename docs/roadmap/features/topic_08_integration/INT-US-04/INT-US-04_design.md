@@ -246,7 +246,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Core Flow DB Integration | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core Flow DB Integration | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Security Defenses Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Parallel Multi-Spec Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Context Mention Highlighting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -258,7 +258,14 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Session Handoff
 
-**Current status**: Impl Plan APPROVED.
-**Next step**: Run `/dev` for SF-08 implementation.
+**Current status**: SF-01's implementation plan is APPROVED (2026-08-14). SF-08 is delivered
+(`e2ac7e6e`, 2026-05-16 — its `Committed` box was corrected 2026-08-14, not re-done).
+**Next step**: Run `/dev` for **SF-01 CB-1** — widen `handlers/validation.py` so `Finding` survives
+into `StepResult.output`, and record the measured `step_records` blob-size delta, which is a
+done-when for that boundary rather than a suggestion.
+**Read before starting**: the plan's Red/Blue section. Three of its findings killed conditions the
+first draft had wrong, and `RB-1` is why `assurance/validation/context.yaml` must be corrected —
+`tach_sync` regenerates `tach.toml`'s `[[interfaces]]` from it, and it currently names three types
+that do not exist.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

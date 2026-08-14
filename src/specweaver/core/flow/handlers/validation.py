@@ -66,6 +66,70 @@ async def _resolve_merged_settings(context: RunContext, target_path: Path) -> An
     return merged_settings
 
 
+def _rule_payload(results: list[RuleResult]) -> list[dict[str, Any]]:
+    """One dict per rule, carrying its findings **without loss** (`INT-US-04` FR-1).
+
+    The rules compute a `Finding` per issue — message, line, severity, suggestion — and this
+    boundary used to keep only `rule_id`/`status`/`message`, discarding every locator and every
+    suggestion the rules had just worked out.
+
+    Two things are deliberate:
+
+    * **`severity` is emitted as `.value`** for symmetry with `status` above. `Severity` is a
+      `StrEnum`, so today this is cosmetic — mutation-tested 2026-08-14, `f.severity` and
+      `f.severity.value` are indistinguishable to both `json.dumps` and `==`, and the mutant swapping
+      them is **equivalent**. It stops being cosmetic the moment `Severity` becomes a plain `Enum`,
+      at which point `default=str` writes `"Severity.ERROR"`; the test pins the `StrEnum` so that
+      change fails loudly rather than silently corrupting every persisted payload.
+    * **`findings` is always present**, empty list included, so a consumer never needs `.get`.
+
+    Shared by both call sites on purpose: they built byte-identical payloads, and wiring one while
+    forgetting the other is invisible to a test of this function alone.
+    """
+    return [
+        {
+            "rule_id": r.rule_id,
+            "status": r.status.value,
+            "message": r.message,
+            "findings": [
+                {
+                    "message": f.message,
+                    "line": f.line,
+                    "severity": f.severity.value,
+                    "suggestion": f.suggestion,
+                }
+                for f in r.findings
+            ],
+        }
+        for r in results
+    ]
+
+
+def _validation_output(results: list[RuleResult]) -> tuple[dict[str, Any], int]:
+    """The validate payload both handlers return, plus the failure count they both branch on.
+
+    Extracted when `TECH-037`'s duplication gate re-keyed the remainder: collapsing the two
+    identical `results` comprehensions into `_rule_payload` exposed an 11-line clone underneath —
+    the same `output` dict and `StepResult` shape in `ValidateSpecHandler` and
+    `ValidateCodeHandler`. Pre-existing, and surfaced for the first time by removing the layer
+    above it.
+
+    Returns the count rather than the failing rules: both callers only ever took `len()` of it, and
+    `passed` is then `len(results) - failed` instead of a second pass over the same list.
+
+    The two callers still differ, deliberately — the spec handler sets `error_message` and the code
+    handler does not, because `validate_code` is report-only behind a CONTINUE gate. That
+    difference is behaviour, not duplication, so it stays at the call sites.
+    """
+    failed = sum(1 for r in results if r.status == RuleStatus.FAIL)
+    return {
+        "results": _rule_payload(results),
+        "total": len(results),
+        "passed": len(results) - failed,
+        "failed": failed,
+    }, failed
+
+
 class ValidateSpecHandler:
     """Handler for validate+spec — runs spec validation rules."""
 
@@ -95,26 +159,17 @@ class ValidateSpecHandler:
                 analyzer_factory=context.analysis.analyzer_factory,
                 parsers=context.analysis.parsers,
             )
-            failed = [r for r in results if r.status == RuleStatus.FAIL]
-            all_passed = len(failed) == 0
+            output, failed = _validation_output(results)
             logger.info(
                 "ValidateSpecHandler: %d rules executed, %d passed, %d failed",
                 len(results),
-                len(results) - len(failed),
-                len(failed),
+                len(results) - failed,
+                failed,
             )
             return StepResult(
-                status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
-                output={
-                    "results": [
-                        {"rule_id": r.rule_id, "status": r.status.value, "message": r.message}
-                        for r in results
-                    ],
-                    "total": len(results),
-                    "passed": sum(1 for r in results if r.status != RuleStatus.FAIL),
-                    "failed": len(failed),
-                },
-                error_message="" if all_passed else f"{len(failed)} validation rules failed",
+                status=StepStatus.PASSED if failed == 0 else StepStatus.FAILED,
+                output=output,
+                error_message="" if failed == 0 else f"{failed} validation rules failed",
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -231,26 +286,17 @@ class ValidateCodeHandler:
                 analyzer_factory=context.analysis.analyzer_factory,
                 parsers=context.analysis.parsers,
             )
-            failed = [r for r in results if r.status == RuleStatus.FAIL]
-            all_passed = len(failed) == 0
+            output, failed = _validation_output(results)
             logger.info(
                 "ValidateCodeHandler: %d rules executed, %d passed, %d failed (code=%s)",
                 len(results),
-                len(results) - len(failed),
-                len(failed),
+                len(results) - failed,
+                failed,
                 code_path.name,
             )
             return StepResult(
-                status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
-                output={
-                    "results": [
-                        {"rule_id": r.rule_id, "status": r.status.value, "message": r.message}
-                        for r in results
-                    ],
-                    "total": len(results),
-                    "passed": sum(1 for r in results if r.status != RuleStatus.FAIL),
-                    "failed": len(failed),
-                },
+                status=StepStatus.PASSED if failed == 0 else StepStatus.FAILED,
+                output=output,
                 started_at=started,
                 completed_at=_now_iso(),
             )

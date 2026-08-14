@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf01_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: APPROVED 2026-08-14
 
 ## Scope
 
@@ -213,6 +213,99 @@ Widen the `results` payload in `handlers/validation.py` at :108 and :245 to carr
 2. **The measured `step_records` blob-size delta on a real run is recorded in this plan** (RB-6). An
    unrecorded measurement blocks this boundary; a cap is only proposed if the number justifies one,
    and `FR-1`'s wording changes with it if so.
+
+#### CB-1 measurement (D-3 / RB-6) — recorded 2026-08-14
+
+Method as pinned: `len(json.dumps([rec.model_dump()], default=str))` for one `validate_spec` step
+record — the expression `StateStore.save_run` uses (`store.py:175`) — same spec, payload with and
+without the `findings` key. Script: `.tmp/measure_blob.py` (gitignored; the numbers are the record,
+not the script).
+
+| Spec | Rules | Findings | Before | After | Delta |
+|---|---|---|---|---|---|
+| `tests/fixtures/good_spec.md` | 12 | 3 | 1 445 B | 2 262 B | **+817 B (+56.5%)** |
+| `specs/TestComponent_spec.md` | 12 | 5 | 1 456 B | 2 509 B | **+1 053 B (+72.3%)** |
+| deliberately weasel-worded spec | 12 | 10 | 1 382 B | 3 110 B | **+1 728 B (+125.0%)** |
+
+Linear at roughly **170 bytes per finding**, plus about 15 bytes per rule for the empty-list key
+even when a rule finds nothing.
+
+**No cap proposed.** The percentage looks alarming and the absolute does not: the worst case
+measured is a **3.1 KB** step record, and a pathological 100-finding spec would reach ~19 KB — far
+inside anything SQLite or the loop-back prompt cares about. `FR-1`'s *without loss* therefore stands
+as written; had a cap been needed, the FR's wording would have had to change with it (D-3).
+
+#### CB-1 outcome (delivered 2026-08-14)
+
+`_rule_payload()` carries all four `Finding` fields; both call sites use it. 8 unit tests.
+
+**Two deviations from the plan, both upward:**
+
+1. **A second shared helper, `_validation_output()`.** `TECH-037`'s duplication gate failed *after*
+   the first extraction: collapsing the two identical `results` comprehensions **re-keyed** the
+   remainder and exposed an 11-line clone underneath — the same `output` dict and `StepResult`
+   shape in both handlers. Pre-existing, and surfaced for the first time by removing the layer
+   above it. Fixed per the inherited-failures rule; duplication baseline re-frozen 123 → 121.
+2. **Two extra unit tests (U-1, U-2)** from the pre-commit Phase 2 gap analysis: multi-rule order
+   and count, and the sibling tallies surviving the widening. Both probed to a killed mutant.
+
+**Mutants run:**
+
+| Mutant | Result |
+|---|---|
+| drop the `findings` key | `KILLED` ×8 |
+| drop `suggestion` (partial loss) | `KILLED` ×3 |
+| reverse rule order | `KILLED` ×2 |
+| `passed` counts only `PASS` (excludes WARN/SKIP) | `KILLED` ×1 — **single point of protection** |
+| `f.severity.value` → `f.severity` | `SURVIVED` — **equivalent**, `Severity` is a `StrEnum` |
+
+The equivalent mutant earned its keep: it exposed a **vacuous assertion in the new test** (`"Severity."
+not in blob` can never fail for a `StrEnum`), replaced with a pin on the premise that can —
+`issubclass(Severity, str)`. The source docstring claiming `.value` was load-bearing was corrected
+with it.
+
+**Gate results** (all re-run fresh inside the pre-commit gate, nothing carried over):
+
+| Gate | Result |
+|---|---|
+| `tests.py cb INT-US-04 --all` | unit 6 107 · integration 58 · e2e 15 — **6 180 passed**, 11 skipped, DAL-D (most critical of `D-FLOW-01`, `E-FLOW-01`, `E-VAL-01`) |
+| `quality.py cb` | 13/13 — ruff, `ruff format --check`, mypy, complexipy, tach, file sizes, suppressions, class health, cycles, duplication, coupling, conventions, test guards |
+| `quality.py doc` | 9/9 |
+| `useless_asserts`, `test_basenames` | green (pulled forward to Phase 2 per §2.5b) |
+
+**Widening was necessary and is worth recording.** `tests.py cb INT-US-04` selects **integration and
+e2e only — no unit tier**, because `INT-US-04` is an integration story. CB-1's change is unit-tier
+by `ADR-003` (behaviour of one module), so the story's own gate would have passed it **unverified**.
+Run with `--all` it failed immediately: the FR sweep baseline had gone stale at 242 because the new
+`Proves:` tag cited a previously uncited FR. Re-frozen to 241.
+
+That is the tension the tier rule creates and does not resolve: `tests.py`'s profile says an INT
+story wanting a unit test is a signal that the capability underneath shipped incomplete — which is
+*exactly* what R-3 found. The signal was right; the gate still would not have run the test.
+
+**HITL gates — every one, and what was decided:**
+
+| Gate | Presented | Decision |
+|---|---|---|
+| impl-plan Phase 4 | 4 questions: table's purpose, grain, `Finding` depth, stale `context.yaml` | All four recommendations accepted → D-1..D-4 |
+| impl-plan Phase 5 | Consistency + 3 Red/Blue cycles, 11 findings, 1 CRITICAL (`RB-1`) | Approved; plan `APPROVED`, `Impl Plan ✅` |
+| dev Phase 2 | Task list + 6 Red/Blue findings on it | Approved |
+| pre-commit Phase 2 | Architecture (A-1..A-4) + coverage matrix + 2 proposed stories | **U-1 and U-2: write both. A-2: leave for now** |
+| pre-commit Phase 3 | The two tests, both probed to a killed mutant | Approved |
+
+**No gate was skipped or auto-approved.**
+
+**Skill defect found, not fixed here.** `phase-3-implement-tests.md` contradicts itself: §3.1b says
+*"MANDATORY HITL YIELD… make ZERO further tool calls"* while the closing block of the same file says
+*"NO HITL GATE HERE… PROCEED IMMEDIATELY to Phase 4."* §3.1b was followed as the more specific
+instruction. This is `TECH-019`'s class (contradictory gate orders) and belongs to whoever reconciles
+it, not to this boundary.
+
+**Recorded, not acted on** (user decision at the Phase 2 gate): the finding-flattening now exists in
+two places — here and `interfaces/api/v1/validation.py::_rule_response`, which never lost the fields.
+Not a boundary violation (opposite dependency direction, different return types; `core.flow` cannot
+import `interfaces.api`), but a field set defined twice that must not drift. Consolidating it into
+`assurance/validation` is the option if a later boundary wants it.
 
 ### CB-2 — FR-2: the table, its writer, its reader
 

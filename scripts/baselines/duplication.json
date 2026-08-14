@@ -67,7 +67,7 @@
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
     "lines": 10,
     "first": "src/specweaver/interfaces/api/event_bridge.py:105",
-    "second": "src/specweaver/core/flow/engine/display.py:332"
+    "second": "src/specweaver/core/flow/engine/display.py:366"
   },
   "src/specweaver/core/flow/engine/store.py <-> src/specweaver/graph/core/store/repository.py @521d1386da74": {
     "lines": 14,
@@ -129,16 +129,6 @@
     "first": "src/specweaver/core/flow/handlers/review.py:303",
     "second": "src/specweaver/core/flow/handlers/review.py:200"
   },
-  "src/specweaver/core/flow/handlers/validation.py <-> src/specweaver/core/flow/handlers/validation.py @062eb4fd6a62": {
-    "lines": 14,
-    "first": "src/specweaver/core/flow/handlers/validation.py:241",
-    "second": "src/specweaver/core/flow/handlers/validation.py:104"
-  },
-  "src/specweaver/core/flow/handlers/validation.py <-> src/specweaver/core/flow/handlers/validation.py @73fbe7802dbc": {
-    "lines": 8,
-    "first": "src/specweaver/core/flow/handlers/validation.py:230",
-    "second": "src/specweaver/core/flow/handlers/validation.py:94"
-  },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,
     "first": "src/specweaver/core/flow/interfaces/cli.py:21",
@@ -166,13 +156,13 @@
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:208",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:153"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:205",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:150"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @b19139f1e54a": {
     "lines": 16,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:217",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:214"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:214",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:211"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @c0d7ad913778": {
     "lines": 7,
@@ -181,13 +171,13 @@
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @faa84cb2b92f": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:274",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:265"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:271",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:262"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @89d15624929b": {
     "lines": 13,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:216",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:109"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:213",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:106"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @4cef14c28087": {
     "lines": 26,
@@ -196,18 +186,18 @@
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @aabfcc2d4963": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:165",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:113"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:162",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:110"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @e04fcd68e926": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:201",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:214"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:198",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:211"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @faa84cb2b92f": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:257",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:265"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:254",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:262"
   },
   "src/specweaver/infrastructure/llm/prompt/adders.py <-> src/specweaver/infrastructure/llm/prompt/adders.py @1cf4d76d07d0": {
     "lines": 12,

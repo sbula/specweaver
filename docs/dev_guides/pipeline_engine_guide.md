@@ -349,6 +349,53 @@ On completion (success or failure), `StepResult.output` is `BashActionAtom`'s `e
 A nonzero `exit_code` maps to `StepStatus.FAILED` (not an exception) — combine with `gate: {on_fail: continue}` if you need the router to branch on the exit code rather than aborting the run. `exit_code` is a top-level key in `output`, so router rules reference it directly (`field: exit_code`), no dot-notation nesting needed.
 
 
+### `validate` Output Shape
+
+Both `validate+spec` and `validate+code` return the same payload, built by one shared helper
+(`handlers/validation.py::_validation_output`). `run_tests` does **not** — it returns the QA
+runner's `passed`/`failed`/`total`, with no `rule_id` anywhere.
+
+```python
+{
+    "results": [
+        {
+            "rule_id": "S01",
+            "status": "fail",              # Status.value
+            "message": "...",              # the rule's summary
+            "findings": [                  # ALWAYS present, [] when the rule found nothing
+                {
+                    "message": "...",      # quotes spec content -- treat as untrusted
+                    "line": 12,            # None when the rule cannot locate it
+                    "severity": "error",   # Severity.value -- error | warning | info
+                    "suggestion": "...",   # None when the rule has none
+                },
+            ],
+        },
+    ],
+    "total": 12,
+    "passed": 11,      # everything that is not FAIL -- WARN and SKIP count as passed
+    "failed": 1,
+}
+```
+
+**`findings` was added by `INT-US-04` SF-01 CB-1 (FR-1).** Before it, this boundary kept only
+`rule_id`/`status`/`message` and discarded every `Finding` the rules had just computed — line
+numbers, severities and suggestions were calculated and thrown away. The REST API
+(`interfaces/api/v1/validation.py::_rule_response`) had carried them all along; only the flow path
+lost them.
+
+Two properties worth relying on:
+
+* **`findings` is never absent**, so a consumer needs no `.get` fallback.
+* **`severity` is a value, not an enum repr.** This payload is persisted verbatim by
+  `StateStore.save_run` through `json.dumps(..., default=str)`, which would happily write
+  `"Severity.ERROR"`. `Severity` is a `StrEnum` today so both spellings agree; a unit test pins
+  that premise, because the day it becomes a plain `Enum` every persisted record changes shape
+  silently.
+
+Sizing: roughly **170 bytes per finding**, plus ~15 bytes per rule for the empty-list key. Measured
+worst case is a 3.1 KB step record — see the CB-1 measurement in `INT-US-04_sf01_implementation_plan.md`.
+
 ## Context Skeletonization Assembly
 
 The Pipeline Engine layer handles complex environment integrations, specifically for gathering contextual data before invoking LLM logic. Background components and target context files must be stripped of bloated method implementations via the **ContextAssembler**.
