@@ -162,6 +162,26 @@ For each task in the breakdown:
 python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 ```
 
+> [!IMPORTANT]
+> **Two shared test helpers exist because their absence caused real, cited-proof defects. Use them
+> rather than re-implementing either.**
+>
+> **`tests/rendering.py` — `shows(output, needle)` for any assertion on CLI output.** Rich
+> soft-wraps to the terminal width, so `result.output` can contain `orp\nhan.py`. A raw `in` check
+> then passes or fails on `COLUMNS`, which nothing in the test declares and CI does not hold
+> constant. `TECH-017` found this **twice, both times in the cited proof of a delivered contract**,
+> and both were invisible until the file was run on its own — the full suite stayed green because
+> xdist sets a different width. `shows()` squashes whitespace on **both** sides. Presence checks
+> only: never assert layout or ordering with it.
+>
+> **`tests/scripted_llm.py` — `ScriptedLLM` / `scripted_world()` when a test needs a doubled LLM.**
+> `scripted_world` patches **two** things and both are load-bearing: patching only
+> `create_llm_adapter` leaves `ModelRouter.get_for_task` free to build a **real provider** from the
+> registry, bypassing the patch — a live API call inside a test that reads as mocked. That was found
+> for real in `INT-US-02`'s e2e. Anything that copies or re-implements this must carry both patches.
+> Import it explicitly rather than hiding it in a fixture: the import line is the only place a
+> reader sees that a test doubles the model.
+
 ### 3.2 Green — Implement the Minimum Code
 
 - **Re-read the target file** before editing (mandatory).

@@ -144,6 +144,7 @@ MATRIX: dict[str, dict[str, str]] = {
     # that would have caught INT-US-25's `✅`-with-no-proof from the day it was written, and never
     # fired because it only runs when a human passes that story ID. A sweep cannot be forgotten.
     "proof_tier": {"doc": "all"},
+    "audit_matrix": {"doc": "all"},
     # R-DEPTH. `R-LENGTH` capped the roadmap and its rationale pushed the detail into the topic
     # doc, which nothing then checked -- 33.5% of topic lines over 200 chars, longest 5624.
     # Ratcheted per file; the remedy is redistribution into the design doc, not deletion.
@@ -207,101 +208,7 @@ PY = venv_python()
 
 _r = _load_sibling("_quality_runners")
 
-CHECKS: dict[str, Check] = {
-    # `scripts/` is included so the gate lints itself — it was previously unlinted by anything.
-    "ruff": Check("ruff", ("src", "tests", "scripts"), _r._ruff),
-    "format": Check("format", ("src", "tests", "scripts"), _r._format),
-    "mypy": Check("mypy", ("src",), _r._mypy),
-    "tach": Check("tach", ("src",), _r._tach, ignores_paths=True),
-    # `script=` is not decoration: it is the pre-flight that reports MISSING instead of letting
-    # the shell-out fail with a confusing error. This entry declared None while its runner
-    # shells out to check_complexity.py, so complexipy alone lacked that guard (`TECH-037`).
-    "complexipy": Check("complexipy", ("src",), _r._complexipy, script="check_complexity.py"),
-    "file_sizes": Check(
-        "file_sizes", ("src", "tests", "scripts"), _r._file_sizes, script="check_file_sizes.py"
-    ),
-    "test_basenames": Check(
-        "test_basenames", ("tests",), _r._test_basenames, script="check_test_basenames.py"
-    ),
-    "useless_asserts": Check(
-        "useless_asserts", ("tests",), _r._useless_asserts, script="check_useless_asserts.py"
-    ),
-    "suppressions": Check(
-        "suppressions", ("src",), _r._suppressions, script="check_suppressions.py"
-    ),
-    "class_health": Check(
-        "class_health", ("src",), _r._class_health, script="check_class_health.py"
-    ),
-    "coupling": Check("coupling", ("src",), _r._coupling, script="check_coupling.py"),
-    "cycles": Check("cycles", ("src",), _r._cycles, script="check_coupling.py"),
-    "duplication": Check(
-        "duplication",
-        ("src",),
-        _r._duplication,
-        ignores_paths=True,
-        script="check_duplication.py",
-    ),
-    "roadmap_placement": Check(
-        "roadmap_placement",
-        ("docs",),
-        _r._whole_repo("check_roadmap_placement.py"),
-        ignores_paths=True,
-        script="check_roadmap_placement.py",
-    ),
-    "roadmap_sync": Check(
-        "roadmap_sync",
-        ("docs",),
-        _r._whole_repo("check_roadmap_sync.py"),
-        ignores_paths=True,
-        script="check_roadmap_sync.py",
-    ),
-    "skill_sync": Check(
-        "skill_sync",
-        (".agents",),
-        _r._whole_repo("check_skill_sync.py"),
-        ignores_paths=True,
-        script="check_skill_sync.py",
-    ),
-    "skill_references": Check(
-        "skill_references",
-        (".agents", "docs"),
-        _r._whole_repo("check_skill_references.py"),
-        ignores_paths=True,
-        script="check_skill_references.py",
-    ),
-    "fr_sweep": Check(
-        "fr_sweep",
-        ("docs",),
-        _r._whole_repo("check_fr_sweep.py"),
-        ignores_paths=True,
-        script="check_fr_sweep.py",
-    ),
-    "nfr_sweep": Check(
-        "nfr_sweep",
-        ("docs",),
-        _r._whole_repo("check_nfr_sweep.py"),
-        ignores_paths=True,
-        script="check_nfr_sweep.py",
-    ),
-    "entry_depth": Check(
-        "entry_depth",
-        ("docs",),
-        _r._whole_repo("_entry_depth.py"),
-        ignores_paths=True,
-        script="_entry_depth.py",
-    ),
-    "proof_tier": Check(
-        "proof_tier",
-        ("docs",),
-        _r._whole_repo("check_proof_tier.py"),
-        ignores_paths=True,
-        script="check_proof_tier.py",
-    ),
-    # `tests` is in scope so R5 (e2e naming) can see e2e files; R2 stays src/scripts-only.
-    "conventions": Check(
-        "conventions", ("src", "tests"), _r._conventions, script="check_conventions.py"
-    ),
-}
+CHECKS: dict[str, Check] = _load_sibling("_quality_checks").build(Check, _r)
 
 
 # ---------------------------------------------------------------------------

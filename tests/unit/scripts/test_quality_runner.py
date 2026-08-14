@@ -137,6 +137,10 @@ EXPECTED: dict[str, dict[str, str]] = {
         # story ID on purpose -- a story-scoped check only fires when someone remembers to pass the
         # story, which is exactly how INT-US-25 stayed wrong.
         "proof_tier": "all",
+        # `TECH-017`: the audit matrix itself, ratcheted. The audit's six FRs name "Auditor" as the
+        # Actor -- they emit a document, so no test in `src/` could own them and `check_fr_coverage`
+        # blocked the ticket. This is where FR-1/2/3/4/6 live.
+        "audit_matrix": "all",
         # R-DEPTH: `R-LENGTH` capped the roadmap, its rationale pushed detail into the topic doc,
         # and nothing checked that level -- 33.5% of topic lines over 200, longest 5624.
         "entry_depth": "all",
@@ -201,6 +205,7 @@ class TestDocTrackIsSeparate:
             "skill_sync",
             "skill_references",
             "proof_tier",
+            "audit_matrix",
             "entry_depth",
             "fr_sweep",
             "nfr_sweep",
