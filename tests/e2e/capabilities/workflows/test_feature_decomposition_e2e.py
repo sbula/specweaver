@@ -27,16 +27,16 @@ The journey has two HITL gates, so the happy path is three sessions:
 
 from __future__ import annotations
 
-import contextlib
 import json
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
+from tests.scripted_llm import ScriptedLLM, scripted_world
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -121,39 +121,12 @@ def _plan_json(components: list[str] | None = None, coverage: float = 1.0) -> st
     )
 
 
-class ScriptedLLM:
-    """Returns queued payloads. Counts calls so INT-US-21 NFR-3 (LLM economy) is assertable."""
-
-    def __init__(self, payloads: list[str]) -> None:
-        self._payloads = list(payloads)
-        self.calls = 0
-
-    async def generate(self, messages, config=None, *args, **kwargs) -> LLMResponse:
-        idx = min(self.calls, len(self._payloads) - 1)
-        self.calls += 1
-        return LLMResponse(text=self._payloads[idx], model="scripted-1")
-
-    async def generate_with_tools(self, messages, config, dispatcher, **kwargs) -> LLMResponse:
-        return await self.generate(messages, config)
-
-
 @pytest.fixture(autouse=True)
 def data_dir(tmp_path: Path, monkeypatch) -> Path:
     d = tmp_path / ".specweaver-test"
     d.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(d))
     return d
-
-
-def _settings_mock():
-    from specweaver.core.config.settings import SandboxSettings
-
-    settings = MagicMock()
-    settings.llm.model = "scripted-1"
-    settings.llm.temperature = 0.2
-    settings.llm.max_output_tokens = 4096
-    settings.sandbox = SandboxSettings()
-    return settings
 
 
 @pytest.fixture()
@@ -168,28 +141,6 @@ def project(tmp_path: Path) -> Path:
     specs.mkdir(exist_ok=True)
     (specs / SPEC_NAME).write_text(SPEC_BODY, encoding="utf-8")
     return project_dir
-
-
-@contextlib.contextmanager
-def scripted_world(llm: ScriptedLLM):
-    """Only the LLM is doubled. Everything downstream of it is the real thing."""
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(_settings_mock(), llm, MagicMock()),
-            )
-        )
-        # Without this the router builds a REAL provider adapter from the registry, bypassing the
-        # factory patch entirely — a live API call inside a "mocked" test (vacuous-proof pattern 5,
-        # found for real in INT-US-02's e2e). None makes handlers fall back to context.model.llm.
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task",
-                return_value=None,
-            )
-        )
-        yield
 
 
 # --------------------------------------------------------------------------- #
@@ -502,7 +453,7 @@ class TestE11ResumeAnUnparkedRun:
             after = _store(data_dir).load_run(run_id)
 
         assert result.exit_code == 1, result.output
-        assert "already completed" in result.output
+        assert shows(result.output, "already completed"), result.output
         assert after.status == RunStatus.COMPLETED, "the finished run was reopened"
         assert second_llm.calls == 0, "a refused resume must not re-run the decomposition"
 
