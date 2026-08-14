@@ -145,17 +145,40 @@ contract asserting *"X must not happen"* is falsifiable, so it earns a verdict l
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | Per-step worktree isolation works for the single-step case. | `unassessed` | — |
-| C2 | Session mode runs a whole untrusted span in one worktree with a single authorized reconcile. | `unassessed` | — |
-| C3 | The legacy per-step model remains single-step-only — a documented limitation, not a defect. | `unassessed` | — |
-| C4 | `D-EXEC-02`, `E-EXEC-01` and `C-EXEC-02` are wired into **one** enforceable, container-free host-execution flow. | `unassessed` | — |
-| C5 | Untrusted execution runs inside an **ephemeral** git-worktree sandbox. | `unassessed` | — |
-| C6 | The `SubprocessExecutor` security boundary — credential stripping, resource limits, `cwd` containment — is **rebound to the worktree path**. | `unassessed` | — |
-| C7 | Bash actions **and** QA execution both operate worktree-bounded rather than against the real source root. | `unassessed` | — |
-| C8 | Source changes are reconciled back via the existing "Main-Branch Wins" strip-merge. | `unassessed` | — |
-| C9 | Out-of-bounds hunks are stripped per `context.yaml`. | `unassessed` | — |
-| C10 | Isolation is enabled by an **opt-in** US-9 policy (`SandboxSettings`), resolved at the composition root. | `unassessed` | — |
-| C11 | Default-off preserves today's behaviour **exactly**. | `unassessed` | — |
+| C1 | Per-step worktree isolation works for the single-step case. | `proven` | e2e — `test_explicit_use_worktree_runs_bash_bounded_to_worktree`, `test_policy_enforced_runs_bash_bounded_to_worktree`, `test_run_tests_pytest_executes_bounded_to_worktree`. |
+| C2 | Session mode runs a whole untrusted span in one worktree with a single authorized reconcile. | `proven` | integration — `test_session_persists_file_across_steps` (one worktree across steps), `test_explicit_use_worktree_step_still_shares_session_worktree`. **Cited after reading; not in `INT-US-09`'s own proof file** (FR-4). |
+| C3 | The legacy per-step model remains single-step-only — a documented limitation, not a defect. | `unprovable` | A scope statement about what is **not** supported, not a behaviour. Pinning it with a test would freeze a known limitation as required behaviour — the test would have to assert a multi-step per-step run keeps failing. Recorded, not tested. Contract not re-worded (NFR-1). |
+| C4 | `D-EXEC-02`, `E-EXEC-01` and `C-EXEC-02` are wired into **one** enforceable, container-free host-execution flow. | `proven` | e2e — the cited file drives bash (`C-EXEC-02`) and pytest QA through a worktree (`D-EXEC-02`) via `SubprocessExecutor` (`E-EXEC-01`) in one flow. *Container-free* shares its invariant with `INT-US-03` C7. |
+| C5 | Untrusted execution runs inside an **ephemeral** git-worktree sandbox. | `proven` | e2e — `test_isolated_run_keeps_the_boundary_and_leaves_no_worktree`, **written at this boundary**. Teardown was proven for the git primitive (`test_git_atom.py`) and for *session* mode only; the per-step flow this contract describes had none. **Probed:** skipping the `git worktree remove` call fails it. |
+| C6 | The `SubprocessExecutor` security boundary — credential stripping, resource limits, `cwd` containment — is **rebound to the worktree path**. | `unprovable` as written | Only **`cwd` containment** is path-dependent and it is proven (C1). Credential stripping and resource limits **cannot be rebound** — they apply on every path. **Probed:** the same script run **un-isolated** also reports the credential absent, so no assertion under isolation can distinguish a correct rebind from no isolation at all. The regression guard that the allow-list survives the rebind is in the new test and is deliberately **not** cited as proof. The contract asserts three things are rebound where one is; not re-worded (NFR-1). |
+| C7 | Bash actions **and** QA execution both operate worktree-bounded rather than against the real source root. | `proven` | e2e — bash in `test_explicit_use_worktree_runs_bash_bounded_to_worktree` and QA in `test_run_tests_pytest_executes_bounded_to_worktree`; both surfaces, same file. |
+| C8 | Source changes are reconciled back via the existing "Main-Branch Wins" strip-merge. | `proven` | **unit** — `test_success_strip_allowed`, `test_strip_merge_preserves_doc_updates` in `test_git_atom.py`. Tier diagnostic below. |
+| C9 | Out-of-bounds hunks are stripped per `context.yaml`. | `proven` | **unit** — same file, the `allowed_paths` strip cases. Tier diagnostic below. |
+| C10 | Isolation is enabled by an **opt-in** US-9 policy (`SandboxSettings`), resolved at the composition root. | `proven` | e2e — `test_policy_enforced_runs_bash_bounded_to_worktree` drives the policy rather than a per-step flag; composition-root resolution at unit (`test_settings_loader.py`, `test_isolation_gate.py`). |
+| C11 | Default-off preserves today's behaviour **exactly**. | `proven` | e2e — the paired controls `test_run_tests_not_isolated_runs_at_project_root` and `test_not_isolated_runs_bash_at_project_root`: `.worktrees` absent from stdout and the write lands at the real root. *Exactly* is a universal; the controls establish the observable half. |
+
+### Finding: the contract asserts three things are rebound, and one is
+
+`C6` is the plan's predicted two-halves case, and probing it produced a **different** answer than
+expected. The claim reads *"the `SubprocessExecutor` security boundary — credential stripping,
+resource limits, `cwd` containment — is rebound to the worktree path."*
+
+Only `cwd` is path-dependent. The first attempt at a seam test asserted that a credential set in the
+parent does not reach the isolated child — and the probe showed **the same script run un-isolated
+also reports it absent**, because stripping applies on every path. The assertion could not fail for
+the reason it claimed, and would have passed with isolation removed entirely. It is the third
+vacuous assertion this audit has caught in its own work, and the first caught before commit.
+
+So `C6` is `unprovable` **as written**, not unproven: `cwd` containment is proven, and the other two
+protections are not the kind of thing that can be rebound. The guard that the allow-list survives
+the rebind is kept in the new test, labelled as a regression guard rather than cited as proof.
+
+### FR-6 — capability findings
+
+`C8` and `C9` (Main-Branch-Wins strip-merge; out-of-bounds hunks stripped per `context.yaml`) are
+seam claims proven **only at unit tier**, in `D-EXEC-02`'s own `test_git_atom.py`. That is the
+`ADR-003` diagnostic: the reconcile seam has no integration-tier proof of its own, and the finding
+belongs to `D-EXEC-02`, not to this contract. Recorded here; `SF-03` consolidates.
 
 ## `INT-US-21` — Base Contract
 

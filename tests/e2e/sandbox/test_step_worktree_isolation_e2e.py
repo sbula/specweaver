@@ -42,6 +42,11 @@ pytestmark = pytest.mark.skipif(_GIT is None or _BASH is None, reason="git and b
 
 _MARKER_SCRIPT = 'echo "PWD=$(pwd)"\necho sentinel > marker.txt\n'
 
+#: Reports the child's cwd AND whether a credential env var survived into it. One script, because
+#: the contract's claim is that the WHOLE `SubprocessExecutor` boundary is rebound to the worktree
+#: — not that the cwd moved while the rest of the boundary stayed behind.
+_BOUNDARY_SCRIPT = 'echo "PWD=$(pwd)"\necho "KEY=${GEMINI_API_KEY:-ABSENT}"\n'
+
 
 def _git(cwd: Path, *args: str) -> None:
     subprocess.run([_GIT, *args], cwd=cwd, check=True, capture_output=True)
@@ -51,6 +56,12 @@ def _write_marker_script(tmp_path: Path) -> None:
     scripts = tmp_path / ".specweaver" / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     (scripts / "mark.sh").write_text(_MARKER_SCRIPT, encoding="utf-8", newline="\n")
+
+
+def _write_boundary_script(tmp_path: Path) -> None:
+    scripts = tmp_path / ".specweaver" / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    (scripts / "boundary.sh").write_text(_BOUNDARY_SCRIPT, encoding="utf-8", newline="\n")
 
 
 def _commit_project_with_script(tmp_path: Path) -> None:
@@ -211,3 +222,57 @@ def test_not_isolated_runs_bash_at_project_root(tmp_path: Path) -> None:
     assert ".worktrees" not in stdout
     # The marker was written directly at the real project root (not isolated).
     assert (tmp_path / "marker.txt").exists()
+
+
+def test_isolated_run_keeps_the_boundary_and_leaves_no_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """[Seam] the boundary still applies under isolation, and the worktree is EPHEMERAL.
+
+    Two `INT-US-09` claims meet here (`TECH-017` SF-02 CB-2):
+
+    * **the boundary is not dropped by the rebind.** Credential stripping is proven in
+      `test_execution_atom.py` on the un-isolated path only; nothing showed it survives when the
+      executor is re-anchored at a worktree. A rebind that moved the cwd and lost the env
+      allow-list would pass every existing test.
+    * **the sandbox is ephemeral.** Teardown is proven for the git primitive (`test_git_atom.py`)
+      and for *session* mode (`test_session_isolation.py`) — never for the per-step flow this
+      contract describes.
+
+    > **What this does NOT prove, established by probe.** The contract says credential stripping,
+    > resource limits and `cwd` containment are all *"rebound to the worktree path"*. Only `cwd` is
+    > path-dependent. Running this same script **un-isolated** also prints `KEY=ABSENT`, because
+    > stripping applies on every path — so the credential assertion below cannot distinguish a
+    > correct rebind from no isolation at all. It is kept as a **regression guard** that the
+    > allow-list is not lost during the rebind, and is deliberately not cited as proof of rebinding.
+    > See the matrix entry for `INT-US-09` C6.
+    """
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-must-not-reach-the-sandbox")
+    _write_boundary_script(tmp_path)
+    _commit_project_with_script(tmp_path)
+    _git(tmp_path, "add", ".specweaver/scripts/boundary.sh")
+    _git(tmp_path, "commit", "-m", "boundary script")
+
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())
+    )
+    step = PipelineStep(
+        name="boundary",
+        action=StepAction.BASH,
+        target=StepTarget.SCRIPT,
+        params={"script": "boundary.sh"},
+        use_worktree=True,
+    )
+    run_state = _run(PipelineDefinition(name="p", steps=[step]), context)
+    assert run_state.status == RunStatus.COMPLETED, run_state
+    stdout = _stdout(run_state)
+
+    # `cwd` — the one part of the boundary that IS rebound.
+    assert ".worktrees" in stdout, stdout
+    # Regression guard, not proof of rebinding: the allow-list survives the rebind.
+    assert "KEY=ABSENT" in stdout, f"a credential reached the isolated sandbox: {stdout}"
+
+    # Ephemeral — torn down, not merely created.
+    worktrees = tmp_path / ".worktrees"
+    leftovers = list(worktrees.glob("*")) if worktrees.is_dir() else []
+    assert leftovers == [], f"worktree survived the run: {leftovers}"
