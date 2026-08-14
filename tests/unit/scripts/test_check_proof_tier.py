@@ -273,3 +273,76 @@ class TestDuplicateIds:
         found = mod.all_duplicate_ids()
 
         assert found == [], "\n".join(f"{d.source}: {d.entry_id} — {d.titles}" for d in found)
+
+
+class TestUnbuiltSubFeatures:
+    """A contract marked ✅ must not have a sub-feature that was designed and never built.
+
+    `INT-US-04` read `✅ Complete` from 2026-07 while `SF-01: Core Flow DB Integration` — the
+    sub-feature implementing the persistence its Integration Description promises — sat at
+    Design ✅, Impl Plan ⬜, Dev ⬜. `TECH-017` found it by reading the contract, which is exactly
+    the manual step this file exists to replace.
+
+    **Design ✅ + Dev ⬜ is the signature**, and it was chosen after measuring the alternatives on
+    the real tree. Keying on *Dev ⬜ alone* flags four sub-features `ADR-003` RETIRED and one that is
+    only pending design — all legitimately unbuilt, none of them a broken promise. Requiring a
+    design first is what separates *we planned this and stopped* from *we decided not to*.
+
+    Not ratcheted, for the same reason duplicate ids are not: it names a contract that claims to be
+    finished and is not, which is never acceptable debt to freeze.
+    """
+
+    def test_designed_but_unbuilt_under_a_delivered_contract_is_a_violation(
+        self, mod: ModuleType, tmp_path: Path
+    ) -> None:
+        design = tmp_path / "INT-US-99" / "INT-US-99_design.md"
+        design.parent.mkdir(parents=True)
+        design.write_text(
+            "| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |\n"
+            "|----|------|-----------|--------|-----------|-----|------------|-----------|\n"
+            "| SF-01 | Core | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |\n",
+            encoding="utf-8",
+        )
+        assert mod.unbuilt_sub_features("INT-US-99", tmp_path) == ["SF-01"]
+
+    def test_a_retired_sub_feature_is_not_a_violation(
+        self, mod: ModuleType, tmp_path: Path
+    ) -> None:
+        """`ADR-003` retired four of `INT-US-04`'s add-ons. Never designed, so nothing was promised.
+
+        This is the case that rules out the simpler `Dev ⬜` check.
+        """
+        design = tmp_path / "INT-US-99" / "INT-US-99_design.md"
+        design.parent.mkdir(parents=True)
+        design.write_text(
+            "| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |\n"
+            "|----|------|-----------|--------|-----------|-----|------------|-----------|\n"
+            "| SF-02 | Retired | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |\n",
+            encoding="utf-8",
+        )
+        assert mod.unbuilt_sub_features("INT-US-99", tmp_path) == []
+
+    def test_a_fully_built_sub_feature_is_not_a_violation(
+        self, mod: ModuleType, tmp_path: Path
+    ) -> None:
+        design = tmp_path / "INT-US-99" / "INT-US-99_design.md"
+        design.parent.mkdir(parents=True)
+        design.write_text(
+            "| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |\n"
+            "|----|------|-----------|--------|-----------|-----|------------|-----------|\n"
+            "| SF-03 | Built | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |\n",
+            encoding="utf-8",
+        )
+        assert mod.unbuilt_sub_features("INT-US-99", tmp_path) == []
+
+    def test_a_missing_design_is_not_a_violation(self, mod: ModuleType, tmp_path: Path) -> None:
+        """No design doc means nothing was designed-then-abandoned. Absence is not a promise."""
+        assert mod.unbuilt_sub_features("INT-US-99", tmp_path) == []
+
+    def test_the_real_tree_is_clean(self, mod: ModuleType) -> None:
+        """The guard lands at zero — `INT-US-04`'s marker was corrected in the same commit.
+
+        If this fails, a contract is claiming to be finished while a designed sub-feature is
+        unbuilt. Correct the marker or build the sub-feature; do not freeze it.
+        """
+        assert mod.all_broken_promises() == []

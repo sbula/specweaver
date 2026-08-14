@@ -70,6 +70,7 @@ _proof_field = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_proof_field)
 proof_segment = _proof_field.proof_segment
 CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
+DESIGNS = REPO_ROOT / "docs" / "roadmap" / "features" / "topic_08_integration"
 BASELINE = REPO_ROOT / "scripts" / "baselines" / "proof_tier.json"
 
 #: Verdicts. `OK` is not a violation; the other two are.
@@ -83,6 +84,10 @@ NO_TEST_FILE = "no_test_file"
 _ENTRY = re.compile(r"^(?:##\s+(?P<h>.*?)|\*\s+\*\*(?P<b>.*?))\(`(?P<id>INT-US-[\w\-]+)`\)", re.M)
 
 _STATUS = re.compile(r"\*\*Status:\*\*\s*(\S+)")
+
+#: One Progress Tracker row. Columns after the id: Name | Depends On | Design | Impl Plan | Dev | …
+_SF_ROW = re.compile(r"^\|\s*(SF-\d+)\s*\|([^\n]*)$", re.M)
+_SF_DESIGN, _SF_DEV = 2, 4
 _TEST_FILE = re.compile(r"tests/[\w/]+\.py")
 
 
@@ -187,6 +192,51 @@ def all_duplicate_ids() -> list[Collision]:
     return found
 
 
+def unbuilt_sub_features(entry_id: str, designs: Path = DESIGNS) -> list[str]:
+    """Sub-features of `entry_id` that were **designed and never built** (Design ✅, Dev not ✅).
+
+    `Design ✅ + Dev ⬜` is the signature of a broken promise, and the qualifier is load-bearing.
+    Keying on `Dev ⬜` alone flags the four add-ons `ADR-003` RETIRED and one that is only pending
+    design — legitimately unbuilt, and nothing was ever promised for them. Requiring a design first
+    separates *we planned this and stopped* from *we decided not to*.
+
+    A missing design doc yields `[]`: absence is not a promise.
+    """
+    design = designs / entry_id / f"{entry_id}_design.md"
+    if not design.is_file():
+        return []
+    text = design.read_text(encoding="utf-8", errors="replace")
+    unbuilt = []
+    for sf_id, rest in _SF_ROW.findall(text):
+        cells = [c.strip() for c in rest.split("|")]
+        if len(cells) > _SF_DEV and cells[_SF_DESIGN] == "✅" and cells[_SF_DEV] != "✅":
+            unbuilt.append(sf_id)
+    return unbuilt
+
+
+def all_broken_promises() -> list[tuple[str, list[str]]]:
+    """`(entry_id, unbuilt_sfs)` for every DELIVERED base contract with a designed-but-unbuilt SF.
+
+    This is the check that `INT-US-04` needed and nothing had: it read `✅ Complete` from 2026-07
+    while the sub-feature implementing its Integration Description sat at Design ✅, Dev ⬜.
+
+    It also covers a gap the correction OPENS. `violations_in` judges delivered entries only, so
+    flipping a false `✅` to `⬜` makes the proof-tier check go quiet on that entry — and a check
+    that silently stops running is indistinguishable from one that passes (`TECH-032`). This guard
+    is what keeps a marker from being downgraded into silence.
+    """
+    found: list[tuple[str, list[str]]] = []
+    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for entry in contract_entries(text, path):
+            if not entry.delivered:
+                continue
+            unbuilt = unbuilt_sub_features(entry.entry_id)
+            if unbuilt:
+                found.append((entry.entry_id, unbuilt))
+    return found
+
+
 def violations_in(text: str, source: Path) -> list[Entry]:
     """Only DELIVERED entries are judged — undelivered work does not yet owe a proof."""
     return [e for e in contract_entries(text, source) if e.delivered and e.verdict != OK]
@@ -204,6 +254,49 @@ def load_baseline() -> dict[str, dict[str, str]]:
         return {}
     data: dict[str, dict[str, str]] = json.loads(BASELINE.read_text(encoding="utf-8"))
     return data
+
+
+def _report_collisions() -> bool:
+    """Print any identifier naming two entries. True if there were any.
+
+    `TECH-039`: not ratcheted. There was exactly one collision, it is repaired, and an identifier
+    naming two entries is never acceptable debt to freeze — unlike a weak proof, which can be
+    true-but-thin while someone schedules the work.
+    """
+    collisions = all_duplicate_ids()
+    if not collisions:
+        return False
+    print(f"Duplicate identifiers: {len(collisions)}\n")
+    for c in collisions:
+        print(f"  {c.source}: `{c.entry_id}` names {len(c.titles)} entries — {', '.join(c.titles)}")
+    print(
+        "\nAn identifier that names two things identifies neither: a story-scoped check "
+        "resolves to whichever entry it reaches first and can never see the other. Give each "
+        "entry its own id — the master roadmap usually already has them."
+    )
+    return True
+
+
+def _report_broken_promises() -> bool:
+    """Print any delivered contract with a designed-but-unbuilt sub-feature. True if there were any.
+
+    `TECH-017`: not ratcheted, same reasoning as duplicate ids. A contract claiming to be finished
+    while a designed sub-feature is unbuilt is never acceptable debt to freeze — the honest move is
+    to correct the marker or build the sub-feature.
+    """
+    promises = all_broken_promises()
+    if not promises:
+        return False
+    print(f"Contracts marked delivered with designed-but-unbuilt sub-features: {len(promises)}\n")
+    for entry_id, sfs in promises:
+        print(f"  {entry_id}: {', '.join(sfs)} — Design ✅ but never built")
+    print(
+        "\nA ✅ on a contract asserts the integration it describes is real. A sub-feature that "
+        "was designed and never built means it is not. Correct the status marker or build the "
+        "sub-feature — and if you correct the marker, say what IS delivered, because an "
+        "undelivered entry stops being judged for proof tier at all."
+    )
+    return True
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -242,21 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{len(found)} violation(s) total")
         return 0
 
-    # `TECH-039`: not ratcheted. There was exactly one collision, it is repaired, and an
-    # identifier naming two entries is never acceptable debt to freeze — unlike a weak proof,
-    # which can be true-but-thin while someone schedules the work.
-    collisions = all_duplicate_ids()
-    if collisions:
-        print(f"Duplicate identifiers: {len(collisions)}\n")
-        for c in collisions:
-            print(
-                f"  {c.source}: `{c.entry_id}` names {len(c.titles)} entries — {', '.join(c.titles)}"
-            )
-        print(
-            "\nAn identifier that names two things identifies neither: a story-scoped check "
-            "resolves to whichever entry it reaches first and can never see the other. Give each "
-            "entry its own id — the master roadmap usually already has them."
-        )
+    if _report_collisions():
         return 1
 
     baseline = load_baseline()
@@ -285,7 +364,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"Proof-tier ratchet: {len(found)} violation(s), none new. No duplicate identifiers.")
+    print(
+        f"Proof-tier ratchet: {len(found)} violation(s), none new. "
+        "No duplicate identifiers, no unbuilt sub-features under a delivered contract."
+    )
     return 0
 
 
