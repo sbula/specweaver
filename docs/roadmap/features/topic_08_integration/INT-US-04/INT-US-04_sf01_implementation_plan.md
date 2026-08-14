@@ -307,6 +307,35 @@ Not a boundary violation (opposite dependency direction, different return types;
 import `interfaces.api`), but a field set defined twice that must not drift. Consolidating it into
 `assurance/validation` is the option if a later boundary wants it.
 
+> [!IMPORTANT]
+> **CB-2 amended 2026-08-14, before implementation, on two findings from its task-list Red/Blue.**
+> Both were errors in this plan as approved, found by reading the code the plan named.
+>
+> **D-10 — the write point moves to `step_execution.py:465`, before `resolve_outcome`.** CB-2 below
+> said *"the advance join point (`:474`), beside plan hydration"*. That line is reached **only when
+> `resolve_outcome` returns `PROCEED`**. A validate step that fails and loops back returns
+> `CONTINUE`; one that fails without a gate, or parks for HITL, returns `RETURN`. The planned
+> position would have persisted rule results for **passing** steps and silently dropped every
+> failing one — the findings that trigger loop-back, feed regeneration, and are exactly what `FR-3`
+> replays. Writing straight after `execute_step()` catches every result once per attempt whatever
+> the verdict; the run row already exists there (`runner.py:258`), so the foreign key holds.
+>
+> Symmetry with `hydrate_plan_context` was the reason for the original position, and it was the
+> wrong reason: hydration *should* only run on advance, because a failed step has no plan to
+> hydrate. Persistence has the opposite requirement.
+>
+> **D-11 — the grain becomes one row per FINDING**, not per rule:
+> `(run_id, step_name, attempt, rule_id, finding_index)` with `message`, `line`, `severity` and
+> `suggestion` as real columns. D-2's per-rule grain left findings nowhere to go but a JSON column —
+> which is the opaque blob `CB-1` had just rescued them from, one layer down, in a table whose whole
+> claim is that it is **queryable**. Denormalized rather than two tables: a join for a feature whose
+> only consumer today is a test is work without a reader (`KISS`), and the redundancy is bounded by
+> the ~170 bytes/finding already measured.
+>
+> **A rule that produced no findings still gets one row**, with `finding_index` and the four finding
+> columns `NULL`. Otherwise passing rules vanish from the table entirely and *"did S01 run, and did
+> it pass?"* — the first question anyone asks of validation history — becomes unanswerable.
+
 ### CB-2 — FR-2: the table, its writer, its reader
 
 `flow_validation_results` added to `_STATE_SCHEMA_V2` with an index on `run_id` (RB-7), version row
@@ -319,6 +348,24 @@ Rows carry the **validating step's own** `attempt` (RB-5). Rule results only —
 integration test; no later story will write it.
 
 **Done when** the writer neutralised to a no-op turns the integration test red.
+
+#### CB-2 outcome (delivered 2026-08-14)
+
+`flow_validation_results` (one row per finding, index on `run_id`, schema v3), plus
+`save_validation_results` / `get_validation_results` and `persist_validation_results` in the step
+loop. 18 unit + 4 integration tests.
+
+Mutants: writer as a no-op `KILLED`; **call moved back to the originally planned `:474`
+`KILLED`** — empirical proof D-10's correction was necessary; `except Exception` narrowed
+`KILLED ×1` (single point of protection).
+
+Three tests added at the pre-commit gate for branches the seam cannot reach — the never-raises path
+D-7 had promised and not delivered, a malformed `results` payload, and the `attempt` fallback.
+`useless_asserts` rejected the first draft of one (`assert mock.called` cannot fail); tightened to
+`assert_called_once`.
+
+Touched: three `version == 2` pins in `test_engine_store.py` (the current version is 3),
+FR-sweep baseline 241 → 240.
 
 ### CB-3 — FR-3: restore feedback on resume
 

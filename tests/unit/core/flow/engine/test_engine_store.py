@@ -134,10 +134,13 @@ class TestStoreSchema:
         # Instantiating the store should trigger migration
         _ = StateStore(db_path)
 
-        # Verify schema version was bumped
+        # Verify schema version was bumped. `INT-US-04` SF-01 CB-2 moved the current version to
+        # 3 (it added `flow_validation_results`), so a v1 database now lands on 3 in one open:
+        # the v1->v2 ALTER still runs, and v2->v3 needed no migration because the new table is
+        # created by the `IF NOT EXISTS` script that runs on every construction.
         conn = sqlite3.connect(db_path)
         version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0]
-        assert version == 2
+        assert version == 3
 
         # Verify parent_run_id column exists
         columns = [
@@ -207,8 +210,8 @@ class TestStoreSchema:
         assert {"flow_pipeline_runs", "flow_audit_log", "flow_state_schema_version"} <= tables
 
         assert (
-            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 2
-        )  # not re-migrated
+            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 3
+        )  # renamed, not re-migrated -- 3 is the current version since CB-2 added a table
 
         run_row = conn.execute(
             "SELECT run_id, pipeline_name, status FROM flow_pipeline_runs"
@@ -653,7 +656,7 @@ class TestStoreEdgeCases:
         row = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()
         conn.close()
         assert row is not None
-        assert row[0] == 2
+        assert row[0] == 3, "current schema version -- CB-2 added flow_validation_results"
 
     def test_foreign_keys_enabled(self, store: StateStore) -> None:
         """Foreign key constraints should be active."""

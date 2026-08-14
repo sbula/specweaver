@@ -17,6 +17,7 @@ import logging
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import (
@@ -56,7 +57,37 @@ CREATE TABLE IF NOT EXISTS flow_state_schema_version (
     version    INTEGER PRIMARY KEY,
     applied_at TEXT NOT NULL
 );
+
+-- INT-US-04 SF-01 CB-2 (FR-2): the queryable surface `INT-US-04` C1 claimed and never had.
+-- ONE ROW PER FINDING (plan D-11), not per rule: a per-rule grain leaves each rule's findings
+-- nowhere to go but a JSON column, which is the opaque blob CB-1 rescued them from. A rule with
+-- no findings still gets a row with NULL finding columns, so "did S01 run and pass?" stays
+-- answerable. Append-only -- a retried step adds rows rather than replacing them, because
+-- overwriting discards the earlier attempt's failures (the loss `TECH-021` was filed for).
+CREATE TABLE IF NOT EXISTS flow_validation_results (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id        TEXT NOT NULL REFERENCES flow_pipeline_runs(run_id),
+    step_name     TEXT NOT NULL,
+    attempt       INTEGER NOT NULL DEFAULT 1,
+    rule_id       TEXT NOT NULL,
+    rule_status   TEXT NOT NULL,
+    rule_message  TEXT,
+    finding_index INTEGER,
+    message       TEXT,
+    line          INTEGER,
+    severity      TEXT,
+    suggestion    TEXT,
+    recorded_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_flow_validation_results_run
+    ON flow_validation_results(run_id);
 """
+
+#: Bumped to 3 by CB-2. The new table needs no data migration -- every statement above is
+#: `IF NOT EXISTS` and the script runs on every construction -- so the version records what the
+#: schema contains rather than gating a migration step.
+_CURRENT_SCHEMA_VERSION = 3
 
 # TECH-005 FR-8: pre-SF-3 installations used these unprefixed names. Order matters — rename
 # `flow_pipeline_runs`' predecessor before `flow_audit_log`'s (which references it), and
@@ -136,24 +167,38 @@ class StateStore:
                 "SELECT COUNT(*) FROM flow_state_schema_version",
             ).fetchone()[0]
             if existing == 0:
-                conn.execute(
-                    "INSERT INTO flow_state_schema_version (version, applied_at) VALUES (?, ?)",
-                    (2, _now_iso()),
+                self._record_version(conn)
+                logger.debug(
+                    "StateStore: created schema v%d at '%s'",
+                    _CURRENT_SCHEMA_VERSION,
+                    self._db_path,
                 )
-                logger.debug("StateStore: created schema v2 at '%s'", self._db_path)
-            else:
-                version = conn.execute(
-                    "SELECT MAX(version) FROM flow_state_schema_version"
-                ).fetchone()[0]
-                if version == 1:
-                    conn.execute(
-                        "ALTER TABLE flow_pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES flow_pipeline_runs(run_id);"
-                    )
-                    conn.execute(
-                        "INSERT INTO flow_state_schema_version (version, applied_at) VALUES (?, ?)",
-                        (2, _now_iso()),
-                    )
-                    logger.debug("StateStore: migrated schema v1 -> v2 at '%s'", self._db_path)
+                return
+
+            version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[
+                0
+            ]
+            if version == 1:
+                # v1 -> v2 is the only step needing a real ALTER; v2 -> v3 added a table, which
+                # the `IF NOT EXISTS` script above has already created.
+                conn.execute(
+                    "ALTER TABLE flow_pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES flow_pipeline_runs(run_id);"
+                )
+            if version < _CURRENT_SCHEMA_VERSION:
+                self._record_version(conn)
+                logger.debug(
+                    "StateStore: migrated schema v%s -> v%d at '%s'",
+                    version,
+                    _CURRENT_SCHEMA_VERSION,
+                    self._db_path,
+                )
+
+    @staticmethod
+    def _record_version(conn: sqlite3.Connection) -> None:
+        conn.execute(
+            "INSERT INTO flow_state_schema_version (version, applied_at) VALUES (?, ?)",
+            (_CURRENT_SCHEMA_VERSION, _now_iso()),
+        )
 
     # ------------------------------------------------------------------
     # Pipeline runs
@@ -234,6 +279,102 @@ class StateStore:
                 (limit,),
             ).fetchall()
             return [_row_to_run(row) for row in rows]
+
+    # ------------------------------------------------------------------
+    # Validation results
+    # ------------------------------------------------------------------
+
+    def save_validation_results(
+        self,
+        run_id: str,
+        step_name: str,
+        *,
+        attempt: int,
+        results: list[dict[str, Any]],
+    ) -> None:
+        """Append one row per finding for a validate step's rule results (`INT-US-04` FR-2).
+
+        `results` is `StepResult.output["results"]` exactly as `_rule_payload` builds it, so this
+        takes primitives and imports nothing from `assurance.validation` — the store stays a store.
+
+        **A rule with no findings still writes one row**, with `finding_index` and the four finding
+        columns `NULL`. Dropping it would make a passing rule invisible, and *"did S01 run, and did
+        it pass?"* is the first question anyone asks of validation history.
+
+        **Append-only.** A retried step adds rows under a higher `attempt` rather than replacing the
+        earlier ones; overwriting would discard the failures that triggered the retry, which is the
+        loss `TECH-021` was filed to stop.
+
+        Raises on a `run_id` with no run row — the foreign key is the point, and a row that cannot
+        name its run is not worth keeping. The pipeline-loop caller swallows it (plan D-7); a store
+        method that silently dropped writes would be lying to every other caller.
+        """
+        now = _now_iso()
+        rows: list[tuple[Any, ...]] = []
+        for rule in results:
+            base = (
+                run_id,
+                step_name,
+                attempt,
+                rule.get("rule_id", ""),
+                rule.get("status", ""),
+                rule.get("message"),
+            )
+            findings = rule.get("findings") or []
+            if not findings:
+                rows.append((*base, None, None, None, None, None, now))
+                continue
+            rows.extend(
+                (
+                    *base,
+                    index,
+                    finding.get("message"),
+                    finding.get("line"),
+                    finding.get("severity"),
+                    finding.get("suggestion"),
+                    now,
+                )
+                for index, finding in enumerate(findings)
+            )
+
+        if not rows:
+            return
+
+        logger.debug(
+            "StateStore.save_validation_results: run_id=%s step=%s attempt=%d rows=%d",
+            run_id,
+            step_name,
+            attempt,
+            len(rows),
+        )
+        with self.connect() as conn:
+            conn.executemany(
+                "INSERT INTO flow_validation_results "
+                "(run_id, step_name, attempt, rule_id, rule_status, rule_message, "
+                "finding_index, message, line, severity, suggestion, recorded_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                rows,
+            )
+
+    def get_validation_results(
+        self,
+        run_id: str,
+        *,
+        step: str | None = None,
+    ) -> list[dict[str, object]]:
+        """Every persisted rule result for a run, oldest first, optionally one step only.
+
+        Run-scoped by signature: cross-run history is deliberately out of scope for this
+        sub-feature, and a reader that cannot express it cannot accidentally grow into it.
+        """
+        sql = "SELECT * FROM flow_validation_results WHERE run_id = ?"
+        params: list[object] = [run_id]
+        if step is not None:
+            sql += " AND step_name = ?"
+            params.append(step)
+        sql += " ORDER BY id"
+        with self.connect() as conn:
+            return [dict(row) for row in conn.execute(sql, params).fetchall()]
 
     # ------------------------------------------------------------------
     # Audit log

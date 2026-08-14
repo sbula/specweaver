@@ -35,6 +35,7 @@ from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.engine.approval import try_approve_parked_step
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
 from specweaver.core.flow.engine.isolation import resolve_should_isolate
+from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
@@ -403,6 +404,59 @@ def advance_step(
     return LoopAction.PROCEED, route_jumps
 
 
+#: `validate` targets whose payload is rule results. `StepTarget.TESTS` is `run_tests`, whose
+#: exports are `passed`/`failed`/`total` with no `rule_id` — persisting it would make
+#: `flow_validation_results` mean two different things (plan D-5).
+_RULE_RESULT_TARGETS = (StepTarget.SPEC, StepTarget.CODE)
+
+
+def persist_validation_results(
+    runner: Any,
+    run: PipelineRun,
+    step_def: PipelineStep,
+    step_idx: int,
+    result: StepResult,
+) -> None:
+    """Append a validate step's rule results to the state DB (`INT-US-04` FR-2).
+
+    **Called before `resolve_outcome`, deliberately.** The obvious home is the advance join point
+    beside `hydrate_plan_context`, and CB-2 was planned there — but that line is reached only on
+    `PROCEED`. A validate step that fails and loops back returns `CONTINUE`; one that fails gateless
+    or parks returns `RETURN`. Writing there would persist passing runs and drop every failure,
+    which is the half that matters: those findings trigger the loop-back and are what `FR-3`
+    replays. Hydration *should* only run on advance — a failed step has no plan to hydrate — so the
+    symmetry was misleading.
+
+    Never raises (plan D-7). A pipeline must not die because an audit row could not be written;
+    the failure is logged with the run id and the run continues.
+    """
+    if runner._store is None:
+        return
+    if step_def.action != StepAction.VALIDATE or step_def.target not in _RULE_RESULT_TARGETS:
+        return
+
+    results = (result.output or {}).get("results")
+    if not isinstance(results, list):
+        return
+
+    # The DURABLE attempt, not the in-memory counter: `TECH-033` moved the retry budget onto the
+    # step record precisely because the live one restarts at zero on resume.
+    record = run.step_records[step_idx] if step_idx < len(run.step_records) else None
+    attempt = getattr(record, "attempt", 1) or 1
+
+    try:
+        runner._store.save_validation_results(
+            run.run_id, step_def.name, attempt=attempt, results=results
+        )
+    except Exception:
+        logger.warning(
+            "[run_id=%s] Could not persist validation results for step '%s' — the run continues",
+            run.run_id,
+            step_def.name,
+            exc_info=True,
+        )
+
+
 def resolve_outcome(
     runner: Any,
     run: PipelineRun,
@@ -463,6 +517,11 @@ async def run_one_step(
 
     announce_step_start(runner, run, step_def, step_idx, total, handler)
     result = await execute_step(runner, handler, step_def, run)
+
+    # INT-US-04 SF-01 FR-2: BEFORE resolve_outcome, so a failing validate step's findings are
+    # persisted too — resolve_outcome sends loop-backs and gateless failures down paths that never
+    # reach the advance join point below.
+    persist_validation_results(runner, run, step_def, step_idx, result)
 
     action = resolve_outcome(runner, run, state, step_def, step_idx, total, result)
     if action is not LoopAction.PROCEED:
