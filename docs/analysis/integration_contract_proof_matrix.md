@@ -31,13 +31,30 @@ are not comparable between entries.
 | `INT-US-09` | 1 | 5 | e2e | 11 |
 | `INT-US-21` | 3 | 61 | e2e, integration | 8 |
 | `INT-US-21-SUB` | 0 | 0 | — | 1 |
-| `INT-US-24` | 2 | 13 | e2e, integration | 3 |
-| `INT-US-25` | 9 | 75 | e2e, integration | 9 |
+| `INT-US-24` | 2 | 13 | e2e, integration | 6 |
+| `INT-US-25` | 9 | 75 | e2e, integration | 13 |
 | `INT-US-28` | 9 | 88 | integration, unit | 6 |
 
-**13 entries, 57 claims, 271 tests across 30 cited files.** The count has risen twice as contracts
+**13 entries, 64 claims, 271 tests across 30 cited files.** The count has risen twice as contracts
 were re-read in full: +4 in SF-01 CB-3 (`INT-US-21`), +11 in SF-02 CB-1 (below). Counts for the 6
 still-unassessed entries are CB-1's and remain **lower bounds** until SF-03 re-reads them.
+
+### SF-03 CB-1 — re-extraction of the last three, 2026-08-14
+
+| Entry | Description | Was | Now | What CB-1 had missed |
+|---|---|---|---|---|
+| `INT-US-25` | 249 words | 9 | **13** | the `sw constitution init/show/check` surface; *five* preset bundles; `extends: validation_spec_default` inheritance resolving in the same round trip; and the **exclusion** of `C-VAL-03`'s code-level half, delegated to `TECH-041` |
+| `INT-US-24` | 93 words | 3 | **6** | the declared stage chain incl. arbiter fault attribution; execution on top of the shipped US-3 loop; and the **exclusion** of DAL escalation, delegated to `C-EXEC-07` |
+| `INT-US-02` | 32 words | 2 | 2 | nothing — one sentence, two assertions |
+
+**The length predictor has now held three times.** One-sentence descriptions were extracted
+correctly every time; multi-sentence ones never were. It is a usable rule for any future audit: read
+long contracts twice, and expect the second reading to find an exclusion, because both entries that
+grew here hid one in their final sentence.
+
+**Exclusions keep being the thing that is missed.** `INT-US-03` C7, `INT-US-24` C6 and `INT-US-25`
+C13 are all *"X is deliberately delegated elsewhere"* — falsifiable, load-bearing for scope, and
+invisible to an extractor reading only the opening assertion.
 
 ### SF-02 CB-1 — re-extraction of the five thin entries, 2026-08-14
 
@@ -384,6 +401,9 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 | C1 | `sw run scenario_integration <spec>` is a real working journey through the QA Runner on the shipped US-3 loop. | `unassessed` | — |
 | C2 | A green verification round costs **zero** arbitration LLM calls. | `unassessed` | — |
 | C3 | A parked `spec_ambiguity` heals through the loop on `sw resume`, with evidence re-published on the fresh round. | `unassessed` | — |
+| C4 | The declared stage chain is what runs: contract extraction → parallel coding + scenario pipelines → JOIN → scenario test execution → **arbiter fault attribution** (`B-FLOW-01`). | `unassessed` | — |
+| C5 | The journey executes through the QA Runner (`D-VAL-01`) **on top of the shipped US-3 loop** (`INT-US-03`). | `unassessed` | — |
+| C6 | **Exclusion:** DAL escalation for run journeys is deliberately delegated to `C-EXEC-07` / `INT-US-09-SF06` and is NOT covered here. | `unassessed` | — |
 
 ## `INT-US-25` — Base Contract
 
@@ -410,6 +430,10 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 | C7 | `--pipeline` and `--level feature` both override the active profile. | `unassessed` | — |
 | C8 | A nested `operational.dal_level` makes a warn-only spec FAIL under `DAL_A` and pass under `DAL_E`. | `unassessed` | — |
 | C9 | The standards scan upserts rather than duplicates, and honours `.specweaverignore`. | `unassessed` | — |
+| C10 | `sw constitution init/show/check` manages a project-wide `CONSTITUTION.md` (`C-VAL-01`) — the CLI surface itself, including oversize rejection and refuse-to-overwrite. | `unassessed` | — |
+| C11 | `sw config set-profile <name>` selects one of **five** preset bundles. | `unassessed` | — |
+| C12 | Each profile pipeline carries `extends: validation_spec_default`, so `D-VAL-02`'s YAML inheritance resolves as part of the same round trip. | `unassessed` | — |
+| C13 | **Exclusion:** the code-level half of `C-VAL-03` — a strict DAL changing the verdict on LLM-**generated** code — is delegated to `TECH-041` and is NOT covered by this contract. | `unassessed` | — |
 
 ## `INT-US-28` — Base Contract
 

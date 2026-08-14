@@ -191,7 +191,7 @@ rather than assesses, and its scope was fixed by SF-02 CB-3; it may be taken bef
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Skeleton + two largest | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The thin proofs | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Remainder + capability findings | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Remainder + capability findings | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | The `sw implement` loop e2e | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
