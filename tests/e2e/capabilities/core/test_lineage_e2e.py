@@ -23,17 +23,12 @@ from typer.testing import CliRunner
 from specweaver.core.flow.handlers.run_context import ModelAccess
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
 
 runner = CliRunner()
 
 
-def _shows(output: str, needle: str) -> bool:
-    """Whether `needle` appears in `output`, ignoring Rich's soft wrapping.
-
-    Both sides are whitespace-squashed, so a message broken across a line boundary still matches.
-    Only safe for presence checks; it destroys layout and ordering, so never assert those with it.
-    """
-    return "".join(needle.split()) in "".join(output.split())
+# Rendering-safe presence check lives in `tests/rendering.py` — this was its first site.
 
 
 def _make_llm(responses: list[str]) -> object:
@@ -303,14 +298,14 @@ class TestLineageE2EFlow:
         assert result.exit_code == 1, (
             f"Expected validation failure due to orphaned files, got {result.exit_code}"
         )
-        assert _shows(result.output, "Lineage Tracking Error")
+        assert shows(result.output, "Lineage Tracking Error")
         # Rich SOFT-WRAPS the path at the terminal width, so at some widths `result.output`
         # contains "orp\nhan.py". Asserting on the raw string made this test pass or fail
         # depending on COLUMNS: 80 failed, 60/100/200 passed, and the full suite stayed green only
         # because xdist sets a different width. Compare against a whitespace-squashed copy so the
         # assertion tests the message, not the renderer's line breaks. `TECH-017` SF-02 CB-4.
-        assert _shows(result.output, "orphan.py")
-        assert _shows(result.output, "Missing '# sw-artifact:' tags")
+        assert shows(result.output, "orphan.py")
+        assert shows(result.output, "Missing '# sw-artifact:' tags")
 
 
 # ===========================================================================

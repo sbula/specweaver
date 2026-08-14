@@ -19,6 +19,14 @@ from specweaver.interfaces.cli.main import app
 if TYPE_CHECKING:
     from pathlib import Path
 
+from tests.rendering import shows
+
+#: These assertions read a Rich *table*. `shows()` makes them immune to soft WRAPPING, but below
+#: about 80 columns Rich TRUNCATES the cell instead — the text is gone from `result.output`, and no
+#: test-side helper can recover it. Verified 2026-08-14: green at COLUMNS 80/100/200, and the
+#: `function_style=` value genuinely absent at 60 and 40. A rendering floor, not a test defect —
+#: and 80 is the no-TTY default, so it is the width CI actually gets.
+
 runner = CliRunner()
 
 
@@ -86,8 +94,8 @@ class TestStandardsLifecycle:
         _init_project_with_python(tmp_path)
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
-        assert "scan" in result.output.lower()
-        assert "complete" in result.output.lower()
+        assert shows(result.output.lower(), "scan")
+        assert shows(result.output.lower(), "complete")
 
     def test_show_after_scan(self, tmp_path: Path) -> None:
         """sw standards show displays discovered standards after scan."""
@@ -96,7 +104,7 @@ class TestStandardsLifecycle:
         result = runner.invoke(app, ["standards", "show"])
         assert result.exit_code == 0
         # Should show a table with at least one standard
-        assert "python" in result.output.lower() or "category" in result.output.lower()
+        assert shows(result.output.lower(), "python") or shows(result.output.lower(), "category")
 
     def test_clear_removes_all(self, tmp_path: Path) -> None:
         """sw standards clear removes all discovered standards."""
@@ -104,11 +112,11 @@ class TestStandardsLifecycle:
         runner.invoke(app, ["standards", "scan", "--no-review"])
         result = runner.invoke(app, ["standards", "clear"])
         assert result.exit_code == 0
-        assert "cleared" in result.output.lower()
+        assert shows(result.output.lower(), "cleared")
 
         # Verify show is empty now
         show_result = runner.invoke(app, ["standards", "show"])
-        assert "no standards" in show_result.output.lower()
+        assert shows(show_result.output.lower(), "no standards")
 
     def test_scan_then_show_then_clear_then_show(self, tmp_path: Path) -> None:
         """Full lifecycle: scan → show → clear → show (empty)."""
@@ -121,7 +129,7 @@ class TestStandardsLifecycle:
         # 2. Show (should have results)
         show1 = runner.invoke(app, ["standards", "show"])
         assert show1.exit_code == 0
-        assert "no standards" not in show1.output.lower()
+        assert not shows(show1.output.lower(), "no standards")
 
         # 3. Clear
         clear_result = runner.invoke(app, ["standards", "clear"])
@@ -129,7 +137,7 @@ class TestStandardsLifecycle:
 
         # 4. Show (should be empty)
         show2 = runner.invoke(app, ["standards", "show"])
-        assert "no standards" in show2.output.lower()
+        assert shows(show2.output.lower(), "no standards")
 
 
 # ---------------------------------------------------------------------------
@@ -144,19 +152,19 @@ class TestStandardsErrors:
         """sw standards scan without active project fails."""
         result = runner.invoke(app, ["standards", "scan"])
         assert result.exit_code == 1
-        assert "no active project" in result.output.lower()
+        assert shows(result.output.lower(), "no active project")
 
     def test_show_requires_active_project(self) -> None:
         """sw standards show without active project fails."""
         result = runner.invoke(app, ["standards", "show"])
         assert result.exit_code == 1
-        assert "no active project" in result.output.lower()
+        assert shows(result.output.lower(), "no active project")
 
     def test_clear_requires_active_project(self) -> None:
         """sw standards clear without active project fails."""
         result = runner.invoke(app, ["standards", "clear"])
         assert result.exit_code == 1
-        assert "no active project" in result.output.lower()
+        assert shows(result.output.lower(), "no active project")
 
     def test_show_empty_no_scan(self, tmp_path: Path) -> None:
         """sw standards show without prior scan shows empty message."""
@@ -165,7 +173,7 @@ class TestStandardsErrors:
         runner.invoke(app, ["init", "empty-proj", "--path", str(project_dir)])
         result = runner.invoke(app, ["standards", "show"])
         assert result.exit_code == 0
-        assert "no standards" in result.output.lower()
+        assert shows(result.output.lower(), "no standards")
 
 
 # ---------------------------------------------------------------------------
@@ -202,9 +210,9 @@ class TestStandardsRescan:
         # `TECH-017`: this used to assert exit codes only, under a comment claiming "no duplicate
         # key errors" — which it never checked. The claim is UPSERT, so both halves are asserted:
         # the stored standard CHANGED, and it was replaced rather than added alongside.
-        assert "function_style=sna" in show1.output, show1.output
-        assert "function_style=cam" in show2.output, show2.output
-        assert "function_style=sna" not in show2.output
+        assert shows(show1.output, "function_style=sna"), show1.output
+        assert shows(show2.output, "function_style=cam"), show2.output
+        assert not shows(show2.output, "function_style=sna")
         assert show2.output.count("naming") == 1, "re-scan inserted a second naming row"
         assert show2.exit_code == 0
 
@@ -227,13 +235,13 @@ class TestStandardsSyntaxError:
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
-        assert "scan" in result.output.lower()
-        assert "complete" in result.output.lower()
+        assert shows(result.output.lower(), "scan")
+        assert shows(result.output.lower(), "complete")
 
         # Standards from valid files should still be saved
         show = runner.invoke(app, ["standards", "show"])
         assert show.exit_code == 0
-        assert "no standards" not in show.output.lower()
+        assert not shows(show.output.lower(), "no standards")
 
 
 # ---------------------------------------------------------------------------
@@ -268,8 +276,8 @@ class TestStandardsWithIgnore:
         # so if the ignore were disregarded the dominant naming pattern would shift.
         show = runner.invoke(app, ["standards", "show"])
 
-        assert "function_style=sna" in show.output, show.output
-        assert "function_style=cam" not in show.output
+        assert shows(show.output, "function_style=sna"), show.output
+        assert not shows(show.output, "function_style=cam")
 
 
 # ---------------------------------------------------------------------------

@@ -95,6 +95,34 @@ class TestKillers:
     def test_a_green_run_has_no_killers(self, mut: ModuleType) -> None:
         assert mut.killers("6829 passed, 11 skipped\n") == []
 
+    def test_a_test_that_merely_prints_syntaxerror_is_not_broken(self, mut: ModuleType) -> None:
+        """The false positive that cost a whole campaign.
+
+        `is_broken` matched the bare word `SyntaxError` anywhere in the output, and some tests
+        legitimately print it — a parser suite asserting on an error message, for one. Two real
+        `KILLED` results were discarded as BROKEN because of it, which is worse than a miss: it
+        turns a measurement into a non-result and looks like a bad anchor.
+        """
+        out = "tests/unit/parsers/test_x.py::test_reports_syntaxerror PASSED\n6853 passed\n"
+        assert mut.is_broken(out) is False
+        assert mut.killers(out) == []
+
+    def test_a_captured_log_line_at_error_level_is_not_broken(self, mut: ModuleType) -> None:
+        """Third iteration on this detector, and the one that mattered.
+
+        Pytest captures application logs, so a full-suite run is full of lines like
+        `ERROR    specweaver.core.flow.engine.runner:runner.py:123 message`. Matching an `ERROR <path>.py` pattern
+        caught those and reported every mutant BROKEN — a real KILLED discarded as a bad anchor.
+        Only the SUMMARY line can say whether pytest itself errored.
+        """
+        out = (
+            "ERROR    specweaver.core.flow.engine.runner:runner.py:123 handover failed\n"
+            "FAILED tests/unit/a.py::test_one\n"
+            "===== 1 failed, 6852 passed, 11 skipped in 58.6s =====\n"
+        )
+        assert mut.is_broken(out) is False
+        assert mut.killers(out) == ["tests/unit/a.py::test_one"]
+
     def test_a_collection_error_is_not_a_kill(self, mut: ModuleType) -> None:
         """A syntactically broken mutant makes every test error — that is a bad mutant, not proof.
 
@@ -113,6 +141,24 @@ class TestVerdict:
 
     def test_any_killer_means_killed(self, mut: ModuleType) -> None:
         assert mut.verdict(["tests/unit/a.py::test_one"]) == "KILLED"
+
+
+class TestProbePath:
+    """`_probe_path` — find the import path in probe output that may carry other noise."""
+
+    def test_it_finds_the_path_among_warnings(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The bug that cost a campaign: the path is not always the LAST line.
+
+        `prove_isolation` took `lines[-1]`, and a `RuntimeWarning` printed after the path made that
+        the warning. The isolation check then raised and every mutant was recorded BROKEN — failing
+        closed, which is the right direction, but reporting a bad anchor rather than a runner bug.
+        """
+        out = f"{tmp_path}\nRuntimeWarning: Enable tracemalloc to get the object allocation traceback\n"
+        assert mut._probe_path(out, tmp_path) == str(tmp_path)
+
+    def test_no_path_at_all_raises(self, mut: ModuleType, tmp_path: Path) -> None:
+        with pytest.raises(RuntimeError, match="probe"):
+            mut._probe_path("RuntimeWarning: something\n", tmp_path)
 
 
 class TestVerifyIsolated:

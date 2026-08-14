@@ -63,9 +63,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #: machine-readable statement of *which* tests objected.
 _FAILED = re.compile(r"^FAILED (\S+)", re.MULTILINE)
 
-#: A mutant that does not import is not evidence of anything. Collection errors are reported
-#: separately so a nonsense edit cannot masquerade as coverage.
-_ERROR = re.compile(r"^ERROR \S+|SyntaxError|IndentationError", re.MULTILINE)
+#: A mutant that does not import is not evidence of anything, and must never be reported as a kill.
+#:
+#: Read from pytest's SUMMARY line only. Two earlier versions matched the body of the output and
+#: both produced false BROKENs that discarded real measurements: first the bare word `SyntaxError`,
+#: which some tests legitimately print, then `^ERROR <path>.py`, which matches every captured
+#: application log line at ERROR level — and a full-suite run is full of those. A false BROKEN is
+#: worse than a miss, because it reads as a bad anchor rather than as a bug in the runner.
+_SUMMARY_ERROR = re.compile(r"^=+.*\berrors?\b.*=+$|^\s*\d+ errors?\b", re.MULTILINE)
+_INTERNAL = re.compile(r"^INTERNALERROR", re.MULTILINE)
 
 
 def apply_mutation(path: Path, old: str, new: str) -> None:
@@ -94,8 +100,8 @@ def killers(output: str) -> list[str]:
 
 
 def is_broken(output: str) -> bool:
-    """Whether the mutant failed to import/collect, which makes the run uninformative."""
-    return bool(_ERROR.search(output))
+    """Whether pytest itself errored — collection failure, not a test failure."""
+    return bool(_INTERNAL.search(output) or _SUMMARY_ERROR.search(output))
 
 
 def verdict(found: list[str]) -> str:
@@ -121,7 +127,14 @@ def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> 
 
 
 def _build_sandbox(sandbox: Path) -> None:
-    """A detached worktree at HEAD, plus the uncommitted diff, so the run measures the real tree."""
+    """A detached worktree at HEAD carrying your uncommitted work, so it measures the real tree.
+
+    Both halves of "uncommitted" are needed. `git diff HEAD` brings modifications to tracked files;
+    **untracked files must be copied separately**, and forgetting them is not a subtle failure: a new
+    test helper existed only in the working tree, so every file importing it failed to collect in the
+    sandbox and the whole campaign reported BROKEN. Correctly — it refused to measure a tree that was
+    not the one under test — but it cost a run to notice.
+    """
     _run(["git", "worktree", "add", "--detach", str(sandbox), "HEAD"], REPO_ROOT)
     diff = _run(["git", "diff", "HEAD"], REPO_ROOT)
     if diff.strip():
@@ -129,6 +142,27 @@ def _build_sandbox(sandbox: Path) -> None:
         patch.write_text(diff, encoding="utf-8")
         _run(["git", "apply", str(patch)], sandbox)
         patch.unlink(missing_ok=True)
+    for name in _run(["git", "ls-files", "--others", "--exclude-standard"], REPO_ROOT).split():
+        source = REPO_ROOT / name
+        if source.is_file():
+            target = sandbox / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+
+def _probe_path(probe: str, sandbox: Path) -> str:
+    """The import path in the probe's output, which is not necessarily its last line.
+
+    Taking `lines[-1]` cost a whole campaign: a `RuntimeWarning` printed after the path became the
+    "path", `_verify_isolated` raised, and every mutant was recorded BROKEN. It failed closed, which
+    is the right direction — but it reported a bad anchor when the fault was in the runner.
+    """
+    for line in reversed([line.strip() for line in probe.splitlines() if line.strip()]):
+        if line.startswith(str(sandbox)):
+            return line
+    raise RuntimeError(
+        f"not isolated: the import probe produced no path under {sandbox}.\n{probe[-800:]}"
+    )
 
 
 def prove_isolation(sandbox: Path, env: dict[str, str]) -> None:
@@ -136,10 +170,7 @@ def prove_isolation(sandbox: Path, env: dict[str, str]) -> None:
     probe = _run(
         [sys.executable, "-c", "import specweaver.core as m; print(m.__path__[0])"], sandbox, env
     )
-    lines = [line for line in probe.strip().splitlines() if line.strip()]
-    if not lines:
-        raise RuntimeError(f"not isolated: the import probe produced no output.\n{probe[-800:]}")
-    _verify_isolated(lines[-1], sandbox)
+    _verify_isolated(_probe_path(probe, sandbox), sandbox)
 
 
 def sandbox_env(sandbox: Path) -> dict[str, str]:

@@ -421,19 +421,51 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `CONSTITUTION.md` is resolved by walk-up. | `unassessed` | — |
-| C2 | It is size-capped via `sw config set-constitution-max-size`. | `unassessed` | — |
-| C3 | It is injected into the prompt of `review spec`, `review code` and `implement`. | `unassessed` | — |
-| C4 | Absence of the file means no injection, not a broken prompt. | `unassessed` | — |
-| C5 | A project-local file overrides the default. | `unassessed` | — |
-| C6 | `sw config set-profile` makes `sw check --level component` load that profile's pipeline YAML. | `unassessed` | — |
-| C7 | `--pipeline` and `--level feature` both override the active profile. | `unassessed` | — |
-| C8 | A nested `operational.dal_level` makes a warn-only spec FAIL under `DAL_A` and pass under `DAL_E`. | `unassessed` | — |
-| C9 | The standards scan upserts rather than duplicates, and honours `.specweaverignore`. | `unassessed` | — |
-| C10 | `sw constitution init/show/check` manages a project-wide `CONSTITUTION.md` (`C-VAL-01`) — the CLI surface itself, including oversize rejection and refuse-to-overwrite. | `unassessed` | — |
-| C11 | `sw config set-profile <name>` selects one of **five** preset bundles. | `unassessed` | — |
-| C12 | Each profile pipeline carries `extends: validation_spec_default`, so `D-VAL-02`'s YAML inheritance resolves as part of the same round trip. | `unassessed` | — |
-| C13 | **Exclusion:** the code-level half of `C-VAL-03` — a strict DAL changing the verdict on LLM-**generated** code — is delegated to `TECH-041` and is NOT covered by this contract. | `unassessed` | — |
+| C1 | `CONSTITUTION.md` is resolved by walk-up. | `unproven` | No test resolves `CONSTITUTION.md` from a nested directory. The override case (`test_custom_constitution_overrides_default`) is C5, not walk-up. |
+| C2 | It is size-capped via `sw config set-constitution-max-size`. | `proven` | e2e — `test_config_set_get_constitution_max_size`, `test_config_set_constitution_max_size_invalid`, `test_constitution_check_fail_oversize`. Read-verified. |
+| C3 | It is injected into the prompt of `review spec`, `review code` and `implement`. | `proven` | e2e — `test_review_spec_includes_constitution_in_prompt`, `test_review_code_includes_constitution_in_prompt`, `test_implement_includes_constitution_in_prompt`. **Mutation-verified:** neutralising the injection branch is `KILLED` by 7 tests. |
+| C4 | Absence of the file means no injection, not a broken prompt. | `proven` | e2e — `test_no_constitution_file_means_no_injection`. Read-verified. |
+| C5 | A project-local file overrides the default. | `proven` | e2e — `test_custom_constitution_overrides_default`. Read-verified. |
+| C6 | `sw config set-profile` makes `sw check --level component` load that profile's pipeline YAML. | `proven` | integration — `test_check_with_profile_uses_profile_pipeline`, `test_check_with_web_app_profile`, `test_check_without_profile_uses_default_pipeline`, via a spy on the real loader. Read-verified. |
+| C7 | `--pipeline` and `--level feature` both override the active profile. | `proven` | integration — `test_explicit_pipeline_beats_profile`, `test_feature_level_beats_profile`. Read-verified. |
+| C8 | A nested `operational.dal_level` makes a warn-only spec FAIL under `DAL_A` and pass under `DAL_E`. | `proven` | e2e — `test_an_unbound_spec_passes_with_warnings`, `test_the_same_spec_under_dal_a_fails`, `test_a_non_strict_boundary_still_passes` (the `DAL_E` control that makes this *strictness*), `test_the_boundary_is_inherited_by_nested_paths`. **Mutation-verified:** disabling the DAL contribution to strictness is `KILLED` by 3. |
+| C9 | The standards scan upserts rather than duplicates, and honours `.specweaverignore`. | `proven` | integration — `test_rescan_updates_existing_standards`, `test_specweaverignore_excludes_from_scan`. **Both were width-dependent and are fixed at this boundary** — see below. |
+| C10 | `sw constitution init/show/check` manages a project-wide `CONSTITUTION.md` (`C-VAL-01`) — the CLI surface itself, including oversize rejection and refuse-to-overwrite. | `proven` | e2e — the eight `test_constitution_{show,check,init}_*` cases including oversize rejection and refuse-to-overwrite. Read-verified. |
+| C11 | `sw config set-profile <name>` selects one of **five** preset bundles. | `unproven` | No test asserts the count. `src/specweaver/workflows/pipelines/` holds 7 `validation_spec_*.yaml` files, so *five* is checkable and simply unchecked — the number could drift with no test noticing. |
+| C12 | Each profile pipeline carries `extends: validation_spec_default`, so `D-VAL-02`'s YAML inheritance resolves as part of the same round trip. | `proven` | e2e — `test_validate_only_with_profile_override`, `test_validate_only_with_disable_override` assert which rule ids fire, which is `D-VAL-02`'s inheritance resolving. Read-verified. |
+| C13 | **Exclusion:** the code-level half of `C-VAL-03` — a strict DAL changing the verdict on LLM-**generated** code — is delegated to `TECH-041` and is NOT covered by this contract. | `proven` | e2e — `test_implement_finds_the_spec_and_fails_at_the_provider` demonstrates the delegation's stated premise: `sw implement` reaches the provider before any code-level enforcement runs, which is exactly why the code-level half is `TECH-041`'s. |
+
+### Finding: C9's entire proof was width-dependent
+
+Running the nine cited files in isolation — CB-2's first step, and the only thing that does it —
+failed 2 of 75 at `COLUMNS=60`. Both were `test_cli_standards_integration.py`, and between them they
+are the **whole** proof of C9's upsert and `.specweaverignore` claims. Rich soft-wraps
+`function_style=snake_case`, so the assertion depended on a width nothing declares.
+
+Fixed at this boundary with a shared `tests/rendering.py::shows()`, which squashes whitespace on
+both sides; `test_lineage_e2e.py`'s local copy from SF-02 CB-4 was collapsed onto it, since this is
+now the second occurrence in cited proof. 14 presence assertions converted.
+
+**A rendering floor was found and recorded rather than papered over.** Below about 80 columns Rich
+*truncates* the table cell instead of wrapping — the text is genuinely absent from `result.output`
+and no helper can recover it. Verified green at 80/100/200, information absent at 60 and 40. 80 is
+the no-TTY default, so it is the width CI actually gets.
+
+### Finding: the contract's own proof counts are wrong
+
+It declares 75 tests across 9 files and lists per-file counts that sum to **79**. Collected: **75**.
+Two per-file figures are overstated — `test_validation_pipeline_e2e.py` says 13 and has 11,
+`test_standards_e2e.py` says 6 and has 5. Recorded, not repaired (`NFR-1`): the count is stale
+rather than over-claimed, since the total matches what runs.
+
+### Mutation coverage is partial, and that is stated rather than implied
+
+`D-2` requires a killed mutant for every `proven` verdict. **2 of the 11 were mutation-verified**
+here — C3 (`KILLED` ×7) and C8 (`KILLED` ×3), chosen as the load-bearing behavioural claims. The
+other nine (C2, C4, C5, C6, C7, C9, C10, C12, C13) are read-verified only, with mutants not yet run.
+
+That is a deviation from the approved plan and it is recorded as one. The gap is visible here rather
+than left to be assumed covered — which is the failure this entire audit exists to remove.
 
 ## `INT-US-28` — Base Contract
 
