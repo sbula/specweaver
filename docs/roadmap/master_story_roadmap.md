@@ -20,8 +20,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **6 of 48 TECH tickets are open**, and only one still asserts a claim against a candidate
-> below — see **Debt Sequencing**.
+> done: **5 of 45 TECH tickets are open**, and **none** asserts a claim against a candidate below —
+> see **Debt Sequencing**. (`TECH-017` was the last one that did; delivered 2026-08-14, it left the
+> section.)
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
 
@@ -68,7 +69,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **6 of 48 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **5 of 45 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -76,9 +77,11 @@ it was closed is what let this section drift for a month.*
 
 **Asserts a claim on a queue candidate** — so picking a candidate without reading this is blind.
 
-| Ticket | Claim | Against |
-|---|---|---|
-| `TECH-017` 🟢 | **DELIVERED 2026-08-14.** The tier-ratio guardrail is no longer a pending claim — it ships and runs: `check_proof_tier.py` and `check_audit_matrix.py` in the `doc` gate, and the tier-by-claim rule in the implementation-plan skill. Planning a candidate now means satisfying it, not remembering it. | **Any** candidate's planning phase |
+**None.** `TECH-017` was the last, and it left this section on delivery (2026-08-14). Its claim did
+not disappear with it — the tier-ratio guardrail now *runs* (`check_proof_tier.py` and
+`check_audit_matrix.py` in the `doc` gate, plus the tier-by-claim rule in the implementation-plan
+skill), so planning a candidate means satisfying it rather than remembering it. That is a gate, not
+a queue entry.
 
 **No claim on a candidate**
 
@@ -92,8 +95,8 @@ it was closed is what let this section drift for a month.*
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
-by 2026-08-13, and `TECH-017` followed on 2026-08-14. Nothing open contends for a shared file, so
-every remaining ticket is independent and none needs code work sequenced ahead of it.
+by 2026-08-13. Nothing open contends for a shared file, so every remaining ticket is independent
+and none needs code work sequenced ahead of it.
 
 > **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against
 > evidence that INT-US-21 SF-03 invalidated **two days later**, by shipping the 24-test CLI journey
