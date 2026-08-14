@@ -208,7 +208,7 @@ are not comparable between entries.
 | C2 | `D-INTL-06` provides read-side retrieval, trust-tagged XML formatting with 8KB payload limits, and fail-safe handover (save on completion, bootstrap on hydration). | `proven` | **unit** — `test_hydrate_standard`, `test_format_prompt_block_standard`, `test_bootstrap_trust_tagging`, `test_handover_under_8kb`, `test_bootstrap_hydrates_existing_handover`. Integration only for the read side (`test_memory_hydration_integration_flow`). |
 | C3 | **Seam:** the `handover_context` JSON column on `Task` is the shared surface — `B-INTL-09` owns write-side validation (Pydantic schema, 8KB limit, truncation on ARCHIVED), `D-INTL-06` owns read-side. | `proven` | integration — `test_memory_hydration_integration_flow`, *"end-to-end compatibility between the Write-Side (MemoryRepository) and the Read-Side (MemoryHydrator)"*, plus `test_build_base_prompt_with_corrupted_handover` for the invalid-payload path. **Partial:** the 8KB cap and ARCHIVED truncation are proven only in the provider's own unit tests (`B-INTL-09` NFR-6, FR-7), never across the seam. |
 | C4 | **Seam:** `_build_base_prompt()` calls `MemoryHydrator` to inject memory context into **every** LLM prompt. | `proven` | integration — `test_build_base_prompt_with_hydration` proves the injection. The **"every"** was unproven and is now `test_no_prompt_is_built_outside_build_base_prompt` (written at this boundary): `PromptBuilder` is constructed nowhere outside its own module and `_build_base_prompt`. |
-| C5 | **Seam:** `save_handover_context()` persists pipeline telemetry in the runner's `finally` block. | `proven` | integration — `test_runner_finally_persists_handover_end_to_end`, **written at this boundary**. Was `unproven`: see the finding below. |
+| C5 | **Seam:** `save_handover_context()` persists pipeline telemetry in the runner's `finally` block. | `proven` | integration — `test_runner_finally_persists_handover_end_to_end` **and** `test_runner_resume_finally_persists_handover_end_to_end`, both written at this boundary. The runner persists from **two** entry points (`run()` and `resume()`); each now has a mock-free span. Was `unproven`: see the finding below. |
 | C6 | **Boundary:** `core.flow` consumes `workspace.memory` via `core/flow/context.yaml`, clean under `tach check`. | `proven` | unit — `test_tach_architectural_boundaries` shells out to `tach check`. Correct instrument: this is an `[proof: arch]` claim, provable by the boundary tool and not by a pytest assertion about behaviour. |
 
 ### Finding: C5 was proven in two halves that met at a mock
@@ -230,6 +230,20 @@ an early `return` leaves all three pre-existing integration tests green.
 `test_runner_finally_persists_handover_end_to_end` was written here — real runner, real registered
 step, real SQLite, no mock between them — and fails on that same break with *"the runner's finally
 never reached the DB"*.
+
+**Both entry points, not one.** `runner.py` saves handover from `run()` (line 176) and from
+`resume()` (line 229). The first span test covered only `run()`, leaving `resume()` in exactly the
+shape this finding is about — `test_runner_resume_calls_save_handover` drives a real runner with
+`_save_handover` mocked, and the direct-call tests never touch a runner.
+`test_runner_resume_finally_persists_handover_end_to_end` closes it: it runs, **clears the handover
+column**, resumes, and asserts a row reappears — so a pass can only mean the *resumed* run wrote it.
+Probed by severing `resume()`'s `finally` alone, which fails that test and no other.
+
+**Duplication removed while here.** Both `finally` blocks repeated `_save_handover` +
+`_flush_telemetry`, so a change to one could silently miss the other. Extracted to `_finalize()`;
+severing handover inside it now fails **both** seam tests from a single point. Outside this ticket's
+audit-only scope, done because the path was already open and the change is six lines covered by
+existing tests — recorded here rather than filed.
 
 ### Finding: the C4 guard was itself vacuous on the first attempt
 

@@ -173,8 +173,7 @@ class PipelineRunner:
             async with cqrs_context():
                 return await execute_run(self, run, logger)
         finally:
-            await self._save_handover(run)
-            self._flush_telemetry()
+            await self._finalize(run)
 
     async def resume(self, run_id: str) -> PipelineRun:
         """Resume a previously interrupted run.
@@ -227,8 +226,7 @@ class PipelineRunner:
                 # reviewed HITL gate-park. One-shot — consumed on the first loop iteration.
                 return await execute_run(self, run, logger, approve_parked=True)
         finally:
-            await self._save_handover(run)
-            self._flush_telemetry()
+            await self._finalize(run)
 
     # ------------------------------------------------------------------
     # Core execution loop
@@ -303,6 +301,17 @@ class PipelineRunner:
         from specweaver.core.flow.engine.telemetry import flush_telemetry
 
         flush_telemetry(self._context, logger)
+
+    async def _finalize(self, run: PipelineRun) -> None:
+        """End-of-run bookkeeping, run from the `finally` of BOTH `run()` and `resume()`.
+
+        Extracted 2026-08-14 while `TECH-017` CB-2 was proving the handover seam: the two entry
+        points repeated this pair, so a change to one could silently miss the other. Handover is
+        saved before telemetry is flushed, because `save_handover_context` reads the run's step
+        records and `_flush_telemetry` is the step that may drain them.
+        """
+        await self._save_handover(run)
+        self._flush_telemetry()
 
     async def _save_handover(self, run: PipelineRun) -> None:
         try:
