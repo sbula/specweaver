@@ -23,22 +23,39 @@ are not comparable between entries.
 |---|---|---|---|---|
 | `INT-US-01` | 1 | 5 | e2e | 3 |
 | `INT-US-02` | 1 | 7 | e2e | 2 |
-| `INT-US-03` | 2 | 7 | e2e, integration | 5 |
+| `INT-US-03` | 2 | 7 | e2e, integration | 8 |
 | `INT-US-04` | 1 | 4 | e2e | 2 |
 | `INT-US-05` | 1 | 6 | e2e | 2 |
 | `INT-US-05-SF03` | 0 | 0 | — | 1 |
 | `INT-US-05-SF04` | 0 | 0 | — | 1 |
-| `INT-US-09` | 1 | 5 | e2e | 3 |
+| `INT-US-09` | 1 | 5 | e2e | 11 |
 | `INT-US-21` | 3 | 61 | e2e, integration | 8 |
 | `INT-US-21-SUB` | 0 | 0 | — | 1 |
 | `INT-US-24` | 2 | 13 | e2e, integration | 3 |
 | `INT-US-25` | 9 | 75 | e2e, integration | 9 |
 | `INT-US-28` | 9 | 88 | integration, unit | 6 |
 
-**13 entries, 46 claims, 271 tests across 30 cited files.** The claim count rose by 4 during CB-3:
-`INT-US-21` carried four assertions CB-1 never extracted (C5–C8). Counts for the 11 unassessed
-entries are CB-1's and should be treated as **lower bounds** until each is re-read against its full
-contract text.
+**13 entries, 57 claims, 271 tests across 30 cited files.** The count has risen twice as contracts
+were re-read in full: +4 in SF-01 CB-3 (`INT-US-21`), +11 in SF-02 CB-1 (below). Counts for the 6
+still-unassessed entries are CB-1's and remain **lower bounds** until SF-03 re-reads them.
+
+### SF-02 CB-1 — re-extraction of the five thin entries, 2026-08-14
+
+| Entry | Was | Now | Where the missing claims were |
+|---|---|---|---|
+| `INT-US-09` | 3 | **11** | CB-1 read only the **Status** paragraph. The entire Integration Description — the `SubprocessExecutor` boundary rebound to the worktree, bash *and* QA bounded, Main-Branch-Wins strip-merge, out-of-bounds hunks stripped, opt-in policy at the composition root, default-off byte-identical — was unextracted |
+| `INT-US-03` | 5 | **8** | the `D-INTL-01` → `D-VAL-01`/`D-VAL-05` pipe; the **exclusion** of container/Podman; DAL-driven auto-escalation from the Status paragraph |
+| `INT-US-01` | 3 | 3 | complete — the contract is one sentence |
+| `INT-US-04` | 2 | 2 | complete — one sentence |
+| `INT-US-05` | 2 | 2 | complete — one sentence |
+
+**Under-extraction is not uniform, and that matters for SF-03.** Three of these five were already
+complete; the two that were not account for the entire +11. The pattern is length: a one-sentence
+Integration Description was extracted correctly, a multi-sentence one was not, and `INT-US-09` — the
+longest contract in the tree — was read from the wrong paragraph entirely.
+
+**Exclusions are claims.** `INT-US-03` C7 records that container execution is out of scope. A
+contract asserting *"X must not happen"* is falsifiable, so it earns a verdict like any other.
 
 
 ## `INT-US-01` — Base Contract
@@ -78,6 +95,9 @@ contract text.
 | C3 | It runs code rules C01-C08. | `unassessed` | — |
 | C4 | It auto-fixes lint, all in one autonomous loop. | `unassessed` | — |
 | C5 | QA/test execution runs **exclusively** inside the US-9 zero-trust worktree sandbox, container-free. | `unassessed` | — |
+| C6 | The Implementation Generator (`D-INTL-01`) pipes natively into the QA Runner (`D-VAL-01`) **and** the Code Validation Rules (`D-VAL-05`). | `unassessed` | — |
+| C7 | **Exclusion:** container/Podman execution (`D-EXEC-01` / `B-EXEC-01`) is OUT of scope for this base contract — no container code path is reachable from the implement loop. | `unassessed` | — |
+| C8 | Untrusted high-assurance (DAL_A/B) code is executed worktree-bounded via **DAL-driven auto-escalation**; small/non-git projects stay on host. | `unassessed` | — |
 
 ## `INT-US-04` — Base Contract
 
@@ -128,6 +148,14 @@ contract text.
 | C1 | Per-step worktree isolation works for the single-step case. | `unassessed` | — |
 | C2 | Session mode runs a whole untrusted span in one worktree with a single authorized reconcile. | `unassessed` | — |
 | C3 | The legacy per-step model remains single-step-only — a documented limitation, not a defect. | `unassessed` | — |
+| C4 | `D-EXEC-02`, `E-EXEC-01` and `C-EXEC-02` are wired into **one** enforceable, container-free host-execution flow. | `unassessed` | — |
+| C5 | Untrusted execution runs inside an **ephemeral** git-worktree sandbox. | `unassessed` | — |
+| C6 | The `SubprocessExecutor` security boundary — credential stripping, resource limits, `cwd` containment — is **rebound to the worktree path**. | `unassessed` | — |
+| C7 | Bash actions **and** QA execution both operate worktree-bounded rather than against the real source root. | `unassessed` | — |
+| C8 | Source changes are reconciled back via the existing "Main-Branch Wins" strip-merge. | `unassessed` | — |
+| C9 | Out-of-bounds hunks are stripped per `context.yaml`. | `unassessed` | — |
+| C10 | Isolation is enabled by an **opt-in** US-9 policy (`SandboxSettings`), resolved at the composition root. | `unassessed` | — |
+| C11 | Default-off preserves today's behaviour **exactly**. | `unassessed` | — |
 
 ## `INT-US-21` — Base Contract
 
