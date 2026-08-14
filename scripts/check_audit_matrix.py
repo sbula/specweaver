@@ -5,10 +5,11 @@
 """The integration-contract proof matrix must stay a measurement, not decay into a snapshot.
 
 `TECH-017` produced 64 claims with verdicts and evidence, and then had no way to prove it had. Its
-six FRs name **"Auditor"** as the Actor — they describe a process and emit a document, so
+FRs name **"Auditor"** as the Actor — they describe a process and emit a document, so
 `check_fr_coverage.py TECH-017` reported all six as `NO TEST` and blocked the ticket. That was the
 right answer to the wrong question: the audit's outputs are checkable, just not as behaviour of
-`src/`. This is where `FR-1`..`FR-4` and `FR-6` are owned.
+`src/`. This is where `FR-1`..`FR-4` and `FR-6` are owned — every FR the ticket still declares.
+`FR-5` was descoped to `AD-2` on 2026-08-14; see below.
 
 Six rules, each a defect someone shipped:
 
@@ -26,10 +27,12 @@ Six rules, each a defect someone shipped:
 6. **The capability-findings table exists and every row names the entry that surfaced it** (`FR-6`)
    — the diagnostic half of the audit, which is the half that goes missing.
 
-`FR-5` (*escalate only decisions*) is deliberately **not** owned here. It constrains what the
-auditor may file, and the artifact that would prove it is the absence of tickets — a historical
-fact, not a document property. Claiming it from this file would be the loose credit the audit spent
-three sub-features removing.
+`FR-5` (*escalate only decisions*) is not owned here, and no longer exists: it constrained what the
+auditor may **file**, and the artifact that would prove it is the absence of tickets — a historical
+fact, not a document property. Claiming it from this file would have been the loose credit the audit
+spent three sub-features removing, so it was **descoped to `AD-2`** instead, which carries the same
+rule as a decision. The audit filed zero tickets across four sub-features, which is what it asked
+for.
 
 Rule 2 accepts a tier word **or** a test name rather than demanding a name. Five proven rows
 legitimately read *"same test"* or *"the cited file"*, pointing at the row above; requiring a

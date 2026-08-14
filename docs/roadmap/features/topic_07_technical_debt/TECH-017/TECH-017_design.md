@@ -93,8 +93,32 @@ it is why the deliverable is a human-read matrix rather than another checker.
 | FR-2 | Per-claim verdict | Auditor | Read the cited tests and mark each claim proven / unproven / unprovable, naming the test function that proves it | No verdict without a named test function or an explicit statement that none exists. |
 | FR-3 | Tier verdict | Auditor | Record, per entry, the tier of each proving test | An entry whose claims are carried by unit tests is reported even when `check_proof_tier` passes it. |
 | FR-4 | Fix in place | Auditor | For an unproven claim: cite an existing test after reading it, or write the missing test | The matrix's unproven count falls by work, not by re-wording claims. |
-| FR-5 | Escalate only decisions | Auditor | File a ticket only where a scope or descope decision is required | Every filed item names the decision and who takes it. |
 | FR-6 | Capability findings | Auditor | Where an entry's gap traces to an incomplete capability, record it against that capability | The diagnostic half is captured, not just the contract half. |
+
+> [!IMPORTANT]
+> **`FR-5` (Escalate only decisions) was DESCOPED on 2026-08-14, not dropped.** The row is deleted
+> rather than struck through because the closure contract requires a descope to be *visible in the
+> artifact rather than inferred from its absence* — this note is that visibility. Numbering is
+> unchanged: `FR-6` keeps its id, because renumbering would silently invalidate every `Proves:`
+> citation that names it.
+>
+> **Where the requirement now lives: `AD-2`** — *"Findings are verified and fixed in place, not
+> filed"* — which carries the same rule with the same reasoning (13 entries × several claims would
+> have produced dozens of unverified tickets). Nothing is lost by the deletion; the constraint was
+> recorded twice, as a requirement and as a decision.
+>
+> **Why it could not stay.** `FR-5` constrains what the auditor may *file*. The artifact that would
+> prove it is the **absence of tickets** — a historical fact about a period of work, not a property
+> of any document or any behaviour of `src/`. `check_audit_matrix.py` owns `FR-1`–`FR-4` and `FR-6`
+> precisely because those ARE document properties; `FR-5` has no such surface. Citing it from that
+> file to clear `check_fr_coverage` would have been the loose credit this audit spent three
+> sub-features removing, so it was descoped instead of falsely credited.
+>
+> **The four implementation plans still say `(FR-5, NFR-3)` in their *What is NOT filed* sections,
+> and are deliberately left alone.** They are the record of what was planned and done at the time,
+> and that record is accurate for the period. Rewriting delivered plans to match a later descope
+> would falsify history to tidy a cross-reference. The audit's outcome — **zero tickets filed
+> across four sub-features** — is what `FR-5` asked for, and it was met.
 
 ## Non-Functional Requirements
 

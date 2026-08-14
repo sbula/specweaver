@@ -4,7 +4,7 @@
 """The audit matrix must stay a measurement, not decay into a snapshot.
 
 `TECH-017` produced 64 claims with verdicts and evidence, and then had no way to prove it had. Its
-six FRs name **"Auditor"** as the Actor — they describe a process and emit a document, so
+FRs name **"Auditor"** as the Actor — they describe a process and emit a document, so
 `check_fr_coverage.py TECH-017` reported all six as `NO TEST` and blocked the ticket. That is the
 right answer to the wrong question: the outputs *are* checkable, just not as behaviour of `src/`.
 
@@ -27,9 +27,10 @@ the prose would be brittle. Both spellings were measured against the real matrix
 
 Proves: TECH-017 FR-1, FR-2, FR-3, FR-4, FR-6.
 
-`FR-5` is **not** claimed. It constrains what the auditor may file, and the artifact that would
-prove it is the absence of tickets — a historical fact, not a property of any document. Citing it
-here to clear the coverage check would be exactly the loose credit `TECH-017` existed to remove.
+`FR-5` is **not** claimed, and no longer exists. It constrained what the auditor may file, and the
+artifact that would prove it is the absence of tickets — a historical fact, not a property of any
+document. Citing it here to clear the coverage check would have been exactly the loose credit
+`TECH-017` existed to remove, so it was **descoped to `AD-2`** on 2026-08-14 instead.
 """
 
 from __future__ import annotations
