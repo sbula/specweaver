@@ -54,7 +54,7 @@ a ticket (`FR-5`, `NFR-3`); the entry that found each is named so the evidence i
 | `D-EXEC-02` | The Main-Branch-Wins reconcile seam (strip-merge, out-of-bounds hunks) is proven **only at unit tier**, in the capability's own tests. No integration proof of the seam exists. | `INT-US-09` C8/C9 | open |
 | `D-INTL-01` | No test drove the Implementation Generator into the QA Runner; the autonomous loop was proven as a **declared pipeline shape** and had never been observed looping. Closing it exposed **two live defects** — `pytest -m unit` deselecting every generated test, and zero-collected reported as success. | `INT-US-03` C1/C6, `INT-US-24` C5 | **closed by SF-04** for `INT-US-03`; defects fixed in `f4435e75` / `faab6dcb`. `INT-US-24` C5 is narrowed, not closed — its own e2e still doubles the handler |
 | `D-VAL-05` | `validate_code` was declared in the implement pipeline and never exercised through it. | `INT-US-03` C3 | **closed by SF-04** — `test_the_generated_code_reaches_the_code_rules` observes a non-zero rule count over generated code |
-| `E-FLOW-01` | The config DB has **no table for validation output**, and `ValidationResult` does not appear in `src/`. The persistence surface `INT-US-04` claims does not exist. | `INT-US-04` C1, via mutation | open — a scope question, not a coverage gap |
+| `E-FLOW-01` | The config DB has **no table for validation output**, and `ValidationResult` does not appear in `src/`. The persistence surface `INT-US-04` claims does not exist. Deciding it exposed a second finding: `context.feedback` is memory-only, so **a resumed run silently loses its validation findings**. | `INT-US-04` C1, via mutation | **decided 2026-08-14** — persistence was intended. Scope lands in `INT-US-04` SF-01 (designed, never built); no ticket filed |
 | `C-SENS-02` | The `.specweaverignore` **engine** is proven; the **seam** feeding exclusions into the Extractor is exercised by nothing. | `INT-US-05-SF03` | open |
 | `B-INTL-02` | **No `MacroEvaluator` exists in `src/`.** Framework-marker extraction is proven at unit tier on the parsers; the seam into context extraction is unexercised. | `INT-US-05-SF04` | open |
 | `C-INTL-01` | Recursive decomposition was designed, never built, never descoped — one LLM call, no recursion, a flat `list[ComponentChange]`. | `INT-US-21-SUB` / `TECH-038` | open — `C-INTL-07` now owns the scope |
@@ -77,9 +77,16 @@ than its contract implied; **five were live defects and all five are fixed**. Tu
 ticket is the inflation `NFR-3` forbids and `AD-2` rejects — the audit's job was to make them visible
 and attributable, which is done.
 
-**No row has scheduled work any more.** SF-04 was the last, and it closed `D-INTL-01` and `D-VAL-05`.
-One row still needs a human: `E-FLOW-01`'s is a scope question — whether validation-output
-persistence was ever intended — and it is the audit's single open decision.
+**No row has scheduled work any more, and the audit has no open decisions.** SF-04 was the last
+sub-feature, and it closed `D-INTL-01` and `D-VAL-05`. `E-FLOW-01`'s scope question was **answered on
+2026-08-14**: validation-output persistence *was* intended. It needed no new ticket — `INT-US-04`
+SF-01 already carries it with an APPROVED design that was never built, so the answer restored an
+existing plan rather than growing the backlog (`NFR-3`).
+
+Answering it also turned up a defect nobody was looking for: `context.feedback` never reaches a
+store, and `rehydrate_from_records` restores `plan_context` but not feedback, so **a resumed run
+loses its validation findings** and regenerates against nothing. That is now FR-3's done-when. The
+audit's pattern held to the last row — the open question was worth more than a ticket recording it.
 
 ## Coverage at a glance
 

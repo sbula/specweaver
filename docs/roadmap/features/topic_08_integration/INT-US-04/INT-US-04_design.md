@@ -35,15 +35,60 @@ No external blueprint references. Driven by the existing Flow Architecture refer
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Validation Persistence | Engine | The system SHALL extract validation findings from `E-VAL-01` | Findings are securely available within `StepResult.outputs`. |
-| FR-2 | Stateful DB Write | FlowRepository | The system SHALL persist the validation context against the current `run_id` | Data is stored in SQLite Config DB (`E-FLOW-01`). |
-| FR-3 | Context Injection | PipelineRunner | The system SHALL fetch persisted validation context | The context is injected into subsequent generation steps. |
+| FR-1 | Validation Persistence | Engine | The system SHALL extract validation findings from `E-VAL-01`, **including each `Finding`'s line, severity and suggestion** | Findings are available within `StepResult.output` **without loss**. |
+| FR-2 | Stateful DB Write | `StateStore` | The system SHALL persist validation results against the current `run_id` in a **queryable table in the pipeline state DB** (`flow_validation_results`), one row per rule result | Data is stored in `pipeline_state.db`, queryable by `run_id`, `step`, `rule_id`, `status`. |
+| FR-3 | Context Injection | PipelineRunner | The system SHALL restore `context.feedback` from persisted validation results **on resume**, and inject it into subsequent generation steps | A resumed run regenerates against the same findings a same-session run would have seen. |
+
+> [!IMPORTANT]
+> **FR-2 and NFR-1 were amended 2026-08-14** — see *Scope decision* below. They previously named the
+> **Config DB** (`E-FLOW-01`) and an async `FlowRepository` session. Amending them is legitimate
+> because SF-01 was **never delivered**, so finished-stories-immutable does not attach.
+
+### Scope decision, 2026-08-14 — taken by the user, from `TECH-017`'s audit
+
+`TECH-017` recorded `INT-US-04` C1 as the audit's single open **decision**: the contract claims the
+Config DB persists Validation Engine outputs, and no such surface exists. The decision taken is that
+**persistence was intended**, and it lands as follows.
+
+**Why not the Config DB, as FR-2 originally said.** `store.py` states the state DB is deliberately
+*"isolated from the configuration database"*. Per-run validation results are runtime state, not
+configuration, so writing them to `specweaver.db` would contradict that separation and split one
+run's state across two files. NFR-1's *async session* clause followed from the Config DB choice
+(`FlowRepository` is async; `StateStore` is sync `sqlite3`) and is re-scoped with it.
+
+**What is already built, and must not be rebuilt:**
+
+| | State |
+|---|---|
+| FR-1 extraction into `StepResult.output` | **built, lossy** — `validation.py` keeps `rule_id`/`status`/`message` and drops `Finding` (line, severity, suggestion) entirely |
+| FR-2 persistence | step results already serialize into `flow_pipeline_runs.step_records` as an **opaque JSON blob** via `model_dump()`. Not queryable, and not what C1 claims |
+| FR-3 injection | **built in memory** — `gates.inject_feedback` → `context.feedback` → popped by `generation.py` / `draft.py`. It never reads a store |
+
+**The live defect that makes this load-bearing.** `context.feedback` is an in-memory field
+(`run_context.py:157`). `rehydrate_from_records` rebuilds `plan_context` on resume (`INT-US-21`
+FR-3) but **not** feedback — no store or hydration module references it. So a resumed run silently
+loses its validation findings, and the step that regenerates after a resume repeats the mistake
+validation had already caught. Closing that is FR-3's done-when.
+
+**Out of scope, stated so it is not rediscovered:**
+
+* **"Sanitized" (C2).** The word maps to `E-VAL-03` (AST Prompt Injection Sanitization), which is
+  `🔜` unbuilt. `INT-US-04` C2's sanitization half stays `unproven` no matter how SF-01 lands, and
+  SF-01 must not be widened to cover it.
+* **Cross-run history and any query/CLI surface over it.** Run-scoped only. A history feature needs
+  a consumer to justify it and would be its own sub-feature.
+
+> [!CAUTION]
+> **`INT-US-04` is marked `✅ Complete` in `US-04_integration.md` while SF-01 has never been built**
+> (Design ✅, Impl Plan ⬜, Dev ⬜, Committed ⬜). The status marker is false today. It is left
+> untouched here rather than flipped unilaterally, because other documents key off it — but it
+> should be corrected as part of, or before, SF-01's delivery.
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Performance | DB writes must use async session execution without locking the thread. |
+| NFR-1 | Performance | DB writes must not block the pipeline loop. **Amended 2026-08-14:** the original *async session* wording assumed the Config DB; `StateStore` is sync `sqlite3` in WAL mode, so the constraint is bounded write cost on the existing state connection, not an async session. |
 | NFR-2 | Architecture Compliance | Changes must occur in `core.flow` or `core.config` adhering to `consumes` boundaries. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | Compatibility | Must pass existing E2E testing: `test_mcp_flow_e2e.py` without regressions. |
 
@@ -71,7 +116,8 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 ## Sub-Feature Breakdown
 
 ### SF-01: Core Flow DB Integration
-- **Scope**: Implements the persistent handshake from validation output to configuration state.
+- **Scope**: Implements the persistent handshake from validation output to **pipeline run state**,
+  and closes the resume gap that loses it. Run-scoped; no cross-run history (see *Scope decision*).
 - **FRs**: [FR-1, FR-2, FR-3]
 - **Inputs**: Validation Engine `RuleResult` findings via `ValidateSpecHandler`.
 - **Outputs**: Stateful SQLite records accessible to `GenerateCodeHandler`.
