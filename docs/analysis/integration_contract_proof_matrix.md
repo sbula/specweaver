@@ -66,9 +66,9 @@ contract asserting *"X must not happen"* is falsifiable, so it earns a verdict l
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The CLI parses the target file using Loom (`E-SENS-01`). | `unassessed` | — |
-| C2 | The CLI passes the parsed result to the Validation Engine (`E-VAL-01`). | `unassessed` | — |
-| C3 | No unvalidated LLM generation can occur. | `unassessed` | — |
+| C1 | The CLI parses the target file using Loom (`E-SENS-01`). | `proven` | e2e — `test_validate_only_all_rules_fire` in `test_validation_pipeline_e2e.py` drives `sw check` over a real spec. **Cited after reading; NOT the contract's own cited file** (FR-4). *"using Loom"* is a component attribution, not observable from outside the CLI, so only the parse itself is witnessed. |
+| C2 | The CLI passes the parsed result to the Validation Engine (`E-VAL-01`). | `proven` | e2e — same test: every `S01`–`S11` rule id appears in the output, which can only happen if the parsed spec reached the Validation Engine. |
+| C3 | No unvalidated LLM generation can occur. | `unprovable` | A system-wide universal negative over **data-defined** pipelines. D-3 finds no structural invariant to guard: pipelines are YAML and a user may author one freely. `scenario_validation.yaml` ships `generate_scenarios` (`action: generate`) with **no VALIDATE step at all**, so a guard would have to encode a meaning of *"unvalidated"* the contract never fixes. Recorded, not re-worded (NFR-1). |
 
 ## `INT-US-02` — Base Contract
 
@@ -140,8 +140,8 @@ exercised through the loop. Recorded against those capabilities; `SF-03` consoli
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The SQLite Config DB (`E-FLOW-01`) statefully persists Validation Engine outputs. | `unassessed` | — |
-| C2 | The Pipeline Runner passes sanitized, verified context into subsequent prompt steps. | `unassessed` | — |
+| C1 | The SQLite Config DB (`E-FLOW-01`) statefully persists Validation Engine outputs. | `unproven` | The cited file never mentions validation, persistence or artifact events (measured: 0 occurrences of `validation`, `persist`, `ValidationResult`, `artifact_events`). Nothing found elsewhere that persists **Validation Engine** outputs to the config DB. |
+| C2 | The Pipeline Runner passes sanitized, verified context into subsequent prompt steps. | `unproven` | Split claim, and only half is witnessed. Context reaching subsequent prompt steps is proven by `test_mcp_flow_e2e_fetch` (the Pre-fetch Context Assembler). *Sanitized, verified* is not: 0 occurrences of `sanitiz` in the cited file, and the verification half depends on C1, which is unproven. |
 
 ## `INT-US-05` — Base Contract
 
@@ -151,8 +151,47 @@ exercised through the loop. Recorded against those capabilities; `SF-03` consoli
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The AST Skeleton Extractor resolves edges against the Git Worktree Bouncer. | `unassessed` | — |
-| C2 | Extracted context reflects the current filesystem state, with no hallucinatory paths. | `unassessed` | — |
+| C1 | The AST Skeleton Extractor resolves edges against the Git Worktree Bouncer. | `unproven` | The cited file is about `# sw-artifact` tag survivability. Measured: `skeleton`, `worktree`, `extractor` each appear **0 times**. The `D-SENS-02` ↔ `D-EXEC-02` seam this claim names is not exercised anywhere in it. |
+| C2 | Extracted context reflects the current filesystem state, with no hallucinatory paths. | `unproven` | Same file; the claim is about extracted context matching filesystem state, and nothing there resolves AST edges against a worktree. Not found proven elsewhere. |
+
+### Finding: the thin trio cite proof for a different subject
+
+The 2026-07-26 review flagged these entries as *"citing capability suites"*. Measured, it is worse
+than that — **the suites they cite are not their capability's**:
+
+| Entry | Claims | Its cited proof actually tests | Subject-word count in the cited file |
+|---|---|---|---|
+| `INT-US-01` | CLI parses via Loom → Validation Engine | the standards scan → show → clear lifecycle (`E-VAL-02`) | `Loom` 0 · `parse` 0 · `validate_spec` 0 |
+| `INT-US-04` | config DB persists Validation Engine outputs | the Pre-fetch Context Assembler (MCP flow) | `validation` 0 · `persist` 0 · `sanitiz` 0 |
+| `INT-US-05` | AST Extractor resolves edges vs the Worktree Bouncer | `# sw-artifact` tag survivability | `skeleton` 0 · `worktree` 0 · `extractor` 0 |
+
+Every one of those counts is a measurement, not an impression. `INT-US-01`'s two observable claims
+were recovered by citing `test_validation_pipeline_e2e.py` after reading it (FR-4) — it was never
+the contract's own citation. For `INT-US-04` and `INT-US-05` no such file was found: **four claims
+stand `unproven` with no candidate anywhere in the tree.**
+
+**The Verifiable Proof field is part of the delivered contract and is not re-worded (NFR-1).** The
+mis-citation is recorded here, which is the whole purpose of the matrix.
+
+### Fixed at this boundary: the `INT-US-05` width-flake
+
+`test_sw_check_lineage_flag_detects_orphans` asserted on Rich-rendered output, so soft wrapping made
+it width-dependent — `COLUMNS=80` failed while 60/100/200 passed, and 40 broke a second assertion.
+Now compared through a `_shows()` helper that squashes whitespace on **both** sides. Verified
+width-independent at COLUMNS 20/40/60/80/100/200.
+
+**R-2 checked before editing:** the rendered output contained the full path broken across a line
+(`orp\nhan.py`), not a truncated one, so this is a renderer artefact and not a product defect.
+`git diff` confirms `src/` is untouched.
+
+### A second decision escalated by this sub-feature
+
+`INT-US-04` C1/C2 and `INT-US-05` C1/C2 have **no proof and no candidate**. Unlike `INT-US-03`'s
+gap — where the loop exists and is merely unwitnessed — here it is not established that the claimed
+integrations were ever built. Writing tests would be the wrong first move: the prior question is
+whether `D-SENS-02` ↔ `D-EXEC-02` edge resolution, and Validation-Engine-output persistence, exist
+at all. That is a scope question, so it is named rather than answered (FR-5, NFR-3).
+
 
 ## `INT-US-05-SF03` — Intelligent Code Exclusions
 

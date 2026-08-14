@@ -27,6 +27,15 @@ from specweaver.interfaces.cli.main import app
 runner = CliRunner()
 
 
+def _shows(output: str, needle: str) -> bool:
+    """Whether `needle` appears in `output`, ignoring Rich's soft wrapping.
+
+    Both sides are whitespace-squashed, so a message broken across a line boundary still matches.
+    Only safe for presence checks; it destroys layout and ordering, so never assert those with it.
+    """
+    return "".join(needle.split()) in "".join(output.split())
+
+
 def _make_llm(responses: list[str]) -> object:
     mock_llm = AsyncMock()
     mock_llm.available.return_value = True
@@ -294,9 +303,14 @@ class TestLineageE2EFlow:
         assert result.exit_code == 1, (
             f"Expected validation failure due to orphaned files, got {result.exit_code}"
         )
-        assert "Lineage Tracking Error" in result.output
-        assert "orphan.py" in result.output
-        assert "Missing '# sw-artifact:' tags" in result.output
+        assert _shows(result.output, "Lineage Tracking Error")
+        # Rich SOFT-WRAPS the path at the terminal width, so at some widths `result.output`
+        # contains "orp\nhan.py". Asserting on the raw string made this test pass or fail
+        # depending on COLUMNS: 80 failed, 60/100/200 passed, and the full suite stayed green only
+        # because xdist sets a different width. Compare against a whitespace-squashed copy so the
+        # assertion tests the message, not the renderer's line breaks. `TECH-017` SF-02 CB-4.
+        assert _shows(result.output, "orphan.py")
+        assert _shows(result.output, "Missing '# sw-artifact:' tags")
 
 
 # ===========================================================================
