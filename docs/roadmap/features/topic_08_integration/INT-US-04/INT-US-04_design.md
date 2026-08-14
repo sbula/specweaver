@@ -205,6 +205,26 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 > user-visible journey is a journey proof. Nothing is lost — the owner changed.
 
 ### SF-08: Configurable Prompt Render Profiles Integration
+
+> [!NOTE]
+> **`Committed` corrected ⬜ → ✅ on 2026-08-14. It was stale bookkeeping, not missing work.**
+> Shipped in **`e2ac7e6e`** (2026-05-16, on `main`), *"integrate dynamic prompt render profiles into
+> handlers `[INT-US-04-SF08]`"*. All three FRs are in `src/`: `render_profile` is read from
+> `step.params` at eight handler call sites (FR-1), `PROFILE_REGISTRY` + `resolve_profile()` live in
+> `handlers/_profiles.py` (FR-2), and every call site passes a handler-specific `default=` so a
+> dynamic profile resolves *before* the fallback (FR-3). 50 tests pass across
+> `test_handlers_profiles.py` and `test_build_base_prompt_profiles.py`.
+>
+> **The implementation plan's own `Status:` still read `DRAFT` and is corrected with it** — the two
+> markers disagreed for three months in the *opposite* direction to `INT-US-04`'s base contract,
+> which read `✅ Complete` over unbuilt work. Both are the same defect: a status marker nothing
+> checks. Under-claiming is the safer failure and still hides delivered work from anyone reading
+> the tracker to decide what is left.
+>
+> **The `Depends on: SF-01` in the tracker is decorative, and this proves it.** Every add-on
+> SF-02..SF-09 lists SF-01, yet **SF-03, SF-04 and SF-08 all shipped while SF-01 was never built**.
+> Nothing is waiting on SF-01 — relevant now that it is scheduled, because the column implies a
+> queue that does not exist.
 - **Scope**: Integrating C-INTL-05 `RenderProfile` capabilities into the pipeline orchestration layer via Step Parameter Injection and a `ProfileRegistry`.
 - **FRs**: [FR-1: Expose `render_profile` in `PipelineStep.params`, FR-2: Provide a `ProfileRegistry` to resolve named profiles, FR-3: Update Handlers to resolve dynamic profiles before fallback.]
 - **Inputs**: `PipelineStep` params dictionary; `ProfileRegistry` mapping.
@@ -233,7 +253,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-05 | Advanced Routing & Conditional Flows | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Infinite Memory Management | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Remote UI Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-08 | Configurable Prompt Render Profiles Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-08 | Configurable Prompt Render Profiles Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-09 | Declarative Dynamic Prompt Routing Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff

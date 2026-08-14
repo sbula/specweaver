@@ -4,7 +4,7 @@
 - **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-08
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf08_implementation_plan.md
-- **Status**: DRAFT (Hardened — RT/BT Rounds 1–5, 39 findings resolved)
+- **Status**: DELIVERED 2026-05-16 in `e2ac7e6e` (was `DRAFT (Hardened — RT/BT Rounds 1–5, 39 findings resolved)`; corrected 2026-08-14 — the plan shipped and its `Status:` was never moved)
 - **Commit Boundary**: Single atomic commit (RT-10)
 - **Dependency Note**: SF-01 dependency is inherited from the design doc's blanket structure but is
   **functionally vacuous** — SF-08 requires zero DB interactions and can be implemented
