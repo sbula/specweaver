@@ -214,8 +214,35 @@ itself (`test_context_assembler.py`). So the *function* is protected — but `IN
 about the **runner passing context into subsequent prompt steps**, and no test died at that seam.
 The kill confirms the assembler works, not that the contract's journey does. Verdict unchanged.
 
-**All four verdicts stand.** The value of the run is that three now rest on a measurement, and the
-fourth on the absence of a database table rather than the absence of a grep hit.
+**All four verdicts stood at the time of the run.** Three rested on a measurement and the fourth on
+the absence of a database table rather than the absence of a grep hit.
+
+### Chasing the survivor found a live defect, 2026-08-14
+
+`INT-US-05` C1's survivor was **not** a coverage gap. `evaluate_and_fetch_skeleton_context` read
+`res.exports["skeleton"]` while `CodeStructureAtom._handle_structure` exports `"structure"`
+(`atom.py:127`). The condition never held, so the assembler **returned `{}` for every caller** —
+and it is called from `generation.py` and twice from `review.py`. **Skeleton context has never
+reached a generation or review prompt.**
+
+That is why the containment mutant survived: the result was discarded before the containment root
+could matter. The three existing tests in `test_context_assembler.py` all mock `CodeStructureAtom`
+and hand back `{"skeleton": ...}`, so the mock and the bug agreed with each other and disagreed with
+production.
+
+**Fixed in place** (`AD-2`), with the mocks corrected to the atom's real contract and a real-atom
+test added that asserts **both** halves — that a file inside the root IS returned, and one outside
+is not. The first version of that test asserted only the second half, which an empty result
+satisfies, so it passed while proving nothing; asserting the inside half is what stops it going
+vacuous if the feature dies again.
+
+`INT-US-05` C1 is now `proven`: re-running the original mutant reports `KILLED`. C2's verdict is
+unchanged — its only killer remains a mocked unit test.
+
+**This is the clearest result the audit has produced.** Reading the contract, grepping its cited
+proof, and counting subject words all said *unproven*. Only changing the code and watching nothing
+object led to the reason: a feature wired to a key that does not exist, green in CI for as long as
+the mocks have existed.
 
 ### A second decision escalated by this sub-feature
 

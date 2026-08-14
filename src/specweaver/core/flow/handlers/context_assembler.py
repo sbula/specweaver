@@ -65,8 +65,13 @@ def evaluate_and_fetch_skeleton_context(
         path_str = str(file_path)
         try:
             res = atom.run({"intent": "skeletonize", "path": path_str})
-            if res.status.value == "SUCCESS" and res.exports and "skeleton" in res.exports:
-                skeleton_files[path_str] = res.exports["skeleton"]
+            # `CodeStructureAtom._handle_structure` exports the payload under "structure"; this
+            # read "skeleton" until 2026-08-14, so the condition never held and the assembler
+            # returned {} for every caller — generation and review prompts have never carried
+            # skeleton context. Found by mutation testing (`TECH-017` SF-02): the containment
+            # mutant survived because the result was discarded before containment could matter.
+            if res.status.value == "SUCCESS" and res.exports and "structure" in res.exports:
+                skeleton_files[path_str] = res.exports["structure"]
             else:
                 logger.debug(
                     "ContextAssembler: Could not skeletonize %s, skipping... reason: %s",
