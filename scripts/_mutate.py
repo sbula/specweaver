@@ -131,6 +131,64 @@ def _build_sandbox(sandbox: Path) -> None:
         patch.unlink(missing_ok=True)
 
 
+def prove_isolation(sandbox: Path, env: dict[str, str]) -> None:
+    """Make the sandbox's interpreter say which tree it imported, and check it."""
+    probe = _run(
+        [sys.executable, "-c", "import specweaver.core as m; print(m.__path__[0])"], sandbox, env
+    )
+    lines = [line for line in probe.strip().splitlines() if line.strip()]
+    if not lines:
+        raise RuntimeError(f"not isolated: the import probe produced no output.\n{probe[-800:]}")
+    _verify_isolated(lines[-1], sandbox)
+
+
+def sandbox_env(sandbox: Path) -> dict[str, str]:
+    """`PYTHONPATH` must win over the editable-install `.pth` entry for the sandbox to be what runs."""
+    return {"PYTHONPATH": str(sandbox / "src"), "PYTHONDONTWRITEBYTECODE": "1"}
+
+
+def run_one(
+    sandbox: Path,
+    *,
+    file: str,
+    old: str,
+    new: str,
+    tests: str = "",
+    fast: bool = False,
+) -> dict[str, object]:
+    """Apply one mutant in an EXISTING sandbox and report what objected.
+
+    Leaves the mutated file in place — the caller resets it (`reset_file`) before the next mutant,
+    which is what lets a campaign reuse one sandbox instead of building N.
+    """
+    target = sandbox / file
+    if not target.is_file():
+        return {"verdict": "BROKEN", "killers": [], "detail": f"{file} not in the sandbox"}
+    apply_mutation(target, old, new)
+
+    env = sandbox_env(sandbox)
+    prove_isolation(sandbox, env)
+
+    cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider"]
+    if fast:
+        cmd.append("-x")
+    if tests:
+        cmd.append(tests)
+    else:
+        cmd += ["-n", "auto"]
+    out = _run(cmd, sandbox, env)
+
+    if is_broken(out):
+        return {"verdict": "BROKEN", "killers": [], "detail": out[-800:]}
+    found = killers(out)
+    return {"verdict": verdict(found), "killers": found, "detail": ""}
+
+
+def reset_file(sandbox: Path, file: str) -> None:
+    """Undo a mutant so the sandbox is reusable for the next one."""
+    _run(["git", "checkout", "--", file], sandbox)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--file", required=True, help="repo-relative source file to mutate")
@@ -148,28 +206,13 @@ def main(argv: list[str] | None = None) -> int:
         if not target.is_file():
             print(f"could not run: {args.file} not found in the sandbox", file=sys.stderr)
             return 2
-        apply_mutation(target, args.old, args.new)
-
-        env = {"PYTHONPATH": str(sandbox / "src"), "PYTHONDONTWRITEBYTECODE": "1"}
-        probe = _run(
-            [sys.executable, "-c", "import specweaver.core as m; print(m.__path__[0])"],
-            sandbox,
-            env,
-        )
-        _verify_isolated(probe.strip().splitlines()[-1], sandbox)
-
-        cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider"]
-        cmd += ["-n", "auto"] if not args.tests else []
-        if args.tests:
-            cmd.append(args.tests)
-        out = _run(cmd, sandbox, env)
-
-        if is_broken(out):
+        result = run_one(sandbox, file=args.file, old=args.old, new=args.new, tests=args.tests)
+        if result["verdict"] == "BROKEN":
             print("BROKEN MUTANT — it does not import, so the run proves nothing.\n")
-            print(out[-1500:])
+            print(result["detail"])
             return 2
 
-        found = killers(out)
+        found = list(result["killers"])
         print(f"{verdict(found)} — {len(found)} test(s) objected to the change\n")
         for test in found:
             print(f"  {test}")

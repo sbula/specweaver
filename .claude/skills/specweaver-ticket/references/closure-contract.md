@@ -232,3 +232,24 @@ Two limits, both real:
 Because the mutant runs in its own worktree, **your working tree is never touched and you can keep
 working while it runs** — a full-suite mutant costs about a minute.
 
+### Several claims at once
+
+`scripts/_mutate_campaign.py --campaign <json>` takes a list you author — `{file, old, new, claim}`
+— reuses **one** sandbox across the batch, and writes a report to `.tmp/`, which is gitignored.
+
+The report is ordered by what needs a decision rather than by input order: `SURVIVED` first, then
+`KILLED x1`, then `BROKEN` (a bad anchor, not a result), then the healthy kills as one-liners. Its
+header states the HEAD, whether the tree was dirty, the mode, and **what was not run** — a report
+that omits its own gaps reads as *all clear* when it is not.
+
+Full runs are the default. `--fast` classifies quicker but cannot count killers, and the count is
+the finding: it is what showed `sw check --lineage` had a single protector.
+
+> [!IMPORTANT]
+> **Nothing it produces is committed, and nothing writes to the proof matrix.** `AD-1` — the matrix
+> is a document, not a checker. A human copies the conclusion across, or the finding does not exist.
+> That is deliberate: mutation needs judgement an equivalent mutant would defeat.
+
+Authoring the campaign by hand is also deliberate. Generating mutants from an AST is `A-VAL-03`;
+doing it before the runner could be trusted would have been the wrong order.
+

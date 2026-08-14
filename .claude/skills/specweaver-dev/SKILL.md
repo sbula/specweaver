@@ -212,6 +212,42 @@ python .tmp/debug.py
 
 Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
 
+### 3.2b Mutate — prove the test can still fail
+
+Green means the test passes. It does **not** mean the test would notice the behaviour going away,
+and a test written after the code has never failed for the right reason.
+
+For each FR this boundary claims to prove, neutralise the line that carries it and check the suite
+objects:
+
+```
+python scripts/_mutate.py --file src/... --old '<exact anchor>' --new '<neutralised>'
+```
+
+It runs in a detached worktree, so your tree is untouched and you can keep working; a targeted run
+is seconds, the whole suite about a minute. Three answers matter:
+
+| Result | Meaning |
+|---|---|
+| `KILLED`, several | protected |
+| `KILLED`, **exactly one** | a single point of protection — worth a note in the walkthrough |
+| `SURVIVED` | the test does not test this. Fix it now, while you still have the context |
+
+> [!CAUTION]
+> **Run it on the claims you are about to call proven, not on the ones you already doubt.**
+> `TECH-017` ran six of these by hand and **four caught vacuous assertions** — a guard that passed
+> with a bypass planted, a credential check that passed un-isolated, a repo root that globbed a
+> directory which does not exist. Every one was written by someone who believed the claim.
+>
+> A *surviving* mutant is not automatically a gap: an **equivalent** mutant, one that does not change
+> observable behaviour, survives for a reason that is not missing coverage. Confirm the edit changes
+> something before acting on it.
+
+For several claims at once — an audit, or a boundary with many FRs — use
+`scripts/_mutate_campaign.py --campaign <json>`, which reuses one sandbox and writes a report to
+`.tmp/` (gitignored). Nothing it produces is committed: a report is an input to your decision, never
+a record of one.
+
 ### 3.3 Refactor (if needed)
 
 - Clean up duplication, naming, structure.
