@@ -155,10 +155,35 @@ or being happy-path only. Highest expected yield of unproven claims.
 ### SF-03: The remainder and the capability findings
 `INT-US-02`, `24`, `25`, the three zero-proof entries, and consolidation of FR-6 findings.
 
+### SF-04: The `sw implement` loop e2e
+**Scoped 2026-08-14 from SF-02 CB-3.** Four of `INT-US-03`'s eight claims — C1, C3, C4, C6 — are
+unproven for one shared reason: the contract's central promise, *"generates code + tests, runs the
+tests, runs C01–C08, and auto-fixes lint **in one autonomous loop**"*, is proven only as a **declared
+pipeline shape** at unit tier. `test_implement_loop_worktree_isolation_e2e.py` is a real e2e but
+substitutes a bash script for `D-INTL-01`, so generation never runs and only the isolation half is
+exercised. **The loop has never been observed to loop**, `validate_code` has never run, and the
+`D-INTL-01 → D-VAL-01`/`D-VAL-05` pipe has never carried anything.
+
+Closing it is `FR-4` work — *write the missing test* — but it is a sub-feature's worth, not a commit
+boundary's: a scripted-LLM e2e driving `sw implement` through generate → lint_fix → run_tests →
+validate_code **including a loop-back iteration**, over real `ruff` and real `pytest`. It also needs
+the `ScriptedLLM` / `scripted_world` harness extracted out of
+`test_feature_decomposition_e2e.py`, where it is currently file-local — which is why this is scoped
+rather than bolted onto SF-02.
+
+This does not widen `TECH-017`. `FR-4` already obliges the audit to write the missing test; `AD-2`
+already rejects filing findings instead of fixing them. SF-04 is where that obligation lands when
+the test is large enough to need its own boundaries.
+
 ## Execution Order
 
-SF-01 → SF-02 → SF-03. Strictly sequential: SF-01 establishes the claim-extraction format the
-others follow, and re-cutting that format mid-audit would invalidate earlier verdicts.
+SF-01 → SF-02 → SF-03 → SF-04. Strictly sequential for the first three: SF-01 establishes the
+claim-extraction format the others follow, and re-cutting that format mid-audit would invalidate
+earlier verdicts.
+
+**SF-04 is sequenced last but is not blocked by SF-03.** It is the only sub-feature that builds
+rather than assesses, and its scope was fixed by SF-02 CB-3; it may be taken before SF-03 if the
+`INT-US-03` gap is judged more urgent than the remaining six entries' verdicts.
 
 ## Progress Tracker
 
@@ -167,6 +192,7 @@ others follow, and re-cutting that format mid-audit would invalidate earlier ver
 | SF-01 | Skeleton + two largest | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The thin proofs | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Remainder + capability findings | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | The `sw implement` loop e2e | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
 

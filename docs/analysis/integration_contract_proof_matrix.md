@@ -120,8 +120,11 @@ mock, whereas here the central journey has no end-to-end proof at all.
 generate → lint_fix → run_tests → validate_code including a loop-back iteration, with real `ruff`
 and real `pytest`. The harness pattern exists (`ScriptedLLM` / `scripted_world` in
 `test_feature_decomposition_e2e.py`) but is file-local and would need extracting. That is a
-sub-feature's worth of work, not a boundary's, and it is the **one decision SF-02 escalates**
-(NFR-3): it needs scope, not a note.
+sub-feature's worth of work, not a boundary's, so it was escalated as SF-02's one decision (NFR-3)
+and **scoped as `TECH-017` SF-04 on 2026-08-14** — not filed as a ticket, and not left as a note.
+
+The four verdicts stay `unproven` until that sub-feature closes them — the honest state, because
+the claims are not disproven, they are unwitnessed.
 
 ### FR-6 — capability findings
 
