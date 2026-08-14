@@ -61,6 +61,16 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > Unit-test-heaviness where a seam was expected is a **diagnostic**: the capability you are building
 > on shipped incomplete, and that is a finding against *it* (`TECH-017` FR-6), not a reason to
 > write its tests here under your own story's name.
+>
+> **A boundary whose Done-when says "write the missing test" is done when that test KILLS A MUTANT,
+> not when it passes.** Neutralise the line the test claims to cover and check it goes red:
+> `python scripts/_mutate.py --file … --old … --new …`. State the expected mutant in the plan, so
+> the boundary has a falsifiable exit condition rather than a green tick.
+>
+> This is not ceremony. `TECH-017` wrote a containment test that passed immediately and proved
+> nothing — the function it covered returned `{}` for every caller, so the assertion could not fail.
+> The mutant was what said so, and chasing it found a key mismatch that had kept skeleton context
+> out of every generation and review prompt since the feature shipped.
 
 **Output header block** — write this at the top of every impl plan produced:
 ```markdown
