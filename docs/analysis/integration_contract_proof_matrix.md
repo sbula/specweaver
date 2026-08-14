@@ -95,8 +95,20 @@ contract asserting *"X must not happen"* is falsifiable, so it earns a verdict l
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The interactive loop (`E-INTL-02`) hands the generated context to the Review Engine. | `unassessed` | — |
-| C2 | No manual copy-pasting is required between the two. | `unassessed` | — |
+| C1 | The interactive loop (`E-INTL-02`) hands the generated context to the Review Engine. | `proven` | e2e — `test_e1_draft_validate_review_one_command` drives the real CLI; the Reviewer is genuine and only the LLM text is scripted. **Mutation-verified:** switching the pipeline's `action: review` to `validate` is `KILLED` by 12, two of them in this contract's own cited file. |
+| C2 | No manual copy-pasting is required between the two. | `proven` | e2e — the same test is the claim: one command, draft → validate → review, with no human step between. `test_e6_park_manual_spec_resume_flows_through_chain` and `test_e7_rejection_park_edit_resume_accepted` cover the cross-session variants. |
+
+### The first mutant was mis-chosen, and it looked like a pass
+
+Renaming the pipeline step (`review_spec` → `review_spec_DISABLED`) reported `KILLED` by 2 — and
+both killers were **YAML-shape unit tests**, with the cited e2e silent. The step name is a label;
+the handler resolves on `action: review`, so nothing about the review actually stopped. It was
+close to an *equivalent* mutant for this claim, and counting it would have recorded a verification
+that never happened.
+
+Re-run against `action: review` → `validate`, the behaviour genuinely changes: `KILLED` by 12,
+including two tests in the contract's own cited file. **Judge the anchor, not the verdict** — a
+kill by the wrong tests is the mutation-era version of a citation that names the wrong file.
 
 ## `INT-US-03` — Base Contract
 
@@ -276,7 +288,7 @@ at all. That is a scope question, so it is named rather than answered (FR-5, NFR
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The `.specweaverignore` engine feeds deterministic exclusions into the Extractor. | `unassessed` | — |
+| C1 | The `.specweaverignore` engine feeds deterministic exclusions into the Extractor. | `unproven` | The **engine** is proven — `tests/unit/workspace/ast/parsers/test_exclusions.py` covers parsing, compiling and scaffolding `.specweaverignore` (cited after reading, FR-4). The **seam** is not: no test in the tree names both the ignore engine and extraction/skeletonization, so *"feeds deterministic exclusions into the Extractor"* is unexercised. Owner: `C-SENS-02`. |
 
 ## `INT-US-05-SF04` — Framework Native Understanding
 
@@ -284,7 +296,7 @@ at all. That is a scope question, so it is named rather than answered (FR-5, NFR
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The Macro Evaluator detects framework context boundaries natively. | `unassessed` | — |
+| C1 | The Macro Evaluator detects framework context boundaries natively. | `unproven` | **There is no `MacroEvaluator` in `src/`.** The mechanism the claim describes is `extract_framework_markers` on the per-language parsers, proven at unit tier in their codestructure suites (cited after reading). So the named component does not exist and the seam — framework boundaries reaching context extraction — is unexercised. Owner: `B-INTL-02`. |
 
 ## `INT-US-09` — Base Contract
 
@@ -387,7 +399,7 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `C-INTL-01` implements iterative decomposition, resolving the AST graph into sub-tasks. **(Out of SF-01 scope — `TECH-018`/`TECH-038` already established this claim is false; recorded for completeness.)** | `unassessed` | — |
+| C1 | `C-INTL-01` implements iterative decomposition, resolving the AST graph into sub-tasks. **(Out of SF-01 scope — `TECH-018`/`TECH-038` already established this claim is false; recorded for completeness.)** | `unprovable` | `TECH-038` measured this against `src/` on 2026-08-13: the shipped decomposer makes **one** LLM call, has no recursion, and returns a flat `list[ComponentChange]` with no nesting to recurse into. The claim describes behaviour that was never built and never descoped, so no test can prove it and none can be written without building it first. Not re-litigated here (design Non-Goals); `TECH-038`'s finding **is** this audit's result for this add-on. |
 
 ## `INT-US-24` — Base Contract
 
