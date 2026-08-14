@@ -98,6 +98,13 @@ the benchmark — so a surprise here is worth more attention than a gap in `INT-
 
 Done when: as CB-2.
 
+**Delivered 2026-08-14.** All 4 extracted claims `proven`; 61 cited tests pass, none skips. The
+predicted surprise landed in **CB-1's extraction**, not in the tests: the Integration Description's
+*"built-but-not-integrated"* sentence carries four more assertions (*"All four are closed"*) that
+were never extracted. Added as C5–C8, all proven. Consequence recorded in the matrix — the other 11
+entries were extracted the same way and their claim counts are lower bounds, so SF-02/SF-03 must
+re-read each contract in full rather than only verdicting CB-1's list.
+
 ## What is NOT filed (FR-5, NFR-3)
 
 Added at the Phase 5.0 pre-check, which caught both missing from the first draft — the two

@@ -1,7 +1,7 @@
 # Integration-contract proof matrix
 
-`TECH-017` SF-01. CB-1 built the skeleton; **CB-2 has assessed `INT-US-28`** — its six claims below
-carry verdicts and evidence. The other 12 entries remain `unassessed` pending CB-3 and SF-02/03.
+`TECH-017` SF-01. CB-1 built the skeleton; **CB-2 assessed `INT-US-28` and CB-3 `INT-US-21`** — their claims below
+carry verdicts and evidence. The other 11 entries remain `unassessed` pending SF-02/03.
 
 For every delivered integration contract, what it *claims* versus what a test *proves*. One claim
 is **one assertion about behaviour at a seam**, not one sentence (`SF-01` D-1) — otherwise verdicts
@@ -29,13 +29,16 @@ are not comparable between entries.
 | `INT-US-05-SF03` | 0 | 0 | — | 1 |
 | `INT-US-05-SF04` | 0 | 0 | — | 1 |
 | `INT-US-09` | 1 | 5 | e2e | 3 |
-| `INT-US-21` | 3 | 61 | e2e, integration | 4 |
+| `INT-US-21` | 3 | 61 | e2e, integration | 8 |
 | `INT-US-21-SUB` | 0 | 0 | — | 1 |
 | `INT-US-24` | 2 | 13 | e2e, integration | 3 |
 | `INT-US-25` | 9 | 75 | e2e, integration | 9 |
 | `INT-US-28` | 9 | 88 | integration, unit | 6 |
 
-**13 entries, 42 claims, 271 tests across 30 cited files.**
+**13 entries, 46 claims, 271 tests across 30 cited files.** The claim count rose by 4 during CB-3:
+`INT-US-21` carried four assertions CB-1 never extracted (C5–C8). Counts for the 11 unassessed
+entries are CB-1's and should be treated as **lower bounds** until each is re-read against its full
+contract text.
 
 
 ## `INT-US-01` — Base Contract
@@ -136,10 +139,47 @@ are not comparable between entries.
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `sw run feature_decomposition` is a working three-session journey: draft (exists-skip) -> park -> resume-as-approval -> validate -> decompose -> park -> resume -> COMPLETED. | `unassessed` | — |
-| C2 | It produces a durable uuid-tagged `<stem>_decomposition.yaml`. | `unassessed` | — |
-| C3 | It produces one never-overwritten stub component spec per DAG node. | `unassessed` | — |
-| C4 | The journey costs **exactly one** LLM call. | `unassessed` | — |
+| C1 | `sw run feature_decomposition` is a working three-session journey: draft (exists-skip) -> park -> resume-as-approval -> validate -> decompose -> park -> resume -> COMPLETED. | `proven` | e2e — `TestE1HappyJourney::test_the_journey_completes_across_three_sessions` drives the REAL CLI and asserts `PARKED` at **both** gates before `COMPLETED`, reading persisted run status rather than exit code. `TestE11ResumeAnUnparkedRun::test_a_parked_run_is_still_resumable`. |
+| C2 | It produces a durable uuid-tagged `<stem>_decomposition.yaml`. | `proven` | integration — `TestPersistenceSeams::test_lineage_row_written_to_real_sqlite_with_the_artifact_uuid` extracts the uuid **from the artifact's own text** and matches it to the lineage row; `TestArtifactBoundaries::test_rerun_reuses_the_artifact_uuid_across_two_real_runs` proves durability across runs. e2e: `test_the_artifact_and_stubs_reach_disk`. |
+| C3 | It produces one never-overwritten stub component spec per DAG node. | `proven` | integration — `TestStubComponentSpecs::test_one_stub_written_per_component_next_to_the_spec` + `::test_existing_spec_is_never_overwritten`; e2e `TestE7StubNoOverwrite::test_a_hand_authored_component_spec_is_untouched`. |
+| C4 | The journey costs **exactly one** LLM call. | `proven` | e2e — `TestE1HappyJourney::test_the_decomposition_costs_exactly_one_llm_call` asserts `llm.calls == 1` across all three sessions. |
+| C5 | Handlers are registered, so the bundled pipeline can execute a step at all. | `proven` | integration — `TestArtifactThroughTheRealRunner::test_registry_resolved_run_writes_the_artifact_next_to_the_spec`. **Extracted by CB-3, not CB-1 — see below.** |
+| C6 | `context.plan` is populated by the runner hook, not documented-but-unwritten. | `proven` | integration — `TestPlanBridgeIsHookDriven::test_plan_reaches_the_next_step_without_being_seeded`, and `::test_the_hook_is_what_sets_it` **deletes the artifact between steps** to prove causation rather than correlation. **Extracted by CB-3.** |
+| C7 | The flow engine has HITL approval semantics — `sw resume` advances rather than re-parking forever. | `proven` | e2e — the two `_resume` advances inside `test_the_journey_completes_across_three_sessions`; `TestE11ResumeAnUnparkedRun::test_resuming_a_finished_run_is_refused`. **Extracted by CB-3.** |
+| C8 | The plan artifact is persisted, where previously it never was. | `proven` | integration — `TestPersistenceSeams::test_output_survives_the_state_store_round_trip`, `::test_resume_rehydrates_decomposition_matching_the_artifact`. **Extracted by CB-3.** |
+
+### Finding: the surprise was in CB-1's extraction, not in the tests
+
+The plan predicted `INT-US-21` would be the cleaner entry and said *"a surprise here is worth more
+attention than a gap in `INT-US-28`."* It was cleaner — **all 61 cited tests pass, none skips**, and
+the suite is the strongest in the tree. `test_seam_pins.py` explicitly guards against
+*"the capture handler proving itself (vacuous-proof pattern 2)"*, and `test_the_hook_is_what_sets_it`
+deletes the artifact between steps so a stale value cannot pass for a live one. That is the standard
+this audit has been measuring everything else against.
+
+The defect was upstream. CB-1 extracted **four** claims from the Integration Description's first
+sentence and stopped. The paragraph continues:
+
+> *"It solves the built-but-not-integrated problem: `D-INTL-02` and `D-INTL-03` shipped capabilities
+> behind a pipeline that could not execute a single step (unregistered handlers), a `context.plan`
+> documented as hook-populated with **zero writes in `src/`**, a flow engine with no HITL approval
+> semantics (`sw resume` re-parked forever, proven empirically), and a plan artifact that was never
+> persisted. **All four are closed.**"*
+
+*"All four are closed"* is four falsifiable assertions about the delivered system, and they are the
+**reason the story existed**. They were not in the matrix. Added above as C5–C8; all four are
+proven, so nothing was broken — but a clean verdict had been about to be issued over an incomplete
+list, which is the same failure shape as a green ledger over an unread test.
+
+**Consequence for the remaining entries.** CB-1's rule was one claim per assertion at a seam; in
+practice it read the first sentence of each Integration Description. The other 11 entries were
+extracted the same way and should be re-read against their full contract text during SF-02/SF-03,
+not merely verdicted. `INT-US-28`'s six claims were checked against its contract during CB-3 and are
+complete.
+
+**Benign drift, recorded not repaired (NFR-1).** The contract's Verifiable Proof says *"22
+scenarios"*; the file now holds 24 — the interrupt-teardown pair was added after the contract was
+written. More proof than claimed, so nothing is over-stated; the count is simply stale.
 
 ## `INT-US-21-SUB` — Recursive Planning
 
