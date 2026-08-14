@@ -190,3 +190,45 @@ So: **a checker's own tests must declare `# fr-coverage: fixture-data` before it
 frozen**, and a freeze is not a formality — measure once with the marker in place, and treat a
 suspiciously good number as a bug until explained.
 
+## Strength: you can now measure it, on one claim at a time
+
+Everything above measures **attribution** — whether a test cites a requirement. None of it can tell
+you whether the test would notice the behaviour disappearing. That gap is real and this page has
+pointed at `A-VAL-03` for it since it was written.
+
+`scripts/_mutate.py` closes it for a single claim at a time:
+
+```
+python scripts/_mutate.py --file src/... --old '<exact anchor>' --new '<neutralised>'
+```
+
+It applies the edit in a detached **git worktree**, proves the subprocess imported the sandbox's
+source rather than yours, runs the suite, and reports which tests objected. Three verdicts matter:
+
+| Result | What it means |
+|---|---|
+| `KILLED`, several tests | the behaviour is genuinely protected |
+| `KILLED`, **exactly one** | a single point of protection — one flaky or skipped test from none |
+| `SURVIVED` | nothing noticed. The claim is unproven **whatever cites it** |
+
+**Use it on the claims you are about to call proven, not the ones you already doubt.** `TECH-017`
+ran six of these by hand and four caught vacuous assertions *in the audit's own work* — a guard that
+passed with a bypass planted, a credential check that passed un-isolated, a repo root that globbed a
+directory which does not exist. Every one of those was written by someone who believed the claim.
+
+The first real measurement it produced: neutralising `sw check --lineage` orphan detection is caught
+by **one test out of 6829**, and that test failed at `COLUMNS=80` until 2026-08-14 — so the feature
+was unprotected on any 80-column CI while its ledger entry looked green.
+
+Two limits, both real:
+
+- **A surviving mutant is not automatically a gap.** An *equivalent* mutant — one that does not
+  change observable behaviour — survives for a reason that is not missing coverage. Confirm the edit
+  actually changes something before recording a finding.
+- **It cannot mutate code that does not exist.** Where an audit cannot find the code a claim names,
+  mutation has no target, and the question is whether the thing was ever built — a scope decision,
+  not a coverage measurement.
+
+Because the mutant runs in its own worktree, **your working tree is never touched and you can keep
+working while it runs** — a full-suite mutant costs about a minute.
+
