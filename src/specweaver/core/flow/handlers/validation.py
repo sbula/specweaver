@@ -412,7 +412,14 @@ class ValidateTestsHandler:
         # would deselect every test and false-green the verification. Suppress the
         # marker at the atom-call site only (_resolve_targets above keeps the original
         # kind for its tests/<kind> fallback paths).
-        atom_kind = "" if kind == "scenario" else kind
+        # ...and the identical reasoning applies to any run that names ONE generated FILE. A marker
+        # filter over a single freshly written file can only ever deselect it: `generate_tests`
+        # emits no `@pytest.mark.unit`, so `-m unit` collected ZERO from every `sw implement` run
+        # and the step reported `0 passed, 0 failed` as a pass. `INT-US-24` fixed this for
+        # "scenario" in 2026-07 and the same bug sat unnoticed on "unit" (`TECH-017` SF-04).
+        # Directory runs keep their filter — that is where a marker is a real selector.
+        _one_generated_file = bool(target) and str(target).endswith(".py")
+        atom_kind = "" if (kind == "scenario" or _one_generated_file) else kind
 
         atom = self._get_atom(context)
         result = atom.run(

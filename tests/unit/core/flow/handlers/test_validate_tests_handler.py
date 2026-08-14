@@ -78,7 +78,11 @@ class TestValidateTestsHandler:
         with patch.object(handler, "_get_atom", return_value=MagicMock()) as mock_get:
             mock_atom = mock_get.return_value
             mock_atom.run.return_value = mock_result
-            step = _step(params={"kind": "integration", "scope": "flow", "timeout": 60})
+            # A DIRECTORY target: this is where `kind` is a real pytest selector and must reach
+            # the atom. Single-file targets suppress it — see the test below.
+            step = _step(
+                params={"kind": "integration", "scope": "flow", "timeout": 60, "target": "tests"}
+            )
             await handler.execute(step, _ctx(tmp_path))
 
         call_ctx = mock_atom.run.call_args[0][0]
@@ -406,3 +410,30 @@ class TestScenarioEvidencePublication:
             await handler.execute(_step(params={"kind": "unit", "target": "tests"}), ctx)
 
         assert ctx.feedback == {}
+
+
+class TestValidateTestsHandlerMarkerSuppression:
+    """`TECH-017` SF-04: a marker filter over one generated file can only deselect it."""
+
+    @pytest.mark.asyncio
+    async def test_a_py_file_target_drops_the_kind_marker(self, tmp_path: Path) -> None:
+        """The defect that made every `sw implement` run collect zero tests.
+
+        `run_tests` passes `kind` through as `pytest -m <kind>`. `generate_tests` emits no
+        `@pytest.mark.unit`, so `-m unit` deselected the freshly written file and the step reported
+        `0 passed, 0 failed` — rendered as a PASS. `INT-US-24` FR-3 found this reasoning for
+        `kind="scenario"` in 2026-07; the identical bug sat on `"unit"` until SF-04.
+        """
+        handler = ValidateTestsHandler()
+        mock_result = AtomResult(
+            status=AtomStatus.SUCCESS, message="ok", exports={"passed": 1, "failed": 0, "total": 1}
+        )
+        with patch.object(handler, "_get_atom", return_value=MagicMock()) as mock_get:
+            mock_atom = mock_get.return_value
+            mock_atom.run.return_value = mock_result
+            step = _step(params={"kind": "unit", "target": "tests/test_greeter.py"})
+            await handler.execute(step, _ctx(tmp_path))
+
+        assert mock_atom.run.call_args.args[0]["kind"] == "", (
+            "the marker reached the atom for a single-file target — it can only deselect there"
+        )
