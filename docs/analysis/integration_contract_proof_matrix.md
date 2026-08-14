@@ -398,12 +398,34 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `sw run scenario_integration <spec>` is a real working journey through the QA Runner on the shipped US-3 loop. | `unassessed` | — |
-| C2 | A green verification round costs **zero** arbitration LLM calls. | `unassessed` | — |
-| C3 | A parked `spec_ambiguity` heals through the loop on `sw resume`, with evidence re-published on the fresh round. | `unassessed` | — |
-| C4 | The declared stage chain is what runs: contract extraction → parallel coding + scenario pipelines → JOIN → scenario test execution → **arbiter fault attribution** (`B-FLOW-01`). | `unassessed` | — |
-| C5 | The journey executes through the QA Runner (`D-VAL-01`) **on top of the shipped US-3 loop** (`INT-US-03`). | `unassessed` | — |
-| C6 | **Exclusion:** DAL escalation for run journeys is deliberately delegated to `C-EXEC-07` / `INT-US-09-SF06` and is NOT covered here. | `unassessed` | — |
+| C1 | `sw run scenario_integration <spec>` is a real working journey through the QA Runner on the shipped US-3 loop. | `proven` | e2e — `test_e1_happy_completes_with_zero_arbitration_cost` drives the REAL CLI (`runner.invoke(app, …)`) through `sw run scenario_integration`, with real contract extraction and real conversion. Read-verified. |
+| C2 | A green verification round costs **zero** arbitration LLM calls. | `proven` | e2e — same test asserts the arbitration call count. **Mutation-verified:** removing the green-round short-circuit (`if failed == 0 and errors == 0`) is `KILLED` by 8 tests. |
+| C3 | A parked `spec_ambiguity` heals through the loop on `sw resume`, with evidence re-published on the fresh round. | `proven` | e2e — `test_e4_spec_ambiguity_parks` then `test_e7_resume_after_park_heals_through_the_loop`, with `test_e7b_resume_without_llm_warns_and_degrades_gracefully` as the degradation case. Read-verified. |
+| C4 | The declared stage chain is what runs: contract extraction → parallel coding + scenario pipelines → JOIN → scenario test execution → **arbiter fault attribution** (`B-FLOW-01`). | `proven` | e2e — fault attribution asserted in both directions: `test_e2_code_bug_loop_buggy_then_fixed` (attributed to the code) and `test_e3_scenario_error_regenerates_with_delta` (attributed to the scenario). Read-verified. |
+| C5 | The journey executes through the QA Runner (`D-VAL-01`) **on top of the shipped US-3 loop** (`INT-US-03`). | `unproven` | The QA-Runner half is real — `test_converter_execution.py` runs real pytest over generated scenarios, green and red variants. **The US-3 half is not.** The e2e's own docstring says *"(US-2/US-3 proven territory) is doubled at the boundary — its GenerateCodeHandler double is the scripted implementer"*. So the journey is proven to run through the QA Runner, and **not** proven to run *on top of the shipped US-3 loop*, which is what the claim asserts. |
+| C6 | **Exclusion:** DAL escalation for run journeys is deliberately delegated to `C-EXEC-07` / `INT-US-09-SF06` and is NOT covered here. | `proven` | **Mutation-verified, and it exposed a single point of protection.** `dal_auto_escalate` defaults to `False` in `isolation.py` and only `sw implement` passes `True`, so run journeys structurally cannot escalate. Flipping the default to `True` is `KILLED` by exactly **one** test — `test_session_policy.py::TestApplySessionPolicyDalEscalation::test_no_escalate_parameter…`. The exclusion holds, on one test. |
+
+### Finding: the journey is proven through the QA Runner, not on top of the US-3 loop
+
+C5 is the only `unproven` here, and the evidence is the suite's own docstring rather than an
+absence: *"(US-2/US-3 proven territory) is doubled at the boundary — its `GenerateCodeHandler`
+double is the scripted implementer that writes deterministically BUGGY-then-FIXED source."*
+
+Doubling it is a **reasonable test design** — a deterministic implementer is what makes the
+buggy-then-fixed loop assertable at all, and the contract's other five claims are about the
+verification loop, not about code generation. What it cannot do is prove the half of C5 that says
+*on top of the shipped US-3 loop*. That seam is asserted by the contract and exercised by nothing.
+
+This is the same shape as `INT-US-03`, where the loop is proven as a declared pipeline shape and
+never observed looping — and it has the same owner, `SF-04`, whose scripted-LLM `sw implement` e2e
+would close both. Recorded here rather than duplicated as a new gap.
+
+### `KILLED x1` is worth reading as a result, not a pass
+
+C6's exclusion rests on **one** test. The claim is that run journeys never DAL-escalate, the
+invariant is a default argument, and a single unit test stands between that default and silence.
+Not a defect — but the kind of fact a `proven` verdict alone would hide, and the reason full runs
+are preferred over `--fast`.
 
 ## `INT-US-25` — Base Contract
 
