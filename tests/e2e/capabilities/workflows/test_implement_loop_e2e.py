@@ -66,6 +66,9 @@ Greet a person by name.
 #: so the failure has to come from `run_tests`, which is the loop-back trigger under test.
 _BUGGY = 'def greet(name: str) -> str:\n    return f"Hi {name}"\n'
 _FIXED = 'def greet(name: str) -> str:\n    return f"Hello {name}"\n'
+#: Behaviourally CORRECT but lint-dirty, so the run turns on `lint_fix` alone: the tests pass on the
+#: first draft, and the only thing that can remove the unused import is auto-fix running in-flight.
+_LINTY = 'import os\n\n\ndef greet(name: str) -> str:\n    return f"Hello {name}"\n'
 _UNCOLLECTABLE_TESTS = (
     "import importlib.util\n"
     "from pathlib import Path\n\n"
@@ -93,10 +96,11 @@ class _LoopAwareLLM:
     the quantity under test, so scripting it by index would bake in the answer.
     """
 
-    def __init__(self, *, collectable: bool) -> None:
+    def __init__(self, *, collectable: bool, first_draft: str = _BUGGY) -> None:
         self.code_calls = 0
         self.test_calls = 0
         self._collectable = collectable
+        self._first_draft = first_draft
 
     def _reply(self, messages: Any) -> str:
         text = " ".join(str(m) for m in (messages or []))
@@ -104,7 +108,7 @@ class _LoopAwareLLM:
             self.test_calls += 1
             return _TESTS if self._collectable else _UNCOLLECTABLE_TESTS
         self.code_calls += 1
-        return _FIXED if self.code_calls > 1 else _BUGGY
+        return _FIXED if self.code_calls > 1 else self._first_draft
 
     async def generate(self, messages: Any, config: Any = None, *a: Any, **kw: Any) -> LLMResponse:
         return LLMResponse(text=self._reply(messages), model="scripted-1")
@@ -212,3 +216,31 @@ def test_a_single_file_target_is_not_marker_filtered(project: Path) -> None:
     assert "0 passed, 0 failed" not in result.output, (
         f"the generated tests were deselected again: {result.output[-600:]}"
     )
+
+
+def test_the_loop_auto_fixes_lint_in_flight(project: Path) -> None:
+    """[Happy] `INT-US-03` C4, the auto-fix half — `lint_fix` repairs the draft inside the journey.
+
+    C4 claims lint is auto-fixed *"all in one autonomous loop"*. The loop half is covered above. The
+    auto-fix half was proven only against the handler
+    (`tests/integration/sandbox/test_lint_fix.py::TestLintFixAutoFix`) — the capability works, but
+    nothing had observed it working **on generated code, inside `sw implement`**. Crediting C4 from
+    the handler's own suite is the capability-suite habit `TECH-017` exists to remove.
+
+    The first draft here is behaviourally correct and carries an unused import, so `run_tests` goes
+    green on pass one and `lint_fix` is the only stage that can change the file. If the import is
+    gone from disk afterwards, auto-fix ran in the journey.
+    """
+    llm = _LoopAwareLLM(collectable=True, first_draft=_LINTY)
+    with _scripted(llm), _no_router():
+        result = _run_implement(project)
+
+    written = (project / "src" / "greeter.py").read_text(encoding="utf-8")
+    assert "import os" not in written, (
+        f"lint_fix did not auto-fix the generated draft: {written!r}\n{result.output[-400:]}"
+    )
+    assert llm.code_calls == 1, (
+        f"the draft was regenerated rather than lint-fixed ({llm.code_calls}x): "
+        f"{result.output[-400:]}"
+    )
+    assert "Implementation complete" in result.output, result.output[-600:]

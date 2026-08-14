@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-017/TECH-017_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-04
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-017/TECH-017_sf04_implementation_plan.md
-- **Status**: APPROVED 2026-08-14
+- **Status**: DELIVERED 2026-08-14
 
 ## Scope
 
@@ -135,8 +135,29 @@ The audit has filed zero tickets across three sub-features. SF-04 holds that bar
 | R-4 | A long real-`pytest`-in-`pytest` e2e is slow or flaky under `-n auto` | Measure its runtime at CB-2 and state it. If it exceeds ~30s, mark it `e2e` and consider excluding it from the default tier rather than letting it rot |
 | R-5 | Scope creep into proving isolation as well | D-3 and CB-2 step 5: isolation stays off, and the existing e2e keeps that claim |
 
-## Session Handoff
+## Outcome, 2026-08-14
 
-The audit is complete: 64 claims across 13 entries, 47 `proven` / 13 `unproven` / 4 `unprovable`,
-zero tickets filed. SF-04 is the only scheduled work and closes five of the thirteen `unproven`
-verdicts plus two `FR-6` capability findings.
+Delivered across three boundaries. **Four claims closed, not five** — `INT-US-24` C5 was narrowed
+instead, because its own e2e still doubles `GenerateCodeHandler` and SF-04's test proves a different
+contract's journey. Both `FR-6` rows (`D-INTL-01`, `D-VAL-05`) closed. Final: 51 / 9 / 4.
+
+**D-3's fallback was not needed** — real `ruff` and real `pytest` drove twice without trouble, and
+the file runs in ~6s, well inside R-4's 30s threshold, so it stays in the default tier.
+
+**R-3 was the risk that paid off.** Its mitigation — *done when a mutant dies, not when it passes* —
+is what turned this from three green tests into the audit's most productive boundary. C4 initially
+got a split verdict because `lint_fix` merely ran in the flow without being asserted on; rather than
+record that residue, a fourth test now feeds the loop a correct-but-lint-dirty draft, and deleting
+the `lint_fix` step kills it. (`max_reflections: 3 → 0` survives, correctly: auto-fix is ruff's phase
+one, not an LLM reflection.)
+
+**Two live defects surfaced, and the ordering between them is the lesson.** `pytest -m unit`
+deselected every generated test — so every `sw implement` run collected nothing and rendered `0
+passed, 0 failed` as a tick — and zero-collected was reported as success. The guard for the second
+was written first, broke nine tests, and was reverted: with collection broken everywhere, failing
+loud on an empty run failed every run. Converting a false green into a universal red is not a fix.
+Collection was fixed in `f4435e75`, then the guard landed clean in `faab6dcb`.
+
+Four of those nine tests had been reaching their assertions *through* the false green and now say
+what they mean. The telemetry one got stronger: it proves the flush is owed on a **failed** run,
+because it happens in `PipelineRunner._finalize`'s `finally`.

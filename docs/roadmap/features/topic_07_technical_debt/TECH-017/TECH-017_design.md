@@ -192,7 +192,7 @@ rather than assesses, and its scope was fixed by SF-02 CB-3; it may be taken bef
 | SF-01 | Skeleton + two largest | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The thin proofs | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Remainder + capability findings | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | The `sw implement` loop e2e | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | The `sw implement` loop e2e | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Non-Goals
 
@@ -237,7 +237,26 @@ escalated rather than filed: the `sw implement` loop e2e (now SF-04) and whether
 (57 → 64 claims); CB-2 `INT-US-25` (13 verdicts), CB-3 `INT-US-24` (6), CB-4 `INT-US-02` and the
 three zero-proof entries (5); CB-5 consolidated the `FR-6` findings across 12 capabilities.
 **All 64 claims on all 13 entries carry a verdict.** Zero tickets were filed across all three
-sub-features; the only scheduled work is SF-04.
+sub-features; the only scheduled work was SF-04.
+
+**2026-08-14 — SF-04 delivered. `TECH-017` is complete.** CB-1 extracted the scripted-LLM harness to
+`tests/scripted_llm.py` carrying both load-bearing patches; CB-2 wrote
+`tests/e2e/capabilities/workflows/test_implement_loop_e2e.py` — only the LLM doubled, real
+`GenerateCodeHandler`, real `ruff`, real `pytest` — and CB-3 re-verdicted. Final tally: **51 proven /
+9 unproven / 4 unprovable**, up from 47 proven.
+
+SF-04 closed four claims, **not the five its plan predicted**. `INT-US-24` C5 was narrowed rather
+than closed: proving the US-3 loop works elsewhere does not make the scenario journey traverse it,
+and that journey's own e2e still doubles `GenerateCodeHandler`. Crediting it would have been the
+cross-file credit this audit spent three sub-features removing.
+
+**The sub-feature's real yield was two live defects**, both invisible to citations, coverage and a
+green suite, and both reachable only by running a path nobody had run: `pytest -m unit` deselected
+every generated test, so **every `sw implement` run collected zero tests and displayed a tick**; and
+zero-collected was reported as success. Fixed in `f4435e75` and `faab6dcb` — in that order, because
+the guard alone turned a false green into a universal red and had to be reverted until collection
+worked. Five live defects across the whole audit, **zero tickets filed**, one open decision
+(`E-FLOW-01`: was validation-output persistence ever intended?).
 
 ## Problem Statement — measured 2026-07-26, **re-measured 2026-08-13**
 

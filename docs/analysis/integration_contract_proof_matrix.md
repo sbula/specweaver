@@ -7,17 +7,24 @@ the miss every time.
 
 | | |
 |---|---|
-| `proven` | 47 |
-| `unproven` | 13 |
+| `proven` | **51** |
+| `unproven` | **9** |
 | `unprovable` | 4 (one of them *as written*) |
+
+SF-04 moved four (`INT-US-03` C1/C3/C4/C6) from `unproven` to `proven` by writing the missing e2e,
+and narrowed a fifth (`INT-US-24` C5) without closing it — recorded as four, not five, because the
+test that proves the loop is not a test of that contract's journey.
 
 `unprovable` means the claim cannot be tested **as written** — a scope statement, a universal
 negative over data-defined pipelines, or behaviour that was never built. It is never a synonym for
 *failed*, and no contract was re-worded to make one provable (`NFR-1`).
 
-Three live defects were found and fixed in place: a context assembler wired to a key the atom never
-exports, and two cited proofs whose assertions depended on terminal width. **Zero tickets were
-filed** (`NFR-3`).
+**Five live defects were found and fixed in place**, and none of them was visible to a citation, a
+coverage number or a green suite: a context assembler wired to a key the atom never exports; two
+cited proofs whose assertions depended on terminal width; `pytest -m unit` deselecting every
+generated test, so **every `sw implement` run collected nothing and rendered it as a tick**; and
+zero-collected being reported as success. The last two were found by writing a test for a claim
+nobody had tested — not by reading. **Zero tickets were filed** (`NFR-3`).
 
 For every delivered integration contract, what it *claims* versus what a test *proves*. One claim
 is **one assertion about behaviour at a seam**, not one sentence (`SF-01` D-1) — otherwise verdicts
@@ -45,8 +52,8 @@ a ticket (`FR-5`, `NFR-3`); the entry that found each is named so the evidence i
 | `D-INTL-06` | Same shape — 5 of 9 now cited; FR-1/2/3/7 remain uncited. FR-3 assigns filtering to the hydrator, which **delegates** it (`max_age_hours=24`), so the FR and the code disagree. | `INT-US-28` | **fixed in place**; FR-3 wording is a live mismatch |
 | `D-SENS-02` | `evaluate_and_fetch_skeleton_context` read `res.exports["skeleton"]` while the atom exports `"structure"` — the assembler returned `{}` for every caller, so **skeleton context never reached a generation or review prompt**. | `INT-US-05` C1, via mutation | **fixed in place** |
 | `D-EXEC-02` | The Main-Branch-Wins reconcile seam (strip-merge, out-of-bounds hunks) is proven **only at unit tier**, in the capability's own tests. No integration proof of the seam exists. | `INT-US-09` C8/C9 | open |
-| `D-INTL-01` | No test drives the Implementation Generator into the QA Runner. The autonomous loop is proven as a **declared pipeline shape** and has never been observed looping. | `INT-US-03` C1/C6, `INT-US-24` C5 | open — owned by **SF-04** |
-| `D-VAL-05` | `validate_code` is declared in the implement pipeline and never exercised through it. | `INT-US-03` C3 | open — owned by **SF-04** |
+| `D-INTL-01` | No test drove the Implementation Generator into the QA Runner; the autonomous loop was proven as a **declared pipeline shape** and had never been observed looping. Closing it exposed **two live defects** — `pytest -m unit` deselecting every generated test, and zero-collected reported as success. | `INT-US-03` C1/C6, `INT-US-24` C5 | **closed by SF-04** for `INT-US-03`; defects fixed in `f4435e75` / `faab6dcb`. `INT-US-24` C5 is narrowed, not closed — its own e2e still doubles the handler |
+| `D-VAL-05` | `validate_code` was declared in the implement pipeline and never exercised through it. | `INT-US-03` C3 | **closed by SF-04** — `test_the_generated_code_reaches_the_code_rules` observes a non-zero rule count over generated code |
 | `E-FLOW-01` | The config DB has **no table for validation output**, and `ValidationResult` does not appear in `src/`. The persistence surface `INT-US-04` claims does not exist. | `INT-US-04` C1, via mutation | open — a scope question, not a coverage gap |
 | `C-SENS-02` | The `.specweaverignore` **engine** is proven; the **seam** feeding exclusions into the Extractor is exercised by nothing. | `INT-US-05-SF03` | open |
 | `B-INTL-02` | **No `MacroEvaluator` exists in `src/`.** Framework-marker extraction is proven at unit tier on the parsers; the seam into context extraction is unexercised. | `INT-US-05-SF04` | open |
@@ -65,13 +72,14 @@ Not gaps, and not comfortable either. Each is one flaky or skipped test away fro
 
 ### What this list is, and is not
 
-It is **not** a backlog. Nine of the twelve rows are statements that a capability's proof is thinner
-than its contract implied; three were live defects and are fixed. Turning each into a ticket is the
-inflation `NFR-3` forbids and `AD-2` rejects — the audit's job was to make them visible and
-attributable, which is done.
+It is **not** a backlog. Seven of the twelve rows are statements that a capability's proof is thinner
+than its contract implied; **five were live defects and all five are fixed**. Turning each into a
+ticket is the inflation `NFR-3` forbids and `AD-2` rejects — the audit's job was to make them visible
+and attributable, which is done.
 
-The two rows marked *owned by SF-04* are the only ones with scheduled work. `E-FLOW-01`'s is a scope
-question for a human: whether validation-output persistence was ever intended.
+**No row has scheduled work any more.** SF-04 was the last, and it closed `D-INTL-01` and `D-VAL-05`.
+One row still needs a human: `E-FLOW-01`'s is a scope question — whether validation-output
+persistence was ever intended — and it is the audit's single open decision.
 
 ## Coverage at a glance
 
@@ -79,7 +87,7 @@ question for a human: whether validation-output persistence was ever intended.
 |---|---|---|---|---|
 | `INT-US-01` | 1 | 5 | e2e | 3 |
 | `INT-US-02` | 1 | 7 | e2e | 2 |
-| `INT-US-03` | 2 | 7 | e2e, integration | 8 |
+| `INT-US-03` | 3 | 11 | e2e, integration | 8 |
 | `INT-US-04` | 1 | 4 | e2e | 2 |
 | `INT-US-05` | 1 | 6 | e2e | 2 |
 | `INT-US-05-SF03` | 0 | 0 | — | 1 |
@@ -91,7 +99,7 @@ question for a human: whether validation-output persistence was ever intended.
 | `INT-US-25` | 9 | 75 | e2e, integration | 13 |
 | `INT-US-28` | 9 | 88 | integration, unit | 6 |
 
-**13 entries, 64 claims, 271 tests across 30 cited files.** The count has risen twice as contracts
+**13 entries, 64 claims, 275 tests across 31 cited files.** The count has risen twice as contracts
 were re-read in full: +4 in SF-01 CB-3 (`INT-US-21`), +11 in SF-02 CB-1 (below). Counts for the 6
 still-unassessed entries are CB-1's and remain **lower bounds** until SF-03 re-reads them.
 
@@ -172,50 +180,72 @@ kill by the wrong tests is the mutation-era version of a citation that names the
 |---|---|---|
 | `tests/e2e/sandbox/test_implement_loop_worktree_isolation_e2e.py` | e2e | 2 |
 | `tests/integration/interfaces/cli/test_cli_implement_isolation.py` | integration | 5 |
+| `tests/e2e/capabilities/workflows/test_implement_loop_e2e.py` **(written by SF-04)** | e2e | 4 |
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | `sw implement` generates code **and** tests. | `unproven` | The cited e2e **fakes generation** with a bash script (`gen.sh`), so `D-INTL-01` never runs. Only the pipeline's declared shape is tested — `test_generate_steps_unchanged` (**unit**). |
+| C1 | `sw implement` generates code **and** tests. | `proven` | e2e — `test_the_loop_generates_fails_regenerates_and_goes_green` drives the **real** `GenerateCodeHandler` with only the LLM doubled; both files are written to disk and the generated test is collected and run. Was `unproven`: the older e2e **fakes generation** with a bash script (`gen.sh`), so `D-INTL-01` never ran. |
 | C2 | It runs the generated tests. | `proven` | e2e — `test_dal_b_escalation_runs_generated_qa_bounded_and_reconciles` runs real pytest over the freshly written code. |
-| C3 | It runs code rules C01-C08. | `unproven` | No test runs `validate_code`. Only its declaration — `test_validate_code_targets_generated_code_report_only` (**unit**). |
-| C4 | It auto-fixes lint, all in one autonomous loop. | `unproven` | No test runs the loop. Only its shape — `test_lint_fix_runs_before_run_tests`, `test_run_tests_has_loopback_gate` (**unit**). The loop-back has never been observed to loop. |
+| C3 | It runs code rules C01-C08. | `proven` | e2e — `test_the_generated_code_reaches_the_code_rules` asserts `validate_code` reported a **non-zero rule count** over the generated file. Was `unproven`: only its declaration was tested (**unit**). |
+| C4 | It auto-fixes lint, all in one autonomous loop. | `proven` | e2e, **both halves separately**. *Loop:* `test_the_loop_generates_fails_regenerates_and_goes_green` observes it **loop** — wrong first draft, real pytest red, loop-back, second draft green, `code_calls == 2`. *Auto-fix:* `test_the_loop_auto_fixes_lint_in_flight` gives the loop a correct-but-lint-dirty draft, so `lint_fix` is the only stage that can change the file, and asserts the unused import is gone from disk. The second test was written **because** citing the handler's own suite for the auto-fix half would be the capability-suite habit this audit removes. **Probed:** deleting the `lint_fix` step kills it. |
 | C5 | QA/test execution runs **exclusively** inside the US-9 zero-trust worktree sandbox, container-free. | `proven` | e2e — worktree-bounded QA in `test_dal_b_escalation_runs_generated_qa_bounded_and_reconciles`; *container-free* by C7's guard. |
-| C6 | The Implementation Generator (`D-INTL-01`) pipes natively into the QA Runner (`D-VAL-01`) **and** the Code Validation Rules (`D-VAL-05`). | `unproven` | The pipe is a pipeline declaration, tested as such at **unit** tier (`test_pipeline_has_five_steps_in_order`). No test drives `D-INTL-01` into `D-VAL-01`/`D-VAL-05`. |
+| C6 | The Implementation Generator (`D-INTL-01`) pipes natively into the QA Runner (`D-VAL-01`) **and** the Code Validation Rules (`D-VAL-05`). | `proven` | e2e — both halves now carry traffic in one run: `D-INTL-01`'s output is what pytest executes (C1/C2) and what the C-series grades (C3). Was a pipeline *declaration* tested at **unit** tier. |
 | C7 | **Exclusion:** container/Podman execution (`D-EXEC-01` / `B-EXEC-01`) is OUT of scope for this base contract — no container code path is reachable from the implement loop. | `proven` | integration — `test_container_execution_mode_stays_dormant_on_implement`, **written at this boundary**. **Probed:** adding a `use_container` field to `IsolationPolicy` fails it. |
 | C8 | Untrusted high-assurance (DAL_A/B) code is executed worktree-bounded via **DAL-driven auto-escalation**; small/non-git projects stay on host. | `proven` | integration — the five DAL cases in `test_cli_implement_isolation.py`, plus the e2e DAL_E control `test_low_dal_project_runs_on_host_and_probe_fails`. |
 
-### Finding: the autonomous loop is proven as a **shape**, never as a loop
+### Finding: the autonomous loop was proven as a **shape** — CLOSED by `TECH-017` SF-04, 2026-08-14
 
-Four of eight claims — C1, C3, C4, C6 — are unproven, and all four fail for the same reason. The
+Four of eight claims — C1, C3, C4, C6 — were unproven, and all four failed for the same reason. The
 contract's core promise is that *"`sw implement` generates code + tests, runs the tests, runs
-C01–C08, and auto-fixes lint **in one autonomous loop**."* What exists is:
+C01–C08, and auto-fixes lint **in one autonomous loop**."* What existed was:
 
 * `test_implement_pipeline.py` (**unit**) — the pipeline *declares* five steps in order, `lint_fix`
   before `run_tests`, a loop-back gate on `run_tests`, report-only `validate_code`. Structure only.
 * `test_implement_loop_worktree_isolation_e2e.py` (**e2e**) — real, but it **substitutes a bash
-  script for `D-INTL-01`**, so generation never happens and only the isolation half is exercised.
+  script for `D-INTL-01`**, so generation never happened and only the isolation half was exercised.
 
-Between them: the loop has never been observed to loop, `validate_code` has never been observed to
-run, and the `D-INTL-01 → D-VAL-01/D-VAL-05` pipe has never carried anything. This is the exact
-shape the 2026-07-26 review meant by *"happy-path only / cites capability suites"*, and it is a
-larger gap than anything SF-01 found: `INT-US-28`'s seam was proven in two halves that met at a
-mock, whereas here the central journey has no end-to-end proof at all.
+Between them: the loop had never been observed to loop, `validate_code` had never been observed to
+run, and the `D-INTL-01 → D-VAL-01/D-VAL-05` pipe had never carried anything. This was the exact
+shape the 2026-07-26 review meant by *"happy-path only / cites capability suites"*, and it was a
+larger gap than anything SF-01 found.
 
-**Not closed at this boundary.** Writing it means a scripted-LLM e2e driving `sw implement` through
-generate → lint_fix → run_tests → validate_code including a loop-back iteration, with real `ruff`
-and real `pytest`. The harness pattern exists (`ScriptedLLM` / `scripted_world` in
-`test_feature_decomposition_e2e.py`) but is file-local and would need extracting. That is a
-sub-feature's worth of work, not a boundary's, so it was escalated as SF-02's one decision (NFR-3)
-and **scoped as `TECH-017` SF-04 on 2026-08-14** — not filed as a ticket, and not left as a note.
+`tests/e2e/capabilities/workflows/test_implement_loop_e2e.py` closes all four. Only the LLM is
+doubled; the real `GenerateCodeHandler`, real `ruff` and real `pytest` run.
 
-The four verdicts stay `unproven` until that sub-feature closes them — the honest state, because
-the claims are not disproven, they are unwitnessed.
+### The gap was hiding two live defects, and the second one only surfaced under the first
+
+This is the finding worth keeping from `TECH-017` SF-04. Writing the missing test did not merely record four
+verdicts — it ran a path nothing had run, and **the path was broken**:
+
+1. **Every `sw implement` run collected zero tests.** `run_tests` passed its `kind` to the QA runner,
+   which became `pytest -m unit`; generated tests carry no `@pytest.mark.unit`, so everything was
+   deselected. The step reported `0 passed, 0 failed` and the display rendered it as a **tick**.
+   `INT-US-24` FR-3 had derived this exact reasoning for `kind="scenario"` in 2026-07 and suppressed
+   the marker there. Nobody looked one case further. Fixed in `f4435e75`, keyed on the target naming
+   a single file — a marker filter over one freshly written file can only ever deselect it.
+2. **Zero-collected was reported as success.** The fail-loud rule `INT-US-24` FR-3 wrote existed only
+   for `scenario`. Widened in `faab6dcb`.
+
+**The ordering is the lesson.** The guard in (2) was written first, and it broke nine tests — because
+with collection broken everywhere, failing loud on an empty run failed *every* run. It was reverted,
+(1) was fixed, and then it landed clean. Converting a false green into a universal red is not a fix,
+and a guard that cannot land is evidence about the system, not about the guard.
+
+Four of those nine tests were reaching their assertions **through** the false green: two implement
+output-path tests doubled the LLM with `"pass\n"` for the test file, a telemetry test never reached
+its assertion once the command exited non-zero, and a degradation test asserted the generated file
+was empty — which held only because an empty generation collected nothing and went green. All four
+now say what they mean; the telemetry one got stronger, and proves the flush is owed on a **failed**
+run because it happens in `PipelineRunner._finalize`'s `finally`.
+
+Neither defect is visible to a citation, a coverage number, or a green suite. Both needed the test
+that had never been written — which is the argument for `AD-2` (fix in place) over filing.
 
 ### FR-6 — capability findings
 
-C1 and C6 trace to `D-INTL-01` (Implementation Generator): it has no test that drives it into the QA
-runner. C3 traces to `D-VAL-05` (Code Validation Rules) — `validate_code` is declared and never
-exercised through the loop. Recorded against those capabilities; `SF-03` consolidates.
+C1 and C6 traced to `D-INTL-01` (Implementation Generator) and C3 to `D-VAL-05` (Code Validation
+Rules). **Both rows close**: `D-INTL-01` is now driven into both the QA Runner and the C-series in
+one run, and `validate_code` is observed grading generated code. See the consolidated table.
 
 ## `INT-US-04` — Base Contract
 
@@ -470,7 +500,7 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 | C2 | A green verification round costs **zero** arbitration LLM calls. | `proven` | e2e — same test asserts the arbitration call count. **Mutation-verified:** removing the green-round short-circuit (`if failed == 0 and errors == 0`) is `KILLED` by 8 tests. |
 | C3 | A parked `spec_ambiguity` heals through the loop on `sw resume`, with evidence re-published on the fresh round. | `proven` | e2e — `test_e4_spec_ambiguity_parks` then `test_e7_resume_after_park_heals_through_the_loop`, with `test_e7b_resume_without_llm_warns_and_degrades_gracefully` as the degradation case. Read-verified. |
 | C4 | The declared stage chain is what runs: contract extraction → parallel coding + scenario pipelines → JOIN → scenario test execution → **arbiter fault attribution** (`B-FLOW-01`). | `proven` | e2e — fault attribution asserted in both directions: `test_e2_code_bug_loop_buggy_then_fixed` (attributed to the code) and `test_e3_scenario_error_regenerates_with_delta` (attributed to the scenario). Read-verified. |
-| C5 | The journey executes through the QA Runner (`D-VAL-01`) **on top of the shipped US-3 loop** (`INT-US-03`). | `unproven` | The QA-Runner half is real — `test_converter_execution.py` runs real pytest over generated scenarios, green and red variants. **The US-3 half is not.** The e2e's own docstring says *"(US-2/US-3 proven territory) is doubled at the boundary — its GenerateCodeHandler double is the scripted implementer"*. So the journey is proven to run through the QA Runner, and **not** proven to run *on top of the shipped US-3 loop*, which is what the claim asserts. |
+| C5 | The journey executes through the QA Runner (`D-VAL-01`) **on top of the shipped US-3 loop** (`INT-US-03`). | `unproven` — **reason narrowed by SF-04** | The QA-Runner half is real — `test_converter_execution.py` runs real pytest over generated scenarios, green and red variants. **The US-3 half is still not.** SF-04 removed *half* of the original reason: the US-3 loop is no longer unwitnessed, it now runs end to end in `test_implement_loop_e2e.py`. What remains is the seam. This contract's own e2e still patches `GenerateCodeHandler.execute` (`test_scenario_verification_e2e.py:360`), so the scenario journey has never run *through* the loop SF-04 proved. Two proven things and an unexercised seam between them — see the note below. |
 | C6 | **Exclusion:** DAL escalation for run journeys is deliberately delegated to `C-EXEC-07` / `INT-US-09-SF06` and is NOT covered here. | `proven` | **Mutation-verified, and it exposed a single point of protection.** `dal_auto_escalate` defaults to `False` in `isolation.py` and only `sw implement` passes `True`, so run journeys structurally cannot escalate. Flipping the default to `True` is `KILLED` by exactly **one** test — `test_session_policy.py::TestApplySessionPolicyDalEscalation::test_no_escalate_parameter…`. The exclusion holds, on one test. |
 
 ### Finding: the journey is proven through the QA Runner, not on top of the US-3 loop
@@ -484,9 +514,21 @@ buggy-then-fixed loop assertable at all, and the contract's other five claims ar
 verification loop, not about code generation. What it cannot do is prove the half of C5 that says
 *on top of the shipped US-3 loop*. That seam is asserted by the contract and exercised by nothing.
 
-This is the same shape as `INT-US-03`, where the loop is proven as a declared pipeline shape and
-never observed looping — and it has the same owner, `SF-04`, whose scripted-LLM `sw implement` e2e
-would close both. Recorded here rather than duplicated as a new gap.
+This was the same shape as `INT-US-03`, where the loop was proven as a declared pipeline shape and
+never observed looping. **SF-04 closed `INT-US-03` and did not close this**, which is worth stating
+plainly because the SF-04 plan predicted it would close five claims and it closed four.
+
+The reason is that the two gaps were never quite the same. `INT-US-03`'s was *the loop is
+unwitnessed* — fixed by witnessing it. This one is *the scenario journey does not run through the
+loop*, and that is unchanged: `test_scenario_verification_e2e.py` still patches
+`GenerateCodeHandler.execute`. Proving the loop works elsewhere does not make this journey traverse
+it. Crediting C5 from SF-04's e2e would be exactly the cross-file credit this audit spent three
+sub-features removing — the test that proves the loop is not a test of *this* contract's journey.
+
+Closing it means re-running the scenario journey against the real `GenerateCodeHandler`, with the
+harness SF-04 extracted to `tests/scripted_llm.py`. That harness now exists, so the work is smaller
+than it was, but it is still a sub-feature's worth and it is **not filed** (`FR-5`, `NFR-3`): it is
+recorded here as a narrowed `unproven` with its remedy named.
 
 ### `KILLED x1` is worth reading as a result, not a pass
 
