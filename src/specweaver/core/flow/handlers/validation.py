@@ -445,10 +445,20 @@ class ValidateTestsHandler:
         # INT-US-24 FR-3: a scenario verification that executed zero tests proves
         # nothing — the atom's total==0 SUCCESS is legitimate only for the pristine
         # incremental paths of the other kinds.
-        if kind == "scenario" and result.exports.get("total", 0) == 0:
+        # Widened past "scenario" on 2026-08-14 (`TECH-017` SF-04), keyed on the same single-file
+        # signal as the marker rule above: naming one generated file and collecting nothing means
+        # the step verified nothing while the pipeline moved on. It was `✓ tests: 0 passed, 0
+        # failed` — a tick — for every `sw implement` run.
+        #
+        # ORDERING MATTERED. Attempted before the marker defect was fixed, this made EVERY implement
+        # run fail and took 9 tests with it, including INT-US-24's own zero-collected guards,
+        # because collection was broken everywhere. Converting a false green into a universal red
+        # is not a fix; the collection defect had to go first.
+        if (kind == "scenario" or _one_generated_file) and result.exports.get("total", 0) == 0:
+            _what = "scenario tests" if kind == "scenario" else "tests"
             msg = (
-                f"No scenario tests executed (target={target}) — nothing was collected; "
-                "the behavioral verification cannot pass on an empty run."
+                f"No {_what} executed (target={target}) — nothing was collected; "
+                "verification cannot pass on an empty run."
             )
             logger.warning("ValidateTestsHandler: %s", msg)
             return StepResult(

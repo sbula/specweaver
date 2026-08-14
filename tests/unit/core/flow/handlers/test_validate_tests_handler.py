@@ -437,3 +437,27 @@ class TestValidateTestsHandlerMarkerSuppression:
         assert mock_atom.run.call_args.args[0]["kind"] == "", (
             "the marker reached the atom for a single-file target — it can only deselect there"
         )
+
+    @pytest.mark.asyncio
+    async def test_zero_collected_on_a_file_target_fails_loud(self, tmp_path: Path) -> None:
+        """A run that collected nothing proves nothing, and must not report success.
+
+        `INT-US-24` FR-3 made this fail loud for `kind="scenario"`. The implement loop names a
+        specific generated file, where zero-collected is never the *pristine incremental* case the
+        narrow guard protected — it means the QA step verified nothing while the pipeline moved on.
+
+        Landed only after the marker defect was fixed. Attempted before that, it made **every**
+        `sw implement` run fail and took 9 tests with it, because collection was broken everywhere:
+        converting a false green into a universal red is not a fix, and the ordering mattered.
+        """
+        handler = ValidateTestsHandler()
+        mock_result = AtomResult(
+            status=AtomStatus.SUCCESS, message="ok", exports={"passed": 0, "failed": 0, "total": 0}
+        )
+        with patch.object(handler, "_get_atom", return_value=MagicMock()) as mock_get:
+            mock_get.return_value.run.return_value = mock_result
+            step = _step(params={"kind": "unit", "target": "tests/test_greeter.py"})
+            result = await handler.execute(step, _ctx(tmp_path))
+
+        assert result.status == StepStatus.FAILED, result
+        assert "nothing was collected" in (result.error_message or "")

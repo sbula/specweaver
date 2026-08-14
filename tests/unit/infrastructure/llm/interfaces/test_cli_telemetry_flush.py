@@ -11,8 +11,10 @@ the TelemetryCollector after operations.
 from __future__ import annotations
 
 import contextlib
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import click
 import pytest
 
 from specweaver.core.config.settings import SandboxSettings
@@ -85,6 +87,18 @@ class TestReviewCommandFlush:
         mock_collector.flush.assert_called_once()
 
 
+def _implement_ignoring_exit(implement: Any, **kwargs: Any) -> None:
+    """Run `implement` and swallow only its exit, so the assertion after it is still reached.
+
+    The generators are doubled here, so nothing is written and the QA step collects nothing — which
+    since `TECH-017` SF-04 exits 1 rather than reporting a false green. Telemetry is flushed from
+    `PipelineRunner._finalize`, inside a `finally`, so the flush is owed on a FAILED run too, and
+    that is the stronger claim this test can now make. A failure other than the exit still escapes.
+    """
+    with contextlib.suppress(SystemExit, click.exceptions.Exit):
+        implement(selector="direct", **kwargs)
+
+
 class TestImplementCommandFlush:
     """sw implement flushes TelemetryCollector after generation."""
 
@@ -134,7 +148,7 @@ class TestImplementCommandFlush:
                 new_callable=AsyncMock,
             ),
         ):
-            implement(spec=str(spec), project=str(tmp_path), selector="direct")
+            _implement_ignoring_exit(implement, spec=str(spec), project=str(tmp_path))
 
         mock_collector.flush.assert_called_once()
 

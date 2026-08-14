@@ -199,7 +199,20 @@ class TestHighPriorityEdgeCases:
         assert not test_path.exists(), "Test file should not exist after LLM failure"
 
     def test_llm_returns_empty_response(self, tmp_path: Path) -> None:
-        """LLM returns empty string during implement → graceful handling."""
+        """[Degradation] LLM returns empty string during implement → refused, not falsely green.
+
+        Rewritten by `TECH-017` SF-04, because the behaviour it describes changed for the better.
+
+        It used to assert the generated file was *empty* and stop there. That held only because an
+        empty generation produced an empty test file, which collected nothing, which `run_tests`
+        reported as `0 passed, 0 failed` — rendered as a tick. The run went green on nothing, and
+        two responses were enough to reach the end of the pipeline.
+
+        Now zero-collected fails loud, so the empty draft is rejected and the loop-back asks again.
+        Graceful degradation is the command exiting non-zero without crashing — not a file that
+        happens to be empty. The file's final contents are whatever the last retry returned and are
+        no longer the interesting fact.
+        """
         spec_path = self._init_and_create_spec(tmp_path)
 
         empty_llm = _make_sequenced_llm(["", ""])
@@ -210,7 +223,7 @@ class TestHighPriorityEdgeCases:
                 empty_llm,
                 GenerationConfig(model="mock"),
             )
-            runner.invoke(
+            result = runner.invoke(
                 app,
                 [
                     "implement",
@@ -220,12 +233,13 @@ class TestHighPriorityEdgeCases:
                 ],
             )
 
-        # Even with empty response, a file gets written (with just a newline)
-        code_path = tmp_path / "src" / "greet_service.py"
-        if code_path.exists():
-            content = code_path.read_text(encoding="utf-8")
-            # Empty LLM output → file should be nearly empty
-            assert len(content.strip()) == 0
+        assert result.exit_code == 1, (
+            f"an empty generation reported success: {result.output[-400:]}"
+        )
+        assert "Implementation complete" not in result.output, result.output[-400:]
+        assert result.exception is None or isinstance(result.exception, SystemExit), (
+            f"degraded ungracefully: {result.exception!r}"
+        )
 
     def test_double_init_preserves_existing_content(
         self,

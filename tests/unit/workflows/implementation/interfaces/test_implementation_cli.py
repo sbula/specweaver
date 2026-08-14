@@ -47,7 +47,15 @@ def _scaffold(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _make_mock_adapter(text: str = "pass\n") -> MagicMock:
+#: The same text is returned for BOTH `generate_code` and `generate_tests`, so it has to be valid
+#: as either. It must contain a real `test_` function: since `TECH-017` SF-04 a run that collects
+#: nothing fails loud, and `"pass\n"` — the old default — collects nothing. These tests are about
+#: output *paths*; before the guard they reached their assertions through a QA step that had
+#: silently verified an empty run.
+_COLLECTABLE = "def greet():\n    pass\n\n\ndef test_greet_is_callable() -> None:\n    assert greet() is None\n"
+
+
+def _make_mock_adapter(text: str = _COLLECTABLE) -> MagicMock:
     """Create a mock LLM adapter that returns fixed text."""
     adapter = MagicMock()
     adapter.available.return_value = True
@@ -89,7 +97,7 @@ class TestImplementOutputPaths:
         mock_load.return_value = mock_settings
         mock_create.return_value = (
             mock_settings,
-            _make_mock_adapter("def greet(): pass\n"),
+            _make_mock_adapter(),
             MagicMock(temperature=0.7),
         )
 
@@ -125,7 +133,7 @@ class TestImplementOutputPaths:
         mock_load.return_value = mock_settings
         mock_create.return_value = (
             mock_settings,
-            _make_mock_adapter("pass\n"),
+            _make_mock_adapter(),
             MagicMock(temperature=0.7),
         )
 
