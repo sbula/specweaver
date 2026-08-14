@@ -164,8 +164,8 @@ others follow, and re-cutting that format mid-audit would invalidate earlier ver
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Skeleton + two largest | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-02 | The thin proofs | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Skeleton + two largest | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | The thin proofs | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Remainder + capability findings | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
@@ -194,6 +194,11 @@ Preserved verbatim from the pre-design stub (2026-07-26, re-measured 2026-08-13)
 these findings, and a reader who plans SF-01 without them will re-measure a tree that has already
 been measured twice. The annotations are the live worklist; the 2026-07-26 body is the record of
 what was found then.
+
+**2026-08-14 — SF-01 delivered, SF-02 planned.** SF-01 closed all three boundaries: the 13-entry
+skeleton, `INT-US-28` (6 claims) and `INT-US-21` (4 → 8, after CB-3 found CB-1 had extracted only
+each contract's first sentence). Matrix census: 13 entries, 46 claims. SF-02's plan is APPROVED and
+ordered worst-first per `AD-4`; it starts at CB-1, re-extraction of all five thin entries.
 
 ## Problem Statement — measured 2026-07-26, **re-measured 2026-08-13**
 
