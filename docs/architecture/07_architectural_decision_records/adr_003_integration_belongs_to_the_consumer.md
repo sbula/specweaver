@@ -145,6 +145,18 @@ evidence a `Proves:` tag can never supply — that the test **can** fail. It is 
 `TECH-025` NFR-3 (*"every `Proves:` tag names a test that would fail if that FR's behaviour
 regressed"*), which nothing currently checks.
 
+> **Tracked 2026-08-15 as `TECH-049`.** A coverage audit of this decision confirmed the rule reached
+> five of seven skills as instruction and **zero scripts as enforcement**. That makes this paragraph
+> the weakest link in the chain the ADR relies on: every downstream gate trusts a red that nothing
+> observes. See `docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_design.md`.
+>
+> The same audit found the **e2e half of this rule had not reached the skills at all** — the tier
+> table named e2e, but only the seam test carried a "write it before the code" sentence, and
+> pre-commit's tier profile (*"integration and e2e arrive at `sf` and `feature`"*) reads as licence
+> to author them late. Corrected the same day in `specweaver-implementation-plan` and
+> `specweaver-dev`, including the clarification that this example's *"steps"* are **pipeline** steps
+> inside the test, not commit boundaries.
+
 ### Risk accepted
 
 *"Is US-21 integrated?"* stops having a one-document answer and becomes *"are these FRs proven?"*.
