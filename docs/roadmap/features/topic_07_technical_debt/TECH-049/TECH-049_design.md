@@ -267,7 +267,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-04 | Machine Report | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Scheduler | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Session Gate and Override Census | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-07 | Adoption | SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Adoption | SF-06 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Verdict Table
 
