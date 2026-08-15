@@ -255,7 +255,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Session Baseline and Scoped Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Machine Report | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Machine Report | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Scheduler | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Session Gate and Override Census | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
