@@ -391,6 +391,31 @@ piece of evidence a `Proves:` tag can never supply.
 This is the mutant that matters most: the entire defect is an absent call, so a test that survives
 its removal is proving nothing.
 
+#### CB-3 outcome (delivered 2026-08-15)
+
+`replay_feedback` in `hydration.py`, called from `rehydrate_from_records`, reusing
+`GateEvaluator.inject_feedback`. 11 unit + 4 integration tests. Done-when mutant — deleting the
+call — `KILLED`.
+
+**The red was recorded, and the first attempt at it was wrong.** The integration test initially
+failed because session 1 ran to completion, so there was nothing to resume: in one process a
+loop-back is immediately followed by re-execution, and the paused-at-target state exists only if
+the process dies between. Rebuilt to construct that state directly, it then failed for the right
+reason — *"the regenerating step was handed NO feedback on resume"*.
+
+**W-1 changed the implementation.** It was proposed at the pre-commit gate to stop the test proving
+its own fixture: every other case hand-builds the interrupted run, so if `gates.py` stopped
+resetting the target or retaining the source result, they would pass over a dead feature. Pinned to
+a real loop-back, the observed target status is **`RUNNING`**, not `PENDING` — `mark_step_running`
+fires and is persisted. There are therefore **two reachable crash points**, and the condition as
+planned (RB-4, `PENDING` only) would have left a run that died mid-regeneration to resume blind.
+The discriminator is `result is None`; status now accepts `PENDING` or `RUNNING`.
+
+Also completed `test_runner_handover.py`'s mock run with `current_step`, which a real `PipelineRun`
+always carries — the stand-in was less constrained than the type it stood in for.
+
+`check_fr_coverage.py INT-US-04` now passes **3 of 3**.
+
 ### CB-4 — D-4/RB-1: correct `assurance/validation`'s declared interface
 
 `exposes` becomes the real surface. Not documentation tidying — `tach_sync` regenerates

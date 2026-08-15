@@ -19,7 +19,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
-from specweaver.core.flow.engine.models import StepAction, StepTarget
+from specweaver.core.flow.engine.gates import GateEvaluator
+from specweaver.core.flow.engine.models import OnFailAction, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
@@ -177,6 +178,103 @@ def hydrate_plan_context(
         )
 
 
+def _eligible_source(
+    pipeline: PipelineDefinition, run: PipelineRun, target_name: str
+) -> tuple[str, StepResult] | None:
+    """The step whose loop-back left feedback pending for `target_name`, or None.
+
+    Three conditions, all required (plan RB-4). `PENDING` on the target is NOT a loop-back signal
+    on its own — every record starts `PENDING`, so keying on it alone would invent feedback for any
+    resume that happens to sit on a gate target.
+
+    Where two gates share a loop target — `run_tests` and `validate_code` both pointing at
+    `generate_code` is a shape `sw implement` already has — the **highest index wins**, matching
+    `rehydrate_from_records`' forward iteration.
+    """
+    found: tuple[str, StepResult] | None = None
+    for idx, step_def in enumerate(pipeline.steps):
+        gate = step_def.gate
+        if (
+            gate is None
+            or gate.on_fail != OnFailAction.LOOP_BACK
+            or gate.loop_target != target_name
+        ):
+            continue
+        if idx >= len(run.step_records):
+            continue
+        record = run.step_records[idx]
+        if record.step_name != step_def.name:
+            continue
+        # `TECH-021` is what makes this checkable: before it, a loop-back discarded the failing
+        # result and there was nothing left to replay.
+        if record.result is None or record.result.status == StepStatus.PASSED:
+            continue
+        found = (step_def.name, record.result)
+    return found
+
+
+def replay_feedback(
+    pipeline: PipelineDefinition,
+    run: PipelineRun,
+    context: RunContext,
+) -> None:
+    """Restore `context.feedback` for a run resumed at a loop target (`INT-US-04` FR-3).
+
+    `context.feedback` lives in memory and dies with the process, so a resumed run regenerated with
+    no findings and repeated the mistake validation had just caught. Same shape as
+    `rehydrate_from_records` replaying `hydrate_plan_context`: one function, both paths, so the live
+    and cross-session runs cannot drift.
+
+    Feedback is keyed on the **target** step's name because that is what the consuming handler pops
+    (`generation.py:87`, `draft.py:37`). Keyed on the failing step's name it would build a dict
+    nothing ever reads, while every "feedback was restored" assertion still passed.
+
+    Never raises — a resume must survive a pipeline that no longer matches its records.
+    """
+    target_idx = run.current_step
+    if not 0 <= target_idx < len(pipeline.steps) or target_idx >= len(run.step_records):
+        return
+
+    target_def = pipeline.steps[target_idx]
+    target_record = run.step_records[target_idx]
+    if target_record.step_name != target_def.name:
+        logger.warning(
+            "[run_id=%s] Resumed at index %d where the pipeline names '%s' but the record names "
+            "'%s' — skipping feedback replay",
+            run.run_id,
+            target_idx,
+            target_def.name,
+            target_record.step_name,
+        )
+        return
+
+    # A loop-back resets its target to PENDING/result=None (`gates.py:232-233`), and the target
+    # becomes RUNNING the moment it is re-entered (`mark_step_running`) — both are persisted, so
+    # BOTH are reachable crash points and both must replay. Requiring PENDING alone would leave a
+    # run that died mid-regeneration to resume blind; found by pinning the fixture to a real
+    # loop-back (CB-3 W-1), where the observed status is RUNNING.
+    #
+    # `result is None` is what actually separates "owes a regeneration" from "already done": a
+    # target that completed carries its result, and a HITL park is WAITING_FOR_INPUT.
+    if target_record.result is not None:
+        return
+    if target_record.status not in (StepStatus.PENDING, StepStatus.RUNNING):
+        return
+
+    source = _eligible_source(pipeline, run, target_def.name)
+    if source is None:
+        return
+
+    from_step, result = source
+    GateEvaluator.inject_feedback(context, from_step, target_def.name, result)
+    logger.debug(
+        "[run_id=%s] Replayed feedback from '%s' onto '%s'",
+        run.run_id,
+        from_step,
+        target_def.name,
+    )
+
+
 def rehydrate_from_records(
     pipeline: PipelineDefinition,
     run: PipelineRun,
@@ -244,3 +342,7 @@ def rehydrate_from_records(
             continue
 
         hydrate_plan_context(step_def, record.result, context)
+
+    # INT-US-04 SF-01 FR-3: feedback is the other half of what a resumed run lost. Independent of
+    # the loop above -- it keys on `run.current_step`, not on any individual record.
+    replay_feedback(pipeline, run, context)

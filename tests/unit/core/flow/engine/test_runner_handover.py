@@ -57,6 +57,10 @@ def runner():
     run.project_name = "test_project"
     run.status = RunStatus.NOT_STARTED
     run.step_records = []
+    # A real PipelineRun always carries an int here (Pydantic, default 0). The mock predates
+    # `replay_feedback`, which reads it on resume; without it the stand-in is less constrained
+    # than the type it stands in for.
+    run.current_step = 0
 
     r = PipelineRunner(pipeline, context)
     r._run = run
