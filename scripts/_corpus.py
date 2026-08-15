@@ -37,6 +37,8 @@ discover a typo is a minute wasted per mistake.
 
 from __future__ import annotations
 
+import ast
+import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -216,3 +218,121 @@ def load_corpus(path: Path) -> Corpus:
             seen[mutant.derived_id] = campaign.requirement
 
     return Corpus(feature=feature, campaigns=campaigns, path=path)
+
+
+# --- symbol resolution, hashing and drift -----------------------------------------------------
+
+#: The node kinds a dotted `symbol` path may name. A mutant anchored outside one of these has no
+#: enclosing scope to fingerprint, so it is refused rather than hashed against the whole module —
+#: that would mark it stale on every unrelated edit in the file, which is worse than not supporting
+#: it at all.
+_NAMED = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+
+#: Drift states. Reported here, judged in SF-03 — this module decides nothing.
+OK = "OK"
+STALE = "STALE"
+UNHASHED = "UNHASHED"
+
+
+def _parse(source: str) -> ast.Module:
+    try:
+        return ast.parse(source)
+    except SyntaxError as exc:
+        raise CorpusError(f"cannot parse the source: {exc}") from exc
+
+
+def resolve_symbol(source: str, symbol: str) -> ast.AST:
+    """The node a dotted path names — `f`, or `Class.method`.
+
+    Resolved one segment at a time through each node's **direct body**, never by walking the whole
+    tree. Measured across `src/`: 25 files carry duplicate symbol names and one holds `__init__`
+    six times, so a tree-wide search would resolve a bare name to whichever it met first and the
+    mutant would silently measure different code than its claim describes.
+    """
+    node: Any = _parse(source)
+    for segment in symbol.split("."):
+        if not segment:
+            raise CorpusError(f"{symbol!r}: empty path segment")
+        found = [
+            child
+            for child in getattr(node, "body", [])
+            if isinstance(child, _NAMED) and child.name == segment
+        ]
+        if not found:
+            raise CorpusError(f"{symbol!r}: no function or class named {segment!r} at that level")
+        if len(found) > 1:
+            raise CorpusError(
+                f"{symbol!r}: {segment!r} is defined {len(found)} times at that level — "
+                "qualify it, e.g. 'ClassName.method'"
+            )
+        node = found[0]
+    return node
+
+
+def _without_docstring(node: ast.AST) -> ast.AST:
+    """A copy whose leading docstring is gone, so prose edits cannot read as drift.
+
+    `ast.dump` includes docstrings because they are ordinary `Expr(Constant(str))` nodes. Left in,
+    rewording a comment-shaped sentence would report the claim as moved when the behaviour did not
+    change — and `STALE` has to mean something stronger than that to be worth reading.
+    """
+    body = list(getattr(node, "body", []))
+    leads_with_docstring = (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    )
+    return ast.Module(body=body[1:] if leads_with_docstring else body, type_ignores=[])
+
+
+def symbol_sha(source: str, symbol: str) -> str:
+    """A fingerprint of what the symbol *does*, not of how it is laid out.
+
+    `ast.dump` omits line numbers unless asked for them, so whitespace and wrapping are already
+    invisible — a `ruff format` pass cannot mark a corpus stale. Renaming a local does change it,
+    which is correct: that is a behaviour-adjacent edit worth re-reading the claim for.
+    """
+    node = resolve_symbol(source, symbol)
+    digest = hashlib.sha256(ast.dump(_without_docstring(node)).encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
+
+
+def check_anchor(source: str, symbol: str, anchor: str) -> None:
+    """The anchor must appear exactly once **inside** the symbol.
+
+    Scoped to the symbol rather than the file on purpose. Measured over `src/`: `return None`
+    occurs 191 times across 77 files and `return []` 59 times across 31 — file-uniqueness would
+    reject every natural anchor and force unreadable ones.
+    """
+    node = resolve_symbol(source, symbol)
+    start = getattr(node, "lineno", 1) - 1
+    end = getattr(node, "end_lineno", None) or len(source.splitlines())
+    body = "\n".join(source.splitlines()[start:end])
+    count = body.count(anchor)
+    if count == 0:
+        raise CorpusError(
+            f"{symbol!r}: anchor {anchor!r} does not occur inside it. Either the code moved, or "
+            "the mutant names a symbol it is not in"
+        )
+    if count > 1:
+        raise CorpusError(
+            f"{symbol!r}: anchor {anchor!r} occurs {count} times inside it — "
+            "the runner could not say which line it changed. Make it unique"
+        )
+
+
+def drift_of(mutant: Mutant, root: Path) -> str:
+    """Whether the code this mutant's claim rests on still looks the way it did.
+
+    A vanished file or symbol is `STALE`, never an error: the code a claim rested on being gone is
+    the most valuable thing the corpus can tell you, and raising here would turn it into a crash in
+    the middle of a nightly run.
+    """
+    if mutant.symbol_sha is None:
+        return UNHASHED
+    try:
+        source = (root / mutant.file).read_text(encoding="utf-8")
+        return OK if symbol_sha(source, mutant.symbol) == mutant.symbol_sha else STALE
+    except (OSError, CorpusError):
+        return STALE

@@ -236,3 +236,190 @@ class TestLoadCorpusErrorMessages:
         assert "C-EXEC-06_mutants.json" in message
         assert "FR-8" in message
         assert "isolation-off" in message
+
+
+# --- CB-2: symbol resolution, hashing, drift -------------------------------------------------
+
+_SOURCE = '''\
+"""Module docstring."""
+
+
+def apply_session_policy(policy):
+    """Decide whether the run is isolated."""
+    if policy is None:
+        return False
+    return policy.enabled
+
+
+class SessionPolicy:
+    def run(self, ctx):
+        """Class A's run."""
+        return ctx.enabled
+
+
+class OtherPolicy:
+    def run(self, ctx):
+        """Class B's run — same bare name."""
+        return ctx.disabled
+
+
+def redefined(x):
+    return 1
+
+
+def redefined(x):  # noqa: F811 — deliberate: two definitions at ONE level
+    return 2
+'''
+
+
+@pytest.fixture
+def source(tmp_path: Path) -> Path:
+    path = tmp_path / "isolation.py"
+    path.write_text(_SOURCE, encoding="utf-8")
+    return path
+
+
+class TestSymbolSha:
+    """`symbol_sha` — a fingerprint of behaviour, not of formatting."""
+
+    def test_it_resolves_a_module_level_function(self, corpus: ModuleType, source: Path) -> None:
+        assert corpus.symbol_sha(source.read_text(), "apply_session_policy").startswith("sha256:")
+
+    def test_a_dotted_path_reaches_a_method(self, corpus: ModuleType, source: Path) -> None:
+        assert corpus.symbol_sha(source.read_text(), "SessionPolicy.run").startswith("sha256:")
+
+    def test_a_dotted_path_disambiguates_a_repeated_bare_name(
+        self, corpus: ModuleType, source: Path
+    ) -> None:
+        """Why the path is dotted at all.
+
+        Measured across `src/`: 25 files carry duplicate symbol names, one holding `__init__` six
+        times. A bare `run` here is two different methods, and resolving it to "the first one" is
+        how a mutant silently measures the wrong code.
+        """
+        text = source.read_text()
+        assert corpus.symbol_sha(text, "SessionPolicy.run") != corpus.symbol_sha(
+            text, "OtherPolicy.run"
+        )
+
+    def test_a_name_defined_twice_at_one_level_is_refused(
+        self, corpus: ModuleType, source: Path
+    ) -> None:
+        """The ambiguity branch — and it took a mutant to notice nothing reached it.
+
+        The first version of this test asked for a bare `run`, which is a *method*: at module level
+        it is simply absent, so the assertion passed through the "no symbol named" branch and the
+        duplicate check went unexercised. Neutralising `if len(found) > 1:` left the suite green.
+        A redefinition is the only shape that reaches it.
+        """
+        with pytest.raises(corpus.CorpusError, match="2 times"):
+            corpus.symbol_sha(source.read_text(), "redefined")
+
+    def test_a_method_name_is_not_visible_at_module_level(
+        self, corpus: ModuleType, source: Path
+    ) -> None:
+        """`run` exists twice in the file but at neither module level — resolution is per level."""
+        with pytest.raises(corpus.CorpusError, match="no function or class named"):
+            corpus.symbol_sha(source.read_text(), "run")
+
+    def test_an_absent_symbol_is_refused_naming_the_segment(
+        self, corpus: ModuleType, source: Path
+    ) -> None:
+        with pytest.raises(corpus.CorpusError, match="Missing"):
+            corpus.symbol_sha(source.read_text(), "SessionPolicy.Missing")
+
+    def test_reformatting_does_not_change_the_hash(self, corpus: ModuleType, source: Path) -> None:
+        """A `ruff format` pass must not mark every mutant stale."""
+        spaced = _SOURCE.replace("    return policy.enabled", "\n    return  policy.enabled")
+        assert corpus.symbol_sha(spaced, "apply_session_policy") == corpus.symbol_sha(
+            _SOURCE, "apply_session_policy"
+        )
+
+    def test_renaming_a_local_does_change_the_hash(self, corpus: ModuleType) -> None:
+        renamed = _SOURCE.replace("policy.enabled", "policy.active")
+        assert corpus.symbol_sha(renamed, "apply_session_policy") != corpus.symbol_sha(
+            _SOURCE, "apply_session_policy"
+        )
+
+    def test_rewording_the_docstring_does_not_change_the_hash(self, corpus: ModuleType) -> None:
+        """Q1 — the only guard on it, and the reason the strip step exists.
+
+        `ast.dump` includes docstrings because they are real nodes, so without stripping, editing
+        prose would report the claim as moved when nothing moved.
+        """
+        reworded = _SOURCE.replace(
+            '"""Decide whether the run is isolated."""', '"""Reworded entirely."""'
+        )
+        assert corpus.symbol_sha(reworded, "apply_session_policy") == corpus.symbol_sha(
+            _SOURCE, "apply_session_policy"
+        )
+
+    def test_unparseable_source_is_refused(self, corpus: ModuleType) -> None:
+        with pytest.raises(corpus.CorpusError):
+            corpus.symbol_sha("def broken(:\n", "broken")
+
+
+class TestCheckAnchor:
+    """Rule 9 — the anchor must be unique *within the symbol*, not the file."""
+
+    def test_an_anchor_present_once_is_accepted(self, corpus: ModuleType) -> None:
+        corpus.check_anchor(_SOURCE, "apply_session_policy", "return policy.enabled")
+
+    def test_an_anchor_outside_the_symbol_is_refused(self, corpus: ModuleType) -> None:
+        """The mutant claims a symbol it is not inside — it would mutate someone else's code."""
+        with pytest.raises(corpus.CorpusError):
+            corpus.check_anchor(_SOURCE, "apply_session_policy", "return ctx.disabled")
+
+    def test_an_anchor_repeated_inside_the_symbol_is_refused(self, corpus: ModuleType) -> None:
+        twice = _SOURCE.replace(
+            "    return policy.enabled", "    if policy.enabled:\n        return policy.enabled"
+        )
+        with pytest.raises(corpus.CorpusError, match="2 times"):
+            corpus.check_anchor(twice, "apply_session_policy", "policy.enabled")
+
+    def test_a_file_scoped_duplicate_is_still_accepted_inside_one_symbol(
+        self, corpus: ModuleType
+    ) -> None:
+        """The point of scoping to the symbol: `return False` is not file-unique and need not be."""
+        corpus.check_anchor(_SOURCE, "apply_session_policy", "return False")
+
+
+class TestDriftOf:
+    """`drift_of` — reports, never acts. Verdicts belong to SF-03."""
+
+    def _pinned(self, corpus: ModuleType, source: Path, sha: str | None) -> Any:
+        return corpus.Mutant(
+            id="isolation-off",
+            file=source.name,
+            symbol="apply_session_policy",
+            old="return policy.enabled",
+            new="return False",
+            breaks="isolation never engages",
+            derived_id="X FR-1 isolation-off",
+            symbol_sha=sha,
+        )
+
+    def test_a_matching_hash_is_ok(self, corpus: ModuleType, source: Path) -> None:
+        sha = corpus.symbol_sha(source.read_text(), "apply_session_policy")
+        assert corpus.drift_of(self._pinned(corpus, source, sha), source.parent) == "OK"
+
+    def test_an_absent_hash_is_unhashed_not_stale(self, corpus: ModuleType, source: Path) -> None:
+        """A newly authored mutant is legal and must not read as drift."""
+        assert corpus.drift_of(self._pinned(corpus, source, None), source.parent) == "UNHASHED"
+
+    def test_a_changed_symbol_is_stale(self, corpus: ModuleType, source: Path) -> None:
+        stale = self._pinned(corpus, source, "sha256:deadbeef")
+        assert corpus.drift_of(stale, source.parent) == "STALE"
+
+    def test_a_vanished_symbol_is_stale_not_an_error(
+        self, corpus: ModuleType, source: Path
+    ) -> None:
+        """The code a claim rested on was removed — the most valuable signal in the corpus."""
+        source.write_text('"""Emptied."""\n', encoding="utf-8")
+        stale = self._pinned(corpus, source, "sha256:whatever")
+        assert corpus.drift_of(stale, source.parent) == "STALE"
+
+    def test_a_vanished_file_is_stale_not_an_error(self, corpus: ModuleType, source: Path) -> None:
+        stale = self._pinned(corpus, source, "sha256:whatever")
+        source.unlink()
+        assert corpus.drift_of(stale, source.parent) == "STALE"

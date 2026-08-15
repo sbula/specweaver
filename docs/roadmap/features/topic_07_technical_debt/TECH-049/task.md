@@ -23,14 +23,14 @@ exactly that test goes red.
 
 ## CB-2 — Symbol resolution and hashing
 
-- [ ] **T6** Dotted symbol path resolution through direct bodies. Rule 8.
+- [x] **T6** Dotted symbol path resolution through direct bodies. Rule 8.
       Covers: module-level function, `Class.method`, absent segment, ambiguous at one level,
       module-level anchor rejected (Q5).
-- [ ] **T7** Docstring strip + `sha256(ast.dump(node))`. FR-2, Q1.
+- [x] **T7** Docstring strip + `sha256(ast.dump(node))`. FR-2, Q1.
       Covers: reformat-stable, rename-sensitive, docstring-insensitive.
-- [ ] **T8** Rule 9 — anchor occurs exactly once **within the symbol's line range**; anchor outside
+- [x] **T8** Rule 9 — anchor occurs exactly once **within the symbol's line range**; anchor outside
       the symbol rejected.
-- [ ] **T9** Drift state, returned as one of `OK` · `STALE` · `UNHASHED` on each mutant, for SF-02
+- [x] **T9** Drift state, returned as one of `OK` · `STALE` · `UNHASHED` on each mutant, for SF-02
       and SF-03 to consume. **Reported, never acted on here** — the shape is the seam, so it is
       named now rather than invented at the boundary.
 
