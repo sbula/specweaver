@@ -1,85 +1,97 @@
-# Design: Nothing Verifies a Test Was Red Before the Code It Covers
+# Design: Mutation Campaign Corpus and Session Gate
 
 - **Feature ID**: TECH-049
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: 2026-08-15, from the `ADR-003` skill-coverage audit run while retiring
-  `INT-US-04-SF09`. The audit asked whether the "integration and e2e tests are written before the
-  code" rule reached the skills. It did — in five of seven. Nothing checks it.
+- **Status**: STUB — decisions settled 2026-08-15, not yet run through `specweaver-design`
+- **Origin**: 2026-08-15, from the `ADR-003` skill-coverage audit. Rescoped the same day — the
+  original framing (*"Nothing Verifies a Test Was Red Before the Code It Covers"*) named a real gap
+  whose two cheap answers the closure contract already refuses, and whose expensive answer is
+  `A-VAL-03`. What survives is dev tooling, below.
+
+> **Track: dev tooling.** This is how *we* build SpecWeaver. `A-VAL-03` (Mutation Testing Gates) is
+> a product capability run against a *user's* codebase. Overlapping subject matter, different
+> deliverable. Nothing here is blocked on it; nothing here belongs in it.
 
 ## Problem Statement
 
-`ADR-003` made test **sequencing** load-bearing. Integration no longer has its own story, so the
-seam test is written by the capability that creates the seam, at the boundary where *"the interface
-first exists and the behaviour does not yet"*. The ADR states plainly why:
+Mutation testing exists (`scripts/_mutate.py`, `scripts/_mutate_campaign.py`) and works. Nothing
+around it does:
 
-> A test written after the code it covers has never failed for the right reason.
+- Campaigns are ad-hoc JSON, authored once and thrown away. **No campaign file is committed
+  anywhere in the repo.**
+- Reports go to gitignored `.tmp/` and are discarded. No prior result survives, so **drift cannot be
+  detected** — "this was killed in July, it survives today" is unaskable.
+- `_mutate_campaign.py` **returns 0 unconditionally**. A campaign where every mutant is `BROKEN`
+  exits clean and writes a report that reads healthy.
+- Nothing runs it. No cron, no timer, no scheduled workflow — `.github/workflows/` holds only an
+  image build, and there are no git hooks.
 
-The rule is well encoded as **instruction**. It is encoded **nowhere as a check**.
+## Settled decisions (2026-08-15)
 
-| Layer | Encodes the rule? | Enforces it? |
+Reached by discussion; recorded here so they are not re-derived.
+
+| # | Decision |
+|---|---|
+| 1 | Mutation detects **shift and drift**. Red-first TDD stays the primary discipline; mutation does not replace it. |
+| 2 | Mutants are **deliberate, never random** — each plants a bug that should break one isolated (N)FR. |
+| 3 | A **campaign targets one (N)FR** and holds several mutants. Requirement ids are unique per feature, **not repo-wide**. |
+| 4 | **One file per feature**, beside the design: `<ID>_mutants.json`. 55 files today, ~149 at full roadmap. One file per requirement would be 575 now and ~1,400 later — rejected. |
+| 5 | Success = scoped tests **green before, red after**, with at least one killer **in scope** for the (N)FR. A bystander kill is a failure: the requirement is still unproven. |
+| 6 | **Baseline runs the full suite once per session.** A red baseline does **not** stop the run — it yields `INDETERMINATE` for the affected mutants and tells you how to read the rest. |
+| 7 | Mutant runs are **(N)FR-scoped**, not full-suite. Measured: **71.7 s → 1.24 s** per mutant. Scoping is semantics (see 5), not an optimisation. |
+| 8 | **Accounting rule**: N mutants declared, N verdicts returned. Any mismatch fails the campaign. Catches crashes, interrupts, silent skips. |
+| 9 | A failing campaign **never stops the others**. All campaigns run; the session verdict aggregates. |
+| 10 | **`symbol_sha` only** — hash of the normalised AST (`ast.dump()`, line numbers stripped) of the enclosing symbol. Not a skip mechanism (a full corpus is ~10 min); its only job is answering *"did the code this claim rests on move?"*. `file_sha` adds nothing. |
+| 11 | **Campaign declares its own `scope`.** Citation tags cross-check where present, never gate — only 35 of 554 test files carry one. |
+| 12 | **One report**, `.tmp/mutation_report.json`, summary block first. No markdown, no human formatting. |
+| 13 | The report is **self-contained**. The sandbox is a detached worktree deleted at any time; killers, collected counts and failure text are captured before teardown. Nothing may point into it. |
+| 14 | Sandbox output is for scripts only. **`PY_COLORS=0`** — no colour anywhere in the pipeline. |
+
+### Verdicts
+
+| Baseline (scoped) | After mutation | Verdict |
 |---|---|---|
-| `specweaver-design` (`phase-3-detail.md` A.1a–A.1d) | ✅ seams are FRs; bindings table; HITL gate | — |
-| `specweaver-implementation-plan` (`SKILL.md`, `phase-1-preparation.md`) | ✅ tier table; write-the-seam-test-between-steps; *"record the red and its reason"* | ❌ |
-| `specweaver-dev` (`SKILL.md` 3.1 Red) | ✅ strict red-before-implementation mandate | ❌ |
-| `specweaver-pre-commit` (`phase-2`, `phase-4`) | ✅ tier gap matrix, tier profile | runs tiers, cannot see ordering |
-| `scripts/` | — | **no script reads a plan or walkthrough for a recorded red** |
+| green | red, killer in scope | `PASS` |
+| green | red, no in-scope killer | `FAIL` — bystander; FR unproven |
+| green | green | `FAIL` — FR not protected |
+| **red** | anything | `INDETERMINATE` |
+| — | anchor will not apply | `STALE` — code moved |
+| — | 0 tests collected | `FAIL` |
 
-`ADR-003` admits the gap in its own §*Test sequencing*: the recorded red is
-*"a partial answer to `TECH-025` NFR-3 … which nothing currently checks."*
+Every kill is re-run without the mutant before it is believed, or a flaky test reads as a pass.
 
-`TECH-025` NFR-3 states the same requirement from the citation side — *"every `Proves:` tag names a
-test that would fail if that FR's behaviour regressed"* — and is likewise unenforced. **Both
-statements of the rule are discipline-only, and they are the two that matter most**, because every
-gate downstream trusts them: `check_fr_coverage.py` proves a test *exists* and is *cited*, never
-that it can fail.
+## Tasks
 
-### This has already produced a false green in this repo
+1. ~~Fix the runner's false `SURVIVED` under a colour-forcing shell.~~ **DONE `72b82df8`.**
+2. **Campaign format** — `<ID>_mutants.json` schema, loader, validation, `symbol_sha` computation.
+3. **Runner changes** — session baseline, scoped runs, collected-count assert, kill re-confirmation,
+   sandbox-clean check between mutants, accounting rule.
+4. **Single JSON report** — summary first, self-contained, exit codes `0` pass / `1` fail / `2` could
+   not run.
+5. **Scheduler** — run the corpus nightly. Nothing exists: no cron, no timer, no scheduled workflow.
+6. **Session gate** — evaluate the report automatically and decide *continue* or *fix first*.
+   Standalone; deliberately **not** wired into any commit gate.
+7. **Override census** — a human may overrule the gate when a feature genuinely outranks the issue,
+   but never silently. Reuse the `check_suppressions.py` + `scripts/baselines/` pattern: the bypass
+   is an entry naming the requirement, the person, the reason and the promise, ratcheted so the
+   count may fall and never rise. A `--force` flag with no record turns the gate into decoration.
 
-`TECH-017` wrote a containment test that passed on first run and proved nothing — the function it
-covered returned `{}` for every caller, so the assertion could not fail. It was a **mutant**, run by
-hand, that exposed it; chasing the mutant found a key mismatch that had kept skeleton context out of
-every generation and review prompt since the feature shipped. A green test suite concealed a live
-production defect for months, and no gate was capable of noticing.
+> **Open on task 7:** does an override expire on a date, or is a non-growing ratchet enough?
 
-## Candidate Approaches (not yet designed)
+## Non-Goals
 
-1. **Parse the plan/walkthrough for a recorded red.** Require a structured `Red:` field per commit
-   boundary that introduces a test, naming the test and the reason it failed. Cheap; checks that
-   the claim was *written*, not that it is *true*. Vulnerable to the exact document-state lie
-   `check_story_preconditions.py` exists to catch.
-2. **Require a killed mutant per new test citation.** Extend `scripts/_mutate.py` (already used
-   this way by hand, already invoked from the implementation-plan skill's Done-when contract) into
-   a gate: a `Proves:` tag is valid only if neutralising the line it covers turns that test red.
-   Strongest evidence, directly discharges `TECH-025` NFR-3, and costs real runtime — the cost
-   profile needs measuring before it can be scoped.
-3. **Check commit ordering in git.** A test file's first commit must not post-date the
-   implementation it cites. Fully mechanical and free, but blind to the within-commit case, which
-   is the normal one here — the project commits red and green together at a boundary.
+- **Mutant generation from an AST.** That is `A-VAL-03`. Every entry stays hand-authored, so the
+  format must remain writable by a person.
+- **Any commit-gate integration.** The session gate is standalone by decision.
+- **Blocking on a surviving mutant as a general rule.** Equivalent mutants are 4–39% of all mutants
+  and equivalence is formally undecidable — a blanket block carries that as a false-failure floor.
+- Retrofitting campaigns onto delivered stories. The corpus grows as campaigns are written.
 
-Not mutually exclusive: 3 is a cheap always-on floor, 2 is the real proof, 1 is the audit trail.
+## Intake for `A-VAL-03`
 
-## Non-Goals (proposed, pending design)
-
-- Enforcing red-first for **unit** tests beyond what `specweaver-dev` 3.1 already mandates. The
-  measured failure is at the seam and journey tiers, which `ADR-003` moved and no separate story
-  now double-checks.
-- Retrofitting evidence onto delivered stories. `finished-stories-immutable` applies; this gate
-  judges what is written next, exactly as `ADR-003` did.
-- Replacing `check_fr_coverage.py` or `check_proof_tier.py`. This is the missing third question
-  (*can the cited test fail?*) alongside their two (*does it exist? is it the right tier?*).
-
-## The decision this ticket exists to force
-
-**What counts as machine-checkable evidence that a test was red first** — and what runtime the
-project will pay for it. Approach 2 is the only one that proves the property rather than recording
-a claim about it, and it is the only one whose cost is unknown. That is a scope decision, not an
-implementation detail, which is why this is a ticket rather than a fix.
-
-**Ship the guardrail with the fix**: whichever approach lands must also be applied to the skills
-that currently only *say* the rule, so the instruction and the gate cannot drift apart.
+Carry forward, do not re-derive: the cost figures (7), the equivalent-mutant floor, scoping-as-
+semantics (5), baseline-once-per-session (6), the accounting rule (8), and the verdict table.
 
 ## Next Step
 
-Run `specweaver-design TECH-049`. Measure approach 2's runtime over a representative story before
-the Phase 4 HITL gate — the cost is the decision.
+Run `specweaver-design TECH-049`. The decisions above are inputs, not a substitute for it.

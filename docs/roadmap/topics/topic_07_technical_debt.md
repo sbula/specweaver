@@ -172,11 +172,10 @@ critical for long-term project viability.
   > requirements, and one whose requirements the parser could not read. **DELIVERED 2026-08-13:** outcomes split, and the parser widened — the table-only rule was its own invention, since the design
   > skill mandates numbered testable FRs and no table. Unreadable designs: 5 → 0.
 
-* **`TECH-049` 🔜: Nothing Verifies a Test Was Red Before the Code It Covers**
-  > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit.)_ | `ADR-003` made test sequencing load-bearing: with no
-  > separate integration story, the seam test is written where *"the interface first exists and the behaviour does not yet"*. Five of seven skills encode that rule; **no script checks it**, as the
-  > ADR admits of `TECH-025` NFR-3. `check_fr_coverage.py` proves a cited test exists, never that it CAN fail — `TECH-017` shipped one that could not. **Decision:** what counts as machine-checkable
-  > red-first evidence, and what runtime it is worth.
+* **`TECH-049` 🔜: Mutation Campaign Corpus and Session Gate**
+  > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit; rescoped the same day.)_ | Mutation testing works, nothing
+  > around it does: campaigns are ad-hoc and uncommitted, reports are discarded so drift is undetectable, the runner returns 0 even when every mutant is BROKEN, and nothing schedules it. Adds a
+  > per-feature campaign corpus, a nightly run, and a standalone session gate with a ratcheted override census. Dev tooling — `A-VAL-03` is the product capability and is a separate track.
 
 * **`TECH-046` 🟢: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
   > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) | _(2026-08-13 — `TECH-038`'s follow-up.)_ | `C-INTL-01` was designed multi-level and shipped single-pass, with no

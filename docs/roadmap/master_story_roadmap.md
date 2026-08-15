@@ -662,4 +662,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-046:** [`C-INTL-01` Shipped Without the Recursion It Was Designed For](features/topic_07_technical_debt/TECH-046/TECH-046_design.md)
     *   `✅` **TECH-047:** [Nothing Runs the FR-Coverage Gate Across Delivered Work](features/topic_07_technical_debt/TECH-047/TECH-047_design.md)
     *   `✅` **TECH-048:** [A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"](features/topic_07_technical_debt/TECH-048/TECH-048_design.md)
-    *   `[ ]` **TECH-049:** [Nothing Verifies a Test Was Red Before the Code It Covers](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
+    *   `[ ]` **TECH-049:** [Mutation Campaign Corpus and Session Gate](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
