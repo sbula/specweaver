@@ -255,7 +255,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Session Baseline and Scoped Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Machine Report | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Machine Report | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Scheduler | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Session Gate and Override Census | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -313,6 +313,8 @@ baseline-once-per-session (AD-6), the accounting rule (FR-8), and the verdict ta
 timer and AD-10 setting the gate to confirm-not-rerun. The blocking runner defect was already
 delivered in `72b82df8` — it reported every mutant `SURVIVED` under a colour-forcing shell.
 **Open decisions**: none.
-**Next step**: SF-01, SF-02 and SF-03 are delivered — the session now judges. Trigger the implementation-plan skill for SF-04 (the machine report).
+**Next step**: SF-01 to SF-04 are delivered — a session runs, judges, and writes a report that
+outlives its sandbox. SF-05 (scheduler) and SF-06 (gate) both depend only on SF-04, so they can run
+in parallel.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

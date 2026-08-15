@@ -82,6 +82,22 @@ no-`/tmp/`-in-the-report test goes red. That test is the whole of FR-9's "self-c
 | R-2 | The report grows a field that is never sanitised | Sanitisation applied once at serialisation, over the whole document, not per-field at each call site |
 | R-3 | `mutation.py` grows past YELLOW anyway | Report split out at 306; measured again at the close |
 
+## Delivered
+
+One boundary. Three mutants, all KILLED. Full suite 7082 passed, 0 failed.
+
+**Two findings, both caught by the seam rather than by unit tests:**
+
+- The report was **trivially clean because it dropped the leaky field**. `_as_dict` carried only
+  `derived_id/verdict/reason/drift`, so "no `/tmp/` in the report" passed for the wrong reason.
+  FR-9 says *captured output included*; adding `detail` made the assertion real, and a reader would
+  otherwise learn a mutant was `STALE` and nothing about which symbol moved.
+- `test_the_sandbox_is_removed_after_a_session` **read shared global state** — `git worktree list`
+  counts before and after. Green alone, red under `-n auto`, because other xdist workers hold
+  worktrees of their own. Rewritten to assert on the path this session created.
+
+`mutation.py` 411 lines, `_mutation_report.py` 143 — both under YELLOW, which the Q5 split bought.
+
 ## Out of scope
 
 The scheduler, the gate, the override census. SF-05 and SF-06.

@@ -3,7 +3,7 @@
 
 """The first place the corpus and the runner meet.
 
-Proves: TECH-049 FR-4, FR-6, FR-7
+Proves: TECH-049 FR-4, FR-6, FR-7, FR-9
 
 `SF-01` produced validated `Corpus` objects and ran nothing; `_mutate` ran mutants and knew nothing
 about campaigns. This is the seam between them, and per `ADR-003` it belongs to the boundary that
@@ -19,7 +19,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -144,22 +144,30 @@ class TestSandboxHygiene:
         assert results[0].outcome == "KILL", "the first is still measured correctly"
         assert results[1].outcome in {"KILL", "NO_KILL"}, "the second ran; it was not lost"
 
-    def test_the_sandbox_is_removed_after_a_session(
-        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path
+    def test_the_session_removes_the_sandbox_it_created(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path, monkeypatch: Any
     ) -> None:
-        """[Degradation] A session that leaves worktrees behind fills the disk over a month of nights."""
-        before = _mutate_worktrees()
+        """[Degradation] A session that leaves worktrees behind fills the disk over a month of nights.
+
+        Asserts on **the path this session created**, never on `git worktree list`'s count. The
+        first version of this test compared that count before and after and passed alone while
+        failing under `-n auto`: other xdist workers hold worktrees of their own, so the number
+        moves for reasons this test has no business caring about. A test that reads shared mutable
+        state is a test that reports on its neighbours.
+        """
+        created: list[Path] = []
+        real_build = mutation.build_sandbox
+
+        def _record() -> Path:
+            sandbox = real_build()
+            created.append(sandbox)
+            return sandbox
+
+        monkeypatch.setattr(mutation, "build_sandbox", _record)
         mutation.run_corpus(corpus.load_corpus(corpus_file), baseline=None)
-        assert _mutate_worktrees() == before
 
-
-def _mutate_worktrees() -> int:
-    import subprocess
-
-    out = subprocess.run(
-        ["git", "worktree", "list"], cwd=REPO_ROOT, capture_output=True, text=True, check=False
-    )
-    return len(out.stdout.splitlines())
+        assert created, "the session built a sandbox"
+        assert not created[0].exists(), "and removed the one it built"
 
 
 @pytest.mark.integration
@@ -199,3 +207,39 @@ class TestConfirmationAgainstARealSandbox:
             )
         finally:
             mutation.remove_sandbox(Path(sandbox))
+
+
+@pytest.mark.integration
+class TestReportOutlivesTheSandbox:
+    """`FR-9` — the claim is only falsifiable once the sandbox is gone.
+
+    Everything else about the report can be asserted on a dict in memory. This one cannot: the
+    point is that the file remains useful after the worktree it describes has been deleted, and
+    proving that means actually deleting it first.
+    """
+
+    def test_no_sandbox_path_survives_into_the_written_report(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path, tmp_path: Path
+    ) -> None:
+        """The mutant is given a stale anchor on purpose.
+
+        A stale anchor is the one path that puts an absolute sandbox path into `detail` verbatim —
+        `apply_mutation` raises with the full filename — so it is the case that would leak.
+        """
+        data = json.loads(corpus_file.read_text(encoding="utf-8"))
+        data["campaigns"][0]["mutants"][0]["old"] = "THIS ANCHOR DOES NOT EXIST"
+        corpus_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+        out = tmp_path / "mutation_report.json"
+        code = mutation.main(["--corpus", str(corpus_file), "--out", str(out), "--no-baseline"])
+
+        assert out.is_file(), "a report must exist even when every mutant failed"
+        written = out.read_text(encoding="utf-8")
+        assert "/tmp/" not in written, "the sandbox is gone; nothing may point into it"
+        assert "scanner.py" in written, "and the useful half of the path survived"
+        assert code in {0, 1}
+
+    def test_no_corpus_files_is_exit_two(self, mutation: ModuleType, tmp_path: Path) -> None:
+        """[Hostile] A session that measured nothing must not report success."""
+        out = tmp_path / "report.json"
+        assert mutation.main(["--corpus-dir", str(tmp_path), "--out", str(out)]) == 2

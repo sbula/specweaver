@@ -30,6 +30,7 @@ which is a later sub-feature's job. This produces raw, honest results and judges
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -49,6 +50,7 @@ def _sibling(name: str) -> Any:
 
 _mutate = _sibling("_mutate")
 _corpus = _sibling("_corpus")
+_report = _sibling("_mutation_report")
 
 _run_rc = _mutate._run_rc
 
@@ -304,3 +306,106 @@ def _run_mutant(sandbox: Path, mutant: Any, target: str, *, drift: str = "OK") -
         detail=str(raw.get("detail", "")),
         drift=drift,
     )
+
+
+def discover_corpora(root: Path) -> list[Path]:
+    """Every corpus file under `root`. The filename is the contract, so the glob and the validator
+    agree by construction rather than by convention."""
+    return sorted(root.rglob("*_mutants.json"))
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run a session and write the report a gate will read hours later.
+
+    Exit codes report the health of the RUN: `0` nothing failed, `1` something did, `2` it could not
+    run. Whether feature work continues is a separate decision made against the report, not against
+    this number.
+    """
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--corpus", action="append", default=[], help="a corpus file; repeatable")
+    ap.add_argument("--corpus-dir", help="discover every <ID>_mutants.json beneath this directory")
+    ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "mutation_report.json"))
+    ap.add_argument("--no-baseline", action="store_true", help="skip the full-suite baseline")
+    ap.add_argument("--no-confirm", action="store_true", help="do not re-run killers unmutated")
+    args = ap.parse_args(argv)
+
+    paths = [Path(p) for p in args.corpus]
+    if args.corpus_dir:
+        paths += discover_corpora(Path(args.corpus_dir))
+
+    campaigns: list[dict[str, Any]] = []
+    baseline: Baseline | None = None
+    head = _mutate._run(["git", "rev-parse", "--short", "HEAD"], REPO_ROOT).strip()
+    dirty = bool(_mutate._run(["git", "status", "--porcelain"], REPO_ROOT).strip())
+
+    if paths:
+        sandbox = build_sandbox()
+        try:
+            if not args.no_baseline:
+                baseline = run_baseline(sandbox)
+            for path in paths:
+                campaigns += _judge(path, sandbox, baseline, confirm=not args.no_confirm)
+        finally:
+            remove_sandbox(sandbox)
+
+    document = _report.build_report(campaigns=campaigns, head=head, dirty=dirty, baseline=baseline)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+    print(f"report: {out}")
+    return _report.exit_code_for([c["verdict"] for c in campaigns])
+
+
+def _judge(
+    path: Path, sandbox: Path, baseline: Baseline | None, *, confirm: bool
+) -> list[dict[str, Any]]:
+    """One corpus file, run and judged into report-shaped campaigns."""
+    corpus = _corpus.load_corpus(path)
+    runs = run_corpus(corpus, baseline=baseline, sandbox=sandbox, confirm=confirm)
+    by_id = {run.derived_id: run for run in runs}
+    failures = list(getattr(baseline, "failures", []) or [])
+
+    judged = []
+    for campaign in corpus.campaigns:
+        if campaign.retired:
+            continue
+        judgements: list[Verdict] = []
+        verdicts = []
+        for mutant in campaign.mutants:
+            run = by_id.get(mutant.derived_id)
+            if run is None:
+                continue
+            judgement = verdict_of(
+                run, scope=campaign.scope, baseline_failures=failures, confirmed=run.confirmed
+            )
+            # The verdict answers "is it protected"; the run carries the evidence for that answer.
+            # The report needs both, and `detail` is where a sandbox path would hide.
+            verdicts.append(
+                {
+                    "derived_id": judgement.derived_id,
+                    "verdict": judgement.verdict,
+                    "reason": judgement.reason,
+                    "drift": judgement.drift,
+                    "confirmed": run.confirmed,
+                    "killers": list(run.killers),
+                    "leaked": list(run.leaked),
+                    "detail": run.detail,
+                }
+            )
+        judged.append(
+            {
+                "feature": corpus.feature,
+                "requirement": campaign.requirement,
+                "verdict": campaign_verdict(judgements, declared=len(campaign.mutants)),
+                "mutants_declared": len(campaign.mutants),
+                "verdicts_returned": len(verdicts),
+                "results": verdicts,
+            }
+        )
+    return judged
+
+
+if __name__ == "__main__":
+    sys.exit(main())
