@@ -40,10 +40,10 @@ guard on Q1.
 
 ## CB-3 — Refresh and retire CLI
 
-- [ ] **T10** `--refresh <derived-id>` — recompute and rewrite one mutant's `symbol_sha`, whether it
+- [x] **T10** `--refresh <derived-id>` — recompute and rewrite one mutant's `symbol_sha`, whether it
       was `STALE` or `UNHASHED`. One at a time; no bulk flag (R-3).
-- [ ] **T11** `--retire <feature> <requirement> --reason "..."` — mark, never delete (Q4).
-- [ ] **T12** Write-back preserves unrelated content byte-for-byte, and refreshing a mutant whose
+- [x] **T11** `--retire <feature> <requirement> --reason "..."` — mark, never delete (Q4).
+- [x] **T12** Write-back preserves unrelated content byte-for-byte, and refreshing a mutant whose
       symbol is gone **fails** rather than writing a hash for nothing.
 
 **Gate:** `tests.py cb TECH-049 --kind tooling` → pre-commit → HITL.

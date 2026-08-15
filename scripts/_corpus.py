@@ -37,9 +37,11 @@ discover a typo is a minute wasted per mistake.
 
 from __future__ import annotations
 
+import argparse
 import ast
 import hashlib
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -135,6 +137,12 @@ def _mutant_from(raw: dict[str, Any], *, where: str, feature: str, requirement: 
         raise CorpusError(
             f"{where}: 'old' and 'new' are identical — that mutates nothing, so the run would "
             "report a survival that means the opposite of what it says"
+        )
+    path_field = str(raw["file"])
+    if path_field.startswith("/") or ".." in Path(path_field).parts:
+        raise CorpusError(
+            f"{where}: 'file' must be a repo-relative path inside the tree, got {path_field!r}. "
+            "A mutant that reaches outside the tree it measures is not measuring that tree"
         )
     return Mutant(
         id=raw["id"],
@@ -336,3 +344,115 @@ def drift_of(mutant: Mutant, root: Path) -> str:
         return OK if symbol_sha(source, mutant.symbol) == mutant.symbol_sha else STALE
     except (OSError, CorpusError):
         return STALE
+
+
+# --- maintenance: refresh and retire ----------------------------------------------------------
+
+
+def _rewrite(path: Path, data: dict[str, Any]) -> None:
+    """Write the corpus back in its canonical shape.
+
+    `json.load` preserves key order, so re-dumping a canonical file changes only the value that was
+    edited — the diff is one line, which is the whole point of keeping `symbol_sha` in the
+    committed file. A tool that reformatted on every refresh would make each future diff
+    unreviewable and the pin worthless as a record.
+
+    A write failure surfaces as `CorpusError` like every other fault here. Letting a bare `OSError`
+    escape would force every caller to know this module touches the filesystem, which is the seam
+    leaking through the interface.
+    """
+    try:
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except OSError as exc:
+        raise CorpusError(f"{path.name}: cannot write — {exc}") from exc
+
+
+def _find_mutant(data: dict[str, Any], feature: str, derived_id: str) -> dict[str, Any]:
+    for campaign in data.get("campaigns", []):
+        for mutant in campaign.get("mutants", []):
+            if f"{feature} {campaign.get('requirement')} {mutant.get('id')}" == derived_id:
+                return mutant
+    raise CorpusError(f"no mutant with id {derived_id!r} in this corpus")
+
+
+def refresh(path: Path, derived_id: str, root: Path) -> str:
+    """Re-pin one mutant's `symbol_sha` after its claim has been re-verified.
+
+    **One mutant at a time, and never automatic.** A bulk refresh is how drift detection gets
+    defeated in a single command: every `STALE` disappears and nobody re-read a claim. The one-line
+    diff this leaves in the corpus file is the review.
+
+    Refuses when the symbol cannot be resolved. Pinning a hash for code that is gone would launder
+    real drift into a green corpus, which is worse than the `STALE` it replaces.
+    """
+    load_corpus(path)  # refuse to maintain a corpus that could not be loaded
+    data = _read(path)
+    feature = feature_of(path)
+    mutant = _find_mutant(data, feature, derived_id)
+
+    source_path = root / mutant["file"]
+    try:
+        source = source_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CorpusError(f"{derived_id}: cannot read {mutant['file']} — {exc}") from exc
+
+    sha = symbol_sha(source, mutant["symbol"])  # raises if the symbol is gone — deliberately
+    mutant["symbol_sha"] = sha
+    _rewrite(path, data)
+    return sha
+
+
+def retire(path: Path, requirement: str, *, reason: str, date: str) -> None:
+    """Mark a campaign retired because its requirement was descoped.
+
+    Marks, never deletes. The mutants stay exactly where they are: deleting them would destroy the
+    only record that the requirement was ever measured, and a corpus that forgets is worth less
+    than one that carries a tombstone.
+    """
+    load_corpus(path)  # refuse to maintain a corpus that could not be loaded
+    data = _read(path)
+    for campaign in data.get("campaigns", []):
+        if campaign.get("requirement") == requirement:
+            campaign["retired"] = {"reason": reason, "date": date}
+            _rewrite(path, data)
+            return
+    raise CorpusError(f"no campaign for requirement {requirement!r} in {path.name}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Maintenance only. This CLI never runs a mutant and never refreshes more than one.
+
+    The absence of a bulk flag is the design: `--refresh-all` would clear every `STALE` in the
+    corpus in one keystroke, with nobody having re-read a single claim, and drift detection would
+    quietly become decoration.
+    """
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--corpus", required=True, help="path to a <FEATURE-ID>_mutants.json")
+    ap.add_argument("--root", default=".", help="repo root the mutants' file paths resolve against")
+    action = ap.add_mutually_exclusive_group(required=True)
+    action.add_argument("--refresh", metavar="DERIVED_ID", help="re-pin ONE mutant's symbol_sha")
+    action.add_argument("--retire", metavar="REQUIREMENT", help="mark one campaign retired")
+    ap.add_argument("--reason", help="why it was retired (required with --retire)")
+    ap.add_argument("--date", default="", help="ISO date for the retirement record")
+    args = ap.parse_args(argv)
+
+    if args.retire and not args.reason:
+        ap.error(
+            "--retire needs --reason: a tombstone with no reason is a deletion with extra steps"
+        )
+
+    try:
+        if args.refresh:
+            sha = refresh(Path(args.corpus), args.refresh, Path(args.root))
+            print(f"{args.refresh}: {sha}")
+        else:
+            retire(Path(args.corpus), args.retire, reason=args.reason, date=args.date)
+            print(f"{args.retire}: retired — {args.reason}")
+    except CorpusError as exc:
+        print(f"could not do that: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

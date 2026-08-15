@@ -188,7 +188,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Guide-1 | Writing a mutation campaign — choosing a mutant that breaks one (N)FR, declaring scope, reading verdicts | ⬜ To be written during Pre-commit |
+| Guide-1 | Writing a mutation campaign — choosing a mutant that breaks one (N)FR, declaring scope, reading verdicts | ✅ `docs/dev_guides/writing_mutation_campaigns.md` (SF-01; verdict half lands with SF-03) |
 
 ## Sub-Feature Breakdown
 
@@ -252,7 +252,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Session Baseline and Scoped Execution | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Machine Report | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -313,6 +313,6 @@ baseline-once-per-session (AD-6), the accounting rule (FR-8), and the verdict ta
 timer and AD-10 setting the gate to confirm-not-rerun. The blocking runner defect was already
 delivered in `72b82df8` — it reported every mutant `SURVIVED` under a colour-forcing shell.
 **Open decisions**: none.
-**Next step**: SF-01 plan is APPROVED — trigger the `specweaver-dev` skill for SF-01 CB-1.
+**Next step**: SF-01 is delivered across three commit boundaries. Trigger the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

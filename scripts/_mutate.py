@@ -50,6 +50,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -136,8 +137,6 @@ def _verify_isolated(module_file: str, sandbox: Path) -> None:
 
 
 def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> str:
-    import os
-
     env = {**os.environ, **(env_extra or {})}
     done = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, check=False)
     return done.stdout + done.stderr
