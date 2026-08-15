@@ -58,6 +58,27 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > that is the only moment a red means anything. Record the red and its reason in the plan: it is the
 > one piece of evidence a `Proves:` tag can never supply, that the test CAN fail.
 >
+> **The same sequencing binds the e2e** — the half most easily lost, because nothing about a
+> journey test *looks* like it belongs early. A journey test written once the journey already works
+> has never failed for the right reason, exactly as a seam test written after the seam has not. So
+> the e2e is authored **before the wiring it exercises**, inside the boundary that owns it, and
+> turned green there.
+>
+> **Name the boundary that owns each journey claim, and do not park it at the last one because the
+> tier profile runs it there.** `scripts/tests.py` decides when a tier is *executed* at a given
+> commit state; it says nothing about when the test is *written*.
+>
+> `ADR-003`'s worked example is `C-EXEC-06` FR-8, a *"multi-step, freshly-generated-file e2e"*
+> where step 1 generates a file a later step consumes — and those are **pipeline** steps inside the
+> test, not commit boundaries. Multi-step is what makes the journey falsifiable; it is not licence
+> to plan a test that stays red past its own commit.
+>
+> **If a journey cannot go green inside any single boundary, the boundaries are wrong** — that is a
+> Phase 4 finding, not a red to schedule. Redraw them so the journey completes in one, or narrow
+> the e2e to the journey that IS complete there and state which part is deferred and to which
+> boundary. An e2e planned as red-at-commit will be turned green by a skip, and that is the exact
+> shape `check_proof_tier.py` was built to catch.
+>
 > Unit-test-heaviness where a seam was expected is a **diagnostic**: the capability you are building
 > on shipped incomplete, and that is a finding against *it* (`TECH-017` FR-6), not a reason to
 > write its tests here under your own story's name.
