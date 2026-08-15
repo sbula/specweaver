@@ -83,6 +83,15 @@ def _write(tmp_path: Path, feature: str = "C-EXEC-06", **over: Any) -> Path:
     return path
 
 
+def _no_commas(lines: list[str]) -> list[str]:
+    """Lines with trailing commas normalised away.
+
+    JSON cannot do better: inserting a key necessarily puts a comma on the line above it, so a
+    literal byte comparison would fail on punctuation rather than on content.
+    """
+    return [line.rstrip(",") for line in lines]
+
+
 class TestLoadCorpus:
     """A well-formed corpus loads, and its mutants carry a composed identity."""
 
@@ -495,10 +504,9 @@ class TestRefresh:
         code. What must hold is that no *content* line disappears and only the pin is added.
         """
         path, root = corpus_with_source
-        strip = lambda lines: [line.rstrip(",") for line in lines]  # noqa: E731
-        before = strip(path.read_text(encoding="utf-8").splitlines())
+        before = _no_commas(path.read_text(encoding="utf-8").splitlines())
         corpus.refresh(path, "C-EXEC-06 FR-98 isolation-off", root)
-        after = strip(path.read_text(encoding="utf-8").splitlines())
+        after = _no_commas(path.read_text(encoding="utf-8").splitlines())
 
         assert [line for line in before if line not in after] == []
         added = [line for line in after if line not in before]
@@ -556,10 +564,9 @@ class TestRetire:
         self, corpus: ModuleType, corpus_with_source: tuple[Path, Path]
     ) -> None:
         path, _ = corpus_with_source
-        strip = lambda lines: [line.rstrip(",") for line in lines]  # noqa: E731
-        before = strip(path.read_text(encoding="utf-8").splitlines())
+        before = _no_commas(path.read_text(encoding="utf-8").splitlines())
         corpus.retire(path, "FR-98", reason="descoped", date="2026-08-15")
-        after = strip(path.read_text(encoding="utf-8").splitlines())
+        after = _no_commas(path.read_text(encoding="utf-8").splitlines())
         assert [line for line in before if line not in after] == []
 
 

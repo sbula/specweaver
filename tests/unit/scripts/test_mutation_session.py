@@ -201,8 +201,10 @@ class _FakeMutant:
     def __init__(self, name: str) -> None:
         self.derived_id = f"X FR-1 {name}"
         self.file = "src/x.py"
+        self.symbol = "f"
         self.old = "a"
         self.new = "b"
+        self.symbol_sha = None
 
 
 class _FakeCampaign:
@@ -215,3 +217,170 @@ class _FakeCampaign:
 class _FakeCorpus:
     def __init__(self, names: list[str]) -> None:
         self.campaigns = [_FakeCampaign(names)]
+
+
+class TestVerdictOf:
+    """The seven ordered rules. First match wins, and the order is the design.
+
+    Proves the distinction this whole sub-feature exists for: `KILL` means *tests failed*, and
+    `PASS` means *this requirement is protected*. A bystander test dying satisfies the first and
+    not the second, and treating them as the same is how a campaign certifies a requirement nothing
+    covers.
+    """
+
+    def _scope(self) -> list[str]:
+        return ["tests/unit/a.py", "tests/unit/b.py"]
+
+    def _run(self, mutation: ModuleType, **over: object) -> object:
+        base = {"derived_id": "X FR-1 m", "outcome": "KILL", "killers": ["tests/unit/a.py::test_x"]}
+        return mutation.MutantRun(**{**base, **over})  # type: ignore[arg-type]
+
+    def test_rule_1_a_baseline_failure_inside_scope_is_indeterminate(
+        self, mutation: ModuleType
+    ) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation),
+            scope=self._scope(),
+            baseline_failures=["tests/unit/a.py::test_old"],
+        )
+        assert v.verdict == "INDETERMINATE"
+
+    def test_rule_1_a_baseline_failure_outside_scope_does_not_taint(
+        self, mutation: ModuleType
+    ) -> None:
+        """`FR-3a`'s whole point: one unrelated red test must not void the session.
+
+        Without the scope restriction a single failure anywhere in a 7,000-test suite would make
+        every campaign unreadable, and the nightly run would report nothing on the night it was
+        most worth reading.
+        """
+        v = mutation.verdict_of(
+            self._run(mutation),
+            scope=self._scope(),
+            baseline_failures=["tests/unit/zzz.py::test_x"],
+        )
+        assert v.verdict != "INDETERMINATE"
+
+    def test_rule_2_nothing_ran_is_a_failure(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NOTHING_RAN", killers=[]), scope=self._scope()
+        )
+        assert v.verdict == "FAIL"
+
+    def test_rule_3_broken_passes_through_unjudged(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="BROKEN", killers=[]), scope=self._scope()
+        )
+        assert v.verdict == "BROKEN"
+
+    def test_rule_4_a_survival_is_a_failure(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NO_KILL", killers=[]), scope=self._scope()
+        )
+        assert v.verdict == "FAIL"
+
+    def test_rule_5_a_bystander_kill_is_a_failure(self, mutation: ModuleType) -> None:
+        """The rule SF-03 exists for.
+
+        Something noticed the behaviour disappear — but not a test the campaign named, so the
+        requirement is exactly as unproven as it was before the mutant ran.
+        """
+        v = mutation.verdict_of(
+            self._run(mutation, killers=["tests/unit/unrelated.py::test_y"]), scope=self._scope()
+        )
+        assert v.verdict == "FAIL"
+        assert "scope" in v.reason
+
+    def test_rule_6_an_in_scope_kill_passes(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(self._run(mutation), scope=self._scope(), confirmed=True)
+        assert v.verdict == "PASS"
+
+    def test_a_stale_mutant_still_carries_a_real_verdict(self, mutation: ModuleType) -> None:
+        """`STALE` is a flag, not a verdict — collapsing them loses one of two answers.
+
+        "The code moved" and "the requirement is unprotected" need different responses, and a
+        result that can only say one of them makes the other invisible.
+        """
+        v = mutation.verdict_of(
+            self._run(mutation, drift="STALE"), scope=self._scope(), confirmed=True
+        )
+        assert v.verdict == "PASS"
+        assert v.drift == "STALE"
+
+    def test_an_unhashed_mutant_is_not_drift(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation, drift="UNHASHED"), scope=self._scope(), confirmed=True
+        )
+        assert v.verdict == "PASS"
+        assert v.drift == "UNHASHED"
+
+
+class TestCampaignVerdict:
+    """`FR-8` — accounting first, then the worst verdict present."""
+
+    def _v(self, mutation: ModuleType, verdict: str, drift: str = "OK") -> object:
+        return mutation.Verdict(derived_id="X FR-1 m", verdict=verdict, reason="", drift=drift)
+
+    def test_a_lost_result_fails_the_campaign_before_anything_else(
+        self, mutation: ModuleType
+    ) -> None:
+        """A campaign that lost a result cannot be scored on the results it kept."""
+        got = mutation.campaign_verdict([self._v(mutation, "PASS")], declared=2)
+        assert got == "FAILED"
+
+    def test_any_fail_fails_the_campaign(self, mutation: ModuleType) -> None:
+        verdicts = [self._v(mutation, "PASS"), self._v(mutation, "FAIL")]
+        assert mutation.campaign_verdict(verdicts, declared=2) == "FAILED"
+
+    def test_only_indeterminate_is_partial(self, mutation: ModuleType) -> None:
+        verdicts = [self._v(mutation, "PASS"), self._v(mutation, "INDETERMINATE")]
+        assert mutation.campaign_verdict(verdicts, declared=2) == "PARTIAL"
+
+    def test_all_passing_is_passed(self, mutation: ModuleType) -> None:
+        assert mutation.campaign_verdict([self._v(mutation, "PASS")], declared=1) == "PASSED"
+
+    def test_an_empty_campaign_is_not_silently_passed(self, mutation: ModuleType) -> None:
+        """[Hostile] Zero results against zero declared must not read as success."""
+        assert mutation.campaign_verdict([], declared=0) == "FAILED"
+
+
+class TestRunMutantDrift:
+    """`STALE` has two sources, and only one of them was wired before SF-03.
+
+    Hash drift comes from `_corpus.drift_of`, which `mutation.py` never called. An anchor that will
+    not apply came out as `BROKEN` — wrong, because `BROKEN` must keep meaning *pytest itself
+    broke*. The two need different responses: one says re-read the claim, the other says the runner
+    could not run.
+    """
+
+    def test_an_anchor_that_will_not_apply_is_stale_not_broken(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        def _no_anchor(*_a: object, **_k: object) -> dict[str, object]:
+            raise ValueError("anchor not found in /x/y.py: 'return sorted(orphans)'")
+
+        monkeypatch.setattr(mutation._mutate, "run_one", _no_anchor)
+        run = mutation._run_mutant(tmp_path, _FakeMutant("m"), "tests/a.py", drift="OK")
+        assert run.outcome == "STALE"
+
+    def test_a_genuine_runner_failure_is_still_broken(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        def _boom(*_a: object, **_k: object) -> dict[str, object]:
+            raise RuntimeError("not isolated: specweaver imported from the working tree")
+
+        monkeypatch.setattr(mutation._mutate, "run_one", _boom)
+        run = mutation._run_mutant(tmp_path, _FakeMutant("m"), "tests/a.py", drift="OK")
+        assert run.outcome == "BROKEN"
+
+    def test_drift_is_carried_onto_the_result(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(
+            mutation._mutate,
+            "run_one",
+            lambda *a, **k: {"verdict": "KILLED", "killers": ["t::x"], "detail": "", "code": 1},
+        )
+        run = mutation._run_mutant(tmp_path, _FakeMutant("m"), "tests/a.py", drift="STALE")
+        assert run.drift == "STALE"
+        assert run.outcome == "KILL", "a drifted mutant still runs and still reports its outcome"
