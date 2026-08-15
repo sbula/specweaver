@@ -136,10 +136,23 @@ def _verify_isolated(module_file: str, sandbox: Path) -> None:
         )
 
 
-def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> str:
+def _run_rc(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> tuple[str, int]:
+    """Output **and** the exit code.
+
+    `_run` discarded the code, and pytest says things through it that it says nowhere else: `4` for
+    a path that does not exist, `5` when everything was deselected. Neither prints a `FAILED` line,
+    so a mis-typed test target read as "nothing objected" — a survival where in truth nothing ran.
+
+    Kept as a sibling rather than a change to `_run` so the ten call sites that only want text stay
+    where they are.
+    """
     env = {**os.environ, **(env_extra or {})}
     done = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, check=False)
-    return done.stdout + done.stderr
+    return done.stdout + done.stderr, done.returncode
+
+
+def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> str:
+    return _run_rc(cmd, cwd, env_extra)[0]
 
 
 def _build_sandbox(sandbox: Path) -> None:
@@ -226,7 +239,12 @@ def run_one(
     """
     target = sandbox / file
     if not target.is_file():
-        return {"verdict": "BROKEN", "killers": [], "detail": f"{file} not in the sandbox"}
+        return {
+            "verdict": "BROKEN",
+            "killers": [],
+            "detail": f"{file} not in the sandbox",
+            "code": 3,
+        }
     original = target.read_text(encoding="utf-8")
     apply_mutation(target, old, new)
 
@@ -238,17 +256,19 @@ def run_one(
         if fast:
             cmd.append("-x")
         if tests:
-            cmd.append(tests)
+            # split, never append: a multi-path target as one argv element is a path that exists
+            # nowhere, and pytest answers that with exit 4 and no failures — a false survival.
+            cmd += tests.split()
         else:
             cmd += ["-n", "auto"]
-        out = _run(cmd, sandbox, env)
+        out, code = _run_rc(cmd, sandbox, env)
     finally:
         target.write_text(original, encoding="utf-8")
 
     if is_broken(out):
-        return {"verdict": "BROKEN", "killers": [], "detail": out[-800:]}
+        return {"verdict": "BROKEN", "killers": [], "detail": out[-800:], "code": code}
     found = killers(out)
-    return {"verdict": verdict(found), "killers": found, "detail": ""}
+    return {"verdict": verdict(found), "killers": found, "detail": "", "code": code}
 
 
 def main(argv: list[str] | None = None) -> int:

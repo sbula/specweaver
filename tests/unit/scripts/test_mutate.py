@@ -230,7 +230,7 @@ class TestRunOneRestoresTheFile:
         target.write_text(original, encoding="utf-8")
 
         monkeypatch.setattr(mut, "prove_isolation", lambda *a, **k: None)
-        monkeypatch.setattr(mut, "_run", lambda *a, **k: "1 passed\n")
+        monkeypatch.setattr(mut, "_run_rc", lambda *a, **k: ("1 passed\n", 0))
 
         result = mut.run_one(tmp_path, file="src/thing.py", old="return 1", new="return 2")
 
@@ -251,8 +251,40 @@ class TestRunOneRestoresTheFile:
         def _boom(*_a: object, **_k: object) -> str:
             raise RuntimeError("pytest died")
 
-        monkeypatch.setattr(mut, "_run", _boom)
+        monkeypatch.setattr(mut, "_run_rc", _boom)
 
         with pytest.raises(RuntimeError):
             mut.run_one(tmp_path, file="src/thing.py", old="return 1", new="return 2")
         assert target.read_text(encoding="utf-8") == original
+
+
+class TestRunOneSplitsTheTestTarget:
+    """A multi-path test target must reach pytest as several arguments, not one.
+
+    `cmd.append(tests)` made `"tests/a.py tests/b.py"` a single argv element — a path that exists
+    nowhere. pytest then exits 4, collects nothing, and reports no failures, which the old text
+    parsing read as a survival.
+
+    Found 2026-08-15 while proving this sub-feature's own done-when: three mutants that should have
+    died all reported SURVIVED, because the campaign was run with two scope paths. A campaign whose
+    `scope` lists more than one file — the normal case — would have measured nothing at all.
+    """
+
+    def test_several_paths_become_several_arguments(
+        self, mut: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = tmp_path / "src" / "thing.py"
+        target.parent.mkdir(parents=True)
+        target.write_text("def f():\n    return 1\n", encoding="utf-8")
+        seen: list[list[str]] = []
+
+        monkeypatch.setattr(mut, "prove_isolation", lambda *a, **k: None)
+        monkeypatch.setattr(
+            mut, "_run_rc", lambda cmd, *a, **k: (seen.append(cmd), ("1 passed\n", 0))[1]
+        )
+
+        mut.run_one(
+            tmp_path, file="src/thing.py", old="return 1", new="return 2", tests="tests/a tests/b"
+        )
+        assert "tests/a" in seen[0] and "tests/b" in seen[0]
+        assert "tests/a tests/b" not in seen[0]
