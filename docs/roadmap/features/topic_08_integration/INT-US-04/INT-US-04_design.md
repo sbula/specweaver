@@ -232,46 +232,90 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: SF-01
 - **Impl Plan**: ✅
 
-### SF-09: Declarative Dynamic Prompt Routing Integration (Pending Design)
+### SF-09: Declarative Dynamic Prompt Routing Integration — RETIRED by `ADR-003` (was Pending Design)
 - **Scope**: B-INTL-10 Declarative Prompt Optimization (DSPy-style routing) integration contract.
 - **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
+> **Retired 2026-08-13 by `ADR-003`.** Never designed, and its scope above is `B-INTL-10`'s
+> (Declarative Prompt Optimization) — persisting prompt profiles, compiling an optimized profile
+> from runtime routing, telemetry and active models, A/B-testing prompt structures are things that
+> capability does, not observations a third document makes about it. **The scope text above is
+> kept, not deleted**: it is the intake for `B-INTL-10`'s design, where each becomes an FR that
+> `check_fr_coverage.py` enforces. Any seam it needs is an FR on the consumer; any user-visible
+> journey is a journey proof. Nothing is lost — the owner changed.
+>
+> **Recorded 2026-08-15 — why this note is two days late.** `ADR-003` (`bb789a29`) deleted 68
+> `INT-US-NN-SFNN` lines from `master_story_roadmap.md`; 8 returned as delivered or as an explicit
+> `RETIRED → owner` line, and 60 are gone. Every one of the 60 that still holds a row in a tracker
+> is either delivered `✅` (`finished-stories-immutable`) or annotated — **except this one**. It
+> lost its roadmap line silently because, unlike `SF-02`/`05`/`06`/`07`, it had no owner line to
+> carry the redirect and no design-doc anchor to link, so the sweep that annotated the others did
+> not reach it. It then sat here as the last `⬜` under a `✅` contract and was cited in the Session
+> Handoff as the reason `INT-US-04` could not close. It never blocked anything: nothing depended on
+> it, and `check_proof_tier.py` never saw it, since that check fires only on Design `✅` / Dev `⬜`.
+>
+> `B-INTL-10` is itself `🔮` and carries an explicit re-scope warning in
+> `topic_04_intelligence.md`: premised on owning slot-prompt assembly, the layer `C-INTL-06` /
+> `C-FLOW-11` shrink — *"at design time either re-scope the optimization target to rubric/skill
+> content (`C-VAL-05` artifacts) or retire."* An integration contract written for it now would have
+> been written against a capability that may not survive its own design.
+
 ## Execution Order
 
 1. SF-01 (no deps — start immediately)
-2. SF-02 through SF-09 can run in parallel (all depend on SF-01)
+2. SF-03, SF-04 and SF-08 ran in parallel behind SF-01 and are delivered. SF-02, SF-05, SF-06,
+   SF-07 and SF-09 are RETIRED by `ADR-003` and are not work. **Nothing remains in this order.**
+
+   > The `Depends on: SF-01` carried by every add-on was decorative: SF-03, SF-04 and SF-08 all
+   > shipped while SF-01 was never built. The column implied a queue that did not exist.
 
 ## Progress Tracker
+
+> [!IMPORTANT]
+> **A RETIRED row is not work, and must not read like it.** The five rows below marked `RETIRED`
+> carried a bare `⬜` in every column until 2026-08-15, which made them indistinguishable from
+> pending work to the resume rule at the foot of this file (*"find the first ⬜ and resume from
+> there"*) — that rule would have landed on `SF-02`. Their owner capability is named in the
+> `Depends On` column; the requirement text is kept in each section above as intake for that
+> capability's design.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Core Flow DB Integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Security Defenses Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Security Defenses Integration | RETIRED → `B-FLOW-05` | — | — | — | — | — |
 | SF-03 | Parallel Multi-Spec Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Context Mention Highlighting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | Advanced Routing & Conditional Flows | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-06 | Infinite Memory Management | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-07 | Remote UI Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Advanced Routing & Conditional Flows | RETIRED → `C-FLOW-10` | — | — | — | — | — |
+| SF-06 | Infinite Memory Management | RETIRED → `C-INTL-04` | — | — | — | — | — |
+| SF-07 | Remote UI Integration | RETIRED → `D-UI-05` | — | — | — | — | — |
 | SF-08 | Configurable Prompt Render Profiles Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-09 | Declarative Dynamic Prompt Routing Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-09 | Declarative Dynamic Prompt Routing Integration | RETIRED → `B-INTL-10` | — | — | — | — | — |
 
 ## Session Handoff
 
-**Current status**: **SF-01 is DELIVERED** (2026-08-15) across four commit boundaries — `e400cfdb`
-findings survive the handler boundary, `3e8c29f9` queryable persistence, `9a81719f` feedback replay
-on resume, `b15d372f` the corrected `context.yaml`. `check_fr_coverage.py INT-US-04` passes **3 of
-3**. SF-03, SF-04 and SF-08 were already delivered; SF-02, SF-05, SF-06 and SF-07 are RETIRED by
-`ADR-003`; **SF-09 remains Pending Design**, so the story is not closeable yet.
+**Current status**: **CLOSED (2026-08-15). Nothing remains.** SF-01 was delivered across four
+commit boundaries — `e400cfdb` findings survive the handler boundary, `3e8c29f9` queryable
+persistence, `9a81719f` feedback replay on resume, `b15d372f` the corrected `context.yaml`.
+`check_fr_coverage.py INT-US-04` passes **3 of 3**. SF-03, SF-04 and SF-08 were already delivered.
+SF-02, SF-05, SF-06, SF-07 **and SF-09** are RETIRED by `ADR-003`.
 
-**Open decision (Q-11, deferred from the plan's Phase 4 gate):** whether the base contract's
-`⬜ Pending` marker — corrected on 2026-08-14 *because* SF-01 was unbuilt — now flips to `✅`.
-SF-01 closes the persistence half; C2's *"sanitized"* clause stays `unproven` regardless, since it
-maps to `E-VAL-03`, which is unbuilt. A status decision, and the user's.
+> **Correction, 2026-08-15.** This paragraph read *"**SF-09 remains Pending Design**, so the story
+> is not closeable yet."* That was wrong when written: `ADR-003` had already retired SF-09 two days
+> earlier (`bb789a29`), and the note recording it never reached this file — see the SF-09 section.
+> The story was closeable the moment SF-01 landed. The line is corrected rather than deleted,
+> because a handoff that quietly stops naming a blocker teaches nobody why it was never one.
+
+**Q-11 (deferred from the plan's Phase 4 gate) is RESOLVED:** the base contract's `⬜ Pending`
+marker flipped to `✅` in `33561183` — earned by SF-01's persistence, with C1 recorded as
+**unprovable as written** (the store is `pipeline_state.db`, not the Config DB the description
+names, by decision) and C2's *"sanitized"* clause still `unproven`, since it maps to `E-VAL-03`,
+which is unbuilt. Neither was re-worded to fit the `✅` — `TECH-017` `NFR-1` forbids exactly that.
 
 **Read before touching this area**: the plan's Red/Blue and the four CB outcome notes. **Five plan
 errors were found by reading the code the plan named**, three of them after approval: the write
 point (D-10), the row grain (D-11), the `exposes` replacement list (D-12), and the `PENDING`-only
 replay condition, which W-1 disproved against a real loop-back.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
+**If resuming mid-feature**: there is nothing to resume — the Progress Tracker holds no `⬜`. Every
+row is delivered `✅` or `RETIRED → <owner>`. The retired scopes are live work under the capability
+named in each row's `Depends On`, and each is picked up by *that* capability's design, not here.

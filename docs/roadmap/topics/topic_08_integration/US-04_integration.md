@@ -22,9 +22,31 @@
 
 ## Sub-Story Add-Ons
 
-US-4's sub-story contracts (`INT-US-04-SF02` … `SF-09`) are defined per-section in
+US-4's sub-story contracts (`INT-US-04-SF02` … `SF-08`) are defined per-section in
 [INT-US-04_design.md](../../features/topic_08_integration/INT-US-04/INT-US-04_design.md) — see the
 master roadmap's US-4 add-on groups for the current status of each.
+
+* **`INT-US-04-SF09` — Declarative Dynamic Prompt Routing:** *Pending Design (minted 2026-07-24
+  audit — every add-on group carries its own integration story).* Integrates `B-INTL-10`
+  Declarative Prompt Optimization: DSPy-style declarative routing, with the `PipelineRunner`
+  fetching and compiling an optimized prompt profile from runtime routing, telemetry and active
+  models.
+
+  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder was removed in
+  > `bb789a29` with the other 62. The scope above is NOT descoped — it moves to `B-INTL-10`, which
+  > owns its own integration and e2e proof as FRs rather than a separate add-on restating them.
+  >
+  > **Recorded 2026-08-15.** SF-09 was the one placeholder of the 60 that lost its roadmap line
+  > without gaining this note, because — unlike `SF-02`/`05`/`06`/`07` — it had no `RETIRED →
+  > owner` line to carry the redirect and no design-doc anchor to link. It therefore survived in
+  > the design doc's tracker as the last `⬜` under a `✅` contract, and the Session Handoff cited
+  > it as the reason `INT-US-04` could not close. It was never a blocker; nothing was waiting on it.
+  >
+  > Note that `B-INTL-10` is itself `🔮` and carries an explicit re-scope warning
+  > (`topic_04_intelligence.md`): premised on owning slot-prompt assembly, the layer `C-INTL-06` /
+  > `C-FLOW-11` shrink — *"at design time either re-scope the optimization target to rubric/skill
+  > content (`C-VAL-05` artifacts) or retire."* Designing an integration contract for it now would
+  > have been designing against a capability that may not survive its own design.
 
 * **`INT-US-04-SF10` — Envelope-vs-Content Prompt Externalization:** *Pending Design (minted
   2026-07-24 audit — every add-on group carries its own integration story).* Integrates
