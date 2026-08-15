@@ -209,6 +209,7 @@ class _FakeMutant:
 
 class _FakeCampaign:
     def __init__(self, names: list[str]) -> None:
+        self.requirement = "FR-1"
         self.scope = ["tests/a.py"]
         self.retired = None
         self.mutants = [_FakeMutant(n) for n in names]
@@ -216,6 +217,7 @@ class _FakeCampaign:
 
 class _FakeCorpus:
     def __init__(self, names: list[str]) -> None:
+        self.feature = "X"
         self.campaigns = [_FakeCampaign(names)]
 
 
@@ -452,3 +454,39 @@ class TestConfirmKill:
 
         results = mutation.run_corpus(_FakeCorpus(["a"]), sandbox=tmp_path, confirm=True)
         assert results[0].confirmed is False
+
+
+class TestJudge:
+    """`_judge` — the wiring between a run and its campaign verdict.
+
+    Untested until the first real campaign ran and reported every campaign `FAILED` while every
+    mutant inside it `PASS`ed. The cause was a dropped `judgements.append`, so `campaign_verdict`
+    received an empty list and hit its "a campaign that lost a result cannot be scored" guard.
+
+    `campaign_verdict` was unit-tested with populated lists and `verdict_of` with single runs; the
+    line joining them was covered by neither. End-to-end use is what found it.
+    """
+
+    def test_a_campaign_whose_only_mutant_passes_is_passed(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(
+            mutation._mutate,
+            "run_one",
+            lambda *a, **k: {
+                "verdict": "KILLED",
+                "killers": ["tests/a.py::test_x"],
+                "detail": "",
+                "code": 1,
+            },
+        )
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("", 0))
+        monkeypatch.setattr(mutation, "confirm_kill", lambda *a, **k: True)
+        monkeypatch.setattr(mutation._corpus, "load_corpus", lambda _p: _FakeCorpus(["m"]))
+
+        judged = mutation._judge(tmp_path / "X_mutants.json", tmp_path, None, confirm=True)
+
+        assert len(judged) == 1
+        assert judged[0]["verdicts_returned"] == judged[0]["mutants_declared"] == 1
+        assert judged[0]["results"][0]["verdict"] == "PASS"
+        assert judged[0]["verdict"] == "PASSED", "the campaign must agree with its own results"

@@ -51,6 +51,11 @@ def _sibling(name: str) -> Any:
 _mutate = _sibling("_mutate")
 _corpus = _sibling("_corpus")
 _report = _sibling("_mutation_report")
+_timer = _sibling("_mutation_timer")
+
+UNIT_NAME = _timer.UNIT_NAME
+timer_units = _timer.timer_units
+install_timer = _timer.install_timer
 
 _run_rc = _mutate._run_rc
 
@@ -329,7 +334,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "mutation_report.json"))
     ap.add_argument("--no-baseline", action="store_true", help="skip the full-suite baseline")
     ap.add_argument("--no-confirm", action="store_true", help="do not re-run killers unmutated")
+    ap.add_argument(
+        "--install-timer", action="store_true", help="write the nightly systemd user units"
+    )
     args = ap.parse_args(argv)
+
+    if args.install_timer:
+        for path in install_timer():
+            print(f"wrote {path}")
+        print(f"enable with: systemctl --user enable --now {UNIT_NAME}.timer")
+        return 0
 
     paths = [Path(p) for p in args.corpus]
     if args.corpus_dir:
@@ -380,6 +394,7 @@ def _judge(
             judgement = verdict_of(
                 run, scope=campaign.scope, baseline_failures=failures, confirmed=run.confirmed
             )
+            judgements.append(judgement)
             # The verdict answers "is it protected"; the run carries the evidence for that answer.
             # The report needs both, and `detail` is where a sandbox path would hide.
             verdicts.append(

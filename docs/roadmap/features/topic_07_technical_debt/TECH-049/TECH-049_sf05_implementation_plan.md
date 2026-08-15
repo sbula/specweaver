@@ -81,6 +81,23 @@ whole sub-feature, not just this boundary.
 | R-3 | The timer runs while a human is mid-edit | Q4: it runs, and `dirty: true` says so |
 | R-4 | The campaign's mutants rot as the code changes | That is `symbol_sha` drift reporting `STALE`, which is the corpus working, not failing |
 
+## Delivered
+
+One boundary. Three mutants KILLED. Full suite 7094 passed, 0 failed. The corpus, run for real:
+`PASSED`, 3 declared / 3 returned.
+
+**Findings:**
+
+- **Running it for real found a bug three layers of unit tests missed.** Every campaign reported
+  `FAILED` while every mutant inside `PASS`ed — a dropped `judgements.append` handed
+  `campaign_verdict` an empty list, which hit its "lost a result" guard. `campaign_verdict` was
+  tested with populated lists and `verdict_of` with single runs; the line joining them was covered
+  by neither. `_judge` now has a regression test.
+- **R8 refused a bare skip** on `systemd-analyze` until the reason was recorded in
+  `ENVIRONMENT_SKIP_REASONS` with a why — exactly the R-2 risk this plan named.
+- **`mutation.py` hit 484 lines**, past YELLOW. Timer split into `_mutation_timer.py`: the same
+  accretion the report was split out to avoid, arriving from the other direction. Now 426 / 143 / 80.
+
 ## Out of scope
 
 The gate and the override census — SF-06.

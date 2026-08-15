@@ -29,6 +29,10 @@ ENVIRONMENT_SKIP_REASONS = (
     "symlink",  # requires elevation on Windows; the OS decides this, not us
     "_api_key",  # tests/manual live calls, not collected by the suite
     "api key",
+    # `systemd-analyze` is a host tool, not something this repo ships or can install. Verifying a
+    # generated unit file is worth doing where systemd exists and is impossible where it does not,
+    # so the skip states a genuine environment fact rather than routing around a defect.
+    "systemd-analyze",
 )
 
 
