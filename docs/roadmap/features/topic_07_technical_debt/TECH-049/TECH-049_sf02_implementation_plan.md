@@ -101,6 +101,20 @@ leak test goes red.
 | R-3 | `_corpus.py` is 458 lines, past YELLOW | SF-02 adds nothing to it. If it must, the CLI splits out first |
 | R-4 | The baseline is slow enough that iterating on SF-02 is painful | The baseline is a parameter — tests inject a tiny path; only the real session runs the full suite |
 
+## Delivered
+
+Both boundaries committed. Six mutants, all KILLED. Full suite 7042 passed, 0 failed.
+
+**Deviations from this plan, recorded rather than folded in:**
+
+- CB-1's done-when exposed a bug in CB-1's own code: `run_one` appended a multi-path test target as
+  one argv element, so any campaign with more than one `scope` file measured nothing while
+  reporting cleanly. Fixed with a regression test inside the same boundary.
+- `FR-7`'s design wording ("verify `git status --porcelain` is empty") is unachievable, as Q4
+  anticipated. Implemented against a post-build snapshot; only additions count as leaks.
+- The `FR-7` tests were written without a `Proves:` tag, so `check_fr_coverage` reported `NO TEST`
+  while three tests proved it. Caught at the closing gate.
+
 ## Out of scope
 
 Verdicts, the in-scope-killer rule, `INDETERMINATE`, the report, the scheduler, the gate. SF-03

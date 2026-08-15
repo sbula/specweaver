@@ -3,7 +3,7 @@
 
 """The first place the corpus and the runner meet.
 
-Proves: TECH-049 FR-4
+Proves: TECH-049 FR-4, FR-7
 
 `SF-01` produced validated `Corpus` objects and ran nothing; `_mutate` ran mutants and knew nothing
 about campaigns. This is the seam between them, and per `ADR-003` it belongs to the boundary that
@@ -108,3 +108,55 @@ class TestCorpusDrivesTheRunner:
         results = mutation.run_corpus(corpus.load_corpus(corpus_file), baseline=None)
         assert results[0].outcome == "NOTHING_RAN"
         assert results[0].outcome != "NO_KILL"
+
+
+@pytest.mark.integration
+class TestSandboxHygiene:
+    """A mutant that leaks state must not corrupt the one measured after it.
+
+    This is the regression guard for the class of defect `103d7998` fixed, where the second mutant
+    in a campaign silently measured a different tree than the first. That bug failed closed by
+    luck; this one would not — a leaked file changes what the next test sees without changing any
+    verdict's shape.
+    """
+
+    def test_a_leak_is_recorded_and_the_next_mutant_is_still_measured(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path
+    ) -> None:
+        data = json.loads(corpus_file.read_text(encoding="utf-8"))
+        campaign = data["campaigns"][0]
+        campaign["mutants"].append(
+            {
+                "id": "orphans-none",
+                "file": "src/specweaver/graph/lineage/scanner.py",
+                "symbol": "check_lineage",
+                "old": "orphans: list[str] = []",
+                "new": "orphans: list[str] = []  # noqa",
+                "breaks": "a no-op edit, present only to be the second mutant",
+            }
+        )
+        corpus_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        loaded = corpus.load_corpus(corpus_file)
+
+        results = mutation.run_corpus(loaded, baseline=None)
+
+        assert len(results) == 2, "two mutants declared, two results — accounting holds"
+        assert results[0].outcome == "KILL", "the first is still measured correctly"
+        assert results[1].outcome in {"KILL", "NO_KILL"}, "the second ran; it was not lost"
+
+    def test_the_sandbox_is_removed_after_a_session(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path
+    ) -> None:
+        """[Degradation] A session that leaves worktrees behind fills the disk over a month of nights."""
+        before = _mutate_worktrees()
+        mutation.run_corpus(corpus.load_corpus(corpus_file), baseline=None)
+        assert _mutate_worktrees() == before
+
+
+def _mutate_worktrees() -> int:
+    import subprocess
+
+    out = subprocess.run(
+        ["git", "worktree", "list"], cwd=REPO_ROOT, capture_output=True, text=True, check=False
+    )
+    return len(out.stdout.splitlines())

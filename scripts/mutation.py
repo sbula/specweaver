@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +84,28 @@ class MutantRun:
     outcome: str
     killers: list[str] = field(default_factory=list)
     detail: str = ""
+    leaked: list[str] = field(default_factory=list)
+
+
+def snapshot_cleanliness(sandbox: Path) -> set[str]:
+    """What `git status --porcelain` says about the sandbox **immediately after it was built**.
+
+    Not an empty set, and that is the point. `_build_sandbox` copies untracked files in on purpose
+    so the run measures the tree you actually have, which means a freshly built sandbox is already
+    "dirty". Comparing later checks against empty would fire on every mutant and the signal would
+    be discarded within a day.
+    """
+    out, _code = _run_rc(["git", "status", "--porcelain"], sandbox)
+    return {line for line in out.splitlines() if line.strip()}
+
+
+def leaked_since(sandbox: Path, baseline: set[str]) -> list[str]:
+    """Entries a mutant added that the build did not leave.
+
+    Additions only. A file the build left and a test consumed is not a leak — it is a test cleaning
+    up after itself, which is the behaviour we want rather than one to report.
+    """
+    return sorted(snapshot_cleanliness(sandbox) - baseline)
 
 
 def run_baseline(sandbox: Path, *, tests: str = "tests") -> Baseline:
@@ -114,6 +136,7 @@ def run_corpus(
         _mutate._build_sandbox(sandbox)
 
     assert sandbox is not None
+    clean = snapshot_cleanliness(sandbox)
     results: list[MutantRun] = []
     try:
         for campaign in corpus.campaigns:
@@ -121,7 +144,14 @@ def run_corpus(
                 continue
             target = " ".join(campaign.scope)
             for mutant in campaign.mutants:
-                results.append(_run_mutant(sandbox, mutant, target))
+                run = _run_mutant(sandbox, mutant, target)
+                leaked = leaked_since(sandbox, clean)
+                if leaked:
+                    # Clean and carry on. Aborting would turn one leaky test into a night with no
+                    # data, and would fail the accounting rule for a reason the corpus did not cause.
+                    _mutate._run(["git", "clean", "-fdq"], sandbox)
+                    run = replace(run, leaked=leaked)
+                results.append(run)
     finally:
         if own_sandbox:
             _mutate._run(["git", "worktree", "remove", "--force", str(sandbox)], REPO_ROOT)
