@@ -78,6 +78,7 @@ def _plain(output: str) -> str:
     """Output with colour removed, so the parsers see the text pytest meant for machines."""
     return _ANSI.sub("", output)
 
+
 #: A mutant that does not import is not evidence of anything, and must never be reported as a kill.
 #:
 #: Read from pytest's SUMMARY line only. Two earlier versions matched the body of the output and
