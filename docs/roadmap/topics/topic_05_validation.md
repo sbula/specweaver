@@ -91,7 +91,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`A-VAL-02` 🔜: Symbolic Math Validation** (Legacy: 3.39)<br>
   > _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code.
 * **`A-VAL-03` 🔜: Mutation Testing Gates** (Legacy: 4.7)<br>
-  > `future_capabilities_reference.md` §13, §14 | Verification gates (mutation testing, assertion density)
+  > `future_capabilities_reference.md` §13, §14 | Verification gates (mutation testing, assertion density). See `TECH-049`.
 * **`A-VAL-04` 🔜: Rust PyO3 Validations** (Legacy: Backlog)<br>
   > _(new)_ | To mathematically unlock 10x-50x performance scaling and guarantee absolute memory-safe LLM sandboxing. Static Validation Rule Pipelines: Rewrite regex-heavy mathematical validation
   > tasks natively in compiled Rust engine cores to instantly evaluate multi-thousand line specs.
