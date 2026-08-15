@@ -87,6 +87,7 @@ undecidable.
 | FR-11 | Session gate | Gate | The system SHALL block on any unconfirmed finding and release once every finding carries a **confirmation with a disposition** (`real-gap` · `equivalent` · `will-fix` · `stale-refreshed`). It SHALL NOT require a re-run to prove a fix, and SHALL treat a missing or stale report as blocking | Findings get read rather than accumulating, without paying for an on-demand corpus run; the next scheduled run re-measures anyway |
 | FR-11a | Repeat findings | Reporter | The system SHALL mark a finding that recurred in consecutive runs with the number of runs it has survived | A `will-fix` that never got fixed is visible instead of being re-confirmed forever |
 | FR-12 | Override census | Gate | The system SHALL permit a human override **per (N)FR**, only as a recorded entry naming requirement, person, reason and promise, ratcheted so the count may fall and never rise | A bypass stays visible and narrow; a silent `--force` turns the gate into decoration |
+| FR-14 | Usage | Author | The system SHALL document how a campaign is written and how the morning gate is cleared, in the skills that govern development and in `CLAUDE.md` | A gate nobody knows how to clear blocks work until it is switched off |
 | FR-13 | Corpus maintenance | Author | The system SHALL provide an explicit, reviewable way to refresh a mutant's `symbol_sha` after its claim has been re-verified and to retire a campaign whose requirement was descoped, and SHALL NOT refresh either automatically | `STALE` has a resolution path, a descoped requirement stops reporting forever, and drift detection cannot be defeated by a silent rewrite |
 
 ## Requirement–Surface Bindings
@@ -101,7 +102,7 @@ undecidable.
 | FR-5 | Which tests cite a requirement | `_citations` · `strict_citations(text) -> dict[str, set[str]]` | read `scripts/_citations.py:38-60` |
 | FR-7 | Reset between mutants | `_mutate` · `reset_file(sandbox, file)` (`git checkout --`, one file only) | read `scripts/_mutate.py:218-220` |
 | FR-9 | Report ordering precedent | `_mutate_campaign` · `render_report(results, meta)`, `_ORDER`, `_bucket()` | read `scripts/_mutate_campaign.py:82-147` |
-| FR-11 | Gate registration and scope resolution | `quality` · `CHECKS` dict (`{check: {gate: scope}}`), `GATES` | read `scripts/quality.py:81-160` |
+| FR-11 | The report to gate on, and the ledger of dispositions | `_mutation_report` · `.tmp/mutation_report.json`; `scripts/baselines/mutation_findings.json` | read `scripts/_mutation_report.py`, `scripts/baselines/suppressions.json` |
 | FR-12 | Ratchet mechanics | `check_suppressions` · frozen baseline JSON, `--update-baseline`, fail-on-growth | read `scripts/check_suppressions.py:1-30`, `scripts/baselines/suppressions.json` |
 
 **Outcome of the fixpoint.** Every row converged on a surface that exists. Two rewrote an FR:
@@ -240,6 +241,14 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 - **Depends on**: SF-04
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_sf06_implementation_plan.md
 
+### SF-07: Adoption
+- **Scope**: Make the gate usable — skills, the morning routine, and the command in `CLAUDE.md`.
+- **FRs**: [FR-14]
+- **Inputs**: The gate delivered by SF-06.
+- **Outputs**: Updated skills and guides; a documented daily routine.
+- **Depends on**: SF-06
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_sf07_implementation_plan.md
+
 ## Execution Order
 
 1. SF-01 (no deps — start immediately)
@@ -257,7 +266,8 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Machine Report | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Scheduler | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | Session Gate and Override Census | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Session Gate and Override Census | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Adoption | SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Verdict Table
 
