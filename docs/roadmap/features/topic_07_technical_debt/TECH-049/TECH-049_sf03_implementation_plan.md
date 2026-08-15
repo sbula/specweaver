@@ -105,6 +105,21 @@ confirm the flaky test goes red.
 | R-3 | `STALE` as a flag rather than a verdict is easy to collapse back | A test asserts a `STALE` mutant still carries a real verdict |
 | R-4 | `mutation.py` grows past 451 YELLOW | 176 now, ~300 expected. Measured at each boundary |
 
+## Delivered
+
+Both boundaries committed. Seven mutants, all KILLED. Full suite 7067 passed, 0 failed.
+
+**Deviations and findings, recorded rather than folded in:**
+
+- A surviving mutant exposed a hole in this plan's own tests: replacing `confirmed=confirm_kill(…)`
+  with `confirmed=True` changed nothing, because every test asserted `confirmed is True` on a
+  genuine kill — true whether the session asks or assumes. Added the case that distinguishes them.
+- `test_rot_check_exits_42_on_drift` failed the integration tier, unrelated to this work and
+  pre-existing at `72b82df8^`: a raw `in` against Rich output that soft-wraps at `COLUMNS`. Third
+  instance of the failure `tests/rendering.py::shows()` exists for. Fixed here rather than deferred.
+- The `Proves:` tags were again not updated when the tests were written, so FR-5, FR-6 and FR-8 read
+  `NO TEST` at the closing gate. Second sub-feature running — a recurring slip, not a one-off.
+
 ## Out of scope
 
 The report, the scheduler, the gate, the override census. SF-04 onward.

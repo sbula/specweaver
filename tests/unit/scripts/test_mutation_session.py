@@ -3,7 +3,7 @@
 
 """A session classifies by pytest's exit code, not by reading its prose.
 
-Proves: TECH-049 FR-3, FR-4, FR-7
+Proves: TECH-049 FR-3, FR-3a, FR-4, FR-5, FR-6, FR-7, FR-8
 
 Measured 2026-08-15: pytest exits `4` for a path that does not exist and `5` when everything is
 deselected, and prints no `FAILED` line in either case. The runner read that as "nothing objected"
@@ -384,3 +384,71 @@ class TestRunMutantDrift:
         run = mutation._run_mutant(tmp_path, _FakeMutant("m"), "tests/a.py", drift="STALE")
         assert run.drift == "STALE"
         assert run.outcome == "KILL", "a drifted mutant still runs and still reports its outcome"
+
+
+class TestConfirmKill:
+    """`FR-6` — a killer only counts if it passes without the mutant.
+
+    A test that fails either way protects nothing: it was already broken, and the mutant merely
+    arrived to take the blame. Without this check a permanently red test in scope would certify
+    every requirement it touches, forever, and the corpus would report its healthiest numbers on
+    exactly the campaigns worth distrusting.
+    """
+
+    def test_a_killer_that_passes_unmutated_is_confirmed(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("1 passed\n", 0))
+        assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is True
+
+    def test_a_killer_that_fails_unmutated_is_not_confirmed(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(
+            mutation, "_run_rc", lambda *a, **k: ("FAILED tests/a.py::test_x\n1 failed\n", 1)
+        )
+        assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is False
+
+    def test_confirmation_runs_only_the_killers_not_the_scope(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """The cost control: one to three node ids, never the whole scope."""
+        seen: list[list[str]] = []
+        monkeypatch.setattr(
+            mutation, "_run_rc", lambda cmd, *a, **k: (seen.append(cmd), ("1 passed\n", 0))[1]
+        )
+        mutation.confirm_kill(tmp_path, ["tests/a.py::test_x", "tests/b.py::test_y"])
+        assert "tests/a.py::test_x" in seen[0]
+        assert "tests/b.py::test_y" in seen[0]
+        assert not any(arg == "tests/a.py" for arg in seen[0]), "the file, not the node id"
+
+    def test_no_killers_cannot_be_confirmed(self, mutation: ModuleType, tmp_path: Path) -> None:
+        """[Boundary] Nothing to re-run is not evidence of protection."""
+        assert mutation.confirm_kill(tmp_path, []) is False
+
+    def test_a_run_that_collects_nothing_is_not_confirmation(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """[Hostile] A node id that no longer exists exits 4 and must not read as a green re-run."""
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("no tests ran\n", 4))
+        assert mutation.confirm_kill(tmp_path, ["tests/gone.py::test_x"]) is False
+
+    def test_the_session_uses_confirmations_answer_rather_than_assuming_it(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Found by a surviving mutant: replacing the call with `confirmed=True` changed nothing.
+
+        Every existing test asserted `confirmed is True` on a genuine kill, which is true whether
+        the session asks or assumes. Only a run where confirmation says *no* can tell the two
+        apart — and that is the case the whole check exists for.
+        """
+        monkeypatch.setattr(
+            mutation._mutate,
+            "run_one",
+            lambda *a, **k: {"verdict": "KILLED", "killers": ["t::x"], "detail": "", "code": 1},
+        )
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("", 0))
+        monkeypatch.setattr(mutation, "confirm_kill", lambda *a, **k: False)
+
+        results = mutation.run_corpus(_FakeCorpus(["a"]), sandbox=tmp_path, confirm=True)
+        assert results[0].confirmed is False

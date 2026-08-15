@@ -10,6 +10,8 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
+from tests.rendering import shows
+
 runner = CliRunner()
 
 
@@ -93,8 +95,11 @@ tasks:
                 type(result.exception), result.exception, result.exception.__traceback__
             )
     assert result.exit_code == 42
-    assert "AST Drift Detected" in result.output
-    assert "src/drifted.py" in result.output
+    # `shows` rather than `in`: Rich soft-wraps at COLUMNS, so the path can arrive as
+    # `src/drift\nted.py` and a raw check passes or fails on terminal width. This test was green
+    # in the full suite and red on its own for exactly that reason — xdist sets a different width.
+    assert shows(result.output, "AST Drift Detected")
+    assert shows(result.output, "src/drifted.py")
 
 
 def test_rot_check_exits_0_on_clean(tmp_path: Path) -> None:

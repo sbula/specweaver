@@ -86,6 +86,7 @@ class MutantRun:
     detail: str = ""
     leaked: list[str] = field(default_factory=list)
     drift: str = "OK"
+    confirmed: bool = False
 
 
 @dataclass(frozen=True)
@@ -162,6 +163,42 @@ def campaign_verdict(verdicts: list[Verdict], *, declared: int) -> str:
     return "PASSED"
 
 
+def build_sandbox() -> Path:
+    """A detached worktree carrying the tree under test. The caller removes it."""
+    import tempfile
+
+    sandbox = Path(tempfile.mkdtemp(prefix="sw-session-"))
+    sandbox.rmdir()
+    _mutate._build_sandbox(sandbox)
+    return sandbox
+
+
+def remove_sandbox(sandbox: Path) -> None:
+    _mutate._run(["git", "worktree", "remove", "--force", str(sandbox)], REPO_ROOT)
+
+
+def confirm_kill(sandbox: Path, killer_ids: list[str]) -> bool:
+    """Do these tests pass when the mutant is **not** applied?
+
+    `FR-6`. A killer that fails either way protects nothing — it was already broken and the mutant
+    merely arrived to take the blame. Left unchecked, a permanently red test in scope would certify
+    every requirement it touches forever, and the corpus would report its healthiest numbers on
+    exactly the campaigns worth distrusting.
+
+    Only the killer node ids are re-run, never the whole scope: that is one to three tests in
+    practice, which is what keeps confirmation affordable enough to be unconditional.
+
+    No killers is not confirmation. Neither is a run that collected nothing — a node id that no
+    longer exists exits `4`, and reading that as a green re-run would confirm a kill against tests
+    that were never executed.
+    """
+    if not killer_ids:
+        return False
+    cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider", *killer_ids]
+    _out, code = _run_rc(cmd, sandbox, _mutate.sandbox_env(sandbox))
+    return code == 0
+
+
 def snapshot_cleanliness(sandbox: Path) -> set[str]:
     """What `git status --porcelain` says about the sandbox **immediately after it was built**.
 
@@ -196,19 +233,24 @@ def run_baseline(sandbox: Path, *, tests: str = "tests") -> Baseline:
 
 
 def run_corpus(
-    corpus: Any, *, baseline: Baseline | None = None, sandbox: Path | None = None
+    corpus: Any,
+    *,
+    baseline: Baseline | None = None,
+    sandbox: Path | None = None,
+    confirm: bool = False,
 ) -> list[MutantRun]:
     """Run every mutant in a validated corpus, one sandbox reused across all of them.
 
-    `baseline` is accepted and carried rather than used: attributing a baseline failure to a scope
-    is a later sub-feature's decision, and taking it here would put a verdict in a module that
-    promises not to make one.
+    `confirm` re-runs each kill's killers without the mutant before believing it (`FR-6`). It is
+    opt-in here and on by default in a session, because the cost is real and the callers that only
+    want raw outcomes should not pay it.
+
+    `baseline` is carried rather than applied: turning it into `INDETERMINATE` is `verdict_of`'s
+    job, and doing it here would put a judgement inside the function that gathers the evidence.
     """
     own_sandbox = sandbox is None
     if own_sandbox:
-        sandbox = Path(__import__("tempfile").mkdtemp(prefix="sw-session-"))
-        sandbox.rmdir()
-        _mutate._build_sandbox(sandbox)
+        sandbox = build_sandbox()
 
     assert sandbox is not None
     clean = snapshot_cleanliness(sandbox)
@@ -221,6 +263,8 @@ def run_corpus(
             for mutant in campaign.mutants:
                 drift = _corpus.drift_of(mutant, REPO_ROOT)
                 run = _run_mutant(sandbox, mutant, target, drift=drift)
+                if confirm and run.outcome == "KILL":
+                    run = replace(run, confirmed=confirm_kill(sandbox, run.killers))
                 leaked = leaked_since(sandbox, clean)
                 if leaked:
                     # Clean and carry on. Aborting would turn one leaky test into a night with no
@@ -230,7 +274,7 @@ def run_corpus(
                 results.append(run)
     finally:
         if own_sandbox:
-            _mutate._run(["git", "worktree", "remove", "--force", str(sandbox)], REPO_ROOT)
+            remove_sandbox(sandbox)
     return results
 
 

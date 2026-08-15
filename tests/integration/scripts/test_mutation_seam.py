@@ -3,7 +3,7 @@
 
 """The first place the corpus and the runner meet.
 
-Proves: TECH-049 FR-4, FR-7
+Proves: TECH-049 FR-4, FR-6, FR-7
 
 `SF-01` produced validated `Corpus` objects and ran nothing; `_mutate` ran mutants and knew nothing
 about campaigns. This is the seam between them, and per `ADR-003` it belongs to the boundary that
@@ -160,3 +160,42 @@ def _mutate_worktrees() -> int:
         ["git", "worktree", "list"], cwd=REPO_ROOT, capture_output=True, text=True, check=False
     )
     return len(out.stdout.splitlines())
+
+
+@pytest.mark.integration
+class TestConfirmationAgainstARealSandbox:
+    """`FR-6` end to end — the interface that does not exist until this boundary.
+
+    Confirmation is the difference between "a test failed while the mutant was applied" and "a test
+    that otherwise passes failed because of it". Only a real sandbox can tell those apart, because
+    the second half of the claim is a second real pytest run.
+    """
+
+    def test_a_genuine_kill_is_confirmed(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path
+    ) -> None:
+        loaded = corpus.load_corpus(corpus_file)
+        results = mutation.run_corpus(loaded, baseline=None, confirm=True)
+        assert results[0].outcome == "KILL"
+        assert results[0].confirmed is True, "the killers pass without the mutant"
+
+    def test_a_permanently_failing_killer_is_not_protection(
+        self, mutation: ModuleType, corpus: ModuleType, corpus_file: Path, tmp_path: Path
+    ) -> None:
+        """The failure mode `FR-6` exists for, built rather than mocked.
+
+        A test that fails with *and* without the mutant certifies nothing, but looks identical to a
+        real kill in the output: both are a `FAILED` line while the mutant is applied.
+        """
+        sandbox = mutation.build_sandbox()
+        try:
+            planted = Path(sandbox) / "tests" / "unit" / "test_always_red_probe.py"
+            planted.write_text("def test_always_red():\n    assert False\n", encoding="utf-8")
+            assert (
+                mutation.confirm_kill(
+                    Path(sandbox), ["tests/unit/test_always_red_probe.py::test_always_red"]
+                )
+                is False
+            )
+        finally:
+            mutation.remove_sandbox(Path(sandbox))
