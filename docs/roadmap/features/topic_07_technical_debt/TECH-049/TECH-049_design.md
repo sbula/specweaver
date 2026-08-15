@@ -266,7 +266,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Machine Report | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Scheduler | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | Session Gate and Override Census | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Session Gate and Override Census | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Adoption | SF-06 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Verdict Table
@@ -323,8 +323,8 @@ baseline-once-per-session (AD-6), the accounting rule (FR-8), and the verdict ta
 timer and AD-10 setting the gate to confirm-not-rerun. The blocking runner defect was already
 delivered in `72b82df8` — it reported every mutant `SURVIVED` under a colour-forcing shell.
 **Open decisions**: none.
-**Next step**: SF-01 to SF-05 are delivered — a nightly timer runs the corpus, and the corpus has
-its first real campaign guarding FR-4, FR-5 and FR-6. Only SF-06 (the session gate and override
-census) remains.
+**Next step**: SF-01 to SF-06 are delivered — the mechanism is complete and runs end to end. Only
+SF-07 (Adoption) remains: until the skills describe how to write a campaign and clear the morning
+gate, the gate works and nobody knows how to use it.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

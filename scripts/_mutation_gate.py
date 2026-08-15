@@ -127,3 +127,40 @@ def record_run(report_path: Path, ledger_path: Path) -> dict[str, Any]:
     )
     ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
     return ledger
+
+
+def confirm(ledger_path: Path, derived_id: str, *, disposition: str, why: str) -> dict[str, Any]:
+    """Record that a human looked at a finding and what they decided.
+
+    One finding at a time, and `why` is mandatory. A confirmation with no reason is a click-through,
+    which is precisely what the census exists to stop — the ratchet counts entries, and an entry
+    nobody had to justify costs nothing to add.
+
+    The recurrence count is preserved. Deciding what to do about a finding must not reset how long
+    it has been here; that number is the only pressure on a `will-fix` that never gets fixed.
+    """
+    if disposition not in DISPOSITIONS:
+        raise ValueError(f"unknown disposition {disposition!r}; expected one of {DISPOSITIONS}")
+    if not why.strip():
+        raise ValueError("why is required — a confirmation without a reason is a click-through")
+
+    ledger = load_ledger(ledger_path)
+    entry = dict(ledger["findings"].get(derived_id, {}))
+    entry.update({"disposition": disposition, "why": why.strip()})
+    entry.setdefault("runs", 1)
+    ledger["findings"][derived_id] = entry
+    ledger["override_count"] = sum(
+        1 for e in ledger["findings"].values() if e.get("disposition") in OVERRIDE_DISPOSITIONS
+    )
+    ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    return ledger
+
+
+def ratchet_ok(*, current: int, baseline: int) -> bool:
+    """Whether the override census has grown.
+
+    Falling is the point: debt may be repaid, never taken on silently. Equal passes — a steady count
+    is not progress, but it is not a new bypass either, and failing on it would make the ratchet
+    unpassable rather than directional.
+    """
+    return current <= baseline

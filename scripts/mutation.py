@@ -52,6 +52,7 @@ _mutate = _sibling("_mutate")
 _corpus = _sibling("_corpus")
 _report = _sibling("_mutation_report")
 _timer = _sibling("_mutation_timer")
+_gate = _sibling("_mutation_gate")
 
 UNIT_NAME = _timer.UNIT_NAME
 timer_units = _timer.timer_units
@@ -170,11 +171,40 @@ def campaign_verdict(verdicts: list[Verdict], *, declared: int) -> str:
     return "PASSED"
 
 
+#: The prefix every session sandbox carries. Used to recognise our own orphans and, just as
+#: importantly, to leave everyone else's worktrees alone.
+_SANDBOX_PREFIX = "sw-session-"
+
+
+def prune_orphaned_sandboxes() -> list[str]:
+    """Remove session worktrees an earlier run left behind, and report what went.
+
+    `run_corpus` removes its sandbox in a `finally`, which survives a crash but not a kill — and a
+    nightly timer meets kills: a reboot, an OOM, a closed lid. The run that has to clean up is
+    therefore the NEXT one, because the one that died cannot.
+
+    Matched by prefix so a human's own worktree is never touched: this cleans up after itself, not
+    after everybody.
+    """
+    listing = _mutate._run(["git", "worktree", "list"], REPO_ROOT)
+    removed = []
+    for line in listing.splitlines():
+        path = line.split()[0] if line.split() else ""
+        if _SANDBOX_PREFIX in Path(path).name:
+            _mutate._run(["git", "worktree", "unlock", path], REPO_ROOT)
+            _mutate._run(["git", "worktree", "remove", "--force", path], REPO_ROOT)
+            removed.append(path)
+    if removed:
+        _mutate._run(["git", "worktree", "prune"], REPO_ROOT)
+    return removed
+
+
 def build_sandbox() -> Path:
     """A detached worktree carrying the tree under test. The caller removes it."""
     import tempfile
 
-    sandbox = Path(tempfile.mkdtemp(prefix="sw-session-"))
+    prune_orphaned_sandboxes()
+    sandbox = Path(tempfile.mkdtemp(prefix=_SANDBOX_PREFIX))
     sandbox.rmdir()
     _mutate._build_sandbox(sandbox)
     return sandbox
@@ -319,6 +349,39 @@ def discover_corpora(root: Path) -> list[Path]:
     return sorted(root.rglob("*_mutants.json"))
 
 
+def _cmd_confirm(args: Any, ap: Any) -> int:
+    """Record one decision. `--as` and `--why` are both required, and that is the point."""
+    if not args.disposition or not args.why:
+        ap.error("--confirm needs --as <disposition> and --why <reason>")
+    try:
+        _gate.confirm(Path(args.ledger), args.confirm, disposition=args.disposition, why=args.why)
+    except ValueError as exc:
+        print(f"could not confirm: {exc}", file=sys.stderr)
+        return 2
+    print(f"{args.confirm}: {args.disposition} — {args.why}")
+    return 0
+
+
+def _cmd_gate(args: Any) -> int:
+    """Blocked or clear, and when blocked, exactly what to do about it."""
+    result = _gate.gate_verdict(Path(args.out), Path(args.ledger))
+    if not result.blocked:
+        print(f"CLEAR: {result.reason}")
+        return 0
+    print(f"BLOCKED: {result.reason}")
+    for finding in result.unconfirmed:
+        print(f"  unconfirmed: {finding}")
+    print("\nconfirm with: mutation.py --confirm '<id>' --as <disposition> --why '<why>'")
+    return 1
+
+
+def _cmd_install() -> int:
+    for path in install_timer():
+        print(f"wrote {path}")
+    print(f"enable with: systemctl --user enable --now {UNIT_NAME}.timer")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run a session and write the report a gate will read hours later.
 
@@ -337,13 +400,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--install-timer", action="store_true", help="write the nightly systemd user units"
     )
+    ap.add_argument("--gate", action="store_true", help="decide whether findings have been read")
+    ap.add_argument("--confirm", metavar="DERIVED_ID", help="record a decision about ONE finding")
+    ap.add_argument("--as", dest="disposition", choices=_gate.DISPOSITIONS)
+    ap.add_argument("--why", help="why (required with --confirm)")
+    ap.add_argument(
+        "--ledger",
+        default=str(REPO_ROOT / "scripts" / "baselines" / "mutation_findings.json"),
+    )
     args = ap.parse_args(argv)
 
+    if args.confirm:
+        return _cmd_confirm(args, ap)
+    if args.gate:
+        return _cmd_gate(args)
     if args.install_timer:
-        for path in install_timer():
-            print(f"wrote {path}")
-        print(f"enable with: systemctl --user enable --now {UNIT_NAME}.timer")
-        return 0
+        return _cmd_install()
 
     paths = [Path(p) for p in args.corpus]
     if args.corpus_dir:
@@ -369,6 +441,10 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     print(f"report: {out}")
+    if campaigns:
+        # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
+        # able to run days later against a ledger that already knows how long a finding has been here.
+        _gate.record_run(out, Path(args.ledger))
     return _report.exit_code_for([c["verdict"] for c in campaigns])
 
 

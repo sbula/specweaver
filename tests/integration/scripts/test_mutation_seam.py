@@ -3,7 +3,7 @@
 
 """The first place the corpus and the runner meet.
 
-Proves: TECH-049 FR-4, FR-6, FR-7, FR-9
+Proves: TECH-049 FR-4, FR-6, FR-7, FR-9, FR-11
 
 `SF-01` produced validated `Corpus` objects and ran nothing; `_mutate` ran mutants and knew nothing
 about campaigns. This is the seam between them, and per `ADR-003` it belongs to the boundary that
@@ -243,3 +243,65 @@ class TestReportOutlivesTheSandbox:
         """[Hostile] A session that measured nothing must not report success."""
         out = tmp_path / "report.json"
         assert mutation.main(["--corpus-dir", str(tmp_path), "--out", str(out)]) == 2
+
+
+@pytest.mark.integration
+class TestReportLedgerGateChain:
+    """`FR-11` end to end — the chain that does not exist until this boundary.
+
+    Report, ledger, gate. Each has unit tests; the wiring between them has none, and this ticket has
+    already been bitten three times by exactly that gap — most recently a dropped
+    `judgements.append` that no unit test could see.
+    """
+
+    def test_a_finding_blocks_until_confirmed_then_clears(
+        self, mutation: ModuleType, tmp_path: Path
+    ) -> None:
+        report = tmp_path / "report.json"
+        ledger = tmp_path / "ledger.json"
+        report.write_text(
+            json.dumps(
+                {
+                    "summary": {"head": "abc", "verdict": "FAILED"},
+                    "campaigns": [
+                        {
+                            "feature": "F",
+                            "requirement": "FR-1",
+                            "verdict": "FAILED",
+                            "mutants_declared": 1,
+                            "verdicts_returned": 1,
+                            "results": [
+                                {
+                                    "derived_id": "F FR-1 m",
+                                    "verdict": "FAIL",
+                                    "reason": "no test noticed",
+                                    "drift": "OK",
+                                    "detail": "",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        blocked = mutation.main(["--gate", "--out", str(report), "--ledger", str(ledger)])
+        assert blocked == 1, "an unread finding must block"
+
+        confirmed = mutation.main(
+            [
+                "--confirm",
+                "F FR-1 m",
+                "--as",
+                "will-fix",
+                "--why",
+                "narrowing scope first",
+                "--ledger",
+                str(ledger),
+            ]
+        )
+        assert confirmed == 0
+
+        assert mutation.main(["--gate", "--out", str(report), "--ledger", str(ledger)]) == 0
+        assert json.loads(ledger.read_text())["override_count"] == 1, "and the census counted it"

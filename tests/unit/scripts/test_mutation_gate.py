@@ -158,3 +158,68 @@ class TestRecordRun:
         ledger = _ledger(tmp_path)
         gate.record_run(_report(tmp_path, _finding()), ledger)
         assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["runs"] == 1
+
+
+class TestConfirm:
+    """Recording that a human looked, and what they decided."""
+
+    def test_a_disposition_is_recorded_with_its_reason(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        ledger = _ledger(tmp_path)
+        gate.confirm(ledger, "F FR-1 m", disposition="will-fix", why="narrowing scope first")
+        entry = json.loads(ledger.read_text())["findings"]["F FR-1 m"]
+        assert entry["disposition"] == "will-fix"
+        assert entry["why"] == "narrowing scope first"
+
+    def test_an_unknown_disposition_is_refused(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Hostile] Four dispositions exist; a fifth would silently escape the census."""
+        with pytest.raises(ValueError, match="disposition"):
+            gate.confirm(_ledger(tmp_path), "F FR-1 m", disposition="probably-fine", why="x")
+
+    def test_an_empty_reason_is_refused(self, gate: ModuleType, tmp_path: Path) -> None:
+        """A confirmation with no reason is a click-through, which is what the census exists to stop."""
+        with pytest.raises(ValueError, match="why"):
+            gate.confirm(_ledger(tmp_path), "F FR-1 m", disposition="will-fix", why="  ")
+
+    def test_confirming_preserves_the_recurrence_count(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Boundary] Deciding what to do about a finding must not reset how long it has been here."""
+        ledger = _ledger(tmp_path, **{"F FR-1 m": {"runs": 7}})
+        gate.confirm(ledger, "F FR-1 m", disposition="will-fix", why="still triaging")
+        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["runs"] == 7
+
+
+class TestOverrideCensus:
+    """`FR-12` — the count may fall, never rise."""
+
+    def test_a_will_fix_counts_as_an_override(self, gate: ModuleType, tmp_path: Path) -> None:
+        ledger = _ledger(tmp_path)
+        gate.confirm(ledger, "F FR-1 m", disposition="will-fix", why="later")
+        assert json.loads(ledger.read_text())["override_count"] == 1
+
+    def test_an_equivalent_mutant_counts_too(self, gate: ModuleType, tmp_path: Path) -> None:
+        """Surviving because the mutant changes nothing still releases the gate without a fix."""
+        ledger = _ledger(tmp_path)
+        gate.confirm(ledger, "F FR-1 m", disposition="equivalent", why="no observable change")
+        assert json.loads(ledger.read_text())["override_count"] == 1
+
+    def test_a_real_gap_does_not_count(self, gate: ModuleType, tmp_path: Path) -> None:
+        """You fixed it. That is the gate working, not a bypass of it."""
+        ledger = _ledger(tmp_path)
+        gate.confirm(ledger, "F FR-1 m", disposition="real-gap", why="wrote the missing test")
+        assert json.loads(ledger.read_text())["override_count"] == 0
+
+    def test_a_stale_refresh_does_not_count(self, gate: ModuleType, tmp_path: Path) -> None:
+        ledger = _ledger(tmp_path)
+        gate.confirm(ledger, "F FR-1 m", disposition="stale-refreshed", why="re-read and re-pinned")
+        assert json.loads(ledger.read_text())["override_count"] == 0
+
+    def test_growth_past_the_baseline_fails(self, gate: ModuleType, tmp_path: Path) -> None:
+        assert gate.ratchet_ok(current=3, baseline=2) is False
+
+    def test_a_falling_count_passes(self, gate: ModuleType, tmp_path: Path) -> None:
+        """The whole point of a ratchet: debt may be repaid, never taken on silently."""
+        assert gate.ratchet_ok(current=1, baseline=2) is True
+        assert gate.ratchet_ok(current=2, baseline=2) is True

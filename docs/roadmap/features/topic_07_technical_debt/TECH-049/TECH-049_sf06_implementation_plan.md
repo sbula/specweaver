@@ -102,6 +102,23 @@ ratchet test goes red.
 | R-2 | The ledger accumulates entries for findings that no longer exist | Entries absent from the current report are pruned on write, so the file describes today |
 | R-3 | `--why` becomes a single character | Not mechanically fixable; the ratchet and the diff are the review |
 
+## Delivered
+
+Two boundaries. Eight mutants, all KILLED. Full suite 7119 passed, 0 failed. End to end for real:
+session → report → gate → `CLEAR`, exit 0.
+
+**Findings, all from using it rather than reviewing it:**
+
+- A mutant caught the **fourth** test in this ticket asserting the right outcome for the wrong
+  reason: `test_a_report_older_than_48h_blocks` used a report that also carried an unconfirmed
+  failure, so rule 2 blocked it regardless. Only an otherwise-clearing report proves staleness did.
+- **A killed session leaks a git worktree forever.** `run_corpus`'s `finally` survives a crash but
+  not a kill, and a nightly timer meets kills. Found because interrupted runs left three
+  `sw-session-*` worktrees behind, one `locked`. The next run now prunes them at build time,
+  matched by prefix so no one else's worktree is touched — the run that died cannot clean up.
+- `main` reached complexity 14 with four modes in it; split into `_cmd_confirm` / `_cmd_gate` /
+  `_cmd_install`.
+
 ## Out of scope
 
 Skills, the morning routine, `CLAUDE.md` — SF-07 (Adoption).

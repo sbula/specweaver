@@ -490,3 +490,55 @@ class TestJudge:
         assert judged[0]["verdicts_returned"] == judged[0]["mutants_declared"] == 1
         assert judged[0]["results"][0]["verdict"] == "PASS"
         assert judged[0]["verdict"] == "PASSED", "the campaign must agree with its own results"
+
+
+class TestBuildSandbox:
+    """A killed session must not leak a worktree forever.
+
+    `run_corpus` removes its sandbox in a `finally`, which covers a crash but not a kill — and a
+    nightly timer meets kills: a reboot, an OOM, a laptop lid. Found by using this for real: three
+    `sw-session-*` worktrees were left behind by interrupted runs, one of them `locked`, and over a
+    month of nights that grows without bound.
+
+    Pruning happens at build time rather than at exit, because the run that has to clean up is the
+    next one — the one that died cannot.
+    """
+
+    def test_it_prunes_orphaned_session_worktrees_first(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        listed = f"{tmp_path}/sw-session-old1  abc [detached HEAD]\n/home/x/repo  abc [main]\n"
+        removed: list[str] = []
+
+        def _fake_run(cmd: list[str], *_a: object, **_k: object) -> str:
+            if cmd[:2] == ["git", "worktree"] and cmd[2] == "list":
+                return listed
+            if cmd[:3] == ["git", "worktree", "remove"]:
+                removed.append(cmd[-1])
+            return ""
+
+        monkeypatch.setattr(mutation._mutate, "_run", _fake_run)
+        monkeypatch.setattr(mutation._mutate, "_build_sandbox", lambda _s: None)
+
+        mutation.build_sandbox()
+        assert any("sw-session-old1" in r for r in removed), removed
+
+    def test_it_leaves_unrelated_worktrees_alone(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Hostile] Pruning by prefix must not touch a worktree someone is working in."""
+        listed = "/home/x/repo  abc [main]\n/home/x/.claude/worktrees/feature  abc [detached]\n"
+        removed: list[str] = []
+
+        def _fake_run(cmd: list[str], *_a: object, **_k: object) -> str:
+            if cmd[:3] == ["git", "worktree", "list"]:
+                return listed
+            if cmd[:3] == ["git", "worktree", "remove"]:
+                removed.append(cmd[-1])
+            return ""
+
+        monkeypatch.setattr(mutation._mutate, "_run", _fake_run)
+        monkeypatch.setattr(mutation._mutate, "_build_sandbox", lambda _s: None)
+
+        mutation.build_sandbox()
+        assert removed == [], removed
