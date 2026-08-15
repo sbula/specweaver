@@ -201,3 +201,58 @@ class TestVerifyIsolated:
         """The failure this exists for: the sandbox is built, and the REAL tree is what runs."""
         with pytest.raises(RuntimeError, match="not isolated"):
             mut._verify_isolated(str(REPO_ROOT / "src" / "specweaver" / "__init__.py"), tmp_path)
+
+
+class TestRunOneRestoresTheFile:
+    """`run_one` puts the file back the way it found it, uncommitted work included.
+
+    Found 2026-08-15 by using the tool on itself. `reset_file` undid a mutant with
+    `git checkout -- <file>`, which restores the file to **HEAD** — but `_build_sandbox`
+    deliberately applies `git diff HEAD` on top so the run measures the tree you actually have.
+    So the first mutant in a file was measured correctly and every later one silently lost the
+    uncommitted changes.
+
+    Observed: the same anchor KILLED when run first and BROKEN when run second, in one campaign.
+    BROKEN is the lucky case — it fails closed because the anchor lived only in the uncommitted
+    part. An anchor present in *both* versions would have mutated the committed code and run it
+    against a tree missing the rest of the work, which is a verdict that looks real and is not.
+
+    This directly contradicts the module docstring's promise that a run "measures the tree you
+    actually have rather than the last commit" — true only for the first mutant per file.
+    """
+
+    def test_the_file_is_restored_after_a_run(
+        self, mut: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = tmp_path / "src" / "thing.py"
+        target.parent.mkdir(parents=True)
+        original = "def f():\n    return 1\n"
+        target.write_text(original, encoding="utf-8")
+
+        monkeypatch.setattr(mut, "prove_isolation", lambda *a, **k: None)
+        monkeypatch.setattr(mut, "_run", lambda *a, **k: "1 passed\n")
+
+        result = mut.run_one(tmp_path, file="src/thing.py", old="return 1", new="return 2")
+
+        assert result["verdict"] == "SURVIVED"
+        assert target.read_text(encoding="utf-8") == original
+
+    def test_the_file_is_restored_even_when_the_run_raises(
+        self, mut: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A crash mid-run must not leave the sandbox carrying a mutant into the next one."""
+        target = tmp_path / "src" / "thing.py"
+        target.parent.mkdir(parents=True)
+        original = "def f():\n    return 1\n"
+        target.write_text(original, encoding="utf-8")
+
+        monkeypatch.setattr(mut, "prove_isolation", lambda *a, **k: None)
+
+        def _boom(*_a: object, **_k: object) -> str:
+            raise RuntimeError("pytest died")
+
+        monkeypatch.setattr(mut, "_run", _boom)
+
+        with pytest.raises(RuntimeError):
+            mut.run_one(tmp_path, file="src/thing.py", old="return 1", new="return 2")
+        assert target.read_text(encoding="utf-8") == original

@@ -5,8 +5,9 @@
 """Run a list of mutants in one sandbox and file a report you can act on.
 
 `_mutate.py` answers one question at a time, which is the right shape mid-investigation. This asks a
-list of them — one detached worktree reused across the batch, `git checkout --` between mutants —
-and writes the answers to `.tmp/`, which is gitignored. **Nothing is committed by this tool.**
+list of them — one detached worktree reused across the batch, each mutant restoring the file it
+found before the next runs — and writes the answers to `.tmp/`, which is gitignored. **Nothing is
+committed by this tool.**
 
 The report's ordering is the design. Input order is useless; what matters is that the top of the
 file is the work:
@@ -188,8 +189,6 @@ def main(argv: list[str] | None = None) -> int:
                 )
             except (ValueError, RuntimeError) as exc:
                 result = {"verdict": "BROKEN", "killers": [], "detail": str(exc)}
-            finally:
-                _mutate.reset_file(sandbox, entry["file"])
             print(f"      {result['verdict']} ({len(result['killers'])} killer(s))", flush=True)
             results.append({**entry, **result})
     except KeyboardInterrupt:

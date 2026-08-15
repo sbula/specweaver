@@ -216,35 +216,40 @@ def run_one(
 ) -> dict[str, object]:
     """Apply one mutant in an EXISTING sandbox and report what objected.
 
-    Leaves the mutated file in place — the caller resets it (`reset_file`) before the next mutant,
-    which is what lets a campaign reuse one sandbox instead of building N.
+    **Restores the file itself**, so one sandbox serves a whole campaign. It restores the text it
+    found, never `git checkout` — the sandbox is HEAD *plus* your uncommitted diff, and checking out
+    would throw that diff away. Found by using this tool on itself on 2026-08-15: the same anchor
+    read `KILLED` first in a campaign and `BROKEN` second, because the first reset had reverted the
+    file to HEAD and the anchor lived only in the uncommitted work.
+
+    The `finally` matters as much as the restore. A crash mid-run would otherwise carry a live
+    mutant into the next one, and that verdict would look ordinary.
     """
     target = sandbox / file
     if not target.is_file():
         return {"verdict": "BROKEN", "killers": [], "detail": f"{file} not in the sandbox"}
+    original = target.read_text(encoding="utf-8")
     apply_mutation(target, old, new)
 
-    env = sandbox_env(sandbox)
-    prove_isolation(sandbox, env)
+    try:
+        env = sandbox_env(sandbox)
+        prove_isolation(sandbox, env)
 
-    cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider"]
-    if fast:
-        cmd.append("-x")
-    if tests:
-        cmd.append(tests)
-    else:
-        cmd += ["-n", "auto"]
-    out = _run(cmd, sandbox, env)
+        cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider"]
+        if fast:
+            cmd.append("-x")
+        if tests:
+            cmd.append(tests)
+        else:
+            cmd += ["-n", "auto"]
+        out = _run(cmd, sandbox, env)
+    finally:
+        target.write_text(original, encoding="utf-8")
 
     if is_broken(out):
         return {"verdict": "BROKEN", "killers": [], "detail": out[-800:]}
     found = killers(out)
     return {"verdict": verdict(found), "killers": found, "detail": ""}
-
-
-def reset_file(sandbox: Path, file: str) -> None:
-    """Undo a mutant so the sandbox is reusable for the next one."""
-    _run(["git", "checkout", "--", file], sandbox)
 
 
 def main(argv: list[str] | None = None) -> int:
