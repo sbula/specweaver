@@ -246,7 +246,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Core Flow DB Integration | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core Flow DB Integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Security Defenses Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Parallel Multi-Spec Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Context Mention Highlighting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -258,14 +258,20 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Session Handoff
 
-**Current status**: SF-01's implementation plan is APPROVED (2026-08-14). SF-08 is delivered
-(`e2ac7e6e`, 2026-05-16 — its `Committed` box was corrected 2026-08-14, not re-done).
-**Next step**: Run `/dev` for **SF-01 CB-1** — widen `handlers/validation.py` so `Finding` survives
-into `StepResult.output`, and record the measured `step_records` blob-size delta, which is a
-done-when for that boundary rather than a suggestion.
-**Read before starting**: the plan's Red/Blue section. Three of its findings killed conditions the
-first draft had wrong, and `RB-1` is why `assurance/validation/context.yaml` must be corrected —
-`tach_sync` regenerates `tach.toml`'s `[[interfaces]]` from it, and it currently names three types
-that do not exist.
+**Current status**: **SF-01 is DELIVERED** (2026-08-15) across four commit boundaries — `e400cfdb`
+findings survive the handler boundary, `3e8c29f9` queryable persistence, `9a81719f` feedback replay
+on resume, `b15d372f` the corrected `context.yaml`. `check_fr_coverage.py INT-US-04` passes **3 of
+3**. SF-03, SF-04 and SF-08 were already delivered; SF-02, SF-05, SF-06 and SF-07 are RETIRED by
+`ADR-003`; **SF-09 remains Pending Design**, so the story is not closeable yet.
+
+**Open decision (Q-11, deferred from the plan's Phase 4 gate):** whether the base contract's
+`⬜ Pending` marker — corrected on 2026-08-14 *because* SF-01 was unbuilt — now flips to `✅`.
+SF-01 closes the persistence half; C2's *"sanitized"* clause stays `unproven` regardless, since it
+maps to `E-VAL-03`, which is unbuilt. A status decision, and the user's.
+
+**Read before touching this area**: the plan's Red/Blue and the four CB outcome notes. **Five plan
+errors were found by reading the code the plan named**, three of them after approval: the write
+point (D-10), the row grain (D-11), the `exposes` replacement list (D-12), and the `PENDING`-only
+replay condition, which W-1 disproved against a real loop-back.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
