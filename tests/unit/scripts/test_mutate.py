@@ -95,6 +95,36 @@ class TestKillers:
     def test_a_green_run_has_no_killers(self, mut: ModuleType) -> None:
         assert mut.killers("6829 passed, 11 skipped\n") == []
 
+    def test_ansi_coloured_failures_are_still_killers(self, mut: ModuleType) -> None:
+        """The defect that made every mutant read SURVIVED, measured 2026-08-15.
+
+        `_run` inherits the environment, and `should_do_markup` honours `FORCE_COLOR` over the
+        isatty test — so under any agent shell (Claude Code sets `FORCE_COLOR=3`) pytest wraps the
+        verdict word: `\\x1b[31mFAILED\\x1b[0m tests/...`. `^FAILED` cannot match a line starting
+        with an escape, every killer went invisible, and the runner reported SURVIVED for a mutant
+        that genuinely killed two tests.
+
+        It never fired for a human, because `capture_output=True` makes stdout a pipe and pytest
+        drops colour on its own. Every fixture in this class was plain text, so 15 passing tests
+        could not reach the failing path — the exact vacuity this tool exists to detect.
+        """
+        out = (
+            "\x1b[31mFAILED\x1b[0m tests/unit/a.py::\x1b[1mtest_one\x1b[0m - assert 0 == 2\n"
+            "\x1b[31m===== \x1b[31m\x1b[1m2 failed\x1b[0m, \x1b[32m16 passed\x1b[0m\x1b[31m =====\x1b[0m\n"
+        )
+        assert mut.is_broken(out) is False
+        assert mut.killers(out) == ["tests/unit/a.py::test_one"]
+
+    def test_colour_is_disabled_in_the_sandbox_environment(self, mut: ModuleType) -> None:
+        """Belt and braces: strip the escapes AND stop pytest emitting them.
+
+        `PY_COLORS` is the FIRST check in `should_do_markup`, so `"0"` beats an inherited
+        `FORCE_COLOR`. Stripping alone would leave the next colour-forcing variable free to break
+        it again; disabling alone would leave the parser fragile.
+        """
+        env = mut.sandbox_env(Path("/tmp/sandbox"))
+        assert env["PY_COLORS"] == "0"
+
     def test_a_test_that_merely_prints_syntaxerror_is_not_broken(self, mut: ModuleType) -> None:
         """The false positive that cost a whole campaign.
 

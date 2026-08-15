@@ -63,6 +63,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #: machine-readable statement of *which* tests objected.
 _FAILED = re.compile(r"^FAILED (\S+)", re.MULTILINE)
 
+#: SGR escape sequences. Pytest colours the verdict word itself — `short_test_summary` builds the
+#: line as `markup(word) + " " + nodeid` — so a coloured line starts with `\x1b[31m`, not `F`, and
+#: `^FAILED` cannot match. Measured 2026-08-15: the same mutant read SURVIVED/0 killers with
+#: `FORCE_COLOR=3` set and KILLED/2 without it.
+#:
+#: Stripping is the belt; `PY_COLORS=0` in :func:`sandbox_env` is the braces. Relaxing the `^`
+#: anchor instead would be wrong — it is what stops the word `FAILED` inside a captured log line
+#: or a test's own output from counting as a killer.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(output: str) -> str:
+    """Output with colour removed, so the parsers see the text pytest meant for machines."""
+    return _ANSI.sub("", output)
+
 #: A mutant that does not import is not evidence of anything, and must never be reported as a kill.
 #:
 #: Read from pytest's SUMMARY line only. Two earlier versions matched the body of the output and
@@ -96,12 +111,13 @@ def killers(output: str) -> list[str]:
     """Test ids that failed — sorted, so a run is comparable with the next one."""
     if is_broken(output):
         return []
-    return sorted(set(_FAILED.findall(output)))
+    return sorted(set(_FAILED.findall(_plain(output))))
 
 
 def is_broken(output: str) -> bool:
     """Whether pytest itself errored — collection failure, not a test failure."""
-    return bool(_INTERNAL.search(output) or _SUMMARY_ERROR.search(output))
+    plain = _plain(output)
+    return bool(_INTERNAL.search(plain) or _SUMMARY_ERROR.search(plain))
 
 
 def verdict(found: list[str]) -> str:
@@ -174,8 +190,18 @@ def prove_isolation(sandbox: Path, env: dict[str, str]) -> None:
 
 
 def sandbox_env(sandbox: Path) -> dict[str, str]:
-    """`PYTHONPATH` must win over the editable-install `.pth` entry for the sandbox to be what runs."""
-    return {"PYTHONPATH": str(sandbox / "src"), "PYTHONDONTWRITEBYTECODE": "1"}
+    """`PYTHONPATH` must win over the editable-install `.pth` entry for the sandbox to be what runs.
+
+    `PY_COLORS=0` is the **first** check in pytest's `should_do_markup`, so it beats an inherited
+    `FORCE_COLOR` — which every agent shell sets, and which otherwise outranks the isatty test that
+    would have kept this output plain. Nothing here is read by a human; the sandbox is a detached
+    worktree that is deleted at the end of the run.
+    """
+    return {
+        "PYTHONPATH": str(sandbox / "src"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PY_COLORS": "0",
+    }
 
 
 def run_one(
