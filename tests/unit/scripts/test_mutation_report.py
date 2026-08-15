@@ -3,7 +3,7 @@
 
 """The report is the only thing that outlives the run.
 
-Proves: TECH-049 FR-9
+Proves: TECH-049 FR-9, NFR-3
 
 The sandbox is a detached worktree deleted when the session ends, so anything in the report that
 points into it is unreadable by the time a human or a gate acts on it. Measured: a stale anchor

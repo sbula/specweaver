@@ -5,9 +5,8 @@ A campaign asks one question: **if this requirement stopped working, would any t
 You write the mutants by hand. That is deliberate — generating them from an AST is `A-VAL-03`, and
 a hand-written mutant carries the intent a generated one cannot.
 
-> Status: `TECH-049`, partially delivered. The corpus format, drift hashing and maintenance CLI
-> exist. **Nothing runs a campaign yet** — the runner, verdicts, report and nightly gate are
-> still to come. See the ticket's design for what remains.
+A nightly timer runs the whole corpus at 03:00; in the morning a gate tells you whether anything
+needs reading. Nothing is blocked until a finding goes unread.
 
 ## Where it lives
 
@@ -94,6 +93,52 @@ destroys the only record it was ever measured.
 
 Refreshing a mutant whose symbol has vanished **fails**. Pinning a hash for code that is gone
 launders real drift into a green corpus.
+
+## The morning routine
+
+```bash
+python scripts/mutation.py --gate
+```
+
+`CLEAR` and you carry on. `BLOCKED` names every finding nobody has looked at.
+
+For each one, read its `breaks` field — it says what bug was planted — then decide:
+
+| Disposition | Means | Counted by the census |
+|---|---|---|
+| `real-gap` | the requirement genuinely is not protected; you fixed it or wrote the test | No |
+| `equivalent` | the mutant changes no observable behaviour, so surviving proves nothing | **Yes** |
+| `will-fix` | real, and you are continuing anyway | **Yes** |
+| `stale-refreshed` | the code moved; you re-read the claim and re-pinned it | No |
+
+```bash
+python scripts/mutation.py --confirm "C-EXEC-06 FR-8 isolation-off" \
+       --as will-fix --why "narrowing the scope first"
+```
+
+**The gate never asks you to prove a fix.** Demanding proof would mean an on-demand corpus run,
+which this design rejects — the next scheduled run re-measures anyway, so an unfixed finding simply
+comes back. What stops that being a free pass is the recurrence count: a `will-fix` re-confirmed for
+a fortnight is visible in the ledger, and `equivalent` and `will-fix` are ratcheted, so the number
+of live bypasses may fall and never rise.
+
+A `STALE` finding means the code a claim rested on moved. Re-read the claim first — that is the
+whole point of the signal — then:
+
+```bash
+python scripts/_corpus.py --corpus <path> --root . --refresh "<derived id>"
+```
+
+### Running it by hand
+
+```bash
+python scripts/mutation.py --corpus-dir docs/roadmap/features   # the whole corpus
+python scripts/mutation.py --corpus <path> --no-baseline        # one file, quickly
+python scripts/mutation.py --install-timer                      # nightly at 03:00
+```
+
+Exit codes report the **run**, not the decision: `0` nothing failed, `1` something did, `2` it could
+not run. Whether work continues is `--gate`'s answer, deliberately separate.
 
 ## Related
 

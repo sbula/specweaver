@@ -3,7 +3,7 @@
 
 """The gate that decides whether findings have been read.
 
-Proves: TECH-049 FR-11, FR-11a, FR-12
+Proves: TECH-049 FR-11, FR-11a, FR-12, NFR-5
 
 It blocks on findings nobody has looked at, and releases the moment each carries a disposition —
 never on proof that a fix worked. Demanding proof would mean an on-demand corpus run, which is the

@@ -82,6 +82,16 @@ Execute each phase by reading and following the instructions in its reference fi
 > regardless of whether it is pre-existing or introduced by this feature.
 > No inherited problems are acceptable!
 
+> [!NOTE]
+> **The mutation corpus is NOT part of this gate, deliberately.** `scripts/mutation.py` runs
+> nightly and is judged by `mutation.py --gate` in the morning — a separate decision about whether
+> feature work continues, never a commit gate (`TECH-049` `NFR-6`). Blocking a commit on it would
+> mean an on-demand corpus run, and a gate that slow gets switched off.
+>
+> What belongs *here* is the campaign itself: when a boundary calls a claim **proven**, write it
+> into `<ID>_mutants.json` beside the design so the nightly run keeps re-asking.
+> See `docs/dev_guides/writing_mutation_campaigns.md`.
+
 ## Phase 7.5: Red/Blue Cycle Check
 
 7.5.1 Execute the `specweaver-red-blue-review` skill against the code changes introduced in this

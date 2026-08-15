@@ -32,6 +32,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -175,6 +176,15 @@ def campaign_verdict(verdicts: list[Verdict], *, declared: int) -> str:
 #: importantly, to leave everyone else's worktrees alone.
 _SANDBOX_PREFIX = "sw-session-"
 
+#: How old a session sandbox must be before it counts as abandoned. Longer than any plausible run
+#: (NFR-1 puts a full corpus near 100 minutes) and far shorter than a day, so last night's leak is
+#: collected tonight.
+#:
+#: Age, not just the prefix. The first version of this pruning matched on the prefix alone and so
+#: deleted sandboxes that concurrent xdist workers were mid-run in — adding orphan cleanup broke
+#: parallel runs that had been working. A live session is minutes old; a leak outlives the night.
+_ORPHAN_AFTER_SECONDS = 2 * 60 * 60
+
 
 def prune_orphaned_sandboxes() -> list[str]:
     """Remove session worktrees an earlier run left behind, and report what went.
@@ -190,7 +200,13 @@ def prune_orphaned_sandboxes() -> list[str]:
     removed = []
     for line in listing.splitlines():
         path = line.split()[0] if line.split() else ""
-        if _SANDBOX_PREFIX in Path(path).name:
+        if _SANDBOX_PREFIX not in Path(path).name:
+            continue
+        try:
+            age = time.time() - Path(path).stat().st_mtime
+        except OSError:
+            age = _ORPHAN_AFTER_SECONDS + 1  # gone from disk but still registered: prune it
+        if age > _ORPHAN_AFTER_SECONDS:
             _mutate._run(["git", "worktree", "unlock", path], REPO_ROOT)
             _mutate._run(["git", "worktree", "remove", "--force", path], REPO_ROOT)
             removed.append(path)

@@ -1,8 +1,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-# fr-coverage: fixture-data
 
 """Change the code so a claim's behaviour no longer holds, then see whether anything objects.
+
+Proves: TECH-049 NFR-2
+
+The `# fr-coverage: fixture-data` marker was removed when this citation was added: it is a
+FILE-LEVEL exemption, so it silently nullified the tag. The marker was there from when this file
+quoted requirement ids as fixture data; it no longer does, and the only requirement-shaped string
+here is the citation above.
 
 `TECH-017` ran six of these by hand and four caught vacuous assertions in the audit's own work — a
 guard that passed with a bypass planted, a credential check that passed un-isolated, a `parents[4]`

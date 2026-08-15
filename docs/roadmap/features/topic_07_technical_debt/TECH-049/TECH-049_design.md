@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-049
 - **Phase**: 7
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_design.md
 
 ## Feature Overview
@@ -113,8 +113,8 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Corpus runtime | **≤ 4 s per mutant end-to-end**, counting the mutated run *and* FR-6's confirmation re-run. Expressed per mutant on purpose: a campaign holds several mutants, so an absolute wall-clock target silently assumes a mutants-per-requirement ratio nobody has measured. Measured basis: 1.24 s for a scoped mutated run. At ~511 campaign-able requirements and 3 mutants each, ≤ 4 s/mutant puts a full corpus near 100 min — an input to AD-8, not a contradiction of it. |
-| NFR-1a | Baseline runtime | The once-per-session full-suite baseline completes in **≤ 10 min**. Measured: a fresh sandbox collects 6952/6983 in a 71.7 s full-suite mutant run. |
+| NFR-1 | Corpus runtime | **≤ 4 s per mutant end-to-end**, counting the mutated run *and* FR-6's confirmation re-run. Expressed per mutant on purpose: a campaign holds several mutants, so an absolute wall-clock target silently assumes a mutants-per-requirement ratio nobody has measured. Measured basis: 1.24 s for a scoped mutated run. At ~511 campaign-able requirements and 3 mutants each, ≤ 4 s/mutant puts a full corpus near 100 min — an input to AD-8, not a contradiction of it. **[proof: meta — a scheduling budget, held by measurement rather than by a wall-clock assertion, which would be flaky under load]** |
+| NFR-1a | Baseline runtime | The once-per-session full-suite baseline completes in **≤ 10 min**. Measured: a fresh sandbox collects 6952/6983 in a 71.7 s full-suite mutant run. **[proof: meta — same reason as NFR-1]** |
 | NFR-2 | Colour-free pipeline | `PY_COLORS=0` in the sandbox environment; parsers strip SGR before matching. Already delivered in `72b82df8`. |
 | NFR-3 | Report survives teardown | No value in `mutation_report.json` may contain a sandbox path — **including captured pytest output**, which carries absolute sandbox paths in tracebacks and must be rewritten to repo-relative before it is stored. The sandbox is a detached worktree deleted at end of run. |
 | NFR-4 | Baseline economy | The full suite runs **once** per session, never per mutant. |
@@ -267,7 +267,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | SF-04 | Machine Report | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Scheduler | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Session Gate and Override Census | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-07 | Adoption | SF-06 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Adoption | SF-06 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Verdict Table
 
@@ -323,8 +323,15 @@ baseline-once-per-session (AD-6), the accounting rule (FR-8), and the verdict ta
 timer and AD-10 setting the gate to confirm-not-rerun. The blocking runner defect was already
 delivered in `72b82df8` — it reported every mutant `SURVIVED` under a colour-forcing shell.
 **Open decisions**: none.
-**Next step**: SF-01 to SF-06 are delivered — the mechanism is complete and runs end to end. Only
-SF-07 (Adoption) remains: until the skills describe how to write a campaign and clear the morning
-gate, the gate works and nobody knows how to use it.
+**Current status**: **COMPLETE (2026-08-15).** All seven sub-features delivered.
+`check_fr_coverage.py TECH-049` exits 0 — 14 of 14 requirements planned and cited. Full suite
+7126 passed, 11 skipped, 0 failed.
+
+**What runs**: a systemd user timer at 03:00 builds one sandbox, lays a full-suite baseline, runs
+every campaign scoped to its own tests, judges each by seven ordered rules, confirms every kill,
+and writes a self-contained report. `mutation.py --gate` reads it in the morning.
+
+**The corpus holds one campaign** — `TECH-049`'s own FR-4, FR-5 and FR-6. It grows as campaigns are
+written; that is the design, not a shortfall.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

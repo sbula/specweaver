@@ -77,11 +77,21 @@ $PY -m pytest tests/e2e/ -n auto --tb=short -q
 # Full suite (before commit) — always parallel
 $PY -m pytest -n auto --tb=short -q
 
-# Quality checks
-ruff check src/ tests/
-mypy src/
-tach check
+# Quality checks — one command, and it decides which checks run at which gate
+$PY scripts/quality.py quick     # sub-second, diff-scoped
+$PY scripts/quality.py cb        # commit boundary
+$PY scripts/quality.py doc       # registries: roadmap, skills, FR/NFR ledgers
+$PY scripts/quality.py matrix    # what runs where
+
+# Mutation corpus — do the tests notice when behaviour disappears?
+$PY scripts/mutation.py --gate   # morning: CLEAR, or the findings nobody has read
+$PY scripts/mutation.py --confirm "<id>" --as will-fix --why "..."
+$PY scripts/mutation.py --install-timer   # nightly at 03:00
 ```
+
+> The mutation corpus is **not** part of any commit gate — it runs nightly and is judged by
+> `--gate` in the morning. Writing a campaign, the four dispositions and the routine:
+> `docs/dev_guides/writing_mutation_campaigns.md`.
 
 > [!IMPORTANT]
 > **The suite is green on Linux as of 2026-08-12: `6485 passed, 11 skipped, 0 failed`.**

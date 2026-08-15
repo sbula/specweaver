@@ -3,7 +3,7 @@
 
 """A session classifies by pytest's exit code, not by reading its prose.
 
-Proves: TECH-049 FR-3, FR-3a, FR-4, FR-5, FR-6, FR-7, FR-8
+Proves: TECH-049 FR-3, FR-3a, FR-4, FR-5, FR-6, FR-7, FR-8, NFR-4
 
 Measured 2026-08-15: pytest exits `4` for a path that does not exist and `5` when everything is
 deselected, and prints no `FAILED` line in either case. The runner read that as "nothing objected"
@@ -542,3 +542,53 @@ class TestBuildSandbox:
 
         mutation.build_sandbox()
         assert removed == [], removed
+
+    def test_it_leaves_a_sandbox_another_run_is_using_alone(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """The bug the first version of pruning introduced.
+
+        Matching by prefix alone removed EVERY `sw-session-*` worktree, including ones concurrent
+        xdist workers were mid-run in — so adding orphan cleanup broke parallel runs that had
+        worked. Age is the discriminator: a live session is minutes old at most, while a leak
+        survives to the next night.
+        """
+        live = tmp_path / "sw-session-live"
+        live.mkdir()
+        removed: list[str] = []
+
+        def _fake_run(cmd: list[str], *_a: object, **_k: object) -> str:
+            if cmd[:3] == ["git", "worktree", "list"]:
+                return f"{live}  abc [detached HEAD]\n"
+            if cmd[:3] == ["git", "worktree", "remove"]:
+                removed.append(cmd[-1])
+            return ""
+
+        monkeypatch.setattr(mutation._mutate, "_run", _fake_run)
+        monkeypatch.setattr(mutation._mutate, "_build_sandbox", lambda _s: None)
+
+        mutation.build_sandbox()
+        assert removed == [], "a sandbox created moments ago belongs to a running session"
+
+    def test_the_baseline_runs_once_per_session_not_once_per_mutant(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """`NFR-4`. The baseline is the expensive half; per-mutant it would dominate everything.
+
+        Three mutants must not mean three full-suite runs. `run_corpus` never calls `run_baseline`
+        at all — the caller lays the baseline once and passes it in — and this pins that, because
+        the cheap way to "fix" a scoping bug later would be to re-baseline inside the loop.
+        """
+        calls: list[int] = []
+        monkeypatch.setattr(
+            mutation, "run_baseline", lambda *a, **k: calls.append(1) or mutation.Baseline(True)
+        )
+        monkeypatch.setattr(
+            mutation._mutate,
+            "run_one",
+            lambda *a, **k: {"verdict": "KILLED", "killers": ["t::x"], "detail": "", "code": 1},
+        )
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("", 0))
+
+        mutation.run_corpus(_FakeCorpus(["a", "b", "c"]), sandbox=tmp_path)
+        assert calls == [], "run_corpus must never lay a baseline itself"

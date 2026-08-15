@@ -73,6 +73,15 @@ flag that does not exist is worse than no guide.
 | R-2 | Skill edits land in one tree only | `check_skill_sync`, already blocking in `quality.py doc` |
 | R-3 | The routine is written and never followed | Out of scope for a plan to fix. The gate blocking is the forcing function |
 
+## Delivered
+
+One boundary. Full suite 7126 passed, 0 failed. `check_fr_coverage TECH-049` exits 0.
+
+**Finding: this sub-feature's gate caught a defect SF-06 had introduced.** `prune_orphaned_sandboxes`
+matched on the prefix alone, so it deleted sandboxes concurrent xdist workers were mid-run in —
+orphan cleanup broke parallel runs that had been working. Surfaced by the integration tier under
+`-n auto`. Age is the discriminator now: a live session is minutes old, a leak outlives the night.
+
 ## Out of scope
 
 Any change to the mechanism. If adoption reveals a defect, it is a finding against the sub-feature

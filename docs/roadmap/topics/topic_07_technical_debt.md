@@ -177,7 +177,7 @@ critical for long-term project viability.
   > agent shell) gives 28 failed / 6940 passed; unset gives 0 failed / 6968 passed. CLI tests compare raw strings against Rich output carrying SGR escapes. Pre-existing — same failures at `72b82df8^`.
   > `CLAUDE.md` promises no accepted deltas, which is unfollowable when 28 are always red. Sibling of the `_mutate.py` defect (`72b82df8`), at suite scale.
 
-* **`TECH-049` 🔜: Mutation Campaign Corpus and Session Gate**
+* **`TECH-049` 🟢: Mutation Campaign Corpus and Session Gate**
   > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit; rescoped the same day.)_ | Mutation testing works, nothing
   > around it does: campaigns are ad-hoc and uncommitted, reports are discarded so drift is undetectable, the runner returns 0 even when every mutant is BROKEN, and nothing schedules it. Adds a
   > per-feature campaign corpus, a nightly run, and a standalone session gate with a ratcheted override census. Dev tooling — `A-VAL-03` is the product capability and is a separate track.

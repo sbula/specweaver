@@ -285,6 +285,20 @@ For several claims at once — an audit, or a boundary with many FRs — use
 `.tmp/` (gitignored). Nothing it produces is committed: a report is an input to your decision, never
 a record of one.
 
+> [!IMPORTANT]
+> **A probe answers today's question; a CAMPAIGN keeps answering it.** The two above are
+> throwaway — they tell you whether a claim holds right now and leave no record. When the claim is
+> one you are about to call **proven**, write it into the durable corpus instead:
+> `docs/roadmap/features/<topic>/<ID>/<ID>_mutants.json`, one campaign per (N)FR, scoped to the
+> tests that cover it.
+>
+> The nightly session then re-asks it forever, and `symbol_sha` drift reports `STALE` when the code
+> a claim rested on moves. That is the difference between knowing a test was strong in August and
+> knowing it is strong today.
+>
+> `python scripts/mutation.py --corpus <path> --no-baseline` runs one file while you write it.
+> Authoring, dispositions and the morning gate: `docs/dev_guides/writing_mutation_campaigns.md`.
+
 ### 3.3 Refactor (if needed)
 
 - Clean up duplication, naming, structure.
