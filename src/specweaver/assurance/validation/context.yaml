@@ -22,10 +22,35 @@ forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
   - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
 
+# CORRECTED 2026-08-15 (`INT-US-04` SF-01 CB-4). This field previously read
+# `[ValidationRunner, ValidationResult, RuleSeverity]` -- three names with ZERO occurrences in
+# `src/`. Not a documentation wart: `tach_sync` GENERATES `tach.toml`'s `[[interfaces]]` from
+# here and tach enforces interfaces, so running the sync would have replaced the 17 correct
+# names below with three that do not exist, breaking every import from this module.
+#
+# It also caused a design error: `INT-US-04`'s contract and FR-1 were written against
+# `ValidationResult`. The real result type is `models.RuleResult`.
+#
+# This list is kept EQUAL to `tach.toml`'s expose block so a sync is a no-op rather than a
+# rewrite; `tests/unit/assurance/validation/test_validation_context_exposes.py` pins both halves.
 exposes:
-  - ValidationRunner
-  - ValidationResult
-  - RuleSeverity
+  - drift_detector
+  - drift_detector.detect_drift
+  - executor
+  - executor.apply_settings_to_pipeline
+  - executor.execute_validation_pipeline
+  - inheritance
+  - loader
+  - models
+  - models.RuleResult
+  - models.Status
+  - pipeline
+  - pipeline_loader
+  - pipeline_loader.load_pipeline_yaml
+  - pipeline_loader.resolve_pipeline_name
+  - registry
+  - rules
+  - spec_kind
 
 # -- Operational Metadata --------------------------------------------------
 operational:

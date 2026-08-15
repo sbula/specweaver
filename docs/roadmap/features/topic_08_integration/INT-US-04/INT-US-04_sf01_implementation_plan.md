@@ -541,6 +541,34 @@ append-only), and stated rather than discovered later.
 | 11 | Every name in `assurance/validation`'s `exposes` resolves to a real symbol (RB-1) | unit |
 | 12 | `tach check` green; full suite green | gate |
 
+#### CB-4 outcome (delivered 2026-08-15)
+
+`assurance/validation/context.yaml`'s `exposes` corrected; 3 unit tests; `tach check` green.
+Probed: reintroducing one fictional name is `KILLED` by 2 tests.
+
+> [!IMPORTANT]
+> **D-12 — D-4's replacement list was wrong, and would have caused the breakage it was meant to
+> prevent.** D-4 said the field should become `run_rules`, `count_by_status`, `all_passed`,
+> `RuleResult`, `Finding`, `Severity`, `Status` — my own guess at "the real surface". But
+> `tach_sync` copies this field verbatim into `tach.toml`'s `expose` array, and tach **enforces**
+> it. `tach.toml` already held **17 correct, module-qualified names** (`executor`,
+> `pipeline_loader.load_pipeline_yaml`, `models.RuleResult`, …). Syncing D-4's seven would have
+> replaced those seventeen and broken every import of `executor`, `loader` and `pipeline_loader` —
+> RB-1's exact failure, arrived at from the other direction.
+>
+> The correct target is not "the real surface" in the abstract but **equality with `tach.toml`**, so
+> a sync is a no-op rather than a rewrite. The test pins both halves: every name resolves, **and**
+> the two lists match. A third assertion guards emptiness, because `tach_sync` skips the interface
+> block entirely when `exposes` is falsy — emptying the field would *delete* the enforced interface
+> rather than fail.
+
+**Gate note, not a coverage gap.** `tests.py` reports e2e `selected NO tests` for this boundary:
+`src_relative()` returns `None` for any non-`.py` file (`_changed_file_mapping.py:37`), so a
+`context.yaml` change maps to no tier at all. The gate's own `blocked_reason` distinguishes this
+from missing coverage and reports it correctly. `context.yaml` is nonetheless load-bearing — it
+generates an enforced interface — so a change to one is currently unmappable by the test gate. Worth
+knowing; not this sub-feature's to fix.
+
 ## Risks
 
 | # | Risk | Mitigation |
