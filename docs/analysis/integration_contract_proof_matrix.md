@@ -8,8 +8,8 @@ the miss every time.
 | | |
 |---|---|
 | `proven` | **51** |
-| `unproven` | **9** |
-| `unprovable` | 4 (one of them *as written*) |
+| `unproven` | **8** |
+| `unprovable` | **5** (two of them *as written*) |
 
 SF-04 moved four (`INT-US-03` C1/C3/C4/C6) from `unproven` to `proven` by writing the missing e2e,
 and narrowed a fifth (`INT-US-24` C5) without closing it — recorded as four, not five, because the
@@ -54,7 +54,7 @@ a ticket (`FR-5`, `NFR-3`); the entry that found each is named so the evidence i
 | `D-EXEC-02` | The Main-Branch-Wins reconcile seam (strip-merge, out-of-bounds hunks) is proven **only at unit tier**, in the capability's own tests. No integration proof of the seam exists. | `INT-US-09` C8/C9 | open |
 | `D-INTL-01` | No test drove the Implementation Generator into the QA Runner; the autonomous loop was proven as a **declared pipeline shape** and had never been observed looping. Closing it exposed **two live defects** — `pytest -m unit` deselecting every generated test, and zero-collected reported as success. | `INT-US-03` C1/C6, `INT-US-24` C5 | **closed by SF-04** for `INT-US-03`; defects fixed in `f4435e75` / `faab6dcb`. `INT-US-24` C5 is narrowed, not closed — its own e2e still doubles the handler |
 | `D-VAL-05` | `validate_code` was declared in the implement pipeline and never exercised through it. | `INT-US-03` C3 | **closed by SF-04** — `test_the_generated_code_reaches_the_code_rules` observes a non-zero rule count over generated code |
-| `E-FLOW-01` | The config DB has **no table for validation output**, and `ValidationResult` does not appear in `src/`. The persistence surface `INT-US-04` claims does not exist. Deciding it exposed a second finding: `context.feedback` is memory-only, so **a resumed run silently loses its validation findings**. | `INT-US-04` C1, via mutation | **decided 2026-08-14** — persistence was intended. Scope lands in `INT-US-04` SF-01 (designed, never built); no ticket filed |
+| `E-FLOW-01` | The config DB had **no table for validation output** and `ValidationResult` did not appear in `src/`. Deciding it exposed a second finding: `context.feedback` was memory-only, so **a resumed run silently lost its validation findings**. The cause of the phantom type was found later: `assurance/validation/context.yaml` *declared* `ValidationResult`, and the contract was written against the declaration. | `INT-US-04` C1, via mutation | **closed 2026-08-15** by `INT-US-04` SF-01 — built in the **state** DB, not the config DB, so C1 is `unprovable` as written by decision. No ticket was filed at any point |
 | `C-SENS-02` | The `.specweaverignore` **engine** is proven; the **seam** feeding exclusions into the Extractor is exercised by nothing. | `INT-US-05-SF03` | open |
 | `B-INTL-02` | **No `MacroEvaluator` exists in `src/`.** Framework-marker extraction is proven at unit tier on the parsers; the seam into context extraction is unexercised. | `INT-US-05-SF04` | open |
 | `C-INTL-01` | Recursive decomposition was designed, never built, never descoped — one LLM call, no recursion, a flat `list[ComponentChange]`. | `INT-US-21-SUB` / `TECH-038` | open — `C-INTL-07` now owns the scope |
@@ -262,8 +262,8 @@ one run, and `validate_code` is observed grading generated code. See the consoli
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|
-| C1 | The SQLite Config DB (`E-FLOW-01`) statefully persists Validation Engine outputs. | `unproven` | The cited file never mentions validation, persistence or artifact events (measured: 0 occurrences of `validation`, `persist`, `ValidationResult`, `artifact_events`). Nothing found elsewhere that persists **Validation Engine** outputs to the config DB. |
-| C2 | The Pipeline Runner passes sanitized, verified context into subsequent prompt steps. | `unproven` | Split claim, and only half is witnessed. Context reaching subsequent prompt steps is proven by `test_mcp_flow_e2e_fetch` (the Pre-fetch Context Assembler). *Sanitized, verified* is not: 0 occurrences of `sanitiz` in the cited file, and the verification half depends on C1, which is unproven. |
+| C1 | The SQLite Config DB (`E-FLOW-01`) statefully persists Validation Engine outputs. | `unprovable` **as written** — was `unproven` | **The behaviour is built and proven; the named store is not the one that holds it.** `INT-US-04` SF-01 delivered `flow_validation_results` (one row per finding, queryable) with `test_validation_results_persistence.py` driving a real run. It lives in `pipeline_state.db`, **not** the Config DB this claim names — a deliberate config/state separation (`store.py:7` calls the state DB *"isolated from the configuration database"*; per-run results are runtime state). So the claim cannot be satisfied as written and never will be, by decision rather than omission. Recorded, not re-worded (`NFR-1`). |
+| C2 | The Pipeline Runner passes sanitized, verified context into subsequent prompt steps. | `unproven` — **reason narrowed 2026-08-15** | Two of three parts now hold. *Context into subsequent prompt steps*: `test_mcp_flow_e2e_fetch`. *Verified*: SF-01 CB-3 replays validation findings into the regenerating step on resume (`test_feedback_replay_across_resume.py`), so the verification output genuinely reaches a later prompt — the dependency on C1 that blocked this is discharged. ***Sanitized* remains unwitnessed and unbuildable here**: it maps to `E-VAL-03` (AST Prompt Injection Sanitization), `🔜`. One word, one capability, and the only thing left. |
 
 ## `INT-US-05` — Base Contract
 
