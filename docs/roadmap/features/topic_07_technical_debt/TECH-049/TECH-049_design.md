@@ -65,9 +65,15 @@ undecidable.
 
 ## Functional Requirements
 
+> **Amended 2026-08-15, after approval.** `FR-1a` was added during SF-01 planning: mutant ids were
+> unique only within a campaign, which is not enough for `FR-11a` recurrence counts or `FR-12`
+> override entries to name the same mutant across runs. Additive and pre-delivery, so
+> `finished-stories-immutable` does not attach; recorded here rather than silently folded in.
+
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Campaign corpus | Loader | The system SHALL load a per-feature `<ID>_mutants.json` declaring `feature`, and per campaign a `requirement`, `scope` and one or more `mutants`, rejecting a malformed file **before** any sandbox work | Campaigns are version-controlled beside the design they test, and an unusable corpus fails loudly at parse time |
+| FR-1 | Campaign corpus | Loader | The system SHALL load a per-feature `<ID>_mutants.json` declaring `schema` and `feature`, and per campaign a `requirement`, `scope` and one or more `mutants`, rejecting a malformed file **before** any sandbox work | Campaigns are version-controlled beside the design they test, and an unusable corpus fails loudly at parse time |
+| FR-1a | Stable mutant identity | Loader | The system SHALL **derive** a project-unique mutant id as `<feature> <requirement> <id>` (e.g. `C-EXEC-06 FR-8 isolation-off`), never accept one hand-typed, and SHALL reject a corpus containing a duplicate | Recurrence counts (FR-11a), override entries (FR-12) and cross-run comparison address the same mutant across runs without drifting |
 | FR-2 | Drift detection | Hasher | The system SHALL record a `symbol_sha` over the **normalised AST** (`ast.dump`, line numbers stripped) of the smallest enclosing named node, and report `STALE` when it no longer matches or the symbol is absent | A refactor that moves the code a claim rests on is reported as such, not as a coverage finding |
 | FR-3 | Session baseline | Runner | The system SHALL run the full suite **once** per session and record the collected count and the **node id of every failing test**; a failing baseline SHALL NOT stop the run | Results are interpretable, and a tree that was already red cannot masquerade as mutation findings |
 | FR-3a | Baseline attribution | Evaluator | The system SHALL mark a mutant `INDETERMINATE` **only when a baseline failure falls inside that campaign's `scope`** | One unrelated red test cannot void the whole session, and a genuinely tainted campaign cannot pass |
@@ -187,8 +193,8 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 ## Sub-Feature Breakdown
 
 ### SF-01: Campaign Corpus and Drift Hashing
-- **Scope**: The on-disk format, its loader and validation, `symbol_sha` computation, and the explicit refresh path.
-- **FRs**: [FR-1, FR-2, FR-13]
+- **Scope**: The on-disk format, its loader and validation, derived mutant identity, `symbol_sha` computation, and the explicit refresh/retire path.
+- **FRs**: [FR-1, FR-1a, FR-2, FR-13]
 - **Inputs**: `<ID>_mutants.json` files beside feature designs; source files named by mutants.
 - **Outputs**: Validated campaign objects with drift state; `STALE` determination.
 - **Depends on**: none
@@ -246,7 +252,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Campaign Corpus and Drift Hashing | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Session Baseline and Scoped Execution | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Verdicts, Confirmation and Accounting | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Machine Report | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -307,6 +313,6 @@ baseline-once-per-session (AD-6), the accounting rule (FR-8), and the verdict ta
 timer and AD-10 setting the gate to confirm-not-rerun. The blocking runner defect was already
 delivered in `72b82df8` — it reported every mutant `SURVIVED` under a colour-forcing shell.
 **Open decisions**: none.
-**Next step**: Trigger the implementation-plan skill for SF-01.
+**Next step**: SF-01 plan is APPROVED — trigger the `specweaver-dev` skill for SF-01 CB-1.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
