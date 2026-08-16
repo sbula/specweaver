@@ -56,6 +56,11 @@ match it, which is what lets the duplicate-id check read one file instead of the
 **`symbol` is a dotted path.** `apply_session_policy` for a function, `SessionPolicy.apply` for a
 method. Bare names are ambiguous in 25 files of `src/` — one holds `__init__` six times.
 
+**Never scope a mutant to a test that runs the corpus.** `tests/e2e/scripts/test_mutation_nightly.py`
+executes a real session; a campaign scoped to that file would run it inside a sandbox, where it
+spawns another session over the same corpus, without bound. Verify such a claim with `_mutate.py` by
+hand and record the verdict in the test's docstring — the corpus cannot hold this one.
+
 **Mutate a guard so it fails CLOSED, never open.** When the target is something every test runs
 through — a suite-wide `autouse` fixture, a conftest hook, a shared assertion helper — a mutant that
 makes it *raise more* poisons the run instead of measuring it. `TECH-055` planted the obvious edit

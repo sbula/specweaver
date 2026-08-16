@@ -95,10 +95,18 @@ the failure this ticket exists to end.
 in teardown, so the strengthening is proven and not merely argued. Both call sites now pass a
 `tmp_path` ledger, and with the fixture live no other test in any tier writes to the directory.
 
-**Open, not owned by this ticket.** `test_mutation_nightly.py` runs the **entire** real corpus
-inside the suite, so the e2e tier's wall clock now grows with every campaign anybody writes: four
-corpora and 22 mutants already cost minutes, and each mutant is a scoped pytest run in its own
-worktree. It is the right test — it is the only thing that proves the nightly command line works —
-but at fifty corpora it is an hour. The fix is a smaller corpus for the in-suite run, and that is a
-decision about the mutation tooling rather than about this guard.
+**Resolved 2026-08-16, after measuring.** `test_mutation_nightly.py` ran the **entire** real corpus
+inside the suite: **117.3s of a 178s run**, the critical path of every full sweep, growing with every
+campaign anybody wrote. It now points `--corpus-dir` at one feature directory — **4.3s**, and flat
+from here — while the real nightly still walks the whole tree, which is what the timer's `ExecStart`
+says and what `test_mutation_timer_units.py` asserts.
+
+Narrowing the directory would have cost the only coverage `discover_corpora` had, so that moved to
+its own test: a filesystem walk over the real tree in 0.01s, asserting **every** corpus is found
+against the `<ID>/<ID>_mutants.json` naming contract. The old assertion only checked that `TECH-049`
+appeared among the results, so a corpus that went missing failed nothing.
+
+Parallelising the session was considered and rejected for now: it would speed up an unattended 03:00
+job with a whole night of slack, while the cost that was actually being paid sat in every commit
+boundary. Revisit when the nightly's own wall clock is the complaint.
 
