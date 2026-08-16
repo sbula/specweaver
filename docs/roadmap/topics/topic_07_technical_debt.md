@@ -167,27 +167,23 @@ critical for long-term project viability.
   > [Description](../features/topic_07_technical_debt/TECH-033/TECH-033_design.md) | _(2026-08-12)_ | `_execute_loop` re-initialised `attempts` on every entry, so each `sw resume` granted a fresh
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
-## Documentation & Knowledge Architecture
-* **`TECH-058` 🟢: The Nightly's Baseline Forgot Its Own `-n auto`**
-  > [Description](../features/topic_07_technical_debt/TECH-058/TECH-058_design.md) | _(2026-08-16 — found verifying a gap in `TECH-057`'s numbers.)_ | `run_baseline` ran the whole suite **serially**
-  > while `_mutate.run_one` adds `-n auto` on the same path. Measured in a sandbox: **291.2s serial vs 77.3s parallel, 3.8x** — 69% of a 6m51s session. A warm rerun cost +0.5s, so the recorded
-  > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
+## Test & Proof Infrastructure
+* **`TECH-049` 🟢: Mutation Campaign Corpus and Session Gate**
+  > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit; rescoped the same day.)_ | Mutation testing works, nothing
+  > around it does: campaigns are ad-hoc and uncommitted, reports are discarded so drift is undetectable, the runner returns 0 even when every mutant is BROKEN, and nothing schedules it. Adds a
+  > per-feature campaign corpus, a nightly run, and a standalone session gate with a ratcheted override census. Dev tooling — `A-VAL-03` is the product capability and is a separate track.
 
-* **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
-  > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`; filed unscheduled, then **scheduled** once the coverage goal was set.)_ |
-  > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet build and teardown measure **0.2s**, so the serialisation defends nothing. With every mutatable (N)FR bound for the nightly
-  > (**579 of 658 today, 88%**; ~918 at full roadmap, ~2,480 mutants) today's scope mix projects to **~3.7h serial**. Ordered behind scope discipline, which is free and gets it to ~54 min.
+* **`TECH-050` 🟢: 28 Tests Fail Whenever an Agent Runs Them**
+  > [Description](../features/topic_07_technical_debt/TECH-050/TECH-050_design.md) | _(2026-08-15 — found running the full suite at `TECH-049` SF-01.)_ | Measured on one tree: `FORCE_COLOR=3` (every
+  > agent shell) gives 28 failed / 6940 passed; unset gives 0 failed / 6968 passed. CLI tests compare raw strings against Rich output carrying SGR escapes. Pre-existing — same failures at `72b82df8^`.
+  > `CLAUDE.md` promises no accepted deltas, which is unfollowable when 28 are always red. Sibling of the `_mutate.py` defect (`72b82df8`), at suite scale.
+  > **DELIVERED 2026-08-16:** 28 → 0 under `FORCE_COLOR`, no baseline loosened.
 
-* **`TECH-056` 🟢: The Morning Gate Marks Its Own Homework**
-  > [Description](../features/topic_07_technical_debt/TECH-056/TECH-056_design.md) | _(2026-08-16 — found running the morning check after `TECH-055`.)_ | `mutation.py --gate` **could not block**:
-  > `gate_verdict` read presence in the ledger as "a human looked at this", and `record_run` — the last thing every session does — writes each finding as `{"runs": 1}` with nothing decided. Both halves
-  > had passing unit tests; nothing composed them. **DELIVERED 2026-08-16:** the gate keys on a recorded disposition, proven by six composed tests and four mutants.
-
-* **`TECH-055` 🟢: The Suite Edits the Standard It Is Measured Against**
-  > [Description](../features/topic_07_technical_debt/TECH-055/TECH-055_design.md) | _(2026-08-16 — found at `TECH-054` CB-2, as an unexplained `M` in `git status`.)_ | A test called
-  > `mutation.main()` without `--ledger`, so every suite run appended a phantom finding to the **real** `scripts/baselines/mutation_findings.json`. The class is the point: 16 version-controlled
-  > ratchets, and nothing compares one to what it was. **DELIVERED 2026-08-16:** an autouse guard
-  > that fails the writing test by name; it caught the offender on its first run, and no others.
+* **`TECH-051` 🟢: 24 Tests Look Like Coverage and Never Run**
+  > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | Of 570 test files, **12 collected nothing**: 9 empty stubs and 3
+  > whose class held `test_*` methods without the `Test` prefix, hiding **24 tests**. They read as coverage in a listing and in review, which is how a story skips a test it thinks exists — `R6`
+  > judges the class NAME and never asks whether it is collected. **DELIVERED 2026-08-16:** 24 recovered, 9 stubs filled, `A-VAL-01` 0 → 5 of 5 FRs on a delivered DAL-A capability, gated from
+  > `quick` by `check_test_collection.py`; run against the pre-fix tree it names all 12 with the right cause.
 
 * **`TECH-054` 🟢: The Two Foundations Nobody Wrote Down**
   > [Description](../features/topic_07_technical_debt/TECH-054/TECH-054_design.md) | _(2026-08-16 — from `TECH-053`'s 19.)_ | `D-FLOW-01` (Pipeline Runner) and `E-FLOW-01` (Config DB) are
@@ -195,17 +191,33 @@ critical for long-term project viability.
   > describes can never fail. **DELIVERED 2026-08-16:** three defects on first contact — `sw resume` could not find a run it had persisted, and both the config-DB bootstrap and the logger wrote to
   > **stdout**, leaving `sw run --json` unparseable. 8 mutants, all killed. The other 17 stay ratcheted, paid down by `specweaver-dev` 3.2c on contact.
 
+* **`TECH-055` 🟢: The Suite Edits the Standard It Is Measured Against**
+  > [Description](../features/topic_07_technical_debt/TECH-055/TECH-055_design.md) | _(2026-08-16 — found at `TECH-054` CB-2, as an unexplained `M` in `git status`.)_ | A test called
+  > `mutation.main()` without `--ledger`, so every suite run appended a phantom finding to the **real** `scripts/baselines/mutation_findings.json`. The class is the point: 16 version-controlled
+  > ratchets, and nothing compares one to what it was. **DELIVERED 2026-08-16:** an autouse guard
+  > that fails the writing test by name; it caught the offender on its first run, and no others.
+
+* **`TECH-056` 🟢: The Morning Gate Marks Its Own Homework**
+  > [Description](../features/topic_07_technical_debt/TECH-056/TECH-056_design.md) | _(2026-08-16 — found running the morning check after `TECH-055`.)_ | `mutation.py --gate` **could not block**:
+  > `gate_verdict` read presence in the ledger as "a human looked at this", and `record_run` — the last thing every session does — writes each finding as `{"runs": 1}` with nothing decided. Both halves
+  > had passing unit tests; nothing composed them. **DELIVERED 2026-08-16:** the gate keys on a recorded disposition, proven by six composed tests and four mutants.
+
+* **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
+  > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`; filed unscheduled, then **scheduled** once the coverage goal was set.)_ |
+  > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet build and teardown measure **0.2s**, so the serialisation defends nothing. With every mutatable (N)FR bound for the nightly
+  > (**579 of 658 today, 88%**; ~918 at full roadmap, ~2,480 mutants) today's scope mix projects to **~3.7h serial**. Ordered behind scope discipline, which is free and gets it to ~54 min.
+
+* **`TECH-058` 🟢: The Nightly's Baseline Forgot Its Own `-n auto`**
+  > [Description](../features/topic_07_technical_debt/TECH-058/TECH-058_design.md) | _(2026-08-16 — found verifying a gap in `TECH-057`'s numbers.)_ | `run_baseline` ran the whole suite **serially**
+  > while `_mutate.run_one` adds `-n auto` on the same path. Measured in a sandbox: **291.2s serial vs 77.3s parallel, 3.8x** — 69% of a 6m51s session. A warm rerun cost +0.5s, so the recorded
+  > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
+
+## Documentation & Knowledge Architecture
 * **`TECH-053` 🟢: A `✅` Nothing Can Verify**
   > [Description](../features/topic_07_technical_debt/TECH-053/TECH-053_design.md) | _(2026-08-16 — an agent flipped two roadmap groups to `🟢` from checkbox arithmetic and was asked for evidence.)_ |
   > Of **62 capabilities marked ✅**: 39 declare FRs nothing cites, **19 have no design document at all**, 3 declare no FRs, and **1 is clean**. The 22 in the middle are invisible to
   > `check_fr_sweep.py` by construction — no design means no FRs to be uncited, so they score zero and read as perfect. Also: nothing compares an add-on group's flag with its own children, and six
   > disagreed. **DELIVERED 2026-08-16** (`e1e8766a`): the check ships in `quality.py doc`, 3 of 3 FRs proven, the 22 ratcheted not fixed (`AD-3`). Standing warning moved to the capability matrix.
-
-* **`TECH-051` 🟢: 24 Tests Look Like Coverage and Never Run**
-  > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | Of 570 test files, **12 collected nothing**: 9 empty stubs and 3
-  > whose class held `test_*` methods without the `Test` prefix, hiding **24 tests**. They read as coverage in a listing and in review, which is how a story skips a test it thinks exists — `R6`
-  > judges the class NAME and never asks whether it is collected. **DELIVERED 2026-08-16:** 24 recovered, 9 stubs filled, `A-VAL-01` 0 → 5 of 5 FRs on a delivered DAL-A capability, gated from
-  > `quick` by `check_test_collection.py`; run against the pre-fix tree it names all 12 with the right cause.
 
 * **`TECH-047` 🟢: Nothing Runs the FR-Coverage Gate Across Delivered Work**
   > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) | _(2026-08-13 — from the coverage audit.)_ | `check_fr_coverage.py` takes a story ID, so it fired only when a human
@@ -216,17 +228,6 @@ critical for long-term project viability.
   > [Description](../features/topic_07_technical_debt/TECH-048/TECH-048_design.md) | _(2026-08-13 — from the coverage audit.)_ | `no FR rows parsed` collapsed two situations: a design stating no
   > requirements, and one whose requirements the parser could not read. **DELIVERED 2026-08-13:** outcomes split, and the parser widened — the table-only rule was its own invention, since the design
   > skill mandates numbered testable FRs and no table. Unreadable designs: 5 → 0.
-
-* **`TECH-050` 🟢: 28 Tests Fail Whenever an Agent Runs Them**
-  > [Description](../features/topic_07_technical_debt/TECH-050/TECH-050_design.md) | _(2026-08-15 — found running the full suite at `TECH-049` SF-01.)_ | Measured on one tree: `FORCE_COLOR=3` (every
-  > agent shell) gives 28 failed / 6940 passed; unset gives 0 failed / 6968 passed. CLI tests compare raw strings against Rich output carrying SGR escapes. Pre-existing — same failures at `72b82df8^`.
-  > `CLAUDE.md` promises no accepted deltas, which is unfollowable when 28 are always red. Sibling of the `_mutate.py` defect (`72b82df8`), at suite scale.
-  > **DELIVERED 2026-08-16:** 28 → 0 under `FORCE_COLOR`, no baseline loosened.
-
-* **`TECH-049` 🟢: Mutation Campaign Corpus and Session Gate**
-  > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit; rescoped the same day.)_ | Mutation testing works, nothing
-  > around it does: campaigns are ad-hoc and uncommitted, reports are discarded so drift is undetectable, the runner returns 0 even when every mutant is BROKEN, and nothing schedules it. Adds a
-  > per-feature campaign corpus, a nightly run, and a standalone session gate with a ratcheted override census. Dev tooling — `A-VAL-03` is the product capability and is a separate track.
 
 * **`TECH-046` 🟢: `C-INTL-01` Shipped Without the Recursion It Was Designed For**
   > [Description](../features/topic_07_technical_debt/TECH-046/TECH-046_design.md) | _(2026-08-13 — `TECH-038`'s follow-up.)_ | `C-INTL-01` was designed multi-level and shipped single-pass, with no
