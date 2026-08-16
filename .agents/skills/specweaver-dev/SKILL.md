@@ -191,6 +191,15 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 > xdist sets a different width. `shows()` squashes whitespace on **both** sides. Presence checks
 > only: never assert layout or ordering with it.
 >
+> **Setting `COLUMNS` at invoke time does not widen anything.** Rich TRUNCATES table cells to the
+> terminal width (`fake-journey-model` renders as `fake-j…`), and the CLI's `Console` is built at
+> module **import** (`interfaces/cli/_core.py:37`) — so `runner.invoke(..., env={"COLUMNS": ...})`
+> is already too late. `INT-US-16` asserted a model name that way: green run alone, red under
+> `-n auto`, where xdist's import-time width is narrower. **Assert something width cannot change** —
+> a parsed number, a row count — rather than a string that might be truncated. And note the mirror
+> image: asserting a truncated string is ABSENT passes for free, which is how the same commit's
+> isolation test was vacuous until it counted rows instead.
+>
 > **`tests/scripted_llm.py` — `ScriptedLLM` / `scripted_world()` when a test needs a doubled LLM.**
 > `scripted_world` patches **two** things and both are load-bearing: patching only
 > `create_llm_adapter` leaves `ModelRouter.get_for_task` free to build a **real provider** from the

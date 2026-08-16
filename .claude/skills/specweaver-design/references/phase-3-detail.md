@@ -64,6 +64,21 @@ A.1b. **Iterate FR ↔ surface until it converges. This is a fixpoint, NOT an or
      | FR-5 | open defects for a BLOCKED task | `B-INTL-09` · `list_defects(task_id, status=OPEN)` | read `repository/core.py` |
 
      > [!IMPORTANT]
+     > [!CAUTION]
+     > **Reading settles a SIGNATURE. Only running settles a BEHAVIOUR.** A row saying *"read
+     > `factory.py:84`"* proves the keyword exists and what the branch does — it does not prove
+     > what the command does when the argument is `None`, whether any caller ever passes it, or
+     > what the user sees. `INT-US-16` derived four such claims by reading and **all four were
+     > wrong**: `sw implement` was said to spend money untracked without an active project (it
+     > refuses); `sw costs set` was assumed to reach a run (no command passes `cost_overrides` at
+     > all); a unit-test file was treated as existing coverage (it collects zero tests); and a
+     > sibling test was cited as the DB-isolation reference (it monkeypatches the very resolution
+     > under test). Two of them reached an APPROVED design and a report to the user as fact.
+     >
+     > So when a binding row carries a claim about **behaviour** rather than shape, run it — a
+     > throwaway probe, a `python -c`, a five-line test — and cite what you ran. Reading is the
+     > floor, not the bar.
+
      > **Termination condition: every row names a surface someone has READ, not assumed.**
      > This is the standard `check_story_preconditions.py` already applies to prerequisites, and for
      > the same reason — `INT-US-21` recorded three prerequisites as `✅` and all three were
@@ -81,6 +96,15 @@ A.1c. **Three outcomes when a row does not converge. All are findings, none is a
      | **Surface provides it** | the FR stands | note its proof tier is **integration**, not unit |
      | **Wrong side owns it** | the responsibility sits with the provider | **rewrite the FR** |
      | **Surface does not exist** | the provider needs a new FR | a cross-story dependency — **HITL, A.1d** |
+     | **Surface provides HALF of it** | the FR bundles two claims and only one holds | **split the FR** — see below |
+
+     The fourth row is the one that looks like a judgement call and is not. `INT-US-16` FR-1 read
+     *"`sw usage` displays token counts **and** a non-zero USD cost priced from `sw costs set`"*.
+     The tokens work; the pricing does not reach any run. Written as one FR it could only be red,
+     so a working, user-visible journey would have waited on an unrelated bug — and the pressure at
+     that point is to weaken the assertion instead. Split into FR-1 (tokens, green today) and FR-4
+     (money, red), each got the proof it deserved. **Two claims joined by "and" are two FRs
+     whenever they can fail independently.**
 
      The middle one is not hypothetical. `D-INTL-06` FR-3 reads *"Selective Filtering |
      MemoryHydrator | Filter out ARCHIVED tasks, tasks outside the project, DONE tasks > 24h old"* —
