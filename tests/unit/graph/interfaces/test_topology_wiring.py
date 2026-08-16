@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+from tests.rendering import shows
+
 from specweaver.assurance.graph.loader import _get_selector_map, select_topology_contexts
 
 
@@ -125,7 +127,7 @@ class TestSelectorCLIFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["draft", "--help"])
-        assert "--selector" in result.output
+        assert shows(result.output, "--selector")
 
     def test_review_has_selector_flag(self) -> None:
         from typer.testing import CliRunner
@@ -134,7 +136,7 @@ class TestSelectorCLIFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["review", "--help"])
-        assert "--selector" in result.output
+        assert shows(result.output, "--selector")
 
     def test_implement_has_selector_flag(self) -> None:
         from typer.testing import CliRunner
@@ -143,4 +145,4 @@ class TestSelectorCLIFlag:
 
         runner = CliRunner()
         result = runner.invoke(app, ["implement", "--help"])
-        assert "--selector" in result.output
+        assert shows(result.output, "--selector")

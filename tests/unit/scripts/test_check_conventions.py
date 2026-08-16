@@ -696,3 +696,28 @@ class TestCheckSilentSkips:
         ]
 
         assert found == [], "\n".join(found)
+
+
+class TestSourceSymbolsSeesSharedTestHelpers:
+    """`source_symbols` was blind to shared test helpers, so tests for them had no legal name.
+
+    Found 2026-08-16 while writing `TECH-050`'s tests. `tests/rendering.py::shows` is a real,
+    shared, documented helper with behaviour worth testing — and `TestShows` was rejected, because
+    symbols were collected from `src/` and `scripts/` only. The rule's only escape was re-freezing
+    the baseline: recording debt to describe code that was named correctly all along.
+
+    Test *files* stay excluded, deliberately. Collecting from them would let `TestFoo` be satisfied
+    by another test class called `Foo`, which is a coincidence rather than a subject.
+    """
+
+    def test_a_shared_helper_beside_the_tests_is_collected(self, cv: ModuleType) -> None:
+        assert "Shows" in cv.source_symbols()
+
+    def test_a_class_defined_in_a_test_file_is_not_collected(self, cv: ModuleType) -> None:
+        """[Hostile] Otherwise the rule could be satisfied by naming a class after another class.
+
+        Asserted against *this* class, which is defined in a test file — not against a blanket
+        "no symbol starts with Test". That blanket version was wrong before the change and after
+        it: `scripts/tests.py` legitimately defines `TestCommand`, `TestRunResult` and others.
+        """
+        assert "TestSourceSymbolsSeesSharedTestHelpers" not in cv.source_symbols()

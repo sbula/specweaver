@@ -44,15 +44,26 @@ MIN_CONTAINED_STEM = 5
 
 
 def source_symbols(repo_root: Path = REPO_ROOT) -> set[str]:
-    """Every class and function defined under `src/` and `scripts/`, in CamelCase.
+    """Every class and function a test could legitimately be named after, in CamelCase.
 
     Functions are camelised here so callers can compare `is_fixture_data` with
     `TestIsFixtureData` without repeating the conversion.
+
+    **Shared test helpers count.** `tests/rendering.py::shows` is real, documented behaviour with
+    its own tests, and collecting only from `src/` and `scripts/` left `TestShows` with no legal
+    name — the rule's only escape was re-freezing the baseline, recording debt to describe code
+    that was named correctly. Found 2026-08-16 (`TECH-050`).
+
+    **Test files do not count**, and that exclusion is load-bearing: collecting from them would let
+    `TestFoo` be satisfied by some other test class called `Foo`, which is a coincidence rather
+    than a subject.
     """
     symbols: set[str] = set()
-    for tree in ("src", "scripts"):
+    for tree in ("src", "scripts", "tests"):
         for path in (repo_root / tree).rglob("*.py"):
             if "__pycache__" in path.parts:
+                continue
+            if tree == "tests" and (path.name.startswith("test_") or path.name == "conftest.py"):
                 continue
             try:
                 parsed = ast.parse(path.read_text(encoding="utf-8"))

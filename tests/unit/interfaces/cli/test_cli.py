@@ -12,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -250,7 +251,7 @@ class TestCheckStrict:
         """--strict appears in sw check --help."""
         result = runner.invoke(app, ["check", "--help"])
         assert result.exit_code == 0
-        assert "--strict" in result.output
+        assert shows(result.output, "--strict")
 
     def test_check_without_strict_passes_on_warnings(self, tmp_path, _good_spec):
         """Without --strict, warnings don't cause exit code 1."""

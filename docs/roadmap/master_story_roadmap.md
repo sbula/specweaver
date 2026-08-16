@@ -663,4 +663,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-047:** [Nothing Runs the FR-Coverage Gate Across Delivered Work](features/topic_07_technical_debt/TECH-047/TECH-047_design.md)
     *   `✅` **TECH-048:** [A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"](features/topic_07_technical_debt/TECH-048/TECH-048_design.md)
     *   `✅` **TECH-049:** [Mutation Campaign Corpus and Session Gate](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
-    *   `[ ]` **TECH-050:** [28 Tests Fail Whenever an Agent Runs Them](features/topic_07_technical_debt/TECH-050/TECH-050_design.md)
+    *   `✅` **TECH-050:** [28 Tests Fail Whenever an Agent Runs Them](features/topic_07_technical_debt/TECH-050/TECH-050_design.md)

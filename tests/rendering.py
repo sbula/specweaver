@@ -21,6 +21,14 @@ Found by `TECH-017` SF-02 and SF-03.
 
 from __future__ import annotations
 
+import re
+
+#: SGR escapes. Stripped before comparison because Rich puts them *inside* tokens, not only around
+#: them — it highlights the number in `SpecWeaver v0.1.0`, so the string carries
+#: `v0.\x1b[1;36m1.0\x1b[0m` and squashing whitespace alone still misses `0.1.0`. Measured
+#: 2026-08-15 across 28 tests in all three tiers (`TECH-050`).
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
 
 def shows(output: str, needle: str) -> bool:
     """Whether `needle` appears in `output`, ignoring soft wrapping.
@@ -29,7 +37,12 @@ def shows(output: str, needle: str) -> bool:
     **Presence checks only** — it destroys layout, ordering and word boundaries, so never assert
     those with it, and prefer a distinctive needle over a short one.
 
+    Colour is stripped too. `tests/conftest.py` already pins the suite colour-free, so this is the
+    second of two guards rather than the only one — but a test that deliberately re-enables colour,
+    or a runner that sets `FORCE_COLOR` some future way, still gets a correct answer here.
+
     Squashing both sides matters: an earlier version squashed only the output, which silently failed
     for any needle containing a space.
     """
-    return "".join(needle.split()) in "".join(output.split())
+    plain = _ANSI.sub("", output)
+    return "".join(needle.split()) in "".join(plain.split())
