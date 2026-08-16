@@ -60,6 +60,13 @@ _MATRIX_CELL = re.compile(r"`([^\s`]+)\s+([A-E]-[A-Z]+-\d+)`")
 _GROUP = re.compile(r"^    \*   ([🔴🟡🟢🔵]) \*\*(.+?):\*\*\s*$")
 _CHILD = re.compile(r"^        \*   `(✅|\[ \])` ")
 
+#: A story header, its Core Required (MVS) heading, and an MVS item — which is a
+#: **4-space** list line. 8 spaces is a sub-story add-on and belongs to the group rule above;
+#: indentation is the only thing separating the two planes.
+_STORY = re.compile(r"^### ([🔴🟡🟢🔵]) (US-\d+)")
+_MVS_HEAD = re.compile(r"^\*   \*\*Core Required \(MVS\):\*\*")
+_MVS_ITEM = re.compile(r"^    \*   `(✅|\[ \])` \*\*([\w-]+):")
+
 
 #: `🔵` is *on hold* — a statement about intent, not progress. Deriving it from children would
 #: silently un-park anything with one delivered dependency, which is the decision the flag records.
@@ -75,6 +82,14 @@ class GroupFinding:
 
 
 @dataclass(frozen=True)
+class StoryFinding:
+    """A story flagged `🟢` whose Core Required (MVS) list still holds unbuilt work."""
+
+    story: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class CapabilityFinding:
     """A capability marked `✅` with nothing behind it that any gate can read."""
 
@@ -86,6 +101,53 @@ def _expected_flag(done: int, total: int) -> str:
     if done == total:
         return "🟢"
     return "🔴" if done == 0 else "🟡"
+
+
+def story_flag_findings(roadmap_root: Path) -> list[StoryFinding]:
+    """Every `🟢` story with an undelivered item in its own Core Required (MVS) list.
+
+    The roadmap's legend says `🟢` means *"Core MVS is 100% delivered"*, and nothing checked it.
+    `group_flag_findings` compares an add-on **group** with its children and never a **story** with
+    its MVS, so appending one `[ ]` to a completed story's Core Required list makes the flag false
+    in a way no gate can see — which is how `C-FLOW-13` un-completed `US-4` for a day.
+
+    Reads only the 4-space plane. A completed story routinely carries unfinished add-ons at 8
+    spaces; that is what an add-on is, and reading them here would report every `🟢` story in the
+    file.
+    """
+    path = roadmap_root / "master_story_roadmap.md"
+    if not path.is_file():
+        return []
+
+    found: list[StoryFinding] = []
+    story: str | None = None
+    in_mvs = False
+    pending: list[str] = []
+
+    def close() -> None:
+        if story and pending:
+            found.append(
+                StoryFinding(story=story, reason="🟢 but Core MVS holds " + ", ".join(pending))
+            )
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        header = _STORY.match(line)
+        if header:
+            close()
+            story = header.group(2) if header.group(1) == "🟢" else None
+            in_mvs, pending = False, []
+            continue
+        if _MVS_HEAD.match(line):
+            in_mvs = True
+            continue
+        if line.startswith("*   **"):
+            in_mvs = False
+            continue
+        item = _MVS_ITEM.match(line) if in_mvs else None
+        if item and item.group(1) != "✅":
+            pending.append(item.group(2))
+    close()
+    return found
 
 
 def group_flag_findings(roadmap_root: Path) -> list[GroupFinding]:
@@ -177,7 +239,20 @@ def write_baseline(count: int) -> None:
     BASELINE.write_text(json.dumps({"unverifiable": count}, indent=2) + "\n", encoding="utf-8")
 
 
-def _report(groups: list[GroupFinding], caps: list[CapabilityFinding], baseline: int) -> None:
+def _report(
+    groups: list[GroupFinding],
+    caps: list[CapabilityFinding],
+    baseline: int,
+    stories: list[StoryFinding] | None = None,
+) -> None:
+    for finding in stories or []:
+        print(f"  {finding.story:8} {finding.reason}")
+    if stories:
+        print(
+            "\nThe legend says 🟢 means Core MVS is 100% delivered. An unbuilt item in that list "
+            "makes the flag false — move it to a Sub-Story Add-On (8 spaces, not 4) or deliver it "
+            "\n"
+        )
     if groups:
         print(f"Add-on group flags that contradict their own children ({len(groups)}):\n")
         for finding in groups:
@@ -211,6 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"could not run: no capability matrix under {roadmap_root}", file=sys.stderr)
         return 2
 
+    stories = story_flag_findings(roadmap_root)
     groups = group_flag_findings(roadmap_root)
     caps = unverifiable_findings(roadmap_root)
     baseline = args.baseline if args.baseline is not None else load_baseline()
@@ -221,11 +297,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.list:
-        _report(groups, caps, baseline)
+        _report(groups, caps, baseline, stories)
         return 0
 
-    if groups or len(caps) > baseline:
-        _report(groups, caps, baseline)
+    if stories or groups or len(caps) > baseline:
+        _report(groups, caps, baseline, stories)
         return 1
 
     print(

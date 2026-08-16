@@ -172,7 +172,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
-        *   `[ ]` **INT-US-04-SF02:** RETIRED by `ADR-003` — requirements move to `B-FLOW-05`
+        *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers — was `INT-US-04-SF02`, retired by `ADR-003`
         *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **INT-US-04-SF03:** [Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
@@ -185,10 +185,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
-        *   `[ ]` **INT-US-04-SF06:** RETIRED by `ADR-003` — requirements move to `C-INTL-04`
+        *   `[ ]` **C-INTL-04:** Conversation Summarization — was `INT-US-04-SF06`, retired by `ADR-003`
         *   `[ ]` **C-INTL-04:** Conversation Summarization (Token compression)
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **INT-US-04-SF07:** RETIRED by `ADR-003` — requirements move to `D-UI-05`
+        *   `[ ]` **D-UI-05:** Remote UI — was `INT-US-04-SF07`, retired by `ADR-003`
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** [Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
@@ -291,7 +291,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-09-SF05:** Sub-Story Integration — delivered by `C-EXEC-06`; see [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
-        *   `[ ]` **INT-US-09-SF06:** RETIRED by `ADR-003` — integration owned by `C-EXEC-07`
+        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — was `INT-US-09-SF06`, retired by `ADR-003`
         *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
@@ -571,7 +571,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md) (Complete)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
-        *   `[ ]` **INT-US-28-SF01:** RETIRED by `ADR-003` — integration owned by `A-EXEC-04`
+        *   `[ ]` **A-EXEC-04:** Advanced Multi-Agent Concurrency — was `INT-US-28-SF01`, retired by `ADR-003`
         *   `[ ]` **A-EXEC-04:** Advanced Row-Level Task Locking (Pessimistic Locks, WAL2, Deadlock Detection)
 
 ---
