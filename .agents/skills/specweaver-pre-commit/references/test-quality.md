@@ -20,7 +20,7 @@ hypothetical.
 
 | # | Pattern | How to detect it |
 |---|---|---|
-| 1 | **Ambiguous exit code** — asserts `exit_code == 0` where two or more outcomes exit 0 | Which distinct end states share this code? PARKED and COMPLETED both exit 0 here. Assert the **persisted status**, never the process code |
+| 1 | **Ambiguous exit code** — asserts `exit_code == 0` where two or more outcomes exit 0 | Which distinct end states share this code? PARKED and COMPLETED both exit 0 here. **The no-op counts as an end state**: `sw resume` exits 0 when it finds *nothing to resume*, so "exit 0, and the step ran once" was satisfied perfectly by a resume that never happened (`TECH-054`). Assert the **persisted status** or a trace the work leaves behind, never the process code |
 | 2 | **Stubbed-away subject** — the test replaces the very thing under test | Grep for wholesale registry/handler substitution. If you double the component whose behaviour you are asserting, you asserted your double |
 | 3 | **Never executed** — a skip guard that is always true | `if not path.exists(): pytest.skip(...)` with a wrong path skips forever. Compare skip counts before and after |
 | 4 | **Fixture cannot satisfy the assertion** | Run the real subject against the fixture once and look at what it produces |

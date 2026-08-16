@@ -93,6 +93,22 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
       tests needed? Explicitly justify why the proposed set is sufficient. Have you
       covered ALL important, crucial, major, and critical edge cases?
 
+2.5c. **COMPOSITION AND AGREEMENT CHECK (MANDATORY)** — for every function in the coverage
+      matrix, answer both in writing:
+
+      a. **Is it only ever called in sequence with another?** If yes, name the test that drives the
+         SEQUENCE. If there is none, that is a gap, and it is the gap unit tests cannot show you:
+         both halves pass while the pair cannot work. (`TECH-056`: a session recorded its own
+         findings and the morning gate read that as "a human looked at it", so it could never
+         block. `gate_verdict` and `record_run` both had complete, passing unit tests.)
+
+      b. **Does anything else in the repo do the same job?** If yes, name the test asserting they
+         AGREE. (`TECH-058`: `run_baseline` ran the suite serially while `_mutate.run_one` passed
+         `-n auto` on the same path — 3.8x, visible in both files, tested in neither.)
+
+      A "no" to either is a fine answer; an unanswered one is not. Both gaps look like full
+      coverage in a matrix, because per-function coverage is exactly what they have.
+
 2.5b. **VACUOUS PROOF CHECK (MANDATORY)** — a passing test is not evidence.
 
 > [!CAUTION]

@@ -159,6 +159,30 @@ For each task in the breakdown:
 > 
 > You MUST write at least one test story for EACH of these 4 buckets. If a bucket is mathematically impossible for the current feature, explicitly justify why.
 
+> [!CAUTION]
+> **THE MATRIX VARIES INPUTS. IT NEVER ASKS WHETHER THE UNIT IS USED ALONE.** Four defects on
+> 2026-08-16 shared one shape, and every one of them had green tests in all four buckets throughout:
+>
+> | | well covered | unreached |
+> |---|---|---|
+> | `TECH-054` | resume persistence — 14 tests, three tiers | how a run is *found* to resume |
+> | `TECH-055` | the baseline comparison — 11 unit tests | that the fixture is `autouse` at all |
+> | `TECH-056` | `gate_verdict` **and** `record_run`, separately | their composition — the gate could never block |
+> | `TECH-058` | both whole-suite runners | that the two agree — one had no `-n auto` |
+>
+> So ask two more questions before you stop writing tests:
+>
+> 1. **Is this only ever used in sequence with something else?** Then a test of each end is not a
+>    test of the pair. `TECH-056`'s two functions each passed every assertion they had, while the
+>    composition they exist for could not work — because each unit test built the state it wanted
+>    instead of letting the other half build it.
+> 2. **Does anything else in the repo do this same job?** Then assert that they **agree**. The
+>    asymmetry in `TECH-058` was plainly visible in both files and in neither test.
+>
+> Neither question is answered by a bucket, because each half genuinely satisfies its own bucket.
+> Where the answer to either is yes, that test is **integration** even when both sides are pure —
+> the seam is the claim.
+
 > [!IMPORTANT]
 > **The matrix says WHAT to test; `specweaver-pre-commit/references/test-quality.md` says whether a
 > passing test proves anything.** Read it before writing assertions — the eight vacuous-proof
