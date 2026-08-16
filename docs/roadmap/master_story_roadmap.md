@@ -675,4 +675,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-053:** [A `✅` Nothing Can Verify](features/topic_07_technical_debt/TECH-053/TECH-053_design.md)
     *   `✅` **TECH-054:** [The Two Foundations Nobody Wrote Down](features/topic_07_technical_debt/TECH-054/TECH-054_design.md)
     *   `✅` **TECH-055:** [The Suite Edits the Standard It Is Measured Against](features/topic_07_technical_debt/TECH-055/TECH-055_design.md)
+    *   `✅` **TECH-056:** [The Morning Gate Marks Its Own Homework](features/topic_07_technical_debt/TECH-056/TECH-056_design.md)
     *   `✅` **TECH-052:** [`sw usage --since` Crashes on Unparseable Input](features/topic_07_technical_debt/TECH-052/TECH-052_design.md)

@@ -92,7 +92,15 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
         return GateResult(True, f"report is {age_hours:.0f}h old — the scheduler may have stopped")
 
     report = _read_json(report_path, {})
-    known = set(load_ledger(ledger_path)["findings"])
+    # `TECH-056`: a **disposition**, not mere presence. `record_run` runs at the end of the same
+    # session that discovers a finding and writes it as `{"runs": 1}` with nothing decided, so
+    # keying on presence let every run mark its own findings read — and this gate then announced
+    # "every finding carries a disposition" about entries that carried none. It could not block.
+    known = {
+        derived_id
+        for derived_id, entry in load_ledger(ledger_path)["findings"].items()
+        if entry.get("disposition")
+    }
     unconfirmed = [
         f["derived_id"]
         for f in findings_in(report)

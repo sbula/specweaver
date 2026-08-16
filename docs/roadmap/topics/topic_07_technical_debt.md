@@ -168,6 +168,11 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-056` 🟢: The Morning Gate Marks Its Own Homework**
+  > [Description](../features/topic_07_technical_debt/TECH-056/TECH-056_design.md) | _(2026-08-16 — found running the morning check after `TECH-055`.)_ | `mutation.py --gate` **could not block**:
+  > `gate_verdict` read presence in the ledger as "a human looked at this", and `record_run` — the last thing every session does — writes each finding as `{"runs": 1}` with nothing decided. Both halves
+  > had passing unit tests; nothing composed them. **DELIVERED 2026-08-16:** the gate keys on a recorded disposition, proven by six composed tests and four mutants.
+
 * **`TECH-055` 🟢: The Suite Edits the Standard It Is Measured Against**
   > [Description](../features/topic_07_technical_debt/TECH-055/TECH-055_design.md) | _(2026-08-16 — found at `TECH-054` CB-2, as an unexplained `M` in `git status`.)_ | A test called
   > `mutation.main()` without `--ledger`, so every suite run appended a phantom finding to the **real** `scripts/baselines/mutation_findings.json`. The class is the point: 16 version-controlled
