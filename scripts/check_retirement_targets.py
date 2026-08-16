@@ -59,7 +59,22 @@ _RETIRED_ID = re.compile(r"`?\b(INT-US-\d+(?:-(?:SF\d+|SUB))?)\b`?")
 #: A note line names both, in either order. The lookbehind is load-bearing: `UN-RETIRED` contains
 #: `RETIRED`, and a substring match would judge exactly the entries whose retirement was withdrawn
 #: -- which name a delivered capability by definition, so every withdrawal would report as a defect.
-_IS_NOTE = re.compile(r"(?<![-\w])RETIRED.*ADR-003|ADR-003.*(?<![-\w])RETIRED")
+#:
+#: CASE-INSENSITIVE, and that is a rule rather than a convenience. On 2026-08-16 five roadmap notes
+#: were rephrased from `RETIRED by ADR-003` into a trailing clause reading `retired by ADR-003`;
+#: the census fell 28 -> 23 and the guard printed CLEAR, which looks exactly like having judged
+#: them. A note may leave this census by being deleted. It may not leave by being reworded.
+#: The case fold costs one thing back. `US-09_integration.md` withdraws a retirement and then
+#: explains it -- *"**UN-RETIRED 2026-08-16.** `ADR-003` retired this on 2026-08-13"* -- where the
+#: second `retired` is ordinary prose that the hyphen lookbehind cannot see. A line that declares
+#: itself a withdrawal is not a retirement, whatever else it says; the lookbehind still stands for
+#: the `UN-RETIRED ... ADR-003` ordering it was written for.
+_IS_WITHDRAWAL = re.compile(r"UN-RETIRED", re.I)
+
+_IS_NOTE = re.compile(
+    r"(?<![-\w])RETIRED.*ADR-003|ADR-003.*(?<![-\w])RETIRED",
+    re.I,
+)
 
 #: The destination clause, and ONLY it. The note's targets are what follows "moves to"; the rest of
 #: the block is prose that legitimately names other capabilities -- most importantly a correction
@@ -173,7 +188,7 @@ def retirement_notes(roadmap: Path) -> list[Note]:
             continue
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         for i, line in enumerate(lines):
-            if not _IS_NOTE.search(line):
+            if not _IS_NOTE.search(line) or _IS_WITHDRAWAL.search(line):
                 continue
             body, retired_id = _note_block(lines, i)
             clause = "".join(_MOVES_TO.findall(body))

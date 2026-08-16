@@ -148,7 +148,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🟡 **Multi-Language Test Support:**
-        *   `[ ]` **INT-US-03-SF01:** RETIRED 2026-08-16 by `ADR-003` — integration owned by `D-INTL-08`. Replaces the 2026-08-13 retirement into a delivered capability, withdrawn in `d0943c36`.
         *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
@@ -172,7 +171,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
-        *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers — was `INT-US-04-SF02`, retired by `ADR-003`
         *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **INT-US-04-SF03:** [Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
@@ -181,14 +179,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-04-SF04:** [Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-04-context-mention-highlighting-integration-pending-design)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
-        *   `[ ]` **INT-US-04-SF05:** RETIRED by `ADR-003` — requirements move to `C-FLOW-10`
         *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
-        *   `[ ]` **C-INTL-04:** Conversation Summarization — was `INT-US-04-SF06`, retired by `ADR-003`
         *   `[ ]` **C-INTL-04:** Conversation Summarization (Token compression)
     *   🔴 **Remote UI Integration:**
-        *   `[ ]` **D-UI-05:** Remote UI — was `INT-US-04-SF07`, retired by `ADR-003`
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** [Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
@@ -291,7 +286,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-09-SF05:** Sub-Story Integration — delivered by `C-EXEC-06`; see [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
-        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — was `INT-US-09-SF06`, retired by `ADR-003`
         *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
@@ -489,10 +483,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
     *   🔴 **Multi-Level Recursive Decomposition** *(the `AD-2` half `C-INTL-01` never built)*:
-        *   `[ ]` **INT-US-21-SF03:** RETIRED by `ADR-003` — integration owned by `C-INTL-07`
         *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition
     *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`; `TECH-014` cleared 2026-08-12)*:
-        *   `[ ]` **INT-US-21-SF02:** RETIRED by `ADR-003` — integration owned by `C-FLOW-12`
         *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution
 
 ### 🟡 US-22: Polyglot Contract Enforcement
@@ -571,7 +563,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md) (Complete)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
-        *   `[ ]` **A-EXEC-04:** Advanced Multi-Agent Concurrency — was `INT-US-28-SF01`, retired by `ADR-003`
         *   `[ ]` **A-EXEC-04:** Advanced Row-Level Task Locking (Pessimistic Locks, WAL2, Deadlock Detection)
 
 ---

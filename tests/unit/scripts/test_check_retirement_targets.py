@@ -223,6 +223,52 @@ class TestRetirementNotes:
         assert len(notes) == 1
         assert notes[0].targets == ()
 
+    def test_a_lower_case_retirement_is_still_a_retirement(
+        self, crt: ModuleType, tmp_path: Path
+    ) -> None:
+        """Rewriting `RETIRED by` as `retired by` must not delete the note from the census.
+
+        It did. On 2026-08-16 five roadmap notes were rephrased as a trailing clause — *"was
+        `INT-US-04-SF02`, retired by `ADR-003`"* — and a case-sensitive match stopped seeing them.
+        The census fell 28 → 23 and the guard reported CLEAR, which is indistinguishable from
+        having judged them. A note leaves this census by being deleted, never by being reworded.
+        """
+        body = INLINE_NOTE.replace(
+            "RETIRED by `ADR-003` — requirements move to `E-VAL-04`",
+            "— was `INT-US-99-SF01`, retired by `ADR-003`, integration owned by `E-VAL-04`",
+        )
+        roadmap = _tree(tmp_path, {"master_story_roadmap.md": body})
+        notes = crt.retirement_notes(roadmap)
+        assert len(notes) == 1
+        assert notes[0].targets == ("E-VAL-04",)
+
+    def test_lower_case_un_retired_is_still_not_a_retirement(
+        self, crt: ModuleType, tmp_path: Path
+    ) -> None:
+        """The `UN-RETIRED` carve-out must survive the case fold, or every withdrawal reports."""
+        body = BLOCKQUOTE_NOTE.replace("**RETIRED 2026-08-13", "**un-retired 2026-08-16")
+        roadmap = _tree(tmp_path, {"topics/US-03_integration.md": body})
+        assert crt.retirement_notes(roadmap) == []
+
+    def test_a_withdrawal_explaining_itself_is_not_a_retirement(
+        self, crt: ModuleType, tmp_path: Path
+    ) -> None:
+        """`INT-US-09-SF01`'s real shape, and the one thing the case fold costs back.
+
+        A withdrawal says what it withdrew — *"`ADR-003` retired this on 2026-08-13"* — where the
+        second `retired` is prose, unhyphenated, and so invisible to the lookbehind that carves
+        `UN-RETIRED` out. Read as a note it points at the delivered capability the withdrawal
+        exists to reject, so every withdrawal would report as the defect it corrects.
+        """
+        body = BLOCKQUOTE_NOTE.replace(
+            "> **RETIRED 2026-08-13 by `ADR-003`.** Never designed;"
+            " its roadmap placeholder is gone.",
+            "> **UN-RETIRED 2026-08-16.** `ADR-003` retired this on 2026-08-13 saying the scope"
+            " moved to `D-VAL-03` — which is delivered, so the retirement does not stand.",
+        )
+        roadmap = _tree(tmp_path, {"topics/US-03_integration.md": body})
+        assert crt.retirement_notes(roadmap) == []
+
     def test_feature_design_docs_are_out_of_scope(self, crt: ModuleType, tmp_path: Path) -> None:
         """The guard judges the REGISTRY. A design doc records its own section's history — those
         headings name no destination because the roadmap line already carries it, and judging both

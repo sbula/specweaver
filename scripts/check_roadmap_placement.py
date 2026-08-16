@@ -2,7 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Placement rules for `master_story_roadmap.md` — one walk, three rules.
+"""Placement rules for `master_story_roadmap.md` — one walk, four rules.
 
 The master roadmap is an overview. What belongs in it was never written down, so every agent
 derived the convention from whatever it happened to grep — and Topic 07 is where it grepped, where
@@ -22,6 +22,9 @@ R-OWNER  A bare `SF-NN` must have its owner named — on the line, or by the ent
 R-MARKER A `TECH` line is `[ ]` when open and `✅` when delivered, never `[x]`. The contract
          showed the open form and not the delivered one, beside an instruction to "check off the
          boxes" that means user stories — so `[x]` got written twice before anyone noticed.
+R-ONCE   A registry ID gets ONE line per story entry. Rewriting a retirement note in place gave
+         five capabilities a second line beside the one they already had — both `[ ]`, so no
+         reader and no gate could say which was the entry and which the footnote.
 
 **Structural, not lexical, and that distinction is the whole design.** An earlier attempt at
 R-PLACE tried to tell legal text from illegal text — `INT-US-NN-SFxx` good, bare `SF-NN` bad — and
@@ -79,7 +82,12 @@ ANY_HEADING = re.compile(r"^###\s")
 #: A list item nested under a registry line — the depth a design's `SF-NN` would land at.
 NESTED_ITEM = re.compile(r"^ {8,}\*\s")
 #: …which is legal exactly when it names a bold registry ID.
-BOLD_ID = re.compile(rf"\*\*{STORY_ID}:\*\*")
+BOLD_ID = re.compile(rf"\*\*({STORY_ID}):\*\*")
+
+#: R-ONCE is scoped to the STORY, not to the file: `US-4 Core` is cited as a dependency by six
+#: other stories, and a file-wide rule would report all six. Not scoped to the add-on group either
+#: — an id split across two groups of one story is the same defect wearing a different indent.
+ENTRY_ITEM = re.compile(r"^ {4,}\*\s")
 
 #: A `TECH` line carrying a checked user-story box. `[ ]` (open) and `✅` (delivered) are the only
 #: two legal markers; `[x]` appears nowhere else in the file.
@@ -106,12 +114,23 @@ ID_ON_LINE = re.compile(STORY_ID)
 def _violations(text: str) -> list[str]:
     out: list[str] = []
     entry: str | None = None
+    seen: dict[str, int] = {}
 
     for number, line in enumerate(text.split("\n"), 1):
         if ANY_HEADING.match(line):
             match = ENTRY_HEADING.match(line)
             entry = match.group(1) if match else None
+            seen = {}
             continue
+
+        named = BOLD_ID.search(line) if entry and ENTRY_ITEM.match(line) else None
+        if named:
+            first = seen.setdefault(named.group(1), number)
+            if first != number:
+                out.append(
+                    f"{number}: R-ONCE   {named.group(1)} already has a line in {entry} "
+                    f"(line {first}) — one line per registry ID, the rest is that line's clause"
+                )
 
         if entry and NESTED_ITEM.match(line) and not BOLD_ID.search(line):
             out.append(

@@ -35,6 +35,21 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > Execute all research and analysis autonomously.
 > STOP only at the defined HITL gates. Never add extra stops.
 
+> [!CAUTION]
+> **The integration and e2e proof belongs to the capability, never to an `INT-US` story.**
+> A test that cannot go RED proves nothing, and RED is only available while the feature is
+> unimplemented. Collecting the seam into an integration story that runs *after* the capability
+> ships means its first run is green against code that already exists — it asserts the present,
+> not the contract.
+>
+> **Never mint or reference an `INT-US-NN` / `INT-US-NN-SFxx` for work that is not built yet** —
+> not as a dependency, not as a retirement tombstone. The seam and journey proofs are FRs of the
+> capability, authored red inside its own TDD cycle, before the code they judge.
+>
+> An `INT-US` entry is legitimate in exactly one place: a (sub)story that **already holds a
+> finished feature**, where `finished-stories-immutable` bars the closed capability from taking
+> the FR and the proof has nowhere else to live.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading for code discovery:

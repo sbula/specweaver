@@ -69,6 +69,19 @@ One number covers both kinds; there is no per-kind allowance.
 it and check it survives there before cutting. 39 entries were redistributed on 2026-08-13 and
 **21 facts** would have been lost to a trim-by-eye.
 
+**R-ONCE — a registry ID gets one line per story entry.**
+
+Everything else the entry has to say — a dependency, a retirement it absorbed, a sequencing
+constraint — is a **clause on that line**, never a second line. Two lines for one ID leaves no way
+to say which is the entry, and if both are `` `[ ]` `` the group's flag is computed from whichever
+the reader happened to find.
+
+This is how it goes wrong: on 2026-08-16 five retirement notes were re-labelled from the retired
+`INT-US-NN-SFxx` to the capability that owns the work, beside the capability's own line, which
+nobody deleted. **When you rewrite an entry's ID, you are merging it into another entry — delete
+the line you duplicated.** Scoped to the story, because a capability legitimately appears under
+several: `US-4 Core` is cited by six.
+
 **R-OWNER — a bare `SF-NN` must have its owner named.**
 
 `SF-01` exists in six different stories. A reference outside its own story's folder resolves only if
