@@ -61,6 +61,13 @@ ticket's identity. This skill exists because that failure has actually happened.
 > A ticket that only records a fact you could have checked is a note, and a note belongs in the
 > design document of the thing it concerns. Full contract: `references/closure-contract.md`.
 
+> [!IMPORTANT]
+> **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against evidence
+> that `INT-US-21 SF-03` invalidated **two days later**, by shipping the 24-test CLI journey that was
+> the ticket's own second candidate approach; re-measuring closed it in one session instead of the
+> "unknown size" it feared, and the same pass corrected three of `TECH-017`'s findings. Filing-day
+> evidence for a ticket gated on *story X ships* is stale by construction.
+
 ## Phase 1: Identify the Registry (do NOT skip)
 
 Each ID family has a **different** authoritative source. Pick the right one:

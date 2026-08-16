@@ -17,15 +17,6 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
-> `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
-> **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **6 of 53 TECH tickets are open**, and **none** asserts a claim against a candidate below —
-> see **Debt Sequencing**. (`TECH-017` was the last one that did; delivered 2026-08-14, it left the
-> section.)
-> *The queue is the decision surface: unlike story entries, each candidate carries the full routing
-> case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
-
 1. **Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
    * **Features:** `C-VAL-05` — battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files. Prereqs: none. Details: [topic_05](topics/topic_05_validation.md).
    * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft"
@@ -64,28 +55,15 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
      right after INT-US-24 while the run-journey context is fresh, and it batches with the same
      high-criticality modules (DAL Batching Rule).
 
-> **Reserve** (integration-only epic-closers; backfill as slots free): `US-22`, `US-23`. (`US-16` closed 2026-08-16.)
-> **Not queue-eligible:** `US-17` (needs `B-VAL-04`), `US-19` (needs `C-FLOW-04`), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (fold into next API-touching story).
-
 ### 🔧 Debt Sequencing
 
-*Max 3 — open debt that changes how you read the rest. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 6 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
 | `TECH-031` 🟡 | Container-prepare defects, latent only because `execution_mode` defaults to `"host"`. |
-
-**Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
-is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
-by 2026-08-13. Nothing open contends for a shared file, so every remaining ticket is independent
-and none needs code work sequenced ahead of it.
-
-> **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against
-> evidence that INT-US-21 SF-03 invalidated **two days later**, by shipping the 24-test CLI journey
-> that was the ticket's own second candidate approach; re-measuring closed it in one session
-> instead of the "unknown size" it feared, and the same pass corrected three of `TECH-017`'s
-> findings. Filing-day evidence for a ticket gated on *story X ships* is stale by construction.
+| `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
