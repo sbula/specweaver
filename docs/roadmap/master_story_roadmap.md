@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **6 of 52 TECH tickets are open**, and **none** asserts a claim against a candidate below —
+> done: **5 of 52 TECH tickets are open**, and **none** asserts a claim against a candidate below —
 > see **Debt Sequencing**. (`TECH-017` was the last one that did; delivered 2026-08-14, it left the
 > section.)
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
@@ -69,7 +69,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **6 of 52 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **5 of 52 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -92,7 +92,6 @@ a queue entry.
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
 | `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
 | `TECH-013` 🔴 | Not queue-eligible — fold into the next API-touching story. |
-| `TECH-052` 🔴 | One unguarded `datetime.fromisoformat`. Small enough to fold into the next commit touching `llm/interfaces/cli.py`. |
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
@@ -187,7 +186,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Multi-Language Test Support:**
+    *   🟡 **Multi-Language Test Support:**
         *   `[ ]` **INT-US-03-SF01:** RETIRED 2026-08-16 by `ADR-003` — integration owned by `D-INTL-08`. Replaces the 2026-08-13 retirement into a delivered capability, withdrawn in `d0943c36`.
         *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
@@ -343,7 +342,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Code-to-Spec Drift Checking:**
+    *   🟢 **Code-to-Spec Drift Checking:**
         *   `✅` **B-VAL-01:** AST Drift Detection
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
@@ -362,7 +361,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Static Code Flow Analysis:**
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
-    *   🔴 **Infinite Scale Management:**
+    *   🟡 **Infinite Scale Management:**
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` **A-FLOW-02:** Hash-based garbage collection
         *   `[ ]` **A-INTL-04:** Memory consolidation
@@ -422,7 +421,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Enterprise Compliance Protocols:**
+    *   🟡 **Enterprise Compliance Protocols:**
         *   `✅` **B-SENS-01:** Artifact lineage graph
         *   `[ ]` **A-UI-01:** 'Dark Factory' Compliance Logging
     *   🔴 **Zero-Trust ACL:**
@@ -494,7 +493,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-VAL-06:** Industry Standard Bridges
     *   🔴 **Parallel Execution Safety:**
         *   `[ ]` **C-EXEC-04:** Concurrent Git Merge Orchestration
-    *   🔴 **Distributed Topology Scaling:**
+    *   🟡 **Distributed Topology Scaling:**
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
@@ -574,7 +573,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Dynamic Risk Controls:**
+    *   🟢 **Dynamic Risk Controls:**
         *   `✅` **D-VAL-02:** Custom Rule Paths
         *   `✅` **D-VAL-04:** Adaptive Assurance Standards
         *   `✅` **C-VAL-03:** Dynamic Risk Rulesets
@@ -672,4 +671,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-049:** [Mutation Campaign Corpus and Session Gate](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
     *   `✅` **TECH-050:** [28 Tests Fail Whenever an Agent Runs Them](features/topic_07_technical_debt/TECH-050/TECH-050_design.md)
     *   `✅` **TECH-051:** [24 Tests Look Like Coverage and Never Run](features/topic_07_technical_debt/TECH-051/TECH-051_design.md)
-    *   `[ ]` **TECH-052:** [`sw usage --since` Crashes on Unparseable Input](features/topic_07_technical_debt/TECH-052/TECH-052_design.md)
+    *   `✅` **TECH-052:** [`sw usage --since` Crashes on Unparseable Input](features/topic_07_technical_debt/TECH-052/TECH-052_design.md)

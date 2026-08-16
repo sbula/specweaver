@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-052
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: COMPLETE 2026-08-16. Approach 1 chosen; a second defect found while testing the first.
 - **Origin**: 2026-08-16, `INT-US-16` CB-1, while building the adversarial test matrix's
   hostile-input bucket for the telemetry read path.
 
@@ -33,6 +33,45 @@ on the command that was never given the same treatment.
 
 A bad `--since` value produces a one-line error naming the expected format and a non-zero exit —
 the same shape as the command's other two handled cases — and never a traceback.
+
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | `--since` fails with a message, not a traceback | `sw usage` | SHALL reject an unparseable or **timezone-naive** `--since` with an error naming the option, the value and a well-formed example, exiting 1 — and SHALL continue to accept every value it accepted before, including a bare offset timestamp | The command that exists to answer *"what did this cost"* stops reporting a date typo as though telemetry were broken |
+
+## The second defect, found while testing the first
+
+The ticket named one crash. Writing its boundary case — *"the guard must not narrow what already
+worked"* — found another, one layer down:
+
+```
+$ sw usage --since 2026-03-27
+StatementError: (builtins.ValueError) StrictISODateTime must be timezone-aware
+```
+
+A bare date parses perfectly (`fromisoformat` accepts it) and then dies in SQLAlchemy, because the
+`llm_usage_log` timestamp column requires an aware datetime. **Guarding only the parse would have
+left this untouched and the ticket half-fixed** — and the second error is worse than the first,
+since it names a database type rather than anything the user typed.
+
+Refused rather than assumed-UTC: silently choosing a timezone mis-filters by up to a day at the
+boundary, and the user cannot see that it happened.
+
+## Approach chosen: catch at the call site (approach 1)
+
+Approach 2 — Typer's native `datetime` parameter type — was rejected on measurement rather than
+taste: it accepts only its three default formats, so `--since 2026-03-27T11:00:00+02:00` would stop
+working. Fixing a crash by narrowing what already worked is not a fix. A Typer *callback* calling
+`fromisoformat` was the near-miss variant; it would also move the exit code from 1 to Click's
+usage-error 2, diverging from this command's two other handled failures.
+
+## Scope confirmed by measurement
+
+Three `fromisoformat` calls exist in `src/`. The other two — `core/config/database.py:60` and
+`store.py:201` — read values **this system wrote**, so a bad value there is a data-integrity
+problem rather than user input. The stub's "do not audit every CLI option" non-goal holds: there
+was exactly one user-facing instance.
 
 ## Relationship
 

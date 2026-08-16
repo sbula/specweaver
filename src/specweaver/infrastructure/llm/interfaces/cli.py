@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 import anyio
 import typer
@@ -124,6 +125,45 @@ usage_app = typer.Typer(
 # usage_app will be mounted by main.py
 
 
+def _parse_since(since: str | None) -> datetime | None:
+    """Validate `--since` here, where the user can be told what went wrong. `TECH-052`.
+
+    Two failures used to reach the user raw, and both read as *"telemetry is broken"* rather than
+    *"the date was wrong"* — on the one command whose whole job is answering what a run cost:
+
+    * an unparseable value raised `ValueError` from `fromisoformat` with no guard at all;
+    * a **naive** value parsed fine and then died deeper down as
+      `StatementError: StrictISODateTime must be timezone-aware`, a SQLAlchemy type error. That
+      second one was found while writing the boundary case for the first, and guarding only the
+      parse would have left the ticket half-fixed.
+
+    A naive value is refused rather than assumed UTC: silently choosing a timezone mis-filters by
+    up to a day at the boundary, and the user cannot see that it happened.
+
+    `fromisoformat` is kept rather than Typer's native `datetime` type, which accepts only its three
+    default formats and would have rejected `2026-03-27T11:00:00+02:00` — narrowing what already
+    worked in the course of fixing a crash.
+    """
+    if not since:
+        return None
+    try:
+        parsed = datetime.fromisoformat(since)
+    except ValueError as exc:
+        _core.console.print(
+            f"[red]Error:[/red] --since {since!r} is not an ISO timestamp. "
+            "Try [bold]2026-08-16T00:00:00Z[/bold].",
+        )
+        raise typer.Exit(code=1) from exc
+    if parsed.tzinfo is None:
+        _core.console.print(
+            f"[red]Error:[/red] --since {since!r} has no timezone, and usage records are stored "
+            "with one. Add an offset — [bold]2026-08-16T00:00:00Z[/bold] or "
+            "[bold]2026-08-16T00:00:00+02:00[/bold].",
+        )
+        raise typer.Exit(code=1)
+    return parsed
+
+
 @usage_app.callback(invoke_without_command=True)
 def usage(
     all_projects: bool = typer.Option(
@@ -154,11 +194,9 @@ def usage(
             )
             raise typer.Exit(code=0)
 
+    parsed_since = _parse_since(since)
+
     async def _get_usage() -> None:
-        from datetime import datetime
-
-        parsed_since = datetime.fromisoformat(since) if since else None
-
         async with db.async_session_scope() as session:
             repo = LlmRepository(session)
             rows = await repo.get_usage_summary(project=project, since=parsed_since)

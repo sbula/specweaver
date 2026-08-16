@@ -110,10 +110,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
-* **`TECH-052` 🔴: `sw usage --since` Crashes on Unparseable Input**
-  > [Description](../features/topic_07_technical_debt/TECH-052/TECH-052_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1 building the hostile-input bucket.)_ | `datetime.fromisoformat(since)` at
-  > `llm/interfaces/cli.py:161` has no guard, so any typo in `--since` gives the user a traceback instead of an error. Probed: exit 1, `ValueError`. It sits on the READ half of the US-16 cost journey,
-  > where a traceback reads as "telemetry is broken" rather than "the date was wrong" — and it is the one input on that command never given the treatment its two other failure modes already have.
+* **`TECH-052` 🟢: `sw usage --since` Crashes on Unparseable Input**
+  > [Description](../features/topic_07_technical_debt/TECH-052/TECH-052_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | `datetime.fromisoformat(since)` had no guard, so any typo gave
+  > the user a traceback on the one command that answers *what did this cost*. **DELIVERED 2026-08-16:** and testing the boundary found a SECOND crash one layer down — a bare date parses fine and
+  > then dies as `StatementError: StrictISODateTime must be timezone-aware`. Both refused with a message and an example; naive values are refused rather than assumed-UTC, which would mis-filter by
+  > a day at the boundary invisibly. Typer's native `datetime` type was rejected: it accepts three formats and would have dropped `+02:00` offsets that already worked.
 
 * **`TECH-041` 🔴: The Code-Level DAL Override Is Unproven End to End (Needs a Scripted LLM)**
   > [Description](../features/topic_07_technical_debt/TECH-041/TECH-041_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `C-VAL-03`'s DAL override is proven

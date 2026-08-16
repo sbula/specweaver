@@ -2,13 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for ``sw usage`` command (Feature 3.12)."""
+"""Tests for ``sw usage`` command (Feature 3.12).
+
+Proves: TECH-052 FR-1
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import pytest
+from tests.rendering import shows
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -102,6 +106,68 @@ class TestUsageCommand:
         )
 
         assert result.exit_code == 0
+
+    def test_usage_rejects_an_unparseable_since_with_a_message(self, _mock_db) -> None:
+        """[Hostile] `--since not-a-date` → an error naming the option, never a traceback.
+
+        `TECH-052`. `datetime.fromisoformat(since)` had no guard, so any typo — `2026-8-1`,
+        `yesterday`, a pasted log line — reached the user as a raw `ValueError`. It sits on the
+        READ half of the US-16 cost journey, where a traceback reads as "telemetry is broken"
+        rather than "the date was wrong".
+        """
+        _create_project(_mock_db)
+
+        result = runner.invoke(app, ["usage", "--since", "not-a-date"])
+
+        assert result.exit_code == 1
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        assert shows(result.output, "--since")
+        assert shows(result.output, "not-a-date")
+
+    def test_usage_names_the_format_it_wanted(self, _mock_db) -> None:
+        """[Hostile] the message has to say what a good value looks like.
+
+        A rejection that only says "invalid" leaves the user guessing between `2026-08-16`,
+        `16/08/2026` and an epoch. The example is the fix, not decoration.
+        """
+        _create_project(_mock_db)
+
+        result = runner.invoke(app, ["usage", "--since", "16/08/2026"])
+
+        assert result.exit_code == 1
+        assert shows(result.output, "2026-08-16")
+
+    def test_an_offset_timestamp_is_accepted(self, _mock_db) -> None:
+        """[Boundary] the guard must not narrow what already worked.
+
+        Typer's native `datetime` type — the obvious framework answer — accepts only its three
+        default formats and would have rejected this offset, so the fix keeps `fromisoformat` and
+        guards it instead.
+        """
+        _create_project(_mock_db)
+        _seed_usage(_mock_db, "testproj")
+
+        assert runner.invoke(app, ["usage", "--since", "2026-03-27T11:00:00+02:00"]).exit_code == 0
+
+    def test_a_naive_timestamp_is_refused_before_it_reaches_the_database(self, _mock_db) -> None:
+        """[Hostile] A SECOND defect, found while writing the first test's boundary case.
+
+        `--since 2026-03-27` parses perfectly — `fromisoformat` accepts a bare date — and then dies
+        deeper down with `StatementError: StrictISODateTime must be timezone-aware`, a SQLAlchemy
+        type error shown to a user who asked a reporting question. Guarding only the parse would
+        have left this crash untouched and the ticket half-fixed.
+
+        Refused rather than assumed-UTC on purpose: silently choosing a timezone mis-filters by up
+        to a day at the boundary, and the user cannot see that it happened.
+        """
+        _create_project(_mock_db)
+
+        result = runner.invoke(app, ["usage", "--since", "2026-03-27"])
+
+        assert result.exit_code == 1
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        assert shows(result.output, "timezone")
+        assert not shows(result.output, "StatementError")
 
     def test_usage_no_active_project_shows_hint(self, _mock_db) -> None:
         """sw usage with no active project → exit 0 with hint."""
