@@ -271,6 +271,31 @@ class StateStore:
                 return None
             return _row_to_run(row)
 
+    def get_latest_resumable_run(self, project_name: str) -> PipelineRun | None:
+        """The newest parked-or-failed run for a project, whatever pipeline produced it.
+
+        `sw resume` used to build this answer itself, by asking `get_latest_run` for each of the 14
+        **bundled** pipeline names in turn. That could not see a run of a pipeline loaded from a
+        YAML path — an input `sw run` documents and accepts — and it returned the first bundled
+        name with a resumable run rather than the most recent one. Both are the same missing query
+        (`TECH-054` FR-1).
+
+        The status filter is inside the SQL rather than applied to the result: filtering afterwards
+        would pick the newest run of any kind and then discard it, reporting nothing to resume while
+        a parked run waits.
+        """
+        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value)
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM flow_pipeline_runs "
+                "WHERE project_name = ? AND status IN (?, ?) "
+                "ORDER BY updated_at DESC LIMIT 1",
+                (project_name, *resumable),
+            ).fetchone()
+            if row is None:
+                return None
+            return _row_to_run(row)
+
     def list_runs(self, limit: int = 50) -> list[PipelineRun]:
         """List recent pipeline runs, ordered by most recently updated."""
         with self.connect() as conn:

@@ -459,19 +459,18 @@ def _resolve_resumable_run(store: StateStore, run_id: str | None) -> Any:
             raise typer.Exit(code=1)
         return run_state
 
-    from specweaver.core.flow.engine.parser import list_bundled_pipelines
-    from specweaver.core.flow.engine.state import RunStatus
-
     name = _core._require_active_project()
     _core.get_db()
     if not _core.run_repo_op(lambda r: r.get_project(name)):
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
 
-    for pipeline_name in list_bundled_pipelines():
-        candidate = store.get_latest_run(name, pipeline_name)
-        if candidate and candidate.status in (RunStatus.PARKED, RunStatus.FAILED):
-            return candidate
+    # `TECH-054` FR-1: ask the store, do not reconstruct the answer from `list_bundled_pipelines()`.
+    # That loop could not see a run of a pipeline given to `sw run` as a YAML path, and it returned
+    # the first bundled name with a resumable run rather than the newest run.
+    candidate = store.get_latest_resumable_run(name)
+    if candidate is not None:
+        return candidate
 
     _core.console.print("[dim]No resumable runs found for the active project.[/dim]")
     raise typer.Exit(code=0)

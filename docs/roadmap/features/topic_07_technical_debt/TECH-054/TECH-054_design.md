@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-054
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: DRAFT
+- **Status**: APPROVED (2026-08-16)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-054/TECH-054_design.md
 - **Origin**: 2026-08-16, from `TECH-053`. Nineteen capabilities are marked `✅` with no design
   document. Seventeen of them stay ratcheted; these two do not, because everything runs on them.
@@ -47,12 +47,49 @@ Tools) has the same empty record and nothing depends on it in the same way.
 Seventeen stay ratcheted **and the ticket says so**, so the question is not reopened in three
 months as though nobody had considered it.
 
+## What the first journey found, before it was written down
+
+Both defects below were found by **probing the journey by hand**, in under ten minutes, on a
+capability that has been `✅` for months. They are the argument for the ticket, so they are recorded
+before the requirements they caused.
+
+`sw run` accepts *"Pipeline name or YAML path"* — its own `--help` says so, twice, and the runner
+loads either. `sw resume` with no argument then does this
+(`src/specweaver/core/flow/interfaces/cli.py:471`):
+
+```python
+for pipeline_name in list_bundled_pipelines():
+    candidate = store.get_latest_run(name, pipeline_name)
+```
+
+1. **A run of any pipeline that is not one of the 14 bundled ones can never be auto-resumed.** It
+   is absent from the loop, so `sw resume` reports *"No resumable runs found for the active
+   project"* while the row sits in `flow_pipeline_runs` with `status='failed'`. The state persisted
+   perfectly; nothing could find it. `sw resume <run-id>` still works — `load_run` has no such
+   filter — so the failure is discovery, and it is silent, which is worse than an error.
+2. **"Latest" is not latest.** The loop returns the first *bundled-list* entry that has a resumable
+   run, so a month-old `new_feature` failure wins over a parked `validate_only` from a minute ago.
+   The docstring one line above promises *"the newest resumable one."*
+
+This is what a journey proof is for. Neither defect is visible from inside a unit test of the
+runner, both are on the first path a user takes, and the capability's own record is one sentence.
+
 ## Functional Requirements
 
-None, deliberately — `ADR-003`: *"a journey artifact declares no FRs of its own, builds nothing, and
-writes no unit tests."* Its deliverable is e2e proof. If writing one of these turns out to need a
-unit test, that is the diagnostic that the capability underneath shipped incomplete, and the finding
-belongs to that capability.
+`ADR-003` says a journey artifact *"declares no FRs of its own, builds nothing, and writes no unit
+tests"* — and this design predicted the exception: *if writing one turns out to need more, that is
+the diagnostic that the capability underneath shipped incomplete.* It did, so `TECH-054` owns the
+fix. `D-FLOW-01` is `✅` and `finished-stories-immutable` puts it out of reach; a ticket is where
+the repair belongs.
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Auto-detect finds the newest resumable run for the active project, whatever pipeline produced it | A developer whose run failed | runs `sw resume` with no arguments | the run that failed last is resumed — including one started from a YAML path, which today is invisible |
+
+One requirement, because both defects are the same three lines and the same missing query: the
+store can answer *"latest resumable run for this project"* directly, and `_resolve_resumable_run`
+should ask it rather than reconstructing the answer from a list of names that has nothing to do
+with what ran.
 
 ## Non-Functional Requirements
 
@@ -78,20 +115,32 @@ belongs to that capability.
 
 | Boundary | Delivers |
 |---|---|
-| **CB-1** | `D-FLOW-01` — a pipeline runs and its state survives a resume |
+| **CB-1** | `D-FLOW-01` — the journey, plus FR-1: the resume-discovery defect it exposed |
 | **CB-2** | `E-FLOW-01` — a project registered in one process is active in the next |
 
-Each is done when its mutant kills it, not when it goes green: both capabilities work today, so a
-passing test proves only that it was written.
+CB-1 is the ordinary case for once: the journey is written first and **fails for the right reason**,
+because the behaviour it claims does not exist. CB-2 has no such luck — the config DB works — so it
+is done when its mutant kills it, not when it goes green.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| — | Single feature | — | ✅ | ✅ | 🔄 | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design DRAFT.
-**Next step**: CB-1. The other seventeen are ratcheted by `TECH-053` and paid down by
-`specweaver-dev` 3.2c on contact; that is the decision, not an omission.
+**Current status**: CB-1 committed. The `D-FLOW-01` journey is green and FR-1 is proven — five
+mutants, all killed, pinned in `TECH-054_mutants.json`.
+
+**What CB-1 settled about the capability.** Resume splits into two halves and only one was covered.
+*Persistence* is well protected: neutralising it (`run.current_step = 0` before the loop) is killed
+by **14 tests across three tiers**. *Discovery* had nothing — the bundled-pipeline loop shipped
+broken through a full green suite, and no test in the repo could see it. That asymmetry, not the
+defect, is the reusable finding: coverage clustered on the mechanism and left the path a user takes
+to reach it unguarded.
+
+**Next step**: CB-2 — `E-FLOW-01`, plus the three `print()` calls in
+`core/config/bootstrap/db_bootstrap.py:31-33` that dump the schema to **stdout** on every bootstrap.
+The other seventeen are ratcheted by `TECH-053` and paid down by `specweaver-dev` 3.2c on contact;
+that is the decision, not an omission.

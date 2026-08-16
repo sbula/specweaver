@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "feature": "TECH-054",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Auto-detection finds the newest resumable run, whatever pipeline produced it",
+      "scope": [
+        "tests/unit/core/flow/engine/test_resumable_run_discovery.py",
+        "tests/e2e/core/flow/test_resume_after_failure_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "discovery-finds-nothing",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.get_latest_resumable_run",
+          "old": "\"WHERE project_name = ? AND status IN (?, ?) \"",
+          "new": "\"WHERE project_name = ? AND status IN (?, ?) AND 0 \"",
+          "breaks": "the query matches nothing, so `sw resume` reports 'No resumable runs found' while the failed run sits in flow_pipeline_runs — the exact shape of the defect this ticket fixed, and the one the old bundled-pipeline loop produced for every YAML-path run",
+          "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
+        },
+        {
+          "id": "latest-becomes-oldest",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.get_latest_resumable_run",
+          "old": "\"ORDER BY updated_at DESC LIMIT 1\",\n                (project_name, *resumable),",
+          "new": "\"ORDER BY updated_at ASC LIMIT 1\",\n                (project_name, *resumable),",
+          "breaks": "a stale run outranks the one that just failed, which is what the bundled-list order did by accident and what 'the newest resumable one' was always supposed to prevent",
+          "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
+        },
+        {
+          "id": "resumable-filter-inverted",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.get_latest_resumable_run",
+          "old": "\"WHERE project_name = ? AND status IN (?, ?) \"\n                \"ORDER BY updated_at DESC LIMIT 1\",",
+          "new": "\"WHERE project_name = ? AND status NOT IN (?, ?) \"\n                \"ORDER BY updated_at DESC LIMIT 1\",",
+          "breaks": "`sw resume` offers completed and running runs and refuses the parked ones, so resuming either restarts finished work or collides with a live run",
+          "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
+        },
+        {
+          "id": "project-filter-inverted",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.get_latest_resumable_run",
+          "old": "\"SELECT * FROM flow_pipeline_runs \"\n                \"WHERE project_name = ? AND status IN (?, ?) \"",
+          "new": "\"SELECT * FROM flow_pipeline_runs \"\n                \"WHERE project_name != ? AND status IN (?, ?) \"",
+          "breaks": "resume picks up another project's run and executes its pipeline against this working tree — the one failure here that is a safety problem rather than an inconvenience",
+          "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
+        },
+        {
+          "id": "resume-restarts-from-step-zero",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner._execute_loop",
+          "old": "        state = LoopState.for_run(run, approve_parked=approve_parked)",
+          "new": "        run.current_step = 0\n        state = LoopState.for_run(run, approve_parked=approve_parked)",
+          "breaks": "a resume re-runs every step that already passed — the persistence half of the journey, as opposed to the discovery half the other four mutants cover. Reported KILLED x1 here only because this campaign's scope is TECH-054's own two files; run against the whole suite it is killed by 14 tests across three tiers. Kept as the corpus's own record that resume-from-checkpoint is the well-protected half and auto-detection was the unprotected one",
+          "symbol_sha": "sha256:5e905772f5440f03ed1a99a740cba00e039ef84c7dfb9e4779b8badd285d1dcf"
+        }
+      ]
+    }
+  ]
+}
