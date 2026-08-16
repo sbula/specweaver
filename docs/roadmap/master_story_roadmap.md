@@ -210,7 +210,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
     *   `✅` **D-FLOW-04:** Unified Runner Architecture
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
-    *   `[ ]` **C-FLOW-13:** Model Catalogue — per-model pricing, serving adapter and capabilities as data, not source
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-04-SF02:** RETIRED by `ADR-003` — requirements move to `B-FLOW-05`
@@ -438,6 +437,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   🔴 **Centralized Model Table:**
+        *   `[ ]` **C-FLOW-13:** Model Catalogue — per-model pricing, serving adapter and capabilities as data, not source
         *   `[ ]` **D-FLOW-05:** Model Catalogue Adoption — move every consumer onto `C-FLOW-13`, delete the per-adapter cost dicts
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations — needs `C-FLOW-13`
