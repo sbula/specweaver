@@ -69,30 +69,41 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **6 of 53 tickets**. A delivered ticket leaves this section; the permanent
-record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
-entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
-Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
-it was closed is what let this section drift for a month.*
+*The **three** open tickets that change how you read the rest of the roadmap — never more. **7 of 58
+tickets are open**; the other four are listed nowhere here on purpose. A delivered ticket leaves this
+section; the permanent record is the [TECH ledger](#-technical-debt-tech) at the foot of this file
+and each ticket's own entry in [topic_07](topics/topic_07_technical_debt.md), which is also where
+status is decided. Statuses appear below purely to rank the open set — keeping a delivered ticket
+here to narrate how it was closed is what let this section drift for a month.*
 
-**Asserts a claim on a queue candidate** — so picking a candidate without reading this is blind.
+**Three, because a list of seven is a list nobody reads before picking work.** The bar is not age or
+severity: it is whether **not knowing this makes you misread something else**. A ticket that is
+independent, deferred by its own design, or explicitly not queue-eligible fails that bar however
+real it is — it costs nothing to discover when its file is next opened.
 
-**None.** `TECH-017` was the last, and it left this section on delivery (2026-08-14). Its claim did
-not disappear with it — the tier-ratio guardrail now *runs* (`check_proof_tier.py` and
-`check_audit_matrix.py` in the `doc` gate, plus the tier-by-claim rule in the implementation-plan
-skill), so planning a candidate means satisfying it rather than remembering it. That is a gate, not
-a queue entry.
+**Asserts a claim on every queue candidate** — so picking one without reading this is blind.
 
-**No claim on a candidate**
-
-| Ticket | Where it fits |
+| Ticket | What you misread without it |
 |---|---|
-| `TECH-031` 🟡 | Three chained container-prepare defects. **Latent, not live** — `execution_mode` defaults to `"host"`, and the vacuous-success shape that hid them is fixed. |
-| `TECH-041` 🔴 | `C-VAL-03`'s code-level DAL override is proven link by link and never as a chain. Needs a scripted LLM; the lenient-DAL control is the load-bearing half. |
-| `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
-| `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
-| `TECH-013` 🔴 | Not queue-eligible — fold into the next API-touching story. |
-| `TECH-053` 🟡 | 62 capabilities marked ✅, **1 clean**. Gate shipped; the 19 with no design and 3 with no FRs are ratcheted. **Read before trusting any ✅.** |
+| `TECH-053` 🟡 | **Any `✅` in this document.** 62 capabilities are marked delivered and **1 passes its own FR ledger**. The gate shipped and the count is ratcheted, so this cannot grow — but the 22 it counts are reported, not fixed. It qualifies every other row here and every candidate above. |
+
+`TECH-017` used to sit here and left on delivery (2026-08-14). Its claim did not disappear with it —
+the tier-ratio guardrail now *runs* (`check_proof_tier.py` and `check_audit_matrix.py` in the `doc`
+gate, plus the tier-by-claim rule in the implementation-plan skill), so planning a candidate means
+satisfying it rather than remembering it. That is a gate, not a queue entry.
+
+**Asserts a claim on one delivered capability**
+
+| Ticket | What you misread without it |
+|---|---|
+| `TECH-041` 🔴 | **`C-VAL-03` Dynamic Risk Rulesets, which is `✅`.** Its code-level DAL override is proven link by link and never as a chain, so anything built on DAL risk gating inherits an unproven seam. Needs a scripted LLM; the lenient-DAL control is the load-bearing half. |
+| `TECH-031` 🟡 | **Container execution.** Three chained container-prepare defects, **latent only because `execution_mode` defaults to `"host"`** — they become live the day anyone changes that default. The vacuous-success shape that hid them is fixed. |
+
+**Deliberately not listed** — open, real, and none of them changes how you read anything else:
+`TECH-010` (needs a long-lived-process executor abstraction; independent), `TECH-011` (load-time
+params validation; independent), `TECH-013` (not queue-eligible — fold into the next API-touching
+story), `TECH-057` (parallel mutation runs; parked behind scope discipline by its own design). Each
+is in [topic_07](topics/topic_07_technical_debt.md) and the TECH ledger, which is where they belong.
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
