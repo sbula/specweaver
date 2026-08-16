@@ -3,8 +3,10 @@
 - **Feature ID**: TECH-057
 - **Epic**: Topic 07 (Technical Debt)
 - **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: 2026-08-16, from measuring the corpus after `TECH-056`. **Deliberately unscheduled** —
-  filed to record a design decision while it is still cheap to change, not to be picked up now.
+- **Origin**: 2026-08-16, from measuring the corpus after `TECH-056`.
+- **Re-scoped same day**: filed unscheduled, then **scheduled** when the coverage goal was stated —
+  *every (N)FR that makes sense goes into the nightly*. That turns this ticket's trigger from a
+  contingency into a date.
 
 ## Problem Statement
 
@@ -25,21 +27,36 @@ That last number is the finding. A pool of eight sandboxes costs **1.6 seconds**
 nothing about the current design is defending an expensive resource — the serialisation is
 incidental to how the code was written, not a constraint anybody chose.
 
-## Why it is not being built yet
+## Why it is now scheduled
 
-Today the nightly finishes in about seven minutes against a window of several hours. Building a
-sandbox pool now would optimise the one clock in this repo with real slack, and `TECH-055` already
-removed the cost that was actually being paid, in the suite, at every commit boundary.
+It was filed unscheduled on the reasoning that the nightly had hours of slack. **The stated goal
+removed that assumption**: every (N)FR that makes sense is to go into the nightly, so the corpus is
+no longer a handful of campaigns written when someone happens to call a claim proven — it has a
+destination, and the destination is measured.
 
-**What is being recorded instead is the trigger.** 670 (N)FRs are declared today, 61 of 135
-capabilities are delivered, and full roadmap is roughly 1,000-1,400 requirements. At today's ratio of
-2.7 mutants per requirement and today's scope mix, full coverage is **~4.9 hours serial**. The
-nightly starts at 03:00, so that finishes at 07:54 with no margin — and `STALE_AFTER_HOURS = 48`
-means a session that overran would not be reported as stale for two days.
+| | measured 2026-08-16 |
+|---|---|
+| FRs declared today | 402 |
+| behavioural NFRs (mutatable) | 177 |
+| NFRs that **cannot** carry a mutant — `meta` 41, `arch` 28, `none` 10 | 79 |
+| **mutatable today** | **579 of 658 — 88%** |
+| capabilities delivered | 61 of 135 |
+| **mutatable at full roadmap** (~1,040 declared x 88%) | **~918** |
+| x 2.7 mutants per requirement | **~2,480 mutants** |
 
-**Pick this up when the nightly's own wall clock passes about two hours**, or sooner if a session is
-ever observed still running at 08:00. Retrofitting a pool costs the same work at any size; what
-grows is the number of campaigns whose verdicts have to be re-validated afterwards.
+Serial, at today's scope mix of 5.4s per mutant: **~3.7 hours**. Disciplined to unit and integration
+scopes at 1.3s: **~54 minutes**. The nightly starts at 03:00, so the first figure lands at 06:42 —
+survivable, but with the whole margin spent and `STALE_AFTER_HOURS = 48` meaning an overrun goes
+unreported for two days.
+
+**`TECH-058` changed the shape of the problem and is why this is worth doing properly.** The
+baseline was 291s of a 420s session; it is now 77s. Mutants were 31% of the session and are now 63%,
+and that share only grows with the corpus. Parallelism now addresses the majority of the cost rather
+than the minority.
+
+**Two levers, and they are not alternatives.** Scope discipline is free and takes ~3.7h to ~54min;
+a pool of eight takes ~3.7h to ~28min. Doing both is how the nightly stays under an hour at full
+coverage without anyone having to think about it again.
 
 ## Candidate Approaches (not yet designed)
 
@@ -47,29 +64,38 @@ grows is the number of campaigns whose verdicts have to be re-validated afterwar
    per-mutant mutate/measure/revert cycle exactly as it is. Smallest change; each worker's scoped
    pytest is already serial, so K ~ cores.
 2. **One sandbox per mutant.** Simpler still and strictly better isolation — `snapshot_cleanliness`
-   and `leaked_since` exist because mutants leak into a shared tree — at 0.2s each, ~11 minutes of
-   pure setup across 3,240 mutants. Probably acceptable; measure before assuming.
-3. **Do nothing; shrink the work instead.** Scope discipline alone takes full coverage from ~4.9 h
-   to ~70 min, because an e2e-scoped mutant costs 8x a unit-scoped one. Recorded in
+   and `leaked_since` exist because mutants leak into a shared tree — at 0.2s each, ~8 minutes of
+   pure setup across ~2,480 mutants. Probably acceptable; measure before assuming.
+3. **Do nothing; shrink the work instead.** Scope discipline alone takes full coverage from ~3.7 h
+   to ~54 min, because an e2e-scoped mutant costs 8x a unit-scoped one. Recorded in
    `docs/dev_guides/writing_mutation_campaigns.md` and the cheaper lever by far.
 
 ## Non-Goals (proposed, pending design)
 
 - **Parallelising the pytest run inside a single mutant.** Scoped runs are small by construction; the
   parallelism worth having is across mutants.
-- **Touching the baseline.** It is one full-suite run per session, fixed cost, and does not scale
-  with the corpus.
+- **Touching the baseline.** One full-suite run per session, fixed cost, and it does not scale with
+  the corpus — `TECH-058` already took it from 291s to 77s.
 - **Any change to `scope` semantics.** Approach 3 is a guidance change, not a mechanism.
 
-## Open question this ticket does not answer
+## The open question, answered — and the hypothesis was wrong
 
-The full session measured **6m51s**, but 129.5s of mutant work plus a 67s baseline is only ~3m15s.
-The leading hypothesis is that the baseline runs the suite in a **cold sandbox** with no
-`__pycache__`, so it costs far more there than in the working tree. Unverified. It does not affect
-the scaling argument — the baseline is a fixed one-off — but whoever picks this up should measure it
-before trusting any per-part budget.
+This section originally read: *the leading hypothesis is that the baseline runs the suite in a cold
+sandbox with no `__pycache__`.* Measured, in one sandbox, three runs: serial **291.2s**, warm serial
+**291.7s**, `-n auto` **77.3s**. Cold bytecode cost **+0.5s**. The cause was a missing `-n auto`,
+fixed by **`TECH-058`**.
+
+Kept rather than deleted, because the lesson is the ticket's own: a plausible cause was written into
+a design document and would have been inherited by whoever picked this up. The probe that settled it
+took one command.
 
 ## Next Step
 
-None scheduled. Re-measure before designing: both the trigger above and the numbers in this document
-are from 2026-08-16, when the corpus held 24 mutants across 9 of 670 requirements.
+**Scheduled, ordered behind scope discipline.** Approach 3 — shrinking the work — is free, already
+shipped as guidance in `docs/dev_guides/writing_mutation_campaigns.md`, and worth letting run for a
+while: if campaigns land at unit and integration scope, the pool buys minutes rather than hours and
+this ticket can stay small.
+
+Re-measure before designing. Every number here is from 2026-08-16, when the corpus held **26 mutants
+across 10 of 579 mutatable requirements — 1.7% of the destination.** The scope mix of the next fifty
+campaigns will move these projections more than any implementation choice made now.

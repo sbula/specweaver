@@ -174,9 +174,9 @@ critical for long-term project viability.
   > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
 
 * **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
-  > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`. **Filed unscheduled**, to record the decision while it is cheap.)_ |
-  > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet sandbox build and teardown measure **0.2s**, so the serialisation defends nothing. Not urgent: today's nightly is ~7 min against
-  > hours of slack. The trigger is written down instead — at full roadmap (~1,200 (N)FRs) today's scope mix projects to **~4.9h serial**, finishing at 07:54 with no margin.
+  > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`; filed unscheduled, then **scheduled** once the coverage goal was set.)_ |
+  > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet build and teardown measure **0.2s**, so the serialisation defends nothing. With every mutatable (N)FR bound for the nightly
+  > (**579 of 658 today, 88%**; ~918 at full roadmap, ~2,480 mutants) today's scope mix projects to **~3.7h serial**. Ordered behind scope discipline, which is free and gets it to ~54 min.
 
 * **`TECH-056` 🟢: The Morning Gate Marks Its Own Homework**
   > [Description](../features/topic_07_technical_debt/TECH-056/TECH-056_design.md) | _(2026-08-16 — found running the morning check after `TECH-055`.)_ | `mutation.py --gate` **could not block**:

@@ -103,20 +103,22 @@ instruction dressed as a principle — it is the same rule `scope` already state
 Where a claim genuinely lives in a journey (`TECH-054` FR-1's resume discovery could not be seen
 below e2e), pay it deliberately and say so in `breaks`.
 
-**The arithmetic that makes this matter.** 670 (N)FRs are declared today across 116 design documents,
-against 61 of 135 capabilities delivered; full roadmap is roughly 1,000-1,400. At today's ratio of
-2.7 mutants per requirement, full coverage is:
+**The arithmetic that makes this matter.** Measured 2026-08-16: **402 FRs and 177 behavioural NFRs
+are mutatable — 579 of 658 declared, 88%.** The other 79 cannot carry a mutant at all: `[proof: meta]`
+is a rule about tests or docs and `[proof: arch]` is proven by a gate, so neither has a production
+line to neutralise. With 61 of 135 capabilities delivered, full roadmap is roughly **918 mutatable
+requirements**, and at today's 2.7 mutants each:
 
 | Scope mix | Mutants | Serial wall clock |
 |---|---|---|
-| disciplined (unit/integration) | ~3,240 | **~70 min** |
-| today's mix | ~3,240 | **~4.9 h** |
-| e2e-dominated | ~3,240 | **~9.9 h** |
+| disciplined (unit/integration) | ~2,480 | **~54 min** |
+| today's mix | ~2,480 | **~3.7 h** |
+| e2e-dominated | ~2,480 | **~7.6 h** |
 
-The nightly starts at 03:00. The middle row finishes at 07:54 with no margin, and a session that
-overruns is not reported as stale for 48 hours. The corpus is opt-in and covers 9 of 670
-requirements today, so none of this is urgent — but the difference between the first row and the
-third is decided one campaign at a time, by whoever picks a scope.
+The nightly starts at 03:00, so the middle row lands at 06:42 with the whole margin spent, and a
+session that overruns is not reported as stale for 48 hours. The corpus covers **10 of 579** today —
+1.7% of the destination — so the difference between the first row and the third is still entirely
+undecided, and it gets decided one campaign at a time, by whoever picks a scope.
 
 Parallel execution is the other half of the answer and is deliberately not built yet: see
 `TECH-057`, which records why (sandbox build and teardown measured **0.2s**, so a pool is cheap when
