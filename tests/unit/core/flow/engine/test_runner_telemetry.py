@@ -68,7 +68,7 @@ def _registry(handler) -> StepHandlerRegistry:
     return reg
 
 
-class QARunnerTelemetryFlush:
+class TestQARunnerTelemetryFlush:
     """Runner flushes TelemetryCollector after pipeline completes."""
 
     @pytest.mark.asyncio

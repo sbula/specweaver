@@ -199,7 +199,7 @@ def _run_spec_rules_with_kind(
     return run_rules(rules, spec_text)
 
 
-class QARunnerKindIntegration:
+class TestQARunnerKindIntegration:
     """Pipeline executor + presets + rules integration (no mocking)."""
 
     def test_feature_kind_uses_intent_header(self) -> None:
@@ -266,7 +266,7 @@ class QARunnerKindIntegration:
         assert len(s01.findings) > 0
 
 
-class QARunnerSettingsOverrideIntegration:
+class TestQARunnerSettingsOverrideIntegration:
     """Settings overrides correctly layer on top of kind presets."""
 
     def test_settings_override_beats_preset(self) -> None:

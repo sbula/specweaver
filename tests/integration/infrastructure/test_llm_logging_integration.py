@@ -2,6 +2,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Structured logging from the LLM adapters. `TECH-051` CB-1 moved one test OUT of this file.
+
+`test_malformed_protocol_payload_emits_error_log` lived here and had nothing to do with LLM
+logging: it drove `GRPCParser` and was, measurably, the only protector of that parser's error path
+in the whole suite. It now lives in
+`tests/unit/sandbox/protocol/core/protocol/test_grpc_parser.py`, the file named after the code it
+covers — which had been empty since it was created.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -12,7 +21,6 @@ import pytest
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.errors import AuthenticationError
 from specweaver.infrastructure.llm.models import GenerationConfig
-from specweaver.sandbox.protocol.core.grpc_parser import GRPCParser
 
 
 @pytest.mark.asyncio
@@ -76,20 +84,3 @@ async def test_fallback_adapter_writes_warning_logs(caplog):
     assert len(warning_logs) >= 1
     assert warning_logs[0].name == "specweaver.infrastructure.llm.adapters.openai"
     assert "rate limit" in warning_logs[0].message.lower()
-
-
-def test_malformed_protocol_payload_emits_error_log(caplog):
-    """Story 4: [Hostile/Wrong Input] Malformed payload parsing in protocol sandbox emits an error log."""
-    from specweaver.sandbox.protocol.core.protocol_interfaces import ProtocolSchemaError
-
-    parser = GRPCParser()
-
-    with caplog.at_level(logging.DEBUG), pytest.raises(ProtocolSchemaError):
-        # A completely invalid syntax string
-        parser.extract_endpoints("syntax = proto3; \n message invalid { int missing_semicolon }")
-
-    # The parser internally emits a debug/error before raising
-    logs = [r for r in caplog.records if r.name == "specweaver.sandbox.protocol.core.grpc_parser"]
-    assert len(logs) >= 1
-    # Check the error log was captured
-    assert "Failed to parse gRPC schema" in logs[-1].message or "parse" in logs[-1].message.lower()
