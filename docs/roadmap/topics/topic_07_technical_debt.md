@@ -168,6 +168,11 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-058` 🟢: The Nightly's Baseline Forgot Its Own `-n auto`**
+  > [Description](../features/topic_07_technical_debt/TECH-058/TECH-058_design.md) | _(2026-08-16 — found verifying a gap in `TECH-057`'s numbers.)_ | `run_baseline` ran the whole suite **serially**
+  > while `_mutate.run_one` adds `-n auto` on the same path. Measured in a sandbox: **291.2s serial vs 77.3s parallel, 3.8x** — 69% of a 6m51s session. A warm rerun cost +0.5s, so the recorded
+  > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
+
 * **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
   > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`. **Filed unscheduled**, to record the decision while it is cheap.)_ |
   > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet sandbox build and teardown measure **0.2s**, so the serialisation defends nothing. Not urgent: today's nightly is ~7 min against

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "feature": "TECH-058",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The baseline runs the suite in parallel and still reports what failed",
+      "scope": [
+        "tests/unit/scripts/test_baseline_parallelism.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-baseline-drops-back-to-serial",
+          "file": "scripts/mutation.py",
+          "symbol": "run_baseline",
+          "old": "    cmd += [\"-n\", \"auto\", tests]",
+          "new": "    cmd += [tests]",
+          "breaks": "the defect restored exactly: the nightly's largest single cost goes from 77s back to 291s, 3.8x, for a flag the other whole-suite runner has always passed",
+          "symbol_sha": "sha256:c4a1df42e3ce6cdd5b26b1db667ce4f62cbcbbac3e0b5390bd6efdf732f7e264"
+        },
+        {
+          "id": "a-red-baseline-loses-its-failures",
+          "file": "scripts/mutation.py",
+          "symbol": "run_baseline",
+          "old": "    return Baseline(green=code == 0, failures=_mutate.killers(out), code=code)",
+          "new": "    return Baseline(green=code == 0, failures=[], code=code)",
+          "breaks": "NFR-1: an already-broken tree stops being attributable, so `verdict_of` cannot mark the affected mutants INDETERMINATE and reports them as unprotected requirements instead — a finding that blames the corpus for a failure it did not cause",
+          "symbol_sha": "sha256:c4a1df42e3ce6cdd5b26b1db667ce4f62cbcbbac3e0b5390bd6efdf732f7e264"
+        }
+      ]
+    }
+  ]
+}

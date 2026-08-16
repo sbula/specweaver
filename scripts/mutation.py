@@ -280,7 +280,13 @@ def run_baseline(sandbox: Path, *, tests: str = "tests") -> Baseline:
     collected *nothing* is not green either: it would certify a tree it never ran.
     """
     env = _mutate.sandbox_env(sandbox)
-    cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider", tests]
+    # `-n auto` because this is a whole-suite run, exactly like `_mutate.run_one`'s unscoped path,
+    # which has always added it. Measured 2026-08-16 in a real sandbox: 291.2s serial against 77.3s
+    # here — 3.8x, and 69% of a session that did 129.5s of mutant work. A warm second serial run
+    # took 291.7s, so a cold `__pycache__` was not the cause; the flag simply was not there
+    # (`TECH-058`).
+    cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider"]
+    cmd += ["-n", "auto", tests]
     out, code = _run_rc(cmd, sandbox, env)
     return Baseline(green=code == 0, failures=_mutate.killers(out), code=code)
 
