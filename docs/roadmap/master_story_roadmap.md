@@ -187,7 +187,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🔴 **Multi-Language Test Support:**
-        *   `[ ]` **INT-US-03-SF01:** UN-RETIRED 2026-08-16 — retired into `D-VAL-03`, which is delivered. `sw implement` stays Python-only.
+        *   `[ ]` **INT-US-03-SF01:** RETIRED 2026-08-16 by `ADR-003` — integration owned by `D-INTL-08`. Replaces the 2026-08-13 retirement into a delivered capability, withdrawn in `d0943c36`.
+        *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
