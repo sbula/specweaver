@@ -29,22 +29,11 @@
 
 * **`INT-US-03-SF01` — Multi-Language Test Support:** *Pending Design.* Integrates `D-VAL-03` (Polyglot QA Runner, built ✅) into the `sw implement` loop for non-Python targets.
 
-  > **RETIRED 2026-08-16 by `ADR-003`.** The scope above is NOT descoped — it moves to
-  > `D-INTL-08` (Polyglot Implementation Loop), which owns its own integration and e2e proof as FRs
-  > rather than a separate add-on restating them.
-  >
-  > **This replaces an invalid retirement, and the history is the point.** On 2026-08-13 the scope
-  > was retired into `D-VAL-03` — **delivered**, so `finished-stories-immutable` forbade it
-  > accepting the FR and the scope landed nowhere at all. Withdrawn 2026-08-16 (`d0943c36`), and
-  > `D-INTL-08` was minted to hold it. The shape is now rejected mechanically by
-  > `scripts/check_retirement_targets.py`; see `ADR-003`'s 2026-08-16 addendum.
-  >
-  > **The gap is real and measured 2026-08-16.** `resolve_runner` is polyglot and picks a runner
-  > from `package.json` / `Cargo.toml` / `build.gradle` / `pom.xml`, but `sw implement` can never
-  > reach a non-Python branch: the pipeline hardcodes `src/{stem}.py` and `tests/test_{stem}.py`
-  > (`workflows/implementation/interfaces/cli.py:75,82,95,244`), and the generator tags artifacts
-  > `"python"` and strips ` ```python ` fences (`generator.py:103,162,201`). No `--language` flag
-  > exists.
+  > **UN-RETIRED.** Ships `D-VAL-03` ✅; this story owns its integration and e2e proof. The seam
+  > is broken, not merely untested: `sw implement` hardcodes `src/{stem}.py`
+  > (`workflows/implementation/interfaces/cli.py:75,82,95,244`) and the generator tags artifacts
+  > `"python"` (`generator.py:103,162,201`), so `resolve_runner` never reaches a non-Python branch.
+  > `D-INTL-08` is unbuilt and owns its own.
 
 * **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
 

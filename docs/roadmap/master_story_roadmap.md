@@ -106,10 +106,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Security Defenses:**
         *   `[ ]` **E-VAL-03:** AST Prompt Injection Sanitization
     *   🟡 **Enforce Internal Architecture:**
+        *   `[ ]` **INT-US-01-SF02:** Enforce Internal Architecture
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
         *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
         *   `[ ]` **E-UI-04:** CLI Command Arch Separation (Discovery vs Validation)
     *   🟡 **Configurable Multi-Stage Reviews:**
+        *   `[ ]` **INT-US-01-SF03:** Configurable Multi-Stage Reviews
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
