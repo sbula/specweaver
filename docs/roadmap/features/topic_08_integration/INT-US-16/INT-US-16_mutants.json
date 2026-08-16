@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "feature": "INT-US-16",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The journey is only proven while the runner actually drains the collector",
+      "scope": [
+        "tests/e2e/interfaces/test_implement_usage_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "flush-becomes-a-no-op",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "flush_telemetry",
+          "old": "llm.flush(db)",
+          "new": "pass",
+          "breaks": "the collector accumulates records in memory and the run ends without persisting them, so `sw usage` shows nothing for a run that really did spend tokens",
+          "symbol_sha": "sha256:66e7a63952b4c1a5697bb8d0c3135169f96bd44ec7872a0bbe7c3be0fe30c573"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The collector must be installed by the factory, not assumed by the test",
+      "scope": [
+        "tests/integration/workflows/implementation/test_implement_collector_wiring.py",
+        "tests/e2e/interfaces/test_implement_usage_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "telemetry-wrap-never-applied",
+          "file": "src/specweaver/infrastructure/llm/factory.py",
+          "symbol": "create_llm_adapter",
+          "old": "if telemetry_project:",
+          "new": "if False:",
+          "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded — the exact silent-no-op shape this contract exists to catch",
+          "symbol_sha": "sha256:20796656eab415b64c6179cb0fab7ec974c006cc7fa2c8688bbd78d90117f5cc"
+        }
+      ]
+    }
+  ]
+}

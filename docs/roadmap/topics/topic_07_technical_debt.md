@@ -110,6 +110,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-052` 🔴: `sw usage --since` Crashes on Unparseable Input**
+  > [Description](../features/topic_07_technical_debt/TECH-052/TECH-052_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1 building the hostile-input bucket.)_ | `datetime.fromisoformat(since)` at
+  > `llm/interfaces/cli.py:161` has no guard, so any typo in `--since` gives the user a traceback instead of an error. Probed: exit 1, `ValueError`. It sits on the READ half of the US-16 cost journey,
+  > where a traceback reads as "telemetry is broken" rather than "the date was wrong" — and it is the one input on that command never given the treatment its two other failure modes already have.
+
 * **`TECH-041` 🔴: The Code-Level DAL Override Is Unproven End to End (Needs a Scripted LLM)**
   > [Description](../features/topic_07_technical_debt/TECH-041/TECH-041_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `C-VAL-03`'s DAL override is proven
   > at spec level and **not** at code level: every link is tested in isolation and the chain never. The test that appeared to prove it never executed `sw implement` at all. Needs a scripted LLM
@@ -162,6 +167,12 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-051` 🔴: 24 Tests Look Like Coverage and Never Run**
+  > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1, checking whether the runner's telemetry flush was already covered.)_ | Measured
+  > across 568 test files: 13 are excluded by the `live` marker (legitimate) and **12 are uncollectable at all** — 9 empty stubs, and **3 files whose class holds `test_*` methods but is not named
+  > `Test*`**, hiding **24 tests**. `test_runner_telemetry.py` is one: six tests for the runner's flush, including the only claim that a failed run still records what it spent. They read as coverage
+  > in a listing and in review, which is how a story comes to skip a test it thinks exists. `R6` judges the class NAME and never asks whether it is collected. Ship the census gate with the fix.
+
 * **`TECH-047` 🟢: Nothing Runs the FR-Coverage Gate Across Delivered Work**
   > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) | _(2026-08-13 — from the coverage audit.)_ | `check_fr_coverage.py` takes a story ID, so it fired only when a human
   > remembered a story. **DELIVERED 2026-08-13:** `check_fr_sweep.py` in the `doc` gate, ratcheting the count of **uncited requirements** (265) rather than of blocked capabilities (45) — a list of

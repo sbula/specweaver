@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07`, and no longer gated on `TECH-014`).
 > **This queue does not route technical debt.** The backlog pass this note used to call for is
-> done: **5 of 45 TECH tickets are open**, and **none** asserts a claim against a candidate below —
+> done: **7 of 52 TECH tickets are open**, and **none** asserts a claim against a candidate below —
 > see **Debt Sequencing**. (`TECH-017` was the last one that did; delivered 2026-08-14, it left the
 > section.)
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
@@ -69,7 +69,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*Open debt only — **5 of 45 tickets**. A delivered ticket leaves this section; the permanent
+*Open debt only — **7 of 52 tickets**. A delivered ticket leaves this section; the permanent
 record is the [TECH ledger](#-technical-debt-tech) at the foot of this file and each ticket's own
 entry in [topic_07](topics/topic_07_technical_debt.md), which is also where status is decided.
 Statuses appear below purely to rank the open set — keeping a delivered ticket here to narrate how
@@ -92,6 +92,8 @@ a queue entry.
 | `TECH-010` 🔴 | Needs a long-lived-process executor abstraction, not a mechanical migration. Independent; fits anywhere. |
 | `TECH-011` 🔴 | Load-time params validation, uniformly across every step type. Independent; fits anywhere. |
 | `TECH-013` 🔴 | Not queue-eligible — fold into the next API-touching story. |
+| `TECH-051` 🔴 | 24 tests never run because their class is not named `Test*`. Independent, but **read it before trusting any coverage claim** — it is why a story skipped a test it thought existed. |
+| `TECH-052` 🔴 | One unguarded `datetime.fromisoformat`. Small enough to fold into the next commit touching `llm/interfaces/cli.py`. |
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
@@ -667,3 +669,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-048:** [A Design the FR Gate Cannot Parse Reports "Cannot Run", Not "Failed"](features/topic_07_technical_debt/TECH-048/TECH-048_design.md)
     *   `✅` **TECH-049:** [Mutation Campaign Corpus and Session Gate](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
     *   `✅` **TECH-050:** [28 Tests Fail Whenever an Agent Runs Them](features/topic_07_technical_debt/TECH-050/TECH-050_design.md)
+    *   `[ ]` **TECH-051:** [24 Tests Look Like Coverage and Never Run](features/topic_07_technical_debt/TECH-051/TECH-051_design.md)
+    *   `[ ]` **TECH-052:** [`sw usage --since` Crashes on Unparseable Input](features/topic_07_technical_debt/TECH-052/TECH-052_design.md)
