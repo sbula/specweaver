@@ -37,7 +37,7 @@ This document tracks all capabilities related to LLM integration, specification 
   > interview plus a separate synthesis pass emitting SpecWeaver's spec contract, verified by the unchanged `INT-US-02` gates. Guidance ships as `C-VAL-05`-class rubric content, not code. **BLOCKED on
   > `C-FLOW-11`**; soft dep `C-VAL-05`. Consumed by `INT-US-02-SF03`.
 * **`D-INTL-08` 🔜: Polyglot Implementation Loop**<br>
-  > [Description](../features/topic_04_intelligence/D-INTL-08/D-INTL-08_design.md) | _(2026-08-16)_ | `D-VAL-03` shipped five language runners and `resolve_runner` sniffs manifests for them, but
+  > _(2026-08-16)_ | `D-VAL-03` shipped five language runners and `resolve_runner` sniffs manifests for them, but
   > `sw implement` can never present a non-Python target: paths, artifact tags and the fence stripper are hardcoded to `.py` at four points, and no `--language` flag exists. Routes the loop to the
   > runners that already exist; builds no runner. Owns the seam for `INT-US-03-SF01`, whose retirement into the delivered `D-VAL-03` was invalid.
 

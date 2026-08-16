@@ -4,7 +4,7 @@
 
 """`sw implement` installs a TelemetryCollector, and the runner drains it. INT-US-16 CB-1.
 
-Proves: INT-US-16 FR-3
+Proves: INT-US-16 FR-3, INT-US-16 FR-2
 
 The seam has three links and this file pins all of them at the boundary the `implement` command
 owns: the command builds an adapter, the adapter must arrive on `RunContext.model.llm` as a
@@ -222,8 +222,13 @@ class TestImplementInstallsTelemetryCollector:
 
         assert result.exit_code == 1, result.output
         assert not mock_runner_class.called, "the command built a pipeline it cannot attribute"
-        # Pins today's wording so CB-2's improvement to it is a visible change, not a silent one.
-        assert shows(result.output, "Project 'None' not found"), result.output
+
+        # FR-2, CB-2. Until this boundary the message was `Project 'None' not found` — the settings
+        # loader describing a failed database lookup on the string `None`, which tells the user
+        # nothing about what to do. The exit code is unchanged; what changed is what it says.
+        assert shows(result.output, "No active project"), result.output
+        assert shows(result.output, "sw use <name>"), result.output
+        assert not shows(result.output, "Project 'None' not found"), result.output
 
 
 class TestImplementRecordsSpendOnCompletedRun:

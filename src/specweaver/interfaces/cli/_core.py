@@ -38,7 +38,14 @@ console = Console()
 
 _T = TypeVar("_T")
 
-__all__ = ["_require_active_project", "app", "console", "get_db", "logger", "run_repo_op"]
+__all__ = [
+    "_require_active_project",
+    "app",
+    "console",
+    "get_db",
+    "logger",
+    "run_repo_op",
+]
 
 
 def run_repo_op(fn: Callable[[WorkspaceRepository], Awaitable[_T]]) -> _T:

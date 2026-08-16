@@ -185,14 +185,19 @@ def draft(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.infrastructure.llm.factory import (
+        LLMAdapterError,
+        build_adapter_for_project,
+    )
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
 
     db = _core.get_db()
-    project = _core.run_repo_op(lambda r: r.get_active_project())
+    # INT-US-16 FR-2/FR-4, extended here from `sw implement`: this command had the same two
+    # defects — an unhelpful refusal, and a configured price that never reached the run.
+    project = _core._require_active_project()
     try:
-        settings = load_settings(db, project, llm_role="draft")  # type: ignore[arg-type]
-        settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
+        settings = load_settings(db, project, llm_role="draft")
+        settings, adapter = build_adapter_for_project(db, settings, project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -284,13 +289,18 @@ def review(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.infrastructure.llm.factory import (
+        LLMAdapterError,
+        build_adapter_for_project,
+    )
 
     db = _core.get_db()
-    project = _core.run_repo_op(lambda r: r.get_active_project())
+    # INT-US-16 FR-2/FR-4, extended here from `sw implement`: this command had the same two
+    # defects — an unhelpful refusal, and a configured price that never reached the run.
+    project = _core._require_active_project()
     try:
-        settings = load_settings(db, project)  # type: ignore[arg-type]
-        settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
+        settings = load_settings(db, project)
+        settings, adapter = build_adapter_for_project(db, settings, project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

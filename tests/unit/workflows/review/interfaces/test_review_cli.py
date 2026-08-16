@@ -10,6 +10,7 @@ from pathlib import Path  # noqa: TC003
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
 from typer.testing import CliRunner
 
 # Force import to test decentralized location (Red Phase)
@@ -27,6 +28,16 @@ def _mock_db(tmp_path: Path, monkeypatch):
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
+    # `_core` binds `get_db` with a `from … import`, so patching only `db_bootstrap.get_db` leaves
+    # `run_repo_op` on the real database — the target `_core.py:7` names explicitly.
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+
+    # `sw review` now refuses without an active project (INT-US-16 FR-2, extended from
+    # `sw implement`): telemetry is attributed per project, so a review that cannot be attributed
+    # is one whose cost disappears. These tests are about the review VERDICT, so they get a real
+    # active project rather than the guard being softened to keep them green.
+    register_test_project(db, "review_cli_test", str(tmp_path))
+    set_test_active_project(db, "review_cli_test")
     return db
 
 

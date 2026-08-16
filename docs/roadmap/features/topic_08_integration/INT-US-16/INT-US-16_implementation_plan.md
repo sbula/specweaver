@@ -237,6 +237,24 @@ warning appears (through `tests/rendering.py::shows()` per NFR-4, because Rich s
 | R-3 | FR-3's `RunContext` spy couples the test to `PipelineRunner`'s construction | Accept: that coupling **is** the seam under test. A weaker assertion (that `create_llm_adapter` was called with a non-None project) proves the call and not the wiring, and Red/Blue already rejected one vacuous phrasing of FR-3 |
 | R-4 | FR-2's warning becomes noise in the existing tests' output | R-3 says they assert exit codes only; verify in CB-2 rather than assume |
 
+## The duplication baseline, and why it is a baseline
+
+CB-2 extended FR-2 and FR-4 to `sw review`, which made the duplication gate object: the same block
+stands in `sw implement` and twice in `sw review`. **Three homes for a shared helper were tried and
+`tach` refused all three** — `interfaces/cli` may not depend on `infrastructure/llm`;
+`infrastructure/llm` may not depend on `core.config.bootstrap`; `workflows/*/interfaces` may not
+depend on `llm.interfaces`. Each would have needed new module edges, which is an architectural
+switch and not something a duplication finding justifies.
+
+What *could* move legally did: `factory.build_adapter_for_project` now holds the three lines that
+carried the FR-4 defect, exposed in `tach.toml`. What remains repeated is the import block, the
+`_require_active_project()` call and two `except` clauses turning errors into console text —
+**presentation, which the boundaries deliberately keep per-command**. Baselined 2026-08-16 with the
+count re-frozen at 122; the call sites carry comments saying why.
+
+If a fourth caller appears, revisit — three is where the architecture and the detector disagree,
+and four is where the disagreement is worth resolving with a module edge.
+
 ## Recorded so they are not re-asked (Phase 4, Q9)
 
 - **Flush failure.** `NFR-1` says swallow-and-log. `TelemetryCollector.flush` already documents

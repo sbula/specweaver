@@ -36,6 +36,54 @@ def _get_adapter_class(provider: str) -> Any:
         ) from e
 
 
+def build_adapter_for_project(db: Any, settings: Any, project: str) -> tuple[Any, Any]:
+    """A telemetry-attributed adapter for `project`, priced from the user's own rates.
+
+    `INT-US-16` CB-2. These three lines stood in `sw implement` and twice in `sw review`, and
+    because they were copies rather than a call, **the same defect was in all three**: none passed
+    `cost_overrides`, so a rate set with `sw costs set` was echoed back by `sw costs` and then
+    ignored by every run — priced from the built-in table instead, or `0.0` for a model absent
+    from it.
+
+    Deliberately narrow. Two things that looked shareable are not, and `tach` said so rather than
+    a reviewer: loading settings would drag `core.config.bootstrap` into `llm`, and turning
+    `LLMAdapterError` / `ValueError` into a message and an exit code is presentation. Both stay at
+    the call site. What is left is the part that was actually wrong everywhere.
+    """
+    return create_llm_adapter(
+        settings,
+        telemetry_project=project,
+        cost_overrides=load_cost_overrides(db),
+    )[:2]
+
+
+def load_cost_overrides(db: Any) -> dict[str, tuple[float, float]]:
+    """User-configured model rates from `llm_cost_overrides`, or `{}` if unreadable.
+
+    INT-US-16 FR-4. `create_llm_adapter` has always accepted `cost_overrides` and, until this was
+    written, **no command supplied it** — so a rate set with `sw costs set` was echoed back by
+    `sw costs` and then ignored by every run, which priced from the built-in table instead, or at
+    `0.0` for a model absent from it.
+
+    Never raises: a pricing table that fails to load must not stop a run, for the same reason
+    `TelemetryCollector.flush` swallows its own failures. Telemetry observes the work; it is never
+    a precondition for it.
+    """
+    import anyio
+
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _read() -> dict[str, tuple[float, float]]:
+        async with db.async_session_scope() as session:
+            return await LlmRepository(session).get_cost_overrides()
+
+    try:
+        return anyio.run(_read)
+    except Exception:
+        logger.warning("Could not load cost overrides; falling back to default pricing")
+        return {}
+
+
 def create_llm_adapter(
     settings: SpecWeaverSettings,
     *,

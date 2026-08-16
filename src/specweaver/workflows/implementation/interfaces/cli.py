@@ -210,19 +210,27 @@ def implement(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.infrastructure.llm.factory import (
+        LLMAdapterError,
+        build_adapter_for_project,
+    )
 
     db = _core.get_db()
-    project = _core.run_repo_op(lambda r: r.get_active_project())
+    # INT-US-16 FR-2: telemetry is attributed per active project, so a run that cannot be
+    # attributed cannot run. This used to fail at `load_settings` with `Project 'None' not found` —
+    # a database lookup, not the thing the user has to do. FR-4: the adapter is built through
+    # `build_adapter_for_project`, which is where `cost_overrides` finally reaches a run.
+    project = _core._require_active_project()
     try:
-        settings = load_settings(db, project)  # type: ignore[arg-type]
-        settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
+        settings = load_settings(db, project)
+        settings, adapter = build_adapter_for_project(db, settings, project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] LLM configuration failed: {exc}")
         raise typer.Exit(code=1) from exc
+
     if settings and getattr(settings, "llm", None):
         settings.llm.temperature = 0.2  # Low temperature for code
 

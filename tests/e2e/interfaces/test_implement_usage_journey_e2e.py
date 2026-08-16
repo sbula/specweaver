@@ -4,7 +4,7 @@
 
 """What a run spent is visible in `sw usage`. INT-US-16 CB-1.
 
-Proves: INT-US-16 FR-1
+Proves: INT-US-16 FR-1, INT-US-16 FR-4
 
 **Why FR-1 is only the token half.** The design wrote the US-16 journey as one e2e asserting tokens
 *and* a USD figure priced from `sw costs set`. Those are two claims, and only one of them holds:
@@ -121,6 +121,22 @@ def _total_token_cells(output: str) -> list[int]:
     return found
 
 
+def _cost_cells(output: str) -> list[str]:
+    """Every `Cost (USD)` cell in a rendered `sw usage` table, as printed.
+
+    Returned raw rather than parsed: Rich truncates the column, so `$0.00000` and `$12408.0` both
+    arrive shortened. The LEADING characters survive, which is why FR-4's rate is chosen large
+    enough that a priced row and an unpriced one differ in their first two characters.
+    """
+    found: list[str] = []
+    for line in output.splitlines():
+        if not line.startswith("│"):
+            continue
+        cells = [c.strip() for c in line.strip("│").split("│")]
+        found.extend(c for c in cells if c.startswith("$"))
+    return found
+
+
 class TestImplementSpendIsVisibleInUsage:
     """The US-16 benefit, end to end: run a command, then ask what it cost."""
 
@@ -194,3 +210,50 @@ class TestImplementSpendIsVisibleInUsage:
         # question, and it is width-independent.
         assert _total_token_cells(usage.output) == [], usage.output
         assert shows(usage.output, "No usage data recorded"), usage.output
+
+
+class TestConfiguredRateReachesTheRun:
+    """FR-4 — a rate set with `sw costs set` prices what `sw usage` reports.
+
+    **Red when written, and for the right reason.** `create_llm_adapter` has always accepted
+    `cost_overrides` (`factory.py:43`), and no command has ever passed it: `cli.py:219`,
+    `flow/interfaces/cli.py:96` and `review/…/cli.py:195,293` all omit the keyword, and the only
+    reader of `LlmRepository.get_cost_overrides()` in `src/` is `sw costs` itself, for display. So
+    the user sets a price, `sw costs` echoes it back, and every run prices from the built-in table —
+    or `0.0` for a model absent from it, with the fact buried in a `logger.warning`.
+    """
+
+    #: Large on purpose. Rich truncates the Cost column, so `$0.00000` and a priced figure must
+    #: differ in their FIRST characters to be told apart at any terminal width.
+    _RATE_PER_1K = 1000.0
+
+    def test_the_rate_the_user_set_is_the_rate_that_is_reported(self, tmp_path: Path) -> None:
+        """[Happy] `sw costs set` → `sw implement` → `sw usage` shows a priced, non-zero cost."""
+        assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
+        assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
+        priced = runner.invoke(
+            app, ["costs", "set", _MODEL, str(self._RATE_PER_1K), str(self._RATE_PER_1K)]
+        )
+        assert priced.exit_code == 0, priced.output
+
+        spec = tmp_path / "specs" / "greeter_spec.md"
+        spec.parent.mkdir(parents=True, exist_ok=True)
+        spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
+
+        with (
+            patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
+            patch(
+                "specweaver.infrastructure.llm.factory._get_adapter_class",
+                return_value=_FakeGeminiAdapter,
+            ),
+        ):
+            runner.invoke(app, ["implement", str(spec), "--project", str(tmp_path)])
+
+        usage = runner.invoke(app, ["usage"])
+        assert usage.exit_code == 0, usage.output
+
+        costs = _cost_cells(usage.output)
+        assert costs, f"no Cost cell parsed from:\n{usage.output}"
+        assert all(not c.startswith("$0") for c in costs), (
+            f"the configured rate never reached the run — costs read {costs}"
+        )

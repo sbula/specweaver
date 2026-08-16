@@ -42,7 +42,7 @@
   "src/specweaver/assurance/validation/interfaces/cli_drift.py <-> src/specweaver/workflows/review/interfaces/cli.py @160e5d70ab8a": {
     "lines": 10,
     "first": "src/specweaver/assurance/validation/interfaces/cli_drift.py:56",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:268"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:273"
   },
   "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py <-> src/specweaver/assurance/validation/rules/code/c04_coverage.py @a536cb106114": {
     "lines": 11,
@@ -71,7 +71,7 @@
   },
   "src/specweaver/core/flow/engine/store.py <-> src/specweaver/graph/core/store/repository.py @521d1386da74": {
     "lines": 14,
-    "first": "src/specweaver/core/flow/engine/store.py:116",
+    "first": "src/specweaver/core/flow/engine/store.py:147",
     "second": "src/specweaver/graph/core/store/repository.py:48"
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
@@ -429,20 +429,25 @@
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:15",
     "second": "src/specweaver/workflows/review/interfaces/cli.py:16"
   },
-  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @488a06fb33c5": {
-    "lines": 23,
+  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @71ee4212ac26": {
+    "lines": 15,
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:205",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:279"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:284"
   },
   "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @b7d04899b60c": {
     "lines": 11,
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:195",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:268"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:273"
   },
-  "src/specweaver/workflows/review/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @929d32400925": {
+  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @b9ed7bd7d957": {
+    "lines": 13,
+    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:223",
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:300"
+  },
+  "src/specweaver/workflows/review/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @473e61974bd1": {
     "lines": 9,
-    "first": "src/specweaver/workflows/review/interfaces/cli.py:292",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:194"
+    "first": "src/specweaver/workflows/review/interfaces/cli.py:302",
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:199"
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @384dc5f05d84": {
     "lines": 30,

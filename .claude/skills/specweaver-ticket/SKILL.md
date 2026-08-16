@@ -133,9 +133,35 @@ defects worth reporting.
 > to find the introducing commit and the pre-corruption value. A mechanical rename commit is the
 > usual culprit and typically damaged more than one ticket.
 
-## Phase 3: Create the Design-Doc Stub
+## Phase 3: Create the Design-Doc Stub — **TECH tickets only**
 
-Every ticket has `docs/roadmap/features/<topic_dir>/<ID>/<ID>_design.md`:
+> [!CAUTION]
+> **A capability is minted as a TOPIC ENTRY and nothing else. Do not write it a design document.**
+> There is a level between the registry and the design: the decision to build it. Creating a stub
+> at mint time takes that decision on someone's behalf and inflates the design corpus with
+> documents for work nobody has scheduled.
+>
+> Measured 2026-08-16 across 153 capabilities: **67 of the 82 unbuilt ones have no feature
+> directory at all**, while **54 of the 62 delivered ones do** — the design document appears when
+> the work is picked up. Of the 15 unbuilt exceptions, twelve are active routing-queue candidates
+> and three were minted the same day by an agent following this phase as if it applied to
+> capabilities. `A-VAL-03` is the reference shape: a topic entry, no directory.
+>
+> **TECH is genuinely different** and that is why this phase exists: its authoritative registry is
+> `ls docs/roadmap/features/topic_07_technical_debt/`, one directory per ticket, so a TECH ticket
+> without a directory does not exist. Capabilities are registered in the matrix and the topic doc,
+> where the entry *is* the artefact.
+>
+> | Family | Minting creates | Design document |
+> |---|---|---|
+> | **TECH** | registry entry **and** a design-doc stub | the stub, replaced by `specweaver-design` |
+> | **Capability** | the topic entry and matrix cell **only** | written when `specweaver-design` runs |
+>
+> Research that outlives the ticket — a census, a measurement, an argument — goes in
+> `docs/analysis/`, not into a design document written early to hold it. An `R-ENTRY` topic entry
+> is four lines; that is the point of it, not a limit to route around.
+
+Every TECH ticket has `docs/roadmap/features/<topic_dir>/<ID>/<ID>_design.md`:
 
 ```markdown
 # Design: <Title — the same words used in the registry entry>

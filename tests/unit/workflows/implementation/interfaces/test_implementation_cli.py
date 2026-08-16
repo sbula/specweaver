@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
 from typer.testing import CliRunner
 
 # Force import to test decentralized location (Red Phase)
@@ -35,6 +36,19 @@ def _mock_db(tmp_path: Path, monkeypatch):
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
+    # `_core` does `from … import get_db`, so the name is bound at ITS import time and patching
+    # `db_bootstrap.get_db` alone leaves `_core.run_repo_op` on the real database — the target
+    # `_core.py:7` names explicitly. Harmless while these tests patched `load_settings` and never
+    # asked the repository anything; not harmless now that the command reads the active project.
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+
+    # `sw implement` refuses without an active project (INT-US-16 FR-2), since telemetry is
+    # attributed per project. These tests are about output PATHS and used to reach their
+    # assertions only because they patch `load_settings` — the guard now sits before it. Giving
+    # them a real active project is the honest fix; softening the guard to keep them green would
+    # be the tail wagging the dog.
+    register_test_project(db, "implement_cli_test", str(tmp_path))
+    set_test_active_project(db, "implement_cli_test")
     return db
 
 

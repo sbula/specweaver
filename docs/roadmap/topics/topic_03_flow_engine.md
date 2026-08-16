@@ -21,6 +21,11 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`D-FLOW-03` ✅: Static Model Routing** (Legacy: 3.14)<br>
   > _(split from original 3.12)_ | Map task types to models in config: `review → claude`, `implement → gemini-pro`. Uses registry to resolve provider+model. No AI, no learning — pure user
   > configuration. **Complete:** 3568 tests total.
+* **`D-FLOW-05` 🔜: Model Catalogue Adoption**
+  > [Census](../../analysis/model_pricing_2026-08-16.md) | _(2026-08-16)_ | Moves every consumer of model facts onto `C-FLOW-13` and deletes the per-adapter `default_costs`
+  > dicts, so the catalogue is the only source rather than a second one. Blocked on `C-FLOW-13`. Includes the user-visible half: `sw costs` lists only what you have overridden, so nobody can see the
+  > 19 built-in rates their runs are actually priced with — the command that answers "what am I paying" cannot show the default answer.
+
 * **`D-FLOW-04` ✅: Unified Runner Architecture** (Legacy: 3.16)<br>
   > _(new)_ | Refactor single-shot CLI commands (`sw review`, `sw draft`, etc.) to use dynamic 1-step pipelines via `PipelineRunner`. Standardizes execution, telemetry, and state tracking. Includes
   > project-wide logging reform. **Complete**: 3589 tests.
@@ -53,6 +58,12 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(new)_ | Allows the runner to dispatch authenticated webhooks or trigger remote Jenkins/GitHub Actions upon successful validation.
 * **`C-FLOW-09` 🔜: DAL CI/CD Risk Evaluation**
   > _(new)_ | Auto-rejects PRs if changes cause architectural degradation (e.g., DAL-C attempting to import DAL-A).
+* **`C-FLOW-13` 🔜: Model Catalogue**
+  > [Census](../../analysis/model_pricing_2026-08-16.md) | _(2026-08-16 — from `INT-US-16` CB-2, asking who keeps the price table true.)_ | `E-FLOW-03` registered
+  > PROVIDERS; nothing registers MODELS. All 19 rates live as `default_costs` dicts in five adapter classes, so a new Gemini needs no new adapter and still needs a source change, a release and an
+  > upgrade. Measured: `qwen.py` untouched since 2026-05-04, three entries are dated preview builds providers retire, and `*-latest` aliases price a moving target with a fixed number. An unknown
+  > model reports **`$0.00`** behind a `logger.warning`. One versioned data file: pricing, serving adapter, capabilities, and how stale each answer is. Consumers switch over in `D-FLOW-05`.
+
 * **`C-FLOW-10` 🔜: Deferred Router Mapping (Advanced Routing & Conditional Flows)** (Legacy: 3.25)<br>
   > _(new)_ | Advanced routing beyond basic `C-FLOW-02` Router-Based Control: deferred/suspended routing with `GATE_PENDING` state persistence and resume (the `INT-US-04-SF05` "Advanced Routing &
   > Conditional Flows" integration target). Split from `C-FLOW-02` during capability-ID normalization — both were the legacy "3.25".
