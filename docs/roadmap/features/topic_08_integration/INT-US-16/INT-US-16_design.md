@@ -2,7 +2,7 @@
 
 - **Feature ID**: INT-US-16
 - **Phase**: Integration (Topic 08)
-- **Status**: APPROVED (2026-08-16 — FR-2 kept in this contract per AD-4)
+- **Status**: COMPLETE (2026-08-16). Approved with FR-2 kept in this contract per `AD-4`; FR-1 split into FR-1/FR-4 during CB-2 per `A.1c`.
 - **Design Doc**: docs/roadmap/features/topic_08_integration/INT-US-16/INT-US-16_design.md
 
 ## Feature Overview
@@ -112,9 +112,9 @@ is a unit-tier claim** — FR-1 is e2e, FR-2 and FR-3 are integration.
 |---|-----|----------------------|
 | NFR-1 | Telemetry never breaks the run | A flush failure SHALL be logged and swallowed, never propagated. Carried from the surface: `TelemetryCollector.flush` documents *"Never raises — telemetry failures are logged, not propagated"* (`collector.py:159-167`) |
 | NFR-2 | The proof makes no live API call | The e2e SHALL double the provider at `factory._get_adapter_class`, **not** at `create_llm_adapter`, so the real telemetry branch under test still executes. **[proof: meta — rule about tests, docs or the diff]** |
-| NFR-3 | Backward compatible | No schema change, no new CLI flag, no change to `sw implement`'s exit codes — a run with no active project still exits 1, with a better message. Every existing invocation is unaffected |
-| NFR-4 | The warning is legible on a wrapped terminal | The FR-2 assertion SHALL go through `tests/rendering.py::shows()`, since Rich soft-wraps at `COLUMNS` and a raw `in` check passes or fails on terminal width (`TECH-017`, twice, in cited proofs) |
-| NFR-5 | FR-1/FR-4 cannot pass on an empty table | `sw usage` prints *"No usage data recorded"* and **exits 0**, so asserting the exit code proves nothing. The e2e SHALL assert the scripted model name, a token count matching the scripted payload, and a non-zero USD figure, against an isolated `tmp_path` DB so no other test's rows can satisfy it |
+| NFR-3 | Backward compatible | No schema change, no new CLI flag, no change to `sw implement`'s exit codes — a run with no active project still exits 1, with a better message. **[proof: meta — rule about tests, docs or the diff]**: this constrains what the change may contain, not what the code does at runtime |
+| NFR-4 | The warning is legible on a wrapped terminal | The FR-2 assertion SHALL go through `tests/rendering.py::shows()`, since Rich soft-wraps at `COLUMNS` and a raw `in` check passes or fails on terminal width (`TECH-017`, twice, in cited proofs). **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-5 | FR-1/FR-4 cannot pass on an empty table | **[proof: meta — rule about tests, docs or the diff]** `sw usage` prints *"No usage data recorded"* and **exits 0**, so asserting the exit code proves nothing. The e2e SHALL assert the scripted model name, a token count matching the scripted payload, and a non-zero USD figure, against an isolated `tmp_path` DB so no other test's rows can satisfy it |
 
 ## External Dependencies
 
@@ -194,14 +194,14 @@ the journey test is written before the code that makes it pass (`ADR-003`):
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| — | Single feature | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-08-16. The one open question (AD-4 — whether FR-2's
-warning belongs here or in its own TECH ticket) was decided by the user: **it stays here**.
-**Next step**: `specweaver-dev` on CB-1 of
-`INT-US-16_implementation_plan.md` (APPROVED 2026-08-16). Its Execution Order **supersedes**
-this document's — the journey e2e is falsified by mutant, not by a red.
+**Current status**: **Feature complete 2026-08-16.** CB-1 `c8be134c`, CB-2 `f7a98a4c`. Closure
+gate run and green: `check_fr_coverage.py INT-US-16` exits 0, `tests.py feature INT-US-16` ok on
+integration and e2e.
+**Next step**: dogfood. The contract proves the number reaches the screen; whether the number is
+*right* is `C-FLOW-13` / `D-FLOW-05`, minted from this work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume from
 there with the matching skill.

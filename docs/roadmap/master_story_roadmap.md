@@ -64,7 +64,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
      right after INT-US-24 while the run-journey context is fresh, and it batches with the same
      high-criticality modules (DAL Batching Rule).
 
-> **Reserve** (integration-only epic-closers; backfill as slots free): `US-16`, `US-22`, `US-23`.
+> **Reserve** (integration-only epic-closers; backfill as slots free): `US-22`, `US-23`. (`US-16` closed 2026-08-16.)
 > **Not queue-eligible:** `US-17` (needs `B-VAL-04`), `US-19` (needs `C-FLOW-04`), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (fold into next API-touching story).
 
 ### 🔧 Debt Sequencing
@@ -429,10 +429,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Zero-Trust ACL:**
         *   `[ ]` **B-EXEC-02:** Tiered access rights & Provenance tracking
 
-### 🟡 US-16: AI Operations & Cost Routing
+### 🟢 US-16: AI Operations & Cost Routing
 **Benefit:** *I can see exactly how much money each agent is spending, detect LLM friction, and dynamically route tasks to cheaper models.*
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-16:** Base Integration Contract defined in [US-16_integration.md](topics/topic_08_integration/US-16_integration.md)
+    *   `✅` **INT-US-16:** Base Integration Contract defined in [US-16_integration.md](topics/topic_08_integration/US-16_integration.md) (Complete)
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
     *   `✅` **C-FLOW-01:** Telemetry DB

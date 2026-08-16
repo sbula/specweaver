@@ -1,8 +1,10 @@
 # US-16: AI Operations & Cost Routing - Integration Contracts
 
 ## Base Story Contract (`INT-US-16`)
-* **Status:** 🟡 In progress — [design APPROVED 2026-08-16](../../features/topic_08_integration/INT-US-16/INT-US-16_design.md);
-  CB-1 (collector wiring, seam pinned) committed; CB-2 (the journey e2e + two fixes) open.
+* **Status:** ✅ Done (2026-08-16) — [design](../../features/topic_08_integration/INT-US-16/INT-US-16_design.md)
+  APPROVED and COMPLETE; CB-1 `c8be134c` (collector wiring, seam pinned), CB-2 `f7a98a4c` (the
+  journey, and the two defects it exposed). All four FRs planned and cited:
+  `check_fr_coverage.py INT-US-16` exits 0, `tests.py feature INT-US-16` green on both tiers.
 * **Integration Description:** The Implementation Generator (`D-INTL-01`) must run under an adapter
   the Telemetry DB (`C-FLOW-01`) can account for, so that a real `sw implement` run — routed to its
   model by Static Routing (`D-FLOW-03`) — persists one `llm_usage_log` row per LLM call and
@@ -11,13 +13,17 @@
   project is given; the command places that collector on `RunContext.model.llm`; and
   `PipelineRunner._flush_telemetry` drains it in a `finally`, so a run that **fails** still records
   what it spent. Cost is priced from `sw costs set` where the user has set a rate.
-* **Verifiable Proof (CB-1):**
-  `tests/integration/workflows/implementation/test_implement_collector_wiring.py` — the collector
-  arrives on the `RunContext` the command itself builds (captured, never constructed); a real run's
-  rows carry the model that answered; a **failed** run still records its spend; no active project
-  stops the command before any adapter is built; and a project name carrying SQL metacharacters is
-  refused at registration rather than reaching the telemetry key.
-  CB-2 adds the `sw implement` → `sw usage` journey e2e.
+* **Verifiable Proof:** two files, both passing, neither skipping.
+  `tests/integration/workflows/implementation/test_implement_collector_wiring.py` (FR-2, FR-3) —
+  the collector arrives on the `RunContext` the command itself builds (captured, never
+  constructed); a real run's rows carry the model that answered; a **failed** run still records its
+  spend; no active project stops the command with a message naming the remedy; a project name
+  carrying SQL metacharacters is refused at registration rather than reaching the telemetry key.
+  `tests/e2e/interfaces/test_implement_usage_journey_e2e.py` (FR-1, FR-4) — `sw init` → `use` →
+  `costs set` → `implement` → `usage` shows that run's tokens and a rate the user configured, and a
+  second project that ran nothing shows none of it.
+  Strength, not just attribution: `INT-US-16_mutants.json` holds two campaigns; neutralising the
+  runner's flush or the collector wrap kills these tests, and the nightly session keeps asking.
 
 > **Why this contract was written after its capabilities shipped.** All four US-16 MVS entries were
 > `✅` while this file said `⬜ Pending` with `[Pending definition...]`, exactly the shape recorded

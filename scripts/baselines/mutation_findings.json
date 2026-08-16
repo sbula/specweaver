@@ -1,8 +1,4 @@
 {
-  "findings": {
-    "D-SENS-09 FR-97 orphans-empty": {
-      "runs": 1
-    }
-  },
+  "findings": {},
   "override_count": 0
 }
