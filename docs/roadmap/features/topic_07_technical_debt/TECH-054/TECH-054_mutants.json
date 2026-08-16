@@ -56,6 +56,42 @@
           "symbol_sha": "sha256:5e905772f5440f03ed1a99a740cba00e039ef84c7dfb9e4779b8badd285d1dcf"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Nothing writes over a command's documented output channel",
+      "scope": [
+        "tests/e2e/core/config/test_config_db_across_processes_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "bootstrap-prints-its-schema-again",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "bootstrap_database",
+          "old": "            logger.debug(\"LlmBase tables: %s\", LlmBase.metadata.tables.keys())",
+          "new": "            print(\"LlmBase tables:\", LlmBase.metadata.tables.keys())",
+          "breaks": "the config DB writes its schema to stdout on every bootstrap, so `sw run --json` is unparseable from its first line — the state it shipped in, undetected, through a full green suite",
+          "symbol_sha": "sha256:a154357849b432312400743199b02e17e73b2d4e493f4af0b08ef8493c09dfd2"
+        },
+        {
+          "id": "log-records-return-to-stdout",
+          "file": "src/specweaver/telemetry_logger.py",
+          "symbol": "setup_logging",
+          "old": "        console=Console(stderr=True), level=logging.WARNING, rich_tracebacks=True",
+          "new": "        console=Console(stderr=False), level=logging.WARNING, rich_tracebacks=True",
+          "breaks": "every warning and error is interleaved into the command's own output, which is what a bare `RichHandler()` did for as long as the comment above it claimed stderr",
+          "symbol_sha": "sha256:fd1b2a1dc73de354028811fe9ca09bbcdfb5c9f0b69197d7c7ec2bc6fad12cba"
+        },
+        {
+          "id": "the-active-project-never-changes",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "WorkspaceRepository.set_active_project",
+          "old": "        if active:\n            active.value = name",
+          "new": "        if active:\n            pass",
+          "breaks": "`sw use` reports the switch and does not perform it once an active project already exists, so the next process still resolves the old one — the round-trip half of this journey, and invisible to any test that stays in one process",
+          "symbol_sha": "sha256:2c29fa25e9af3db706cb4142fcc8d8cb0eee4a71c3666a76bc9e3c500a40542e"
+        }
+      ]
     }
   ]
 }

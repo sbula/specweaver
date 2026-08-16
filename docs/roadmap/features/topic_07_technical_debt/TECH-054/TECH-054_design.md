@@ -85,19 +85,32 @@ the repair belongs.
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Auto-detect finds the newest resumable run for the active project, whatever pipeline produced it | A developer whose run failed | runs `sw resume` with no arguments | the run that failed last is resumed — including one started from a YAML path, which today is invisible |
+| FR-2 | A command's stdout carries that command's output and nothing else | A script consuming `sw run --json` | pipes the stream to a JSON parser | every line parses, because neither the config-DB bootstrap nor the logger writes to stdout |
 
-One requirement, because both defects are the same three lines and the same missing query: the
-store can answer *"latest resumable run for this project"* directly, and `_resolve_resumable_run`
-should ask it rather than reconstructing the answer from a list of names that has nothing to do
-with what ran.
+FR-1 is one requirement because both of its defects are the same three lines and the same missing
+query: the store can answer *"latest resumable run for this project"* directly, and
+`_resolve_resumable_run` should ask it rather than reconstructing the answer from a list of names
+that has nothing to do with what ran.
+
+**FR-2 came from CB-2's journey and is the same shape as FR-1's**: two different components writing
+over a documented output channel, neither noticed because nothing asserted on the channel.
+`db_bootstrap.py` used three `print()` calls to dump its schema on every bootstrap, and
+`telemetry_logger.py` built its console handler under a comment reading *"Console handler (stderr,
+WARNING+ only)"* while `RichHandler()` with no console argument writes to **stdout**. Between them,
+`sw run --json` — *"NDJSON event stream (machine-readable)"* — emitted twelve schema lines and four
+log records around six real events.
+
+The proof is deliberately not `"Base tables" not in stdout`. Naming the string that used to be
+printed passes the moment somebody rewords the debug line, while the stream stays unparseable;
+asking whether the output is what it claims to be cannot be satisfied that way.
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Each journey must be able to fail | Proven by mutation, not by passing: neutralise the persistence each claim rests on and the journey must die. A journey over working machinery that no mutant can kill is describing the code. **[proof: meta — rule about tests, docs or the diff]** |
-| NFR-2 | No LLM, no network | Both journeys are about persistence and process boundaries. A pipeline that needs a model to prove its state survives is testing the wrong thing |
-| NFR-3 | Nothing is written to the user's real database | `SPECWEAVER_DATA_DIR` into `tmp_path`, the way `tests/e2e/conftest.py::_isolate_env` already does for the tier |
+| NFR-2 | No LLM, no network | Both journeys are about persistence and process boundaries. A pipeline that needs a model to prove its state survives is testing the wrong thing. Enforced by construction — every step is `action: bash` and no adapter is built — and by the tier's own `-m 'not live'` default. **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-3 | Nothing is written to the user's real database | `tests/e2e/conftest.py::_isolate_env` is `autouse` and points `SPECWEAVER_DATA_DIR` at `tmp_path`; the subprocesses inherit it. A pytest asserting this would be asserting its own harness. **[proof: meta — rule about tests, docs or the diff]** |
 
 ## Architectural Decisions
 
@@ -126,21 +139,30 @@ is done when its mutant kills it, not when it goes green.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature | — | ✅ | ✅ | 🔄 | ⬜ | ⬜ |
+| — | Single feature | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: CB-1 committed. The `D-FLOW-01` journey is green and FR-1 is proven — five
-mutants, all killed, pinned in `TECH-054_mutants.json`.
+**Current status**: DELIVERED 2026-08-16. Both journeys are green, FR-1 and FR-2 are proven, and
+all eight mutants in `TECH-054_mutants.json` are killed.
 
-**What CB-1 settled about the capability.** Resume splits into two halves and only one was covered.
-*Persistence* is well protected: neutralising it (`run.current_step = 0` before the loop) is killed
-by **14 tests across three tiers**. *Discovery* had nothing — the bundled-pipeline loop shipped
-broken through a full green suite, and no test in the repo could see it. That asymmetry, not the
-defect, is the reusable finding: coverage clustered on the mechanism and left the path a user takes
-to reach it unguarded.
+**Three defects, on two capabilities that had been `✅` for months and had no requirements to fail.**
+`sw resume` could not find a run it had persisted; the config DB printed its schema to stdout on
+every bootstrap; the logger's console handler wrote to stdout under a comment saying stderr.
+Between the last two, `sw run --json` — documented as a machine-readable NDJSON stream — carried
+twelve schema lines and four log records around six real events.
 
-**Next step**: CB-2 — `E-FLOW-01`, plus the three `print()` calls in
-`core/config/bootstrap/db_bootstrap.py:31-33` that dump the schema to **stdout** on every bootstrap.
-The other seventeen are ratcheted by `TECH-053` and paid down by `specweaver-dev` 3.2c on contact;
-that is the decision, not an omission.
+**What the boundaries settled about coverage.** Resume splits into two halves and only one was
+guarded. *Persistence* is well protected: neutralising it is killed by **14 tests across three
+tiers**. *Discovery* had nothing, and neither did the output channel — both shipped broken through a
+full green suite. The pattern is not missing tests in general but tests clustered on mechanisms,
+with the path a user takes to reach them unasserted. That is the argument for journey proofs, and
+it is the one thing here worth carrying to the other seventeen.
+
+**The seventeen remain ratcheted by `TECH-053`** and are paid down by `specweaver-dev` 3.2c on
+contact. That is the decision, not an omission.
+
+**Open, not owned by this ticket**: `tests/integration/scripts/test_mutation_seam.py` and
+`test_corpus_real_source.py` write to the real `scripts/baselines/mutation_findings.json` through
+`mutation.run_corpus`'s default ledger path — a test mutating a version-controlled baseline. Found
+here, belongs to the mutation tooling.

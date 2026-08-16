@@ -94,7 +94,7 @@ $PY scripts/mutation.py --install-timer   # nightly at 03:00
 > `docs/dev_guides/writing_mutation_campaigns.md`.
 
 > [!IMPORTANT]
-> **The suite is green on Linux as of 2026-08-12: `6485 passed, 11 skipped, 0 failed`.**
+> **The suite is green on Linux as of 2026-08-16: `7356 passed, 11 skipped, 0 failed` in 2m43 (`-n auto`).**
 > **There are no accepted deltas.** A failure you see is a failure you caused — do not go looking
 > for a "known Linux failure" list to file it under.
 >

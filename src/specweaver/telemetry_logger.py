@@ -28,6 +28,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import orjson
+from rich.console import Console
 from rich.logging import RichHandler
 
 # ---------------------------------------------------------------------------
@@ -157,7 +158,13 @@ def setup_logging(
     root_logger.addHandler(file_handler)
 
     # --- Console handler (stderr, WARNING+ only) ---
-    console_handler = RichHandler(level=logging.WARNING, rich_tracebacks=True)
+    # `TECH-054` FR-2: the comment above has always said stderr and the code has never done it.
+    # A bare `RichHandler()` builds a Console on **stdout**, so every warning and error landed in
+    # the command's own output — including inside `sw run --json`, whose stream is documented as
+    # machine-readable NDJSON and could not be parsed past its first log record.
+    console_handler = RichHandler(
+        console=Console(stderr=True), level=logging.WARNING, rich_tracebacks=True
+    )
     console_formatter = logging.Formatter("%(message)s", datefmt="[%X]")
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
