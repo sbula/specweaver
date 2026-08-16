@@ -6,6 +6,15 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-5.**
+
+> **Attribution added 2026-08-16 by `TECH-051` CB-2.** The plan predates the FR ledger
+> and named no requirement, so `check_fr_coverage.py A-VAL-01` reported all five as
+> *carried by no implementation plan* on a delivered DAL-A capability. Mapped from this
+> sub-feature's own scope — the C13 contract-drift rule — not assigned to make a number fall. The work is
+> unchanged; only the record of which requirement it discharged is new.
+
+
 ## Goal Description
 Implement `c13_contract_drift.py` inside the Validation Engine framework. This rule programmatically
 compares codebase CodeStructure paths (extracted from backend Python/TS) with the expected

@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-051
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: APPROVED 2026-08-16 — scope extended to cover `A-VAL-01`. CB-1 delivered.
+- **Status**: APPROVED 2026-08-16 — scope extended to cover `A-VAL-01`. CB-1 and CB-2 delivered.
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-051/TECH-051_design.md
 - **Origin**: 2026-08-16, `INT-US-16` CB-1. Checking whether the runner's telemetry flush was
   already covered at unit tier before writing a duplicate test. It looked covered. It was not.
@@ -208,26 +208,22 @@ removing either half of a redundant pair is how a property loses its last protec
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature (CB-1 → CB-3) | — | ✅ | ✅ | 🟡 CB-1 | 🟡 CB-1 | 🟡 CB-1 |
+| — | Single feature (CB-1 → CB-3) | — | ✅ | ✅ | 🟡 CB-2 | 🟡 CB-2 | 🟡 CB-2 |
 
 ## Session Handoff
 
-**Current status**: **CB-1 delivered.** 24 hidden tests now run; `test_grpc_parser.py` filled and
-the misplaced test rescued into it. `check_fr_coverage A-VAL-01` went 0 of 5 cited → FR-2 and FR-3
-cited. Package coverage measured across every tier that touches it: **52%**, with `grpc_parser.py`,
-`models.py` and `protocol_interfaces.py` at 100% and the rest still open.
+**Current status**: **CB-2 delivered.** All nine stubs filled; `sandbox/protocol` went from no real
+tests to **100% statement coverage across all 8 modules (248 statements)** — 52% after CB-1, and
+effectively zero exercise before. `check_fr_coverage.py A-VAL-01` **exits 0**: 5 of 5 FRs planned
+and cited, on a delivered DAL-A capability that reported 0 of 5 this morning.
 
-| module | after CB-1 |
-|---|---|
-| `grpc_parser.py` · `models.py` · `protocol_interfaces.py` | **100%** |
-| `factory.py` | 47% |
-| `interfaces/tool.py` | 54% |
-| `atom.py` | 29% |
-| `openapi_parser.py` | 26% |
-| `asyncapi_parser.py` | 23% |
+FR-5 was not written but **found**: `test_c13_contract_drift.py` already proved it and nothing
+pointed the ledger at it. Cited only after reading `test_c13_fails_when_drift_detected`, which
+supplies two protocol endpoints and an AST carrying one and asserts the missing path is named —
+FR-5's promise rather than a restatement of it.
 
-The non-zero figures on the last five are import-time lines, not exercise.
+The four A-VAL-01 implementation plans predate the FR ledger and named no requirement, so all five
+FRs read as *carried by no plan*. Each now declares what it owns, mapped from its own sub-feature
+title rather than assigned to make a number fall.
 
-**Next step**: CB-2 — fill the remaining eight stubs, starting with `openapi_parser.py`, whose
-`if "paths" not in parsed:` still survives a mutant against the whole suite. A-VAL-01 FR-1, FR-4 and
-FR-5 remain uncited, and all five FRs are still carried by no implementation plan.
+**Next step**: CB-3 — the collection check itself, zero-tolerance, which the repo can now satisfy.

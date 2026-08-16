@@ -2,6 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""C13 compares the code's AST against a parsed protocol schema and reports what drifted.
+
+Proves: A-VAL-01 FR-5
+
+**Citation added 2026-08-16 by `TECH-051` CB-2, after reading the tests rather than counting them.**
+`test_c13_fails_when_drift_detected` supplies two protocol endpoints and an AST carrying one, then
+asserts `Status.FAIL` with the missing path named in the finding — which is FR-5's promise
+(*"emits ERRORs on missing/mismatched signatures"*) rather than a restatement of it. The file was
+already here and already passing; nothing pointed the ledger at it, so `A-VAL-01` reported FR-5 as
+proven by nothing while this ran green on every commit.
+"""
+
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c13_contract_drift import C13ContractDriftRule
 
