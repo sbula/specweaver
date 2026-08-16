@@ -69,42 +69,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*At most **three** open tickets — the ones that change how you read the rest of the roadmap. **6 of
-58 are open** and **two** meet the bar; the rest are listed nowhere here on purpose. A delivered ticket leaves this
-section; the permanent record is the [TECH ledger](#-technical-debt-tech) at the foot of this file
-and each ticket's own entry in [topic_07](topics/topic_07_technical_debt.md), which is also where
-status is decided. Statuses appear below purely to rank the open set — keeping a delivered ticket
-here to narrate how it was closed is what let this section drift for a month.*
-
-**At most three, because a list of seven is a list nobody reads before picking work.** The bar is not age or
-severity: it is whether **not knowing this makes you misread something else**. A ticket that is
-independent, deferred by its own design, or explicitly not queue-eligible fails that bar however
-real it is — it costs nothing to discover when its file is next opened.
-
-**Asserts a claim on every queue candidate** — so picking one without reading this is blind.
-
-**None.** `TECH-053` was the last and left on delivery (2026-08-16); `TECH-017` before it
-(2026-08-14). Neither claim disappeared with its ticket — both became gates. `TECH-053`'s census
-runs as `check_delivered_claims.py` and its finding is stated where `✅` is actually read, at the top
-of [capability_matrix.md](capability_matrix.md); the tier-ratio guardrail runs as
-`check_proof_tier.py` and `check_audit_matrix.py`. **A ticket leaving this table because it shipped
-a gate is the intended ending** — what was a thing to remember is now a thing that fails.
-
-**Asserts a claim on one delivered capability**
+*Max 3 — open debt that changes how you read the rest. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
-| `TECH-041` 🔴 | **`C-VAL-03` Dynamic Risk Rulesets, which is `✅`.** Its code-level DAL override is proven link by link and never as a chain, so anything built on DAL risk gating inherits an unproven seam. Needs a scripted LLM; the lenient-DAL control is the load-bearing half. |
-| `TECH-031` 🟡 | **Container execution.** Three chained container-prepare defects, **latent only because `execution_mode` defaults to `"host"`** — they become live the day anyone changes that default. The vacuous-success shape that hid them is fixed. |
-
-**Deliberately not listed** — open, real, and none of them changes how you read anything else:
-`TECH-010` (needs a long-lived-process executor abstraction; independent), `TECH-011` (load-time
-params validation; independent), `TECH-013` (not queue-eligible — fold into the next API-touching
-story), `TECH-057` (parallel mutation runs; parked behind scope discipline by its own design). Each
-is in [topic_07](topics/topic_07_technical_debt.md) and the TECH ledger, which is where they belong.
-
-Two rows, not three, because `TECH-053` shipped. The cap is a ceiling, never a quota — promoting
-something to fill the space is how a ranked list becomes a list again.
+| `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
+| `TECH-031` 🟡 | Container-prepare defects, latent only because `execution_mode` defaults to `"host"`. |
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
