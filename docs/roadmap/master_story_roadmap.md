@@ -187,6 +187,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🔴 **Multi-Language Test Support:**
+        *   `[ ]` **INT-US-03-SF01:** UN-RETIRED 2026-08-16 — retired into `D-VAL-03`, which is delivered. `sw implement` stays Python-only.
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
@@ -314,6 +315,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟡 **Containerized Isolation:**
+        *   `[ ]` **INT-US-09-SF01:** UN-RETIRED 2026-08-16 — retired into `E-EXEC-01`, which is delivered. Container execution is wired but opt-in.
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
         *   `✅` **B-EXEC-01:** Ephemeral Podman Sub-Containers
     *   🔴 **Security Defenses:**

@@ -208,3 +208,68 @@ Encoded in: design skill Phase 2 A.7 (record surfaces with real signatures), Pha
 (the loop, the table, the outcomes, the gate), Phase 5 (the template section), Phase 6.0 (the
 convergence check), and implementation-plan Phase 1.1 (the bindings say where integration tests go).
 
+## Addendum, 2026-08-16: a retirement is only valid while its target is UNBUILT
+
+Every retirement note this ADR produced makes the same promise:
+
+> The scope above is NOT descoped — it moves to `X`, which owns its own integration and e2e
+> proof as FRs rather than a separate add-on restating them.
+
+**That promise is unsatisfiable when `X` is already `✅`.** `finished-stories-immutable` forbids
+adding an FR to a delivered story, so there is no design that will ever own the seam. The scope is
+retired from one side and never lands on the other: homeless, and invisible to every gate, because
+`check_fr_coverage.py` can only judge an FR that someone wrote.
+
+**The rule, and it is mechanical:** a retirement is valid **if and only if every capability it
+names is unbuilt**. If any target is `✅`, **the retirement does not happen** — the add-on stays
+open, because the only honest reading of "it moves to a delivered story" is that it moved nowhere.
+Closing it afterwards is then a real decision with three legitimate outcomes: **un-retire** (the
+seam is genuinely missing), **close empty** (nothing is left to build, only a scope decision), or
+mint a **new ticket** that owns the seam FR — the ticket skill's existing rule that *"a defect in
+delivered code becomes a NEW ticket, never an edit to the delivered story's entry"*. Whichever is
+chosen, the integration or e2e test is written first and fails because the wiring does not exist,
+which is the whole reason this ADR moved the tests earlier.
+
+### What the re-audit found
+
+Re-checked against the code, entry by entry. `bb789a29` deleted **63 `Sub-Story Integration
+(Pending Design)` lines**, and **68 distinct ids** once prose mentions are counted.
+
+| | |
+|---|---|
+| named no capability and had no topic-doc entry | **46** — nothing to restore; there is no scope to put back |
+| carried a real entry in `topics/topic_08_integration/` | **22** |
+| …of those, target only unbuilt capabilities | **17** — correctly retired |
+| …of those, target at least one delivered `✅` | **5** — the class the rule failed to protect |
+| …of those, genuinely homeless work | **1** |
+
+The one is **`INT-US-03-SF01` (Multi-Language Test Support) → `D-VAL-03` ✅**. `resolve_runner` is
+polyglot, but `sw implement` cannot reach a non-Python branch: the pipeline hardcodes
+`src/{stem}.py` and `tests/test_{stem}.py`, and the generator tags artifacts `"python"` and strips
+` ```python ` fences. **Un-retired**, with the roadmap line restored.
+
+The dispositions of the other four, each checked against the code rather than the document:
+
+| Entry | Found | Disposition |
+|---|---|---|
+| `INT-US-09-SF01` | `B-EXEC-01` is threaded end-to-end from `QARunnerAtom`, but **opt-in**; the add-on wanted it enforced | **un-retired** — a product decision nobody has taken |
+| `INT-US-25-SF01` | all three targets delivered *and* exercised by its own base contract | **closed empty** — nothing moved, because nothing was left |
+| `INT-US-01-SF02` | `C-EXEC-01`/`C-EXEC-03` already live; blocked on `E-UI-04`, unbuilt | note corrected to name `E-UI-04` only |
+| `INT-US-01-SF03` | `E-VAL-02`/`B-VAL-02` already wired; blocked on `E-VAL-04`, unbuilt | note corrected to name `E-VAL-04` only |
+
+**Enforced by** `scripts/check_retirement_targets.py`, in `quality.py doc`. It reads the
+destination clause of every retirement note and fails when a target is `✅`, when a target is
+absent from the capability matrix, or when the note **names nobody at all** — `INT-US-25-SF01` read
+*"it moves to the capability that builds it"*, the unfalsifiable prose this ADR set out to delete,
+wearing the ADR's own name.
+
+Two further defects surfaced while writing it, both the same shape and both in `_registry_orphans`:
+`"RETIRED" in body` also matches **`UN-RETIRED`**, so a withdrawal kept absolving the entry and its
+missing roadmap line went unreported — the check that exists to catch exactly this correction was
+blind to it. And **`CLOSED EMPTY`** had no expression at all, so an add-on with nothing left to
+build could only exit by claiming a move that never happened. Both fixed with word-boundary
+matching and a second sanctioned disposition.
+
+Without enforcement this clause is discipline-only and the defect regrows on the next `✅` — three
+of the five above sat one delivery away from it.
+

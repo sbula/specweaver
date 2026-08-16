@@ -18,14 +18,24 @@
 * **`INT-US-01-SF02` — Enforce Internal Architecture:** *Pending Design.* Integrates `C-EXEC-01` ✅ + `C-EXEC-03` ✅ + `E-UI-04` (unbuilt).
 
   > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
-  > The scope above is NOT descoped — it moves to `C-EXEC-01`, `C-EXEC-03` and `E-UI-04`, which owns its own
+  > The scope above is NOT descoped — it moves to `E-UI-04`, which owns its own
   > integration and e2e proof as FRs rather than a separate add-on restating them.
+  >
+  > **Corrected 2026-08-16.** This note originally also named `C-EXEC-01` and `C-EXEC-03`, both
+  > delivered — and a delivered story cannot accept an FR. Neither needed to: layer enforcement is
+  > already live in the gates, and the add-on is blocked solely on `E-UI-04`, which is unbuilt and
+  > will therefore write the seam test before its code. See `ADR-003`'s 2026-08-16 addendum.
 
 * **`INT-US-01-SF03` — Configurable Multi-Stage Reviews:** *Pending Design.* Integrates `E-VAL-02` ✅ + `E-VAL-04` (unbuilt, rubric-first on `C-VAL-05`) + `B-VAL-02` ✅.
 
   > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
-  > The scope above is NOT descoped — it moves to `E-VAL-02`, `E-VAL-04` and `C-VAL-05`, which owns its own
-  > integration and e2e proof as FRs rather than a separate add-on restating them.
+  > The scope above is NOT descoped — it moves to `E-VAL-04` (rubric-first on `C-VAL-05`), which
+  > owns its own integration and e2e proof as FRs rather than a separate add-on restating them.
+  >
+  > **Corrected 2026-08-16.** This note originally also named `E-VAL-02`, which is delivered and
+  > cannot accept an FR. It did not need to: standards auto-discovery is already wired into the
+  > implement, review and flow CLIs, and the add-on is blocked solely on `E-VAL-04`, unbuilt.
+  > See `ADR-003`'s 2026-08-16 addendum.
 
 * **`INT-US-01-SF04` — Mathematical Speed & Security (Rust):** *Pending Design.* Blocked on `A-VAL-04` (unbuilt).
 

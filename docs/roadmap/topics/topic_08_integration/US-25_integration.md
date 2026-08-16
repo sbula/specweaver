@@ -83,7 +83,13 @@
 > asserted `exit_code in (0, 1)`; with the domain-profile lookup disabled the whole capability was
 > dead and the suite reported 10 passed.
 
-  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
-  > The scope above is NOT descoped — it moves to the capability that builds it, which owns its own
-  > integration and e2e proof as FRs rather than a separate add-on restating them.
+  > **CLOSED EMPTY 2026-08-16 — nothing moved, because nothing was left.** `ADR-003` dropped
+  > `INT-US-25-SF01`'s roadmap placeholder on 2026-08-13 with the note *"it moves to the capability
+  > that builds it"* — naming nobody. That is the unfalsifiable prose the ADR set out to delete,
+  > wearing the ADR's own name, and `scripts/check_retirement_targets.py` now rejects the shape.
+  >
+  > Re-checked 2026-08-16: `D-VAL-02`, `D-VAL-04` and `C-VAL-03` are all delivered **and** exercised
+  > by the base contract above, so no seam is waiting on anyone. What the entry describes as
+  > remaining is a **scope decision**, not a build — this add-on is closed for want of scope, and
+  > re-opening it means deciding what it should do, not integrating what already works.
 

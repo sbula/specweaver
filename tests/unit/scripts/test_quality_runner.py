@@ -131,6 +131,10 @@ EXPECTED: dict[str, dict[str, str]] = {
     "doc": {
         "roadmap_sync": "all",
         "roadmap_placement": "all",
+        # `ADR-003`'s 2026-08-16 addendum: a retirement note may only move scope to an UNBUILT
+        # capability. A delivered one cannot accept the FR, so the scope lands nowhere and no
+        # other gate can see it -- `check_fr_coverage.py` judges only FRs somebody wrote.
+        "retirement_targets": "all",
         "skill_sync": "all",
         "skill_references": "all",
         # `TECH-017`: every delivered integration contract's proof, judged in one sweep. Takes no
@@ -202,6 +206,7 @@ class TestDocTrackIsSeparate:
         assert {p.check for p in q.resolve_plans("doc")} == {
             "roadmap_sync",
             "roadmap_placement",
+            "retirement_targets",
             "skill_sync",
             "skill_references",
             "proof_tier",

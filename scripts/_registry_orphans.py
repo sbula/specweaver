@@ -59,7 +59,16 @@ _ENTRY = re.compile(rf"^\s*[*-]\s+.{{0,8}}\*\*[^\n]*?\b({_ID})\b")
 #: later entry and silently absolved every entry it skipped.
 _ENDS_ENTRY = re.compile(r"^(?:[*-]\s|#{1,6}\s)")
 
-_RETIRED = "RETIRED"
+#: The sanctioned exits, and the word boundary is load-bearing. A bare `"RETIRED" in body` also
+#: matches **`UN-RETIRED`** — so withdrawing a retirement kept the entry absolved and its missing
+#: roadmap line went unreported, which inverts the checker: a withdrawal is exactly when the
+#: roadmap line has to come back. Found 2026-08-16 restoring `INT-US-03-SF01`.
+#:
+#: `CLOSED EMPTY` is the second exit, for an add-on that lost its roadmap line because nothing was
+#: left to build rather than because the scope moved. `INT-US-25-SF01` is the case: three delivered
+#: capabilities, all exercised by its own base contract, only a scope decision outstanding. Forcing
+#: that to say `RETIRED` would make it claim a move that never happened.
+_DISPOSITIONS = re.compile(r"(?<![-\w])(?:RETIRED|CLOSED EMPTY)\b")
 
 
 def entry_ids(text: str) -> set[str]:
@@ -85,7 +94,7 @@ def orphans(roadmap: str, topics: dict[str, str]) -> list[tuple[str, str]]:
             end = index + 1
             while end < len(lines) and not _ENDS_ENTRY.match(lines[end]):
                 end += 1
-            if any(_RETIRED in body for body in lines[index:end]):
+            if any(_DISPOSITIONS.search(body) for body in lines[index:end]):
                 continue
             found.append((match.group(1), name))
     return found

@@ -88,6 +88,33 @@ class TestOrphans:
         )
         assert orphans.orphans(self.ROAD, {"US-03.md": topic}) == []
 
+    def test_un_retired_does_not_absolve_the_entry(self, orphans: ModuleType) -> None:
+        """`UN-RETIRED` contains `RETIRED`, and a substring match reads a withdrawal as a
+        retirement — so the entry stays absolved and its MISSING roadmap line goes unreported.
+
+        That inverts the checker: withdrawing a retirement is exactly when the roadmap line has to
+        come back, and this is the check that would have said so.
+        """
+        topic = (
+            "* **`INT-US-03-SF03` — Graduated Autonomy:** *Pending Design.*\n"
+            "\n"
+            "  > **UN-RETIRED 2026-08-16.** The 2026-08-13 retirement named a delivered target.\n"
+        )
+        assert orphans.orphans(self.ROAD, {"US-03.md": topic}) == [("INT-US-03-SF03", "US-03.md")]
+
+    def test_closed_empty_is_a_second_sanctioned_exit(self, orphans: ModuleType) -> None:
+        """An add-on can lose its roadmap line because nothing was left to build, not because the
+        scope moved. `INT-US-25-SF01` is the case: all three capabilities delivered AND exercised,
+        with only a scope decision outstanding. Forcing that to say `RETIRED` would make it claim a
+        move that never happened — the unfalsifiable prose `ADR-003` exists to remove.
+        """
+        topic = (
+            "* **Dynamic Risk Controls (`INT-US-25-SF01`)**\n"
+            "\n"
+            "  > **CLOSED EMPTY 2026-08-16 — nothing moved, because nothing was left.**\n"
+        )
+        assert orphans.orphans(self.ROAD, {"US-25.md": topic}) == []
+
     def test_retirement_covers_only_its_own_entry(self, orphans: ModuleType) -> None:
         """The bug that made this checker necessary, in miniature.
 

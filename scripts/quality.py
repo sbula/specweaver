@@ -135,6 +135,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # whole registry, and a skill file drifts relative to its twin in the other tree.
     "roadmap_sync": {"doc": "all"},
     "roadmap_placement": {"doc": "all"},
+    # `ADR-003` retires an add-on by promising its scope "moves to X". Unsatisfiable when X is
+    # delivered — finished-stories-immutable forbids the FR, so the scope lands nowhere and
+    # `check_fr_coverage.py` cannot see it, because it only judges FRs somebody wrote.
+    "retirement_targets": {"doc": "all"},
     "skill_sync": {"doc": "all"},
     # Same track, same reason: an instruction's references are stale relative to the whole repo,
     # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*

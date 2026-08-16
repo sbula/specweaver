@@ -83,6 +83,18 @@ Each ID family has a **different** authoritative source. Pick the right one:
 > * **a user-visible journey across capabilities** (*"the journey costs exactly one LLM call"*) →
 >   still legitimate, as a **journey proof**: e2e tests only, declares no FRs, implements nothing.
 >
+> **The seam bullet's "Mint nothing" holds only while the consumer is UNBUILT.** If the consumer is
+> already `✅`, `finished-stories-immutable` forbids adding the FR to it, so "it moves to the
+> capability" moves it nowhere — **mint a ticket instead**, which owns the seam FR and writes the
+> failing integration/e2e test first.
+>
+> **Retiring an existing entry follows the same rule**, and it is enforced:
+> `scripts/check_retirement_targets.py` in `quality.py doc` fails a `RETIRED … by ADR-003` note
+> whose destination is `✅`, is absent from the capability matrix, or is **not named at all**. When
+> it fires, the retirement does not happen — pick a real disposition instead: **un-retire** (the
+> seam is genuinely missing), **`CLOSED EMPTY`** (nothing left to build, only a scope decision), or
+> a new ticket. See the 2026-08-16 addendum to `ADR-003` for the audit that produced this.
+>
 > Measured 2026-08-13: 63 pre-allocated `Sub-Story Integration (Pending Design)` entries existed and
 > **not one had a design document or a feature directory**. The family's failure mode is a second
 > place to make claims that no gate compares against code — `INT-US-21-SUB` advertised recursive

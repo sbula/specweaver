@@ -47,9 +47,16 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
   execution can become an enforced US-9 default. *Pending Design — container-scoped, out of scope
   for the Base Contract.*
 
-  > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.
-  > The scope above is NOT descoped — it moves to `E-EXEC-01`, which owns its own
-  > integration and e2e proof as FRs rather than a separate add-on restating them.
+  > **UN-RETIRED 2026-08-16.** `ADR-003` retired this on 2026-08-13 saying the scope moved to
+  > `E-EXEC-01` — which is **delivered**, so it cannot accept the FR and the scope landed nowhere.
+  > The retirement was invalid and does not stand. See `ADR-003`'s 2026-08-16 addendum.
+  >
+  > **What remains is narrower than the entry above suggests.** `B-EXEC-01` is wired end-to-end:
+  > `QARunnerAtom` builds a `ContainerSubprocessExecutor` from the RO-source / RW-scratch mount
+  > layout (`sandbox/qa_runner/core/atom.py:63`), with integration tests present. But it is
+  > **opt-in** — `sandbox_settings.execution_mode == "container"`, defaulting to host — and this
+  > add-on asked for container execution as an *enforced* US-9 default. That is a product decision
+  > nobody has taken, which is exactly why it must stay visible rather than be retired.
 
 * **`INT-US-09-SF02` — Security Defenses:** blocked on `E-EXEC-02` (Air-Gapped Network Egress
   Control, unbuilt).
