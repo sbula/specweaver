@@ -16,7 +16,7 @@
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"WHERE project_name = ? AND status IN (?, ?) \"",
           "new": "\"WHERE project_name = ? AND status IN (?, ?) AND 0 \"",
-          "breaks": "the query matches nothing, so `sw resume` reports 'No resumable runs found' while the failed run sits in flow_pipeline_runs — the exact shape of the defect this ticket fixed, and the one the old bundled-pipeline loop produced for every YAML-path run",
+          "breaks": "the query matches nothing, so `sw resume` reports 'No resumable runs found' while the failed run sits in flow_pipeline_runs \u2014 the exact shape of the defect this ticket fixed, and the one the old bundled-pipeline loop produced for every YAML-path run",
           "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
         },
         {
@@ -43,7 +43,7 @@
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"SELECT * FROM flow_pipeline_runs \"\n                \"WHERE project_name = ? AND status IN (?, ?) \"",
           "new": "\"SELECT * FROM flow_pipeline_runs \"\n                \"WHERE project_name != ? AND status IN (?, ?) \"",
-          "breaks": "resume picks up another project's run and executes its pipeline against this working tree — the one failure here that is a safety problem rather than an inconvenience",
+          "breaks": "resume picks up another project's run and executes its pipeline against this working tree \u2014 the one failure here that is a safety problem rather than an inconvenience",
           "symbol_sha": "sha256:5c3127b8275cb29f3d2d29351983a01a42581c52a4461414e209766da63afcc0"
         },
         {
@@ -52,7 +52,7 @@
           "symbol": "PipelineRunner._execute_loop",
           "old": "        state = LoopState.for_run(run, approve_parked=approve_parked)",
           "new": "        run.current_step = 0\n        state = LoopState.for_run(run, approve_parked=approve_parked)",
-          "breaks": "a resume re-runs every step that already passed — the persistence half of the journey, as opposed to the discovery half the other four mutants cover. Reported KILLED x1 here only because this campaign's scope is TECH-054's own two files; run against the whole suite it is killed by 14 tests across three tiers. Kept as the corpus's own record that resume-from-checkpoint is the well-protected half and auto-detection was the unprotected one",
+          "breaks": "a resume re-runs every step that already passed \u2014 the persistence half of the journey, as opposed to the discovery half the other four mutants cover. Reported KILLED x1 here only because this campaign's scope is TECH-054's own two files; run against the whole suite it is killed by 14 tests across three tiers. Kept as the corpus's own record that resume-from-checkpoint is the well-protected half and auto-detection was the unprotected one",
           "symbol_sha": "sha256:5e905772f5440f03ed1a99a740cba00e039ef84c7dfb9e4779b8badd285d1dcf"
         }
       ]
@@ -61,7 +61,8 @@
       "requirement": "FR-2",
       "title": "Nothing writes over a command's documented output channel",
       "scope": [
-        "tests/e2e/core/config/test_config_db_across_processes_e2e.py"
+        "tests/e2e/core/config/test_config_db_across_processes_e2e.py",
+        "tests/unit/test_telemetry_logger.py"
       ],
       "mutants": [
         {
@@ -70,7 +71,7 @@
           "symbol": "bootstrap_database",
           "old": "            logger.debug(\"LlmBase tables: %s\", LlmBase.metadata.tables.keys())",
           "new": "            print(\"LlmBase tables:\", LlmBase.metadata.tables.keys())",
-          "breaks": "the config DB writes its schema to stdout on every bootstrap, so `sw run --json` is unparseable from its first line — the state it shipped in, undetected, through a full green suite",
+          "breaks": "the config DB writes its schema to stdout on every bootstrap, so `sw run --json` is unparseable from its first line \u2014 the state it shipped in, undetected, through a full green suite",
           "symbol_sha": "sha256:a154357849b432312400743199b02e17e73b2d4e493f4af0b08ef8493c09dfd2"
         },
         {
@@ -88,7 +89,7 @@
           "symbol": "WorkspaceRepository.set_active_project",
           "old": "        if active:\n            active.value = name",
           "new": "        if active:\n            pass",
-          "breaks": "`sw use` reports the switch and does not perform it once an active project already exists, so the next process still resolves the old one — the round-trip half of this journey, and invisible to any test that stays in one process",
+          "breaks": "`sw use` reports the switch and does not perform it once an active project already exists, so the next process still resolves the old one \u2014 the round-trip half of this journey, and invisible to any test that stays in one process",
           "symbol_sha": "sha256:2c29fa25e9af3db706cb4142fcc8d8cb0eee4a71c3666a76bc9e3c500a40542e"
         }
       ]

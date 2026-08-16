@@ -39,6 +39,11 @@ class TestNightlySession:
                 "--out",
                 str(out),
                 "--no-baseline",
+                # `TECH-055`: `main` folds its report into a ledger, and the default is the real
+                # `scripts/baselines/mutation_findings.json`. This test runs the WHOLE corpus, so
+                # without an override every suite run rewrites the file the morning gate reads.
+                "--ledger",
+                str(tmp_path / "ledger.json"),
             ],
             cwd=REPO_ROOT,
             env={"PY_COLORS": "0", "PATH": "/usr/bin:/bin", "HOME": str(Path.home())},

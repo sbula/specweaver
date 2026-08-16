@@ -172,6 +172,25 @@ class TestSetupLogging:
         console_handler = next(h for h in root.handlers if isinstance(h, RichHandler))
         assert console_handler.level == logging.WARNING
 
+    def test_console_handler_writes_to_stderr(self, tmp_path, monkeypatch):
+        """The half this class asserted everything around and never asserted.
+
+        `setup_logging` has always carried the comment "Console handler (stderr, WARNING+ only)",
+        and for as long as it did, a bare `RichHandler()` built a Console on **stdout** — so every
+        warning landed in the command's own output, including inside `sw run --json`, whose stream
+        is documented as machine-readable NDJSON. Level and rotation were pinned here; the stream
+        was not, and `TECH-054` found it from the far end of a subprocess instead.
+        """
+        _logs = tmp_path / "logs"
+        monkeypatch.setattr(
+            "specweaver.core.config.paths.logs_dir",
+            lambda: _logs,
+        )
+        setup_logging("proj")
+        root = logging.getLogger("specweaver")
+        console_handler = next(h for h in root.handlers if isinstance(h, RichHandler))
+        assert console_handler.console.stderr is True
+
     def test_file_handler_at_configured_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(

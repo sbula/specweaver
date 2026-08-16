@@ -64,6 +64,13 @@ and four log records around six real events. Two causes, both writing over stdou
 | the round trip | `TestTheActiveProjectSurvivesTheProcessBoundary` (2 cases) | e2e |
 | FR-2 | `TestTheConfigDbDoesNotSpeakOverTheCommand::test_every_line_of_the_json_event_stream_parses` | e2e |
 
+**Amended 2026-08-16, after `TECH-055`'s tier review.** `tests/unit/test_telemetry_logger.py` now
+also carries `test_console_handler_writes_to_stderr`. That class already pinned the console
+handler's *level* and the file handler's *rotation* and *path*, and never its **stream** — the one
+property the code's own comment promised and did not deliver. The e2e proves the consequence a user
+sees and the unit test fails in 0.2 s instead of 4; neither replaces the other, and the gap between
+them is the pattern this ticket kept finding.
+
 **The assertion is "every line parses", not `"Base tables" not in stdout`.** Naming the string that
 used to be printed passes the moment somebody rewords the debug line while the stream stays
 unparseable.
@@ -84,14 +91,15 @@ warning out of `result.stdout`.
 | project filter inverted | FR-1 | KILLED ×8 |
 | resume restarts from step zero | FR-1 | KILLED ×1 scoped, ×14 suite-wide |
 | bootstrap prints its schema again | FR-2 | KILLED ×1 |
-| log records return to stdout | FR-2 | KILLED ×1 |
+| log records return to stdout | FR-2 | KILLED ×2 |
 | the active project never changes | FR-2 | KILLED ×1 |
 
-**Every FR-2 mutant is killed by exactly one test**, which is what a journey proof looks like and
-also its weakness: one skip and the claim is unguarded. Recorded rather than padded — writing a
-second test that asserts the same thing twice would hide the fact instead of fixing it. The corpus
-is where this stays visible, since `symbol_sha` drift reports `STALE` the moment any of the three
-lines moves.
+**Two of the three FR-2 mutants are killed by exactly one test**, which is what a journey proof
+looks like and also its weakness: one skip and the claim is unguarded. Recorded rather than padded —
+a second test asserting the same thing twice would hide the fact instead of fixing it. The third
+gained a genuine second killer at a different tier when the stderr unit test was added above; that
+is what closing a gap looks like, as against inflating a count. The corpus is where this stays
+visible, since `symbol_sha` drift reports `STALE` the moment any of the lines moves.
 
 ## Out of scope
 

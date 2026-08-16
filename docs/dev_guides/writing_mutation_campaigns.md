@@ -56,6 +56,18 @@ match it, which is what lets the duplicate-id check read one file instead of the
 **`symbol` is a dotted path.** `apply_session_policy` for a function, `SessionPolicy.apply` for a
 method. Bare names are ambiguous in 25 files of `src/` — one holds `__init__` six times.
 
+**Mutate a guard so it fails CLOSED, never open.** When the target is something every test runs
+through — a suite-wide `autouse` fixture, a conftest hook, a shared assertion helper — a mutant that
+makes it *raise more* poisons the run instead of measuring it. `TECH-055` planted the obvious edit
+in a baseline-comparison helper, inverting `!=` to `==` so that every *unchanged* file was reported
+as rewritten. The autouse guard then failed sixteen tests in teardown, and `is_broken()` cannot
+distinguish that from a collection failure, so the run was judged **BROKEN** and proved nothing —
+which is the correct refusal, not a bug in the runner.
+
+The fix is to choose the direction: make the guard **miss** what it should catch (`if … and False`),
+never **invent** what is not there. The same rule applies to any mutant whose blast radius includes
+the machinery running the tests that judge it.
+
 ## Scope
 
 `scope` lists the test files the mutant runs against, and it is **authoritative**. A mutant passes

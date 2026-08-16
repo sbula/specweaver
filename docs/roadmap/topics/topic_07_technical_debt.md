@@ -168,6 +168,12 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-055` 🟢: The Suite Edits the Standard It Is Measured Against**
+  > [Description](../features/topic_07_technical_debt/TECH-055/TECH-055_design.md) | _(2026-08-16 — found at `TECH-054` CB-2, as an unexplained `M` in `git status`.)_ | A test called
+  > `mutation.main()` without `--ledger`, so every suite run appended a phantom finding to the **real** `scripts/baselines/mutation_findings.json`. The class is the point: 16 version-controlled
+  > ratchets, and nothing compares one to what it was. **DELIVERED 2026-08-16:** an autouse guard
+  > that fails the writing test by name; it caught the offender on its first run, and no others.
+
 * **`TECH-054` 🟢: The Two Foundations Nobody Wrote Down**
   > [Description](../features/topic_07_technical_debt/TECH-054/TECH-054_design.md) | _(2026-08-16 — from `TECH-053`'s 19.)_ | `D-FLOW-01` (Pipeline Runner) and `E-FLOW-01` (Config DB) are
   > marked `✅` with no design, no FRs, and a one-sentence record — under every `sw` command. Each gets **one falsifiable journey**, not a reverse-engineered design: an FR read off the code it

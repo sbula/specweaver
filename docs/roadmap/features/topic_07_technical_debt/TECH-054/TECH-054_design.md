@@ -162,7 +162,7 @@ it is the one thing here worth carrying to the other seventeen.
 **The seventeen remain ratcheted by `TECH-053`** and are paid down by `specweaver-dev` 3.2c on
 contact. That is the decision, not an omission.
 
-**Open, not owned by this ticket**: `tests/integration/scripts/test_mutation_seam.py` and
-`test_corpus_real_source.py` write to the real `scripts/baselines/mutation_findings.json` through
-`mutation.run_corpus`'s default ledger path — a test mutating a version-controlled baseline. Found
-here, belongs to the mutation tooling.
+**Found here, fixed by `TECH-055`**: `tests/integration/scripts/test_mutation_seam.py` called
+`mutation.main()` without `--ledger`, so `record_run` appended to the real
+`scripts/baselines/mutation_findings.json` on every suite run. `TECH-055` ships the guard for the
+whole class — 16 version-controlled ratchets that nothing compared against their previous state.

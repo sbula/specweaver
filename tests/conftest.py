@@ -36,7 +36,44 @@ A test that genuinely wants colour sets it back for its own duration — see
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
+
+import pytest
+
+from tests.baseline_snapshot import BASELINES, rewrites, snapshot
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 os.environ["NO_COLOR"] = "1"  # Rich: the CLI's own output
 os.environ["PY_COLORS"] = "0"  # pytest: its terminal writer, and anything parsing it
 os.environ.pop("FORCE_COLOR", None)  # inherited from an agent shell; would beat both
+
+
+@pytest.fixture(autouse=True)
+def _baselines_are_read_only() -> Iterator[None]:
+    """No test may rewrite a gate's ratchet baseline.
+
+    `scripts/baselines/` is the standard this repo is measured against, and nothing compares a
+    baseline against what it was — so a test that writes one relaxes or corrupts a gate inside a
+    diff that reads as ordinary test work.
+
+    Found for real on 2026-08-16: `test_mutation_seam.py` called `mutation.main()` without
+    `--ledger`, and `record_run` appended to the **real** `mutation_findings.json` on every suite
+    run, inventing a finding for a mutant that existed only inside a fixture. It was noticed by an
+    unexplained modification in `git status`, which is not a detection mechanism.
+
+    Fails the offending test rather than restoring the file: a fixture that silently rewrote
+    version-controlled content would be doing the very thing it exists to catch. Nothing cascades —
+    the next test's "before" is the polluted state, so only the writer fails.
+    """
+    before = snapshot(BASELINES)
+    yield
+    changed = rewrites(before, snapshot(BASELINES))
+    if changed:
+        pytest.fail(
+            "this test wrote to scripts/baselines/, which is version-controlled gate state:\n  "
+            + "\n  ".join(changed)
+            + "\nPoint the tool at tmp_path instead — most take a --ledger/--baseline argument.",
+            pytrace=False,
+        )
