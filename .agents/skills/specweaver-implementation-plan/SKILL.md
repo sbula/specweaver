@@ -156,9 +156,15 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > ships means its first run is green against code that already exists — it asserts the present,
 > not the contract.
 >
-> **Never mint or reference an `INT-US-NN` / `INT-US-NN-SFxx` for work that is not built yet** —
-> not as a dependency, not as a retirement tombstone. The seam and journey proofs are FRs of the
-> capability, authored red inside its own TDD cycle, before the code they judge.
+> **Every capability not yet `✅` is responsible for its own integration and e2e testing.** No
+> exceptions, nothing deferred to a later story: it declares its seam FRs and proves them at
+> integration/e2e tier inside its own TDD cycle, red before the code they judge. This has not
+> been the practice historically — the delivered corpus carries the debt — so it binds the work
+> in front of you, not a backfill programme.
+>
+> It follows that you **never mint or reference an `INT-US-NN` / `INT-US-NN-SFxx` for work that is
+> not built yet** — not as a dependency, not as a retirement tombstone. There is nothing left for
+> such a story to own.
 >
 > An `INT-US` entry is legitimate in exactly one place: a (sub)story that **already holds a
 > finished feature**, where `finished-stories-immutable` bars the closed capability from taking
