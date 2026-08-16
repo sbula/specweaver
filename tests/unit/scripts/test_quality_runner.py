@@ -74,6 +74,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         # diff-scoped run cannot see the collision it exists to catch. Cheap (names only, no
         # reads), so it runs `all` even in the inner loop.
         "test_basenames": "all",
+        "test_collection": "all",
         "useless_asserts": "changed",
         "conventions": "changed",
     },
@@ -83,6 +84,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "file_sizes": "all",
         "complexipy": "all",
         "test_basenames": "all",
+        "test_collection": "all",
         "useless_asserts": "all",
         "conventions": "all",
         "mypy": "all",
@@ -101,6 +103,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "file_sizes": "all",
         "complexipy": "all",
         "test_basenames": "all",
+        "test_collection": "all",
         "useless_asserts": "all",
         "conventions": "all",
         "mypy": "all",
@@ -117,6 +120,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "file_sizes": "all",
         "complexipy": "all",
         "test_basenames": "all",
+        "test_collection": "all",
         "useless_asserts": "all",
         "conventions": "all",
         "mypy": "all",

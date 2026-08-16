@@ -106,6 +106,11 @@ MATRIX: dict[str, dict[str, str]] = {
     # files had drifted. Cheap enough to run everywhere.
     "format": {"quick": "all", "cb": "all", "sf": "all", "feature": "all"},
     "test_basenames": {"quick": "all", "cb": "all", "sf": "all", "feature": "all"},
+    # `TECH-051`: a test file pytest collects nothing from reads as coverage everywhere a human
+    # looks. Static AST, sub-second, so it belongs in the loop the author actually watches rather
+    # than once at `doc` -- a real collection pass costs 15-20s. Its own test pins the static rule
+    # against the real collector, so the approximation cannot drift quietly.
+    "test_collection": {"quick": "all", "cb": "all", "sf": "all", "feature": "all"},
     # -- scoped only in the inner loop, repo-wide from the first commit ----
     "file_sizes": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},
     "complexipy": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},

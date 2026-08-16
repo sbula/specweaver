@@ -167,11 +167,11 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
-* **`TECH-051` 🔴: 24 Tests Look Like Coverage and Never Run**
-  > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1, checking whether the runner's telemetry flush was already covered.)_ | Measured
-  > across 568 test files: 13 are excluded by the `live` marker (legitimate) and **12 are uncollectable at all** — 9 empty stubs, and **3 files whose class holds `test_*` methods but is not named
-  > `Test*`**, hiding **24 tests**. `test_runner_telemetry.py` is one: six tests for the runner's flush, including the only claim that a failed run still records what it spent. They read as coverage
-  > in a listing and in review, which is how a story comes to skip a test it thinks exists. `R6` judges the class NAME and never asks whether it is collected. Ship the census gate with the fix.
+* **`TECH-051` 🟢: 24 Tests Look Like Coverage and Never Run**
+  > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | Of 570 test files, **12 collected nothing**: 9 empty stubs and 3
+  > whose class held `test_*` methods without the `Test` prefix, hiding **24 tests**. They read as coverage in a listing and in review, which is how a story skips a test it thinks exists — `R6`
+  > judges the class NAME and never asks whether it is collected. **DELIVERED 2026-08-16:** 24 recovered, 9 stubs filled, `A-VAL-01` 0 → 5 of 5 FRs on a delivered DAL-A capability, gated from
+  > `quick` by `check_test_collection.py`; run against the pre-fix tree it names all 12 with the right cause.
 
 * **`TECH-047` 🟢: Nothing Runs the FR-Coverage Gate Across Delivered Work**
   > [Description](../features/topic_07_technical_debt/TECH-047/TECH-047_design.md) | _(2026-08-13 — from the coverage audit.)_ | `check_fr_coverage.py` takes a story ID, so it fired only when a human

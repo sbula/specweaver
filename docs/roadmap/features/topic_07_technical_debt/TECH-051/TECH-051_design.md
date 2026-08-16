@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-051
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: APPROVED 2026-08-16 — scope extended to cover `A-VAL-01`. CB-1 and CB-2 delivered.
+- **Status**: COMPLETE 2026-08-16 — scope extended to cover `A-VAL-01`. CB-1, CB-2 and CB-3 delivered.
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-051/TECH-051_design.md
 - **Origin**: 2026-08-16, `INT-US-16` CB-1. Checking whether the runner's telemetry flush was
   already covered at unit tier before writing a duplicate test. It looked covered. It was not.
@@ -181,6 +181,34 @@ That is the only one that improves anything. Deleting removes the sole visible t
 mission-critical capability shipped untested; a separate ticket defers it and, on this repo's own
 evidence, deferral is how `A-VAL-01` reached `✅` with 0 of 5 FRs proven in the first place.
 
+## Delivery evidence: the gate, run against the tree it was written for
+
+**Asked at CB-3: if there is no e2e, is there any real value?** Fair question, and synthetic
+fixtures were not a good enough answer to it. So the check was run against a worktree at
+`2d8582f0^` — the repo as it stood the morning this ticket was written:
+
+```
+Test files that collect NOTHING (12):
+  test_kind_presets.py      class QARunnerKindIntegration, QARunnerSettingsOverrideIntegration …
+  test_runner_events.py     class QARunnerEventCallback holds test methods but is not named Test*
+  test_runner_telemetry.py  class QARunnerTelemetryFlush holds test methods but is not named Test*
+  test_asyncapi_parser.py   the file defines nothing at all
+  …8 more
+```
+
+**Exactly the twelve that were wrong, each with the correct cause.** Not a fixture built to pass —
+the real tree, the real defect, found by the real check. For a gate, that IS the journey: a repo in
+the bad state → the gate → the finding.
+
+**And there is no e2e on purpose.** The repo's e2e tier is `sw` command journeys; `quality.py` is a
+developer gate, and the two are separate tracks. An e2e here would be the same subprocess call from
+a different directory, which `check_proof_tier.py` counts tiers precisely to make visible.
+
+**The limit, stated rather than glossed.** The unit tests prove the rule, the integration test
+proves the gate runs it and fails on a finding, and the run above proves it would have caught the
+real thing. **Nothing proves the counterfactual** — that the gate prevents the next one. That is the
+same boundary the closure contract draws between attribution and strength, and no test closes it.
+
 ## Sub-Feature Breakdown
 
 **Single feature — no decomposition.** 7 FRs but one capability area, one new script, and one
@@ -208,22 +236,19 @@ removing either half of a redundant pair is how a property loses its last protec
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature (CB-1 → CB-3) | — | ✅ | ✅ | 🟡 CB-2 | 🟡 CB-2 | 🟡 CB-2 |
+| — | Single feature (CB-1 → CB-3) | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: **CB-2 delivered.** All nine stubs filled; `sandbox/protocol` went from no real
-tests to **100% statement coverage across all 8 modules (248 statements)** — 52% after CB-1, and
-effectively zero exercise before. `check_fr_coverage.py A-VAL-01` **exits 0**: 5 of 5 FRs planned
-and cited, on a delivered DAL-A capability that reported 0 of 5 this morning.
+**Current status**: **COMPLETE.** CB-1 `2d8582f0`, CB-2 `5aeac638`, CB-3 this commit.
 
-FR-5 was not written but **found**: `test_c13_contract_drift.py` already proved it and nothing
-pointed the ledger at it. Cited only after reading `test_c13_fails_when_drift_detected`, which
-supplies two protocol endpoints and an AST carrying one and asserts the missing path is named —
-FR-5's promise rather than a restatement of it.
+| | |
+|---|---|
+| hidden tests recovered | **24**, across 3 files |
+| empty stubs filled | **9**, all named after `sandbox/protocol` |
+| `sandbox/protocol` coverage | 0 real exercise → **100%** (8 modules, 248 statements) |
+| `check_fr_coverage A-VAL-01` | 0 of 5 → **5 of 5**, exit 0 |
+| uncollectable test files | 12 → **0**, and now gated at `quick` |
 
-The four A-VAL-01 implementation plans predate the FR ledger and named no requirement, so all five
-FRs read as *carried by no plan*. Each now declares what it owns, mapped from its own sub-feature
-title rather than assigned to make a number fall.
-
-**Next step**: CB-3 — the collection check itself, zero-tolerance, which the repo can now satisfy.
+**Next step**: none. The gate is registered at `quick`, `cb`, `sf` and `feature`, and the repo is
+clean against it.

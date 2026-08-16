@@ -6,6 +6,12 @@
 
 Verifies that PipelineRunner flushes the TelemetryCollector
 (if present on context.model.llm) after run() and resume() complete.
+
+Proves: TECH-051 FR-4
+
+**This file collected ZERO tests until 2026-08-16.** Its six tests for the runner's telemetry flush were
+hidden behind a class without the `Test` prefix, so pytest never saw them. Renamed by `TECH-051`
+CB-1; `scripts/check_test_collection.py` now fails the gate if it happens again.
 """
 
 from __future__ import annotations

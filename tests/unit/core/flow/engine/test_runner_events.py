@@ -2,7 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for the pipeline runner event callback mechanism."""
+"""Tests for the pipeline runner event callback mechanism.
+
+Proves: TECH-051 FR-4
+
+**This file collected ZERO tests until 2026-08-16.** Its eight tests for the runner's event
+callback were hidden behind a class without the `Test` prefix, so pytest never saw them. Renamed by
+`TECH-051` CB-1; `scripts/check_test_collection.py` now fails the gate if it happens again.
+"""
 
 from __future__ import annotations
 

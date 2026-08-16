@@ -10,6 +10,12 @@ No mocking — exercises the real preset → rule constructor → check path.
 
 Design: uses the pipeline executor path (load_pipeline_yaml + spec_kind.get_presets)
 instead of the legacy get_spec_rules() function (removed in Feature 3.5b).
+
+Proves: TECH-051 FR-4
+
+**This file collected ZERO tests until 2026-08-16.** Its ten tests for the QA runner's kind presets were
+hidden behind a class without the `Test` prefix, so pytest never saw them. Renamed by `TECH-051`
+CB-1; `scripts/check_test_collection.py` now fails the gate if it happens again.
 """
 
 from __future__ import annotations

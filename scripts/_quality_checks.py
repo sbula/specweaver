@@ -61,6 +61,13 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
             ignores_paths=True,
             script="check_duplication.py",
         ),
+        "test_collection": make(
+            "test_collection",
+            ("tests",),
+            _r._whole_repo("check_test_collection.py"),
+            ignores_paths=True,
+            script="check_test_collection.py",
+        ),
         "roadmap_placement": make(
             "roadmap_placement",
             ("docs",),
