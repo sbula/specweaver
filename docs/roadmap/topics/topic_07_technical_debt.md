@@ -168,6 +168,11 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
+  > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`. **Filed unscheduled**, to record the decision while it is cheap.)_ |
+  > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet sandbox build and teardown measure **0.2s**, so the serialisation defends nothing. Not urgent: today's nightly is ~7 min against
+  > hours of slack. The trigger is written down instead — at full roadmap (~1,200 (N)FRs) today's scope mix projects to **~4.9h serial**, finishing at 07:54 with no margin.
+
 * **`TECH-056` 🟢: The Morning Gate Marks Its Own Homework**
   > [Description](../features/topic_07_technical_debt/TECH-056/TECH-056_design.md) | _(2026-08-16 — found running the morning check after `TECH-055`.)_ | `mutation.py --gate` **could not block**:
   > `gate_verdict` read presence in the ledger as "a human looked at this", and `record_run` — the last thing every session does — writes each finding as `{"runs": 1}` with nothing decided. Both halves

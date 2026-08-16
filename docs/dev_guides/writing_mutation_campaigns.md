@@ -82,6 +82,46 @@ requirement is covered.
 Where the tests carry `Proves:` tags, the run cross-checks scope against them and reports a
 `scope_drift` note if they disagree — a finding for a human, never a verdict.
 
+## What a mutant costs, and why scope is the lever
+
+Measured 2026-08-16 over the whole corpus, 24 mutants, one scoped pytest plus a confirmation re-run
+each:
+
+| Scope tier | Seconds per mutant |
+|---|---|
+| unit | **1.2 – 1.6** |
+| unit + integration | **1.2 – 1.3** |
+| includes an e2e file | **9.9 – 16.1** |
+
+**An e2e scope is an 8x purchase.** On that run, 42% of the mutants consumed **86%** of the clock —
+ten e2e-scoped mutants took 111s while the other fourteen took 18s between them. The cause is not
+the corpus: an e2e test spawns real subprocesses, and the mutant pays for all of them, twice, once
+to measure and once to confirm.
+
+So **scope at the lowest tier that can still falsify the claim.** That is not a cost-saving
+instruction dressed as a principle — it is the same rule `scope` already states, with a price on it.
+Where a claim genuinely lives in a journey (`TECH-054` FR-1's resume discovery could not be seen
+below e2e), pay it deliberately and say so in `breaks`.
+
+**The arithmetic that makes this matter.** 670 (N)FRs are declared today across 116 design documents,
+against 61 of 135 capabilities delivered; full roadmap is roughly 1,000-1,400. At today's ratio of
+2.7 mutants per requirement, full coverage is:
+
+| Scope mix | Mutants | Serial wall clock |
+|---|---|---|
+| disciplined (unit/integration) | ~3,240 | **~70 min** |
+| today's mix | ~3,240 | **~4.9 h** |
+| e2e-dominated | ~3,240 | **~9.9 h** |
+
+The nightly starts at 03:00. The middle row finishes at 07:54 with no margin, and a session that
+overruns is not reported as stale for 48 hours. The corpus is opt-in and covers 9 of 670
+requirements today, so none of this is urgent — but the difference between the first row and the
+third is decided one campaign at a time, by whoever picks a scope.
+
+Parallel execution is the other half of the answer and is deliberately not built yet: see
+`TECH-057`, which records why (sandbox build and teardown measured **0.2s**, so a pool is cheap when
+it is wanted).
+
 ## Drift
 
 `symbol_sha` fingerprints the **normalised AST** of the enclosing symbol.
