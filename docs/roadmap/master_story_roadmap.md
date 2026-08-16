@@ -148,6 +148,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🟡 **Multi-Language Test Support:**
+        *   `[ ]` **INT-US-03-SF01:** Multi-Language Test Support
         *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
@@ -179,6 +180,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-04-SF04:** [Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-04-context-mention-highlighting-integration-pending-design)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
+        *   `[ ]` **INT-US-04-SF05:** Advanced Routing & Conditional Flows
         *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
