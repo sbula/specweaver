@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-053
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: DRAFT
+- **Status**: DELIVERED (2026-08-16)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-053/TECH-053_design.md
 - **Origin**: 2026-08-16. An agent flipped two roadmap add-on groups to `🟢` from their children's
   checkboxes, called it *"computed from the children rather than eyeballed"*, and was asked whether
@@ -104,7 +104,7 @@ the six groups — with the check's own tests proving it fires on a synthetic di
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Single feature | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| — | Single feature | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## What happened to the 22 (decided 2026-08-16)
 
@@ -123,6 +123,20 @@ worth more than the paperwork it is tempting to write against it.
 
 ## Session Handoff
 
-**Current status**: Design DRAFT.
-**Next step**: implement; the four capabilities named above stay open as this ticket's findings.
-The 22 are dispositioned above — `TECH-054` for two, `specweaver-dev` 3.2c for the rest.
+**Current status**: DELIVERED 2026-08-16, in `e1e8766a`. `check_delivered_claims.py` is registered
+in `quality.py doc`; `check_fr_coverage.py TECH-053` exits 0 on 3 of 3 FRs; 23 tests pass without
+skips.
+
+**Closed late, and the delay is the lesson.** The code shipped and the paperwork did not, so for a
+day this ticket carried three contradictory states at once — `DRAFT` here, `🔴` in `topic_07`, `🟡`
+in the debt table, `[ ]` in the ledger — while its own gate ran green in every session. **This is
+the ticket about flags that do not match reality, and its flag did not match reality.** Nothing
+checks that a delivered ticket's own flag agrees with its delivery; that gap is real and is not
+covered by FR-1, which compares add-on group flags with their children and never a ticket with
+itself.
+
+**The finding outlives the ticket, by design (AD-3).** 62 capabilities are marked `✅` and 1 passes
+its own FR ledger. Closing this asserts the *gate* works, never that the 22 are fixed — they are
+ratcheted so the count can only fall, dispositioned above, and the standing warning now lives in
+`capability_matrix.md` where `✅` is actually read, rather than in a debt table a delivered ticket
+must leave.

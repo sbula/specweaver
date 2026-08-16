@@ -3,7 +3,7 @@
 
 """Tests for the delivered-claim guard (`scripts/check_delivered_claims.py`).
 
-Proves: TECH-053 FR-1, TECH-053 FR-2, TECH-053 FR-3
+Proves: TECH-053 FR-1, TECH-053 FR-2, TECH-053 FR-3, TECH-053 NFR-1, TECH-053 NFR-3
 
 `TECH-053`. Two ways a `✅` can mean nothing: an add-on group whose flag disagrees with its own
 children, and a capability marked delivered that `check_fr_sweep.py` cannot see — no design
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -255,3 +256,20 @@ class TestMain:
     def test_the_live_repo_is_at_or_under_its_baseline(self, cdc: ModuleType) -> None:
         """FR-2's ratchet against the real registry — the count may fall, never rise."""
         assert cdc.main([]) == 0
+
+    def test_the_census_is_cheap_enough_for_the_doc_gate(self, cdc: ModuleType) -> None:
+        """NFR-1 — reads the matrix and the features tree, no subprocess per capability.
+
+        The 62-capability census that produced this ticket's numbers needed a parallel subprocess
+        fan-out and takes minutes; that shape must never reach the gate, because a `doc` run that
+        costs minutes is a `doc` run people stop taking. The bar is deliberately loose — this is a
+        tripwire for a change of shape, not a benchmark.
+        """
+        started = time.perf_counter()
+        cdc.unverifiable_findings(REPO_ROOT / "docs" / "roadmap")
+        elapsed = time.perf_counter() - started
+
+        assert elapsed < 5.0, (
+            f"the census took {elapsed:.1f}s; at that cost it belongs in a nightly, not in "
+            "`quality.py doc`, which is run on every commit boundary"
+        )

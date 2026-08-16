@@ -195,11 +195,11 @@ critical for long-term project viability.
   > describes can never fail. **DELIVERED 2026-08-16:** three defects on first contact — `sw resume` could not find a run it had persisted, and both the config-DB bootstrap and the logger wrote to
   > **stdout**, leaving `sw run --json` unparseable. 8 mutants, all killed. The other 17 stay ratcheted, paid down by `specweaver-dev` 3.2c on contact.
 
-* **`TECH-053` 🔴: A `✅` Nothing Can Verify**
+* **`TECH-053` 🟢: A `✅` Nothing Can Verify**
   > [Description](../features/topic_07_technical_debt/TECH-053/TECH-053_design.md) | _(2026-08-16 — an agent flipped two roadmap groups to `🟢` from checkbox arithmetic and was asked for evidence.)_ |
   > Of **62 capabilities marked ✅**: 39 declare FRs nothing cites, **19 have no design document at all**, 3 declare no FRs, and **1 is clean**. The 22 in the middle are invisible to
   > `check_fr_sweep.py` by construction — no design means no FRs to be uncited, so they score zero and read as perfect. Also: nothing compares an add-on group's flag with its own children, and six
-  > disagreed. Ships the check; the 22 are ratcheted, not fixed — 19 missing designs is a programme, not a ticket.
+  > disagreed. **DELIVERED 2026-08-16** (`e1e8766a`): the check ships in `quality.py doc`, 3 of 3 FRs proven, the 22 ratcheted not fixed (`AD-3`). Standing warning moved to the capability matrix.
 
 * **`TECH-051` 🟢: 24 Tests Look Like Coverage and Never Run**
   > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | Of 570 test files, **12 collected nothing**: 9 empty stubs and 3

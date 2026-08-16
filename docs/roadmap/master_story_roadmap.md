@@ -69,28 +69,26 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*The **three** open tickets that change how you read the rest of the roadmap — never more. **7 of 58
-tickets are open**; the other four are listed nowhere here on purpose. A delivered ticket leaves this
+*At most **three** open tickets — the ones that change how you read the rest of the roadmap. **6 of
+58 are open** and **two** meet the bar; the rest are listed nowhere here on purpose. A delivered ticket leaves this
 section; the permanent record is the [TECH ledger](#-technical-debt-tech) at the foot of this file
 and each ticket's own entry in [topic_07](topics/topic_07_technical_debt.md), which is also where
 status is decided. Statuses appear below purely to rank the open set — keeping a delivered ticket
 here to narrate how it was closed is what let this section drift for a month.*
 
-**Three, because a list of seven is a list nobody reads before picking work.** The bar is not age or
+**At most three, because a list of seven is a list nobody reads before picking work.** The bar is not age or
 severity: it is whether **not knowing this makes you misread something else**. A ticket that is
 independent, deferred by its own design, or explicitly not queue-eligible fails that bar however
 real it is — it costs nothing to discover when its file is next opened.
 
 **Asserts a claim on every queue candidate** — so picking one without reading this is blind.
 
-| Ticket | What you misread without it |
-|---|---|
-| `TECH-053` 🟡 | **Any `✅` in this document.** 62 capabilities are marked delivered and **1 passes its own FR ledger**. The gate shipped and the count is ratcheted, so this cannot grow — but the 22 it counts are reported, not fixed. It qualifies every other row here and every candidate above. |
-
-`TECH-017` used to sit here and left on delivery (2026-08-14). Its claim did not disappear with it —
-the tier-ratio guardrail now *runs* (`check_proof_tier.py` and `check_audit_matrix.py` in the `doc`
-gate, plus the tier-by-claim rule in the implementation-plan skill), so planning a candidate means
-satisfying it rather than remembering it. That is a gate, not a queue entry.
+**None.** `TECH-053` was the last and left on delivery (2026-08-16); `TECH-017` before it
+(2026-08-14). Neither claim disappeared with its ticket — both became gates. `TECH-053`'s census
+runs as `check_delivered_claims.py` and its finding is stated where `✅` is actually read, at the top
+of [capability_matrix.md](capability_matrix.md); the tier-ratio guardrail runs as
+`check_proof_tier.py` and `check_audit_matrix.py`. **A ticket leaving this table because it shipped
+a gate is the intended ending** — what was a thing to remember is now a thing that fails.
 
 **Asserts a claim on one delivered capability**
 
@@ -104,6 +102,9 @@ satisfying it rather than remembering it. That is a gate, not a queue entry.
 params validation; independent), `TECH-013` (not queue-eligible — fold into the next API-touching
 story), `TECH-057` (parallel mutation runs; parked behind scope discipline by its own design). Each
 is in [topic_07](topics/topic_07_technical_debt.md) and the TECH ledger, which is where they belong.
+
+Two rows, not three, because `TECH-053` shipped. The cap is a ceiling, never a quota — promoting
+something to fill the space is how a ranked list becomes a list again.
 
 **Ordering.** The 2026-08-08 dependency chain — seven tickets contending for the same six files —
 is **fully discharged**: `TECH-019` → `025` → `014` → `020` → `015` → `024` → `023`, all delivered
@@ -683,7 +684,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-049:** [Mutation Campaign Corpus and Session Gate](features/topic_07_technical_debt/TECH-049/TECH-049_design.md)
     *   `✅` **TECH-050:** [28 Tests Fail Whenever an Agent Runs Them](features/topic_07_technical_debt/TECH-050/TECH-050_design.md)
     *   `✅` **TECH-051:** [24 Tests Look Like Coverage and Never Run](features/topic_07_technical_debt/TECH-051/TECH-051_design.md)
-    *   `[ ]` **TECH-053:** [A `✅` Nothing Can Verify](features/topic_07_technical_debt/TECH-053/TECH-053_design.md)
+    *   `✅` **TECH-053:** [A `✅` Nothing Can Verify](features/topic_07_technical_debt/TECH-053/TECH-053_design.md)
     *   `✅` **TECH-054:** [The Two Foundations Nobody Wrote Down](features/topic_07_technical_debt/TECH-054/TECH-054_design.md)
     *   `✅` **TECH-055:** [The Suite Edits the Standard It Is Measured Against](features/topic_07_technical_debt/TECH-055/TECH-055_design.md)
     *   `✅` **TECH-056:** [The Morning Gate Marks Its Own Homework](features/topic_07_technical_debt/TECH-056/TECH-056_design.md)

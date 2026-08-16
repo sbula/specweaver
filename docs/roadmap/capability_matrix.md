@@ -4,6 +4,19 @@ This matrix acts as the "Periodic Table" of SpecWeaver's internal architecture. 
 capability against its **Domain Assurance Level (DAL)** to guarantee we are scaling safety alongside
 complexity.
 
+> [!CAUTION]
+> **A `✅` here means the capability shipped. It does not mean its claims are proven.** Measured
+> 2026-08-16 across the 62 capabilities marked `✅`: **39** declare FRs that no test cites, **19**
+> have no design document at all, **3** declare no FRs — and **1** passes its own ledger. That last
+> number is not a typo.
+>
+> Two gates hold the line rather than close it: `check_fr_sweep.py` ratchets the uncited FRs at 234,
+> and `check_delivered_claims.py` (`TECH-053`) ratchets the 22 a design-less capability makes
+> invisible. Both counts may fall and can never rise, so this is the high-water mark. It is paid down
+> on contact — `specweaver-dev` §3.2c — not by a backfill programme.
+>
+> **Before depending on a `✅`, read its design's FR table and check something cites it.**
+
 ## Naming Convention
 Capabilities use a strict identifier: `[DAL]-[Topic]-[Sequence]` (e.g., `✅ C-SENS-01`).
 * **DAL**: `E` (Prototyping) to `A` (Mission-Critical)
