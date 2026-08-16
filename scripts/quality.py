@@ -144,6 +144,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # delivered — finished-stories-immutable forbids the FR, so the scope lands nowhere and
     # `check_fr_coverage.py` cannot see it, because it only judges FRs somebody wrote.
     "retirement_targets": {"doc": "all"},
+    # `TECH-053`: a ✅ nothing can verify. Two shapes no other gate sees — an add-on group flag that
+    # contradicts its own children, and a delivered capability with no design or no FRs, which
+    # `fr_sweep` scores as zero-uncited and therefore perfect. 62 delivered, 1 clean.
+    "delivered_claims": {"doc": "all"},
     "skill_sync": {"doc": "all"},
     # Same track, same reason: an instruction's references are stale relative to the whole repo,
     # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*

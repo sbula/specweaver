@@ -168,6 +168,12 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-053` 🔴: A `✅` Nothing Can Verify**
+  > [Description](../features/topic_07_technical_debt/TECH-053/TECH-053_design.md) | _(2026-08-16 — an agent flipped two roadmap groups to `🟢` from checkbox arithmetic and was asked for evidence.)_ |
+  > Of **62 capabilities marked ✅**: 39 declare FRs nothing cites, **19 have no design document at all**, 3 declare no FRs, and **1 is clean**. The 22 in the middle are invisible to
+  > `check_fr_sweep.py` by construction — no design means no FRs to be uncited, so they score zero and read as perfect. Also: nothing compares an add-on group's flag with its own children, and six
+  > disagreed. Ships the check; the 22 are ratcheted, not fixed — 19 missing designs is a programme, not a ticket.
+
 * **`TECH-051` 🟢: 24 Tests Look Like Coverage and Never Run**
   > [Description](../features/topic_07_technical_debt/TECH-051/TECH-051_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | Of 570 test files, **12 collected nothing**: 9 empty stubs and 3
   > whose class held `test_*` methods without the `Test` prefix, hiding **24 tests**. They read as coverage in a listing and in review, which is how a story skips a test it thinks exists — `R6`
