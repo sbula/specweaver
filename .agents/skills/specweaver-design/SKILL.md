@@ -49,6 +49,11 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > An `INT-US` entry is legitimate in exactly one place: a (sub)story that **already holds a
 > finished feature**, where `finished-stories-immutable` bars the closed capability from taking
 > the FR and the proof has nowhere else to live.
+>
+> **There, an OPEN `INT-US` is load-bearing — never delete it.** It is the only record that a
+> feature which is already implemented has not been integration-tested. Removing it does not
+> retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
+> the integration being written and passing. It never closes by being tidied away.
 
 ## MCP Tool Guidance
 
