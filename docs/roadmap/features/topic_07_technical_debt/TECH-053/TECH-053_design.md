@@ -106,7 +106,23 @@ the six groups — with the check's own tests proving it fires on a synthetic di
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | — | Single feature | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
+## What happened to the 22 (decided 2026-08-16)
+
+This ticket ratchets them and does not fix them (AD-3). The disposition, so the question is not
+reopened as though nobody had considered it:
+
+| | Disposition |
+|---|---|
+| `D-FLOW-01`, `E-FLOW-01` | **`TECH-054`** — one falsifiable journey each. Chosen by blast radius: every `sw` command runs through the pipeline runner and the config DB |
+| the other 17 + the 3 with no FRs | **No ticket, by decision.** Paid down by `specweaver-dev` 3.2c: a boundary that touches a capability with no FRs gives it FRs, mutant-checked. The number falls as work happens |
+
+**Nineteen designs were rejected as the answer.** An FR derived from the code it describes restates
+the implementation, and a restatement cannot fail — nineteen of them would convert a countable
+silence into nineteen claims the ledger reports as proven while proving nothing. The ratchet is
+worth more than the paperwork it is tempting to write against it.
+
 ## Session Handoff
 
 **Current status**: Design DRAFT.
 **Next step**: implement; the four capabilities named above stay open as this ticket's findings.
+The 22 are dispositioned above — `TECH-054` for two, `specweaver-dev` 3.2c for the rest.

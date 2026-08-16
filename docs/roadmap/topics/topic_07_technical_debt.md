@@ -168,6 +168,11 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Documentation & Knowledge Architecture
+* **`TECH-054` 🔴: The Two Foundations Nobody Wrote Down**
+  > [Description](../features/topic_07_technical_debt/TECH-054/TECH-054_design.md) | _(2026-08-16 — from `TECH-053`'s 19.)_ | `D-FLOW-01` (Pipeline Runner) and `E-FLOW-01` (Config DB) are
+  > marked `✅` with no design, no FRs, and a one-sentence record — under every `sw` command. Each gets **one falsifiable journey**, not a reverse-engineered design: an FR read off the code it
+  > describes can never fail. The other 17 stay ratcheted and are paid down by `specweaver-dev` 3.2c on contact, which is the decision, not the omission.
+
 * **`TECH-053` 🔴: A `✅` Nothing Can Verify**
   > [Description](../features/topic_07_technical_debt/TECH-053/TECH-053_design.md) | _(2026-08-16 — an agent flipped two roadmap groups to `🟢` from checkbox arithmetic and was asked for evidence.)_ |
   > Of **62 capabilities marked ✅**: 39 declare FRs nothing cites, **19 have no design document at all**, 3 declare no FRs, and **1 is clean**. The 22 in the middle are invisible to

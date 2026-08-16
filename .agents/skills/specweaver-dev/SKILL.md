@@ -308,6 +308,34 @@ a record of one.
 > `python scripts/mutation.py --corpus <path> --no-baseline` runs one file while you write it.
 > Authoring, dispositions and the morning gate: `docs/dev_guides/writing_mutation_campaigns.md`.
 
+### 3.2c Backfill on contact — a capability you touch gains the FRs it never had
+
+**Measured 2026-08-16 (`TECH-053`): of 62 capabilities marked `✅`, exactly ONE passes its own FR
+ledger.** Nineteen have no design document at all — eight from the "Step N" bootstrap, eleven from
+the "Feature 3.x" era whose implementation plans carry real design reasoning and **zero FRs between
+them**. They are invisible to `check_fr_sweep.py` by construction: no design means no FRs to be
+uncited, so they score zero and read as perfect.
+
+**So when a commit boundary touches one of them, it gives it FRs.** Not as a project — writing
+nineteen designs at once manufactures nineteen claims nobody can falsify, which is worse than the
+silence it replaces. On contact, you already have the context and a change to test against, which
+is the whole reason it is cheap here and expensive as an audit.
+
+Two rules make the difference between a requirement and a paraphrase:
+
+1. **Write it from why the capability exists, not from what the code does.** An FR read off the
+   implementation restates it, and a restatement can never fail.
+2. **Kill a mutant with it before believing it.** Neutralise the line the new FR claims to cover
+   (3.2b). If nothing dies, you transcribed rather than constrained — delete the FR and write a
+   different one. This is the only mechanical way to tell the two apart, and it caught two vacuous
+   tests in `TECH-051`/`TECH-053` written by someone who believed them.
+
+**Where the code predates any recorded intent, a journey proof beats a reconstructed design.**
+`D-FLOW-01`'s entire written record is *"SQLite Pipeline Runner & State Persistence."* There is
+nothing to backfill *from* except the code, so a spec would describe the implementation with a
+straight face. One falsifiable e2e — *a pipeline runs and its state survives a resume* — declares no
+FRs, invents no history, and can fail. Prefer it.
+
 ### 3.3 Refactor (if needed)
 
 - Clean up duplication, naming, structure.
