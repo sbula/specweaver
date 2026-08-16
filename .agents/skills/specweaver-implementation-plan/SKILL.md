@@ -164,6 +164,15 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > finished feature**, where `finished-stories-immutable` bars the closed capability from taking
 > the FR and the proof has nowhere else to live.
 >
+> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose
+> satisfaction needs something from outside — a call into another module, data handed across a
+> boundary, a format or schema both sides must agree on, an ordering, a shared file — is a
+> **seam FR**: a hidden contract with another feature. Those, and only those, are what an
+> integration test proves. Name them as seams when you write the FR table, because a seam FR
+> proven by a unit test with the other side mocked proves the mock, not the contract. `TECH-041`
+> is one instance: `C-VAL-03` is `✅` and its DAL override is proven link by link, never as a
+> chain.
+>
 > **There, an OPEN `INT-US` is load-bearing — never delete it.** It is the only record that a
 > feature which is already implemented has not been integration-tested. Removing it does not
 > retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
