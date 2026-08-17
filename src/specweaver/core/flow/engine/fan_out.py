@@ -3,10 +3,9 @@
 
 """Spawning sub-runs, and giving each one its own identity.
 
-Split out of `runner_utils.py` by `TECH-015`. Both members exist only because of fan-out:
-`run_fan_out` dispatches the sub-runners, and `isolate_sub_run_context` is what stops them reading
-each other's `run_id` (`TECH-014`). Keeping them together is the point — the isolation is not a
-general context utility, it is the invariant fan-out depends on.
+Both members exist only because of fan-out: `run_fan_out` dispatches the sub-runners, and
+`isolate_sub_run_context` is what stops them reading each other's `run_id`. They belong together —
+the isolation is not a general context utility, it is the invariant fan-out depends on.
 """
 
 from __future__ import annotations
@@ -22,10 +21,10 @@ if TYPE_CHECKING:
 def isolate_sub_run_context(context: RunContext, parent_run_id: str | None) -> RunContext:
     """Give a sub-run its own `RunContext`, or hand a top-level run the one it was given.
 
-    `TECH-014`. Fan-out hands the **same** `RunContext` object to every concurrent sub-runner —
-    four sites across `handlers/decompose.py` and `handlers/dual_pipeline.py`, all reaching through
+    Fan-out hands the **same** `RunContext` object to every concurrent sub-runner — four sites
+    across `handlers/decompose.py` and `handlers/dual_pipeline.py`, all reaching through
     `context.run.pipeline_runner._context` — while `_execute_loop` rebinds `context.run` on every
-    step. Shared object + per-step rebind + real concurrency meant a sub-run read a sibling's
+    step. Shared object + per-step rebind + real concurrency means a sub-run reads a sibling's
     `run_id`, so lineage and telemetry were attributed to the wrong sub-run. Measured as **every**
     step, not an occasional interleave.
 
@@ -37,9 +36,7 @@ def isolate_sub_run_context(context: RunContext, parent_run_id: str | None) -> R
     The copy is deliberately **shallow**: only `run` is rebound per step, so paths, providers and
     adapters stay shared by reference as the read-only infrastructure they are.
 
-    Lives here rather than inline in `runner.py` because that file sits against its 600-line RED
-    threshold — see `TECH-020`, which names buying headroom by condensing comments as the pattern
-    to stop repeating.
+    Lives here rather than inline in `runner.py`, which sits against its 600-line RED threshold.
     """
     if parent_run_id is None:
         return context

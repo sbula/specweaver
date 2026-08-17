@@ -214,18 +214,17 @@ class GateEvaluator:
                     attempts[step_idx],
                     gate.max_retries,
                 )
-                # TECH-021: retain the FAILING step's result before rewinding. Without this the
-                # record was left status=RUNNING / result=None, so a human parked at the loop
-                # target had no record of why the later step failed — they saw the draft gate and
-                # nothing else. Found by INT-US-21's e2e driving a spec that fails the battery:
-                # every resume looked identical to the first, with the reason discarded each time.
+                # Retain the FAILING step's result before rewinding. Without this the record is
+                # left status=RUNNING / result=None, so a human parked at the loop target has no
+                # record of why the later step failed — they see the draft gate and nothing else,
+                # and every resume looks identical to the first.
                 run.step_records[step_idx].status = result.status
                 run.step_records[step_idx].result = result
 
-                # TECH-033: record the retry this loop-back just spent, the way `_handle_retry`
-                # does. Without it the budget existed only in memory for this path, so a resume
-                # restarted it at zero — and seeding the counter from the persisted value would
-                # have fixed `retry` while leaving `loop_back` silently resetting.
+                # Record the retry this loop-back just spent, the way `_handle_retry` does.
+                # Without it the budget lives only in memory for this path, so a resume restarts it
+                # at zero — and seeding the counter from the persisted value fixes `retry` while
+                # leaving `loop_back` silently resetting.
                 run.step_records[step_idx].attempt = attempts[step_idx] + 1
 
                 # Reset target step to PENDING

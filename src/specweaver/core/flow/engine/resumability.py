@@ -3,9 +3,9 @@
 
 """Which runs may be resumed, and why the others may not.
 
-Found by INT-US-21 SF-03 CB-3's e2e (2026-07-28): resuming an already-COMPLETED run left it stuck
-in ``RUNNING``. ``PipelineRunner.resume()`` sets ``RunStatus.RUNNING`` unconditionally, the loop
-finds nothing left to execute, and the corrupted status is persisted by the ``finally:`` block — so
+Without this, resuming an already-COMPLETED run leaves it stuck in ``RUNNING``:
+``PipelineRunner.resume()`` sets ``RunStatus.RUNNING`` unconditionally, the loop finds nothing left
+to execute, and the corrupted status is persisted by the ``finally:`` block — so
 a finished journey reports as in-flight forever, and every status-based query downstream believes
 it.
 

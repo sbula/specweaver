@@ -27,7 +27,7 @@ class SQLiteReservationSystem:
         return conn
 
     def _rename_legacy_table(self, conn: sqlite3.Connection) -> None:
-        """TECH-005 FR-8: migrate a pre-SF-3 installation's `sw_reservations` table to
+        """Migrate a legacy installation's `sw_reservations` table to
         `flow_reservations` in place, preserving all held locks. Held locks are transient, but the
         TABLE name is not self-healing — `expires_at` is written but never read/enforced (no TTL
         sweep exists), so a crashed run can leave stale rows under the old name indefinitely.

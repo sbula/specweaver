@@ -3,7 +3,7 @@
 
 """Plan-context hydration — the bridge from a completed step's output into the RunContext.
 
-INT-US-21 FR-2/AD-1. Two distinct plan concepts live on two distinct fields:
+Two distinct plan concepts live on two distinct fields:
 
 * ``decompose+feature`` -> ``context.plan_context.decomposition`` (DecompositionPlan, canonical JSON)
 * ``plan+spec``         -> ``context.plan_context.plan`` (implementation PlanArtifact file content)
@@ -32,10 +32,9 @@ logger = logging.getLogger(__name__)
 
 #: The key `decompose+feature` nests its DecompositionPlan under in ``StepResult.output``.
 #:
-#: This is the AD-4-frozen seam between the writer (``handlers/decompose.py``) and the reader
-#: (this module). It lived as the bare literal ``"plan"`` in both files until the CB-1 pre-commit
-#: gate (2026-07-26) observed that two string literals which MUST agree, with nothing forcing them
-#: to, is not a frozen seam. Both sides import this name; ``C-FLOW-12`` should too.
+#: A frozen seam between the writer (``handlers/decompose.py``) and the reader (this module). As a
+#: bare literal ``"plan"`` in both files it would be two strings that MUST agree with nothing
+#: forcing them to. Both sides import this name, and so should any future consumer.
 DECOMPOSITION_PLAN_KEY = "plan"
 
 
@@ -86,9 +85,9 @@ def hydrate_plan_context(
     result: StepResult,
     context: RunContext,
 ) -> None:
-    """Bridge a completed step's output into the RunContext plan fields (INT-US-21 FR-2).
+    """Bridge a completed step's output into the RunContext plan fields.
 
-    Two distinct concepts, two distinct fields (AD-1):
+    Two distinct concepts, two distinct fields:
 
     * ``decompose+feature`` -> ``context.plan_context.decomposition`` (DecompositionPlan, canonical JSON)
     * ``plan+spec``         -> ``context.plan_context.plan`` (implementation PlanArtifact file content)
@@ -114,11 +113,10 @@ def hydrate_plan_context(
             # (where the store already stringified it) — the same run would behave differently
             # depending on whether it was resumed. Sharing this function is only half the
             # guarantee; the serialization semantics must match too.
-            # INT-US-21 SF-02: the handler nests the plan under "plan" so it can also report
-            # `decomposition_path` without that key leaking into this field. AD-4 freezes
-            # `context.plan_context.decomposition` as canonical DecompositionPlan JSON, and
-            # OrchestrateComponentsHandler / C-FLOW-12 consume it as such. The `.get("plan", ...)`
-            # fallback keeps records persisted before SF-02 (flat plan) rehydrating correctly.
+            # The handler nests the plan under "plan" so it can also report `decomposition_path`
+            # without that key leaking into this field. `context.plan_context.decomposition` is
+            # frozen as canonical DecompositionPlan JSON, and its consumers read it as such. The
+            # `.get("plan", ...)` fallback keeps older flat-plan records rehydrating correctly.
             payload = result.output or {}
             nested = payload.get(DECOMPOSITION_PLAN_KEY)
             # Local first: `model_copy` erases the narrowing the log call below needs.
@@ -205,8 +203,8 @@ def _eligible_source(
         record = run.step_records[idx]
         if record.step_name != step_def.name:
             continue
-        # `TECH-021` is what makes this checkable: before it, a loop-back discarded the failing
-        # result and there was nothing left to replay.
+        # Checkable only because a loop-back retains the failing result; discarding it would leave
+        # nothing to replay.
         if record.result is None or record.result.status == StepStatus.PASSED:
             continue
         found = (step_def.name, record.result)
@@ -218,7 +216,7 @@ def replay_feedback(
     run: PipelineRun,
     context: RunContext,
 ) -> None:
-    """Restore `context.feedback` for a run resumed at a loop target (`INT-US-04` FR-3).
+    """Restore `context.feedback` for a run resumed at a loop target.
 
     `context.feedback` lives in memory and dies with the process, so a resumed run regenerated with
     no findings and repeated the mistake validation had just caught. Same shape as
@@ -280,7 +278,7 @@ def rehydrate_from_records(
     run: PipelineRun,
     context: RunContext,
 ) -> None:
-    """Rebuild the plan context from persisted step records (INT-US-21 FR-3).
+    """Rebuild the plan context from persisted step records.
 
     ``context.plan_context`` lives in memory and dies with the process, so a
     resumed run must reconstruct them before the loop starts. This replays
@@ -343,6 +341,6 @@ def rehydrate_from_records(
 
         hydrate_plan_context(step_def, record.result, context)
 
-    # INT-US-04 SF-01 FR-3: feedback is the other half of what a resumed run lost. Independent of
-    # the loop above -- it keys on `run.current_step`, not on any individual record.
+    # Feedback is the other half of what a resumed run lost. Independent of the loop above -- it
+    # keys on `run.current_step`, not on any individual record.
     replay_feedback(pipeline, run, context)

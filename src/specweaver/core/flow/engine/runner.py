@@ -49,10 +49,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-#: `resolve_should_isolate` is re-exported, not used here — `TECH-020` moved its only call site
-#: into `step_execution.execute_step`, but existing tests import it from this module and the
-#: refactor's contract is that they pass untouched. Explicit so the next `ruff --fix` does not
-#: quietly delete it again, which is exactly how it broke mid-refactor.
+#: `resolve_should_isolate` is re-exported, not used here — its only call site is
+#: `step_execution.execute_step`, but existing tests import it from this module. Explicit so a
+#: `ruff --fix` does not quietly delete it.
 __all__ = ["PipelineRunner", "resolve_should_isolate"]
 
 
@@ -84,7 +83,7 @@ class PipelineRunner:
         self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline, context)
 
-        # INT-US-21 SF-03 CB-2 (R-13) — see `current_run_id`.
+        # See `current_run_id`.
         self._current_run_id: str | None = None
 
         from specweaver.core.flow.engine.routers import RouterEvaluator
@@ -97,10 +96,10 @@ class PipelineRunner:
     def spawn(self, pipeline: PipelineDefinition) -> PipelineRunner:
         """A sibling runner for a sub-pipeline, sharing this run's collaborators.
 
-        `TECH-024` cycle 2. Four sites — both fan-out paths in `handlers/decompose`,
-        `handlers/dual_pipeline`, and `engine/fan_out` — each imported `PipelineRunner` purely to
-        re-construct one from this runner's `_context` / `_registry` / `_store` / `_on_event`. Those
-        imports were the back-edges of a five-module cycle, and they were deferred inside functions
+        Four sites — both fan-out paths in `handlers/decompose`, `handlers/dual_pipeline`, and
+        `engine/fan_out` — otherwise import `PipelineRunner` purely to re-construct one from this
+        runner's `_context` / `_registry` / `_store` / `_on_event`. Those imports are the back-edges
+        of a five-module cycle, and deferring them inside functions
         to hide it, which is the workaround `check_coupling` names rather than a fix.
 
         The callers already hold this object (via `context.run.pipeline_runner`), so asking it to
@@ -108,7 +107,7 @@ class PipelineRunner:
         copied four times, where a fifth collaborator would have had to be added in four places.
 
         The sub-run gets its own `RunContext` when it runs, not here: `run(parent_run_id=...)` is
-        what marks it as a sub-run (`TECH-014`).
+        what marks it as a sub-run.
         """
         return PipelineRunner(
             pipeline,
@@ -213,17 +212,17 @@ class PipelineRunner:
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
 
-        # INT-US-21 FR-3: the plan context lives in memory and died with the previous session.
-        # Rebuild it from persisted step records BEFORE the loop starts, so the first resumed
-        # handler sees the same context a same-session handler would have.
+        # The plan context lives in memory and dies with the session. Rebuild it from persisted
+        # step records BEFORE the loop starts, so the first resumed handler sees the same context a
+        # same-session handler would have.
         rehydrate_from_records(self._pipeline, run, self._context)
 
         from specweaver.core.config.database import cqrs_context
 
         try:
             async with cqrs_context():
-                # INT-US-21 FR-4: the human chose to resume, which IS the approval of a
-                # reviewed HITL gate-park. One-shot — consumed on the first loop iteration.
+                # The human chose to resume, which IS the approval of a reviewed HITL gate-park.
+                # One-shot — consumed on the first loop iteration.
                 return await execute_run(self, run, logger, approve_parked=True)
         finally:
             await self._finalize(run)
@@ -305,8 +304,7 @@ class PipelineRunner:
     async def _finalize(self, run: PipelineRun) -> None:
         """End-of-run bookkeeping, run from the `finally` of BOTH `run()` and `resume()`.
 
-        Extracted 2026-08-14 while `TECH-017` CB-2 was proving the handover seam: the two entry
-        points repeated this pair, so a change to one could silently miss the other. Handover is
+        Shared by both entry points, so a change cannot silently miss one of them. Handover is
         saved before telemetry is flushed, because `save_handover_context` reads the run's step
         records and `_flush_telemetry` is the step that may drain them.
         """

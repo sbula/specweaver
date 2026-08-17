@@ -3,9 +3,8 @@
 
 """Running ONE step inside its own ephemeral git worktree.
 
-Split out of `runner_utils.py` by `TECH-015`. The per-step INT-US-09 path, as distinct from
-`session.py`'s per-run C-EXEC-06 worktree — the two are mutually exclusive at runtime and were
-easier to confuse while they shared a file that named neither.
+The per-step path, as distinct from `session.py`'s per-run worktree. The two are mutually exclusive
+at runtime, so they live in files that name which is which.
 """
 
 from __future__ import annotations
@@ -74,7 +73,7 @@ async def execute_in_sandbox(
     # 1. Add worktree
     add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
     if add_res.status != AtomStatus.SUCCESS:
-        # INT-US-09 fail-closed: isolation was requested (per-step or policy) but the
+        # Fail closed: isolation was requested (per-step or policy) but the
         # worktree could not be created. Surface GitAtom's ACTUAL failure (do not assume
         # the cause) plus an actionable hint — the most common cause is a non-git project.
         raise RuntimeError(
@@ -87,7 +86,7 @@ async def execute_in_sandbox(
 
     isolated_context = copy.copy(context)
     isolated_context.output_dir = context.project_path / wt_path
-    # INT-US-09: rebind the execution root to the worktree source tree so untrusted-
+    # Rebind the execution root to the worktree source tree so untrusted-
     # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
     # cwd inside the worktree rather than against the real project root.
     # Shallow copy: rebind the whole attribute, don't edit the shared one.

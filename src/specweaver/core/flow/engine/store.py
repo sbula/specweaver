@@ -89,7 +89,7 @@ CREATE INDEX IF NOT EXISTS idx_flow_validation_results_run
 #: schema contains rather than gating a migration step.
 _CURRENT_SCHEMA_VERSION = 3
 
-# TECH-005 FR-8: pre-SF-3 installations used these unprefixed names. Order matters — rename
+# Legacy installations used these unprefixed names. Order matters — rename
 # `flow_pipeline_runs`' predecessor before `flow_audit_log`'s (which references it), and
 # `state_schema_version` last since `_ensure_schema` reads it immediately afterward to decide
 # whether this is a fresh DB or one needing the v1->v2 column migration.
@@ -126,7 +126,7 @@ class StateStore:
     # ------------------------------------------------------------------
 
     def _rename_legacy_tables(self, conn: sqlite3.Connection) -> None:
-        """TECH-005 FR-8: migrate a pre-SF-3 installation's `pipeline_runs`/`audit_log`/
+        """Migrate a legacy installation's `pipeline_runs`/`audit_log`/
         `state_schema_version` tables to their `flow_`-prefixed equivalents in place, preserving
         all data. MUST run before the version-check logic below — that logic reads
         `flow_state_schema_version` to decide fresh-DB vs. needs-v1-to-v2-migration, and if the
@@ -277,8 +277,7 @@ class StateStore:
         `sw resume` used to build this answer itself, by asking `get_latest_run` for each of the 14
         **bundled** pipeline names in turn. That could not see a run of a pipeline loaded from a
         YAML path — an input `sw run` documents and accepts — and it returned the first bundled
-        name with a resumable run rather than the most recent one. Both are the same missing query
-        (`TECH-054` FR-1).
+        name with a resumable run rather than the most recent one. Both are the same missing query.
 
         The status filter is inside the SQL rather than applied to the result: filtering afterwards
         would pick the newest run of any kind and then discard it, reporting nothing to resume while
@@ -317,7 +316,7 @@ class StateStore:
         attempt: int,
         results: list[dict[str, Any]],
     ) -> None:
-        """Append one row per finding for a validate step's rule results (`INT-US-04` FR-2).
+        """Append one row per finding for a validate step's rule results.
 
         `results` is `StepResult.output["results"]` exactly as `_rule_payload` builds it, so this
         takes primitives and imports nothing from `assurance.validation` — the store stays a store.
@@ -327,11 +326,10 @@ class StateStore:
         it pass?"* is the first question anyone asks of validation history.
 
         **Append-only.** A retried step adds rows under a higher `attempt` rather than replacing the
-        earlier ones; overwriting would discard the failures that triggered the retry, which is the
-        loss `TECH-021` was filed to stop.
+        earlier ones; overwriting would discard the failures that triggered the retry.
 
         Raises on a `run_id` with no run row — the foreign key is the point, and a row that cannot
-        name its run is not worth keeping. The pipeline-loop caller swallows it (plan D-7); a store
+        name its run is not worth keeping. The pipeline-loop caller swallows it; a store
         method that silently dropped writes would be lying to every other caller.
         """
         now = _now_iso()

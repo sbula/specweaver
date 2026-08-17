@@ -49,7 +49,7 @@ class _StepState:
         self.start_time: float | None = None
         self.elapsed: float = 0.0
         self.note: str = ""
-        #: `TECH-040`: handler output, rendered only under `--verbose`.
+        #: Handler output, rendered only under `--verbose`.
         self.detail: str = ""
 
     def mark_running(self) -> None:
@@ -78,7 +78,7 @@ _STATUS_ICONS = {
 
 
 def _format_output(result: StepResult | None) -> str:
-    """One line per key of a step's `output`, for `--verbose`. `TECH-040`.
+    """One line per key of a step's `output`, for `--verbose`.
 
     Empty when there is nothing to show, so a handler that returns no output does not gain a blank
     row — `--verbose` must add detail where detail exists, not add noise everywhere.
@@ -98,8 +98,8 @@ def _format_output(result: StepResult | None) -> str:
 
 
 #: Row style per status. A mapping rather than an if-chain: `_render` gained a second row for
-#: `--verbose` detail (`TECH-040`) and tipped over the complexity limit, and the branch ladder was
-#: the part carrying no information — every arm did the same thing with a different colour.
+#: `--verbose` detail, which tips `_render` over the complexity limit. The branch ladder carries no
+#: information anyway — every arm does the same thing with a different colour.
 _STATUS_STYLES = {
     "running": "bold cyan",
     "passed": "green",
@@ -319,8 +319,8 @@ class RichPipelineDisplay:
                 _elapsed_text(step),
             )
 
-            # `TECH-040`: the "detailed handler output" the --verbose help text promises. A second
-            # row rather than an appended clause, so a multi-key output stays readable.
+            # The "detailed handler output" the --verbose help text promises. A second row rather
+            # than an appended clause, so a multi-key output stays readable.
             if step.detail:
                 table.add_row("", Text(step.detail, style="dim"), "")
 

@@ -1,11 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""HITL approve-on-resume (INT-US-21 FR-4 / AD-2).
+"""HITL approve-on-resume.
 
-``GateEvaluator`` parks HITL gates unconditionally and ``resume()`` only flipped the run status
-back to RUNNING, so the loop re-executed the step and the gate re-parked — forever. Resuming a
-reviewed gate-park now *is* the approval.
+``GateEvaluator`` parks HITL gates unconditionally, so a ``resume()`` that merely flips the run
+status back to RUNNING re-executes the step and re-parks the gate, forever. Resuming a reviewed
+gate-park *is* the approval.
 
 The discriminator lives entirely in already-persisted state, so this needs no schema change and
 no approval store:

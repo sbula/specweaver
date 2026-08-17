@@ -3,8 +3,8 @@
 
 """The runner's progress-event contract.
 
-Split out of `runner_utils.py` by `TECH-015`. A Protocol the CLI and API display layers implement,
-which is why it has no business sitting beside worktree teardown.
+A Protocol the CLI and API display layers implement, which is why it does not sit beside worktree
+teardown.
 """
 
 from __future__ import annotations

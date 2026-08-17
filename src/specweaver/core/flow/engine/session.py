@@ -1,10 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The C-EXEC-06 session-worktree lifecycle around a whole run.
+"""The session-worktree lifecycle around a whole run.
 
-Split out of `runner_utils.py` by `TECH-015`. One ephemeral worktree for the entire run, reconciled
-once and torn down once — distinct from the per-step isolation in `sandboxed_execution.py`, which
+One ephemeral worktree for the entire run, reconciled once and torn down once — distinct from the
+per-step isolation in `sandboxed_execution.py`, which
 this deliberately suppresses while a session is active.
 """
 
@@ -28,11 +28,11 @@ async def execute_run(
     *,
     approve_parked: bool = False,
 ) -> PipelineRun:
-    """C-EXEC-06: run the loop, wrapping it in ONE session worktree when session isolation is on.
+    """Run the loop, wrapping it in ONE session worktree when session isolation is on.
 
-    ``approve_parked`` (INT-US-21 FR-4/D1) is forwarded to the loop: ``resume()`` passes True so a
-    reviewed HITL gate-park advances instead of re-parking; ``run()`` never does, so the
-    fresh-run path is byte-identical to before.
+    ``approve_parked`` is forwarded to the loop: ``resume()`` passes True so a reviewed HITL
+    gate-park advances instead of re-parking; ``run()`` never does, so the fresh-run path is
+    unaffected.
 
     The whole run executes in a single ephemeral worktree (generated code persists across steps),
     reconciled once at the end (reconcile lands in SF-02) and torn down once (worktree + branch).

@@ -3,10 +3,10 @@
 
 """Executing one step, and deciding what the loop does next.
 
-`TECH-020`. Extracted from `PipelineRunner._execute_loop`, which was **365 lines — around 60% of
-`runner.py` — in a single method at cognitive complexity 50 against a ceiling of 15**, silenced
-with `# noqa: C901`. The suppression was the load-bearing part of that ticket: the file-size
-threshold is a proxy, but the `noqa` was a direct admission the method was past the project's own
+The per-step body, kept out of `PipelineRunner._execute_loop`. Inlined there it is 365 lines —
+around 60% of `runner.py` — in a single method at cognitive complexity 50 against a ceiling of 15,
+which only a `# noqa: C901` makes tolerable. The file-size threshold is a proxy, but such a
+suppression is a direct admission the method is past the project's own
 bar.
 
 The seams were already visible, because three modules had been carved out of this same loop before
@@ -66,9 +66,9 @@ class LoopState:
     def for_run(cls, run: PipelineRun, *, approve_parked: bool = False) -> LoopState:
         """Start the loop with the retry budget each step has **already** spent.
 
-        `TECH-033`. `attempts` used to start empty on every `_execute_loop` entry, and `resume()`
-        re-enters that loop — so every `sw resume` handed each step a full fresh budget and
-        `max_retries: 3` bounded retries *per session* rather than per step.
+        `attempts` starting empty on every `_execute_loop` entry would hand each step a full fresh
+        budget on every `sw resume`, since `resume()` re-enters that loop — making
+        `max_retries: 3` a bound per session rather than per step.
 
         `StepRecord.attempt` already carried the durable count: it is written by the gate and it
         round-trips through the store. Only the read back was missing.
@@ -194,8 +194,8 @@ async def execute_step(
             }
         )
 
-        # INT-US-09: tri-state isolation gate (see resolve_should_isolate).
-        # C-EXEC-06: inside an active session, ALL steps already run in the one session worktree —
+        # Tri-state isolation gate (see resolve_should_isolate).
+        # Inside an active session, ALL steps already run in the one session worktree —
         # unconditionally bypass per-step isolation (even explicit use_worktree=True) so no nested
         # worktree is created.
         if not getattr(runner, "_session_active", False) and resolve_should_isolate(
@@ -417,10 +417,10 @@ def persist_validation_results(
     step_idx: int,
     result: StepResult,
 ) -> None:
-    """Append a validate step's rule results to the state DB (`INT-US-04` FR-2).
+    """Append a validate step's rule results to the state DB.
 
     **Called before `resolve_outcome`, deliberately.** The obvious home is the advance join point
-    beside `hydrate_plan_context`, and CB-2 was planned there — but that line is reached only on
+    beside `hydrate_plan_context`, but that line is reached only on
     `PROCEED`. A validate step that fails and loops back returns `CONTINUE`; one that fails gateless
     or parks returns `RETURN`. Writing there would persist passing runs and drop every failure,
     which is the half that matters: those findings trigger the loop-back and are what `FR-3`
@@ -439,8 +439,8 @@ def persist_validation_results(
     if not isinstance(results, list):
         return
 
-    # The DURABLE attempt, not the in-memory counter: `TECH-033` moved the retry budget onto the
-    # step record precisely because the live one restarts at zero on resume.
+    # The DURABLE attempt, not the in-memory counter: the retry budget lives on the step record
+    # precisely because the live one restarts at zero on resume.
     record = run.step_records[step_idx] if step_idx < len(run.step_records) else None
     attempt = getattr(record, "attempt", 1) or 1
 
@@ -491,12 +491,12 @@ async def run_one_step(
 ) -> LoopAction:
     """One full iteration of the pipeline loop: approve, dispatch, execute, judge, advance.
 
-    `TECH-020`'s stated seam — the per-step body as a collaborator, leaving `_execute_loop` as
-    iteration and bookkeeping. `CONTINUE` and `PROCEED` both mean "next iteration" to the caller;
+    The per-step body as a collaborator, leaving `_execute_loop` as iteration and bookkeeping.
+    `CONTINUE` and `PROCEED` both mean "next iteration" to the caller;
     the distinction is real only in here, where it decides whether `current_step` moves.
     """
-    # INT-US-21 FR-4 — MUST stay at the very top. Two later blocks would otherwise destroy the
-    # evidence this decision reads:
+    # MUST stay at the very top. Two later blocks would otherwise destroy the evidence this
+    # decision reads:
     #   * the staleness bypass below can complete the step as SKIPPED and continue, discarding the
     #     human's approval and the stored result;
     #   * mark_step_running() overwrites record.status WAITING_FOR_INPUT -> RUNNING.
@@ -518,7 +518,7 @@ async def run_one_step(
     announce_step_start(runner, run, step_def, step_idx, total, handler)
     result = await execute_step(runner, handler, step_def, run)
 
-    # INT-US-04 SF-01 FR-2: BEFORE resolve_outcome, so a failing validate step's findings are
+    # BEFORE resolve_outcome, so a failing validate step's findings are
     # persisted too — resolve_outcome sends loop-backs and gateless failures down paths that never
     # reach the advance join point below.
     persist_validation_results(runner, run, step_def, step_idx, result)
@@ -527,7 +527,7 @@ async def run_one_step(
     if action is not LoopAction.PROCEED:
         return action
 
-    # INT-US-21 FR-2: the join point BOTH advance paths reach — the gate's "advance" fall-through
+    # The join point BOTH advance paths reach — the gate's "advance" fall-through
     # and the no-gate branch. Hydrating inside the gate block would silently skip every gateless
     # plan/decompose step.
     hydrate_plan_context(step_def, result, runner._context)

@@ -131,7 +131,7 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.CONVERT, StepTarget.SCENARIO),
         # Arbiter pipeline combos (Feature 3.28 SF-C)
         (StepAction.ARBITRATE, StepTarget.VERDICT),
-        # Native CLI Action Node combos (C-EXEC-02 SF-2)
+        # Native CLI Action Node combos
         (StepAction.BASH, StepTarget.SCRIPT),
     }
 )
@@ -218,7 +218,7 @@ class PipelineStep(BaseModel):
     gate: GateDefinition | None = None
     router: RouterDefinition | None = None
     description: str = ""
-    # INT-US-09: tri-state — None = defer to the US-9 isolation policy
+    # Tri-state — None = defer to the run-wide isolation policy
     # (context.isolation.enforce_isolation); True = force isolation on; False = force opt-out.
     use_worktree: bool | None = None
 

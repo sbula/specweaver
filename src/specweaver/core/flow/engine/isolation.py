@@ -3,9 +3,9 @@
 
 """Whether a step runs isolated, and under what allow-list.
 
-Split out of `runner_utils.py` by `TECH-015`. The policy questions — tri-state worktree gating,
-DAL escalation, and the reconcile allow-list derived from the spec stem — are one contract, and a
-module named for it can be contradicted by the next addition. `runner_utils` could not be.
+The policy questions — tri-state worktree gating, DAL escalation, and the reconcile allow-list
+derived from the spec stem — are one contract, and a module named for it can be contradicted by the
+next addition. A grab-bag named for being leftovers cannot.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_should_isolate(step_def: Any, context: Any) -> bool:
-    """INT-US-09 tri-state worktree-isolation gate resolution.
+    """Tri-state worktree-isolation gate resolution.
 
     An explicit per-step ``use_worktree`` (``True``/``False``) wins; ``None`` — or a
     missing attribute — defers to the US-9 isolation policy (``context.isolation.enforce_isolation``,
@@ -38,7 +38,7 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
 
 
 def _derive_allowed_paths(spec_path: Path) -> list[str]:
-    """C-EXEC-06 SF-03 (FR-5, AD-2): the reconcile allow-list from the spec stem.
+    """The reconcile allow-list, derived from the spec stem.
 
     Mirrors the pipeline's generation targets so the single end-of-run strip-merge
     authorizes exactly the files the run actually generates. Inside a session,
@@ -65,24 +65,24 @@ def apply_session_policy(
     *,
     dal_auto_escalate: bool = False,
 ) -> None:
-    """C-EXEC-06 SF-03 (FR-5, FR-7): freeze per-run isolation policy onto the context.
+    """Freeze per-run isolation policy onto the context.
 
-    Called at the composition root (ADR-002). Reads the opt-in ``[sandbox]`` knobs and,
+    Called at the composition root (`ADR-002`). Reads the opt-in ``[sandbox]`` knobs and,
     **only when per-run isolation is on**, populates ``allowed_paths`` (the configured
     override, else the derived generation targets).
 
-    ``dal_auto_escalate`` (INT-US-03 SF-03, AD-8): when True and the explicit
+    ``dal_auto_escalate``: when True and the explicit
     ``enforce_session_isolation`` flag is off, the policy auto-enables session isolation if
     the touched code's resolved DAL is at/above the ``auto_isolate_min_dal`` threshold
     (default ``DAL_B``). This is **opt-in per caller** — ``sw implement`` passes True;
     ``sw run``/``sw resume`` leave it False, so their behavior is byte-identical (escalation
     never even resolves a DAL for them).
 
-    NFR-2 guard: when the policy is OFF, ``allowed_paths`` is left EMPTY — the per-step
-    INT-US-09 path (``execute_in_sandbox``) also reads ``allowed_paths``, so populating it
-    here would silently change per-step ``strip_merge`` behavior.
+    When the policy is OFF, ``allowed_paths`` is left EMPTY — the per-step path
+    (``execute_in_sandbox``) also reads ``allowed_paths``, so populating it here would silently
+    change per-step ``strip_merge`` behavior.
 
-    C2 (no half-apply): the allow-list is computed BEFORE either field is mutated, so a
+    No half-apply: the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the
     dangerous "session on, empty allow-list" state that would drop all generated code.
     Both fields land in ONE ``model_copy``, so the half-applied state cannot be represented.
@@ -127,7 +127,7 @@ def seed_dal_level(context: RunContext) -> Any:
 
 
 def _dal_requires_isolation(context: RunContext, sandbox: Any, logger: logging.Logger) -> bool:
-    """INT-US-03 SF-03 (AD-8): does the touched code's DAL meet the escalation threshold?
+    """Does the touched code's DAL meet the escalation threshold?
 
     Reads ``auto_isolate_min_dal`` (a ``DALLevel`` name, or ``"off"`` to disable), then defers
     to ``seed_dal_level`` for the run's DAL (resolving and caching it if the runner has not

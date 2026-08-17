@@ -3,8 +3,8 @@
 
 """Pre-run safety checks that must fail the run rather than warn.
 
-Split out of `runner_utils.py` by `TECH-015`. Today this is the vault-binding audit: a tracked
-`vault.env` aborts execution rather than leaking credentials into a commit.
+Today this is the vault-binding audit: a tracked `vault.env` aborts execution rather than leaking
+credentials into a commit.
 """
 
 from __future__ import annotations
