@@ -1,10 +1,26 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The MCP atom: intent dispatch, executor lifecycle, and the container boundary.
+
+Proves: C-INTL-02 FR-2
+
+Cited from `INT-US-23-MIG`. Two mutants die: removing the boundary guard entirely (1 fails), and never
+booting the executor (10 fail).
+
+**A third mutant survived and had to be closed.** Widening `allowed_executables` from
+`{"docker", "podman"}` to include `bash` passed the whole suite — the guard fires on ABSENCE from the
+set, and asserting that *something* is rejected leaves the set itself unpinned. That is a sandbox
+boundary able to move silently. `test_only_container_runtimes_are_allowed` pins it against shells and
+interpreters, and the mutant now dies.
+"""
+
 from __future__ import annotations
 
 import sys
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from specweaver.sandbox.base import AtomStatus
 from specweaver.sandbox.mcp.core.atom import MCPAtom
@@ -254,3 +270,18 @@ class TestMCPAtomIntents:
         assert "***RESTRICTED***" in connections[1]
         assert "supersecret" not in connections[1]
         assert connections[2]["sub"][1] == "***RESTRICTED***"
+
+
+@pytest.mark.parametrize("executable", ["bash", "sh", "python", "/bin/sh", "npx"])
+def test_only_container_runtimes_are_allowed(executable) -> None:
+    """The allow-list is pinned, not just its rejection behaviour.
+
+    `C-INTL-02` FR-2 requires the MCP server to boot inside a container runtime. The guard rejects
+    anything absent from `{"docker", "podman"}` — and a test asserting only that *something* is
+    rejected leaves the SET itself unpinned. Widening it to include `bash` survived the whole suite,
+    which is a sandbox boundary quietly moving.
+
+    This fails if a shell or interpreter is ever added to that set.
+    """
+    with pytest.raises(ValueError, match="Boundary Violation"):
+        MCPAtom(command=[executable, "anything"])

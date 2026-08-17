@@ -1,5 +1,12 @@
 # Implementation Plan: Common MCP Client Architecture [SF-01: Context YAML & Vault Bindings]
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-23-MIG`. Proof and mutants: `tests/unit/core/flow/handlers/test_mcp_assembler.py` (FR-1, FR-3,
+FR-4) and `tests/unit/sandbox/mcp/core/mcp/test_mcp_atom.py` (FR-2).
+
+FR-2 needed a new test: the container-runtime allow-list could be widened to include `bash` with the
+whole suite green, because the guard was only ever asserted to reject *something*.
+
 - **Feature ID**: 3.32c
 - **Sub-Feature**: SF-01 — Context YAML & Vault Bindings
 - **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_design.md

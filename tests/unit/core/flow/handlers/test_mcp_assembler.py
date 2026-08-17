@@ -2,7 +2,23 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for MCP Pre-Fetch Context Assembler utility."""
+"""Assembling MCP context: which servers, which resources, and what reaches the prompt.
+
+Proves: C-INTL-02 FR-1, C-INTL-02 FR-3, C-INTL-02 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-23-MIG`. `C-INTL-02` is `✅` with four FRs, none cited.
+
+Mutants:
+
+* FR-1 — `mcp_servers` never read from the topology: 10 fail.
+* FR-3 — the `read_resource` intent swapped for `list_servers`, so servers are discovered and their
+  resources never fetched: 4 fail.
+* FR-4 — `environment_context=None`, so fetched context never reaches the prompt envelope: 1 fails.
+
+FR-3's prose names a `read_mcp_resource` request; the code calls a `read_resource` intent that issues
+the `resources/read` RPC. Same mechanism, different vocabulary — worth noting, because searching for
+the FR's own words finds nothing and reads as absent code.
+"""
 
 from __future__ import annotations
 
