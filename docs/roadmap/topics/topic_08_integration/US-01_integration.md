@@ -157,7 +157,7 @@
   | P-4 | `sw githook install --pre-commit` writes a hook that invokes the interceptor | single feature | `B-VAL-02` | yes — **done** | — |
   | P-5 | Seam: the interceptor reads the git *index*, locates each staged file's plan by path or by lineage uuid, and runs a one-step `DETECT`/`DRIFT` pipeline | cross-module | `B-VAL-02` | yes — **done** | — |
   | P-6 | Journey: a drifted staged file aborts a real `git commit` | cross-feature | `B-VAL-02` | yes — **done** | — |
-  | P-7 | Journey: conventions discovered by `E-VAL-02` are what the pre-commit interceptor judges against | cross-feature | this contract, deferred | no | none — the two capabilities never meet today; see below |
+  | P-7 | Journey: conventions discovered by `E-VAL-02` are what the pre-commit interceptor judges against | cross-feature | this contract, deferred | no | needs a product decision — nothing joins the two capabilities; see below |
   | P-8 | Review stages are configurable | cross-feature | `E-VAL-04` (unbuilt) | no | `E-VAL-04` owns this as its own FR |
 
   **Fifteen FRs across two capabilities, all cited, all behind killed mutants.** `E-VAL-02` had **no
@@ -171,6 +171,12 @@
   "correct" — conventions versus structural contract — and **nothing joins them.** The interceptor
   judges a file against `specs/*_plan.yaml`; the discovered standards go only into generation prompts.
   A reader could reasonably assume a pre-commit check enforces the project's conventions. It does not.
+
+  **Audited 2026-08-17: this row's blocker cell used to read "none".** That was wrong in a way worth
+  correcting rather than leaving — "none" is the cell the other deferred rows use for *write the test*,
+  and this row cannot be closed by a test. There is no journey to exercise until something connects
+  discovered conventions to the pre-commit check, which is a product decision. A blocker cell that
+  understates the obstacle sends the next reader looking for a missing test that was never missing.
 
   ### `B-VAL-02`: three wordings that did not match the code
 
