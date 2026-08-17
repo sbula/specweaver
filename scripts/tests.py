@@ -104,7 +104,7 @@ DAL_LETTERS = ("A", "B", "C", "D", "E")
 TECH_KINDS = ("refactor", "bugfix", "tooling", "audit")
 
 CAPABILITY_ID = re.compile(r"\b([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}\b")
-INT_ID = re.compile(r"^INT-US-\d{2}(?:-SF\d{2})?$", re.I)
+INT_ID = re.compile(r"^INT-US-\d{2}(?:-SF\d{2}|-SUB)?(?:-MIG)?$", re.I)
 TECH_ID = re.compile(r"^TECH-(\d{3})$", re.I)
 CAP_ID = re.compile(r"^([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}$", re.I)
 

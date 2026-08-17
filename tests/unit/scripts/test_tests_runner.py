@@ -125,6 +125,21 @@ class TestStoryResolution:
     def test_a_sub_story_takes_its_own_scope_not_the_bases(self, tr: ModuleType) -> None:
         assert tr.resolve_story("INT-US-09-SF01", None, None).dal == "B"
 
+    def test_a_migration_id_resolves_as_an_integration_story(self, tr: ModuleType) -> None:
+        """`INT-US-NN-MIG` is a first-class registry id (`ADR-004`, `TECH-060` FR-1).
+
+        Without the suffix in `INT_ID`, `resolve_story` falls through every branch and the migration
+        entry cannot be named on the command line at all.
+        """
+        story = tr.resolve_story("INT-US-09-MIG", None, "C")
+        assert story.kind == "int"
+        assert story.dal == "C"
+
+    def test_a_sub_story_migration_id_resolves_too(self, tr: ModuleType) -> None:
+        story = tr.resolve_story("INT-US-09-SF01-MIG", None, "B")
+        assert story.kind == "int"
+        assert story.dal == "B"
+
     def test_a_sub_story_can_be_more_critical_than_its_base(self, tr: ModuleType) -> None:
         assert tr.resolve_story("INT-US-09-SF03", None, None).dal == "A"
 

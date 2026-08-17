@@ -57,10 +57,21 @@ A `-MIG` line closes when the inventory exists, every runnable test is placed an
 non-runnable path is recorded with its blocker. It does **not** wait for the story's unbuilt
 capabilities, or US-6's could never close.
 
-The grammar is hardcoded in four sites and must widen: `scripts/tests.py:107` (`INT_ID`, which also
-requires exactly two digits), `check_retirement_targets.py:57` (`_RETIRED_ID`) and `:107`
-(`_ENTRY_BULLET`), and `check_proof_tier.py:84` (`_ENTRY`). `check_comment_provenance.py:57` needs no
-change — it only has to keep matching, and a `-MIG` suffix on an already-matching prefix still does.
+The grammar is hardcoded in five sites. **Probed rather than reasoned about, which changed the
+answer from four to two:**
+
+| Site | Behaviour on `INT-US-06-MIG` | Action |
+|---|---|---|
+| `scripts/tests.py:107` `INT_ID` | **no match** — anchored, two-digit, no `-MIG` and no `-SUB` | widened |
+| `check_retirement_targets.py:57` `_RETIRED_ID` | matches but **TRUNCATES** to `INT-US-06` | widened |
+| `check_retirement_targets.py:107` `_ENTRY_BULLET` | prefix match, and it is a boolean test | unchanged |
+| `check_proof_tier.py:84` `_ENTRY` | `INT-US-[\w\-]+` captures it whole | unchanged |
+| `check_comment_provenance.py:57` `_REGISTRY_ID` | truncates, but only presence matters | unchanged |
+
+The truncation is the finding worth having. `_RETIRED_ID` fails **silently**: it captures a valid but
+WRONG id, attributing a `-MIG` line's note to the base contract — the same mislabel its own docstring
+already records for two live notes credited to their base contracts instead of the add-ons retired.
+Reasoning about the pattern would have missed it, because it does match.
 
 ### 3. Two gates
 

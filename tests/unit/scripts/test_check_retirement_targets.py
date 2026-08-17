@@ -129,6 +129,19 @@ class TestRetirementNotes:
         roadmap = _tree(tmp_path, {"topics/US-03_integration.md": body})
         assert crt.retirement_notes(roadmap)[0].retired_id == "INT-US-03-SF01"
 
+    def test_a_migration_id_is_not_truncated_to_its_base_contract(
+        self, crt: ModuleType, tmp_path: Path
+    ) -> None:
+        """`INT-US-99-SF01-MIG` must not be read as `INT-US-99-SF01`.
+
+        The id pattern stops at the known suffixes, so a longer one silently truncates and the note
+        is attributed to a DIFFERENT entry — the exact mislabel this module's docstring records for
+        two live notes credited to their base contracts instead of the add-ons retired.
+        """
+        body = INLINE_NOTE.replace("INT-US-99-SF01", "INT-US-99-SF01-MIG")
+        roadmap = _tree(tmp_path, {"master_story_roadmap.md": body})
+        assert crt.retirement_notes(roadmap)[0].retired_id == "INT-US-99-SF01-MIG"
+
     def test_finds_the_single_line_shape(self, crt: ModuleType, tmp_path: Path) -> None:
         roadmap = _tree(tmp_path, {"master_story_roadmap.md": INLINE_NOTE})
         notes = crt.retirement_notes(roadmap)

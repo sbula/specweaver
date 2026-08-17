@@ -54,7 +54,11 @@ _MATRIX_CELL = re.compile(r"`([^\s`]+)\s+([A-E]-[A-Z]+-\d+)`")
 
 #: The retired entry's own id, taken from the nearest preceding `* **`ID`` bullet (blockquote
 #: shape) or from the note line itself (the single-line roadmap shape).
-_RETIRED_ID = re.compile(r"`?\b(INT-US-\d+(?:-(?:SF\d+|SUB))?)\b`?")
+#:
+#: The optional `-MIG` tail is load-bearing, and its absence TRUNCATES rather than failing to match:
+#: `INT-US-99-SF01-MIG` would capture as `INT-US-99-SF01`, attributing the note to a different entry.
+#: That is the same mislabel recorded above for two live notes credited to their base contracts.
+_RETIRED_ID = re.compile(r"`?\b(INT-US-\d+(?:-(?:SF\d+|SUB))?(?:-MIG)?)\b`?")
 
 #: A note line names both, in either order. The lookbehind is load-bearing: `UN-RETIRED` contains
 #: `RETIRED`, and a substring match would judge exactly the entries whose retirement was withdrawn
