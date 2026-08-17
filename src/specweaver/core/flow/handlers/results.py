@@ -3,8 +3,7 @@
 
 """Constructing a handler's StepResult for the failure path.
 
-Split out of `handlers/base.py` by `TECH-015`. Small, but it is a *contract* — every handler that
-gives up reports it the same way — whereas sitting under a "Helpers" banner it was only a location.
+Small, but a *contract*: every handler that gives up reports it the same way.
 """
 
 from __future__ import annotations

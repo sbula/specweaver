@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """BashActionHandler — runs a bash script via BashActionAtom for an
-`action: bash`, `target: script` pipeline step (C-EXEC-02 SF-2)."""
+`action: bash`, `target: script` pipeline step."""
 
 from __future__ import annotations
 
@@ -33,8 +33,7 @@ class BashActionHandler:
 
     This handler is deliberately thin: it does not validate, default, or
     otherwise interpret `step.params` beyond passing it straight through to
-    BashActionAtom.run(), which already owns all of that validation (SF-1's
-    FR-2/FR-12/FR-13). See C-EXEC-02 SF-2's implementation plan, Q1.
+    BashActionAtom.run(), which already owns all of that validation.
     """
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
@@ -65,7 +64,7 @@ class BashActionHandler:
     def _get_atom(self, context: RunContext) -> BashActionAtom:
         """Lazily create a BashActionAtom for the project.
 
-        INT-US-09: under worktree isolation the runner sets ``execution_root`` to the
+        Under worktree isolation the runner sets ``execution_root`` to the
         worktree source tree; bind the bash cwd there so an untrusted script's writes
         (and its ``.specweaver/scripts`` resolution) are worktree-bounded, not against
         the real project root. Falls back to ``project_path`` when not isolated.

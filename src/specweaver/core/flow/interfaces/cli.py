@@ -38,11 +38,10 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# INT-US-02 SF-02: the generic context-provider channel seam (post-TECH-006 shape).
-# The delivery layer registers a factory here; core stays terminal-agnostic — the
-# factory owns the interactivity decision and may return None (e.g. no TTY). Future
-# channels (D-INTL-07 interview engine, C-FLOW-11 work-unit channels) register through
-# this same seam. Core adds NO delivery-layer imports for this.
+# The generic context-provider channel seam. The delivery layer registers a factory here; core
+# stays terminal-agnostic — the factory owns the interactivity decision and may return None (e.g.
+# no TTY). Future channels register through this same seam, and core adds NO delivery-layer imports
+# for it.
 # ---------------------------------------------------------------------------
 
 _context_provider_factory: Callable[[], Any] | None = None
@@ -84,8 +83,8 @@ def _get_state_store() -> StateStore:
 
 def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> None:
     """Wire context.model.llm for non-validate-only pipelines — shared by run AND
-    resume (INT-US-24 defect #10: resume historically skipped this, silently
-    degrading every resumed LLM step to "LLM not configured" errors)."""
+    resume. A resume that skips this silently degrades every resumed LLM step to
+    "LLM not configured"."""
     if pipeline_name == "validate_only":
         return
     try:
@@ -211,10 +210,10 @@ def run_pipeline(
         print_resume_hint(None)
         raise typer.Exit(code=130) from None
     except typer.Exit:
-        # INT-US-02 SF-02 (inherited fix): intentional exits (e.g. PARKED -> Exit(code=0),
-        # "not an error, just parked") must pass through untouched — click's Exit is a
-        # RuntimeError subclass, so the generic handler below used to swallow it and
-        # convert every parked run into a bogus "Error: Exit:" with exit code 1.
+        # Intentional exits (e.g. PARKED -> Exit(code=0), "not an error, just parked") must pass
+        # through untouched — click's Exit is a RuntimeError subclass, so the generic handler below
+        # would otherwise swallow it and convert every parked run into a bogus "Error: Exit:" with
+        # exit code 1.
         raise
     except FileNotFoundError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -245,11 +244,9 @@ def run_pipeline(
 def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) -> RunContext:
     """The fully-wired `RunContext` a run or a resume starts from.
 
-    `TECH-023`: `_execute_run` and `resume` built this identically — constitution, standards,
-    interaction provider, isolation policy, model router, LLM wiring — differing only in a local
-    variable's name. Forty duplicated lines is forty lines where the two entry points can drift
-    into giving a run and its resume different execution postures, which is exactly the class of
-    defect `TECH-013` records for the API composition root.
+    Shared by `_execute_run` and `resume` — constitution, standards, interaction provider,
+    isolation policy, model router, LLM wiring. As two copies it is forty lines where the entry
+    points can drift into giving a run and its resume different execution postures.
     """
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.infrastructure.llm.router import ModelRouter
@@ -274,7 +271,7 @@ def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) 
         ),
     )
 
-    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
+    # Attach the registered interaction channel, if any —
     # the delivery-layer factory decides interactivity (returns None when headless, so
     # DraftSpecHandler's parking contract is untouched without a TTY).
     _maybe_attach_provider(context)
@@ -297,10 +294,9 @@ def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) 
 def _apply_isolation_policy(context: RunContext, db: Database, project_path: Path) -> None:
     """Resolve the worktree-isolation policies at the composition root (ADR-002).
 
-    INT-US-09 + C-EXEC-06: the per-step US-9 policy (``enforce_isolation``) and the per-run
-    C-EXEC-06 policy (``session_isolation`` + ``allowed_paths``). We deliberately do NOT populate
-    ``context.model.config`` here: that would also expose ``[sandbox] execution_mode`` and
-    incidentally activate B-EXEC-01 container QA on this path, which is out of scope.
+    Both the per-step policy (``enforce_isolation``) and the per-run one (``session_isolation`` +
+    ``allowed_paths``). Deliberately does NOT populate ``context.model.config``: that would also
+    expose ``[sandbox] execution_mode`` and incidentally activate container QA on this path.
 
     **Best-effort by contract:** a settings-resolution failure must never crash a run, so the
     policies fall back to their defaults (off).
@@ -325,10 +321,9 @@ def _apply_isolation_policy(context: RunContext, db: Database, project_path: Pat
 def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) -> None:
     """Save the staleness cache on success, then translate the run status into an exit code.
 
-    `TECH-023`: written out twice, once in `_execute_run` and once in `resume`. They differed in
-    one respect only and it is preserved rather than smoothed over — `resume` logs a cache-save
-    failure without printing it, so `warn_on_console` says which caller is which instead of
-    quietly changing what a resume prints.
+    Shared by `_execute_run` and `resume`, which differ in one respect that is preserved rather
+    than smoothed over: `resume` logs a cache-save failure without printing it, so
+    `warn_on_console` says which caller is which.
 
     `PARKED` exits 0 explicitly. Falling through would too, but a parked run is a routine outcome
     rather than an absence of one, and saying so keeps the three statuses side by side.
@@ -428,10 +423,10 @@ def _execute_run(
             # Fresh run
             final_run = asyncio.run(runner.run())
     except KeyboardInterrupt:
-        # INT-US-21 SF-03 CB-2 (R-13): handled HERE, not in the caller's `except KeyboardInterrupt`.
-        # By the time the caller sees it, `_execute_run` has already raised and the run id is gone
-        # with the frame -- which is why the message used to say `sw run --resume` with nothing to
-        # resume. The runner's own `finally:` has already saved handover, so the id is real.
+        # Handled HERE, not in the caller's `except KeyboardInterrupt`. By the time the caller sees
+        # it, `_execute_run` has already raised and the run id is gone with the frame, so the
+        # message would name `sw run --resume` with nothing to resume. The runner's own `finally:`
+        # has already saved handover, so the id is real.
         display.stop()
         print_resume_hint(runner.current_run_id)
         raise typer.Exit(code=130) from None
@@ -465,9 +460,9 @@ def _resolve_resumable_run(store: StateStore, run_id: str | None) -> Any:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
 
-    # `TECH-054` FR-1: ask the store, do not reconstruct the answer from `list_bundled_pipelines()`.
-    # That loop could not see a run of a pipeline given to `sw run` as a YAML path, and it returned
-    # the first bundled name with a resumable run rather than the newest run.
+    # Ask the store, do not reconstruct the answer from `list_bundled_pipelines()`. Such a loop
+    # cannot see a run of a pipeline given to `sw run` as a YAML path, and returns the first bundled
+    # name with a resumable run rather than the newest run.
     candidate = store.get_latest_resumable_run(name)
     if candidate is not None:
         return candidate

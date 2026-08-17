@@ -96,8 +96,8 @@ def _extract_prompt_feedback(
 ) -> tuple[list[str] | None, str | None]:
     """Extract dictator overrides and validation findings from loop-back feedback and clear it.
 
-    `TECH-023`: this scored 26 at fourteen lines — the cost was four levels of nesting, not size.
-    The pop is now a guard clause, so each half of the return reads on its own.
+    The pop is a guard clause rather than a fourth level of nesting, so each half of the return
+    reads on its own.
     """
     findings = _pop_findings(context, step)
     if findings is None:
@@ -122,10 +122,10 @@ def _extract_prompt_feedback(
 class _GenerationHandler:
     """Generate one artefact from a spec with the LLM, then record its lineage.
 
-    `TECH-037`: `GenerateCodeHandler` and `GenerateTestsHandler` ran the same eighty lines and
-    differed in six places, five of them data — where the file goes, what it is called, which
-    instructions the prompt carries, which generator method runs, and which lineage event is
-    emitted. The sixth is `INCLUDE_TRACEBACK`, and it is preserved rather than unified because it
+    `GenerateCodeHandler` and `GenerateTestsHandler` share these eighty lines and differ in six
+    places, five of them data — where the file goes, what it is called, which instructions the
+    prompt carries, which generator method runs, and which lineage event is emitted. The sixth is
+    `INCLUDE_TRACEBACK`, and it stays a flag rather than being unified because it
     changes what a failing step reports; see there.
     """
 

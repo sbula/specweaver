@@ -62,9 +62,9 @@ class ScenarioGenerator:
             req_ids: Extracted requirement IDs from spec.
             constitution: Optional project constitution.
             project_metadata: Optional project metadata.
-            feedback: Optional prior-verdict findings (INT-US-24 FR-4 — the
-                arbiter's behavioral delta on a regeneration loop). None ⇒
-                the prompt is byte-identical to a first-pass generation.
+            feedback: Optional prior-verdict findings — the arbiter's behavioral
+                delta on a regeneration loop. None ⇒ the prompt is identical to a
+                first-pass generation.
 
         Returns:
             ScenarioSet with validated scenario definitions.
@@ -107,9 +107,8 @@ class ScenarioGenerator:
                 retry_prompt = prompt
 
             raw = await self._llm.generate(retry_prompt, config=self._config)
-            # INT-US-24 SF-03 (inherited defect #9): real adapters return
-            # LLMResponse objects (reviewer.py precedent: `response.text`) —
-            # string returns are the unit-mock convention only.
+            # Real adapters return LLMResponse objects (as in reviewer.py:
+            # `response.text`); string returns are the unit-mock convention only.
             raw_text = raw.text if hasattr(raw, "text") else raw
             cleaned = self._clean_json(raw_text)
 
@@ -224,7 +223,7 @@ class ScenarioGenerator:
         if constitution:
             parts.extend(["## Project Constitution", constitution, ""])
         if feedback:
-            # INT-US-24 FR-4: the arbiter's spec-clause-anchored behavioral delta
+            # The arbiter's spec-clause-anchored behavioral delta
             # from the previous verification round — placed before the schema
             # instructions so the fix intent frames the regeneration.
             parts.extend(

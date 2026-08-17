@@ -98,9 +98,8 @@ class StepHandlerRegistry:
             (StepAction.DRAFT, StepTarget.SPEC): DraftSpecHandler(),
             (StepAction.DRAFT, StepTarget.FEATURE): DraftFeatureHandler(),
             (StepAction.VALIDATE, StepTarget.SPEC): ValidateSpecHandler(),
-            # INT-US-21 FR-1: ValidateSpecHandler already routes kind=feature to the
-            # validation_spec_feature battery (validation.py:155-156) — a registry row is
-            # all the bundled feature_decomposition pipeline was missing.
+            # ValidateSpecHandler routes kind=feature to the validation_spec_feature battery, so
+            # the bundled feature_decomposition pipeline needs only this registry row.
             (StepAction.VALIDATE, StepTarget.FEATURE): ValidateSpecHandler(),
             (StepAction.VALIDATE, StepTarget.CODE): ValidateCodeHandler(),
             (StepAction.VALIDATE, StepTarget.TESTS): ValidateTestsHandler(),

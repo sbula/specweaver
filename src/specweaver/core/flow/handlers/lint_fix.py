@@ -25,8 +25,8 @@ def _linter_kwargs(context: RunContext, target: str) -> dict[str, Any]:
     """What to hand the linter: every stale file under `target`, or `target` itself.
 
     A topology-aware run lints only what the staleness cache says changed; without a cache it
-    lints the whole target. Extracted so `execute` reads as its four phases rather than opening
-    with a file walk (`TECH-023`).
+    lints the whole target. Separate so `execute` reads as its four phases rather than opening with
+    a file walk.
     """
     if context.graph.stale_nodes is None:
         return {"intent": "run_linter", "target": target}
@@ -229,7 +229,7 @@ class LintFixHandler:
     def _find_code_files(self, context: RunContext, target: str | None = None) -> list[Path]:
         """Find the Python file(s) to fix.
 
-        INT-US-03 SF-02: an explicit ``target`` (the generated ``src/<stem>.py``) is
+        An explicit ``target`` (the generated ``src/<stem>.py``) is
         authoritative — resolved against ``project_path`` and required to stay inside it
         (no traversal) — so the LLM reflection loop can locate the file when ``output_dir``
         is unset. A non-file target (e.g. the default ``"src/"`` directory) or no target

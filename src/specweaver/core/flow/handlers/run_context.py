@@ -3,12 +3,11 @@
 
 """Everything a running pipeline step is handed.
 
-Split out of `handlers/base.py` by `TECH-015`. `StepHandler` legitimately belongs in a `base`;
-215 lines of domain model do not, and their presence is what made that file the place anything
-"about a step" went.
+`StepHandler` belongs in a `base`; 215 lines of domain model do not, and their presence makes that
+file the place anything "about a step" goes.
 
-`RunContext` is deliberately shallow-copied in two places — per sub-run (`TECH-014`) and per
-worktree (`C-EXEC-06`) — which works only because **every write rebinds a whole sub-model** rather
+`RunContext` is deliberately shallow-copied in two places — per sub-run and per worktree — which
+works only because **every write rebinds a whole sub-model** rather
 than mutating one in place. That invariant lives with the models rather than with the code relying
 on it, because it is a property of these classes.
 """

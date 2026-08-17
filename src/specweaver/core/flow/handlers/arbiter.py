@@ -105,7 +105,7 @@ in the spec below. Your job is to determine WHO is at fault.
 def _evidence_error(context: RunContext) -> str | None:
     """Why the scenario evidence cannot be arbitrated, or None when it can.
 
-    INT-US-24 FR-2, the evidence contract: `run_scenario_tests` ALWAYS publishes the raw QA export
+    The evidence contract: `run_scenario_tests` ALWAYS publishes the raw QA export
     under this reserved key for scenario runs, so its absence means the wire is broken and must
     fail LOUD, never green. The key is consumed ON VERDICT (popped only on terminal branches) so a
     `spec_ambiguity` park can resume and re-arbitrate, and an ERROR retry re-reads it.
@@ -142,7 +142,7 @@ class ArbitrateVerdictHandler(StepHandler):
         started = _now_iso()
         logger.info("Executing ARBITRATE VERDICT for %s", context.run.run_id)
 
-        # INT-US-24 FR-2: the evidence contract. run_scenario_tests ALWAYS publishes
+        # The evidence contract. run_scenario_tests ALWAYS publishes
         # the raw QA export under this reserved key for scenario runs — its absence
         # means the wire is broken and must fail LOUD, never green. The key is
         # consumed ON VERDICT (popped only on terminal branches) so a spec_ambiguity
@@ -228,8 +228,8 @@ class ArbitrateVerdictHandler(StepHandler):
 
             prompt = base_prompt.build()
             response = await context.model.llm.generate(prompt)
-            # INT-US-24 SF-03 (inherited defect #9): normalize the adapter's
-            # LLMResponse (string returns are the unit-mock convention only).
+            # Normalize the adapter's LLMResponse (string returns are the unit-mock convention
+            # only).
             raw_response = response.text if hasattr(response, "text") else response
 
             try:

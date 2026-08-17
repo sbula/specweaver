@@ -3,7 +3,7 @@
 
 """An artifact's lineage: its identity on disk, and its events in the telemetry DB.
 
-`TECH-016` §2, the tail of an artifact write. Two halves, both hand-rolled across the handlers:
+The tail of an artifact write. Two halves, otherwise hand-rolled across the handlers:
 
 - **identity** — read back an existing uuid or mint one, then put the tag at the top (4 sites)
 - **events** — open a session and record what happened to the artifact (**7** sites)
@@ -101,10 +101,10 @@ async def log_artifact_lineage(
     work that succeeded**, and pointing the reader at the LLM rather than at the telemetry config.
 
     That contract was written for the decomposition handler after a real CB-1 pre-commit failure
-    against a non-bootstrapped database (2026-07-26), and it was never generalised: of the seven
+    against a non-bootstrapped database, and hand-rolling it does not generalise: of the seven
     sites this replaces, one had the guard *and* the ``try``, five had only the guard, and
-    ``lint_fix.py`` had **neither** — `TECH-036`. The failure is logged at exception level so it
-    stays loud while the run continues.
+    ``lint_fix.py`` had **neither**. The failure is logged at exception level so it stays loud while
+    the run continues.
     """
     if not context.db:
         return

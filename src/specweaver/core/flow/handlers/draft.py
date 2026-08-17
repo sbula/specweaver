@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 #: Filename suffix the feature-spec convention requires. ``FeatureDrafter`` derives its own
 #: output path as ``<output_dir>/<name>_feature_spec.md``, so this is the only shape that can
-#: round-trip back to ``context.spec_path`` (INT-US-21 FR-1).
+#: round-trip back to ``context.spec_path``.
 FEATURE_SPEC_SUFFIX = "_feature_spec.md"
 
 
@@ -49,10 +49,10 @@ class DraftSpecHandler:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
 
-        # INT-US-02 SF-01 (AD-6a): consume loop_back reviewer feedback FIRST. Without this,
-        # the exists-skip below fires on re-entry and the review rejection loop is dead
-        # (validate→review→fail→skip→…). Mirrors generation.py's _extract_prompt_feedback:
-        # popped exactly once so it never sticks across attempts.
+        # Consume loop_back reviewer feedback FIRST. Without this the exists-skip below fires on
+        # re-entry and the review rejection loop is dead (validate→review→fail→skip→…). Mirrors
+        # generation.py's _extract_prompt_feedback: popped exactly once so it never sticks across
+        # attempts.
         findings = self._pop_feedback(step, context)
         if findings is not None:
             if context.context_provider is not None and context.model.llm is not None:
@@ -157,9 +157,9 @@ class DraftSpecHandler:
             profile=profile,
         )
 
-        # INT-US-02 SF-01 (AD-6a): surface reviewer findings to the re-draft. Deliberately
-        # minimal (one JSON context block) — the drafting engine is a D-INTL-07 supersession
-        # target; do not invest in prompt shaping here.
+        # Surface reviewer findings to the re-draft. Deliberately minimal (one JSON context
+        # block) — the drafting engine is slated for replacement, so prompt shaping here is not
+        # worth investing in.
         if findings is not None:
             import json
 
@@ -210,7 +210,7 @@ class DraftSpecHandler:
 class DraftFeatureHandler:
     """Handler for draft+feature — wraps ``FeatureDrafter`` with ``DraftSpecHandler`` parity.
 
-    INT-US-21 FR-1. ``FeatureDrafter.draft()`` derives its own output path as
+    ``FeatureDrafter.draft()`` derives its own output path as
     ``<output_dir>/<name>_feature_spec.md`` while every downstream step reads
     ``context.spec_path``. The feature name is therefore derived so the drafter's output IS
     ``context.spec_path`` by construction, and the returned path is asserted against it.

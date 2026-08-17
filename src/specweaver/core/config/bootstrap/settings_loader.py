@@ -65,9 +65,10 @@ def _load_toml_standards(root_path: str | None) -> StandardsSettings:
 
 
 def _load_toml_sandbox(root_path: str | None) -> SandboxSettings:
-    """B-EXEC-01: load the opt-in [sandbox] TOML section, mirroring
-    _load_toml_standards exactly. Defaults to SandboxSettings() (execution_mode="host")
-    on any absence or parse failure — NFR-7 backward compatibility."""
+    """Load the opt-in [sandbox] TOML section, mirroring _load_toml_standards exactly.
+
+    Defaults to SandboxSettings() (execution_mode="host") on any absence or parse failure, so an
+    unconfigured project keeps host execution."""
     import tomllib
 
     sandbox = SandboxSettings()

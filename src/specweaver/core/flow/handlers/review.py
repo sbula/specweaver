@@ -99,10 +99,9 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
 def _inject_resolved_mentions(messages: list[Any], context: RunContext) -> None:
     """Append the contents of any files the assistant @-mentioned, as extra USER turns.
 
-    `TECH-023`: written twice — once as `ReviewSpecHandler._inject_mentions`, once as a nested
-    `on_tool_round` closure inside `ReviewCodeHandler.execute`. The copies had **drifted**: the
-    closure's f-string used `\\n` (a literal backslash and an n) where the method used `\n`, so
-    the code-review path fed the model a single run-on line with visible `\n` characters instead
+    Shared by `ReviewSpecHandler` and `ReviewCodeHandler`, which is the point: as two copies they
+    drift, and one such copy used `\\n` (a literal backslash and an n) where the other used `\n`,
+    feeding the model a single run-on line with visible `\n` characters instead
     of a fenced block. Unifying fixes that by construction.
 
     Never raises: an unreadable resolved path is suppressed, because losing one auto-attached file
@@ -213,9 +212,8 @@ class ReviewSpecHandler:
                     "verdict": result.verdict.value,
                     "summary": result.summary,
                     "findings_count": len(result.findings),
-                    # INT-US-02 SF-03 (found by the FR-8 e2e): the finding TEXTS were never
-                    # exported — the inline report (FR-6) and the loop_back feedback to the
-                    # re-draft (FR-3) need them, not just a count.
+                    # The finding TEXTS, not just a count: the inline report and the loop_back
+                    # feedback to the re-draft both need them.
                     "findings": [f.model_dump() for f in result.findings],
                 },
                 started_at=started,
@@ -316,9 +314,8 @@ class ReviewCodeHandler:
                     "verdict": result.verdict.value,
                     "summary": result.summary,
                     "findings_count": len(result.findings),
-                    # INT-US-02 SF-03 (found by the FR-8 e2e): the finding TEXTS were never
-                    # exported — the inline report (FR-6) and the loop_back feedback to the
-                    # re-draft (FR-3) need them, not just a count.
+                    # The finding TEXTS, not just a count: the inline report and the loop_back
+                    # feedback to the re-draft both need them.
                     "findings": [f.model_dump() for f in result.findings],
                 },
                 started_at=started,

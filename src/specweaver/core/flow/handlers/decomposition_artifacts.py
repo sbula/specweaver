@@ -3,14 +3,14 @@
 
 """The artifacts a feature decomposition produces, and how they reach disk.
 
-Split out of ``handlers/decompose.py`` by INT-US-21 SF-02 CB-2, which took that file to 586 lines
-against a 450-line threshold and CB-3 adds more. Named for the contract it owns — the artifacts a
-decomposition emits — rather than for what the code is, so it cannot accrete unrelated helpers.
+Separate from ``handlers/decompose.py``, which would otherwise run past its 450-line threshold.
+Named for the contract it owns — the artifacts a decomposition emits — rather than for what the code
+is, so it cannot accrete unrelated helpers.
 
-``TECH-016`` has since landed (2026-08-12) and did what this note predicted: the uuid/tag and
-lineage-event halves of the sequence now live in :mod:`~specweaver.core.flow.handlers.artifact_lineage`
-and are called from here. What stays is what the note said would stay -- the YAML rendering, the
-stub writer and the feature-name derivation, because the *head* of an artifact write differs at
+The uuid/tag and lineage-event halves of an artifact write live in
+:mod:`~specweaver.core.flow.handlers.artifact_lineage` and are called from here. What stays here is
+the YAML rendering, the stub writer and the feature-name derivation, because the *head* of an
+artifact write differs at
 every site.
 """
 
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-#: Suffix stripped when deriving a feature name from its spec filename (INT-US-21 FR-1 convention).
+#: Suffix stripped when deriving a feature name from its spec filename.
 FEATURE_SPEC_STEM_SUFFIX = "_feature_spec"
 
 #: Component names are authored by an LLM and become path segments, so they are validated before
@@ -36,9 +36,8 @@ FEATURE_SPEC_STEM_SUFFIX = "_feature_spec"
 #: two copies of a security regex is one copy too many.
 #:
 #: ``\Z``, not ``$``: Python's ``$`` also matches immediately before a trailing newline, so the
-#: shipped fan-out guard accepted ``"auth\n"`` — a legal filename on POSIX and a log-injection
-#: vector, defeating the guard's own stated intent. Inherited defect, verified and fixed by
-#: INT-US-21 SF-02 CB-2 (2026-07-26). Traversal was never possible: ``/``, ``\`` and ``.`` are
+#: naive guard accepts ``"auth\n"`` — a legal filename on POSIX and a log-injection vector, which
+#: defeats the guard's own intent. Traversal is not possible either way: ``/``, ``\`` and ``.`` are
 #: outside the class.
 COMPONENT_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+\Z")
 
@@ -122,9 +121,8 @@ async def log_decomposition_lineage(context: RunContext, artifact_uuid: str) -> 
     **Never raises.** Lineage is telemetry, and by the time it runs the decomposition has already
     been paid for with an LLM call and durably written to disk. Letting a DB problem propagate hands
     it to ``execute``'s ``except Exception``, which returns ``ERROR`` with no ``output`` — throwing
-    the plan away and violating the very rule D6 exists to enforce. Found by the CB-1 pre-commit
-    gate (2026-07-26) against a non-bootstrapped database; the failure is logged at exception level
-    so it is loud in logs while the run continues.
+    the plan away. A non-bootstrapped database is the case that reaches it; the failure is logged at
+    exception level so it is loud in logs while the run continues.
     """
     from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
 
@@ -146,8 +144,7 @@ def load_component_template(project_path: Path) -> str:
 def _classify_stub(component: dict[str, Any], context: RunContext) -> tuple[str, str, Path | None]:
     """`(report bucket, name, target)`. A non-None target means "safe to write".
 
-    The three refusals, in the order they must be checked (`TECH-023` moved them out of
-    :func:`write_component_stubs`; the ordering below is behaviour, not style).
+    The three refusals, in the order they must be checked — the ordering is behaviour, not style.
     """
     name = component.get("component")
     if not name or not COMPONENT_NAME_PATTERN.match(str(name)):

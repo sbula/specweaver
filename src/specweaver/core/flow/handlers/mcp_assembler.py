@@ -60,8 +60,8 @@ def _resolve_mcp_command(
     """`(command, env, error)` for one `mcp://<server>/<resource>` URI.
 
     `error` is non-None for each of the three ways a URI can fail to name a runnable server, and
-    the caller renders it into the snippet — the three refusals were three `continue`s inside the
-    fetch loop (`TECH-023`).
+    the caller renders it into the snippet, rather than the three refusals being three `continue`s
+    inside the fetch loop.
     """
     if not uri.startswith("mcp://"):
         return [], {}, "Invalid MCP URI format"

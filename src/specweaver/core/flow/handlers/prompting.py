@@ -3,9 +3,8 @@
 
 """Assembling the prompt every handler starts from.
 
-Split out of `handlers/base.py` by `TECH-015`. `StepHandler` legitimately belongs in a `base`;
-sixty-seven lines of prompt assembly — instructions, project metadata, rules, memory — do not, and
-their presence is what let that file grow to 334 lines.
+`StepHandler` belongs in a `base`; sixty-seven lines of prompt assembly — instructions, project
+metadata, rules, memory — do not.
 """
 
 from __future__ import annotations

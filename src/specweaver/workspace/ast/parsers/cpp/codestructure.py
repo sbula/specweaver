@@ -278,7 +278,7 @@ class CppCodeStructure(ClassBasedParser):
         return names
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
-        """Bases and attributes per declared type — previously hard-coded to `{}`."""
+        """Bases and attributes per declared type."""
         if not code.strip():
             return {}
 

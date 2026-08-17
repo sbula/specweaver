@@ -28,9 +28,9 @@ def bootstrap_database(db_path: str) -> None:
         db_posix = pathlib.Path(db_path).absolute().as_posix()
         engine = create_async_engine(f"sqlite+aiosqlite:///{db_posix}")
         async with engine.begin() as conn:
-            # `TECH-054` FR-2: these were three `print()` calls, so every bootstrap wrote its
-            # schema to **stdout** — ahead of the first event of `sw run --json`, which documents
-            # its output as a machine-readable NDJSON stream.
+            # `logger.debug`, never `print`: a bootstrap that writes its schema to stdout puts it
+            # ahead of the first event of `sw run --json`, whose output is a machine-readable NDJSON
+            # stream.
             logger.debug("LlmBase tables: %s", LlmBase.metadata.tables.keys())
             logger.debug("WorkspaceBase tables: %s", WorkspaceBase.metadata.tables.keys())
             logger.debug("FlowBase tables: %s", FlowBase.metadata.tables.keys())

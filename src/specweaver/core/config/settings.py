@@ -117,20 +117,20 @@ class SandboxSettings(BaseModel):
     Opt-in only: both knobs default off so existing installs and CI keep
     today's behavior unmodified until an operator explicitly enables them.
 
-    - ``execution_mode`` (B-EXEC-01): ``"host"`` vs container QA execution.
-    - ``enforce_worktree_isolation`` (INT-US-09): when ``True``, worktree
+    - ``execution_mode``: ``"host"`` vs container QA execution.
+    - ``enforce_worktree_isolation``: when ``True``, worktree
       isolation becomes the default for pipeline steps so untrusted execution
       (``action: bash``, ``run_tests``) runs bounded to an ephemeral git
       worktree. Container-free; orthogonal to ``execution_mode``.
-    - ``enforce_session_isolation`` (C-EXEC-06): when ``True``, the WHOLE run
+    - ``enforce_session_isolation``: when ``True``, the WHOLE run
       executes in ONE ephemeral worktree (per-run mode) with a single
       end-of-run authorized reconcile, instead of the per-step create/reconcile
       of ``enforce_worktree_isolation``. When both are on, per-run wins (the
       per-step gate is suppressed inside the session). Container-free.
-    - ``session_allowed_paths`` (C-EXEC-06): the reconcile's write-back allow
+    - ``session_allowed_paths``: the reconcile's write-back allow
       list (repo-relative). **Empty ⇒ derive** from the pipeline's generation
       targets at the composition root; **non-empty ⇒ used verbatim**.
-    - ``auto_isolate_min_dal`` (INT-US-03 SF-03): the DAL-driven auto-escalation
+    - ``auto_isolate_min_dal``: the DAL-driven auto-escalation
       threshold. A ``DALLevel`` name (default ``"DAL_B"``): callers that opt into
       escalation (e.g. ``sw implement``) turn per-run session isolation ON when the
       touched code's resolved DAL is this strict or stricter — so high-assurance

@@ -3,7 +3,7 @@
 
 """What the CLI permits and says when a user asks to resume a run.
 
-Two rules, both learned from defects in INT-US-21 SF-03:
+Two rules:
 
 * **Refuse to reopen a finished journey.** `PipelineRunner.resume()` sets `RunStatus.RUNNING`
   unconditionally, so resuming a COMPLETED run left it stuck in RUNNING forever — a finished
@@ -14,9 +14,9 @@ Two rules, both learned from defects in INT-US-21 SF-03:
   `Resume with: sw run --resume` with no id, because the handler sat outside the frame that owned
   it.
 
-Split out of `cli.py` on 2026-07-28, which the resume guard took to 606 lines against a 600-line
-RED threshold. Named for the contract — the rules governing a resume request — rather than for the
-code, so it cannot accrete unrelated CLI helpers. The engine-side predicate lives in
+Separate from `cli.py`, which the resume guard would take past its 600-line RED threshold. Named
+for the contract — the rules governing a resume request — rather than for the code, so it cannot
+accrete unrelated CLI helpers. The engine-side predicate lives in
 `engine/resumability.py`; this module is only the delivery-layer half.
 """
 

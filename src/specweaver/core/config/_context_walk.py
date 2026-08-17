@@ -3,9 +3,9 @@
 
 """Walking up the directory tree for the nearest `context.yaml` answer.
 
-`TECH-023`. Three resolvers — `ArchetypeResolver.resolve`, `ArchetypeResolver.resolve_plugins` and
-`DALResolver.resolve` — were the same forty-line walk, differing only in which cache they read and
-which value they parsed out. All three were independently over the complexity ceiling for it.
+Three resolvers — `ArchetypeResolver.resolve`, `ArchetypeResolver.resolve_plugins` and
+`DALResolver.resolve` — need the same forty-line walk, differing only in which cache they read and
+which value they parse out. Hand-rolled, each one is over the complexity ceiling for it.
 
 The two halt conditions are the subtle part and are stated once here rather than three times:
 the walk stops at `project_root` **and** at the filesystem root, because a target outside the

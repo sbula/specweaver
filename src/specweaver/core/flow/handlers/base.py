@@ -3,9 +3,9 @@
 
 """The contract a pipeline step handler implements.
 
-`TECH-015` reduced this to what a `base` should hold: one Protocol. The context model moved to
-`run_context.py` and the helpers to `prompting.py` / `results.py`; all are re-exported below
-because well over a hundred files import them from here.
+What a `base` should hold: one Protocol. The context model lives in `run_context.py` and the
+helpers in `prompting.py` / `results.py`; all are re-exported below because well over a hundred
+files import them from here.
 """
 
 from __future__ import annotations
@@ -13,10 +13,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-# Re-exports, NOT definitions. `TECH-015` moved these out; ~30 files import them from here and
-# the split is meant to be mechanical, so the old names keep resolving. New code should import
-# from the module that owns them. `_now_iso` was one of SIX identical definitions of
-# `datetime.now(UTC).isoformat()` in this repo — this one delegates to the L0 commons leaf
+# Re-exports, NOT definitions. ~30 files import them from here, so the old names keep resolving.
+# New code should import from the module that owns them. `_now_iso` delegates to the L0 commons leaf
 # rather than being a seventh place to change.
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.handlers.prompting import _build_base_prompt

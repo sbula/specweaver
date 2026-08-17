@@ -124,10 +124,10 @@
     "first": "src/specweaver/core/flow/handlers/generation.py:46",
     "second": "src/specweaver/core/flow/handlers/review.py:33"
   },
-  "src/specweaver/core/flow/handlers/review.py <-> src/specweaver/core/flow/handlers/review.py @c1a96d71c898": {
-    "lines": 26,
-    "first": "src/specweaver/core/flow/handlers/review.py:303",
-    "second": "src/specweaver/core/flow/handlers/review.py:200"
+  "src/specweaver/core/flow/handlers/review.py <-> src/specweaver/core/flow/handlers/review.py @bc2b01ec85a3": {
+    "lines": 25,
+    "first": "src/specweaver/core/flow/handlers/review.py:301",
+    "second": "src/specweaver/core/flow/handlers/review.py:199"
   },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,

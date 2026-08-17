@@ -48,7 +48,7 @@ class GenerateScenarioHandler:
 
             req_ids = ScenarioGenerator._extract_req_ids(spec_content)
 
-            # INT-US-24 FR-4: consume the arbiter's scenario_error verdict feedback
+            # Consume the arbiter's scenario_error verdict feedback
             # (pop-once, keyed by this step's name — same contract as the coding
             # side). Call-site guard: a malformed feedback shape must degrade to
             # a normal first-pass generation, never crash the pipeline — the

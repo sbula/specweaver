@@ -36,9 +36,9 @@ class DecomposeFeatureHandler(StepHandler):
         started = _now_iso()
 
         try:
-            # INT-US-21 FR-5: derive the feature name from the spec when the step does not name
-            # one. The bundled feature_decomposition.yaml passes no params, so the old
-            # "unknown_feature" fallback was what every real run got.
+            # Derive the feature name from the spec when the step does not name one. The bundled
+            # feature_decomposition.yaml passes no params, so an "unknown_feature" fallback is what
+            # every real run would get.
             feature_name = step.params.get("feature_name") or feature_name_from_spec(
                 context.spec_path
             )
@@ -81,12 +81,12 @@ class DecomposeFeatureHandler(StepHandler):
                     completed_at="",  # Runner will fill
                 )
 
-            # INT-US-21 FR-5/D1: mode="json" is REQUIRED, not stylistic. `model_dump()` leaves
+            # mode="json" is REQUIRED, not stylistic. `model_dump()` leaves
             # `proposed_dal` as a DALLevel enum and ruamel raises RepresenterError on it — and the
             # field is mandatory on every component, so the python-mode dump fails on 100% of real
             # plans. mode="json" also makes this byte-identical to the hydrated
-            # `context.plan_context.decomposition`, so the on-disk and in-memory halves of this AD-4-frozen seam
-            # agree. Generalised by TECH-016.
+            # `context.plan_context.decomposition`, so the on-disk and in-memory halves of this
+            # frozen seam agree.
             dumped = plan.model_dump(mode="json")
             started_at = context.project_metadata.date_iso if context.project_metadata else ""
 
@@ -137,10 +137,10 @@ class DecomposeFeatureHandler(StepHandler):
 class _OrchestrationRefusedError(Exception):
     """A condition that stops the fan-out with a FAILED result rather than an ERROR.
 
-    `TECH-023`. `execute` had **seven** early `return StepResult(FAILED, ...)` sites, and each one
-    is a branch — a large share of its complexity of 79 was the shape of reporting failure, not the
+    `execute` otherwise needs **seven** early `return StepResult(FAILED, ...)` sites, each one a
+    branch — a large share of its complexity is then the shape of reporting failure rather than the
     orchestration itself. Raising lets the steps below read as a straight line and keeps every
-    message and status byte-identical, because `execute` converts this back into the same
+    message and status identical, because `execute` converts this back into the same
     `StepResult` the inline returns produced.
 
     Distinct from the bare `Exception` handler, which reports ERROR: these are *expected* refusals
@@ -156,9 +156,9 @@ def _failed(message: str) -> StepResult:
 
 def _components_of(context: RunContext) -> list[dict[str, Any]]:
     """The decomposition plan's components, or a refusal explaining what is missing."""
-    # INT-US-21 AD-1: reads plan_context.decomposition, NOT plan_context.plan. The latter is the
-    # implementation PlanArtifact consumed by the generation handlers; sharing one field for both
-    # concepts was a latent type bug. Populated by the runner's hydrate_plan_context hook after a
+    # Reads plan_context.decomposition, NOT plan_context.plan. The latter is the implementation
+    # PlanArtifact consumed by the generation handlers; one field for both concepts is a type bug
+    # waiting to happen. Populated by the runner's hydrate_plan_context hook after a
     # decompose+feature step passes.
     if not context.plan_context.decomposition:
         raise _OrchestrationRefusedError(
@@ -363,7 +363,7 @@ class OrchestrateComponentsHandler(StepHandler):
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.info("Executing ORCHESTRATE COMPONENTS for %s", context.run.run_id)
 
-        # INT-US-24 FR-1 (AD-1): "dual_pipeline" mode is a plan-less orchestration — it must branch
+        # "dual_pipeline" mode is a plan-less orchestration — it must branch
         # BEFORE the DecompositionPlan guard below.
         mode = step.params.get("mode")
         if mode == "dual_pipeline":

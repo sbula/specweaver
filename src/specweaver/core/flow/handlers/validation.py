@@ -67,18 +67,18 @@ async def _resolve_merged_settings(context: RunContext, target_path: Path) -> An
 
 
 def _rule_payload(results: list[RuleResult]) -> list[dict[str, Any]]:
-    """One dict per rule, carrying its findings **without loss** (`INT-US-04` FR-1).
+    """One dict per rule, carrying its findings **without loss**.
 
-    The rules compute a `Finding` per issue — message, line, severity, suggestion — and this
-    boundary used to keep only `rule_id`/`status`/`message`, discarding every locator and every
+    The rules compute a `Finding` per issue — message, line, severity, suggestion — and a boundary
+    that keeps only `rule_id`/`status`/`message` discards every locator and every
     suggestion the rules had just worked out.
 
     Two things are deliberate:
 
     * **`severity` is emitted as `.value`** for symmetry with `status` above. `Severity` is a
-      `StrEnum`, so today this is cosmetic — mutation-tested 2026-08-14, `f.severity` and
-      `f.severity.value` are indistinguishable to both `json.dumps` and `==`, and the mutant swapping
-      them is **equivalent**. It stops being cosmetic the moment `Severity` becomes a plain `Enum`,
+      `StrEnum`, so while that holds this is cosmetic: `f.severity` and `f.severity.value` are
+      indistinguishable to both `json.dumps` and `==`, and a mutant swapping them is **equivalent**.
+      It stops being cosmetic the moment `Severity` becomes a plain `Enum`,
       at which point `default=str` writes `"Severity.ERROR"`; the test pins the `StrEnum` so that
       change fails loudly rather than silently corrupting every persisted payload.
     * **`findings` is always present**, empty list included, so a consumer never needs `.get`.
@@ -108,10 +108,9 @@ def _rule_payload(results: list[RuleResult]) -> list[dict[str, Any]]:
 def _validation_output(results: list[RuleResult]) -> tuple[dict[str, Any], int]:
     """The validate payload both handlers return, plus the failure count they both branch on.
 
-    Extracted when `TECH-037`'s duplication gate re-keyed the remainder: collapsing the two
-    identical `results` comprehensions into `_rule_payload` exposed an 11-line clone underneath —
-    the same `output` dict and `StepResult` shape in `ValidateSpecHandler` and
-    `ValidateCodeHandler`. Pre-existing, and surfaced for the first time by removing the layer
+    Shared by `ValidateSpecHandler` and `ValidateCodeHandler`, which otherwise repeat the same
+    `output` dict and `StepResult` shape — an 11-line clone sitting under the two identical
+    `results` comprehensions that `_rule_payload` now owns. Surfaced by removing the layer
     above it.
 
     Returns the count rather than the failing rules: both callers only ever took `len()` of it, and
@@ -211,9 +210,9 @@ class ValidateSpecHandler:
         if kind_str == "feature":
             pipeline_name = "validation_spec_feature"
 
-        # INT-US-02 SF-03 (inherited fix): pass project_dir so D-VAL-02's documented
-        # project-local override ({project}/.specweaver/pipelines/) actually applies on
-        # the flow-handler path — it was silently ignored (loader searched packaged only).
+        # Pass project_dir so the documented project-local override
+        # ({project}/.specweaver/pipelines/) applies on the flow-handler path; without it the
+        # loader searches packaged pipelines only and the override is silently ignored.
         if archetype:
             try:
                 pipeline = load_pipeline_yaml(
@@ -307,7 +306,7 @@ class ValidateCodeHandler:
     def _find_code_path(self, step: PipelineStep, context: RunContext) -> Path | None:
         """Find the code file to validate.
 
-        INT-US-03 SF-01: an explicit ``params["target"]`` is authoritative — it points
+        An explicit ``params["target"]`` is authoritative — it points
         validation at a specific generated file (``src/<stem>.py``) instead of the
         ``output_dir`` glob (which returns an arbitrary first match). The target is
         resolved against ``project_path`` and must stay inside it (no traversal). When
@@ -358,8 +357,8 @@ class ValidateCodeHandler:
             archetype = resolver.resolve(code_path)
 
         pipeline_name = f"validation_code_{archetype}" if archetype else "validation_code_default"
-        # D-VAL-02: pass project_dir so project-local pipeline overrides resolve (same
-        # fix as the spec-validation path above — was silently loading packaged defaults).
+        # Pass project_dir so project-local pipeline overrides resolve, as on the spec-validation
+        # path above; without it the loader silently uses packaged defaults.
         try:
             pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
         except Exception:
@@ -453,17 +452,16 @@ class ValidateTestsHandler:
 
         targets = self._resolve_targets(context, target, kind)
 
-        # INT-US-24 FR-3: "scenario" is a flow-level category, not a pytest marker —
+        # "scenario" is a flow-level category, not a pytest marker —
         # the generated scenario file carries no such marker, so a `-m scenario` filter
         # would deselect every test and false-green the verification. Suppress the
         # marker at the atom-call site only (_resolve_targets above keeps the original
         # kind for its tests/<kind> fallback paths).
         # ...and the identical reasoning applies to any run that names ONE generated FILE. A marker
         # filter over a single freshly written file can only ever deselect it: `generate_tests`
-        # emits no `@pytest.mark.unit`, so `-m unit` collected ZERO from every `sw implement` run
-        # and the step reported `0 passed, 0 failed` as a pass. `INT-US-24` fixed this for
-        # "scenario" in 2026-07 and the same bug sat unnoticed on "unit" (`TECH-017` SF-04).
-        # Directory runs keep their filter — that is where a marker is a real selector.
+        # emits no `@pytest.mark.unit`, so `-m unit` collects ZERO from an `sw implement` run and
+        # the step reports `0 passed, 0 failed` as a pass. Directory runs keep their filter — that
+        # is where a marker is a real selector.
         _one_generated_file = bool(target) and str(target).endswith(".py")
         atom_kind = "" if (kind == "scenario" or _one_generated_file) else kind
 
@@ -481,25 +479,22 @@ class ValidateTestsHandler:
             }
         )
 
-        # INT-US-24 FR-2: scenario runs ALWAYS publish the raw QA export under the
+        # Scenario runs ALWAYS publish the raw QA export under the
         # reserved key — pass, fail, and zero-collected alike. The arbiter consumes
         # it on verdict; for it, an ABSENT key is a wiring defect (loud ERROR), so
         # publication must be unconditional for this kind.
         if kind == "scenario":
             context.feedback["scenario_test_failures"] = result.exports
 
-        # INT-US-24 FR-3: a scenario verification that executed zero tests proves
-        # nothing — the atom's total==0 SUCCESS is legitimate only for the pristine
-        # incremental paths of the other kinds.
-        # Widened past "scenario" on 2026-08-14 (`TECH-017` SF-04), keyed on the same single-file
-        # signal as the marker rule above: naming one generated file and collecting nothing means
-        # the step verified nothing while the pipeline moved on. It was `✓ tests: 0 passed, 0
-        # failed` — a tick — for every `sw implement` run.
+        # A verification that executed zero tests proves nothing — the atom's total==0 SUCCESS is
+        # legitimate only for the pristine incremental paths of the other kinds. Keyed on the same
+        # single-file signal as the marker rule above: naming one generated file and collecting
+        # nothing means the step verified nothing while the pipeline moved on, reported as
+        # `✓ tests: 0 passed, 0 failed`.
         #
-        # ORDERING MATTERED. Attempted before the marker defect was fixed, this made EVERY implement
-        # run fail and took 9 tests with it, including INT-US-24's own zero-collected guards,
-        # because collection was broken everywhere. Converting a false green into a universal red
-        # is not a fix; the collection defect had to go first.
+        # ORDERING MATTERS. This guard depends on the marker rule above: without it collection is
+        # broken everywhere, and the guard turns a false green into a universal red rather than a
+        # fix.
         if (kind == "scenario" or _one_generated_file) and result.exports.get("total", 0) == 0:
             _what = "scenario tests" if kind == "scenario" else "tests"
             msg = (
@@ -541,7 +536,7 @@ class ValidateTestsHandler:
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project.
 
-        INT-US-09: ``run_tests`` (pytest) executes LLM-authored test code, so under
+        ``run_tests`` (pytest) executes LLM-authored test code, so under
         worktree isolation the runner sets ``execution_root`` to the worktree source
         tree; bind the QA-runner cwd there so tests run worktree-bounded. Falls back to
         ``project_path`` when not isolated. ``sandbox_settings`` is threaded unchanged.

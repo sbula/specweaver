@@ -3,9 +3,9 @@
 
 """Turning a CLI spec argument into a path on disk.
 
-Split out of `cli.py` by INT-US-21 SF-03 CB-1, which took that file to 619 lines against a 600-line
-RED threshold. Named for the contract it owns — argument-to-path resolution — rather than for what
-the code is, so it cannot accrete unrelated CLI helpers.
+Separate from `cli.py`, which would otherwise run past its 600-line RED threshold. Named for the
+contract it owns — argument-to-path resolution — rather than for what the code is, so it cannot
+accrete unrelated CLI helpers.
 
 The rules differ per pipeline, and the order matters: an argument that already names an existing
 file always wins, so an explicit path works for every pipeline without a special case.
@@ -23,7 +23,7 @@ def derive_feature_spec_path(name: str, project_path: Path) -> Path | None:
 
     ``FEATURE_SPEC_SUFFIX`` is **imported**, never re-spelled: `DraftFeatureHandler` errors loudly
     when ``context.spec_path`` does not match it, so a second literal here would drift and trip that
-    guard on every drafting run (INT-US-21 SF-01 CB-1).
+    guard on every drafting run.
 
     Returns ``None`` — deliberately falling through to the caller's literal-path branch, which
     fails later with a clear message — when the argument is not a plain filename. A bare name
@@ -57,7 +57,7 @@ def resolve_spec_path(
         derived = project_path / "specs" / f"{spec_or_module}_spec.md"
         return derived
 
-    # INT-US-21 FR-8: the same courtesy for the feature-decomposition journey.
+    # The same courtesy for the feature-decomposition journey.
     if pipeline_name == "feature_decomposition":
         feature_spec = derive_feature_spec_path(spec_or_module, project_path)
         if feature_spec is not None:
