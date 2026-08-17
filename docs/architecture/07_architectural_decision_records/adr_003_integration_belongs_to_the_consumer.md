@@ -1,9 +1,18 @@
 # ADR 003: Integration Belongs to the Consumer, Not to a Separate Story
 
-**Status:** Accepted
+**Status:** Superseded by `ADR-004` (2026-08-17)
 **Date:** August 13, 2026
 **Context:** `TECH-017` proof audit — measured evidence that the capability/integration split
 produced unproven capabilities and unfalsifiable contracts
+
+> [!IMPORTANT]
+> **Superseded by [`ADR-004`](adr_004_integration_by_build_state.md).** The decision below is right
+> for work that is **not yet built** and `ADR-004` keeps it verbatim. It is wrong for a (sub)story
+> whose features are already **closed**: `finished-stories-immutable` bars a closed capability from
+> accepting the seam FR, so the scope was retired from one side and landed on neither. `ADR-004`
+> splits the rule by build state and reverses four of the dispositions recorded here — the blanket
+> no-minting rule, `INT-US-25-SF01`'s CLOSED EMPTY, and the note corrections for `INT-US-01-SF02`
+> and `INT-US-01-SF03`. Read `ADR-004` for what is in force; this document is kept for its evidence.
 
 ## Context and Problem Statement
 
