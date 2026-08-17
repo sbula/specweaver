@@ -80,8 +80,19 @@ Reasoning about the pattern would have missed it, because it does match.
 
 **Gate 1 — no green without integration.** Extends `check_delivered_claims.py`, which already owns
 "a `✅` nothing can verify" and already parses both the 4-space MVS plane and the 8-space add-on
-plane. A fourth finding kind: a (sub)story marked green whose closed features have no
-integration/e2e evidence. Ratcheted, because it fires on all 27 by construction on day one.
+plane. A fourth finding kind: a green unit holding closed features with **no integration contract at
+all**.
+
+**Absence is the whole rule.** `group_flag_findings` and `story_flag_findings` compare a flag with
+the children that are present, so an *unchecked* contract already forces `🟡` and needs no new rule.
+Neither can see a child nobody wrote.
+
+**Zero-tolerance, not ratcheted — the design was wrong about this.** It assumed the rule would fire
+on all 27 on day one. Measured once FR-2/FR-3 registered them: it fires on **none**, because those
+units are `🟡` or their contracts are `[ ]`. There is nothing to carry forward.
+
+A `-MIG` entry does not satisfy it. The migration entry is the task of building the inventory, not
+the proof it produces.
 
 **Gate 2 — a stale strict-xfail.** New `scripts/check_xfail_blockers.py`: any
 `pytest.mark.xfail(strict=True)` whose named blocking capability is now `✅` in the capability matrix
@@ -137,7 +148,7 @@ they flip; both groups become `🟡`.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | No behaviour change | Registry, skills and gate scripts only. Nothing under `src/` is touched |
-| NFR-2 | Gate 1 ratchets, gate 2 does not | Gate 1 fires on all 27 on day one, so it freezes a count that may fall and never rise. Gate 2 has no legacy set and is zero-tolerance |
+| NFR-2 | Both gates are zero-tolerance | Measured, not assumed: gate 1 fires on nothing once FR-2/FR-3 land, so the ratchet the design planned would freeze zero and mean nothing. Gate 2 has no legacy set either |
 | NFR-3 | Existing gates stay green | `doc` 11/11 and `cb` throughout; the `-MIG` widening must not change how any existing identifier resolves |
 | NFR-4 | Probed, not asserted | Every gate is verified by planting a violation and watching it fail, then removing it — a passing gate and an inert gate look identical |
 

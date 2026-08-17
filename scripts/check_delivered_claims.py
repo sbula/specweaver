@@ -90,6 +90,14 @@ class StoryFinding:
 
 
 @dataclass(frozen=True)
+class UnprovenGreenFinding:
+    """A green story or add-on group holding closed features with no integration contract at all."""
+
+    unit: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class CapabilityFinding:
     """A capability marked `✅` with nothing behind it that any gate can read."""
 
@@ -178,6 +186,71 @@ def group_flag_findings(roadmap_root: Path) -> list[GroupFinding]:
     return found
 
 
+#: A capability id, as opposed to a dependency reference (`US-4 Core`) or a bootstrap step.
+_CAPABILITY_ID = re.compile(r"^[A-E]-[A-Z]+-\d+$")
+
+#: An integration contract id. `-MIG` is DELIBERATELY excluded: a migration entry is the task of
+#: building the inventory, not the proof it produces, so a green unit citing only its `-MIG` still
+#: owes a contract.
+_CONTRACT_ID = re.compile(r"^INT-US-\d+(?:-(?:SF\d+|SUB))?$")
+
+#: Any checkbox item on either plane, with its indent, so one walk can judge both.
+_ANY_ITEM = re.compile(r"^( {4,})\*   `(✅|\[ \])` \*\*([\w-]+)")
+
+
+def unproven_green_findings(roadmap_root: Path) -> list[UnprovenGreenFinding]:
+    """`ADR-004` clause 5: a green unit holding closed features must have a delivered contract.
+
+    The distinctive word is **absence**. `group_flag_findings` and `story_flag_findings` compare a
+    flag with the children present, so an UNCHECKED integration entry already forces `🟡` and needs
+    no new rule. Neither can see a child nobody wrote — and a check that never looks is
+    indistinguishable from one that passes, which is the argument this whole module rests on.
+
+    Zero-tolerance. The design expected this to fire on all 27 migration entries; measured once they
+    were registered it fires on none, because those units are `🟡` or their contracts are `[ ]`.
+    """
+    roadmap = (roadmap_root / "master_story_roadmap.md").read_text(encoding="utf-8")
+
+    findings: list[UnprovenGreenFinding] = []
+    unit: str | None = None
+    flag: str | None = None
+    depth = 4
+    closed: list[str] = []
+    contract_done = False
+
+    def judge() -> None:
+        if unit is not None and flag == "🟢" and closed and not contract_done:
+            findings.append(
+                UnprovenGreenFinding(
+                    unit,
+                    f"🟢 over {', '.join(closed)} with no delivered integration contract",
+                )
+            )
+
+    for line in roadmap.splitlines():
+        story = _STORY.match(line)
+        group = _GROUP.match(line)
+        if story or group:
+            judge()
+            unit = story.group(2) if story else group.group(2)
+            flag = (story or group).group(1)
+            depth = 4 if story else 8
+            closed, contract_done = [], False
+            continue
+        item = _ANY_ITEM.match(line)
+        if item is None or unit is None:
+            continue
+        if len(item.group(1)) != depth:
+            continue
+        state, ident = item.group(2), item.group(3)
+        if _CONTRACT_ID.match(ident):
+            contract_done = contract_done or state == "✅"
+        elif _CAPABILITY_ID.match(ident) and state == "✅":
+            closed.append(ident)
+    judge()
+    return findings
+
+
 def _fr_reader():
     """`check_fr_coverage`'s own declaration grammar, loaded rather than re-implemented.
 
@@ -244,7 +317,19 @@ def _report(
     caps: list[CapabilityFinding],
     baseline: int,
     stories: list[StoryFinding] | None = None,
+    unproven: list[UnprovenGreenFinding] | None = None,
 ) -> None:
+    if unproven:
+        print(
+            f"Green units holding closed features with no integration contract ({len(unproven)}):\n"
+        )
+        for finding in unproven:
+            print(f"  {finding.unit}\n        {finding.reason}")
+        print(
+            "\n`ADR-004` clause 5: a (sub)story may not go green while the integration and e2e proof "
+            "for its closed features is missing, even when every feature task beneath it is green. "
+            "Mint the contract, or correct the flag.\n"
+        )
     for finding in stories or []:
         print(f"  {finding.story:8} {finding.reason}")
     if stories:
@@ -288,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
 
     stories = story_flag_findings(roadmap_root)
     groups = group_flag_findings(roadmap_root)
+    unproven = unproven_green_findings(roadmap_root)
     caps = unverifiable_findings(roadmap_root)
     baseline = args.baseline if args.baseline is not None else load_baseline()
 
@@ -297,11 +383,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.list:
-        _report(groups, caps, baseline, stories)
+        _report(groups, caps, baseline, stories, unproven)
         return 0
 
-    if stories or groups or len(caps) > baseline:
-        _report(groups, caps, baseline, stories)
+    if stories or groups or unproven or len(caps) > baseline:
+        _report(groups, caps, baseline, stories, unproven)
         return 1
 
     print(
