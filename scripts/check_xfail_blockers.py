@@ -2,7 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""A strict xfail names its blocking capability, and goes when that capability ships.
+"""A strict xfail names its blocker, and goes when that blocker lands.
 
 `ADR-004` clause 4: a test is written as soon as the interface it exercises is defined, not when the
 implementation lands. Where the implementation is absent it is committed as
@@ -15,7 +15,8 @@ first run and asserts the present rather than a contract.
 * **The blocker ships and the marker stays.** `strict=True` does make the suite complain, since an
   unexpected pass is a failure — but only once a reader interprets that as "the marker is stale"
   rather than "the test is broken", and the tempting fix is to delete the assertion. The registry
-  already knows the answer: the capability is `✅` in the capability matrix.
+  already knows the answer: the capability is `✅` in the matrix, or the ticket is `✅` in the
+  TECH ledger.
 * **The reason names no blocker.** Then nothing can ever judge the marker stale, and it becomes a
   permanent exemption. That is how every suppression list in this repo decayed, so a named blocker is
   part of the contract rather than a convention.
@@ -24,9 +25,13 @@ first run and asserts the present rather than a contract.
 is nothing to judge. Narrow on purpose: a rule that fires on markers it cannot reason about gets
 switched off, and takes the rule it protects with it.
 
-**A blocker absent from the matrix is a finding, not a pass** — `TECH-032`'s lesson applied per row.
+**A blocker the registry does not know is a finding, not a pass** — `TECH-032`'s lesson per row.
 
-Zero-tolerance. Clause 4's markers do not exist yet, so there is no legacy set to carry.
+**A blocker may be a TECH ticket.** `ADR-004` clause 6 makes "a defect found by an integration test
+becomes a new ticket" the normal outcome, so most real markers name a ticket rather than an unbuilt
+capability. Capability status comes from the matrix, ticket status from the ledger.
+
+Zero-tolerance: there was no legacy set when this shipped.
 
 Usage:
     python scripts/check_xfail_blockers.py [--root DIR] [--list]
@@ -52,13 +57,23 @@ MATRIX = "capability_matrix.md"
 #: `✅ D-VAL-03` inside one code span, which is how the matrix writes its cells.
 _MATRIX_CELL = re.compile(r"`([^\s`]+)\s+([A-E]-[A-Z]+-\d+)`")
 
-#: A capability id inside an xfail reason.
-_CAPABILITY = re.compile(r"\b([A-E]-[A-Z]+-\d+)\b")
+#: A blocker id inside an xfail reason: an unbuilt capability, or a TECH ticket.
+#:
+#: TECH ids are load-bearing, and were missing on first release. `ADR-004` clause 6 makes "a defect
+#: found by an integration test becomes a new ticket" the NORMAL outcome, so most real markers name a
+#: ticket rather than a capability -- the first one written (`INT-US-10` FR-1, blocked on `TECH-061`)
+#: did exactly that. A gate that understands only capabilities cannot judge the markers the rule it
+#: enforces produces.
+_BLOCKER = re.compile(r"\b([A-E]-[A-Z]+-\d+|TECH-\d{3})\b")
+
+#: One TECH ledger line, which is where a ticket's status lives. The capability matrix holds
+#: capabilities only, so a TECH blocker cannot be resolved there.
+_LEDGER_LINE = re.compile(r"`(✅|\[ \])`\s+\*\*(TECH-\d{3}):\*\*")
 
 #: Status glyphs that mean the blocker has shipped, so the marker is stale.
 DELIVERED = frozenset({"✅", "🟢"})
 
-#: Reported for a reason that names no capability at all.
+#: Reported for a reason that names no blocker at all.
 NO_BLOCKER = "(none named)"
 
 #: Reported for a blocker the matrix does not know.
@@ -76,16 +91,21 @@ class StaleMarker:
 
 
 def capability_status(roadmap: Path) -> dict[str, str]:
-    """Map capability ID -> status glyph, read from the capability matrix.
+    """Map blocker ID -> status glyph: capabilities from the matrix, TECH tickets from the ledger.
 
     Raises:
         FileNotFoundError: the matrix is absent. A checker that cannot find its subject must say so
             rather than return `{}` and pass every marker by accident.
     """
-    return {
+    status = {
         cid: glyph
         for glyph, cid in _MATRIX_CELL.findall((roadmap / MATRIX).read_text(encoding="utf-8"))
     }
+    ledger = roadmap / "master_story_roadmap.md"
+    if ledger.is_file():
+        text = ledger.read_text(encoding="utf-8")
+        status.update({tech: glyph for glyph, tech in _LEDGER_LINE.findall(text)})
+    return status
 
 
 def _is_strict_xfail(node: ast.expr) -> bool:
@@ -133,7 +153,7 @@ def stale_markers(roadmap: Path, tests_root: Path) -> list[StaleMarker]:
         except (SyntaxError, UnicodeDecodeError):
             continue
         for line, reason in markers:
-            blockers = sorted(set(_CAPABILITY.findall(reason)))
+            blockers = sorted(set(_BLOCKER.findall(reason)))
             rel = path.as_posix()
             if not blockers:
                 out.append(StaleMarker(rel, line, NO_BLOCKER, UNKNOWN))
@@ -149,9 +169,9 @@ def _print(found: list[StaleMarker]) -> None:
     print(f"Strict xfails the registry no longer justifies ({len(found)}):\n")
     for marker in found:
         if marker.blocker == NO_BLOCKER:
-            why = "the reason names no capability, so nothing can ever judge it stale"
+            why = "the reason names no blocker, so nothing can ever judge it stale"
         elif marker.status == UNKNOWN:
-            why = "blocker is not in the capability matrix"
+            why = "blocker is in neither the capability matrix nor the TECH ledger"
         else:
             why = f"blocker has shipped ({marker.status})"
         print(f"  {marker.path}:{marker.line}  {marker.blocker} — {why}")

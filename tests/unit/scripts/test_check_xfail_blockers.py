@@ -63,11 +63,19 @@ MATRIX = """# Capability Matrix
 """
 
 
+#: A TECH ledger, which is where a TECH blocker's status lives — the matrix holds capabilities only.
+LEDGER = """### 🔧 Technical Debt (TECH)
+    *   `✅` **TECH-058:** [Done](x.md)
+    *   `[ ]` **TECH-061:** [Open](x.md)
+"""
+
+
 def _tree(root: Path, tests: dict[str, str]) -> tuple[Path, Path]:
-    """A throwaway repo: a capability matrix and a `tests/` tree."""
+    """A throwaway repo: a capability matrix, a TECH ledger, and a `tests/` tree."""
     roadmap = root / "docs" / "roadmap"
     roadmap.mkdir(parents=True)
     (roadmap / "capability_matrix.md").write_text(MATRIX, encoding="utf-8")
+    (roadmap / "master_story_roadmap.md").write_text(LEDGER, encoding="utf-8")
     tests_root = root / "tests"
     for rel, body in tests.items():
         path = tests_root / rel
@@ -123,6 +131,34 @@ class TestStaleMarkers:
         (finding,) = cxb.stale_markers(roadmap, tests_root)
         assert finding.path.endswith("test_a.py")
         assert finding.line == 4
+
+
+class TestStaleMarkersWithATechBlocker:
+    """A blocker may be a TECH ticket, not only an unbuilt capability.
+
+    Found by using the gate: `INT-US-10` FR-1's non-Python case is blocked on `TECH-061`, a defect in
+    delivered code. `ADR-004` clause 6 makes that the normal outcome of an integration test finding
+    something — so a gate that only understands capability ids cannot judge the markers the rule it
+    enforces actually produces.
+
+    A TECH ticket's status lives in the ledger in `master_story_roadmap.md`; the capability matrix
+    holds capabilities only.
+    """
+
+    def test_an_open_tech_blocker_passes(self, cxb: ModuleType, tmp_path: Path) -> None:
+        roadmap, tests_root = _tree(tmp_path, {"e2e/test_a.py": _marker("TECH-061")})
+        assert cxb.stale_markers(roadmap, tests_root) == []
+
+    def test_a_closed_tech_blocker_is_reported(self, cxb: ModuleType, tmp_path: Path) -> None:
+        roadmap, tests_root = _tree(tmp_path, {"e2e/test_a.py": _marker("TECH-058")})
+        found = cxb.stale_markers(roadmap, tests_root)
+        assert [(f.blocker, f.status) for f in found] == [("TECH-058", "✅")]
+
+    def test_a_tech_id_absent_from_the_ledger_is_reported(
+        self, cxb: ModuleType, tmp_path: Path
+    ) -> None:
+        roadmap, tests_root = _tree(tmp_path, {"e2e/test_a.py": _marker("TECH-999")})
+        assert [f.status for f in cxb.stale_markers(roadmap, tests_root)] == ["?"]
 
 
 class TestStaleMarkersWithNoNamedBlocker:

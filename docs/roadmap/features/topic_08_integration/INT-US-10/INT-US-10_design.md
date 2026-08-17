@@ -34,12 +34,24 @@ That backfill happens under `specweaver-dev` §3.2c as first contact, from `INT-
 shared: five other base contracts list `B-SENS-02` as their only closed capability, and none of them
 repeats this work.
 
-**P-2 is the finding.** `tests/integration/graph/test_builder_integration.py` builds its graph with
-`fake_java_parser`, a hand-written stub whose own docstring says it *"Simulates a Tree-Sitter AST
-extractor purely for integration testing delta logic"*. The seam between two **closed** capabilities
-is therefore mocked at precisely the boundary it should prove: the real extractors emit a shape, the
-builder consumes a shape, and nothing checks the two agree. Both sides shipped; neither can accept
-the requirement (`finished-stories-immutable`), which is why it lands here.
+**P-2 is the finding, and it is a composition gap rather than a missing test.** Each part is
+covered on its own:
+
+| Part | Proof today |
+|---|---|
+| `graph_adapter.extract_ast_dict` | `tests/unit/workspace/ast/adapters/test_graph_adapter.py` — 6 cases, real parser, real file |
+| `GraphBuilder.ingest_ast` | `tests/integration/graph/test_builder_integration.py` — but with `fake_java_parser`, a stub whose docstring says it *"Simulates a Tree-Sitter AST extractor purely for integration testing delta logic"* |
+| `SqliteGraphRepository` | seven test files, dedup mutant-probed |
+| `GraphOrchestrator.build_target` — the only place the three meet | `test_orchestrator.py:149`, which `MagicMock`s the repository, topology and engine and asserts `persist_semantic_digraph.assert_called_once()` |
+
+So nothing anywhere drives the **real** adapter into the **real** mapper into **real** SQLite. The one
+test that names the composition asserts that calls happened, not that nodes came out. An initial draft
+of this row called the seam "mocked at the boundary", which overstated it — the adapter is tested; the
+*pair* is not, which is the rule the 2026-08-16 handover recorded: **if two things are only ever used
+together, test the pair.**
+
+Both sides shipped, so neither can accept the requirement (`finished-stories-immutable`), which is why
+it lands here.
 
 ## Cross-feature Functional Requirements
 
@@ -62,7 +74,7 @@ could not fail for the right reason. `check_xfail_blockers.py` holds the obligat
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Honest skips | The non-Python half of FR-1 skips with a named reason when that toolchain is absent, and runs when present. A test that always skips is a false pass |
+| NFR-1 | No skip on a repo-controlled dependency | The non-Python half of FR-1 must NOT skip on grammar availability: `tree-sitter-java` is a hard dependency in `pyproject.toml`, so absence is a defect rather than an environment gap. R8 in `check_conventions.py` enforces this, and rejected the first draft |
 
 ## Migration disposition
 

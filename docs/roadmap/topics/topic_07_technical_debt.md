@@ -21,6 +21,11 @@ critical for long-term project viability.
   > never existed.
 
 ## Architecture & Restructuring
+* **`TECH-061` 🔴: The Knowledge Graph Is Python-Only**
+  > [Description](../features/topic_07_technical_debt/TECH-061/TECH-061_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-10` FR-1, the first integration test written under `ADR-004`._ |
+  > `GraphOrchestrator.collect_files` filters `.py` and nothing else (`orchestrator.py:85-97`), while `D-SENS-03` ships Go/Kotlin/Java/C++/Rust extractors and both the adapter and the mapper are
+  > language-agnostic. Pointed at a real Java file whose symbols the extractor DOES report, a build persists **zero** nodes. Three green suites never drove the composition.
+
 * **`TECH-037` 🟢: Duplicated Code Is Found Only By Accident**
   > [Description](../features/topic_07_technical_debt/TECH-037/TECH-037_design.md) | _(2026-08-12 — raised by the user after `TECH-023` batch 7 and `TECH-035` each turned out to be duplication
   > findings wearing a complexity or cohesion label.)_ | **There was no duplicate-code check in this repo**, and `ruff` cannot provide one (`R0801` is not implemented). Every duplication fixed that
