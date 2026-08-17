@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf01_implementation_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: FR-1, FR-6.** Wave scheduling and cascading aborts. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-18-MIG`. Proof and mutants:
+`tests/unit/core/flow/handlers/test_decompose.py`,
+`tests/integration/core/flow/engine/test_dag_orchestration_integration.py`.
+
+
 ## 1. Goal
 
 Implement the Topological DAG filtering inside `OrchestrateComponentsHandler` to classify decomposed

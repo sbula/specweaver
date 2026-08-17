@@ -1,9 +1,35 @@
 # US-19: Microservice Fleet Orchestration - Integration Contracts
 
 ## Base Story Contract (`INT-US-19`)
-* **Status:** ⬜ Pending
-* **Integration Description:** [Pending definition...]
-* **Verifiable Proof:** [Pending]
+* **Status:** ⬜ Pending — migration `INT-US-19-MIG` discharged 2026-08-17; the contract stays open
+* **Integration Description:** US-19 orchestrates a fleet of 20+ microservices. It holds **two**
+closed
+  capabilities — `C-FLOW-03` (fan-out) and `B-SENS-02` (knowledge graph) — with `C-FLOW-04` (Work
+  Packet Bundling) unbuilt.
+* **Verifiable Proof:** P-1 and P-2 by `check_fr_coverage.py C-FLOW-03` and `... B-SENS-02`, both
+exit 0.
+
+### Path Inventory (`ADR-004`)
+
+| # | Path | Span | Owner | Runnable today | Blocker |
+|---|---|---|---|---|---|
+| P-1 | Wave scheduling, RESERVE locking, deferred JOIN synthesis, cascading aborts | single feature | `C-FLOW-03` | yes — **done** | — |
+| P-2 | Graph build, dedup, persistence, query, export | single feature | `B-SENS-02` | yes — **done** | — |
+| P-3 | Fan-out schedules waves from the topology the graph holds | cross-feature | this contract, deferred | no | `C-FLOW-04` |
+| P-4 | Collision safety under real concurrent fan-out | single feature | `TECH-062` | no — **not built** | `TECH-062` |
+| P-5 | Journey: 20+ services stay contract-synchronised across independent repos | cross-feature | this contract, deferred | no | `C-FLOW-04`, `A-VAL-06` |
+
+**Two closed capabilities, and P-3 is where they would meet — but not yet.** `C-FLOW-03` derives its
+waves from a dependency graph it builds itself from decomposed components (`_dependency_graph` in
+`handlers/decompose.py`), not from `B-SENS-02`'s persisted knowledge graph. Joining them is
+`C-FLOW-04`'s Work Packet Bundling, which is unbuilt — so the two capabilities coexist in this story
+without touching, and P-3 waits.
+
+That is worth stating plainly rather than inventing a seam: a story holding two closed features does
+not automatically have a runnable cross-feature path between them.
+
+**`INT-US-19-MIG` is discharged; the contract stays open** on `C-FLOW-04`, `A-VAL-06` and
+`TECH-062`.
 
 ## Sub-Story Add-Ons
 

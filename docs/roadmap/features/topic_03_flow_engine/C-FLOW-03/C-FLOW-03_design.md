@@ -43,8 +43,17 @@ port/SQLite collisions, and must completely avoid git merge conflicts.
 |---|-----|-------|--------|---------|
 | FR-1 | Blast Radius Wave Scheduling | Orchestrator | Analyzes each decomposed component against the `TopologyGraph` and explicitly enforces `depends_on` logical dependencies. | Identifies completely disjoint sets of components and assigns them to sequential execution "Waves" (DAG). |
 | FR-2 | Resource Reservation Locking | PipelineRunner | Checks an SQLite Reservation Table before spawning worktrees. | Cross-feature multi-agent collisions are gracefully parked if modules or ports intersect. |
-| FR-3 | Dynamic Port Offset Injection | PipelineRunner | Injects a unique `SW_PORT_OFFSET` hash into the environment of a sandbox worktree. | Testing instances and mock servers do not collide on network ports or SQLite database locks. |
-| FR-4 | Serialized Worktree Context Prep | Orchestrator | Pauses background GC (`gc.auto 0`) and sequentially creates `.worktree` directories and unique branches per component. | Avoids fatal Git locking collisions natively experienced when spawning parallel Git worktree tasks. |
+**FR-3 and FR-4 were deleted 2026-08-17, not delivered.** Both described mechanisms that do not
+exist in `src/`: `SW_PORT_OFFSET` appears nowhere, and no `gc.auto` configuration or worktree-creation
+serialisation exists. The hazards are real — `run_fan_out` is genuinely concurrent via
+`asyncio.gather` and its sub-runs can each call `git worktree add` — so the work moved to
+[`TECH-062`](../../topic_07_technical_debt/TECH-062/TECH-062_design.md) rather than being dropped.
+
+Deleted rather than left standing, following `TECH-046`: an FR that advertises unbuilt behaviour
+survives delivery and epic closure unless the descope is made visible. Found only because `ADR-004`'s
+migration requires citing every FR with a killed mutant, and there is no mutant to kill for code that
+does not exist.
+
 | FR-5 | Deferred Artifact Synthesis | Orchestrator | Delays generation of shared documentation (`README.md`, `context.yaml`) until after parallel execution. | Implements a `GateType.JOIN` ensuring shared artifacts are merged safely without collision. |
 | FR-6 | DAG Cascading Failures | PipelineRunner | Monitors wave batch execution states and aborts downstream dependents. | If Component A fails in Wave 1, Component B (which conceptually `depends_on` A) is safely aborted in Wave 2. |
 

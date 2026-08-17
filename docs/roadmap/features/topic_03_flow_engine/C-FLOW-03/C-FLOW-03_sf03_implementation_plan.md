@@ -6,6 +6,14 @@
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf03_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-5.** Deferred artifact synthesis behind the JOIN wave. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-18-MIG`. Proof and mutant:
+`tests/unit/core/flow/handlers/test_decompose.py` — skipping `_run_wave_n` fails it.
+
+**FR-3 and FR-4 are NOT owned here, or anywhere.** Both were declared and never built; the rows are
+deleted from the design and the work is `TECH-062`.
+
+
 ## Research Notes
 - **GateType.JOIN**: Needs to be explicitly added to `GateType` enum in `src/specweaver/core/flow/models.py`.
 - **Join Gate Evaluation Strategy**: The `GateEvaluator` in `src/specweaver/core/flow/gates.py` must

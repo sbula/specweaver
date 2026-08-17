@@ -21,6 +21,11 @@ critical for long-term project viability.
   > never existed.
 
 ## Architecture & Restructuring
+* **`TECH-062` 🔴: Parallel Fan-Out Has No Collision Guards**
+  > [Description](../features/topic_07_technical_debt/TECH-062/TECH-062_design.md) | _Status: STUB. Origin: found 2026-08-17 while citing `C-FLOW-03`'s FRs under `ADR-004`._ |
+  > `C-FLOW-03` is `✅` and two of its six FRs describe mechanisms **absent from `src/`**: `SW_PORT_OFFSET` port-offset injection, and `gc.auto 0` plus serialised worktree creation. `run_fan_out` IS
+  > concurrent (`asyncio.gather`) and its sub-runs can each `git worktree add`, so both hazards are live. FR rows deleted per `TECH-046`; the work carried here. No mutant exists for absent code.
+
 * **`TECH-061` 🔴: The Knowledge Graph Is Python-Only**
   > [Description](../features/topic_07_technical_debt/TECH-061/TECH-061_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-10` FR-1, the first integration test written under `ADR-004`._ |
   > `GraphOrchestrator.collect_files` filters `.py` and nothing else (`orchestrator.py:85-97`), while `D-SENS-03` ships Go/Kotlin/Java/C++/Rust extractors and both the adapter and the mapper are

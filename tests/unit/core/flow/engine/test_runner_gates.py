@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for gate evaluation, retry, and feedback loops in the pipeline runner."""
+"""Gate evaluation in the runner, including the RESERVE gate's atomic reservation.
+
+Proves: C-FLOW-03 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-18-MIG`. `C-FLOW-03` is `✅` with six FRs, one planned
+and none cited.
+
+Mutant-verified: skipping `evaluate_reserve` so the RESERVE gate never reserves fails tests here and in
+`test_approve_on_resume.py`. FR-2 claims colliding runs are "gracefully parked", and a gate that
+reserves nothing can park nothing.
+"""
 
 from __future__ import annotations
 

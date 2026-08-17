@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf02_implementation_plan.md
 - **Status**: DONE
 
+**FRs owned: FR-2.** The RESERVE gate's atomic reservation. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-18-MIG`. Proof and mutant:
+`tests/unit/core/flow/engine/test_runner_gates.py` — skipping `evaluate_reserve` fails it.
+
+
 ## 1. Goal
 Implement serialized `git worktree` initialization safely and execute SQL/Environment isolation to
 ensure concurrent overlapping multi-spec agents natively avoid locking bugs without halting the

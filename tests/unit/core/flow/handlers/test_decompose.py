@@ -1,7 +1,23 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for decompose step handlers."""
+"""Fan-out orchestration: wave scheduling, deferred joins, and cascading aborts.
+
+Proves: C-FLOW-03 FR-1, C-FLOW-03 FR-5, C-FLOW-03 FR-6
+
+Cited from `INT-US-18-MIG`. Three mutants die here and in
+`tests/integration/core/flow/engine/test_dag_orchestration_integration.py`:
+
+* FR-1 — the wave pipeline built with `steps=[]` instead of `state.deferred_joins`.
+* FR-5 — `_run_wave_n` skipped, so deferred shared artifacts are never synthesised.
+* FR-6 — `if state.has_failed:` replaced by `if False:`, so a failed component stops aborting its
+  dependents.
+
+**FR-3 and FR-4 carry no citation because they have no code.** Port-offset injection
+(`SW_PORT_OFFSET`) and serialised worktree preparation (`gc.auto 0`) were declared and never built.
+The rows are deleted from `C-FLOW-03`'s design and the work is `TECH-062`. There is no mutant to kill
+for absent code, which is exactly how both survived delivery.
+"""
 
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
