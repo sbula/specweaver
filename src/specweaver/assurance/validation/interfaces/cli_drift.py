@@ -247,10 +247,9 @@ def _target_has_drifted(target: str, all_plans: list[Path], project_path: Path) 
     """Check one staged file: locate its plan, run the check, report what it found."""
     from specweaver.core.flow.engine.state import StepStatus
 
-    _core.console.print(f"DEBUG TARGET STR: {target}")
     target_path = project_path / target
     if not target_path.exists():
-        _core.console.print(f"DEBUG SKIP: {target_path} does not exist!")
+        logger.debug("check-rot: staged path %s is not on disk; skipping", target_path)
         return False
 
     matched_plan = _plan_declaring(target_path, all_plans, project_path, target)
@@ -263,7 +262,7 @@ def _target_has_drifted(target: str, all_plans: list[Path], project_path: Path) 
     last_record = run_state.step_records[-1] if run_state.step_records else None
     status_code = getattr(last_record, "status", None) if last_record else None
 
-    _core.console.print(f"DEBUG PIPELINE: status_code={status_code}, last_record={last_record}")
+    logger.debug("check-rot: %s -> status=%s", target, status_code)
 
     if status_code not in (StepStatus.FAILED, StepStatus.ERROR):
         return False

@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for standards/scope_detector.py — scope detection and resolution."""
+"""Scopes: a monorepo's modules keep their own conventions.
+
+Proves: E-VAL-02 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. Mutant: `detect_scopes` returns an empty
+list — **27 fail**.
+
+That breadth is the measure of FR-4. With no scopes every standard collapses into one bucket, and a
+project's modules are averaged into a house style none of them actually follows. Scope is not a
+refinement of the feature; it is most of it.
+"""
 
 from __future__ import annotations
 

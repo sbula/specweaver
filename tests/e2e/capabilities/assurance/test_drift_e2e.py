@@ -1,6 +1,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The pre-commit journey: stage a drifted file, watch git refuse the commit.
+
+Proves: B-VAL-02 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. Mutant: `--cached` dropped from
+`git diff --cached --name-only --diff-filter=ACM`, so the command compares the working tree to the
+index instead of the index to HEAD — 2 fail.
+
+That mutant is precise about what FR-3 means. `git diff --name-only` still returns a list of real
+paths; it is simply the *wrong* list, and for a clean working tree it is empty. A pre-commit hook that
+reads anything other than the index inspects code that is not being committed.
+"""
+
 import subprocess
 import sys
 import time

@@ -1,7 +1,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for recency weighting utilities."""
+"""Age weighting: what the project does now outvotes what it used to do.
+
+Proves: E-VAL-02 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. Mutant: `recency_weight` flattened to a
+constant 1.0 — 7 fail.
+
+Flattening is the right mutant because the function still runs, still returns a float, and still
+weights every file. It simply stops discriminating, and a convention the project has abandoned gets an
+equal vote with the one that replaced it. The half-life is derived from the project rather than
+configured, which is what makes this a discovery mechanism and not a knob.
+"""
 
 from __future__ import annotations
 

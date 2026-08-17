@@ -1,7 +1,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for StandardsScanner."""
+"""Routing files to their language's analyzer, and what happens when none of them find anything.
+
+Proves: E-VAL-02 FR-2, E-VAL-02 FR-7
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+
+Mutants: no analyzer ever matches an extension, so nothing is extracted from any language (FR-2, 14
+fail); the `best_practice` fallback never fires, so a project with nothing to learn from is handed
+silence instead of built-in defaults (FR-7, 2 fail).
+
+FR-7 is the smaller mutant and the easier one to lose. Mimicry has an empty case — a greenfield
+project — and the fallback is the whole answer to it. Without a test, the mode flag would look
+supported while doing nothing.
+"""
 
 from __future__ import annotations
 

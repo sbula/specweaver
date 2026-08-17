@@ -37,7 +37,14 @@
 
   **FR-2 is deleted from the design, and the descope was already on record.** It claimed the plan
   would be fetched "via the file's lineage UUID"; `--plan` is a required option and nothing in the
-  path touches lineage. `B-VAL-01_sf02_implementation_plan.md` §Open Questions had weighed exactly
+  `drift check` path touches lineage.
+
+  **Corrected the same day, on reaching `B-VAL-02`:** the mechanism FR-2 described *is* implemented —
+  `_resolve_plan_by_lineage` in the same module reads the file's `# sw-artifact` uuid, finds its
+  `parent_id` in `flow_artifact_events`, and matches that against each plan's uuid. It is wired to
+  `sw drift check-rot`, `B-VAL-02`'s pre-commit interceptor, and to nothing else. The row is still
+  correctly deleted from `B-VAL-01` — that behaviour is not on this command — but "never built" was too
+  strong. It is built, fifty lines away, owned by the neighbour. `B-VAL-01_sf02_implementation_plan.md` §Open Questions had weighed exactly
   that mechanism and recommended the flag instead — *"keeps it 100% fast, avoids globbing, and is
   explicit"* — which is what shipped. **The decision never travelled from the plan back to the design**,
   so the design kept advertising a resolution path the CLI cannot take. No gate compares an FR against

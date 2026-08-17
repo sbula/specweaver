@@ -41,10 +41,49 @@ delegation.
 | FR-2 | Trigger Interceptor | Git Pre-commit | executes `sw check-rot --staged` | The system SHALL intercept the active commit attempt. |
 | FR-3 | Stage Filtering | Interceptor Command | evaluates the current git index | The system SHALL identify all staged target files using `git diff --cached --name-only` and skip out-of-scope files. |
 | FR-4 | Pipeline Delegation | Interceptor Command | delegates to engine | The system SHALL execute a dynamic one-step pipeline `DETECT ROT` targeting `StepTarget.DRIFT`. |
-| FR-5 | Extract Signatures | Rot Handler | analyzes staged AST | The system SHALL leverage `AstAtom` (Polyglot AST Extractor) to extract method signatures and `@trace` metadata from the staged files. |
+| FR-5 | Extract Signatures | Rot Handler | analyzes staged AST | The system SHALL extract method signatures from each staged file's AST. |
 | FR-6 | Read Specs | Rot Handler | reads requirement sources | The system SHALL correctly locate and load the associated `Spec.md` requirements tied to the AST objects via traceability tags. |
 | FR-7 | Correlate Drift | Rot Handler | matches AST against Spec | The system SHALL emit a FAILED `StepResult` with severity ERROR if divergence between the Code AST structure and the Spec.md contract is detected. |
 | FR-8 | Block Commit | Interceptor Command | reads the pipeline result | The system SHALL exit with a non-zero deterministic code (`1`) to explicitly abort the git commit process if `StepResult` is FAILED. |
+
+### Three wordings corrected on contact (2026-08-17, `INT-US-01-SF03-MIG`)
+
+All eight FRs are cited and each is behind a killed mutant — `check_fr_coverage.py B-VAL-02` exits 0.
+Three rows described something other than what runs, and none of the three is a missing capability.
+
+**FR-5 lost two clauses.** It named `AstAtom` (Polyglot AST Extractor) as the source of signatures:
+**there is no `AstAtom` class anywhere in `src/`.** The rot path delegates to `DriftCheckHandler`, which
+parses with `tree_sitter` directly and extracts signatures in `drift_detector._extract_signatures` —
+Python only. It also claimed `@trace` metadata is extracted from staged files.
+`extract_traceability_tags` is real and is reached from `workspace/analyzers/factory.py`, but **nothing
+on the `check-rot` path calls it**, so no trace metadata reaches the rot check. Both clauses struck; the
+signature clause stands and is cited.
+
+FR-5's mutant is **shared with `B-VAL-01` FR-1** — both die when the tree-sitter parse is handed empty
+bytes, because both go through the same handler. Disclosed in the test file too: one mutant, two
+capabilities, and the second citation is not independent evidence.
+
+**FR-8's exit code is 42, not 1.** The FR says "a non-zero deterministic code (`1`)"; the interceptor
+calls `sys.exit(42)` and the installed hook matches on `if [ $exit_code -eq 42 ]`. **42 is the better
+contract** — it distinguishes "drift detected" from "the command itself failed", which a bare `1`
+cannot — so the wording is what is stale. Row left as the declared behaviour (non-zero, deterministic,
+blocks the commit); the specific number is recorded here rather than silently changed in the table,
+because the hook script and the command have to agree and that agreement is the real requirement.
+
+**FR-6 reads plans, not `Spec.md`.** It says the handler locates "the associated `Spec.md` requirements
+tied to the AST objects via traceability tags". What runs globs `specs/*_plan.yaml` and matches a plan
+to a file two ways: by an `expected_signatures` key naming the path (three spellings), and failing that
+by lineage — `_resolve_plan_by_lineage` reads the file's `# sw-artifact` uuid, finds its `parent_id` in
+`flow_artifact_events`, and matches that against each plan's own uuid. Same intent, a different and
+more precise mechanism than "traceability tags", and worth recording because that lineage resolver is
+also the mechanism `B-VAL-01` FR-2 described and never got.
+
+### One defect fixed, not ticketed
+
+`_target_has_drifted` printed three `DEBUG …` lines to the console on every staged file — `DEBUG TARGET
+STR`, `DEBUG SKIP`, `DEBUG PIPELINE` — on the **pre-commit path**, so every commit in a SpecWeaver
+project showed them. Leftover debugging, not diagnostics anyone chose. Replaced with `logger.debug`
+where the information is worth keeping. No test asserted on them.
 
 ## Non-Functional Requirements
 

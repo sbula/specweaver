@@ -2,7 +2,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Standards discovery, and the exclusions it must honour before touching disk.
+"""Which files get to teach the agent what this project's conventions are.
+
+Proves: E-VAL-02 FR-1
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. `E-VAL-02` shipped with an
+implementation plan and no design document, so no requirement of it existed in the ledger's form.
+
+Mutant: `.specweaverignore` no longer applied — **41 test files fail**, the widest in this capability.
+The discovery set swells with everything the project deliberately excluded, and vendored or generated
+code starts voting on the conventions the agent will imitate. Discovery is upstream of every other FR
+here, and the blast radius says so.
+
+Previously documented here:
+
+Standards discovery, and the exclusions it must honour before touching disk.
 
 Proves: C-SENS-02 FR-5
 

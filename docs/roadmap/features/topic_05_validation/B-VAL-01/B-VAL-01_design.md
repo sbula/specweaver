@@ -45,9 +45,9 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 | FR-6 | Drift CLI | Developer | SHALL run `sw drift check <file> [--analyze]` | Initiates structural inspection pipeline |
 
 **FR-2 (Baseline Fetch) is deleted, not lost.** It claimed the plan would be fetched "via the file's
-lineage UUID". That mechanism was never built: `--plan` is a **required** option on
+lineage UUID". That never happens on this command: `--plan` is a **required** option on
 `sw drift check`, the handler reads `step.params["plan_path"]`, and neither the handler nor the
-detector touches lineage or a UUID.
+detector touches lineage or a UUID. (It *is* implemented elsewhere — see the correction below.)
 
 The descope was a decision already taken and recorded — `B-VAL-01_sf02_implementation_plan.md`
 §Open Questions weighs `Code UUID -> Spec UUID -> Plan UUID` plus a `specs/*_plan.yaml` glob against
@@ -60,12 +60,21 @@ naming: there the mechanism was absent and undecided, here it was consciously tr
 and the design was left stale. A descope recorded in one document and not the other is invisible to
 every gate — `check_fr_sweep.py` sees an uncited FR, never a contradicted one.
 
-**One thing nearby will look like FR-2 and is not.** `_plan_declaring` in
-`assurance/validation/interfaces/cli_drift.py` does resolve a plan for a file automatically — by
-scanning every plan for an `expected_signatures` entry naming the path, in three spellings. It belongs
-to **`B-VAL-02`** (`sw rot`), which shares the module, and it keys on path text rather than on
-lineage. So automatic baseline resolution exists in the repo, on another capability's command, by a
-mechanism FR-2 did not describe. Reading it as evidence that FR-2 shipped would be wrong twice.
+**FR-2's mechanism does exist in the repo — on another capability's command.** Corrected 2026-08-17,
+same day, on reaching `B-VAL-02`: `assurance/validation/interfaces/cli_drift.py` holds
+**`_resolve_plan_by_lineage`**, which reads the file's `# sw-artifact` uuid, looks up its `parent_id`
+in `flow_artifact_events`, and matches that parent against each candidate plan's own uuid. That is
+FR-2 as written, almost clause for clause.
+
+It is wired to **`sw drift check-rot`**, which is `B-VAL-02`'s pre-commit interceptor, and to nothing
+else — `_target_has_drifted` is its only caller. A second resolver, `_plan_declaring`, backs it up by
+matching `expected_signatures` path text in three spellings.
+
+So the accurate statement is narrower than "never built": **`sw drift check` cannot resolve a plan and
+never tries**, because `--plan` is required and the handler reads `step.params["plan_path"]`. The row
+is still correctly deleted from *this* capability — the behaviour it promised is not on this command —
+but a reader should know the mechanism is fifty lines away in the same file, owned by `B-VAL-02`, and
+that wiring it in is a small change rather than a build.
 
 Recorded 2026-08-17 from `INT-US-10-SF01-MIG`. Remaining FRs renumbered nowhere: FR-1, FR-3..FR-6
 keep their identifiers so existing citations and plans stay valid.

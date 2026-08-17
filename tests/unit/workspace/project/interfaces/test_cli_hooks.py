@@ -2,6 +2,23 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Installing the pre-commit hook, and what the script it writes actually runs.
+
+Proves: B-VAL-02 FR-1, B-VAL-02 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+
+Mutants: the hook never written to disk (FR-1, 2 fail); the hook written but invoking
+`drift check --staged` instead of `drift check-rot --staged` (FR-2, 2 fail). The second is the one
+worth having — the file still appears, is still executable, still runs SpecWeaver, and intercepts
+nothing, because `drift check` has no `--staged` mode and needs a `--plan`. An installer proven only by
+the file existing proves the file exists.
+
+The hook and the interceptor agree on **exit code 42**, not the `1` FR-8 declares, and this file is
+where that contract is visible: `if [ $exit_code -eq 42 ]`. See the design's note — 42 is the better
+design and the FR's wording is what is stale.
+"""
+
 import os
 import sys
 from pathlib import Path

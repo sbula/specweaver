@@ -1,5 +1,15 @@
 # Feature 3.5 — Auto-Discover Standards from Codebase
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7.** Recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-01-SF03-MIG`. The plan predates the FR ledger — the capability had no design
+document at all, so there was no ownership to state and nothing for either sweep to count. One plan,
+one owner; a retrospective sub-feature split would be fiction.
+
+Proof and mutants are tabulated in `E-VAL-02_design.md`. The one worth reading before touching this
+code: FR-5's first mutant removed `session.flush()` and the suite stayed green, because the session
+commits anyway. That was an equivalent mutant, not a gap.
+
+
 Extract coding conventions per scope × language from existing code → HITL document review → store centrally → auto-inject into LLM prompts.
 
 > **Languages**: Python (stdlib `ast`) + JS/TS (`tree-sitter`). Architecture supports adding Kotlin, Rust, Go.

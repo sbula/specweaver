@@ -2,7 +2,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for `_build_base_prompt()` assembly.
+"""Assembling the base prompt, and the standards slot inside it.
+
+Proves: E-VAL-02 FR-6
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. Mutant: `builder.add_standards(...)`
+never called — 3 fail.
+
+FR-6 is the reason the rest of `E-VAL-02` is worth anything: conventions discovered, weighted, scoped
+and persisted, and then not handed to the model that writes the code, would be inert. The mutant leaves
+discovery entirely intact and cuts only the delivery.
+
+Previously documented here:
+
+Unit tests for `_build_base_prompt()` assembly.
 
 Proves: D-INTL-06 FR-6.
 

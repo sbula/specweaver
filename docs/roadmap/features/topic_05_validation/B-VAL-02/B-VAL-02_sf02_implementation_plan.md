@@ -6,6 +6,14 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf02_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-2, FR-4, FR-8.** Installing the hook, what the hook invokes, the one-step
+`DETECT`/`DRIFT` pipeline, and aborting the commit. Recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-01-SF03-MIG`.
+
+**The exit code is 42, not the `1` FR-8 declares**, and the hook script matches on 42. The two
+have to agree, and that agreement is the actual requirement.
+
+
 ## 1. Goal
 
 Finalize the "Bi-Directional Spec Rot Interceptor" by implementing the logic inside the Git

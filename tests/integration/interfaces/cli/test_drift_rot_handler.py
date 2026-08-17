@@ -2,7 +2,31 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for the Git Pre-Commit Hook (Feature 3.23 SF-2)."""
+"""`sw drift check-rot --staged`: find each staged file's plan, judge it, block the commit.
+
+Proves: B-VAL-02 FR-4, B-VAL-02 FR-5, B-VAL-02 FR-6, B-VAL-02 FR-7, B-VAL-02 FR-8
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+
+Mutants: the one-step pipeline retargeted off `DRIFT` (FR-4, 3 fail); the `specs/*_plan.yaml` glob
+emptied so no baseline is ever located (FR-6, 2 fail); the FAILED/ERROR verdict discarded so drift is
+seen and not acted on (FR-7, 2 fail); `sys.exit(42)` softened to `sys.exit(0)` so the commit proceeds
+(FR-8, 2 fail).
+
+**FR-5 shares its mutant with `B-VAL-01` FR-1, and that is disclosed rather than glossed.** Both are
+killed by handing the tree-sitter parse empty bytes: the rot path delegates to the same
+`DriftCheckHandler`, so one mutant, two capabilities, and the second citation is not independent
+evidence.
+
+**FR-5's other two clauses do not hold, and are struck in the design.** It says signatures come from
+`AstAtom` — no such class exists anywhere in `src/`. And it claims `@trace` metadata is extracted from
+staged files: `extract_traceability_tags` is real and reached from `workspace/analyzers/factory.py`,
+but nothing on the `check-rot` path calls it.
+
+**FR-8 declares exit code `1`; the code exits `42`,** and the hook script matches on 42. That is the
+better contract — it separates "drift found" from "the command itself failed" — so the wording is what
+is stale, not the behaviour.
+"""
 
 from pathlib import Path
 from unittest.mock import patch

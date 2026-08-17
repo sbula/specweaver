@@ -6,6 +6,15 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf01_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-3, FR-5, FR-6, FR-7.** Reading the git index, extracting signatures from each
+staged file, locating its plan, and judging the two against each other. Recorded 2026-08-17
+under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+
+**FR-5's `AstAtom` and `@trace` clauses are struck** — no such class exists, and no trace
+extraction happens on this path. **FR-6 reads `specs/*_plan.yaml`**, by path match and then by
+lineage uuid, not `Spec.md` traceability tags. See the design's corrections section.
+
+
 ## 1. Goal
 Implement the core CLI entry points (`sw hooks install` and `sw drift check-rot --staged`) and the
 logic to deploy a robust, strict git `pre-commit` hook that intercepts commits for spec alignment

@@ -2,7 +2,23 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for CLI standards commands and _load_standards_content helper.
+"""`sw scan --standards` end to end at the CLI, including what lands in the database.
+
+Proves: E-VAL-02 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+
+**This FR needed its second mutant.** Removing `await self.session.flush()` from `upsert_standard`
+passed the entire suite — an **equivalent mutant**, since the session commits regardless. Nothing was
+untested; the probe changed no behaviour, and reporting it as a coverage gap would have been wrong.
+
+The mutant that lands stores `json.dumps({})` in place of the discovered content. The row is still
+written, still counted, still carries its confidence — and holds nothing. 4 files fail. A test that
+counts rows cannot tell those two databases apart.
+
+Previously documented here:
+
+Tests for CLI standards commands and _load_standards_content helper.
 
 Covers:
 - _load_standards_content() edge cases (item 1)
