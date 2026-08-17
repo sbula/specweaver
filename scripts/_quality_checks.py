@@ -74,6 +74,13 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
             ignores_paths=True,
             script="check_test_collection.py",
         ),
+        "xfail_blockers": make(
+            "xfail_blockers",
+            ("tests", "docs"),
+            _r._xfail_blockers,
+            ignores_paths=True,
+            script="check_xfail_blockers.py",
+        ),
         "roadmap_placement": make(
             "roadmap_placement",
             ("docs",),

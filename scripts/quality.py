@@ -151,6 +151,9 @@ MATRIX: dict[str, dict[str, str]] = {
     # contradicts its own children, and a delivered capability with no design or no FRs, which
     # `fr_sweep` scores as zero-uncited and therefore perfect. 62 delivered, 1 clean.
     "delivered_claims": {"doc": "all"},
+    # The trigger is a capability turning `✅` in the matrix, which a commit can do without touching
+    # a single test — so this is repo-wide, never diff-scoped.
+    "xfail_blockers": {"doc": "all"},
     "skill_sync": {"doc": "all"},
     # Same track, same reason: an instruction's references are stale relative to the whole repo,
     # not to a diff. Doc-gate-only mirrors the two above -- the accepted gap is that a *code*

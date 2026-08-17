@@ -71,6 +71,16 @@ def _duplication(_paths: list[Path]) -> list[str]:
     return _script("check_duplication.py")
 
 
+def _xfail_blockers(_paths: list[Path]) -> list[str]:
+    """`ADR-004` clause 4: a strict xfail names an unbuilt blocker, and goes when it ships.
+
+    Takes no paths. The trigger is a capability flipping to `✅` in the matrix — a commit that
+    touches no test at all can make every marker naming it stale, so a diff-scoped run would report
+    "nothing in scope" on exactly the change that matters.
+    """
+    return _script("check_xfail_blockers.py")
+
+
 def _comment_provenance(paths: list[Path]) -> list[str]:
     """No registry ID in a `src/` comment or docstring — code documents the present.
 
