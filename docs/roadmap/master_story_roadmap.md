@@ -212,11 +212,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
     *   🔴 **API Contract Understanding:**
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
-    *   🟢 **Intelligent Code Exclusions:**
-        *   `✅` **INT-US-05-SF03:** Sub-Story Integration (Complete)
+    *   🟡 **Intelligent Code Exclusions:**
+        *   `[ ]` **INT-US-05-SF03:** Intelligent Code Exclusions
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
-    *   🟢 **Framework Native Understanding:**
-        *   `✅` **INT-US-05-SF04:** Sub-Story Integration (Complete)
+    *   🟡 **Framework Native Understanding:**
+        *   `[ ]` **INT-US-05-SF04:** Framework Native Understanding
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **D-SENS-04:** Parallel AST Extraction Engine
@@ -300,7 +300,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Code-to-Spec Drift Checking:**
+    *   🟡 **Code-to-Spec Drift Checking:**
+        *   `[ ]` **INT-US-10-SF01:** Code-to-Spec Drift Checking
         *   `✅` **B-VAL-01:** AST Drift Detection
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
@@ -320,6 +321,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
     *   🟡 **Infinite Scale Management:**
+        *   `[ ]` **INT-US-11-SF01:** Infinite Scale Management
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` **A-FLOW-02:** Hash-based garbage collection
         *   `[ ]` **A-INTL-04:** Memory consolidation
@@ -380,6 +382,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   🟡 **Enterprise Compliance Protocols:**
+        *   `[ ]` **INT-US-15-SF01:** Enterprise Compliance Protocols
         *   `✅` **B-SENS-01:** Artifact lineage graph
         *   `[ ]` **A-UI-01:** 'Dark Factory' Compliance Logging
     *   🔴 **Zero-Trust ACL:**
@@ -453,6 +456,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Parallel Execution Safety:**
         *   `[ ]` **C-EXEC-04:** Concurrent Git Merge Orchestration
     *   🟡 **Distributed Topology Scaling:**
+        *   `[ ]` **INT-US-19-SF01:** Distributed Topology Scaling
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
@@ -483,7 +487,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Recursive Planning:**
+    *   🟡 **Recursive Planning:**
+        *   `[ ]` **INT-US-21-SUB:** Recursive Planning
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
     *   🔴 **Multi-Level Recursive Decomposition** *(the `AD-2` half `C-INTL-01` never built)*:
@@ -530,7 +535,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Dynamic Risk Controls:**
+    *   🟡 **Dynamic Risk Controls:**
+        *   `[ ]` **INT-US-25-SF01:** Dynamic Risk Controls
         *   `✅` **D-VAL-02:** Custom Rule Paths
         *   `✅` **D-VAL-04:** Adaptive Assurance Standards
         *   `✅` **C-VAL-03:** Dynamic Risk Rulesets
@@ -571,6 +577,44 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ---
 
+## 🚚 Integration Migration (`-MIG`)
+
+*`ADR-004`: a (sub)story holding closed features owns an integration story for them. These 27 place
+every path into the new structure — feature, inventory row, or deferred row — and are then
+discharged. Method, gates and identifier: [`TECH-060`](features/topic_07_technical_debt/TECH-060/TECH-060_design.md).
+Ordered by capability cluster, so a shared seam is decided once with every claimant visible.*
+
+| Cluster | Migration | Story | Sub-story / contract | Closed capabilities |
+|---|---|---|---|---|
+| B-SENS-02 (6) | `[ ]` `INT-US-10-MIG` | US-10 | Monolith Dependency Visualizer | `B-SENS-02` |
+|  | `[ ]` `INT-US-11-MIG` | US-11 | GraphRAG for Brownfield Scale | `B-SENS-02` |
+|  | `[ ]` `INT-US-12-MIG` | US-12 | Legacy Spec Extraction | `B-SENS-02` |
+|  | `[ ]` `INT-US-15-MIG` | US-15 | Enterprise Audit & Traceability | `B-SENS-02` |
+|  | `[ ]` `INT-US-26-MIG` | US-26 | Fleet-Wide CVE Remediation | `B-SENS-02` |
+|  | `[ ]` `INT-US-27-MIG` | US-27 | Autonomous Production Self-Healing | `B-SENS-02` |
+| A-SENS-01 (2) | `[ ]` `INT-US-11-SF01-MIG` | US-11 | Infinite Scale Management | `A-SENS-01` |
+|  | `[ ]` `INT-US-19-SF01-MIG` | US-19 | Distributed Topology Scaling | `A-SENS-01` |
+| C-FLOW-02 (2) | `[ ]` `INT-US-06-MIG` | US-6 | Remote Dashboard | `C-FLOW-02`, `E-UI-02` |
+|  | `[ ]` `INT-US-07-MIG` | US-7 | IDE Copilot | `C-FLOW-02` |
+| C-FLOW-03 (2) | `[ ]` `INT-US-18-MIG` | US-18 | Productionizing External Targets | `C-FLOW-03` |
+|  | `[ ]` `INT-US-19-MIG` | US-19 | Microservice Fleet Orchestration | `C-FLOW-03`, `B-SENS-02` |
+| singletons (15) | `[ ]` `INT-US-08-MIG` | US-8 | Greenfield Bootstrap Wizard | `D-SENS-01` |
+|  | `[ ]` `INT-US-20-MIG` | US-20 | Enterprise Architecture Enforcement | `D-SENS-01`, `B-SENS-02`, `C-EXEC-01` |
+|  | `[ ]` `INT-US-22-MIG` | US-22 | Polyglot Contract Enforcement | `A-VAL-01`, `C-VAL-04` |
+|  | `[ ]` `INT-US-23-MIG` | US-23 | Enterprise Tool Extension (MCP) | `C-INTL-02` |
+|  | `[ ]` `INT-US-01-SF02-MIG` | US-1 | Enforce Internal Architecture | `C-EXEC-01`, `C-EXEC-03` |
+|  | `[ ]` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
+|  | `[ ]` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
+|  | `[ ]` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
+|  | `[ ]` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation | `D-EXEC-01`, `B-EXEC-01` |
+|  | `[ ]` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
+|  | `[ ]` `INT-US-15-SF01-MIG` | US-15 | Enterprise Compliance Protocols | `B-SENS-01` |
+|  | `[ ]` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
+|  | `[ ]` `INT-US-05-SF03-MIG` | US-5 | Intelligent Code Exclusions | `C-SENS-02` |
+|  | `[ ]` `INT-US-05-SF04-MIG` | US-5 | Framework Native Understanding | `B-INTL-02` |
+|  | `[ ]` `INT-US-21-SUB-MIG` | US-21 | Recursive Planning | `C-INTL-01` |
+
+---
 ## Technical Debt & Architecture Stories (TECH)
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.

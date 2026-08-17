@@ -87,6 +87,24 @@ def test_the_two_legal_markers_pass() -> None:
     assert _violations(OPEN_LINE, DONE_LINE) == []
 
 
+def test_the_sub_and_mig_suffixes_are_registry_ids() -> None:
+    """`STORY_ID` ended at a digit or `-SFnn`, so `-SUB` and `-MIG` were not ids at all.
+
+    R-PLACE then reported a legitimate `INT-US-21-SUB` line as a design's internal decomposition —
+    the precise opposite of what the rule is for. `-SUB` is a legacy sub-story suffix carried by a
+    live entry; `-MIG` is `ADR-004`'s migration entry.
+    """
+    story = "### 🟡 US-21: Autonomous Feature Decomposition"
+    for line in (
+        "        *   `[ ]` **INT-US-21-SUB:** Recursive Planning",
+        "        *   `[ ]` **INT-US-21-MIG:** Migration",
+        "        *   `[ ]` **INT-US-21-SF01-MIG:** Migration",
+    ):
+        module = _load("check_roadmap_placement")
+        found = [v for v in module._violations(f"{story}\n{line}\n") if "R-PLACE" in v]
+        assert found == [], f"{line} reported as having no registry ID: {found}"
+
+
 def test_one_id_on_two_lines_of_a_story_is_rejected() -> None:
     """The 2026-08-16 shape: a retirement note re-labelled onto an id that already had a line."""
     found = _once(STORY_HEADING, RETIRED_TWIN, CAPABILITY_LINE)

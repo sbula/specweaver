@@ -44,12 +44,17 @@ from pathlib import Path
 
 ROADMAP = Path("docs/roadmap/master_story_roadmap.md")
 
-#: A registry ID: `US-9`, `TECH-025`, `C-FLOW-02`, `INT-US-21-SF02`.
+#: A registry ID: `US-9`, `TECH-025`, `C-FLOW-02`, `INT-US-21-SF02`, `INT-US-21-SUB`,
+#: `INT-US-06-MIG`, `INT-US-01-SF02-MIG`.
 #:
 #: The `(?!SF-)` guard is load-bearing and was missing on first release: without it the pattern
 #: matches a bare `SF-03`, so R-OWNER saw every unqualified reference as its own owner and could
 #: never fire. Caught by probing the rule against a planted orphan rather than by reading it.
-STORY_ID = r"(?<![\w-])(?!SF-\d)[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?(?![\w-])"
+#:
+#: The `-SUB` and `-MIG` tails are load-bearing for the same reason. Ending the pattern at a digit or
+#: `-SFnn` made `INT-US-21-SUB` not an id at all, so R-PLACE reported a legitimate entry as a
+#: design's internal decomposition -- the precise opposite of the rule's purpose.
+STORY_ID = r"(?<![\w-])(?!SF-\d)[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+|-SUB)?(?:-MIG)?(?![\w-])"
 
 DOCS = Path("docs")
 

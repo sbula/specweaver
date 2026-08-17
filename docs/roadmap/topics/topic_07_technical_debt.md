@@ -215,8 +215,8 @@ critical for long-term project viability.
 ## Documentation & Knowledge Architecture
 * **`TECH-060` 🔴: Integration Migration to (Sub)Story Path Inventories**
   > [Description](../features/topic_07_technical_debt/TECH-060/TECH-060_design.md) | _(2026-08-17 — `ADR-004` defines the target structure and builds none of the machinery.)_ |
-  > **26 (sub)stories hold a closed capability they cannot prove**: 14 base contracts are ten-line `[Pending definition...]` stubs, 9 add-on groups have no entry or an unproven one, 3 are `✅` citing
-  > no test file. Owns the method (three homes per path), the additive `INT-US-NN-MIG` identifier and its grammar in 4 gate sites, two gates, and the 26 entries in one section. Not the inventories.
+  > **27 (sub)stories hold a closed capability they cannot prove**: 14 base contracts are ten-line `[Pending definition...]` stubs, 10 add-on groups have no entry or an unproven one, 3 are `✅` citing
+  > no test file. Owns the method (three homes per path), the additive `INT-US-NN-MIG` identifier and its grammar (2 sites, probed), two gates, and the 27 entries in one section. Not the inventories.
 
 * **`TECH-059` 🟢: Registry IDs and History in Production Comments**
   > [Description](../features/topic_07_technical_debt/TECH-059/TECH-059_design.md) | _(2026-08-17 — raised by the user while agreeing `ADR-004`: code is a document of the present, no history.)_ |

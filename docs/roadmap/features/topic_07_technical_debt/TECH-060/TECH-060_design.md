@@ -11,17 +11,20 @@
 the `INT-US` entry **is** that story's contract, and that its spine is a **path inventory** plus the
 cross-feature (N)FRs the inventory generates. None of that exists yet. This ticket builds it.
 
-**Measured 2026-08-17.** 26 (sub)stories hold at least one closed capability and cannot prove its
+**Measured 2026-08-17 by generating the roster rather than counting by hand — which corrected the
+total from 26 to 27.** 27 (sub)stories hold at least one closed capability and cannot prove its
 integration:
 
 | Set | Count | State |
 |---|---|---|
 | Open base contracts | 14 | US-6, 7, 8, 10, 11, 12, 15, 18, 19, 20, 22, 23, 26, 27 — every contract document a ten-line stub reading `[Pending definition...]` / `Verifiable Proof: [Pending]` |
 | Add-on groups with an identifier | 5 | `INT-US-01-SF02`, `-01-SF03`, `-03-SF01`, `-04-SF05`, `-09-SF01` |
-| Add-on groups with no identifier | 4 | US-10 drift checking, US-11 and US-19 infinite scale, US-15 compliance |
+| Add-on groups with no identifier | 5 | US-10 drift checking, US-11 and US-19 infinite scale, US-15 compliance, US-25 dynamic risk controls |
 | Marked `✅`, citing no test file | 3 | `INT-US-05-SF03`, `-05-SF04`, `-21-SUB` — carried by `check_proof_tier.py` as accepted debt |
 
-Also `INT-US-25-SF01`, which `ADR-003` closed empty and `ADR-004` reverses.
+The fifth un-IDed group is `INT-US-25-SF01`, which `ADR-003` closed empty and `ADR-004` reverses. An
+earlier draft of this table named it in prose beside the count instead of inside it, which is how 27
+read as 26. Every figure below is now generated, not transcribed.
 
 **Nothing enforces the rule either.** `check_delivered_claims.py` compares a story's flag with its
 children's checkboxes and never asks whether the closed children have integration evidence. And
@@ -78,7 +81,7 @@ Reasoning about the pattern would have missed it, because it does match.
 **Gate 1 — no green without integration.** Extends `check_delivered_claims.py`, which already owns
 "a `✅` nothing can verify" and already parses both the 4-space MVS plane and the 8-space add-on
 plane. A fourth finding kind: a (sub)story marked green whose closed features have no
-integration/e2e evidence. Ratcheted, because it fires on the 26 by construction on day one.
+integration/e2e evidence. Ratcheted, because it fires on all 27 by construction on day one.
 
 **Gate 2 — a stale strict-xfail.** New `scripts/check_xfail_blockers.py`: any
 `pytest.mark.xfail(strict=True)` whose named blocking capability is now `✅` in the capability matrix
@@ -90,8 +93,8 @@ Both run at the `doc` gate: each is a question about registry state, not about a
 
 ### 4. The registry
 
-One dedicated roadmap section listing all 26 `-MIG` entries, added once and deleted once when
-discharged. **Not** a line inside each of the 21 stories: that is 26 placement edits in and 26 out,
+One dedicated roadmap section listing all 27 `-MIG` entries, added once and deleted once when
+discharged. **Not** a line inside each of the 21 stories: that is 27 placement edits in and 27 out,
 and misfiled registry insertions are what wrecked three commits on 2026-08-16.
 
 The three `✅` entries citing no test file flip to `[ ]`. That is a reversal of three delivery
@@ -102,7 +105,7 @@ they flip; both groups become `🟡`.
 
 ## Non-Goals
 
-- **Writing the 26 inventories.** Each is its own `-MIG` work item, ordered by capability cluster so
+- **Writing the 27 inventories.** Each is its own `-MIG` work item, ordered by capability cluster so
   a shared seam is decided once with every claimant visible — `B-SENS-02` alone is the only closed
   capability in six base contracts.
 - **The 17 already-proven contracts.** They have tests and lack an inventory. A named follow-on
@@ -122,7 +125,7 @@ they flip; both groups become `🟡`.
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | `-MIG` grammar | four gate scripts | Accept `INT-US-NN[-SFxx]-MIG` wherever an `INT-US` identifier is parsed | A `-MIG` entry is a first-class registry id; no gate reports it as malformed or invisible |
-| FR-2 | Migration registry | `master_story_roadmap.md` | One dedicated section listing the 26 `-MIG` entries, each naming its (sub)story and its closed capabilities | The batch is trackable in one place and removable in one edit |
+| FR-2 | Migration registry | `master_story_roadmap.md` | One dedicated section listing the 27 `-MIG` entries, each naming its (sub)story and its closed capabilities; the 5 missing contract ids minted alongside (`INT-US-10-SF01`, `-11-SF01`, `-15-SF01`, `-19-SF01`, and `-25-SF01` restored) | The batch is trackable in one place and removable in one edit |
 | FR-3 | Honest delivery marks | roadmap | `INT-US-05-SF03`, `-05-SF04`, `-21-SUB` flip `✅` → `[ ]`; US-5's two affected groups flip `🟢` → `🟡` | No `✅` survives that cites no test file; `check_delivered_claims` and `check_proof_tier` agree with the registry |
 | FR-4 | No green without integration | `check_delivered_claims.py` | Report a (sub)story marked green whose closed features have no integration/e2e evidence, ratcheted | `ADR-004` clause 5 is enforced rather than written down |
 | FR-5 | Stale strict-xfail | `check_xfail_blockers.py` | Fail any `xfail(strict=True)` whose named blocking capability is `✅` in the matrix; require the reason to name a blocker | Clause 4's markers cannot decay into permanent exemptions |
@@ -134,7 +137,7 @@ they flip; both groups become `🟡`.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | No behaviour change | Registry, skills and gate scripts only. Nothing under `src/` is touched |
-| NFR-2 | Gate 1 ratchets, gate 2 does not | Gate 1 fires on all 26 on day one, so it freezes a count that may fall and never rise. Gate 2 has no legacy set and is zero-tolerance |
+| NFR-2 | Gate 1 ratchets, gate 2 does not | Gate 1 fires on all 27 on day one, so it freezes a count that may fall and never rise. Gate 2 has no legacy set and is zero-tolerance |
 | NFR-3 | Existing gates stay green | `doc` 11/11 and `cb` throughout; the `-MIG` widening must not change how any existing identifier resolves |
 | NFR-4 | Probed, not asserted | Every gate is verified by planting a violation and watching it fail, then removing it — a passing gate and an inert gate look identical |
 
