@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf01_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1.** The `tach.toml` layer declaration itself, base layer first. Recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: a declared module
+path pointing at a namespace that does not exist.
+
+
 ## Feature Scope Overview
 This Sub-Feature initializes `Tach` into SpecWeaver and formally defines the bottom-most
 dependencies (the "Base Layer"). It guarantees that `config`, `standards`, and `logging.py` operate

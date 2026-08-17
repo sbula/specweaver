@@ -11,14 +11,57 @@ Capabilities do not accidentally depend on L1 Interface dependencies. Feature 3.
 
 ## 2. Requirements & Constraints
 ### Functional Requirements
-*   **FR1:** `Tach` must be added as a dev-dependency in `pyproject.toml`.
-*   **FR2:** A `tach.yml` configuration must formally define the structural layout of SpecWeaver (Base Layer, Resources, Capabilities, Orchestrators, Presentation).
-*   **FR3:** Strict dependency boundaries must be enforced (e.g., Domain Logic cannot import CLI utilities).
-*   **FR4:** Public Interfaces must be formally explicitly declared via Tach.
+
+Rewritten into the ledger's table form 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-01-SF02-MIG`. **The four requirements were always here — as prose bullets (`**FR1:**`), which
+`check_fr_coverage.py` and `check_fr_sweep.py` both read as no requirements at all**, because both
+match `| FR-N |` table rows. So a capability with four declared FRs and eight committed sub-features
+counted as a design with nothing to cite. Same class as `C-SENS-02`'s `_impl_plan.md` filenames: the
+content was written, the gate could not see it.
+
+Wording is preserved. FR-5 is new, and covers SF-08, which shipped with no requirement describing it.
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The layer cake is a declared artefact | System | `tach.toml` names each module and the modules it may depend on | The architecture is machine-checkable rather than a convention, and a config naming a module that does not exist is itself a failure |
+| FR-2 | Boundaries are enforced, not documented | CI | Runs `tach check` over `src/specweaver/` | A forbidden upstream import fails the suite — at **zero** violations, not a baseline |
+| FR-3 | Public surfaces are declared, not implied | System | `tach.toml`'s `interfaces:` blocks name what each module exposes | Importing a module's internals from outside is a violation, and a soft-deprecated name cannot be quietly re-exposed |
+| FR-4 | A violation becomes a reviewable finding | Validation rule C05 | Reads the hydrated QA architecture result for a target project | Each boundary violation is reported as an ERROR `Finding` with a message, rather than an exit code nobody reads |
+| FR-5 | A target project's topology becomes its `tach.toml` | Developer | Syncs a `TopologyGraph` into the analysed project's `tach.toml` | `context.yaml` boundaries are enforced by tach in that project too, with `[[modules]]` rebuilt from the graph rather than merged into stale ones |
+
+**FR1 as originally worded — "`Tach` must be added as a dev-dependency" — is folded into FR-1.** A
+dependency declaration has no independent failure: remove it and `tach check` cannot run, which is
+FR-2's mutant. Keeping it as its own row would add one whose only observable consequence is another
+row's.
+
+### Two findings, both guards that had stopped guarding
+
+**1. `tach check` was enforced against a baseline of 95 violations.**
+`test_tach_architectural_boundaries` asserted `fail_count <= 95`, introduced 2026-05-25 (`07ce7544`)
+when the debt was real. `tach check` now reports **zero**. The slack outlived the debt by nearly three
+months, and it was not inert: a new cross-layer import — verified by mutation, `interfaces.cli`
+imported into `graph.lineage.scanner`, whose `depends_on` is empty — passed the entire suite, as would
+the next ninety-four. The assertion is now `returncode == 0`.
+
+This is the shape worth naming. A stale threshold does not announce itself. The test kept passing, kept
+appearing in the suite, and kept reading like enforcement, while the thing it enforced had moved.
+`CLAUDE.md` states "No cross-layer imports" as a critical rule; nothing checked it.
+
+**2. `test_tach_keeps_runner_soft_deprecated` had never run its assertion.**
+It searched the `interfaces` blocks for `from = "src.specweaver.assurance.validation"`. `tach.toml`
+sets `source_roots = ["src"]`, so its module paths begin at `specweaver.` — the string never matched,
+the loop body never executed, and the test passed unconditionally. Verified: adding `runner` straight
+back into the expose list passed the whole suite. Fixed, and it now also asserts that the block was
+*found*, so the same drift cannot return it to silently passing.
+
+Both were found the same way: a mutant that should have died and did not.
 
 ### Non-Functional Requirements
-*   **NFR1:** Must replace/delete unnecessary `__init__.py` encapsulation hacks (`__all__ = [...]`).
-*   **NFR2:** Tach execution (`tach check`) must be integrated into the `pre-commit` workflow.
+
+| # | NFR | Threshold / Constraint |
+|---|-----|----------------------|
+| NFR-1 | No `__init__.py` encapsulation hacks | Internal `__init__.py` proxy files and `__all__` re-export boilerplate are replaced by `tach.toml` `interfaces:` declarations. **[proof: meta — a one-time refactor over the tree, not a runtime behaviour; SF-06 removed the last 20, and FR-3's `interfaces:` blocks are what replaced them]** |
+| NFR-2 | Enforced at the commit boundary | `tach check` runs as part of the commit-boundary gate. **[proof: meta — gate wiring, not product behaviour; `scripts/quality.py` registers `tach` at the `cb`, `sf` and `feature` gates, and `tests/unit/test_architecture.py` runs it inside the suite]** |
 
 ## 3. Codebase Patterns (Where to Implement)
 

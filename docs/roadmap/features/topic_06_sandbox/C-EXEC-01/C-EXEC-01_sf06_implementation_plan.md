@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf06_implementation_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: none.** The last 20 `__init__.py` proxies were deleted here; the requirement that
+replaced them is NFR-1, marked `[proof: meta]` because it is a one-time refactor over the tree
+rather than a runtime behaviour. Recorded 2026-08-17 from `INT-US-01-SF02-MIG`.
+
+
 ## 1. Description
 This plan executes SF-06: The final completion of SpecWeaver's transition into a PEP-420
 architecture. We will delete all remaining `__init__.py` boilerplate encapsulation proxy files

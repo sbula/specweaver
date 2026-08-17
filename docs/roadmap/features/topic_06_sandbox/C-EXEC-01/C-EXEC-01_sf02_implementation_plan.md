@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf02_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: none.** SF-02 extended FR-1's declaration to the resource and capability layers;
+it added no requirement of its own. Recorded 2026-08-17 from `INT-US-01-SF02-MIG` so the
+silence is deliberate.
+
+
 ## Feature Scope Overview
 This Sub-Feature formalizes the Resource and Core Capability modules (`project`, `context`, `graph`, `llm`) into the `tach.toml` registry.
 

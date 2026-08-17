@@ -4,6 +4,13 @@
 - **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
 - **Status**: APPROVED
 
+**FRs owned: FR-3.** Public surfaces declared through `interfaces:` instead of `__init__.py`
+re-export hacks. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`.
+
+**The soft-deprecation guard had never run its assertion** — it matched a module prefix
+`tach.toml` does not use. Fixed, and it now asserts the block was found.
+
+
 ## 1. Goal
 Delete all remaining `__init__.py` proxy-export boilerplate files deep inside `src/specweaver` and
 enforce their replacement with native, computationally-evaluated Rust boundaries using Tach's

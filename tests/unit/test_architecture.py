@@ -1,6 +1,29 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""SpecWeaver's own layer cake: declared in `tach.toml`, enforced at zero, surfaces named explicitly.
+
+Proves: C-EXEC-01 FR-1, C-EXEC-01 FR-2, C-EXEC-01 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. `C-EXEC-01` declared its four
+requirements as prose bullets rather than table rows, so both requirement gates read it as declaring
+nothing — the same invisibility `C-SENS-02` had from a filename.
+
+**Two of the three FRs were unprovable when this file was reached, because two guards here had stopped
+guarding.** Both were found by a mutant that should have died and did not, and both are fixed above:
+
+- `test_tach_architectural_boundaries` allowed 95 violations, a baseline from 2026-05-25 that the
+  codebase had long since cleared. Zero now.
+- `test_tach_keeps_runner_soft_deprecated` matched a module prefix that `tach.toml` does not use, so
+  its assertion never executed.
+
+Mutants that now die: a forbidden `interfaces.cli` import inside `graph.lineage.scanner` (FR-2); a
+`tach.toml` module path pointing at a namespace that does not exist (FR-1); `runner` re-added to the
+validation module's expose list (FR-3). FR-1 and FR-2 die through the same assertion — config integrity
+and source compliance are one check by construction, and citing them separately is a statement about
+the requirements, not two independent proofs.
+"""
+
 import ast
 import importlib.util
 import subprocess
@@ -13,25 +36,25 @@ from tests.fixtures.arch_scanners import import_offenders
 
 
 def test_tach_architectural_boundaries() -> None:
-    """
-    Ensures that the Tach domain boundaries defined in tach.toml are strictly respected.
-    This guarantees that the Layer Cake structure (Base -> Resource -> Capability -> Orchestrator)
-    has no forbidden upstream dependencies, replacing the deleted __init__.py manual encapsulation.
+    """The Layer Cake has no forbidden upstream dependencies — zero, not a baseline.
+
+    `C-EXEC-01` FR-2. This assertion carried `fail_count <= 95` from 2026-05-25 (`07ce7544`) until
+    2026-08-17, and `tach check` has since reached **zero** violations. The slack outlived the debt: a
+    new cross-layer import could be added and every one of the next ninety-four would keep the suite
+    green. Verified by mutation — importing `interfaces.cli` into `graph.lineage.scanner`, a module
+    whose `depends_on` is empty, passed the whole suite under the old bound.
+
+    A guard whose threshold is stale does not fail loudly; it stops being a guard and goes on looking
+    like one. `tach check` is enforced at zero from here.
     """
     root_dir = Path(__file__).resolve().parent.parent.parent
     result = subprocess.run(["tach", "check"], cwd=root_dir, capture_output=True, text=True)
 
-    if result.returncode != 0:
-        # Count the number of [FAIL] lines
-        fail_count = result.stdout.count("[FAIL]") + result.stderr.count("[FAIL]")
-
-        # We are currently in Topic 07 Technical Debt epic.
-        # The baseline is exactly 95 violations.
-        assert fail_count <= 95, (
-            f"Architecture boundary violation detected by tach! "
-            f"Expected <= 95 baseline violations, got {fail_count}:\n"
-            f"{result.stdout}\n{result.stderr}"
-        )
+    fail_count = result.stdout.count("[FAIL]") + result.stderr.count("[FAIL]")
+    assert result.returncode == 0, (
+        f"tach check reports {fail_count} architecture boundary violation(s); the bound is zero:\n"
+        f"{result.stdout}\n{result.stderr}"
+    )
 
 
 def _interface_path_exists(root_dir: Path, base_parts: list[str], exposed_path: str) -> bool:
@@ -92,11 +115,19 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
 
 
 def test_tach_keeps_runner_soft_deprecated() -> None:
-    """
-    Integration Regression Guard:
-    Ensures that the legacy 'runner' module is explicitly omitted from the 'src.specweaver.assurance.validation'
-    expose list in tach.toml. This prevents accidental soft-deprecation regressions where a future
-    developer might silently re-expose it, bypassing the architectural deprecation boundary.
+    """The legacy `runner` module stays out of the validation module's public surface.
+
+    `C-EXEC-01` FR-3: `tach.toml`'s `interfaces:` blocks are what make a module's surface public, so
+    re-exposing a soft-deprecated name silently reopens a boundary that was closed on purpose.
+
+    **This guard passed unconditionally until 2026-08-17.** It searched the `from` lists for
+    `"src.specweaver.assurance.validation"`, while `tach.toml` — whose `source_roots` is `["src"]` and
+    whose module paths therefore begin at `specweaver.` — spells it `"specweaver.assurance.validation"`.
+    The loop never matched, so the assertion inside it never ran. Verified by mutation: adding `runner`
+    straight back into the expose list passed the whole suite.
+
+    The prefix is fixed, and the block must now be *found* — otherwise a future rename returns this test
+    to quietly passing, which is the failure it just had.
     """
     root_dir = Path(__file__).resolve().parent.parent.parent
     tach_path = root_dir / "tach.toml"
@@ -105,14 +136,20 @@ def test_tach_keeps_runner_soft_deprecated() -> None:
     with tach_path.open("rb") as f:
         config = tomllib.load(f)
 
+    checked = 0
     for interface in config.get("interfaces", []):
-        from_bases = interface.get("from", [])
-        if "src.specweaver.assurance.validation" in from_bases:
-            exposed = interface.get("expose", [])
-            assert "runner" not in exposed, (
-                "CRITICAL: The 'runner' module must remain soft-deprecated! "
-                "Do NOT add 'runner' to the validation interfaces in tach.toml."
-            )
+        if "specweaver.assurance.validation" not in interface.get("from", []):
+            continue
+        checked += 1
+        assert "runner" not in interface.get("expose", []), (
+            "CRITICAL: The 'runner' module must remain soft-deprecated! "
+            "Do NOT add 'runner' to the validation interfaces in tach.toml."
+        )
+
+    assert checked, (
+        "no tach.toml [[interfaces]] block declares 'specweaver.assurance.validation' — this guard "
+        "just went vacuous again, which is exactly the defect it was fixed for"
+    )
 
 
 def _load_check_coupling() -> ModuleType:

@@ -6,6 +6,15 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf08_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-5.** A `TopologyGraph` written out as the target project's `tach.toml`.
+Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. **FR-5 is new** —
+this sub-feature shipped with no requirement describing it.
+
+Its first mutant was an *equivalent* one: disabling the `[[modules]]` purge changes nothing while
+the graph is populated, because the rebuild reassigns the key. The purge only matters for an
+emptied topology, which is now the test.
+
+
 ## Goal Description
 
 Build an adapter that bridges SpecWeaver's internal topological model (`context.yaml` defined via

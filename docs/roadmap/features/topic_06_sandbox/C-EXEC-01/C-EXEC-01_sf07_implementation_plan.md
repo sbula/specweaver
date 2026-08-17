@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf07_implementation_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: FR-4.** Rule C05 turns a tach boundary violation in an *analysed* project into an
+ERROR `Finding` a reviewer can act on. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-01-SF02-MIG`. This is the product-facing half of the capability, as against the repo's
+own hygiene. Mutant: the no-violations branch forced true — 4 fail across three tiers.
+
+
 ## Goal
 Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace it with a
 generalized architecture boundary check on the target project. To ensure SpecWeaver remains strictly

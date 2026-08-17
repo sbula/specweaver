@@ -6,6 +6,10 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf05_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: none.** Legacy linter subsumption moved existing checks onto tach without adding
+a requirement. Recorded 2026-08-17 from `INT-US-01-SF02-MIG`.
+
+
 ## 1. Description
 This implementation plan covers the complete integration and adoption of `Tach` for SpecWeaver
 internal testing handling. The goal is to fully deprecate and remove overlapping internal Python

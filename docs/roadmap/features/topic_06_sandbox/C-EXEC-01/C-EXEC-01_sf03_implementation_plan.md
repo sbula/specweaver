@@ -6,6 +6,14 @@
 - **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf03_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-2.** Enforcement — no domain module may depend on `api` or `cli`. Recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`.
+
+**The enforcing assertion allowed 95 violations** until 2026-08-17, a baseline from
+2026-05-25 that the codebase had long since cleared. It is zero now. See the design's findings
+section — a forbidden import verified to pass the whole suite under the old bound.
+
+
 ## 1. Goal
 Enforce that no domain logic inside `src/specweaver` is mathematically allowed to depend on `api` or `cli`.
 

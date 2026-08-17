@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for C05 Import Direction Architecture Rule using real Tach."""
+"""Rule C05: a tach boundary violation reaching a spec review as a finding.
+
+Proves: C-EXEC-01 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: the `violation_count == 0`
+branch forced true, so the rule always passes — 4 fail across three tiers.
+
+FR-4 is the half of this capability that is *product*, not repo hygiene: `tach check` runs against an
+analysed project and each violation becomes an ERROR `Finding` with a message a reviewer can act on. An
+exit code is not a review.
+"""
 
 from __future__ import annotations
 
