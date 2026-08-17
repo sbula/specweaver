@@ -2,6 +2,26 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""C09: every requirement in the spec is traced to a `# @trace()` tag in test code.
+
+Proves: C-VAL-04 FR-1, C-VAL-04 FR-2, C-VAL-04 FR-3, C-VAL-04 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-22-MIG`. `C-VAL-04` is `✅` with four FRs, none planned
+and none cited.
+
+Each is behind a killed mutant, and they die in different places, which is what makes the four separate
+claims rather than one:
+
+* FR-1 — `_extract_all_requirements` returns an empty set, so the spec side is blind: 2 fail.
+* FR-2 — `_find_and_parse_tests` returns an empty set, so the test side is blind: 5 fail.
+* FR-3 — `missing_ids = target_ids - mapped_ids` replaced by `set()`, so both sides are read and never
+  compared: 1 fails.
+* FR-4 — `if missing_ids:` neutralised, so the gap is computed and then not enforced: 1 fails.
+
+FR-3 and FR-4 are worth distinguishing. A rule that compares nothing and a rule that compares correctly
+and then declines to fail are both green from the outside, and only one mutant each tells them apart.
+"""
+
 from pathlib import Path
 from unittest.mock import patch
 

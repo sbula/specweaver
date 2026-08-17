@@ -6,6 +6,13 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-22-MIG`. The plan predates the FR ledger, so ownership was never stated.
+
+Proof and mutants: `tests/unit/assurance/validation/rules/code/test_c09_traceability.py`. FR-3 and FR-4
+are separated deliberately — a rule that compares nothing and a rule that compares and then declines to
+fail look identical from outside, and one mutant each is what distinguishes them.
+
 ## 1. Goal Description
 Implement `C09_traceability.py`, a pure logic validation rule that ensures every Functional
 Requirement (FR) and Non-Functional Requirement (NFR) documented in an L3 Spec is explicitly covered
