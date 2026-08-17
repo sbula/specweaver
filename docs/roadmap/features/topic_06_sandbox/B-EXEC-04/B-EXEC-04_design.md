@@ -33,16 +33,51 @@ host-side execution path can, without a mechanism that scopes to a process subtr
 **cgroups v2 `pids.max` is that mechanism.** It bounds a control group, the sandbox's children live
 in it, and the invoking user's other work is untouched.
 
-## Relationship to `TECH-029` — read this before starting
+## Relationship to the interim backstop — read this before starting
 
-`TECH-029` ships an interim backstop: `RLIMIT_NPROC` set to *current task count + budget*, so it
-bounds the sandbox's **additional** forks rather than the user's total. That keeps `FR-11`
-approximately true and stops the breakage, but it is racy (another process may start between
-measurement and `setrlimit`) and still per-UID.
+**Re-measured 2026-08-17. The backstop this section originally described no longer exists, and the
+replacement is looser — which raises this capability's value rather than lowering it.**
 
-**This capability supersedes it.** The design should **remove** `TECH-029`'s workaround rather than
-layer on top of it — two mechanisms claiming the same guarantee is how the original defect survived
-unnoticed for as long as it did.
+`TECH-029` shipped `RLIMIT_NPROC = current task count + budget`, bounding the sandbox's *additional*
+forks rather than the user's total. That description held until 2026-08-17, when the racy-ness it
+flagged in one clause turned out to be the dominant behaviour rather than an edge case.
+
+**What the race actually costs, measured.** Sampling the UID's task count while this repo's own suite
+ran at `-n auto`:
+
+```
+range within one run : 313 .. 960 tasks   (spread 647)
+p50 / p95            : 419 / 484
+budget               : 128  ->  ceiling ~453
+```
+
+The ceiling sat **below** the load the machine routinely reaches. Sandboxed bash steps died on their
+own `fork` with `Resource temporarily unavailable`, exit 254, roughly one full suite run in six — and
+the failure was reported against the innocent script, because `BashActionAtom` put only the exit code
+in its message. Disabling the cap entirely: **0 failures in 12 runs**, which identified it
+conclusively.
+
+The reason is not the measurement window. The ceiling is **fixed for the child's whole lifetime at the
+moment it spawns**, so it must clear not the load at spawn but the machine's *future* peak — which no
+sample can know. Two sampling-based repairs were implemented and measured before this was accepted: a
+process-lifetime high-water mark (still failed — a child spawned before the peak arrives carries the
+lower ceiling), then high-water mark plus observed spread (still failed, same reason). **Anyone
+planning this capability should not spend time on a third sampling scheme.**
+
+**What ships in the interim instead.** Headroom is now the configured budget **or 1% of the system's
+own hard `RLIMIT_NPROC`, whichever is larger**, clamped to that hard limit — measured 3538 against a
+325-task baseline where the old ceiling was 453. It is chosen because the system's declared limit is
+the only scale on the host that is not a guess. A fork bomb is unbounded and still crosses it in
+milliseconds, so `C-EXEC-02` FR-11's outcome holds.
+
+**But the bound is now roughly 8x looser, and it is no longer a per-sandbox quota in any sense.** That
+is the state this capability inherits: not "a slightly racy approximation" but "a ceiling deliberately
+set high enough that ambient load cannot reach it". Kernel-enforced per-subtree bounding is the only
+thing that makes `max_processes` mean what its name says.
+
+**This capability supersedes the backstop.** The design should **remove** it rather than layer on top
+— two mechanisms claiming the same guarantee is how the original defect survived unnoticed for as long
+as it did.
 
 ## Candidate Approaches (not yet designed)
 
@@ -59,6 +94,12 @@ unnoticed for as long as it did.
 - **Reconcile with `B-EXEC-01`.** The container path already bounds processes by other means. The
   design must say which mechanism applies when a step runs containerized, so the two do not both
   claim the limit.
+- **Reconcile with `E-EXEC-01` FR-10 as well** — *"memory/process-count bombs are caught and killed on
+  all platforms"*. That is a **second delivered claim** on the same bound, and it is where the Unix
+  limiter actually lives, so it is the FR whose meaning changes when a cgroup exists. Counting
+  `C-EXEC-02` FR-11, `E-EXEC-01` FR-10 and `B-EXEC-01` NFR-5, **three delivered requirements already
+  claim a process bound** — the ambiguity this section warns about is not hypothetical, it is the
+  current state.
 
 ## Non-Goals (proposed, pending design)
 
@@ -77,5 +118,6 @@ Run through `specweaver-design`. Three things to settle before writing FRs:
 2. **What `max_processes` means once two mechanisms exist.** `TECH-029` will have made it a
    best-effort backstop; this makes it a real bound where a cgroup is available. One field, two
    guarantees, is exactly the ambiguity that produced the original defect.
-3. **How `C-EXEC-02 FR-11` reads afterwards.** `TECH-029` amends it to state what is actually
-   enforced; this capability is what would let it state something stronger.
+3. **How `C-EXEC-02 FR-11` and `E-EXEC-01 FR-10` read afterwards.** Both were amended to state what
+   is actually enforced; this capability is what would let either state something stronger. Amend them
+   together or the ambiguity simply moves.
