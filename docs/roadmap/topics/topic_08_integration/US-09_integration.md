@@ -129,3 +129,38 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
   > and stays. What changed is the owner: `C-EXEC-07` builds it and owns its integration and e2e
   > proof as FRs of its own, rather than a separate add-on restating them. Seam claims become
   > FRs on the consumer; any user-visible journey becomes a journey proof.
+
+* **`INT-US-09-SF01` — Containerized Isolation:** the add-on's contract under `ADR-004`.
+  **Migration HELD, not open** — see the disposition below.
+
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | Podman/Docker integration; ephemeral sub-containers per QA run | single feature | `D-EXEC-01`, `B-EXEC-01` | **no** | `TECH-031` |
+  | P-2 | Container execution as an enforced US-9 default rather than opt-in | cross-feature | this contract, deferred | no | product decision |
+
+  **P-1 cannot be proven yet, and that is why the migration is held rather than open.** Both
+  capabilities are `✅` and their FRs are uncited, but citing them requires container execution to be
+  genuinely exercised — and `TECH-031` records that the container prepare phase **has never
+  installed a
+  toolchain**. A citation backed by a mutant that only ever runs on the host would assert the host
+  path
+  and claim the container one, which is the precise failure this migration exists to remove.
+
+  So this waits on containerised testing being introduced properly. `TECH-031` is the prerequisite;
+  `B-EXEC-01`'s nine uncited FRs and `D-EXEC-01`'s are its dependents.
+
+  **P-2 is a product decision nobody has taken** (`ADR-003`'s 2026-08-16 addendum): container
+  execution
+  is wired end-to-end but opt-in via `sandbox_settings.execution_mode == "container"`, while the
+  add-on
+  asked for it as an enforced default. Recorded rather than assumed — and `TECH-031` makes enforcing
+  it
+  unsafe today regardless.
+
+  **Held (`🔵`) is deliberately distinct from open (`[ ]`).** An open row invites someone to pick it
+  up;
+  this one cannot be finished until a prerequisite lands, and saying so is the difference between a
+  queue and a lie. `test_migration_registry.py` pins that a held row must name what it waits on.
+

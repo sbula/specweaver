@@ -606,7 +606,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `[ ]` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
 |  | `[ ]` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
 |  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
-|  | `[ ]` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation | `D-EXEC-01`, `B-EXEC-01` |
+|  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — HELD, needs container execution actually exercised (`TECH-031`) | `D-EXEC-01`, `B-EXEC-01` |
 |  | `[ ]` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
 |  | `[ ]` `INT-US-15-SF01-MIG` | US-15 | Enterprise Compliance Protocols | `B-SENS-01` |
 |  | `[ ]` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
@@ -682,3 +682,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-060:** [Integration Migration to (Sub)Story Path Inventories](features/topic_07_technical_debt/TECH-060/TECH-060_design.md)
     *   `[ ]` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
+    *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)

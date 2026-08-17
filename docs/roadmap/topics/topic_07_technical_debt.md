@@ -120,6 +120,12 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-063` 🔴: The MCP Container Boundary Checks a Name, Not a Command**
+  > [Description](../features/topic_07_technical_debt/TECH-063/TECH-063_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-23-MIG` while citing `C-INTL-02` FR-2._ |
+  > `MCPAtom` enforces "must run through docker/podman" by comparing `argv[0]` to a string set, then hands the command to raw `Popen`. The command AND its `env` come from `mcp_servers` in the analysed
+  > project's `context.yaml` (`mcp_assembler.py:74-89`), so config-supplied `PATH` decides what `docker` resolves to, and `docker run --privileged -v /:/host` passes untouched. Analysis only — no
+  > exploit demonstrated, and a reproduction is the ticket's first task.
+
 * **`TECH-052` 🟢: `sw usage --since` Crashes on Unparseable Input**
   > [Description](../features/topic_07_technical_debt/TECH-052/TECH-052_design.md) | _(2026-08-16 — found at `INT-US-16` CB-1.)_ | `datetime.fromisoformat(since)` had no guard, so any typo gave
   > the user a traceback on the one command that answers *what did this cost*. **DELIVERED 2026-08-16:** and testing the boundary found a SECOND crash one layer down — a bare date parses fine and

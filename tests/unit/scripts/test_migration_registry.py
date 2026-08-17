@@ -26,12 +26,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
 
-#: A migration row in the `## 🚚 Integration Migration` table, in EITHER state.
+#: A migration row in the `## 🚚 Integration Migration` table, in ANY of its three states.
 #:
 #: A first draft matched `` `[ ]` `` only, so discharging the first entry to `✅` dropped the count
 #: from 27 to 26 and failed this file. The registry holds 27 entries whose STATE varies; the section
 #: is deleted once, when they are all discharged, not row by row.
-_MIG_ROW = re.compile(r"^\|[^|]*\|\s*`(?:\[ \]|✅)`\s*`(INT-US-[\w-]+-MIG)`\s*\|", re.M)
+#:
+#: `🔵` (on hold) joined `[ ]` and `✅` when `INT-US-09-SF01-MIG` was held: its proof needs container
+#: execution actually exercised, which `TECH-031` owns. Held is not open — an open row invites someone
+#: to pick it up, and this one cannot be finished until a prerequisite lands.
+_MIG_ROW = re.compile(r"^\|[^|]*\|\s*`(?:\[ \]|✅|🔵)`\s*`(INT-US-[\w-]+-MIG)`\s*\|", re.M)
+
+#: A held row, which must name what it waits on rather than simply stalling.
+_HELD_ROW = re.compile(r"^\|[^|]*\|\s*`🔵`\s*`(INT-US-[\w-]+-MIG)`\s*\|(.*)$", re.M)
 
 #: The contract ids `TECH-060` FR-2 minted, which had no roadmap line before it.
 MINTED_CONTRACTS = (
@@ -100,3 +107,27 @@ def test_a_reopened_claim_carries_a_real_name(roadmap: str, contract: str) -> No
     """Two of them read "Sub-Story Integration (Complete)" — a label, not a subject."""
     line = next(ln for ln in roadmap.splitlines() if f"**{contract}:**" in ln)
     assert "Sub-Story Integration (Complete)" not in line
+
+
+def test_a_held_migration_names_what_it_waits_on(roadmap: str) -> None:
+    """`🔵` is a claim that the work cannot proceed, so it must say why.
+
+    A held row with no named blocker is indistinguishable from an abandoned one, and the whole point of
+    the migration registry is that nothing stalls invisibly.
+    """
+    held = _HELD_ROW.findall(roadmap)
+    for mig, rest in held:
+        assert "TECH-" in rest or "C-" in rest or "E-" in rest, (
+            f"{mig} is held without naming a blocker: {rest.strip()}"
+        )
+
+
+def test_the_held_container_migration_is_recorded(roadmap: str) -> None:
+    """`INT-US-09-SF01-MIG` waits on container execution being exercised (`TECH-031`).
+
+    Pinned explicitly because it is the first entry to be held rather than discharged, and a hold that
+    quietly becomes a discharge would be the registry lying about proof that does not exist.
+    """
+    held = dict(_HELD_ROW.findall(roadmap))
+    assert "INT-US-09-SF01-MIG" in held, "the container migration is no longer held"
+    assert "TECH-031" in held["INT-US-09-SF01-MIG"]
