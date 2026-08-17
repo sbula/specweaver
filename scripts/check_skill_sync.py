@@ -17,11 +17,20 @@ Note on `st_ino`: do NOT use inode equality to detect hardlinks here. On this wo
 filesystem two distinct files reported the SAME `st_ino` while both had `st_nlink == 1`. Content
 comparison is the reliable signal.
 
+**Symlinked skills count as in sync, and the walk must follow them.** One side may point a whole
+skill directory at the other -- `.claude/skills/grill-me -> ../../.agents/skills/grill-me` -- which
+is a STRONGER guarantee than a copy: the two sides cannot drift, because there is one file.
+`Path.rglob` does not descend into symlinked directories, so the naive walk reported every file
+under such a link as MISSING and inverted the rule. `os.walk(followlinks=True)` reads through, and
+content comparison still judges what it finds -- a link pointing somewhere unrelated is reported as
+DIFFERS rather than waved through.
+
 Exit code 1 if the trees differ (missing file on either side, or differing content).
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -31,10 +40,29 @@ AGENT_SKILLS = REPO_ROOT / ".agents" / "skills"
 
 
 def _relative_files(root: Path) -> dict[Path, Path]:
-    """Map each file's path relative to `root` -> its absolute path."""
+    """Map each file's path relative to `root` -> its absolute path, reading through symlinks.
+
+    `followlinks=True` is what makes a symlinked skill directory visible. It also makes a
+    self-referential link walk forever, so every directory is visited at most once by its resolved
+    identity -- a cycle then contributes its files and stops rather than hanging the gate.
+    """
     if not root.is_dir():
         return {}
-    return {p.relative_to(root): p for p in sorted(root.rglob("*")) if p.is_file()}
+
+    found: dict[Path, Path] = {}
+    seen: set[Path] = set()
+    for parent, dirs, names in os.walk(root, followlinks=True):
+        here = Path(parent)
+        real = here.resolve()
+        if real in seen:
+            dirs[:] = []
+            continue
+        seen.add(real)
+        for name in names:
+            path = here / name
+            if path.is_file():
+                found[path.relative_to(root)] = path
+    return dict(sorted(found.items()))
 
 
 def main(argv: list[str] | None = None) -> int:
