@@ -195,10 +195,9 @@ class EventBridge:
 # Process-wide singleton
 # ---------------------------------------------------------------------------
 #
-# `TECH-024` cycle 4 moved these down out of `app`. `app` imports the routers, and three of them
-# reached back for this accessor — a five-module cycle held together by imports deferred inside
-# functions. The singleton belongs beside the class it hands out anyway; sitting in `app` it made
-# every route module depend on the application object just to publish an event.
+# The singleton belongs beside the class it hands out. In `app` it would make every route module
+# depend on the application object just to publish an event, and since `app` imports the routers
+# that is a cycle.
 
 _event_bridge: EventBridge | None = None
 

@@ -3,11 +3,8 @@
 
 """The one ISO-8601 "now".
 
-`TECH-015` moved this out of `core/flow/engine/runner_utils.py`. It was defined **six** times across
-the repo as the identical one-liner; this is the L0 leaf where a genuinely cross-cutting helper
-belongs, and the flow engine now uses it. The remaining copies — notably
-`core/flow/handlers/base._now_iso`, with over twenty importers — are a separate step, as the ticket
-requires.
+This is the L0 leaf where a genuinely cross-cutting helper belongs. One copy remains —
+`core/flow/handlers/base._now_iso`, with over twenty importers — and has not been folded in.
 """
 
 from __future__ import annotations

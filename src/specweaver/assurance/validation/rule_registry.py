@@ -3,13 +3,9 @@
 
 """The rule registry type and its process-wide singleton.
 
-`TECH-024` cycle 1. `registry.py` imported the two `rules/*/register` modules at the bottom of the
-file so built-in rules would self-register on import, and those modules imported `get_registry`
-back — a cycle papered over with `# noqa: E402`.
-
-Splitting the *contract* out from the *trigger* removes it without changing when registration
-happens. This module holds the contract and imports nothing, so both the rules and `registry.py`
-can sit above it:
+Separating the *contract* from the *trigger* keeps the module graph acyclic: a module that both
+defines the registry and imports the clients that register with it is a cycle by construction. This
+module holds the contract and imports nothing, so both the rules and `registry.py` can sit above it:
 
     registry  ->  rules.{spec,code}.register  ->  rule_registry
 

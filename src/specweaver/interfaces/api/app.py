@@ -16,9 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from specweaver.interfaces.api import deps
 from specweaver.interfaces.api.errors import SpecWeaverAPIError, specweaver_error_handler
 
-# Re-exported, not defined: `TECH-024` moved the singleton beside the class it hands out, so the
-# route modules no longer import the application object back. Kept resolving here for callers
-# that reach `app.get_event_bridge`.
+# Re-exported, not defined: the singleton lives beside the class it hands out, so the route modules
+# do not import the application object back. Resolved here too, for callers that reach
+# `app.get_event_bridge`.
 from specweaver.interfaces.api.event_bridge import get_event_bridge as get_event_bridge
 from specweaver.interfaces.api.event_bridge import set_event_bridge as set_event_bridge
 from specweaver.interfaces.api.ui import htmx as ui_htmx

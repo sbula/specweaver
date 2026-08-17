@@ -31,7 +31,7 @@ class DALLevel(enum.StrEnum):
         """Strictness rank for threshold comparisons: DAL_A (5, strictest) … DAL_E (1, least).
 
         Lets callers express "is this DAL at least as strict as <threshold>?" as
-        ``dal.rank >= threshold.rank`` (e.g. the C-EXEC-06 DAL-driven isolation escalation).
+        ``dal.rank >= threshold.rank`` (e.g. the DAL-driven isolation escalation).
         """
         return {
             DALLevel.DAL_A: 5,

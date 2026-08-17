@@ -27,7 +27,7 @@ class SqliteGraphRepository:
         return conn
 
     def _rename_legacy_tables(self, conn: sqlite3.Connection) -> None:
-        """TECH-005 FR-8: migrate a pre-SF-3 installation's `nodes`/`edges` tables to
+        """Migrate a legacy installation's `nodes`/`edges` tables to
         `graph_nodes`/`graph_edges` in place, preserving all data (`ALTER TABLE RENAME` also
         auto-patches `edges`'s FK reference to `nodes(id)`). Renaming `nodes` before `edges`
         mirrors DDL order below; SQLite's FK-reference patching is schema-wide, not order-

@@ -3,9 +3,9 @@
 
 """Turning a documented/total count into a standards verdict.
 
-`TECH-023`. The Python docstring analyzer and the JavaScript JSDoc analyzer banded the same ratio
-with the same four thresholds, written out twice. The bands are a *policy* — what counts as a
-project's documentation convention — so they belong in one place where changing them changes both.
+The bands are a *policy* — what counts as a project's documentation convention — so they live in
+one place, where changing them changes both the Python docstring analyzer and the JavaScript JSDoc
+analyzer.
 """
 
 from __future__ import annotations

@@ -13,8 +13,8 @@ Usage:
 Architecture:
     - The registry type and singleton live in `rule_registry`, which imports nothing.
     - This module adds the one thing that cannot live there: importing the built-in rule modules
-      so they self-register. `TECH-024` split the two apart, because a module that both defines
-      the registry and imports its clients is a cycle by construction.
+      so they self-register. The two are separate because a module that both defines the registry
+      and imports its clients is a cycle by construction.
     - Phase B: custom rules register via loader.
 """
 

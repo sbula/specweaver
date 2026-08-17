@@ -155,7 +155,7 @@ def _staged_files() -> list[str]:
     # agent-facing/untrusted input, so SubprocessExecutor's env-isolation/credential-stripping
     # doesn't carry the same security value here it does elsewhere. Routing this through
     # sandbox.git's GitExecutor (rather than raw subprocess OR a direct SubprocessExecutor import,
-    # both of which would newly couple assurance.validation to sandbox) is future scope on TECH-009.
+    # both of which would newly couple assurance.validation to sandbox) is the proper fix.
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],

@@ -3,13 +3,11 @@
 
 """The UI's Jinja environment and its markdown sanitiser — defined once.
 
-`TECH-037`: `htmx.py` and `routes.py` each built their own `Jinja2Templates`, defined their own
-`_render_markdown`, and registered their own `markdown` filter — the same thirty lines twice.
-
-The duplication mattered because of what was in it. `render_markdown` is a **sanitiser**, and its
-allowed-tags set is an allowlist: with two copies, tightening one leaves the other permissive, and
-which copy an exploit meets depends on nothing more than which module rendered the page. Same
-hazard as the duplicated `FolderGrant` this ticket also found.
+`render_markdown` is a **sanitiser** and its allowed-tags set is an allowlist, so it must exist
+exactly once: with two copies, tightening one leaves the other permissive, and which copy an
+exploit meets depends on nothing more than which module rendered the page. `htmx.py` and
+`routes.py` therefore share this environment, this sanitiser and this `markdown` filter rather than
+building their own.
 """
 
 from __future__ import annotations

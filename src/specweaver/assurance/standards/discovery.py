@@ -26,8 +26,8 @@ import os
 # engine to natively execute raw processes") — routing this through
 # SubprocessExecutor/GitExecutor would violate that documented boundary, not
 # satisfy it. A proper fix means going through the flow engine (e.g. a
-# GitAtom-based pipeline step), not a direct sandbox import. Tracked as
-# future scope on TECH-009 alongside the analogous cli_drift.py case.
+# GitAtom-based pipeline step), not a direct sandbox import. The analogous
+# case is in cli_drift.py.
 import subprocess  # noqa: TID251
 from pathlib import Path
 from typing import TYPE_CHECKING

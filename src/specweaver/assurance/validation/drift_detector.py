@@ -91,9 +91,8 @@ def _param_name(child: Any) -> str | None:
 def _extract_param_names(parameters_node: Any) -> list[str]:
     """Given a tree-sitter parameters node, extract parameter identifiers.
 
-    `TECH-023`: scored 31 for a 25-line function — the cost was three nested loops inside a
-    three-way type branch. Per-shape naming is now its own function, so this reads as
-    "name every parameter, minus the implicit receiver".
+    Per-shape naming is its own function, so this reads as "name every parameter, minus the
+    implicit receiver" rather than as three nested loops inside a three-way type branch.
     """
     names = (_param_name(child) for child in getattr(parameters_node, "children", None) or ())
     return [n for n in names if n and n not in ("self", "cls")]

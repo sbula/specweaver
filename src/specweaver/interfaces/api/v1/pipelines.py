@@ -82,13 +82,11 @@ async def start_pipeline_run(
         )
 
     # Build context
-    # INT-US-09 Backlog: the API run sites (this one + resume_run,
-    # submit_gate_decision) do not yet set `context.isolation.enforce_isolation` from
-    # `await load_settings_async(...).sandbox.enforce_worktree_isolation`, so
-    # API-launched runs currently ignore the worktree-isolation policy. The CLI
-    # `sw run`/`resume` paths DO resolve it. Wiring here is a small follow-up
-    # (settings are resolvable via `db` + `body.project`) pending an API-run test
-    # harness. See docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_implementation_plan.md.
+    # KNOWN GAP: the API run sites (this one, resume_run, submit_gate_decision) do not set
+    # `context.isolation.enforce_isolation` from
+    # `await load_settings_async(...).sandbox.enforce_worktree_isolation`, so API-launched runs
+    # ignore the worktree-isolation policy. The CLI `sw run`/`resume` paths do resolve it. Settings
+    # are reachable here via `db` + `body.project`; what is missing is an API-run test harness.
     context = RunContext(
         project_path=project_root,
         spec_path=spec_path,

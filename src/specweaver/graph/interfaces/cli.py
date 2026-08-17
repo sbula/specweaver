@@ -74,12 +74,10 @@ lineage_app = typer.Typer(
 def _resolve_target_uuid(target: str) -> str:
     """The lineage UUID `target` names — read from the file when it is one, else `target` itself.
 
-    `TECH-023`. Written out twice inside `tree_command`, once per branch of an `is_absolute()` test
-    whose two halves did the same thing, and a third time in `tag`. All three matched
-    `"# sw-artifact: "` at line start, so they saw **only** hash-comment languages —
-    `wrap_artifact_tag` is language-aware, and every spec `draft.py` writes carries
-    `<!-- sw-artifact: … -->`. `sw lineage tree spec.md` therefore resolved nothing and silently
-    passed the path string on as a UUID.
+    Resolution is language-aware, matching whatever `wrap_artifact_tag` emits rather than only
+    `"# sw-artifact: "` at line start — every spec `draft.py` writes carries
+    `<!-- sw-artifact: … -->`, so a hash-comment-only match resolves nothing and passes the path
+    string on as a UUID.
     """
     path = Path(target)
     try:

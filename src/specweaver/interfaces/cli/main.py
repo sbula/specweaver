@@ -130,7 +130,7 @@ def _stdin_isatty() -> bool:
 
 
 def _interactive_context_provider() -> object | None:
-    """INT-US-02 SF-02 (FR-4/FR-5): the delivery-layer interaction-channel factory.
+    """The delivery-layer interaction-channel factory.
 
     Returns an HITLProvider only on an interactive stdin; None otherwise, so headless
     runs keep the draft-parking contract byte-identical.
