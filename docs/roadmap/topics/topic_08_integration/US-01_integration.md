@@ -31,7 +31,7 @@
   | P-5 | Seam: a soft-deprecated surface cannot be re-exposed through `interfaces:` | cross-module | `C-EXEC-01` | yes — **done** | — |
   | P-6 | Journey: a boundary violation in an *analysed* project becomes an ERROR finding in its review | cross-feature | `C-EXEC-01` | yes — **done** | — |
   | P-7 | Journey: that project's `context.yaml` boundaries are emitted as its own `tach.toml` and then enforced against it in one run | cross-feature | this contract, deferred | no | none — needs an e2e over the whole chain |
-  | P-8 | The test tiers mirror `src/` 1:1 | cross-feature | this contract, deferred | no | scope decision — four directories with no `src/` counterpart |
+  | P-8 | The test tiers mirror `src/` 1:1 | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-10 | `tests/e2e/` is organised only by capability | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-9 | The architecture surfaces in the UI | cross-feature | `E-UI-04` (unbuilt) | no | `E-UI-04` owns this as its own FR |
 
@@ -86,16 +86,27 @@
   `pyproject.toml`. A hardcoded ancestor index is a silent dependency on a file's position in the tree —
   precisely what this FR relocates.
 
-  **P-8 remains `C-EXEC-03`'s unfinished half.** FR-7 claims 1:1 test parity, and four test directories
-  have no `src/` counterpart: `tests/unit/alembic`, `tests/integration/constitution`,
-  `tests/integration/engine`, and `scripts` under both tiers — the last deliberate and correct. Its
-  guard uses **named** exceptions rather than a count, so the gap cannot grow by one; where each of the
-  three belongs is still a scope call.
+  **P-8 closed too, and sorting it needed reading rather than filing.** FR-7 claims 1:1 test parity,
+  and four directories had no `src/` counterpart. Two were not parity gaps at all:
+  `tests/integration/constitution/` imports `workspace.project.constitution` and `.scaffold`, and
+  `tests/integration/engine/` imports `core.flow.handlers.{arbiter,decompose,run_context}` — ordinary
+  tests of real packages, filed under invented top-level names. Both moved to their mirrors.
+
+  The two that stayed, `scripts` and `alembic`, mirror repo-root directories that genuinely exist and
+  are not product code. **That is the bar for the exception list** — mirroring something real, which is
+  a different claim from "has no home". `alembic`'s test could not have moved regardless: it resolves
+  its target as `parents[3] / "alembic" / "versions"`, so its position in the tree is load-bearing,
+  the same hidden dependency P-10's move hit in `test_cli_colour_e2e.py`.
+
+  The guard now fails in both directions — a third unmirrored directory, and an excused entry that
+  mirrors nothing — so the list cannot be used to wave a real gap through.
 
   One leftover was deleted rather than excepted: `tests/unit/graph_store/`, an empty `__init__.py`
   stranded when `graph/core/store` moved.
 
-  **`INT-US-01-SF02-MIG` is discharged (2026-08-17); the contract stays open** on P-7, P-8 and P-9.
+  **`INT-US-01-SF02-MIG` is discharged (2026-08-17); the contract stays open** on P-7 and P-9. P-9 is
+  `E-UI-04`'s, unbuilt. P-7 — the whole chain in one run — is the only row left that is this contract's
+  own, and it needs a test rather than a feature.
 
 * **`INT-US-01-SF03` — Configurable Multi-Stage Reviews:** *Pending Design.* Integrates `E-VAL-02` ✅ + `E-VAL-04` (unbuilt, rubric-first on `C-VAL-05`) + `B-VAL-02` ✅.
 

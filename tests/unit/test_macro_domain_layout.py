@@ -16,14 +16,19 @@ is falsifiable: put a package back where it was and this file fails.
 silently — which is exactly what `test_tach_architectural_boundaries` did for three months with
 `fail_count <= 95`, fixed the same day as this file. A named list absorbs nothing.
 
-Two FRs still describe a tree that is not there, and both are recorded in the design:
+One FR still describes a tree that is not there, and it is recorded in the design:
 
 - **FR-5** claims `flow`, `loom` and `config` moved into `core/`. `flow` and `config` did. **There is
   no `loom` anywhere in `src/`** — it is the top-level `sandbox` package (hence
   `test_loom_stack.py`), and it is top-level by design, not under `core/`.
-- **FR-7** claims 1:1 parity between the test tiers and `src/`. Four test directories have no `src/`
-  counterpart, and one — `tests/unit/graph_store/`, an empty `__init__.py` left behind when
-  `graph/core/store` moved — was deleted rather than excepted.
+
+**FR-7 is closed.** It claims 1:1 parity between the test tiers and `src/`. Of the four directories
+that had no `src/` counterpart, `tests/integration/constitution/` and `tests/integration/engine/`
+turned out to be ordinary tests of `workspace.project` and `core.flow.handlers` filed under invented
+top-level names — they were moved to their mirrors, not excused. A fifth,
+`tests/unit/graph_store/`, was an empty `__init__.py` stranded when `graph/core/store` moved, and was
+deleted. What remains is `scripts` and `alembic`, and both mirror a repo-root directory that really
+exists rather than nothing at all.
 
 **FR-8 is closed.** It claimed `tests/e2e/` moved from a flat tree into capability folders, and for a
 while both existed side by side: `capabilities/` with seven domains, and beside it four loose test
@@ -100,13 +105,16 @@ def _imported_modules(tree: ast.Module) -> set[str]:
     return names
 
 
-#: FR-7: test directories with no `src/specweaver` counterpart. Named, so a fifth one fails.
-#: `scripts` mirrors the repo's `scripts/` rather than `src/`, which is the point of it.
+#: FR-7: the only test directories that do not mirror `src/specweaver`, and both mirror something
+#: else that genuinely exists — a repo-root directory. Neither is a leftover, and the list is named
+#: rather than counted so a third fails here.
+#:
+#: `constitution` and `engine` used to sit alongside these and were **not** in this category: they
+#: held ordinary tests of `workspace.project` and `core.flow.handlers`, filed under invented
+#: top-level names. They were moved to their mirrors rather than excused.
 MIRROR_EXCEPTIONS: dict[str, str] = {
-    "scripts": "mirrors repo-root scripts/, not src/ — deliberate",
-    "alembic": "migration tests; alembic lives at the repo root, not in src/",
-    "constitution": "cross-cutting integration tests with no single owning package",
-    "engine": "caller-migration integration tests, predate the restructure",
+    "scripts": "mirrors repo-root scripts/ — the dev gates, which are not product code",
+    "alembic": "mirrors repo-root alembic/; the migration it loads is not an importable package",
 }
 
 #: FR-8: nothing outside a capability folder. The set is empty and stays empty — every e2e test lives
@@ -187,11 +195,17 @@ def test_no_module_imports_a_pre_restructure_path() -> None:
 
 
 def test_the_unit_and_integration_tiers_mirror_src() -> None:
-    """FR-7: 1:1 structural parity, with the four non-mirroring directories named.
+    """FR-7: 1:1 structural parity, with the two genuine non-mirrors named.
 
-    A named exception list is the point. `tests/unit/graph_store/` — an empty `__init__.py` stranded
-    when `graph/core/store` moved — was deleted rather than added here, because a leftover is the
-    restructure's own unfinished business and not an exception to it.
+    A named exception list is the point, and the bar for joining it is that the directory mirrors
+    something real. Three of the original five did not clear it: `constitution` and `engine` held
+    ordinary tests of `workspace.project` and `core.flow.handlers` under invented top-level names and
+    were moved to their mirrors; `graph_store` was an empty `__init__.py` stranded when
+    `graph/core/store` moved and was deleted. A leftover is the restructure's own unfinished business,
+    not an exception to it.
+
+    `scripts` and `alembic` remain because each mirrors a repo-root directory — the dev gates, and the
+    migrations, neither of which is product code under `src/`.
     """
     src_packages = _packages(SRC_ROOT)
     for tier in ("unit", "integration"):

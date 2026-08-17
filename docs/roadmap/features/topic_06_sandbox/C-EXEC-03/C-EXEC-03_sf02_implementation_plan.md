@@ -10,8 +10,10 @@ the tier root fails rather than joining an exception list. `tests/e2e/scripts/` 
 non-capability directory, for the same reason `scripts` is excused from the src mirror: it drives dev
 tooling, not a product capability. 216 e2e tests pass, unchanged in number.
 
-**FR-7 is still not fully met**, and its guard uses named exceptions rather than a count: four test
-directories have no `src/` counterpart. The gap cannot grow by one, and it is not closed.
+**FR-7 is closed (2026-08-17).** Of the four directories with no `src/` counterpart, two held ordinary
+tests of `workspace.project` and `core.flow.handlers` under invented top-level names and were moved to
+their mirrors; two — `scripts` and `alembic` — mirror repo-root directories that genuinely exist and are
+not product code. The guard keeps them as named exceptions, so a third fails.
 
 
 - **Feature ID**: 3.26a (SF-02)

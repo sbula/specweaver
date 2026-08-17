@@ -78,14 +78,30 @@ for a `core/loom` that never existed. `test_the_loom_package_is_the_top_level_sa
 correction in both directions — it also fails if a `core/loom` ever appears, which would mean this note
 needs revisiting rather than the tree.
 
-**FR-7 is not met: four test directories have no `src/` counterpart.** `tests/unit/alembic`,
-`tests/integration/constitution`, `tests/integration/engine`, and `scripts` under both tiers. The last
-is deliberate and correct — it mirrors the repo's `scripts/`, not `src/`. The other three are real
-parity gaps, named in `MIRROR_EXCEPTIONS` with their reasons so they cannot quietly become four.
+**FR-7 was not met, and is now closed (2026-08-17).** Four test directories had no `src/` counterpart:
+`tests/unit/alembic`, `tests/integration/constitution`, `tests/integration/engine`, and `scripts` under
+both tiers. Sorting them required reading what each actually tested rather than accepting the directory
+name:
 
-A fifth was **deleted rather than excepted**: `tests/unit/graph_store/`, an empty `__init__.py`
-stranded when `graph/core/store` moved. A leftover is the restructure's own unfinished business, not an
-exception to it.
+| Directory | What it holds | Disposition |
+|---|---|---|
+| `tests/integration/constitution/` | imports `workspace.project.constitution` and `.scaffold` — an ordinary test of `workspace.project`, filed under an invented top-level name | moved to `tests/integration/workspace/project/` |
+| `tests/integration/engine/` | imports `core.flow.handlers.{arbiter,decompose,run_context}` — handler injection pathways | moved to `tests/integration/core/flow/handlers/` |
+| `tests/unit/alembic/` | loads a migration module **by path** from repo-root `alembic/versions/`; imports nothing from `specweaver` | kept — mirrors a repo-root directory |
+| `scripts` (both tiers) | the dev gates in repo-root `scripts/` | kept — mirrors a repo-root directory |
+
+So two were parity gaps and two were never gaps at all. **The bar for the exception list is that the
+directory mirrors something real** — `alembic/` and `scripts/` both exist at the repo root and are not
+product code, which is a different statement from "has no home".
+
+A fifth was **deleted rather than excepted**: `tests/unit/graph_store/`, an empty `__init__.py` stranded
+when `graph/core/store` moved. A leftover is the restructure's own unfinished business, not an exception
+to it.
+
+`alembic`'s test is the one that could not have moved regardless: it computes its target as
+`Path(__file__).parent.parent.parent.parent / "alembic" / "versions" / ...`, so its position in the tree
+is load-bearing — the same hidden dependency FR-8's move hit in `test_cli_colour_e2e.py`, and a reason
+to leave it where it correctly is.
 
 **FR-8 was half met, and is now closed (2026-08-17).** It claims `tests/e2e/` was restructured *from* a
 flat tree *into* capability folders. For a while both existed side by side: `capabilities/` with seven
