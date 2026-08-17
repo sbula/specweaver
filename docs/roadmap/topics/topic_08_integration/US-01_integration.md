@@ -30,7 +30,7 @@
   | P-4 | Seam: a forbidden upstream import fails the suite — at zero, not a baseline | cross-module | `C-EXEC-01` | yes — **done** | — |
   | P-5 | Seam: a soft-deprecated surface cannot be re-exposed through `interfaces:` | cross-module | `C-EXEC-01` | yes — **done** | — |
   | P-6 | Journey: a boundary violation in an *analysed* project becomes an ERROR finding in its review | cross-feature | `C-EXEC-01` | yes — **done** | — |
-  | P-7 | Journey: that project's `context.yaml` boundaries are emitted as its own `tach.toml` and then enforced against it in one run | cross-feature | this contract, deferred | no | none — needs an e2e over the whole chain |
+  | P-7 | Journey: that project's `context.yaml` boundaries are emitted as its own `tach.toml` and then enforced against it in one run | cross-feature | this contract | yes — **done** | — |
   | P-8 | The test tiers mirror `src/` 1:1 | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-10 | `tests/e2e/` is organised only by capability | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-9 | The architecture surfaces in the UI | cross-feature | `E-UI-04` (unbuilt) | no | `E-UI-04` owns this as its own FR |
@@ -104,9 +104,43 @@
   One leftover was deleted rather than excepted: `tests/unit/graph_store/`, an empty `__init__.py`
   stranded when `graph/core/store` moved.
 
-  **`INT-US-01-SF02-MIG` is discharged (2026-08-17); the contract stays open** on P-7 and P-9. P-9 is
-  `E-UI-04`'s, unbuilt. P-7 — the whole chain in one run — is the only row left that is this contract's
-  own, and it needs a test rather than a feature.
+  ### P-7, written 2026-08-17 — and the gap it closed was not cosmetic
+
+  `tests/e2e/capabilities/assurance/test_declared_boundaries_enforced_e2e.py`. The two halves of this
+  chain each had an e2e, and **each was proven against a different artefact**:
+
+  - `test_tach_sync_e2e.py` runs `sw scan` on a **compliant** project and asserts the generated
+    `tach.toml` passes `tach check`. A generator emitting boundaries nobody could violate would pass it.
+  - `test_architecture_pipeline.py` proves a violation becomes a C05 `FAIL` — against a `tach.toml` the
+    **test hand-writes itself**.
+
+  So if `sync_tach_toml` emitted a config that did not express the declared `context.yaml` boundaries,
+  both stayed green: one never checks a violation, the other never uses the generated file. Nothing
+  joined the declaration to the enforcement.
+
+  The new test authors no `tach.toml`. A project declares `src.core` consumes nothing and `src.api`
+  consumes `src.core`, then plants `import src.api` inside `core` — forbidden by its own declaration and
+  by nothing else in the test. `sw scan` derives the config, and the violation is judged through *that*
+  file by the production validation path.
+
+  **The load-bearing assertion is the middle one**: `src.core`'s `depends_on` must not contain
+  `src.api`. Without it, a permissive generator would still satisfy the final check — by making the
+  violation legal rather than by catching it, which reads identically from the verdict.
+
+  Four mutants, each killing it with the right message: the sync writes no file; the sync grants every
+  module every dependency; C05 stops turning violations into findings; and **the tach half of the
+  architecture check removed** — that last one matters because `run_architecture_check` also consults
+  per-file `forbids` from `context.yaml` directly, so without that probe the test could have been
+  passing on a mechanism that bypasses the generated config entirely. It fails, so the config is
+  genuinely what catches it.
+
+  A second test is the control: the same chain, the same scan, a file that respects its declaration,
+  asserting `PASS` — specifically `PASS` and not "not `FAIL`", since a `SKIP` from an unhydrated QA
+  context would clear the weaker bar and mean the chain never ran. Without that control, `FAIL` on the
+  violating file proves nothing about what was caught.
+
+  **`INT-US-01-SF02-MIG` is discharged (2026-08-17), and this contract now closes** except for P-9,
+  which is `E-UI-04`'s to prove when it is built. Every row this contract owns is proven.
 
 * **`INT-US-01-SF03` — Configurable Multi-Stage Reviews:** *Pending Design.* Integrates `E-VAL-02` ✅ + `E-VAL-04` (unbuilt, rubric-first on `C-VAL-05`) + `B-VAL-02` ✅.
 
