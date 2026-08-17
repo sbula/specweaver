@@ -26,9 +26,13 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from tests.rendering import shows
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+#: The repo root, found by walking up to `pyproject.toml` rather than counting directories. A
+#: hardcoded `parents[N]` broke silently when this file moved into its capability folder under
+#: `C-EXEC-03` FR-8; the next restructure should not get a second chance.
+REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file())
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 

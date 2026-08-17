@@ -4,9 +4,14 @@
 documentation moves. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
 `INT-US-01-SF02-MIG`.
 
-**FR-7 and FR-8 are not fully met**, and the guards say so with named exceptions rather than a
-count: four test directories have no `src/` counterpart, and the flat e2e tree still sits beside
-`capabilities/`. Neither can grow. Completing the move is a scope decision, not a migration task.
+**FR-8 is closed (2026-08-17).** Sixteen files moved into capability folders, `interfaces` and
+`sandbox` added to `tests/e2e/capabilities/`, and the guard is now unconditional — a loose e2e file at
+the tier root fails rather than joining an exception list. `tests/e2e/scripts/` remains as a permanent
+non-capability directory, for the same reason `scripts` is excused from the src mirror: it drives dev
+tooling, not a product capability. 216 e2e tests pass, unchanged in number.
+
+**FR-7 is still not fully met**, and its guard uses named exceptions rather than a count: four test
+directories have no `src/` counterpart. The gap cannot grow by one, and it is not closed.
 
 
 - **Feature ID**: 3.26a (SF-02)

@@ -22,8 +22,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-#: `tests/e2e/` groups some suites under a container directory rather than by domain directly, so
-#: the domain is what FOLLOWS it. Taking the first path part verbatim selects every capability.
+#: `tests/e2e/` groups its suites under a container directory rather than by domain directly, so the
+#: domain is what FOLLOWS it. Taking the first path part verbatim selects every capability.
+#: `tests/e2e/scripts/` is the one directory outside the container — it holds dev-tooling journeys with
+#: no product capability to sit under — and needs no stripping, which is why this is a match rather
+#: than an assumption.
 DOMAIN_CONTAINERS = ("capabilities",)
 
 

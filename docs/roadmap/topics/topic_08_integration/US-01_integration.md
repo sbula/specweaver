@@ -31,7 +31,8 @@
   | P-5 | Seam: a soft-deprecated surface cannot be re-exposed through `interfaces:` | cross-module | `C-EXEC-01` | yes — **done** | — |
   | P-6 | Journey: a boundary violation in an *analysed* project becomes an ERROR finding in its review | cross-feature | `C-EXEC-01` | yes — **done** | — |
   | P-7 | Journey: that project's `context.yaml` boundaries are emitted as its own `tach.toml` and then enforced against it in one run | cross-feature | this contract, deferred | no | none — needs an e2e over the whole chain |
-  | P-8 | The test tiers mirror `src/` 1:1, and `tests/e2e/` is organised only by capability | cross-feature | this contract, deferred | no | scope decision — see below |
+  | P-8 | The test tiers mirror `src/` 1:1 | cross-feature | this contract, deferred | no | scope decision — four directories with no `src/` counterpart |
+  | P-10 | `tests/e2e/` is organised only by capability | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-9 | The architecture surfaces in the UI | cross-feature | `E-UI-04` (unbuilt) | no | `E-UI-04` owns this as its own FR |
 
   **Seventeen FRs across two capabilities, all cited, all behind killed mutants** —
@@ -62,13 +63,34 @@
   quiet. Every one was found the same way: a mutant that should have died and did not. That is the whole
   argument for `ADR-004`'s citation requirement, and this pair of capabilities is where it paid.
 
-  **P-8 is `C-EXEC-03`'s unfinished half, held open deliberately.** FR-7 claims 1:1 test parity — four
-  test directories have no `src/` counterpart. FR-8 claims `tests/e2e/` moved from a flat tree into
-  capability folders — `capabilities/` holds seven, and the flat tree it was to replace still sits beside
-  it: four loose files and five layer-shaped directories. The guards use **named** exceptions rather than
-  counts, so neither gap can grow by one, but neither is closed. Deciding which capability folder each of
-  the nine remaining locations belongs to is a scope call, and nine mechanical moves inside a migration
-  commit is how a restructure acquires a second unfinished half.
+  **P-10 closed the same day, on request.** FR-8's restructure is finished: sixteen files moved out of
+  the flat tree into capability folders, and two folders added — `interfaces` and `sandbox`, both
+  mirroring a `src/` macro-domain that `capabilities/` had no home for. The full mapping is in
+  `C-EXEC-03_design.md`; the placements worth naming are `test_cpp_flow.py`, filed under `flow/` but
+  driving a `read_symbol` intent rather than a pipeline, and `test_cli_decentralized_e2e.py`, a journey
+  across the CLI surface rather than any one domain behind it.
+
+  **`tests/e2e/scripts/` stays, and is recorded as permanent rather than remaining.** It drives the
+  repo's own dev tooling — the mutation corpus CLI, the nightly timer — which are not product
+  capabilities and have no capability folder to belong to. Same reason `scripts` is excused from the
+  src-mirror check.
+
+  The guard is now unconditional. `E2E_FLAT_REMAINDER_FILES` is empty, so a loose file at the tier root
+  **fails** instead of being added to an exception list, and every capability folder must mirror a `src/`
+  macro-domain so "by capability" cannot drift back into "by whatever seemed handy". 216 e2e tests pass,
+  unchanged in number.
+
+  **One move needed a code change, which is the argument against treating a restructure as `git mv`.**
+  `test_cli_colour_e2e.py` computed the repo root as `parents[3]` and handed it to a subprocess as `cwd`.
+  One directory deeper, that resolves to `tests/e2e/`. It now walks up to the directory holding
+  `pyproject.toml`. A hardcoded ancestor index is a silent dependency on a file's position in the tree —
+  precisely what this FR relocates.
+
+  **P-8 remains `C-EXEC-03`'s unfinished half.** FR-7 claims 1:1 test parity, and four test directories
+  have no `src/` counterpart: `tests/unit/alembic`, `tests/integration/constitution`,
+  `tests/integration/engine`, and `scripts` under both tiers — the last deliberate and correct. Its
+  guard uses **named** exceptions rather than a count, so the gap cannot grow by one; where each of the
+  three belongs is still a scope call.
 
   One leftover was deleted rather than excepted: `tests/unit/graph_store/`, an empty `__init__.py`
   stranded when `graph/core/store` moved.

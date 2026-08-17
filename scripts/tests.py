@@ -54,10 +54,14 @@ all; it blocked every commit whose work is tests and documents. Tier-specific, b
 tier is embedded in its own path while a source file serves every tier.
 
 Both gaps have the same root: this selector was written assuming every change is source-shaped.
-CB-1's adversarial review found the same root a third time, in `domain` scope: a test in the tier
-root resolved to no domain at all, and one under `capabilities/` resolved to every capability. The
-path-to-module mapping now lives in `_changed_file_mapping.py`, so this file keeps only the
-decision of what to RUN for a module.
+CB-1's adversarial review found the same root a third time, in `domain` scope, where a test under
+`capabilities/` resolved to every capability. The path-to-module mapping now lives in
+`_changed_file_mapping.py`, so this file keeps only the decision of what to RUN for a module.
+
+`domain` is used by the e2e tier alone, and it names a directory: `tests/e2e/capabilities/<domain>`,
+or `tests/e2e/scripts` for the dev tooling that has no capability to sit under. A single-part path —
+a file directly in the tier root — therefore selects nothing, and `tests/unit/test_macro_domain_layout.py`
+is what refuses such a file in the first place.
 """
 
 from __future__ import annotations
@@ -358,17 +362,14 @@ def _scoped_paths(rel: Path, tier_root: Path, scope: str, repo_root: Path) -> se
         mirror = tier_root / rel.parent
         return {mirror} if (repo_root / mirror).is_dir() else set()
     if scope == "domain":
-        # e2e is organised by top-level domain rather than by full package path.
+        # e2e is organised by top-level domain rather than by full package path. Both candidates are
+        # tried because `domain` names a directory whether or not `capabilities/` contains it:
+        # `tests/e2e/capabilities/core` today, `tests/e2e/scripts` for the dev tooling that has no
+        # capability to sit under.
         parts = domain_parts(rel)
-        if len(parts) <= 1:
-            # No directory to name a domain with: a test sitting in the tier root IS the unit of
-            # work. Without this, the four tests directly under `tests/e2e/` contribute nothing.
-            # The `test_` check is load-bearing, not belt-and-braces: a bare SOURCE module lands
-            # here too, and `src/specweaver/conftest.py` would otherwise select the unrelated
-            # `tests/e2e/conftest.py` purely because that file happens to exist.
-            target = tier_root / rel
-            is_test = rel.name.startswith("test_") and (repo_root / target).is_file()
-            return {target} if is_test else set()
+        if not parts:
+            # Only reachable if a path is the container itself; `parts[0]` below would raise.
+            return set()
         return {
             candidate
             for candidate in (tier_root / "capabilities" / parts[0], tier_root / parts[0])

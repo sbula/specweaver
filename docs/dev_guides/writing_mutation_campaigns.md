@@ -27,7 +27,7 @@ match it, which is what lets the duplicate-id check read one file instead of the
     {
       "requirement": "FR-8",
       "title": "Multi-step generated-file e2e stays worktree-bounded",
-      "scope": ["tests/e2e/sandbox/test_session_worktree_isolation_e2e.py"],
+      "scope": ["tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py"],
       "mutants": [
         {
           "id": "isolation-off",

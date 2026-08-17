@@ -316,7 +316,7 @@ class TestScopeResolution:
     def test_domain_scope_maps_to_the_e2e_domain_directory(self, tr: ModuleType) -> None:
         paths = tr.paths_for("e2e", "domain", self.CHANGED)
 
-        assert Path("tests/e2e/core") in paths
+        assert Path("tests/e2e/capabilities/core") in paths
 
     def test_non_source_changes_select_nothing(self, tr: ModuleType) -> None:
         assert tr.paths_for("unit", "module", [Path("README.md")]) == []
@@ -356,9 +356,15 @@ class TestScopeResolution:
         ]
 
     def test_a_changed_e2e_test_maps_to_its_domain(self, tr: ModuleType) -> None:
+        """The domain is found whether or not the changed path spells `capabilities/` itself.
+
+        `tests/e2e/sandbox/` no longer exists — `C-EXEC-03` FR-8 moved it under `capabilities/` — and
+        the resolver still lands on the right directory, because it tries both spellings and keeps
+        only what is on disk.
+        """
         changed = [Path("tests/e2e/sandbox/test_x.py")]
 
-        assert tr.paths_for("e2e", "domain", changed) == [Path("tests/e2e/sandbox")]
+        assert tr.paths_for("e2e", "domain", changed) == [Path("tests/e2e/capabilities/sandbox")]
 
     def test_touched_scope_runs_the_changed_test_itself(self, tr: ModuleType) -> None:
         """The `test_{stem}*.py` glob cannot serve a test file — it would seek `test_test_x*.py`."""
@@ -422,18 +428,20 @@ class TestPathsForAtDomainScope:
     boundary claimed to have fixed test-derived scoping generally.
     """
 
-    def test_a_test_in_the_tier_root_resolves_to_itself(self, tr: ModuleType) -> None:
-        """`rel.parts[0]` is the FILENAME here, not a domain — there is no directory to find.
+    def test_a_test_in_the_tier_root_selects_nothing(self, tr: ModuleType) -> None:
+        """`rel.parts[0]` is a FILENAME here, not a domain, so there is no directory to name.
 
-        Four e2e tests sit directly in `tests/e2e/`. Without this they contribute nothing, so an
-        INT story editing one fails its own gate for a reason that is not the developer's fault —
-        the very defect class this boundary exists to remove, one tier over.
+        This case used to return the file itself, because four e2e tests sat directly in `tests/e2e/`
+        and would otherwise have contributed nothing to their own gate. `C-EXEC-03` FR-8 moved all
+        four into capability folders, and `tests/unit/test_macro_domain_layout.py` now *fails* a loose
+        file at the tier root — so the compensation was deleted with the condition that caused it.
+
+        Asserted rather than dropped: this pins that a tier-root file selects nothing, which is the
+        behaviour a second guard is relied on to make unreachable.
         """
         changed = [Path("tests/e2e/test_cli_bootstrap_e2e.py")]
 
-        assert tr.paths_for("e2e", "domain", changed) == [
-            Path("tests/e2e/test_cli_bootstrap_e2e.py")
-        ]
+        assert tr.paths_for("e2e", "domain", changed) == []
 
     def test_a_capabilities_test_resolves_to_its_domain_not_the_container(
         self, tr: ModuleType
@@ -446,10 +454,7 @@ class TestPathsForAtDomainScope:
         """
         changed = [Path("tests/e2e/capabilities/core/test_lineage_e2e.py")]
 
-        assert tr.paths_for("e2e", "domain", changed) == [
-            Path("tests/e2e/capabilities/core"),
-            Path("tests/e2e/core"),
-        ]
+        assert tr.paths_for("e2e", "domain", changed) == [Path("tests/e2e/capabilities/core")]
 
     def test_the_test_route_and_the_source_route_agree_on_a_domain(self, tr: ModuleType) -> None:
         """The asymmetry itself, asserted — so closing one route and not the other goes red."""

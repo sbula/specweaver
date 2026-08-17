@@ -40,11 +40,11 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
-from tests.rendering import shows
 from typer.testing import CliRunner
 
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
 
 if TYPE_CHECKING:
     from pathlib import Path

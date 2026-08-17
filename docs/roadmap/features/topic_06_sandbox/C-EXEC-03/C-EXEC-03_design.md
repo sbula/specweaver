@@ -87,17 +87,37 @@ A fifth was **deleted rather than excepted**: `tests/unit/graph_store/`, an empt
 stranded when `graph/core/store` moved. A leftover is the restructure's own unfinished business, not an
 exception to it.
 
-**FR-8 is half met, and the halves sit side by side.** It claims `tests/e2e/` was restructured *from* a
-flat tree *into* capability folders. `capabilities/` exists and holds seven. The flat tree it was meant
-to replace is still there: four loose test files (`test_polyglot_validation_e2e.py`,
-`test_logging_e2e.py`, `test_cli_bootstrap_e2e.py`, `test_cli_decentralized_e2e.py`) and five
-layer-shaped directories (`core`, `flow`, `interfaces`, `sandbox`, `scripts`).
+**FR-8 was half met, and is now closed (2026-08-17).** It claims `tests/e2e/` was restructured *from* a
+flat tree *into* capability folders. For a while both existed side by side: `capabilities/` with seven
+domains, and beside it four loose test files and five layer-shaped directories (`core`, `flow`,
+`interfaces`, `sandbox`, `scripts`).
 
-The test refuses to call that finished. It pins the new shape *and* the exact remainder, so the
-restructure can only continue in one direction — no new file may join the flat tree. **Completing the
-move is not done here**: deciding which capability folder each of nine remaining locations belongs to is
-a scope call, and nine mechanical `git mv`s inside a migration commit is how a restructure acquires a
-second unfinished half.
+**Sixteen files moved**, and two capability folders were added — `interfaces` and `sandbox`, both of
+which mirror a `src/` macro-domain that `capabilities/` had no home for:
+
+| From | To | Why |
+|---|---|---|
+| `test_cli_bootstrap_e2e.py`, `core/config/test_config_db_across_processes_e2e.py`, `core/flow/test_pipeline_hydration.py`, `core/flow/test_resume_after_failure_journey_e2e.py`, `capabilities/test_cli_lineage_e2e.py` | `capabilities/core/` | config bootstrap and routing, pipeline hydration and resume, lineage — all `core/` |
+| `interfaces/test_cli_colour_e2e.py`, `interfaces/test_implement_usage_journey_e2e.py`, `test_cli_decentralized_e2e.py` | `capabilities/interfaces/` | journeys through the CLI surface itself |
+| `sandbox/test_executor_e2e.py`, the three worktree-isolation journeys, `flow/test_cpp_flow.py` | `capabilities/sandbox/` | the executor, worktree isolation, and the polyglot code-structure atom — `test_cpp_flow.py` was filed under `flow/` but drives a `read_symbol` intent, not a pipeline |
+| `test_logging_e2e.py`, `capabilities/test_provider_cli_e2e.py` | `capabilities/infrastructure/` | joins the two logging journeys already there; multi-provider is the LLM adapter |
+| `test_polyglot_validation_e2e.py` | `capabilities/assurance/` | validation |
+
+**`tests/e2e/scripts/` stays, and it is not a leftover.** It drives the repo's own dev tooling — the
+mutation corpus CLI and the nightly timer — which are not product capabilities and have no capability
+folder to belong to. That is the same reason `scripts` is excused from the src-mirror check, and it is
+recorded as `E2E_NON_CAPABILITY_DIRS` rather than as a remainder.
+
+The guard is now unconditional: `E2E_FLAT_REMAINDER_FILES` is empty, so a loose file at the tier root is
+a **failure** rather than something to add to an exception list. It also asserts that every capability
+folder mirrors a `src/` macro-domain, so "by capability" cannot drift back into "by whatever seemed
+handy". 216 e2e tests pass, unchanged in number.
+
+**One move needed a code change, which is why a restructure is not just `git mv`.**
+`test_cli_colour_e2e.py` computed the repo root as `Path(__file__).resolve().parents[3]` and passed it as
+`cwd` to a subprocess. One directory deeper, that resolves to `tests/e2e/`. It now walks up to the
+directory holding `pyproject.toml`. A hardcoded ancestor index is a silent dependency on a file's
+position in the tree — exactly the thing this FR moves.
 
 **FR-9 was already fully true**: zero imports anywhere in `src/` or `tests/` name a pre-restructure
 path. It is the only one of the twelve that needed nothing.

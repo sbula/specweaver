@@ -12,13 +12,11 @@ FRs, each of the form "directory X now lives at Y". None had a test, and there i
 — a completed move leaves nothing running to observe. What it does leave is a **shape**, and a shape
 is falsifiable: put a package back where it was and this file fails.
 
-**Why these baselines are enumerated and not counted.** Three FRs are only partly true (see below), so
-the guards for them carry exceptions. Every exception is a *named* path, never a number. A count
-absorbs the next violation silently — which is exactly what `test_tach_architectural_boundaries` did
-for three months with `fail_count <= 95`, fixed the same day as this file. A named list absorbs
-nothing: a fourth stray directory, or a fifth flat e2e file, fails here.
+**Why any exception here is a named path and never a number.** A count absorbs the next violation
+silently — which is exactly what `test_tach_architectural_boundaries` did for three months with
+`fail_count <= 95`, fixed the same day as this file. A named list absorbs nothing.
 
-Three FRs describe a tree that is not there, and all three are recorded in the design:
+Two FRs still describe a tree that is not there, and both are recorded in the design:
 
 - **FR-5** claims `flow`, `loom` and `config` moved into `core/`. `flow` and `config` did. **There is
   no `loom` anywhere in `src/`** — it is the top-level `sandbox` package (hence
@@ -26,9 +24,22 @@ Three FRs describe a tree that is not there, and all three are recorded in the d
 - **FR-7** claims 1:1 parity between the test tiers and `src/`. Four test directories have no `src/`
   counterpart, and one — `tests/unit/graph_store/`, an empty `__init__.py` left behind when
   `graph/core/store` moved — was deleted rather than excepted.
-- **FR-8** claims `tests/e2e/` was restructured from a flat tree into capability folders.
-  `capabilities/` exists and holds seven of them; the flat tree it was meant to replace is **also
-  still there** — four loose test files and five layer-shaped directories.
+
+**FR-8 is closed.** It claimed `tests/e2e/` moved from a flat tree into capability folders, and for a
+while both existed side by side: `capabilities/` with seven domains, and beside it four loose test
+files plus five layer-shaped directories. Sixteen files moved on 2026-08-17, two capability folders
+were added (`interfaces`, `sandbox`), and `E2E_FLAT_REMAINDER_FILES` is now empty — a loose file at the
+tier root is a failure rather than a new exception. `tests/e2e/scripts/` stays and is not a leftover:
+it drives the repo's own dev tooling, which has no product capability to belong to.
+
+Two side effects are worth knowing, because they are the reason a restructure is not just `git mv`:
+
+- `test_cli_colour_e2e.py` computed the repo root as `parents[3]` and handed it to a subprocess as
+  `cwd`. One directory deeper, that resolves to `tests/e2e/`. It now walks up to the directory holding
+  `pyproject.toml`, so position in the tree stops being a hidden dependency.
+- The old `tests/e2e/interfaces/` had no `__init__.py`; its destination does. Inside a package,
+  `from tests.rendering import shows` reclassifies as first-party, so two files needed their import
+  blocks regrouped. A file's lint profile is not invariant under moving it.
 """
 
 from __future__ import annotations
@@ -98,14 +109,16 @@ MIRROR_EXCEPTIONS: dict[str, str] = {
     "engine": "caller-migration integration tests, predate the restructure",
 }
 
-#: FR-8: what is left of the pre-restructure flat e2e tree. Named, so a new flat file fails.
-E2E_FLAT_REMAINDER_FILES = {
-    "test_polyglot_validation_e2e.py",
-    "test_logging_e2e.py",
-    "test_cli_bootstrap_e2e.py",
-    "test_cli_decentralized_e2e.py",
-}
-E2E_FLAT_REMAINDER_DIRS = {"core", "flow", "interfaces", "sandbox", "scripts"}
+#: FR-8: nothing outside a capability folder. The set is empty and stays empty — every e2e test lives
+#: under `tests/e2e/capabilities/<domain>/`, so a loose file at the tier root is a failure, not an
+#: exception to be added here.
+E2E_FLAT_REMAINDER_FILES: set[str] = set()
+
+#: FR-8's one permanent exception, and it is not a leftover. `tests/e2e/scripts/` drives the repo's own
+#: dev tooling — the mutation corpus CLI and the nightly timer. Those are not product capabilities and
+#: have no capability folder to belong to, which is the same reason `scripts` is excused from the
+#: src-mirror check above.
+E2E_NON_CAPABILITY_DIRS = {"scripts"}
 
 _SKIP = {"__pycache__", ".pytest_cache"}
 
@@ -190,27 +203,43 @@ def test_the_unit_and_integration_tiers_mirror_src() -> None:
         )
 
 
-def test_e2e_is_organised_by_capability_and_the_flat_remainder_cannot_grow() -> None:
-    """FR-8: the capability tree exists; what predates it is enumerated and frozen.
+def test_every_e2e_test_lives_in_a_capability_folder() -> None:
+    """FR-8: `tests/e2e/` is organised by capability, with nothing left beside it.
 
-    FR-8 claims the flat tree was replaced. Half of it was — `capabilities/` holds real capability
-    folders — and the other half is still sitting beside it. This test refuses to call that finished:
-    it pins both the new shape and the exact remainder, so the restructure can only continue in one
-    direction. A new loose e2e file, or a new layer-shaped directory, fails here.
+    FR-8 said the flat tree was replaced by capability folders. Until 2026-08-17 both were present:
+    `capabilities/` held seven domains, and the tree it was meant to replace still sat next to it —
+    four loose test files and five layer-shaped directories (`core`, `flow`, `interfaces`, `sandbox`,
+    `scripts`). Sixteen files moved; the remainder is now empty and the guard is unconditional.
+
+    The one permanent exception is `tests/e2e/scripts/`, and it is not a leftover: it drives the repo's
+    own dev tooling, which has no product capability to belong to. `scripts` is excused from the
+    src-mirror check above for exactly the same reason.
+
+    Note what this refuses. A loose file at the tier root is a failure rather than something to add to
+    an exception list — the point of finishing a restructure is that the escape hatch closes behind it.
     """
     e2e = REPO_ROOT / "tests" / "e2e"
     capabilities = e2e / "capabilities"
     assert capabilities.is_dir(), "tests/e2e/capabilities/ is gone — FR-8's new shape with it"
     assert _packages(capabilities), "tests/e2e/capabilities/ holds no capability folders"
 
-    flat_files = {p.name for p in e2e.glob("test_*.py")}
-    new_files = flat_files - E2E_FLAT_REMAINDER_FILES
-    assert not new_files, (
-        f"new flat e2e test file(s) outside a capability folder: {sorted(new_files)}"
+    flat_files = {p.name for p in e2e.glob("test_*.py")} - E2E_FLAT_REMAINDER_FILES
+    assert not flat_files, (
+        f"e2e test file(s) outside a capability folder: {sorted(flat_files)}. "
+        f"Move each into tests/e2e/capabilities/<domain>/ — do not except it here."
     )
 
-    new_dirs = _packages(e2e) - E2E_FLAT_REMAINDER_DIRS - {"capabilities"}
-    assert not new_dirs, f"new layer-shaped e2e director(ies): {sorted(new_dirs)}"
+    stray_dirs = _packages(e2e) - E2E_NON_CAPABILITY_DIRS - {"capabilities"}
+    assert not stray_dirs, (
+        f"layer-shaped e2e director(ies) beside capabilities/: {sorted(stray_dirs)}"
+    )
+
+    #: Every capability folder must mirror a src macro-domain, so "by capability" cannot drift back
+    #: into "by whatever seemed handy".
+    unknown = _packages(capabilities) - _packages(SRC_ROOT)
+    assert not unknown, (
+        f"capability folder(s) with no src/specweaver counterpart: {sorted(unknown)}"
+    )
 
 
 def test_the_documentation_tree_is_where_the_restructure_left_it() -> None:
