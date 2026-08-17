@@ -612,7 +612,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `[ ]` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
 |  | `[ ]` `INT-US-05-SF03-MIG` | US-5 | Intelligent Code Exclusions | `C-SENS-02` |
 |  | `[ ]` `INT-US-05-SF04-MIG` | US-5 | Framework Native Understanding | `B-INTL-02` |
-|  | `[ ]` `INT-US-21-SUB-MIG` | US-21 | Recursive Planning | `C-INTL-01` |
+|  | `✅` `INT-US-21-SUB-MIG` | US-21 | Recursive Planning | `C-INTL-01` |
 
 ---
 ## Technical Debt & Architecture Stories (TECH)

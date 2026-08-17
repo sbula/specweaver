@@ -96,3 +96,38 @@
 > `INT-US-21-SF01`. The divergence is accepted and documented rather than corrected, because
 > renaming a delivered entry's identifier would breach the finished-stories-immutable rule.
 > Recorded so no future session re-opens it as registry corruption.
+
+* **`INT-US-21-SUB` — Recursive Planning:** the add-on's contract under `ADR-004`.
+
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | Feature spec → DecompositionPlan; HITL decision gate; per-component battery; blast-radius coverage assert | single feature | `C-INTL-01` | yes — **done** | — |
+  | P-2 | Multi-level recursive decomposition | cross-feature | this contract, deferred | no | `C-INTL-07` |
+  | P-3 | Journey: an epic-level spec becomes a DAG of testable sub-components | cross-feature | this contract, deferred | no | `C-INTL-07`, `C-FLOW-12` |
+
+  **This entry has been wrong twice before, so what it claims now is deliberately narrow.**
+  `TECH-038`
+  found it advertising *"recursive planning … resolving the AST graph into sub-tasks"* over a
+  decomposer
+  that makes one LLM call and returns a flat list — surviving delivery *and* an epic closure.
+  `TECH-046` then deleted `C-INTL-01`'s FR-3 because the recursion was designed and never built,
+  minting
+  `C-INTL-07` to hold it. P-2 is that work, and it is deferred rather than described as present.
+
+  P-1 is `C-INTL-01`'s own requirement: four FRs, all cited, each behind a killed mutant —
+  `check_fr_coverage.py C-INTL-01` exits 0.
+
+  **FR-4 needed a test before it could be cited.** The feature-decomposition pipeline stops at the
+  decompose HITL gate and validates only the *feature* spec; the per-component battery exists solely
+  because the fan-out spawns `new_feature.yaml`, which carries a `validate_spec` step. Nothing
+  asserted
+  that, so stripping it passed the whole suite. FR-2 is the mirror case: flipping its gate from
+  `hitl`
+  to `auto` is noticed by exactly one e2e and by nothing at unit tier.
+
+  **`INT-US-21-SUB-MIG` is discharged (2026-08-17); the contract stays open** until `C-INTL-07`
+  lands and
+  P-2/P-3 are written.
+

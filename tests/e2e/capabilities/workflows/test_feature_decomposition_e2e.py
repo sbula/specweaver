@@ -2,27 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""INT-US-21 Verifiable Proof (FR-10): the feature-decomposition journey, end to end.
+"""The feature-decomposition journey on the real CLI, including its human decision gate.
 
-The **first test in the suite to drive a bundled pipeline THROUGH a HITL gate.** `INT-US-02`'s
-E6/E7 claimed to and did not: PARKED and COMPLETED both exit 0, so their exit-code assertions could
-not tell the two apart, and the scripted verdicts were never consumed.
+Proves: C-INTL-01 FR-2
 
-Real surfaces throughout `sw run feature_decomposition`: the real CLI, the real registry, the real
-`validation_spec_feature` battery, the real `DecomposeFeatureHandler`, real artifact and stub
-writes, real approve-on-resume, real SQLite state across three separate `CliRunner` sessions. The
-scripted edge is the LLM only.
+Cited under `specweaver-dev` §3.2c, from `INT-US-21-SUB-MIG`.
 
-> **Every assertion reads the PERSISTED run status, never the exit code.** `cli.py` maps
-> COMPLETED → 0, FAILED → 1 and **PARKED → 0** ("not an error, just parked"). An exit-code
-> assertion cannot distinguish a parked journey from a finished one — which is exactly how
-> INT-US-02's proof came to be vacuous.
+FR-2 requires the decomposition plan to be presented and *wait* for approval. Mutant-verified: flipping
+the `decompose` step's gate from `hitl` to `auto` in `feature_decomposition.yaml` fails this file — and
+only this file. Nothing at unit tier notices a human gate becoming automatic, because the gate is
+pipeline configuration rather than code.
 
-The journey has two HITL gates, so the happy path is three sessions:
-
-    session 1  draft_feature (spec pre-exists -> exists-skip) -> PARK #1
-    session 2  resume = approval -> validate_feature -> decompose -> PARK #2
-    session 3  resume = approval -> COMPLETED
+That is `ADR-004` clause 3 again: a path only an e2e can walk belongs to the story.
 """
 
 from __future__ import annotations

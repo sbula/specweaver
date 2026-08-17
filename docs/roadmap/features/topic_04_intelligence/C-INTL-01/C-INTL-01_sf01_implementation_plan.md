@@ -1,5 +1,16 @@
 # Implementation Plan: Automated iterative decomposition (multi-level) [SF-01: Hierarchical Orchestration Engine Support]
 
+**FR-1 ownership recorded 2026-08-17** under `specweaver-dev` §3.2c, from `INT-US-21-SUB-MIG`. FR-2,
+FR-4 and FR-5 were already carried; FR-1 was not, so `check_fr_coverage.py` read it as unplanned.
+
+Proof and mutants: `tests/unit/core/flow/handlers/test_decompose.py` (FR-1 — emptying
+`plan.component_changes` fails 28 tests; FR-4 — stripping `validate_spec` from the per-component
+template) and `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py` (FR-2 — the decompose
+gate flipped from `hitl` to `auto`, which only an e2e notices).
+
+FR-4 needed a test written: the per-component battery exists only because the fan-out spawns
+`new_feature.yaml`, and nothing asserted that template still carries `validate_spec`.
+
 - **Feature ID**: 3.24
 - **Sub-Feature**: SF-01 — Hierarchical Orchestration Engine Support
 - **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_design.md

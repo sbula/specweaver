@@ -1,22 +1,36 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Fan-out orchestration: wave scheduling, deferred joins, and cascading aborts.
+"""Fan-out orchestration: wave scheduling, deferred joins, cascading aborts, and per-component validation.
 
 Proves: C-FLOW-03 FR-1, C-FLOW-03 FR-5, C-FLOW-03 FR-6
+Proves: C-INTL-01 FR-1, C-INTL-01 FR-4
 
-Cited from `INT-US-18-MIG`. Three mutants die here and in
-`tests/integration/core/flow/engine/test_dag_orchestration_integration.py`:
+`C-FLOW-03`'s three were cited from `INT-US-18-MIG`; `C-INTL-01`'s from `INT-US-21-SUB-MIG`. One story
+per `Proves:` line — `_citations._TAG` reads a single id then every requirement to end-of-line.
 
-* FR-1 — the wave pipeline built with `steps=[]` instead of `state.deferred_joins`.
-* FR-5 — `_run_wave_n` skipped, so deferred shared artifacts are never synthesised.
-* FR-6 — `if state.has_failed:` replaced by `if False:`, so a failed component stops aborting its
-  dependents.
+`C-FLOW-03` mutants: wave pipeline built with `steps=[]` (FR-1), `_run_wave_n` skipped (FR-5),
+`if state.has_failed:` neutralised (FR-6).
 
-**FR-3 and FR-4 carry no citation because they have no code.** Port-offset injection
-(`SW_PORT_OFFSET`) and serialised worktree preparation (`gc.auto 0`) were declared and never built.
-The rows are deleted from `C-FLOW-03`'s design and the work is `TECH-062`. There is no mutant to kill
-for absent code, which is exactly how both survived delivery.
+`C-INTL-01` mutants: emptying `plan.component_changes` after the decomposer returns fails 28 tests
+(FR-1); stripping `validate_spec` from the per-component template fails
+`test_each_component_pipeline_validates_its_own_spec` (FR-4).
+
+**FR-4 needed that test written.** The feature-decomposition pipeline stops at the decompose HITL gate
+and validates only the FEATURE spec; the per-component battery exists solely because the fan-out spawns
+`new_feature.yaml`, which carries a `validate_spec` step. Nothing asserted that, so stripping it passed
+the whole suite — a template swap could have removed per-component validation silently while FR-4 still
+read as satisfied.
+
+**Two earlier probes were rejected rather than recorded as findings.** Pointing the template at
+`validate_only.yaml` survived, but that file also contains `validate_spec`, so the mutant was
+*equivalent* and said nothing (§3.2c). And grepping FR-4's own wording — "10-test battery against each
+Component Spec" — finds nothing in `decompose.py`, which reads as absent code until you follow the
+fan-out. Neither survival was evidence.
+
+**FR-3 and FR-4 of `C-FLOW-03` carry no citation because they have no code.** Port-offset injection and
+serialised worktree preparation were declared and never built; the rows are deleted from that design
+and the work is `TECH-062`.
 """
 
 from pathlib import Path
@@ -658,3 +672,34 @@ async def test_orchestrate_components_wave_n_crash_gap_7(
     assert result.status == StepStatus.FAILED
     assert "Cascading failure: Wave N deferred join execution failed" in str(result.error_message)
     assert mock_runner_instance.run.call_count == 2
+
+
+def test_each_component_pipeline_validates_its_own_spec() -> None:
+    """`C-INTL-01` FR-4: the standard battery runs against EACH component spec, not only the feature.
+
+    The feature-decomposition pipeline itself stops at the decompose HITL gate — it validates the
+    *feature* spec and nothing else. The per-component battery exists only because the fan-out spawns
+    `new_feature.yaml` for every component, and that template carries a `validate_spec` step.
+
+    Nothing asserted that. Stripping `validate_spec` out of the template passed the entire suite, so a
+    template swap or an edit to `new_feature.yaml` could silently remove per-component validation while
+    FR-4 still read as satisfied.
+    """
+    from specweaver.core.flow.handlers.decompose import _base_pipeline_yaml, _component_pipeline
+
+    deferred: list[object] = []
+    pipe = _component_pipeline("auth", _base_pipeline_yaml(), deferred)
+
+    validating = [
+        step
+        for step in pipe.steps
+        if str(getattr(step.action, "value", step.action)) == "validate"
+        and str(getattr(step.target, "value", step.target)) == "spec"
+    ]
+    assert validating, (
+        "no validate+spec step in a component's sub-pipeline, so FR-4's per-component battery "
+        f"does not run: {[s.name for s in pipe.steps]}"
+    )
+    assert validating[0].params.get("component") == "auth", (
+        "the validation step is not bound to the component it belongs to"
+    )
