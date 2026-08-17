@@ -102,6 +102,44 @@ No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) st
 | FR-9 | Execution telemetry | SubprocessExecutor | Emits structured log entries (start, stop, exit_code, duration, command) at DEBUG level | Auditable execution trail for all subprocess calls |
 | FR-10 | Cross-platform resource limit enforcement | SubprocessExecutor | Detects OS at runtime. Unix/macOS: `resource.setrlimit()` via `preexec_fn`. Windows: Win32 Job Objects via `ctypes` (no third-party deps). All platforms: stdlib-only, zero user configuration | Memory/process-count bombs are caught and killed on all platforms |
 
+### FR-10's process ceiling, re-derived from measurement (2026-08-17)
+
+FR-10 holds — bombs are still caught — but the number it caps at changed, and the reason is worth
+keeping because two plausible fixes were tried and measured to fail before the third worked.
+
+**The defect.** `RLIMIT_NPROC` is per-real-**UID**. The ceiling is therefore spent by everything the
+user runs, not only by the sandbox, and it is fixed for the child's whole lifetime the moment it
+spawns. `baseline + budget` — the ceiling `TECH-029` introduced — asks a single sample to predict the
+machine's *future* peak.
+
+**The evidence.** Sampling this repo's own suite at `-n auto` while it ran: the UID's task count swung
+between **313 and 960** in one run, p50 419, p95 484 — a 647-task spread against a 128-task budget, and
+a ceiling of roughly 453. Sandboxed bash steps died on their own `fork` with `Resource temporarily
+unavailable`, exit 254, roughly one full run in six, and the failure was reported against the innocent
+script. Turning the cap off entirely: **0 failures in 12 runs.**
+
+**Two fixes that did not work, both measured rather than reasoned about.** A process-lifetime
+high-water mark: still failed, because a child spawned before the peak arrives carries the lower
+ceiling. High-water mark plus observed spread: still failed, for the same reason — early children have
+seen no spread. Any ceiling derived from sampling loses the race by construction.
+
+**What shipped.** The headroom is the configured budget **or a fixed share (1%) of the system's own
+hard `RLIMIT_NPROC`, whichever is larger**, clamped to that hard limit. The system's limit is the only
+scale on the host that is not a guess: it is what this machine has already declared it will let one
+user reach. Ambient load lives far below it, so the ceiling stops being spent by unrelated work; a fork
+bomb is unbounded and crosses it in milliseconds, so the FR's outcome is unchanged. Measured: **0
+failures in 12 runs**, cap still enforced (3538 against a 325-task baseline, where the old ceiling was
+453).
+
+**This is a looser bound, and it is not a per-sandbox quota.** It never was one — a per-UID limit
+cannot be. The kernel-enforced per-subtree bound is cgroups v2 `pids.max`, which `B-EXEC-04` owns and
+which should **replace** this rather than layer on top of it.
+
+**One reporting defect fixed alongside it.** `BashActionAtom` put only the exit code in its failure
+message — stderr went to `exports`, which nothing surfaces — so an environmental death read as an
+ordinary script failure. The message now carries the first line of stderr, and it named the cause on
+the first reproduction after eight runs of guessing without it.
+
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |

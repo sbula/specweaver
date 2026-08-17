@@ -139,6 +139,58 @@ def current_task_count() -> int | None:
     return sum(counts) if counts else None
 
 
+#: Denominator for the system-derived floor on sandbox headroom: the sandbox may always push the UID
+#: to at least this fraction of what the system itself is willing to allow.
+_SYSTEM_SHARE = 100
+
+#: Headroom when the system declares no limit at all. There is no share of infinity to take, and the
+#: budget alone is the thing measured to fail, so this clears any plausible ambient load while still
+#: leaving a finite ceiling for a bomb to hit.
+_UNBOUNDED_SYSTEM_HEADROOM = 10_000
+
+
+def nproc_ceiling(baseline: int, budget: int, hard: int | None = None) -> int:
+    """The `RLIMIT_NPROC` value for a child spawning now.
+
+    `baseline + budget` is the intuitive answer and it is measurably wrong. `RLIMIT_NPROC` is
+    per-real-UID: the ceiling is spent by *everything* the user runs, and it is fixed for the child's
+    whole lifetime at the moment it spawns. So the ceiling has to clear not the load at spawn but the
+    machine's future peak — which no sample can know.
+
+    Measured on this repo's suite at `-n auto`: the UID's task count swung 313 to 960 within one run
+    while the ceiling was ~453. Sandboxed bash steps died on their own `fork` with `Resource
+    temporarily unavailable`, exit 254, and the failure was reported against the innocent script.
+    Turning the cap off entirely: 0 failures in 12 runs. Tracking a high-water mark, and then a
+    high-water mark plus observed spread, were both tried and both still failed — a child spawned
+    before the peak arrives still carries the lower ceiling.
+
+    So the headroom is the configured budget **or a fixed share of the system's own limit, whichever
+    is larger**. That share is the only scale on the machine that is not a guess: it is what this
+    host has already declared it is prepared to let one user reach. Ambient load lives far below it,
+    so the ceiling stops being spent by other work; a fork bomb is unbounded and crosses it in
+    milliseconds, so it is still caught and killed.
+
+    A bound this loose is not a per-sandbox quota and does not pretend to be. A per-UID limit cannot
+    be one. The kernel-enforced per-subtree bound is cgroups v2 `pids.max`, and it should REPLACE this
+    rather than layer on top of it.
+
+    Args:
+        baseline: tasks the UID already owns.
+        budget: the configured `max_processes`.
+        hard: the system's hard `RLIMIT_NPROC`, read from the OS when omitted. Passed explicitly by
+            tests so the arithmetic is deterministic rather than host-dependent.
+    """
+    import resource
+
+    if hard is None:
+        _, hard = resource.getrlimit(resource.RLIMIT_NPROC)
+
+    if hard == resource.RLIM_INFINITY:
+        return baseline + budget + _UNBOUNDED_SYSTEM_HEADROOM
+
+    return min(baseline + max(budget, hard // _SYSTEM_SHARE), hard)
+
+
 class UnixLimiter(PlatformLimiter):
     """Uses ``resource.setrlimit()`` via ``preexec_fn``.
 
@@ -166,10 +218,12 @@ class UnixLimiter(PlatformLimiter):
         # parent, not in the closure: `preexec_fn` runs after fork where only async-signal-safe work
         # is sound, and walking /proc there is neither safe nor cheap.
         #
-        # This is a best-effort backstop, not a real bound — the limit still applies to the whole
-        # UID, and the baseline can drift between measurement and exec. A kernel-enforced
-        # per-subtree bound via cgroups v2 `pids.max` should REPLACE this rather than layer on
-        # top of it.
+        # The headroom is the budget or a share of the system's own limit, whichever is larger —
+        # `baseline + budget` is measurably spent by unrelated load. See `nproc_ceiling`.
+        #
+        # This is still a best-effort backstop, not a real bound — the limit applies to the whole UID
+        # either way. A kernel-enforced per-subtree bound via cgroups v2 `pids.max` should REPLACE
+        # this rather than layer on top of it.
         nproc: int | None = None
         if limits.max_processes is not None:
             baseline = current_task_count()
@@ -180,7 +234,7 @@ class UnixLimiter(PlatformLimiter):
                     limits.max_processes,
                 )
             else:
-                nproc = baseline + limits.max_processes
+                nproc = nproc_ceiling(baseline, limits.max_processes)
 
         def _apply_limits() -> None:
             import resource

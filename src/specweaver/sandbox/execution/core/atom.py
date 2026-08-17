@@ -27,6 +27,20 @@ _DEFAULT_RESOURCE_LIMITS = ResourceLimits(
 )
 
 
+#: How much of a failing script's stderr goes into the failure MESSAGE. The full text is still in
+#: `exports`; this is the part an operator reads without going looking.
+_MESSAGE_STDERR_CHARS = 200
+
+
+def _first_line(text: str) -> str:
+    """The first non-empty line of `text`, bounded — enough to name a cause, not to bury it."""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped[:_MESSAGE_STDERR_CHARS]
+    return ""
+
+
 def _truncate(text: str) -> str:
     """Truncate `text` to `_MAX_OUTPUT_BYTES` (UTF-8 byte length), FR-8."""
     encoded = text.encode("utf-8")
@@ -123,9 +137,16 @@ class BashActionAtom(Atom):
             )
 
         status = AtomStatus.SUCCESS if result.exit_code == 0 else AtomStatus.FAILED
+        # The exit code alone names nothing. `exports` has always carried stderr, but the message is
+        # what reaches a step's `error_message` and the operator's terminal — so a script that died
+        # for an environmental reason read as an ordinary script failure.
+        detail = _first_line(result.stderr)
+        message = f"bash script '{script}' exited {result.exit_code}."
+        if status is AtomStatus.FAILED and detail:
+            message = f"{message} stderr: {detail}"
         return AtomResult(
             status=status,
-            message=f"bash script '{script}' exited {result.exit_code}.",
+            message=message,
             exports={
                 "exit_code": result.exit_code,
                 "stdout": _truncate(result.stdout),

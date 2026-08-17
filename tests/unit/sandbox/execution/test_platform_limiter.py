@@ -120,15 +120,56 @@ class TestUnixLimiter:
             fn()
             mock_resource.setrlimit.assert_any_call(5, (512 * 1024 * 1024, 512 * 1024 * 1024))
 
-    def test_the_nproc_cap_is_a_budget_above_the_current_baseline(self) -> None:
-        """`max_processes` bounds the sandbox's ADDITIONAL tasks, not the whole user's.
+    def test_the_nproc_headroom_is_a_share_of_what_the_system_itself_allows(self) -> None:
+        """`baseline + budget` is the intuitive ceiling and it is measurably wrong.
 
-        `RLIMIT_NPROC` is per-real-UID and counts tasks (threads), not processes. Setting it to the
-        raw budget caps every task the invoking user owns — and on an ordinary machine the user is
-        already over that number before the sandbox forks anything, so every step failed. Measured
-        on an idle host: 64 processes but 234 tasks against a configured 128.
+        `RLIMIT_NPROC` is per-real-UID, so the ceiling is spent by everything the user runs, and it
+        is fixed for the child's whole lifetime at spawn. It therefore has to clear not the load at
+        spawn but the machine's future peak — which no sample can know.
 
-        The cap is therefore `current tasks + budget`, which bounds what this sandbox may add.
+        Measured on this repo's suite at `-n auto`: the UID's task count swung 313 to 960 in one run
+        against a ~453 ceiling, and sandboxed bash steps died on their own `fork` with `Resource
+        temporarily unavailable`, exit 254, blaming the innocent script. Two sampling-based ceilings
+        were tried and measured — a high-water mark, then a high-water mark plus observed spread —
+        and both still failed, because a child spawned before the peak arrives carries the lower one.
+
+        So the headroom is the budget or a share of the system's own hard limit, whichever is larger.
+        `hard` is injected here; reading it from the host would make the expectation host-dependent.
+        """
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        # hard=100_000 -> share 1_000, which beats the 50-task budget.
+        assert pl.nproc_ceiling(200, 50, hard=100_000) == 1_200
+
+    def test_the_budget_wins_when_it_exceeds_the_system_share(self) -> None:
+        """On a small system limit the share is tiny, and the configured budget is still honoured."""
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        # hard=1_000 -> share 10, so the 50-task budget is the larger headroom.
+        assert pl.nproc_ceiling(200, 50, hard=1_000) == 250
+
+    def test_the_ceiling_never_exceeds_the_system_hard_limit(self) -> None:
+        """`setrlimit` refuses a soft limit above the hard one, so the ceiling clamps."""
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        assert pl.nproc_ceiling(200, 50, hard=220) == 220
+
+    def test_an_unlimited_system_still_gets_a_finite_ceiling(self) -> None:
+        """There is no share of infinity to take, and FR-10 needs a ceiling for a bomb to hit."""
+        import resource
+
+        from specweaver.sandbox.execution import platform_limiter as pl
+
+        ceiling = pl.nproc_ceiling(200, 50, hard=resource.RLIM_INFINITY)
+        assert ceiling > 200, "unreachable ceiling — every fork would fail"
+        assert ceiling < 1_000_000, "not a bound at all"
+
+    def test_the_cap_reaches_setrlimit_through_the_preexec_closure(self) -> None:
+        """The wiring itself: the value `nproc_ceiling` returns is what the child has applied.
+
+        The baseline is read in the PARENT, when the closure is built — not inside it. `preexec_fn`
+        runs after fork, where only async-signal-safe work is sound, so patching around `fn()` alone
+        would miss it entirely.
         """
         from specweaver.sandbox.execution import platform_limiter as pl
 
@@ -136,16 +177,18 @@ class TestUnixLimiter:
         mock_resource = MagicMock()
         mock_resource.RLIMIT_NPROC = 6
 
-        # The baseline is read in the PARENT, when the closure is built — not inside it. preexec_fn
-        # runs after fork, where only async-signal-safe work is sound, so patching around `fn()`
-        # alone would miss it entirely.
-        with patch.object(pl, "current_task_count", return_value=200):
+        with (
+            patch.object(pl, "current_task_count", return_value=200),
+            patch.object(pl, "nproc_ceiling", return_value=1_234) as ceiling,
+        ):
             fn = limiter.make_preexec_fn(ResourceLimits(max_processes=50))
         assert fn is not None
+        ceiling.assert_called_once_with(200, 50)
+
         with patch.dict("sys.modules", {"resource": mock_resource}):
             fn()
 
-        mock_resource.setrlimit.assert_any_call(6, (250, 250))
+        mock_resource.setrlimit.assert_any_call(6, (1234, 1234))
 
     def test_the_nproc_cap_is_skipped_when_the_baseline_is_unknown(self) -> None:
         """Degrade explicitly rather than guessing.
