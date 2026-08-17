@@ -1,5 +1,14 @@
 # Implementation Plan: Boundary Matrix Sync (SF-02)
 
+**FRs owned: FR-7, FR-8, FR-11, FR-12.** The test-tier mirror, the e2e capability tree, and the
+documentation moves. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-01-SF02-MIG`.
+
+**FR-7 and FR-8 are not fully met**, and the guards say so with named exceptions rather than a
+count: four test directories have no `src/` counterpart, and the flat e2e tree still sits beside
+`capabilities/`. Neither can grow. Completing the move is a scope decision, not a migration task.
+
+
 - **Feature ID**: 3.26a (SF-02)
 - **Status**: APPROVED
 - **Design Doc**: `docs/roadmap/phase_3/feature_3.26a/feature_3.26a_design.md`

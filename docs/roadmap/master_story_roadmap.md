@@ -602,7 +602,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `✅` `INT-US-20-MIG` | US-20 | Enterprise Architecture Enforcement | `D-SENS-01`, `B-SENS-02`, `C-EXEC-01` |
 |  | `✅` `INT-US-22-MIG` | US-22 | Polyglot Contract Enforcement | `A-VAL-01`, `C-VAL-04` |
 |  | `✅` `INT-US-23-MIG` | US-23 | Enterprise Tool Extension (MCP) | `C-INTL-02` |
-|  | `[ ]` `INT-US-01-SF02-MIG` | US-1 | Enforce Internal Architecture | `C-EXEC-01`, `C-EXEC-03` |
+|  | `✅` `INT-US-01-SF02-MIG` | US-1 | Enforce Internal Architecture | `C-EXEC-01`, `C-EXEC-03` |
 |  | `[ ]` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
 |  | `✅` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
 |  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |

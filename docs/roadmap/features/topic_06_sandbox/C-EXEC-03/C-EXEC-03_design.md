@@ -52,6 +52,62 @@ This refactoring directly reflects the `context.yaml` topological layering princ
 | FR-11 | Relocate Design Documents | System | Moves `docs/architecture/*` into `docs/architecture/` and permanently removes the empty `docs/proposals/design` paths | Design documents reside accurately within `architecture` |
 | FR-12 | Relocate Roadmap Folder | System | Moves the entire `docs/roadmap/` directory up into `docs/roadmap/` | Project roadmap structures are cleanly elevated out of proposals |
 
+### What the twelve FRs are, and how they are proven (2026-08-17, `INT-US-01-SF02-MIG`)
+
+Every row here has the form *"directory X now lives at Y"*. None had a test, and the reason is
+structural rather than negligent: **a completed move leaves nothing running to observe.** What it does
+leave is a shape, and a shape is falsifiable — put a package back where it was and the assertion fails.
+`tests/unit/test_macro_domain_layout.py` is that assertion, and each of its guards was verified by
+mutating the tree: `workflows/review` moved back to the top level, a new flat e2e file, a stray test
+directory, `tach.toml` renamed off a macro-domain. All four fail.
+
+**The guards carry enumerated exceptions, never counted ones.** Where an FR is partly true the
+exception is a *named path*. A count absorbs the next violation in silence — which is precisely what
+`test_tach_architectural_boundaries` did for three months at `fail_count <= 95`, found and fixed the
+same day as this. A named list absorbs nothing: a fourth stray directory fails, a fifth flat e2e file
+fails.
+
+### Three FRs describe a tree that is not there
+
+**FR-5's `loom` clause is wrong, and struck.** It claims `flow`, `loom` and `config` moved into
+`core/`. `flow` and `config` did. **There is no `loom` package anywhere in `src/`** — the Loom is the
+top-level `sandbox/` package (hence `tests/integration/sandbox/test_loom_stack.py`), and it is
+top-level by design, with `test_sandbox_is_grouped_by_feature_not_by_layer` already guarding its
+internal shape. Asserting FR-5 as written would fail; asserting nothing would leave a reader hunting
+for a `core/loom` that never existed. `test_the_loom_package_is_the_top_level_sandbox` pins the
+correction in both directions — it also fails if a `core/loom` ever appears, which would mean this note
+needs revisiting rather than the tree.
+
+**FR-7 is not met: four test directories have no `src/` counterpart.** `tests/unit/alembic`,
+`tests/integration/constitution`, `tests/integration/engine`, and `scripts` under both tiers. The last
+is deliberate and correct — it mirrors the repo's `scripts/`, not `src/`. The other three are real
+parity gaps, named in `MIRROR_EXCEPTIONS` with their reasons so they cannot quietly become four.
+
+A fifth was **deleted rather than excepted**: `tests/unit/graph_store/`, an empty `__init__.py`
+stranded when `graph/core/store` moved. A leftover is the restructure's own unfinished business, not an
+exception to it.
+
+**FR-8 is half met, and the halves sit side by side.** It claims `tests/e2e/` was restructured *from* a
+flat tree *into* capability folders. `capabilities/` exists and holds seven. The flat tree it was meant
+to replace is still there: four loose test files (`test_polyglot_validation_e2e.py`,
+`test_logging_e2e.py`, `test_cli_bootstrap_e2e.py`, `test_cli_decentralized_e2e.py`) and five
+layer-shaped directories (`core`, `flow`, `interfaces`, `sandbox`, `scripts`).
+
+The test refuses to call that finished. It pins the new shape *and* the exact remainder, so the
+restructure can only continue in one direction — no new file may join the flat tree. **Completing the
+move is not done here**: deciding which capability folder each of nine remaining locations belongs to is
+a scope call, and nine mechanical `git mv`s inside a migration commit is how a restructure acquires a
+second unfinished half.
+
+**FR-9 was already fully true**: zero imports anywhere in `src/` or `tests/` name a pre-restructure
+path. It is the only one of the twelve that needed nothing.
+
+One note on instrument choice, because the first attempt got it wrong. The import sweep reads the
+**AST**, not the text. A regex over source flagged `test_runner_architecture.py`, which writes
+`from specweaver.llm import Client` into a temp file inside a triple-quoted string to exercise the
+forbids checker. That is fixture data, and a text match cannot tell it from a real import of a package
+deleted three restructures ago.
+
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |

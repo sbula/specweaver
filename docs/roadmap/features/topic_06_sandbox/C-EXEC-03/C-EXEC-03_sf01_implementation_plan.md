@@ -1,5 +1,14 @@
 # Implementation Plan: Domain Realignment (SF-01)
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-9, FR-10.** The `src/` relocations, the
+import sweep, and the boundary config that describes them. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Proof:
+`tests/unit/test_macro_domain_layout.py`, each guard verified by mutating the tree.
+
+**FR-5's `loom` clause is struck** — there is no `loom` package; the Loom is the top-level
+`sandbox/`. See the design's findings section.
+
+
 - **Feature ID**: 3.26a (SF-01)
 - **Status**: APPROVED
 - **Design Doc**: `docs/roadmap/phase_3/feature_3.26a/feature_3.26a_design.md`
