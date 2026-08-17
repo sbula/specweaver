@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf02_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-2, FR-3.** Dedup on `semantic_hash` and SQLite persistence. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-10-MIG`: the plan predates the FR ledger, so ownership was never
+stated and `check_fr_coverage.py` read all five FRs as unplanned. Proof and the mutants that verify it
+are in `tests/unit/graph/core/store/test_repository_roundtrip.py`.
+
 ## User Review Required
 *This plan incorporates the final decisions from the Phase 4/5 HITL Gate (Strict DDD, Deferred Lineage Merge, RT-17/26 mitigations, Option A Tombstoning). No further review required to begin Dev.*
 

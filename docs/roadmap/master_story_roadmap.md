@@ -586,7 +586,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 
 | Cluster | Migration | Story | Sub-story / contract | Closed capabilities |
 |---|---|---|---|---|
-| B-SENS-02 (6) | `[ ]` `INT-US-10-MIG` | US-10 | Monolith Dependency Visualizer | `B-SENS-02` |
+| B-SENS-02 (6) | `✅` `INT-US-10-MIG` | US-10 | Monolith Dependency Visualizer | `B-SENS-02` |
 |  | `[ ]` `INT-US-11-MIG` | US-11 | GraphRAG for Brownfield Scale | `B-SENS-02` |
 |  | `[ ]` `INT-US-12-MIG` | US-12 | Legacy Spec Extraction | `B-SENS-02` |
 |  | `[ ]` `INT-US-15-MIG` | US-15 | Enterprise Audit & Traceability | `B-SENS-02` |

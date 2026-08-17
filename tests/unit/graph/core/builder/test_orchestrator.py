@@ -2,6 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The build orchestrator: file collection, ingestion, and GraphML export.
+
+Proves: B-SENS-02 FR-7
+
+Cited from `INT-US-10-MIG`. Mutant-verified: making `export_graph_to_disk` return an empty path
+without writing fails a test here.
+
+**What this file does NOT prove**, recorded because it is the gap `INT-US-10` FR-1 exists to close:
+`test_orchestrator_build_target_happy_path` `MagicMock`s the repository, topology and engine and
+asserts `persist_semantic_digraph` was *called*. It is a wiring pin, not evidence that real extraction
+produces real nodes — see `tests/integration/graph/test_real_extraction_to_graph.py`.
+"""
+
 from pathlib import Path
 
 import pytest

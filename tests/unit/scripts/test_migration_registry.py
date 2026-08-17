@@ -26,8 +26,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
 
-#: A migration row in the `## 🚚 Integration Migration` table.
-_MIG_ROW = re.compile(r"^\|[^|]*\|\s*`\[ \]`\s*`(INT-US-[\w-]+-MIG)`\s*\|", re.M)
+#: A migration row in the `## 🚚 Integration Migration` table, in EITHER state.
+#:
+#: A first draft matched `` `[ ]` `` only, so discharging the first entry to `✅` dropped the count
+#: from 27 to 26 and failed this file. The registry holds 27 entries whose STATE varies; the section
+#: is deleted once, when they are all discharged, not row by row.
+_MIG_ROW = re.compile(r"^\|[^|]*\|\s*`(?:\[ \]|✅)`\s*`(INT-US-[\w-]+-MIG)`\s*\|", re.M)
 
 #: The contract ids `TECH-060` FR-2 minted, which had no roadmap line before it.
 MINTED_CONTRACTS = (
@@ -57,7 +61,10 @@ def test_the_migration_section_exists(roadmap: str) -> None:
 
 
 def test_the_section_holds_every_migration_entry(roadmap: str) -> None:
-    """27, not 26 — the count was corrected by generating the roster instead of tallying it."""
+    """27, not 26 — the count was corrected by generating the roster instead of tallying it.
+
+    Entries, not open entries: a discharged migration stays listed until the whole section goes.
+    """
     assert len(_MIG_ROW.findall(roadmap)) == 27
 
 

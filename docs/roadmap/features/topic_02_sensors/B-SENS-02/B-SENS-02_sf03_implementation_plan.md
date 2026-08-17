@@ -5,6 +5,15 @@
 - **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_design.md
 - **Status**: DRAFT (Awaiting HITL Approval)
 
+**FRs owned: FR-1, FR-6, FR-7.** AST-to-node mapping, bounded subgraph extraction, and GraphML
+export. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-10-MIG`. Proof and mutants:
+`tests/unit/graph/core/builder/test_mapper.py`, `.../engine/test_graph_engine_core.py`,
+`.../builder/test_orchestrator.py`.
+
+**Not covered by this plan, and now tracked elsewhere:** the composition of mapper, adapter and
+repository is proven only with mocks here. `INT-US-10` FR-1 drives the real thing, and `TECH-061`
+owns the Python-only file collection it exposed.
+
 Based on our discussion regarding KISS, Single Point of Responsibility, strict boundary adherence, and **ID Prefixing**, please formally review and approve the following architectural proposals.
 
 ---

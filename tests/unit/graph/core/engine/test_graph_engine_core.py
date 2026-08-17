@@ -2,6 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The in-memory graph engine: mutation under a lock, and bounded subgraph extraction.
+
+Proves: B-SENS-02 FR-6
+
+Cited from `INT-US-10-MIG`. Two independent mutants die here, which is why the citation is trusted:
+removing the depth cap (`max_depth = min(requested_depth, 5)` -> `requested_depth`) and forcing the
+ego-graph radius to 1 each fail a test. A single surviving mutant would have meant the depth half of
+FR-6 was unconstrained.
+"""
+
 import threading
 
 from specweaver.graph.core.engine.core import InMemoryGraphEngine

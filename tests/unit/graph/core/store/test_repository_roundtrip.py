@@ -2,6 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""A graph survives a round trip through SQLite unchanged.
+
+Proves: B-SENS-02 FR-2, B-SENS-02 FR-3
+
+Cited from `INT-US-10-MIG`. Both mutants die here: dropping `semantic_hash TEXT UNIQUE` (FR-2's
+dedup) fails 18 tests across the graph suites, and renaming the `INSERT OR IGNORE INTO graph_nodes`
+target (FR-3's persistence) fails three in this directory.
+
+FR-2's claim is "exact structural duplicates are merged to a single Node ID". The constraint plus
+`ON CONFLICT(semantic_hash) DO UPDATE` is what enforces it; this file is where a regression shows.
+"""
+
 import networkx as nx
 import pytest
 

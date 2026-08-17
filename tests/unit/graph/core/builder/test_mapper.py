@@ -2,6 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Mapping an AST dictionary onto graph nodes and edges.
+
+Proves: B-SENS-02 FR-1
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-10-MIG`. `B-SENS-02` is `✅` and had **0 of 5 FRs
+cited by any test** — a capability whose claims `check_fr_sweep.py` scores as perfect because there
+is nothing to be uncited.
+
+Mutant-verified before the citation was believed: forcing `map_ast_to_nodes` to read no children
+(`children = []`) fails a test here. Without that check the tag would be a transcription rather than
+a constraint, which §3.2c names as the thing to avoid.
+"""
+
 from specweaver.graph.core.builder.mapper import OntologyMapper
 from specweaver.graph.core.engine.ontology import NodeKind
 

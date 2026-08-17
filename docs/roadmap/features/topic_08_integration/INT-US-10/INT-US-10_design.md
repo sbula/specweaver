@@ -78,8 +78,19 @@ could not fail for the right reason. `check_xfail_blockers.py` holds the obligat
 
 ## Migration disposition
 
-`INT-US-10-MIG` closes when: P-1's citations are backfilled onto `B-SENS-02` and mutant-verified,
-FR-1 is written and green, and P-3/P-4 are recorded as deferred against `C-UI-01`. It does **not**
-wait for `C-UI-01` — the contract keeps the deferred rows and stays open.
+**`INT-US-10-MIG` is discharged (2026-08-17).** P-1's citations are backfilled and mutant-verified,
+FR-1 is written and green, and P-3/P-4 are recorded as deferred against `C-UI-01`. It did not wait for
+`C-UI-01`: the contract keeps those rows and stays open, which is the split `ADR-004` draws between a
+migration that finishes and a contract that persists.
+
+**`B-SENS-02` now passes its own FR ledger** — 5 of 5 cited, each behind a killed mutant, `check_fr_coverage.py`
+exit 0. It is the first of the 62 delivered capabilities the migration has brought there, and the
+repo-wide FR sweep fell 233 → 229 with the capability dropping off the uncited list entirely.
+
+That backfill is **shared**: `INT-US-11`, `-12`, `-15`, `-26` and `-27` list `B-SENS-02` as their only
+closed capability, and none of them repeats it. Their inventories cite this work and move straight to
+their own deferred rows — which is what ordering the batch by capability cluster bought.
+
+`INT-US-10` itself stays open on `TECH-061` (FR-1's polyglot case) and on `C-UI-01` (P-3, P-4).
 
 `INT-US-10-SF01` (P-5) is its own contract and its own migration entry.
