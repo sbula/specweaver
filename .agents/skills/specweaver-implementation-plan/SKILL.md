@@ -184,6 +184,15 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
 > the integration being written and passing. It never closes by being tidied away.
 
+> [!IMPORTANT]
+> **Read the (sub)story contract's path inventory before scheduling anything** (`ADR-004`).
+> Each cross-feature row is a task, and a row is scheduled at the commit boundary where **the
+> interface it exercises first exists** — not where the implementation lands. That is what lets the
+> test fail before it passes.
+>
+> A row whose interface is not yet defined is not schedulable here. Leave it deferred against its
+> blocking capability and say so; `check_xfail_blockers.py` will not let it be forgotten.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading:

@@ -160,6 +160,18 @@ they flip; both groups become `🟡`.
 4. FR-5 gate 2
 5. FR-6 skills
 
+## Delivery
+
+| FR | State | Where |
+|---|---|---|
+| FR-1 `-MIG` grammar | ✅ | `tests.py` `INT_ID`, `check_retirement_targets.py` `_RETIRED_ID`, `check_roadmap_placement.py` `STORY_ID` — three sites, two found only by probing |
+| FR-2 migration registry | ✅ | `## 🚚 Integration Migration (-MIG)`, 27 rows by capability cluster; 5 contract ids minted |
+| FR-3 honest delivery marks | ✅ | 3 claims flipped, 4 group flags followed |
+| FR-4 no green without integration | ✅ | `check_delivered_claims.unproven_green_findings`, zero-tolerance |
+| FR-5 stale strict-xfail | ✅ | `scripts/check_xfail_blockers.py`, `doc` gate, zero-tolerance |
+| FR-6 the method in the skills | ✅ | `specweaver-feature` Phase 0b owns the contract; `-design` hard-stops without one; `-implementation-plan` schedules from the inventory; `-dev` enforces the named blocker |
+| FR-7 verifiable proof | ✅ | below |
+
 ## Verifiable Proof
 
 `tests/unit/scripts/test_check_xfail_blockers.py`, additions to

@@ -70,6 +70,19 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
 > the integration being written and passing. It never closes by being tidied away.
 
+> [!CAUTION]
+> **Before Phase 3 can bind requirements to surfaces, the (sub)story contract must exist.**
+> `ADR-004`: every (sub)story holds a contract — its `INT-US` entry — carrying the path inventory
+> and the cross-feature (N)FRs. Starting a design inside a (sub)story is what creates it.
+>
+> If the contract is absent, **stop and create it** (`specweaver-feature` Phase 0b) before
+> continuing. A design that binds FRs to surfaces without one has nowhere to put the requirements
+> that cross a feature boundary, and they end up restated on this capability — which is the defect
+> `ADR-003` measured and `ADR-004` re-scoped.
+>
+> Only the paths that cross a feature boundary go there. A path this one feature can walk alone is
+> this feature's own FR.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading for code discovery:

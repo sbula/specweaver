@@ -64,6 +64,21 @@ Trigger: "dev <impl_plan_path>", "implement <feature_id> SF-<N>",
 > retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
 > the integration being written and passing. It never closes by being tidied away.
 
+> [!CAUTION]
+> **A cross-feature test is written when its interface is defined, not when the code lands**
+> (`ADR-004` clause 4). Where the implementation is absent, commit it as
+> `pytest.mark.xfail(strict=True, reason="blocked on <CAPABILITY-ID> ...")` — the blocker **must**
+> be named.
+>
+> This is the whole point of writing it early: a test authored after the code is green on its first
+> run and asserts the present state rather than a contract. `strict=True` turns the eventual
+> unexpected pass into a failure, which is the signal that the marker is now stale and the test
+> stands on its own.
+>
+> `check_xfail_blockers.py` fails any strict xfail whose named blocker has shipped, and any whose
+> reason names no blocker at all — an unnamed one can never be judged stale and becomes a permanent
+> exemption.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading:
