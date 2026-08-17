@@ -587,11 +587,11 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 | Cluster | Migration | Story | Sub-story / contract | Closed capabilities |
 |---|---|---|---|---|
 | B-SENS-02 (6) | `✅` `INT-US-10-MIG` | US-10 | Monolith Dependency Visualizer | `B-SENS-02` |
-|  | `[ ]` `INT-US-11-MIG` | US-11 | GraphRAG for Brownfield Scale | `B-SENS-02` |
-|  | `[ ]` `INT-US-12-MIG` | US-12 | Legacy Spec Extraction | `B-SENS-02` |
-|  | `[ ]` `INT-US-15-MIG` | US-15 | Enterprise Audit & Traceability | `B-SENS-02` |
-|  | `[ ]` `INT-US-26-MIG` | US-26 | Fleet-Wide CVE Remediation | `B-SENS-02` |
-|  | `[ ]` `INT-US-27-MIG` | US-27 | Autonomous Production Self-Healing | `B-SENS-02` |
+|  | `✅` `INT-US-11-MIG` | US-11 | GraphRAG for Brownfield Scale | `B-SENS-02` |
+|  | `✅` `INT-US-12-MIG` | US-12 | Legacy Spec Extraction | `B-SENS-02` |
+|  | `✅` `INT-US-15-MIG` | US-15 | Enterprise Audit & Traceability | `B-SENS-02` |
+|  | `✅` `INT-US-26-MIG` | US-26 | Fleet-Wide CVE Remediation | `B-SENS-02` |
+|  | `✅` `INT-US-27-MIG` | US-27 | Autonomous Production Self-Healing | `B-SENS-02` |
 | A-SENS-01 (2) | `[ ]` `INT-US-11-SF01-MIG` | US-11 | Infinite Scale Management | `A-SENS-01` |
 |  | `[ ]` `INT-US-19-SF01-MIG` | US-19 | Distributed Topology Scaling | `A-SENS-01` |
 | C-FLOW-02 (2) | `[ ]` `INT-US-06-MIG` | US-6 | Remote Dashboard | `C-FLOW-02`, `E-UI-02` |
