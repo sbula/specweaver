@@ -1,7 +1,22 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for TopologyGraph — in-memory dependency graph from context.yaml."""
+"""Topology queries: forward dependencies, reverse impact, cycles, and termination.
+
+Proves: A-SENS-01 FR-3
+
+Cited from `INT-US-11-SF01-MIG`. FR-3 claims changes recursively invalidate **upward** consumers, and
+`impact_of` -> `traverse(module, forward=False)` is where that lives. Mutant-verified: flipping it to
+`forward=True` fails five tests here, including `TestQueryDelegation::test_queries_terminate`.
+
+**A first probe hit the wrong line.** Emptying `direct_consumers` in the prompt-context summary path
+survived the whole suite — it feeds relationship labels, not invalidation. A surviving mutant on the
+wrong line says nothing about the claim, so it was worth locating the right one rather than recording
+FR-3 as uncovered.
+
+Recorded while here: `consumers_of` (the one-hop reverse query) survives being emptied. It is not what
+FR-3 claims, so it is not this citation's business — but it is a real uncovered surface.
+"""
 
 from __future__ import annotations
 

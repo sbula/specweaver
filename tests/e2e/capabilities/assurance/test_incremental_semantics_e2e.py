@@ -2,12 +2,22 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E tests — Incremental validation via Deep Semantic Hashing (Feature 3.32 SF-4).
+"""The incremental-semantics journey: a pipeline run leaves a usable staleness cache.
+
+Proves: A-SENS-01 FR-2
+
+Cited from `INT-US-11-SF01-MIG`. Mutant-verified and precisely located: renaming the cache file
+(`topology.cache.json` -> `unused.json`) fails exactly one test in the repo,
+`test_e2e_topology_cache_generated_on_success` — here. Nothing at unit tier notices, because the cache
+is a journey-level artifact.
+
+That is the shape `ADR-004` clause 3 predicts: a path only an e2e can walk belongs to the story, not
+to a unit suite.
 
 Exercises:
-  1. sw run outputs .specweaver/topology.cache.json upon success.
-  2. sw run identically again exits instantly (bypass logic).
-  3. sw run failing validation does NOT output or update cache.
+  1. `sw run` writes `.specweaver/topology.cache.json` on success.
+  2. an identical `sw run` exits instantly on the bypass.
+  3. a failing validation neither writes nor updates the cache.
 """
 
 from __future__ import annotations

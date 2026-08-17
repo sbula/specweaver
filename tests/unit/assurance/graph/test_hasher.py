@@ -2,6 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Merkle-root hashing across a dependency boundary.
+
+Proves: A-SENS-01 FR-1
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-11-SF01-MIG`. `A-SENS-01` is `✅` with all three FRs
+planned and **none cited** — a capability that scores as perfect because there is nothing to be
+uncited.
+
+Mutant-verified: making `_hash_directory` return `{}` fails eight tests across this file and
+`test_hasher_integration.py`. FR-1's claim is a hash spanning the dependency tree, so a hasher that
+sees no directory contents must not pass.
+"""
+
 from pathlib import Path
 
 from specweaver.assurance.graph.hasher import _ensure_gitignore
