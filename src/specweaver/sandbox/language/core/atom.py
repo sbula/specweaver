@@ -64,8 +64,8 @@ class LanguageAtom(Atom):
             )
 
             converter = create_scenario_converter(self._cwd)
-            # INT-US-24 SF-03: the handler-known stem anchors the emitted
-            # target-loader — never the LLM-authored scenario_set.spec_path.
+            # The handler-known stem anchors the emitted target-loader — never the
+            # LLM-authored scenario_set.spec_path.
             content = converter.convert(scenario_set, stem=stem)
             output_path = converter.output_path(stem, self._cwd)
 

@@ -3,13 +3,10 @@
 
 """Reading lint findings out of a SARIF report.
 
-`TECH-032`. PMD (Java) and detekt (Kotlin) both emit SARIF, and both runners walked it with the
-same four-deep loop — `runs` → `results` → `locations` → `physicalLocation` — differing only in the
-substring used to skip complexity rules, which each runner reports through its own
-`run_complexity` instead.
-
-Extracted because adding a toolchain guard to each pushed both past the complexity ceiling: the
-walk was already at the limit, and the duplication meant paying for it twice.
+PMD (Java) and detekt (Kotlin) both emit SARIF, so both need the same four-deep walk — `runs` →
+`results` → `locations` → `physicalLocation` — differing only in the substring used to skip
+complexity rules, which each runner reports through its own `run_complexity` instead. One walk,
+because it sits at the complexity ceiling and a second copy means paying for it twice.
 
 Note the shadowing this removes. Both runners wrote `for result in run.get("results", [])` inside a
 method whose subprocess result was also called `result` — harmless as written, but the kind of

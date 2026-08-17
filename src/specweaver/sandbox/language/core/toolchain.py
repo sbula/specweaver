@@ -3,16 +3,14 @@
 
 """Telling "the tool reported nothing" apart from "the tool never ran".
 
-Extracted from the Python runner (``TECH-031``), then hoisted here (``TECH-032``) once the same
-hole was found in every other language runner. A toolchain that is not installed read as a *clean run*: ``python -m pytest``
-with no pytest leaves stdout empty and exits 1, which parses to ``passed=0 failed=0 errors=0`` —
-indistinguishable from a project with no tests, and from a caller's view, from success. Ruff's
-empty stdout parses identically to its own ``[]``, and an empty tach stdout reads as no
-violations.
+Shared by every language runner, because the hole is identical in all of them. Without this, a
+toolchain that is not installed reads as a *clean run*: ``python -m pytest`` with no pytest leaves
+stdout empty and exits 1, which parses to ``passed=0 failed=0 errors=0`` — indistinguishable from a
+project with no tests, and from a caller's view, from success. Ruff's empty stdout parses
+identically to its own ``[]``, and an empty tach stdout reads as no violations.
 
-**The QA gate could certify runs that never happened** — a vacuous proof inside the mechanism
-whose whole job is to prevent them, and why the container prepare-phase defects around it went
-unnoticed for so long.
+**The QA gate would certify runs that never happened** — a vacuous proof inside the mechanism whose
+whole job is to prevent them.
 """
 
 from __future__ import annotations
@@ -63,7 +61,7 @@ def did_not_run(result: SubprocessResult, tool: str) -> str | None:
 # The result each QA surface returns when its tool never ran
 # ---------------------------------------------------------------------------
 #
-# `TECH-032`. Five result shapes, one meaning: "this did not run, do not read the zeros as a
+# Five result shapes, one meaning: "this did not run, do not read the zeros as a
 # pass." Factories rather than an inline literal at each of a dozen call sites, so the reported
 # shape cannot drift between languages — which is how the Python runner ended up being the only
 # one that reported it at all.

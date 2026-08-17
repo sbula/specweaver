@@ -156,9 +156,8 @@ class ToolDispatcher:
     def _compute_role_grants(cls, role: str, boundary: Any) -> list[Any]:
         """The filesystem grants one agent role gets over a workspace boundary.
 
-        `TECH-023`: three roles, each spelled out as its own `append` sequence over the same two
-        collections. Each role is now a rule — which roots, at what access, and whether the API
-        paths come with them — so a fourth role is a table entry rather than a fourth branch.
+        Each role is a rule — which roots, at what access, and whether the API paths come with
+        them — so a fourth role is a table entry rather than a fourth branch.
         """
         from specweaver.sandbox.security import AccessMode, ReadOnlyWorkspaceBoundary
 

@@ -61,7 +61,7 @@ class SubprocessResult:
 
 @dataclass(frozen=True)
 class ContainerMounts:
-    """Host paths mounted into an ephemeral QA-runner container (B-EXEC-01).
+    """Host paths mounted into an ephemeral QA-runner container.
 
     ``source_root`` is mounted read-only; ``scratch_root``/``cache_root`` are
     mounted read-write and isolated from the source mount.

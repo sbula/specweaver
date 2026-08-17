@@ -14,10 +14,9 @@ from typing import Any
 
 # `AccessMode`, `FolderGrant` and the `MODE_ALLOWS_*` sets are re-exported, NOT redefined.
 #
-# `TECH-037`: they used to be declared here as well, which made them two distinct classes --
-# `isinstance` across them was False, and `AccessMode.READ == AccessMode.READ` held only because
-# `StrEnum` compares by value. Production imported the `sandbox.security` copy while several tests
-# built grants from this one and handed them over, which worked by duck typing alone.
+# Declaring them here as well would make them two distinct classes -- `isinstance` across them
+# false, and `AccessMode.READ == AccessMode.READ` true only because `StrEnum` compares by value.
+# Code holding one copy and code holding the other would interoperate by duck typing alone.
 #
 # The security consequence is recorded on `FolderGrant.__post_init__`: a guard added to one copy
 # leaves the hole open through the other. One definition, one guard.

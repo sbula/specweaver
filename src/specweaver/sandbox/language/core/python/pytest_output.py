@@ -3,12 +3,10 @@
 
 """Pytest output parsing for the Python QA runner.
 
-Extracted from ``runner.py`` (INT-US-24 SF-03) alongside the inherited
-defect #7 fix: pytest orders mixed summaries failed-FIRST
-("2 failed, 1 passed in 0.03s"); the old passed-first regex silently parsed
-that as passed=1/failed=0 — failing runs reported SUCCESS. Parsing is now
-order-independent: find the summary line via its duration token, then extract
-every "<count> <bucket>" pair on it.
+Parsing is order-independent, and must stay that way: pytest orders mixed summaries failed-FIRST
+("2 failed, 1 passed in 0.03s"), so a passed-first regex reads that as passed=1/failed=0 and a
+failing run reports SUCCESS. Find the summary line via its duration token, then extract every
+"<count> <bucket>" pair on it.
 """
 
 from __future__ import annotations

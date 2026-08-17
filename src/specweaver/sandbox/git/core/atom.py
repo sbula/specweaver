@@ -57,7 +57,7 @@ class GitAtom(Atom):
             "tag",  # tag
             "worktree",
             "ls-files",  # is_tracked
-            "branch",  # C-EXEC-06: delete the session branch at teardown
+            "branch",  # delete the session branch at teardown
         }
     )
 
@@ -492,7 +492,7 @@ class GitAtom(Atom):
         return handle_strip_merge(self._executor, self._cwd, context)
 
     def _intent_worktree_commit(self, context: dict[str, Any]) -> AtomResult:
-        """C-EXEC-06: commit the session worktree's changes onto its branch (before reconcile).
+        """Commit the session worktree's changes onto its branch (before reconcile).
 
         Context keys:
             path: str - relative path of the session worktree.

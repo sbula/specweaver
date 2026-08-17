@@ -167,9 +167,9 @@ class UnixLimiter(PlatformLimiter):
         # is sound, and walking /proc there is neither safe nor cheap.
         #
         # This is a best-effort backstop, not a real bound — the limit still applies to the whole
-        # UID, and the baseline can drift between measurement and exec. `B-EXEC-04` replaces it with
-        # a kernel-enforced per-subtree bound via cgroups v2 `pids.max`, and should REMOVE this
-        # rather than layer on top.
+        # UID, and the baseline can drift between measurement and exec. A kernel-enforced
+        # per-subtree bound via cgroups v2 `pids.max` should REPLACE this rather than layer on
+        # top of it.
         nproc: int | None = None
         if limits.max_processes is not None:
             baseline = current_task_count()

@@ -67,10 +67,10 @@ def handle_worktree_teardown(
 
 
 def _delete_branch_if_present(executor: "EngineGitExecutor", context: dict[str, Any]) -> None:
-    """C-EXEC-06: delete the session branch after its worktree is removed.
+    """Delete the session branch after its worktree is removed.
 
-    Best-effort — the per-run session owns a unique branch and must not leak it (fixing the
-    INT-US-09 orphan-branch defect). No ``branch`` key → no-op (per-step teardown unchanged).
+    Best-effort — the per-run session owns a unique branch and must not leak it. No ``branch``
+    key → no-op, which is what per-step teardown relies on.
     """
     branch = context.get("branch")
     if not branch:
@@ -86,11 +86,11 @@ def _delete_branch_if_present(executor: "EngineGitExecutor", context: dict[str, 
 
 
 def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
-    """C-EXEC-06: commit the session worktree's accumulated changes onto its branch.
+    """Commit the session worktree's accumulated changes onto its branch.
 
     Runs INSIDE the worktree (``executor`` bound to the worktree path). Stages everything and
-    commits so the reconcile (``strip_merge``) has committed changes to merge back (fixes the
-    ``TECH-012`` Gap 1 where nothing was ever committed). A clean worktree is a no-op — no empty
+    commits so the reconcile (``strip_merge``) has committed changes to merge back — without this
+    there is nothing to merge. A clean worktree is a no-op — no empty
     commit — after which ``strip_merge`` finds an empty diff and cleanly no-ops.
     """
     executor.run("add", "-A")
@@ -118,7 +118,7 @@ def _strip_forbidden_files(
     """Strip files not in ``allowed_paths`` (+ README/docs hard-block) from the staged merge.
 
     For an existing file, restore its HEAD version; for a newly-added file (no HEAD version),
-    delete it from the working tree so a stripped file never reaches the real repo (C-EXEC-06).
+    delete it from the working tree so a stripped file never reaches the real repo.
     ``doc_updates.md`` is always allowed to survive.
     """
     stripped: list[str] = []

@@ -47,8 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Parsing helpers — extracted to pytest_output.py (INT-US-24 SF-03, with the
-# inherited defect #7 order-independence fix). Re-exported for existing pins.
+# Parsing helpers live in pytest_output.py. Re-exported here for existing importers.
 # ---------------------------------------------------------------------------
 
 from specweaver.sandbox.language.core.python.pytest_output import (  # noqa: E402
@@ -393,7 +392,7 @@ class PythonQARunner(QARunnerInterface):
         entrypoint: str,
     ) -> DebugRunResult:
         """Execute a process and stream runtime outputs using DAP OutputEvents."""
-        # B-EXEC-01 Red/Blue fix: sys.executable is the HOST interpreter path
+        # sys.executable is the HOST interpreter path
         # (e.g. a Windows .exe path), meaningless inside a Linux container — use the
         # bare "python" name there instead, resolved fresh inside whatever env runs it
         # (matches run_tests/run_linter/run_complexity, which already use "python").
@@ -469,7 +468,7 @@ class PythonQARunner(QARunnerInterface):
     def _run_tach_check(self) -> ArchitectureRunResult:
         """Run global tach boundary check (extracted from original method)."""
         # H-1 / RED-1.2: Pre-check tool existence before calling executor.
-        # B-EXEC-01 Finding #1: skipped in container mode — this checks HOST
+        # Skipped in container mode — this checks HOST
         # tooling presence, which is irrelevant when tach runs inside the sandbox image.
         is_container = isinstance(self._executor, ContainerSubprocessExecutor)
         if not is_container and not shutil.which("tach"):
