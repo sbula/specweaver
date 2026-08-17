@@ -7,6 +7,14 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf03_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-4, FR-5, FR-6.** Tracing a file's history, failing CI on untracked source, and
+adopting a manual edit. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-15-SF01-MIG`.
+
+FR-4's declared invocation is `sw lineage <file>`; the shipped command is `sw lineage tree
+<file>`. Same mechanism, same output, same data source — wording drift, not a descope.
+
+
 This plan completes the "Spec-to-Code Traceability" feature by adding CLI commands to verify and build lineage trees, and establishing DB schemas for tracking manual interventions (`model_id`).
 
 ## Proposed Changes

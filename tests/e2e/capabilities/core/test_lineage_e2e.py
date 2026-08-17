@@ -2,11 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E tests — Artifact Lineage Edge Cases and Tag Survivability.
+"""`sw check --lineage`: untracked source is a CI failure, not a warning.
 
-Ensures that the pipeline CLI invocations correctly interact with physical
-files to mint, propagate, and preserve `# sw-artifact` tags across executions,
-even when traversing intense LLM reflection loops or fallback pipelines.
+Proves: B-SENS-01 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Mutant: the scanner's tag test forced
+false, so no file is ever an orphan and the gate passes a tree in which nothing is tracked — 4 fail.
+
+The FR's actor is CI, and that is what the mutant attacks: the scan still runs, still walks every
+file, still reports. It simply never finds anything, which is indistinguishable from success to
+anyone reading the exit code.
 """
 
 from __future__ import annotations

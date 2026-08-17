@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for the SpecWeaver lineage CLI scanner."""
+"""`sw lineage tag`: adopting an untagged file, and recording who wrote it.
+
+Proves: B-SENS-01 FR-6
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Mutant: `model_id=author` replaced by a
+constant, so a human edit is logged under the wrong provenance — 6 fail.
+
+FR-6 exists so that manual code is not a hole in the lineage graph: the tag is injected and the event
+records `model_id=human`. Provenance that always says the same thing carries no information, which is
+what the mutant demonstrates — the row is still written, still complete, and no longer true.
+"""
 
 from __future__ import annotations
 

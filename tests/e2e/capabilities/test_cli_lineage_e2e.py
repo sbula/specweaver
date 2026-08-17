@@ -2,6 +2,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The lineage journey through the CLI: tag a file, then trace it back out of the database.
+
+Proves: B-SENS-01 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Mutant: the `tree` sub-command renamed,
+so the documented invocation no longer resolves — 13 fail.
+
+**The FR names `sw lineage <file>`; what shipped is `sw lineage tree <file>`.** The mechanism, its
+outcome and its data source are exactly as declared — a tree rendered from the DB, accepting either a
+uuid or a path — so this is invocation drift in the design's wording, not an absent capability. Recorded
+rather than silently reconciled, because a reader checking the FR against the CLI would otherwise find
+the command missing and conclude the wrong thing.
+"""
+
 from unittest.mock import patch
 
 import pytest

@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf02_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-2.** Tag injection into every generated artifact. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Its mutant fails 15 files across three
+tiers — the widest in the migration, which is what "every generated file" ought to look like.
+
+
 ## Goal Description
 Implement SF-02 to orchestrate the injection of `# sw-artifact: <uuid>` lineage trackers into any
 artifact generated or reviewed by the system. This allows the CLI to track origin (Spec -> Plan ->

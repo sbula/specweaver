@@ -1,6 +1,24 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The lineage event store: what a row must contain, and which parent it points at.
+
+Proves: B-SENS-01 FR-1, B-SENS-01 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`.
+
+The two FRs are separable and each has its own mutant, which is why they are cited together here
+rather than treated as one claim:
+
+- **FR-1 is the edge.** Mutant: `parent_id` written as `None` regardless of what the caller passed,
+  so every artifact becomes a root and the graph flattens to a set — 6 fail.
+- **FR-3 is the payload.** Mutant: `run_id` and `model_id` swapped in the INSERT tuple. Both columns
+  stay populated and every row still validates; only their *meaning* is exchanged — 6 fail.
+
+The second is the sharper of the two. A test counting rows, or asserting the insert did not raise,
+would pass a database in which every event attributes the wrong model to the wrong run.
+"""
+
 from pathlib import Path
 
 import pytest

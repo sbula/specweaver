@@ -1,5 +1,10 @@
 # Implementation Plan: Spec-to-Code Traceability (Artifact Lineage Graph) [SF-01: Lineage Database & Flow Integration]
 
+**FRs owned: FR-1, FR-3.** The lineage event store and the parent edge, plus the five fields
+every row carries. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`.
+Proof and mutants: `tests/unit/graph/lineage/store/test_lineage_repository.py`.
+
+
 - **Feature ID**: 3.14
 - **Sub-Feature**: SF-01 — Lineage Database & Flow Integration
 - **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_design.md

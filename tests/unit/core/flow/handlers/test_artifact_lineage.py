@@ -1,15 +1,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""An artifact's lineage: its identity on disk, and its events in the telemetry DB.
+"""Artifact identity on disk: minting a uuid, reading one back, and putting the tag at the top.
 
-`TECH-016` §2. Seven handler sites hand-rolled the event tail and four hand-rolled the identity
-half; both are unified here.
+Proves: B-SENS-01 FR-2
 
-The never-raises contract is the load-bearing part and had **no test at all** before this file —
-`log_decomposition_lineage` carried it in a docstring, written after a real CB-1 failure
-(2026-07-26), and nothing proved it. `lint_fix.py` did not even carry the `None` guard, which is
-`TECH-036`.
+Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Mutant: `wrap_artifact_tag` returning
+`None` for Python, so nothing is ever injected — 15 fail across three tiers, the widest blast radius
+in this migration.
+
+That breadth is the honest measure of FR-2's "every generated file": the tag is applied at four write
+sites (drafting, generation, decomposition artifacts, lint-fix) and read back at more, so removing it
+is visible almost everywhere. A capability whose mutant kills one test is narrow; this one is load-
+bearing.
 """
 
 from __future__ import annotations
