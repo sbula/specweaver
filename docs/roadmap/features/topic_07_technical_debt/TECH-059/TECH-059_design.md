@@ -68,13 +68,25 @@ its content is history. Scope is **`src/` only**, all three ID families, in one 
 
 ## Guardrail
 
-The rule regrows without one. `check_conventions.py` gains a `src/`-scoped check: a registry ID in a
-comment or docstring under `src/` is a violation, ratcheted at 0 once the sweep lands so it can never
-rise. Without it the next commit that cites a ticket in a comment reintroduces the debt silently,
-which is the failure mode of every discipline-only clause in this repo.
+The rule regrows without one, which is the failure mode of every discipline-only clause in this repo.
+`scripts/check_comment_provenance.py` is zero-tolerance over `src/` and runs at `quick` (diff-scoped)
+and `cb`/`sf`/`feature` (repo-wide).
+
+**Not a rule inside `check_conventions.py`, as first planned.** That file sits at exactly 600 lines —
+its RED ceiling — so a ninth rule cannot be added without shaving the prose that explains the other
+eight, and `TECH-020` records buying headroom by condensing comments as the pattern to stop
+repeating. R6, R7 and R8 were each moved to a sibling for the same reason; this rule gets its own
+gate instead.
+
+Zero-tolerance rather than ratcheted: the sweep reached zero, so there is no legacy set to carry, and
+a ratchet at zero is a slower way of saying the same thing.
 
 ## Verifiable Proof
 
-`tests/unit/scripts/test_check_conventions.py` — the new rule fires on a planted registry ID in a
-`src/` comment, passes on the same ID inside a `tests/` `Proves:` tag, and the live `src/` tree scores
-zero.
+`tests/unit/scripts/test_check_comment_provenance.py` — 17 tests. Every ID family is caught in a
+comment and in a docstring; an ID in a **string literal** is not, because that is behaviour;
+validation rule IDs (`C09`, `S07`) are not, because they are domain vocabulary; an unparseable file
+exits non-zero rather than passing silently; and the live `src/` tree scores zero.
+
+Probed rather than assumed: a planted `# TECH-999` comment in `commons/timestamps.py` turns the `cb`
+gate red, and removing it turns it green again.

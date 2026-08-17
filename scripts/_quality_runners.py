@@ -71,6 +71,15 @@ def _duplication(_paths: list[Path]) -> list[str]:
     return _script("check_duplication.py")
 
 
+def _comment_provenance(paths: list[Path]) -> list[str]:
+    """No registry ID in a `src/` comment or docstring — code documents the present.
+
+    Diff-scopable, unlike the duplication ratchet: a provenance comment is local to the line it
+    sits on, so judging only the files a commit touched cannot miss one.
+    """
+    return [*_script("check_comment_provenance.py"), *(str(p) for p in paths)]
+
+
 def _file_sizes(paths: list[Path]) -> list[str]:
     return [*_script("check_file_sizes.py"), *(str(p) for p in paths)]
 

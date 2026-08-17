@@ -116,6 +116,9 @@ MATRIX: dict[str, dict[str, str]] = {
     "complexipy": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},
     "useless_asserts": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},
     "conventions": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},
+    # Provenance is local to the line it sits on, so a diff-scoped run cannot miss one — unlike the
+    # duplication ratchet, whose clone twin may live in a file the commit never touched.
+    "comment_provenance": {"quick": "changed", "cb": "all", "sf": "all", "feature": "all"},
     # -- commit-point checks, never scoped --------------------------------
     "mypy": {"cb": "all", "sf": "all", "feature": "all"},
     "tach": {"cb": "all", "sf": "all", "feature": "all"},

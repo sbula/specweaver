@@ -634,4 +634,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-056:** [The Morning Gate Marks Its Own Homework](features/topic_07_technical_debt/TECH-056/TECH-056_design.md)
     *   `[ ]` **TECH-057:** [The Nightly Runs Its Mutants One at a Time](features/topic_07_technical_debt/TECH-057/TECH-057_design.md)
     *   `✅` **TECH-058:** [The Nightly's Baseline Forgot Its Own `-n auto`](features/topic_07_technical_debt/TECH-058/TECH-058_design.md)
-    *   `[ ]` **TECH-059:** [Registry IDs and History in Production Comments](features/topic_07_technical_debt/TECH-059/TECH-059_design.md)
+    *   `✅` **TECH-059:** [Registry IDs and History in Production Comments](features/topic_07_technical_debt/TECH-059/TECH-059_design.md)

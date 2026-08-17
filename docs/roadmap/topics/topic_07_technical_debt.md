@@ -213,10 +213,11 @@ critical for long-term project viability.
   > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
 
 ## Documentation & Knowledge Architecture
-* **`TECH-059` 🔴: Registry IDs and History in Production Comments**
+* **`TECH-059` 🟢: Registry IDs and History in Production Comments**
   > [Description](../features/topic_07_technical_debt/TECH-059/TECH-059_design.md) | _(2026-08-17 — raised by the user while agreeing `ADR-004`: code is a document of the present, no history.)_ |
   > **256 registry-ID references across ~130 files of `src/`** (`INT-US` 104, `TECH` 109, capability 44) plus ~41 wholly retrospective comments. Nothing reads them, so nothing catches their drift —
-  > `ADR-004` has just changed what every `INT-US` entry means. Strip the ID where a present-tense statement survives, delete the comment where none does; guardrail ratchets the count at 0.
+  > `ADR-004` had just changed what every `INT-US` entry means. **DELIVERED 2026-08-17:** 256 ids and 4 retrospective comments gone across 5 batches, every diff asserted comment-only;
+  > `check_comment_provenance.py` holds `src/` at zero. The sweep was editorial, not mechanical — only 44 of 104 comments were structural prefixes.
 
 * **`TECH-053` 🟢: A `✅` Nothing Can Verify**
   > [Description](../features/topic_07_technical_debt/TECH-053/TECH-053_design.md) | _(2026-08-16 — an agent flipped two roadmap groups to `🟢` from checkbox arithmetic and was asked for evidence.)_ |
