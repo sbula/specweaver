@@ -126,16 +126,15 @@ usage_app = typer.Typer(
 
 
 def _parse_since(since: str | None) -> datetime | None:
-    """Validate `--since` here, where the user can be told what went wrong. `TECH-052`.
+    """Validate `--since` here, where the user can be told what went wrong.
 
-    Two failures used to reach the user raw, and both read as *"telemetry is broken"* rather than
-    *"the date was wrong"* — on the one command whose whole job is answering what a run cost:
+    Two failures would otherwise reach the user raw, both reading as *"telemetry is broken"* rather
+    than *"the date was wrong"* — on the one command whose whole job is answering what a run cost:
 
-    * an unparseable value raised `ValueError` from `fromisoformat` with no guard at all;
-    * a **naive** value parsed fine and then died deeper down as
-      `StatementError: StrictISODateTime must be timezone-aware`, a SQLAlchemy type error. That
-      second one was found while writing the boundary case for the first, and guarding only the
-      parse would have left the ticket half-fixed.
+    * an unparseable value raises `ValueError` from `fromisoformat`;
+    * a **naive** value parses fine and dies deeper down as
+      `StatementError: StrictISODateTime must be timezone-aware`, a SQLAlchemy type error. Guarding
+      only the parse leaves the second one live.
 
     A naive value is refused rather than assumed UTC: silently choosing a timezone mis-filters by
     up to a day at the boundary, and the user cannot see that it happened.

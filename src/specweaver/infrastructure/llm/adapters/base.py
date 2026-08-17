@@ -89,9 +89,9 @@ class LLMAdapter(ABC):
     def available(self) -> bool:
         """Whether this adapter is configured and ready to use.
 
-        `TECH-037`: this was abstract, and all four concrete adapters answered it identically with
-        `bool(self._api_key)` — obliging each to restate a rule none of them varied. It is now the
-        default; an adapter whose readiness is not just "a key is set" still overrides it.
+        A default rather than an abstract method: every adapter's answer is `bool(self._api_key)`,
+        so requiring each to restate it buys nothing. An adapter whose readiness is not just "a key
+        is set" still overrides it.
         """
         return bool(getattr(self, "_api_key", None))
 

@@ -13,7 +13,7 @@ Hierarchy:
 
 `LLMAdapterError` stands outside that hierarchy deliberately: the others are provider failures
 during a call, this one is a failure to *build* an adapter at all. It lives here rather than in
-`factory` because `_rate_limit` raises it and `factory` imports `_rate_limit` — see `TECH-024`.
+`factory` because `_rate_limit` raises it and `factory` imports `_rate_limit`.
 """
 
 from __future__ import annotations
@@ -56,11 +56,11 @@ class ContentFilterError(LLMError):
 class LLMAdapterError(Exception):
     """Raised when an LLM adapter cannot be created or validated.
 
-    `TECH-024` cycle 3 moved this down out of `factory`. `factory` needs `_rate_limit`'s adapter
-    and `_rate_limit` needs this exception, so each had deferred its import inside a function —
-    exactly the workaround `check_coupling` names when it says *"break it by moving the shared
-    contract down, not by deferring an import inside a function"*. Deferring hides a cycle from the
-    interpreter without removing it; the modules still could not be understood or extracted apart.
+    Defined here, below `factory`, and not in it. `factory` needs `_rate_limit`'s adapter and
+    `_rate_limit` needs this exception, so holding it in `factory` forces each to defer its import
+    inside a function — the workaround `check_coupling` names when it says *"break it by moving the
+    shared contract down, not by deferring an import inside a function"*. Deferring hides a cycle
+    from the interpreter without removing it, leaving the modules inextricable.
 
     Not a subclass of `LLMError`: eleven files catch these separately and widening the hierarchy
     would silently change what their `except LLMError` blocks catch.

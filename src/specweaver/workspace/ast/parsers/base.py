@@ -28,8 +28,8 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     def grammar() -> object:
         """The tree-sitter language pointer for this parser.
 
-        Every parser had the identical five lines of `__init__` plus two pass-through properties to
-        hold this one value (`TECH-034`). Declared as a static method rather than a class attribute
+        Holding this one value would otherwise cost every parser the identical five lines of
+        `__init__` plus two pass-through properties. Declared as a static method rather than a class attribute
         because a bare callable in a class body is a method to the type checker, and would be
         handed `self`; subclasses assign `grammar = staticmethod(tree_sitter_x.language)`.
 
@@ -83,10 +83,10 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     # Tree-walking helpers shared by every language parser
     # -----------------------------------------------------------------------
     #
-    # `TECH-023`. Nine parsers each hand-rolled the same nested walk — query the tree, decode a
-    # captured name, compare it, then descend through two or three levels of `if child.type == ...`
-    # — and every one of them was over the complexity ceiling for it. The nesting *was* the
-    # complexity; the per-language part is only which node types matter, which stays in the
+    # Nine parsers need the same nested walk — query the tree, decode a captured name, compare it,
+    # then descend through two or three levels of `if child.type == ...`. Hand-rolled, each one is
+    # over the complexity ceiling, because the nesting *is* the complexity; the per-language part is
+    # only which node types matter, which stays in the
     # subclass where it belongs.
 
     @staticmethod

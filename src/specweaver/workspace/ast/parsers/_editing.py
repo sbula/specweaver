@@ -3,9 +3,8 @@
 
 """Editing a parsed file: replacing, injecting and deleting symbols.
 
-`TECH-035`, split from `BaseTreeSitterParser` alongside `_reading.py`. The two share nothing —
-zero cross-references, each depending only on the per-language contract — so this is a move, not a
-rewrite.
+Separate from `_reading.py` because the two share nothing: zero cross-references, each depending
+only on the per-language contract.
 
 A mixin rather than a collaborator, so no parser's public API changes.
 """
@@ -47,8 +46,8 @@ class SymbolEditingMixin:
     ) -> bytes:
         """Insert `new_code` inside a brace-delimited block, indented one level in.
 
-        `TECH-037`: byte-for-byte identical in `java`, `kotlin`, `rust` and `typescript`. The `+1`
-        and `-1` step over the block's own braces, so this is the **brace-block** form; a language
+        Shared by `java`, `kotlin`, `rust` and `typescript`. The `+1` and `-1` step over the
+        block's own braces, so this is the **brace-block** form; a language
         whose block is not brace-delimited overrides it — `python` splices the whole suite, `go`,
         `c` and `cpp` hunt for the brace children, `sql` and `markdown` have no executable body at
         all. A default, never a prohibition.
@@ -69,10 +68,9 @@ class SymbolEditingMixin:
     def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
         """Replace the node's byte span with `new_code`.
 
-        `TECH-037`: written out ten times — six character-for-character identical, `sql` the same
-        logic with two lines reordered, and three differing only in :meth:`_replacement_bytes`.
-        A **default, not a prohibition** (`TECH-034`'s tier rule): a language whose splice is
-        genuinely different still overrides this outright.
+        Shared by every language whose splice is a byte-span replacement, the per-language part
+        being :meth:`_replacement_bytes`. A **default, not a prohibition**: a language whose splice
+        is genuinely different still overrides this outright.
         """
         start_byte = typing.cast("int", node.start_byte)
         end_byte = typing.cast("int", node.end_byte)

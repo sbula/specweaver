@@ -6,10 +6,9 @@
 Pure-logic transformer. No LLM involvement (NFR-2).
 Produces executable pytest files with # @trace(FR-X) tags for C09 compatibility.
 
-INT-US-24 SF-03 (inherited defect #6): the emitted tests are REAL — they load
-the target module through a file-anchored importlib loader, call the function
-under test with the scenario inputs, and assert the expected output. Stub
-bodies (``...``) shipped originally and made every scenario run vacuously
+The emitted tests are REAL — they load the target module through a file-anchored importlib loader,
+call the function under test with the scenario inputs, and assert the expected output. Stub
+bodies (``...``) would make every scenario run vacuously
 green. Every interpolated name/value goes through ``repr()`` or an identifier
 check: LLM-authored content can never inject statements into the emitted file.
 """

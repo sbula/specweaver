@@ -3,8 +3,8 @@
 
 """Rendering discovered standards as the markdown a constitution embeds.
 
-Split out of `_helpers.py` by `TECH-015`. Presentation, not discovery: these build table rows and
-sections, and know nothing about how the standards were found.
+Presentation, not discovery: these build table rows and sections, and know nothing about how the
+standards were found.
 """
 
 from __future__ import annotations

@@ -3,9 +3,8 @@
 
 """Reading structure out of a parsed file.
 
-`TECH-035`. `BaseTreeSitterParser` was one class doing four jobs, at `LCOM4=8` — the most
-incohesive class in the repo after `TECH-034` deliberately concentrated the parsers' shared
-mechanics into it.
+Reading is separate from editing because `BaseTreeSitterParser` holding both is one class doing
+four jobs.
 
 Reading and editing turned out to share **nothing**: measured, they have zero cross-references and
 each depends only on the per-language contract the base declares. That is what made splitting them
@@ -106,12 +105,10 @@ class SymbolReadingMixin:
     ) -> bool:
         """Filter a symbol by the requested visibility and decorator.
 
-        `TECH-035`: this was written out four times — Java, Rust and TypeScript byte-identical,
-        Kotlin differing by one token — and `check_class_health` named the split independently, as
-        the pair `{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` forming its own
-        component in all four classes.
+        Shared by Java, Kotlin, Rust and TypeScript, which differ by at most one token; the pair
+        `{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` is its own cohesive component.
 
-        A **default, not a prohibition** (`TECH-034`'s tier rule): a language whose filtering is
+        A **default, not a prohibition**: a language whose filtering is
         genuinely different still overrides this outright, as C, C++, Go, Python and the
         declarative tier all do.
         """
@@ -131,8 +128,8 @@ class SymbolReadingMixin:
         return True
 
     #: The tree-sitter query naming this language's class and function declarations, captured as
-    #: `@name` plus `@cls`/`@fn`. Data, because it is the ONLY thing four parsers varied by
-    #: (`TECH-037`); the walk below had been written out four times. Empty means "report nothing",
+    #: `@name` plus `@cls`/`@fn`. Data, because it is the ONLY thing the four framework-aware
+    #: parsers vary by; the walk below is shared. Empty means "report nothing",
     #: so a language that never sets it is not obliged to.
     SCM_FRAMEWORK_QUERY: str = ""
 

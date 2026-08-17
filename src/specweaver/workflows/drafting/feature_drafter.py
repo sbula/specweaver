@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 #: The feature sections have the same shape as any other; kept as a name so existing
-#: imports of `FeatureSectionDef` keep resolving (`TECH-037`).
+#: imports of `FeatureSectionDef` keep resolving.
 FeatureSectionDef = SectionDef
 
 

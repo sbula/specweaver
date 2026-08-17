@@ -237,10 +237,9 @@ class CppCodeStructure(ClassBasedParser):
     def _extract_bases(self, target_node: typing.Any) -> list[str]:
         """The types this class or struct derives from, in declaration order.
 
-        `TECH-034` — C++ reported **no** inheritance at all before this: `extract_framework_markers`
-        returned `{}` unconditionally and `_extract_bases` did not exist, while every other
-        class-based parser implemented both. `struct` is included because in C++ it is a class with
-        different default access, and inherits identically.
+        `struct` is included because in C++ it is a class with different default access, and
+        inherits identically. Both this and `extract_framework_markers` are required of every
+        class-based parser, so neither may be stubbed out here.
         """
         bases: list[str] = []
         for clause in self._children_of_type(target_node, "base_class_clause"):

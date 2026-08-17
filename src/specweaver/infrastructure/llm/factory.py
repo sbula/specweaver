@@ -12,9 +12,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-# Re-exported, not defined: `TECH-024` moved it to `errors.py`, a leaf, so `_rate_limit` can raise
-# it without importing `factory` back. Eleven files import it from here, so the name keeps
-# resolving — new code should import from `errors`.
+# Re-exported, not defined: it lives in `errors.py`, a leaf, so `_rate_limit` can raise it without
+# importing `factory` back. Eleven files import it from here, so the name keeps resolving — new
+# code should import from `errors`.
 from specweaver.infrastructure.llm.errors import LLMAdapterError as LLMAdapterError
 
 if TYPE_CHECKING:
@@ -39,11 +39,9 @@ def _get_adapter_class(provider: str) -> Any:
 def build_adapter_for_project(db: Any, settings: Any, project: str) -> tuple[Any, Any]:
     """A telemetry-attributed adapter for `project`, priced from the user's own rates.
 
-    `INT-US-16` CB-2. These three lines stood in `sw implement` and twice in `sw review`, and
-    because they were copies rather than a call, **the same defect was in all three**: none passed
-    `cost_overrides`, so a rate set with `sw costs set` was echoed back by `sw costs` and then
-    ignored by every run — priced from the built-in table instead, or `0.0` for a model absent
-    from it.
+    One call site for `sw implement` and both `sw review` paths. As copies they each have to
+    remember `cost_overrides`, and a copy that forgets prices the run from the built-in table — or
+    at `0.0` for a model absent from it — while `sw costs` still echoes back the rate the user set.
 
     Deliberately narrow. Two things that looked shareable are not, and `tach` said so rather than
     a reviewer: loading settings would drag `core.config.bootstrap` into `llm`, and turning
@@ -60,10 +58,9 @@ def build_adapter_for_project(db: Any, settings: Any, project: str) -> tuple[Any
 def load_cost_overrides(db: Any) -> dict[str, tuple[float, float]]:
     """User-configured model rates from `llm_cost_overrides`, or `{}` if unreadable.
 
-    INT-US-16 FR-4. `create_llm_adapter` has always accepted `cost_overrides` and, until this was
-    written, **no command supplied it** — so a rate set with `sw costs set` was echoed back by
-    `sw costs` and then ignored by every run, which priced from the built-in table instead, or at
-    `0.0` for a model absent from it.
+    `create_llm_adapter` accepts `cost_overrides`, and this is what supplies it. Without it a rate
+    set with `sw costs set` is echoed back by `sw costs` and then ignored by every run, which prices
+    from the built-in table instead, or at `0.0` for a model absent from it.
 
     Never raises: a pricing table that fails to load must not stop a run, for the same reason
     `TelemetryCollector.flush` swallows its own failures. Telemetry observes the work; it is never

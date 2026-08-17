@@ -32,9 +32,10 @@ review_cli = typer.Typer(no_args_is_help=True)
 
 
 def _build_draft_pipeline(name: str) -> PipelineDefinition:
-    """INT-US-02 SF-01 (FR-1/FR-2/FR-3): draft -> validate -> review in ONE pipeline —
-    no manual handoff. Review rejection loops back into a REAL re-draft (AD-6a
-    feedback-aware handler), bounded at max_retries=2."""
+    """Draft -> validate -> review in ONE pipeline, with no manual handoff.
+
+    Review rejection loops back into a REAL re-draft through the feedback-aware handler, bounded at
+    max_retries=2."""
     from specweaver.core.flow.engine.models import (
         GateCondition,
         GateDefinition,
@@ -85,8 +86,8 @@ def _build_draft_pipeline(name: str) -> PipelineDefinition:
 
 
 def _report_draft_chain(run_state: Any, spec_path: Path) -> None:
-    """INT-US-02 SF-01 (FR-6): inline outcome report — the whole chain's result from one
-    command; the old "run 'sw check' manually" handoff is gone by design."""
+    """Inline outcome report — the whole chain's result from one command, with no follow-up
+    `sw check` handoff."""
     from specweaver.core.flow.engine.state import StepStatus
 
     records = {r.step_name: r for r in (run_state.step_records or [])}
@@ -192,8 +193,8 @@ def draft(
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
 
     db = _core.get_db()
-    # INT-US-16 FR-2/FR-4, extended here from `sw implement`: this command had the same two
-    # defects — an unhelpful refusal, and a configured price that never reached the run.
+    # Same two hazards as `sw implement`: a refusal that names a database lookup instead of the
+    # missing project, and a configured price that never reaches the run.
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project, llm_role="draft")
@@ -295,8 +296,8 @@ def review(
     )
 
     db = _core.get_db()
-    # INT-US-16 FR-2/FR-4, extended here from `sw implement`: this command had the same two
-    # defects — an unhelpful refusal, and a configured price that never reached the run.
+    # Same two hazards as `sw implement`: a refusal that names a database lookup instead of the
+    # missing project, and a configured price that never reaches the run.
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project)

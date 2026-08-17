@@ -3,10 +3,9 @@
 
 """Reading complexity violations out of a SARIF report.
 
-`TECH-023`. PMD (Java), Clippy (Rust) and detekt (Kotlin) all emit SARIF, and all three parsers
-were **byte-identical apart from two values**: which rule ids count as complexity rules, and the
-hint appended to the hard-fail message. Each was independently over the complexity ceiling for the
-same nested walk.
+PMD (Java), Clippy (Rust) and detekt (Kotlin) all emit SARIF, and differ in exactly two values:
+which rule ids count as complexity rules, and the hint appended to the hard-fail message. One
+nested walk, because it sits at the complexity ceiling on its own.
 
 The hard failure is deliberate and preserved exactly. A complexity result whose SARIF properties
 carry no complexity *number* means the tool's property mapping has drifted — reporting zero

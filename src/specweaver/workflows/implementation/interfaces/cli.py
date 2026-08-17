@@ -31,7 +31,7 @@ implement_cli = typer.Typer(no_args_is_help=True)
 
 
 def _build_implement_pipeline(stem: str) -> PipelineDefinition:
-    """Build the autonomous ``implement_spec`` pipeline (INT-US-03 SF-01).
+    """Build the autonomous ``implement_spec`` pipeline.
 
     Generate code + tests, then run the tests and validate the code in one loop.
     The QA steps target this run's freshly generated files (``tests/test_<stem>.py``,
@@ -65,7 +65,7 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
                 action=StepAction.GENERATE,
                 target=StepTarget.TESTS,
             ),
-            # INT-US-03 SF-02: auto-fix lint BEFORE running tests, so run_tests and
+            # Auto-fix lint BEFORE running tests, so run_tests and
             # validate_code exercise the lint-fixed code. Report-only (CONTINUE):
             # remaining lint errors after reflections never abort the run.
             PipelineStep(
@@ -100,7 +100,7 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
 
 
 def _report_implementation(run_state: object) -> None:
-    """Print per-step results of the implement loop (INT-US-03 SF-01, FR-7).
+    """Print per-step results of the implement loop.
 
     Surfaces generated paths, test pass/fail + coverage, and code-validation
     rule outcomes inline so ``sw implement`` conveys the full autonomous result.
@@ -156,7 +156,7 @@ def _report_code_validation(mark: str, _name: str, out: dict[str, Any]) -> None:
 
 #: Which step names get a bespoke line. Anything absent falls back to "report it only if it
 #: failed" — a table rather than an `elif` chain, so adding a step is one entry rather than a
-#: branch in a function that was already the longest in this package (`TECH-023`).
+#: branch in what would otherwise be the longest function in this package.
 _STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
     "generate_code": _report_generated,
     "generate_tests": _report_generated,
@@ -216,10 +216,10 @@ def implement(
     )
 
     db = _core.get_db()
-    # INT-US-16 FR-2: telemetry is attributed per active project, so a run that cannot be
-    # attributed cannot run. This used to fail at `load_settings` with `Project 'None' not found` —
-    # a database lookup, not the thing the user has to do. FR-4: the adapter is built through
-    # `build_adapter_for_project`, which is where `cost_overrides` finally reaches a run.
+    # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
+    # and the refusal must name the missing project rather than surface a `load_settings` lookup
+    # failure. The adapter is built through `build_adapter_for_project`, which is where
+    # `cost_overrides` reaches a run.
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project)
@@ -278,7 +278,7 @@ def implement(
         guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
     )
 
-    # INT-US-03 SF-03 (FR-5, AD-8): run the autonomous (untrusted) implement loop
+    # Run the autonomous (untrusted) implement loop
     # worktree-bounded when the risk warrants it. Opt into DAL-driven auto-escalation —
     # session isolation auto-enables for high-assurance (DAL_B+) code, while small/low-DAL
     # projects keep today's friction-free host behavior. Best-effort: never crashes the run.
@@ -292,7 +292,7 @@ def implement(
 
     _report_implementation(run_state)
 
-    # INT-US-03 SF-01: exit reflects QA outcome. A failed run_tests exhausts its
+    # Exit reflects QA outcome. A failed run_tests exhausts its
     # loop-back and leaves the run non-completed \u2192 exit 1. A failed validate_code
     # is report-only (CONTINUE gate) and does not, on its own, fail the command.
     if run_state.status != "completed":

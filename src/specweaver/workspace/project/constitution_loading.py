@@ -3,9 +3,8 @@
 
 """Finding a project's CONSTITUTION.md and reading it safely.
 
-Split out of `_helpers.py` by `TECH-015`. The size ceiling and the filename are part of this
-contract — a constitution is read into an LLM prompt, so "how big may it be" belongs beside "how do
-we load it" rather than in a file named for being a leftover.
+The size ceiling and the filename are part of this contract — a constitution is read into an LLM
+prompt, so "how big may it be" belongs beside "how do we load it".
 """
 
 from __future__ import annotations

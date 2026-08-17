@@ -201,8 +201,7 @@ class OpenAIAdapter(LLMAdapter):
     ) -> None:
         """Invoke the caller's hook and sync any messages it appended into the provider payload.
 
-        Matches the extraction the Anthropic, Gemini and Mistral adapters already had — this one
-        was the only adapter still doing it inline (`TECH-023`).
+        Matches the extraction the Anthropic, Gemini and Mistral adapters use.
         """
         old_len = len(messages)
         on_tool_round(round_num, messages)

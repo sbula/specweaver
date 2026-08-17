@@ -3,10 +3,9 @@
 
 """The drafting loop both drafters run, and the four things a drafter changes about it.
 
-`TECH-037`. `Drafter` and `FeatureDrafter` had **byte-identical** `__init__` (17 lines) and
-`_generate_section` (35 lines), and a `draft` that differed in exactly four places: which sections
-to walk, which Jinja template to render, what to call the output file, and the wording of the
-instruction handed to the LLM. All four are data.
+`Drafter` and `FeatureDrafter` share `__init__` and `_generate_section` outright, and their `draft`
+differs in exactly four places: which sections to walk, which Jinja template to render, what to call
+the output file, and the wording of the instruction handed to the LLM. All four are data.
 
 So a third drafter is four class attributes, not a third copy of ninety lines.
 """

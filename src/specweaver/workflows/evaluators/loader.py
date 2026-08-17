@@ -15,8 +15,8 @@ def _merge_schema(
     """Parse one YAML schema and merge it into `schemas[language]`, in place.
 
     A malformed file is logged and skipped rather than raised: one bad evaluator schema must not
-    stop every other language's from loading. `TECH-023` — this was written out twice, once per
-    source, differing only in the wording of that warning.
+    stop every other language's from loading. Shared by both sources, which differ only in the
+    wording of that warning.
     """
     import io
     import logging

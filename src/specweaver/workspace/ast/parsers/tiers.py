@@ -3,9 +3,9 @@
 
 """What kind of language a parser is parsing.
 
-`TECH-034`. `BaseTreeSitterParser` served ten languages from C++ to SQL, so a language without a
-concept answered the contract with a stub — **SQL was 11 stubs out of 18 methods**, markdown 11 of
-23. The stubs were not a design; they were the price of one base for everything.
+One base for ten languages from C++ to SQL forces a language without a concept to answer the
+contract with a stub — SQL would be 11 stubs out of 18 methods, markdown 11 of 23. Tiers exist so
+that a parser is only asked for the concepts its language has.
 
 Three tiers, chosen from what the parsers actually override rather than from taxonomy:
 
@@ -36,8 +36,8 @@ class ClassBasedParser(BaseTreeSitterParser):
     """A language with classes: symbols inherit, and carry annotations.
 
     The tier exists to make its two concepts **required**. A class-based parser that cannot report
-    a base class is a gap, not a choice — which is exactly what C++ was until `TECH-034`, and it
-    was invisible because the base class never asked.
+    a base class is a gap, not a choice — and a base class that never asks makes such a gap
+    invisible.
     """
 
     @abstractmethod

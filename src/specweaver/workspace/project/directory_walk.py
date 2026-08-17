@@ -3,8 +3,7 @@
 
 """Walking up a directory tree, bounded.
 
-Split out of `_helpers.py` by `TECH-015`. Genuinely generic traversal, with no knowledge of what is
-being looked for — which is exactly why it kept company it had nothing to do with.
+Genuinely generic traversal, with no knowledge of what is being looked for.
 """
 
 from __future__ import annotations
