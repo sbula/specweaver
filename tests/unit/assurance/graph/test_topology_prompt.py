@@ -1,7 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for TopologyContext's PromptContentSource protocol conformance."""
+"""Rendering a module's topology into a prompt, inside a character budget.
+
+Proves: D-SENS-01 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-08-MIG`. Mutant: the `char_limit` branch never taken,
+so nothing is ever truncated — 1 fails, and it is the only test in the repo that notices.
+
+The budget is the requirement, not a detail of it. Topology exists to make a prompt better informed;
+an unbounded neighbourhood makes it worse by crowding out the thing being asked about. A single test
+carrying that is thin, and it is the reason this FR was worth writing down rather than assuming.
+"""
 
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.infrastructure.llm.prompt.interfaces import PromptContentSource

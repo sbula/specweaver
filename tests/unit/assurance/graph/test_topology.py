@@ -1,21 +1,46 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Topology queries: forward dependencies, reverse impact, cycles, and termination.
+"""The topology graph: what a project declares, what it does not, and which way impact runs.
 
+Proves: D-SENS-01 FR-1, D-SENS-01 FR-2, D-SENS-01 FR-3, D-SENS-01 FR-4, D-SENS-01 FR-6, D-SENS-01 FR-7
 Proves: A-SENS-01 FR-3
 
-Cited from `INT-US-11-SF01-MIG`. FR-3 claims changes recursively invalidate **upward** consumers, and
-`impact_of` -> `traverse(module, forward=False)` is where that lives. Mutant-verified: flipping it to
-`forward=True` fails five tests here, including `TestQueryDelegation::test_queries_terminate`.
+Cited under `specweaver-dev` §3.2c, from `INT-US-08-MIG` (`D-SENS-01`) and `INT-US-11-SF01-MIG`
+(`A-SENS-01`). `D-SENS-01` had **no design document and no feature directory** before this citation — a
+delivered foundation with nothing written down, and so invisible to `check_fr_sweep.py`, which can only
+count uncited FRs in designs that exist.
 
-**A first probe hit the wrong line.** Emptying `direct_consumers` in the prompt-context summary path
-survived the whole suite — it feeds relationship labels, not invalidation. A surviving mutant on the
-wrong line says nothing about the claim, so it was worth locating the right one rather than recording
-FR-3 as uncovered.
+**Two capabilities are cited off one line here, and that is worth stating plainly.** `impact_of`
+delegates to `traverse(module, forward=False)`. `A-SENS-01` FR-3 claims changes recursively invalidate
+*upward* consumers; `D-SENS-01` FR-2 claims the graph answers blast radius rather than dependency list.
+Same code, two claims at different altitudes — so **one mutant kills both**, and the second citation is
+not independent evidence. Recorded rather than presented as two proofs.
 
-Recorded while here: `consumers_of` (the one-hop reverse query) survives being emptied. It is not what
-FR-3 claims, so it is not this citation's business — but it is a real uncovered surface.
+That mutant flips `forward=False` to `forward=True`, returning the module's *dependencies* where its
+*consumers* belong. Both are non-empty sets of real module names; both read plausibly in a prompt. An
+impact analysis pointing the wrong way is worse than none, because it reads as reassurance. 5 fail,
+including `TestQueryDelegation::test_queries_terminate`.
+
+**A first probe for `A-SENS-01` FR-3 hit the wrong line.** Emptying `direct_consumers` in the
+prompt-context summary path survived the whole suite — it feeds relationship labels, not invalidation. A
+surviving mutant on the wrong line says nothing about the claim, so it was worth locating the right one
+rather than recording FR-3 as uncovered.
+
+The remaining `D-SENS-01` mutants, each run against the whole suite:
+
+- **FR-1** — the `context.yaml` walk replaced by an empty iterable: **50 files fail** across all three
+  tiers. Selectors, staleness, the graph CLI and the tach-sync journey all stand on this one loop.
+- **FR-3** — inferred nodes discarded rather than added, so the graph covers only the documented part
+  of the project.
+- **FR-4** — `cycles()` returns `[]`, and a circular dependency stops being a finding.
+- **FR-6** — the consumer loop in `constraints_for` emptied, so a module sees only the constraints it
+  declares about itself and none of those imposed on it.
+- **FR-7** — the batch-freshness condition forced false, so a latency-critical module consuming a batch
+  source reads as consistent.
+
+Staleness is exercised here as well. Its merkle-boundary comparison belongs to `A-SENS-01`'s cache, not
+to the graph, so nothing about it is cited to `D-SENS-01`.
 """
 
 from __future__ import annotations

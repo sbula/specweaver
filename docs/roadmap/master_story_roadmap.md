@@ -598,7 +598,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `✅` `INT-US-07-MIG` | US-7 | IDE Copilot | `C-FLOW-02` |
 | C-FLOW-03 (2) | `✅` `INT-US-18-MIG` | US-18 | Productionizing External Targets | `C-FLOW-03` |
 |  | `✅` `INT-US-19-MIG` | US-19 | Microservice Fleet Orchestration | `C-FLOW-03`, `B-SENS-02` |
-| singletons (15) | `[ ]` `INT-US-08-MIG` | US-8 | Greenfield Bootstrap Wizard | `D-SENS-01` |
+| singletons (15) | `✅` `INT-US-08-MIG` | US-8 | Greenfield Bootstrap Wizard | `D-SENS-01` |
 |  | `[ ]` `INT-US-20-MIG` | US-20 | Enterprise Architecture Enforcement | `D-SENS-01`, `B-SENS-02`, `C-EXEC-01` |
 |  | `✅` `INT-US-22-MIG` | US-22 | Polyglot Contract Enforcement | `A-VAL-01`, `C-VAL-04` |
 |  | `✅` `INT-US-23-MIG` | US-23 | Enterprise Tool Extension (MCP) | `C-INTL-02` |
