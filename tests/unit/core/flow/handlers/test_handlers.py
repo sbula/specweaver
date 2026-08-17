@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for step handlers — protocol, context, registry, and handler mocks."""
+"""Generation handlers, including how loop-back feedback is split before it reaches a prompt.
+
+Proves: C-FLOW-05 FR-2
+
+Cited from `INT-US-04-SF05-MIG`. Mutant-verified: replacing the `_extract_prompt_feedback` call with
+`None, None` — so human remarks and automated findings arrive as one undifferentiated stream — fails
+tests here and in two integration suites.
+
+FR-2's whole claim is that the two streams stay distinct. A single merged stream still produces a
+prompt, which is why the mutant matters: nothing about the output shape reveals the loss.
+"""
 
 from __future__ import annotations
 

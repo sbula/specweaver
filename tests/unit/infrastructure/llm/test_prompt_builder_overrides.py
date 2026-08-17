@@ -1,5 +1,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""Human overrides entering the prompt at priority zero.
+
+Proves: C-FLOW-05 FR-1
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-04-SF05-MIG`. `C-FLOW-05` is `✅` with two FRs, neither
+planned nor cited.
+
+Mutant-verified: renaming the `dictator-overrides` slot so nothing renders into it fails tests here, in
+`test_prompt_profiles.py`, and in `test_generation_loopback_integration.py`. FR-1's claim is that human
+feedback is "mathematically bound to ignore context limits" — a slot that renders nowhere cannot bind
+anything.
+"""
+
 from __future__ import annotations
 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder

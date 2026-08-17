@@ -58,3 +58,26 @@ master roadmap's US-4 add-on groups for the current status of each.
   > The scope above is NOT descoped — it moves to `C-INTL-06`, which owns its own
   > integration and e2e proof as FRs rather than a separate add-on restating them.
 
+* **`INT-US-04-SF05` — Advanced Routing & Conditional Flows:** the add-on's contract under
+`ADR-004`.
+
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | Human overrides enter the prompt at priority zero; HITL remarks stay separate from automated findings | single feature | `C-FLOW-05` | yes — **done** | — |
+  | P-2 | Router maps a rejection verdict onto a conditional branch | cross-feature | this contract, deferred | no | `C-FLOW-10` |
+  | P-3 | Journey: a rejected review routes to a different remediation path | cross-feature | this contract, deferred | no | `C-FLOW-10` |
+
+  **No cross-feature FR of its own.** P-1 is `C-FLOW-05`'s own requirement — two FRs, both cited and
+  mutant-verified, `check_fr_coverage.py C-FLOW-05` exits 0. Restating it here would put a
+  capability's
+  claims in a second place, which `ADR-003` forbade.
+
+  P-2 and P-3 wait on `C-FLOW-10` (Deferred Router Mapping), unbuilt, so their interfaces are
+  undefined
+  and a test written against them could not fail for the right reason (`ADR-004` clause 4).
+
+  **`INT-US-04-SF05-MIG` is discharged (2026-08-17); the contract stays open** until `C-FLOW-10`
+  lands.
+

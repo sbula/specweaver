@@ -6,6 +6,13 @@
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.26c/feature_3.26c_sf01_implementation_plan.md
 - **Status**: COMPLETE
 
+**FRs owned: FR-1, FR-2.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-04-SF05-MIG`. The plan predates the FR ledger, so ownership was never stated.
+
+Proof and mutants: `tests/unit/infrastructure/llm/test_prompt_builder_overrides.py` (FR-1 — renaming the
+`dictator-overrides` slot kills it) and `tests/unit/core/flow/handlers/test_handlers.py` (FR-2 —
+collapsing human remarks and automated findings into one stream kills it).
+
 ## 1. Scope & Objective
 
 SF-01 extends the SpecWeaver flow engine and `PromptBuilder` to dynamically isolate and inject HITL
