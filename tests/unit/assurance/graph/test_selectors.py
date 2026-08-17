@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for context selectors — strategy-based module selection."""
+"""Neighbourhood selection over the topology graph, without going back to disk.
+
+Proves: D-VAL-04 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: `neighbors_within` returns an
+empty set — 9 fail.
+
+FR-4's wording is about *not reloading files*: the dependency neighbourhood is answered from the graph
+already in memory. The mutant is blunt but lands on the right line — a selector that returns nothing
+still returns, and every caller silently gets an empty context rather than an error.
+"""
 
 from __future__ import annotations
 

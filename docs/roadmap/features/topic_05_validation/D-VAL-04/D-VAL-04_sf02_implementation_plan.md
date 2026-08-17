@@ -1,5 +1,10 @@
 # Implementation Plan: Context Condensation Skeletons (SF-02)
 
+**FRs owned: FR-3, FR-4.** AST-skeleton condensation before injection, and answering the
+dependency neighbourhood from the in-memory graph instead of re-reading files. Recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+
+
 > **Status:** ✅ Completed
 
 ## Goal Description

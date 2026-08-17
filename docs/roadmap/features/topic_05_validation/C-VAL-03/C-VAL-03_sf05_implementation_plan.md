@@ -1,5 +1,9 @@
 # Implementation Plan: Feature 3.20b [SF-05: Polyglot Architecture Configs]
 
+**FRs owned: none.** SF-05 carried no requirement of its own. Recorded 2026-08-17 from
+`INT-US-25-SF01-MIG` so the silence is deliberate rather than an omission.
+
+
 - **Feature ID**: 3.20b
 - **Sub-Feature**: SF-05 — Polyglot Architecture Configs
 - **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md

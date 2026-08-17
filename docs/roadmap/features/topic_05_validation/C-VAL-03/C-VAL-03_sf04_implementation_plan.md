@@ -1,5 +1,13 @@
 # Implementation Plan: Dynamic Risk-Based Rulesets (DAL) [SF-04: Generative HARA (AI Governance Proposal)]
 
+**FRs owned: FR-2.** Generative HARA — the agent proposes a DAL per component. Recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+
+**FR-2 had no test.** Defaulting `proposed_dal` to `DAL_E` — the lowest criticality — passed the
+whole suite, so an omitted rating would have silently become the least-critical one with no
+architect shown a proposal. See the design.
+
+
 - **Feature ID**: 3.20b
 - **Sub-Feature**: SF-04 — Generative HARA (AI Governance Proposal)
 - **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md

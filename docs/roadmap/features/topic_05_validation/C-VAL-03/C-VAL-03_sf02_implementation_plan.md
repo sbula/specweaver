@@ -1,5 +1,11 @@
 # Implementation Plan: Dynamic Risk-Based Rulesets (DAL) [SF-02: Fractal Resolution Engine]
 
+**FRs owned: FR-3.** Fractal resolution — the nearest tier declared at or above the target.
+Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the walk
+stopped at the target's own directory, which leaves the resolver working and strips inheritance
+from most of the tree — 17 fail.
+
+
 - **Feature ID**: 3.20b
 - **Sub-Feature**: SF-02 — Fractal Resolution Engine
 - **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md

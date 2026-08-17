@@ -6,6 +6,14 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf01_implementation_plan.md
 - **Status**: DRAFT
 
+**FRs owned: FR-1, FR-2.** The configured `mimicry` / `best_practice` mode, and the built-in
+defaults supplied when the project yields nothing. Recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-25-SF01-MIG`.
+
+FR-2 shares a *path* with `E-VAL-02` FR-7 but not a mutant: this side supplies the defaults, that
+side falls back to them. Two lines, two claims, cited separately.
+
+
 ## Research Notes
 - `StandardsScanner` dynamically loads Analyzers and runs `extract_all` across topological files. For greenfield repos this results in Empty Repository vacuums.
 - Configuration is managed via `SpecWeaverSettings` inside `core/config/settings.py`. It uses Pydantic.

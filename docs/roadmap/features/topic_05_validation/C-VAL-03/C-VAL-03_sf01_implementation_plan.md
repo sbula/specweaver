@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_sf01_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-4.** The DAL declaration in `context.yaml` and the project's own impact
+matrix deep-merged over the packaged profiles. Recorded 2026-08-17 under `specweaver-dev` §3.2c,
+from `INT-US-25-SF01-MIG`.
+
+
 ## Goal Description
 Implement the core configuration layer for Mixed Criticality (DAL) execution. We will define the
 `DALLevel` enumeration (`DAL_A` through `DAL_E`) inside the fundamental `config/dal.py` module.

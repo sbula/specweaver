@@ -1,6 +1,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Condensing a file into its AST skeleton before it goes into a prompt.
+
+Proves: D-VAL-04 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the skeleton branch never taken,
+so full file bodies are injected — 4 fail.
+
+FR-3 is a context-budget requirement: a prompt needs a file's *shape* far more often than its bodies, and
+sending both wastes the budget on the parts the model was not asked about. Note the graceful fallback
+around it — if the AST parse fails the raw content goes in — so this mutant is the difference between
+condensing and never trying, not between working and crashing.
+"""
+
 from pathlib import Path
 from unittest.mock import patch
 

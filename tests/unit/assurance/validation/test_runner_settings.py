@@ -2,7 +2,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for apply_settings_to_pipeline — overrides via DB settings.
+"""Stored settings meeting a resolved pipeline: disabled rules gone, thresholds carried in.
+
+Proves: D-VAL-02 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: `apply_settings_to_pipeline`
+returns its input untouched — 20 fail.
+
+FR-4 is a bridge between two configuration systems that could disagree: the settings a project stores
+and the pipeline YAML it resolves. The mutant leaves both intact and simply stops them meeting, which is
+the failure mode worth guarding — a rule switched off in settings would go on running, and nothing about
+either system would look wrong.
+
+Previously documented here:
+
+Tests for apply_settings_to_pipeline — overrides via DB settings.
 
 Replaces the old qa_runner_settings.py which tested via the now-removed
 ``get_spec_rules()`` / ``get_code_rules()`` legacy functions.

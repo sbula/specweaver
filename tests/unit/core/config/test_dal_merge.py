@@ -2,6 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""A project's own `dal_definitions.yaml` merged over the standard impact matrix.
+
+Proves: C-VAL-03 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the project's
+`.specweaver/dal_definitions.yaml` never loaded, so the packaged matrix is used unconditionally — 1 fails.
+
+One test is thin for a requirement that lets a project *disable* rules (`Rule_X: null`) inside a
+safety-tier matrix, and the count is recorded rather than dressed up. The mutant is quiet: a matrix still
+loads, the run still succeeds, and every local augmentation is silently absent.
+"""
+
 from specweaver.commons.enums.dal import DALLevel
 from tests.fixtures.db_utils import register_test_project
 

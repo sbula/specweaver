@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_sf03_implementation_plan.md
 - **Status**: IMPLEMENTED
 
+**FRs owned: FR-5.** Freedom-from-interference outsourced to the native boundary linter through
+the QA runner, merged with per-file `forbids`. Recorded 2026-08-17 under `specweaver-dev` §3.2c,
+from `INT-US-25-SF01-MIG`.
+
+
 ## Goal
 Strip the legacy SQLite `validation_overrides` tables completely out of the system. Force all
 threshold boundaries to route strictly through our new DAL Impact Matrices and rule sub-pipeline

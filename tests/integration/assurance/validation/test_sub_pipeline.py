@@ -1,7 +1,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests — validation sub-pipeline (pipeline_loader → executor → rules).
+"""Pipeline resolution end to end, including whose copy of a pipeline wins.
+
+Proves: D-VAL-02 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the project-local lookup in
+`_load_raw_yaml` skipped, so `.specweaver/pipelines/<name>.yaml` is ignored and the packaged default is
+used instead — 13 fail.
+
+FR-5 is what makes overriding a pipeline a *file* rather than a fork. The mutant is quiet by nature: a
+pipeline of that name still loads and still runs, so the run succeeds while ignoring everything the
+project asked for.
+
+Previously documented here:
+
+Integration tests — validation sub-pipeline (pipeline_loader → executor → rules).
 
 Exercises the full sub-pipeline chain: load YAML → resolve inheritance →
 execute against real rules → verify results. Uses real packaged pipeline YAML

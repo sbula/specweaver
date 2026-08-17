@@ -1,5 +1,14 @@
 # Feature 3.4: Custom Rule Paths — Implementation Plan
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-25-SF01-MIG`. The plan predates the FR ledger and the capability had no design document, so
+there was no ownership to state. One capability, one owner — a retrospective sub-feature split would be
+fiction.
+
+Proof and mutants are tabulated in `D-VAL-02_design.md`. FR-1's mutant fails **71 files**, the widest in
+the whole migration; FR-2's fails 3. The topic entry lists ten components as equals, and they are not.
+
+
 > **Date**: 2026-03-19
 > **Status**: Proposal — awaiting approval
 > **Scope**: Refactor rules into registry-based composable architecture (Phase A), then add custom rules + validation pipeline YAMLs (Phase B)

@@ -67,6 +67,69 @@
     this add-on is the scope decision, not the build.]
   * **Verifiable Proof:** [Pending]
 
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | A project defines its own validation pipeline by difference — `extends` with `override` / `remove` / `add` — and a cyclic chain is refused by name | single feature | `D-VAL-02` | yes — **done** | — |
+  | P-2 | Seam: the project's own `D`-prefixed rule classes and its `.specweaver/pipelines/*.yaml` take precedence over the packaged ones, and stored settings are applied on top | cross-module | `D-VAL-02` | yes — **done** | — |
+  | P-3 | A module declares its risk tier once, and everything beneath that boundary inherits it | single feature | `C-VAL-03` | yes — **done** | — |
+  | P-4 | Seam: the project's `dal_definitions.yaml` is deep-merged over the packaged matrix, so a rule can be augmented or disabled per tier | cross-module | `C-VAL-03` | yes — **done** | — |
+  | P-5 | Seam: freedom-from-interference is outsourced to the native boundary linter through the QA runner, merged with per-file `forbids` | cross-module | `C-VAL-03` | yes — **done** | — |
+  | P-6 | An agent must propose a criticality per component; one is never arrived at by omission | cross-module | `C-VAL-03` | yes — **done** | — |
+  | P-7 | Seam: the configured standards mode decides what the agent is told, and a project with nothing to learn from still gets defaults | cross-module | `D-VAL-04` | yes — **done** | — |
+  | P-8 | Seam: prompt context is condensed to AST skeletons, and dependency neighbourhoods are answered from the in-memory graph | cross-module | `D-VAL-04` | yes — **done** | — |
+  | P-9 | Journey: a DAL declared in `context.yaml` changes which rules run against a specific file, end to end | cross-feature | `TECH-041` | no | `TECH-041` — proven link by link, never as a chain |
+
+  **Fourteen FRs across three capabilities, all cited, all behind killed mutants.** Two of the three
+  had **no design document at all** or **no readable requirements**:
+
+  - **`D-VAL-02`** shipped with an implementation plan and no design. Five FRs written from why it
+    exists — a project's assurance rules are the project's business.
+  - **`C-VAL-03`** declared five FRs as prose bullets (`**FR1 …**`), which both requirement gates read
+    as none, since both match `| FR-N |` table rows. Second instance in this migration after
+    `C-EXEC-01`. Converted, wording preserved.
+  - **`D-VAL-04`** had a proper table and four uncited FRs.
+
+  ### The finding that matters, and it is a safety one
+
+  **`C-VAL-03` FR-2 had no test, and the mutant that exposed it was `default=DALLevel.DAL_E`.**
+
+  FR-2 is the governance requirement: an agent proposes a DAL per component and an architect approves
+  it. Its teeth are the *required* `proposed_dal` field on `ComponentChange` — that is what forces a
+  proposal to exist at all. Giving the field a default passed the **entire suite**.
+
+  `DAL_E` is the lowest criticality. So an agent that simply omitted the field would have had every
+  component rated least-critical, and nothing would have looked wrong: no error, no missing key in the
+  output, no proposal for an architect to reject. **A safety downgrade arriving as an absence.** In a
+  capability whose whole purpose is DO-178C-shaped risk tiering, that is the most consequential gap this
+  migration turned up. `test_a_component_without_a_proposed_dal_is_rejected` closes it.
+
+  A default is not a neutral act when the field it fills is a risk tier.
+
+  ### Two things measured and recorded as thin
+
+  **`C-VAL-03` FR-4 has one test.** It covers a requirement that lets a project *disable* rules
+  (`Rule_X: null`) inside a safety-tier matrix. **`D-VAL-04` FR-1 and FR-2 have one apiece.** The counts
+  are recorded rather than smoothed over — a cited FR is not the same as a well-covered one, and this
+  contract is the place that difference should be visible.
+
+  **`D-VAL-02` FR-1 fails 71 files**, the widest mutant measured anywhere in this migration: the packaged
+  pipelines use inheritance to build themselves, so disabling one directive breaks nearly every
+  validation path. Against `C-VAL-03` FR-4's one, that spread is the real shape of these three
+  capabilities — which the topic entries, listing components as equals, do not show.
+
+  ### On this add-on's status
+
+  The 2026-08-16 note above is still right that **no seam is waiting on anyone**: all three capabilities
+  are delivered and now proven per-FR. What it could not know is P-9. `TECH-041` holds the one genuine
+  end-to-end gap — the code-level DAL override is proven link by link and never as a chain — so the
+  add-on is not merely "closed for want of scope"; it has exactly one open journey, and it is already
+  ticketed.
+
+  **`INT-US-25-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-9, which is
+  `TECH-041`'s to close.
+
 ---
 
 > **Why this contract was written after its capabilities shipped.** Recorded so the sequence is not

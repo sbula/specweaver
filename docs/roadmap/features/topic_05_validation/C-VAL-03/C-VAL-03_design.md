@@ -13,15 +13,36 @@ ESLint).
 
 ## 2. Requirements & Constraints
 ### Functional Requirements
-*   **FR1 (Assignment):** Modules declare their risk tier inside `operational.dal_level: DAL_<X>` within `context.yaml`.
-*   **FR2 (Governance):** During SpecWeaver `/design` scaffolding, Agents perform topological HARA analysis to propose a DAL; Human Architects must approve it via a HITL gate.
-*   **FR3 (Resolution):** `ValidationRunner` uses Fractal Resolution to resolve the applicable DAL by walking up the directory tree on a per-file target basis.
-*   **FR4 (Impact Matrix):** Projects can provide a `.specweaver/dal_definitions.yaml`. Pydantic
-    must safely Deep-Merge this over standard Domain Profiles, allowing rules to be augmented or
-    disabled (`Rule_X: null`).
-*   **FR5 (FFI Isolation):** Dynamic cross-boundary Mixed Criticality isolation is outsourced via
-    the Feature 3.19 `QARunner` orchestrator (e.g., executing `ArchUnit` / `Tach` against the target
-    user project).
+
+Rewritten into the ledger's table form 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-25-SF01-MIG`. **The five requirements were always here — as prose bullets (`**FR1 …**`), which
+`check_fr_coverage.py` and `check_fr_sweep.py` both read as no requirements at all**, since both match
+`| FR-N |` table rows. A capability with five FRs and five committed sub-features counted as declaring
+nothing. Second instance in this migration, after `C-EXEC-01`; wording preserved in both.
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Assignment | Module | Declares `operational.dal_level: DAL_<X>` in its `context.yaml` | A module's risk tier lives next to the module, in the file that already describes it |
+| FR-2 | Governance | Agent, then Architect | Proposes a DAL per component during decomposition, for a human to approve | A criticality rating is always *proposed explicitly* and never arrived at by omission |
+| FR-3 | Resolution | `ValidationRunner` | Resolves the applicable DAL by walking up the directory tree per target file | A tier declared once at a boundary governs everything beneath it — nobody annotates every file |
+| FR-4 | Impact Matrix | Project | Supplies `.specweaver/dal_definitions.yaml`, deep-merged over the standard domain profiles | Rules can be augmented or disabled (`Rule_X: null`) without forking the packaged matrix |
+| FR-5 | FFI Isolation | `QARunner` | Runs the native boundary linter against the target project and merges its findings with per-file `forbids` | Cross-boundary isolation is outsourced to tools that already do it, and both sources are reported as one |
+
+**FR-2 survived its first mutant, and the survivor was the dangerous kind.** The requirement's teeth are
+the *required* `proposed_dal` field on `ComponentChange` — that is what forces a proposal to exist for a
+human to approve. Giving it `default=DALLevel.DAL_E` passed the entire suite.
+
+`DAL_E` is the **lowest** criticality. An agent that simply omitted the field would have had every
+component rated least-critical: a safety downgrade arriving as a missing key, with no architect ever
+shown a proposal to approve. `test_a_component_without_a_proposed_dal_is_rejected` closes it. **A default
+is not a neutral act when the field it fills is a risk tier.**
+
+FR-1 and FR-3 each fail 17 files; FR-5 fails 15; FR-4 fails 1. FR-3's mutant is worth reading — stopping
+the walk at the target's own directory leaves the resolver running and correct for any directory that
+declares its own tier, and silently strips inheritance from everything below, which is most of the tree.
+
+FR-4's single test is thin for a requirement that lets a project **disable** rules inside a safety-tier
+matrix, and the count is recorded as thin rather than dressed up.
 
 ### Non-Functional Requirements
 *   **NFR1:** LLMs are strictly forbidden from participating in the FFI Validation loop (Must remain strictly Deterministic).

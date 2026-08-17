@@ -2,7 +2,22 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for decomposition models — ComponentChange, IntegrationSeam, DecompositionPlan."""
+"""Decomposition models, and the criticality an agent is not allowed to leave out.
+
+Proves: C-VAL-03 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+
+**FR-2 survived its first mutant, and the survivor was the dangerous kind.** The requirement has an
+agent propose a DAL during decomposition for a human to approve; the schema's *required* `proposed_dal`
+is what forces the proposal to exist. Giving that field `default=DALLevel.DAL_E` passed the entire suite.
+
+`DAL_E` is the lowest criticality. So an agent omitting the field would have had every component rated
+least-critical — a safety downgrade arriving as a missing key, with no human ever shown a proposal to
+approve. `test_a_component_without_a_proposed_dal_is_rejected` closes it.
+
+A default is not a neutral act when the field it fills is a risk tier.
+"""
 
 from __future__ import annotations
 
@@ -37,6 +52,25 @@ class TestComponentChange:
         assert c.component == "billing_service"
         assert c.exists is True
         assert c.change_nature == "behavior"
+
+    def test_a_component_without_a_proposed_dal_is_rejected(self) -> None:
+        """`C-VAL-03` FR-2: the agent must propose a criticality, never inherit one by omission.
+
+        FR-2 has the agent propose a DAL during decomposition for a human to approve. The schema's
+        *required* `proposed_dal` is what forces the proposal to exist, and nothing tested it: giving
+        the field `default=DALLevel.DAL_E` passed the entire suite.
+
+        That default is the dangerous one. `DAL_E` is the lowest criticality, so an agent that simply
+        omits the field would have every component silently rated least-critical — a safety downgrade
+        arriving as a missing key, with no human ever seeing a proposal to approve.
+        """
+        with pytest.raises(ValidationError):
+            ComponentChange(
+                component="flight_control",
+                exists=False,
+                change_nature="new_interface",
+                description="Attitude command path",
+            )
 
     def test_dependencies_default_empty(self) -> None:
         c = ComponentChange(

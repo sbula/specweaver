@@ -2,7 +2,26 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E tests — standards scan → show → clear lifecycle (Feature 3.5a-1).
+"""Standards discovery end to end, and the configured mode that decides how it behaves.
+
+Proves: D-VAL-04 FR-1, D-VAL-04 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+
+Mutants: the configured `standards.mode` ignored so the run is always `mimicry` (FR-1, 1 fails); the
+built-in defaults never supplied to the scanner in `best_practice` mode (FR-2, 1 fails).
+
+**FR-2 shares a path with `E-VAL-02` FR-7 and not a mutant, which is the distinction worth keeping.**
+`D-VAL-04` *supplies* the defaults from the handler; `E-VAL-02` *consumes* them in
+`StandardsScanner._hydrate_from_defaults` when extraction came back empty. Two lines, two claims, two
+mutants — a supplier that stops supplying and a consumer that stops falling back fail differently, and
+both are cited separately.
+
+Each is proven by exactly one test. That is thin, and it is recorded as thin rather than smoothed over.
+
+Previously documented here:
+
+E2E tests — standards scan → show → clear lifecycle (Feature 3.5a-1).
 
 Exercises:
     - Full lifecycle: init project → scan → show → clear → show (empty)

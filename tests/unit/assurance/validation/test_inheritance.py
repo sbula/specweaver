@@ -2,7 +2,24 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for validation pipeline inheritance resolution.
+"""Pipelines defined by difference: extends, override, remove, add — and the loop that must not run.
+
+Proves: D-VAL-02 FR-1, D-VAL-02 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. `D-VAL-02` shipped with an implementation
+plan and no design document, so neither sweep had a requirement to count.
+
+Mutants: the `remove` directive disabled — **71 test files fail**, the widest measured anywhere in this
+migration, because the packaged pipelines use inheritance to build themselves and nearly every
+validation path runs through one (FR-1). The cyclic-`extends` guard removed — 3 fail (FR-2).
+
+Those two numbers sit at opposite ends on purpose. FR-1 is the load-bearing beam; FR-2 is the narrowest
+guard here and the only thing standing between a user-supplied YAML loop and a recursion crash. The
+topic entry lists ten components as equals, and they are not.
+
+Previously documented here:
+
+Unit tests for validation pipeline inheritance resolution.
 
 Tests extends/override/remove/add logic that resolves a child pipeline
 against its base into a flat step list.

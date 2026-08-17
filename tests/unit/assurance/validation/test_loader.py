@@ -2,7 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for custom rule loader — discovers and registers Rule subclasses
+"""Discovering rule classes a project wrote and SpecWeaver has never seen.
+
+Proves: D-VAL-02 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: every candidate file skipped, so
+no custom rule is ever loaded — 4 fail.
+
+FR-3 is the "Custom Rule Paths" in the capability's name. A project drops `D`-prefixed rule classes into
+a directory and they run; the loader validates the prefix so a project cannot shadow a built-in rule id.
+
+Previously documented here:
+
+Unit tests for custom rule loader — discovers and registers Rule subclasses
 from external directories.
 """
 

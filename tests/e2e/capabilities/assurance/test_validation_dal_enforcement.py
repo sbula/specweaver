@@ -2,6 +2,23 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The DAL journey: a module declares its criticality and the battery it gets changes.
+
+Proves: C-VAL-03 FR-1, C-VAL-03 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+
+Mutants: `operational.dal_level` never read out of `context.yaml`, so no module has a tier (FR-1, 17
+fail); the context walk stopped at the target's own directory, so a tier declared on a parent reaches
+nothing beneath it (FR-3, 17 fail).
+
+FR-3 is the interesting one. "Fractal Resolution" means a DAL declared once at a boundary governs
+everything inside it, which is the only way the feature is usable — nobody annotates every file. The
+mutant leaves the resolver running and returning a valid answer for any directory that declares its own
+tier; it simply stops inheriting, so the deepest and most numerous files quietly fall back to no tier at
+all.
+"""
+
 from pathlib import Path
 
 import pytest

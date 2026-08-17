@@ -1,7 +1,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for PythonQARunner DAL-aware architecture checking.
+"""Freedom-from-interference checks: `context.yaml` forbids plus the boundary linter, merged.
+
+Proves: C-VAL-03 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the tach half dropped from the
+merged violation list, leaving only per-file `forbids` — 15 fail.
+
+FR-5 outsources cross-boundary isolation to native linters through the QA runner rather than
+reimplementing it. The mutant keeps the check alive and halves what it sees, which is why the merge is
+the thing worth pinning: a violation count that is right about one source and blind to the other reads
+exactly like a clean result.
+
+Previously documented here:
+
+Tests for PythonQARunner DAL-aware architecture checking.
 
 Tests the two-phase architecture check:
   Phase 1: context.yaml forbids (AST import scanning)
