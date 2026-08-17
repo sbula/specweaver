@@ -34,6 +34,65 @@
   > and the real toolchain runs. `D-INTL-08` is unbuilt and owns its own — `sw implement` being
   > Python-only is that missing feature, not a defect in a delivered one.
 
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | Each of five runners issues the right command per intent and parses what comes back — pytest/ruff, cargo, Gradle+Maven, detekt, tsc/eslint | single feature | `D-VAL-03` | yes — **done** | — |
+  | P-2 | Seam: a project directory resolves to its language's runner, and every runner satisfies all five intents or cannot be instantiated | cross-module | `D-VAL-03` | yes — **done** | — |
+  | P-3 | Seam: an agent reaches `run_compiler` / `run_debugger` through the Loom sandbox, and is refused when its role does not carry the intent | cross-module | `D-VAL-03` | yes — **done** | — |
+  | P-4 | Journey: a real non-Python toolchain executes inside the sandbox | cross-feature | this contract, deferred | no | container execution — `TECH-031`, held with `INT-US-09-SF01-MIG` |
+  | P-5 | Journey: `sw implement` drives a non-Python target end to end | cross-feature | `D-INTL-08` (unbuilt) | no | `D-INTL-08` owns this as its own FR |
+  | P-6 | A lint finding carries the URI of the rule it violated | cross-feature | this contract, deferred | no | needs a scope decision — see below |
+
+  **All seven surviving FRs are cited and each is behind a killed mutant** —
+  `check_fr_coverage.py D-VAL-03` exits 0. Every mutant is a *command* substitution rather than a
+  deletion, which is the sharper test at this tier: `cargo check` for `cargo build`, `gradlew build`
+  for `compileJava`, `tsc` without `--noEmit`, `unittest` for `pytest`. Each substitute is a real tool
+  that really runs and really succeeds. A test asserting only that the runner returned without error
+  would accept all four.
+
+  **FR-1's mutant fails 228 tests and 11 collections** — the widest in this migration by an order of
+  magnitude. Renaming `run_compiler` on the abstract base makes all five runners abstract and
+  un-instantiable, and the QA surface is reached from nearly every pipeline. That is what an interface
+  being load-bearing looks like when you measure it.
+
+  **FR-2's mutant is the one to remember.** Forcing the `ROLE_INTENTS` membership test false leaves the
+  tool completely functional: every intent dispatches, every result returns. What disappears is the
+  *refusal* — any role may now compile and debug. Three tests catch it. A boundary whose refusal is
+  untested is not a boundary, it is a habit.
+
+  ### Two rows changed on contact
+
+  **FR-8 (E2E Testing) is deleted.** It required that every runner "must be rigorously tested" — a
+  statement about the test suite, not about the product. Its negation is an absent test, not a broken
+  capability, and that is what `check_fr_coverage.py` already refuses at closure for every other row.
+  The FR table had become partly a checklist of itself.
+
+  **FR-1's data-model clause is struck, and that one is a finding.** It claimed the models were
+  "expanded to support `stacktrace: str`, `rule_uri: str`". The fields exist on `TestFailure`,
+  `LintError` and `DebugRunResult`. **Nothing writes them** — there is no `stacktrace=` or `rule_uri=`
+  assignment anywhere in `src/` or `tests/`, and `arbiter.py` reads `f.get("stacktrace", "")` and so
+  always reads the empty string.
+
+  P-6 is the substantive half. FR-5, FR-6 and FR-7 all promise SARIF, and `language/core/sarif.py`
+  genuinely parses it — `ruleId`, message, physical location, per finding. It never reads the rule
+  descriptor's `helpUri`, which in SARIF is the field that makes a finding *actionable*: the link
+  saying what the rule is and how to satisfy it. So the pipeline asks its linters for SARIF, is handed
+  the URI, and drops it. Declared-but-never-written fields cannot be falsified by any mutant — deleting
+  one breaks no caller, because there are none — which is precisely why a struck clause plus a deferred
+  row is more honest than a green FR.
+
+  Not ticketed: filling `rule_uri` changes what an agent receives in a lint report, which is a scope
+  decision, and filing a ticket is not the same as taking it.
+
+  P-4 is the same wait as `INT-US-09-SF01-MIG`, and the code says so itself — `resolve_runner` warns
+  that "container sandboxing is validated for Python projects only". Mocked executors prove the command
+  and the parse, which is the whole contract at unit tier; whether `cargo` or `gradlew` exists on the
+  host is a container question, and it is held, not forgotten.
+
+  **`INT-US-03-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-4, P-5 and P-6.
+
 * **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
 
   > **RETIRED 2026-08-13 by `ADR-003`.** Never designed; its roadmap placeholder is gone.

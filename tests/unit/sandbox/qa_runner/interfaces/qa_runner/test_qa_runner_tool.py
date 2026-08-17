@@ -1,7 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for QARunnerTool and role-specific interfaces."""
+"""The agent-facing QA tool, and the role that decides which intents it will serve.
+
+Proves: D-VAL-03 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: the `ROLE_INTENTS` membership
+test forced false, so every role may compile and debug — 3 fail.
+
+FR-2's word is *permissioned*. The mutant leaves the tool fully functional: every intent still
+dispatches, every result still returns. What disappears is the refusal, and a capability whose refusal
+is untested has no boundary at all — only a habit.
+"""
 
 from __future__ import annotations
 

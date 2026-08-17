@@ -1,7 +1,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for PythonQARunner."""
+"""The Python QA runner: one command per intent, and the parsing of what comes back.
+
+Proves: D-VAL-03 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: the pytest invocation replaced by `unittest`, which cannot honour the same flags or emit the same
+report — **28 fail across all three tiers**, because Python is the default runner and nearly every
+pipeline e2e ends up executing tests through it.
+
+Every runner is exercised against a mocked executor, so what these tests pin is the *command* and the
+*parse* — which is the whole of the contract at this tier. Whether the toolchain exists on the host is
+a container concern, and `INT-US-09-SF01-MIG` holds it.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch

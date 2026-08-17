@@ -1,5 +1,10 @@
 # Implementation Plan: Rust Handler [SF-03: Rust Handler]
 
+**FRs owned: FR-4.** The Rust runner over `cargo`. Recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-03-SF01-MIG`. Mutant: `cargo build` downgraded to `cargo check` — a type
+check that passes is not a build that succeeded.
+
+
 - **Feature ID**: 3.19
 - **Sub-Feature**: SF-03 — Rust Handler
 - **Design Document**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_design.md

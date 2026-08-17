@@ -6,6 +6,14 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf01_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-2, FR-3, FR-7.** The unified interface and its five intents, the
+role-permissioned agent tool, and the Python and TypeScript runners. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`.
+
+FR-1's data-model clause is struck in the design: `stacktrace` and `rule_uri` are declared and
+never written. The interface clause stands — its mutant fails 228 tests.
+
+
 ## Goal Description
 Expand the engine internals (`atoms`, `tools`, `interface`) to securely broker universal compile,
 debug, lint, and test execution formats. This foundational sub-feature standardizes compiler outputs

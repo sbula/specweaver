@@ -54,14 +54,46 @@ none stated
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Unified Interface Refactor | System | Update `interface.py` | The bounds encompass Test, Lint, Complexity, **Compile**, and **Debug**. The Data Models are expanded to support `stacktrace: str`, `rule_uri: str`, etc. |
+| FR-1 | Unified Interface Refactor | System | Update `interface.py` | The bounds encompass Test, Lint, Complexity, **Compile**, and **Debug** — every runner implements all five or is not a runner. |
 | FR-2 | Agent-facing Tools | Agent | Update `qa_runner/tool.py` | The LLM agents natively gain permissioned access to trigger `compile()` and `debug()` through the Loom Sandbox, utilizing identical Black Box resolution patterns. |
 | FR-3 | Python Support | System | Align `PythonQARunner` | Python executes tests, linting, complexity, compiling, and debugging by conforming to the new unified data models. |
 | FR-4 | Rust Support | System | Build `RustRunner` | Rust executes tests, linting, compiling, complexity natively via `cargo` wrappers mapping to generic bounds. |
 | FR-5 | Java Support | System | Build `JavaRunner` | Java executes tests, compilation, linting via Maven (`mvn compile/test/pmd`) and Gradle natively mapping outputs. |
 | FR-6 | Kotlin Support | System | Build `KotlinRunner` | Kotlin executes tests, compilation, complexity via Gradle/Maven and `detekt` pushing SARIF maps. |
 | FR-7 | TypeScript Support| System | Build `TypeScriptRunner`| TS executes tests, compiling, linting/complexity natively via `tsc`, `jest-junit` and `eslint` SARIF formatters. |
-| FR-8 | E2E Testing | System | Implement Tests | Every runner class must be rigorously tested using mock CLI executions to verify parsing rules for each respective language across all 5 operational intents. |
+
+### Two rows changed on contact (2026-08-17, `INT-US-03-SF01-MIG`)
+
+**FR-8 (E2E Testing) is deleted.** It required that "every runner class must be rigorously tested" —
+a statement about the test suite, not about what the product does. It cannot fail in the way an FR
+fails: its negation is not a broken capability but an absent test, which is what
+`check_fr_coverage.py` already refuses at closure for every other row. Keeping it made the FR table
+partly a checklist of itself. The obligation is not lost — it is where it belongs, in the gate.
+
+**FR-1's second clause is struck**, and this one is a finding rather than tidying. It claimed *"the
+Data Models are expanded to support `stacktrace: str`, `rule_uri: str`, etc."* The fields do exist —
+`TestFailure`, `LintError` and `DebugRunResult` in `commons/qa.py` each declare one or both, defaulted
+to `""`.
+
+**Nothing ever writes them.** There is no assignment to `stacktrace=` or `rule_uri=` anywhere in
+`src/` or `tests/`. `arbiter.py` *reads* `f.get("stacktrace", "")` and therefore always reads the empty
+string.
+
+The `rule_uri` gap is the substantive half. FR-5, FR-6 and FR-7 all promise SARIF — `pmd:pmd
+-Dpmd.format=sarif`, `detekt`, eslint's SARIF formatter — and `sandbox/language/core/sarif.py`
+genuinely parses it, building each `LintError` from `ruleId`, the message, and the physical location.
+It never reads the rule descriptor's `helpUri`, which is the field in SARIF that makes a finding
+*actionable*: the link to what the rule is and how to satisfy it. So the pipeline asks its linters for
+SARIF, receives the URI, and drops it.
+
+A clause describing fields that are declared but never populated cannot be falsified by any mutant —
+deleting the field breaks no caller, because there are none. Under §3.2c that is worse than silence,
+so the clause is struck and the state of affairs recorded here instead. **The remaining clause is
+strongly proven**: renaming `run_compiler` on the abstract base fails 228 tests and 11 collections.
+
+Populating `rule_uri` from `helpUri` is a real improvement and is **not ticketed here** — it changes
+what agents receive in a lint report, which is a scope decision, and filing a ticket is not the same
+as taking it.
 
 ## Non-Functional Requirements
 

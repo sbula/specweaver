@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf04_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: none.** SF-04 is the submodule refactor — it moved the runners into
+`sandbox/language/core/<lang>/` and added no requirement of its own. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`, so the silence is deliberate rather than an
+omission.
+
+
 ## Research Notes
 - **SARIF Complexity Extraction**: All PMD, Detekt, and clippy-sarif tools embed custom attributes
   under the `properties` or `rank` fields dynamically. We will natively scan for

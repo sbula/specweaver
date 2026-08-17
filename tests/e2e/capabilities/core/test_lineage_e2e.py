@@ -12,6 +12,9 @@ false, so no file is ever an orphan and the gate passes a tree in which nothing 
 The FR's actor is CI, and that is what the mutant attacks: the scan still runs, still walks every
 file, still reports. It simply never finds anything, which is indistinguishable from success to
 anyone reading the exit code.
+
+Also covers tag survivability: pipeline CLI invocations mint, propagate and preserve `# sw-artifact`
+tags across executions, including through LLM reflection loops and fallback pipelines.
 """
 
 from __future__ import annotations

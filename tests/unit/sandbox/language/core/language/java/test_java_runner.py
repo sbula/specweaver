@@ -1,7 +1,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for JavaRunner — SubprocessExecutor migration."""
+"""The Java QA runner: one command per intent, and the parsing of what comes back.
+
+Proves: D-VAL-03 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `gradlew compileJava` replaced by `gradlew build`, which compiles *and* tests and packages — 1
+fails. A compile intent that quietly runs the whole build reports the wrong failures for the wrong
+reason.
+
+Every runner is exercised against a mocked executor, so what these tests pin is the *command* and the
+*parse* — which is the whole of the contract at this tier. Whether the toolchain exists on the host is
+a container concern, and `INT-US-09-SF01-MIG` holds it.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch

@@ -13,6 +13,14 @@ That breadth is the honest measure of FR-2's "every generated file": the tag is 
 sites (drafting, generation, decomposition artifacts, lint-fix) and read back at more, so removing it
 is visible almost everywhere. A capability whose mutant kills one test is narrow; this one is load-
 bearing.
+
+`TECH-016` §2 unified this: seven handler sites hand-rolled the event tail and four hand-rolled the
+identity half.
+
+The never-raises contract is the load-bearing part and had **no test at all** before this file —
+`log_decomposition_lineage` carried it in a docstring, written after a real CB-1 failure
+(2026-07-26), and nothing proved it. `lint_fix.py` did not even carry the `None` guard, which is
+`TECH-036`.
 """
 
 from __future__ import annotations

@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf02_implementation_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: FR-5, FR-6.** The Java and Kotlin runners over Gradle and Maven. Recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Both mutants conflate the
+compile intent with a full `build`, and both die.
+
+
 ## Goal Description
 Implement the `JavaRunner` and `KotlinRunner` classes inheriting from `QARunnerInterface`. These
 runners will map the 5 polyglot intents (run_tests, run_linter, run_complexity, run_compiler,

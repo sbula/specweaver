@@ -1,7 +1,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for KotlinRunner — SubprocessExecutor migration."""
+"""The Kotlin QA runner: one command per intent, and the parsing of what comes back.
+
+Proves: D-VAL-03 FR-6
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `gradlew compileKotlin` replaced by `gradlew build` — 1 fails, the same conflation as Java's.
+
+Every runner is exercised against a mocked executor, so what these tests pin is the *command* and the
+*parse* — which is the whole of the contract at this tier. Whether the toolchain exists on the host is
+a container concern, and `INT-US-09-SF01-MIG` holds it.
+"""
 
 import json
 from pathlib import Path

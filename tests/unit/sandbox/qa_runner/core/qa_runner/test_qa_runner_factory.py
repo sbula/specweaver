@@ -1,7 +1,26 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for qa_runner factory — auto-discovery + executor DI passthrough (B-EXEC-01)."""
+"""Which runner a directory resolves to, and what every runner must implement.
+
+Proves: D-VAL-03 FR-1
+Proves: B-EXEC-01 NFR-7
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `run_compiler` renamed on the
+abstract base, so compilation leaves the interface's bounds — **228 fail and 11 collection errors**,
+the widest blast radius in this migration by an order of magnitude.
+
+That number is the point. The five language runners are all `QARunnerInterface` subclasses, so
+narrowing the interface makes every one of them abstract and un-instantiable, and the QA surface is
+reached from almost every pipeline. An interface is not a document that describes the runners; it is
+the thing that makes them exist.
+
+**`B-EXEC-01` NFR-7** is the executor-passthrough half: with no executor supplied, the runner builds
+its own plain `SubprocessExecutor` and never a `ContainerSubprocessExecutor`, so leaving
+`execution_mode` at its default changes nothing. The citation was carried in this file's old docstring
+as a bare `(B-EXEC-01)` plus an `(NFR-7)` comment thirty lines down, which the NFR sweep credited by
+proximity; it is explicit now.
+"""
 
 from __future__ import annotations
 

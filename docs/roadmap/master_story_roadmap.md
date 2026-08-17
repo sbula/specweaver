@@ -604,7 +604,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `✅` `INT-US-23-MIG` | US-23 | Enterprise Tool Extension (MCP) | `C-INTL-02` |
 |  | `[ ]` `INT-US-01-SF02-MIG` | US-1 | Enforce Internal Architecture | `C-EXEC-01`, `C-EXEC-03` |
 |  | `[ ]` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
-|  | `[ ]` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
+|  | `✅` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
 |  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
 |  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — HELD, needs container execution actually exercised (`TECH-031`) | `D-EXEC-01`, `B-EXEC-01` |
 |  | `✅` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
