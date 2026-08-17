@@ -2,6 +2,24 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The macro evaluator behind the code-structure atom and its agent-facing tool.
+
+Proves: B-INTL-02 FR-1, B-INTL-02 FR-2, B-INTL-02 FR-3, B-INTL-02 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-05-SF04-MIG`. `B-INTL-02` is `✅` with five FRs, none
+cited.
+
+Mutants: markers never matched against a schema (FR-1, 7 fail); the `supported_languages` gate ignored
+so an unsupported language is unrolled anyway (FR-2, 1 fails); recursive `>>{...}<<` templates left
+unresolved (FR-5, 2 fail).
+
+**FR-3 needed a stronger assertion before it could be cited.** The tool-level test asserted only
+`res.status == "success"`, so swapping the tool's intent from `read_unrolled_symbol` to plain
+`read_symbol` passed the whole suite — a symbol came back, simply without its unrolled framework
+logic. Success is not delegation. The atom-level test already pinned the unrolled content; the tool
+path did not, and now does.
+"""
+
 import pytest
 
 from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
@@ -63,6 +81,15 @@ def test_code_structure_tool_exposes_read_unrolled_symbol(tmp_path, mock_schemas
 
     res = tool.read_unrolled_symbol("test.py", "User")
     assert res.status == "success", res.message
+
+    # `B-INTL-02` FR-3 — the tool must DELEGATE to the evaluator, not merely succeed. Asserting only
+    # `status == "success"` let the intent be swapped for plain `read_symbol` with the whole suite
+    # green: a symbol came back, just without the unrolled macro. The atom-level test above already
+    # pins this; the tool path did not.
+    assert (
+        "# [Framework Eval] Python standard library dataclass generator." in res.data["symbol"]
+    ), f"the tool returned a symbol without its unrolled framework logic: {res.data}"
+    assert "class User:" in res.data["symbol"]
 
 
 def test_atom_graceful_unknown_extension_and_bare_symbol(tmp_path, mock_schemas):

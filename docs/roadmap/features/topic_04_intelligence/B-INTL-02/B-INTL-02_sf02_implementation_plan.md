@@ -1,5 +1,12 @@
 # Implementation Plan: Macro & Annotation Evaluator [SF-02: Native Core Framework Libraries]
 
+**FRs owned: FR-3, FR-5.** Tool delegation to the evaluator, and cascading template
+resolution. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF04-MIG`.
+
+FR-3 needed a stronger assertion: the tool test checked only `status == "success"`, so the
+intent could be swapped for plain `read_symbol` with the suite green.
+
+
 - **Feature ID**: 3.30
 - **Sub-Feature**: SF-02 — Native Core Framework Libraries
 - **Design Document**: docs/roadmap/phase_3/feature_3.30/feature_3.30_design.md

@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf01_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-2.** Macro evaluation against declarative YAML schemas, and the
+multi-language gate. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-05-SF04-MIG`. Proof and mutants: `tests/integration/sandbox/test_code_structure_tool_evaluator.py`.
+
+
 ## 1. Goal
 Implement the `evaluator.py` engine to parse declarative YAML framework schemas and translate raw
 AST framework markers into LLM-readable runtime explanations. Implement Dependency Injection through

@@ -1,7 +1,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests validating DI schema injection across handlers."""
+"""Evaluator schemas reaching the validation handler by injection, including hot-loaded overrides.
+
+Proves: B-INTL-02 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-05-SF04-MIG`.
+
+FR-4 claims custom `.yaml` schema overrides are discovered in arbitrary ecosystem directories "without
+recompilation". Mutant-verified: replacing the loader's `local_dir.glob("*.yaml")` with an empty
+iterable — so no user-supplied schema is ever found — fails this file and three others.
+
+The claim is about DISCOVERY rather than evaluation, which is why the mutant targets the loader and not
+`SchemaEvaluator`: an evaluator handed no schemas degrades gracefully by design (NFR-2), so breaking
+evaluation and breaking discovery look different from the outside.
+"""
 
 from pathlib import Path
 

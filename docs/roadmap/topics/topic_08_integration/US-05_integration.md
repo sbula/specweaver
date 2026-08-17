@@ -73,3 +73,33 @@
 
   **`INT-US-05-SF03-MIG` is discharged (2026-08-17); the contract stays open** on P-2.
 
+
+* **`INT-US-05-SF04` — Framework Native Understanding:** the add-on's contract under `ADR-004`.
+
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | AST markers evaluated against declarative YAML schemas; the language gate; cascading `>>{...}<<` resolution under a depth cap | single feature | `B-INTL-02` | yes — **done** | — |
+  | P-2 | Seam: an agent's `read_unrolled_symbol` intent reaches the evaluator through the code-structure atom, and the unrolled logic comes back attached to the symbol | cross-module | `B-INTL-02` | yes — **done** | — |
+  | P-3 | Seam: a project's own `.specweaver/evaluators/*.yaml` are discovered by the loader and injected into the validation handler | cross-module | `B-INTL-02` | yes — **done** | — |
+  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | this contract, deferred | no | none — see below |
+
+  **This entry was the second of three marked `✅` while citing no test file**, reopened by
+  `TECH-060` FR-3. All five FRs are now cited and each is behind a killed mutant —
+  `check_fr_coverage.py B-INTL-02` exits 0. FR-2 is genuinely multi-language: schemas ship for Spring
+  Boot, Quarkus, NestJS, FastAPI and Actix.
+
+  **FR-3 is the finding, and it is the same shape as `E-UI-02` FR-1.** Its test asserted only
+  `res.status == "success"`, so swapping the tool's intent from `read_unrolled_symbol` to plain
+  `read_symbol` passed the entire suite: a symbol came back, simply without its unrolled macro.
+  **Success is not delegation.** A tool test that checks the envelope and not the payload cannot
+  distinguish a tool that does the work from one that does something cheaper. The atom-level test
+  already pinned the unrolled content; the tool path — the one an agent actually takes — did not.
+
+  P-4 has **no unbuilt blocker.** Nothing in `src/` calls `read_unrolled_symbol`: it is reachable
+  only when an agent chooses the intent, and no e2e drives an agent tool loop over a framework
+  codebase. So the journey is deferred on a test nobody has written, not on a feature nobody has
+  built — the second such row in this migration, after `INT-US-05-SF03` P-2.
+
+  **`INT-US-05-SF04-MIG` is discharged (2026-08-17); the contract stays open** on P-4.
