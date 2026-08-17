@@ -29,11 +29,10 @@
 
 * **`INT-US-03-SF01` — Multi-Language Test Support:** *Pending Design.* Integrates `D-VAL-03` (Polyglot QA Runner, built ✅) into the `sw implement` loop for non-Python targets.
 
-  > **UN-RETIRED.** Ships `D-VAL-03` ✅; this story owns its integration and e2e proof. The seam
-  > is broken, not merely untested: `sw implement` hardcodes `src/{stem}.py`
-  > (`workflows/implementation/interfaces/cli.py:75,82,95,244`) and the generator tags artifacts
-  > `"python"` (`generator.py:103,162,201`), so `resolve_runner` never reaches a non-Python branch.
-  > `D-INTL-08` is unbuilt and owns its own.
+  > **UN-RETIRED.** Ships `D-VAL-03` ✅, and this story owns its integration and e2e proof: a
+  > target project's manifest selects that language's runner (`sandbox/qa_runner/core/factory.py`)
+  > and the real toolchain runs. `D-INTL-08` is unbuilt and owns its own — `sw implement` being
+  > Python-only is that missing feature, not a defect in a delivered one.
 
 * **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
 
