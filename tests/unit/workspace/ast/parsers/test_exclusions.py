@@ -2,6 +2,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The exclusion engine: `.specweaverignore` parsing and default scaffolding.
+
+Proves: C-SENS-02 FR-3, C-SENS-02 FR-4
+
+Cited from `INT-US-05-SF03-MIG`.
+
+Mutants: compiling the `pathspec` from an empty pattern list — so every path matches nothing — fails 6
+tests (FR-3); neutralising the `if to_append:` seeding branch, so defaults are never written, fails 6
+(FR-4).
+
+FR-3's claim is `.gitignore` semantics *identically*, which is why the compile is delegated to
+`pathspec` rather than hand-rolled; the mutant checks the delegation actually carries the patterns.
+"""
+
 from typing import TYPE_CHECKING
 
 from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser

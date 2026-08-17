@@ -6,6 +6,11 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf04_impl_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-4.** Scaffolding seeds language defaults when the ignore file is missing.
+Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
+`tests/unit/workspace/ast/parsers/test_exclusions.py` — neutralising the seeding branch fails 6.
+
+
 ## Goal Description
 Implement strict architectural decoupling for the pure-logic engine. Move all concrete Tree-Sitter
 powered language analyzers out of the pure-logic `context` domain and into a new

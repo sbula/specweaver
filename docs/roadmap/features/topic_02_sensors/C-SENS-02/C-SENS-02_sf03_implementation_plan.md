@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf03_impl_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: FR-3.** `.specweaverignore` parsed with `.gitignore` semantics via `pathspec`.
+Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
+`tests/unit/workspace/ast/parsers/test_exclusions.py` — compiling the spec from an empty pattern
+list fails 6 tests.
+
+
 ## Goal Description
 Perform structural technical debt sweeps across the repository to seamlessly integrate the new
 polyglot orchestrator boundaries created in SF-02. This involves removing all temporary hardcoded

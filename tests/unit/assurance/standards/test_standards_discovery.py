@@ -2,7 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for standards/discovery.py — file discovery priority chain."""
+"""Standards discovery, and the exclusions it must honour before touching disk.
+
+Proves: C-SENS-02 FR-5
+
+Cited from `INT-US-05-SF03-MIG`. Mutant-verified: dropping the `_apply_specweaverignore` call from
+discovery — so excluded files are walked and read anyway — fails 4 tests.
+
+FR-5's claim is interception *before deep I/O*, which is a performance and token-context property as
+much as a correctness one: the files are still findable, they simply must not be opened.
+"""
 
 from __future__ import annotations
 

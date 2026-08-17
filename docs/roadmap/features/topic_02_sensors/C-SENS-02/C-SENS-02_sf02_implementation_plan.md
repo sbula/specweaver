@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf02_impl_plan.md
 - **Status**: FULLY IMPLEMENTED (Pre-commit complete)
 
+**FRs owned: FR-2.** Polyglot binary-file exclusions. Recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
+`tests/unit/workspace/ast/parsers/test_polyglot_exclusions.py` — emptying Java's `*.class`/`*.jar`
+list fails it, and nothing else under `tests/unit/workspace` notices.
+
+
 ## Proposed Changes
 
 > [!WARNING]

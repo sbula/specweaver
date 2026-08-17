@@ -42,3 +42,34 @@
 > unambiguous, and left alone deliberately. This was one name for two things, which is ambiguous by
 > construction. A guardrail now forbids the latter and permits the former.
 
+* **`INT-US-05-SF03` — Intelligent Code Exclusions:** the add-on's contract under `ADR-004`.
+
+  ### Path Inventory
+
+  | # | Path | Span | Owner | Runnable today | Blocker |
+  |---|---|---|---|---|---|
+  | P-1 | Per-language structural and binary exclusions; `.specweaverignore` with gitignore semantics; default scaffolding; interception before deep I/O | single feature | `C-SENS-02` | yes — **done** | — |
+  | P-2 | Journey: a polyglot monorepo is scanned without build artefacts entering the token context | cross-feature | this contract, deferred | no | none — see below |
+
+  **This entry was one of three marked `✅` while citing no test file**, reopened by `TECH-060` FR-3.
+  It is now genuinely proven: `C-SENS-02`'s five FRs are cited and each is behind a killed mutant —
+  `check_fr_coverage.py C-SENS-02` exits 0.
+
+  **Getting there needed a filename fix, and that is the finding.** The capability has five
+  implementation plans, and `check_fr_coverage.py` could not see any of them: they were named
+  `C-SENS-02_sfNN_impl_plan.md` while the gate globs `*implementation_plan.md`. So a capability with
+  five plans read as entirely unplanned. `TECH-044` had already noticed the naming drift — *"naming
+  has
+  already drifted three ways each (`sfN_implementation_plan` / `sfN_impl_plan` / …)"* — but recorded
+  it
+  as untidiness; its actual consequence, invisibility to the FR gate, was never stated. Measured
+  across
+  the whole tree, `C-SENS-02` was the only capability affected; the five files are renamed.
+
+  P-2 has **no unbuilt blocker** — it is a journey this capability could carry alone, and it is
+  deferred
+  only because no e2e asserts it end to end today. That makes it the first deferred row in this
+  migration that is a genuine test-writing task rather than a wait on someone else.
+
+  **`INT-US-05-SF03-MIG` is discharged (2026-08-17); the contract stays open** on P-2.
+

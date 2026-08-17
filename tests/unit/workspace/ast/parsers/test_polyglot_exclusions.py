@@ -1,6 +1,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Each language parser contributes its own structural and binary exclusions.
+
+Proves: C-SENS-02 FR-1, C-SENS-02 FR-2
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-05-SF03-MIG`.
+
+Mutants: emptying Rust's `["target/"]` directory exclusion (FR-1) and Java's
+`["*.class", "*.jar", "*.ear", "*.war"]` binary exclusions (FR-2) each fail here, and nowhere else in
+`tests/unit/workspace`. The per-language lists are data, so this is the only place that notices a
+language quietly contributing nothing.
+"""
+
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
