@@ -607,7 +607,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `[ ]` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
 |  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
 |  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — HELD, needs container execution actually exercised (`TECH-031`) | `D-EXEC-01`, `B-EXEC-01` |
-|  | `[ ]` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
+|  | `✅` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
 |  | `[ ]` `INT-US-15-SF01-MIG` | US-15 | Enterprise Compliance Protocols | `B-SENS-01` |
 |  | `[ ]` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
 |  | `✅` `INT-US-05-SF03-MIG` | US-5 | Intelligent Code Exclusions | `C-SENS-02` |

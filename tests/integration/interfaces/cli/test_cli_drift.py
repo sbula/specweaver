@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for sw drift commands."""
+"""`sw drift check` end to end through the pipeline runner.
+
+Proves: B-VAL-01 FR-6
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`. Mutant: the command renamed, so the
+documented invocation no longer exists — 9 fail here and at e2e.
+
+`--plan` is a REQUIRED option, and that is the shape of the FR-2 descope recorded in
+`B-VAL-01_sf02_implementation_plan.md`: the plan is named by the caller, never resolved from the
+file's lineage UUID.
+"""
 
 from pathlib import Path
 

@@ -6,6 +6,18 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf02_implementation_plan.md
 - **Status**: COMPLETED
 
+**FRs owned: FR-1, FR-5, FR-6.** The tree-sitter parse of the target file, the `--analyze`
+gate, and the `sw drift check` entry point. Recorded 2026-08-17 under `specweaver-dev` §3.2c,
+from `INT-US-10-SF01-MIG`.
+
+**FR-2 is deleted from the design**, implementing this plan's own §Open Questions recommendation
+— `--plan` required, no lineage-UUID resolution. The decision was taken here and never carried
+back to the FR table.
+
+FR-5 needed a new test: nothing exercised the *absence* of `--analyze` with an LLM attached, so
+the guard could be deleted with the suite green.
+
+
 ## Goal Description
 Expose the previously built AST Drift Engine (SF-01) through the SpecWeaver CLI via the `sw drift`
 command. It integrates the pure-logic `detect_drift` capabilities into the intelligent execution

@@ -2,6 +2,24 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The pure-logic drift comparator: what moved, and what never arrived.
+
+Proves: B-VAL-01 FR-3, B-VAL-01 FR-4
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`.
+
+The two FRs split cleanly along a line the code already draws, and each has its own mutant:
+
+- **FR-3 — mutation of what exists.** Parameter lists compared against the plan, and public methods
+  the plan never authorised. Mutant: `actual_param_list != expected_param_list` forced False, so a
+  renamed or reordered parameter passes silently — 4 fail across three tiers.
+- **FR-4 — absence of what should exist.** Mutant: a missing planned method downgraded from ERROR to
+  WARNING, which leaves `is_drifted` False and turns a real coverage gap into a note — 3 fail.
+
+The second mutant is the interesting one: the finding is still produced, so a test that only counted
+findings would not notice. What changes is whether the check *fails*.
+"""
+
 from specweaver.assurance.validation.drift_detector import detect_drift, detect_workspace_drift
 
 

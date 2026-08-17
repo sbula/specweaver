@@ -6,6 +6,12 @@
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf01_implementation_plan.md
 - **Status**: COMPLETE (2026-04-02)
 
+**FRs owned: FR-3, FR-4.** Structural mutation detection, and coverage-gap detection for
+what the plan expected and the code does not contain. Recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`. Proof and mutants:
+`tests/unit/assurance/validation/test_validation_drift_detector.py`.
+
+
 > **Implementation Notes:**
 > - Modified task model deviation: `expected_signatures` maps file layout via `dict[str, list[MethodSignature]]` rather than a flat list.
 > - Handled `tree-sitter` complexities by introducing native Python syntax mappings (`*args`, `@staticmethod`).

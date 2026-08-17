@@ -1,7 +1,25 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for the flow drift handler."""
+"""The drift step handler: parse the target, compare it to its plan, analyse only on request.
+
+Proves: B-VAL-01 FR-1, B-VAL-01 FR-5
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`.
+
+Mutants: the tree-sitter parse handed empty bytes, so nothing is extracted and a clean file reads as
+wholly missing (FR-1, 5 fail across three tiers).
+
+**FR-5 survived, and its wording is where the gap was.** The FR says root-cause analysis runs *only*
+when `--analyze` is passed. Deleting the `analyze` guard outright — so every drifted file silently
+bought an LLM call — passed the entire suite, because the only test with an LLM attached also passed
+the flag. The positive path was covered; the word "only" was not.
+`test_drift_handler_does_not_analyze_without_the_flag` closes it by counting calls on the adapter.
+
+Third instance of this shape in the migration, after `E-UI-02` FR-1 (a page that always renders) and
+`B-INTL-02` FR-3 (a call that always succeeds). An assertion that cannot distinguish the guarded path
+from the unguarded one proves the feature, never the constraint.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -104,10 +122,53 @@ class MockLLMResponse:
 
 
 class MockLLMAdapter:
+    def __init__(self) -> None:
+        self.calls = 0
+
     async def generate(
         self, messages: list[Any], config: Any = None, tool_dispatcher: Any = None
     ) -> Any:
+        self.calls += 1
         return MockLLMResponse("The parameter `z` in `my_func` is a typo and should be `y`.")
+
+
+@pytest.mark.asyncio
+async def test_drift_handler_does_not_analyze_without_the_flag(
+    tmp_path: Path, plan_yaml_content: str
+) -> None:
+    """A drifted file with an LLM available is NOT analysed unless `--analyze` was passed.
+
+    `B-VAL-01` FR-5 says root-cause analysis runs *only* on the flag, and the "only" was the half
+    nobody tested. `test_drift_handler_analyze` covers the positive path; deleting the `analyze`
+    guard outright — so every drifted file silently bought an LLM call — kept the whole suite green.
+    """
+    plan_file = tmp_path / "plan.yaml"
+    plan_file.write_text(plan_yaml_content)
+
+    src_file = tmp_path / "src" / "test.py"
+    src_file.parent.mkdir()
+    # Same drift as the --analyze test: `my_func` is missing entirely, so `is_drifted` is True and
+    # the only thing left holding the LLM back is the flag.
+    src_file.write_text("def unrelated_func() -> int:\n    return 0\n")
+
+    llm = MockLLMAdapter()
+    handler = DriftCheckHandler()
+    step = PipelineStep(
+        name="drift_check",
+        action=StepAction.DETECT,
+        target=StepTarget.DRIFT,
+        params={"target_path": str(src_file), "plan_path": str(plan_file)},
+    )
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
+    context.model = context.model.model_copy(update={"llm": llm})
+
+    result = await handler.execute(step, context)
+
+    assert result.output["is_drifted"] is True, "the fixture must drift, or this proves nothing"
+    assert "llm_root_cause" not in result.output, (
+        f"root-cause analysis ran without --analyze: {result.output}"
+    )
+    assert llm.calls == 0, "the LLM was called without --analyze"
 
 
 @pytest.mark.asyncio

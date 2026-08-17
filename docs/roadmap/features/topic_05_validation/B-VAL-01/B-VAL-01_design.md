@@ -39,11 +39,36 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | AST Extraction | System | SHALL extract the Abstract Syntax Tree (AST) of the target file using `tree_sitter` | AST representation is produced for analysis |
-| FR-2 | Baseline Fetch | System | SHALL fetch the Structured Plan JSON via the file's lineage UUID | Structural baseline is established |
 | FR-3 | Drift Detection | System | SHALL detect structural mutations in the AST compared to the baseline spec expectations | A list of drift findings is produced |
 | FR-4 | Gap Analysis | System | SHALL evaluate coverage by verifying AST nodes corresponding to spec scenarios exist | Missing scenarios are reported as coverage gaps |
 | FR-5 | Root-Cause Analysis | System | SHALL trigger LLM root-cause analysis on detected drift ONLY when `--analyze` is passed | Explains why the drift happened |
 | FR-6 | Drift CLI | Developer | SHALL run `sw drift check <file> [--analyze]` | Initiates structural inspection pipeline |
+
+**FR-2 (Baseline Fetch) is deleted, not lost.** It claimed the plan would be fetched "via the file's
+lineage UUID". That mechanism was never built: `--plan` is a **required** option on
+`sw drift check`, the handler reads `step.params["plan_path"]`, and neither the handler nor the
+detector touches lineage or a UUID.
+
+The descope was a decision already taken and recorded — `B-VAL-01_sf02_implementation_plan.md`
+§Open Questions weighs `Code UUID -> Spec UUID -> Plan UUID` plus a `specs/*_plan.yaml` glob against
+an explicit flag and recommends the flag: *"This keeps it 100% fast, avoids globbing, and is
+explicit."* That is what shipped. **The decision simply never reached this table**, so the design
+went on advertising a resolution path the CLI cannot take.
+
+Row deleted per `TECH-046`'s precedent, and the same shape as `TECH-062`, with one difference worth
+naming: there the mechanism was absent and undecided, here it was consciously traded away in the plan
+and the design was left stale. A descope recorded in one document and not the other is invisible to
+every gate — `check_fr_sweep.py` sees an uncited FR, never a contradicted one.
+
+**One thing nearby will look like FR-2 and is not.** `_plan_declaring` in
+`assurance/validation/interfaces/cli_drift.py` does resolve a plan for a file automatically — by
+scanning every plan for an `expected_signatures` entry naming the path, in three spellings. It belongs
+to **`B-VAL-02`** (`sw rot`), which shares the module, and it keys on path text rather than on
+lineage. So automatic baseline resolution exists in the repo, on another capability's command, by a
+mechanism FR-2 did not describe. Reading it as evidence that FR-2 shipped would be wrong twice.
+
+Recorded 2026-08-17 from `INT-US-10-SF01-MIG`. Remaining FRs renumbered nowhere: FR-1, FR-3..FR-6
+keep their identifiers so existing citations and plans stay valid.
 
 ## Non-Functional Requirements
 
