@@ -1,0 +1,95 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""The integration-migration registry says what `ADR-004` requires it to say.
+
+Proves: TECH-060 FR-2, TECH-060 FR-3
+
+The 27 migration entries are the work list for `ADR-004`'s backlog. A section that quietly loses rows,
+or a delivery claim that quietly comes back, is the failure this whole ticket exists to stop — so the
+registry facts are pinned rather than trusted to a reader.
+
+Deliberately about **shape and specific claims**, not wording: the row count, the identifiers that
+must exist, and the three checkboxes that must stay open. The section can be rewritten freely.
+
+These are also the only assertions standing behind FR-2 and FR-3. Without them the FR sweep counts
+both as uncited, which is honest: a registry change nothing reads is a change nothing protects.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
+
+#: A migration row in the `## 🚚 Integration Migration` table.
+_MIG_ROW = re.compile(r"^\|[^|]*\|\s*`\[ \]`\s*`(INT-US-[\w-]+-MIG)`\s*\|", re.M)
+
+#: The contract ids `TECH-060` FR-2 minted, which had no roadmap line before it.
+MINTED_CONTRACTS = (
+    "INT-US-10-SF01",
+    "INT-US-11-SF01",
+    "INT-US-15-SF01",
+    "INT-US-19-SF01",
+    "INT-US-25-SF01",
+)
+
+#: `TECH-060` FR-3 — marked delivered while citing no test file, so reopened.
+REOPENED = ("INT-US-05-SF03", "INT-US-05-SF04", "INT-US-21-SUB")
+
+
+@pytest.fixture(scope="module")
+def roadmap() -> str:
+    return ROADMAP.read_text(encoding="utf-8")
+
+
+# Module-level rather than grouped in classes: R6 in `check_conventions.py` requires a unit test
+# class to name the class or function it exercises, and these assert a *document*. There is no unit
+# to name, so inventing a class name to satisfy the rule would be the gaming the rule exists to stop.
+
+
+def test_the_migration_section_exists(roadmap: str) -> None:
+    assert "## 🚚 Integration Migration" in roadmap
+
+
+def test_the_section_holds_every_migration_entry(roadmap: str) -> None:
+    """27, not 26 — the count was corrected by generating the roster instead of tallying it."""
+    assert len(_MIG_ROW.findall(roadmap)) == 27
+
+
+def test_every_migration_id_is_unique(roadmap: str) -> None:
+    rows = _MIG_ROW.findall(roadmap)
+    assert len(set(rows)) == len(rows)
+
+
+def test_the_section_is_the_only_home_for_them(roadmap: str) -> None:
+    """Scattering the entries into their stories means 27 placement edits in and 27 out.
+
+    Misfiled registry insertions wrecked three commits on 2026-08-16, which is why they live in one
+    table instead of under 21 story headings.
+    """
+    section = roadmap.split("## 🚚 Integration Migration", 1)[1].split("\n---", 1)[0]
+    assert len(_MIG_ROW.findall(section)) == 27
+
+
+@pytest.mark.parametrize("contract", MINTED_CONTRACTS)
+def test_each_minted_contract_has_a_line(roadmap: str, contract: str) -> None:
+    assert f"**{contract}:**" in roadmap
+
+
+@pytest.mark.parametrize("contract", REOPENED)
+def test_a_reopened_claim_is_open(roadmap: str, contract: str) -> None:
+    """FR-3 — a `✅` citing no test file is not a delivery, and must not drift back."""
+    line = next(ln for ln in roadmap.splitlines() if f"**{contract}:**" in ln)
+    assert "`[ ]`" in line, f"{contract} claims delivery again: {line.strip()}"
+
+
+@pytest.mark.parametrize("contract", REOPENED)
+def test_a_reopened_claim_carries_a_real_name(roadmap: str, contract: str) -> None:
+    """Two of them read "Sub-Story Integration (Complete)" — a label, not a subject."""
+    line = next(ln for ln in roadmap.splitlines() if f"**{contract}:**" in ln)
+    assert "Sub-Story Integration (Complete)" not in line

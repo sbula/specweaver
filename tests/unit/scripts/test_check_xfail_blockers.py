@@ -3,6 +3,8 @@
 
 """Tests for the stale-xfail guard (`scripts/check_xfail_blockers.py`).
 
+Proves: TECH-060 FR-5, TECH-060 NFR-1
+
 `ADR-004` clause 4: a test is written as soon as the interface it exercises is defined, not when the
 implementation lands. Where the implementation is absent it is committed as
 `pytest.mark.xfail(strict=True)` naming the blocking capability, so it fails first and proves it

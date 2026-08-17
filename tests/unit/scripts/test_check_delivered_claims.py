@@ -4,6 +4,12 @@
 """Tests for the delivered-claim guard (`scripts/check_delivered_claims.py`).
 
 Proves: TECH-053 FR-1, TECH-053 FR-2, TECH-053 FR-3, TECH-053 NFR-1, TECH-053 NFR-3
+Proves: TECH-060 FR-4
+
+One story per `Proves:` line — `_citations._TAG` reads a single id and then every requirement
+to end-of-line, so a second story appended to the same line credits its requirements to the
+FIRST. That is a dangling citation, which the sweep calls worse than a missing one: it looks
+like proof and counts as none.
 
 `TECH-053`. Two ways a `✅` can mean nothing: an add-on group whose flag disagrees with its own
 children, and a capability marked delivered that `check_fr_sweep.py` cannot see — no design

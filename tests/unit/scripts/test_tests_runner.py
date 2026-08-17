@@ -3,6 +3,8 @@
 
 """Tests for the test-tier runner (`scripts/tests.py`).
 
+Proves: TECH-060 FR-1
+
 The dangerous logic here is not the pytest invocation, it is the resolution: story ID -> profile,
 DAL -> shift, scope -> paths. Every one of those failing silently produces a GREEN run that tested
 less than it claimed, which is worse than a red one.

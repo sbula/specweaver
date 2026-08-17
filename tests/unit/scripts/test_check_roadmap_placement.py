@@ -3,6 +3,8 @@
 
 """R-MARKER and R-ONCE, the two rules about what a single roadmap line may be.
 
+Proves: TECH-060 FR-1
+
 R-MARKER: a `TECH` line is `[ ]` when open and `✅` when delivered — never `[x]`.
 
 `TECH-020`'s follow-up. `check_roadmap_placement.py` shipped with `TECH-026` and had **no tests at

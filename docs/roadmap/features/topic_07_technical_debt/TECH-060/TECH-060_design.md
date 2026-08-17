@@ -141,16 +141,21 @@ they flip; both groups become `🟡`.
 | FR-4 | No green without integration | `check_delivered_claims.py` | Report a (sub)story marked green whose closed features have no integration/e2e evidence, ratcheted | `ADR-004` clause 5 is enforced rather than written down |
 | FR-5 | Stale strict-xfail | `check_xfail_blockers.py` | Fail any `xfail(strict=True)` whose named blocking capability is `✅` in the matrix; require the reason to name a blocker | Clause 4's markers cannot decay into permanent exemptions |
 | FR-6 | The method is written down | `specweaver-feature`, `-design`, `-implementation-plan`, `-dev` | The contract's lifecycle, the trigger, the inventory-to-task reading and the marker discipline, one per skill | A future (sub)story gets its contract without this ticket being re-read |
-| FR-7 | Verifiable proof | test suite | Each gate is driven against a synthetic registry built to violate it and one built to satisfy it, and probed with a planted violation | Neither gate can ship inert, which `R-OWNER` and the morning mutation gate both did |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | No behaviour change | Registry, skills and gate scripts only. Nothing under `src/` is touched |
-| NFR-2 | Both gates are zero-tolerance | Measured, not assumed: gate 1 fires on nothing once FR-2/FR-3 land, so the ratchet the design planned would freeze zero and mean nothing. Gate 2 has no legacy set either |
-| NFR-3 | Existing gates stay green | `doc` 11/11 and `cb` throughout; the `-MIG` widening must not change how any existing identifier resolves |
-| NFR-4 | Probed, not asserted | Every gate is verified by planting a violation and watching it fail, then removing it — a passing gate and an inert gate look identical |
+| NFR-1 | Both gates are zero-tolerance | Measured, not assumed: gate 1 fires on nothing once FR-2/FR-3 land, so the ratchet this design originally planned would freeze zero and mean nothing. Gate 2 has no legacy set either. Pinned by the live-tree assertion in each gate's tests |
+
+**Three NFRs were descoped rather than delivered**, because none of them is a property a test can
+judge and an NFR nothing can cite is exactly what `check_nfr_sweep.py` counts:
+
+- *No behaviour change* — a fact about this ticket's diff, not an ongoing constraint. The
+  `src/`-untouched claim is visible in the commits.
+- *Existing gates stay green* — that is what `doc` and `cb` are. Restating it as a requirement adds a
+  row nothing can prove independently.
+- *Probed, not asserted* — process, and it belongs in the implementation plan, where it now is.
 
 ## Execution Order
 
@@ -162,6 +167,12 @@ they flip; both groups become `🟡`.
 
 ## Delivery
 
+**FR-7 was deleted, not delivered.** It read "verifiable proof: each gate is driven against a
+synthetic registry and probed". That is not a requirement — it is *how* FR-1 through FR-6 are proven,
+and as a row it can never fail independently of them. Deleting it makes the descope visible, which is
+what the FR gate asks for. The proof itself is unchanged and listed below.
+
+
 | FR | State | Where |
 |---|---|---|
 | FR-1 `-MIG` grammar | ✅ | `tests.py` `INT_ID`, `check_retirement_targets.py` `_RETIRED_ID`, `check_roadmap_placement.py` `STORY_ID` — three sites, two found only by probing |
@@ -170,7 +181,6 @@ they flip; both groups become `🟡`.
 | FR-4 no green without integration | ✅ | `check_delivered_claims.unproven_green_findings`, zero-tolerance |
 | FR-5 stale strict-xfail | ✅ | `scripts/check_xfail_blockers.py`, `doc` gate, zero-tolerance |
 | FR-6 the method in the skills | ✅ | `specweaver-feature` Phase 0b owns the contract; `-design` hard-stops without one; `-implementation-plan` schedules from the inventory; `-dev` enforces the named blocker |
-| FR-7 verifiable proof | ✅ | below |
 
 ## Verifiable Proof
 
