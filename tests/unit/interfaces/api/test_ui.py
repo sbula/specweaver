@@ -2,7 +2,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for the UI (Web Dashboard) endpoints."""
+"""The web dashboard's endpoints: run visibility, HITL resolution, and refusal.
+
+Proves: E-UI-02 FR-1, E-UI-02 FR-2, E-UI-02 FR-3
+
+Cited under `specweaver-dev` §3.2c, on contact from `INT-US-06-MIG`. `E-UI-02` shipped with a design
+that declared no requirements at all, so there was nothing for any gate to judge.
+
+Each FR is behind a killed mutant:
+
+* FR-1 — `runs = store.list_runs()` -> `runs = []`. This one **survived** until
+  `test_get_dashboard_runs_lists_runs_from_the_store` was added: the page always rendered and the
+  only assertion was that it contained "Pipeline Runs".
+* FR-2 — dropping the `await submit_gate_decision(...)` call fails two tests here.
+* FR-3 — replacing the 404 with a rendered `run = None` fails one.
+"""
 
 from __future__ import annotations
 
@@ -66,6 +80,42 @@ def test_get_dashboard_runs(client) -> None:
     assert "text/html" in resp.headers["content-type"]
     text = resp.text
     assert "Pipeline Runs" in text
+
+
+def test_get_dashboard_runs_lists_runs_from_the_store(client, tmp_path) -> None:
+    """The runs page shows the runs the store holds, not just a heading.
+
+    `E-UI-02` FR-1's mutant survived without this: replacing `runs = store.list_runs()` with
+    `runs = []` left every test green, because the only assertion was that the page rendered and
+    contained "Pipeline Runs". A page that always renders proves nothing about the data behind it,
+    which is the whole point of the "tablet on a train" scenario — reading real run state remotely.
+    """
+    from pathlib import Path
+    from unittest.mock import patch
+
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+    from specweaver.core.flow.engine.store import StateStore
+
+    run = PipelineRun(
+        run_id="listed-run-42",
+        pipeline_name="validate_only",
+        project_name="myproject",
+        spec_path="/fake/spec.md",
+        status=RunStatus.COMPLETED,
+        current_step=0,
+        step_records=[],
+        started_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:01",
+    )
+
+    with patch.object(Path, "home", return_value=tmp_path):
+        state_dir = tmp_path / ".specweaver"
+        state_dir.mkdir(exist_ok=True)
+        StateStore(state_dir / "pipeline_state.db").save_run(run)
+
+        resp = client.get("/dashboard/runs")
+        assert resp.status_code == 200
+        assert "listed-run-42" in resp.text, "the runs page did not render the stored run"
 
 
 def test_get_dashboard_run_detail_404(client) -> None:

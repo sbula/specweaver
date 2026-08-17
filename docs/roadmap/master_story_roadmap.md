@@ -594,8 +594,8 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `✅` `INT-US-27-MIG` | US-27 | Autonomous Production Self-Healing | `B-SENS-02` |
 | A-SENS-01 (2) | `✅` `INT-US-11-SF01-MIG` | US-11 | Infinite Scale Management | `A-SENS-01` |
 |  | `✅` `INT-US-19-SF01-MIG` | US-19 | Distributed Topology Scaling | `A-SENS-01` |
-| C-FLOW-02 (2) | `[ ]` `INT-US-06-MIG` | US-6 | Remote Dashboard | `C-FLOW-02`, `E-UI-02` |
-|  | `[ ]` `INT-US-07-MIG` | US-7 | IDE Copilot | `C-FLOW-02` |
+| C-FLOW-02 (2) | `✅` `INT-US-06-MIG` | US-6 | Remote Dashboard | `C-FLOW-02`, `E-UI-02` |
+|  | `✅` `INT-US-07-MIG` | US-7 | IDE Copilot | `C-FLOW-02` |
 | C-FLOW-03 (2) | `[ ]` `INT-US-18-MIG` | US-18 | Productionizing External Targets | `C-FLOW-03` |
 |  | `[ ]` `INT-US-19-MIG` | US-19 | Microservice Fleet Orchestration | `C-FLOW-03`, `B-SENS-02` |
 | singletons (15) | `[ ]` `INT-US-08-MIG` | US-8 | Greenfield Bootstrap Wizard | `D-SENS-01` |

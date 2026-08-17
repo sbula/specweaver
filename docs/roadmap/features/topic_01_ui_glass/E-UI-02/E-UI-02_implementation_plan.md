@@ -1,5 +1,9 @@
 # Feature 3.8 — Web Dashboard (Minimal)
 
+**FRs owned: FR-1, FR-2, FR-3.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-06-MIG`. The plan predates the FR ledger — the capability's design declared no requirements
+at all, so there was no ownership to state. Proof and mutants: `tests/unit/interfaces/api/test_ui.py`.
+
 A lightweight, server-rendered HTML dashboard powered by FastAPI + Jinja2 + HTMX, served alongside
 the existing REST API (`sw serve`). Designed for mobile-responsive use on a tablet ("the train
 scenario") to monitor pipelines and perform HITL (Human-in-the-Loop) gate approvals.

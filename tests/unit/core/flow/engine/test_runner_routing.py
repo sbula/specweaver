@@ -2,7 +2,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for PipelineRunner integration with RouterEvaluator."""
+"""Routing through the runner, including what it leaves behind for a later reader.
+
+Proves: C-FLOW-02 FR-5
+
+Cited from `INT-US-06-MIG`. FR-5 has two halves and only one was covered: the emitted `step_routed`
+event was asserted via `events_caught`, while the StateStore row — `runner._log(run, "step_routed",
+...)` — could be deleted with the entire suite staying green. An emitted event dies with the process;
+the audit row is what survives it.
+
+`test_a_route_is_written_to_the_audit_log` closes that, and the mutant now dies.
+
+Narrower than FR-5's wording, deliberately: the row carries the step name, while the parsed condition
+and target travel on the event. The test asserts what is written rather than what the sentence implies.
+"""
 
 from __future__ import annotations
 
@@ -232,3 +245,45 @@ async def test_router_edge_cases_and_telemetry(mock_context, registry):
 
     assert run.status == RunStatus.COMPLETED
     assert "step_routed" in events_caught
+
+
+@pytest.mark.asyncio
+async def test_a_route_is_written_to_the_audit_log(mock_context, tmp_path) -> None:
+    """A jump leaves a `step_routed` row in the StateStore, not only an emitted event.
+
+    `C-FLOW-02` FR-5 has two halves and only one was covered. The event stream half is asserted
+    above via `events_caught`; the STORE half — `runner._log(run, "step_routed", ...)` — could be
+    deleted and the entire suite stayed green. An emitted event dies with the process; the audit row
+    is what a later reader has.
+
+    Narrower than the FR's wording, deliberately: the row carries the step name, while the parsed
+    condition and target travel on the emitted event. This asserts what is written, not what the
+    sentence implies.
+    """
+    from specweaver.core.flow.engine.store import StateStore
+
+    registry = StepHandlerRegistry()
+    registry.register(StepAction.VALIDATE, StepTarget.SPEC, FakeHandler())
+    registry.register(StepAction.REVIEW, StepTarget.SPEC, FakeHandler())
+
+    pipe = PipelineDefinition(
+        name="test_route_audit",
+        steps=[
+            PipelineStep(
+                name="step_a",
+                action=StepAction.VALIDATE,
+                target=StepTarget.SPEC,
+                router=RouterDefinition(rules=[], default_target="step_b"),
+            ),
+            PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC),
+        ],
+    )
+
+    store = StateStore(tmp_path / "state.db")
+    runner = PipelineRunner(pipe, mock_context, registry=registry, store=store)
+    run = await runner.run()
+
+    rows = store.get_audit_log(run.run_id)
+    assert any("step_routed" in str(row.values()) for row in rows), (
+        f"no step_routed row in the audit log: {rows}"
+    )

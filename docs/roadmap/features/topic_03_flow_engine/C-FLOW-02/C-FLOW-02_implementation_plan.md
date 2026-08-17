@@ -6,6 +6,16 @@
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-02/C-FLOW-02_implementation_plan.md
 - **Status**: APPROVED
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-06-MIG`. The plan predates the FR ledger, so ownership was never stated and
+`check_fr_coverage.py` read all five as unplanned.
+
+Proof and the mutants that verify it: `tests/unit/core/flow/engine/test_routers.py` (FR-3),
+`test_router_integration.py` (FR-1, FR-2, FR-4), `test_runner_routing.py` (FR-5).
+
+FR-5 needed a new assertion. Its store half — the `step_routed` audit row — could be deleted with the
+whole suite green, because the only routing assertion was on the emitted event.
+
 ## Goal Description
 Implement Router-Based Flow Control (Feature 3.25) to enable conditional branching in SpecWeaver
 pipelines dynamically. Rather than being restricted to strict linear execution (Step 1 -> Step 2) or

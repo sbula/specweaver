@@ -2,6 +2,18 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Evaluating a router's rules against a step result.
+
+Proves: C-FLOW-02 FR-3
+
+Cited under `specweaver-dev` §3.2c, from `INT-US-06-MIG`. `C-FLOW-02` is `✅` with five FRs, none
+planned and none cited.
+
+Mutant-verified: returning `router.default_target` unconditionally — skipping every rule — fails three
+tests here. FR-3's claim is that the FIRST matching condition wins and the default is a fallback, so a
+router that always falls back must not pass.
+"""
+
 from specweaver.core.flow.engine.models import RouterDefinition, RouterRule, RuleOperator
 from specweaver.core.flow.engine.routers import RouterEvaluator
 

@@ -1,6 +1,22 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""A router inside a real pipeline: parsed, validated, and acted on.
+
+Proves: C-FLOW-02 FR-1, C-FLOW-02 FR-2, C-FLOW-02 FR-4
+
+Cited from `INT-US-06-MIG`. Three mutants die across this file and its siblings:
+
+* FR-1 — `router = step_def.router` -> `None`, so the step never reads its own router: 5 fail.
+* FR-2 — skipping `_validate_router` in `validate_flow`, so a target naming no step is accepted: 1 fails.
+* FR-4 — `run.route_to_step(result, target_idx)` -> `run.complete_current_step(result)`, so the jump
+  resolves and is then thrown away: 4 fail.
+
+FR-4's mutant is the one worth naming: the router still evaluates, still logs, still emits — only the
+`current_step` move disappears. A weaker mutant that merely wrapped the call in a false branch was a
+no-op and proved nothing.
+"""
+
 import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
