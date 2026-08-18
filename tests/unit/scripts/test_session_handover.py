@@ -138,3 +138,38 @@ class TestDerivedCounts:
         assert rows[1].blocked_externally is False, (
             "'none — ...' names no blocker, so it is actionable"
         )
+
+
+class TestNeedsYou:
+    """Separating what a human must answer from what any agent can just go and do.
+
+    Eight open rows with no external blocker is a number. Three of them wanting a decision from the
+    user and five wanting a test from whoever picks them up is an instruction. The generator can tell
+    them apart because the blocker cell already says which it is.
+    """
+
+    def test_a_row_wanting_a_decision_is_routed_to_the_user(self, ho: ModuleType) -> None:
+        rows = [
+            ho.OpenRow("US-03", "P-6", "rule uri", "needs a scope decision — see below", False),
+            ho.OpenRow("US-09", "P-2", "containers", "product decision", False),
+            ho.OpenRow("US-08", "P-5", "wizard", "none — needs an e2e, not a feature", False),
+            ho.OpenRow("US-20", "P-5", "inferred", "`B-SENS-07` — no resolver exists", True),
+        ]
+
+        assert [r.number for r in ho.awaiting_decision(rows)] == ["P-6", "P-2"]
+        assert [r.number for r in ho.awaiting_work(rows)] == ["P-5"], (
+            "a row blocked on named work is neither — it is waiting on someone else's build"
+        )
+
+    def test_the_section_says_so_when_it_cannot_know(self, ho: ModuleType) -> None:
+        """HITL gates are not derivable. Silence must read as 'nothing was recorded', not 'nothing exists'."""
+        block = ho.render_needs_you(unpushed=0, dirty=0, rows=[], handover_text="")
+
+        assert "not derivable" in block.lower() or "recorded" in block.lower()
+
+    def test_unpushed_work_names_the_command(self, ho: ModuleType) -> None:
+        """`git push` is not in this repo's Bash allow-list, so it is always the user's to run."""
+        block = ho.render_needs_you(unpushed=9, dirty=0, rows=[], handover_text="")
+
+        assert "9" in block
+        assert "git push" in block

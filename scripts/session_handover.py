@@ -108,6 +108,80 @@ def open_rows(contract_text: str, story: str) -> list[OpenRow]:
     return rows
 
 
+#: A blocker cell that names a *decision* is the user's to answer; one that names none at all is an
+#: agent's to go and do. The cell already carries the distinction, so nothing has to be inferred.
+_DECISION = re.compile(r"\bdecision\b", re.I)
+
+
+def awaiting_decision(rows: list[OpenRow]) -> list[OpenRow]:
+    """Open rows whose blocker is a judgement only the user can make."""
+    return [r for r in rows if not r.blocked_externally and _DECISION.search(r.blocker)]
+
+
+def awaiting_work(rows: list[OpenRow]) -> list[OpenRow]:
+    """Open rows with no external blocker and no decision pending — someone can just write the test."""
+    return [r for r in rows if not r.blocked_externally and not _DECISION.search(r.blocker)]
+
+
+def render_needs_you(*, unpushed: int, dirty: int, rows: list[OpenRow], handover_text: str) -> str:
+    """The section that says what cannot proceed without the user.
+
+    Deliberately explicit about its own blind spot. A HITL gate a skill stopped at is not derivable
+    from any artefact, so an empty list here means *nothing was recorded*, never *nothing is pending* —
+    and saying which is the difference between a useful section and a misleading one.
+    """
+    out = ["### Needs you", ""]
+
+    if unpushed:
+        out.append(
+            f"- **{unpushed} commit(s) unpushed.** `git push` is not in this repo's Bash allow-list, "
+            "so it is always yours to run: `git push origin main`"
+        )
+    if dirty:
+        out.append(f"- **{dirty} file(s) uncommitted** — decide whether they belong in a commit")
+
+    decisions = awaiting_decision(rows)
+    if decisions:
+        out.append(
+            f"- **{len(decisions)} contract row(s) waiting on a judgement only you can make:**"
+        )
+        out += [f"  - `{r.story}` {r.number} — {r.blocker}" for r in decisions]
+
+    work = awaiting_work(rows)
+    if work:
+        out.append(
+            f"- {len(work)} row(s) need a test rather than a decision — an agent can take these "
+            "without asking:"
+        )
+        out += [f"  - `{r.story}` {r.number} — {r.blocker}" for r in work]
+
+    if "*(none recorded" in handover_text or not handover_text.strip():
+        out += [
+            "",
+            "> **A HITL gate is not derivable from any artefact.** The sections above this block are "
+            "empty or stubbed, which means *nothing was recorded* — not that nothing is pending. If a "
+            "skill stopped at a gate this session, write it there before the session ends.",
+        ]
+
+    if len(out) == 2:
+        out.append(
+            "*Nothing derivable is waiting. Check the recorded sections above — a HITL gate is not "
+            "derivable and appears there only if someone wrote it down.*"
+        )
+    return "\n".join(out)
+
+
+def _all_open_rows() -> list[OpenRow]:
+    """Every open inventory row across every contract that has one."""
+    if not CONTRACTS.is_dir():
+        return []
+    return [
+        r
+        for f in sorted(CONTRACTS.glob("US-*_integration.md"))
+        for r in open_rows(f.read_text(encoding="utf-8"), f.stem.replace("_integration", ""))
+    ]
+
+
 def splice(existing: str, block: str) -> str:
     """Replace the generated block, returning everything else unchanged.
 
@@ -198,8 +272,6 @@ def _registries() -> list[str]:
             f"{len(rows) - len(actionable)} waiting on named work, "
             f"**{len(actionable)} with no external blocker**"
         )
-        for r in actionable:
-            lines.append(f"  - `{r.story}` {r.number} — {r.blocker}")
     return lines
 
 
@@ -230,6 +302,19 @@ def render_state(*, gates: bool = False, suite: bool = False) -> str:
         "",
     ]
     body += _git_state() + _optional(gates, suite) + _registries() + _sweeps()
+
+    existing = HANDOVER.read_text(encoding="utf-8") if HANDOVER.is_file() else ""
+    _, ahead = _run("git", "rev-list", "--count", "@{u}..HEAD")
+    _, dirty = _run("git", "status", "--porcelain")
+    body += [
+        "",
+        render_needs_you(
+            unpushed=int(ahead) if ahead.isdigit() else 0,
+            dirty=len([x for x in dirty.splitlines() if x.strip()]),
+            rows=_all_open_rows(),
+            handover_text=existing,
+        ),
+    ]
     _, log = _run("git", "log", "--oneline", "-8")
     body += [
         "",
