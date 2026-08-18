@@ -404,6 +404,15 @@ def _cmd_install() -> int:
     return 0
 
 
+def _cmd_summary(report: Path) -> int:
+    """Re-render a report already on disk. Reads nothing else and runs nothing."""
+    if not report.is_file():
+        print(f"no report at {report} — run the corpus first", file=sys.stderr)
+        return 1
+    print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run a session and write the report a gate will read hours later.
 
@@ -445,12 +454,7 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_install()
 
     if args.summary:
-        report = Path(args.out)
-        if not report.is_file():
-            print(f"no report at {report} — run the corpus first", file=sys.stderr)
-            return 1
-        print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
-        return 0
+        return _cmd_summary(Path(args.out))
 
     paths = [Path(p) for p in args.corpus]
     if args.corpus_dir:
