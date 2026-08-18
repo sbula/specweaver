@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.execution.tooling_sources import ToolingSource, declared_pytest
 
 if TYPE_CHECKING:
     from specweaver.sandbox.execution.models import (
@@ -71,6 +72,22 @@ def _declares_a_runner(deps: list[object]) -> bool:
         if any(name == runner or name.startswith(f"{runner}-") for runner in _TEST_RUNNERS):
             return True
     return False
+
+
+def _manifest_declares_a_runner(manifest_text: str) -> bool:
+    """Whether `uv` can install pytest from this manifest alone, by group or at runtime.
+
+    The gate on reading any other file. A project that declares pytest has pinned it, and layering a
+    `tox.ini` block over that resolution would turn a reproducible run into a mixed one.
+    """
+    try:
+        manifest = tomllib.loads(manifest_text)
+    except (tomllib.TOMLDecodeError, ValueError):
+        return False
+    runtime = (manifest.get("project") or {}).get("dependencies")
+    return bool(_groups_holding_a_runner(manifest_text)) or (
+        isinstance(runtime, list) and _declares_a_runner(runtime)
+    )
 
 
 def _groups_holding_a_runner(manifest_text: str) -> list[str]:
@@ -253,10 +270,25 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         )
         runner_groups = _groups_holding_a_runner(manifest_text)
 
-        # The manifest is part of the digest because it now decides the command: moving a runner
-        # from `dev` into `tests` changes which `--group` flags are sent, and a stamp keyed on the
-        # lockfile alone would keep serving the environment built before the move.
-        digest = hashlib.sha256(stamped.read_bytes() + manifest_text.encode("utf-8")).hexdigest()
+        # Two thirds of real projects never name pytest in the manifest. Most of them declare it
+        # somewhere `uv` will not look — `tox.ini`, a `requirements` file — and reading those is the
+        # difference between an environment and none. Only when the manifest is silent: a project
+        # that declares its runner has pinned it, and a second unpinned set over the top of a
+        # locked resolution is worse than nothing.
+        fallback = (
+            None
+            if _manifest_declares_a_runner(manifest_text)
+            else declared_pytest(self._mounts.source_root)
+        )
+
+        # Every input to the command belongs in the digest, or a changed input serves a stale
+        # environment for ever: the manifest decides which `--group` flags are sent, and the
+        # fallback decides whether anything is installed on top at all.
+        digest = hashlib.sha256(
+            stamped.read_bytes()
+            + manifest_text.encode("utf-8")
+            + self._fallback_fingerprint(fallback)
+        ).hexdigest()
         # Sibling of cache_root, NOT inside it — uv itself owns/may reorganize cache_root's
         # contents, so a stamp file living inside it could be silently wiped (Red/Blue fix).
         stamp_file = self._mounts.cache_root.parent / ".prepared_hash"
@@ -268,7 +300,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         # prepare-phase container, not just the execute-phase one (Red/Blue fix: `--rm` alone
         # is the exact anti-pattern AD-8 exists to avoid, and a 300s prepare timeout is long
         # enough for a host-side SIGKILL to leave one orphaned).
-        for step, uv_cmd in self._prepare_steps(runner_groups, locked=lockfile.exists()):
+        for step, uv_cmd in self._prepare_steps(runner_groups, fallback, locked=lockfile.exists()):
             name = f"specweaver-prepare-{self._run_id}-{uuid.uuid4().hex[:8]}"
             super().execute([engine, "rm", "-f", name], timeout_seconds=10)
             try:
@@ -290,8 +322,24 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
                 )
         stamp_file.write_text(digest)
 
+    def _fallback_fingerprint(self, fallback: ToolingSource | None) -> bytes:
+        """The fallback's own contribution to the stamp, contents included.
+
+        The parsed packages travel in the repr, but a `requirements` file is installed by reference
+        — `uv pip install -r` reads it inside the container — so its *contents* never reach the
+        command and a repr-only digest would miss an edited pin.
+        """
+        if fallback is None:
+            return b""
+        parts = [repr(fallback).encode("utf-8")]
+        for relative in fallback.requirement_files:
+            path = self._mounts.source_root / relative
+            if path.is_file():
+                parts.append(path.read_bytes())
+        return b"".join(parts)
+
     def _prepare_steps(
-        self, runner_groups: list[str], *, locked: bool
+        self, runner_groups: list[str], fallback: ToolingSource | None, *, locked: bool
     ) -> list[tuple[str, list[str]]]:
         """The container invocations that build the environment, in order.
 
@@ -322,7 +370,8 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
                     # an error naming the lockfile rather than the sandbox. `--frozen` installs what
                     # the lock already says.
                     ["uv", "sync", "--frozen", *synced],
-                )
+                ),
+                *self._fallback_step(fallback),
             ]
         logger.warning(
             "ContainerSubprocessExecutor: %s has no uv.lock, so the prepared environment was "
@@ -336,6 +385,48 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
                 "install",
                 ["uv", "pip", "install", "--python", _PREPARED_VENV, *group_flags, "/workspace"],
             ),
+            *self._fallback_step(fallback),
+        ]
+
+    def _fallback_step(self, fallback: ToolingSource | None) -> list[tuple[str, list[str]]]:
+        """Install what the project declared outside its manifest, if anything readable."""
+        if fallback is None:
+            return []
+        logger.info(
+            "ContainerSubprocessExecutor: pyproject.toml declares no test runner; installing the "
+            "one declared in %s (%d package(s), %d file(s))",
+            fallback.path,
+            len(fallback.packages),
+            len(fallback.requirement_files),
+        )
+        if fallback.skipped:
+            # Silence here would make a partial environment look like a complete one, and these are
+            # the lines most likely to hold the plugins a suite needs.
+            logger.warning(
+                "ContainerSubprocessExecutor: %d line(s) of %s need tox's own substitution engine "
+                "and were NOT installed: %s",
+                len(fallback.skipped),
+                fallback.path,
+                "; ".join(fallback.skipped[:5]),
+            )
+        references = [
+            arg
+            for relative in fallback.requirement_files
+            for arg in ("-r", f"/workspace/{relative}")
+        ]
+        return [
+            (
+                "tooling",
+                [
+                    "uv",
+                    "pip",
+                    "install",
+                    "--python",
+                    _PREPARED_VENV,
+                    *references,
+                    *fallback.packages,
+                ],
+            )
         ]
 
     def _prepare_container(self, engine: str, name: str, *cmd: str) -> list[str]:

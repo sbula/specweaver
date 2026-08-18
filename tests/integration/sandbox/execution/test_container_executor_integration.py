@@ -338,6 +338,51 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
 
     @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_a_runner_declared_only_in_tox_ini_is_installed(self, tmp_path: Path) -> None:
+        """Rung 2, in the shape it actually occurs: 31 corpus repositories declare pytest in
+        `tox.ini` and 81 declare it nowhere in `pyproject.toml`.
+
+        The fixture also carries a tox factor line, `py3{10-14}: -r extra.pip`, which needs tox's
+        own substitution engine. It must be skipped rather than guessed at — and the run must still
+        succeed, because that line is not what holds the runner.
+        """
+        project = tmp_path / "tox-only"
+        (project / "src" / "mypkg").mkdir(parents=True)
+        (project / "pyproject.toml").write_text(
+            '[project]\nname = "mypkg"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
+            'dependencies = ["iniconfig"]\n\n'
+            '[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n',
+            encoding="utf-8",
+        )
+        (project / "tox.ini").write_text(
+            "[tox]\nenvlist = py311\n\n[testenv]\ndeps =\n    pytest>=8\n"
+            "    py3{10-14}: -r extra.pip\ncommands = pytest {posargs}\n",
+            encoding="utf-8",
+        )
+        (project / "src" / "mypkg" / "__init__.py").write_text("VALUE = 42\n", encoding="utf-8")
+        (project / "test_it.py").write_text(
+            "from mypkg import VALUE\n\n\ndef test_v() -> None:\n    assert VALUE == 42\n",
+            encoding="utf-8",
+        )
+        assert "pytest" not in (project / "pyproject.toml").read_text(encoding="utf-8")
+
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
+        )
+        runner = PythonQARunner(
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+        )
+
+        result = runner.run_tests(".", kind="")
+
+        assert result.passed == 1 and result.errors == 0, (
+            f"the runner was declared in tox.ini and never installed: {result}"
+        )
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
     def test_the_absent_toolchain_is_explained_to_the_caller(self, tmp_path: Path) -> None:
         """Failing loudly is not the same as failing usefully, and this is the majority path.
 

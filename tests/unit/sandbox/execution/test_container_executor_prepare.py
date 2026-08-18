@@ -464,3 +464,142 @@ class TestEnsurePreparedResolvesWithoutACommittedLockfile:
             f"a committed lockfile was ignored in favour of a fresh resolution:\n{joined}"
         )
         assert not any("pip install" in j for j in joined), joined
+
+
+class TestEnsurePreparedFallsBackToOtherDeclarationSites:
+    """Rung 2: 48 of 121 corpus repositories declare pytest outside `pyproject.toml`.
+
+    Reading those files is worth nothing on its own — of the 68 projects in the two reachable
+    failure classes only 29 committed a lockfile, so before rung 1 this recovered nine. With the
+    lockless route in place it recovers 27 of the 48, taking the corpus from 33% to 55%.
+
+    The reader is in `tooling_sources` and has its own tests, including a run against all 30 real
+    `tox.ini` files from the corpus. What is asserted here is the wiring and, more importantly, when
+    it must *not* fire.
+    """
+
+    def _uv_steps(self, tmp_path: Path, monkeypatch, files: dict[str, str]) -> list[list[str]]:
+        mounts = _mounts(tmp_path)
+        for name, text in files.items():
+            path = mounts.source_root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        mock_execute = MagicMock(return_value=_ok_result())
+        monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        return [
+            list(call.args[0])[list(call.args[0]).index("uv") :]
+            for call in mock_execute.call_args_list
+            if call.args and "uv" in call.args[0]
+        ]
+
+    _NO_RUNNER = '[project]\nname = "t"\nversion = "0"\ndependencies = []\n'
+
+    def test_a_requirements_file_is_installed_when_the_manifest_has_no_runner(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        steps = self._uv_steps(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": self._NO_RUNNER,
+                "uv.lock": "locked",
+                "requirements-dev.txt": "pytest>=8\npytest-cov\n",
+            },
+        )
+
+        flat = [" ".join(s) for s in steps]
+        assert any("-r /workspace/requirements-dev.txt" in f for f in flat), (
+            f"the project declares pytest in a file we can read, and it was ignored:\n{flat}"
+        )
+
+    def test_tox_packages_are_installed_by_name(self, tmp_path: Path, monkeypatch) -> None:
+        steps = self._uv_steps(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": self._NO_RUNNER,
+                "uv.lock": "locked",
+                "tox.ini": "[testenv]\ndeps =\n    pytest>=8\n    pytest-cov\n",
+            },
+        )
+
+        install = next((s for s in steps if "pip" in s), None)
+        assert install is not None, f"nothing was installed from tox.ini:\n{steps}"
+        assert "pytest>=8" in install and "pytest-cov" in install, install
+
+    def test_a_manifest_that_declares_pytest_is_not_second_guessed(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """The control, and the one that matters most.
+
+        A project that declares pytest in its manifest is already served by the lockfile it pinned.
+        Installing a `tox.ini` block over the top would add a second, unpinned set of versions on
+        top of a resolution the project controls — turning a reproducible run into a mixed one for
+        no gain at all.
+        """
+        steps = self._uv_steps(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": '[project]\nname = "t"\nversion = "0"\ndependencies = []\n\n'
+                '[dependency-groups]\ndev = ["pytest"]\n',
+                "uv.lock": "locked",
+                "tox.ini": "[testenv]\ndeps =\n    pytest==1.0\n",
+            },
+        )
+
+        flat = [" ".join(s) for s in steps]
+        assert not any("pytest==1.0" in f for f in flat), (
+            f"a tox pin was layered over the project's own locked resolution:\n{flat}"
+        )
+
+    def test_a_runtime_dependency_on_pytest_also_counts_as_declared(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Rare, but real: a testing library ships pytest as a runtime dependency."""
+        steps = self._uv_steps(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": '[project]\nname = "t"\nversion = "0"\n'
+                'dependencies = ["pytest>=8"]\n',
+                "uv.lock": "locked",
+                "tox.ini": "[testenv]\ndeps =\n    pytest==1.0\n",
+            },
+        )
+
+        flat = [" ".join(s) for s in steps]
+        assert not any("pytest==1.0" in f for f in flat), flat
+
+    def test_changing_the_fallback_file_rebuilds_the_environment(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """The stamp must cover every input to the command, and this is now one of them."""
+        mounts = _mounts(tmp_path)
+        (mounts.source_root / "pyproject.toml").write_text(self._NO_RUNNER, encoding="utf-8")
+        (mounts.source_root / "uv.lock").write_text("locked", encoding="utf-8")
+        req = mounts.source_root / "requirements-dev.txt"
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+
+        def prepare(text: str) -> bool:
+            req.write_text(text, encoding="utf-8")
+            mock = MagicMock(return_value=_ok_result())
+            monkeypatch.setattr(SubprocessExecutor, "execute", mock)
+            ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+            return _find_call(mock, "uv", "pip") is not None
+
+        assert prepare("pytest>=8\n")
+        assert not prepare("pytest>=8\n"), (
+            "an unchanged project was rebuilt; the stamp caches nothing"
+        )
+        assert prepare("pytest>=8\npytest-asyncio\n"), (
+            "the requirements file changed and the stamp served the old environment anyway"
+        )

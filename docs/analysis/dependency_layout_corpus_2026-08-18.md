@@ -133,6 +133,38 @@ This also unblocks the rest. Of the 68 projects in the two reachable failure cla
 lockfile, so reading `tox.ini` and friends *without* this would have recovered nine projects: we
 would have learned what to install and had no environment to install it into.
 
+## Rung 2, delivered — and worth less than projected
+
+48 projects declare pytest outside the manifest. The reachable share is **27**, not 48, taking the
+corpus from 33% to **55%**. The projection of 73% assumed every one of the 48 could be read; parsing
+all 30 real `tox.ini` files showed otherwise.
+
+| Route | projects |
+|---|---|
+| a `requirements` file naming pytest — installed with `-r`, no parsing | 20 |
+| a plain `pytest` line in a tox `testenv` deps block | 18 |
+| union (11 projects offer both) | **27** |
+| not reachable at this scope | 21 |
+
+**Why the tox half stops at 18 of 31.** Across those 30 files, **891** dependency lines carry
+`{...}` substitution — tox factors like `py3{10-14}: -r reqs.pip`, `{[testenv]deps}`
+back-references, `{toxinidir}` paths — against 236 plain requirement lines. Selecting the right
+factor means knowing which environment tox would have run, which is implementing tox. Only 18 of the
+30 have a plain `pytest` line at all.
+
+What cannot be read is **reported, not dropped**: the prepare phase logs how many lines it skipped
+and the first few verbatim, because silence would let a partial environment pass for a complete one
+— and those lines are the likeliest home of the plugins a suite needs.
+
+Two ordering rules, both load-bearing:
+
+- **A `requirements` file wins over `tox.ini`.** `uv pip install -r` reads the format natively,
+  including its own includes, so nothing is parsed. Installing both would risk two conflicting pins
+  of the same package.
+- **Nothing is read at all when the manifest declares pytest.** Such a project pinned its runner;
+  layering a `tox.ini` block over a locked resolution turns a reproducible run into a mixed one for
+  no gain.
+
 ## Dropping `--frozen` is not the fix
 
 Removing the flag raises the ceiling from 16.5% to at most **33.1%** — the share that declares pytest

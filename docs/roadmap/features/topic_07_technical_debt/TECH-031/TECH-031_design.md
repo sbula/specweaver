@@ -143,6 +143,7 @@ reading it:
 | runner never installed, so the group is never synced | groups declaring pytest are requested | live podman + unit |
 | the absent toolchain explained as an internal path | the reason names the cause and the remedy | live podman + unit |
 | no `uv.lock`, so no environment at all | `uv venv` + `uv pip install` off the sync path | live podman + unit |
+| runner declared outside the manifest | `tox.ini` / `requirements*.txt` read when pyproject is silent | live podman + unit |
 
 The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
 and has no business writing into an environment the next run reuses.
@@ -277,6 +278,19 @@ rather than the log is not done — recorded here rather than left to be discove
 
 Worth against the corpus: **16.5% → 33%** of the 121 repositories, and it is the precondition for
 rung 2 being worth more than nine projects.
+
+### Delivered: the runner is read from where the project actually declares it
+
+Rung 2, and it is **worth less than the 73% projected**: 27 of the 48 are reachable, taking the
+corpus to **55%**. The projection assumed all 48 could be read. Parsing all 30 real `tox.ini`
+files first showed 891 of their dependency lines carry `{...}` substitution against 236 plain
+ones, and only 18 of the 30 have a plain `pytest` line at all. Measuring before building is the
+only reason that number is honest rather than discovered later.
+
+The reader takes what it can read and **logs what it skipped**, because a partial environment
+that looks complete is the failure mode this whole ticket exists to remove. It never runs when
+the manifest declares pytest: that project pinned its runner, and a second unpinned set over a
+locked resolution is worse than nothing.
 
 That reframes the remaining work. "Detect the layout and sync accordingly" was scoped against
 extras-versus-groups; it now has to answer what the prepare phase does for a project that is not
