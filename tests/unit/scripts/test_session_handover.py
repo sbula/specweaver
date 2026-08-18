@@ -104,6 +104,18 @@ class TestSplice:
 
         assert once == twice
 
+    def test_the_marker_names_the_script_that_writes_it(self, ho: ModuleType) -> None:
+        """The marker embeds this script's filename, so renaming the script breaks the file format.
+
+        That is not hypothetical: the module was renamed and a later pass corrected the filename in
+        its own docstring, silently rewriting the marker with it. Every existing handover then had a
+        `begin` the script no longer recognised. `splice` refused rather than clobbering — the guard
+        worked — but the failure was avoidable, and this is what makes it so.
+        """
+        assert Path(ho.__file__).name in ho.BEGIN, (
+            f"the marker names a script that is not this one:\n{ho.BEGIN}"
+        )
+
 
 class TestDerivedCounts:
     """The numbers, read from fixture markdown rather than the live repo."""
