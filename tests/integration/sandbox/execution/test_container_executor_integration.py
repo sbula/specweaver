@@ -22,6 +22,7 @@ import pytest
 
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
+from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -285,3 +286,34 @@ class TestPrepareAndExecuteShareAnEnvironment:
             "a project with no test runner reported success — the shape that let an absent "
             f"toolchain read as an empty suite: {result.stdout!r}"
         )
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_the_absent_toolchain_is_explained_to_the_caller(self, tmp_path: Path) -> None:
+        """Failing loudly is not the same as failing usefully, and this is the majority path.
+
+        Measured across the corpus, 101 of 121 resolvable repositories reach the sandbox without
+        pytest installed, so this message is what most first runs against a new target will say. It
+        used to be the interpreter's own line forwarded verbatim — naming `/cache/venv`, a path
+        inside our container that appears nowhere in the reader's project.
+
+        Driven through `PythonQARunner` rather than the executor, because the wiring is the claim:
+        the pure explainer has its own unit tests and passing them proves nothing about what a
+        caller is handed.
+        """
+        mounts = self._project(tmp_path, groups='dev = ["iniconfig"]')
+        runner = PythonQARunner(
+            cwd=mounts.source_root,
+            executor=ContainerSubprocessExecutor(
+                cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+            ),
+        )
+
+        result = runner.run_tests(".")
+
+        assert result.errors == 1 and result.passed == 0, (
+            f"an absent toolchain did not report as an error: {result}"
+        )
+        message = result.failures[0].message
+        assert "/cache" not in message, f"an internal container path reached the user:\n{message}"
+        assert "not a test failure" in message.lower(), message
+        assert "Declare pytest" in message, message

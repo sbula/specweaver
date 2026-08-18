@@ -2,8 +2,9 @@
 
 - **Feature ID**: TECH-031
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL — the QA-runner half is delivered; the prepare phase is not. See
-  §Measured, 2026-08-12, which **corrects the Problem Statement below rather than extending it**.
+- **Status**: PARTIAL — every defect this ticket found is fixed and the three Next Step questions
+  are answered. What remains is one scope decision, not work: see §What is left. See §Measured,
+  2026-08-12, which **corrects the Problem Statement below rather than extending it**.
 - **Origin**: Found 2026-08-12 during `TECH-028`. **That ticket's claimed side-effect was wrong** —
   it fixed this repo's manifest, but §Measured shows the prepare phase fails for SpecWeaver too, on
   a defect the manifest cannot reach. The layout gap is real but is not what stops the phase.
@@ -139,6 +140,8 @@ reading it:
 | prepared environment absent at execute | cache mounted at `/cache:ro` | live podman + unit |
 | image interpreter shadowing it | `PATH` puts `/cache/venv/bin` first | live podman + unit |
 | failure reaching only a log line | `_ensure_prepared` raises | unit |
+| runner never installed, so the group is never synced | groups declaring pytest are requested | live podman + unit |
+| the absent toolchain explained as an internal path | the reason names the cause and the remedy | live podman + unit |
 
 The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
 and has no business writing into an environment the next run reuses.
@@ -280,17 +283,34 @@ reason this is a decision rather than a fix. `--all-extras` remains rejected (us
 That is not this ticket's scope, but a reader treating `B-EXEC-01`'s design as verified should know
 it has not been.
 
-## Next Step
+## What is left
 
-Run through `specweaver-design`. Establish first:
+All three Next Step questions are answered, two of them by work rather than argument.
 
-1. **How wide the gap is.** Sample real Python projects: how many put pytest in a dependency-group
-   versus an extra versus a `requirements-dev.txt` that `uv sync` never reads at all? The third case
-   may matter more than the second and is not yet considered here.
-2. **What the QA runner should do when a tool is absent** — that decision is worth making before the
-   sync strategy, because a clear failure may be most of the value.
-3. **Whether the same assumption exists for the non-Python runners**, which resolve their toolchains
-   differently.
+1. **How wide the gap is** — measured against a corpus of 121 real repositories:
+   `docs/analysis/dependency_layout_corpus_2026-08-18.md`. The answer reordered the ticket. The
+   `requirements-dev.txt` case the question suspected would matter *does* matter, and is bigger than
+   suspected: 81 of 121 projects never name pytest in `pyproject.toml` at all, 32 of them because
+   `tox` or `nox` owns the dev environment.
+2. **What the QA runner should do when a tool is absent** — answered, and the guess in the question
+   was right that a clear failure is most of the value. The reason now names the missing module, says
+   it is a setup failure rather than a test failure, states where the environment comes from, and
+   gives the remedy for both a sandboxed and a host run. It no longer forwards
+   `/cache/venv/bin/python: No module named pytest`, a path that exists only inside our container.
+   Proven through `PythonQARunner` against live podman, not only as a pure function.
+3. **Whether the same assumption exists for the non-Python runners** — answered in Q3: it does not.
+   Their own silent-success shape is a different root cause and is `TECH-032`.
+
+**The one decision left is the third candidate approach: check the layout at configuration time.**
+It is now worth much less than when it was written. The failure a reader meets is already specific
+and actionable, so a configuration-time check would move the same information earlier rather than
+add any. Against that, it needs a place to live — `sw init`, `sw scan`, or a new preflight — and
+inventing one is scope this ticket did not set out to take. Recorded as a decision for the human
+rather than taken quietly in either direction.
+
+The remaining *coverage* gap is not ours to close by code: 81 of 121 corpus projects declare no
+pytest for `uv sync` to install, and no sync strategy reaches a manifest that does not name the
+tool.
 
 ## Carried down from the topic entry (2026-08-13, `TECH-044`)
 

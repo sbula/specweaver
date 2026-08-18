@@ -22,7 +22,7 @@ from specweaver.sandbox.execution.container_executor import (
     ContainerEngineUnavailableError,
     ContainerSubprocessExecutor,
 )
-from specweaver.sandbox.language.core.toolchain import did_not_run
+from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -153,7 +153,7 @@ class PythonQARunner(QARunnerInterface):
 
         parsed = _parse_pytest_output(result.stdout)
 
-        reason = did_not_run(result, "pytest")
+        reason = why_it_did_not_run(result, "pytest")
         if reason:
             return TestRunResult(
                 passed=0,
@@ -228,7 +228,7 @@ class PythonQARunner(QARunnerInterface):
 
         # `_parse_ruff_json` swallows the JSONDecodeError from an empty stdout and returns no
         # errors — which is exactly what ruff's own `[]` means, so an absent ruff read as clean.
-        reason = did_not_run(result, "ruff")
+        reason = why_it_did_not_run(result, "ruff")
         if reason:
             return LintRunResult(
                 error_count=1,
@@ -320,7 +320,7 @@ class PythonQARunner(QARunnerInterface):
                 max_complexity=max_complexity,
             )
 
-        reason = did_not_run(result, "complexipy")
+        reason = why_it_did_not_run(result, "complexipy")
         if reason:
             return ComplexityRunResult(
                 violation_count=1,
@@ -521,7 +521,7 @@ class PythonQARunner(QARunnerInterface):
         # The `shutil.which` guard above asks about the *host* PATH, and container mode skips it
         # because the host is irrelevant there — so the one configuration where the prepared
         # environment can genuinely lack tach is the one with no guard of its own.
-        reason = did_not_run(result, "tach")
+        reason = why_it_did_not_run(result, "tach")
         if reason:
             return ArchitectureRunResult(
                 violation_count=1,
