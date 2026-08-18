@@ -155,12 +155,23 @@ class TestContainerExecutorRealEngine:
 _UV_IMAGE = "ghcr.io/astral-sh/uv:python3.12-bookworm"
 
 
+_RUST_IMAGE = "docker.io/library/rust:1-slim"
+
+
+def _rust_image_available() -> bool:
+    return _image_available(_RUST_IMAGE)
+
+
 def _uv_image_available() -> bool:
+    return _image_available(_UV_IMAGE)
+
+
+def _image_available(image: str) -> bool:
     if _LIVE_ENGINE is None:
         return False
     try:
         probe = subprocess.run(
-            [_LIVE_ENGINE, "image", "exists", _UV_IMAGE], capture_output=True, timeout=30
+            [_LIVE_ENGINE, "image", "exists", image], capture_output=True, timeout=30
         )
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -455,3 +466,78 @@ class TestPrepareAndExecuteShareAnEnvironment:
         assert "/cache" not in message, f"an internal container path reached the user:\n{message}"
         assert "not a test failure" in message.lower(), message
         assert "Declare pytest" in message, message
+
+
+class TestNonPythonToolchainsRunInTheContainer:
+    """Rust and Maven inside the sandbox, which is what `US-03` P-4 has been waiting for.
+
+    The prepare phase existed for Python only, so these projects reached an execute phase that has
+    `--network none` with nothing fetched. The mount layout already allowed the fix: `/cache` is
+    read-write while preparing and read-only during the run, `/scratch` is read-write during the run,
+    and `/workspace` is read-only throughout — so dependencies are fetched once and builds write to
+    scratch, never into the project.
+
+    Proves: TECH-031 FR-17
+    """
+
+    @pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo not installed")
+    @pytest.mark.skipif(not _rust_image_available(), reason=f"{_RUST_IMAGE} not present locally")
+    def test_a_rust_crate_runs_inside_the_sandbox(self, tmp_path: Path) -> None:
+        """The whole chain: fetch with network, build and run without, source tree untouched."""
+        image = _RUST_IMAGE
+        project = tmp_path / "crate"
+        (project / "src").mkdir(parents=True)
+        (project / "Cargo.toml").write_text(
+            '[package]\nname = "probe"\nversion = "0.1.0"\nedition = "2021"\n', encoding="utf-8"
+        )
+        (project / "src" / "lib.rs").write_text(
+            "pub fn v() -> i32 { 42 }\n\n#[cfg(test)]\nmod t {\n"
+            "    #[test]\n    fn works() { assert_eq!(super::v(), 42); }\n}\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["cargo", "generate-lockfile", "-q"], cwd=project, check=True, timeout=300)
+
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
+        )
+        from specweaver.sandbox.language.core.rust.runner import RustRunner
+
+        result = RustRunner(
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=image),
+        ).run_tests(".", timeout=900)
+
+        assert result.passed == 1 and result.failed == 0, result
+        assert not (project / "target").exists(), (
+            "the build wrote into the project; `CARGO_TARGET_DIR` must point at /scratch"
+        )
+        # A pass alone would not prove the container did the work — the runner would report the same
+        # if it had somehow run on the host. These are artefacts only the container could leave.
+        assert list(mounts.scratch_root.rglob("target/debug/deps/probe*")), (
+            "no build artefacts in the scratch mount, so nothing was compiled inside the sandbox"
+        )
+        assert (mounts.cache_root / "cargo").exists(), (
+            "the prepare phase fetched nothing into the cache the offline run reads from"
+        )
+
+    def test_a_crate_without_a_lockfile_is_refused_with_its_reason(self, tmp_path: Path) -> None:
+        """The control. Resolving writes `Cargo.lock` into a read-only mount, so this cannot run —
+        and saying which one command fixes it is the difference between unsupported and broken.
+
+        No toolchain needed: the refusal is decided from the manifest, before anything runs.
+        """
+        project = tmp_path / "nolock"
+        (project / "src").mkdir(parents=True)
+        (project / "Cargo.toml").write_text(
+            '[package]\nname = "probe"\nversion = "0.1.0"\nedition = "2021"\n', encoding="utf-8"
+        )
+        (project / "src" / "lib.rs").write_text("pub fn v() -> i32 { 42 }\n", encoding="utf-8")
+
+        from specweaver.commons.prepare_plan import plan_for
+
+        plan = plan_for(project)
+
+        assert plan.steps == ()
+        assert any("Cargo.lock" in w for w in plan.warnings), plan.warnings

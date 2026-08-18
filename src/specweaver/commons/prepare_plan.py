@@ -119,6 +119,11 @@ _TOOLCHAIN_MANIFESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 _CARGO_HOME = "/cache/cargo"
 _MAVEN_REPO = "/cache/m2"
 
+#: Where a build writes. `/workspace` is read-only, so the default output directory cannot be
+#: used as-is — Rust is pointed here by `CARGO_TARGET_DIR`, and for the JVM the executor mounts
+#: this path over `target/` so Maven's own defaults keep working.
+_BUILD_DIR = "/scratch/target"
+
 
 def detect_toolchain(source_root: Path) -> str:
     """The build tool this project declares, or `""` when it declares none."""
@@ -150,13 +155,16 @@ class PreparePlan:
     steps: tuple[tuple[str, tuple[str, ...]], ...] = ()
     #: Environment the prepare and execute phases must share, so a fetch survives into the run.
     env: dict[str, str] = field(default_factory=dict)
+    #: Environment for the execute phase only — chiefly the offline switches, which must not
+    #: apply to the prepare phase, since fetching is the one thing that needs the network.
+    execute_env: dict[str, str] = field(default_factory=dict)
 
 
 def plan_for(source_root: Path) -> PreparePlan:
     """What the prepare phase will do with the project at `source_root`."""
     toolchain = detect_toolchain(source_root)
     if toolchain and toolchain != "uv":
-        return _plan_for_other(toolchain)
+        return _plan_for_other(toolchain, source_root)
 
     manifest = source_root / "pyproject.toml"
     manifest_text = (
@@ -205,7 +213,7 @@ def plan_for(source_root: Path) -> PreparePlan:
     return PreparePlan(route, "sandbox", groups, warnings=tuple(warnings))
 
 
-def _plan_for_other(toolchain: str) -> PreparePlan:
+def _plan_for_other(toolchain: str, source_root: Path) -> PreparePlan:
     """The plan for a toolchain that is not `uv`.
 
     Every one of these resolves dependencies over the network, and the execute phase has none. So the
@@ -213,13 +221,34 @@ def _plan_for_other(toolchain: str) -> PreparePlan:
     dependencies cannot be pre-fetched cannot be prepared, and saying so is the point.
     """
     if toolchain == "cargo":
+        # `cargo fetch` resolves, and resolving writes `Cargo.lock` — into `/workspace`, which is
+        # read-only in both phases. With a committed lockfile `--locked` asserts no write is needed;
+        # without one cargo refuses outright, saying so itself: *"cannot create the lock file …
+        # because --locked was passed"*. The alternative is making the source tree writable while
+        # arbitrary build scripts run, which is the isolation the sandbox exists to keep.
+        if not (source_root / "Cargo.lock").is_file():
+            return PreparePlan(
+                route="none",
+                runner_source="Cargo.toml",
+                toolchain=toolchain,
+                warnings=(
+                    "This crate has no committed Cargo.lock. Resolving one writes into the source "
+                    "tree, which the sandbox mounts read-only, so its dependencies cannot be "
+                    "fetched. Commit Cargo.lock — `cargo generate-lockfile` — and it is supported.",
+                ),
+            )
         return PreparePlan(
             route="fetch",
             runner_source="Cargo.toml",
             toolchain=toolchain,
-            steps=(("fetch", ("cargo", "fetch")),),
+            steps=(("fetch", ("cargo", "fetch", "--locked")),),
             # The build writes to `/scratch`, not to `target/` under the read-only source mount.
-            env={"CARGO_HOME": _CARGO_HOME, "CARGO_TARGET_DIR": "/scratch/target"},
+            env={
+                "CARGO_HOME": _CARGO_HOME,
+                "CARGO_TARGET_DIR": _BUILD_DIR,
+                "HOME": "/scratch",
+            },
+            execute_env={"CARGO_NET_OFFLINE": "true"},
             warnings=(
                 "Rust dependencies are fetched now and the test run is offline. A crate that "
                 "resolves anything at build time — a build script reaching the network — will fail "
@@ -243,11 +272,22 @@ def _plan_for_other(toolchain: str) -> PreparePlan:
                     ),
                 ),
             ),
-            env={"MAVEN_REPO_LOCAL": _MAVEN_REPO},
+            # `HOME` because the image defaults it to `/root`, which the sandbox's non-root user
+            # cannot write — Maven fails at `mkdir /root` before it compiles anything.
+            env={"MAVEN_REPO_LOCAL": _MAVEN_REPO, "HOME": "/scratch"},
+            # Maven 3.9 reads `MAVEN_ARGS`, so the run goes offline against the fetched repository
+            # without the QA runner needing to know it is inside a sandbox. The build directory is
+            # redirected for the same reason as Rust's: the default `target/` is under `/workspace`,
+            # which is read-only.
+            execute_env={"MAVEN_ARGS": f"-o -Dmaven.repo.local={_MAVEN_REPO}"},
             warnings=(
                 "Maven dependencies are resolved now and the test run is offline. A plugin that "
                 "`dependency:go-offline` does not pre-fetch — some resolve at execution — will fail "
                 "in the execute phase, which has no network.",
+                "Running Maven inside the sandbox is NOT yet verified: the fetch succeeds, but "
+                "surefire fails in the execute phase because a JVM build writes to `target/` inside "
+                "the project and `/workspace` is read-only. Run JVM QA on the host until that is "
+                "resolved.",
             ),
         )
     return PreparePlan(

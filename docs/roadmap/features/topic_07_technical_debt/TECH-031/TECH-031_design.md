@@ -322,6 +322,7 @@ Each row says *why* it exists, because a row restating its own test teaches a la
 | FR-14 | A failed build is never an empty suite | Java runner, Kotlin runner | Report an error when the build exits non-zero having written no reports | `did_not_run` keys on empty stdout, and a build tool that fails to compile prints freely, so it slipped through and an empty report directory harvested as `0 passed, 0 failed`. Measured against real Maven: `BUILD FAILURE`, exit 1, `TestRunResult(total=0)`. The guard is skipped when reports *were* written, because Maven and Gradle also exit non-zero on a red suite. |
 | FR-15 | A failure carries enough to act on | Java runner, Kotlin runner, Rust runner | Report the test's identity, the assertion and the stack | Both JVM runners harvested counts and returned `failures=[]` while the surefire report beside them held `expected:<42> but was:<41>` and the full stack. A caller given `failed=1` and nothing else must re-run the suite by hand to learn anything, which is the one thing a sandboxed QA run exists to avoid. Rust already carried its panic; its message now stops at the diagnostic rather than trailing cargo's own index of failed names. |
 | FR-16 | Non-Python projects have a prepare plan at all | Prepare phase | Detect the build tool and fetch its dependencies before the run | The phase returned immediately without a `pyproject.toml`, so a Rust or JVM project reached the execute phase with nothing installed — and that phase runs `--network none` by design, so resolution must happen in the prepare phase or not at all. Rust fetches into `CARGO_HOME=/cache/cargo` and builds into `/scratch/target`, because `/workspace` is read-only. Maven resolves into `/cache/m2` with `dependency:go-offline`. Gradle is reported unsupported rather than silently skipped: a wrapper fetches its own distribution on first use and the system Gradle is 4.4.1. |
+| FR-17 | The executor acts on a non-Python plan | Prepare phase, execute phase | Run the fetch, pick an image containing the toolchain, and carry the environment into both phases | A plan nothing consumes is half a deliverable. The image must follow the toolchain or `cargo` is simply absent; the environment must reach both phases or the fetch lands where the run cannot see it; and `PATH` must not be rewritten with the Python venv, which hides the binary the image was chosen for. **Rust runs end to end in the container**, verified against live podman: crates fetched in prepare, compiled into `/scratch`, run offline, source tree untouched. |
 | FR-10 | The plan is readable before a run | CLI | Report the prepare plan, non-zero on any warning | Every decision above was otherwise met inside a container, minutes into a run. `plan_for` decides once and both the executor and the report read it, so the report cannot describe a phase other than the one that runs. |
 
 ## Non-Functional Requirements
@@ -357,6 +358,36 @@ All three were taken, and one of them changed shape once measured.
 - **Not** surfacing the fresh-resolution warning into the QA report. It is logged by name and stated
   in NFR-2; moving it into the report needs plumbing through the runner and is not done. Recorded
   rather than left to be discovered.
+
+## Where the container journey stands
+
+Measured against live podman on 2026-08-18, with the images the executor now selects.
+
+| Toolchain | Prepare | Execute in container |
+|---|---|---|
+| `uv` (Python) | yes | **yes** |
+| `cargo` (Rust) | `cargo fetch --locked` | **yes** — 1 passed / 1 failed with the real panic, `/scratch` holds the artefacts, source tree untouched |
+| `maven` (Java, Kotlin) | yes — `/cache/m2` populated | **no** — surefire fails; recorded, not hidden |
+| `gradle` | no | no |
+
+**Rust needs a committed `Cargo.lock`.** `cargo fetch` resolves, resolving writes `Cargo.lock`, and
+`/workspace` is read-only — cargo says so itself under `--locked`: *"cannot create the lock file …
+because --locked was passed"*. A crate without one is refused with that one-line remedy rather than
+attempted. The alternative is a writable source tree while arbitrary build scripts run, which is the
+isolation the sandbox exists to keep.
+
+**Maven's blocker is the same shape and is not yet solved.** A JVM build writes `target/` inside the
+project. Two routes were tried and measured:
+
+- `-Dproject.build.directory=/scratch/target` — the compiler still failed with *"could not create
+  parent directories"*.
+- Bind-mounting scratch over `/workspace/target`. This *works* as a mount — podman creates the
+  mountpoint even under a read-only parent — but it creates an empty `target/` **in the user's own
+  source tree**, because the mountpoint is made in the bind source before the read-only flag applies.
+  Reverted for that reason; surefire failed regardless.
+
+Until that is resolved the plan says so in as many words, and JVM QA runs on the host, where all
+nine live tests pass.
 
 ## Verifiable Proof
 

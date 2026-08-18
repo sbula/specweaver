@@ -72,7 +72,7 @@ class TestPlanForOtherToolchains:
 
     def test_a_rust_project_fetches_its_dependencies_first(self, tmp_path: Path) -> None:
         """`cargo fetch` in the phase with network; the build then runs `--offline`."""
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n'))
+        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
 
         assert plan.toolchain == "cargo"
         assert plan.route == "fetch"
@@ -82,9 +82,30 @@ class TestPlanForOtherToolchains:
     def test_rust_dependencies_land_in_the_cache_not_the_source_tree(self, tmp_path: Path) -> None:
         """`/workspace` is read-only, and the default `CARGO_HOME` is outside it anyway — what
         matters is that the fetch survives into the execute phase, which only sees `/cache`."""
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n'))
+        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
 
         assert any("/cache" in v for v in plan.env.values()), plan.env
+
+    def test_a_crate_without_a_lockfile_is_reported_rather_than_attempted(
+        self, tmp_path: Path
+    ) -> None:
+        """`cargo fetch` resolves, and resolving writes `Cargo.lock` into a read-only mount.
+
+        Cargo says so itself under `--locked`: *"cannot create the lock file … because --locked was
+        passed"*. The alternative is a writable source tree while arbitrary build scripts run.
+        """
+        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n'))
+
+        assert plan.toolchain == "cargo"
+        assert plan.steps == ()
+        assert any("Cargo.lock" in w for w in plan.warnings), plan.warnings
+
+    def test_the_rust_run_is_offline_but_the_fetch_is_not(self, tmp_path: Path) -> None:
+        """The fetch is the one step that needs the network; the run must not have it."""
+        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
+
+        assert plan.execute_env.get("CARGO_NET_OFFLINE") == "true"
+        assert "CARGO_NET_OFFLINE" not in plan.env
 
     def test_a_maven_project_goes_offline_first(self, tmp_path: Path) -> None:
         plan = plan_for(_project(tmp_path, pom__xml="<project/>"))

@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING
 from specweaver.commons.prepare_plan import (
     _DEFAULT_GROUP,
     _LAST_RESORT_RUNNER,
+    PreparePlan,
+    detect_toolchain,
     plan_for,
 )
 from specweaver.sandbox.execution.executor import SubprocessExecutor
@@ -52,6 +54,14 @@ _CONTAINER_PATH = (
     f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
 
+#: An image per toolchain, because `cargo` is not in the Python sandbox image and no amount of
+#: preparing puts it there. Public upstream images for the others: building one polyglot image would
+#: pull every toolchain for every project, and the executor already picks per project.
+_TOOLCHAIN_IMAGES = {
+    "cargo": "docker.io/library/rust:1-slim",
+    "maven": "docker.io/library/maven:3-eclipse-temurin-21",
+}
+
 _DEFAULT_IMAGE_REPO = "ghcr.io/sbula/specweaver-sandbox-python"
 
 # NFR-5 / AD-4: reuse BashActionAtom's resource-limit defaults verbatim (2 GiB / 128 procs)
@@ -67,7 +77,14 @@ class ContainerEngineUnavailableError(Exception):
 
 
 def _resolve_image(source_root: Path) -> str:
-    """Pick an image tag from ``requires-python``, defaulting to the newest supported."""
+    """The image for this project's toolchain.
+
+    Python keeps its own sandbox image and its `requires-python` tag selection. Every other toolchain
+    takes an upstream image that carries it, because the Python image contains no `cargo` and no JDK.
+    """
+    toolchain = detect_toolchain(source_root)
+    if toolchain in _TOOLCHAIN_IMAGES:
+        return _TOOLCHAIN_IMAGES[toolchain]
     version = _DEFAULT_TAG
     pyproject = source_root / "pyproject.toml"
     if pyproject.exists():
@@ -121,6 +138,9 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         super().__init__(cwd=cwd, timeout_seconds=timeout_seconds, resource_limits=resource_limits)
 
         mounts.scratch_root.mkdir(parents=True, exist_ok=True)
+        # The build directory is bind-mounted over the project's `target/`, and podman creates the
+        # mountpoint inside the container but never the source directory on the host.
+        (mounts.scratch_root / "target").mkdir(parents=True, exist_ok=True)
         mounts.cache_root.mkdir(parents=True, exist_ok=True)
 
         self._mounts = mounts
@@ -151,6 +171,15 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             "in specweaver.toml."
         )
         raise ContainerEngineUnavailableError(msg)
+
+    def _toolchain_env(self) -> dict[str, str]:
+        """Environment both phases must agree on, so a fetch survives into the run.
+
+        Cargo is the clearest case: the crates land in `CARGO_HOME` during prepare and are read from
+        the same path, now read-only, during the run — and `CARGO_TARGET_DIR` has to point at
+        `/scratch` because the default `target/` sits under the read-only source mount.
+        """
+        return plan_for(self._mounts.source_root).env
 
     def _baseline_flags(self, engine: str) -> list[str]:
         """Security/resource flags shared by BOTH the prepare and execute phases (Red/Blue
@@ -190,6 +219,11 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
     def _ensure_prepared(self) -> None:
         """Network-enabled `uv sync` prepare phase, gated by a lockfile-hash stamp (AD-7, AD-9)."""
+        plan = plan_for(self._mounts.source_root)
+        if plan.toolchain != "uv":
+            self._prepare_other_toolchain(plan)
+            return
+
         manifest = self._mounts.source_root / "pyproject.toml"
         lockfile = self._mounts.source_root / "uv.lock"
         stamped = lockfile if lockfile.exists() else manifest
@@ -201,7 +235,6 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         )
         # One decision, shared. `sw sandbox preflight` prints this same plan, so the report cannot
         # describe a phase other than the one that runs.
-        plan = plan_for(self._mounts.source_root)
         runner_groups = list(plan.groups)
 
         # Two thirds of real projects never name pytest in the manifest. Most of them declare it
@@ -275,6 +308,45 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             if path.is_file():
                 parts.append(path.read_bytes())
         return b"".join(parts)
+
+    def _prepare_other_toolchain(self, plan: PreparePlan) -> None:
+        """Run a non-`uv` toolchain's fetch, so the offline execute phase has something to build on.
+
+        Stamped on the toolchain's own manifest: `Cargo.toml` and `pom.xml` are what decide the
+        fetch, exactly as `pyproject.toml` does for `uv`.
+        """
+        for warning in plan.warnings:
+            logger.warning(
+                "ContainerSubprocessExecutor: %s — %s", self._mounts.source_root, warning
+            )
+        if not plan.steps:
+            return
+
+        manifest = self._mounts.source_root / plan.runner_source
+        if not manifest.is_file():
+            return
+        digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+        stamp_file = self._mounts.cache_root.parent / ".prepared_hash"
+        if stamp_file.exists() and stamp_file.read_text().strip() == digest:
+            return
+
+        engine = self._ensure_engine()
+        for step, argv in plan.steps:
+            name = f"specweaver-prepare-{self._run_id}-{uuid.uuid4().hex[:8]}"
+            super().execute([engine, "rm", "-f", name], timeout_seconds=10)
+            try:
+                result = super().execute(
+                    self._prepare_container(engine, name, *argv), timeout_seconds=600
+                )
+            finally:
+                super().execute([engine, "rm", "-f", name], timeout_seconds=10)
+            if result.exit_code != 0:
+                raise RuntimeError(
+                    f"container prepare phase failed at the {step} step (exit={result.exit_code}). "
+                    f"The sandbox has no fetched dependencies, and the execute phase has no network "
+                    f"to fetch them itself. stderr: {result.stderr.strip() or '(empty)'}"
+                )
+        stamp_file.write_text(digest)
 
     def _prepare_steps(
         self, runner_groups: list[str], fallback: ToolingSource | None, *, locked: bool
@@ -383,6 +455,9 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
     def _prepare_container(self, engine: str, name: str, *cmd: str) -> list[str]:
         """A prepare-phase container running `cmd`."""
+        toolchain_env = [
+            arg for key, value in self._toolchain_env().items() for arg in ("-e", f"{key}={value}")
+        ]
         return [
             engine,
             "run",
@@ -394,6 +469,10 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             f"{self._mounts.source_root}:/workspace:ro",
             "-v",
             f"{self._mounts.cache_root}:/cache:rw",
+            # Also mounted here, not only in the execute phase: a build tool needs a writable HOME,
+            # and the image's default is `/root`, which the sandbox's non-root user cannot create.
+            "-v",
+            f"{self._mounts.scratch_root}:/scratch:rw",
             "--tmpfs",
             "/tmp:size=100m,mode=1777",
             *self._baseline_flags(engine),
@@ -405,6 +484,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             #   failed to create directory `/workspace/.venv`: Read-only file system (os error 30)
             "-e",
             f"UV_PROJECT_ENVIRONMENT={_PREPARED_VENV}",
+            *toolchain_env,
             "--workdir",
             "/workspace",
             self._image,
@@ -440,8 +520,22 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             "/tmp:size=100m,mode=1777",
             "--network",
             "none",
-            "-e",
-            f"PATH={_CONTAINER_PATH}",
+            # `PATH` is only rewritten for Python, where the prepared venv must come first. Forcing
+            # it on another toolchain hides the very binary its image was chosen for: `cargo` is not
+            # under `/cache/venv/bin`.
+            *(
+                ["-e", f"PATH={_CONTAINER_PATH}"]
+                if detect_toolchain(self._mounts.source_root) in ("uv", "")
+                else []
+            ),
+            *(
+                arg
+                for key, value in {
+                    **self._toolchain_env(),
+                    **plan_for(self._mounts.source_root).execute_env,
+                }.items()
+                for arg in ("-e", f"{key}={value}")
+            ),
             *self._baseline_flags(engine),
         ]
 
