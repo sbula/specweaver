@@ -6,7 +6,7 @@
       "requirement": "FR-1",
       "title": "The journey is only proven while the runner actually drains the collector",
       "scope": [
-        "tests/e2e/interfaces/test_implement_usage_journey_e2e.py"
+        "tests/e2e/capabilities/interfaces/test_implement_usage_journey_e2e.py"
       ],
       "mutants": [
         {
@@ -25,7 +25,7 @@
       "title": "The collector must be installed by the factory, not assumed by the test",
       "scope": [
         "tests/integration/workflows/implementation/test_implement_collector_wiring.py",
-        "tests/e2e/interfaces/test_implement_usage_journey_e2e.py"
+        "tests/e2e/capabilities/interfaces/test_implement_usage_journey_e2e.py"
       ],
       "mutants": [
         {

@@ -7,7 +7,7 @@
       "title": "Auto-detection finds the newest resumable run, whatever pipeline produced it",
       "scope": [
         "tests/unit/core/flow/engine/test_resumable_run_discovery.py",
-        "tests/e2e/core/flow/test_resume_after_failure_journey_e2e.py"
+        "tests/e2e/capabilities/core/test_resume_after_failure_journey_e2e.py"
       ],
       "mutants": [
         {
@@ -61,7 +61,7 @@
       "requirement": "FR-2",
       "title": "Nothing writes over a command's documented output channel",
       "scope": [
-        "tests/e2e/core/config/test_config_db_across_processes_e2e.py",
+        "tests/e2e/capabilities/core/test_config_db_across_processes_e2e.py",
         "tests/unit/test_telemetry_logger.py"
       ],
       "mutants": [
