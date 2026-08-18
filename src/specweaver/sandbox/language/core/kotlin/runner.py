@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.language.core.junit_reports import harvest_junit
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -81,22 +82,20 @@ class KotlinRunner(QARunnerInterface):
         if reason:
             return failed_tests(reason)
 
-        passed, failed = self._parse_junit_results(search_path)
+        harvest = harvest_junit(search_path)
         # Same hole as the Java runner: a Kotlin compile failure exits non-zero, prints freely, and
         # leaves the report directory empty. Measured against real Maven on 2026-08-18.
-        broken_build = build_failed_without_results(
-            result, "the Kotlin build tool", passed + failed
-        )
+        broken_build = build_failed_without_results(result, "the Kotlin build tool", harvest.total)
         if broken_build:
             return failed_tests(broken_build)
 
         return TestRunResult(
-            passed=passed,
-            failed=failed,
+            passed=harvest.passed,
+            failed=harvest.failed,
             errors=0,
-            skipped=0,
-            total=passed + failed,
-            failures=[],
+            skipped=harvest.skipped,
+            total=harvest.total,
+            failures=harvest.failures,
             coverage_pct=0.0,
             duration_seconds=0.0,
         )

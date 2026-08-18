@@ -28,7 +28,7 @@ _SUMMARY = re.compile(
 
 #: `---- t::broken stdout ----` followed by the panic, up to the next such block or the summary.
 _FAILURE_BLOCK = re.compile(
-    r"^---- (?P<name>\S+) stdout ----$(?P<body>.*?)(?=^---- |^test result:|\Z)",
+    r"^---- (?P<name>\S+) stdout ----$(?P<body>.*?)(?=^---- |^failures:|^test result:|\Z)",
     re.MULTILINE | re.DOTALL,
 )
 

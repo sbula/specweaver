@@ -194,6 +194,15 @@ class TestJavaRunnerAgainstRealMaven:
 
         assert result.failed == 1, result
         assert result.passed == 0, result
+        # The half that used to be missing entirely: the runner returned `failures=[]` while the
+        # surefire report beside it held the assertion and the stack. A caller given only `failed=1`
+        # has to re-run the suite by hand to learn anything, which is what the sandbox avoids.
+        assert result.failures, "a failing suite carried no detail to act on"
+        assert result.failures[0].nodeid == "ProbeTest.broken", result.failures[0].nodeid
+        assert "expected:<42> but was:<41>" in result.failures[0].message, result.failures[
+            0
+        ].message
+        assert "ProbeTest.broken" in result.failures[0].stacktrace, result.failures[0].stacktrace
 
     def test_a_build_that_does_not_compile_is_not_an_empty_suite(self, tmp_path: Path) -> None:
         """The vacuous shape, reproduced against real Maven before it was fixed.
@@ -303,3 +312,31 @@ class TestKotlinRunnerAgainstRealMaven:
         assert result.failed >= 1 or result.errors >= 1, (
             f"a Kotlin build that does not compile reported as a clean run: {result}"
         )
+
+    def test_a_failing_suite_carries_its_detail(self, tmp_path: Path) -> None:
+        """Kotlin had the same empty-`failures` hole as Java, from the same shared harvester."""
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+
+        root = _write(
+            tmp_path / "kotlinfail",
+            {
+                "pom.xml": self._POM,
+                "src/main/kotlin/Probe.kt": "fun v(): Int = 41\n",
+                "src/test/kotlin/ProbeTest.kt": """
+                    import kotlin.test.Test
+                    import kotlin.test.assertEquals
+
+                    class ProbeTest {
+                        @Test fun broken() { assertEquals(42, v()) }
+                    }
+                """,
+            },
+        )
+        runner = KotlinRunner(cwd=root, executor=SubprocessExecutor(cwd=root))
+
+        result = runner.run_tests(target=".", timeout=900)
+
+        assert result.failed == 1, result
+        assert result.failures, "a failing Kotlin suite carried no detail to act on"
+        assert result.failures[0].nodeid == "ProbeTest.broken", result.failures[0].nodeid
+        assert "42" in result.failures[0].message, result.failures[0].message

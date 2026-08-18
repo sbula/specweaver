@@ -7,7 +7,7 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-031/TECH-031_sf01_implementation_plan.md
 - **Status**: APPROVED
 
-**FRs owned: FR-1 through FR-14.** All of them, in one plan, because the ticket shipped as one
+**FRs owned: FR-1 through FR-15.** All of them, in one plan, because the ticket shipped as one
 sequence rather than as sub-features. FR-11 to FR-14 were added when the ticket was re-opened for
 Rust, Java and Kotlin — the first target project is Python, Rust and Kotlin.
 
@@ -125,6 +125,17 @@ Both call the guard after harvesting. **(FR-12, FR-13, FR-14)**
 Real `cargo`, `mvn` and `kotlinc` against projects written by the test, skipping only on a missing
 toolchain. **(FR-11, FR-12, FR-13, FR-14)**
 
+### [NEW] `src/specweaver/sandbox/language/core/junit_reports.py`
+
+`harvest_junit` returns counts **and** a `TestFailure` per failed or errored case — identity,
+assertion message, and stack. Shared rather than per-language: the two runners consume the same
+format, and their counting had already drifted apart. **(FR-15)**
+
+### [MODIFY] `java/runner.py`, `kotlin/runner.py`, `rust/cargo_output.py`
+
+Both JVM runners return `harvest.failures` instead of `[]`. The Rust failure block now stops at
+cargo's `failures:` index, so the message ends at the diagnostic. **(FR-15)**
+
 ## 5. Proof
 
 | FR | Test file |
@@ -139,6 +150,7 @@ toolchain. **(FR-11, FR-12, FR-13, FR-14)**
 | FR-11 | `tests/unit/sandbox/language/core/language/rust/test_cargo_output.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-12, FR-13 | `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-14 | `tests/unit/sandbox/language/core/test_runner_migration.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
+| FR-15 | `tests/unit/sandbox/language/core/test_junit_reports.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 
 Every behaviour above was mutation-verified as it was written, individually, against the test that
 claims it. The counts are in the commit messages; the discipline is that a citation whose mutant

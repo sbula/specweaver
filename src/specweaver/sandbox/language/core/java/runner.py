@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.language.core.junit_reports import harvest_junit
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -156,8 +157,13 @@ class JavaRunner(QARunnerInterface):
         if reason:
             return failed_tests(reason)
 
-        passed, failed, skipped = _harvest_junit(search_path)
-        total = passed + failed + skipped
+        harvest = harvest_junit(search_path)
+        passed, failed, skipped, total = (
+            harvest.passed,
+            harvest.failed,
+            harvest.skipped,
+            harvest.total,
+        )
         # A build that never compiled writes no reports, and exits non-zero with plenty on stdout —
         # so it passes `did_not_run` and then harvests as an empty suite.
         broken_build = build_failed_without_results(result, "the Java build tool", total)
@@ -170,7 +176,7 @@ class JavaRunner(QARunnerInterface):
             errors=0,
             skipped=skipped,
             total=total,
-            failures=[],
+            failures=harvest.failures,
             coverage_pct=None,
         )
 
