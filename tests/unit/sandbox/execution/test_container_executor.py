@@ -532,7 +532,14 @@ class TestEnsurePrepared:
     def test_prepare_runs_against_pyproject_when_no_lockfile(
         self, tmp_path: Path, monkeypatch
     ) -> None:
-        """No uv.lock, but pyproject.toml exists — prepare phase still runs (fallback branch)."""
+        """No uv.lock, but pyproject.toml exists — prepare phase still runs.
+
+        It runs a *different* route now. `uv sync` cannot resolve without a lockfile and cannot
+        write one into a read-only mount, so a lockless project takes the `uv venv` + `uv pip
+        install` path instead. This test asserts the invariant that survived the change: the phase
+        runs and records a stamp. Which route it takes is
+        `TestEnsurePreparedResolvesWithoutACommittedLockfile`'s subject.
+        """
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text('[project]\nname = "x"\n')
         mock_execute = MagicMock(return_value=_ok_result())
@@ -545,7 +552,7 @@ class TestEnsurePrepared:
 
         executor._ensure_prepared()
 
-        assert _find_call(mock_execute, "uv", "sync") is not None
+        assert _find_call(mock_execute, "uv", "pip", "install") is not None
         assert (mounts.cache_root.parent / ".prepared_hash").is_file()
 
     def test_prepare_failure_does_not_write_stamp_and_raises(

@@ -121,6 +121,18 @@ lives in `[project.optional-dependencies]`. Measured against the corpus, that br
 in a group or in its runtime dependencies. The branch is closed by measurement rather than left
 half-built. (`--all-extras` was separately rejected by the user on 2026-08-12.)
 
+## Rung 1, delivered: the lockfile is no longer a wall
+
+20 of the 121 declare pytest and commit no lockfile. They now take a second route — `uv venv` then
+`uv pip install`, resolving from the manifest and writing nothing into the read-only source tree —
+which takes the supported share from **16.5% to 33%**. A committed lockfile still takes the frozen
+path, because a fresh resolution does not reproduce the project's own pinned set; the phase logs by
+name when it resolves instead.
+
+This also unblocks the rest. Of the 68 projects in the two reachable failure classes, only 29 have a
+lockfile, so reading `tox.ini` and friends *without* this would have recovered nine projects: we
+would have learned what to install and had no environment to install it into.
+
 ## Dropping `--frozen` is not the fix
 
 Removing the flag raises the ceiling from 16.5% to at most **33.1%** — the share that declares pytest

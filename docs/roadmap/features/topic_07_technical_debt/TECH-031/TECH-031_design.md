@@ -142,6 +142,7 @@ reading it:
 | failure reaching only a log line | `_ensure_prepared` raises | unit |
 | runner never installed, so the group is never synced | groups declaring pytest are requested | live podman + unit |
 | the absent toolchain explained as an internal path | the reason names the cause and the remedy | live podman + unit |
+| no `uv.lock`, so no environment at all | `uv venv` + `uv pip install` off the sync path | live podman + unit |
 
 The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
 and has no business writing into an environment the next run reuses.
@@ -245,6 +246,37 @@ and a lockfile-keyed stamp would have served the pre-move environment forever.
 **`--frozen` does not cause this and removing it would not help.** The lockfile cannot be written to a
 read-only mount either way; `--frozen` converts a confusing `failed to write /workspace/uv.lock` into
 a message that names the actual precondition. Coverage is unchanged, diagnosis is better.
+
+### Delivered: a lockless project no longer gets nothing
+
+That last paragraph stands — but it argues only that `uv sync` cannot be *made* to work without a
+lockfile. It does not follow that nothing can, and something can: `uv venv` followed by `uv pip
+install` resolves from the manifest and writes nothing into the source tree. Verified against live
+podman before it was written, and the source tree is asserted untouched afterwards.
+
+So the prepare phase now has two routes:
+
+| Project | Route | Reproduces the project's pins |
+|---|---|---|
+| `uv.lock` committed | `uv sync --frozen`, groups beyond `dev` | **yes** — unchanged |
+| no `uv.lock` | `uv venv` + `uv pip install`, every group **including `dev`**, plus `/workspace` | no |
+
+Three things about the second route are easy to get wrong and are each pinned by a test:
+
+- **`uv pip install` installs no group unless named, where `uv sync` always installs `dev`.** Reusing
+  the sync path's group list would silently drop the most common runner location. The detector now
+  returns `dev` and each route filters for its own semantics.
+- **`/workspace` must be installed too**, or pytest is present and the tests cannot import what they
+  test. Measured: omitting it leaves collection failing on the project's own package.
+- **A committed lockfile still wins.** Routing everything through `uv pip install` would pass every
+  other test here while quietly ending reproduction of the project's own CI.
+
+**The cost is real and is logged, not hidden**: a fresh resolution is not the project's pinned set,
+and the prepare phase says so by name when it takes that route. Surfacing it into the *QA report*
+rather than the log is not done — recorded here rather than left to be discovered.
+
+Worth against the corpus: **16.5% → 33%** of the 121 repositories, and it is the precondition for
+rung 2 being worth more than nine projects.
 
 That reframes the remaining work. "Detect the layout and sync accordingly" was scoped against
 extras-versus-groups; it now has to answer what the prepare phase does for a project that is not

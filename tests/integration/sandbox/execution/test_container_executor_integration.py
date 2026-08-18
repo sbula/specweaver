@@ -288,6 +288,56 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
 
     @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_a_project_with_no_lockfile_still_gets_a_working_environment(
+        self, tmp_path: Path
+    ) -> None:
+        """Rung 1: 20 of 121 corpus repositories declare pytest and commit no `uv.lock`.
+
+        `uv sync --frozen` refuses without one, and dropping `--frozen` makes uv try to *write*
+        `uv.lock` into the read-only mount. The route taken instead — `uv venv` then `uv pip
+        install` — resolves from the manifest and needs nothing writable in the source tree.
+
+        Driven all the way through `PythonQARunner` and a real suite, because the claim is not that
+        a command was issued but that the tests can run: the project itself has to be installed too,
+        or pytest is present and `import mypkg` fails.
+        """
+        project = tmp_path / "unlocked"
+        (project / "src" / "mypkg").mkdir(parents=True)
+        (project / "pyproject.toml").write_text(
+            '[project]\nname = "mypkg"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
+            'dependencies = ["iniconfig"]\n\n'
+            '[dependency-groups]\ntests = ["pytest"]\n\n'
+            '[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n',
+            encoding="utf-8",
+        )
+        (project / "src" / "mypkg" / "__init__.py").write_text("VALUE = 42\n", encoding="utf-8")
+        (project / "test_it.py").write_text(
+            "from mypkg import VALUE\n\n\ndef test_v() -> None:\n    assert VALUE == 42\n",
+            encoding="utf-8",
+        )
+        assert not (project / "uv.lock").exists(), "the fixture must not be locked"
+
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
+        )
+        runner = PythonQARunner(
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+        )
+
+        result = runner.run_tests(".", kind="")
+
+        assert result.passed == 1 and result.errors == 0, (
+            f"a project with no lockfile did not get a usable environment: {result}"
+        )
+        assert not (project / "uv.lock").exists(), (
+            "the prepare phase wrote into the project's source tree, which is mounted read-only "
+            "precisely so it cannot"
+        )
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
     def test_the_absent_toolchain_is_explained_to_the_caller(self, tmp_path: Path) -> None:
         """Failing loudly is not the same as failing usefully, and this is the majority path.
 

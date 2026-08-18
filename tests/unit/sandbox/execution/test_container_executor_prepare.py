@@ -275,9 +275,14 @@ class TestGroupsHoldingARunnerReadsDependencySpecs:
         manifest = f'[dependency-groups]\nextra = ["{spec}"]\n'
         assert _groups_holding_a_runner(manifest) == [], f"{spec!r} was mistaken for a runner"
 
-    def test_the_default_group_is_never_requested(self) -> None:
-        """`uv sync` already installs `dev`; naming it again is noise in every command line."""
-        assert _groups_holding_a_runner('[dependency-groups]\ndev = ["pytest"]\n') == []
+    def test_the_default_group_is_reported_and_filtered_per_path(self) -> None:
+        """`dev` is returned here, not dropped, because the two prepare paths disagree about it.
+
+        `uv sync` installs `dev` unasked, so the sync path filters it out as noise. `uv pip install`
+        installs nothing it is not given, so the lockless path must name it — and `dev` is the most
+        common runner location. Filtering at the source would have stripped it from both.
+        """
+        assert _groups_holding_a_runner('[dependency-groups]\ndev = ["pytest"]\n') == ["dev"]
 
     def test_an_include_group_reference_is_not_a_dependency(self) -> None:
         """PEP 735 lets a group include another. The included group is judged on its own entries."""
@@ -354,3 +359,108 @@ class TestEnsurePreparedStampsEveryCommandInput:
         assert self._prepare(tmp_path, mounts, monkeypatch, manifest) is None, (
             "an unchanged project re-ran `uv sync`, so the stamp no longer caches anything"
         )
+
+
+class TestEnsurePreparedResolvesWithoutACommittedLockfile:
+    """Rung 1 of the gap: a project with no `uv.lock` used to get no environment at all.
+
+    `uv sync --frozen` refuses without a lockfile, and dropping `--frozen` does not help — `uv`
+    then tries to *write* `uv.lock` into `/workspace`, which is mounted read-only. Measured against
+    the corpus (`docs/analysis/dependency_layout_corpus_2026-08-18.md`), 20 of 121 repositories
+    declare pytest in `pyproject.toml` and commit no lockfile, so this path alone doubles the
+    supported share.
+
+    The route is `uv venv` followed by `uv pip install`, which resolves from the manifest and needs
+    nothing writable in the source tree — verified against live podman before it was written here.
+    It differs from the sync path in one way that is easy to get wrong: **`uv pip install` does not
+    install the `dev` group unless asked**, where `uv sync` always does. A path that reused the sync
+    path's group list would silently drop the most common runner location.
+    """
+
+    def _steps(
+        self, tmp_path: Path, monkeypatch, *, lockfile: bool, pyproject: str
+    ) -> list[list[str]]:
+        mounts = _mounts(tmp_path)
+        if lockfile:
+            (mounts.source_root / "uv.lock").write_text("lockfile-content-v1")
+        (mounts.source_root / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+        mock_execute = MagicMock(return_value=_ok_result())
+        monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        # The uv command only, not the whole container argv. The argv carries `-v …:/workspace:ro`
+        # and `--workdir /workspace`, so asserting `/workspace` against it passes whether or not
+        # the project is handed to `uv pip install` — which is how the first version of
+        # `test_the_project_itself_is_installed` passed against a mutant that removed it.
+        return [
+            list(call.args[0])[list(call.args[0]).index("uv") :]
+            for call in mock_execute.call_args_list
+            if call.args and "uv" in call.args[0]
+        ]
+
+    _MANIFEST = (
+        '[project]\nname = "t"\nversion = "0"\ndependencies = []\n\n'
+        '[dependency-groups]\ndev = ["pytest"]\ndocs = ["sphinx"]\n'
+    )
+
+    def test_a_project_without_a_lockfile_is_still_prepared(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        steps = self._steps(tmp_path, monkeypatch, lockfile=False, pyproject=self._MANIFEST)
+
+        assert steps, "no environment was built at all for a project with no lockfile"
+        joined = [" ".join(s) for s in steps]
+        assert any("uv venv" in j for j in joined), f"no environment was created:\n{joined}"
+        assert any("uv pip install" in j for j in joined), (
+            f"nothing was installed into it:\n{joined}"
+        )
+        assert not any("sync" in j for j in joined), (
+            f"`uv sync` cannot work without a lockfile; it must not be attempted:\n{joined}"
+        )
+
+    def test_the_default_group_is_requested_explicitly_off_the_sync_path(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """`uv pip install` installs no group unless named, including `dev`."""
+        steps = self._steps(tmp_path, monkeypatch, lockfile=False, pyproject=self._MANIFEST)
+
+        install = next(s for s in steps if "pip" in s)
+        groups = [install[i + 1] for i, a in enumerate(install) if a == "--group"]
+        assert "dev" in groups, (
+            f"the runner lives in `dev`, and unlike `uv sync` this path does not install it "
+            f"unasked, so the environment has no pytest:\n{install}"
+        )
+        assert "docs" not in groups, f"a documentation toolchain was installed:\n{install}"
+
+    def test_the_project_itself_is_installed(self, tmp_path: Path, monkeypatch) -> None:
+        """Without it the runner has pytest and the tests cannot import what they test.
+
+        Measured live: omitting the target leaves `python -m pytest` collecting
+        `ModuleNotFoundError` for the project's own package — pytest present, suite unrunnable.
+        """
+        steps = self._steps(tmp_path, monkeypatch, lockfile=False, pyproject=self._MANIFEST)
+
+        install = next(s for s in steps if "pip" in s)
+        assert "/workspace" in install, (
+            f"only the tooling was installed, not the project under test:\n{install}"
+        )
+
+    def test_a_lockfile_still_takes_the_reproducible_path(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """The control. Resolving fresh when a lockfile exists would throw away the project's pins.
+
+        Without this the cheapest way to pass every other test in this class is to route every
+        project through `uv pip install`, which silently stops reproducing what the project's own
+        CI runs.
+        """
+        steps = self._steps(tmp_path, monkeypatch, lockfile=True, pyproject=self._MANIFEST)
+
+        joined = [" ".join(s) for s in steps]
+        assert any("sync --frozen" in j for j in joined), (
+            f"a committed lockfile was ignored in favour of a fresh resolution:\n{joined}"
+        )
+        assert not any("pip install" in j for j in joined), joined

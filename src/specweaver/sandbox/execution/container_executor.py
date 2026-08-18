@@ -74,7 +74,11 @@ def _declares_a_runner(deps: list[object]) -> bool:
 
 
 def _groups_holding_a_runner(manifest_text: str) -> list[str]:
-    """The PEP 735 groups that declare a test runner, beyond the one `uv sync` already installs.
+    """Every PEP 735 group that declares pytest, `dev` included.
+
+    `dev` is returned rather than filtered here because the two prepare paths disagree about it:
+    `uv sync` installs it unasked, while `uv pip install` installs nothing it is not given. Dropping
+    it at the source would silently strip the most common runner location from the second path.
 
     Detection is by content because the names are a long tail: `test`, `tests`, `testing`, `ci`,
     `test-core` and `dev-base` all carry pytest across the measured corpus, while
@@ -96,9 +100,7 @@ def _groups_holding_a_runner(manifest_text: str) -> list[str]:
     if not isinstance(groups, dict):
         return []
     return sorted(
-        name
-        for name, deps in groups.items()
-        if name != _DEFAULT_GROUP and isinstance(deps, list) and _declares_a_runner(deps)
+        name for name, deps in groups.items() if isinstance(deps, list) and _declares_a_runner(deps)
     )
 
 
@@ -266,9 +268,79 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         # prepare-phase container, not just the execute-phase one (Red/Blue fix: `--rm` alone
         # is the exact anti-pattern AD-8 exists to avoid, and a 300s prepare timeout is long
         # enough for a host-side SIGKILL to leave one orphaned).
-        name = f"specweaver-prepare-{self._run_id}-{uuid.uuid4().hex[:8]}"
-        super().execute([engine, "rm", "-f", name], timeout_seconds=10)
-        prepare_cmd = [
+        for step, uv_cmd in self._prepare_steps(runner_groups, locked=lockfile.exists()):
+            name = f"specweaver-prepare-{self._run_id}-{uuid.uuid4().hex[:8]}"
+            super().execute([engine, "rm", "-f", name], timeout_seconds=10)
+            try:
+                result = super().execute(
+                    self._prepare_container(engine, name, *uv_cmd), timeout_seconds=300
+                )
+            finally:
+                super().execute([engine, "rm", "-f", name], timeout_seconds=10)
+            if result.exit_code != 0:
+                # A warning is why this survived unnoticed: the phase failed on every run for years,
+                # the QA runner then reported an absent toolchain as an empty test suite, and both
+                # looked like nothing happening. Raise, so the caller learns the environment was
+                # never built rather than discovering it as a test result that makes no sense.
+                raise RuntimeError(
+                    f"container prepare phase failed at the {step} step (exit={result.exit_code}). "
+                    f"The sandbox has no prepared environment, so any QA run inside it would report "
+                    f"against the image's own interpreter. "
+                    f"stderr: {result.stderr.strip() or '(empty)'}"
+                )
+        stamp_file.write_text(digest)
+
+    def _prepare_steps(
+        self, runner_groups: list[str], *, locked: bool
+    ) -> list[tuple[str, list[str]]]:
+        """The container invocations that build the environment, in order.
+
+        Two routes, chosen by whether the project committed a lockfile:
+
+        * **locked** — `uv sync --frozen`, which installs exactly what the lock pins. `dev` is
+          dropped from the group flags because sync installs it anyway.
+        * **unlocked** — `uv venv` then `uv pip install`, which resolves from the manifest and
+          writes nothing into the read-only source tree. Every group is named explicitly, `dev`
+          included, and `/workspace` is installed too so the tests can import what they test.
+
+        The unlocked route is a deliberate trade: it produces a working environment for a project
+        that would otherwise get none, and it does **not** reproduce the project's own pinned set.
+        A committed lockfile is always preferred when one exists.
+        """
+        group_flags = [arg for group in runner_groups for arg in ("--group", group)]
+        if locked:
+            # `uv sync` installs `dev` and nothing else, so a project whose runner sits in `tests`
+            # gets a venv the QA runner cannot use. Naming `dev` again would only be noise.
+            synced = [arg for arg in group_flags if arg != _DEFAULT_GROUP]
+            if synced[-1:] == ["--group"]:
+                synced = synced[:-1]
+            return [
+                (
+                    "sync",
+                    # A lockfile that has drifted from its manifest makes `uv` re-resolve and
+                    # rewrite `/workspace/uv.lock`, which hits the same read-only mount and reports
+                    # an error naming the lockfile rather than the sandbox. `--frozen` installs what
+                    # the lock already says.
+                    ["uv", "sync", "--frozen", *synced],
+                )
+            ]
+        logger.warning(
+            "ContainerSubprocessExecutor: %s has no uv.lock, so the prepared environment was "
+            "resolved fresh from pyproject.toml and does NOT reproduce the project's pinned "
+            "dependency set.",
+            self._mounts.source_root,
+        )
+        return [
+            ("venv", ["uv", "venv", _PREPARED_VENV]),
+            (
+                "install",
+                ["uv", "pip", "install", "--python", _PREPARED_VENV, *group_flags, "/workspace"],
+            ),
+        ]
+
+    def _prepare_container(self, engine: str, name: str, *cmd: str) -> list[str]:
+        """A prepare-phase container running `cmd`."""
+        return [
             engine,
             "run",
             "--rm",
@@ -293,35 +365,8 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             "--workdir",
             "/workspace",
             self._image,
-            "uv",
-            "sync",
-            # A lockfile that has drifted from its manifest makes `uv` re-resolve and rewrite
-            # `/workspace/uv.lock`, which hits the same read-only mount and reports an error naming
-            # the lockfile rather than the sandbox. `--frozen` installs what the lock already says.
-            "--frozen",
-            # `uv sync` installs `dev` and nothing else, so a project whose runner sits in `tests`
-            # gets a venv the QA runner cannot use. These are the groups this manifest declares a
-            # runner in — never a guessed name, which uv rejects outright.
-            *(arg for group in runner_groups for arg in ("--group", group)),
+            *cmd,
         ]
-        try:
-            result = super().execute(prepare_cmd, timeout_seconds=300)
-        finally:
-            super().execute([engine, "rm", "-f", name], timeout_seconds=10)
-
-        if result.exit_code == 0:
-            stamp_file.write_text(digest)
-            return
-
-        # A warning is why this survived unnoticed: the phase failed on every run for years, the QA
-        # runner then reported an absent toolchain as an empty test suite, and both looked like
-        # nothing happening. Raise, so the caller learns the environment was never built rather than
-        # discovering it as a test result that makes no sense.
-        raise RuntimeError(
-            f"container prepare phase failed (uv sync exit={result.exit_code}). The sandbox has no "
-            f"prepared environment, so any QA run inside it would report against the image's own "
-            f"interpreter. stderr: {result.stderr.strip() or '(empty)'}"
-        )
 
     def _build_container_cmd(
         self,
