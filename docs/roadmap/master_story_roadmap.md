@@ -320,6 +320,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Static Code Flow Analysis:**
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
+    *   🔴 **Cross-Language Dependency Resolution:**
+        *   `[ ]` **B-SENS-07:** Language-Agnostic Dependency Resolution
     *   🟡 **Infinite Scale Management:**
         *   `[ ]` **INT-US-11-SF01:** Infinite Scale Management
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
@@ -683,3 +685,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
     *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
+    *   `[ ]` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)

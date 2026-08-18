@@ -120,6 +120,12 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-064` 🔴: Polyglot Architecture Checks Report Success Where They Do Nothing**
+  > [Description](../features/topic_07_technical_debt/TECH-064/TECH-064_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-20` P-5 test._ |
+  > `KotlinAnalyzer.extract_imports` returns nothing for valid imports, so archetype inference calls the module `pure-logic`;
+  > Kotlin's and Rust's `run_architecture_check` return `violation_count=0` as stubs, so *not implemented* is
+  > indistinguishable from *nothing wrong*. **Lands before `B-SENS-07`** — these are wrong on today's code.
+
 * **`TECH-063` 🔴: The MCP Container Boundary Checks a Name, Not a Command**
   > [Description](../features/topic_07_technical_debt/TECH-063/TECH-063_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-23-MIG` while citing `C-INTL-02` FR-2._ |
   > `MCPAtom` enforces "must run through docker/podman" by comparing `argv[0]` to a string set, then hands the command to raw `Popen`. The command AND its `env` come from `mcp_servers` in the analysed

@@ -68,6 +68,14 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > _(extracted from B-SENS-02)_ | Maps execution branches (True/False edges). Restricted strictly to statically typed languages (Java, C++) to avoid dynamic scoping tar pits.
 * **`B-SENS-05` 🔮: Static Dataflow Solver**<br>
   > _(extracted from B-SENS-02)_ | Computes Def-Use chains using Kildall's framework. Highly experimental. Restricted to statically typed languages.
+* **`B-SENS-07` 🔜: Language-Agnostic Dependency Resolution**<br>
+  > _(2026-08-18 — split out of the `INT-US-20` P-5 journey.)_ | Resolves each language's import syntax into
+  > canonical `MODULE` identities in the existing Universal Ontology, so boundary decisions are one graph query
+  > instead of five external tools — two of which are stubs. **Supersedes the Python special case rather than
+  > joining it**: the design MUST specify a time-boxed dual-run against tach, ending in its removal. Blocks
+  > `INT-US-20` P-5 and the brownfield journeys in US-11, US-12, US-26. Measurements and scope:
+  > [analysis](../../analysis/polyglot_dependency_resolution_2026-08-18.md).
+
 * **`B-SENS-06` 🔜: OSV Vulnerability Feed Ingestion**
   > _(new)_ | Automatically maps known CVEs from the OSV database against the active workspace topology graph.
 
