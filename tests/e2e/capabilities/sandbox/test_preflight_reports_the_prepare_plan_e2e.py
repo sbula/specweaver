@@ -12,6 +12,8 @@ Driven through the real `sw` CLI in a subprocess, because the claim is about wha
 at a terminal. The plan itself is pure and unit-tested; that it is *reachable* is this test's
 subject, and the exit code is part of it — a preflight nobody can gate CI on has only moved the
 surprise earlier.
+
+Proves: TECH-031 FR-10
 """
 
 from __future__ import annotations

@@ -62,7 +62,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
-| `TECH-031` 🟡 | Container-prepare defects, latent only because `execution_mode` defaults to `"host"`. |
+| `TECH-031` 🟢 | Container prepare builds a usable toolchain for 83% of a 121-repo corpus; `sw sandbox preflight` reports the plan. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -608,7 +608,7 @@ Ordered by capability cluster, so a shared seam is decided once with every claim
 |  | `✅` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
 |  | `✅` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
 |  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
-|  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — HELD, needs container execution actually exercised (`TECH-031`) | `D-EXEC-01`, `B-EXEC-01` |
+|  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — container execution IS now exercised (`TECH-031` closed); what remains is the product decision to make it the enforced default, `execution_mode` still `"host"` | `D-EXEC-01`, `B-EXEC-01` |
 |  | `✅` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
 |  | `✅` `INT-US-15-SF01-MIG` | US-15 | Enterprise Compliance Protocols | `B-SENS-01` |
 |  | `✅` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
@@ -654,7 +654,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
     *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
     *   `✅` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
-    *   `[ ]` **TECH-031:** [Container Prepare Phase Has Never Installed a Toolchain](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
+    *   `✅` **TECH-031:** [Container Prepare Phase Has Never Installed a Toolchain](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
     *   `✅` **TECH-032:** [Non-Python QA Runners Report an Absent Toolchain as Success](features/topic_07_technical_debt/TECH-032/TECH-032_design.md)
     *   `✅` **TECH-033:** [A Step's Retry Budget Resets on Every `sw resume`](features/topic_07_technical_debt/TECH-033/TECH-033_design.md)
     *   `✅` **TECH-034:** [Split the AST Parser Hierarchy by Language Paradigm](features/topic_07_technical_debt/TECH-034/TECH-034_design.md)

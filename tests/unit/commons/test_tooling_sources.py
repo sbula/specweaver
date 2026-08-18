@@ -13,6 +13,8 @@ Rung 2 of the coverage gap. 48 of the 121 corpus repositories declare pytest out
 back-references — against 236 plain requirement lines. Resolving those means implementing tox's
 substitution engine, and only 18 of the 30 projects have a plain `pytest` line at all. So the reader
 takes what it can read and reports what it skipped; it does not pretend to be tox.
+
+Proves: TECH-031 FR-7
 """
 
 from __future__ import annotations

@@ -16,6 +16,8 @@ which is the last line of stderr forwarded verbatim. It names `/cache/venv`, a p
 sandbox that appears nowhere in the reader's project, and it says nothing about why pytest is absent
 or what would make it present. A reader who has never seen the container layout has no way to tell
 this from a broken test.
+
+Proves: TECH-031 FR-9
 """
 
 from __future__ import annotations

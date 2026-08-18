@@ -166,7 +166,7 @@ after logging. That contract is why the phase could fail on every run unnoticed,
 `..._and_raises`. Updated rather than deleted, so the change is visible in the history of the test
 that pinned the old behaviour.
 
-## Still open: the layout gap (defect 3)
+## The layout gap (defect 3), measured and closed
 
 Unchanged and confirmed today:
 
@@ -299,30 +299,86 @@ extras-versus-groups; it now has to answer what the prepare phase does for a pro
 uv-managed at all — which is a larger question than the one the ticket was written to ask, and the
 reason this is a decision rather than a fix. `--all-extras` remains rejected (user, 2026-08-12).
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
 
-- **Detect the layout and sync accordingly.** Read the target's `pyproject.toml`; if the tools the
-  QA runner will invoke are absent from the default groups but present in an extra, request that
-  extra. Precise, and it installs nothing the project did not already declare for the purpose.
-- **Fail loudly instead of silently.** Whatever the sync strategy, the QA runner should say *"pytest
-  is not present in the prepared environment"* rather than surfacing a bare non-zero exit. Today the
-  failure looks like a test failure rather than a setup failure, which sends the reader to the wrong
-  place — the same misdirection `TECH-029` produced with `fork: retry`.
-- **Document the expected layout** and check it at configuration time, rather than at the moment a
-  QA run fails inside a container.
+Written after the fact, from what shipped. That is backfill, and it cannot make these requirements
+TDD retroactively — the tests were written first against behaviours, and these name the behaviours.
+Each row says *why* it exists, because a row restating its own test teaches a later reader nothing.
 
-## Non-Goals (proposed, pending design)
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Environment on a writable mount | Prepare phase | Point `UV_PROJECT_ENVIRONMENT` at the rw cache mount | `uv`'s default `.venv` lands in the workdir, which is `:ro` inside a `--read-only` container, so without this the phase fails for **every** project on every layout before the manifest is read. |
+| FR-2 | The source tree is never written | Prepare phase | Pass `--frozen` on the locked route | A lockfile that has drifted makes `uv` re-resolve and rewrite `/workspace/uv.lock`, hitting the same read-only mount and reporting an error that names the lockfile rather than the sandbox. |
+| FR-3 | The execute phase uses what prepare built | Execute phase | Mount the cache `:ro` and put `/cache/venv/bin` first on `PATH` | Fixing FR-1 and FR-2 changes nothing observable without this: `python -m pytest` otherwise resolves to the image's own interpreter, and the prepared environment is not even mounted. |
+| FR-4 | A failed prepare reaches the caller | Prepare phase | Raise rather than log | The phase failed on every run for years behind a `logger.warning`; the QA runner then reported an absent toolchain as an empty suite, and both looked like nothing happening. |
+| FR-5 | The group holding the runner is synced | Prepare phase | Request the groups whose contents declare pytest | `uv sync` installs `dev` and nothing else. Of 50 corpus projects on PEP 735, 15 put pytest in `dev` and 23 put it in `test`/`tests`, so the supported layout was the *less* common case. Detection is by content: names are a long tail, and `uv sync --group <undeclared>` exits 2, so a guessed name breaks every project that does not use it. |
+| FR-6 | A project with no lockfile still gets an environment | Prepare phase | Take a `uv venv` + `uv pip install` route when `uv.lock` is absent | 20 of 121 corpus repositories declare pytest and commit no lockfile. A committed lockfile still takes the frozen route, because a fresh resolution does not reproduce the project's pins — and the phase says so by name when it resolves instead. |
+| FR-7 | A runner declared outside the manifest is installed | Prepare phase | Read `tox.ini` and the `requirements` family when `pyproject.toml` names no runner | 81 of 121 corpus repositories never name pytest in their manifest. What cannot be read is reported rather than dropped: 891 of the corpus's tox dependency lines need tox's own substitution engine, and silence would let a partial environment pass for a complete one. |
+| FR-8 | A supplied runner is disclosed on the result | Prepare phase, QA runner | Install pytest when the project declares none, and set `TestRunResult.toolchain_note` | Without the disclosure a green run attests to a suite executed against a version nobody chose, with none of the plugins it may need — the same vacuous success this ticket exists to remove, better dressed. A field rather than a log line, because the caller has to be able to repeat it. |
+| FR-9 | An absent toolchain explains itself | QA runner | Name the missing module, the cause and the remedy | The reason forwarded the interpreter's own line, naming `/cache/venv/bin/python` — a path inside our container that appears nowhere in the reader's project — and said nothing about why pytest was absent or what would make it present. |
+| FR-10 | The plan is readable before a run | CLI | Report the prepare plan, non-zero on any warning | Every decision above was otherwise met inside a container, minutes into a run. `plan_for` decides once and both the executor and the report read it, so the report cannot describe a phase other than the one that runs. |
 
-- **Not** `--all-extras` in the prepare phase. Rejected at the point this was found (user,
-  2026-08-12): widening what an untrusted project installs cuts against the sandbox's purpose, and
-  the prepare phase already executes arbitrary sdist build code, which is why AD-7/AD-9 isolate it.
-- **Not** a change to this repo's own manifest — `TECH-028` did that, and it is why SpecWeaver's own
-  sandboxed QA works today.
-- **Not** reopening `B-EXEC-01`'s status. See above.
-- **Not** the non-Python runners, unless the design finds the same assumption in them. The design
-  looked (Q3 above): the prepare-phase assumption is absent from them, and the silent-success
-  shape is present in six of their paths but has a different root cause. Left for its own ticket
-  rather than absorbed, per the scope rules in `specweaver-ticket`.
+## Non-Functional Requirements
+
+| # | NFR | Threshold / Constraint |
+|---|-----|----------------------|
+| NFR-1 | Isolation is not widened to buy coverage | The prepare phase executes arbitrary sdist build code, so nothing may be installed that the project did not declare — no `--all-extras`, no `--all-groups`, and no group requested for a runner the QA runner never invokes. |
+| NFR-2 | Reproducibility is preferred, never silently lost | A committed `uv.lock` always takes the frozen route. Where a fresh resolution is unavoidable, the phase states that the environment does not reproduce the project's pinned set. |
+| NFR-3 | Every input to the command is in the cache stamp | The manifest and any fallback declaration decide the command, so a stamp keyed on the lockfile alone would serve a stale environment for ever. |
+
+## Approaches, as decided
+
+All three were taken, and one of them changed shape once measured.
+
+- **Detect the layout and sync accordingly** — delivered. The groups half is FR-5. The extras half is
+  **closed by measurement rather than built**: requesting a specific extra would add zero corpus
+  projects, because every uv-managed repository declaring pytest in an extra already declares it in a
+  group or at runtime.
+- **Fail loudly instead of silently** — delivered as FR-4 and FR-9. The guess in the original entry
+  was right that a clear failure is most of the value.
+- **Document the expected layout and check it at configuration time** — delivered as FR-10,
+  `sw sandbox preflight`.
+
+## Non-Goals, as decided
+
+- **Not** `--all-extras`, and not `--all-groups` either. Rejected on 2026-08-12 and reconfirmed by
+  measurement: `--all-groups` would install twenty corpus projects' documentation toolchains to run
+  their tests, and fail the whole phase on one unresolvable doc dependency. Recorded as NFR-1.
+- **Not** a change to this repo's own manifest — `TECH-028` did that.
+- **Not** reopening `B-EXEC-01`'s status.
+- **Not** the non-Python runners. The design looked (Q3): the prepare-phase assumption is absent from
+  them, and their silent-success shape has a different root cause. `TECH-032`.
+- **Not** surfacing the fresh-resolution warning into the QA report. It is logged by name and stated
+  in NFR-2; moving it into the report needs plumbing through the runner and is not done. Recorded
+  rather than left to be discovered.
+
+## Verifiable Proof
+
+Every file below passes and does not skip, except where a live container engine is absent — the
+integration tier skips cleanly on that and only on that (NFR-10), which is an environment
+capability rather than anything this repo controls.
+
+- `tests/unit/sandbox/execution/test_container_executor_prepare.py` — FR-1, FR-2, FR-3, FR-4, FR-5,
+  FR-6, FR-8
+- `tests/unit/commons/test_tooling_sources.py` — FR-7, including a run against all 30 real `tox.ini`
+  files from the corpus
+- `tests/unit/commons/test_prepare_plan.py` — FR-10, and the two tests that tie the plan to what the
+  executor does
+- `tests/unit/sandbox/language/core/language/python/test_toolchain_absence.py` — FR-9
+- `tests/integration/sandbox/execution/test_container_executor_integration.py` — FR-1 to FR-9 against
+  live podman, across six project shapes
+- `tests/e2e/capabilities/sandbox/test_preflight_reports_the_prepare_plan_e2e.py` — FR-10 through the
+  real `sw` CLI in a subprocess
+
+`python scripts/check_fr_coverage.py TECH-031` exits 0: ten FRs, each planned and each carried by an
+authoritative `Proves:` tag in two files.
+
+**Each citation was checked by mutation against the file that claims it, and two of the ten failed
+that check first.** FR-3's assertion tested that `/cache/venv/bin` appeared *in* `PATH` rather than
+first, so prepending `/usr/bin:` satisfied it while restoring the exact shadowing FR-3 exists to
+prevent — the assertion is now positional. FR-8 was cited to the wrong file; its unit proof is the
+runner-note class beside the prepare tests, not the explanation module. Neither would have been found
+by the coverage gate, which proves attribution and never strength.
 
 ## Adjacent finding, recorded because nobody has looked
 
@@ -331,9 +387,9 @@ reason this is a decision rather than a fix. `--all-extras` remains rejected (us
 That is not this ticket's scope, but a reader treating `B-EXEC-01`'s design as verified should know
 it has not been.
 
-## What is left
+## The Next Step questions, answered
 
-All three Next Step questions are answered, two of them by work rather than argument.
+All three are answered, two of them by work rather than argument.
 
 1. **How wide the gap is** — measured against a corpus of 121 real repositories:
    `docs/analysis/dependency_layout_corpus_2026-08-18.md`. The answer reordered the ticket. The

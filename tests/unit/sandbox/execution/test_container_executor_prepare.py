@@ -6,6 +6,10 @@
 Split out of `test_container_executor.py`, which covers the executor's argv construction and
 delegation contract. This module covers one question that runs the other way: given a real target
 project, does the phase build a toolchain, and is it the toolchain the execute phase then finds?
+
+Proves: TECH-031 FR-1, TECH-031 FR-2, TECH-031 FR-3, TECH-031 FR-4
+Proves: TECH-031 FR-5, TECH-031 FR-6, TECH-031 FR-8
+Proves: TECH-031 NFR-1, TECH-031 NFR-2, TECH-031 NFR-3
 """
 
 from __future__ import annotations
@@ -99,8 +103,13 @@ class TestEnsurePreparedProducesAUsableEnvironment:
 
         path_env = [a for a in cmd if a.startswith("PATH=")]
         assert path_env, f"no PATH is set, so `python -m pytest` is the image's interpreter:\n{cmd}"
-        assert "/cache/venv/bin" in path_env[0], (
-            f"PATH does not put the prepared environment first: {path_env[0]}"
+        # FIRST, not merely present. Membership was the original assertion and it proved nothing:
+        # prepending `/usr/bin:` to the value satisfied it while restoring the exact shadowing this
+        # exists to prevent. Found by mutation while backfilling the FR citations.
+        entries = path_env[0].removeprefix("PATH=").split(":")
+        assert entries[0] == "/cache/venv/bin", (
+            f"the prepared environment is not first on PATH, so the image's interpreter wins: "
+            f"{path_env[0]}"
         )
 
     def test_a_failed_prepare_is_surfaced_not_logged(self, tmp_path: Path, monkeypatch) -> None:

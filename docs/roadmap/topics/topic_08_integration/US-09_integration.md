@@ -137,27 +137,27 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
 
   | # | Path | Span | Owner | Runnable today | Blocker |
   |---|---|---|---|---|---|
-  | P-1 | Podman/Docker integration; ephemeral sub-containers per QA run | single feature | `D-EXEC-01`, `B-EXEC-01` | **no** | `TECH-031` |
+  | P-1 | Podman/Docker integration; ephemeral sub-containers per QA run | single feature | `D-EXEC-01`, `B-EXEC-01` | **yes, as of 2026-08-18** | — |
   | P-2 | Container execution as an enforced US-9 default rather than opt-in | cross-feature | this contract, deferred | no | product decision |
 
-  **P-1 cannot be proven yet, and that is why the migration is held rather than open.** Both
-  capabilities are `✅` and their FRs are uncited, but citing them requires container execution to be
-  genuinely exercised — and `TECH-031` records that the container prepare phase **has never
-  installed a
-  toolchain**. A citation backed by a mutant that only ever runs on the host would assert the host
-  path
-  and claim the container one, which is the precise failure this migration exists to remove.
+  **P-1's prerequisite is discharged.** It was held because citing `B-EXEC-01`'s and `D-EXEC-01`'s FRs
+  requires container execution to be *genuinely* exercised, and `TECH-031` recorded that the prepare
+  phase had never installed a toolchain — so any citation would have asserted the host path while
+  claiming the container one.
 
-  So this waits on containerised testing being introduced properly. `TECH-031` is the prerequisite;
-  `B-EXEC-01`'s nine uncited FRs and `D-EXEC-01`'s are its dependents.
+  `TECH-031` closed on 2026-08-18. `tests/integration/sandbox/execution/test_container_executor_integration.py`
+  drives the real executor against live podman across six project shapes, and its mutants die when the
+  container path is broken rather than the host one. **The work P-1 was waiting for exists; what has
+  not happened is the citation.** `B-EXEC-01`'s nine FRs and `D-EXEC-01`'s are still uncited, and that
+  is now ordinary FR-sweep work on this contract rather than a blocked dependency.
 
   **P-2 is a product decision nobody has taken** (`ADR-003`'s 2026-08-16 addendum): container
   execution
   is wired end-to-end but opt-in via `sandbox_settings.execution_mode == "container"`, while the
   add-on
-  asked for it as an enforced default. Recorded rather than assumed — and `TECH-031` makes enforcing
-  it
-  unsafe today regardless.
+  asked for it as an enforced default. Recorded rather than assumed. `TECH-031` no longer argues
+  against it — the prepare phase now builds a usable toolchain for 83% of a 121-repository corpus and
+  states in the result when it could not — so P-2 is a decision on its merits, not a safety veto.
 
   **Held (`🔵`) is deliberately distinct from open (`[ ]`).** An open row invites someone to pick it
   up;

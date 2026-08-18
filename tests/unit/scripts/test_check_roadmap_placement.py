@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-OPEN_LINE = "    *   `[ ]` **TECH-031:** [Container Prepare Phase](features/x/TECH-031.md)"
+OPEN_LINE = "    *   `[ ]` **TECH-901:** [A Synthetic Ledger Entry](features/x/TECH-901.md)"
 DONE_LINE = "    *   `✅` **TECH-030:** [An Empty FolderGrant Path](features/x/TECH-030.md)"
 BAD_LINE = "    *   `[x]` **TECH-020:** [Extract the Step-Execution Loop](features/x/TECH-020.md)"
 
@@ -131,7 +131,7 @@ def test_the_same_id_under_two_stories_passes() -> None:
 
 def test_a_repeated_tech_line_is_out_of_scope() -> None:
     """The TECH ledger is not a story entry, and `roadmap_sync` already judges its ids."""
-    tech = "    *   `[ ]` **TECH-031:** [Container Prepare Phase](features/x/TECH-031.md)"
+    tech = "    *   `[ ]` **TECH-901:** [A Synthetic Ledger Entry](features/x/TECH-901.md)"
     assert _once("### 🔧 Technical Debt (TECH)", tech, tech) == []
 
 

@@ -8,6 +8,9 @@ moment a QA run fails inside a container. The three rungs before it each added b
 would otherwise meet by surprise — a fresh resolution that does not reproduce their pins, tox lines
 skipped, a runner the sandbox chose — so the value is no longer only "you are unsupported", it is
 "here is what will happen and what it will cost".
+
+Proves: TECH-031 FR-10
+Proves: TECH-031 NFR-2
 """
 
 from __future__ import annotations

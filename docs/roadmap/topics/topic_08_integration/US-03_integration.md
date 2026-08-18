@@ -41,7 +41,7 @@
   | P-1 | Each of five runners issues the right command per intent and parses what comes back — pytest/ruff, cargo, Gradle+Maven, detekt, tsc/eslint | single feature | `D-VAL-03` | yes — **done** | — |
   | P-2 | Seam: a project directory resolves to its language's runner, and every runner satisfies all five intents or cannot be instantiated | cross-module | `D-VAL-03` | yes — **done** | — |
   | P-3 | Seam: an agent reaches `run_compiler` / `run_debugger` through the Loom sandbox, and is refused when its role does not carry the intent | cross-module | `D-VAL-03` | yes — **done** | — |
-  | P-4 | Journey: a real non-Python toolchain executes inside the sandbox | cross-feature | this contract, deferred | no | container execution — `TECH-031`, held with `INT-US-09-SF01-MIG` |
+  | P-4 | Journey: a real non-Python toolchain executes inside the sandbox | cross-feature | this contract, deferred | no | the container path is proven for **Python only**; nothing has exercised a non-Python toolchain inside it |
   | P-5 | Journey: `sw implement` drives a non-Python target end to end | cross-feature | `D-INTL-08` (unbuilt) | no | `D-INTL-08` owns this as its own FR |
   | P-6 | A lint finding carries the URI of the rule it violated | cross-feature | this contract, deferred | no | needs a scope decision — see below |
 
@@ -86,10 +86,16 @@
   Not ticketed: filling `rule_uri` changes what an agent receives in a lint report, which is a scope
   decision, and filing a ticket is not the same as taking it.
 
-  P-4 is the same wait as `INT-US-09-SF01-MIG`, and the code says so itself — `resolve_runner` warns
-  that "container sandboxing is validated for Python projects only". Mocked executors prove the command
-  and the parse, which is the whole contract at unit tier; whether `cargo` or `gradlew` exists on the
-  host is a container question, and it is held, not forgotten.
+  P-4's blocker was `TECH-031`, held with `INT-US-09-SF01-MIG`. **`TECH-031` closed on 2026-08-18 and
+  P-4 is no closer.** Everything it delivered is Python-specific — `uv`, PEP 735 groups, pytest — and
+  `resolve_runner` still warns that "container sandboxing is validated for Python projects only". A
+  blocker naming finished work reads as unblocked, which is why the row now names the gap itself
+  rather than a ticket.
+
+  What is missing is a non-Python toolchain executing inside the container: `cargo`, `gradlew` or
+  `tsc` present in an image, resolved and run. Mocked executors prove the command and the parse, which
+  is the whole contract at unit tier; whether those binaries exist in the sandbox is a container
+  question, and it is open, not forgotten.
 
   **`INT-US-03-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-4, P-5 and P-6.
 

@@ -10,6 +10,10 @@ a container runtime.
 Uses the public ``python:3.13-slim`` image rather than SpecWeaver's own not-yet-
 published sandbox image (Containerfile.sandbox's CI publish pipeline is Backlog,
 per the implementation plan) — this keeps the test independent of that follow-up.
+
+Proves: TECH-031 FR-1, TECH-031 FR-2, TECH-031 FR-3, TECH-031 FR-4
+Proves: TECH-031 FR-5, TECH-031 FR-6, TECH-031 FR-7
+Proves: TECH-031 FR-8, TECH-031 FR-9
 """
 
 from __future__ import annotations
