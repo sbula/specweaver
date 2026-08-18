@@ -19,6 +19,8 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.sandbox.execution.models import SubprocessResult
 
 from specweaver.sandbox.qa_runner.core.interface import (
@@ -55,6 +57,26 @@ def did_not_run(result: SubprocessResult, tool: str) -> str | None:
     reason = detail[-1][:_MAX_REASON] if detail else f"{tool} exited {result.exit_code}"
     logger.error("%s produced no output — %s", tool, reason)
     return f"{tool} did not run: {reason}"
+
+
+def report_never_written(result: SubprocessResult, tool: str, report: Path) -> str | None:
+    """Why a lint or complexity verdict cannot be trusted: the tool wrote no report.
+
+    A missing report is not a clean project. It happens when the plugin is not configured, when the
+    build failed before reaching it, or when an external converter the pipeline expects is not
+    installed — and in every one of those cases the caller was handed `0 findings`, which is the
+    vacuous success this module exists to prevent.
+    """
+    if report.exists():
+        return None
+
+    detail = (result.stderr or result.stdout or "").strip().splitlines()
+    tail = detail[-1][:_MAX_REASON] if detail else f"exit {result.exit_code}"
+    logger.error("%s wrote no report at %s — %s", tool, report, tail)
+    return (
+        f"{tool} produced no report at {report.name}, so there is no verdict to read. "
+        f"A missing report is not a clean result. Last output: {tail}"
+    )
 
 
 def build_failed_without_results(result: SubprocessResult, tool: str, total: int) -> str | None:

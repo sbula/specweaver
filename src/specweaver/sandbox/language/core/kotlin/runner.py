@@ -22,6 +22,7 @@ from specweaver.sandbox.language.core.toolchain import (
     failed_complexity,
     failed_lint,
     failed_tests,
+    report_never_written,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -168,6 +169,11 @@ class KotlinRunner(QARunnerInterface):
         if reason:
             return failed_lint(reason)
 
+        # A missing report is not a clean project: the plugin may not be configured, or the
+        # build may have stopped before reaching it. Either way there is no verdict to read.
+        missing = report_never_written(result, tool, sarif_path)
+        if missing:
+            return failed_lint(missing)
         if sarif_path.exists():
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
@@ -202,6 +208,9 @@ class KotlinRunner(QARunnerInterface):
         if reason:
             return failed_complexity(reason, max_complexity)
 
+        missing = report_never_written(result, tool, sarif_path)
+        if missing:
+            return failed_complexity(missing, max_complexity)
         if sarif_path.exists():
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))

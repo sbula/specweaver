@@ -324,6 +324,7 @@ Each row says *why* it exists, because a row restating its own test teaches a la
 | FR-16 | Non-Python projects have a prepare plan at all | Prepare phase | Detect the build tool and fetch its dependencies before the run | The phase returned immediately without a `pyproject.toml`, so a Rust or JVM project reached the execute phase with nothing installed — and that phase runs `--network none` by design, so resolution must happen in the prepare phase or not at all. Rust fetches into `CARGO_HOME=/cache/cargo` and builds into `/scratch/target`, because `/workspace` is read-only. Maven resolves into `/cache/m2` with `dependency:go-offline`. Gradle is reported unsupported rather than silently skipped: a wrapper fetches its own distribution on first use and the system Gradle is 4.4.1. |
 | FR-17 | The executor acts on a non-Python plan | Prepare phase, execute phase | Run the fetch, pick an image containing the toolchain, and carry the environment into both phases | A plan nothing consumes is half a deliverable. The image must follow the toolchain or `cargo` is simply absent; the environment must reach both phases or the fetch lands where the run cannot see it; and `PATH` must not be rewritten with the Python venv, which hides the binary the image was chosen for. **Rust runs end to end in the container**, verified against live podman: crates fetched in prepare, compiled into `/scratch`, run offline, source tree untouched. |
 | FR-18 | A JVM project runs in the sandbox | Prepare phase, execute phase, JVM runners | Give the build a writable workspace, warm the provider, and find the reports afterwards | Four container-only defects, none visible from outside one: the image's entrypoint creating `/root/.m2` as a non-root user; `target/` under a read-only mount, which Maven cannot be told to move; surefire's provider resolved at execution time and fetched by no offline goal; and its forked VM dying inside the sandbox's budget. An overlay workspace keeps the host source tree untouched while letting the build write. |
+| FR-19 | Lint, complexity and compile give a verdict or say why not | Rust runner, Java runner, Kotlin runner | Read the tool's own output, and treat a missing report as an error | Every one of these surfaces returned `0 findings` when it had learned nothing. Rust piped clippy into `clippy-sarif` and complexity into the same, a binary installed nowhere: the pipe produced nothing and the guard around it reported a clean project for code clippy had just flagged. The JVM runners guarded a SARIF report with `if path.exists()` and fell through to zero when the plugin had never written one. And `cargo build` writes progress to stderr, so a healthy crate had empty stdout and was reported as an absent toolchain. |
 | FR-10 | The plan is readable before a run | CLI | Report the prepare plan, non-zero on any warning | Every decision above was otherwise met inside a container, minutes into a run. `plan_for` decides once and both the executor and the report read it, so the report cannot describe a phase other than the one that runs. |
 
 ## Non-Functional Requirements
@@ -402,6 +403,33 @@ Each was measured, not guessed, and none is visible from outside a container.
 
 The runners look for reports in both places, because the same runner serves a host run and a
 sandboxed one and nothing tells it which happened.
+
+## What each QA intent actually does, per language
+
+Verified against the real toolchains. "Real" below means the intent was driven against the tool and
+its output checked — not that a command exists in the source.
+
+| Intent | Python | Rust | Java | Kotlin |
+|---|---|---|---|---|
+| tests | real | real | real | real |
+| linter | real | real | **guarded** | **guarded** |
+| complexity | real | partial | **guarded** | **guarded** |
+| compiler | no-op | real | real | real |
+| debugger | real | real | real | real |
+| architecture | real | stub → 0 | real | stub → 0 |
+
+- **partial** — Rust complexity reads clippy's own findings, but clippy's threshold is set in
+  `clippy.toml` and cannot be given per run, so a caller's `max_complexity` has no effect. The result
+  now reports the threshold clippy actually used rather than echoing the one it ignored.
+- **guarded** — the JVM lint and complexity surfaces depend on a PMD or detekt report the project
+  must configure. When none is written they now say so instead of reporting zero findings; a project
+  that does configure one is parsed as before.
+- **no-op** — Python has no compile step, and the surface returns a clean result by design.
+- **stub → 0** — `TECH-064`, unchanged here.
+
+Python's complexity honours the caller's threshold; Rust's cannot. Java's compiler detects a broken
+build but reports the count without the compiler's message, and its debugger returns Maven's build
+log rather than the program's output — both measured, neither fixed here.
 
 ## Verifiable Proof
 

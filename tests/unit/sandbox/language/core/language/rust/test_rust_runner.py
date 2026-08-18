@@ -13,7 +13,6 @@ Every runner is exercised against a mocked executor, so what these tests pin is 
 a container concern, and `INT-US-09-SF01-MIG` holds it.
 """
 
-import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -86,105 +85,63 @@ class TestRustRunner:
         )
 
     def test_run_linter_success(self, tmp_path: Path) -> None:
+        """Clippy's own JSON, which is what the runner reads.
+
+        This fed SARIF through a mocked `clippy-sarif`. That binary is installed nowhere, so in a
+        real run the pipe produced nothing and the guard around it returned `error_count=0` — a
+        clean verdict for code clippy had flagged. The sample is copied from a real clippy run.
+        """
         (tmp_path / "Cargo.toml").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-
-        sarif_output = json.dumps(
-            {
-                "runs": [
-                    {
-                        "results": [
-                            {
-                                "message": {"text": "A clippy error"},
-                                "locations": [
-                                    {
-                                        "physicalLocation": {
-                                            "artifactLocation": {"uri": "src/main.rs"},
-                                            "region": {"startLine": 42},
-                                        }
-                                    }
-                                ],
-                            }
-                        ]
-                    }
-                ]
-            }
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0,
+            stdout=(
+                '{"reason":"compiler-message","message":{"level":"warning",'
+                '"message":"unneeded `return` statement",'
+                '"code":{"code":"clippy::needless_return"},'
+                '"spans":[{"file_name":"src/lib.rs","line_start":3}]}}\n'
+                # A complexity finding in the same stream: `run_complexity` reports these, so
+                # counting them here would report every one of them twice.
+                '{"reason":"compiler-message","message":{"level":"warning",'
+                '"message":"the function has a cognitive complexity of (30/25)",'
+                '"code":{"code":"clippy::cognitive_complexity"},'
+                '"spans":[{"file_name":"src/lib.rs","line_start":9}]}}\n'
+            ),
         )
-
-        # First call `cargo clippy`, second `clippy-sarif`
-        mock_executor.execute.side_effect = [
-            _make_result(exit_code=0, stdout='{"reason":"compiler-message"}'),
-            _make_result(exit_code=0, stdout=sarif_output),
-        ]
         runner = RustRunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_linter(target="src/")
 
-        assert mock_executor.execute.call_count == 2
-
-        # Cargo clippy call
-        assert "cargo" in mock_executor.execute.call_args_list[0][0][0]
-        assert "clippy" in mock_executor.execute.call_args_list[0][0][0]
-        assert "--message-format=json" in mock_executor.execute.call_args_list[0][0][0]
-
-        # clippy-sarif call
-        assert "clippy-sarif" in mock_executor.execute.call_args_list[1][0][0]
-        assert (
-            mock_executor.execute.call_args_list[1].kwargs.get("input_text")
-            == '{"reason":"compiler-message"}'
+        assert result.error_count == 1, result
+        assert result.errors[0].code == "clippy::needless_return"
+        assert result.errors[0].line == 3
+        assert mock_executor.execute.call_count == 1, (
+            "the second call was a pipe into `clippy-sarif`, which is installed nowhere"
         )
-
-        assert result.error_count == 1
-        assert result.errors[0].message == "A clippy error"
-        assert result.errors[0].file == "src/main.rs"
-        assert result.errors[0].line == 42
 
     def test_run_complexity_success(self, tmp_path: Path) -> None:
+        """Only the complexity lint, so a finding is not counted by both surfaces."""
         (tmp_path / "Cargo.toml").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-
-        # Mock clippy-sarif output containing a cognitive complexity error
-        sarif_output = json.dumps(
-            {
-                "runs": [
-                    {
-                        "results": [
-                            {
-                                "ruleId": "clippy::cognitive_complexity",
-                                "properties": {"complexity": 15},
-                                "message": {
-                                    "text": "The function `complex_fn` has a cognitive complexity of 15"
-                                },
-                                "locations": [
-                                    {
-                                        "physicalLocation": {
-                                            "artifactLocation": {"uri": "src/main.rs"},
-                                            "region": {"startLine": 100},
-                                        }
-                                    }
-                                ],
-                            }
-                        ]
-                    }
-                ]
-            }
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0,
+            stdout=(
+                '{"reason":"compiler-message","message":{"level":"warning",'
+                '"message":"the function has a cognitive complexity of (11/10)",'
+                '"code":{"code":"clippy::cognitive_complexity"},'
+                '"spans":[{"file_name":"src/lib.rs","line_start":9}]}}\n'
+                '{"reason":"compiler-message","message":{"level":"warning",'
+                '"message":"unneeded `return` statement",'
+                '"code":{"code":"clippy::needless_return"},'
+                '"spans":[{"file_name":"src/lib.rs","line_start":3}]}}\n'
+            ),
         )
-
-        mock_executor.execute.side_effect = [
-            _make_result(exit_code=0, stdout=""),
-            _make_result(exit_code=0, stdout=sarif_output),
-        ]
         runner = RustRunner(cwd=tmp_path, executor=mock_executor)
 
-        result = runner.run_complexity(target="src/", max_complexity=10)
+        result = runner.run_complexity(target="src/")
 
-        assert mock_executor.execute.call_count == 2
-        assert "-W" in mock_executor.execute.call_args_list[0][0][0]
-        assert "clippy::cognitive_complexity" in mock_executor.execute.call_args_list[0][0][0]
-
-        assert result.violation_count == 1
-        assert result.violations[0].complexity == 15
-        assert result.violations[0].file == "src/main.rs"
+        assert result.violation_count == 1, result
+        assert "cognitive_complexity" in result.violations[0].function
 
     def test_run_debugger_success(self, tmp_path: Path) -> None:
         (tmp_path / "Cargo.toml").write_text("")

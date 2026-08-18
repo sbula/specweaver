@@ -15,12 +15,14 @@ reuse that turns a later edit into a silent bug.
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.qa_runner.core.interface import LintError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 
 def _findings(report: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -55,3 +57,16 @@ def lint_errors_from_sarif(
                 )
             )
     return errors
+
+
+def read_sarif_report(path: Path) -> dict[str, Any]:
+    """A SARIF report as a mapping, or an empty one when it cannot be read.
+
+    Callers check `report_never_written` first, so reaching here with an unreadable file means the
+    tool wrote something malformed — which is its problem to fix and not a lint verdict either way.
+    """
+    try:
+        report = json.loads(path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return report if isinstance(report, dict) else {}

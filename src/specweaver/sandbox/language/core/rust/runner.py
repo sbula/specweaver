@@ -6,10 +6,12 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.rust.cargo_diagnostics import parse_cargo_diagnostics
 from specweaver.sandbox.language.core.rust.cargo_output import parse_cargo_test
 from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
@@ -22,7 +24,6 @@ from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
 )
-from specweaver.workspace.ast.parsers.rust.parsers import parse_clippy_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -145,7 +146,6 @@ class RustRunner(QARunnerInterface):
             )
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        from specweaver.commons import json
         from specweaver.sandbox.qa_runner.core.interface import LintError, LintRunResult
 
         try:
@@ -159,31 +159,12 @@ class RustRunner(QARunnerInterface):
             if reason:
                 return failed_lint(reason)
 
-            sarif_result = self._executor.execute(
-                ["clippy-sarif"],
-                input_text=clippy_result.stdout,
-            )
-
-            errors_list = []
-            if sarif_result.stdout.strip():
-                try:
-                    data = json.loads(sarif_result.stdout)
-                    runs = data.get("runs", [])
-                    for run in runs:
-                        for result in run.get("results", []):
-                            msg = result.get("message", {}).get("text", "")
-                            rule_id = result.get("ruleId", "")
-
-                            for loc in result.get("locations", []):
-                                ploc = loc.get("physicalLocation", {})
-                                uri = ploc.get("artifactLocation", {}).get("uri", "")
-                                line = ploc.get("region", {}).get("startLine", 0)
-                                errors_list.append(
-                                    LintError(file=uri, line=line, code=rule_id, message=msg)
-                                )
-                except json.JSONDecodeError:
-                    pass
-
+            # Complexity findings belong to `run_complexity`; counting them here reports each twice.
+            errors_list = [
+                LintError(file=f.file, line=f.line, code=f.code, message=f.message)
+                for f in parse_cargo_diagnostics(clippy_result.stdout)
+                if "complexity" not in f.code.lower()
+            ]
             return LintRunResult(
                 error_count=len(errors_list), fixable_count=0, fixed_count=0, errors=errors_list
             )
@@ -191,8 +172,10 @@ class RustRunner(QARunnerInterface):
             return LintRunResult(error_count=1, fixable_count=0, fixed_count=0, errors=[])
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        from specweaver.commons import json
-        from specweaver.sandbox.qa_runner.core.interface import ComplexityRunResult
+        from specweaver.sandbox.qa_runner.core.interface import (
+            ComplexityRunResult,
+            ComplexityViolation,
+        )
 
         try:
             clippy_cmd = [
@@ -209,40 +192,80 @@ class RustRunner(QARunnerInterface):
             if reason:
                 return failed_complexity(reason, max_complexity)
 
-            sarif_result = self._executor.execute(
-                ["clippy-sarif"],
-                input_text=clippy_result.stdout,
-            )
-
-            violations = []
-            if sarif_result.stdout.strip():
-                try:
-                    data = json.loads(sarif_result.stdout)
-                    violations.extend(parse_clippy_complexity(data, max_complexity))
-                except json.JSONDecodeError:
-                    pass
-
+            violations = [
+                ComplexityViolation(
+                    file=f.file,
+                    line=f.line,
+                    function=f.code,
+                    # Clippy states the score in the message — `cognitive complexity of (11/10)` —
+                    # so the real number is reported rather than the threshold plus one.
+                    complexity=_complexity_score(f.message, max_complexity),
+                    message=f.message,
+                )
+                for f in parse_cargo_diagnostics(clippy_result.stdout)
+                if "complexity" in f.code.lower()
+            ]
+            # Clippy's threshold lives in `clippy.toml`, not on the command line, so the caller's
+            # `max_complexity` cannot be applied — the number reported is the one clippy used. Saying
+            # so beats echoing a threshold that had no effect on the verdict.
             return ComplexityRunResult(
                 violation_count=len(violations),
-                max_complexity=max_complexity,
+                max_complexity=_CLIPPY_COGNITIVE_THRESHOLD,
                 violations=violations,
             )
-        except Exception:
-            return ComplexityRunResult(violation_count=1, max_complexity=10, violations=[])
+        except Exception as exc:
+            # A phantom violation with no detail is what this returned, so an internal error looked
+            # like a complexity finding. It says which error, since the count alone cannot.
+            return ComplexityRunResult(
+                violation_count=1,
+                max_complexity=max_complexity,
+                violations=[
+                    ComplexityViolation(
+                        file="<toolchain>",
+                        line=0,
+                        function="run_complexity",
+                        complexity=max_complexity + 1,
+                        message=f"complexity check failed: {type(exc).__name__}: {exc}",
+                    )
+                ],
+            )
 
     def run_compiler(self, target: str) -> CompileRunResult:
         from specweaver.sandbox.qa_runner.core.interface import CompileError, CompileRunResult
 
         try:
-            cmd = ["cargo", "build"]
-            if target != "src/":
-                cmd.extend(["--bin", target.strip("/")])
+            # The whole package, and no `--bin`. `--bin` takes a binary *name*, so passing a path
+            # produced `no bin target named '.'` for every target but the literal `src/` — cargo
+            # compiles the package, and selecting a path within it is not a thing it does.
+            cmd = ["cargo", "build", "--message-format=json"]
 
             result = self._executor.execute(cmd)
-            reason = did_not_run(result, "cargo")
-            if reason:
-                return failed_compile(reason)
-            return CompileRunResult(error_count=0, warning_count=0, errors=[])
+            # Judged by exit code, not by empty stdout: cargo writes its progress to stderr, so a
+            # perfectly good build looks silent and `did_not_run` called it an absent toolchain.
+            diagnostics = parse_cargo_diagnostics(result.stdout)
+            errors = [
+                CompileError(
+                    file=d.file,
+                    line=d.line,
+                    column=0,
+                    code=d.code,
+                    message=d.message,
+                    is_warning=False,
+                )
+                for d in diagnostics
+                if d.level == "error"
+            ]
+            warnings = [d for d in diagnostics if d.level == "warning"]
+            if result.exit_code != 0 and not errors:
+                # Failed, but said nothing a parser could read — a missing toolchain, a bad flag.
+                return failed_compile(
+                    did_not_run(result, "cargo")
+                    or f"cargo build exited {result.exit_code}: "
+                    f"{(result.stderr or '').strip()[:200]}"
+                )
+            return CompileRunResult(
+                error_count=len(errors), warning_count=len(warnings), errors=errors
+            )
         except Exception as e:
             return CompileRunResult(
                 error_count=1,
@@ -277,3 +300,14 @@ class RustRunner(QARunnerInterface):
     ) -> ArchitectureRunResult:
         """Run architectural checks (Deferred to Feature 3.20b)."""
         return ArchitectureRunResult(violation_count=0, violations=[])
+
+
+#: Clippy's own default for `cognitive-complexity-threshold`. It is configured in `clippy.toml`
+#: and cannot be set per run, so a caller asking for a stricter number does not get one.
+_CLIPPY_COGNITIVE_THRESHOLD = 25
+
+
+def _complexity_score(message: str, fallback: int) -> int:
+    """The score clippy reported, or one past the threshold when its wording changes."""
+    match = re.search(r"\((\d+)/\d+\)", message)
+    return int(match.group(1)) if match else fallback + 1

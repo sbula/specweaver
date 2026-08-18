@@ -199,3 +199,55 @@ class TestBuildFailedWithoutResults:
         from specweaver.sandbox.language.core.toolchain import build_failed_without_results
 
         assert build_failed_without_results(self._result(0), "gradle", total=0) is None
+
+
+class TestReportNeverWritten:
+    """A lint or complexity surface that produced no report has no verdict to give.
+
+    Both JVM runners guarded their report with `if sarif_path.exists():` and fell through to
+    `0 findings` when it did not. Against real Maven on a project with no PMD plugin configured, the
+    report was never written and the runner reported a clean lint — for code nobody had checked.
+
+    The Rust runners had the same hole by a different route: they piped clippy into `clippy-sarif`,
+    a binary installed nowhere, and guarded the empty output the same way.
+
+    Proves: TECH-031 FR-19
+    """
+
+    @staticmethod
+    def _result(exit_code: int = 0, stderr: str = "some build output"):
+        from specweaver.sandbox.execution.models import SubprocessResult
+
+        return SubprocessResult(exit_code=exit_code, stdout="", stderr=stderr, duration_seconds=0.1)
+
+    def test_a_missing_report_is_not_a_clean_verdict(self, tmp_path) -> None:
+        from specweaver.sandbox.language.core.toolchain import report_never_written
+
+        reason = report_never_written(self._result(), "maven", tmp_path / "pmd.sarif")
+
+        assert reason is not None
+        assert "pmd.sarif" in reason
+        assert "not a clean result" in reason
+
+    def test_a_report_that_exists_is_left_to_the_parser(self, tmp_path) -> None:
+        """The control: when the tool did its job, this must say nothing at all."""
+        from specweaver.sandbox.language.core.toolchain import report_never_written
+
+        report = tmp_path / "pmd.sarif"
+        report.write_text("{}", encoding="utf-8")
+
+        assert report_never_written(self._result(), "maven", report) is None
+
+    def test_the_last_output_is_carried_into_the_reason(self, tmp_path) -> None:
+        """Why it wrote nothing is the only actionable part; a bare 'no report' sends nobody
+        anywhere."""
+        from specweaver.sandbox.language.core.toolchain import report_never_written
+
+        reason = report_never_written(
+            self._result(exit_code=1, stderr="plugin org.apache.maven.plugins:pmd not found"),
+            "maven",
+            tmp_path / "pmd.sarif",
+        )
+
+        assert reason is not None
+        assert "pmd not found" in reason

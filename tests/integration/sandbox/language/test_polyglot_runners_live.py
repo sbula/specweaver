@@ -340,3 +340,99 @@ class TestKotlinRunnerAgainstRealMaven:
         assert result.failures, "a failing Kotlin suite carried no detail to act on"
         assert result.failures[0].nodeid == "ProbeTest.broken", result.failures[0].nodeid
         assert "42" in result.failures[0].message, result.failures[0].message
+
+
+@pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo not installed")
+class TestRustIntentsBeyondTests:
+    """Lint, complexity, compile and debug against real cargo.
+
+    Only `run_tests` had ever been exercised unmocked, and the three defects below were all hiding
+    behind mocks that returned whatever their author imagined.
+
+    Proves: TECH-031 FR-19
+    """
+
+    _CARGO_TOML = '[package]\nname = "probe"\nversion = "0.1.0"\nedition = "2021"\n'
+
+    def _runner(self, root: Path):
+        from specweaver.sandbox.language.core.rust.runner import RustRunner
+
+        return RustRunner(cwd=root, executor=SubprocessExecutor(cwd=root))
+
+    def test_clippy_findings_reach_the_caller(self, tmp_path: Path) -> None:
+        """These were piped through `clippy-sarif`, which is installed nowhere — so the pipe
+        produced nothing and the guard around it reported a clean project."""
+        root = _write(
+            tmp_path / "lint",
+            {
+                "Cargo.toml": self._CARGO_TOML,
+                "src/lib.rs": """
+                    pub fn messy(x: i32) -> i32 {
+                        let y = x;
+                        return y;
+                    }
+                """,
+            },
+        )
+
+        result = self._runner(root).run_linter(".")
+
+        assert result.error_count >= 1, (
+            f"clippy flags this code and nothing reached the caller: {result}"
+        )
+        finding = result.errors[0]
+        assert finding.code.startswith("clippy::"), finding
+        assert finding.file.endswith("lib.rs") and finding.line > 0, finding
+
+    def test_a_clean_crate_lints_clean(self, tmp_path: Path) -> None:
+        """The control. Without it, a linter that invented findings would pass the test above."""
+        root = _write(
+            tmp_path / "clean",
+            {"Cargo.toml": self._CARGO_TOML, "src/lib.rs": "pub fn v() -> i32 { 42 }\n"},
+        )
+
+        assert self._runner(root).run_linter(".").error_count == 0
+
+    def test_a_good_crate_compiles_without_error(self, tmp_path: Path) -> None:
+        """`cargo build` writes progress to stderr, so its stdout is empty — which the old check
+        read as an absent toolchain and reported as a compile failure for every healthy crate."""
+        root = _write(
+            tmp_path / "good",
+            {
+                "Cargo.toml": self._CARGO_TOML,
+                "src/lib.rs": "pub fn v() -> i32 { 42 }\n",
+                "src/main.rs": 'fn main() { println!("ok"); }\n',
+            },
+        )
+
+        result = self._runner(root).run_compiler(".")
+
+        assert result.error_count == 0, result
+
+    def test_a_broken_crate_reports_the_compiler_error(self, tmp_path: Path) -> None:
+        root = _write(
+            tmp_path / "broken",
+            {
+                "Cargo.toml": self._CARGO_TOML,
+                "src/lib.rs": "pub fn v() -> i32 { this is not rust }",
+            },
+        )
+
+        result = self._runner(root).run_compiler(".")
+
+        assert result.error_count >= 1, result
+        assert result.errors[0].message, "a compile failure with no message to act on"
+
+    def test_the_debugger_runs_the_program(self, tmp_path: Path) -> None:
+        root = _write(
+            tmp_path / "dbg",
+            {
+                "Cargo.toml": self._CARGO_TOML,
+                "src/main.rs": 'fn main() { println!("hello from main"); }\n',
+            },
+        )
+
+        result = self._runner(root).run_debugger(".", "main")
+
+        assert result.exit_code == 0, result
+        assert any("hello from main" in e.output for e in result.events), result.events

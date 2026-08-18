@@ -12,16 +12,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
-from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
+from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, read_sarif_report
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
     did_not_run,
     failed_complexity,
     failed_lint,
     failed_tests,
+    report_never_written,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -202,12 +202,16 @@ class JavaRunner(QARunnerInterface):
         if reason:
             return failed_lint(reason)
 
-        if sarif_path.exists():
-            try:
-                data = json.loads(sarif_path.read_text("utf-8"))
-                errors.extend(lint_errors_from_sarif(data, skip_rules_containing="complexity"))
-            except json.JSONDecodeError:
-                pass
+        # A missing report is not a clean project: the plugin may not be configured, or the
+        # build may have stopped before reaching it. Either way there is no verdict to read.
+        missing = report_never_written(result, tool, sarif_path)
+        if missing:
+            return failed_lint(missing)
+        errors.extend(
+            lint_errors_from_sarif(
+                read_sarif_report(sarif_path), skip_rules_containing="complexity"
+            )
+        )
 
         return LintRunResult(
             error_count=len(errors),
@@ -236,13 +240,10 @@ class JavaRunner(QARunnerInterface):
         if reason:
             return failed_complexity(reason, max_complexity)
 
-        if sarif_path.exists():
-            try:
-                data = json.loads(sarif_path.read_text("utf-8"))
-                # Hand off parsing explicitly without regex bindings inside the monolithic logic
-                violations.extend(parse_pmd_complexity(data, max_complexity))
-            except json.JSONDecodeError:
-                pass
+        missing = report_never_written(result, tool, sarif_path)
+        if missing:
+            return failed_complexity(missing, max_complexity)
+        violations.extend(parse_pmd_complexity(read_sarif_report(sarif_path), max_complexity))
 
         return ComplexityRunResult(
             violation_count=len(violations),
