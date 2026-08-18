@@ -96,6 +96,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/session_brief.py",
+            "timeout": 10,
+            "statusMessage": "Briefing on this repo's operational rules..."
+          }
+        ]
+      }
     ]
   }
 }
