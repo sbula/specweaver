@@ -49,7 +49,7 @@
   | # | Path | Span | Owner | Runnable today | Blocker |
   |---|---|---|---|---|---|
   | P-1 | Per-language structural and binary exclusions; `.specweaverignore` with gitignore semantics; default scaffolding; interception before deep I/O | single feature | `C-SENS-02` | yes — **done** | — |
-  | P-2 | Journey: a polyglot monorepo is scanned without build artefacts entering the token context | cross-feature | this contract, deferred | no | none — see below |
+  | P-2 | Journey: a polyglot monorepo is scanned without build artefacts entering the token context | cross-feature | `C-SENS-02` | yes — **done** | — |
 
   **This entry was one of three marked `✅` while citing no test file**, reopened by `TECH-060` FR-3.
   It is now genuinely proven: `C-SENS-02`'s five FRs are cited and each is behind a killed mutant —
@@ -73,6 +73,15 @@
 
   **`INT-US-05-SF03-MIG` is discharged (2026-08-17); the contract stays open** on P-2.
 
+  **P-2 closed 2026-08-18** —
+  `tests/e2e/capabilities/workspace/test_build_artefacts_stay_out_of_context_e2e.py`. A three-language
+  monorepo carrying `node_modules`, `target`, `build` and `.venv` alongside real Python, TypeScript and
+  Java sources. The assertion is two-sided on purpose: *"no `node_modules` file was returned"* is
+  satisfied by a discovery that returns nothing at all, so the authored files must be present in the
+  same breath. A second test covers `.specweaverignore`, because a discovery that hardcoded the
+  ecosystem directories would pass the first while ignoring what the project asked for.
+  Mutant: the ignore handling disabled — both fail.
+
 
 * **`INT-US-05-SF04` — Framework Native Understanding:** the add-on's contract under `ADR-004`.
 
@@ -83,7 +92,7 @@
   | P-1 | AST markers evaluated against declarative YAML schemas; the language gate; cascading `>>{...}<<` resolution under a depth cap | single feature | `B-INTL-02` | yes — **done** | — |
   | P-2 | Seam: an agent's `read_unrolled_symbol` intent reaches the evaluator through the code-structure atom, and the unrolled logic comes back attached to the symbol | cross-module | `B-INTL-02` | yes — **done** | — |
   | P-3 | Seam: a project's own `.specweaver/evaluators/*.yaml` are discovered by the loader and injected into the validation handler | cross-module | `B-INTL-02` | yes — **done** | — |
-  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | this contract, deferred | no | none — see below |
+  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | `B-INTL-02` | partly — see below | parameterised annotations never match a schema |
 
   **This entry was the second of three marked `✅` while citing no test file**, reopened by
   `TECH-060` FR-3. All five FRs are now cited and each is behind a killed mutant —
@@ -103,3 +112,21 @@
   built — the second such row in this migration, after `INT-US-05-SF03` P-2.
 
   **`INT-US-05-SF04-MIG` is discharged (2026-08-17); the contract stays open** on P-4.
+
+  **P-4 is now half proven, and the other half is a defect — 2026-08-18.**
+  `tests/e2e/capabilities/sandbox/test_framework_unrolling_reaches_the_agent_e2e.py` drives the
+  **packaged** `spring-boot` schema — not a fixture — through the role-gated tool an agent actually
+  holds, against real Java. `@RestController` arrives unrolled to `@Controller` + `@ResponseBody`. A
+  control runs the identical call under the `generic` archetype and asserts the source comes back
+  untouched, because otherwise "the annotation appears" proves nothing: it is in the source already.
+
+  **What does not work: any annotation carrying arguments.** The Java parser extracts
+  `GetMapping("/orders/{id}")` and the Rust parser `get("/orders")`, while every schema key is a bare
+  name — `GetMapping:`, `get:`. So the lookup misses, and routing annotations nearly always carry a
+  path. Argument-less ones (`@RestController`, `@Transactional`, JAX-RS `@GET`) match; the rest are
+  unreachable, which is why the Actix sample unrolls nothing at all.
+
+  The failing test for it is written and **deliberately not committed**, because the only existing
+  ticket that looked close — `TECH-064` — covers polyglot *architecture checks*, a different subject in
+  a different capability. Attaching it there would satisfy `check_xfail_blockers.py` mechanically while
+  being wrong. It needs its own ticket.

@@ -17,7 +17,7 @@
   | P-2 | A directory that declares nothing is analysed and given a node, so the graph covers the project rather than its documented part | cross-module | `D-SENS-01` | yes — **done** | — |
   | P-3 | Seam: a module's neighbourhood is rendered into a prompt inside a character budget | cross-module | `D-SENS-01` | yes — **done** | — |
   | P-4 | Cycles and contradictory SLAs are surfaced as findings | single feature | `D-SENS-01` | yes — **done** | — |
-  | P-5 | Journey: the wizard bootstraps an undocumented project and the graph it produces is what the first prompt carries | cross-feature | this contract, deferred | no | none — needs an e2e, not a feature |
+  | P-5 | Journey: the wizard bootstraps an undocumented project and the graph it produces is what the first prompt carries | cross-feature | `D-SENS-01` | yes — **done** | — |
 
   **`D-SENS-01` had no design document and no feature directory.** It is a `✅` foundation — the topic
   entry calls it exactly that — recorded in four lines of a topic file and nowhere else. That makes it
@@ -48,3 +48,18 @@
   P-5 waits on a test, not a feature.
 
   **`INT-US-08-MIG` is discharged (2026-08-17); the contract stays open** on P-5.
+
+  **P-5 closed 2026-08-18** —
+  `tests/e2e/capabilities/infrastructure/test_inferred_topology_reaches_the_prompt_e2e.py`. An
+  undocumented project, inference, and then the assertion that matters: the *purpose inference read out
+  of the source* appears in the built prompt. Not that a `<topology>` block exists — an empty one would
+  satisfy that and tell the model nothing.
+
+  **An e2e for this appeared to exist and did not.** `test_topology_e2e.py` advertises *"sw review
+  --selector nhop injects neighbor context into prompt"*, runs `sw scan`, runs the review, and then
+  asserts `exit_code in (0, 1)` and no traceback — a check that the command did not crash, which also
+  accepts failure. Its docstring made a claim its assertions never made.
+
+  One trap recorded in the test: `TopologyContext.get_prompt_content` renders the same fields in the
+  same layout and is **not** the renderer on this path — `PromptBuilder.add_topology` builds the line
+  itself. Mutating the former leaves the test green.

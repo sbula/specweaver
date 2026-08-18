@@ -17,7 +17,7 @@
   | P-2 | Seam: the handler parses the target with tree-sitter, validates the plan YAML into a `PlanArtifact`, and hands both to a detector that touches neither disk nor DB | cross-module | `B-VAL-01` | yes — **done** | — |
   | P-3 | Seam: `sw drift check` builds a one-step `DETECT`/`DRIFT` pipeline and the runner dispatches it to the handler | cross-module | `B-VAL-01` | yes — **done** | — |
   | P-4 | Seam: `--analyze` reaches an LLM adapter through `RunContext.model.llm`, and **only** on the flag | cross-module | `B-VAL-01` | yes — **done** | — |
-  | P-5 | Journey: a plan the planner actually generated carries `expected_signatures` the drift engine can compare against | cross-feature | this contract, deferred | no | none — needs a planner fixture, not a feature |
+  | P-5 | Journey: a plan the planner actually generated carries `expected_signatures` the drift engine can compare against | cross-feature | `B-VAL-01` | yes — **done** | — |
   | P-6 | A non-Python target is *distinguishable* from a clean one | cross-feature | this contract, deferred | no | needs a scope decision — see below |
 
   **`B-VAL-01`'s five surviving FRs are cited and each is behind a killed mutant** —
@@ -63,3 +63,15 @@
   not the same as taking it.
 
   **`INT-US-10-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-5 and P-6.
+
+  **P-5 closed 2026-08-18** —
+  `tests/e2e/capabilities/assurance/test_planned_signatures_reach_drift_e2e.py`. Every existing test of
+  either side uses a plan written by hand for the occasion, so the two had never been shown to agree:
+  the planner emits a `PlanArtifact`, the drift engine consumes one, and nothing checked that what the
+  first produces is what the second can read. A renamed or renested field leaves both suites green and
+  drift detection quietly finding nothing on real plans.
+
+  The LLM is faked and the planner is not: what is under test is the planner's own parsing and
+  validation of a model reply into a `PlanArtifact`, and then that artifact's use by the detector. A
+  control asserts code matching the plan is reported clean, so "drift was found" cannot mean the
+  detector flags everything. Mutant: the detector stops reading `expected_signatures` — it fails.
