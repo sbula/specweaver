@@ -16,6 +16,7 @@ from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
+    build_failed_without_results,
     did_not_run,
     failed_complexity,
     failed_lint,
@@ -156,13 +157,19 @@ class JavaRunner(QARunnerInterface):
             return failed_tests(reason)
 
         passed, failed, skipped = _harvest_junit(search_path)
+        total = passed + failed + skipped
+        # A build that never compiled writes no reports, and exits non-zero with plenty on stdout —
+        # so it passes `did_not_run` and then harvests as an empty suite.
+        broken_build = build_failed_without_results(result, "the Java build tool", total)
+        if broken_build:
+            return failed_tests(broken_build)
 
         return TestRunResult(
             passed=passed,
             failed=failed,
             errors=0,
             skipped=skipped,
-            total=passed + failed + skipped,
+            total=total,
             failures=[],
             coverage_pct=None,
         )

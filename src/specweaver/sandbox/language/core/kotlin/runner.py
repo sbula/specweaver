@@ -16,6 +16,7 @@ from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
+    build_failed_without_results,
     did_not_run,
     failed_complexity,
     failed_lint,
@@ -81,6 +82,13 @@ class KotlinRunner(QARunnerInterface):
             return failed_tests(reason)
 
         passed, failed = self._parse_junit_results(search_path)
+        # Same hole as the Java runner: a Kotlin compile failure exits non-zero, prints freely, and
+        # leaves the report directory empty. Measured against real Maven on 2026-08-18.
+        broken_build = build_failed_without_results(
+            result, "the Kotlin build tool", passed + failed
+        )
+        if broken_build:
+            return failed_tests(broken_build)
 
         return TestRunResult(
             passed=passed,

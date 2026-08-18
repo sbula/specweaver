@@ -57,6 +57,26 @@ def did_not_run(result: SubprocessResult, tool: str) -> str | None:
     return f"{tool} did not run: {reason}"
 
 
+def build_failed_without_results(result: SubprocessResult, tool: str, total: int) -> str | None:
+    """Why a non-zero build that produced no test reports is not an empty suite.
+
+    `did_not_run` above keys on empty stdout, which is right for a tool that never started. A JVM
+    build tool that fails to compile prints a great deal and exits non-zero, so it slips past that
+    check — and a report directory with no XML in it then harvests as `0 passed, 0 failed`.
+
+    The `total` guard is what keeps this honest in the other direction: Maven and Gradle also exit
+    non-zero when *tests* fail, and those runs do write reports. Treating them as build failures
+    would convert every red suite into a toolchain error and discard the counts.
+    """
+    if total or result.exit_code == 0:
+        return None
+
+    detail = (result.stderr or result.stdout or "").strip().splitlines()
+    tail = detail[-1][:_MAX_REASON] if detail else "no output"
+    logger.error("%s exited %d with no test results — %s", tool, result.exit_code, tail)
+    return f"{tool} exited {result.exit_code} and produced no test results: {tail}"
+
+
 # ---------------------------------------------------------------------------
 # The result each QA surface returns when its tool never ran
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ a container concern, and `INT-US-09-SF01-MIG` holds it.
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.execution.models import SubprocessResult
@@ -53,35 +53,37 @@ class TestRustRunner:
         assert result.error_count == 0
 
     def test_run_tests_success(self, tmp_path: Path) -> None:
+        """Cargo's own stable output, and the command it accepts.
+
+        This test previously asserted `--format=json` was in the argv and fed the runner JUnit XML
+        through a mocked `cargo2junit`. Both were fictions: real cargo rejects the flag outright, its
+        JSON format is nightly-only, and `cargo2junit` was never installed. The mock made a broken
+        command look proven — so the sample below is copied from a real `cargo test` run.
+        """
         (tmp_path / "Cargo.toml").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        # First call for `cargo test`, second for `cargo2junit`
-        mock_executor.execute.side_effect = [
-            _make_result(exit_code=0, stdout='{"type":"test","event":"ok"}'),
-            _make_result(exit_code=0, stdout="<testsuites></testsuites>"),
-        ]
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0,
+            stdout=(
+                "\nrunning 1 test\ntest t::works ... ok\n\n"
+                "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;"
+                " finished in 0.00s\n"
+            ),
+        )
         runner = RustRunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("junitparser.JUnitXml.fromstring") as mock_fromstring:
-            mock_fromstring.return_value = []
-            result = runner.run_tests(target="src/")
+        result = runner.run_tests(target="src/")
 
-            assert mock_executor.execute.call_count == 2
-
-            # Verify first `cargo test` call
-            assert "cargo" in mock_executor.execute.call_args_list[0][0][0]
-            assert "test" in mock_executor.execute.call_args_list[0][0][0]
-            assert "--format=json" in mock_executor.execute.call_args_list[0][0][0]
-
-            # Verify second `cargo2junit` call
-            assert "cargo2junit" in mock_executor.execute.call_args_list[1][0][0]
-            assert (
-                mock_executor.execute.call_args_list[1].kwargs.get("input_text")
-                == '{"type":"test","event":"ok"}'
-            )
-
-            assert result.passed == 0
-            assert result.failed == 0
+        argv = mock_executor.execute.call_args_list[0][0][0]
+        assert argv[:2] == ["cargo", "test"], argv
+        assert not any(a.startswith("--format") for a in argv), (
+            f"`--format` is a libtest flag; cargo rejects it as an argument of its own: {argv}"
+        )
+        assert result.passed == 1
+        assert result.failed == 0
+        assert mock_executor.execute.call_count == 1, (
+            "the second call was a pipe into `cargo2junit`, which is installed nowhere"
+        )
 
     def test_run_linter_success(self, tmp_path: Path) -> None:
         (tmp_path / "Cargo.toml").write_text("")

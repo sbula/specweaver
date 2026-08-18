@@ -7,8 +7,9 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-031/TECH-031_sf01_implementation_plan.md
 - **Status**: APPROVED
 
-**FRs owned: FR-1 through FR-10.** All of them, in one plan, because the ticket shipped as one
-sequence rather than as sub-features.
+**FRs owned: FR-1 through FR-14.** All of them, in one plan, because the ticket shipped as one
+sequence rather than as sub-features. FR-11 to FR-14 were added when the ticket was re-opened for
+Rust, Java and Kotlin — the first target project is Python, Rust and Kotlin.
 
 > [!IMPORTANT]
 > **This plan was written after the code, and says so.** Recorded under `specweaver-dev` §3.2c —
@@ -98,7 +99,33 @@ pattern does not recognise. `supplied_note` renders the disclosure. **(FR-8, FR-
 `plan_for` from `commons` and never imports the sandbox — the delivery layer delegates rather than
 importing execution. **(FR-10)**
 
-## 4. Proof
+## 4. The other three languages
+
+### [NEW] `src/specweaver/sandbox/language/core/rust/cargo_output.py`
+
+`parse_cargo_test` reads cargo's stable text output — summing every suite's `test result:` line,
+because a crate with doc-tests reports two — and returns `None` when no summary appeared at all, so a
+compile error stays distinguishable from a suite with no tests. **(FR-11)**
+
+### [MODIFY] `src/specweaver/sandbox/language/core/rust/runner.py`
+
+`cargo test`, with no `--format` and no `cargo2junit` pipe. **(FR-11)**
+
+### [MODIFY] `src/specweaver/sandbox/language/core/toolchain.py`
+
+`build_failed_without_results` — non-zero exit plus zero harvested results is an error, not an empty
+suite. Guarded on `total` so a red suite, which also exits non-zero, keeps its counts. **(FR-14)**
+
+### [MODIFY] `java/runner.py`, `kotlin/runner.py`
+
+Both call the guard after harvesting. **(FR-12, FR-13, FR-14)**
+
+### [NEW] `tests/integration/sandbox/language/test_polyglot_runners_live.py`
+
+Real `cargo`, `mvn` and `kotlinc` against projects written by the test, skipping only on a missing
+toolchain. **(FR-11, FR-12, FR-13, FR-14)**
+
+## 5. Proof
 
 | FR | Test file |
 |---|---|
@@ -109,6 +136,9 @@ importing execution. **(FR-10)**
 | FR-8 | `tests/unit/sandbox/execution/test_container_executor_prepare.py`, `tests/integration/sandbox/execution/test_container_executor_integration.py` |
 | FR-9 | `tests/unit/sandbox/language/core/language/python/test_toolchain_absence.py`, `tests/integration/sandbox/execution/test_container_executor_integration.py` |
 | FR-10 | `tests/unit/commons/test_prepare_plan.py`, `tests/e2e/capabilities/sandbox/test_preflight_reports_the_prepare_plan_e2e.py` |
+| FR-11 | `tests/unit/sandbox/language/core/language/rust/test_cargo_output.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
+| FR-12, FR-13 | `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
+| FR-14 | `tests/unit/sandbox/language/core/test_runner_migration.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 
 Every behaviour above was mutation-verified as it was written, individually, against the test that
 claims it. The counts are in the commit messages; the discipline is that a citation whose mutant

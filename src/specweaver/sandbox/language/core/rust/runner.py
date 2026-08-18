@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.rust.cargo_output import parse_cargo_test
 from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
     failed_compile,
@@ -105,27 +106,29 @@ class RustRunner(QARunnerInterface):
 
         try:
             start_time = time.time()
-            cmd = ["cargo", "test", "--format=json", "-q"]
+            # Cargo's own output, parsed directly. It offers no stable machine-readable form — the
+            # JSON libtest format is nightly-only — so asking for one produced a command cargo
+            # rejects outright, piped into a converter that was never installed.
+            cmd = ["cargo", "test"]
 
-            test_result = self._executor.execute(cmd)
-            reason = did_not_run(test_result, "cargo")
-            if reason:
-                return failed_tests(reason)
+            test_result = self._executor.execute(cmd, timeout_seconds=timeout)
+            outcome = parse_cargo_test(test_result.stdout)
+            if outcome is None:
+                # No summary means no suite ran. `did_not_run` keys on empty stdout, which a cargo
+                # compile error does not produce, so the summary is the stronger discriminator here.
+                return failed_tests(
+                    did_not_run(test_result, "cargo")
+                    or f"cargo test reported no suite (exit {test_result.exit_code}): "
+                    f"{(test_result.stderr or test_result.stdout).strip()[:200]}"
+                )
 
-            junit_result = self._executor.execute(
-                ["cargo2junit"],
-                input_text=test_result.stdout,
-            )
-
-            passed, failed, errors, skipped, failures = _tally_junit(junit_result.stdout)
-            total = passed + failed + errors + skipped
             return TestRunResult(
-                passed=passed,
-                failed=failed,
-                errors=errors,
-                skipped=skipped,
-                total=total,
-                failures=failures,
+                passed=outcome.passed,
+                failed=outcome.failed,
+                errors=0,
+                skipped=outcome.skipped,
+                total=outcome.total,
+                failures=outcome.failures,
                 duration_seconds=time.time() - start_time,
                 coverage_pct=None,
             )
