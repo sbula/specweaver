@@ -119,6 +119,17 @@ one nobody reads; a handover that is an index of them is the one that works.
 **Do not turn it into a changelog.** `git log --oneline` covers what changed. The handover covers what
 is *unfinished, undecided, or not to be repeated*.
 
+The *state* half is generated, so do not hand-write it:
+
+```bash
+python scripts/session_handover.py            # git, registries, sweeps — seconds
+python scripts/session_handover.py --gates    # also runs quality.py cb + doc
+python scripts/session_handover.py --suite    # also runs the full suite for the real count
+```
+
+It rewrites only the marked block and returns every other line byte for byte. Numbers copied by hand
+are the ones that go stale, so copy none of them.
+
 ## Phase 8: Commit Boundary (HITL)
 
 > **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
