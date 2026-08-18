@@ -168,9 +168,42 @@ Unchanged and confirmed today:
 | `[dependency-groups]` | installs it | `pytest 9.1.1` |
 | `[project.optional-dependencies]` | `Audited in 0.00ms` | `No module named pytest` |
 
-This is the ticket's stated subject and the one part that needs a decision rather than a fix.
-`--all-extras` is already rejected (user, 2026-08-12). Q1 — how wide the gap is across real targets —
-is still unanswered, and answering it is what the remaining candidate approaches depend on.
+### Q1 answered by measurement, and the answer is wider than the question
+
+Each layout family was built as a fixture and driven through the fixed prepare phase against live
+podman on 2026-08-18:
+
+| Layout | `uv.lock` | usable toolchain |
+|---|---|---|
+| PEP 735 `[dependency-groups]` | yes | **yes** |
+| `[project.dependencies]` (runtime) | yes | yes — but nobody declares a test runner there |
+| `[project.optional-dependencies]` | yes | no — venv builds, `No module named pytest` |
+| Poetry `[tool.poetry.group.dev]` | **no** — `uv lock` fails outright | no |
+| `requirements-dev.txt` | yes | no — `uv` never reads it |
+| any of the above **without** `uv.lock` | — | no — `--frozen` refuses: *"Unable to find lockfile at `uv.lock`"* |
+
+**So the supported target is not "a project that avoids extras". It is a uv-managed project that
+declares its tooling in PEP 735 dependency groups.** Everything else gets a venv with no test runner,
+which is a far narrower set than "extras are the older convention" implies:
+
+- **PEP 735 was accepted in 2024.** No project predating it is in the working set without migrating.
+- **`uv.lock` exists only if the project uses `uv`.** pip, Poetry, PDM and Hatch projects have no such
+  file, so the prepare phase cannot proceed for them at all.
+
+The intersection — uv-managed *and* PEP 735 — is a small and recent slice of the ecosystem. **This
+box has no other Python projects to sample, so the share of real targets is not measured here**; what
+is measured is the *kind* of target that works, which is what the decision actually turns on. A
+percentage would need a corpus of real repositories and is worth having before choosing between the
+candidate approaches.
+
+**`--frozen` does not cause this and removing it would not help.** The lockfile cannot be written to a
+read-only mount either way; `--frozen` converts a confusing `failed to write /workspace/uv.lock` into
+a message that names the actual precondition. Coverage is unchanged, diagnosis is better.
+
+That reframes the remaining work. "Detect the layout and sync accordingly" was scoped against
+extras-versus-groups; it now has to answer what the prepare phase does for a project that is not
+uv-managed at all — which is a larger question than the one the ticket was written to ask, and the
+reason this is a decision rather than a fix. `--all-extras` remains rejected (user, 2026-08-12).
 
 ## Candidate Approaches (not yet designed)
 
