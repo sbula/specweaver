@@ -2,8 +2,8 @@
 
 - **Feature ID**: TECH-031
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: PARTIAL — every defect this ticket found is fixed and the three Next Step questions
-  are answered. What remains is one scope decision, not work: see §What is left. See §Measured,
+- **Status**: every defect this ticket found is fixed, the three Next Step questions are answered,
+  and all three candidate approaches are delivered. Nothing is left open. See §Measured,
   2026-08-12, which **corrects the Problem Statement below rather than extending it**.
 - **Origin**: Found 2026-08-12 during `TECH-028`. **That ticket's claimed side-effect was wrong** —
   it fixed this repo's manifest, but §Measured shows the prepare phase fails for SpecWeaver too, on
@@ -145,6 +145,7 @@ reading it:
 | no `uv.lock`, so no environment at all | `uv venv` + `uv pip install` off the sync path | live podman + unit |
 | runner declared outside the manifest | `tox.ini` / `requirements*.txt` read when pyproject is silent | live podman + unit |
 | runner declared nowhere | the sandbox supplies pytest, and the result says so | live podman + unit |
+| the layout only checked when a run fails | `sw sandbox preflight` reports the plan first | e2e + unit |
 
 The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
 and has no business writing into an environment the next run reuses.
@@ -371,12 +372,24 @@ limit allowed 16 trees to be read, and all 16 contain test files. Six of the 16 
 where plugin imports live — those runs are the likeliest to trade one clear failure for a confusing
 one. 17 are unmeasured.
 
-**The one decision left is the third candidate approach: check the layout at configuration time.**
-It is now worth much less than when it was written. The failure a reader meets is already specific
-and actionable, so a configuration-time check would move the same information earlier rather than
-add any. Against that, it needs a place to live — `sw init`, `sw scan`, or a new preflight — and
-inventing one is scope this ticket did not set out to take. Recorded as a decision for the human
-rather than taken quietly in either direction.
+### Delivered: `sw sandbox preflight`
+
+The third candidate approach, and the last open item. It prints what the prepare phase will do with a
+project before a run costs anything: which route builds the environment, where the runner comes from,
+which lines could not be read, and every warning that applies. Exit 1 on any warning, so CI can gate
+on it; exit 0 only when the run will use the project's own pinned toolchain.
+
+**It is not a second implementation, and that is the design.** `plan_for` decides once; the container
+executor acts on the plan and the command prints it. A preflight that re-derived the decision would
+agree with the sandbox only until one of them changed, and a report describing a phase other than the
+one that runs is worse than no report. Two tests pin the two ways they could drift apart.
+
+**It also cost a layer boundary, and the boundary won.** The command was first written inside
+`sandbox/execution/interfaces/`, which `test_interfaces_layer_does_not_import_the_sandbox` rejects —
+the delivery layer delegates rather than importing execution, and nothing but that test enforces it.
+The fix was to move the decision to L0 `commons`, beside the QA result models that live there for
+exactly this reason, and the command to the CLI's own routers. `tach.toml` needed no change at all in
+the end: the design was wrong, not the constraint.
 
 The remaining *coverage* gap is not ours to close by code: 81 of 121 corpus projects declare no
 pytest for `uv sync` to install, and no sync strategy reaches a manifest that does not name the

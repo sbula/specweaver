@@ -15,10 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.sandbox.execution.container_executor import (
-    ContainerSubprocessExecutor,
-    _groups_holding_a_runner,
-)
+from specweaver.commons.prepare_plan import _groups_holding_a_runner, plan_for
+from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from tests.fixtures.container_sandbox import find_call as _find_call
 from tests.fixtures.container_sandbox import mounts as _mounts
@@ -720,3 +718,60 @@ class TestPythonQARunnerReportsASuppliedRunner:
         result = self._runner(tmp_path, ()).run_tests(".", kind="")
 
         assert result.toolchain_note == ""
+
+
+#: The shape the plan and the executor must agree about: a manifest naming no runner at all.
+_PLAN_MANIFEST = '[project]\nname = "t"\nversion = "0"\ndependencies = []\n'
+
+
+class TestThePlanDescribesWhatTheExecutorDoes:
+    """The reason this is a module and not a second implementation.
+
+    A preflight that re-derived the decision would agree with the sandbox until one of them changed,
+    and a report describing a phase other than the one that runs is worse than no report. These tie
+    the two together at the points where they could drift apart.
+    """
+
+    @staticmethod
+    def _prepared(tmp_path: Path, monkeypatch, **files: str):
+        mounts = _mounts(tmp_path)
+        for name, text in files.items():
+            (mounts.source_root / name.replace("__", ".")).write_text(text, encoding="utf-8")
+        monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(return_value=_ok_result()))
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor._ensure_prepared()
+        return executor, plan_for(mounts.source_root)
+
+    def test_a_promised_supplied_runner_is_the_one_that_gets_supplied(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        executor, plan = self._prepared(
+            tmp_path, monkeypatch, uv__lock="locked", pyproject__toml=_PLAN_MANIFEST
+        )
+
+        assert plan.runner_source == "sandbox"
+        assert executor.supplied_toolchain == ("pytest",), (
+            "the plan promises the sandbox will supply a runner and the executor did not"
+        )
+
+    def test_a_promised_project_runner_is_never_substituted(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """The control: the two must agree about *not* substituting, or the report reassures
+        falsely."""
+        executor, plan = self._prepared(
+            tmp_path,
+            monkeypatch,
+            uv__lock="locked",
+            pyproject__toml=_PLAN_MANIFEST,
+            tox__ini="[testenv]\ndeps =\n    pytest==7.4.0\n",
+        )
+
+        assert plan.runner_source == "tox.ini"
+        assert executor.supplied_toolchain == (), (
+            "the plan named the project's own declaration and the executor substituted anyway"
+        )

@@ -114,6 +114,10 @@ try:
     from specweaver.workspace.project.interfaces.cli import workspace_cli
 
     app.add_typer(workspace_cli)
+
+    from specweaver.interfaces.cli.routers.sandbox_router import sandbox_cli
+
+    app.add_typer(sandbox_cli, name="sandbox")
 except ImportError as e:
     console.print(f"[bold red]Failed to load workspace project plugin:[/bold red] {e}")
 

@@ -22,10 +22,15 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from specweaver.commons.prepare_plan import (
+    _DEFAULT_GROUP,
+    _LAST_RESORT_RUNNER,
+    plan_for,
+)
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.execution.tooling_sources import ToolingSource, declared_pytest
 
 if TYPE_CHECKING:
+    from specweaver.commons.tooling_sources import ToolingSource
     from specweaver.sandbox.execution.models import (
         ContainerMounts,
         ResourceLimits,
@@ -46,85 +51,6 @@ _PREPARED_VENV = "/cache/venv"
 _CONTAINER_PATH = (
     f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
-
-#: The QA runner invokes `python -m pytest` and nothing else, so this is the entire predicate: a
-#: group is worth syncing exactly when it puts pytest in the environment.
-#:
-#: `tox` and `nox` are deliberately absent even though both are test runners. They build their own
-#: environments and would leave `python -m pytest` failing exactly as before, while installing the
-#: rest of that group — and the prepare phase executes arbitrary sdist build code, so widening what
-#: an untrusted project builds for no gain is the wrong trade. `coverage` is absent for the simpler
-#: reason that it measures a run and cannot start one.
-_TEST_RUNNERS: tuple[str, ...] = ("pytest",)
-
-#: `uv sync` installs this group unasked. Requesting it again would be noise.
-_DEFAULT_GROUP = "dev"
-
-#: Installed only when the project names no runner anywhere. Bare: which plugins a suite needs
-#: is exactly what the project failed to say, so guessing at them would add arbitrary packages
-#: to an already arbitrary choice.
-_LAST_RESORT_RUNNER = "pytest"
-
-
-def _declares_a_runner(deps: list[object]) -> bool:
-    """Whether a dependency-group's entries include something that can run a test suite."""
-    for dep in deps:
-        if not isinstance(dep, str):
-            # A PEP 735 `{include-group = "..."}` table. The included group is judged on its own
-            # entries, so following the reference here would only find it twice.
-            continue
-        name = re.split(r"[<>=!~;\[\s]", dep.strip(), maxsplit=1)[0].lower().replace("_", "-")
-        if any(name == runner or name.startswith(f"{runner}-") for runner in _TEST_RUNNERS):
-            return True
-    return False
-
-
-def _manifest_declares_a_runner(manifest_text: str) -> bool:
-    """Whether `uv` can install pytest from this manifest alone, by group or at runtime.
-
-    The gate on reading any other file. A project that declares pytest has pinned it, and layering a
-    `tox.ini` block over that resolution would turn a reproducible run into a mixed one.
-    """
-    try:
-        manifest = tomllib.loads(manifest_text)
-    except (tomllib.TOMLDecodeError, ValueError):
-        return False
-    runtime = (manifest.get("project") or {}).get("dependencies")
-    return bool(_groups_holding_a_runner(manifest_text)) or (
-        isinstance(runtime, list) and _declares_a_runner(runtime)
-    )
-
-
-def _groups_holding_a_runner(manifest_text: str) -> list[str]:
-    """Every PEP 735 group that declares pytest, `dev` included.
-
-    `dev` is returned rather than filtered here because the two prepare paths disagree about it:
-    `uv sync` installs it unasked, while `uv pip install` installs nothing it is not given. Dropping
-    it at the source would silently strip the most common runner location from the second path.
-
-    Detection is by content because the names are a long tail: `test`, `tests`, `testing`, `ci`,
-    `test-core` and `dev-base` all carry pytest across the measured corpus, while
-    `tests-postgresql` and `tests-mysql` carry database drivers and none. A name list would miss
-    the first set and install the second.
-
-    It is also the only safe rule. `uv sync --group <undeclared>` exits 2 rather than warning, so a
-    speculative name would break the prepare phase for every project that does not use it; only
-    groups this manifest actually declares are ever returned.
-
-    A manifest that cannot be parsed yields no groups. Group detection improves the sync; it is
-    never a new way for it to fail.
-    """
-    try:
-        manifest = tomllib.loads(manifest_text)
-    except (tomllib.TOMLDecodeError, ValueError):
-        return []
-    groups = manifest.get("dependency-groups")
-    if not isinstance(groups, dict):
-        return []
-    return sorted(
-        name for name, deps in groups.items() if isinstance(deps, list) and _declares_a_runner(deps)
-    )
-
 
 _DEFAULT_IMAGE_REPO = "ghcr.io/sbula/specweaver-sandbox-python"
 
@@ -273,27 +199,24 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         manifest_text = (
             manifest.read_text(encoding="utf-8", errors="replace") if manifest.is_file() else ""
         )
-        runner_groups = _groups_holding_a_runner(manifest_text)
+        # One decision, shared. `sw sandbox preflight` prints this same plan, so the report cannot
+        # describe a phase other than the one that runs.
+        plan = plan_for(self._mounts.source_root)
+        runner_groups = list(plan.groups)
 
         # Two thirds of real projects never name pytest in the manifest. Most of them declare it
         # somewhere `uv` will not look — `tox.ini`, a `requirements` file — and reading those is the
         # difference between an environment and none. Only when the manifest is silent: a project
         # that declares its runner has pinned it, and a second unpinned set over the top of a
         # locked resolution is worse than nothing.
-        declared = _manifest_declares_a_runner(manifest_text)
-        fallback = None if declared else declared_pytest(self._mounts.source_root)
+        fallback = plan.source
         # Last resort, and deliberately last: the project has named no runner anywhere this can
         # read, so the sandbox installs one. Recorded rather than merely logged, because a green
         # result then attests to a suite run against a version nobody chose.
-        self.supplied_toolchain = () if declared or fallback else (_LAST_RESORT_RUNNER,)
-        if self.supplied_toolchain:
+        self.supplied_toolchain = (_LAST_RESORT_RUNNER,) if plan.runner_source == "sandbox" else ()
+        for warning in plan.warnings:
             logger.warning(
-                "ContainerSubprocessExecutor: %s declares no test runner in pyproject.toml, "
-                "tox.ini or any requirements file. Installing %s so the suite can run at all — "
-                "the version is the sandbox's choice, not the project's, and any plugins its "
-                "tests need are absent.",
-                self._mounts.source_root,
-                _LAST_RESORT_RUNNER,
+                "ContainerSubprocessExecutor: %s — %s", self._mounts.source_root, warning
             )
 
         # Every input to the command belongs in the digest, or a changed input serves a stale
