@@ -191,32 +191,49 @@ which is a far narrower set than "extras are the older convention" implies:
   file, so the prepare phase cannot proceed for them at all.
 
 The intersection — uv-managed *and* PEP 735 — is a small and recent slice of the ecosystem, and the
-share is now measured against a corpus rather than asserted: **21 of 121 real repositories, 17.4%**.
+share is now measured against a corpus rather than asserted: **10 of 121 real repositories, 8.3%**,
+rising to 20 (16.5%) with the group-detection fix below.
 The corpus is the 150 most-downloaded packages on PyPI, an externally ordered list so the sample
 cannot be steered; 121 of them resolve to a `pyproject.toml` at a repo root. Full method, denominators
 and bias: `docs/analysis/dependency_layout_corpus_2026-08-18.md`.
 
 Two things in that measurement change what this ticket has left to decide.
 
-**The lockfile dominates, not the layout.** 88 of the 100 failures are simply the absence of
-`uv.lock`; only 12 turn on which table the tooling is declared in. "Detect the layout and sync
-accordingly" therefore addresses the smaller half of the problem. The corpus is entirely libraries,
-which have a standing reason not to commit a lockfile, so 17.4% is a floor for application targets
-rather than an estimate — but the ranking is unavailable from here, so the size of that gap stays
-unmeasured.
+**Not declaring pytest dominates, not the lockfile and not the layout.** 81 of 121 projects never
+name pytest in `pyproject.toml` at all — 32 hand the whole dev environment to `tox` or `nox`, the
+rest use requirements files or declare nothing in-tree. The two causes overlap, so the cross-tab is
+the honest reading: 20 declare pytest and have a lock (usable), 20 declare pytest with no lock, 13
+have a lock and no pytest, 68 have neither. "Detect the layout and sync accordingly" was scoped
+against a problem that is not the big one. The corpus is entirely libraries, which have two standing
+reasons to look worse than an application — no lockfile by design, and `tox`/`nox` for multi-version
+testing — so 16.5% is a floor for application targets rather than an estimate; the ranking is
+unavailable from here, so the size of that gap stays unmeasured.
 
-**A second defect, independent of all of the above — now fixed.** 50 corpus projects use PEP 735 and
-only 40 name a group `dev`. `test` (17 projects) and `tests` (9) are common, and `uv sync` installs
-neither, so a project could sit exactly on the supported layout and still get a venv with no test
-runner. The prepare phase now reads the target's manifest and requests the groups that declare a
-runner: **17.4% → 23.1%** of the corpus (21 → 28 of 121).
+**A second defect, independent of all of the above — now fixed, and bigger than it first looked.**
+50 corpus projects use PEP 735, and only **15** put pytest in the `dev` group `uv sync` installs
+unasked; **23** put it in `test` or `tests`. So a project could sit exactly on the supported layout
+and still get a venv with no runner, and that was the *more common* case. The prepare phase now reads
+the target's manifest and requests the groups that declare pytest: **8.3% → 16.5%** of the corpus
+(10 → 20 of 121), which doubles the supported share.
 
-Detection is by content rather than name, which the corpus forced. `{test, tests}` recovers 6 of the
-7 projects; the rest of the tail is `testing`, `ci`, `test-core`, `dev-base`, `nox`, `emscripten`.
-And a name list is unsafe, not just partial: `uv sync --group <undeclared>` exits 2 (verified against
-uv 0.12.3), so a guessed name breaks every project that does not use it. Only declared groups are
-passed. The same evidence rules out `--all-groups`, which would install the 20 projects' `docs`
-toolchains to run their tests and fail the whole phase on one unresolvable doc dependency.
+Detection is by content rather than name, which the corpus forced: the tail includes `testing`, `ci`,
+`test-core` and `dev-base`, and cuts the other way through SQLAlchemy's `tests-postgresql` /
+`tests-mysql` / `tests-oracle`, which hold database drivers and no runner. A name list is also unsafe
+rather than merely partial: `uv sync --group <undeclared>` exits 2 (verified against uv 0.12.3), so a
+guessed name breaks every project that does not use it. Only declared groups are passed. The same
+evidence rules out `--all-groups`, which would install the 20 projects' `docs` toolchains to run
+their tests and fail the whole phase on one unresolvable doc dependency.
+
+`tox` and `nox` are excluded from detection although both are test runners. They build their own
+environments, so installing one leaves `python -m pytest` — the only thing `PythonQARunner` invokes —
+failing exactly as before, while pulling in the rest of that group through a prepare phase that
+executes arbitrary sdist build code. Counting them was the error in this document's first set of
+figures: eight OpenTelemetry packages were credited on a `dev` group holding `tox`.
+
+**The extras branch of the first candidate approach is closed by measurement.** Requesting a specific
+extra when the tooling lives in `[project.optional-dependencies]` would add **zero** corpus projects:
+every uv-managed repository declaring pytest in an extra already declares it in a group or at
+runtime. Nothing left to build there.
 
 The cache stamp now covers `pyproject.toml` as well as `uv.lock`, because the manifest decides the
 command: moving a runner from `dev` to `tests` changes the `--group` flags without touching the lock,

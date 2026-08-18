@@ -145,7 +145,7 @@ class TestEnsurePreparedSyncsTheGroupHoldingTheRunner:
     venv with no test runner in it.
 
     Detection is by content, not by name, and the corpus is why. The group names are a long tail —
-    `testing`, `ci`, `test-core`, `dev-base`, `nox`, `emscripten` all carry a runner — so no name
+    `testing`, `ci`, `test-core` and `dev-base` all carry pytest — so no name
     list covers them. The tail also cuts the other way: SQLAlchemy declares `tests-postgresql`,
     `tests-mysql` and `tests-oracle`, which hold database drivers and no runner at all, so a
     `test*` prefix rule would install three database stacks to find nothing.
@@ -254,8 +254,6 @@ class TestGroupsHoldingARunnerReadsDependencySpecs:
             "pytest_asyncio",
             "PyTest",
             "pytest-cov>=5",
-            "nox",
-            "tox-uv",
         ],
     )
     def test_a_runner_is_recognised_through_its_spec(self, spec: str) -> None:
@@ -268,7 +266,8 @@ class TestGroupsHoldingARunnerReadsDependencySpecs:
             "psycopg2",
             "sphinx",
             "coverage",  # measures a run, cannot start one
-            "toxicity-checker",  # shares a prefix, is not `tox`
+            "nox",  # orchestrates its own environments; leaves `python -m pytest` failing
+            "tox-uv",  # same, and installing it widens what an untrusted project builds
             "my-pytest-plugin",  # names the runner, is not it
         ],
     )

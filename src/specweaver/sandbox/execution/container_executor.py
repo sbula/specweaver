@@ -46,9 +46,15 @@ _CONTAINER_PATH = (
     f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
 
-#: Distributions that can start a test suite. `coverage` is deliberately absent — it measures a
-#: run, it cannot begin one — and including it changed the corpus result by exactly zero projects.
-_TEST_RUNNERS: tuple[str, ...] = ("pytest", "nox", "tox")
+#: The QA runner invokes `python -m pytest` and nothing else, so this is the entire predicate: a
+#: group is worth syncing exactly when it puts pytest in the environment.
+#:
+#: `tox` and `nox` are deliberately absent even though both are test runners. They build their own
+#: environments and would leave `python -m pytest` failing exactly as before, while installing the
+#: rest of that group — and the prepare phase executes arbitrary sdist build code, so widening what
+#: an untrusted project builds for no gain is the wrong trade. `coverage` is absent for the simpler
+#: reason that it measures a run and cannot start one.
+_TEST_RUNNERS: tuple[str, ...] = ("pytest",)
 
 #: `uv sync` installs this group unasked. Requesting it again would be noise.
 _DEFAULT_GROUP = "dev"
@@ -71,7 +77,7 @@ def _groups_holding_a_runner(manifest_text: str) -> list[str]:
     """The PEP 735 groups that declare a test runner, beyond the one `uv sync` already installs.
 
     Detection is by content because the names are a long tail: `test`, `tests`, `testing`, `ci`,
-    `test-core`, `dev-base` and `nox` all carry a runner across the measured corpus, while
+    `test-core` and `dev-base` all carry pytest across the measured corpus, while
     `tests-postgresql` and `tests-mysql` carry database drivers and none. A name list would miss
     the first set and install the second.
 
