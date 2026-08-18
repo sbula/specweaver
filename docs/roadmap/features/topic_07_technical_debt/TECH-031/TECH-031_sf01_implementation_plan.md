@@ -7,7 +7,7 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-031/TECH-031_sf01_implementation_plan.md
 - **Status**: APPROVED
 
-**FRs owned: FR-1 through FR-15.** All of them, in one plan, because the ticket shipped as one
+**FRs owned: FR-1 through FR-16.** All of them, in one plan, because the ticket shipped as one
 sequence rather than as sub-features. FR-11 to FR-14 were added when the ticket was re-opened for
 Rust, Java and Kotlin — the first target project is Python, Rust and Kotlin.
 
@@ -136,6 +136,13 @@ format, and their counting had already drifted apart. **(FR-15)**
 Both JVM runners return `harvest.failures` instead of `[]`. The Rust failure block now stops at
 cargo's `failures:` index, so the message ends at the diagnostic. **(FR-15)**
 
+### [MODIFY] `src/specweaver/commons/prepare_plan.py`
+
+`detect_toolchain` names the build tool from its own manifest, Python first. `plan_for` routes a
+non-`uv` toolchain to `_plan_for_other`, which carries the fetch step and the environment the two
+phases must share — `CARGO_HOME` and `CARGO_TARGET_DIR` for Rust, the local repository for Maven.
+Gradle carries a warning and no steps. **(FR-16)**
+
 ## 5. Proof
 
 | FR | Test file |
@@ -151,6 +158,7 @@ cargo's `failures:` index, so the message ends at the diagnostic. **(FR-15)**
 | FR-12, FR-13 | `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-14 | `tests/unit/sandbox/language/core/test_runner_migration.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-15 | `tests/unit/sandbox/language/core/test_junit_reports.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
+| FR-16 | `tests/unit/commons/test_prepare_plan_languages.py` |
 
 Every behaviour above was mutation-verified as it was written, individually, against the test that
 claims it. The counts are in the commit messages; the discipline is that a citation whose mutant

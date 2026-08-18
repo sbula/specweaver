@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from specweaver.commons.tooling_sources import ToolingSource, declared_pytest
@@ -104,6 +104,30 @@ def _groups_holding_a_runner(manifest_text: str) -> list[str]:
     )
 
 
+#: Which build tool owns a project, by the manifest it reads. Python first: a polyglot tree — this
+#: repo has Java and Kotlin fixtures inside a Python one — resolves to Python for QA today, and
+#: changing that is a routing decision rather than a prepare-phase one.
+_TOOLCHAIN_MANIFESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("uv", ("pyproject.toml", "uv.lock")),
+    ("cargo", ("Cargo.toml",)),
+    ("maven", ("pom.xml",)),
+    ("gradle", ("build.gradle", "build.gradle.kts")),
+)
+
+#: Where each tool's fetched dependencies live. On the cache mount, which is read-write while the
+#: prepare phase runs and read-only afterwards, so the execute phase can read them with no network.
+_CARGO_HOME = "/cache/cargo"
+_MAVEN_REPO = "/cache/m2"
+
+
+def detect_toolchain(source_root: Path) -> str:
+    """The build tool this project declares, or `""` when it declares none."""
+    for toolchain, manifests in _TOOLCHAIN_MANIFESTS:
+        if any((source_root / name).is_file() for name in manifests):
+            return toolchain
+    return ""
+
+
 @dataclass(frozen=True)
 class PreparePlan:
     """Everything the prepare phase decides before it runs a container."""
@@ -120,10 +144,20 @@ class PreparePlan:
     #: The declaration the runner was found in, when it came from outside the manifest. Carried so
     #: the executor installs exactly what the report described, rather than looking it up again.
     source: ToolingSource | None = None
+    #: The build tool that owns the project — `uv`, `cargo`, `maven`, `gradle`, or `""`.
+    toolchain: str = "uv"
+    #: Commands to run in the network-enabled prepare phase, as `(step name, argv)`.
+    steps: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    #: Environment the prepare and execute phases must share, so a fetch survives into the run.
+    env: dict[str, str] = field(default_factory=dict)
 
 
 def plan_for(source_root: Path) -> PreparePlan:
     """What the prepare phase will do with the project at `source_root`."""
+    toolchain = detect_toolchain(source_root)
+    if toolchain and toolchain != "uv":
+        return _plan_for_other(toolchain)
+
     manifest = source_root / "pyproject.toml"
     manifest_text = (
         manifest.read_text(encoding="utf-8", errors="replace") if manifest.is_file() else ""
@@ -169,3 +203,60 @@ def plan_for(source_root: Path) -> PreparePlan:
         "plugins the suite needs will be absent — results will say so."
     )
     return PreparePlan(route, "sandbox", groups, warnings=tuple(warnings))
+
+
+def _plan_for_other(toolchain: str) -> PreparePlan:
+    """The plan for a toolchain that is not `uv`.
+
+    Every one of these resolves dependencies over the network, and the execute phase has none. So the
+    fetch happens here, into `/cache`, and the run that follows is explicitly offline. A project whose
+    dependencies cannot be pre-fetched cannot be prepared, and saying so is the point.
+    """
+    if toolchain == "cargo":
+        return PreparePlan(
+            route="fetch",
+            runner_source="Cargo.toml",
+            toolchain=toolchain,
+            steps=(("fetch", ("cargo", "fetch")),),
+            # The build writes to `/scratch`, not to `target/` under the read-only source mount.
+            env={"CARGO_HOME": _CARGO_HOME, "CARGO_TARGET_DIR": "/scratch/target"},
+            warnings=(
+                "Rust dependencies are fetched now and the test run is offline. A crate that "
+                "resolves anything at build time — a build script reaching the network — will fail "
+                "in the execute phase, which has none.",
+            ),
+        )
+    if toolchain == "maven":
+        return PreparePlan(
+            route="fetch",
+            runner_source="pom.xml",
+            toolchain=toolchain,
+            steps=(
+                (
+                    "fetch",
+                    (
+                        "mvn",
+                        "-q",
+                        "-B",
+                        f"-Dmaven.repo.local={_MAVEN_REPO}",
+                        "dependency:go-offline",
+                    ),
+                ),
+            ),
+            env={"MAVEN_REPO_LOCAL": _MAVEN_REPO},
+            warnings=(
+                "Maven dependencies are resolved now and the test run is offline. A plugin that "
+                "`dependency:go-offline` does not pre-fetch — some resolve at execution — will fail "
+                "in the execute phase, which has no network.",
+            ),
+        )
+    return PreparePlan(
+        route="none",
+        runner_source="",
+        toolchain=toolchain,
+        warnings=(
+            "Gradle projects cannot be prepared yet: a Gradle wrapper downloads its own "
+            "distribution on first use and the execute phase has no network, while the system "
+            "Gradle is 4.4.1. Use Maven for a JVM project inside the sandbox, or run on the host.",
+        ),
+    )
