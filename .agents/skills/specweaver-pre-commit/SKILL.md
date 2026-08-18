@@ -99,6 +99,26 @@ commit boundary. Look for security flaws, unhandled edge cases, architecture vio
 incomplete requirements.
 7.5.2 If the cycle produces findings, **STOP** and present them to the user for review. You must resolve critical findings before proceeding to Phase 8.
 
+## Phase 7.9: Is anything lost if this session ends here?
+
+The commit captures the code. It does not capture the three things a handover exists for, and none of
+them are recoverable from `git log`:
+
+1. **A decision now waiting on the user.** Any HITL gate you stopped at, with the document that must be
+   read before answering it.
+2. **An approach measured and rejected.** If you tried something and the measurement said no, record
+   it where the next person will look *before* trying it again — the design or the analysis, not just
+   the commit message. A rejected approach that is not written down is a rediscovery cost.
+3. **A pointer that must be read first.** Any `docs/analysis/` document you produced, and what must not
+   be touched before reading it.
+
+Put each in its **durable** home first — the design, the analysis, the contract row. Only then add a
+one-line pointer to `.tmp/HANDOVER.md`. A handover that restates what the artefacts already hold is the
+one nobody reads; a handover that is an index of them is the one that works.
+
+**Do not turn it into a changelog.** `git log --oneline` covers what changed. The handover covers what
+is *unfinished, undecided, or not to be repeated*.
+
 ## Phase 8: Commit Boundary (HITL)
 
 > **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.

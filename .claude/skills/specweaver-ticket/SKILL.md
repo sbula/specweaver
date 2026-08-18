@@ -68,6 +68,14 @@ ticket's identity. This skill exists because that failure has actually happened.
 > "unknown size" it feared, and the same pass corrected three of `TECH-017`'s findings. Filing-day
 > evidence for a ticket gated on *story X ships* is stale by construction.
 
+> [!IMPORTANT]
+> **If you stop at the confirmation above and the session ends, the proposal dies with it.** Record in
+> `.tmp/HANDOVER.md`: the proposed ID, the title, and the one-line reason it is wanted. A minting
+> proposal is exactly the kind of decision that is expensive to reconstruct and cheap to write down.
+>
+> After minting, put the *measurements* in `docs/analysis/` and have the entry link them — a registry
+> entry is four lines and a census is not one of them.
+
 ## Phase 1: Identify the Registry (do NOT skip)
 
 Each ID family has a **different** authoritative source. Pick the right one:

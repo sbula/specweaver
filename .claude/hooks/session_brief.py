@@ -42,8 +42,25 @@ BRIEF = f"""
 """
 
 
+def _leave_trace() -> None:
+    """Record that the briefing ran, so it can be verified after the banner scrolls away.
+
+    `.tmp/` is gitignored, so this never leaves the machine. Best-effort: a trace that cannot be
+    written is not a reason to fail a session.
+    """
+    try:
+        from datetime import UTC, datetime
+
+        trace = REPO / ".tmp" / "session_brief_last.txt"
+        trace.parent.mkdir(parents=True, exist_ok=True)
+        trace.write_text(datetime.now(UTC).isoformat() + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
 def main() -> int:
     try:
+        _leave_trace()
         out = [BRIEF]
         if HANDOVER.is_file():
             out.append(

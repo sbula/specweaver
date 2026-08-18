@@ -83,6 +83,16 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > Only the paths that cross a feature boundary go there. A path this one feature can walk alone is
 > this feature's own FR.
 
+> [!IMPORTANT]
+> **When you stop at a HITL gate, the decision is now invisible to everyone but this conversation.**
+> Phase 6's gate always fires; Phases 1 and 3 fire on ambiguity. Before you stop, record in
+> `.tmp/HANDOVER.md`: which gate, what question is open, and the document that must be read before
+> answering it. One line each.
+>
+> This is what a handover is for and what `git log` cannot give you. `E-VAL-03` sat at its Phase 1 gate
+> across sessions and was only picked up correctly because the handover named the analysis document and
+> said *do not restart the research* — without that line the next session re-derives it.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading for code discovery:
