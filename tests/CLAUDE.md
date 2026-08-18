@@ -7,6 +7,7 @@ tests/
 ├── unit/          # Fast, isolated. Mock all I/O. Target: <2s per file.
 ├── integration/   # Multi-layer. Mock external APIs only.
 ├── e2e/           # Full real-world scenarios. CLI invocations.
+│   └── capabilities/<domain>/   # every e2e lives here — see below
 ├── assurance/     # Quality assurance tests (standards, validation).
 ├── fixtures/      # Shared test data (YAML specs, sample configs).
 └── manual/        # Manual test scripts (not in CI).
@@ -26,6 +27,16 @@ Every feature MUST have tests in all 4 buckets:
 2. **Boundary/Edge Cases** — Empty inputs, max constraints, cyclic graphs, Unicode.
 3. **Graceful Degradation** — Dependencies failing, timeouts, malformed data.
 4. **Hostile/Wrong Input** — Path traversal, wrong types, None injection, SQL injection strings.
+
+## e2e layout is enforced
+
+Every e2e test lives in `tests/e2e/capabilities/<domain>/`, where `<domain>` mirrors a `src/specweaver`
+macro-domain. A loose file at the tier root **fails** `tests/unit/test_macro_domain_layout.py` — it is
+not an exception list to add to. The one directory outside that rule is `tests/e2e/scripts/`, which
+drives the repo's own dev tooling and has no product capability to sit under.
+
+The unit and integration tiers mirror `src/specweaver` package-for-package, with `scripts` and
+`alembic` the only exceptions — each mirrors a repo-root directory rather than nothing.
 
 ## Conventions
 

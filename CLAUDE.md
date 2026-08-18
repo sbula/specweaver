@@ -55,7 +55,9 @@ specs/                  # YAML spec definitions (input to validation battery)
 > **Add `-n auto` for anything tier-sized or larger; leave single modules serial.** Measured on a
 > 16-core box: one module 12.5s serial vs 15.2s parallel (worker startup loses); `tests/unit`
 > 5m02 serial vs 1m37 parallel (3.1x); full suite ~13m vs 4m26 (2.9x). The crossover sits
-> between one module and one tier.
+> between one module and one tier. **The parallel full-suite figure is now ~1m15** (measured
+> 2026-08-18, three runs); the serial numbers have not been re-measured since, so the ratios
+> above are the 2026-08-16 evidence and the conclusion, not the current arithmetic.
 >
 > `scripts/tests.py` already passes `-n auto` itself — prefer it at commit boundaries and you
 > get this for free.
@@ -94,16 +96,23 @@ $PY scripts/mutation.py --install-timer   # nightly at 03:00
 > `docs/dev_guides/writing_mutation_campaigns.md`.
 
 > [!IMPORTANT]
-> **The suite is green on Linux as of 2026-08-16: `7356 passed, 11 skipped, 0 failed` in 2m43 (`-n auto`).**
+> **The suite is green on Linux as of 2026-08-18: `7511 passed, 11 skipped, 1 xfailed` in ~1m15 (`-n auto`),
+> measured over three consecutive runs.** The one `xfail` is strict and names its blocker — see `check_xfail_blockers.py`.
 > **There are no accepted deltas.** A failure you see is a failure you caused — do not go looking
 > for a "known Linux failure" list to file it under.
 >
 > This block previously recorded 25 chronic failures. All 25 are fixed; the root-cause analysis
 > that closed them is kept at `docs/analysis/linux_test_failures_2026-08-12.md`. 18 were one
 > production defect (`max_processes=128` becoming `setrlimit(RLIMIT_NPROC)`, which is per-real-UID
-> and so bounded the *user* rather than the sandbox) — closed by **`TECH-029`**, whose
-> `current task count + budget` backstop is explicitly best-effort and is meant to be **removed**,
-> not extended, when `B-EXEC-04` lands kernel-enforced cgroups v2 `pids.max`.
+> and so bounded the *user* rather than the sandbox) — closed by **`TECH-029`**.
+>
+> **`TECH-029`'s `current task count + budget` backstop was itself replaced on 2026-08-18.** That
+> ceiling sat *below* ordinary load — the UID's task count swings 313..960 during one `-n auto` run
+> against a ~453 ceiling — so sandboxed bash steps died on their own `fork` about one run in six and
+> the failure was reported against the innocent script. The headroom is now the budget **or 1% of the
+> system's own hard `RLIMIT_NPROC`, whichever is larger**. Two sampling-based repairs were tried and
+> measured to fail first; do not attempt a third. It remains best-effort and is still meant to be
+> **removed**, not extended, when `B-EXEC-04` lands kernel-enforced cgroups v2 `pids.max`.
 >
 > **Two gate lessons worth keeping:**
 > - `tests.py cb <STORY> --kind tooling` selects the **unit tier only** — see `tests.py matrix`. The
