@@ -568,9 +568,18 @@ class TestEnsurePrepared:
         assert _find_call(mock_execute, "uv", "sync") is not None
         assert (mounts.cache_root.parent / ".prepared_hash").is_file()
 
-    def test_prepare_failure_does_not_write_stamp_and_warns(
-        self, tmp_path: Path, monkeypatch, caplog
+    def test_prepare_failure_does_not_write_stamp_and_raises(
+        self, tmp_path: Path, monkeypatch
     ) -> None:
+        """A failed prepare must not be recorded as prepared, and must not be a log line.
+
+        This test previously asserted the *warning* — `executor._ensure_prepared()` returning
+        normally after the phase had failed. That contract is the reason the phase could fail on
+        every run for as long as it did: the warning went to a log nobody reads, the QA runner then
+        reported the absent toolchain as an empty test suite, and the two together looked like
+        nothing happening at all. Updated deliberately rather than deleted, so the change of
+        contract is visible in the history of the test that pinned the old one.
+        """
         mounts = _mounts(tmp_path)
         (mounts.source_root / "uv.lock").write_text("lockfile-v1")
 
@@ -586,11 +595,10 @@ class TestEnsurePrepared:
         )
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
 
-        with caplog.at_level("WARNING"):
+        with pytest.raises(RuntimeError, match="prepare phase failed"):
             executor._ensure_prepared()
 
         assert not (mounts.cache_root.parent / ".prepared_hash").exists()
-        assert any("uv sync" in rec.message for rec in caplog.records)
 
     def test_prepare_skipped_when_lockfile_hash_unchanged(
         self, tmp_path: Path, monkeypatch
@@ -753,3 +761,103 @@ class TestEnsurePrepared:
         stamp = mounts.cache_root.parent / ".prepared_hash"
         assert stamp.is_file()
         assert not (mounts.cache_root / ".prepared_hash").exists()
+
+
+# ---------------------------------------------------------------------------
+# TECH-031: the prepare phase has never produced a usable environment
+# ---------------------------------------------------------------------------
+
+
+class TestPrepareProducesAUsableEnvironment:
+    """Three walls stand between `uv sync` and a venv the QA runner can use.
+
+    Re-measured against live podman 2026-08-18, six days after the ticket recorded them, and every
+    one still reproduces verbatim:
+
+    1. `uv` writes `.venv` into the workdir, which is mounted `:ro` inside a `--read-only` container:
+       `failed to create directory /workspace/.venv: Read-only file system (os error 30)`, exit 2 —
+       for *every* project, on every layout, before the manifest is even read.
+    2. With the venv redirected, a target whose lockfile is stale makes `uv` re-resolve and rewrite
+       `/workspace/uv.lock`, which fails the same way. Measured: a lockfile that is merely *present*
+       is not enough — adding one dependency after locking is sufficient to trigger it.
+    3. Even with both fixed, the execute phase set no `PATH`, so `python -m pytest` resolved to the
+       image's interpreter rather than the environment just prepared.
+
+    The fourth defect — the QA runner reporting an absent toolchain as success — is already fixed and
+    is what kept the other three invisible.
+    """
+
+    def _prepare_cmd(self, tmp_path: Path, monkeypatch) -> list[str]:
+        mounts = _mounts(tmp_path)
+        (mounts.source_root / "uv.lock").write_text("lockfile-content-v1")
+        mock_execute = MagicMock(return_value=_ok_result())
+        monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        call = _find_call(mock_execute, "uv", "sync")
+        assert call is not None, "the prepare phase did not run at all"
+        return list(call)
+
+    def test_the_venv_is_built_on_a_writable_mount(self, tmp_path: Path, monkeypatch) -> None:
+        """Wall 1. Without this the phase cannot create an environment for any project at all."""
+        cmd = self._prepare_cmd(tmp_path, monkeypatch)
+
+        assert any(arg.startswith("UV_PROJECT_ENVIRONMENT=") for arg in cmd), (
+            f"`uv` defaults to `.venv` in the workdir, which is mounted read-only:\n{cmd}"
+        )
+        target = next(a for a in cmd if a.startswith("UV_PROJECT_ENVIRONMENT="))
+        assert target.split("=", 1)[1].startswith("/cache"), (
+            f"the environment must land on the rw cache mount, not {target}"
+        )
+
+    def test_the_lockfile_is_never_rewritten(self, tmp_path: Path, monkeypatch) -> None:
+        """Wall 2. A stale lockfile makes `uv` rewrite it, into a read-only mount."""
+        cmd = self._prepare_cmd(tmp_path, monkeypatch)
+
+        assert "--frozen" in cmd, (
+            "without `--frozen` a target whose lockfile has drifted fails with a read-only error "
+            f"that names uv.lock and explains nothing:\n{cmd}"
+        )
+
+    def test_the_execute_phase_uses_what_prepare_built(self, tmp_path: Path, monkeypatch) -> None:
+        """Wall 3. Fixing the first two changes nothing observable without this one."""
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+
+        cmd = executor._build_container_cmd("podman", "n", ["python", "-m", "pytest"], None)
+
+        path_env = [a for a in cmd if a.startswith("PATH=")]
+        assert path_env, f"no PATH is set, so `python -m pytest` is the image's interpreter:\n{cmd}"
+        assert "/cache/venv/bin" in path_env[0], (
+            f"PATH does not put the prepared environment first: {path_env[0]}"
+        )
+
+    def test_a_failed_prepare_is_surfaced_not_logged(self, tmp_path: Path, monkeypatch) -> None:
+        """A warning nobody reads is why this survived: the failure must reach the caller.
+
+        The QA runner's own vacuous-success defect is fixed, so a missing toolchain now reports
+        honestly — but only if the prepare phase's own failure is not swallowed one level earlier.
+        """
+        mounts = _mounts(tmp_path)
+        (mounts.source_root / "uv.lock").write_text("lockfile-content-v1")
+
+        def only_sync_fails(cmd, **kwargs):
+            # Failing every call would fail the engine probe first, and the test would pass for a
+            # reason that has nothing to do with the prepare phase.
+            return _ok_result(exit_code=2) if "sync" in cmd else _ok_result()
+
+        monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(side_effect=only_sync_fails))
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+
+        with pytest.raises(RuntimeError, match="prepare"):
+            executor._ensure_prepared()

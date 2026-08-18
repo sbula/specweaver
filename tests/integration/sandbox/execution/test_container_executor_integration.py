@@ -142,3 +142,122 @@ class TestContainerExecutorRealEngine:
         assert result.exit_code == 0
         assert "hello from container" in result.stdout
         assert result.timed_out is False
+
+
+#: An image that ships `uv`. The prepare phase invokes `uv sync`, so `python:3.13-slim` — fine for
+#: every other test in this file — cannot exercise it at all, and cannot install `uv` either because
+#: the container is `--read-only`.
+_UV_IMAGE = "ghcr.io/astral-sh/uv:python3.12-bookworm"
+
+
+def _uv_image_available() -> bool:
+    if _LIVE_ENGINE is None:
+        return False
+    try:
+        probe = subprocess.run(
+            [_LIVE_ENGINE, "image", "exists", _UV_IMAGE], capture_output=True, timeout=30
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return probe.returncode == 0
+
+
+class TestPrepareAndExecuteShareAnEnvironment:
+    """`TECH-031`: the prepare phase builds a toolchain and the execute phase actually uses it.
+
+    This is the journey `INT-US-09-SF01-MIG` is held on — container execution *actually exercised*
+    rather than asserted through mocks. It runs the real executor against a real engine; every other
+    proof of this path built the podman argv by hand, which tests podman rather than this code.
+
+    Until 2026-08-18 it could not have passed. Three walls, each re-measured against live podman:
+    `uv` wrote `.venv` into a read-only workdir; a drifted lockfile made it rewrite a read-only
+    `uv.lock`; and the execute phase never mounted the cache the environment lives on, so even a
+    correct `PATH` pointed at nothing.
+    """
+
+    def _project(self, tmp_path: Path) -> ContainerMounts:
+        mounts = _mounts(tmp_path)
+        (mounts.source_root / "pyproject.toml").write_text(
+            '[project]\nname = "t"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
+            'dependencies = []\n\n[dependency-groups]\ndev = ["pytest"]\n',
+            encoding="utf-8",
+        )
+        assert _LIVE_ENGINE is not None
+        subprocess.run(  # one-off fixture setup, writable on purpose
+            [
+                _LIVE_ENGINE,
+                "run",
+                "--rm",
+                "-v",
+                f"{mounts.source_root}:/w:rw",
+                "--workdir",
+                "/w",
+                _UV_IMAGE,
+                "uv",
+                "lock",
+            ],
+            capture_output=True,
+            timeout=180,
+            check=True,
+        )
+        return mounts
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_the_toolchain_prepare_installed_is_the_one_execute_finds(self, tmp_path: Path) -> None:
+        """pytest is declared by the project, installed by prepare, and found by execute."""
+        mounts = self._project(tmp_path)
+        executor = ContainerSubprocessExecutor(
+            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+        )
+
+        result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
+
+        assert result.exit_code == 0, (
+            f"the prepared toolchain was not usable from the execute phase:\n"
+            f"stdout={result.stdout!r}\nstderr={result.stderr!r}"
+        )
+        assert "pytest" in result.stdout.lower(), result.stdout
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_a_project_that_declares_no_toolchain_fails_loudly(self, tmp_path: Path) -> None:
+        """The control, and the half that used to look identical to success.
+
+        A project declaring no test runner must not produce a run that merely reports nothing. The
+        QA runner's own vacuous-success defect is fixed; this checks the layer beneath it, where the
+        prepare phase either builds an environment without pytest or fails outright — either way the
+        caller must be able to tell, which is exactly what a `logger.warning` denied it.
+        """
+        mounts = _mounts(tmp_path)
+        (mounts.source_root / "pyproject.toml").write_text(
+            '[project]\nname = "t"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
+            "dependencies = []\n",
+            encoding="utf-8",
+        )
+        assert _LIVE_ENGINE is not None
+        subprocess.run(
+            [
+                _LIVE_ENGINE,
+                "run",
+                "--rm",
+                "-v",
+                f"{mounts.source_root}:/w:rw",
+                "--workdir",
+                "/w",
+                _UV_IMAGE,
+                "uv",
+                "lock",
+            ],
+            capture_output=True,
+            timeout=180,
+            check=True,
+        )
+        executor = ContainerSubprocessExecutor(
+            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+        )
+
+        result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
+
+        assert result.exit_code != 0, (
+            "a project with no test runner reported success — the shape that let an absent "
+            f"toolchain read as an empty suite: {result.stdout!r}"
+        )

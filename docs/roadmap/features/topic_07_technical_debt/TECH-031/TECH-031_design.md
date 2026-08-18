@@ -112,6 +112,66 @@ regression is pinned by its own test.
   executor. Six paths with a different root cause, so **not folded in here** — see §Out of scope.
 - **Q1 (how wide the layout gap is)** — still open, and now clearly the *third* question to ask.
 
+## Re-measured and partly delivered, 2026-08-18
+
+Reproduced against live podman before touching anything, per the skill's rule about stale audit
+evidence. **Every measurement from 2026-08-12 still held, verbatim** — including
+`failed to create directory /workspace/.venv: Read-only file system (os error 30)`, exit 2.
+
+Two things the original measurement did not record, both found by walking the chain rather than
+reading it:
+
+- **`--frozen` is required, not merely tidy.** The note above says a target with no `uv.lock` fails
+  on `failed to write to file /workspace/uv.lock`. Measured further: a lockfile that merely *exists*
+  is not enough. Adding one dependency after locking makes `uv` re-resolve and rewrite the lock, and
+  it fails the same way. A bare `uv sync` therefore works only while the target's lockfile happens to
+  be current — the failure is a property of the target's tidiness, not of the sandbox.
+- **The execute phase never mounted the cache at all.** Defect 2 above is recorded as "sets no `PATH`
+  and no `UV_PROJECT_ENVIRONMENT`". It also attaches only `scratch_root`, so `/cache/venv` did not
+  exist inside the execute container. Setting `PATH` alone would have pointed at nothing.
+
+### Delivered
+
+| Wall | Fix | Verified |
+|---|---|---|
+| `.venv` into a read-only workdir | `UV_PROJECT_ENVIRONMENT=/cache/venv`, on the rw mount | live podman + unit |
+| lockfile rewritten into a read-only mount | `uv sync --frozen` | live podman + unit |
+| prepared environment absent at execute | cache mounted at `/cache:ro` | live podman + unit |
+| image interpreter shadowing it | `PATH` puts `/cache/venv/bin` first | live podman + unit |
+| failure reaching only a log line | `_ensure_prepared` raises | unit |
+
+The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
+and has no business writing into an environment the next run reuses.
+
+`tests/integration/sandbox/execution/test_container_executor_integration.py` now drives the **real
+executor against a real engine** — prepare installs the project's declared `pytest`, execute finds it,
+and a project declaring no test runner fails rather than reporting an empty suite. Every other proof
+of this path built the podman argv by hand, which tests podman rather than this code. Each of the four
+fixes was mutated individually and each kills at least one test.
+
+**`INT-US-09-SF01-MIG` was held on "container execution actually exercised". It now is** — for the
+prepare/execute round trip. The layout question below is what remains.
+
+### One test's contract changed
+
+`test_prepare_failure_does_not_write_stamp_and_warns` asserted that a failed prepare returns normally
+after logging. That contract is why the phase could fail on every run unnoticed, so it is now
+`..._and_raises`. Updated rather than deleted, so the change is visible in the history of the test
+that pinned the old behaviour.
+
+## Still open: the layout gap (defect 3)
+
+Unchanged and confirmed today:
+
+| Target layout | `uv sync --frozen` | pytest in the environment |
+|---|---|---|
+| `[dependency-groups]` | installs it | `pytest 9.1.1` |
+| `[project.optional-dependencies]` | `Audited in 0.00ms` | `No module named pytest` |
+
+This is the ticket's stated subject and the one part that needs a decision rather than a fix.
+`--all-extras` is already rejected (user, 2026-08-12). Q1 — how wide the gap is across real targets —
+is still unanswered, and answering it is what the remaining candidate approaches depend on.
+
 ## Candidate Approaches (not yet designed)
 
 - **Detect the layout and sync accordingly.** Read the target's `pyproject.toml`; if the tools the

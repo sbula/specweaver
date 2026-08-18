@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 
 _SUPPORTED_TAGS: tuple[str, ...] = ("3.11", "3.12", "3.13")
 _DEFAULT_TAG = "3.13"
+#: Where the prepare phase builds the target project's environment. On the rw cache mount,
+#: because the source tree is mounted read-only and `uv`'s default `.venv` lands there.
+_PREPARED_VENV = "/cache/venv"
+
+#: The execute phase's `PATH`, written literally because `-e PATH=...` is not shell-expanded.
+#: The prepared environment goes first so `python -m pytest` resolves to what the prepare phase
+#: installed rather than to the image's own interpreter.
+_CONTAINER_PATH = (
+    f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+)
+
 _DEFAULT_IMAGE_REPO = "ghcr.io/sbula/specweaver-sandbox-python"
 
 # NFR-5 / AD-4: reuse BashActionAtom's resource-limit defaults verbatim (2 GiB / 128 procs)
@@ -209,11 +220,21 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             *self._baseline_flags(engine),
             "-e",
             "UV_CACHE_DIR=/cache",
+            # `uv` builds `.venv` in the workdir by default, and the workdir is `/workspace:ro`
+            # inside a `--read-only` container. Without redirecting it the phase fails for EVERY
+            # project on every layout, before the manifest is read:
+            #   failed to create directory `/workspace/.venv`: Read-only file system (os error 30)
+            "-e",
+            f"UV_PROJECT_ENVIRONMENT={_PREPARED_VENV}",
             "--workdir",
             "/workspace",
             self._image,
             "uv",
             "sync",
+            # A lockfile that has drifted from its manifest makes `uv` re-resolve and rewrite
+            # `/workspace/uv.lock`, which hits the same read-only mount and reports an error naming
+            # the lockfile rather than the sandbox. `--frozen` installs what the lock already says.
+            "--frozen",
         ]
         try:
             result = super().execute(prepare_cmd, timeout_seconds=300)
@@ -222,12 +243,17 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
         if result.exit_code == 0:
             stamp_file.write_text(digest)
-        else:
-            logger.warning(
-                "ContainerSubprocessExecutor: prepare-phase 'uv sync' failed (exit=%d): %s",
-                result.exit_code,
-                result.stderr,
-            )
+            return
+
+        # A warning is why this survived unnoticed: the phase failed on every run for years, the QA
+        # runner then reported an absent toolchain as an empty test suite, and both looked like
+        # nothing happening. Raise, so the caller learns the environment was never built rather than
+        # discovering it as a test result that makes no sense.
+        raise RuntimeError(
+            f"container prepare phase failed (uv sync exit={result.exit_code}). The sandbox has no "
+            f"prepared environment, so any QA run inside it would report against the image's own "
+            f"interpreter. stderr: {result.stderr.strip() or '(empty)'}"
+        )
 
     def _build_container_cmd(
         self,
@@ -248,10 +274,18 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             f"{self._mounts.source_root}:/workspace:ro",
             "-v",
             f"{self._mounts.scratch_root}:/scratch:rw",
+            # The prepared environment lives on the cache mount, and the execute phase did not
+            # attach it at all — so even with a correct `PATH` there was nothing at `/cache/venv`
+            # to find. Mounted READ-ONLY here: execution runs untrusted code and has no business
+            # writing into an environment the next run will reuse.
+            "-v",
+            f"{self._mounts.cache_root}:/cache:ro",
             "--tmpfs",
             "/tmp:size=100m,mode=1777",
             "--network",
             "none",
+            "-e",
+            f"PATH={_CONTAINER_PATH}",
             *self._baseline_flags(engine),
         ]
 
