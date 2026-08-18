@@ -205,10 +205,22 @@ which have a standing reason not to commit a lockfile, so 17.4% is a floor for a
 rather than an estimate — but the ranking is unavailable from here, so the size of that gap stays
 unmeasured.
 
-**A second defect, independent of all of the above.** 50 corpus projects use PEP 735 and only 40 name
-a group `dev`. `test` (17 projects) and `tests` (9) are common, and `uv sync` installs neither. So a
-project can sit exactly on the supported layout and still get a venv with no test runner. That failure
-is not about ecosystem adoption and does not wait on it.
+**A second defect, independent of all of the above — now fixed.** 50 corpus projects use PEP 735 and
+only 40 name a group `dev`. `test` (17 projects) and `tests` (9) are common, and `uv sync` installs
+neither, so a project could sit exactly on the supported layout and still get a venv with no test
+runner. The prepare phase now reads the target's manifest and requests the groups that declare a
+runner: **17.4% → 23.1%** of the corpus (21 → 28 of 121).
+
+Detection is by content rather than name, which the corpus forced. `{test, tests}` recovers 6 of the
+7 projects; the rest of the tail is `testing`, `ci`, `test-core`, `dev-base`, `nox`, `emscripten`.
+And a name list is unsafe, not just partial: `uv sync --group <undeclared>` exits 2 (verified against
+uv 0.12.3), so a guessed name breaks every project that does not use it. Only declared groups are
+passed. The same evidence rules out `--all-groups`, which would install the 20 projects' `docs`
+toolchains to run their tests and fail the whole phase on one unresolvable doc dependency.
+
+The cache stamp now covers `pyproject.toml` as well as `uv.lock`, because the manifest decides the
+command: moving a runner from `dev` to `tests` changes the `--group` flags without touching the lock,
+and a lockfile-keyed stamp would have served the pre-move environment forever.
 
 **`--frozen` does not cause this and removing it would not help.** The lockfile cannot be written to a
 read-only mount either way; `--frozen` converts a confusing `failed to write /workspace/uv.lock` into

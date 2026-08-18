@@ -2,15 +2,15 @@
   "_comment": "Frozen count of unit test classes that name no class or function under test. Regenerate ONLY with `python scripts/check_conventions.py --update-naming-baseline`, and expect the diff to be reviewed: every increase is a test class whose name does not say what it tests.",
   "counts": {
     ".": 5,
-    "assurance": 98,
-    "core": 67,
+    "assurance": 96,
+    "core": 66,
     "graph": 1,
     "infrastructure": 11,
     "interfaces": 9,
-    "sandbox": 45,
+    "sandbox": 44,
     "scripts": 26,
     "workflows": 7,
     "workspace": 9
   },
-  "total": 278
+  "total": 274
 }

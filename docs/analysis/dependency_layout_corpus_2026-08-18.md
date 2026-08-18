@@ -69,6 +69,26 @@ The middle row is a distinct defect from the one `TECH-031` fixed. 50 projects u
 Being on the supported layout is not sufficient — the group has to be named the one thing uv syncs
 by default.
 
+### That row is now closed
+
+The prepare phase reads the target's `pyproject.toml` and requests the groups that declare a test
+runner. Measured against the same corpus, the usable share moves **17.4% → 23.1%** (21 → 28 of 121).
+The 93 that still fail are 88 with no lockfile and 5 that declare no runner anywhere.
+
+Detection is by **content, not name**, and the corpus is the reason. The names are a long tail —
+`testing`, `ci`, `test-core`, `dev-base`, `nox` and `emscripten` all carry a runner — so `{test,
+tests}` recovers 6 of the 7 and no list covers the tail. The tail cuts the other way too: SQLAlchemy
+declares `tests-postgresql`, `tests-mysql` and `tests-oracle`, which hold database drivers and no
+runner, so a `test*` prefix rule would install three database stacks to find nothing.
+
+A name list is not merely incomplete, it is unsafe. `uv sync --group nosuchgroup` exits 2 —
+*"Group `nosuchgroup` is not defined in the project's `dependency-groups` table"*, verified against
+uv 0.12.3 — so a speculative name breaks the prepare phase for every project that does not happen to
+use it. Only groups the manifest declares are ever passed.
+
+`coverage` is excluded from the runner set: it measures a run and cannot start one. Including it
+changed the corpus result by zero projects.
+
 ## Dropping `--frozen` is not the fix
 
 Removing the flag raises the ceiling from 17.4% to at most 24.0% — the share whose tooling a default
@@ -89,9 +109,9 @@ application corpus would need a repository ranking this box cannot obtain (GitHu
 requires authentication, and `gh` is not installed here), so it is left unmeasured rather than
 approximated.
 
-What survives the bias is the second finding, which has nothing to do with lockfiles: **a fifth of
-the projects already on PEP 735 still fail, because their group is named `test` instead of `dev`.**
-That one is ours to fix and does not depend on how the ecosystem trends.
+What survived the bias was the second finding, which has nothing to do with lockfiles: a fifth of the
+projects already on PEP 735 failed because their group was named `test` rather than `dev`. That one
+was ours, did not depend on how the ecosystem trends, and is fixed.
 
 ## Method note
 

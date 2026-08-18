@@ -46,6 +46,56 @@ _CONTAINER_PATH = (
     f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
 
+#: Distributions that can start a test suite. `coverage` is deliberately absent — it measures a
+#: run, it cannot begin one — and including it changed the corpus result by exactly zero projects.
+_TEST_RUNNERS: tuple[str, ...] = ("pytest", "nox", "tox")
+
+#: `uv sync` installs this group unasked. Requesting it again would be noise.
+_DEFAULT_GROUP = "dev"
+
+
+def _declares_a_runner(deps: list[object]) -> bool:
+    """Whether a dependency-group's entries include something that can run a test suite."""
+    for dep in deps:
+        if not isinstance(dep, str):
+            # A PEP 735 `{include-group = "..."}` table. The included group is judged on its own
+            # entries, so following the reference here would only find it twice.
+            continue
+        name = re.split(r"[<>=!~;\[\s]", dep.strip(), maxsplit=1)[0].lower().replace("_", "-")
+        if any(name == runner or name.startswith(f"{runner}-") for runner in _TEST_RUNNERS):
+            return True
+    return False
+
+
+def _groups_holding_a_runner(manifest_text: str) -> list[str]:
+    """The PEP 735 groups that declare a test runner, beyond the one `uv sync` already installs.
+
+    Detection is by content because the names are a long tail: `test`, `tests`, `testing`, `ci`,
+    `test-core`, `dev-base` and `nox` all carry a runner across the measured corpus, while
+    `tests-postgresql` and `tests-mysql` carry database drivers and none. A name list would miss
+    the first set and install the second.
+
+    It is also the only safe rule. `uv sync --group <undeclared>` exits 2 rather than warning, so a
+    speculative name would break the prepare phase for every project that does not use it; only
+    groups this manifest actually declares are ever returned.
+
+    A manifest that cannot be parsed yields no groups. Group detection improves the sync; it is
+    never a new way for it to fail.
+    """
+    try:
+        manifest = tomllib.loads(manifest_text)
+    except (tomllib.TOMLDecodeError, ValueError):
+        return []
+    groups = manifest.get("dependency-groups")
+    if not isinstance(groups, dict):
+        return []
+    return sorted(
+        name
+        for name, deps in groups.items()
+        if name != _DEFAULT_GROUP and isinstance(deps, list) and _declares_a_runner(deps)
+    )
+
+
 _DEFAULT_IMAGE_REPO = "ghcr.io/sbula/specweaver-sandbox-python"
 
 # NFR-5 / AD-4: reuse BashActionAtom's resource-limit defaults verbatim (2 GiB / 128 procs)
@@ -184,13 +234,21 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
     def _ensure_prepared(self) -> None:
         """Network-enabled `uv sync` prepare phase, gated by a lockfile-hash stamp (AD-7, AD-9)."""
+        manifest = self._mounts.source_root / "pyproject.toml"
         lockfile = self._mounts.source_root / "uv.lock"
-        if not lockfile.exists():
-            lockfile = self._mounts.source_root / "pyproject.toml"
-        if not lockfile.exists():
+        stamped = lockfile if lockfile.exists() else manifest
+        if not stamped.exists():
             return
 
-        digest = hashlib.sha256(lockfile.read_bytes()).hexdigest()
+        manifest_text = (
+            manifest.read_text(encoding="utf-8", errors="replace") if manifest.is_file() else ""
+        )
+        runner_groups = _groups_holding_a_runner(manifest_text)
+
+        # The manifest is part of the digest because it now decides the command: moving a runner
+        # from `dev` into `tests` changes which `--group` flags are sent, and a stamp keyed on the
+        # lockfile alone would keep serving the environment built before the move.
+        digest = hashlib.sha256(stamped.read_bytes() + manifest_text.encode("utf-8")).hexdigest()
         # Sibling of cache_root, NOT inside it — uv itself owns/may reorganize cache_root's
         # contents, so a stamp file living inside it could be silently wiped (Red/Blue fix).
         stamp_file = self._mounts.cache_root.parent / ".prepared_hash"
@@ -235,6 +293,10 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             # `/workspace/uv.lock`, which hits the same read-only mount and reports an error naming
             # the lockfile rather than the sandbox. `--frozen` installs what the lock already says.
             "--frozen",
+            # `uv sync` installs `dev` and nothing else, so a project whose runner sits in `tests`
+            # gets a venv the QA runner cannot use. These are the groups this manifest declares a
+            # runner in — never a guessed name, which uv rejects outright.
+            *(arg for group in runner_groups for arg in ("--group", group)),
         ]
         try:
             result = super().execute(prepare_cmd, timeout_seconds=300)

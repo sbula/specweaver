@@ -175,11 +175,11 @@ class TestPrepareAndExecuteShareAnEnvironment:
     correct `PATH` pointed at nothing.
     """
 
-    def _project(self, tmp_path: Path) -> ContainerMounts:
+    def _project(self, tmp_path: Path, groups: str = 'dev = ["pytest"]') -> ContainerMounts:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text(
             '[project]\nname = "t"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
-            'dependencies = []\n\n[dependency-groups]\ndev = ["pytest"]\n',
+            f"dependencies = []\n\n[dependency-groups]\n{groups}\n",
             encoding="utf-8",
         )
         assert _LIVE_ENGINE is not None
@@ -215,6 +215,30 @@ class TestPrepareAndExecuteShareAnEnvironment:
         assert result.exit_code == 0, (
             f"the prepared toolchain was not usable from the execute phase:\n"
             f"stdout={result.stdout!r}\nstderr={result.stderr!r}"
+        )
+        assert "pytest" in result.stdout.lower(), result.stdout
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_a_runner_declared_outside_dev_is_installed_for_real(self, tmp_path: Path) -> None:
+        """`uv sync` installs `dev` and nothing else, and 26 of 121 measured repositories put the
+        runner in `test`/`tests` instead.
+
+        The unit tests prove the argv carries `--group tests`. They cannot prove uv then installs
+        anything — only a real `uv sync` against a real lockfile can, which is what this does. It is
+        also the check that a name list would have passed and a real project would have failed:
+        `uv sync --group <undeclared>` exits 2, so the flag is only ever safe when it is derived
+        from the manifest in front of it.
+        """
+        mounts = self._project(tmp_path, groups='dev = ["iniconfig"]\ntests = ["pytest"]')
+        executor = ContainerSubprocessExecutor(
+            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+        )
+
+        result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
+
+        assert result.exit_code == 0, (
+            f"the runner sits in `tests`, which a default `uv sync` skips, so the prepared "
+            f"environment has no pytest:\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
         )
         assert "pytest" in result.stdout.lower(), result.stdout
 
