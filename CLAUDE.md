@@ -124,6 +124,23 @@ $PY scripts/mutation.py --install-timer   # nightly at 03:00
 >   dependency-group, so the default command installs every tool the gates need and the whole suite
 >   runs on it. `--all-extras` is harmless but no longer required.
 
+## Before Your First Change
+
+Read **[`docs/dev_guides/working_in_this_repo.md`](docs/dev_guides/working_in_this_repo.md)**. It is
+ten operational traps, each one an incident that cost a session, with the single line that prevents it.
+
+The four that cost the most, in case you read nothing else:
+
+1. **`$?` after a pipe is `tail`'s, not the gate's.** Two commits landed on a red gate this way. Use
+   `python scripts/quality.py cb 2>&1 | tail -3; s=${PIPESTATUS[0]}`.
+2. **Put an ABSOLUTE `.venv/bin` on `PATH`** — `export PATH="$PWD/.venv/bin:$PATH"`. A relative entry
+   breaks the moment a test `chdir`s into a temp worktree: 45 phantom failures were chased that way.
+3. **Break your own guard and watch it fail.** A test that cannot fail is decoration, and this repo
+   keeps finding them — a `<= 95` threshold whose debt was cleared, a loop whose match string never
+   matched, a `status == "success"` that any cheaper call satisfied.
+4. **When a measurement surprises you, suspect the instrument first.** A survey reported 28 delivered
+   capabilities in a story that holds 2; the parser had run past the section.
+
 ## Critical Rules
 
 1. **No subprocess.** Use `SubprocessExecutor` from `specweaver.sandbox.execution.executor`.
