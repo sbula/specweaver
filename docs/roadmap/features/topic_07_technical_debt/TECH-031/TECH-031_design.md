@@ -190,11 +190,25 @@ which is a far narrower set than "extras are the older convention" implies:
 - **`uv.lock` exists only if the project uses `uv`.** pip, Poetry, PDM and Hatch projects have no such
   file, so the prepare phase cannot proceed for them at all.
 
-The intersection — uv-managed *and* PEP 735 — is a small and recent slice of the ecosystem. **This
-box has no other Python projects to sample, so the share of real targets is not measured here**; what
-is measured is the *kind* of target that works, which is what the decision actually turns on. A
-percentage would need a corpus of real repositories and is worth having before choosing between the
-candidate approaches.
+The intersection — uv-managed *and* PEP 735 — is a small and recent slice of the ecosystem, and the
+share is now measured against a corpus rather than asserted: **21 of 121 real repositories, 17.4%**.
+The corpus is the 150 most-downloaded packages on PyPI, an externally ordered list so the sample
+cannot be steered; 121 of them resolve to a `pyproject.toml` at a repo root. Full method, denominators
+and bias: `docs/analysis/dependency_layout_corpus_2026-08-18.md`.
+
+Two things in that measurement change what this ticket has left to decide.
+
+**The lockfile dominates, not the layout.** 88 of the 100 failures are simply the absence of
+`uv.lock`; only 12 turn on which table the tooling is declared in. "Detect the layout and sync
+accordingly" therefore addresses the smaller half of the problem. The corpus is entirely libraries,
+which have a standing reason not to commit a lockfile, so 17.4% is a floor for application targets
+rather than an estimate — but the ranking is unavailable from here, so the size of that gap stays
+unmeasured.
+
+**A second defect, independent of all of the above.** 50 corpus projects use PEP 735 and only 40 name
+a group `dev`. `test` (17 projects) and `tests` (9) are common, and `uv sync` installs neither. So a
+project can sit exactly on the supported layout and still get a venv with no test runner. That failure
+is not about ecosystem adoption and does not wait on it.
 
 **`--frozen` does not cause this and removing it would not help.** The lockfile cannot be written to a
 read-only mount either way; `--frozen` converts a confusing `failed to write /workspace/uv.lock` into
