@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.sandbox.language.core.junit_reports import harvest_junit
+from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -83,8 +83,8 @@ class KotlinRunner(QARunnerInterface):
             return failed_tests(reason)
 
         harvest = harvest_junit(search_path)
-        # Same hole as the Java runner: a Kotlin compile failure exits non-zero, prints freely, and
-        # leaves the report directory empty. Measured against real Maven on 2026-08-18.
+        # A compile failure exits non-zero, prints freely, and leaves the report directory
+        # empty — so it passes `did_not_run` and would harvest as an empty suite.
         broken_build = build_failed_without_results(result, "the Kotlin build tool", harvest.total)
         if broken_build:
             return failed_tests(broken_build)
@@ -106,7 +106,7 @@ class KotlinRunner(QARunnerInterface):
         "maven": (("mvnw", "mvnw.cmd"), "mvn", "test", ("target", "surefire-reports")),
     }
 
-    def _test_command(self) -> tuple[list[str], Path]:
+    def _test_command(self) -> tuple[list[str], list[Path]]:
         """The test command for this project's build tool, and where its reports will land.
 
         The two build tools differed only in four values, so they are a table rather than two
@@ -117,9 +117,12 @@ class KotlinRunner(QARunnerInterface):
             "gradle" if self._get_build_tool() == "gradle" else "maven"
         ]
         launcher = wrappers[0] if any((self._cwd / w).exists() for w in wrappers) else fallback
-        search_path = self._cwd.joinpath(*report_dir)
-        self._clear_stale_reports(search_path)
-        return [launcher, goal], search_path
+        # Both places the reports can land: inside the project on a host run, or mounted out to
+        # scratch when the sandbox gave the build an overlay workspace it then discarded.
+        search_paths = report_search_paths(self._cwd, "/".join(report_dir))
+        for path in search_paths:
+            self._clear_stale_reports(path)
+        return [launcher, goal], search_paths
 
     @staticmethod
     def _clear_stale_reports(search_path: Path) -> None:

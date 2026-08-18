@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.sandbox.language.core.junit_reports import harvest_junit
+from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -143,14 +143,14 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "gradle"
             for stale_xml in self._cwd.rglob("build/test-results/test/*.xml"):
                 stale_xml.unlink(missing_ok=True)
-            search_path = self._cwd / "build" / "test-results"
+            search_path = report_search_paths(self._cwd, "build/test-results")
         else:
             cmd = ["mvnw", "test"]
             if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
                 cmd[0] = "mvn"
             for stale_xml in self._cwd.rglob("target/surefire-reports/*.xml"):
                 stale_xml.unlink(missing_ok=True)
-            search_path = self._cwd / "target" / "surefire-reports"
+            search_path = report_search_paths(self._cwd, "target/surefire-reports")
 
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "the Java build tool")
@@ -164,8 +164,8 @@ class JavaRunner(QARunnerInterface):
             harvest.skipped,
             harvest.total,
         )
-        # A build that never compiled writes no reports, and exits non-zero with plenty on stdout —
-        # so it passes `did_not_run` and then harvests as an empty suite.
+        # A build that never compiled writes no reports and exits non-zero with plenty on
+        # stdout, so it passes `did_not_run` and would harvest as an empty suite.
         broken_build = build_failed_without_results(result, "the Java build tool", total)
         if broken_build:
             return failed_tests(broken_build)

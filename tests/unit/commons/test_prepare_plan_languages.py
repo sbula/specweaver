@@ -107,13 +107,30 @@ class TestPlanForOtherToolchains:
         assert plan.execute_env.get("CARGO_NET_OFFLINE") == "true"
         assert "CARGO_NET_OFFLINE" not in plan.env
 
-    def test_a_maven_project_goes_offline_first(self, tmp_path: Path) -> None:
+    def test_a_maven_project_warms_its_repository_with_a_real_test_run(
+        self, tmp_path: Path
+    ) -> None:
+        """`dependency:go-offline` is not enough, and that was measured rather than assumed.
+
+        Surefire chooses its *provider* at execution time from the test framework it detects, so
+        `surefire-junit4` is named in no POM. Neither `go-offline` nor `test -DskipTests` fetches
+        it — only a full `test` does — and without it the offline run dies on *"Cannot access
+        central … in offline mode"*.
+        """
         plan = plan_for(_project(tmp_path, pom__xml="<project/>"))
 
         assert plan.toolchain == "maven"
         joined = [" ".join(cmd) for _, cmd in plan.steps]
-        assert any("dependency:go-offline" in j for j in joined), joined
+        assert any(j.endswith(" test") for j in joined), joined
         assert any("/cache" in v for v in plan.env.values()), plan.env
+
+    def test_a_red_suite_does_not_fail_the_maven_preparation(self, tmp_path: Path) -> None:
+        """The preparation runs the suite, so a project with failing tests would otherwise never
+        reach the run that reports them — it would be a prepare-phase error instead."""
+        plan = plan_for(_project(tmp_path, pom__xml="<project/>"))
+
+        joined = " ".join(cmd for _, cmd_tuple in plan.steps for cmd in cmd_tuple)
+        assert "-Dmaven.test.failure.ignore=true" in joined, joined
 
     def test_a_gradle_project_is_reported_as_unsupported_rather_than_silently_skipped(
         self, tmp_path: Path

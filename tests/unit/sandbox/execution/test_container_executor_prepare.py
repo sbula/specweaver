@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class TestEnsurePreparedProducesAUsableEnvironment:
     """Three walls stand between `uv sync` and a venv the QA runner can use.
 
-    Re-measured against live podman 2026-08-18, six days after the ticket recorded them, and every
+    Re-measured against live podman six days after the ticket recorded them, and every
     one still reproduces verbatim:
 
     1. `uv` writes `.venv` into the workdir, which is mounted `:ro` inside a `--read-only` container:

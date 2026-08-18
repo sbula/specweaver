@@ -4,7 +4,7 @@
 """Reading what `cargo test` actually prints on stable Rust.
 
 The runner asked cargo for JSON and piped it into `cargo2junit`. Measured against the real cargo on
-2026-08-18, none of that could ever have worked:
+none of that could ever have worked:
 
 - `cargo test --format=json -q`, the exact command, fails with
   `error: unexpected argument '--format' found` — `--format` is a libtest flag and belongs after `--`.

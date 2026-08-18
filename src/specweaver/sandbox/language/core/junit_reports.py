@@ -17,12 +17,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.commons.qa import TestFailure
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from collections.abc import Iterable
 
     import junitparser as _junitparser
 
@@ -46,7 +47,21 @@ class JUnitHarvest:
         return self.passed + self.failed + self.skipped
 
 
-def harvest_junit(search_path: Path) -> JUnitHarvest:
+#: The sandbox writes a JVM build's output here, because the workspace it ran in was an overlay
+#: that is discarded. Same convention `QARunnerAtom` builds its container mounts from.
+_SANDBOX_SCRATCH = (".specweaver", ".sandbox", "scratch")
+
+
+def report_search_paths(cwd: Path, relative: str) -> list[Path]:
+    """Both places a build's reports can be: inside the project, or mounted out to scratch.
+
+    The runner is the same object either way and nothing tells it whether the build ran on the host
+    or in a container, so it looks in both. A directory that does not exist harvests as nothing.
+    """
+    return [cwd.joinpath(relative), cwd.joinpath(*_SANDBOX_SCRATCH, relative)]
+
+
+def harvest_junit(search_path: Path | Iterable[Path]) -> JUnitHarvest:
     """Every JUnit XML report under `search_path`, summed, with failure detail preserved.
 
     A report that cannot be parsed is skipped rather than failing the run: a partially-written file
@@ -55,12 +70,14 @@ def harvest_junit(search_path: Path) -> JUnitHarvest:
     """
     import junitparser
 
-    if not search_path.exists():
+    roots = [search_path] if isinstance(search_path, Path) else list(search_path)
+    xml_files = sorted(f for root in roots if root.exists() for f in root.rglob("*.xml"))
+    if not xml_files:
         return JUnitHarvest(0, 0, 0)
 
     passed = failed = skipped = 0
     failures: list[TestFailure] = []
-    for xml_file in sorted(search_path.rglob("*.xml")):
+    for xml_file in xml_files:
         try:
             xml = junitparser.JUnitXml.fromfile(str(xml_file))
         except Exception:

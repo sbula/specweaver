@@ -3,7 +3,7 @@
 
 """Getting a JVM test failure out of the report and into the caller's hands.
 
-Both JVM runners harvested **counts only** and hard-coded `failures=[]`. Measured 2026-08-18 against
+Both JVM runners harvested **counts only** and hard-coded `failures=[]`.
 real Maven: a failing Java test yielded `TestRunResult(passed=0, failed=1, failures=[])` while the
 surefire XML beside it held `java.lang.AssertionError: expected:<42> but was:<41>` and the full stack.
 
@@ -14,6 +14,7 @@ the sandbox exists to avoid. The detail was already on disk; nothing read it.
 The sample below is a real surefire report, trimmed of its 40-line `<properties>` block.
 
 Proves: TECH-031 FR-15
+Proves: TECH-031 FR-18
 """
 
 from __future__ import annotations
@@ -116,3 +117,57 @@ class TestHarvestJunit:
 
         assert (harvest.passed, harvest.failed, harvest.skipped) == (0, 0, 0)
         assert harvest.failures == []
+
+
+class TestReportSearchPaths:
+    """Where a JVM build's reports land depends on whether it ran on the host or in the sandbox.
+
+    On the host, Maven writes `target/surefire-reports` inside the project. In the sandbox the
+    workspace is an overlay that is discarded, so the reports are mounted out to the scratch
+    directory instead — `.specweaver/.sandbox/scratch/target/...`, the same convention
+    `QARunnerAtom` builds its mounts from. The runner has to look in both, because it is the same
+    runner either way and nothing tells it which one happened.
+
+    Proves: TECH-031 FR-18
+    """
+
+    def test_both_locations_are_searched(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.language.core.junit_reports import report_search_paths
+
+        paths = report_search_paths(tmp_path, "target/surefire-reports")
+
+        assert tmp_path / "target" / "surefire-reports" in paths
+        assert (
+            tmp_path / ".specweaver" / ".sandbox" / "scratch" / "target" / "surefire-reports"
+            in paths
+        )
+
+    def test_reports_written_by_a_sandboxed_run_are_harvested(self, tmp_path: Path) -> None:
+        """The case that was silently zero: the build ran, wrote its reports, and the runner looked
+        in the one directory the sandbox could not write to."""
+        from specweaver.sandbox.language.core.junit_reports import (
+            harvest_junit,
+            report_search_paths,
+        )
+
+        scratch = tmp_path / ".specweaver" / ".sandbox" / "scratch" / "target" / "surefire-reports"
+        scratch.mkdir(parents=True)
+        (scratch / "TEST-Ok.xml").write_text(
+            '<testsuite name="Ok" tests="1" errors="0" skipped="0" failures="0">'
+            '<testcase name="works" classname="Ok" time="0"/></testsuite>',
+            encoding="utf-8",
+        )
+
+        harvest = harvest_junit(report_search_paths(tmp_path, "target/surefire-reports"))
+
+        assert harvest.passed == 1, harvest
+
+    def test_a_single_path_still_works(self, tmp_path: Path) -> None:
+        """The control: every existing caller passes one directory and must keep working."""
+        (tmp_path / "TEST-Ok.xml").write_text(
+            '<testsuite name="Ok" tests="1" errors="0" skipped="0" failures="0">'
+            '<testcase name="works" classname="Ok" time="0"/></testsuite>',
+            encoding="utf-8",
+        )
+
+        assert harvest_junit(tmp_path).passed == 1

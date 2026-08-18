@@ -13,6 +13,7 @@ lands somewhere the run cannot see. And `PATH` must not be overridden with the P
 because `cargo` lives outside it in the Rust image.
 
 Proves: TECH-031 FR-17
+Proves: TECH-031 FR-18
 """
 
 from __future__ import annotations
@@ -67,11 +68,18 @@ class TestPrepareOtherToolchainRunsTheFetch:
         fetch = next(a for a in argvs if "fetch" in a)
         assert "CARGO_HOME=/cache/cargo" in fetch, fetch
 
-    def test_a_maven_project_resolves_offline_first(self, tmp_path: Path, monkeypatch) -> None:
+    def test_a_maven_project_warms_its_repository(self, tmp_path: Path, monkeypatch) -> None:
+        """A full `mvn test`, because surefire resolves its provider at execution time and no
+        offline-preparation goal fetches it — measured against the real image."""
         _, argvs = _prepare(tmp_path, monkeypatch, pom__xml="<project/>")
 
         joined = [" ".join(a) for a in argvs]
-        assert any("dependency:go-offline" in j for j in joined), joined
+        assert any(
+            j.endswith(
+                " mvn -q -B -Dmaven.repo.local=/cache/m2 -Dmaven.test.failure.ignore=true test"
+            )
+            for j in joined
+        ), joined
 
     def test_a_crate_without_a_lockfile_is_skipped_with_its_reason(
         self, tmp_path: Path, monkeypatch
@@ -183,3 +191,59 @@ class TestBuildContainerCmdCarriesToolchainEnv:
         cmd = executor._build_container_cmd("podman", "n", ["python", "-m", "pytest"], None)
 
         assert any(a.startswith("PATH=/cache/venv/bin:") for a in cmd), cmd
+
+
+class TestBuildContainerCmdGivesTheJvmSomewhereToBuild:
+    """Maven cannot be told to build elsewhere, so the workspace has to become writable.
+
+    `project.build.directory` is a model field, not a user property — setting it on the command line
+    does not move the build, and the measured failure was the compiler unable to create its output
+    directories. Bind-mounting scratch over `target/` alone was worse: podman creates a mount's
+    destination in the **bind source** before the read-only flag applies, so an empty `target/`
+    appeared in the user's own project.
+
+    An overlay mount (`:O`) resolves both. The container gets a writable `/workspace`, and every
+    write lands in an ephemeral upper layer that is discarded — the host source tree is never
+    touched. Reports still have to survive, so scratch is mounted over `target/` on top of it.
+
+    Proves: TECH-031 FR-18
+    """
+
+    @staticmethod
+    def _cmd(tmp_path: Path, monkeypatch, **files: str) -> list[str]:
+        mounts = _mounts(tmp_path)
+        for name, text in files.items():
+            (mounts.source_root / name.replace("__", ".")).write_text(text, encoding="utf-8")
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        return executor._build_container_cmd("podman", "n", ["mvn", "test"], None)
+
+    def test_a_jvm_workspace_is_an_overlay(self, tmp_path: Path, monkeypatch) -> None:
+        cmd = self._cmd(tmp_path, monkeypatch, pom__xml="<project/>")
+
+        assert any(a.endswith(":/workspace:O") for a in cmd), cmd
+
+    def test_the_reports_survive_the_overlay(self, tmp_path: Path, monkeypatch) -> None:
+        """An overlay is discarded when the container exits; the reports must not go with it."""
+        cmd = self._cmd(tmp_path, monkeypatch, pom__xml="<project/>")
+
+        assert any(a.endswith(":/workspace/target:rw") for a in cmd), cmd
+
+    def test_python_keeps_its_read_only_workspace(self, tmp_path: Path, monkeypatch) -> None:
+        """The control, and the property worth keeping: Python needs no writable source tree, so it
+        does not get one. An overlay is writable in-container even though the host is safe."""
+        cmd = self._cmd(tmp_path, monkeypatch, pyproject__toml="[project]\n")
+
+        assert any(a.endswith(":/workspace:ro") for a in cmd), cmd
+        assert not any(a.endswith(":/workspace:O") for a in cmd), cmd
+
+    def test_rust_keeps_its_read_only_workspace(self, tmp_path: Path, monkeypatch) -> None:
+        """Rust needs no overlay either — `CARGO_TARGET_DIR` already moves the build to scratch."""
+        cmd = self._cmd(
+            tmp_path, monkeypatch, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""
+        )
+
+        assert any(a.endswith(":/workspace:ro") for a in cmd), cmd

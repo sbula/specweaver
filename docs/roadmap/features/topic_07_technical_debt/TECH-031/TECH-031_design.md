@@ -323,6 +323,7 @@ Each row says *why* it exists, because a row restating its own test teaches a la
 | FR-15 | A failure carries enough to act on | Java runner, Kotlin runner, Rust runner | Report the test's identity, the assertion and the stack | Both JVM runners harvested counts and returned `failures=[]` while the surefire report beside them held `expected:<42> but was:<41>` and the full stack. A caller given `failed=1` and nothing else must re-run the suite by hand to learn anything, which is the one thing a sandboxed QA run exists to avoid. Rust already carried its panic; its message now stops at the diagnostic rather than trailing cargo's own index of failed names. |
 | FR-16 | Non-Python projects have a prepare plan at all | Prepare phase | Detect the build tool and fetch its dependencies before the run | The phase returned immediately without a `pyproject.toml`, so a Rust or JVM project reached the execute phase with nothing installed — and that phase runs `--network none` by design, so resolution must happen in the prepare phase or not at all. Rust fetches into `CARGO_HOME=/cache/cargo` and builds into `/scratch/target`, because `/workspace` is read-only. Maven resolves into `/cache/m2` with `dependency:go-offline`. Gradle is reported unsupported rather than silently skipped: a wrapper fetches its own distribution on first use and the system Gradle is 4.4.1. |
 | FR-17 | The executor acts on a non-Python plan | Prepare phase, execute phase | Run the fetch, pick an image containing the toolchain, and carry the environment into both phases | A plan nothing consumes is half a deliverable. The image must follow the toolchain or `cargo` is simply absent; the environment must reach both phases or the fetch lands where the run cannot see it; and `PATH` must not be rewritten with the Python venv, which hides the binary the image was chosen for. **Rust runs end to end in the container**, verified against live podman: crates fetched in prepare, compiled into `/scratch`, run offline, source tree untouched. |
+| FR-18 | A JVM project runs in the sandbox | Prepare phase, execute phase, JVM runners | Give the build a writable workspace, warm the provider, and find the reports afterwards | Four container-only defects, none visible from outside one: the image's entrypoint creating `/root/.m2` as a non-root user; `target/` under a read-only mount, which Maven cannot be told to move; surefire's provider resolved at execution time and fetched by no offline goal; and its forked VM dying inside the sandbox's budget. An overlay workspace keeps the host source tree untouched while letting the build write. |
 | FR-10 | The plan is readable before a run | CLI | Report the prepare plan, non-zero on any warning | Every decision above was otherwise met inside a container, minutes into a run. `plan_for` decides once and both the executor and the report read it, so the report cannot describe a phase other than the one that runs. |
 
 ## Non-Functional Requirements
@@ -361,33 +362,46 @@ All three were taken, and one of them changed shape once measured.
 
 ## Where the container journey stands
 
-Measured against live podman on 2026-08-18, with the images the executor now selects.
+Measured against live podman on 2026-08-18, with the images the executor selects.
 
-| Toolchain | Prepare | Execute in container |
+| Toolchain | Prepare | Runs in the container |
 |---|---|---|
 | `uv` (Python) | yes | **yes** |
-| `cargo` (Rust) | `cargo fetch --locked` | **yes** — 1 passed / 1 failed with the real panic, `/scratch` holds the artefacts, source tree untouched |
-| `maven` (Java, Kotlin) | yes — `/cache/m2` populated | **no** — surefire fails; recorded, not hidden |
-| `gradle` | no | no |
+| `cargo` (Rust) | `cargo fetch --locked` | **yes** |
+| `maven` (Java) | full `mvn test`, network on | **yes** |
+| `maven` (Kotlin) | same | **yes** |
+| `gradle` | no | no — a wrapper fetches its own distribution, and the run has no network |
 
 **Rust needs a committed `Cargo.lock`.** `cargo fetch` resolves, resolving writes `Cargo.lock`, and
-`/workspace` is read-only — cargo says so itself under `--locked`: *"cannot create the lock file …
-because --locked was passed"*. A crate without one is refused with that one-line remedy rather than
-attempted. The alternative is a writable source tree while arbitrary build scripts run, which is the
-isolation the sandbox exists to keep.
+`/workspace` is read-only — cargo says so itself under `--locked`. A crate without one is refused
+with that one-line remedy rather than attempted.
 
-**Maven's blocker is the same shape and is not yet solved.** A JVM build writes `target/` inside the
-project. Two routes were tried and measured:
+### The four defects between Maven and a green run
 
-- `-Dproject.build.directory=/scratch/target` — the compiler still failed with *"could not create
-  parent directories"*.
-- Bind-mounting scratch over `/workspace/target`. This *works* as a mount — podman creates the
-  mountpoint even under a read-only parent — but it creates an empty `target/` **in the user's own
-  source tree**, because the mountpoint is made in the bind source before the read-only flag applies.
-  Reverted for that reason; surefire failed regardless.
+Each was measured, not guessed, and none is visible from outside a container.
 
-Until that is resolved the plan says so in as many words, and JVM QA runs on the host, where all
-nine live tests pass.
+1. **The image's entrypoint creates `MAVEN_CONFIG`**, which it sets to `/root/.m2`. The sandbox runs
+   as a non-root user, so the run died at `mkdir: cannot create directory '/root'` before Maven
+   started — an error naming a path that appears nowhere in the project or in our configuration.
+   `HOME` and `MAVEN_CONFIG` both point into `/scratch` now.
+2. **A JVM build writes `target/` inside the project**, and Maven cannot be told to build elsewhere:
+   `project.build.directory` is a model field, not a user property, and setting it on the command
+   line left the compiler unable to create its output directories. The workspace is now an **overlay
+   mount**: writable inside the container, every write landing in an ephemeral layer, the host source
+   tree untouched. Scratch is mounted over `target/` so the reports survive the overlay being
+   discarded. Python and Rust keep the stronger read-only mount, because neither needs to write there.
+3. **Surefire resolves its *provider* at execution time** — `surefire-junit4` is named in no POM, so
+   neither `dependency:go-offline` nor `test -DskipTests` fetches it, and the offline run died on
+   *"Cannot access central … in offline mode"*. Measured across all three: only a full `mvn test`
+   warms it. The preparation therefore runs the suite once, with
+   `-Dmaven.test.failure.ignore=true` so a red suite still reaches the run that reports it.
+4. **Surefire's forked VM died** inside the sandbox's memory and pid budget — *"The forked VM
+   terminated without properly saying goodbye"*, reproducibly for Kotlin, whose compiler is the
+   heavier. `-DforkCount=0` runs the tests in Maven's own JVM. Isolation between tests is weaker,
+   which matters less here than on a shared machine: the run is already inside a container of its own.
+
+The runners look for reports in both places, because the same runner serves a host run and a
+sandboxed one and nothing tells it which happened.
 
 ## Verifiable Proof
 

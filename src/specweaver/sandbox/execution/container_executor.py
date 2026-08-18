@@ -138,6 +138,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         super().__init__(cwd=cwd, timeout_seconds=timeout_seconds, resource_limits=resource_limits)
 
         mounts.scratch_root.mkdir(parents=True, exist_ok=True)
+        (mounts.scratch_root / "target").mkdir(parents=True, exist_ok=True)
         # The build directory is bind-mounted over the project's `target/`, and podman creates the
         # mountpoint inside the container but never the source directory on the host.
         (mounts.scratch_root / "target").mkdir(parents=True, exist_ok=True)
@@ -171,6 +172,17 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             "in specweaver.toml."
         )
         raise ContainerEngineUnavailableError(msg)
+
+    def _workspace_mode(self) -> str:
+        """`O` for a toolchain that must write inside the project, `ro` otherwise.
+
+        Maven cannot be told to build elsewhere — `project.build.directory` is a model field, not a
+        user property — so its workspace is an overlay: writable in the container, with every write
+        landing in a layer that is discarded and never reaching the host source tree. An overlay is
+        weaker than read-only inside the container, so Python and Rust do not get one; neither needs
+        to write there.
+        """
+        return "O" if detect_toolchain(self._mounts.source_root) in ("maven", "gradle") else "ro"
 
     def _toolchain_env(self) -> dict[str, str]:
         """Environment both phases must agree on, so a fetch survives into the run.
@@ -466,7 +478,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             name,
             "--read-only",
             "-v",
-            f"{self._mounts.source_root}:/workspace:ro",
+            f"{self._mounts.source_root}:/workspace:{self._workspace_mode()}",
             "-v",
             f"{self._mounts.cache_root}:/cache:rw",
             # Also mounted here, not only in the execute phase: a build tool needs a writable HOME,
@@ -507,9 +519,15 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             name,
             "--read-only",
             "-v",
-            f"{self._mounts.source_root}:/workspace:ro",
+            f"{self._mounts.source_root}:/workspace:{self._workspace_mode()}",
             "-v",
             f"{self._mounts.scratch_root}:/scratch:rw",
+            # An overlay is discarded with the container, so reports must land outside it.
+            *(
+                ["-v", f"{self._mounts.scratch_root / 'target'}:/workspace/target:rw"]
+                if self._workspace_mode() == "O"
+                else []
+            ),
             # The prepared environment lives on the cache mount, and the execute phase did not
             # attach it at all — so even with a correct `PATH` there was nothing at `/cache/venv`
             # to find. Mounted READ-ONLY here: execution runs untrusted code and has no business

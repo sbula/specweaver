@@ -151,7 +151,7 @@ class TestBuildFailedWithoutResults:
     tool that fails to compile prints a great deal to stdout and exits non-zero, so it slips past that
     check — and then a JUnit report directory with no XML in it harvests as `0 passed, 0 failed`.
 
-    Measured 2026-08-18 against real Maven: a Kotlin project whose compiler rejected the JDK produced
+    real Maven: a Kotlin project whose compiler rejected the JDK produced
     `BUILD FAILURE`, exit 1, and `TestRunResult(passed=0, failed=0, errors=0, total=0)`. That is the
     same vacuous success `TECH-032` removed from the other direction.
 

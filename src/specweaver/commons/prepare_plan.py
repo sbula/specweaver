@@ -268,26 +268,41 @@ def _plan_for_other(toolchain: str, source_root: Path) -> PreparePlan:
                         "-q",
                         "-B",
                         f"-Dmaven.repo.local={_MAVEN_REPO}",
-                        "dependency:go-offline",
+                        # A full `test`, because surefire picks its *provider* at execution time
+                        # from the framework it detects: `surefire-junit4` appears in no POM, and
+                        # neither `go-offline` nor `test -DskipTests` fetches it. Without it the
+                        # offline run dies on `Cannot access central … in offline mode`. The cost
+                        # is that the suite runs here too, once per manifest change.
+                        "-Dmaven.test.failure.ignore=true",
+                        "test",
                     ),
                 ),
             ),
-            # `HOME` because the image defaults it to `/root`, which the sandbox's non-root user
-            # cannot write — Maven fails at `mkdir /root` before it compiles anything.
-            env={"MAVEN_REPO_LOCAL": _MAVEN_REPO, "HOME": "/scratch"},
-            # Maven 3.9 reads `MAVEN_ARGS`, so the run goes offline against the fetched repository
-            # without the QA runner needing to know it is inside a sandbox. The build directory is
-            # redirected for the same reason as Rust's: the default `target/` is under `/workspace`,
-            # which is read-only.
-            execute_env={"MAVEN_ARGS": f"-o -Dmaven.repo.local={_MAVEN_REPO}"},
+            # `HOME` and `MAVEN_CONFIG` because the image points both at `/root`, which the
+            # non-root sandbox user cannot create. The image's entrypoint runs
+            # `mkdir -p "${MAVEN_CONFIG}/repository"` before Maven starts, so without this the
+            # run fails before a line is compiled, naming a path that is nowhere in the project.
+            env={
+                "MAVEN_REPO_LOCAL": _MAVEN_REPO,
+                "HOME": "/scratch",
+                "MAVEN_CONFIG": "/scratch/.m2",
+            },
+            # Maven 3.9 reads `MAVEN_ARGS`, so the run goes offline against the fetched
+            # repository without the QA runner needing to know it is inside a sandbox.
+            # `forkCount=0` runs the tests in Maven's own JVM. Surefire forks a second one by
+            # default, and inside the sandbox's memory and pid budget that fork dies with *"The
+            # forked VM terminated without properly saying goodbye"*. Isolation between tests is
+            # weaker, which matters little here: the run is already inside a container of its own.
+            execute_env={
+                "MAVEN_ARGS": f"-o -Dmaven.repo.local={_MAVEN_REPO} -DforkCount=0",
+            },
             warnings=(
-                "Maven dependencies are resolved now and the test run is offline. A plugin that "
-                "`dependency:go-offline` does not pre-fetch — some resolve at execution — will fail "
-                "in the execute phase, which has no network.",
-                "Running Maven inside the sandbox is NOT yet verified: the fetch succeeds, but "
-                "surefire fails in the execute phase because a JVM build writes to `target/` inside "
-                "the project and `/workspace` is read-only. Run JVM QA on the host until that is "
-                "resolved.",
+                "Maven dependencies are resolved now and the reported run is offline. A plugin "
+                "that resolves anything further at execution time will fail there, since it has no "
+                "network.",
+                "The suite also runs once while preparing, because surefire resolves its provider "
+                "at execution time and no offline-preparation goal fetches it. Only the second, "
+                "offline run is reported.",
             ),
         )
     return PreparePlan(

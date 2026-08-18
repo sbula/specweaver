@@ -13,9 +13,9 @@ for the single most common failure that line is:
 message names an artefact they cannot inspect, while saying nothing about why pytest is absent or
 what would make it present.
 
-This is not an edge case. Measured across the 150 most-downloaded PyPI packages, 101 of 121
-resolvable repositories would reach the sandbox without pytest installed — 81 never declare it in
-`pyproject.toml` at all. It is the first thing most new targets will say.
+This is not an edge case. Of the 121 resolvable repositories among the 150 most-downloaded PyPI
+packages, 101 reach the sandbox without pytest installed and 81 never declare it in
+`pyproject.toml` at all — so this is the first thing most new targets say.
 """
 
 from __future__ import annotations

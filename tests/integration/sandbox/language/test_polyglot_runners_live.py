@@ -3,7 +3,7 @@
 
 """The Rust, Java and Kotlin runners against their real toolchains.
 
-**Nothing had ever run them unmocked.** Measured 2026-08-18: no test in the repository gated on
+**Nothing had ever run them unmocked.** no test in the repository gated on
 `shutil.which("cargo" | "java" | "kotlinc" | "mvn")`, so all five language runners were proven only
 against mocked executors — and the four fixtures under `tests/fixtures/` that look like projects hold
 no source files at all. They are language-detection stubs, so no test could have run them even if one

@@ -156,10 +156,15 @@ _UV_IMAGE = "ghcr.io/astral-sh/uv:python3.12-bookworm"
 
 
 _RUST_IMAGE = "docker.io/library/rust:1-slim"
+_MAVEN_IMAGE = "docker.io/library/maven:3-eclipse-temurin-21"
 
 
 def _rust_image_available() -> bool:
     return _image_available(_RUST_IMAGE)
+
+
+def _maven_image_available() -> bool:
+    return _image_available(_MAVEN_IMAGE)
 
 
 def _uv_image_available() -> bool:
@@ -468,17 +473,65 @@ class TestPrepareAndExecuteShareAnEnvironment:
         assert "Declare pytest" in message, message
 
 
+_POM = """<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>probe</groupId><artifactId>probe</artifactId><version>1.0</version>
+  <properties><maven.compiler.source>17</maven.compiler.source>
+  <maven.compiler.target>17</maven.compiler.target>
+  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+  <dependencies><dependency><groupId>junit</groupId><artifactId>junit</artifactId>
+  <version>4.13.2</version><scope>test</scope></dependency></dependencies>
+</project>
+"""
+
+
 class TestNonPythonToolchainsRunInTheContainer:
     """Rust and Maven inside the sandbox, which is what `US-03` P-4 has been waiting for.
 
-    The prepare phase existed for Python only, so these projects reached an execute phase that has
-    `--network none` with nothing fetched. The mount layout already allowed the fix: `/cache` is
-    read-write while preparing and read-only during the run, `/scratch` is read-write during the run,
-    and `/workspace` is read-only throughout — so dependencies are fetched once and builds write to
-    scratch, never into the project.
+        The prepare phase existed for Python only, so these projects reached an execute phase that has
+        `--network none` with nothing fetched. The mount layout already allowed the fix: `/cache` is
+        read-write while preparing and read-only during the run, `/scratch` is read-write during the run,
+        and `/workspace` is read-only throughout — so dependencies are fetched once and builds write to
+        scratch, never into the project.
 
-    Proves: TECH-031 FR-17
+        Proves: TECH-031 FR-17
+    Proves: TECH-031 FR-18
     """
+
+    @pytest.mark.skipif(not _maven_image_available(), reason=f"{_MAVEN_IMAGE} not present locally")
+    def test_a_java_project_runs_inside_the_sandbox(self, tmp_path: Path) -> None:
+        """Four container-only defects stood between this and a green run, each measured:
+
+        the image's entrypoint creating `MAVEN_CONFIG=/root/.m2` as a non-root user; `target/`
+        landing under a read-only `/workspace`; surefire resolving its *provider* at execution time,
+        which no offline-preparation goal fetches; and its forked VM dying inside the sandbox's
+        memory budget.
+        """
+        project = tmp_path / "java"
+        (project / "src" / "test" / "java").mkdir(parents=True)
+        (project / "pom.xml").write_text(_POM, encoding="utf-8")
+        (project / "src" / "test" / "java" / "ProbeTest.java").write_text(
+            "import org.junit.Test;\nimport static org.junit.Assert.assertEquals;\n"
+            "public class ProbeTest {\n"
+            "  @Test public void works(){ assertEquals(42,42); }\n"
+            "  @Test public void broken(){ assertEquals(42,41); }\n}\n",
+            encoding="utf-8",
+        )
+        sandbox = project / ".specweaver" / ".sandbox"
+        mounts = ContainerMounts(
+            source_root=project, scratch_root=sandbox / "scratch", cache_root=sandbox / "cache"
+        )
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
+
+        result = JavaRunner(
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_MAVEN_IMAGE),
+        ).run_tests(".", timeout=1800)
+
+        assert (result.passed, result.failed) == (1, 1), result
+        assert "expected:<42> but was:<41>" in result.failures[0].message, result.failures[0]
+        assert not (project / "target").exists(), "the build wrote into the user's source tree"
+        assert list(sandbox.rglob("surefire-reports/*.xml")), "reports did not survive the overlay"
 
     @pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo not installed")
     @pytest.mark.skipif(not _rust_image_available(), reason=f"{_RUST_IMAGE} not present locally")
