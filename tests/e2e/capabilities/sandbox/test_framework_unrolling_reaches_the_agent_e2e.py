@@ -21,11 +21,10 @@ Rust parser `get("/orders")` — while every schema key is a bare name (`GetMapp
 parameterised annotation can ever match, and routing annotations nearly always carry a path.
 Argument-less ones (`@RestController`, `@Transactional`, JAX-RS `@GET`) work; the rest are unreachable.
 
-The failing test for it is written and held back rather than committed against the wrong blocker.
-`TECH-064` covers polyglot *architecture checks* returning success while doing nothing, which is a
-different subject in a different capability, and attaching this to it would pass
-`check_xfail_blockers.py` mechanically while being wrong. It needs its own ticket, and minting one is
-not a decision to take mid-test.
+That is `TECH-065`, minted for it on 2026-08-18 and pinned below as a strict `xfail`. It was held back
+for a commit rather than attached to `TECH-064` — which covers polyglot *architecture checks* returning
+success while doing nothing, a different subject in a different capability. Pointing the marker there
+would have satisfied `check_xfail_blockers.py` mechanically while being wrong.
 """
 
 from __future__ import annotations
@@ -110,3 +109,29 @@ def test_the_same_file_without_the_schema_is_left_raw(spring_project: Path) -> N
     assert "@ResponseBody" not in symbol, (
         f"the generic archetype invented framework meaning it has no schema for:\n{symbol}"
     )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "blocked on TECH-065 — an annotation carrying arguments is extracted with them attached "
+        '(`GetMapping("/orders/{id}")`, `get("/orders")`) while every schema key is a bare name '
+        "(`GetMapping:`, `get:`), so no parameterised annotation ever matches"
+    ),
+)
+def test_a_parameterised_annotation_is_unrolled_too(spring_project: Path) -> None:
+    """The half that does not work, written now because the interface is fully defined.
+
+    Routing annotations almost always carry a path, so this is not an edge case — it is most of what a
+    framework schema exists for. `spring-boot.yaml` maps `GetMapping` to
+    `@RequestMapping(method = RequestMethod.GET)`, and that mapping is unreachable today.
+
+    `strict=True` so it converts to a real pass the moment the defect is fixed, rather than sitting
+    green and unnoticed. The marker comes off then; the test stays.
+    """
+    result = _tool(spring_project, "spring-boot").read_unrolled_symbol(
+        "src/OrderController.java", "OrderController.find"
+    )
+
+    symbol = (result.data or {}).get("symbol", "") if result.data else ""
+    assert "RequestMethod.GET" in symbol, f"`@GetMapping` reached the agent unexplained:\n{symbol}"

@@ -686,3 +686,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
     *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `[ ]` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
+    *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)

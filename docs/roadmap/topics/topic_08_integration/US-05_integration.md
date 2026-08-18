@@ -92,7 +92,7 @@
   | P-1 | AST markers evaluated against declarative YAML schemas; the language gate; cascading `>>{...}<<` resolution under a depth cap | single feature | `B-INTL-02` | yes — **done** | — |
   | P-2 | Seam: an agent's `read_unrolled_symbol` intent reaches the evaluator through the code-structure atom, and the unrolled logic comes back attached to the symbol | cross-module | `B-INTL-02` | yes — **done** | — |
   | P-3 | Seam: a project's own `.specweaver/evaluators/*.yaml` are discovered by the loader and injected into the validation handler | cross-module | `B-INTL-02` | yes — **done** | — |
-  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | `B-INTL-02` | partly — see below | parameterised annotations never match a schema |
+  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | `B-INTL-02` | partly — see below | `TECH-065` — parameterised annotations never match a schema |
 
   **This entry was the second of three marked `✅` while citing no test file**, reopened by
   `TECH-060` FR-3. All five FRs are now cited and each is behind a killed mutant —
@@ -126,7 +126,8 @@
   path. Argument-less ones (`@RestController`, `@Transactional`, JAX-RS `@GET`) match; the rest are
   unreachable, which is why the Actix sample unrolls nothing at all.
 
-  The failing test for it is written and **deliberately not committed**, because the only existing
-  ticket that looked close — `TECH-064` — covers polyglot *architecture checks*, a different subject in
-  a different capability. Attaching it there would satisfy `check_xfail_blockers.py` mechanically while
-  being wrong. It needs its own ticket.
+  That is **`TECH-065`**, minted for it the same day, and the failing case is now pinned as a strict
+  `xfail` naming it — so the marker comes off and the test stands on its own the moment the defect is
+  fixed. It was held back for one commit rather than attached to `TECH-064`, which covers polyglot
+  *architecture checks* — a different subject in a different capability. Pointing the marker there would
+  have satisfied `check_xfail_blockers.py` mechanically while being wrong.

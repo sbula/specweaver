@@ -100,6 +100,13 @@ critical for long-term project viability.
   > **DELIVERED:** all tables prefixed; SF-03 landed 2026-08-11 (`4ebb89cf`) covering the six raw-sqlite3 tables with a zero-data-loss migration path.
 
 ## Context Loading & RunContext Anti-Patterns
+* **`TECH-065` 🔴: Parameterised Annotations Never Match a Framework Schema**
+  > [Description](../features/topic_07_technical_debt/TECH-065/TECH-065_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-05` P-4 test._ |
+  > Parsers extract `GetMapping("/orders/{id}")` and `get("/orders")`; every schema key is a bare name. So the argument-less
+  > subset unrolls (`@RestController`, `@Transactional`, JAX-RS `@GET`) and everything with a path does not — roughly half of
+  > each shipped schema, and nearly every routing annotation. The decision to take is whether an annotation's arguments are
+  > data worth keeping or noise to strip.
+
 * **`TECH-036` 🟢: Lineage Telemetry Takes Down a Lint Fix That Already Succeeded**
   > [Description](../features/topic_07_technical_debt/TECH-036/TECH-036_design.md) | _(2026-08-12 — found while measuring `TECH-016` §2.)_ | `LintFixHandler._llm_fix` opened the telemetry DB with no
   > `None` guard, so a lint fix that had already written its corrected file was reported as a failed step. **RESOLVED 2026-08-12 by `TECH-016` §2** without its own implementation: unifying the event
