@@ -69,3 +69,22 @@ def why_it_did_not_run(result: SubprocessResult, tool: str) -> str | None:
     if reason is None:
         return None
     return absent_module(result) or reason
+
+
+def supplied_note(executor: object) -> str:
+    """What to tell the reader when the runner was not the project's own.
+
+    A project that declares no test runner anywhere still gets one, so its suite can run at all.
+    That makes a green result an attestation about a version nobody chose, with none of the plugins
+    the suite may need — the one thing a caller must not have to infer.
+    """
+    supplied = getattr(executor, "supplied_toolchain", ())
+    if not supplied:
+        return ""
+    names = ", ".join(supplied)
+    return (
+        f"This run used {names} supplied by the sandbox: the project does not declare a test "
+        f"runner in pyproject.toml, tox.ini or any requirements file. The version is not declared "
+        f"by the project, and any plugins its tests rely on are absent, so a passing result "
+        f"describes this environment rather than the project's own."
+    )

@@ -60,6 +60,11 @@ _TEST_RUNNERS: tuple[str, ...] = ("pytest",)
 #: `uv sync` installs this group unasked. Requesting it again would be noise.
 _DEFAULT_GROUP = "dev"
 
+#: Installed only when the project names no runner anywhere. Bare: which plugins a suite needs
+#: is exactly what the project failed to say, so guessing at them would add arbitrary packages
+#: to an already arbitrary choice.
+_LAST_RESORT_RUNNER = "pytest"
+
 
 def _declares_a_runner(deps: list[object]) -> bool:
     """Whether a dependency-group's entries include something that can run a test suite."""
@@ -275,11 +280,21 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         # difference between an environment and none. Only when the manifest is silent: a project
         # that declares its runner has pinned it, and a second unpinned set over the top of a
         # locked resolution is worse than nothing.
-        fallback = (
-            None
-            if _manifest_declares_a_runner(manifest_text)
-            else declared_pytest(self._mounts.source_root)
-        )
+        declared = _manifest_declares_a_runner(manifest_text)
+        fallback = None if declared else declared_pytest(self._mounts.source_root)
+        # Last resort, and deliberately last: the project has named no runner anywhere this can
+        # read, so the sandbox installs one. Recorded rather than merely logged, because a green
+        # result then attests to a suite run against a version nobody chose.
+        self.supplied_toolchain = () if declared or fallback else (_LAST_RESORT_RUNNER,)
+        if self.supplied_toolchain:
+            logger.warning(
+                "ContainerSubprocessExecutor: %s declares no test runner in pyproject.toml, "
+                "tox.ini or any requirements file. Installing %s so the suite can run at all — "
+                "the version is the sandbox's choice, not the project's, and any plugins its "
+                "tests need are absent.",
+                self._mounts.source_root,
+                _LAST_RESORT_RUNNER,
+            )
 
         # Every input to the command belongs in the digest, or a changed input serves a stale
         # environment for ever: the manifest decides which `--group` flags are sent, and the
@@ -389,9 +404,23 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         ]
 
     def _fallback_step(self, fallback: ToolingSource | None) -> list[tuple[str, list[str]]]:
-        """Install what the project declared outside its manifest, if anything readable."""
+        """Install what the project declared outside its manifest — or, failing that, a runner."""
         if fallback is None:
-            return []
+            if not self.supplied_toolchain:
+                return []
+            return [
+                (
+                    "runner",
+                    [
+                        "uv",
+                        "pip",
+                        "install",
+                        "--python",
+                        _PREPARED_VENV,
+                        *self.supplied_toolchain,
+                    ],
+                )
+            ]
         logger.info(
             "ContainerSubprocessExecutor: pyproject.toml declares no test runner; installing the "
             "one declared in %s (%d package(s), %d file(s))",

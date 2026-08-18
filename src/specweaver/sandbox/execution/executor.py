@@ -104,6 +104,11 @@ class SubprocessExecutor:
         strip_credentials: If True, remove known API key env vars.
     """
 
+    #: Tooling this executor had to install because the project declared none. Empty for a plain
+    #: host executor, which installs nothing and substitutes nothing. Read by the QA runners so a
+    #: result can say whose toolchain produced it.
+    supplied_toolchain: tuple[str, ...] = ()
+
     def __init__(
         self,
         cwd: Path,

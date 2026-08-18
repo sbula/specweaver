@@ -603,3 +603,120 @@ class TestEnsurePreparedFallsBackToOtherDeclarationSites:
         assert prepare("pytest>=8\npytest-asyncio\n"), (
             "the requirements file changed and the stamp served the old environment anyway"
         )
+
+
+class TestEnsurePreparedSuppliesARunnerAsALastResort:
+    """Rung 3: 33 of 121 corpus repositories declare pytest nowhere this can read.
+
+    For them the sandbox installs pytest itself. This is the rung that changes what a green run
+    *means* — the version is ours, not the project's, and the plugins their suite may need are
+    absent — so it fires last, only when the project has said nothing, and it is recorded on the
+    executor so the result can carry it. A silent supply would be the same vacuous success this
+    whole ticket exists to remove, wearing a better disguise.
+    """
+
+    def _prepared(self, tmp_path: Path, monkeypatch, files: dict[str, str]):
+        mounts = _mounts(tmp_path)
+        for name, text in files.items():
+            path = mounts.source_root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        mock_execute = MagicMock(return_value=_ok_result())
+        monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
+        monkeypatch.setattr(
+            "specweaver.sandbox.execution.container_executor.shutil.which",
+            lambda name: f"/usr/bin/{name}",
+        )
+        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor._ensure_prepared()
+        steps = [
+            list(call.args[0])[list(call.args[0]).index("uv") :]
+            for call in mock_execute.call_args_list
+            if call.args and "uv" in call.args[0]
+        ]
+        return executor, steps
+
+    _SILENT = '[project]\nname = "t"\nversion = "0"\ndependencies = []\n'
+
+    def test_pytest_is_installed_when_the_project_declares_none(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        _, steps = self._prepared(
+            tmp_path, monkeypatch, {"pyproject.toml": self._SILENT, "uv.lock": "locked"}
+        )
+
+        assert any("pytest" in step for step in steps), (
+            f"the project names no runner anywhere, and none was supplied:\n{steps}"
+        )
+
+    def test_what_was_supplied_is_recorded_on_the_executor(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """A log line is not enough for this rung — the caller has to be able to say so in a report."""
+        executor, _ = self._prepared(
+            tmp_path, monkeypatch, {"pyproject.toml": self._SILENT, "uv.lock": "locked"}
+        )
+
+        assert executor.supplied_toolchain == ("pytest",), executor.supplied_toolchain
+
+    def test_a_project_that_declares_its_runner_is_left_alone(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """The control. Supplying our pytest on top of theirs would replace a pinned version with
+        an arbitrary one, and record nothing to say a substitution happened."""
+        executor, steps = self._prepared(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": self._SILENT.rstrip()
+                + '\n\n[dependency-groups]\ndev = ["pytest==8.0"]\n',
+                "uv.lock": "locked",
+            },
+        )
+
+        assert executor.supplied_toolchain == ()
+        assert not any(step[-1] == "pytest" for step in steps), steps
+
+    def test_a_declaration_we_can_read_beats_supplying_our_own(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Rung 2 wins over rung 3: `tox.ini` at least names versions the project chose."""
+        executor, steps = self._prepared(
+            tmp_path,
+            monkeypatch,
+            {
+                "pyproject.toml": self._SILENT,
+                "uv.lock": "locked",
+                "tox.ini": "[testenv]\ndeps =\n    pytest==7.4.0\n",
+            },
+        )
+
+        assert executor.supplied_toolchain == ()
+        flat = [" ".join(s) for s in steps]
+        assert any("pytest==7.4.0" in f for f in flat), flat
+
+
+class TestPythonQARunnerReportsASuppliedRunner:
+    """The recording is worthless unless it reaches the result the caller reads."""
+
+    @staticmethod
+    def _runner(tmp_path: Path, supplied: tuple[str, ...]):
+        from specweaver.sandbox.language.core.python.runner import PythonQARunner
+
+        executor = MagicMock(spec=SubprocessExecutor)
+        executor.execute.return_value = _ok_result(stdout="2 passed in 0.10s")
+        executor.supplied_toolchain = supplied
+        return PythonQARunner(cwd=tmp_path, executor=executor)
+
+    def test_a_green_run_says_whose_pytest_it_used(self, tmp_path: Path) -> None:
+        result = self._runner(tmp_path, ("pytest",)).run_tests(".", kind="")
+
+        assert result.passed == 2
+        assert "pytest" in result.toolchain_note
+        assert "not declared" in result.toolchain_note.lower(), result.toolchain_note
+
+    def test_an_ordinary_run_carries_no_note(self, tmp_path: Path) -> None:
+        """The control. A note on every run is a note nobody reads."""
+        result = self._runner(tmp_path, ()).run_tests(".", kind="")
+
+        assert result.toolchain_note == ""

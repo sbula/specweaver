@@ -244,41 +244,29 @@ class TestPrepareAndExecuteShareAnEnvironment:
         assert "pytest" in result.stdout.lower(), result.stdout
 
     @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
-    def test_a_project_that_declares_no_toolchain_fails_loudly(self, tmp_path: Path) -> None:
+    def test_a_project_with_no_manifest_fails_loudly(self, tmp_path: Path) -> None:
         """The control, and the half that used to look identical to success.
 
-        A project declaring no test runner must not produce a run that merely reports nothing. The
-        QA runner's own vacuous-success defect is fixed; this checks the layer beneath it, where the
-        prepare phase either builds an environment without pytest or fails outright — either way the
-        caller must be able to tell, which is exactly what a `logger.warning` denied it.
+        The fixture used to be a project with a `pyproject.toml` declaring no runner. That case no
+        longer reaches here: the sandbox now supplies pytest for it and says so on the result. What
+        remains genuinely unpreparable is a tree with **no manifest at all** — 22 of the 150 corpus
+        repositories, where `pyproject.toml` sits under a monorepo path or the project still uses
+        `setup.py`. There is nothing for `uv` to read, so no environment is built.
+
+        The guarantee is unchanged and still worth a test: an absent toolchain must not produce a
+        run that merely reports nothing, which is exactly what a `logger.warning` allowed.
         """
-        mounts = _mounts(tmp_path)
-        (mounts.source_root / "pyproject.toml").write_text(
-            '[project]\nname = "t"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
-            "dependencies = []\n",
-            encoding="utf-8",
+        project = tmp_path / "no-manifest"
+        project.mkdir()
+        (project / "test_it.py").write_text("def test_v() -> None:\n    assert True\n", "utf-8")
+        assert not (project / "pyproject.toml").exists()
+
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
         )
-        assert _LIVE_ENGINE is not None
-        subprocess.run(
-            [
-                _LIVE_ENGINE,
-                "run",
-                "--rm",
-                "-v",
-                f"{mounts.source_root}:/w:rw",
-                "--workdir",
-                "/w",
-                _UV_IMAGE,
-                "uv",
-                "lock",
-            ],
-            capture_output=True,
-            timeout=180,
-            check=True,
-        )
-        executor = ContainerSubprocessExecutor(
-            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
-        )
+        executor = ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE)
 
         result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
 
@@ -383,6 +371,48 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
 
     @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
+    def test_a_supplied_runner_runs_the_suite_and_says_so(self, tmp_path: Path) -> None:
+        """Rung 3, the one that changes what a green run means.
+
+        33 corpus repositories declare pytest nowhere readable. They now get one from the sandbox —
+        which is only defensible because the result says so. The two assertions carry equal weight:
+        the suite ran, *and* the caller is told the runner was not the project's.
+        """
+        project = tmp_path / "declares-nothing"
+        (project / "src" / "mypkg").mkdir(parents=True)
+        (project / "pyproject.toml").write_text(
+            '[project]\nname = "mypkg"\nversion = "0.1.0"\nrequires-python = ">=3.11"\n'
+            'dependencies = ["iniconfig"]\n\n'
+            '[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n',
+            encoding="utf-8",
+        )
+        (project / "src" / "mypkg" / "__init__.py").write_text("VALUE = 42\n", encoding="utf-8")
+        (project / "test_it.py").write_text(
+            "from mypkg import VALUE\n\n\ndef test_v() -> None:\n    assert VALUE == 42\n",
+            encoding="utf-8",
+        )
+
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
+        )
+        runner = PythonQARunner(
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+        )
+
+        result = runner.run_tests(".", kind="")
+
+        assert result.passed == 1 and result.errors == 0, (
+            f"no runner was supplied, so the suite could not run at all: {result}"
+        )
+        assert "supplied by the sandbox" in result.toolchain_note, (
+            "the run used a pytest the project never chose and the result does not say so — "
+            f"which is the vacuous success this ticket exists to remove: {result.toolchain_note!r}"
+        )
+
+    @pytest.mark.skipif(not _uv_image_available(), reason=f"{_UV_IMAGE} not present locally")
     def test_the_absent_toolchain_is_explained_to_the_caller(self, tmp_path: Path) -> None:
         """Failing loudly is not the same as failing usefully, and this is the majority path.
 
@@ -394,16 +424,25 @@ class TestPrepareAndExecuteShareAnEnvironment:
         Driven through `PythonQARunner` rather than the executor, because the wiring is the claim:
         the pure explainer has its own unit tests and passing them proves nothing about what a
         caller is handed.
+
+        The fixture is a tree with no manifest. A project that *has* one but declares no runner is
+        now supplied with pytest instead, so this message no longer reaches it — the message still
+        matters wherever no environment can be built at all.
         """
-        mounts = self._project(tmp_path, groups='dev = ["iniconfig"]')
+        project = tmp_path / "no-manifest"
+        project.mkdir()
+        (project / "test_it.py").write_text("def test_v() -> None:\n    assert True\n", "utf-8")
+        mounts = ContainerMounts(
+            source_root=project,
+            scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
+            cache_root=project / ".specweaver" / ".sandbox" / "cache",
+        )
         runner = PythonQARunner(
-            cwd=mounts.source_root,
-            executor=ContainerSubprocessExecutor(
-                cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
-            ),
+            cwd=project,
+            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
         )
 
-        result = runner.run_tests(".")
+        result = runner.run_tests(".", kind="")
 
         assert result.errors == 1 and result.passed == 0, (
             f"an absent toolchain did not report as an error: {result}"

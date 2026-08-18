@@ -144,6 +144,7 @@ reading it:
 | the absent toolchain explained as an internal path | the reason names the cause and the remedy | live podman + unit |
 | no `uv.lock`, so no environment at all | `uv venv` + `uv pip install` off the sync path | live podman + unit |
 | runner declared outside the manifest | `tox.ini` / `requirements*.txt` read when pyproject is silent | live podman + unit |
+| runner declared nowhere | the sandbox supplies pytest, and the result says so | live podman + unit |
 
 The cache is mounted **read-only** in the execute phase deliberately: that phase runs untrusted code
 and has no business writing into an environment the next run reuses.
@@ -346,6 +347,29 @@ All three Next Step questions are answered, two of them by work rather than argu
    Proven through `PythonQARunner` against live podman, not only as a pure function.
 3. **Whether the same assumption exists for the non-Python runners** — answered in Q3: it does not.
    Their own silent-success shape is a different root cause and is `TECH-032`.
+
+### Delivered: a supplied runner, disclosed on the result
+
+Rung 3, taken on the user's decision after the case against it was put twice. 33 corpus projects
+declare pytest nowhere readable; they now get it from the sandbox, for a ceiling of **83%** (100 of
+121). The remainder have no `pyproject.toml` at the repository root at all.
+
+The disclosure is the part that makes it defensible, and it is a field rather than a log line:
+`TestRunResult.toolchain_note` says the runner was supplied, that its version is not the project's,
+and that any plugins the suite needs are absent. `SubprocessExecutor.supplied_toolchain` is the seam
+— empty for a host executor, which substitutes nothing.
+
+**It cost two existing tests their premise, and they were repointed rather than deleted.** A project
+with a manifest can no longer *have* an absent toolchain, so `test_a_project_that_declares_no_toolchain_fails_loudly`
+and the absent-toolchain explanation test now run against a tree with **no manifest at all** — 22 of
+the 150 corpus repositories, where `pyproject.toml` sits under a monorepo path or the project still
+uses `setup.py`. The guarantee they encode is unchanged and still reachable; only the fixture that
+reaches it moved.
+
+Yield is partly measured, deliberately reported as such: of the 33, GitHub's unauthenticated rate
+limit allowed 16 trees to be read, and all 16 contain test files. Six of the 16 ship a `conftest.py`,
+where plugin imports live — those runs are the likeliest to trade one clear failure for a confusing
+one. 17 are unmeasured.
 
 **The one decision left is the third candidate approach: check the layout at configuration time.**
 It is now worth much less than when it was written. The failure a reader meets is already specific

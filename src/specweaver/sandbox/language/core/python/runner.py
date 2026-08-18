@@ -22,6 +22,9 @@ from specweaver.sandbox.execution.container_executor import (
     ContainerEngineUnavailableError,
     ContainerSubprocessExecutor,
 )
+from specweaver.sandbox.language.core.python.toolchain_absence import (
+    supplied_note as _supplied_note,
+)
 from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -183,6 +186,7 @@ class PythonQARunner(QARunnerInterface):
             failures=parsed["failures"],
             coverage_pct=parsed["coverage_pct"],
             duration_seconds=parsed.get("duration", result.duration_seconds),
+            toolchain_note=_supplied_note(self._executor),
         )
 
     def run_linter(

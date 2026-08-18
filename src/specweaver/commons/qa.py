@@ -36,6 +36,10 @@ class TestRunResult:
     failures: list[TestFailure] = field(default_factory=list)
     coverage_pct: float | None = None
     duration_seconds: float = 0.0
+    #: Set when the run did not use the project's own declared toolchain — because it declared
+    #: none and the sandbox supplied one. A green result then attests to a suite run against a
+    #: runner nobody chose, which the reader has to be told rather than left to assume.
+    toolchain_note: str = ""
 
     __test__ = False
 

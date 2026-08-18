@@ -165,6 +165,27 @@ Two ordering rules, both load-bearing:
   layering a `tox.ini` block over a locked resolution turns a reproducible run into a mixed one for
   no gain.
 
+## Rung 3, delivered: the sandbox supplies a runner, and says so
+
+33 projects declare pytest nowhere any of the above can read. They now get pytest from the sandbox,
+which takes the corpus to a ceiling of **83%** (100 of 121) — the remainder being projects whose
+`pyproject.toml` is not at the repository root at all.
+
+**This rung changes what a green run means, and that is why the disclosure is part of it.** The
+version is the sandbox's choice, not the project's, and the plugins a suite may need are absent. So
+the result carries a `toolchain_note` saying exactly that — not a log line, which nobody reads, but
+a field on the `TestRunResult` the caller already handles. A passing result then describes the
+sandbox's environment rather than the project's, and says so in the same object.
+
+It fires strictly last: after the manifest, after `tox.ini`, after every `requirements` file. A
+project that named a version — even an old one — has its own choice honoured.
+
+**What the yield actually is, is only partly measured.** Of the 33, GitHub's unauthenticated rate
+limit allowed 16 repository trees to be read. All 16 contain `test_*.py` or `*_test.py` files, so a
+supplied runner has something to run. Six of those 16 also ship a `conftest.py`, which is where
+plugin imports usually live — those are the runs most likely to trade *"no module named pytest"* for
+a collection error naming a plugin instead. The other 17 are unmeasured, not assumed.
+
 ## Dropping `--frozen` is not the fix
 
 Removing the flag raises the ceiling from 16.5% to at most **33.1%** — the share that declares pytest
