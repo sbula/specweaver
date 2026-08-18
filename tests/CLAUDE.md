@@ -44,6 +44,10 @@ The unit and integration tiers mirror `src/specweaver` package-for-package, with
 - Use `pytest-asyncio` with `asyncio_mode = "auto"` (configured in `pyproject.toml`).
 - Use `respx` for HTTP mocking, NOT `unittest.mock.patch` on HTTP clients.
 - Coverage target: 70-90%.
+- **`tests`, plural, is the name.** The tree, any directory in it, and any identifier naming a
+  collection of tests use the plural. The singular is correct in exactly two places: one test
+  (`test_name`, the `test_` function prefix), and a token a foreign tool mandates — `mvnw test`,
+  `cargo test`, Maven's `src/test/java`, the stdlib `test` module. Never as our own choice.
 
 ## Quick Commands
 
