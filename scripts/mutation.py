@@ -422,6 +422,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--install-timer", action="store_true", help="write the nightly systemd user units"
     )
+    ap.add_argument(
+        "--summary",
+        action="store_true",
+        help="re-render the last report as prose; runs nothing",
+    )
     ap.add_argument("--gate", action="store_true", help="decide whether findings have been read")
     ap.add_argument("--confirm", metavar="DERIVED_ID", help="record a decision about ONE finding")
     ap.add_argument("--as", dest="disposition", choices=_gate.DISPOSITIONS)
@@ -438,6 +443,14 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_gate(args)
     if args.install_timer:
         return _cmd_install()
+
+    if args.summary:
+        report = Path(args.out)
+        if not report.is_file():
+            print(f"no report at {report} — run the corpus first", file=sys.stderr)
+            return 1
+        print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
+        return 0
 
     paths = [Path(p) for p in args.corpus]
     if args.corpus_dir:
@@ -462,7 +475,14 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    print(f"report: {out}")
+
+    # The nightly's journal used to carry a path and nothing else, so a FAILED run looked identical
+    # to a clean one until somebody opened the file. The verdict travels with the run now.
+    summary = _report.render_summary(document)
+    readable = out.with_suffix(".md")
+    readable.write_text(summary + "\n", encoding="utf-8")
+    print(summary)
+    print(f"\nreport: {out}\nsummary: {readable}")
     if campaigns:
         # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
         # able to run days later against a ledger that already knows how long a finding has been here.

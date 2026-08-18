@@ -28,6 +28,7 @@ gate's call, not this file's.
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from typing import Any
 
 #: A sandbox path. `_mutate` and `mutation` both build sandboxes under the system temp directory
@@ -90,6 +91,104 @@ def _as_dict(result: Any) -> dict[str, Any]:
     }
 
 
+def _age(generated_at: str, now: str | None) -> str:
+    """How old this evidence is, in words a reader will notice.
+
+    `--gate` reported CLEAR for two days against a report from before the change it was judging. The
+    file's mtime knew; the document did not, and the document is what gets read. So the age travels
+    with the verdict.
+    """
+    if not generated_at:
+        return "age unknown — this report predates `generated_at`"
+    if now is None:
+        now = datetime.now(UTC).isoformat()
+    try:
+        delta = datetime.fromisoformat(now) - datetime.fromisoformat(generated_at)
+    except ValueError:
+        return "age unknown — unparseable timestamp"
+    days, hours = delta.days, delta.seconds // 3600
+    if days >= 1:
+        return f"{days} day{'s' if days != 1 else ''} old — CHECK THIS IS STILL THE CODE YOU MEAN"
+    if hours >= 1:
+        return f"{hours} hour{'s' if hours != 1 else ''} old"
+    return "fresh"
+
+
+def render_summary(document: dict[str, Any], now: str | None = None) -> str:
+    """The report as prose, derived from the same document the JSON holds.
+
+    A pure function of `document`, deliberately: the JSON stays the single source of truth and this is
+    a view of it, so the two cannot drift. Written because the machine-readable format was hand-parsed
+    three times in one session and produced a confident wrong answer each time — `dict.get` returns a
+    default rather than raising, so a mistyped key reads as a zero. A reader with a parse in hand can
+    check it against this.
+
+    Only failures are listed individually. Twenty-six passing lines would bury the two that matter,
+    which is how "no tests were collected for this scope" sat unread for two days.
+    """
+    summary = document.get("summary", {})
+    campaigns = document.get("campaigns", [])
+    counts = summary.get("counts", {})
+    baseline = summary.get("baseline") or {}
+
+    lines = [
+        "MUTATION REPORT",
+        f"  verdict      {summary.get('verdict', '?')}",
+        f"  generated    {summary.get('generated_at', '(none)')}  ({_age(summary.get('generated_at', ''), now)})",
+        f"  commit       {summary.get('head', '?')}"
+        + (
+            "  **TREE WAS DIRTY — this verdict describes no commit**"
+            if summary.get("dirty")
+            else ""
+        ),
+    ]
+
+    if baseline:
+        green = baseline.get("green")
+        state = "green" if green else f"NOT GREEN ({baseline.get('failed', '?')} failed)"
+        lines.append(f"  baseline     {state}")
+        if not green:
+            lines.append(
+                "               every verdict below is meaningless while the baseline is red"
+            )
+
+    lines += [
+        f"  mutants      {summary.get('declared', 0)} declared, {summary.get('returned', 0)} returned"
+        f"  (pass {counts.get('pass', 0)}, fail {counts.get('fail', 0)},"
+        f" indeterminate {counts.get('indeterminate', 0)},"
+        f" stale {counts.get('stale', 0)}, broken {counts.get('broken', 0)})",
+        "",
+    ]
+
+    if not campaigns:
+        lines.append("  no campaigns ran — this is not the same as everything passing")
+        return "\n".join(lines)
+
+    lines.append(f"  {len(campaigns)} campaign(s):")
+    for campaign in campaigns:
+        mark = " " if campaign.get("verdict") == "PASSED" else "!"
+        lines.append(
+            f"   {mark} {campaign.get('feature', '?'):<12} {campaign.get('requirement', '?'):<6}"
+            f" {campaign.get('verdict', '?'):<8}"
+            f" {campaign.get('mutants_declared', 0)} declared"
+        )
+
+    failures = [
+        result
+        for campaign in campaigns
+        for result in campaign.get("results", [])
+        if result.get("verdict") != "PASS"
+    ]
+    if failures:
+        lines += ["", f"  {len(failures)} mutant(s) not passing:"]
+        for result in failures:
+            reason = result.get("reason") or "(no reason recorded)"
+            lines.append(f"    {result.get('derived_id', '?')}")
+            lines.append(f"      {result.get('verdict', '?')}: {reason}")
+
+    return "\n".join(lines)
+
+
 def build_report(
     *,
     campaigns: list[dict[str, Any]],
@@ -109,6 +208,9 @@ def build_report(
 
     document = {
         "summary": {
+            # First field for the same reason the summary is first: a reader who stops early must
+            # still learn how old the evidence is. Its absence is why `--gate` read CLEAR for two days.
+            "generated_at": datetime.now(UTC).isoformat(),
             "head": head,
             "dirty": dirty,
             "verdict": "FAILED" if "FAILED" in verdicts else ("PASSED" if verdicts else "NOT_RUN"),
