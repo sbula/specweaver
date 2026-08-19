@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "feature": "E-VAL-03",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Instruction-shaped text is recognised",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_injection.py"
+      ],
+      "mutants": [
+        {
+          "id": "detector-blind",
+          "file": "src/specweaver/infrastructure/llm/injection.py",
+          "symbol": "_first_match",
+          "old": "return min(matches, key=lambda found: found.start()) if matches else None",
+          "new": "return None",
+          "breaks": "no line ever matches, so every payload passes through untouched"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The payload's object goes with its verb",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_injection.py",
+        "tests/unit/infrastructure/llm/test_injection_boundary.py"
+      ],
+      "mutants": [
+        {
+          "id": "truncate-to-match",
+          "file": "src/specweaver/infrastructure/llm/injection.py",
+          "symbol": "redact_injections",
+          "old": "lines[index] = body[: found.start()] + MARKER + line[len(body) :]",
+          "new": "lines[index] = body[: found.start()] + MARKER + body[found.end() :] + line[len(body) :]",
+          "breaks": "only the matched verb is removed, so 'and drop the database' still reaches the model"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The prompt declares the redaction",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_injection_boundary.py"
+      ],
+      "mutants": [
+        {
+          "id": "silent-redaction",
+          "file": "src/specweaver/infrastructure/llm/prompt/adapter.py",
+          "symbol": "FilePromptAdapter.get_prompt_content",
+          "old": "attrs += f' redacted=\"{len(redaction.findings)}\"'",
+          "new": "attrs += \"\"",
+          "breaks": "the file is altered and nothing in the prompt says so"
+        }
+      ]
+    }
+  ]
+}

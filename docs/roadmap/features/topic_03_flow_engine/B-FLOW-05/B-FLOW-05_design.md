@@ -70,7 +70,10 @@ worth pinning: moving it inside would silently make the breaker retryable.
 |---|-----|-------------|
 | NFR-1 | Fail closed | A ceiling of `0` refuses everything. Disabling is `null` and nothing else, so a mistyped limit cannot open the gate |
 | NFR-2 | Scope | One budget per `TelemetryCollector`, which `create_llm_adapter` builds once per CLI invocation or API request — so the ceiling is per run, which is the unit a loop runs away in |
-| NFR-3 | Cost | Two additions and two comparisons per call |
+
+`NFR-3` ("two additions and two comparisons per call") was deleted rather than marked. It was
+an implementation note wearing a requirement's clothes: nothing about the product changes if it
+is false, so there was no claim to prove.
 
 ## Non-Goals
 

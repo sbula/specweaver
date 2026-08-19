@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "feature": "C-VAL-05",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "A project's rubric outranks the shipped default",
+      "scope": [
+        "tests/unit/assurance/validation/test_rubrics.py",
+        "tests/unit/core/flow/handlers/test_review_rubric_seam.py",
+        "tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "override-ignored",
+          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "symbol": "_candidates",
+          "old": "roots.insert(0, (project_dir / \".specweaver\" / \"rubrics\", True))",
+          "new": "pass",
+          "breaks": "the project directory is never searched, so an override is silently ignored"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A verdict is traceable to the criteria that produced it",
+      "scope": [
+        "tests/unit/assurance/validation/test_rubrics.py"
+      ],
+      "mutants": [
+        {
+          "id": "frozen-checksum",
+          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "symbol": "load_rubric",
+          "old": "checksum=hashlib.sha256(criteria.encode(\"utf-8\")).hexdigest(),",
+          "new": "checksum=\"constant\",",
+          "breaks": "an edited rubric reports the same checksum, so the audit trail records nothing"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "An override cannot break the response parser",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_review_rubric_seam.py",
+        "tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "contract-dropped",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "resolve_review_instructions",
+          "old": "return review_instructions(rubric.criteria)",
+          "new": "return rubric.criteria",
+          "breaks": "the output format never reaches the model, so the verdict parser has nothing to read"
+        }
+      ]
+    }
+  ]
+}

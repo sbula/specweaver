@@ -3,7 +3,7 @@
 
 """How rigid a step runs is policy, and criticality overrules the pipeline author.
 
-Proves: C-FLOW-11 FR-1, C-FLOW-11 FR-2
+Proves: C-FLOW-11 FR-1, C-FLOW-11 FR-2, C-FLOW-11 NFR-2
 
 Execution rigidity was an architectural constant: every generation step is one LLM call and every
 fix loop is hand-rolled. That over-delivers ceremony for a throwaway script and under-delivers for

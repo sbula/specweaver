@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "feature": "B-SENS-03",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "A symbol is chunked once, as a whole",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py"
+      ],
+      "mutants": [
+        {
+          "id": "nested-not-filtered",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_top_level",
+          "old": "return [name for name in symbols if \".\" not in name]",
+          "new": "return symbols",
+          "breaks": "a parser listing a method before its class consumes the method's text first, so the whole class is skipped"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "An oversized symbol splits rather than truncating",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py",
+        "tests/unit/workspace/analyzers/test_chunking_properties.py"
+      ],
+      "mutants": [
+        {
+          "id": "split-truncates",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_split",
+          "old": "return parts or [text]",
+          "new": "return [parts[0]] if parts else [text]",
+          "breaks": "only the first slice of a long function is indexed and the rest is lost silently"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "An unreadable file is still indexed",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py"
+      ],
+      "mutants": [
+        {
+          "id": "parser-failure-drops-file",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        symbols = []",
+          "new": "        return []",
+          "breaks": "a file whose parser raises vanishes from the index with no signal"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Nothing is dropped",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py",
+        "tests/unit/workspace/analyzers/test_chunking_properties.py"
+      ],
+      "mutants": [
+        {
+          "id": "preamble-dropped",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        if head.strip():",
+          "new": "        if False:",
+          "breaks": "imports and the module docstring never reach the index"
+        }
+      ]
+    }
+  ]
+}

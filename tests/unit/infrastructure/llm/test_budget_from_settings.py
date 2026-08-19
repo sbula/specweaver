@@ -3,7 +3,7 @@
 
 """The ceilings come from configuration, and a default install already has them.
 
-Proves: B-FLOW-05 FR-5
+Proves: B-FLOW-05 FR-5, B-FLOW-05 NFR-2
 
 A breaker that ships disabled protects nobody, and the queue entry's premise is that nothing
 currently caps spend at all. So the default is finite rather than `None`: generous enough that an

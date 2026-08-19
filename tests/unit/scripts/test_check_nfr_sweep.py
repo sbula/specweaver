@@ -127,3 +127,66 @@ class TestMain:
 
     def test_list_mode_reports_without_judging(self, sweep: ModuleType) -> None:
         assert sweep.main(["--list"]) == 0
+
+
+class TestNewSince:
+    """The baseline tracks WHICH NFRs are uncited, not how many.
+
+    A count is a budget, and a budget can be spent. Measured 2026-08-19: the repo sat at 120
+    uncited against a frozen 138, so eighteen new uncited NFRs could be added while the gate
+    reported "none new" — and fourteen were, in one session, by the agent that later found it.
+    The headroom belonged to whoever did the cleanup that created it; it was silently transferred
+    to whoever came next.
+
+    An identity set cannot be spent. A new uncited NFR is new whatever anyone else fixed.
+    """
+
+    def test_a_new_uncited_nfr_is_new_even_when_the_total_falls(self, sweep: ModuleType) -> None:
+        """The exact hole. Two rows cleaned, one added: the count improves, and the gate must
+        still refuse the addition."""
+        before = {"A-AAA-01 NFR-1", "A-AAA-01 NFR-2", "A-AAA-01 NFR-3"}
+        after = {"A-AAA-01 NFR-1", "B-BBB-02 NFR-9"}
+
+        assert len(after) < len(before)
+        assert sweep.new_since(before, after) == {"B-BBB-02 NFR-9"}
+
+    def test_clearing_rows_alone_is_not_a_regression(self, sweep: ModuleType) -> None:
+        """The control: cleanup must stay free."""
+        before = {"A-AAA-01 NFR-1", "A-AAA-01 NFR-2"}
+
+        assert sweep.new_since(before, {"A-AAA-01 NFR-1"}) == set()
+
+
+class TestLoadBaselineIdentities:
+    """`write_baseline` / `load_baseline_identities` — the ratchet's memory."""
+
+    def test_an_identity_survives_a_freeze_round_trip(
+        self, sweep: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A ratchet that cannot reload what it wrote degrades to no ratchet at all."""
+        baseline = tmp_path / "nfr_uncited.json"
+        monkeypatch.setattr(sweep, "BASELINE", baseline)
+        identities = {"A-AAA-01 NFR-1", "B-BBB-02 NFR-9"}
+
+        sweep.write_baseline(identities)
+
+        assert sweep.load_baseline_identities() == identities
+
+    def test_a_missing_baseline_admits_it_rather_than_passing_everything(
+        self, sweep: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An empty set would make every existing row look new; `None` lets the caller say so."""
+        monkeypatch.setattr(sweep, "BASELINE", tmp_path / "absent.json")
+
+        assert sweep.load_baseline_identities() is None
+
+
+class TestCensusIdentities:
+    """`census_identities` — the live read the gate judges."""
+
+    def test_the_live_repo_reports_identities_not_just_a_number(self, sweep: ModuleType) -> None:
+        """Guards the wiring: `census_identities` must actually read the tree."""
+        identities = sweep.census_identities()
+
+        assert identities
+        assert all(" NFR-" in i for i in identities)

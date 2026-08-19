@@ -3,7 +3,7 @@
 
 """An agentic step iterates with tools, and cannot iterate for ever.
 
-Proves: C-FLOW-11 FR-3, C-FLOW-11 FR-4, C-FLOW-11 FR-5
+Proves: C-FLOW-11 FR-3, C-FLOW-11 FR-4, C-FLOW-11 FR-5, C-FLOW-11 NFR-2, C-FLOW-11 NFR-3
 
 An agent loop is the shape that runs away. It is also the reason `B-FLOW-05` was built first: the
 spend ceiling is one of this loop's two bounds, and without it "iterate until converged" is an

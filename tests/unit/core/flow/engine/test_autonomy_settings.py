@@ -3,7 +3,7 @@
 
 """The dial is configuration and pipeline syntax, not a constant in Python.
 
-Proves: C-FLOW-11 FR-1, C-FLOW-11 FR-2
+Proves: C-FLOW-11 FR-1, C-FLOW-11 FR-2, C-FLOW-11 NFR-1
 
 A dial nothing can turn is an architectural constant with extra steps. Two surfaces have to exist
 for the capability to be real: a pipeline step can name its mode, and an install can set the

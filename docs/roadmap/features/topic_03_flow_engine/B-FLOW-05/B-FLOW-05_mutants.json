@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "feature": "B-FLOW-05",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Spend accumulates against the ceiling",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
+      ],
+      "mutants": [
+        {
+          "id": "spend-not-counted",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.record",
+          "old": "self._spent_usd += cost_usd",
+          "new": "self._spent_usd += 0.0",
+          "breaks": "the run's cost stays at zero for ever, so the breaker never trips"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The expensive tool path is refused too",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
+      ],
+      "mutants": [
+        {
+          "id": "tool-path-unchecked",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "self._budget.check()",
+          "new": "pass",
+          "breaks": "a spent run can still make tool calls, which is the costliest path of the three"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A tripped breaker reaches the operator",
+      "scope": [
+        "tests/unit/workflows/test_budget_error_propagates.py"
+      ],
+      "mutants": [
+        {
+          "id": "reviewer-swallows",
+          "file": "src/specweaver/workflows/review/reviewer.py",
+          "symbol": "Reviewer._execute_review",
+          "old": "        except BudgetExceededError:",
+          "new": "        except KeyboardInterrupt:",
+          "breaks": "the breaker is no longer re-raised, so it falls through to the broad handler and is relabelled as a review verdict of ERROR"
+        }
+      ]
+    }
+  ]
+}

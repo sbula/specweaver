@@ -65,7 +65,7 @@ would send the model no standard, and it would still return a verdict.
 |---|-----|-------------|
 | NFR-1 | Format | Markdown with a small frontmatter, parsed by two regexes. A rubric is prose with a label; a YAML dependency would make the criteria harder to edit, not easier |
 | NFR-2 | Precedence | A project's plain rubric outranks a shipped DAL variant — an override that names no DAL still means *use mine* |
-| NFR-3 | Boundary | The loader lives in `assurance.validation`; `workflows.review` reaches only `infrastructure.llm`, so the handler composes and the reviewer stays unaware |
+| NFR-3 | Boundary | The loader lives in `assurance.validation`; `workflows.review` reaches only `infrastructure.llm`, so the handler composes and the reviewer stays unaware. **[proof: arch — `tach check`, not pytest: the expose list and `depends_on` are what enforce it]** |
 
 ## Non-Goals
 

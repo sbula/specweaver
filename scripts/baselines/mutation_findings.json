@@ -1,28 +1,7 @@
 {
   "findings": {
-    "TECH-054 FR-2 bootstrap-prints-its-schema-again": {
-      "runs": 2
-    },
-    "TECH-054 FR-1 resume-restarts-from-step-zero": {
-      "runs": 2
-    },
-    "TECH-054 FR-1 discovery-finds-nothing": {
-      "runs": 2
-    },
-    "TECH-054 FR-2 log-records-return-to-stdout": {
-      "runs": 2
-    },
-    "TECH-054 FR-1 latest-becomes-oldest": {
-      "runs": 2
-    },
-    "TECH-054 FR-2 the-active-project-never-changes": {
-      "runs": 2
-    },
-    "TECH-054 FR-1 project-filter-inverted": {
-      "runs": 2
-    },
-    "TECH-054 FR-1 resumable-filter-inverted": {
-      "runs": 2
+    "E-VAL-03 FR-1 detector-blind": {
+      "runs": 1
     }
   },
   "override_count": 0

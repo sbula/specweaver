@@ -3,7 +3,7 @@
 
 """A run cannot spend without limit.
 
-Proves: B-FLOW-05 FR-1, B-FLOW-05 FR-4, B-FLOW-05 FR-5
+Proves: B-FLOW-05 FR-1, B-FLOW-05 FR-4, B-FLOW-05 FR-5, B-FLOW-05 NFR-1
 
 Economic denial of service is the failure this prevents: a loop that never terminates bills until
 somebody notices. The engine has three live loops — the autonomous flow, the dual-pipeline

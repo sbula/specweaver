@@ -54,6 +54,7 @@ import importlib.util
 import json
 import re
 import sys
+import typing
 from pathlib import Path
 
 _cit_spec = importlib.util.spec_from_file_location(
@@ -169,8 +170,39 @@ def uncited_from(text: str, cited: set[str]) -> int:
     return len(set(behavioural_nfrs_from_text(text)) - cited)
 
 
+def uncited_identities_from(text: str, story: str, cited: set[str]) -> set[str]:
+    """`{"<STORY> NFR-N", ...}` for this design's uncited behavioural NFRs."""
+    return {f"{story} {nfr}" for nfr in set(behavioural_nfrs_from_text(text)) - cited}
+
+
+def new_since(baseline: set[str], live: set[str]) -> set[str]:
+    """Uncited NFRs present now and absent from the baseline.
+
+    Set difference, never a comparison of totals. A count is a budget and a budget can be spent:
+    the repo sat at 120 against a frozen 138, so eighteen new uncited NFRs could be added while
+    the gate reported no regression. Fourteen were, in a single session. Cleanup by one author
+    silently financed new debt by the next.
+    """
+    return live - baseline
+
+
 def _design(story: str) -> Path | None:
     return next(FEATURES.rglob(f"{story}/{story}_design.md"), None)
+
+
+def census_identities() -> set[str]:
+    """Every uncited behavioural NFR in the tree, by identity."""
+    delivered = delivered_stories()
+    found: set[str] = set()
+    for design in sorted(FEATURES.rglob("*_design.md")):
+        story = design.parent.name
+        if story not in delivered:
+            continue
+        text = design.read_text(encoding="utf-8", errors="replace")
+        if not behavioural_nfrs_from_text(text):
+            continue
+        found |= uncited_identities_from(text, story, cited_nfrs_in_tests(TESTS, story))
+    return found
 
 
 def census() -> dict[str, int]:
@@ -193,8 +225,39 @@ def census() -> dict[str, int]:
 def load_baseline() -> int:
     if not BASELINE.exists():
         return 0
-    data: dict[str, int] = json.loads(BASELINE.read_text(encoding="utf-8"))
-    return int(data.get("uncited_nfrs", 0))
+    data: dict[str, object] = json.loads(BASELINE.read_text(encoding="utf-8"))
+    return int(typing.cast("int", data.get("uncited_nfrs", 0)))
+
+
+def load_baseline_identities() -> set[str] | None:
+    """The frozen identities, or `None` when there is no identity baseline to compare against.
+
+    `None` rather than an empty set on purpose: empty would make every existing row look new and
+    fail the gate for everyone, which is how a ratchet gets switched off.
+    """
+    if not BASELINE.exists():
+        return None
+    data: dict[str, object] = json.loads(BASELINE.read_text(encoding="utf-8"))
+    frozen = data.get("uncited")
+    if not isinstance(frozen, list):
+        return None
+    return {str(item) for item in frozen}
+
+
+def write_baseline(identities: set[str]) -> None:
+    BASELINE.parent.mkdir(parents=True, exist_ok=True)
+    BASELINE.write_text(
+        json.dumps(
+            {
+                "schema": 2,
+                "uncited_nfrs": len(identities),
+                "uncited": sorted(identities),
+            },
+            indent=2,
+        )
+        + "\n",
+        "utf-8",
+    )
 
 
 def _print_marked() -> None:
@@ -228,12 +291,11 @@ def main(argv: list[str] | None = None) -> int:
     live = census()
     total = sum(live.values())
 
+    identities = census_identities()
+
     if args.freeze:
-        BASELINE.parent.mkdir(parents=True, exist_ok=True)
-        BASELINE.write_text(
-            json.dumps({"uncited_nfrs": total, "designs": len(live)}, indent=2) + "\n", "utf-8"
-        )
-        print(f"froze {total} uncited behavioural NFR(s) across {len(live)} design(s)")
+        write_baseline(identities)
+        print(f"froze {len(identities)} uncited behavioural NFR(s) across {len(live)} design(s)")
         return 0
 
     if args.list:
@@ -242,14 +304,32 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{total} uncited behavioural NFR(s) across {len(live)} design(s)")
         return 0
 
-    frozen = load_baseline()
-    if total > frozen:
+    baseline = load_baseline_identities()
+    if baseline is None:
         print(
-            f"NFR sweep: {total} uncited behavioural NFR(s), was {frozen} — "
-            f"REGRESSION of {total - frozen}\n"
+            "NFR sweep: no identity baseline — run `--freeze` once to record which NFRs are "
+            "uncited today.",
+            file=sys.stderr,
         )
-        for story, count in sorted(live.items(), key=lambda kv: (-kv[1], kv[0]))[:10]:
-            print(f"  {count:3}  {story}")
+        return 2
+
+    arrived = new_since(baseline, identities)
+    cleared = baseline - identities
+    if cleared:
+        print(
+            f"{len(cleared)} uncited NFR(s) cleared — re-freeze with --freeze to bank it:\n  "
+            + "\n  ".join(sorted(cleared)[:10])
+            + "\n"
+        )
+
+    if arrived:
+        print(
+            f"NFR sweep: {len(arrived)} NEW uncited behavioural NFR(s) "
+            f"({len(identities)} total, baseline {len(baseline)}):\n"
+        )
+        for identity in sorted(arrived):
+            print(f"  {identity}")
+        print()
         print(
             "\nAn NFR with no test is a promise nothing checks — and NFRs are where the security, "
             "isolation and performance claims live. Four legitimate answers, one that is not:\n"
@@ -264,7 +344,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"NFR sweep: {total} uncited behavioural NFR(s) across {len(live)} design(s), none new")
+    print(
+        f"NFR sweep: {len(identities)} uncited behavioural NFR(s) across {len(live)} design(s), "
+        "none new"
+    )
     return 0
 
 

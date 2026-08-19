@@ -3,7 +3,7 @@
 
 """Judgment criteria are content a project can edit; the engine contract is not.
 
-Proves: C-VAL-05 FR-1, C-VAL-05 FR-2, C-VAL-05 FR-3, C-VAL-05 FR-4
+Proves: C-VAL-05 FR-1, C-VAL-05 FR-2, C-VAL-05 FR-3, C-VAL-05 FR-4, C-VAL-05 NFR-1, C-VAL-05 NFR-2
 
 "Rules as code, rubrics as content" cuts one line: **what counts as good** is content, **how the
 verdict is read** is code. A project that dislikes a review criterion should not need a SpecWeaver

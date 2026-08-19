@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "feature": "C-FLOW-11",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "Criticality overrules the pipeline author",
+      "scope": [
+        "tests/unit/core/flow/engine/test_autonomy_dial.py"
+      ],
+      "mutants": [
+        {
+          "id": "dal-ignored",
+          "file": "src/specweaver/core/flow/engine/autonomy.py",
+          "symbol": "resolve_execution_mode",
+          "old": "if DALLevel(dal).rank > DALLevel(ceiling).rank:",
+          "new": "if False:",
+          "breaks": "a DAL-A target runs agentic whenever the pipeline asks for it"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "An agentic work unit actually iterates",
+      "scope": [
+        "tests/unit/core/flow/engine/test_work_unit.py"
+      ],
+      "mutants": [
+        {
+          "id": "tools-never-run",
+          "file": "src/specweaver/core/flow/engine/work_unit.py",
+          "symbol": "InProcessAgentRuntime.run",
+          "old": "result = await self._dispatcher.execute(call.name, call.args)",
+          "new": "result = {}",
+          "breaks": "requested tools are never executed, so the agent iterates over nothing"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The loop cannot run away",
+      "scope": [
+        "tests/unit/core/flow/engine/test_work_unit.py"
+      ],
+      "mutants": [
+        {
+          "id": "turn-ceiling-lifted",
+          "file": "src/specweaver/core/flow/engine/work_unit.py",
+          "symbol": "InProcessAgentRuntime.run",
+          "old": "for turn in range(1, self._max_turns + 1):",
+          "new": "for turn in range(1, 10_000):",
+          "breaks": "the configured turn ceiling is ignored, so an agent that never converges never stops"
+        }
+      ]
+    }
+  ]
+}

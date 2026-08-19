@@ -40,7 +40,7 @@ end, dropping the attribute, and dropping the log each fail the tests that claim
 
 | # | NFR | Requirement |
 |---|-----|-------------|
-| NFR-1 | Cost | Precompiled patterns, one pass per line; the adapter's existing 10MB file ceiling bounds the work |
+| NFR-1 | Cost | One pass per line, and the input is bounded: `FilePromptAdapter` refuses a file over 10MB **before** reading or scanning it |
 | NFR-2 | Determinism | Pure text in, text out — no model call, no network, no clock |
 
 ## Scope
