@@ -113,3 +113,28 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 **Current status**: SF-05 is complete and committed.
 **Next step**: Proceed with SF-06 or wrap up Feature 3.20b.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+
+## Proof strengthened 2026-08-19
+
+`TECH-041` named this capability: *"`C-VAL-03` is `✅` and its DAL override is proven link by link,
+never as a chain."* That ticket closed the code-level override. Re-reading the other four citations
+found the same shape twice more, and both are now crossed:
+
+**FR-4** was cited by `test_dal_merge.py`, which writes a `dal_definitions.yaml`, loads settings and
+asserts `is_enabled("S01") is False` — the override **parsed and attached**. Nothing asserted the
+rule then fails to run, which is what the FR promises. Measured before writing the test: the same
+module validates against 10 rules with no file and 9 with one disabling `C08`. So the chain worked
+and was unproven; `tests/integration/core/flow/handlers/test_dal_definitions_disable_a_rule.py`
+proves it, and mutating either end — the project file never read, or the tier's constraints never
+merged — fails it.
+
+**FR-5** was cited by `test_tach_and_forbids_merged`, which **patches `_run_tach_check`** and hands
+the merge a hand-built result. FR-5's claim is that isolation is *outsourced to the native boundary
+linter*, so the mocked half was the claim.
+`tests/integration/sandbox/language/test_boundary_linter_merge.py` runs real `tach` over a real
+project beside a real `forbids` entry and asserts both kinds of finding return from one call.
+Dropping either source, or skipping the linter, fails it.
+
+**The remaining three are honestly tiered.** FR-1 and FR-3 are e2e already. FR-2 is a decomposition
+prompt claim — an agent proposes a DAL per component — and its unit citation asserts the proposal is
+made, which is where that behaviour lives.
