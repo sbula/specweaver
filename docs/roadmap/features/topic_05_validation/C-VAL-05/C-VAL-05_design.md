@@ -2,57 +2,80 @@
 
 - **Feature ID**: C-VAL-05
 - **Epic**: Topic 05 (Validation Engine)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: Architecture-direction review (2026-07-21, Steve Bula + Claude) — the "middle way" between
-  hardcoded rules and flexible skills: keep the battery **engine** hardcoded (guarantees), externalize the
-  **semantic judgment content** as editable rubric files (skill-shaped knowledge).
+- **Status**: ✅ Delivered — this document is a **record**, not a plan.
 - **DAL**: C (Enterprise Standard)
 
-## Problem Statement
+## What shipped
 
-The validation battery is mostly the *right kind* of hardcoding — 21 of 23 rules are mechanical (syntax,
-tests-pass, coverage, import direction, type hints, traceability...). But the **semantic** rules are prompts
-wearing a Python costume: `s03_stranger.py` (stranger test) and `s07_test_first.py` embed their LLM judgment
-criteria in code, and the review handlers' rubrics are likewise frozen in handler prompts. Consequences:
-editing judgment criteria requires a code change + release; projects cannot tune criteria to their domain;
-the criteria cannot improve independently of the engine; and the same pattern will repeat for every future
-semantic check (`B-VAL-03` Semantic Test Completeness, `E-VAL-04` Multi-Stage Reviews).
+Semantic judgment criteria are markdown files under `src/specweaver/assurance/validation/rubrics/`.
+A project overrides any of them from `.specweaver/rubrics/`, the run's DAL selects a stricter
+variant where one is shipped, and every load carries the id, version, checksum and source path of
+the file that judged it.
 
-## Goal
+The line the feature draws: **what counts as good is content, how the verdict is read is code.**
+`REVIEW_OUTPUT_CONTRACT` in `workflows/review/reviewer.py` stays in Python because `_parse` depends
+on it, and `resolve_review_instructions` in the review handler joins the two halves.
 
-**Rules as code, rubrics as content.** The battery runner, rule IDs, verdict aggregation, DAL thresholds and
-strict-mode semantics stay hardcoded. Semantic rules load their judgment criteria from **markdown rubric
-files** (shipped defaults + per-project overrides), so:
+## The stub's premise was half stale
 
-1. `S03`/`S07` (and review criteria) become thin engine shims that apply a rubric file via the LLM — same
-   rule IDs, same battery, same reports, same gates.
-2. Rubrics are versioned, per-project overridable (`.specweaver/rubrics/` over shipped defaults), and
-   **DAL-gated** (e.g. stricter rubric variants selected at DAL-A/B; override authority may itself be
-   DAL-restricted).
-3. New semantic checks are added by *writing a rubric*, not a rule class — the extension point future
-   semantic capabilities (`B-VAL-03`, `E-VAL-04`, `B-INTL-08` Semantic Code Review) build on instead of
-   re-freezing prompts in Python.
+The stub named three targets: `S03` stranger-test, `S07` test-first, and the review criteria. Two of
+the three no longer hold, measured against the code on delivery:
 
-## Relationship
-- **Complements**: `C-FLOW-11` (graduated autonomy) — together they form the middle way: execution mode and
-  judgment content both become policy/content, while every guarantee stays code.
-- **Feeds**: `B-VAL-03`, `E-VAL-04`, `B-INTL-08` should be designed **rubric-first** on this substrate.
-- **Touches**: `assurance/validation` (rule shims + rubric loader), review workflow prompts; NOT the
-  mechanical rules, NOT the battery engine contract.
+- `s03_stranger.py` and `s07_test_first.py` both return `requires_llm = False`. They are regexes and
+  thresholds — `_EXT_LINK_RE`, `_WARN_THRESHOLD`, an abstraction-leak scan. There is no judgment
+  criterion in either, so there is nothing to externalize.
+- **No rule in the battery requires an LLM.** All 23 are mechanical, not 21 of 23.
 
-## Candidate Approaches (not yet designed)
-1. Rubric file format: plain markdown with a small frontmatter (id, version, dal_variants) — recommended;
-   resist inventing a DSL.
-2. Loader precedence: project `.specweaver/rubrics/<rule>.md` → shipped default; checksum recorded in the
-   validation report for auditability (DAL-C: *which* rubric judged this run must be traceable).
-3. Migration: S03 + S07 first (proof), then the review-handler criteria.
+The real frozen judgment was `SPEC_REVIEW_INSTRUCTIONS` and `CODE_REVIEW_INSTRUCTIONS`, defined in
+`reviewer.py` and consumed by the review handler. Each already contained the two halves as separate
+markdown sections — `## Review Criteria` and `## Output Format` — which is why the cut is clean.
 
-## Non-Goals (proposed, pending design)
-- Softening mechanical rules (C01–C13 and the 21 mechanical spec rules stay code).
-- Changing battery/report/gate contracts.
-- User-defined *rule IDs* (custom rules remain `D-VAL-02` territory; this externalizes judgment content of
-  existing/blessed semantic checks).
+So this capability externalizes the review criteria and builds the substrate. It does **not** convert
+`S03`/`S07`, because converting a regex to a rubric would replace a cheap deterministic check with an
+LLM call and call it progress.
 
-## Next Step
-Run `specweaver-design C-VAL-05`. Recommended first bite of the middle-way direction (low-risk, no execution
-path touched, establishes the "engine hard / content soft" precedent).
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Criteria are content, not code | System | Ships judgment criteria as markdown with `id` and `version` frontmatter, loaded by id | Changing what a review asks for is an edit to a file, not a code change and a release |
+| FR-2 | A project sets its own standard | System | Resolves `.specweaver/rubrics/<id>.md` ahead of the shipped default, per rubric | A team tunes criteria to its domain; an untouched project keeps the shipped criteria rather than losing them |
+| FR-3 | Risk selects the standard | System | Prefers `<id>.<DAL>.md` using the run's own resolved DAL, falling back to the default when no variant exists | A DAL-A spec is judged against catastrophic-failure criteria without a step parameter anyone must remember, and a DAL-D spec is not |
+| FR-4 | The verdict is auditable | System | Records id, version, sha256 of the criteria and the source path on every load | DAL-C can answer *which criteria produced this verdict*, and an edited rubric is visibly a different one |
+| FR-5 | The engine contract is not overridable | System | Keeps the response format in `REVIEW_OUTPUT_CONTRACT` and appends it to whatever criteria were loaded | An override cannot break the response parser — the failure mode would appear as a wrong verdict, not as a bad rubric |
+
+Proof is by citation in the test files, read by `check_fr_coverage.py`. Each FR is behind a killed
+mutant: ignoring the project override, ignoring the DAL variant, freezing the checksum, returning
+empty criteria instead of raising, and dropping the output contract each fail the tests that claim
+them.
+
+`FR-2` and `FR-5` are also proven at full distance by
+`tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py`, which runs
+`ReviewSpecHandler` against a recording adapter and reads what the model was actually sent. The
+unit tests cannot see the wiring being dropped — a correct `resolve_review_instructions` whose
+result is never passed to the prompt leaves them green, and hardcoding the criteria back into the
+handler fails all three of these.
+
+A missing rubric raises `RubricNotFound` rather than resolving to empty criteria. Empty criteria
+would send the model no standard, and it would still return a verdict.
+
+## Non-Functional Requirements
+
+| # | NFR | Requirement |
+|---|-----|-------------|
+| NFR-1 | Format | Markdown with a small frontmatter, parsed by two regexes. A rubric is prose with a label; a YAML dependency would make the criteria harder to edit, not easier |
+| NFR-2 | Precedence | A project's plain rubric outranks a shipped DAL variant — an override that names no DAL still means *use mine* |
+| NFR-3 | Boundary | The loader lives in `assurance.validation`; `workflows.review` reaches only `infrastructure.llm`, so the handler composes and the reviewer stays unaware |
+
+## Non-Goals
+
+- Softening mechanical rules. C01–C13 and the spec rules stay code.
+- Changing the battery, report or gate contracts.
+- User-defined rule IDs — that remains `D-VAL-02`.
+- Converting `S03`/`S07`. See the premise section: there is no judgment content in either.
+
+## What this is the substrate for
+
+`B-VAL-03`, `E-VAL-04` and `B-INTL-08` should be designed rubric-first on this loader rather than
+freezing new prompts in Python. The extension point is a markdown file plus a `load_rubric` call,
+not a rule class.

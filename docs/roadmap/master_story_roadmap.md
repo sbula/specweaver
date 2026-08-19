@@ -114,8 +114,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
-    *   🔴 **Rubrics-as-Content:**
-        *   `[ ]` **C-VAL-05:** Rubrics-as-Content Validation
+    *   🟢 **Rubrics-as-Content:**
+        *   `✅` **C-VAL-05:** Rubrics-as-Content Validation
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
 

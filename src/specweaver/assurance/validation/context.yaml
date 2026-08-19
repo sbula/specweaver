@@ -49,6 +49,10 @@ exposes:
   - pipeline_loader.load_pipeline_yaml
   - pipeline_loader.resolve_pipeline_name
   - registry
+  - rubrics
+  - rubrics.Rubric
+  - rubrics.RubricNotFoundError
+  - rubrics.load_rubric
   - rules
   - spec_kind
 

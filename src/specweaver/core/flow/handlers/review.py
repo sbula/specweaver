@@ -141,6 +141,67 @@ def _inject_resolved_mentions(messages: list[Any], context: RunContext) -> None:
             )
 
 
+def resolve_review_instructions(context: RunContext, rubric_id: str) -> str:
+    """Load the criteria that should judge this run and join them to the parser's contract.
+
+    The project's own `.specweaver/rubrics/` wins over the shipped defaults, and the run's DAL
+    selects a stricter variant where one exists. A rubric that cannot be found is not silently
+    replaced by empty criteria — an unjudged review that reports a verdict is worse than a
+    failure.
+    """
+    from specweaver.assurance.validation.rubrics import load_rubric
+    from specweaver.workflows.review.reviewer import review_instructions
+
+    rubric = load_rubric(
+        rubric_id,
+        project_dir=context.project_path,
+        dal=context.isolation.dal_level,
+    )
+    logger.debug(
+        "Review rubric %s v%s (%s) from %s",
+        rubric.id,
+        rubric.version,
+        rubric.checksum[:12],
+        rubric.source,
+    )
+    return review_instructions(rubric.criteria)
+
+
+async def _build_review_prompt(
+    context: RunContext,
+    step: PipelineStep,
+    rubric_id: str,
+    *,
+    extra_targets: list[str] | None = None,
+) -> Any:
+    """Assemble what a review step sends: skeleton context, criteria, topology.
+
+    Raises `ValueError` when the step names a render profile that does not exist; the caller turns
+    that into a step failure.
+    """
+    from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
+    from specweaver.core.flow.handlers.base import _build_base_prompt
+    from specweaver.core.flow.handlers.context_assembler import (
+        evaluate_and_fetch_skeleton_context,
+    )
+
+    targets: list[str] = list(context.graph.api_contract_paths or [])
+    for target in extra_targets or []:
+        if target not in targets:
+            targets.append(target)
+    skeleton_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
+    base_prompt = await _build_base_prompt(
+        context,
+        resolve_review_instructions(context, rubric_id),
+        profile=resolve_profile(step.params.get("render_profile"), default=FULL),
+        skeleton_files=skeleton_files,
+    )
+    if context.graph.topology:
+        base_prompt.add_topology([context.graph.topology])
+    return base_prompt
+
+
 class ReviewSpecHandler:
     """Handler for review+spec — LLM-based spec review."""
 
@@ -164,29 +225,10 @@ class ReviewSpecHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import (
-                evaluate_and_fetch_skeleton_context,
-            )
-
-            targets = []
-            if context.graph.api_contract_paths:
-                targets.extend(context.graph.api_contract_paths)
-            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
-
-            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
-            from specweaver.core.flow.handlers.base import _build_base_prompt
-            from specweaver.workflows.review.reviewer import SPEC_REVIEW_INSTRUCTIONS
-
             try:
-                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+                base_prompt = await _build_review_prompt(context, step, "spec_review")
             except ValueError as e:
                 return _error_result(str(e), started)
-
-            base_prompt = await _build_base_prompt(
-                context, SPEC_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
-            )
-            if context.graph.topology:
-                base_prompt.add_topology([context.graph.topology])
 
             result = await reviewer.review_spec(
                 context.spec_path,
@@ -262,32 +304,15 @@ class ReviewCodeHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import (
-                evaluate_and_fetch_skeleton_context,
-            )
-
-            targets = []
-            if context.graph.api_contract_paths:
-                targets.extend(context.graph.api_contract_paths)
-            # also extract code target if reviewing code
-            if code_path and str(code_path) not in targets:
-                targets.append(str(code_path))
-            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
-
-            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
-            from specweaver.core.flow.handlers.base import _build_base_prompt
-            from specweaver.workflows.review.reviewer import CODE_REVIEW_INSTRUCTIONS
-
             try:
-                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+                base_prompt = await _build_review_prompt(
+                    context,
+                    step,
+                    "code_review",
+                    extra_targets=[str(code_path)] if code_path else None,
+                )
             except ValueError as e:
                 return _error_result(str(e), started)
-
-            base_prompt = await _build_base_prompt(
-                context, CODE_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
-            )
-            if context.graph.topology:
-                base_prompt.add_topology([context.graph.topology])
 
             result = await reviewer.review_code(
                 code_path,

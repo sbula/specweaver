@@ -63,39 +63,21 @@ class ReviewResult(BaseModel):
         return [f for f in self.findings if not f.below_threshold]
 
 
-# Instruction constants — extracted for reuse and testability
-SPEC_REVIEW_INSTRUCTIONS = """\
-You are a senior software architect reviewing a component specification.
-Your job is to evaluate whether this spec is CLEAR, COMPLETE, and IMPLEMENTABLE.
-
-## Review Criteria:
-1. **Clarity**: Is every term defined? Are there ambiguous statements?
-2. **Completeness**: Does it cover happy path AND error paths?
-3. **Implementability**: Can a developer write code from this spec WITHOUT guessing?
-4. **Testability**: Can tests be written from the Contract section alone?
-5. **Single Responsibility**: Does it describe ONE component doing ONE thing?
-
+#: How the response must be shaped for `_parse` to read it. This is engine contract, not
+#: judgment: a project that could edit it would break the parser, and the failure would surface
+#: as a wrong verdict rather than as a broken rubric. The criteria it is appended to are content
+#: and live in `assurance/validation/rubrics/`.
+REVIEW_OUTPUT_CONTRACT = """\
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
 For each finding, append a confidence score: [confidence: N] where N is 0-100.
 End with a one-line summary."""
 
-CODE_REVIEW_INSTRUCTIONS = """\
-You are a senior software engineer reviewing generated code against its source specification.
 
-## Review Criteria:
-1. **Spec Compliance**: Does the code implement what the spec describes?
-2. **Contract Match**: Do function signatures match the spec's Contract section?
-3. **Error Handling**: Are all error cases from the spec's Policy section handled?
-4. **No Hallucination**: Does the code add behavior NOT in the spec?
-5. **Test Coverage**: If tests are included, do they cover the spec's examples?
-
-## Output Format:
-Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
-Then list your findings, each on a new line starting with "- ".
-For each finding, append a confidence score: [confidence: N] where N is 0-100.
-End with a one-line summary."""
+def review_instructions(criteria: str) -> str:
+    """Join a rubric's criteria to the output contract the parser depends on."""
+    return f"{criteria.rstrip()}\n\n{REVIEW_OUTPUT_CONTRACT}"
 
 
 class Reviewer:

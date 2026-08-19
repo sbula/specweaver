@@ -54,11 +54,11 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`C-VAL-04` ✅: Traceability Matrix Check** (Legacy: 3.21)<br>
   > _(new)_ | Mathematically counts FRs/NFRs in the L3 spec and asserts exact matching `@traces(req_id)` tags in the AST of generated test files. Hard-fails pipeline if coverage is incomplete,
   > preventing "Correlated Hallucinations."
-* **`C-VAL-05` 🔜: Rubrics-as-Content Validation**<br>
-  > [Description](../features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) | _(new, 2026-07-21)_ | "Rules as code, rubrics as content": the battery engine (rule IDs, aggregation, DAL thresholds,
-  > strict mode) stays hardcoded, but the **semantic** judgment content — `S03` stranger-test, `S07` test-first, review criteria — externalizes to versioned markdown **rubric files** (shipped defaults
-  > + per-project `.specweaver/rubrics/` overrides, DAL-gated variants, checksums recorded in reports for auditability). Mechanical rules (21 of 23) stay code. The rubric substrate future semantic
-  > checks (`B-VAL-03`, `E-VAL-04`, `B-INTL-08`) should build on. Complements `C-FLOW-11` (the "middle way" pair).
+* **`C-VAL-05` ✅: Rubrics-as-Content Validation**<br>
+  > [Description](../features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) | _(new, 2026-07-21)_ | "Rules as code, rubrics as content": the review engine and its response contract stay code;
+  > the spec and code **review criteria** become versioned markdown rubrics — shipped defaults, per-project `.specweaver/rubrics/` overrides, DAL-gated variants, and id/version/checksum/source
+  > recorded on every load. **All 23 battery rules are mechanical** — `S03`/`S07` are `requires_llm = False` regexes with nothing to externalize, correcting the stub. The substrate `B-VAL-03`,
+  > `E-VAL-04` and `B-INTL-08` should build on. Complements `C-FLOW-11` (the "middle way" pair).
 
 * **`C-VAL-06` 🔜: Structural Code-Health Rules (Cognitive Complexity, God Object, Signature Shape)**<br>
   > [Description](../features/topic_05_validation/C-VAL-06/C-VAL-06_design.md) | _(2026-07-28 — user-driven metric review.)_ | The battery's structural signal is cyclomatic complexity, which largely

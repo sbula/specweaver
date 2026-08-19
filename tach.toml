@@ -163,7 +163,7 @@ expose = [ "dispatcher", "security", "base", "rule_atom", "git.core", "git.inter
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]
-expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline",]
+expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline", "rubrics", "rubrics.load_rubric", "rubrics.Rubric", "rubrics.RubricNotFoundError",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.interfaces",]
