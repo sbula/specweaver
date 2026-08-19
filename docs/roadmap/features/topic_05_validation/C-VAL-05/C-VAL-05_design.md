@@ -59,6 +59,18 @@ handler fails all three of these.
 A missing rubric raises `RubricNotFound` rather than resolving to empty criteria. Empty criteria
 would send the model no standard, and it would still return a verdict.
 
+## Requirement–Surface Bindings
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-2 | Project-override precedence, as already established for pipelines | `E-FLOW-02` · `profiles._custom_pipelines_dir(project_dir)` | read `src/specweaver/core/config/profiles.py:74` — `.specweaver/<kind>/` over the packaged directory |
+| FR-3 | The run's resolved criticality | `C-VAL-03` · `context.isolation.dal_level` | read `src/specweaver/core/flow/engine/isolation.py` — `seed_dal_level` resolves it once per run |
+| FR-5 | The response format the verdict parser depends on | `E-INTL-03` · `reviewer.REVIEW_OUTPUT_CONTRACT` | read `src/specweaver/workflows/review/reviewer.py` — `_parse` reads `VERDICT:` and `[confidence: N]` |
+
+`workflows.review` may depend only on `infrastructure.llm` (`tach.toml`), so it cannot load a
+rubric itself. The handler composes — which is why `FR-5` is proven at the handler, and end to end
+at e2e, not inside the reviewer.
+
 ## Non-Functional Requirements
 
 | # | NFR | Requirement |

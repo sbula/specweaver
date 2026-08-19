@@ -36,6 +36,17 @@ Proof is by citation in the test files, read by `check_fr_coverage.py`. Each FR 
 mutant: neutering the detector, flagging every line, truncating to the match instead of the line
 end, dropping the attribute, and dropping the log each fail the tests that claim them.
 
+## Requirement–Surface Bindings
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-2 | The point every file-shaped context passes through | `E-INTL-01` · `FilePromptAdapter.get_prompt_content()` | read `src/specweaver/infrastructure/llm/prompt/adapter.py` — `add_file`, `add_file_context`, `add_mentioned_files` and the skeleton path all render there |
+| FR-2 | The escaping applied after redaction | `E-INTL-01` · `escaping.apply_escaping(text, strategy)` | read `src/specweaver/infrastructure/llm/escaping.py` — structural only, so it passes an intact instruction through every strategy |
+| FR-4 | The untrusted/trusted split | `E-INTL-01` · `PromptBuilder.add_instructions()` | read `src/specweaver/infrastructure/llm/prompt/adders.py` — instructions carry what SpecWeaver and the user wrote, so they are not scanned |
+
+All three are inside `infrastructure.llm`, so no `tach` boundary is crossed and the proof stays at
+unit tier.
+
 ## Non-Functional Requirements
 
 | # | NFR | Requirement |

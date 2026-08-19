@@ -1,11 +1,4 @@
 {
-  "findings": {
-    "B-FLOW-05 FR-2 tool-path-unchecked": {
-      "runs": 1
-    },
-    "E-VAL-03 FR-1 detector-blind": {
-      "runs": 2
-    }
-  },
+  "findings": {},
   "override_count": 0
 }

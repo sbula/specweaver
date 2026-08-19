@@ -49,6 +49,17 @@ Three guards survived their first mutants, meaning three tests were decoration:
   the remainder path, not the `except`. Only a stub that genuinely raises reaches it.
 - **The empty-input early return** was genuinely dead and was deleted rather than tested.
 
+## Requirement–Surface Bindings
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-1 | The symbols in a file | `B-SENS-02` · `CodeStructureInterface.list_symbols(code)` | read `src/specweaver/workspace/ast/parsers/_reading.py:222` — returns scoped names, so `Beta.go` arrives beside `Beta` |
+| FR-1 | Each symbol's exact source | `B-SENS-02` · `CodeStructureInterface.extract_symbol(code, name)` | read `src/specweaver/workspace/ast/parsers/interfaces.py:52` |
+
+Both are inside `workspace`, which `workspace.analyzers` already depends on, so no boundary moves.
+The parser is passed in rather than resolved, so this feature consumes no factory and no language
+table — which is what `NFR-1` asserts and a stub parser proves.
+
 ## Non-Functional Requirements
 
 | # | NFR | Requirement |

@@ -64,6 +64,20 @@ Only `Reviewer._execute_review` genuinely wraps the call, and it converted every
 changed. The tests for the other two remain, because "the call is outside the `try`" is a property
 worth pinning: moving it inside would silently make the breaker retryable.
 
+## Requirement–Surface Bindings
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-1 | Per-call cost and tokens | `C-FLOW-01` · `telemetry.create_usage_record(...) -> UsageRecord` | read `src/specweaver/infrastructure/llm/telemetry.py` — carries `estimated_cost_usd` and `total_tokens` |
+| FR-1 | Why a token ceiling is not redundant | `C-FLOW-01` · `telemetry.estimate_cost(model, usage, overrides)` | read the same file — returns `0.0` for a model absent from the cost table, so cost alone cannot bound it |
+| FR-2 | The one place every adapter is wrapped | `E-INTL-01` · `factory.create_llm_adapter(settings, telemetry_project=...)` | read `src/specweaver/infrastructure/llm/factory.py` — the sole `TelemetryCollector` construction site |
+| FR-3 | The broad handler the breaker must survive | `E-INTL-03` · `Reviewer._execute_review` | read `src/specweaver/workflows/review/reviewer.py` — caught every exception and returned `ReviewVerdict.ERROR` |
+
+`FR-3` crosses `infrastructure.llm` → `workflows.review`, so it is a **seam FR** and is proven at
+integration tier by `tests/integration/workflows/test_budget_breaker_integration.py`. The unit test
+beside it uses a stub that raises on call, which proves the re-raise but never builds a collector
+or spends a budget.
+
 ## Non-Functional Requirements
 
 | # | NFR | Requirement |

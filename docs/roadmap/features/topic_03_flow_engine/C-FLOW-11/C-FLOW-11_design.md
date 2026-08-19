@@ -55,6 +55,21 @@ best-effort, so a settings object without the attribute would otherwise take the
 policy down with it. That regression was introduced and caught by the API's own policy tests
 before it left the branch.
 
+## Requirement–Surface Bindings
+
+| FR | Data needed | Provider · surface | Verified how |
+|---|---|---|---|
+| FR-2 | The run's resolved criticality and its ordering | `C-VAL-03` · `DALLevel.rank` | read `src/specweaver/commons/enums/dal.py` — `rank` is what lets "at least as strict as" be expressed |
+| FR-2 | The composition root that freezes run policy | `C-EXEC-06` · `isolation.apply_isolation_policy(context, settings, logger)` | read `src/specweaver/core/flow/engine/isolation.py` — already serves both `sw run`/`sw resume` and the API endpoints |
+| FR-3 | A tool loop over the run's own adapter | `E-INTL-01` · `LLMAdapter.generate_with_tools(messages, config, dispatcher)` | read `src/specweaver/infrastructure/llm/adapters/base.py` |
+| FR-3 | Tool execution | `E-SENS-01` · `ToolDispatcherProtocol.execute(name, args)` | read `src/specweaver/infrastructure/llm/models.py:247` |
+| FR-4 | The spend half of the bound, free of extra wiring | `B-FLOW-05` · `TelemetryCollector.budget` | read `src/specweaver/infrastructure/llm/collector.py` — the factory has already wrapped the adapter |
+
+`FR-2` crosses `core.config` → `core.flow.engine.isolation` → `core.flow.engine.autonomy`, so it is
+a **seam FR** and is proven at integration tier by
+`tests/integration/core/flow/engine/test_autonomy_policy_integration.py`. The dial's unit tests
+build the policy by hand and would not notice the composition root dropping it.
+
 ## Non-Functional Requirements
 
 | # | NFR | Requirement |
