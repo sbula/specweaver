@@ -4,9 +4,24 @@
 """Integration tests for DAG orchestration: fan-out of decomposed components, dependency
 starvation, and collision handling.
 
+Proves: C-FLOW-03 FR-1, C-FLOW-03 FR-2, C-FLOW-03 FR-5, C-FLOW-03 FR-6
+
 Split out of `test_planning_integration.py`, which had grown past the file-size limit. That
 file covers planning through to prompts and generators; this one covers what the orchestrator
 does with a decomposition once it has one.
+
+**The tag was missing, not the coverage.** These tests existed and spanned the seam while
+`check_fr_coverage.py C-FLOW-03` saw unit tests only, so US-18 and US-19 both read as owing an
+integration proof they already had. Each claim was verified by mutating the orchestrator before it
+was written down here:
+
+* FR-1 / FR-6 — `graph[name] = set(comp.get("dependencies", []))` -> `set()`, so nothing is ever
+  starved and a failure bubbles nowhere: `test_integration_starvation_and_dependency_bubble_up`
+  fails.
+* FR-2 — the `node_impacts.intersection(running_impacts)` guard forced false, so overlapping impact
+  chains start together: `test_integration_topological_collision_deferment` fails.
+* FR-5 — either `deferred_joins.append(step_dict)` dropped or the Wave N guard forced to skip:
+  `test_integration_topological_join_wave_n_deferred` fails on both.
 """
 
 import json
