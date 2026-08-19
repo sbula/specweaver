@@ -3,7 +3,7 @@
 
 """The whole boundary chain in one run: what a project declares is what gets enforced against it.
 
-Proves: INT-US-01-SF02 P-7
+Proves: D-SENS-01 FR-1, INT-US-01-SF02 P-7
 
 `C-EXEC-01` and `C-EXEC-03` are cited link by link and this journey was the last row of
 `INT-US-01-SF02`'s inventory left open. Every link had a test; the chain did not, and the gap was not
@@ -27,6 +27,13 @@ the thing the project's own declaration forbids, before the check is asked about
 Filed under `assurance` because the journey's outcome is an assurance verdict. Its middle links belong
 to `workspace` (topology, sync) and `sandbox` (the runner), so no single capability folder is the
 honest home — the story owns it, and `ADR-004` clause 3 says so.
+
+**Why `D-SENS-01`'s first requirement is claimed here.** This chain begins by reading the project's
+`context.yaml` files, and nothing hand-authors what comes after it. Emptying the walk —
+`project_root.rglob("context.yaml")` to an empty list — fails
+`test_declared_boundaries_become_the_config_that_catches_the_violation`. US-20's first path is that
+link, and it was cited at unit tier only while this ran green on every commit.
+
 """
 
 from __future__ import annotations
