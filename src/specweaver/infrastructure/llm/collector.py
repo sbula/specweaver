@@ -19,6 +19,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.async_bridge import run_sync
+from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import CostEntry, UsageRecord, create_usage_record
@@ -50,11 +51,18 @@ class TelemetryCollector:
         adapter: LLMAdapter,
         project: str,
         cost_overrides: dict[str, CostEntry] | None = None,
+        budget: SpendBudget | None = None,
     ) -> None:
         self._adapter = adapter
         self._project = project
         self._cost_overrides = cost_overrides
         self._records: list[UsageRecord] = []
+        self._budget = budget or SpendBudget(limit_usd=None)
+
+    @property
+    def budget(self) -> SpendBudget:
+        """The run's spend ceiling. Every generation path checks it before sending."""
+        return self._budget
 
     # ------------------------------------------------------------------
     # Generation proxies (telemetry captured per call)
@@ -66,6 +74,7 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> LLMResponse:
         """Proxy ``generate()`` — captures timing and usage."""
+        self._budget.check()
         start = time.monotonic()
         response = await self._adapter.generate(messages, config)
         self._capture(config, response, time.monotonic() - start)
@@ -79,6 +88,7 @@ class TelemetryCollector:
         on_tool_round: Any = None,
     ) -> LLMResponse:
         """Proxy ``generate_with_tools()`` — captures cumulative usage."""
+        self._budget.check()
         start = time.monotonic()
         response = await self._adapter.generate_with_tools(
             messages,
@@ -100,6 +110,7 @@ class TelemetryCollector:
         accumulated text.  ``prompt_tokens`` is 0 for streaming calls
         (exact counts require adapter-level support — see backlog).
         """
+        self._budget.check()
         start = time.monotonic()
         total_text: list[str] = []
         async for chunk in self._adapter.generate_stream(messages, config):
@@ -136,16 +147,16 @@ class TelemetryCollector:
         ``task_type`` is read from ``config.task_type`` (set per call
         by each handler), NOT from the constructor.
         """
-        self._records.append(
-            create_usage_record(
-                config,
-                response,
-                self._adapter.provider_name,
-                self._project,
-                int(elapsed * 1000),
-                cost_overrides=self._cost_overrides,
-            )
+        record = create_usage_record(
+            config,
+            response,
+            self._adapter.provider_name,
+            self._project,
+            int(elapsed * 1000),
+            cost_overrides=self._cost_overrides,
         )
+        self._records.append(record)
+        self._budget.record(record.estimated_cost_usd, tokens=record.total_tokens)
 
     # ------------------------------------------------------------------
     # Persistence

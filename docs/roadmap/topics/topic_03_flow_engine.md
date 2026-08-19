@@ -90,9 +90,11 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)<br>
   > Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_
-* **`B-FLOW-05` 🔜: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
-  > _(new)_ | Cost/token circuit breakers that halt runaway LLM spend (Economic Denial-of-Service prevention); the `INT-US-04-SF02` "Security Defenses" integration target. Split from `B-FLOW-03`
-  > (Friction Detection) during capability-ID normalization.
+* **`B-FLOW-05` ✅: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
+  > [Design](../features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md) | _(new)_ | A run carries two ceilings — `llm.max_spend_usd` and `llm.max_tokens_per_run` — checked in
+  > `TelemetryCollector` before every request and fed by every completed call. Both are finite by default: a breaker that ships disabled stops nothing, and `max_retries` counts attempts, not money.
+  > Tokens are a second ceiling because a model absent from the cost table prices at `0.0`, so cost alone cannot bound it. Split from `B-FLOW-03` (Friction Detection) during capability-ID
+  > normalization.
 
 ## DAL-A: Mission-Critical
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)<br>

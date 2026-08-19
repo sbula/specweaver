@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
+from specweaver.infrastructure.llm.budget import BudgetExceededError
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
@@ -198,6 +199,11 @@ class Reviewer:
                 )
             else:
                 response = await self._llm.generate(messages, self._config)
+        except BudgetExceededError:
+            # A verdict of ERROR reads as "the review found problems". Out of budget is not a
+            # review outcome, and burying it here would let the pipeline continue past a
+            # tripped breaker.
+            raise
         except Exception as exc:
             logger.debug("Review LLM call failed: %s", str(exc))
             return ReviewResult(

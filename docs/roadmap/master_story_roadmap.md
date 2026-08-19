@@ -21,42 +21,22 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
-   * **Features:** `C-VAL-05` — battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files. Prereqs: none. Details: [topic_05](topics/topic_05_validation.md).
-   * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft"
-     precedent the approved middle-way direction rests on; substrate for `B-VAL-03`, `E-VAL-04`,
-     `B-INTL-08`.
-   * **Cons:** No epic unlock; payoff is architectural, invisible to the CLI user on day 1.
-   * **ROI:** **Medium-high** — small, well-bounded effort that de-risks and sequences the two larger middle-way builds (`C-FLOW-11`, `C-INTL-06` deliberately queue AFTER this proves the pattern).
-2. **AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE (may preempt 1)
-   * **Features:** `E-VAL-03`. Prereqs: none.
-   * **Pros:** Protects the validation/LLM pipeline from instructions embedded in analyzed source.
-     Urgency INCREASED AGAIN: `INT-US-24` put LLM-authored failure traces + verdict feedback into
-     arbitration and regeneration prompts (flagged at every SF's Red/Blue as exactly this class), on
-     top of the autonomous DAL-escalated US-3 flows.
-   * **Cons:** Hardening only — no epic unlock, no new user-visible capability.
-   * **ROI:** **Risk-driven** — medium effort vs. closing the platform's widest-known attack class
-     while three autonomous LLM loops are already live; value grows with every new LLM-consuming
-     feature shipped before it.
-3. **Token-Burn Circuit Breakers (`B-FLOW-05`)** ← FINANCIAL SAFETY
-   * **Features:** `B-FLOW-05`. Prereqs: none. Details: [topic_03](topics/topic_03_flow_engine.md).
-   * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance:
-     the autonomous US-3 loop AND the US-24 dual-pipeline loop (which re-runs whole verification
-     rounds on loop_back) are live; `C-FLOW-11`'s budget-cap NFR needs exactly this substrate.
-   * **Cons:** Hardening; no epic unlock.
-   * **ROI:** **Risk-driven** — modest effort caps the worst-case cost of every existing and future loop; currently the only guards are per-step `max_retries`, not spend.
-4. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY (minted 2026-07-24)
+1. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY
    * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree +
-     `sw run`/`sw resume` escalation wiring), integration implicit in `C-EXEC-07` per `ADR-005`. Prereqs: `C-EXEC-06` ✅.
+     `sw run`/`sw resume` escalation wiring), integration implicit per `ADR-005`. Prereqs: `C-EXEC-06` ✅.
      Details: [topic_06](topics/topic_06_sandbox.md) / [US-09.md](stories/US-09.md).
    * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution
      surface (LLM-derived scenario tests over LLM-generated code, now LIVE via
      `sw run scenario_integration`) has the weakest default; also contains scenario artifact
      droppings + the bare-pytest collection hazard documented in the dev guide.
-   * **Cons:** Engine/capability work (not integration-only); no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
-   * **ROI:** **Medium** — medium-high effort for security parity + workspace hygiene; cheapest
-     right after INT-US-24 while the run-journey context is fresh, and it batches with the same
+   * **Cons:** Engine/capability work; no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
+   * **ROI:** **Medium** — medium-high effort for security parity + workspace hygiene; cheapest while the
+     run-journey context from `INT-US-24` is still fresh, and it batches with the same
      high-criticality modules (DAL Batching Rule).
+
+*The three candidates this queue opened with — `C-VAL-05`, `E-VAL-03` and `B-FLOW-05` — are
+delivered. Each is recorded in its topic doc and its design document; nothing about them belongs
+here any more.*
 
 ### 🔧 Debt Sequencing
 
@@ -168,8 +148,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-04:** Unified Runner Architecture
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Security Defenses:**
-        *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
+    *   🟢 **Security Defenses:**
+        *   `✅` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   🟢 **Context Mention Highlighting:**

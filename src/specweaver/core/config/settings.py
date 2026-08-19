@@ -47,7 +47,19 @@ def deep_merge_dict(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, 
 
 
 class LLMSettings(BaseModel):
-    """LLM-related configuration."""
+    """LLM-related configuration.
+
+    ``max_spend_usd`` and ``max_tokens_per_run`` are the run's circuit breakers. Both default to a
+    finite value: a breaker that ships disabled stops nothing, and until it existed the only guard
+    on a runaway loop was ``max_retries``, which counts attempts rather than money. The defaults
+    are far above an ordinary run and far below a runaway one.
+
+    Write ``null`` to disable either deliberately. ``0`` is not that — it means *refuse
+    everything*, so a mistyped ceiling fails closed.
+
+    ``max_tokens_per_run`` is not redundant with ``max_spend_usd``: a model absent from the cost
+    table is priced at ``0.0``, so cost alone cannot bound it. Tokens come back on every response.
+    """
 
     model: str
     temperature: float = 0.7
@@ -55,6 +67,8 @@ class LLMSettings(BaseModel):
     response_format: Literal["text", "json"] = "text"
     provider: str = "gemini"
     api_key: str = ""
+    max_spend_usd: float | None = 25.0
+    max_tokens_per_run: int | None = 20_000_000
 
 
 class RuleOverride(BaseModel):

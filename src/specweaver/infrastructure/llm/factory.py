@@ -134,7 +134,17 @@ def create_llm_adapter(
         overrides = (
             {k: CostEntry(*v) for k, v in cost_overrides.items()} if cost_overrides else None
         )
-        adapter = TelemetryCollector(adapter, telemetry_project, overrides)
+        from specweaver.infrastructure.llm.budget import SpendBudget
+
+        adapter = TelemetryCollector(
+            adapter,
+            telemetry_project,
+            overrides,
+            budget=SpendBudget(
+                limit_usd=settings.llm.max_spend_usd,
+                token_limit=settings.llm.max_tokens_per_run,
+            ),
+        )
 
     gen_config = GenerationConfig(
         model=settings.llm.model,
