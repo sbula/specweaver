@@ -606,3 +606,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `[ ]` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
     *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
+    *   `[ ]` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)

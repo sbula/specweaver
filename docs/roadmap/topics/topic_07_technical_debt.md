@@ -127,6 +127,13 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-066` 🔴: Contract Drift Analysis Can Never Find Anything**
+  > [Description](../features/topic_07_technical_debt/TECH-066/TECH-066_design.md) | _Status: STUB. Origin: found 2026-08-19 giving `US-22` its spanning proof._
+  > `C13` reads `protocol_schema` from its rule context and nothing in `src/` ever produces that key, so it takes
+  > the skip branch on every code check: measured, a real `.proto` beside mismatched code reports `SKIP`. The
+  > parsers are delivered and proven; the join to validation is missing, and the decision is whether contract
+  > drift belongs at validation tier at all.
+
 * **`TECH-064` 🔴: Polyglot Architecture Checks Report Success Where They Do Nothing**
   > [Description](../features/topic_07_technical_debt/TECH-064/TECH-064_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-20` P-5 test._ |
   > `KotlinAnalyzer.extract_imports` returns nothing for valid imports, so archetype inference calls the module `pure-logic`;
