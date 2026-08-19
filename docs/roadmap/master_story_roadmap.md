@@ -463,7 +463,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`; `TECH-014` cleared 2026-08-12)*:
         *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution
 
-### 🟡 US-22: Polyglot Contract Enforcement
+### 🟢 US-22: Polyglot Contract Enforcement
 **Benefit:** *SpecWeaver mathematically proves that my Python microservice didn't break the REST/gRPC contract of my Rust worker.*
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
@@ -473,7 +473,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Mathematical Speed & Security:**
         *   `[ ]` **A-VAL-04:** Rust PyO3 Validations (Massive performance scale for deep contract checking)
 
-### 🟡 US-23: Enterprise Tool Extension (MCP)
+### 🟢 US-23: Enterprise Tool Extension (MCP)
 **Benefit:** *I can instantly plug SpecWeaver into my company's internal tools (Jira, Confluence) using the Model Context Protocol without writing custom Python adapters.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine for E2E execution)*
