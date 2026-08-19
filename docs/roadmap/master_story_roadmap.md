@@ -303,7 +303,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
-    *   `[ ]` **B-SENS-03:** AST-based semantic chunking
+    *   `✅` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
         *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring)
