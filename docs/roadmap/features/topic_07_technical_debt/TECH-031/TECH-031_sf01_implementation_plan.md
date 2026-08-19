@@ -7,7 +7,7 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-031/TECH-031_sf01_implementation_plan.md
 - **Status**: APPROVED
 
-**FRs owned: FR-1 through FR-19.** All of them, in one plan, because the ticket shipped as one
+**FRs owned: FR-1 through FR-20.** All of them, in one plan, because the ticket shipped as one
 sequence rather than as sub-features. FR-11 to FR-14 were added when the ticket was re-opened for
 Rust, Java and Kotlin — the first target project is Python, Rust and Kotlin.
 
@@ -160,6 +160,7 @@ Gradle carries a warning and no steps. **(FR-16)**
 | FR-15 | `tests/unit/sandbox/language/core/test_junit_reports.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-16 | `tests/unit/commons/test_prepare_plan_languages.py` |
 | FR-17 | `tests/unit/sandbox/execution/test_container_polyglot.py`, `tests/integration/sandbox/execution/test_container_executor_integration.py` |
+| FR-20 | `tests/unit/sandbox/language/core/test_maven_output.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-19 | `tests/unit/sandbox/language/core/language/rust/test_cargo_diagnostics.py`, `tests/unit/sandbox/language/core/test_runner_migration.py`, `tests/integration/sandbox/language/test_polyglot_runners_live.py` |
 | FR-18 | `tests/unit/sandbox/execution/test_container_polyglot.py`, `tests/unit/sandbox/language/core/test_junit_reports.py`, `tests/integration/sandbox/execution/test_container_executor_integration.py` |
 

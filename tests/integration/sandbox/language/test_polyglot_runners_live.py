@@ -436,3 +436,93 @@ class TestRustIntentsBeyondTests:
 
         assert result.exit_code == 0, result
         assert any("hello from main" in e.output for e in result.events), result.events
+
+
+@pytest.mark.skipif(
+    shutil.which("mvn") is None or shutil.which("javac") is None,
+    reason="maven and a JDK required",
+)
+class TestJavaIntentsBeyondTests:
+    """Java's compiler and debugger against real Maven.
+
+    Both returned something true and useless: the compiler reported that a build failed, which the
+    exit code already said, with an empty message; and the debugger returned Maven's whole log as
+    the program's output, burying the one line the program printed.
+
+    Proves: TECH-031 FR-20
+    """
+
+    _POM = """
+        <project xmlns="http://maven.apache.org/POM/4.0.0">
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>probe</groupId><artifactId>probe</artifactId><version>1.0</version>
+          <properties>
+            <maven.compiler.source>17</maven.compiler.source>
+            <maven.compiler.target>17</maven.compiler.target>
+            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+          </properties>
+        </project>
+    """
+
+    def _runner(self, root: Path):
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
+
+        return JavaRunner(cwd=root, executor=SubprocessExecutor(cwd=root))
+
+    def test_a_compile_error_carries_its_location_and_message(self, tmp_path: Path) -> None:
+        root = _write(
+            tmp_path / "jbad",
+            {
+                "pom.xml": self._POM,
+                "src/main/java/App.java": """
+                    public class App {
+                        public int broken() { return "not an int"; }
+                    }
+                """,
+            },
+        )
+
+        result = self._runner(root).run_compiler(
+            ".",
+        )
+
+        assert result.error_count >= 1, result
+        error = result.errors[0]
+        assert error.file.endswith("App.java"), error
+        assert error.line > 0, error
+        assert "cannot be converted to int" in error.message, error
+
+    def test_a_good_build_reports_no_errors(self, tmp_path: Path) -> None:
+        """The control: a compiler that invents diagnostics would pass the test above."""
+        root = _write(
+            tmp_path / "jgood",
+            {
+                "pom.xml": self._POM,
+                "src/main/java/App.java": "public class App { public int f(){ return 1; } }\n",
+            },
+        )
+
+        assert self._runner(root).run_compiler(".").error_count == 0
+
+    def test_the_debugger_returns_the_programs_output_not_the_build_log(
+        self, tmp_path: Path
+    ) -> None:
+        root = _write(
+            tmp_path / "jdbg",
+            {
+                "pom.xml": self._POM,
+                "src/main/java/App.java": """
+                    public class App {
+                        public static void main(String[] a) {
+                            System.out.println("hello from java");
+                        }
+                    }
+                """,
+            },
+        )
+
+        result = self._runner(root).run_debugger(".", "App")
+
+        assert result.exit_code == 0, result
+        printed = [e.output for e in result.events]
+        assert printed == ["hello from java"], printed

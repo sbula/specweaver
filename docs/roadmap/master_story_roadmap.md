@@ -62,7 +62,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
-| `TECH-031` 🟡 | Python prepare is delivered (83% of a 121-repo corpus). Re-opened for Rust, Java and Kotlin inside the sandbox. |
+| `TECH-031` 🟢 | Python, Rust, Java and Kotlin all run in the sandbox; every QA intent verified against its real toolchain. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -654,7 +654,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-028:** [Split `dev` Dependency Definitions](features/topic_07_technical_debt/TECH-028/TECH-028_design.md)
     *   `✅` **TECH-029:** [Sandbox Process Cap Uses `RLIMIT_NPROC`](features/topic_07_technical_debt/TECH-029/TECH-029_design.md)
     *   `✅` **TECH-030:** [An Empty `FolderGrant` Path Diverges by Platform](features/topic_07_technical_debt/TECH-030/TECH-030_design.md)
-    *   `[ ]` **TECH-031:** [Container Prepare Phase Has Never Installed a Toolchain](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
+    *   `✅` **TECH-031:** [Container Prepare Phase Has Never Installed a Toolchain](features/topic_07_technical_debt/TECH-031/TECH-031_design.md)
     *   `✅` **TECH-032:** [Non-Python QA Runners Report an Absent Toolchain as Success](features/topic_07_technical_debt/TECH-032/TECH-032_design.md)
     *   `✅` **TECH-033:** [A Step's Retry Budget Resets on Every `sw resume`](features/topic_07_technical_debt/TECH-033/TECH-033_design.md)
     *   `✅` **TECH-034:** [Split the AST Parser Hierarchy by Language Paradigm](features/topic_07_technical_debt/TECH-034/TECH-034_design.md)

@@ -2,8 +2,10 @@
 
 - **Feature ID**: TECH-031
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: every defect this ticket found is fixed, the three Next Step questions are answered,
-  and all three candidate approaches are delivered. Nothing is left open. See §Measured,
+- **Status**: DELIVERED. Twenty FRs, each planned and each carried by an authoritative `Proves:`
+  tag; `check_fr_coverage.py TECH-031` exits 0 and every file the Verifiable Proof names passes
+  without skipping. All six QA intents are verified against real toolchains for Python, Rust, Java
+  and Kotlin, and all four languages run inside the container. See §Measured,
   2026-08-12, which **corrects the Problem Statement below rather than extending it**.
 - **Origin**: Found 2026-08-12 during `TECH-028`. **That ticket's claimed side-effect was wrong** —
   it fixed this repo's manifest, but §Measured shows the prepare phase fails for SpecWeaver too, on
@@ -325,6 +327,7 @@ Each row says *why* it exists, because a row restating its own test teaches a la
 | FR-17 | The executor acts on a non-Python plan | Prepare phase, execute phase | Run the fetch, pick an image containing the toolchain, and carry the environment into both phases | A plan nothing consumes is half a deliverable. The image must follow the toolchain or `cargo` is simply absent; the environment must reach both phases or the fetch lands where the run cannot see it; and `PATH` must not be rewritten with the Python venv, which hides the binary the image was chosen for. **Rust runs end to end in the container**, verified against live podman: crates fetched in prepare, compiled into `/scratch`, run offline, source tree untouched. |
 | FR-18 | A JVM project runs in the sandbox | Prepare phase, execute phase, JVM runners | Give the build a writable workspace, warm the provider, and find the reports afterwards | Four container-only defects, none visible from outside one: the image's entrypoint creating `/root/.m2` as a non-root user; `target/` under a read-only mount, which Maven cannot be told to move; surefire's provider resolved at execution time and fetched by no offline goal; and its forked VM dying inside the sandbox's budget. An overlay workspace keeps the host source tree untouched while letting the build write. |
 | FR-19 | Lint, complexity and compile give a verdict or say why not | Rust runner, Java runner, Kotlin runner | Read the tool's own output, and treat a missing report as an error | Every one of these surfaces returned `0 findings` when it had learned nothing. Rust piped clippy into `clippy-sarif` and complexity into the same, a binary installed nowhere: the pipe produced nothing and the guard around it reported a clean project for code clippy had just flagged. The JVM runners guarded a SARIF report with `if path.exists()` and fell through to zero when the plugin had never written one. And `cargo build` writes progress to stderr, so a healthy crate had empty stdout and was reported as an absent toolchain. |
+| FR-20 | A Java compile error and a program's output are both readable | Java runner | Parse Maven's diagnostics, and separate the program's output from the build log | The compiler reported that a build had failed — which the exit code already said — with an empty message, so a caller knew nothing it could act on. The debugger returned Maven's entire log as the program's output. Diagnostics are now parsed with their file, line and column; the program's output is taken from after Maven's `exec:java` banner, because javac echoes its warnings unprefixed and no prefix filter can tell those from a line the program printed. |
 | FR-10 | The plan is readable before a run | CLI | Report the prepare plan, non-zero on any warning | Every decision above was otherwise met inside a container, minutes into a run. `plan_for` decides once and both the executor and the report read it, so the report cannot describe a phase other than the one that runs. |
 
 ## Non-Functional Requirements
@@ -360,6 +363,19 @@ All three were taken, and one of them changed shape once measured.
 - **Not** surfacing the fresh-resolution warning into the QA report. It is logged by name and stated
   in NFR-2; moving it into the report needs plumbing through the runner and is not done. Recorded
   rather than left to be discovered.
+
+## What is knowingly not covered
+
+Closing this asserts these three are acceptable, not that they are absent.
+
+- **Gradle cannot be prepared.** A wrapper fetches its own distribution on first use and the execute
+  phase has no network, while the system Gradle is 4.4.1. Reported as unsupported with the reason,
+  rather than attempted; a JVM project runs through Maven.
+- **Rust complexity cannot honour a caller's threshold.** Clippy reads `cognitive-complexity-threshold`
+  from `clippy.toml` and takes no per-run override, so the result reports the threshold clippy
+  actually applied rather than echoing one that had no effect.
+- **Architecture checks remain stubs for Rust and Kotlin.** `TECH-064` owns them; they are outside
+  this ticket and unchanged by it.
 
 ## Where the container journey stands
 
@@ -427,9 +443,9 @@ its output checked — not that a command exists in the source.
 - **no-op** — Python has no compile step, and the surface returns a clean result by design.
 - **stub → 0** — `TECH-064`, unchanged here.
 
-Python's complexity honours the caller's threshold; Rust's cannot. Java's compiler detects a broken
-build but reports the count without the compiler's message, and its debugger returns Maven's build
-log rather than the program's output — both measured, neither fixed here.
+Python's complexity honours the caller's threshold; Rust's cannot, because clippy reads it from
+`clippy.toml`. Java's compiler and debugger were both fixed (FR-20): a compile error now carries its
+file, line and message, and the debugger returns what the program printed rather than the build log.
 
 ## Verifiable Proof
 
@@ -447,15 +463,16 @@ container engine, or a toolchain the test drives. Those are the only reasons any
 - `tests/unit/sandbox/language/core/language/rust/test_cargo_output.py` — FR-11
 - `tests/unit/sandbox/language/core/language/rust/test_cargo_diagnostics.py` — FR-19
 - `tests/unit/sandbox/language/core/test_junit_reports.py` — FR-15, FR-18
+- `tests/unit/sandbox/language/core/test_maven_output.py` — FR-20
 - `tests/unit/sandbox/language/core/test_runner_migration.py` — FR-14, FR-19
 - `tests/integration/sandbox/execution/test_container_executor_integration.py` — FR-1 to FR-9,
   FR-17, FR-18 against live podman, across nine project shapes
-- `tests/integration/sandbox/language/test_polyglot_runners_live.py` — FR-11 to FR-15, FR-19 against
-  real `cargo`, `mvn` and `kotlinc`
+- `tests/integration/sandbox/language/test_polyglot_runners_live.py` — FR-11 to FR-15, FR-19, FR-20
+  against real `cargo`, `mvn` and `kotlinc`
 - `tests/e2e/capabilities/sandbox/test_preflight_reports_the_prepare_plan_e2e.py` — FR-10 through the
   real `sw` CLI in a subprocess
 
-`python scripts/check_fr_coverage.py TECH-031` exits 0: nineteen FRs, each planned and each carried
+`python scripts/check_fr_coverage.py TECH-031` exits 0: twenty FRs, each planned and each carried
 by an authoritative `Proves:` tag.
 
 **Each citation was checked by mutation against the file that claims it, and two of the ten failed

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
+from specweaver.sandbox.language.core.maven_output import compile_errors, program_output
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, read_sarif_report
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -252,6 +253,8 @@ class JavaRunner(QARunnerInterface):
         )
 
     def run_compiler(self, target: str) -> CompileRunResult:
+        from specweaver.sandbox.qa_runner.core.interface import CompileError
+
         tool = self._get_build_tool()
         if tool == "gradle":
             cmd = ["gradlew", "compileJava"]
@@ -263,12 +266,35 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "mvn"
 
         result = self._executor.execute(cmd)
-
-        return CompileRunResult(
-            error_count=1 if result.exit_code != 0 else 0,
-            warning_count=0,
-            errors=[],
-        )
+        # The count alone said a build failed, which the exit code already said. These carry the
+        # file, line and message, which is the part a caller can act on.
+        diagnostics = [
+            CompileError(
+                file=d.file,
+                line=d.line,
+                column=d.column,
+                code="",
+                message=d.message,
+                is_warning=False,
+            )
+            for d in compile_errors(result.stdout)
+        ]
+        if result.exit_code != 0 and not diagnostics:
+            # Failed without naming a location — a missing toolchain, a bad goal, a plugin error.
+            diagnostics = [
+                CompileError(
+                    file="<toolchain>",
+                    line=0,
+                    column=0,
+                    code="BuildFailed",
+                    message=(
+                        f"{cmd[0]} exited {result.exit_code} without a compiler diagnostic: "
+                        f"{(result.stderr or result.stdout or '').strip()[-200:]}"
+                    ),
+                    is_warning=False,
+                )
+            ]
+        return CompileRunResult(error_count=len(diagnostics), warning_count=0, errors=diagnostics)
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()
@@ -285,10 +311,15 @@ class JavaRunner(QARunnerInterface):
 
         from specweaver.sandbox.qa_runner.core.interface import OutputEvent
 
+        # The program's own output, not the build log around it. Returning the whole stream buried
+        # the one line a program printed under Maven's chatter and the JVM's deprecation warnings.
+        printed = program_output(result.stdout)
         return DebugRunResult(
             exit_code=result.exit_code,
             duration_seconds=result.duration_seconds,
-            events=[OutputEvent(category="stdout", output=x) for x in result.stdout.splitlines()],
+            events=[
+                OutputEvent(category="stdout", output=line) for line in printed.splitlines() if line
+            ],
         )
 
     def run_architecture_check(

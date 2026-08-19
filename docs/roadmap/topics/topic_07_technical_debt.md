@@ -328,8 +328,8 @@ critical for long-term project viability.
   > the default `uv sync` installed neither completely and test tooling leaked into the container image. **DELIVERED:** collapsed into one dependency-group, so plain `uv sync` now installs everything
   > the gates need.
 
-* **`TECH-031` 🟡: The Container Prepare Phase Has Never Installed a Toolchain**
+* **`TECH-031` 🟢: The Container Prepare Phase Has Never Installed a Toolchain**
   > [Description](../features/topic_07_technical_debt/TECH-031/TECH-031_design.md) | _(2026-08-12 — found during `TECH-028`; Python half delivered 2026-08-18, re-opened the same day.)_ | The prepare
   > phase never installed a toolchain. **Python is delivered** — lockless projects, `tox.ini`/`requirements` fallbacks, a supplied runner disclosed on the result, and `sw sandbox preflight`; 8.3% →
   > 83% of a 121-repo corpus ([measurements](../../analysis/dependency_layout_corpus_2026-08-18.md)). **Re-opened by scope decision:** Rust, Java and Kotlin must execute in the sandbox too, since the
-  > first target project is Python, Rust and Kotlin.
+  > first target project is Python, Rust and Kotlin. **DELIVERED:** all four languages run in the sandbox and all six QA intents are verified against their real toolchains.
