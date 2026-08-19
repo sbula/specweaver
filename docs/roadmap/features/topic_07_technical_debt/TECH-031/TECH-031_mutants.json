@@ -1,0 +1,368 @@
+{
+  "schema": 1,
+  "feature": "TECH-031",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The environment is built on a writable mount",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "venv-lands-in-the-read-only-workdir",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._prepare_container",
+          "old": "f\"UV_PROJECT_ENVIRONMENT={_PREPARED_VENV}\",",
+          "new": "\"UV_HTTP_TIMEOUT=60\",",
+          "breaks": "uv falls back to `.venv` in the workdir, which is `/workspace:ro` — the phase then fails for every project on every layout before the manifest is read",
+          "symbol_sha": "sha256:21164ed9de8b2a36112877a88eeb3ee763d489ed7e85064ff6d15f22313a14fc"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The source tree is never written",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-lockfile-is-rewritten",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._prepare_steps",
+          "old": "[\"uv\", \"sync\", \"--frozen\", *synced],",
+          "new": "[\"uv\", \"sync\", *synced],",
+          "breaks": "a drifted lockfile makes uv re-resolve and rewrite /workspace/uv.lock, reporting a read-only error that names the lockfile rather than the sandbox",
+          "symbol_sha": "sha256:45d97242281f79f3c5c72eb95495f4ddca87f69cc487fcc3dbb9c2d3bd0ad1f4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The execute phase uses what prepare built",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-image-interpreter-shadows-the-venv",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._build_container_cmd",
+          "old": "f\"PATH={_CONTAINER_PATH}\"",
+          "new": "f\"PATH=/usr/bin:{_CONTAINER_PATH}\"",
+          "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter — the membership check that used to pass this is why the assertion is positional",
+          "symbol_sha": "sha256:e582ffc16628e6f68d7bffa3a9bb5ead02266171821552ea56cc021b0872620f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A failed prepare reaches the caller",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor.py",
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-failed-prepare-is-only-logged",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._ensure_prepared",
+          "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
+          "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
+          "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
+          "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The group holding the runner is synced",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py",
+        "tests/unit/sandbox/execution/test_container_polyglot.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-dependency-carries-a-runner",
+          "file": "src/specweaver/commons/prepare_plan.py",
+          "symbol": "_declares_a_runner",
+          "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
+          "new": "        if False:",
+          "breaks": "no group is ever recognised as holding pytest, so a project that declares it outside `dev` gets a venv with no runner",
+          "symbol_sha": "sha256:c29ccbb1daff83a6881814d086596291d3b9d36bbeb3a5628bf068047363c2f3"
+        },
+        {
+          "id": "a-runner-is-matched-as-a-substring",
+          "file": "src/specweaver/commons/prepare_plan.py",
+          "symbol": "_declares_a_runner",
+          "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
+          "new": "        if any(runner in name for runner in _TEST_RUNNERS):",
+          "breaks": "`my-pytest-plugin` counts as a runner, so a group holding no test runner is requested and the caller is told the environment is ready",
+          "symbol_sha": "sha256:c29ccbb1daff83a6881814d086596291d3b9d36bbeb3a5628bf068047363c2f3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A project with no lockfile still gets an environment",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "every-project-takes-the-frozen-route",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._ensure_prepared",
+          "old": "locked=lockfile.exists()",
+          "new": "locked=True",
+          "breaks": "a project with no uv.lock is sent to `uv sync --frozen`, which refuses, so it gets no environment at all",
+          "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A runner declared outside the manifest is installed",
+      "scope": [
+        "tests/unit/commons/test_tooling_sources.py"
+      ],
+      "mutants": [
+        {
+          "id": "requirements-files-are-never-read",
+          "file": "src/specweaver/commons/tooling_sources.py",
+          "symbol": "declared_pytest",
+          "old": "    for name in _REQUIREMENT_FILES:",
+          "new": "    for name in ():",
+          "breaks": "the `requirements` family is skipped, so 20 corpus projects that declare pytest there get nothing installed",
+          "symbol_sha": "sha256:60f5e655d4c42d7a5b86a90e2c8992518ac591bee8494282a7313fddad6b907f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A supplied runner is disclosed on the result",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_executor_prepare.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-supplied-runner-is-not-disclosed",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_tests",
+          "old": "toolchain_note=_supplied_note(self._executor),",
+          "new": "toolchain_note=\"\",",
+          "breaks": "a green run attests to a suite executed against a version nobody chose, with none of the plugins it may need, and says nothing about it",
+          "symbol_sha": "sha256:5b5265daf26be27639500dcca47dd3db8b5ed70be6efa3be956f5130c871f792"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "An absent toolchain explains itself",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/python/test_toolchain_absence.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-missing-module-is-not-recognised",
+          "file": "src/specweaver/sandbox/language/core/python/toolchain_absence.py",
+          "symbol": "absent_module",
+          "old": "match = _NO_MODULE.search(result.stderr or \"\")",
+          "new": "match = None",
+          "breaks": "the reason falls back to the interpreter's own line, naming `/cache/venv/bin/python` — a path inside our container that appears nowhere in the reader's project",
+          "symbol_sha": "sha256:7c09b37f337bc19969e4e49489b17e956a34a1dd0a0e3282f12d1ea0d96c6653"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The plan is readable before a run",
+      "scope": [
+        "tests/unit/commons/test_prepare_plan.py"
+      ],
+      "mutants": [
+        {
+          "id": "every-project-claims-to-be-reproducible",
+          "file": "src/specweaver/commons/prepare_plan.py",
+          "symbol": "plan_for",
+          "old": "route = \"locked\" if locked else \"resolved\"",
+          "new": "route = \"locked\"",
+          "breaks": "the preflight reports a frozen route for a project with no lockfile, so a reader is told the run reproduces pins that do not exist",
+          "symbol_sha": "sha256:5847873ce8f93220c4753d8e2446cf110e625454cbf4d5d1b6c1a4ec0db22eba"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "Rust tests run through cargo's real output",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/rust/test_rust_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "cargo-is-asked-for-json-it-cannot-emit",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_tests",
+          "old": "cmd = [\"cargo\", \"test\"]",
+          "new": "cmd = [\"cargo\", \"test\", \"--format=json\", \"-q\"]",
+          "breaks": "the exact command real cargo rejects with `unexpected argument '--format' found`; its JSON format is nightly-only and the converter it fed was installed nowhere",
+          "symbol_sha": "sha256:b38a7f2495cc602f8ff1a23344cbd9d5bdfb2f0474c75cf30098668daa1ed36a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "A failed build is never an empty suite",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_runner_migration.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-failed-build-harvests-as-empty",
+          "file": "src/specweaver/sandbox/language/core/toolchain.py",
+          "symbol": "build_failed_without_results",
+          "old": "    if total or result.exit_code == 0:",
+          "new": "    if True:",
+          "breaks": "a build that never compiled reports `0 passed, 0 failed` — indistinguishable from a project with no tests",
+          "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
+        },
+        {
+          "id": "a-red-suite-is-called-a-build-failure",
+          "file": "src/specweaver/sandbox/language/core/toolchain.py",
+          "symbol": "build_failed_without_results",
+          "old": "    if total or result.exit_code == 0:",
+          "new": "    if result.exit_code == 0:",
+          "breaks": "Maven exits non-zero when tests fail too, so every red suite becomes a toolchain error and the failure counts are discarded",
+          "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "A failure carries enough to act on",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_junit_reports.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-failing-test-is-not-named",
+          "file": "src/specweaver/sandbox/language/core/junit_reports.py",
+          "symbol": "_failures_in",
+          "old": "nodeid=f\"{case.classname}.{case.name}\",",
+          "new": "nodeid=\"unknown\",",
+          "breaks": "the caller is told a test failed but not which one, so the report cannot be acted on without re-running the suite by hand",
+          "symbol_sha": "sha256:428c1cf3574b758039b45ab0ce8aa2d4429ae2b56cded1d1cd1bf404ac28f29a"
+        },
+        {
+          "id": "the-stack-trace-is-dropped",
+          "file": "src/specweaver/sandbox/language/core/junit_reports.py",
+          "symbol": "_failures_in",
+          "old": "stacktrace=stack[:_MAX_STACK],",
+          "new": "stacktrace=\"\",",
+          "breaks": "the assertion survives but not where it happened, which is the half that locates the fix",
+          "symbol_sha": "sha256:428c1cf3574b758039b45ab0ce8aa2d4429ae2b56cded1d1cd1bf404ac28f29a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "Non-Python projects have a prepare plan at all",
+      "scope": [
+        "tests/unit/commons/test_prepare_plan_languages.py"
+      ],
+      "mutants": [
+        {
+          "id": "rust-is-not-recognised",
+          "file": "src/specweaver/commons/prepare_plan.py",
+          "symbol": "_plan_for_other",
+          "old": "    if toolchain == \"cargo\":",
+          "new": "    if False:",
+          "breaks": "a Rust project falls through to the unsupported branch, so its crates are never fetched and the offline run has nothing to build against",
+          "symbol_sha": "sha256:63fa2741a50f4ea52db896d93177b9123be8bc48179d30ce60efaeac51592c37"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "The executor acts on a non-Python plan",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_polyglot.py"
+      ],
+      "mutants": [
+        {
+          "id": "every-toolchain-gets-the-python-image",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "_resolve_image",
+          "old": "    if toolchain in _TOOLCHAIN_IMAGES:",
+          "new": "    if False:",
+          "breaks": "a Rust or JVM project is handed the Python sandbox image, which contains no cargo and no JDK, and no amount of preparing puts one there",
+          "symbol_sha": "sha256:c2a1704388bc6d604115aa94a490ed052cbde1354ae3ffb7f36a4c6232921ba3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "A JVM project runs in the sandbox",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_polyglot.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-jvm-gets-a-read-only-workspace",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._workspace_mode",
+          "old": "        return \"O\" if detect_toolchain(self._mounts.source_root) in (\"maven\", \"gradle\") else \"ro\"",
+          "new": "        return \"ro\"",
+          "breaks": "Maven cannot write `target/` and cannot be told to build elsewhere, so the build fails before it compiles anything",
+          "symbol_sha": "sha256:235046f046ca34f7e0ee61fc138709044cb6a2de40f7181a279e105dbf980a3b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-19",
+      "title": "Lint, complexity and compile give a verdict or say why not",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_runner_migration.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-missing-report-reads-as-clean",
+          "file": "src/specweaver/sandbox/language/core/toolchain.py",
+          "symbol": "report_never_written",
+          "old": "    if report.exists():",
+          "new": "    if True:",
+          "breaks": "a lint or complexity surface that wrote no report returns `0 findings`, so an unconfigured plugin certifies the code it never read",
+          "symbol_sha": "sha256:dd6e1c02c9d0a0dc1f40700d6590186aeef4fafb64b708bbcb490c6355e20329"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-20",
+      "title": "A Java compile error and a program's output are both readable",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_maven_output.py"
+      ],
+      "mutants": [
+        {
+          "id": "each-diagnostic-is-reported-twice",
+          "file": "src/specweaver/sandbox/language/core/maven_output.py",
+          "symbol": "compile_errors",
+          "old": "        if key in seen:",
+          "new": "        if False:",
+          "breaks": "Maven prints every diagnostic twice — once compiling, once in the failure summary — so the caller sees double the errors that exist",
+          "symbol_sha": "sha256:950311bf13c353a758df3db1b28e0b3f074ebdf8ea92494adb2a0cebe60b3b8b"
+        },
+        {
+          "id": "the-build-log-is-returned-as-program-output",
+          "file": "src/specweaver/sandbox/language/core/maven_output.py",
+          "symbol": "program_output",
+          "old": "        if _EXEC_BANNER.match(line.strip()):",
+          "new": "        if False:",
+          "breaks": "javac's unprefixed warnings are returned as lines the program printed, so the one line it did print arrives buried in build chatter",
+          "symbol_sha": "sha256:63d1bae9344f25e0fdb297dddf6b65bb0b317e082c35230ec236a94ae7c4f873"
+        }
+      ]
+    }
+  ]
+}

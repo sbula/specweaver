@@ -262,6 +262,10 @@ class TestGroupsHoldingARunnerReadsDependencySpecs:
             "PyTest",
             "pytest-cov>=5",
         ],
+        # Explicit ids: the default ones are the specs themselves, and a node id containing a space
+        # cannot be re-run from a `FAILED` line — the mutation corpus truncates it there and reports
+        # a confirmed kill as flaky.
+        ids=["bare", "pinned", "marker", "extra", "underscore", "mixed-case", "plugin"],
     )
     def test_a_runner_is_recognised_through_its_spec(self, spec: str) -> None:
         manifest = f'[dependency-groups]\nqa = ["{spec}"]\n'
@@ -306,6 +310,7 @@ class TestGroupsHoldingARunnerReadsDependencySpecs:
             '[project]\nname = "x"\n',  # no groups table at all
             "[dependency-groups]\nbroken = 42\n",  # a group that is not a list
         ],
+        ids=["not-toml", "empty", "no-groups-table", "group-not-a-list"],
     )
     def test_a_manifest_it_cannot_read_yields_nothing(self, manifest: str) -> None:
         assert _groups_holding_a_runner(manifest) == []

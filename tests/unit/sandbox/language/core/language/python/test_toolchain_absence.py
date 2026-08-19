@@ -43,7 +43,7 @@ class TestAbsentModule:
     _CONTAINER = "/cache/venv/bin/python: No module named pytest"
     _HOST = "/usr/bin/python3: No module named pytest"
 
-    @pytest.mark.parametrize("stderr", [_CONTAINER, _HOST])
+    @pytest.mark.parametrize("stderr", [_CONTAINER, _HOST], ids=["container", "host"])
     def test_it_names_the_module_and_calls_this_a_setup_failure(self, stderr: str) -> None:
         message = absent_module(_result(stderr))
 
@@ -53,7 +53,7 @@ class TestAbsentModule:
         # their tests, which are fine, instead of their manifest, which is not.
         assert "not a test failure" in message.lower()
 
-    @pytest.mark.parametrize("stderr", [_CONTAINER, _HOST])
+    @pytest.mark.parametrize("stderr", [_CONTAINER, _HOST], ids=["container", "host"])
     def test_it_says_what_would_make_the_module_present(self, stderr: str) -> None:
         """A diagnosis without a remedy is the same dead end in better prose.
 
@@ -94,6 +94,10 @@ class TestAbsentModule:
             "PermissionError: [Errno 13] Permission denied: '/workspace/tests'",
             "OCI runtime error: container init failed",
         ],
+        # Explicit ids because the default ones are the strings themselves, and a node id with a
+        # space in it cannot be re-run from a `FAILED` line — the corpus truncates it there and
+        # reports a confirmed kill as flaky.
+        ids=["empty", "permission-denied", "oci-error"],
     )
     def test_an_unrelated_failure_is_left_alone(self, stderr: str) -> None:
         """The control. Claiming a missing module for every silent failure would be a worse lie
