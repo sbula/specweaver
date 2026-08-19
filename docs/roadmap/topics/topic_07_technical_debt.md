@@ -100,7 +100,7 @@ critical for long-term project viability.
   > **DELIVERED:** all tables prefixed; SF-03 landed 2026-08-11 (`4ebb89cf`) covering the six raw-sqlite3 tables with a zero-data-loss migration path.
 
 ## Context Loading & RunContext Anti-Patterns
-* **`TECH-065` 🔴: Parameterised Annotations Never Match a Framework Schema**
+* **`TECH-065` 🟢: Parameterised Annotations Never Match a Framework Schema**
   > [Description](../features/topic_07_technical_debt/TECH-065/TECH-065_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-05` P-4 test._ |
   > Parsers extract `GetMapping("/orders/{id}")` and `get("/orders")`; every schema key is a bare name. So the argument-less
   > subset unrolls (`@RestController`, `@Transactional`, JAX-RS `@GET`) and everything with a path does not — roughly half of

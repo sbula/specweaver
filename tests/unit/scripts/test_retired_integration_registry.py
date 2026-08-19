@@ -113,13 +113,24 @@ def test_the_roadmap_still_names_the_incidents_it_learned_from(roadmap: str) -> 
     assert "INT-US-24" in roadmap
 
 
+#: A path to a real test file, which is the evidence FR-3 requires behind a `✅`.
+_TEST_CITATION = re.compile(r"`?tests/[\w./-]+\.py`?")
+
+
 @pytest.mark.parametrize(("story", "titles"), sorted(REOPENED.items()))
-def test_a_reopened_claim_is_still_open_in_its_story(story: str, titles: tuple[str, ...]) -> None:
+def test_a_reopened_claim_is_green_only_behind_a_named_test(
+    story: str, titles: tuple[str, ...]
+) -> None:
     """FR-3 — a `✅` citing no test file is not a delivery, and must not drift back.
 
-    Both of these were flipped on the roadmap in 2026-08 and left `✅` in their own document for
-    days: two homes for one fact, needing an edit in both. `ADR-005` removed one of the homes, and
-    this asserts the surviving one tells the truth.
+    Both were flipped on the roadmap in 2026-08 and left `✅` in their own document for days: two
+    homes for one fact, needing an edit in both. `ADR-005` removed one of the homes, and this asserts
+    the surviving one tells the truth.
+
+    **The rule is one-directional, and requiring `[ ]` outright got that wrong twice.** No proof can
+    ever discharge such a pin: `Framework Native Understanding` earned its `✅` when `TECH-065` closed
+    the argument-lookup defect, and the pin fired on the delivery it existed to permit. What is
+    pinned is only that a green claim cannot be unevidenced.
     """
     text = (STORIES / f"{story}.md").read_text(encoding="utf-8")
     for title in titles:
@@ -127,4 +138,6 @@ def test_a_reopened_claim_is_still_open_in_its_story(story: str, titles: tuple[s
         block = text.split(f"* **{title}**", 1)[1].split("\n* **", 1)[0]
         status = _ENTRY_STATUS.search(block)
         assert status is not None, f"{title} declares no Status, so nothing can judge it"
-        assert "✅" not in status.group(1), f"{title} claims delivery again: {status.group(1)}"
+        if "✅" not in status.group(1):
+            continue
+        assert _TEST_CITATION.search(block), f"{title} claims `✅` and names no test file"

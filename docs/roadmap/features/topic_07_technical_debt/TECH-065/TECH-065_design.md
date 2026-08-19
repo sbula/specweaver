@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-065
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: found 2026-08-18 writing the `INT-US-05` P-4 journey test. Measurements:
   [`docs/analysis/polyglot_dependency_resolution_2026-08-18.md`](../../../../analysis/polyglot_dependency_resolution_2026-08-18.md)
 
@@ -34,7 +34,50 @@ every shipped schema is unreachable.
 keys match the fixture markers, so both sides agree by construction. The mismatch only appears when the
 *shipped* schemas meet a *real* parser, which nothing did until `INT-US-05` P-4.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | A marker with arguments finds its schema entry | `SchemaEvaluator` | looks a marker up exactly, then by its bare name | `GetMapping("/orders/{id}")` matches the `GetMapping:` key, and a key that already carries arguments (`derive(Clone)`) keeps its exact meaning |
+| FR-2 | The arguments survive the lookup | `SchemaEvaluator` | substitutes the argument text for `>>{args}<<` before template recursion | a schema can say *"HTTP GET /orders/{id}"*, so the path is data rather than something discarded to make the match work |
+| FR-3 | The shipped schemas are driven, not fixtures | the integration tier | evaluates `load_evaluator_schemas()` against the marker text parsers really produce | the mismatch between shipped keys and extracted markers is visible to a test, which it was not |
+
+## The decision taken
+
+**Arguments are data.** The ticket named this as the decision worth taking deliberately, and the
+cheapest option — strip and discard — would have traded one silent loss for another: a route path is
+exactly what an unrolled description should carry. So the lookup normalises and the template keeps
+access to what was normalised away.
+
+Approach 3 — normalising at extraction, across all five parsers — is not taken. It is the version
+that stops the next consumer repeating this, and it is a change to five parsers' output contract; the
+`>>{args}<<` token makes the arguments available without one.
+
+**`>>{args}<<` is substituted before recursion, and that ordering is load-bearing.** `_resolve_template`
+resolves `>>{key}<<` against the schema category, so a category defining a key called `args` would
+capture the token and the route path would vanish exactly where it was asked for.
+
+## Verified against the shipped schemas
+
+The three cases the ticket measured as broken, driven through `load_evaluator_schemas()`:
+
+```
+// [Framework Eval] @Controller\n@ResponseBody          <- RestController      (always worked)
+// [Framework Eval] @RequestMapping(method = RequestMethod.GET)   <- GetMapping("/orders/{id}")
+// [Framework Eval] @RequestMapping(method = RequestMethod.POST)  <- PostMapping("/orders")
+// [Framework Eval] // Actix HTTP GET Route              <- get("/orders")
+// [Framework Eval] impl Clone for >>{Target}<< ...      <- derive(Clone)       (exact key)
+```
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/unit/sandbox/language/core/language/test_schema_evaluator.py::TestMarkersCarryingArguments` — removing the fallback fails 5; letting the fallback outrank exact match fails 7 |
+| FR-2 | the same class — discarding the argument text fails 1 |
+| FR-3 | `tests/integration/sandbox/language/test_packaged_schemas_unroll.py` — the real files, the real marker text. Making any marker match anything fails 2, which is what its silence control is for |
+
+## Candidate Approaches (as filed)
 
 - **Normalise the marker before lookup** — strip the argument list, look up the bare name. Smallest
   change; loses the arguments, which some unrollings may want (`>>{Target}<<` templating already
@@ -49,7 +92,7 @@ keys match the fixture markers, so both sides agree by construction. The mismatc
 exactly the sort of thing an unrolled description should carry (*"HTTP GET /orders/{id}"*), so throwing
 it away to make the lookup work may trade one silent loss for another.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - **Not** `TECH-064`. That covers polyglot *architecture checks* returning success while doing nothing —
   a different subject in a different capability. The two were deliberately kept apart when this was

@@ -111,16 +111,13 @@ def test_the_same_file_without_the_schema_is_left_raw(spring_project: Path) -> N
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "blocked on TECH-065 — an annotation carrying arguments is extracted with them attached "
-        '(`GetMapping("/orders/{id}")`, `get("/orders")`) while every schema key is a bare name '
-        "(`GetMapping:`, `get:`), so no parameterised annotation ever matches"
-    ),
-)
 def test_a_parameterised_annotation_is_unrolled_too(spring_project: Path) -> None:
-    """The half that does not work, written now because the interface is fully defined.
+    """The half that did not work, written before the fix because the interface was fully defined.
+
+    **Was `xfail(strict=True)`.** An annotation carrying arguments was extracted with them attached
+    — `GetMapping("/orders/{id}")` — while every schema key is a bare name, so no parameterised
+    annotation ever matched. The lookup now falls back to the bare name after trying the exact key,
+    and this turned XPASS the moment that landed.
 
     Routing annotations almost always carry a path, so this is not an edge case — it is most of what a
     framework schema exists for. `spring-boot.yaml` maps `GetMapping` to

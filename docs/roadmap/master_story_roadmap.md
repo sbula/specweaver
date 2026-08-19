@@ -205,7 +205,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
     *   🟢 **Intelligent Code Exclusions:**
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
-    *   🟡 **Framework Native Understanding:**
+    *   🟢 **Framework Native Understanding:**
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **D-SENS-04:** Parallel AST Extraction Engine
@@ -605,6 +605,6 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
     *   `✅` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `✅` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
-    *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
+    *   `✅` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
     *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
     *   `✅` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)

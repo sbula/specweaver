@@ -14,6 +14,46 @@ class EvaluatorDepthError(Exception):
     """Raised when schema evaluation exceeds the max depth or hits a cyclic dependency."""
 
 
+#: The reserved template variable carrying a marker's argument text.
+#:
+#: Reserved, and substituted BEFORE `_resolve_template` runs, so a schema category that happens to
+#: define a key called `args` cannot capture it — the recursion would resolve that key instead and
+#: the route path would vanish exactly where it was asked for.
+_ARGS_TOKEN = ">>{args}<<"
+
+
+def _split_marker(marker: str) -> tuple[str, str]:
+    """`GetMapping("/orders/{id}")` -> `("GetMapping", "\"/orders/{id}\"")`.
+
+    Parsers report an annotation with its argument list attached; schema keys are bare names. Only
+    the first `(` is a boundary — an argument may contain more.
+    """
+    head, sep, tail = marker.partition("(")
+    if not sep or not tail.endswith(")"):
+        return marker, ""
+    return head, tail[:-1]
+
+
+def _schema_key_for(marker: str, category: dict[str, Any]) -> tuple[str | None, str]:
+    """The schema key this marker matches, and the argument text it carried.
+
+    Exact first, ALWAYS. `actix-web.yaml` ships `derive(Clone)` as a literal key, so a schema that
+    already opted into arguments keeps its meaning; falling back first would silently reinterpret it
+    as `derive`.
+
+    Then the bare name, which is what makes the routing half of every shipped schema reachable:
+    `@GetMapping("/orders/{id}")` matched nothing while `@RestController` on the same class matched.
+    A name that is in neither form still matches nothing, so stripping arguments does not turn an
+    unknown annotation into a partial hit.
+    """
+    if marker in category:
+        return marker, ""
+    bare, arguments = _split_marker(marker)
+    if bare != marker and bare in category:
+        return bare, arguments
+    return None, ""
+
+
 class SchemaEvaluator:
     """Evaluates AST markers against declarative schemas to produce LLM string representations."""
 
@@ -83,11 +123,11 @@ class SchemaEvaluator:
         for category, items in markers.items():
             schema_category = lang_schema.get(category, {})
             for marker_name in items:
-                if marker_name in schema_category:
-                    template = str(schema_category[marker_name])
-                    resolved_desc = self._resolve_template(
-                        template, schema_category, 0, {marker_name}
-                    )
-                    lines.append(f"{prefix} [Framework Eval] {resolved_desc}")
+                key, arguments = _schema_key_for(marker_name, schema_category)
+                if key is None:
+                    continue
+                template = str(schema_category[key]).replace(_ARGS_TOKEN, arguments)
+                resolved_desc = self._resolve_template(template, schema_category, 0, {key})
+                lines.append(f"{prefix} [Framework Eval] {resolved_desc}")
 
         return "\n".join(lines)
