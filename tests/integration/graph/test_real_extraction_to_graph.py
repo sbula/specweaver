@@ -3,7 +3,7 @@
 
 """The real extractor's output actually builds a graph.
 
-Proves: INT-US-10 FR-1
+Proves: TECH-061 FR-1, TECH-061 FR-2, INT-US-10 FR-1
 
 `D-SENS-02`/`D-SENS-03` emit an AST dict; `B-SENS-02`'s `OntologyMapper` consumes one. Both shipped,
 and until now **nothing drove one into the other**:
@@ -130,20 +130,14 @@ def test_a_second_build_does_not_duplicate_nodes(tmp_path: Path) -> None:
     assert len(second) == len(first), f"a re-build duplicated nodes: {len(first)} -> {len(second)}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="blocked on TECH-061 — GraphOrchestrator.collect_files filters .py only",
-)
 def test_a_non_python_source_also_reaches_the_graph(tmp_path: Path) -> None:
     """The polyglot half of the claim — `D-SENS-03`'s extractors, not just Python.
 
-    **Currently xfail(strict=True) against `TECH-061`.** `collect_files` accepts `.py` and nothing
-    else (`orchestrator.py:85-97`), so a Java file is dropped before the mapper is reached and the
-    run persists zero nodes — not even the FILE node. This test found that on its first run, which
-    is exactly what `ADR-004` clause 4 writes tests early for.
-
-    `strict=True` means closing `TECH-061` turns this into a failure until the marker is removed, and
-    `check_xfail_blockers.py` fails the `doc` gate if it is left behind.
+    **This was `xfail(strict=True)` and is now a plain pass.** `collect_files` accepted `.py` and
+    nothing else, so a Java file was dropped before the mapper was reached and the run persisted zero
+    nodes — not even the FILE node. The test found that on its first run, which is exactly what a
+    test written before the fix is for; collection now asks the parser registry which suffixes it can
+    read, and the strict marker turned XPASS the moment that landed.
 
     **No grammar skip.** A first draft skipped when the Java grammar was unavailable; R8 in
     `check_conventions.py` rejected it, and correctly — `tree-sitter-java` is a hard dependency in
@@ -161,3 +155,38 @@ def test_a_non_python_source_also_reaches_the_graph(tmp_path: Path) -> None:
     GraphOrchestrator.build_target(source, project)
     persisted = _nodes(project / ".specweaver" / "graph.db")
     assert len(persisted) > 1, f"Java symbols did not reach the graph: {persisted}"
+
+
+def test_a_polyglot_directory_reaches_the_graph(tmp_path: Path) -> None:
+    """`sw graph build <directory>` is the real entry point, and it walks rather than matching once.
+
+    The single-file test above leaves the directory branch uncovered: replacing the walk's `*` with
+    `*.py` kills nothing, because no test ever hands `build_target` a directory. A monolith is what
+    this feature exists for, and a monolith is a directory.
+
+    Both languages are asserted, not just the new one. A walk that collected Java and stopped
+    collecting Python would satisfy a Java-only assertion perfectly.
+    """
+    project = _project(
+        tmp_path,
+        {
+            "src/UserService.java": "public class UserService {\n    public void register() {}\n}\n",
+            "src/orders.py": "class OrderService:\n    def place(self):\n        pass\n",
+        },
+    )
+
+    GraphOrchestrator.build_target(project / "src", project)
+
+    # `_nodes` reports the SERVICE name, which is "default" for every row here. The file each node
+    # came from is what says which languages the walk reached.
+    with sqlite3.connect(project / ".specweaver" / "graph.db") as conn:
+        # Lowercased, because the store normalises `file_id` — `UserService.java` is persisted as
+        # `userservice.java`, and a case-sensitive match reports the Java file as absent when it is
+        # there.
+        files = {
+            row[0].lower()
+            for row in conn.execute("SELECT file_id FROM graph_nodes WHERE is_active = 1")
+        }
+
+    assert any("userservice.java" in f for f in files), f"the Java file was not walked: {files}"
+    assert any("orders.py" in f for f in files), f"the Python file was not walked: {files}"

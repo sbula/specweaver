@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-061
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: found 2026-08-17 by `INT-US-10` FR-1, the first integration test written under `ADR-004`
 
 ## Problem Statement
@@ -44,7 +44,37 @@ Three passing suites, no proof the shapes meet. This is the fourth instance of t
 This is a defect in delivered code, so per `ADR-004` clause 6 it is a new ticket rather than an edit
 to `B-SENS-02`, and `INT-US-10` stays open until it lands.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Collection asks the parser registry | `GraphBuilder.collect_files` | derives its accepted suffixes from `get_default_parsers()` | every language a shipped parser can read is collected, and a language added to the registry needs no second edit here |
+| FR-2 | A directory of mixed sources is walked | `GraphOrchestrator.build_target` | is pointed at a directory rather than one file | both a Java and a Python file under it reach the graph — which is what `sw graph build <dir>` on a monolith actually does |
+
+## What the fix was
+
+Approach 1, as the filing predicted. Collection and extraction now cannot disagree by construction:
+both read the same registry.
+
+**A second gap surfaced while proving it.** Reverting the directory walk from `*` to `*.py` killed
+nothing — the existing test hands `build_target` a single FILE, so the walk branch was never driven,
+and the real entry point is a directory. FR-2 covers it, and asserts BOTH languages: a walk that
+collected Java and stopped collecting Python would satisfy a Java-only assertion perfectly.
+
+**Two details worth recording rather than rediscovering.** `_nodes` in that suite reports the
+*service* name, which is `default` for every row — the file each node came from is what says which
+languages were reached. And the store normalises `file_id` to lower case, so `UserService.java` is
+persisted as `userservice.java`; a case-sensitive match reports the Java file as absent when it is
+there.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/integration/graph/test_real_extraction_to_graph.py::test_a_non_python_source_also_reaches_the_graph` — was `xfail(strict=True)` against this ticket and turned XPASS the moment the fix landed. Pinning the suffixes back to `.py` fails it |
+| FR-2 | the same file, `::test_a_polyglot_directory_reaches_the_graph` — reverting the walk to `*.py` fails it, and pinning the suffixes fails both |
+
+## Candidate Approaches (as filed)
 
 1. **Ask the parser registry.** Derive the accepted suffixes from `get_default_parsers()` so
    collection and extraction cannot disagree by construction. One source of truth; the likely answer.
@@ -53,15 +83,15 @@ to `B-SENS-02`, and `INT-US-10` stays open until it lands.
 3. **Collect everything and let the adapter refuse.** Simple, but walks a whole monolith's
    non-source files to discard them.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - Language-specific graph semantics. The mapper reads `type` and `name`; whether a Kotlin `object`
   should be a distinct `NodeKind` is `B-SENS-02` scope, not this fix.
 - `.specweaverignore` behaviour (`C-SENS-02`), which already filters what is collected.
 - Making the Java grammar available where it is absent — the proof skips explicitly there.
 
-## Next Step
+## Delivery
 
-Run `specweaver-design`. The guardrail must ship with the fix: `INT-US-10` FR-1's non-Python case is
-`xfail(strict=True)` against this ticket today, so closing it flips that marker to a real pass and
-`check_xfail_blockers.py` fails if the marker is left behind.
+Delivered 2026-08-19. The guardrail worked exactly as the stub required: the strict marker turned
+XPASS on the first run after the fix, which is the signal to remove it, and
+`check_xfail_blockers.py` reports every remaining strict xfail still names an unbuilt blocker.

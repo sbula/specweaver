@@ -26,7 +26,7 @@ critical for long-term project viability.
   > `C-FLOW-03` is `✅` and two of its six FRs describe mechanisms **absent from `src/`**: `SW_PORT_OFFSET` port-offset injection, and `gc.auto 0` plus serialised worktree creation. `run_fan_out` IS
   > concurrent (`asyncio.gather`) and its sub-runs can each `git worktree add`, so both hazards are live. FR rows deleted per `TECH-046`; the work carried here. No mutant exists for absent code.
 
-* **`TECH-061` 🔴: The Knowledge Graph Is Python-Only**
+* **`TECH-061` 🟢: The Knowledge Graph Is Python-Only**
   > [Description](../features/topic_07_technical_debt/TECH-061/TECH-061_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-10` FR-1, the first integration test written under `ADR-004`._ |
   > `GraphOrchestrator.collect_files` filters `.py` and nothing else (`orchestrator.py:85-97`), while `D-SENS-03` ships Go/Kotlin/Java/C++/Rust extractors and both the adapter and the mapper are
   > language-agnostic. Pointed at a real Java file whose symbols the extractor DOES report, a build persists **zero** nodes. Three green suites never drove the composition.
@@ -147,7 +147,7 @@ critical for long-term project viability.
   > Kotlin's and Rust's `run_architecture_check` return `violation_count=0` as stubs, so *not implemented* is
   > indistinguishable from *nothing wrong*. **Lands before `B-SENS-07`** — these are wrong on today's code.
 
-* **`TECH-063` 🔴: The MCP Container Boundary Checks a Name, Not a Command**
+* **`TECH-063` 🟢: The MCP Container Boundary Checks a Name, Not a Command**
   > [Description](../features/topic_07_technical_debt/TECH-063/TECH-063_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-23-MIG` while citing `C-INTL-02` FR-2._ |
   > `MCPAtom` enforces "must run through docker/podman" by comparing `argv[0]` to a string set, then hands the command to raw `Popen`. The command AND its `env` come from `mcp_servers` in the analysed
   > project's `context.yaml` (`mcp_assembler.py:74-89`), so config-supplied `PATH` decides what `docker` resolves to, and `docker run --privileged -v /:/host` passes untouched. Analysis only — no

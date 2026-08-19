@@ -32,6 +32,93 @@ def _scrub(payload: Any, secrets: set[str]) -> Any:
     return payload
 
 
+#: The only runtimes NFR-2 permits. Names, because that is what a config declares.
+_ALLOWED_RUNTIMES = ("docker", "podman")
+
+#: Arguments that hand the container the host. `argv[0]` is still `docker` for every one of them, so
+#: a guard reading only the executable calls a host takeover compliant.
+#:
+#: Prefix-matched, because each has a `=` form and a separate-word form, and matching a whole token
+#: would let `--network=host` past a check written for `--network`.
+_ESCAPING_ARGUMENTS = (
+    "--privileged",
+    "--network=host",
+    "--net=host",
+    "--pid=host",
+    "--ipc=host",
+    "--uts=host",
+    "--userns=host",
+    "--cap-add",
+    "--security-opt",
+    "--device",
+)
+
+#: Host paths a mount may never expose. The socket is the whole daemon; `/` is the whole machine.
+_FORBIDDEN_MOUNT_SOURCES = ("/", "/var/run/docker.sock", "/run/docker.sock", "/etc", "/root")
+
+#: Flags whose value is a bind mount.
+_MOUNT_FLAGS = ("-v", "--volume", "--mount")
+
+#: The test seam that replaces a production hole.
+#:
+#: The interpreter used to be permitted unconditionally, with a comment saying it was "for internal
+#: test infrastructure" — and the condition ran on every construction, so a `context.yaml` naming the
+#: exact interpreter path (`.venv/bin/python` is conventional and discoverable) got arbitrary code
+#: with the boundary reporting compliance.
+#:
+#: A test needs a stdio server it can start without an image, a registry or a network. It gets one by
+#: patching this, which takes in-process code execution — something configuration cannot do, and
+#: something an attacker who already has it does not need.
+_ALLOW_INTERPRETER = False
+
+
+def _refuse(reason: str) -> None:
+    raise ValueError(
+        "NFR-2 Boundary Violation: MCP executions must run through an isolated container "
+        f"environment. {reason}"
+    )
+
+
+def _reject_escaping_arguments(arguments: list[str]) -> None:
+    """Refuse a command that asks the runtime to hand back the host."""
+    for index, argument in enumerate(arguments):
+        if any(argument.startswith(flag) for flag in _ESCAPING_ARGUMENTS):
+            _refuse(f"Argument '{argument}' removes the isolation the runtime provides.")
+        if argument in _MOUNT_FLAGS:
+            value = arguments[index + 1] if index + 1 < len(arguments) else ""
+            source = value.split(":", 1)[0]
+            if source in _FORBIDDEN_MOUNT_SOURCES:
+                _refuse(f"Mount '{value}' exposes host path '{source}' to the container.")
+
+
+def _resolved_runtime_command(command: list[str]) -> list[str]:
+    """The command to execute, with the runtime resolved from the TRUSTED environment.
+
+    `Popen` resolves `argv[0]` through the PATH of the `env` it is handed, and that `env` comes from
+    the analysed project's own `context.yaml`. So a guard comparing `command[0]` to a NAME validated
+    nothing the config could not redirect: a directory holding a script called `docker`, declared as
+    the config's PATH, satisfied the old check and ran. That was reproduced before this was written.
+
+    Resolving here — once, from this process's environment — makes `argv[0]` an absolute path, and a
+    config's PATH can no longer decide what it means.
+    """
+    import shutil
+    import sys
+
+    name = command[0]
+    if _ALLOW_INTERPRETER and name == sys.executable:
+        return list(command)
+    if name not in _ALLOWED_RUNTIMES:
+        _refuse(f"Bare executable '{name}' forbidden.")
+
+    _reject_escaping_arguments(command[1:])
+
+    resolved = shutil.which(name)
+    if resolved is None:
+        _refuse(f"Container runtime '{name}' is not installed on this machine.")
+    return [str(resolved), *command[1:]]
+
+
 class MCPAtom(Atom):
     """Flow-level MCP lifecycle and operation bridging.
 
@@ -49,17 +136,7 @@ class MCPAtom(Atom):
                 "Configuration Error: MCP Atom boundary dictates a valid executable string must be provided."
             )
 
-        allowed_executables = {"docker", "podman"}
-        # For internal test infrastructure, we safely permit the Python runtime bridge.
-        import sys
-
-        executor_target = command[0]
-        if executor_target not in allowed_executables and executor_target != sys.executable:
-            raise ValueError(
-                f"NFR-2 Boundary Violation: MCP Atom dictates executions must run through isolated environments (docker/podman). Bare executable forbidden: '{executor_target}'"
-            )
-
-        self._command = command
+        self._command = _resolved_runtime_command(command)
         self._env = env
         self._executor: MCPExecutor | None = None
 

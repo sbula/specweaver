@@ -60,12 +60,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 8 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 6 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
-| `TECH-061` 🔴 | The knowledge graph indexes Python only, so a polyglot repository is mapped by its Python half. |
-| `TECH-063` 🔴 | The MCP container boundary checks a name, not a command, so a permitted name can carry anything. |
+| `TECH-013` 🔴 | API composition roots do not resolve worktree-isolation policy, so a served run ignores it. |
+| `TECH-062` 🔴 | Parallel fan-out has no collision guards, so two agents can write the same file in one run. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -498,7 +498,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Dynamic Risk Controls:**
+    *   🟢 **Dynamic Risk Controls:**
         *   `✅` **D-VAL-02:** Custom Rule Paths
         *   `✅` **D-VAL-04:** Adaptive Assurance Standards
         *   `✅` **C-VAL-03:** Dynamic Risk Rulesets
@@ -601,9 +601,9 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-058:** [The Nightly's Baseline Forgot Its Own `-n auto`](features/topic_07_technical_debt/TECH-058/TECH-058_design.md)
     *   `✅` **TECH-059:** [Registry IDs and History in Production Comments](features/topic_07_technical_debt/TECH-059/TECH-059_design.md)
     *   `✅` **TECH-060:** [Integration Migration to (Sub)Story Path Inventories](features/topic_07_technical_debt/TECH-060/TECH-060_design.md)
-    *   `[ ]` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
+    *   `✅` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
-    *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
+    *   `✅` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `✅` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
     *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
     *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)

@@ -74,6 +74,20 @@ if __name__ == "__main__":
     return str(script_path)
 
 
+@pytest.fixture(autouse=True)
+def _allow_interpreter_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The dummy MCP server is a Python script, and the boundary refuses a bare interpreter.
+
+    That refusal is the fix for a real bypass: a `context.yaml` naming the exact interpreter path got
+    arbitrary code while the boundary reported compliance. The seam is opened in test scope, where it
+    takes in-process code execution to reach — which is exactly what a `context.yaml` does not have.
+
+    A container would need an image, a registry and a network to prove the same chain, none of which
+    belong in this test's cost.
+    """
+    monkeypatch.setattr("specweaver.sandbox.mcp.core.atom._ALLOW_INTERPRETER", True)
+
+
 class TestMCPFlowE2E:
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_code")

@@ -82,19 +82,31 @@ class GraphBuilder:
             ast_data = self.parser(str(path))
             self.ingest_ast(filepath, ast_data)
 
+    @staticmethod
+    def _parseable_suffixes() -> frozenset[str]:
+        """Every suffix the parser registry can read, asked rather than restated.
+
+        Collection used to accept `.py` and nothing else while every layer beneath it was polyglot:
+        the adapter resolves a parser by suffix from this same registry, and the mapper reads only
+        `type` and `name`. A Java file was dropped here, before the mapper — so a real Java class
+        whose symbols the shipped extractor DOES report persisted zero nodes, not even the FILE node.
+
+        Asked of the adapter rather than of the parser registry: `specweaver.graph` may depend on the
+        adapter and not on `workspace.ast.parsers`, and that boundary is the reason the two ended up
+        restating each other. A language added to the registry is now collected with no edit here.
+        """
+        from specweaver.workspace.ast.adapters.graph_adapter import parseable_suffixes
+
+        return parseable_suffixes()
+
     def collect_files(self, target_path: Path) -> set[str]:
-        """Collects all python files from a target path."""
+        """Collects every source file a shipped parser can read, from a target path."""
+        suffixes = self._parseable_suffixes()
         target = Path(target_path)
         if target.is_file():
-            if target.suffix == ".py":
-                return {str(target)}
-            return set()
+            return {str(target)} if target.suffix in suffixes else set()
 
-        found = set()
-        for p in target.rglob("*.py"):
-            if p.is_file():
-                found.add(str(p))
-        return found
+        return {str(p) for p in target.rglob("*") if p.is_file() and p.suffix in suffixes}
 
     def ingest_target(self, target_path: Path) -> int:
         """Collects files and ingests them, returning the number of ingested files."""

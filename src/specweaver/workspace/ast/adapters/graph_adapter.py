@@ -10,6 +10,21 @@ from specweaver.workspace.ast.parsers.factory import get_default_parsers
 logger = logging.getLogger(__name__)
 
 
+def parseable_suffixes() -> frozenset[str]:
+    """Every file suffix `extract_ast_dict` can resolve a parser for.
+
+    Lives beside the resolution it describes, so a caller deciding WHICH files to hand over and this
+    function deciding what to do with one cannot disagree. `GraphBuilder.collect_files` accepted
+    `.py` and nothing else while this resolved parsers for ten suffix groups, and a Java file was
+    dropped before the mapper ever saw it.
+
+    Exposed here rather than from the parser registry because `specweaver.graph` may depend on this
+    adapter and not on `workspace.ast.parsers` — the boundary is the reason the two ended up
+    restating each other.
+    """
+    return frozenset(suffix for group in get_default_parsers() for suffix in group)
+
+
 def extract_ast_dict(filepath: str) -> dict[str, Any]:
     """
     Adapter that wraps the polyglot Tree-Sitter parsers to output

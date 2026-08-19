@@ -2,9 +2,9 @@
 
 - **Feature ID**: TECH-063
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: found 2026-08-17 by `INT-US-23-MIG` while citing `C-INTL-02` FR-2
-- **Severity**: security. Analysis only — **no exploit has been demonstrated**, see Evidence.
+- **Severity**: security. **Reproduced 2026-08-19** before any fix was written, see Evidence.
 
 ## Problem Statement
 
@@ -65,8 +65,19 @@ escalation and no credential stripping, on a long-lived process.
 
 Verified by reading: the guard, the `Popen` call, and every step of the data flow above.
 
-**Not verified:** no exploit was run. Nothing here has been demonstrated end to end, and the
-severity rests on `context.yaml` being attacker-influenced.
+**Reproduced 2026-08-19, through the real atom.** A directory holding a shell script named after an
+installed runtime, declared as the config's `PATH`:
+
+```python
+atom = MCPAtom(command=["docker", "run", "alpine"], env={"PATH": attacker_directory})
+atom._ensure_started()
+# guard verdict: ACCEPTED (no exception)
+# the attacker's binary ran: True -> compromised
+```
+
+The guard raised nothing and the impersonating script executed and wrote its marker. Consequence (1)
+is confirmed, not hypothetical. The severity still rests on `context.yaml` being attacker-influenced,
+which is the premise below.
 
 **That premise is SpecWeaver's own brownfield case**, not a hypothetical: US-12 reverse-weaves
 undocumented repositories, US-18 targets an external proprietary system, US-26 sweeps *every*
@@ -76,7 +87,45 @@ untrusted input. A repository carrying its own `context.yaml` is the normal cond
 **A reproduction is the first task of this ticket**, before any fix is chosen. A security ticket
 argued only from reading is a hypothesis.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The runtime is resolved, not named | `MCPAtom` | resolves `docker` / `podman` against THIS process's environment before construction completes | `argv[0]` is an absolute path, so the config's `PATH` can no longer decide which binary the name means |
+| FR-2 | Escaping arguments are refused | `MCPAtom` | inspects the arguments, not only the executable | `--privileged`, host namespaces, `--cap-add`, `--device` and mounts of `/`, the daemon socket, `/etc` or `/root` are rejected |
+| FR-3 | The interpreter is unreachable from configuration | `MCPAtom` | permits a bare interpreter only behind a module constant | a `context.yaml` naming `.venv/bin/python` is refused; a test opens the seam by patching, which needs in-process code execution |
+
+## What was fixed, and what was not
+
+Approaches 1, 2 and 4. Approach 3 — SpecWeaver constructing the argv from config *data* — is the
+strongest and is not done: it is a change to what `mcp_servers` means, and (1), (2) and (4) close the
+demonstrated bypass without it.
+
+**(4) `SubprocessExecutor` is untouched**, as the Non-Goals say. That is `TECH-010`, still open, and
+this ticket does not need it.
+
+**The carve-out became a seam rather than disappearing.** 24 tests and one e2e needed a stdio server
+they could start without an image, a registry or a network. Deleting the interpreter outright would
+have removed `C-INTL-02`'s only end-to-end proof, so `_ALLOW_INTERPRETER` is `False` in production
+and patched by an autouse fixture in three conftests — an exemption that lives in one visible place
+per package and cannot be granted by accident. Reaching it needs code execution in the process, which
+is precisely what a `context.yaml` does not have.
+
+**A behaviour change worth naming:** a runtime that is not installed is now refused at construction
+rather than handed to `Popen` as a name. That is the point of FR-1, and it made two unit-test files
+box-dependent — they name `docker` on a machine that has podman. Their conftest answers
+`shutil.which` for both, because the assembler's tests are about `mcp_servers` reaching the atom, not
+about what this machine has installed.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/integration/sandbox/mcp/test_mcp_boundary_reproduction.py` — the reproduction inverted, plus a launch against the real `podman 5.7.0`. Reverting resolution to the bare name fails 3, and the impersonator runs again |
+| FR-2 | the same file — five parametrised refusals. Removing the argument check fails 5; emptying the forbidden mount sources fails 2 |
+| FR-3 | the same file — restoring the `sys.executable` condition fails 1 |
+
+## Candidate Approaches (as filed)
 
 1. **Resolve the runtime ourselves and ignore config `PATH`.** `shutil.which("docker")` at a trusted
    moment, pass the absolute path, and never let config decide resolution. Addresses (1) directly.
@@ -91,7 +140,7 @@ argued only from reading is a hypothesis.
 
 Approach 3 plus 4 is the shape most likely to close the class rather than the instances.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - `TECH-010`'s persistent-process executor migration. Related, separately owned, and not required to
   close (1)–(3).
@@ -101,6 +150,6 @@ Approach 3 plus 4 is the shape most likely to close the class rather than the in
 
 ## Guardrail
 
-`test_only_container_runtimes_are_allowed` already pins the allow-list against shells and
-interpreters, so it cannot *drift*. That stops regression and addresses none of (1)–(3) — it is
-recorded here so the existing test is not mistaken for a fix.
+`test_only_container_runtimes_are_allowed` pins the allow-list against shells and interpreters, so it
+cannot drift. It addressed none of (1)–(3), which is why it was recorded here rather than mistaken
+for a fix; the file above is what closes them, and every one of its claims is behind a mutant.

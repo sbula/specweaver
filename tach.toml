@@ -135,7 +135,7 @@ expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStruct
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.adapters",]
-expose = [ "graph_adapter", "graph_adapter.extract_ast_dict",]
+expose = [ "graph_adapter", "graph_adapter.extract_ast_dict", "graph_adapter.parseable_suffixes",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.project",]
