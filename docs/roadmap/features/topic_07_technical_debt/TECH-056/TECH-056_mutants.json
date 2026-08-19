@@ -17,7 +17,7 @@
           "old": "        if entry.get(\"disposition\")",
           "new": "        if entry is not None",
           "breaks": "the defect this ticket fixed, restored exactly: `record_run` writes every finding at the end of the session that found it, so keying on presence means a survival is marked read by the run that discovered it and the gate can never block",
-          "symbol_sha": "sha256:a45ab1e27a0ec5b2fa61243bb29120c5cb3dd9eb71372be143767ad3b8b8323f"
+          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         },
         {
           "id": "nothing-ever-counts-as-read",
@@ -26,7 +26,7 @@
           "old": "        if entry.get(\"disposition\")",
           "new": "        if False",
           "breaks": "the opposite failure and the more corrosive one: a confirmed finding re-blocks every morning, so `--confirm` stops meaning anything and the gate is disabled by whoever is on call",
-          "symbol_sha": "sha256:a45ab1e27a0ec5b2fa61243bb29120c5cb3dd9eb71372be143767ad3b8b8323f"
+          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         },
         {
           "id": "a-blocking-finding-is-not-named",
@@ -35,7 +35,7 @@
           "old": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] not in known",
           "new": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] in known",
           "breaks": "the filter is inverted, so dispositioned findings block and new ones pass — the gate reports on precisely the set nobody needs to look at",
-          "symbol_sha": "sha256:a45ab1e27a0ec5b2fa61243bb29120c5cb3dd9eb71372be143767ad3b8b8323f"
+          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         },
         {
           "id": "a-confirmation-forgets-the-recurrence-count",
@@ -45,6 +45,15 @@
           "new": "        entry[\"runs\"] = 1",
           "breaks": "NFR-2: every finding looks new every morning, so a `will-fix` that has been re-confirmed for a fortnight is indistinguishable from one raised last night, and the only pressure on a fix nobody makes disappears",
           "symbol_sha": "sha256:81d2d20090e933a570f7a8112caa9197e9048220f5cec91a491889fe5be7805d"
+        },
+        {
+          "id": "a-red-baseline-reads-as-green",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "    if baseline is not None and not baseline.get(\"green\"):",
+          "new": "    if False:",
+          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree — which it did, over 26 mutants, until the field was read",
+          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         }
       ]
     }
