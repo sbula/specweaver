@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-057
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: 2026-08-16, from measuring the corpus after `TECH-056`.
 - **Re-scoped same day**: filed unscheduled, then **scheduled** when the coverage goal was stated —
   *every (N)FR that makes sense goes into the nightly*. That turns this ticket's trigger from a
@@ -58,7 +58,52 @@ than the minority.
 a pool of eight takes ~3.7h to ~28min. Doing both is how the nightly stays under an hour at full
 coverage without anyone having to think about it again.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Mutants run across a pool | `run_corpus` | builds one sandbox per concurrent worker and hands each a free one | the nightly overlaps the 1.2–16s measurement of each mutant instead of adding them up, while each mutant still owns its worktree |
+| FR-2 | The report is unchanged | `run_corpus` | carries each mutant's index through and re-sorts at the end | results arrive in corpus order, so two nights stay diffable — completion order would reorder the report for reasons unrelated to the code |
+
+## Measured, before and after
+
+Approach 1 as filed: a pool of K sandboxes, the per-mutant mutate/measure/revert cycle untouched.
+
+Timed 2026-08-19 on a real corpus (`TECH-054`, 2 campaigns, 8 mutants):
+
+| | |
+|---|---|
+| `--workers 1` (the historical path) | **46.3 s** |
+| `--workers 4` | **18.4 s** |
+
+**2.5x, with identical verdicts in identical order** — compared campaign by campaign and mutant by
+mutant, not inferred from the exit code.
+
+Approach 2 (one sandbox per mutant) was not taken: it is strictly better isolation and the pool
+already gives each *concurrent* mutant its own worktree, which is the property that mattered. Approach
+3 (shrink the work instead) is not an alternative and remains the cheaper lever — scope discipline
+takes full coverage from ~3.7 h to ~54 min on its own, and this multiplies with it rather than
+replacing it.
+
+## Why the default is 4 and not the core count
+
+Each worker runs a **scoped pytest**, so the pool competes with pytest's own parallelism rather than
+adding to it, and the win is overlapping each mutant's measurement rather than saturating the box.
+Four is the conservative end of that; `--workers` exists for the other end, and `--workers 1` is the
+old behaviour exactly.
+
+**The session keeps its own sandbox for the baseline.** That is one full-suite run with nothing to
+parallelise, and reusing it for mutants would hand the same worktree to several workers — the overlap
+the single-sandbox design existed to prevent.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/unit/scripts/test_mutation_session.py::TestRunCorpusInParallel` — a sandbox handed out twice, or a pool of one, each fail. The cap test pins that two mutants never build eight worktrees |
+| FR-2 | the same class — `test_results_stay_in_corpus_order`, and the serial/parallel equality test that is the point of the change |
+
+## Candidate Approaches (as filed)
 
 1. **A pool of K sandboxes.** `build_sandbox()` K times, hand each worker a free one, keep the
    per-mutant mutate/measure/revert cycle exactly as it is. Smallest change; each worker's scoped
@@ -70,7 +115,7 @@ coverage without anyone having to think about it again.
    to ~54 min, because an e2e-scoped mutant costs 8x a unit-scoped one. Recorded in
    `docs/dev_guides/writing_mutation_campaigns.md` and the cheaper lever by far.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - **Parallelising the pytest run inside a single mutant.** Scoped runs are small by construction; the
   parallelism worth having is across mutants.

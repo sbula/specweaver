@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-011
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: Found during C-EXEC-02 SF-02's implementation-plan Phase 4 (2026-07-14), Q1.
 
 ## Problem Statement
@@ -29,7 +29,43 @@ with how `PipelineDefinition.validate_flow()` already fails fast on invalid `(ac
 combinations — without introducing per-action-type special cases scattered across the validation
 layer.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Required params are checked at load | `validate_flow()` | looks up what each step's action requires and reports what is absent | an author learns at load, not after the earlier steps of a gated run have already executed |
+| FR-2 | A misplaced key is named, not just missed | `validate_flow()` | sees a required param sitting at step level and says where it belongs | the ticket's own example — `script:` beside `action:` — reports *"it belongs under 'params:'"* instead of *"missing param"* about a value that is right there |
+
+## The decision that changed on contact
+
+Approach 2 as filed, plus a correction the filing could not have known.
+
+`extra="forbid"` is the obvious reading of *"a mistyped step-level key is silently dropped, not
+rejected"*, and it is wrong here. This repo states a **forward-compatibility contract** outright, in
+`test_load_with_extra_fields_ignored`: an unknown field from a future version must still load.
+Forbidding extras reverses a deliberate decision, and measured, it broke 11 of 16 shipped pipelines.
+
+`extra="allow"` keeps both properties. An unknown field loads, and it is still *there* when
+`validate_flow()` runs — which is what lets a misplaced param be named without forbidding fields
+nobody has invented yet.
+
+**One real field was hiding in the extras.** `rule` is used by every validation pipeline and was
+never declared, absorbed by `extra="ignore"` along with the typos. It is declared now, which is
+what made the model able to tell a field from a mistake at all.
+
+**The registry is a mechanism, not a demand.** Every action is looked up; one that declares nothing
+passes. `C-EXEC-02` refused to special-case bash to avoid the first action-specific exception, and
+that holds: bash is the only action with a requirement today because it is the only one that names
+one, and adding another is one line.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/unit/core/flow/engine/test_step_params_validated_at_load.py` — removing the call, or emptying the registry, each fail 3 |
+| FR-2 | the same file — dropping the misplacement branch fails 1, and reverting to `extra="ignore"` fails 1, because the key vanishes before anything can see it |
+
+## Candidate Approaches (as filed)
 
 1. **Per-action `params` schema registry** — each `StepAction` maps to a Pydantic model describing
    its expected `params` shape (e.g. `BashStepParams(script: str, args: list[str] = [], ...)`);
@@ -43,7 +79,7 @@ layer.
    premise; document the footgun instead. (The status quo — not a "do nothing" ticket by definition,
    but worth stating as the baseline being evaluated against.)
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - Retrofitting every existing step type's params validation in one PR — likely warrants its own phased sub-feature breakdown (start with a couple of the most typo-prone step types, expand from there).
 - Changing `PipelineStep`'s `extra="ignore"` Pydantic config globally — that's a separate, more

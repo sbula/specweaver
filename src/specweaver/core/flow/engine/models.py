@@ -17,7 +17,7 @@ from __future__ import annotations
 import enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -209,7 +209,24 @@ class PipelineStep(BaseModel):
         params: Free-form parameters passed to the module at runtime.
         gate: Optional gate that controls flow after this step.
         description: Human-readable description.
+
+    `extra="allow"`, deliberately, and it is neither of the two obvious choices. The default
+    `ignore` DROPPED an undeclared key silently: `script:` written beside `action:` instead of under
+    `params:` produced `params == {}` and a pipeline that validated clean, so the mistake surfaced as
+    a handler error much later in a long, gated run. `forbid` would reject it — and would also break
+    the forward-compatibility contract this repo states outright in
+    `test_load_with_extra_fields_ignored`, that an unknown field from a future version must load.
+
+    `allow` keeps both: an unknown field loads, and it is still THERE for `validate_flow` to look at,
+    which is how a misplaced param can be named without forbidding fields nobody has invented yet.
     """
+
+    model_config = ConfigDict(extra="allow")
+
+    #: A validation-rule id, for the validation pipelines that reuse this model. Declared rather than
+    #: absorbed by `extra="ignore"`: it is the only undeclared key any shipped pipeline uses, and
+    #: leaving it undeclared was what made the model unable to tell a real field from a typo.
+    rule: str | None = None
 
     name: str
     action: StepAction
@@ -306,6 +323,7 @@ class PipelineDefinition(BaseModel):
         - Each action+target combination is valid
         - loop_back gates have a valid, non-forward loop_target
         - loop_back on_fail requires a loop_target
+        - each step declares the params its action requires
 
         Returns:
             List of error messages. Empty list means valid.
@@ -343,7 +361,50 @@ class PipelineDefinition(BaseModel):
             if step.router is not None:
                 errors.extend(_validate_router(step.name, step.router, name_to_index))
 
+            # Required params, at load rather than when the step finally runs
+            errors.extend(_validate_params(step))
+
         return errors
+
+
+#: Params each action REQUIRES, checked when the pipeline is loaded rather than when the step runs.
+#:
+#: Uniform mechanism, not a uniform demand: every action is looked up, and one that declares nothing
+#: passes. Bash is the only action with a requirement because it is the only one that names one —
+#: this is not a bash special case, and adding another action is one entry that applies at load for
+#: free.
+_REQUIRED_PARAMS: dict[StepAction, tuple[str, ...]] = {
+    StepAction.BASH: ("script",),
+}
+
+
+def _validate_params(step: PipelineStep) -> list[str]:
+    """Required params a step declares nothing for, and ones written in the wrong place.
+
+    The second half is the footgun this exists for. An author who writes `script:` beside `action:`
+    rather than under `params:` gets a step whose params are empty and whose extras hold exactly the
+    value they meant — which is enough to say so precisely, instead of reporting a missing param and
+    leaving them to find a key that is right there.
+    """
+    required = _REQUIRED_PARAMS.get(step.action, ())
+    if not required:
+        return []
+
+    extras = step.model_extra or {}
+    errors = []
+    for key in required:
+        if step.params.get(key):
+            continue
+        if key in extras:
+            errors.append(
+                f"Step '{step.name}' ({step.action.value}) has '{key}' at the step level; "
+                f"it belongs under 'params:'"
+            )
+        else:
+            errors.append(
+                f"Step '{step.name}' ({step.action.value}) is missing required param '{key}'"
+            )
+    return errors
 
 
 def _validate_router(

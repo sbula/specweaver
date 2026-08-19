@@ -592,3 +592,91 @@ class TestBuildSandbox:
 
         mutation.run_corpus(_FakeCorpus(["a", "b", "c"]), sandbox=tmp_path)
         assert calls == [], "run_corpus must never lay a baseline itself"
+
+
+class TestRunCorpusInParallel:
+    """A pool of sandboxes, because the serialisation was incidental rather than chosen.
+
+    Proves: TECH-057 FR-1, TECH-057 FR-2
+
+    `run_corpus` said it plainly — *"one sandbox reused across all of them"* — so every mutant was
+    written into the same worktree, measured and reverted, and mutants could not overlap. Measured
+    2026-08-16: a sandbox costs **0.2s** to build and tear down, so a pool of eight costs 1.6s. The
+    serial order was defending nothing.
+
+    Two properties, and the second is the one that makes the first safe to want: the results must be
+    identical to the serial run, in corpus order, and each concurrent mutant must get a sandbox of
+    its own. A pool that handed two workers the same worktree would reintroduce exactly the overlap
+    the single-sandbox design was avoiding.
+    """
+
+    @staticmethod
+    def _run(mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, names: list[str], workers: int):
+        seen: list[Path] = []
+
+        def _run_one(*args: object, **kwargs: object) -> dict:
+            box = kwargs.get("sandbox", args[0] if args else None)
+            seen.append(Path(str(box)))
+            return {"verdict": "KILLED", "killers": ["t::x"], "detail": "", "code": 1}
+
+        monkeypatch.setattr(mutation._mutate, "run_one", _run_one)
+        monkeypatch.setattr(mutation, "_run_rc", lambda *a, **k: ("", 0))
+        built: list[Path] = []
+
+        def _build() -> Path:
+            import tempfile
+
+            path = Path(tempfile.mkdtemp(prefix="fake-sandbox-"))
+            built.append(path)
+            return path
+
+        monkeypatch.setattr(mutation, "build_sandbox", _build)
+        monkeypatch.setattr(mutation, "remove_sandbox", lambda p: None)
+        results = mutation.run_corpus(_FakeCorpus(names), workers=workers)
+        return results, seen, built
+
+    def test_parallel_returns_the_same_results_as_serial(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        names = ["a", "b", "c", "d"]
+
+        serial, _, _ = self._run(mutation, monkeypatch, names, workers=1)
+        parallel, _, _ = self._run(mutation, monkeypatch, names, workers=4)
+
+        assert [r.derived_id for r in parallel] == [r.derived_id for r in serial]
+        assert [r.outcome for r in parallel] == [r.outcome for r in serial]
+
+    def test_results_stay_in_corpus_order(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A report whose rows arrive in completion order is a report nobody can diff."""
+        names = ["a", "b", "c", "d", "e"]
+
+        results, _, _ = self._run(mutation, monkeypatch, names, workers=4)
+
+        assert [r.derived_id for r in results] == [f"X FR-1 {n}" for n in names]
+
+    def test_each_worker_gets_its_own_sandbox(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The property the single-sandbox design was protecting: mutants must not overlap."""
+        _, _, built = self._run(mutation, monkeypatch, ["a", "b", "c", "d"], workers=4)
+
+        assert len(set(built)) == len(built), "a sandbox was handed out twice"
+        assert len(built) > 1, "the pool built only one sandbox"
+
+    def test_the_pool_is_capped_by_the_work_available(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Eight workers for two mutants is six worktrees built to sit idle."""
+        _, _, built = self._run(mutation, monkeypatch, ["a", "b"], workers=8)
+
+        assert len(built) <= 2
+
+    def test_one_worker_still_builds_one_sandbox(
+        self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The control, and the default: nothing about the serial path changes."""
+        _, _, built = self._run(mutation, monkeypatch, ["a", "b", "c"], workers=1)
+
+        assert len(built) == 1

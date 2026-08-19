@@ -54,6 +54,7 @@ _corpus = _sibling("_corpus")
 _report = _sibling("_mutation_report")
 _timer = _sibling("_mutation_timer")
 _gate = _sibling("_mutation_gate")
+_pool = _sibling("_mutation_pool")
 
 UNIT_NAME = _timer.UNIT_NAME
 timer_units = _timer.timer_units
@@ -291,14 +292,29 @@ def run_baseline(sandbox: Path, *, tests: str = "tests") -> Baseline:
     return Baseline(green=code == 0, failures=_mutate.killers(out), code=code)
 
 
+def _default_workers() -> int:
+    """Sandboxes to run mutants across unless told otherwise.
+
+    Capped below the core count: each worker runs a scoped pytest, so the pool competes with
+    pytest's own parallelism rather than adding to it.
+    """
+    import os
+
+    return max(1, min(4, os.cpu_count() or 1))
+
+
 def run_corpus(
     corpus: Any,
     *,
     baseline: Baseline | None = None,
     sandbox: Path | None = None,
     confirm: bool = False,
+    workers: int = 1,
 ) -> list[MutantRun]:
-    """Run every mutant in a validated corpus, one sandbox reused across all of them.
+    """Run every mutant in a validated corpus, across a pool of `workers` sandboxes.
+
+    Each concurrent mutant gets a worktree of its own, so mutants cannot overlap. An explicit
+    `sandbox` pins the run to that worktree, and therefore to one worker.
 
     `confirm` re-runs each kill's killers without the mutant before believing it (`FR-6`). It is
     opt-in here and on by default in a session, because the cost is real and the callers that only
@@ -307,34 +323,51 @@ def run_corpus(
     `baseline` is carried rather than applied: turning it into `INDETERMINATE` is `verdict_of`'s
     job, and doing it here would put a judgement inside the function that gathers the evidence.
     """
-    own_sandbox = sandbox is None
-    if own_sandbox:
-        sandbox = build_sandbox()
+    work = [
+        (mutant, " ".join(campaign.scope))
+        for campaign in corpus.campaigns
+        if not campaign.retired
+        for mutant in campaign.mutants
+    ]
+    if not work:
+        return []
 
-    assert sandbox is not None
-    clean = snapshot_cleanliness(sandbox)
-    results: list[MutantRun] = []
-    try:
-        for campaign in corpus.campaigns:
-            if campaign.retired:
-                continue
-            target = " ".join(campaign.scope)
-            for mutant in campaign.mutants:
-                drift = _corpus.drift_of(mutant, REPO_ROOT)
-                run = _run_mutant(sandbox, mutant, target, drift=drift)
-                if confirm and run.outcome == "KILL":
-                    run = replace(run, confirmed=confirm_kill(sandbox, run.killers))
-                leaked = leaked_since(sandbox, clean)
-                if leaked:
-                    # Clean and carry on. Aborting would turn one leaky test into a night with no
-                    # data, and would fail the accounting rule for a reason the corpus did not cause.
-                    _mutate._run(["git", "clean", "-fdq"], sandbox)
-                    run = replace(run, leaked=leaked)
-                results.append(run)
-    finally:
-        if own_sandbox:
-            remove_sandbox(sandbox)
-    return results
+    def measure(box: Path, item: tuple[Any, str], clean: Any) -> MutantRun:
+        mutant, target = item
+        run = _run_mutant(box, mutant, target, drift=_corpus.drift_of(mutant, REPO_ROOT))
+        if confirm and run.outcome == "KILL":
+            run = replace(run, confirmed=confirm_kill(box, run.killers))
+        leaked = leaked_since(box, clean)
+        if leaked:
+            # Aborting would turn one leaky test into a night with no data, and would fail the
+            # accounting rule for a reason the corpus did not cause.
+            _mutate._run(["git", "clean", "-fdq"], box)
+            run = replace(run, leaked=leaked)
+        return run
+
+    def serial(box: Path) -> list[MutantRun]:
+        clean = snapshot_cleanliness(box)
+        return [measure(box, item, clean) for item in work]
+
+    if sandbox is not None:
+        return serial(sandbox)
+
+    pool_size = _pool.size_for(workers, len(work))
+    if pool_size == 1:
+        only = build_sandbox()
+        try:
+            return serial(only)
+        finally:
+            remove_sandbox(only)
+
+    return _pool.run_ordered(
+        work,
+        pool_size,
+        run_one=measure,
+        build=build_sandbox,
+        remove=remove_sandbox,
+        prepare=snapshot_cleanliness,
+    )
 
 
 def _run_mutant(sandbox: Path, mutant: Any, target: str, *, drift: str = "OK") -> MutantRun:
@@ -432,6 +465,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-baseline", action="store_true", help="skip the full-suite baseline")
     ap.add_argument("--no-confirm", action="store_true", help="do not re-run killers unmutated")
     ap.add_argument(
+        "--workers",
+        type=int,
+        default=_default_workers(),
+        help="sandboxes to run mutants across (1 = serial)",
+    )
+    ap.add_argument(
         "--install-timer", action="store_true", help="write the nightly systemd user units"
     )
     ap.add_argument(
@@ -474,7 +513,9 @@ def main(argv: list[str] | None = None) -> int:
             if not args.no_baseline:
                 baseline = run_baseline(sandbox)
             for path in paths:
-                campaigns += _judge(path, sandbox, baseline, confirm=not args.no_confirm)
+                campaigns += _judge(
+                    path, sandbox, baseline, confirm=not args.no_confirm, workers=args.workers
+                )
         finally:
             remove_sandbox(sandbox)
 
@@ -498,11 +539,19 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _judge(
-    path: Path, sandbox: Path, baseline: Baseline | None, *, confirm: bool
+    path: Path, sandbox: Path, baseline: Baseline | None, *, confirm: bool, workers: int = 1
 ) -> list[dict[str, Any]]:
-    """One corpus file, run and judged into report-shaped campaigns."""
+    """One corpus file, run and judged into report-shaped campaigns.
+
+    Above one worker the session's sandbox is not reused — handing one worktree to two workers is
+    the overlap the pool avoids. It stays for the baseline, which has nothing to parallelise.
+    """
     corpus = _corpus.load_corpus(path)
-    runs = run_corpus(corpus, baseline=baseline, sandbox=sandbox, confirm=confirm)
+    runs = (
+        run_corpus(corpus, baseline=baseline, confirm=confirm, workers=workers)
+        if workers > 1
+        else run_corpus(corpus, baseline=baseline, sandbox=sandbox, confirm=confirm)
+    )
     by_id = {run.derived_id: run for run in runs}
     failures = list(getattr(baseline, "failures", []) or [])
 

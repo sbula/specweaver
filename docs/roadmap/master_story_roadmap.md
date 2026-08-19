@@ -60,13 +60,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 3 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*Nothing open. All 64 `TECH` tickets are delivered, each with its FRs cited and behind a killed
+mutant. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
-| Ticket | What you misread without it |
-|---|---|
-| `TECH-011` 🔴 | Pipeline step params are unvalidated at load, so a malformed step fails mid-run. |
-| `TECH-011` 🔴 | Pipeline step params are unvalidated at load, so a malformed step fails mid-run. |
-| `TECH-057` 🔴 | The nightly runs its mutants one at a time, so the corpus takes hours it need not. |
+*This table ranked open debt by what it invalidated. It stays, empty, because the next ticket needs
+somewhere to go — and because an empty ranking is a fact worth being able to read, where a deleted
+section would only be an absence.*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -554,7 +553,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-008:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-008/TECH-008_design.md)
     *   `✅` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
     *   `✅` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
-    *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
+    *   `✅` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
     *   `✅` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
     *   `✅` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
@@ -597,7 +596,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-054:** [The Two Foundations Nobody Wrote Down](features/topic_07_technical_debt/TECH-054/TECH-054_design.md)
     *   `✅` **TECH-055:** [The Suite Edits the Standard It Is Measured Against](features/topic_07_technical_debt/TECH-055/TECH-055_design.md)
     *   `✅` **TECH-056:** [The Morning Gate Marks Its Own Homework](features/topic_07_technical_debt/TECH-056/TECH-056_design.md)
-    *   `[ ]` **TECH-057:** [The Nightly Runs Its Mutants One at a Time](features/topic_07_technical_debt/TECH-057/TECH-057_design.md)
+    *   `✅` **TECH-057:** [The Nightly Runs Its Mutants One at a Time](features/topic_07_technical_debt/TECH-057/TECH-057_design.md)
     *   `✅` **TECH-058:** [The Nightly's Baseline Forgot Its Own `-n auto`](features/topic_07_technical_debt/TECH-058/TECH-058_design.md)
     *   `✅` **TECH-059:** [Registry IDs and History in Production Comments](features/topic_07_technical_debt/TECH-059/TECH-059_design.md)
     *   `✅` **TECH-060:** [Integration Migration to (Sub)Story Path Inventories](features/topic_07_technical_debt/TECH-060/TECH-060_design.md)

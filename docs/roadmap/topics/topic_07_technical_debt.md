@@ -77,7 +77,7 @@ critical for long-term project viability.
   > documented raw-`subprocess` exemption: its persistent, bidirectional process pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design. Needs a
   > long-lived-process executor abstraction rather than a mechanical migration.
 
-* **`TECH-011` 🔴: Load-Time Params Validation for All Pipeline Step Types**
+* **`TECH-011` 🟢: Load-Time Params Validation for All Pipeline Step Types**
   > [Description](../features/topic_07_technical_debt/TECH-011/TECH-011_design.md) | _Status: STUB. Origin: `C-EXEC-02 SF-02` implementation-plan Phase 4, Q1 (2026-07-14)._ | `PipelineStep.params` is
   > opaque to `PipelineDefinition.validate_flow()`, so every step type's params are validated only when the step **executes** — potentially far into a long HITL-gated run. Combined with Pydantic
   > `extra="ignore"`, an author typo (e.g. `script:` at step level instead of under `params:`) surfaces as a confusing runtime handler error instead of an immediate load-time failure. Must apply to
@@ -245,7 +245,7 @@ critical for long-term project viability.
   > `gate_verdict` read presence in the ledger as "a human looked at this", and `record_run` — the last thing every session does — writes each finding as `{"runs": 1}` with nothing decided. Both halves
   > had passing unit tests; nothing composed them. **DELIVERED 2026-08-16:** the gate keys on a recorded disposition, proven by six composed tests and four mutants.
 
-* **`TECH-057` 🔴: The Nightly Runs Its Mutants One at a Time**
+* **`TECH-057` 🟢: The Nightly Runs Its Mutants One at a Time**
   > [Description](../features/topic_07_technical_debt/TECH-057/TECH-057_design.md) | _(2026-08-16 — measured after `TECH-056`; filed unscheduled, then **scheduled** once the coverage goal was set.)_ |
   > `run_corpus` reuses one sandbox, so mutants cannot overlap — yet build and teardown measure **0.2s**, so the serialisation defends nothing. With every mutatable (N)FR bound for the nightly
   > (**579 of 658 today, 88%**; ~918 at full roadmap, ~2,480 mutants) today's scope mix projects to **~3.7h serial**. Ordered behind scope discipline, which is free and gets it to ~54 min.
