@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-067
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: found 2026-08-19 closing `TECH-041`, which set out to prove the code-level DAL override
   end to end and had to measure which path implements it first.
 
@@ -42,7 +42,39 @@ parameter arrived, which proves the call, not the constraint.
 The `sw check` path does not have this problem because its strictness is applied at the summary
 (`effective_strict` turns WARNs into a failure), not inside a runner.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The step is judged against the module's DAL | `ValidateCodeHandler` | reads the DAL the runner seeded onto `context.isolation` and forwards it to the validation flow | the value the runner resolved is the value the verdict uses, instead of being carried and dropped |
+| FR-2 | A strict DAL fails on findings a lenient one passes | The step verdict | counts WARNs as failures when the DAL is strict | the same module and the same findings fail under `DAL_A` and pass under `DAL_E`, the rule `sw check` already applied at its summary |
+
+## The decision taken
+
+Approach 1: apply strictness at the step verdict, mirroring the CLI. Approach 2 — pushing the DAL
+down so runners produce *different* findings — remains open and is not an increment of this; nothing
+here forecloses it, because the strictness is applied above the runners rather than inside them.
+
+**The filing said forwarding alone would be inert, and it was right.** No runner branches on
+`dal_level`; it is still only logged. What makes this observable is the second half: the handler's
+verdict now folds WARNs in when the DAL is strict, exactly as `_print_summary` has always done for
+`sw check`. Forwarding without that would have been the wiring-with-no-consumer the filing warned
+about.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/integration/core/flow/handlers/test_code_validation_dal_strictness.py` — blanking the seeded DAL fails the strict case |
+| FR-2 | the same file — three tests. Dropping the WARN fold, or forcing every step strict, each fail one. The lenient control is what catches the always-strict inverse |
+
+## What is knowingly not covered
+
+**Runners still ignore the DAL.** A `DAL_A` module gets the same findings judged harder, not stricter
+thresholds. That is approach 2, and it is a different product — worth taking deliberately rather than
+sliding into.
+
+## Candidate Approaches (as filed)
 
 1. **Apply strictness at the handler's verdict, mirroring the CLI.** `_validation_output` decides
    pass/fail for the step; give it the same `is_strict` treatment `_print_summary` has, so a WARN
@@ -60,7 +92,7 @@ The `sw check` path does not have this problem because its strictness is applied
 differently: 1 judges the same findings harder, 2 produces different findings. They are not
 increments of each other.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - The `sw check` path. Proven by `TECH-041`, unchanged.
 - The spec-level DAL path. Proven twice, unchanged.
@@ -68,8 +100,8 @@ increments of each other.
   where Kotlin and Rust are concerned, and `TECH-064` has already made their silence legible.
 - Removing `seed_dal_level` from the runner. It also feeds isolation decisions, which do consume it.
 
-## Next Step
+## Delivery
 
-Run `specweaver-design`. Take the scope decision first — 1, 2 or 3 — because the test that proves it
-differs in each case, and writing the wiring before the decision is how the value came to be carried
-and unused in the first place.
+Delivered 2026-08-19, same day as filing. The scope decision was taken first, as the stub demanded:
+approach 1, because it makes the pipeline agree with a rule the CLI already applies, and because the
+test that proves it is observable without any runner changing.

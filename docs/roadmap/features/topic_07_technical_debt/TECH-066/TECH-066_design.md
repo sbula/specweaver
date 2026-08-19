@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-066
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: found 2026-08-19 giving `US-22` the spanning proof `ADR-005` requires. The story's
   first path could not be tested because there is no chain to test.
 
@@ -36,7 +36,49 @@ rule against a context that no run constructs.
 record the defect as the intended behaviour. `finished-stories-immutable` also bars adding the
 wiring as a new FR on `A-VAL-01`, which is `✅` — hence a ticket.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | A declared contract is found and parsed | The code-validation hydrator | walks the project root for `.proto` files and YAML carrying an `openapi:`, `swagger:` or `asyncapi:` marker | the endpoints they declare are in the rule context, so `C13` has something to compare against |
+| FR-2 | The comparison reaches a verdict | `C13` | compares those endpoints against the code's own structure | an endpoint the code does not carry is an ERROR naming it, code that binds it passes, and a project declaring no contract still skips |
+
+## What the fix actually was
+
+Approach 1 as filed, with one thing the filing did not know: **two** keys were missing, not one.
+`C13` reads `protocol_schema` *and* `ast_payload`, and the executor makes a step's payload *be* the
+rule context rather than a member of it — so `ast_payload` existed as the context and never as a key
+inside it. Supplying only the schema left the rule skipping for the other half.
+
+Both are hydrated in the one place both entry points pass through, so `sw check` and the pipeline
+behave the same. The code structure is read through `CodeStructureAtom` with a **project-relative**
+path: an absolute one is rejected as traversal, and a rejected read exports `{}` — indistinguishable
+from a file with no structure.
+
+The scope question the filing raised — *does contract drift belong at validation tier?* — answered
+itself. `C13` already ships enabled in `validation_code_default.yaml`; that decision was taken when
+the rule was added, and the defect was never scope but wiring.
+
+## What is knowingly not covered
+
+**`C13` compares an endpoint's path literally.** That suits a path-based contract, where the route
+appears in a decorator the AST carries. It cannot confirm a gRPC method is implemented —
+`Users/GetUser` is a name the code never has to spell — so a `.proto` can raise drift and can never
+clear it. The e2e uses OpenAPI for the pass/fail pair for that reason and says so. Making the gRPC
+side symmetric means matching on service and method rather than a path, which is a change to the
+rule's comparison and its own piece of work.
+
+**Discovery is bounded** to three directory levels and skips vendored trees. A contract nested deeper
+is not found, and a project that keeps one there gets the honest SKIP rather than a wrong verdict.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/e2e/capabilities/assurance/test_contract_drift_reaches_the_check_e2e.py` — emptying discovery fails 4 of 5; removing the YAML markers fails 3 |
+| FR-2 | the same file — the aligned control, the named-endpoint assertion, and the honest SKIP. Blanking the AST payload or handing the atom an absolute path each fail one |
+
+## Candidate Approaches (as filed)
 
 1. **Wire it in the validation handler.** `handlers/validation.py` already assembles `ast_payload`
    from the AST atom; discover protocol files under the project root, parse them through
@@ -50,7 +92,7 @@ wiring as a new FR on `A-VAL-01`, which is `✅` — hence a ticket.
    a rule that always skips is worse than an absent one, because a green check reads as a clean
    verdict.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - Changing any protocol parser. FR-1 to FR-4 are delivered and proven; only the join is missing.
 - Rewriting the C13 comparison logic. Its unit test passes against a hand-built context and the
@@ -58,9 +100,9 @@ wiring as a new FR on `A-VAL-01`, which is `✅` — hence a ticket.
 - The polyglot AST work in `TECH-065`. That ticket is about annotation *arguments* not matching a
   schema key; this one is about the schema never arriving at all.
 
-## Next Step
+## Delivery
 
-Run the `specweaver-design` skill. The decision it must take is approach 1 versus 3 — whether
-contract drift is a validation-tier concern at all — because approach 2 only makes sense once that
-is settled. Whichever is chosen, ship the guardrail with it: a rule that can only ever SKIP in a
-real run must be a finding, or this regrows silently the next time a context key is renamed.
+Delivered 2026-08-19, same day as filing. The guardrail the stub asked for is
+`TECH-064`'s `test_architecture_check_honesty.py` in spirit and this ticket's own honest-SKIP test in
+practice: SKIP stays reachable and asserted, so a future rename that breaks the wiring shows up as
+the pass case failing rather than as silence.

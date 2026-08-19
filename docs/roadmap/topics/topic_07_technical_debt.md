@@ -127,14 +127,14 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
-* **`TECH-067` 🔴: The Pipeline Resolves a Module's DAL and Never Applies It**
+* **`TECH-067` 🟢: The Pipeline Resolves a Module's DAL and Never Applies It**
   > [Description](../features/topic_07_technical_debt/TECH-067/TECH-067_design.md) | _Status: STUB. Origin: found 2026-08-19 closing `TECH-041`._
   > `seed_dal_level` resolves a module's DAL onto `context.isolation`, and `ValidateCodeHandler` then calls
   > `execute_validation_flow` without it — so code from `sw implement` is validated at default strictness whatever
   > its `context.yaml` says. Forwarding it alone would be inert: no QA runner branches on `dal_level`. The decision
   > is what strictness should mean for generated code — the same findings judged harder, or different findings.
 
-* **`TECH-066` 🔴: Contract Drift Analysis Can Never Find Anything**
+* **`TECH-066` 🟢: Contract Drift Analysis Can Never Find Anything**
   > [Description](../features/topic_07_technical_debt/TECH-066/TECH-066_design.md) | _Status: STUB. Origin: found 2026-08-19 giving `US-22` its spanning proof._
   > `C13` reads `protocol_schema` from its rule context and nothing in `src/` ever produces that key, so it takes
   > the skip branch on every code check: measured, a real `.proto` beside mismatched code reports `SKIP`. The

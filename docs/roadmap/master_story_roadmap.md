@@ -60,12 +60,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 10 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 8 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-061` 🔴 | The knowledge graph indexes Python only, so a polyglot repository is mapped by its Python half. |
-| `TECH-066` 🔴 | `C13` reads a context key nothing produces, so contract drift skips on every check and a mismatched `.proto` reads as clean. |
+| `TECH-063` 🔴 | The MCP container boundary checks a name, not a command, so a permitted name can carry anything. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -606,5 +606,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `✅` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
     *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
-    *   `[ ]` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
-    *   `[ ]` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)
+    *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
+    *   `✅` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)

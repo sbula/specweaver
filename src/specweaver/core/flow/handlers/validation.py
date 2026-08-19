@@ -105,7 +105,9 @@ def _rule_payload(results: list[RuleResult]) -> list[dict[str, Any]]:
     ]
 
 
-def _validation_output(results: list[RuleResult]) -> tuple[dict[str, Any], int]:
+def _validation_output(
+    results: list[RuleResult], *, strict: bool = False
+) -> tuple[dict[str, Any], int]:
     """The validate payload both handlers return, plus the failure count they both branch on.
 
     Shared by `ValidateSpecHandler` and `ValidateCodeHandler`, which otherwise repeat the same
@@ -116,11 +118,18 @@ def _validation_output(results: list[RuleResult]) -> tuple[dict[str, Any], int]:
     Returns the count rather than the failing rules: both callers only ever took `len()` of it, and
     `passed` is then `len(results) - failed` instead of a second pass over the same list.
 
+    `strict` folds WARNs into that count, which is how a module's DAL reaches the step verdict. It is
+    the same rule the CLI applies at its summary, so a module marked `DAL_A` fails a pipeline step on
+    the findings a `DAL_E` module passes with — instead of the two being judged identically because
+    the DAL stopped one call short of here.
+
     The two callers still differ, deliberately — the spec handler sets `error_message` and the code
     handler does not, because `validate_code` is report-only behind a CONTINUE gate. That
     difference is behaviour, not duplication, so it stays at the call sites.
     """
     failed = sum(1 for r in results if r.status == RuleStatus.FAIL)
+    if strict:
+        failed += sum(1 for r in results if r.status == RuleStatus.WARN)
     return {
         "results": _rule_payload(results),
         "total": len(results),
@@ -274,6 +283,9 @@ class ValidateCodeHandler:
             )
 
         logger.debug("ValidateCodeHandler: validating code file '%s'", code_path.name)
+        # Seeded onto the run context by the runner. Read here rather than resolved again, so the
+        # step is judged against the same DAL the isolation decisions used.
+        dal_level = context.isolation.dal_level
         try:
             merged_settings = await _resolve_merged_settings(context, code_path)
             results = await asyncio.to_thread(
@@ -284,8 +296,11 @@ class ValidateCodeHandler:
                 context.project_path,
                 analyzer_factory=context.analysis.analyzer_factory,
                 parsers=context.analysis.parsers,
+                dal_level=dal_level,
             )
-            output, failed = _validation_output(results)
+            output, failed = _validation_output(
+                results, strict=bool(dal_level and dal_level.is_strict)
+            )
             logger.info(
                 "ValidateCodeHandler: %d rules executed, %d passed, %d failed (code=%s)",
                 len(results),
@@ -336,6 +351,7 @@ class ValidateCodeHandler:
         project_path: Path | None = None,
         analyzer_factory: Any | None = None,
         parsers: Any | None = None,
+        dal_level: Any | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -398,6 +414,7 @@ class ValidateCodeHandler:
             content,
             spec_path,
             project_root=project_path,
+            dal_level=dal_level,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
         )
 
