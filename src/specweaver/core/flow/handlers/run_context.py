@@ -46,6 +46,9 @@ class IsolationPolicy(BaseModel):
     session_isolation: bool = False
     allowed_paths: list[str] = Field(default_factory=list)
     dal_level: Any = None
+    #: The install's `AutonomySettings`, frozen here at the composition root. `None` means
+    #: policy never resolved, which the dial treats as `oneshot`.
+    autonomy: Any = None
 
 
 class PlanContext(BaseModel):

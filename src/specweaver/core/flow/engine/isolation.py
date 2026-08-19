@@ -75,6 +75,10 @@ def apply_isolation_policy(
     CLI synchronously, the API with `load_settings_async` — and calling the sync loader inside an
     async endpoint would block the event loop to share code that is not the part worth sharing.
 
+    Also freezes the autonomy policy — the execution-mode dial — because it is the same kind of
+    decision with the same two roots: seeding it at one of them would leave runs from the other
+    resolving against no policy at all.
+
     Deliberately does NOT populate `context.model.config`: that would also expose
     `[sandbox] execution_mode` and incidentally activate container QA on this path.
 
@@ -83,7 +87,13 @@ def apply_isolation_policy(
     """
     try:
         context.isolation = context.isolation.model_copy(
-            update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
+            update={
+                "enforce_isolation": settings.sandbox.enforce_worktree_isolation,
+                # Defensive: a settings object without this attribute must still get its
+                # isolation policy. Reading it strictly would drop BOTH on the floor, because
+                # the whole block is best-effort.
+                "autonomy": getattr(settings, "autonomy", None),
+            }
         )
         apply_session_policy(context, settings, logger)
     except Exception:  # best-effort here — never crash a run over policy resolution

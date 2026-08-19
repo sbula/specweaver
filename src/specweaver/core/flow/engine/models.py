@@ -238,6 +238,9 @@ class PipelineStep(BaseModel):
     # Tri-state — None = defer to the run-wide isolation policy
     # (context.isolation.enforce_isolation); True = force isolation on; False = force opt-out.
     use_worktree: bool | None = None
+    # Tri-state, same shape — None = defer to the install's autonomy policy; "oneshot"/"agentic"
+    # state the step's own intent. The run's DAL can still refuse agentic; it never forces it.
+    mode: str | None = None
 
 
 # ---------------------------------------------------------------------------

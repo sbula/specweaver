@@ -125,6 +125,28 @@ class StandardsSettings(BaseModel):
     mode: Literal["mimicry", "best_practice"] = "mimicry"
 
 
+class AutonomySettings(BaseModel):
+    """The execution-mode dial: how rigidly work between two gates is produced.
+
+    ``mode`` is the install-wide default a pipeline step may override. It ships ``oneshot``
+    because every pipeline in the repo predates the dial, and a capability whose arrival changes
+    how existing work runs is a regression wearing a feature's clothes.
+
+    ``agentic_max_dal`` is the ceiling criticality may not cross. Agentic execution is the *less*
+    rigid position, so it is allowed for low-criticality targets and refused above this level —
+    the pipeline author asks, the target's DAL decides. Defaults to ``DAL_D`` (minor failure), so
+    DAL-A, DAL-B and DAL-C targets stay deterministic whatever a pipeline requests.
+
+    ``max_turns`` bounds one agentic work unit. It is one of two bounds; the other is the run's
+    spend ceiling in ``LLMSettings``. Turns alone cannot stop expensive calls and spend alone
+    cannot stop cheap ones, so neither is redundant.
+    """
+
+    mode: Literal["oneshot", "agentic"] = "oneshot"
+    agentic_max_dal: DALLevel = DALLevel.DAL_D
+    max_turns: int = Field(default=10, ge=1)
+
+
 class SandboxSettings(BaseModel):
     """Execution sandbox configuration.
 
@@ -183,3 +205,4 @@ class SpecWeaverSettings(BaseModel):
     dal_matrix: DALImpactMatrix = DALImpactMatrix()
     standards: StandardsSettings = StandardsSettings()
     sandbox: SandboxSettings = SandboxSettings()
+    autonomy: AutonomySettings = AutonomySettings()

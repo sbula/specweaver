@@ -163,8 +163,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
-    *   🔴 **Graduated Autonomy:**
-        *   `[ ]` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial) — needs `C-EXEC-06` ✅; sequenced behind `C-VAL-05`
+    *   🟢 **Graduated Autonomy:**
+        *   `✅` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
