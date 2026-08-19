@@ -41,6 +41,19 @@ DIRECTIVES = [
     "<|im_start|>system",
 ]
 
+#: Short, space-free ids. A parametrised id containing spaces does not survive being handed
+#: back to pytest as a node id, which is how the mutation corpus re-runs a killer to confirm
+#: it — the run reported the killers as flaky when the ids were the payloads themselves.
+DIRECTIVE_IDS = [
+    "ignore-all-previous",
+    "ignore-the-above",
+    "disregard-prior",
+    "you-are-now",
+    "system-role-header",
+    "new-instructions",
+    "chat-template-token",
+]
+
 #: Ordinary source that names the same words. Flagging these makes the guard useless — every
 #: security-related codebase discusses instructions, systems and assistants.
 INNOCENT = [
@@ -51,19 +64,27 @@ INNOCENT = [
     "This function disregards whitespace when comparing tokens.",
 ]
 
+INNOCENT_IDS = [
+    "ignore-underscored-name",
+    "system-constant",
+    "you-are-in-prose",
+    "ignored-past-tense",
+    "disregards-plural",
+]
 
-@pytest.mark.parametrize("text", DIRECTIVES)
+
+@pytest.mark.parametrize("text", DIRECTIVES, ids=DIRECTIVE_IDS)
 def test_a_directive_is_detected(text: str) -> None:
     assert findings_in(text), text
 
 
-@pytest.mark.parametrize("text", INNOCENT)
+@pytest.mark.parametrize("text", INNOCENT, ids=INNOCENT_IDS)
 def test_ordinary_source_is_left_alone(text: str) -> None:
     """The control, and the harder half. A detector that flags everything protects nothing."""
     assert findings_in(text) == [], text
 
 
-@pytest.mark.parametrize("text", INNOCENT)
+@pytest.mark.parametrize("text", INNOCENT, ids=INNOCENT_IDS)
 def test_ordinary_source_is_returned_unchanged(text: str) -> None:
     assert redact_injections(text).text == text
 
