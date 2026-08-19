@@ -28,6 +28,7 @@ multi-phase skills keeping one file per phase under `references/`.
 | `specweaver-pre-commit` | The 7-phase quality gate before EVERY commit |
 | `specweaver-red-blue-review` | Adversarial review of a design, plan, or diff |
 | `specweaver-ticket` | Minting a `TECH-NNN`, capability, or sub-story ID without collision |
+| `specweaver-live-llm` | **Only** on an explicit ask to hit a real provider API — it bills. Never inside another task, never at a gate |
 
 Read the skill's `SKILL.md` **in full before starting**, then each phase file as you reach it. Never
 skip or reorder phases, and never bypass a HITL gate.
