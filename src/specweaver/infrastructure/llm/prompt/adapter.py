@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,9 @@ if TYPE_CHECKING:
 
 from specweaver.infrastructure.llm._prompt_constants import detect_language
 from specweaver.infrastructure.llm.escaping import apply_escaping, escape_xml_attribute
+from specweaver.infrastructure.llm.injection import redact_injections
+
+_LOGGER = logging.getLogger(__name__)
 
 # Only allow alphanumeric, dashes, underscores, dots, and slashes in labels to prevent injection/spoofing
 LABEL_REGEX = re.compile(r"^[a-zA-Z0-9_\-\./]+$")
@@ -88,6 +92,16 @@ class FilePromptAdapter:
         if char_limit is not None:
             content = content[:char_limit] + "\n[truncated]"
 
+        redaction = redact_injections(content)
+        if redaction.findings:
+            _LOGGER.warning(
+                "Redacted %d instruction-like span(s) from %s before prompting: lines %s",
+                len(redaction.findings),
+                self._path.name,
+                ", ".join(str(finding.line) for finding in redaction.findings),
+            )
+        content = redaction.text
+
         lang = detect_language(self._path)
         escaped_path = escape_xml_attribute(self._label)
         escaped_lang = escape_xml_attribute(lang)
@@ -95,6 +109,8 @@ class FilePromptAdapter:
         if self._role:
             escaped_role = escape_xml_attribute(self._role)
             attrs += f' role="{escaped_role}"'
+        if redaction.findings:
+            attrs += f' redacted="{len(redaction.findings)}"'
         escaped_text = apply_escaping(content, self._escaping)
         return f"<file {attrs}>\n{escaped_text}\n</file>"
 

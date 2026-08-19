@@ -104,8 +104,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-VAL-01:** Validation Engine (Foundation)
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Security Defenses:**
-        *   `[ ]` **E-VAL-03:** AST Prompt Injection Sanitization
+    *   🟢 **Security Defenses:**
+        *   `✅` **E-VAL-03:** AST Prompt Injection Sanitization
     *   🟡 **Enforce Internal Architecture:**
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
         *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
