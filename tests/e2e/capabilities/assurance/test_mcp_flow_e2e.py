@@ -2,7 +2,29 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E flow engine integrations testing the Pre-fetch Context Assembler (SF-3)."""
+"""E2E flow engine integrations testing the Pre-fetch Context Assembler (SF-3).
+
+Proves: C-INTL-02 FR-2, C-INTL-02 FR-3, C-INTL-02 FR-4
+
+A real MCP server is booted as a subprocess and answered over real JSON-RPC on stdio; what it
+returns is asserted inside the `environment_context` the generator is handed. That is the whole
+chain — boot, fetch, inject — and no unit test crosses it, because each side of it is a process
+boundary.
+
+The tag was missing, not the coverage, so `check_fr_coverage.py C-INTL-02` saw unit tests only and
+US-23 read as owing an integration proof it already had. Verified by mutation before being written
+down here:
+
+* FR-2/FR-3 — the assembler's `if not servers or not resources` guard forced true, so no server is
+  ever booted: 3 of 4 fail.
+* FR-3 — the fetched `content` replaced by `""`, so the boot happens and returns nothing: 3 fail.
+* FR-4 — `environment_context=mcp_env` replaced by `""` in the generation handler, so the fetch
+  succeeds and the prompt never carries it: 2 fail.
+
+**FR-1 is deliberately not claimed here.** These tests hand the assembler a `TopologyContext`
+directly; reading the `mcp_servers` block out of a `context.yaml` is a different step, and it stays
+cited at unit tier until something drives it from a file.
+"""
 
 import sys
 from pathlib import Path
