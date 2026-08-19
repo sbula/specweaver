@@ -71,9 +71,7 @@
   only because no e2e asserts it end to end today. That makes it the first deferred row in this
   migration that is a genuine test-writing task rather than a wait on someone else.
 
-  **`INT-US-05-SF03-MIG` is discharged (2026-08-17); the contract stays open** on P-2.
-
-  **P-2 closed 2026-08-18** —
+  **`INT-US-05-SF03-MIG` is discharged (2026-08-17) and the contract is closed on P-2** —
   `tests/e2e/capabilities/workspace/test_build_artefacts_stay_out_of_context_e2e.py`. A three-language
   monorepo carrying `node_modules`, `target`, `build` and `.venv` alongside real Python, TypeScript and
   Java sources. The assertion is two-sided on purpose: *"no `node_modules` file was returned"* is

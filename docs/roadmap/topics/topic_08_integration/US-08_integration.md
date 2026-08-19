@@ -1,9 +1,16 @@
 # US-08 Integration - Integration Contracts
 
 ## Base Story Contract (`INT-US-08`)
-* **Status:** ⬜ Pending
-* **Integration Description:** [Pending definition...]
-* **Verifiable Proof:** [Pending]
+* **Status:** ✅ Complete (2026-08-18) — every path runnable, P-5 last
+* **Integration Description:** US-8 bootstraps a project nobody documented. Its five paths all land on
+  one closed capability, `D-SENS-01`: the declared `context.yaml` files become a queryable graph, a
+  directory that declares nothing still gets a node, the neighbourhood renders into a prompt inside a
+  character budget, cycles and contradictory SLAs surface as findings, and the journey joins them —
+  the graph the wizard produces is what the first prompt carries.
+* **Verifiable Proof:** P-5 by
+  `tests/e2e/capabilities/infrastructure/test_inferred_topology_reaches_the_prompt_e2e.py`, which
+  asserts the purpose inference read out of the source reaches the built prompt; P-1 through P-4 by
+  `check_fr_coverage.py D-SENS-01`, whose seven FRs each sit behind a killed mutant.
 
 ## Sub-Story Add-Ons
 
@@ -45,11 +52,9 @@
   `A-SENS-01`'s cache. Citing it to the graph as well would double-count one behaviour across two
   capabilities — the thing the paragraph above exists to avoid.
 
-  P-5 waits on a test, not a feature.
+  P-5 was a test-writing task, not a wait on a feature.
 
-  **`INT-US-08-MIG` is discharged (2026-08-17); the contract stays open** on P-5.
-
-  **P-5 closed 2026-08-18** —
+  **`INT-US-08-MIG` is discharged (2026-08-17) and the contract is closed on P-5** —
   `tests/e2e/capabilities/infrastructure/test_inferred_topology_reaches_the_prompt_e2e.py`. An
   undocumented project, inference, and then the assertion that matters: the *purpose inference read out
   of the source* appears in the built prompt. Not that a `<topology>` block exists — an empty one would

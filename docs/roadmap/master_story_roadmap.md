@@ -57,12 +57,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 6 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 10 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
-| `TECH-031` 🟢 | Python, Rust, Java and Kotlin all run in the sandbox; every QA intent verified against its real toolchain. |
+| `TECH-064` 🔴 | Kotlin and Rust architecture checks return `violation_count=0` as stubs, so a boundary violation reads as a clean verdict. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -212,8 +212,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
     *   🔴 **API Contract Understanding:**
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
-    *   🟡 **Intelligent Code Exclusions:**
-        *   `[ ]` **INT-US-05-SF03:** Intelligent Code Exclusions
+    *   🟢 **Intelligent Code Exclusions:**
+        *   `✅` **INT-US-05-SF03:** Intelligent Code Exclusions
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
     *   🟡 **Framework Native Understanding:**
         *   `[ ]` **INT-US-05-SF04:** Framework Native Understanding
@@ -257,7 +257,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟡 US-8: The Greenfield Bootstrap Wizard
 **Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-08:** Base Integration Contract defined in [US-08_integration.md](topics/topic_08_integration/US-08_integration.md)
+    *   `✅` **INT-US-08:** Base Integration Contract defined in [US-08_integration.md](topics/topic_08_integration/US-08_integration.md)
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
     *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
@@ -581,40 +581,14 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ## 🚚 Integration Migration (`-MIG`)
 
-*`ADR-004`: a (sub)story holding closed features owns an integration story for them. These 27 place
-every path into the new structure — feature, inventory row, or deferred row — and are then
-discharged. Method, gates and identifier: [`TECH-060`](features/topic_07_technical_debt/TECH-060/TECH-060_design.md).
-Ordered by capability cluster, so a shared seam is decided once with every claimant visible.*
+*`ADR-004`: a (sub)story holding closed features owns an integration story for them. 26 of the 27
+are discharged and read in the [ledger](features/topic_07_technical_debt/TECH-060/TECH-060_delivery.md);
+method and identifier: [`TECH-060`](features/topic_07_technical_debt/TECH-060/TECH-060_design.md).
+One is still open:*
 
 | Cluster | Migration | Story | Sub-story / contract | Closed capabilities |
 |---|---|---|---|---|
-| B-SENS-02 (6) | `✅` `INT-US-10-MIG` | US-10 | Monolith Dependency Visualizer | `B-SENS-02` |
-|  | `✅` `INT-US-11-MIG` | US-11 | GraphRAG for Brownfield Scale | `B-SENS-02` |
-|  | `✅` `INT-US-12-MIG` | US-12 | Legacy Spec Extraction | `B-SENS-02` |
-|  | `✅` `INT-US-15-MIG` | US-15 | Enterprise Audit & Traceability | `B-SENS-02` |
-|  | `✅` `INT-US-26-MIG` | US-26 | Fleet-Wide CVE Remediation | `B-SENS-02` |
-|  | `✅` `INT-US-27-MIG` | US-27 | Autonomous Production Self-Healing | `B-SENS-02` |
-| A-SENS-01 (2) | `✅` `INT-US-11-SF01-MIG` | US-11 | Infinite Scale Management | `A-SENS-01` |
-|  | `✅` `INT-US-19-SF01-MIG` | US-19 | Distributed Topology Scaling | `A-SENS-01` |
-| C-FLOW-02 (2) | `✅` `INT-US-06-MIG` | US-6 | Remote Dashboard | `C-FLOW-02`, `E-UI-02` |
-|  | `✅` `INT-US-07-MIG` | US-7 | IDE Copilot | `C-FLOW-02` |
-| C-FLOW-03 (2) | `✅` `INT-US-18-MIG` | US-18 | Productionizing External Targets | `C-FLOW-03` |
-|  | `✅` `INT-US-19-MIG` | US-19 | Microservice Fleet Orchestration | `C-FLOW-03`, `B-SENS-02` |
-| singletons (15) | `✅` `INT-US-08-MIG` | US-8 | Greenfield Bootstrap Wizard | `D-SENS-01` |
-|  | `✅` `INT-US-20-MIG` | US-20 | Enterprise Architecture Enforcement | `D-SENS-01`, `B-SENS-02`, `C-EXEC-01` |
-|  | `✅` `INT-US-22-MIG` | US-22 | Polyglot Contract Enforcement | `A-VAL-01`, `C-VAL-04` |
-|  | `✅` `INT-US-23-MIG` | US-23 | Enterprise Tool Extension (MCP) | `C-INTL-02` |
-|  | `✅` `INT-US-01-SF02-MIG` | US-1 | Enforce Internal Architecture | `C-EXEC-01`, `C-EXEC-03` |
-|  | `✅` `INT-US-01-SF03-MIG` | US-1 | Configurable Multi-Stage Reviews | `E-VAL-02`, `B-VAL-02` |
-|  | `✅` `INT-US-03-SF01-MIG` | US-3 | Multi-Language Test Support | `D-VAL-03` |
-|  | `✅` `INT-US-04-SF05-MIG` | US-4 | Advanced Routing & Conditional Flows | `C-FLOW-05` |
-|  | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — container execution IS now exercised (`TECH-031` closed); what remains is the product decision to make it the enforced default, `execution_mode` still `"host"` | `D-EXEC-01`, `B-EXEC-01` |
-|  | `✅` `INT-US-10-SF01-MIG` | US-10 | Code-to-Spec Drift Checking | `B-VAL-01` |
-|  | `✅` `INT-US-15-SF01-MIG` | US-15 | Enterprise Compliance Protocols | `B-SENS-01` |
-|  | `✅` `INT-US-25-SF01-MIG` | US-25 | Dynamic Risk Controls | `D-VAL-02`, `D-VAL-04`, `C-VAL-03` |
-|  | `✅` `INT-US-05-SF03-MIG` | US-5 | Intelligent Code Exclusions | `C-SENS-02` |
-|  | `✅` `INT-US-05-SF04-MIG` | US-5 | Framework Native Understanding | `B-INTL-02` |
-|  | `✅` `INT-US-21-SUB-MIG` | US-21 | Recursive Planning | `C-INTL-01` |
+| singletons | `🔵` `INT-US-09-SF01-MIG` | US-9 | Containerized Isolation — HELD, needs `B-EXEC-01`'s FRs cited against the container path | `D-EXEC-01`, `B-EXEC-01` |
 
 ---
 ## Technical Debt & Architecture Stories (TECH)
