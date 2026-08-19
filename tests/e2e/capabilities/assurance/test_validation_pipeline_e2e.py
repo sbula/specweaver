@@ -358,7 +358,20 @@ class TestCodeValidationPipeline:
         )
 
     def test_c09_traceability_enforced_in_code_validation_pipeline(self, tmp_path: Path) -> None:
-        """Traceability C09 rule dynamically pulls tags from test files and flags gaps E2E."""
+        """Traceability C09 rule dynamically pulls tags from test files and flags gaps E2E.
+
+        Proves: C-VAL-04 FR-1, C-VAL-04 FR-2, C-VAL-04 FR-3, C-VAL-04 FR-4
+
+        The whole capability in one `sw check` run over a real project: a spec declaring FR-39, a
+        test file without the tag, then the same file with it. Nothing is mocked and nothing calls
+        the rule class directly, which is what separates this from the unit suite — C-VAL-04's claim
+        is that the pipeline hard-fails, not that a rule object returns a status.
+
+        Both halves are load-bearing and only one used to be. The pass half asserted
+        `exit_code in (0, 1)` and that "C09" appeared, which a FAILING C09 also satisfies: measured
+        2026-08-19, `_find_and_parse_tests` returning an empty set left this test green. It now
+        asserts FR-39 is no longer reported unmapped, and that mutant dies.
+        """
         project_dir = tmp_path / _unique_name("proj")
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
@@ -396,10 +409,15 @@ class TestCodeValidationPipeline:
             app,
             ["check", str(code_file), "--level", "code", "--project", str(project_dir)],
         )
-        assert result_pass.exit_code in (0, 1)  # Might fail on other C0X issues
+        # `exit_code in (0, 1)` and "C09 appears" are both satisfied by C09 still FAILING, which is
+        # what the second half of this journey exists to rule out. Measured 2026-08-19: with
+        # `_find_and_parse_tests` returning an empty set — the tag never extracted at all — this test
+        # still passed. The assertion is now on the finding the rule emits per unmapped requirement.
+        assert "FR-39" not in result_pass.output, (
+            "FR-39 is still reported unmapped after its `@trace` was added, so the tag was never "
+            f"read:\n{result_pass.output}"
+        )
         assert "C09" in result_pass.output
-        # Since standard output shows 'PASS' for successful rules
-        assert "C09" in result_pass.stdout
         # Note: If it fails, check for "FR-39"
         assert "FR-39 missing" not in result_pass.output
 
