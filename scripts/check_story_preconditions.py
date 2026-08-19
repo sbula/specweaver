@@ -48,7 +48,7 @@ _proof_field = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_proof_field)
 proof_segment = _proof_field.proof_segment
 ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
-CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
+CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "stories"
 PIPELINES = REPO_ROOT / "src" / "specweaver" / "workflows" / "pipelines"
 
 #: Fields documented as "(set by X)" that legitimately have no writer yet, with the reason.
@@ -181,7 +181,7 @@ def check_contract_and_proof(story_id: str, report: Report, *, fast: bool) -> li
 def _check_int_us_contract_and_proof(story_id: str, report: Report, *, fast: bool) -> list[Path]:
     """The `INT-US-NN` branch of `check_contract_and_proof`, split out to stay under C901."""
     num = story_id.replace("INT-US-", "").split("-")[0]
-    contract = CONTRACTS / f"US-{num}_integration.md"
+    contract = CONTRACTS / f"US-{num}.md"
     if not contract.exists():
         report.fail(f"contract document missing: {contract.relative_to(REPO_ROOT)}")
         return []

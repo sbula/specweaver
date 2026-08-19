@@ -98,7 +98,7 @@ _MOVES_TO = re.compile(
 #: Feature design docs are OUT of scope. They record their own sections' history -- `### SF-02: ...
 #: RETIRED by ADR-003` -- and name no destination, because the roadmap line already carries it.
 #: Judging both would report one retirement twice and demand the destination be written twice.
-_REGISTRY = ("master_story_roadmap.md", "topics")
+_REGISTRY = ("master_story_roadmap.md", "topics", "stories")
 
 #: Reported as the target of a note that names nobody at all. `INT-US-25-SF01` read *"it moves to
 #: the capability that builds it"* -- the unfalsifiable prose `ADR-003` set out to delete, wearing

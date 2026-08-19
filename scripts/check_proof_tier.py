@@ -69,7 +69,7 @@ assert _spec is not None and _spec.loader is not None
 _proof_field = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_proof_field)
 proof_segment = _proof_field.proof_segment
-CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
+CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "stories"
 DESIGNS = REPO_ROOT / "docs" / "roadmap" / "features" / "topic_08_integration"
 BASELINE = REPO_ROOT / "scripts" / "baselines" / "proof_tier.json"
 
@@ -78,10 +78,14 @@ OK = "ok"
 UNIT_ONLY = "unit_only"
 NO_TEST_FILE = "no_test_file"
 
-#: A contract entry declares its ID in backticks, either as a `##` heading (the base contract) or
-#: as a `*` bullet (an add-on). Capturing both in one pattern is what keeps add-ons from being
-#: swallowed into the base contract's block.
-_ENTRY = re.compile(r"^(?:##\s+(?P<h>.*?)|\*\s+\*\*(?P<b>.*?))\(`(?P<id>INT-US-[\w\-]+)`\)", re.M)
+#: An entry is the `## Base Story` heading or a top-level bold bullet naming an add-on group.
+#: Capturing both in one pattern is what keeps add-ons from being swallowed into the base block.
+#:
+#: **The trailing `$` is load-bearing.** `ADR-005` removed the `(`INT-US-NN`)` suffix these used to
+#: end with, and the first replacement matched any bold bullet — which swallowed `**Status:**`,
+#: `**Verifiable Proof:**` and every path-list bullet, so one file reported a dozen entries. A name
+#: bullet carries nothing after the bold run; a field bullet carries a colon and its value.
+_ENTRY = re.compile(r"^(?:##\s+(?P<h>Base Story)\s*$|\*\s+\*\*(?P<b>[^*:]+?)\*\*\s*$)", re.M)
 
 _STATUS = re.compile(r"\*\*Status:\*\*\s*(\S+)")
 
@@ -96,15 +100,19 @@ class Entry:
     """One contract entry: a base contract or a sub-story add-on."""
 
     source: str
-    entry_id: str
     title: str
     delivered: bool
     proof: str
 
     @property
     def key(self) -> str:
-        """File + title. **Not** the ID — `INT-US-05-SUB` names two different add-ons."""
-        return f"{self.source} :: {self.title} (`{self.entry_id}`)"
+        """File + title, which is now the only identity an entry has.
+
+        It was file + title + ID, and the ID was never the key on its own: `INT-US-05-SUB` named two
+        different delivered add-ons. `ADR-005` retired the IDs, so the title carries the whole
+        distinction and a duplicate title inside one file is reported rather than merged.
+        """
+        return f"{self.source} :: {self.title}"
 
     @property
     def verdict(self) -> str:
@@ -139,11 +147,10 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
         status = _STATUS.search(block)
         proof = proof_segment(block)
         raw_title = (m.group("h") or m.group("b") or "").strip()
-        title = raw_title.removeprefix("Base Story Contract").strip("* ").strip() or "Base Contract"
+        title = raw_title.strip("* ").strip() or "Base Story"
         entries.append(
             Entry(
                 source=source.name,
-                entry_id=m.group("id"),
                 title=title,
                 delivered=bool(status and "✅" in status.group(1)),
                 proof=proof or "",
@@ -154,7 +161,7 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
 
 @dataclass(frozen=True)
 class Collision:
-    """One identifier used by more than one entry in the same contract document."""
+    """One title used by more than one entry in the same story document."""
 
     source: str
     entry_id: str
@@ -164,10 +171,10 @@ class Collision:
 def duplicate_ids(text: str, source: Path) -> list[Collision]:
     """Identifiers naming more than one entry. `TECH-039`.
 
-    An identifier that names two things identifies neither. `INT-US-05-SUB` named two different
-    delivered add-ons, so `check_story_preconditions.py INT-US-05-SUB` resolved to whichever its
-    regex reached first and could never check the other — and this module keys its own ratchet on
-    file+title rather than ID precisely because of that entry.
+    A name that names two things identifies neither. `INT-US-05-SUB` named two different delivered
+    add-ons, so a story-scoped check resolved to whichever its regex reached first and could never
+    check the other. `ADR-005` retired the IDs, so the title IS the identity — which makes a
+    duplicate title inside one document the same defect the ID collision was.
 
     Status is deliberately ignored: a collision is a defect whether or not the entries shipped.
 
@@ -177,7 +184,7 @@ def duplicate_ids(text: str, source: Path) -> list[Collision]:
     """
     seen: dict[str, list[str]] = {}
     for entry in contract_entries(text, source):
-        seen.setdefault(entry.entry_id, []).append(entry.title)
+        seen.setdefault(entry.title, []).append(entry.title)
     return [
         Collision(source=source.name, entry_id=key, titles=titles)
         for key, titles in seen.items()
@@ -187,9 +194,20 @@ def duplicate_ids(text: str, source: Path) -> list[Collision]:
 
 def all_duplicate_ids() -> list[Collision]:
     found: list[Collision] = []
-    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
+    for path in sorted(CONTRACTS.glob("US-*.md")):
         found.extend(duplicate_ids(path.read_text(encoding="utf-8", errors="replace"), path))
     return found
+
+
+def design_id_for(source: str) -> str:
+    """The frozen design directory a story document's build record lives under.
+
+    `ADR-005` retired the `INT-US` identifiers from the registry but froze the ones already spent:
+    the design documents, their FR tables and the ~175 test files citing `INT-US-24 FR-3` are the
+    record of delivered work, and renaming them would break every citation without changing what
+    was built. So the design is still found by the old id, derived from the story number.
+    """
+    return f"INT-US-{source.removeprefix('US-').removesuffix('.md')}"
 
 
 def unbuilt_sub_features(entry_id: str, designs: Path = DESIGNS) -> list[str]:
@@ -215,7 +233,7 @@ def unbuilt_sub_features(entry_id: str, designs: Path = DESIGNS) -> list[str]:
 
 
 def all_broken_promises() -> list[tuple[str, list[str]]]:
-    """`(entry_id, unbuilt_sfs)` for every DELIVERED base contract with a designed-but-unbuilt SF.
+    """`(design_id, unbuilt_sfs)` for every DELIVERED entry with a designed-but-unbuilt SF.
 
     This is the check that `INT-US-04` needed and nothing had: it read `✅ Complete` from 2026-07
     while the sub-feature implementing its Integration Description sat at Design ✅, Dev ⬜.
@@ -226,14 +244,15 @@ def all_broken_promises() -> list[tuple[str, list[str]]]:
     is what keeps a marker from being downgraded into silence.
     """
     found: list[tuple[str, list[str]]] = []
-    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
+    for path in sorted(CONTRACTS.glob("US-*.md")):
         text = path.read_text(encoding="utf-8", errors="replace")
         for entry in contract_entries(text, path):
             if not entry.delivered:
                 continue
-            unbuilt = unbuilt_sub_features(entry.entry_id)
+            design_id = design_id_for(entry.source)
+            unbuilt = unbuilt_sub_features(design_id)
             if unbuilt:
-                found.append((entry.entry_id, unbuilt))
+                found.append((design_id, unbuilt))
     return found
 
 
@@ -244,7 +263,7 @@ def violations_in(text: str, source: Path) -> list[Entry]:
 
 def all_violations() -> list[Entry]:
     found: list[Entry] = []
-    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
+    for path in sorted(CONTRACTS.glob("US-*.md")):
         found.extend(violations_in(path.read_text(encoding="utf-8", errors="replace"), path))
     return found
 

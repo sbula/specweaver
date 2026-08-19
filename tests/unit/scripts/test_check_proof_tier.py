@@ -45,26 +45,26 @@ def mod() -> ModuleType:
 
 
 CONTRACT = """\
-# US-99: Example - Integration Contracts
+# US-99: Example
 
-## Base Story Contract (`INT-US-99`)
+## Base Story
 * **Status:** ✅ Complete (2026-01-01)
 * **Integration Description:** Something.
 * **Verifiable Proof:** `tests/e2e/capabilities/test_journey_e2e.py` - 9 scenarios.
 
 ## Sub-Story Add-Ons
 
-* **First Add-On (`INT-US-99-SF01`)**
+* **First Add-On**
   * **Status:** ✅ Complete
   * **Integration Description:** Something else.
   * **Verifiable Proof:** Covered by the `Widget` suite, `tests/unit/widgets/test_widget.py`.
 
-* **Second Add-On (`INT-US-99-SF02`)**
+* **Second Add-On**
   * **Status:** ⬜ Pending
   * **Integration Description:** [Pending definition...]
   * **Verifiable Proof:** [Pending]
 
-* **Third Add-On (`INT-US-99-SF03`)**
+* **Third Add-On**
   * **Status:** ✅ Complete
   * **Integration Description:** Something more.
   * **Verifiable Proof:** Covered by E2E tests in `tests/e2e/capabilities/core/` and `pytest -m integration`.
@@ -73,27 +73,39 @@ CONTRACT = """\
 
 class TestContractEntries:
     def test_every_declared_entry_is_found(self, mod: ModuleType) -> None:
-        """The base contract is a `##` heading; add-ons are `*` bullets. Both carry an ID."""
-        ids = [e.entry_id for e in mod.contract_entries(CONTRACT, Path("US-99_integration.md"))]
+        """The base story is a `##` heading; add-ons are `*` bullets naming the group."""
+        titles = [e.title for e in mod.contract_entries(CONTRACT, Path("US-99.md"))]
 
-        assert ids == ["INT-US-99", "INT-US-99-SF01", "INT-US-99-SF02", "INT-US-99-SF03"]
+        assert titles == ["Base Story", "First Add-On", "Second Add-On", "Third Add-On"]
 
     def test_an_entry_carries_its_own_status_and_not_its_neighbour_s(self, mod: ModuleType) -> None:
         """The whole point of splitting into blocks: a greedy match spans into the next add-on."""
-        by_id = {
-            e.entry_id: e for e in mod.contract_entries(CONTRACT, Path("US-99_integration.md"))
-        }
+        by_title = {e.title: e for e in mod.contract_entries(CONTRACT, Path("US-99.md"))}
 
-        assert by_id["INT-US-99-SF02"].delivered is False
-        assert by_id["INT-US-99-SF01"].delivered is True
+        assert by_title["Second Add-On"].delivered is False
+        assert by_title["First Add-On"].delivered is True
 
-    def test_the_title_is_captured_because_ids_are_not_unique(self, mod: ModuleType) -> None:
-        """`INT-US-05-SUB` names two different delivered add-ons, so the ID alone cannot key them."""
-        by_id = {
-            e.entry_id: e for e in mod.contract_entries(CONTRACT, Path("US-99_integration.md"))
-        }
+    def test_a_field_bullet_is_not_mistaken_for_an_entry(self, mod: ModuleType) -> None:
+        """`ADR-005` removed the id suffix that used to make an entry bullet unmistakable.
 
-        assert by_id["INT-US-99-SF01"].title == "First Add-On"
+        Without the end-of-line anchor, `**Status:**` and `**Verifiable Proof:**` each read as a new
+        entry, every block shrinks to one line, and every proof reads as absent — the whole file
+        reports as violations. A name bullet ends at the bold run; a field bullet carries a value.
+        """
+        titles = [e.title for e in mod.contract_entries(CONTRACT, Path("US-99.md"))]
+
+        assert not [t for t in titles if t.endswith(":")]
+
+    def test_the_last_entry_stops_at_the_next_entry_not_the_file_end(self, mod: ModuleType) -> None:
+        """A block running to EOF borrows every later `.py` path in the document.
+
+        That was live: `US-05`'s last add-on cited only a directory and read as proven, because its
+        block swallowed the path lists below it. Found 2026-08-19 when the split changed.
+        """
+        text = CONTRACT + "\nLater prose citing `tests/e2e/z/test_z_e2e.py` in passing.\n"
+        entries = mod.contract_entries(text, Path("US-99.md"))
+
+        assert "test_z_e2e.py" not in entries[-1].proof
 
 
 class TestClassify:
@@ -131,36 +143,32 @@ class TestClassify:
 class TestViolations:
     def test_a_pending_entry_is_never_judged(self, mod: ModuleType) -> None:
         """A tier supplies defaults, never prohibitions: undelivered work owes no proof yet."""
-        found = mod.violations_in(CONTRACT, Path("US-99_integration.md"))
+        found = mod.violations_in(CONTRACT, Path("US-99.md"))
 
-        assert all(v.entry_id != "INT-US-99-SF02" for v in found)
+        assert all(v.title != "Second Add-On" for v in found)
 
     def test_the_delivered_unit_only_entry_is_reported(self, mod: ModuleType) -> None:
-        found = {
-            v.entry_id: v.verdict for v in mod.violations_in(CONTRACT, Path("US-99_integration.md"))
-        }
+        found = {v.title: v.verdict for v in mod.violations_in(CONTRACT, Path("US-99.md"))}
 
-        assert found["INT-US-99-SF01"] == mod.UNIT_ONLY
+        assert found["First Add-On"] == mod.UNIT_ONLY
 
     def test_the_delivered_directory_only_entry_is_reported(self, mod: ModuleType) -> None:
-        found = {
-            v.entry_id: v.verdict for v in mod.violations_in(CONTRACT, Path("US-99_integration.md"))
-        }
+        found = {v.title: v.verdict for v in mod.violations_in(CONTRACT, Path("US-99.md"))}
 
-        assert found["INT-US-99-SF03"] == mod.NO_TEST_FILE
+        assert found["Third Add-On"] == mod.NO_TEST_FILE
 
     def test_a_proven_entry_is_not_reported(self, mod: ModuleType) -> None:
-        found = {v.entry_id for v in mod.violations_in(CONTRACT, Path("US-99_integration.md"))}
+        found = {v.title for v in mod.violations_in(CONTRACT, Path("US-99.md"))}
 
-        assert "INT-US-99" not in found
+        assert "Base Story" not in found
 
-    def test_the_key_distinguishes_two_entries_sharing_an_id(self, mod: ModuleType) -> None:
-        """`INT-US-05-SUB` is used twice. Keying on the ID alone would freeze one and hide one."""
-        text = CONTRACT.replace("INT-US-99-SF03", "INT-US-99-SF01")
+    def test_the_key_carries_the_file_so_two_stories_never_merge(self, mod: ModuleType) -> None:
+        """Two stories may name an add-on group the same thing; the ratchet must keep them apart."""
+        keys = {v.key for v in mod.violations_in(CONTRACT, Path("US-99.md"))} | {
+            v.key for v in mod.violations_in(CONTRACT, Path("US-96.md"))
+        }
 
-        keys = {v.key for v in mod.violations_in(text, Path("US-99_integration.md"))}
-
-        assert len(keys) == 2, keys
+        assert len(keys) == 4, keys
 
 
 class TestMain:
@@ -182,7 +190,7 @@ class TestMain:
 
 
 LONG_CONTRACT = """\
-## Base Story Contract (`INT-US-98`)
+## Base Story
 * **Status:** ✅ Complete
 * **Integration Description:** Something.
 * **Verifiable Proof:**
@@ -206,32 +214,32 @@ class TestFieldBoundedProof:
 
     def test_a_late_path_is_still_seen(self, mod: ModuleType) -> None:
         """The e2e path sits past 900 characters. A window parser calls this contract unit-only."""
-        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98_integration.md"))
+        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98.md"))
 
         assert "tests/e2e/b/test_b_e2e.py" in entries[0].proof
 
     def test_the_verdict_is_therefore_correct(self, mod: ModuleType) -> None:
-        assert mod.violations_in(LONG_CONTRACT, Path("US-98_integration.md")) == []
+        assert mod.violations_in(LONG_CONTRACT, Path("US-98.md")) == []
 
     def test_the_read_stops_at_the_next_field(self, mod: ModuleType) -> None:
         """Unbounded is not the fix either — it would swallow the rest of the document."""
-        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98_integration.md"))
+        entries = mod.contract_entries(LONG_CONTRACT, Path("US-98.md"))
 
         assert "the field after the proof" not in entries[0].proof
 
 
 COLLIDING = """\
-## Base Story Contract (`INT-US-97`)
+## Base Story
 * **Status:** ✅ Complete
 * **Verifiable Proof:** `tests/e2e/a/test_a_e2e.py`
 
 ## Sub-Story Add-Ons
 
-* **First Thing (`INT-US-97-SF01`)**
+* **First Thing**
   * **Status:** ✅ Complete
   * **Verifiable Proof:** `tests/e2e/b/test_b_e2e.py`
 
-* **Second Thing (`INT-US-97-SF01`)**
+* **First Thing**
   * **Status:** ⬜ Pending
   * **Verifiable Proof:** [Pending]
 """
@@ -250,23 +258,23 @@ class TestDuplicateIds:
     legal; one name for two things does not.
     """
 
-    def test_a_repeated_id_is_reported(self, mod: ModuleType) -> None:
-        found = mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))
+    def test_a_repeated_title_is_reported(self, mod: ModuleType) -> None:
+        found = mod.duplicate_ids(COLLIDING, Path("US-97.md"))
 
-        assert [d.entry_id for d in found] == ["INT-US-97-SF01"]
+        assert [d.entry_id for d in found] == ["First Thing"]
 
-    def test_both_titles_are_named(self, mod: ModuleType) -> None:
-        """The message has to say which two entries collided, or it cannot be acted on."""
-        found = mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))
+    def test_both_occurrences_are_named(self, mod: ModuleType) -> None:
+        """The message has to say how many entries collided, or it cannot be acted on."""
+        found = mod.duplicate_ids(COLLIDING, Path("US-97.md"))
 
-        assert found[0].titles == ["First Thing", "Second Thing"]
+        assert found[0].titles == ["First Thing", "First Thing"]
 
     def test_delivery_status_is_irrelevant(self, mod: ModuleType) -> None:
         """One entry above is Pending. A collision is a defect whatever the entries' status."""
-        assert len(mod.duplicate_ids(COLLIDING, Path("US-97_integration.md"))) == 1
+        assert len(mod.duplicate_ids(COLLIDING, Path("US-97.md"))) == 1
 
     def test_distinct_ids_are_clean(self, mod: ModuleType) -> None:
-        assert mod.duplicate_ids(CONTRACT, Path("US-99_integration.md")) == []
+        assert mod.duplicate_ids(CONTRACT, Path("US-99.md")) == []
 
     def test_the_repo_has_no_colliding_identifiers(self, mod: ModuleType) -> None:
         """The live invariant. `INT-US-05-SUB` was the only one, repaired 2026-08-13."""

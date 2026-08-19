@@ -2,14 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Read an INT story's integration doc to find which capabilities it integrates.
+"""Read a (sub)story's path document to find which capabilities it spans.
 
 Split out of `scripts/tests.py` (2026-08-08), which had no headroom left under the file-size
 ceiling. The seam is real rather than convenient: this is markdown archaeology over
-`docs/roadmap/topics/topic_08_integration/`, while `tests.py` selects and runs pytest tiers. The
+`docs/roadmap/stories/`, while `tests.py` selects and runs pytest tiers. The
 sibling `_refactor_diff_safety.py` was split off the same file for the same reason.
 
-The scoping in `integration_scope_text` is the whole correctness of the DAL derivation — read its
+The scoping in `story_scope_text` is the whole correctness of the DAL derivation — read its
 docstring before touching it.
 
 `UsageError` is defined HERE and re-exported by `tests.py`, not declared in both. Two classes of
@@ -30,7 +30,7 @@ class UsageError(Exception):
     """The caller asked for something the matrix cannot answer."""
 
 
-BASE_SECTION = "## Base Story Contract"
+BASE_SECTION = "## Base Story"
 SUBSTORY_SECTION = "## Sub-Story Add-Ons"
 INTEGRATION_DESCRIPTION = "**Integration Description:**"
 
@@ -45,64 +45,41 @@ def _bullet_at(lines: list[str], start: int) -> str:
     return "\n".join(collected)
 
 
-def integration_scope_text(story_id: str, doc_text: str) -> str:
-    """The passage naming what THIS story integrates — nothing more.
+def story_scope_text(story_id: str, doc_text: str) -> str:
+    """The passage naming what THIS story spans — nothing more.
 
     Scoping this precisely is the whole correctness of the DAL derivation. Scanning the entire
-    document reads `INT-US-09` as DAL-A, because its **Sub-Story Add-Ons** section mentions
-    `A-EXEC-01` and `A-EXEC-03` — capabilities those add-ons are BLOCKED ON, which the base
-    contract does not integrate and which are not built. A base INT story integrates the
-    Core-Required MVS capabilities named in its Integration Description; `INT-US-NN-SFxx` add-ons
-    are separate stories with separate scope, and pulling theirs into the base over-escalates
-    every gate for work that has not happened.
+    document reads `US-09` as DAL-A, because its **Sub-Story Add-Ons** section mentions `A-EXEC-01`
+    and `A-EXEC-03` — capabilities those add-ons are BLOCKED ON, which the base story does not span
+    and which are not built. A base story spans the Core-Required MVS capabilities named in its
+    Integration Description; an add-on group is separate scope, and pulling its capabilities into
+    the base over-escalates every gate for work that has not happened.
+
+    `ADR-005` removed the add-on's own identifier, so an add-on is no longer addressable here. Run
+    its work under the capability it ships (`tests.py cb C-FLOW-12`), which carries its own DAL in
+    its prefix and needs no document to derive it.
     """
     lines = doc_text.splitlines()
-    upper = story_id.upper()
-
-    if "-SF" in upper:
-        # Only the bullet that DEFINES the add-on, and only inside the add-ons section. The base
-        # contract's Status bullet also mentions sub-story IDs in passing ("container add-on =
-        # `INT-US-09-SF01`"), and matching that reads the wrong scope entirely.
-        section_start = next(
-            (i for i, line in enumerate(lines) if line.startswith(SUBSTORY_SECTION)), None
-        )
-        if section_start is None:
-            raise UsageError(f"{story_id}: integration doc has no '{SUBSTORY_SECTION}' section")
-        defines = re.compile(r"^\*\s+\*\*[`'\"]?" + re.escape(upper), re.I)
-        for i in range(section_start, len(lines)):
-            if defines.match(lines[i]):
-                return _bullet_at(lines, i)
-        raise UsageError(
-            f"{story_id}: no defining bullet under '{SUBSTORY_SECTION}' in the integration doc"
-        )
 
     start = next((i for i, line in enumerate(lines) if line.startswith(BASE_SECTION)), None)
     end = next((i for i, line in enumerate(lines) if line.startswith(SUBSTORY_SECTION)), len(lines))
     if start is None:
-        raise UsageError(f"{story_id}: integration doc has no '{BASE_SECTION}' section")
+        raise UsageError(f"{story_id}: path document has no '{BASE_SECTION}' section")
 
     for i in range(start, end):
         if INTEGRATION_DESCRIPTION in lines[i]:
             return _bullet_at(lines, i)
-    raise UsageError(f"{story_id}: no '{INTEGRATION_DESCRIPTION}' bullet in the base contract")
+    raise UsageError(f"{story_id}: no '{INTEGRATION_DESCRIPTION}' bullet in the base story")
 
 
-def integrated_capabilities(story_id: str) -> list[str]:
-    """Capability IDs an INT story integrates, read from its integration doc."""
-    base_id = re.sub(r"-SF\d+$", "", story_id.upper())
-    number = base_id.removeprefix("INT-US-")
-    doc = (
-        REPO_ROOT
-        / "docs"
-        / "roadmap"
-        / "topics"
-        / "topic_08_integration"
-        / f"US-{number}_integration.md"
-    )
+def spanned_capabilities(story_id: str) -> list[str]:
+    """Capability IDs a (sub)story spans, read from its path document."""
+    number = f"{int(story_id.upper().removeprefix('US-')):02d}"
+    doc = REPO_ROOT / "docs" / "roadmap" / "stories" / f"US-{number}.md"
     if not doc.is_file():
         raise UsageError(
-            f"no integration doc for {story_id} at {doc.relative_to(REPO_ROOT).as_posix()} — "
+            f"no path document for {story_id} at {doc.relative_to(REPO_ROOT).as_posix()} — "
             "cannot derive DAL; pass --dal explicitly"
         )
-    scope_text = integration_scope_text(story_id, doc.read_text(encoding="utf-8", errors="replace"))
+    scope_text = story_scope_text(story_id, doc.read_text(encoding="utf-8", errors="replace"))
     return sorted({m.group(0) for m in CAPABILITY_ID.finditer(scope_text)})

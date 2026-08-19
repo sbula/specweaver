@@ -24,12 +24,19 @@ from __future__ import annotations
 
 import re
 
-#: Where a field ends: the next `* **Field:**` bullet, a markdown heading, or end of text.
-#: Blank lines are NOT a boundary — a proof written as a list is separated from its own bullets by
-#: newlines, and stopping there would truncate exactly the multi-line form this change enables.
+#: Where a field ends: the next `* **Field:**` bullet, a markdown heading, a thematic break, a new
+#: unindented paragraph, or end of text.
+#:
+#: A blank line alone is NOT a boundary — a proof written as a list is separated from its own bullets
+#: by newlines, and stopping there would truncate exactly the multi-line form this parser enables.
+#: A blank line followed by text at column 0 **is** one: in markdown that starts a new block, so it
+#: cannot be part of this bullet. Without it the last entry in a document reads to end of text and
+#: borrows every `.py` path in the prose below it — measured live on `US-05`, whose final add-on
+#: cited only a directory and read as proven for as long as the file ended in prose.
 _FIELD = re.compile(
-    r"\*\*Verifiable Proof[^:]*:\*\*(.*?)(?=\n\s*[*-]\s+\*\*[A-Z]|\n#{1,6}\s|\Z)",
-    re.S,
+    r"\*\*Verifiable Proof[^:]*:\*\*(.*?)"
+    r"(?=\n\s*[*-]\s+\*\*[A-Z]|\n#{1,6}\s|\n\s*-{3,}\s*$|\n\n\S|\Z)",
+    re.S | re.M,
 )
 
 

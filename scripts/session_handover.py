@@ -39,7 +39,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HANDOVER = REPO_ROOT / ".tmp" / "HANDOVER.md"
-CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
+CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "stories"
 ROADMAP = REPO_ROOT / "docs" / "roadmap" / "master_story_roadmap.md"
 MIGRATION_LEDGER = (
     REPO_ROOT
@@ -190,8 +190,8 @@ def _all_open_rows() -> list[OpenRow]:
         return []
     return [
         r
-        for f in sorted(CONTRACTS.glob("US-*_integration.md"))
-        for r in open_rows(f.read_text(encoding="utf-8"), f.stem.replace("_integration", ""))
+        for f in sorted(CONTRACTS.glob("US-*.md"))
+        for r in open_rows(f.read_text(encoding="utf-8"), f.stem)
     ]
 
 
@@ -276,8 +276,8 @@ def _registries() -> list[str]:
         )
     rows = [
         r
-        for f in sorted(CONTRACTS.glob("US-*_integration.md"))
-        for r in open_rows(f.read_text(encoding="utf-8"), f.stem.replace("_integration", ""))
+        for f in sorted(CONTRACTS.glob("US-*.md"))
+        for r in open_rows(f.read_text(encoding="utf-8"), f.stem)
     ]
     if rows:
         actionable = [r for r in rows if not r.blocked_externally]

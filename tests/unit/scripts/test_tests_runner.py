@@ -103,58 +103,45 @@ class TestStoryResolution:
     def test_a_high_assurance_capability_is_dal_b(self, tr: ModuleType) -> None:
         assert tr.resolve_story("B-VAL-06", None, None).dal == "B"
 
-    def test_an_int_story_derives_its_dal_from_what_it_integrates(self, tr: ModuleType) -> None:
-        """INT-US-09 integrates D-EXEC-02, E-EXEC-01 and C-EXEC-02 — most critical is C."""
-        story = tr.resolve_story("INT-US-09", None, None)
+    def test_a_story_derives_its_dal_from_what_it_spans(self, tr: ModuleType) -> None:
+        """US-09 spans D-EXEC-02, E-EXEC-01 and C-EXEC-02 — most critical is C."""
+        story = tr.resolve_story("US-09", None, None)
 
-        assert story.kind == "int"
+        assert story.kind == "story"
         assert story.dal == "C"
 
-    def test_the_int_dal_derivation_names_its_sources(self, tr: ModuleType) -> None:
+    def test_the_story_dal_derivation_names_its_sources(self, tr: ModuleType) -> None:
         """A derived value nobody can audit is a value nobody will trust."""
-        story = tr.resolve_story("INT-US-09", None, None)
+        story = tr.resolve_story("US-09", None, None)
 
         assert "C-EXEC-02" in story.dal_source
 
-    def test_a_base_int_story_ignores_its_sub_story_add_ons(self, tr: ModuleType) -> None:
-        """INT-US-09's add-ons are blocked on A-EXEC-01/03 — unbuilt work the base does not integrate.
+    def test_a_base_story_ignores_its_sub_story_add_ons(self, tr: ModuleType) -> None:
+        """US-09's add-ons are blocked on A-EXEC-01/03 — unbuilt work the base does not span.
 
         Scanning the whole document reads the base as DAL-A and escalates every gate for a story
-        that integrates D, E and C capabilities.
+        that spans D, E and C capabilities. This is the reason `story_scope_text` reads one bullet
+        rather than the file.
         """
-        assert tr.resolve_story("INT-US-09", None, None).dal == "C"
+        assert tr.resolve_story("US-09", None, None).dal == "C"
 
-    def test_a_sub_story_takes_its_own_scope_not_the_bases(self, tr: ModuleType) -> None:
-        assert tr.resolve_story("INT-US-09-SF01", None, None).dal == "B"
+    def test_a_single_digit_story_number_resolves(self, tr: ModuleType) -> None:
+        """The roadmap writes `US-9` and the document is `US-09.md`; both must reach it."""
+        assert tr.resolve_story("US-9", None, None).dal == "C"
 
-    def test_a_migration_id_resolves_as_an_integration_story(self, tr: ModuleType) -> None:
-        """`INT-US-NN-MIG` is a first-class registry id (`ADR-004`, `TECH-060` FR-1).
+    def test_an_int_us_id_is_rejected_and_says_what_to_pass(self, tr: ModuleType) -> None:
+        """`ADR-005` retired the family, so the old id must fail loudly rather than fall through.
 
-        Without the suffix in `INT_ID`, `resolve_story` falls through every branch and the migration
-        entry cannot be named on the command line at all.
+        Falling through reached the generic "unrecognised story ID" message, which does not tell the
+        reader that the id is gone or what replaced it — and an add-on has no id at all now, so the
+        answer is not simply "drop the prefix".
         """
-        story = tr.resolve_story("INT-US-09-MIG", None, "C")
-        assert story.kind == "int"
-        assert story.dal == "C"
+        with pytest.raises(tr.UsageError, match="ADR-005"):
+            tr.resolve_story("INT-US-09", None, None)
 
-    def test_a_sub_story_migration_id_resolves_too(self, tr: ModuleType) -> None:
-        story = tr.resolve_story("INT-US-09-SF01-MIG", None, "B")
-        assert story.kind == "int"
-        assert story.dal == "B"
-
-    def test_a_sub_story_can_be_more_critical_than_its_base(self, tr: ModuleType) -> None:
-        assert tr.resolve_story("INT-US-09-SF03", None, None).dal == "A"
-
-    def test_a_sub_story_can_be_less_critical_than_its_base(self, tr: ModuleType) -> None:
-        assert tr.resolve_story("INT-US-09-SF02", None, None).dal == "E"
-
-    def test_a_passing_mention_of_a_sub_story_id_is_not_its_definition(
-        self, tr: ModuleType
-    ) -> None:
-        """The base Status bullet says "container add-on = `INT-US-09-SF01`" — not a definition."""
-        story = tr.resolve_story("INT-US-09-SF01", None, None)
-
-        assert "B-EXEC-01" in story.dal_source
+    def test_a_retired_add_on_id_is_rejected_too(self, tr: ModuleType) -> None:
+        with pytest.raises(tr.UsageError, match="C-FLOW-12"):
+            tr.resolve_story("INT-US-09-SF01", None, None)
 
     def test_a_tech_ticket_without_a_kind_is_rejected(self, tr: ModuleType) -> None:
         with pytest.raises(tr.UsageError, match="kind"):
@@ -184,15 +171,15 @@ class TestStoryResolution:
 
 
 class TestProfiles:
-    def test_an_int_story_runs_no_unit_tests_at_any_state(self, tr: ModuleType) -> None:
+    def test_a_story_runs_no_unit_tests_at_any_state(self, tr: ModuleType) -> None:
         """The whole point: needing a unit test here means the capability shipped incomplete."""
-        story = tr.resolve_story("INT-US-09", None, None)
+        story = tr.resolve_story("US-09", None, None)
 
         for state in tr.STATES:
             assert "unit" not in {s.tier for s in tr.resolve_selections(story, state)}
 
-    def test_an_int_story_runs_e2e_at_the_commit_boundary(self, tr: ModuleType) -> None:
-        story = tr.resolve_story("INT-US-09", None, None)
+    def test_a_story_runs_e2e_at_the_commit_boundary(self, tr: ModuleType) -> None:
+        story = tr.resolve_story("US-09", None, None)
 
         tiers = {s.tier: s.scope for s in tr.resolve_selections(story, "cb")}
 

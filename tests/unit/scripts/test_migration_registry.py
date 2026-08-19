@@ -62,7 +62,7 @@ MINTED_CONTRACTS = (
 REOPENED = ("INT-US-05-SF03", "INT-US-05-SF04", "INT-US-21-SUB")
 
 #: Which contract document holds each reopened id's `ADR-004` section.
-CONTRACTS = Path("docs") / "roadmap" / "topics" / "topic_08_integration"
+CONTRACTS = Path("docs") / "roadmap" / "stories"
 
 #: A path to a real test file, which is the evidence FR-3 requires behind a `✅`.
 _TEST_CITATION = re.compile(r"`?tests/[\w./-]+\.py`?")
@@ -144,9 +144,12 @@ def test_a_reopened_claim_is_green_only_behind_a_named_test(roadmap: str, contra
     if "`✅`" not in line:
         return
     story = contract.split("-SF")[0].replace("INT-US-", "US-").replace("-SUB", "")
-    doc = (REPO_ROOT / CONTRACTS / f"{story}_integration.md").read_text(encoding="utf-8")
-    section = doc.split(f"**`{contract}`", 1)[-1].split("\n* **", 1)[0]
-    assert _TEST_CITATION.search(section), f"{contract} claims `✅` and its contract names no test"
+    doc = (REPO_ROOT / CONTRACTS / f"{story}.md").read_text(encoding="utf-8")
+    # `ADR-005` removed the id from the story document, so the roadmap line's title is the key.
+    name = line.split(f"**{contract}:**", 1)[1].strip()
+    assert f"**{name}" in doc, f"{contract}: no section named {name!r} in {story}.md"
+    section = doc.split(f"**{name}", 1)[-1].split("\n* **", 1)[0]
+    assert _TEST_CITATION.search(section), f"{contract} claims `✅` and its story names no test"
 
 
 @pytest.mark.parametrize("contract", REOPENED)

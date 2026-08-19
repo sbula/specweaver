@@ -13,13 +13,13 @@ Unlike the quality matrix, the tier depends on TWO things, not one: `cb` in a ca
 by commit state, and DAL shifts the whole thing earlier or later.
 
     python scripts/tests.py cb C-FLOW-12
-    python scripts/tests.py cb INT-US-21
+    python scripts/tests.py cb US-21
     python scripts/tests.py sf TECH-020 --kind refactor
 
 STORY TYPE comes from the ID:
 
   `[A-E]-<TOPIC>-NN`  capability story — unit-led, integration and e2e arrive late
-  `INT-US-NN`         integration story — NO unit tier at all; integration + e2e from the start
+  `US-NN`             (sub)story — NO unit tier at all; its spanning tests are integration + e2e
   `TECH-NNN`          technical debt — has no single profile, see KIND below
 
 An INT story has no DAL letter of its own, so it INHERITS the most critical DAL among the
@@ -108,7 +108,7 @@ DAL_LETTERS = ("A", "B", "C", "D", "E")
 TECH_KINDS = ("refactor", "bugfix", "tooling", "audit")
 
 CAPABILITY_ID = re.compile(r"\b([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}\b")
-INT_ID = re.compile(r"^INT-US-\d{2}(?:-SF\d{2}|-SUB)?(?:-MIG)?$", re.I)
+STORY_ID = re.compile(r"^US-\d{1,2}$", re.I)
 TECH_ID = re.compile(r"^TECH-(\d{3})$", re.I)
 CAP_ID = re.compile(r"^([A-E])-(UI|SENS|FLOW|INTL|VAL|EXEC)-\d{2}$", re.I)
 
@@ -142,7 +142,7 @@ CAPABILITY_PROFILE: dict[str, dict[str, str]] = {
 
 #: No unit tier by design. Writing unit tests in an INT story is not a coverage win — it is the
 #: signal that the capability underneath shipped incomplete, and the fix belongs upstream.
-INT_PROFILE: dict[str, dict[str, str]] = {
+STORY_PROFILE: dict[str, dict[str, str]] = {
     "integration": {"quick": "module", "cb": "all", "sf": "all", "feature": "all"},
     "e2e": {"quick": "domain", "cb": "domain", "sf": "all", "feature": "all"},
 }
@@ -174,7 +174,7 @@ class Selection:
 @dataclass(frozen=True)
 class Story:
     story_id: str
-    kind: str  # "capability" | "int" | "tech"
+    kind: str  # "capability" | "story" | "tech"
     dal: str
     tech_kind: str | None = None
     dal_source: str = ""
@@ -200,8 +200,8 @@ def most_critical(letters: list[str]) -> str:
 BASE_SECTION = _story_resolution.BASE_SECTION
 SUBSTORY_SECTION = _story_resolution.SUBSTORY_SECTION
 INTEGRATION_DESCRIPTION = _story_resolution.INTEGRATION_DESCRIPTION
-integration_scope_text = _story_resolution.integration_scope_text
-integrated_capabilities = _story_resolution.integrated_capabilities
+story_scope_text = _story_resolution.story_scope_text
+spanned_capabilities = _story_resolution.spanned_capabilities
 
 
 def resolve_story(story_id: str, tech_kind: str | None, dal_override: str | None) -> Story:
@@ -209,18 +209,18 @@ def resolve_story(story_id: str, tech_kind: str | None, dal_override: str | None
         dal = dal_override or m.group(1).upper()
         return Story(story_id, "capability", dal, dal_source="capability ID prefix")
 
-    if INT_ID.match(story_id) is not None:
+    if STORY_ID.match(story_id) is not None:
         if dal_override:
-            return Story(story_id, "int", dal_override, dal_source="--dal override")
-        caps = integrated_capabilities(story_id)
+            return Story(story_id, "story", dal_override, dal_source="--dal override")
+        caps = spanned_capabilities(story_id)
         letters = [c[0].upper() for c in caps]
         if not letters:
             raise UsageError(
-                f"{story_id}: found no capability IDs in its integration doc, so its DAL cannot "
-                "be derived. Pass --dal, or name the integrated capabilities in the doc."
+                f"{story_id}: found no capability IDs in its path document, so its DAL cannot "
+                "be derived. Pass --dal, or name the spanned capabilities in the document."
             )
         dal = most_critical(letters)
-        return Story(story_id, "int", dal, dal_source=f"most critical of {', '.join(caps)}")
+        return Story(story_id, "story", dal, dal_source=f"most critical of {', '.join(caps)}")
 
     if TECH_ID.match(story_id) is not None:
         if tech_kind is None:
@@ -241,9 +241,15 @@ def resolve_story(story_id: str, tech_kind: str | None, dal_override: str | None
         )
         return Story(story_id, "tech", dal, tech_kind=tech_kind, dal_source=source)
 
+    if story_id.upper().startswith("INT-US-"):
+        raise UsageError(
+            f"{story_id} is an `INT-US` id, and `ADR-005` retired the family. Pass the (sub)story "
+            "as `US-21`, or the capability the add-on ships as `C-FLOW-12` — a capability carries "
+            "its DAL in its own prefix."
+        )
     raise UsageError(
-        f"unrecognised story ID {story_id!r}. Expected a capability ID (C-FLOW-12), an "
-        "integration story (INT-US-21) or a TECH ticket (TECH-020). Refusing to guess a profile."
+        f"unrecognised story ID {story_id!r}. Expected a capability ID (C-FLOW-12), a (sub)story "
+        "(US-21) or a TECH ticket (TECH-020). Refusing to guess a profile."
     )
 
 
@@ -255,8 +261,8 @@ def resolve_story(story_id: str, tech_kind: str | None, dal_override: str | None
 def base_profile(story: Story) -> dict[str, dict[str, str]]:
     if story.kind == "capability":
         return CAPABILITY_PROFILE
-    if story.kind == "int":
-        return INT_PROFILE
+    if story.kind == "story":
+        return STORY_PROFILE
     assert story.tech_kind is not None
     return TECH_PROFILES[story.tech_kind]
 
@@ -471,7 +477,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("state", choices=[*STATES, "matrix"], help="commit point")
-    ap.add_argument("story", nargs="?", help="story ID (C-FLOW-12 / INT-US-21 / TECH-020)")
+    ap.add_argument("story", nargs="?", help="story ID (C-FLOW-12 / US-21 / TECH-020)")
     ap.add_argument("--kind", choices=TECH_KINDS, help="required for TECH tickets")
     ap.add_argument("--dal", choices=DAL_LETTERS, help="override the derived DAL")
     ap.add_argument("--also", help="comma-separated extra tiers (widen only)")
@@ -549,7 +555,7 @@ def render_matrix() -> str:
     lines = []
     for title, profile in (
         ("CAPABILITY story ([A-E]-TOPIC-NN)", CAPABILITY_PROFILE),
-        ("INTEGRATION story (INT-US-NN)", INT_PROFILE),
+        ("(SUB)STORY (US-NN)", STORY_PROFILE),
         *[(f"TECH --kind {k}", p) for k, p in TECH_PROFILES.items()],
     ):
         lines.append(f"\n{title}   [baseline DAL-C]")

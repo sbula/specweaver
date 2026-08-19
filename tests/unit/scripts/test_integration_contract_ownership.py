@@ -27,7 +27,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "topics" / "topic_08_integration"
+CONTRACTS = REPO_ROOT / "docs" / "roadmap" / "stories"
 
 #: A six-column path-inventory row, `| P-1 | ... |`, at any indentation.
 _ROW = re.compile(r"^\s*\|\s*P-\d+\s*\|")
@@ -42,8 +42,8 @@ _OTHER_TICKET = re.compile(r"\b(?:[A-E]-[A-Z]+-\d+|TECH-\d{3})\b")
 
 def _rows() -> list[tuple[str, list[str]]]:
     out: list[tuple[str, list[str]]] = []
-    for path in sorted(CONTRACTS.glob("US-*_integration.md")):
-        story = path.stem.split("_")[0]
+    for path in sorted(CONTRACTS.glob("US-*.md")):
+        story = path.stem
         for line in path.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
             if not _ROW.match(stripped):
