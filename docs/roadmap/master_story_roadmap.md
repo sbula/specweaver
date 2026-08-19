@@ -47,9 +47,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
    * **ROI:** **Risk-driven** — modest effort caps the worst-case cost of every existing and future loop; currently the only guards are per-step `max_retries`, not spend.
 4. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY (minted 2026-07-24)
    * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree +
-     `sw run`/`sw resume` escalation wiring), integration owned by `C-EXEC-07` per `ADR-003`. Prereqs: `C-EXEC-06` ✅.
-     Details: [topic_06](topics/topic_06_sandbox.md) /
-     [US-09_integration.md](topics/topic_08_integration/US-09_integration.md).
+     `sw run`/`sw resume` escalation wiring), integration implicit in `C-EXEC-07` per `ADR-005`. Prereqs: `C-EXEC-06` ✅.
+     Details: [topic_06](topics/topic_06_sandbox.md) / [US-09.md](stories/US-09.md).
    * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution
      surface (LLM-derived scenario tests over LLM-generated code, now LIVE via
      `sw run scenario_integration`) has the weakest default; also contains scenario artifact

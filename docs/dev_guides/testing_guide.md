@@ -139,7 +139,7 @@ the gate picks them from the story:
 
 ```bash
 python scripts/tests.py cb C-FLOW-12           # capability story
-python scripts/tests.py cb INT-US-21           # integration story
+python scripts/tests.py cb US-21               # (sub)story — integration + e2e, no unit tier
 python scripts/tests.py cb TECH-020 --kind refactor|bugfix|tooling|audit
 python scripts/tests.py matrix                 # every profile
 ```

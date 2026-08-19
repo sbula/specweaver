@@ -134,7 +134,7 @@ def _check_proof_in_roadmap_block(story_id: str, report: Report, *, fast: bool) 
     """Proof check for families with no separate integration contract (e.g. `TECH-NNN`).
 
     These declare their `Verifiable Proof` directly inside their own master-roadmap section
-    instead of a `topic_08_integration/US-N_integration.md` file — requiring one there is what
+    instead of a `stories/US-NN.md` document — requiring one there is what
     made `check_contract_and_proof` fail every TECH-NNN ticket with a nonsensical path like
     `US-TECH_integration.md`.
     """

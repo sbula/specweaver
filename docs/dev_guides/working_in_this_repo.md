@@ -138,17 +138,21 @@ A design that describes a mechanism the code no longer has is the exception: cor
 because a delivered design asserting something untrue is the defect class most of this repo's audits
 keep finding.
 
-## 10. Integration stories have a rule that is easy to get backwards
+## 10. Integration is implicit, and there is no integration story
 
-An `INT-US` entry belongs to a (sub)story **that already holds a finished feature**, and nowhere else.
+`ADR-005`: a (sub)story owns every test it needs, spanning ones included. No `INT-US-NN`,
+`INT-US-NN-SFxx` or `-MIG` is ever minted again.
 
-- **Never mint or reference one for unbuilt work.** An unbuilt capability owns its own integration and
-  e2e proof, as its own FRs, written red before the code.
-- **Never delete an open one.** It is the record that a shipped feature was never integration-tested.
-  Removing it hides the debt rather than retiring it.
+- **Write the spanning test before the work, so it can go RED.** A test written after the code is
+  green on its first run and asserts the present instead of a contract.
+- **A related (sub)story unbuilt is not a reason to defer.** Write the test now, as
+  `pytest.mark.xfail(strict=True)` naming the blocker. `strict` makes the eventual pass a loud
+  failure, and `check_xfail_blockers.py` fails the marker once its blocker is `✅`.
+- **A gap under an already-finished (sub)story is a defect**, so it becomes a `TECH` ticket that
+  owns the test and writes it red first.
 
-Getting this wrong is how the session that produced this file started. Full rules: `ADR-004`, and the
-`specweaver-design` skill's opening caution.
+This rule was retired and regrown twice, both times because a version of it kept one exception.
+Full rules: `ADR-005`, and the `specweaver-design` skill's opening caution.
 
 ---
 

@@ -36,9 +36,10 @@ BRIEF = f"""
      decoration, and this repo keeps finding them.
   4. When a measurement surprises you, suspect the instrument first.
 
-  Integration stories: never mint or reference an INT-US for unbuilt work, and
-  never delete an open one — it is the record that a shipped feature was never
-  integration-tested. See ADR-004.
+  Integration is implicit in the (sub)story and there is no integration story.
+  Never mint an INT-US. A path one feature cannot walk is a seam FR of the
+  story, its test written RED first — xfail(strict=True) naming the blocker
+  while a related story is unbuilt. See ADR-005.
 """
 
 

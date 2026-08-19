@@ -1,5 +1,11 @@
 # US-25 Integration Contract
 
+> **Superseded shape, kept for its facts.** `ADR-005` retired the separate integration contract; a
+> story's paths and seams live in `docs/roadmap/stories/US-25.md`. This is the only document of its
+> kind ever written (1 of 28, dated 2026-05-03) and it records boundaries and schemas that are not
+> restated there, so it stays as a dated record rather than being trimmed by eye. Its template was
+> deleted — a mould for a retired artifact teaches the shape back.
+
 **Story Name:** Compliance & Constitution Governance
 **Status:** Integrated
 **Date Integrated:** 2026-05-03
