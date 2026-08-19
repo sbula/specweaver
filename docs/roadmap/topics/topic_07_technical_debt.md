@@ -152,7 +152,7 @@ critical for long-term project viability.
   > then dies as `StatementError: StrictISODateTime must be timezone-aware`. Both refused with a message and an example; naive values are refused rather than assumed-UTC, which would mis-filter by
   > a day at the boundary invisibly. Typer's native `datetime` type was rejected: it accepts three formats and would have dropped `+02:00` offsets that already worked.
 
-* **`TECH-041` 🔴: The Code-Level DAL Override Is Unproven End to End (Needs a Scripted LLM)**
+* **`TECH-041` 🟢: The Code-Level DAL Override Is Unproven End to End (Needs a Scripted LLM)**
   > [Description](../features/topic_07_technical_debt/TECH-041/TECH-041_design.md) | _(2026-08-13 — found while fixing `TECH-017`'s vacuous-assertion findings.)_ | `C-VAL-03`'s DAL override is proven
   > at spec level and **not** at code level: every link is tested in isolation and the chain never. The test that appeared to prove it never executed `sw implement` at all. Needs a scripted LLM
   > adapter; the lenient-DAL control is the load-bearing half.

@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-041
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: Found 2026-08-13 while fixing `TECH-017`'s vacuous-assertion findings. The test that
   claimed this coverage — `test_e2e_sw_implement_pipeline_dal_strictness` — had never executed
   `sw implement` at all. Filed rather than left in a docstring.
@@ -46,7 +46,49 @@ can run, so proving it needs a **scripted adapter** — the shape `test_feature_
 already builds (`ScriptedLLM`, with `ModelRouter.get_for_task` patched to `None` so the router
 cannot construct a live provider around the factory patch).
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The code-level DAL override changes the verdict | `sw check --level code` | validates one module twice, under a lenient and a strict `dal_level`, with everything else held equal | the lenient run exits 0 reporting warnings and the strict run exits 1 on the identical warnings, so the DAL is what moved the verdict |
+
+## What re-measurement changed
+
+The ticket was filed expecting a **scripted LLM**, because `sw implement` reaches the model before
+any code-level enforcement runs. That turned out to be the wrong shape, for a reason worth writing
+down: the code-level DAL override does not live on the `sw implement` path at all.
+
+Measured 2026-08-19, `dal_level` reaches exactly three callers of `execute_validation_flow`:
+
+| Caller | Passes `dal_level`? |
+|---|---|
+| `assurance/validation/interfaces/cli.py` (`sw check`) | yes — and turns it into `effective_strict`, which is what moves the exit code |
+| `interfaces/api/v1/validation.py` | yes |
+| `core/flow/handlers/validation.py` (the pipeline handler `sw implement` runs) | **no** |
+
+So the claim is real, implemented and now proven — on the CLI path, which needs no LLM. Approach 1's
+scripted adapter would have driven the one path where the DAL is never applied, and a test written
+there could only have asserted the absence.
+
+## The finding this uncovered, recorded and not fixed here
+
+**The pipeline path does not apply a module's DAL to code validation.** The runner resolves the DAL
+and seeds `context.isolation.dal_level` — `test_runner_dal_injection.py` proves that at integration
+tier — and the code-validation handler then calls `execute_validation_flow` without it. The value is
+computed, carried, and dropped one call short of use.
+
+Forwarding it was deliberately **not** done here, because it would be inert: no QA runner branches on
+`dal_level` today, it is only logged. Wiring a value nothing consumes, with a test that cannot observe
+it, is the substitution this ticket exists to correct. What the pipeline should do about strictness on
+generated code is a scope decision, and it needs its own ticket.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/e2e/capabilities/assurance/test_code_dal_strictness_e2e.py` — 4 tests. Three mutants die: `effective_strict` dropping the DAL, forcing it always-strict, and never reporting the resolved level. The always-strict mutant is what the lenient control catches |
+
+## Candidate Approaches (as filed)
 
 1. **Scripted-LLM e2e, mirroring the spec-level proof.** One generated module, two runs: under a
    lenient DAL it passes with warnings, under `DAL_A` the identical code fails. The **lenient
@@ -63,7 +105,7 @@ cannot construct a live provider around the factory patch).
 `ScriptedLLM` is currently private to one e2e module. If (1) is chosen, decide whether to lift it
 into a shared fixture — a second copy is what `TECH-037`'s duplication ratchet exists to prevent.
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 - The spec-level DAL path — proven, twice.
 - Making `sw implement` runnable without an LLM.
@@ -79,6 +121,9 @@ The spec-level DAL claim now has **two** proofs: `test_validation_dal_enforcemen
 harmless, and consolidating it is not this ticket's job — noted so a future reader does not read
 the duplication as an accident.
 
-## Next Step
+## Delivery
 
-Run the `specweaver-design` skill against this stub before any implementation.
+Delivered 2026-08-19. Neither of the filed approaches was taken as written: approach 1 aimed at the
+path where the DAL is not applied, and approach 2 would have called a handler directly and skipped
+the journey. The `sw check --level code` journey is a real user path, needs no LLM, and is where the
+override actually lives.

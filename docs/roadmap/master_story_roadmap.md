@@ -60,11 +60,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 10 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 9 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
-| `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
+| `TECH-061` 🔴 | The knowledge graph indexes Python only, so a polyglot repository is mapped by its Python half. |
 | `TECH-066` 🔴 | `C13` reads a context key nothing produces, so contract drift skips on every check and a mismatched `.proto` reads as clean. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
@@ -583,7 +583,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-038:** [Registry Claims Recursive Decomposition the Capability Does Not Implement](features/topic_07_technical_debt/TECH-038/TECH-038_design.md)
     *   `✅` **TECH-039:** [One Identifier Named Two Delivered Add-Ons (`INT-US-05-SUB` Collision)](features/topic_07_technical_debt/TECH-039/TECH-039_design.md)
     *   `✅` **TECH-040:** [`sw run --verbose` Showed No Handler Output](features/topic_07_technical_debt/TECH-040/TECH-040_design.md)
-    *   `[ ]` **TECH-041:** [The Code-Level DAL Override Is Unproven End to End](features/topic_07_technical_debt/TECH-041/TECH-041_design.md)
+    *   `✅` **TECH-041:** [The Code-Level DAL Override Is Unproven End to End](features/topic_07_technical_debt/TECH-041/TECH-041_design.md)
     *   `✅` **TECH-044:** [Registry Entries Carry Content Belonging Four Layers Down](features/topic_07_technical_debt/TECH-044/TECH-044_design.md)
     *   `✅` **TECH-045:** [Nothing Bounds a Document's Size](features/topic_07_technical_debt/TECH-045/TECH-045_design.md)
     *   `✅` **TECH-046:** [`C-INTL-01` Shipped Without the Recursion It Was Designed For](features/topic_07_technical_debt/TECH-046/TECH-046_design.md)
