@@ -453,12 +453,23 @@ class QARunnerAtom(Atom):
         exports: dict[str, Any] = {
             "violation_count": result.violation_count,
             "violations": [asdict(v) for v in result.violations],
+            "note": result.note,
         }
 
         if result.violation_count > 0:
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"{result.violation_count} architectural violation(s) found.",
+                exports=exports,
+            )
+
+        # A runner that declined the check reports why. "No architectural violations" over a check
+        # that never ran cannot be told apart from a clean verdict, and the zero is what a reader
+        # acts on.
+        if result.note:
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Architecture check did not run: {result.note}",
                 exports=exports,
             )
 

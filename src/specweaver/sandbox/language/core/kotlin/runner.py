@@ -278,5 +278,14 @@ class KotlinRunner(QARunnerInterface):
         target: str,
         dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
-        """Run architectural checks (Deferred to Feature 3.20b)."""
-        return ArchitectureRunResult(violation_count=0, violations=[])
+        """Report that architectural checks are not implemented for this language.
+
+        It returns a result rather than raising because the QA atom treats an exception as a
+        failed step, and the check not existing is not the project's fault. The `note` is not
+        optional: without it, this is indistinguishable from a clean verdict.
+        """
+        return ArchitectureRunResult(
+            violation_count=0,
+            violations=[],
+            note="Kotlin architecture checks are not implemented; no boundary was examined.",
+        )

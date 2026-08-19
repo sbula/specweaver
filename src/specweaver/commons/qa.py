@@ -160,4 +160,12 @@ class ArchitectureRunResult:
     violation_count: int
     violations: list[ArchitectureViolation] = field(default_factory=list)
 
+    #: Why no verdict was reached, when none was. Empty means the check ran.
+    #:
+    #: `violation_count=0` alone cannot say whether a boundary was examined and found clean or never
+    #: examined at all, and two runners returned the second while looking like the first. Same shape
+    #: as `TestRunResult.toolchain_note`: the result discloses what it could not do rather than
+    #: leaving the caller to infer it from a zero.
+    note: str = ""
+
     __test__ = False

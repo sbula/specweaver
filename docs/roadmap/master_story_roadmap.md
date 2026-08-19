@@ -65,7 +65,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-041` 🔴 | `C-VAL-03` is `✅`, but its DAL override is proven link by link and never as a chain. |
-| `TECH-064` 🔴 | Kotlin and Rust architecture checks return `violation_count=0` as stubs, so a boundary violation reads as a clean verdict. |
+| `TECH-066` 🔴 | `C13` reads a context key nothing produces, so contract drift skips on every check and a mismatched `.proto` reads as clean. |
 | `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
 
 ### 📋 Routing Selection Matrix
@@ -604,6 +604,6 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
     *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
     *   `[ ]` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
-    *   `[ ]` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
+    *   `✅` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
     *   `[ ]` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
     *   `[ ]` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)

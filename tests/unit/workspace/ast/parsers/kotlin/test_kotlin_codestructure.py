@@ -200,3 +200,44 @@ class OtherController {
     symbols = parser.list_symbols(code, decorator_filter="RestController")
     assert "MyController" in symbols
     assert "OtherController" not in symbols
+
+
+class TestExtractImports:
+    """`KotlinCodeStructure.extract_imports` — the data every archetype decision rests on.
+
+    Proves: TECH-064 FR-1
+
+    The query named `(import_header)`, a node type this grammar does not have, so every call raised
+    `tree_sitter.QueryError`. The visible symptom was worse than a crash: callers that swallow the
+    error read "this file imports nothing", archetype inference finds no imports and classifies the
+    module `pure-logic`, and missing data becomes a confident wrong answer about architecture.
+
+    The grammar emits `(import)`, with the keyword and any `as` alias inside the node — which the
+    method already strips. Compare `java/codestructure.py`, whose `(import_declaration)` query works
+    on structurally identical input; the defect was the node name alone.
+    """
+
+    def test_a_plain_import_is_extracted(self, parser: KotlinCodeStructure) -> None:
+        code = "package com.demo\n\nimport java.util.List\n\nclass A\n"
+
+        assert parser.extract_imports(code) == ["java.util.List"]
+
+    def test_extraction_does_not_depend_on_a_package_declaration(
+        self, parser: KotlinCodeStructure
+    ) -> None:
+        """Both samples in the ticket returned nothing; only one of them had a package header."""
+        code = "import java.util.List\nimport com.other.Thing\n\nclass A\n"
+
+        assert parser.extract_imports(code) == ["com.other.Thing", "java.util.List"]
+
+    def test_an_alias_is_reported_under_the_imported_name(
+        self, parser: KotlinCodeStructure
+    ) -> None:
+        """`import x.Y as Z` is a dependency on `x.Y`. Recording `Z` would name a local label."""
+        code = "import com.other.Thing as T\n"
+
+        assert parser.extract_imports(code) == ["com.other.Thing"]
+
+    def test_a_file_that_imports_nothing_is_still_empty(self, parser: KotlinCodeStructure) -> None:
+        """The honest empty result has to stay reachable, or the fix just inverts the defect."""
+        assert parser.extract_imports("package com.demo\n\nclass A\n") == []

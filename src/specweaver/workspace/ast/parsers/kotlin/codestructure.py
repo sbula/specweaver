@@ -27,8 +27,10 @@ class KotlinCodeStructure(ClassBasedParser):
 
     @property
     def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+        #: The grammar emits `(import)`; `(import_header)` is Kotlin's own spec vocabulary and not a
+        #: node type here, so querying it raised rather than matching nothing.
         return """
-        (import_header) @imp
+        (import) @imp
         """
 
     @property

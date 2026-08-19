@@ -134,7 +134,7 @@ critical for long-term project viability.
   > parsers are delivered and proven; the join to validation is missing, and the decision is whether contract
   > drift belongs at validation tier at all.
 
-* **`TECH-064` 🔴: Polyglot Architecture Checks Report Success Where They Do Nothing**
+* **`TECH-064` 🟢: Polyglot Architecture Checks Report Success Where They Do Nothing**
   > [Description](../features/topic_07_technical_debt/TECH-064/TECH-064_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-20` P-5 test._ |
   > `KotlinAnalyzer.extract_imports` returns nothing for valid imports, so archetype inference calls the module `pure-logic`;
   > Kotlin's and Rust's `run_architecture_check` return `violation_count=0` as stubs, so *not implemented* is
