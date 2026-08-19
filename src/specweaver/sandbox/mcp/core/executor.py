@@ -31,12 +31,20 @@ class MCPExecutor:
 
     def __init__(self, command: list[str], env: dict[str, str] | None = None) -> None:
         """Initialize the MCP subprocess securely."""
+        from specweaver.sandbox.execution.executor import build_child_env
+
         self._command = command
+
+        # `Popen(env=None)` hands the child THIS process's whole environment, and an MCP server is an
+        # external binary named by the analysed project's own configuration. The allowlist and the
+        # credential strip are the executor's, so both subprocess paths answer the same question the
+        # same way — only the call shape differs, which is why this cannot simply call `execute()`.
+        child_env = build_child_env(env)
 
         try:
             self._process = subprocess.Popen(
                 self._command,
-                env=env,
+                env=child_env,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 text=True,

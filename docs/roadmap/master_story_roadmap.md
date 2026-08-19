@@ -60,13 +60,13 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔧 Debt Sequencing
 
-*3 of 6 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*3 of 3 open, ranked by what they invalidate. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 | Ticket | What you misread without it |
 |---|---|
 | `TECH-013` 🔴 | API composition roots do not resolve worktree-isolation policy, so a served run ignores it. |
-| `TECH-062` 🔴 | Parallel fan-out has no collision guards, so two agents can write the same file in one run. |
-| `TECH-010` 🔴 | `mcp/core/executor.py` runs raw `subprocess` — no timeout escalation, no credential stripping. |
+| `TECH-011` 🔴 | Pipeline step params are unvalidated at load, so a malformed step fails mid-run. |
+| `TECH-057` 🔴 | The nightly runs its mutants one at a time, so the corpus takes hours it need not. |
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -553,7 +553,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md)
     *   `✅` **TECH-008:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-008/TECH-008_design.md)
     *   `✅` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
-    *   `[ ]` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
+    *   `✅` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
@@ -602,7 +602,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-059:** [Registry IDs and History in Production Comments](features/topic_07_technical_debt/TECH-059/TECH-059_design.md)
     *   `✅` **TECH-060:** [Integration Migration to (Sub)Story Path Inventories](features/topic_07_technical_debt/TECH-060/TECH-060_design.md)
     *   `✅` **TECH-061:** [The Knowledge Graph Is Python-Only](features/topic_07_technical_debt/TECH-061/TECH-061_design.md)
-    *   `[ ]` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
+    *   `✅` **TECH-062:** [Parallel Fan-Out Has No Collision Guards](features/topic_07_technical_debt/TECH-062/TECH-062_design.md)
     *   `✅` **TECH-063:** [The MCP Container Boundary Checks a Name, Not a Command](features/topic_07_technical_debt/TECH-063/TECH-063_design.md)
     *   `✅` **TECH-064:** [Polyglot Architecture Checks Report Success Where They Do Nothing](features/topic_07_technical_debt/TECH-064/TECH-064_design.md)
     *   `✅` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)

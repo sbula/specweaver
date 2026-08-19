@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-010
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: Found during C-EXEC-02 SF-01's pre-commit gate (2026-07-13) while auditing repo-wide `ruff` `TID251` (banned raw `subprocess`) violations.
 
 ## Problem Statement
@@ -25,7 +25,46 @@ It cannot keep a process alive across multiple calls, has no concept of "send mo
 output, the process is still running." Forcing `MCPExecutor` through it would break the MCP bridge
 outright — not a regression risk, a certain break.
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The MCP child gets a built environment, never an inherited one | `MCPExecutor` | constructs the child environment through the executor's allowlist before `Popen` | a variable this process holds and the allowlist does not name is absent from the server, instead of the whole parent environment being handed over |
+| FR-2 | Credentials are stripped, including configured ones | `MCPExecutor` | applies the same credential strip `SubprocessExecutor` already applies | `ANTHROPIC_API_KEY` is absent from the server, and a `context.yaml` naming `OPENAI_API_KEY` in `mcp_servers[].env` does not put it back |
+
+## What was reproduced
+
+With `ANTHROPIC_API_KEY` set in this process, a server started by `MCPExecutor` read it back
+verbatim. `Popen(env=None)` hands the child the entire parent environment, and when a `context.yaml`
+declares no `env` — the common case — `None` is exactly what was passed. The server is an external
+binary named by the analysed project's own configuration.
+
+## What was NOT done, and why the ticket was still closable
+
+**`MCPExecutor` still owns its own `Popen`.** The ticket's own analysis is why: `execute()` is
+one-shot, `communicate()` waits for the process to exit, and MCP is a long-lived bidirectional
+JSON-RPC bridge with a background reader thread. Forcing it through `execute()` was described in the
+filing as "not a regression risk, a certain break", and that has not changed.
+
+Neither approach as filed was taken. Extending `SubprocessExecutor` with a persistent mode, or
+building a `PersistentSubprocessExecutor` sibling, both move the *call shape*; what the two paths
+genuinely share is **what the child is allowed to see**. `build_child_env` is that, extracted to
+module level and used by both, so the allowlist and the credential strip have one definition and
+`SubprocessExecutor._build_env` delegates to it unchanged.
+
+**Timeout escalation and structured telemetry remain `MCPExecutor`'s own.** `call_rpc` already
+carries a per-call timeout; unifying the telemetry shape is a call-shape change and belongs with a
+persistent-executor design if one is ever wanted. This ticket closes the security half, which is what
+`TECH-063` kept naming as its consequence (4).
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/integration/sandbox/mcp/test_mcp_child_environment.py` — passing the raw config env again fails 3; ignoring the allowlist fails 1. The `PATH` control is what stops an empty environment satisfying both |
+| FR-2 | the same file — removing the credential strip fails 3, including the config-injected case |
+
+## Candidate Approaches (as filed)
 
 A persistent/streaming-process execution mode — either:
 1. **Extend `SubprocessExecutor`** with a new mode/method for long-lived processes (e.g. an
@@ -41,7 +80,7 @@ Either approach should give `MCPExecutor` the same env allowlisting + credential
 structured telemetry the rest of the sandbox already has, without changing its public API
 (`call_rpc()`, `is_alive()`, `close()`).
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 
 Written 2026-08-13. This ticket sits in the sandbox execution layer, which is the easiest place in
 the repo for a fix to become a rewrite — so the boundaries are stated before anyone starts.

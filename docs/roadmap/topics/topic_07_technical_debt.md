@@ -21,7 +21,7 @@ critical for long-term project viability.
   > never existed.
 
 ## Architecture & Restructuring
-* **`TECH-062` 🔴: Parallel Fan-Out Has No Collision Guards**
+* **`TECH-062` 🟢: Parallel Fan-Out Has No Collision Guards**
   > [Description](../features/topic_07_technical_debt/TECH-062/TECH-062_design.md) | _Status: STUB. Origin: found 2026-08-17 while citing `C-FLOW-03`'s FRs under `ADR-004`._ |
   > `C-FLOW-03` is `✅` and two of its six FRs describe mechanisms **absent from `src/`**: `SW_PORT_OFFSET` port-offset injection, and `gc.auto 0` plus serialised worktree creation. `run_fan_out` IS
   > concurrent (`asyncio.gather`) and its sub-runs can each `git worktree add`, so both hazards are live. FR rows deleted per `TECH-046`; the work carried here. No mutant exists for absent code.
@@ -72,7 +72,7 @@ critical for long-term project viability.
   > [Description](../features/topic_07_technical_debt/TECH-009/TECH-009_design.md) | _(Origin: `C-EXEC-02` TID251 audit.)_ | Git and filesystem operations bypassed `SubprocessExecutor`, so they missed
   > its timeout escalation and credential stripping. **DELIVERED:** migrated behind the executor, leaving only the documented MCP exemption that `TECH-010` owns.
 
-* **`TECH-010` 🔴: MCP Persistent-Process Executor Migration**
+* **`TECH-010` 🟢: MCP Persistent-Process Executor Migration**
   > [Description](../features/topic_07_technical_debt/TECH-010/TECH-010_design.md) | _Status: STUB. Origin: `C-EXEC-02 SF-01` pre-commit `TID251` audit (2026-07-13)._ | `mcp/core/executor.py` keeps a
   > documented raw-`subprocess` exemption: its persistent, bidirectional process pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design. Needs a
   > long-lived-process executor abstraction rather than a mechanical migration.

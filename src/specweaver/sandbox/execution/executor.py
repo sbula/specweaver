@@ -90,6 +90,41 @@ def _is_credential(key: str) -> bool:
     return key in _CREDENTIAL_VARS or any(key.startswith(p) for p in _CREDENTIAL_PREFIXES)
 
 
+def build_child_env(
+    extra_env: dict[str, str] | None,
+    *,
+    allowlist: frozenset[str] | None = None,
+    strip_credentials: bool = True,
+) -> dict[str, str]:
+    """A clean child environment: allowlist from the parent, then extras, then strip credentials.
+
+    1. Start from an empty dict — never from `os.environ`
+    2. Copy allowed vars from the parent environment
+    3. Merge `extra_env`
+    4. Strip credential vars, ALWAYS, even ones injected via `extra_env`
+
+    Module-level so a caller that cannot use `SubprocessExecutor.execute()` can still share its
+    environment discipline. `MCPExecutor` is the case: it keeps a long-lived bidirectional process
+    alive across many calls, which `execute()` cannot host — it is one-shot and `communicate()` waits
+    for exit. What the two genuinely share is what the child is allowed to see, and passing `None`
+    to `Popen(env=...)` hands it the whole parent environment instead.
+    """
+    env: dict[str, str] = {}
+
+    for key in allowlist if allowlist is not None else _DEFAULT_ENV_ALLOWLIST:
+        val = os.environ.get(key)
+        if val is not None:
+            env[key] = val
+
+    if extra_env:
+        env.update(extra_env)
+
+    if strip_credentials:
+        env = {k: v for k, v in env.items() if not _is_credential(k)}
+
+    return env
+
+
 class SubprocessExecutor:
     """Unified, cross-platform subprocess execution with security boundaries.
 
@@ -230,30 +265,12 @@ class SubprocessExecutor:
         )
 
     def _build_env(self, extra_env: dict[str, str] | None) -> dict[str, str]:
-        """Build a clean child environment from allowlist.
-
-        1. Start from empty dict
-        2. Copy allowed vars from parent environment
-        3. Merge extra_env
-        4. Strip all credential vars (even if injected via extra_env)
-        """
-        env: dict[str, str] = {}
-
-        # Copy allowed vars from parent
-        for key in self._env_allowlist:
-            val = os.environ.get(key)
-            if val is not None:
-                env[key] = val
-
-        # Merge extra_env
-        if extra_env:
-            env.update(extra_env)
-
-        # Strip credentials — ALWAYS, even if injected via extra_env
-        if self._strip_credentials:
-            env = {k: v for k, v in env.items() if not _is_credential(k)}
-
-        return env
+        """Build a clean child environment from allowlist."""
+        return build_child_env(
+            extra_env,
+            allowlist=self._env_allowlist,
+            strip_credentials=self._strip_credentials,
+        )
 
     def _validate_cwd(self, cwd_override: Path | None) -> Path:
         """Validate and resolve the working directory.
