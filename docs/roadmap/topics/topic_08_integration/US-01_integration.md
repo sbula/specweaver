@@ -33,7 +33,7 @@
   | P-7 | Journey: that project's `context.yaml` boundaries are emitted as its own `tach.toml` and then enforced against it in one run | cross-feature | this contract | yes — **done** | — |
   | P-8 | The test tiers mirror `src/` 1:1 | cross-feature | `C-EXEC-03` | yes — **done** | — |
   | P-10 | `tests/e2e/` is organised only by capability | cross-feature | `C-EXEC-03` | yes — **done** | — |
-  | P-9 | The architecture surfaces in the UI | cross-feature | `E-UI-04` (unbuilt) | no | `E-UI-04` owns this as its own FR |
+  | P-9 | The architecture surfaces in the UI | cross-feature | `E-UI-04` | retired | `ADR-003` — owned by `E-UI-04`, which declares this seam as its own FR |
 
   **Seventeen FRs across two capabilities, all cited, all behind killed mutants** —
   `check_fr_coverage.py` exits 0 for both. Three findings came out of it, and they are the same finding
@@ -158,7 +158,7 @@
   | P-5 | Seam: the interceptor reads the git *index*, locates each staged file's plan by path or by lineage uuid, and runs a one-step `DETECT`/`DRIFT` pipeline | cross-module | `B-VAL-02` | yes — **done** | — |
   | P-6 | Journey: a drifted staged file aborts a real `git commit` | cross-feature | `B-VAL-02` | yes — **done** | — |
   | P-7 | Journey: conventions discovered by `E-VAL-02` are what the pre-commit interceptor judges against | cross-feature | this contract, deferred | no | needs a product decision — nothing joins the two capabilities; see below |
-  | P-8 | Review stages are configurable | cross-feature | `E-VAL-04` (unbuilt) | no | `E-VAL-04` owns this as its own FR |
+  | P-8 | Review stages are configurable | cross-feature | `E-VAL-04` | retired | `ADR-003` — owned by `E-VAL-04`, which declares this seam as its own FR |
 
   **Fifteen FRs across two capabilities, all cited, all behind killed mutants.** `E-VAL-02` had **no
   design document** — an implementation plan and a topic entry were the whole record, so neither sweep
@@ -218,7 +218,8 @@
   place of the discovered content: the row is still written, still counted, still carries its confidence,
   and holds nothing. Four files fail. A test that counts rows cannot tell those two databases apart.
 
-  **`INT-US-01-SF03-MIG` is discharged (2026-08-17); the contract stays open** on P-7 and P-8.
+  **`INT-US-01-SF03-MIG` is discharged, and every path blocked on another ticket now names it.**
+  The contract stays open on P-7, which no other ticket owns — P-7 needs a product decision.
 
 * **`INT-US-01-SF04` — Mathematical Speed & Security (Rust):** *Pending Design.* Blocked on `A-VAL-04` (unbuilt).
 

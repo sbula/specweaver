@@ -66,8 +66,8 @@ master roadmap's US-4 add-on groups for the current status of each.
   | # | Path | Span | Owner | Runnable today | Blocker |
   |---|---|---|---|---|---|
   | P-1 | Human overrides enter the prompt at priority zero; HITL remarks stay separate from automated findings | single feature | `C-FLOW-05` | yes — **done** | — |
-  | P-2 | Router maps a rejection verdict onto a conditional branch | cross-feature | this contract, deferred | no | `C-FLOW-10` |
-  | P-3 | Journey: a rejected review routes to a different remediation path | cross-feature | this contract, deferred | no | `C-FLOW-10` |
+  | P-2 | Router maps a rejection verdict onto a conditional branch | cross-feature | `C-FLOW-10` | retired | `ADR-003` — owned by `C-FLOW-10`, which declares this seam as its own FR |
+  | P-3 | Journey: a rejected review routes to a different remediation path | cross-feature | `C-FLOW-10` | retired | `ADR-003` — owned by `C-FLOW-10`, which declares this seam as its own FR |
 
   **No cross-feature FR of its own.** P-1 is `C-FLOW-05`'s own requirement — two FRs, both cited and
   mutant-verified, `check_fr_coverage.py C-FLOW-05` exits 0. Restating it here would put a
@@ -78,6 +78,8 @@ master roadmap's US-4 add-on groups for the current status of each.
   undefined
   and a test written against them could not fail for the right reason (`ADR-004` clause 4).
 
-  **`INT-US-04-SF05-MIG` is discharged (2026-08-17); the contract stays open** until `C-FLOW-10`
-  lands.
+  **`INT-US-04-SF05-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.
 

@@ -90,7 +90,7 @@
   | P-1 | AST markers evaluated against declarative YAML schemas; the language gate; cascading `>>{...}<<` resolution under a depth cap | single feature | `B-INTL-02` | yes — **done** | — |
   | P-2 | Seam: an agent's `read_unrolled_symbol` intent reaches the evaluator through the code-structure atom, and the unrolled logic comes back attached to the symbol | cross-module | `B-INTL-02` | yes — **done** | — |
   | P-3 | Seam: a project's own `.specweaver/evaluators/*.yaml` are discovered by the loader and injected into the validation handler | cross-module | `B-INTL-02` | yes — **done** | — |
-  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | `B-INTL-02` | partly — see below | `TECH-065` — parameterised annotations never match a schema |
+  | P-4 | Journey: an agent reading a Spring Boot or Actix codebase receives unrolled runtime behaviour in its prompt, not raw annotations | cross-feature | `TECH-065` | moved | `TECH-065` owns the fix and its proof |
 
   **This entry was the second of three marked `✅` while citing no test file**, reopened by
   `TECH-060` FR-3. All five FRs are now cited and each is behind a killed mutant —
@@ -109,7 +109,10 @@
   codebase. So the journey is deferred on a test nobody has written, not on a feature nobody has
   built — the second such row in this migration, after `INT-US-05-SF03` P-2.
 
-  **`INT-US-05-SF04-MIG` is discharged (2026-08-17); the contract stays open** on P-4.
+  **`INT-US-05-SF04-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.
 
   **P-4 is now half proven, and the other half is a defect — 2026-08-18.**
   `tests/e2e/capabilities/sandbox/test_framework_unrolling_reaches_the_agent_e2e.py` drives the

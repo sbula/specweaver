@@ -42,7 +42,7 @@
   | P-2 | Seam: a project directory resolves to its language's runner, and every runner satisfies all five intents or cannot be instantiated | cross-module | `D-VAL-03` | yes — **done** | — |
   | P-3 | Seam: an agent reaches `run_compiler` / `run_debugger` through the Loom sandbox, and is refused when its role does not carry the intent | cross-module | `D-VAL-03` | yes — **done** | — |
   | P-4 | Journey: a real non-Python toolchain executes inside the sandbox | cross-feature | this contract, deferred | no | the container path is proven for **Python only**; nothing has exercised a non-Python toolchain inside it |
-  | P-5 | Journey: `sw implement` drives a non-Python target end to end | cross-feature | `D-INTL-08` (unbuilt) | no | `D-INTL-08` owns this as its own FR |
+  | P-5 | Journey: `sw implement` drives a non-Python target end to end | cross-feature | `D-INTL-08` | retired | `ADR-003` — owned by `D-INTL-08`, which declares this seam as its own FR |
   | P-6 | A lint finding carries the URI of the rule it violated | cross-feature | this contract, deferred | no | needs a scope decision — see below |
 
   **All seven surviving FRs are cited and each is behind a killed mutant** —
@@ -97,7 +97,8 @@
   is the whole contract at unit tier; whether those binaries exist in the sandbox is a container
   question, and it is open, not forgotten.
 
-  **`INT-US-03-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-4, P-5 and P-6.
+  **`INT-US-03-SF01-MIG` is discharged, and every path blocked on another ticket now names it.**
+  The contract stays open on P-4 and P-6, which no other ticket owns — both need a scope decision.
 
 * **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
 

@@ -1,7 +1,8 @@
 # US-18: Productionizing External Targets - Integration Contracts
 
 ## Base Story Contract (`INT-US-18`)
-* **Status:** ⬜ Pending — migration `INT-US-18-MIG` discharged 2026-08-17; the contract stays open
+* **Status:** ⬜ Pending — migration `INT-US-18-MIG` discharged 2026-08-17; no path
+  waits on this contract, so closure is a scope decision
 * **Integration Description:** US-18 proves the platform by building an external proprietary trading
   system. Its only closed capability is `C-FLOW-03` (Multi-Spec Pipeline Fan-Out); `US-13 Core`,
   `US-14 Core` and `B-UI-02` are all unbuilt.
@@ -14,8 +15,8 @@ surviving
 | # | Path | Span | Owner | Runnable today | Blocker |
 |---|---|---|---|---|---|
 | P-1 | Wave scheduling, RESERVE locking, deferred JOIN synthesis, cascading aborts | single feature | `C-FLOW-03` | yes — **done** | — |
-| P-2 | Port and git-lock collision safety under real concurrent fan-out | single feature | `TECH-062` | no — **not built** | `TECH-062` |
-| P-3 | Journey: build and manage an external proprietary system end to end | cross-feature | this contract, deferred | no | `US-13 Core`, `US-14 Core`, `B-UI-02` |
+| P-2 | Port and git-lock collision safety under real concurrent fan-out | single feature | `TECH-062` | moved | `TECH-062` owns the fix and its proof |
+| P-3 | Journey: build and manage an external proprietary system end to end | cross-feature | `B-UI-02` | retired | `ADR-003` — owned by `B-UI-02`, which declares this seam as its own FR |
 
 **P-2 is the finding, and it is not a coverage gap — it is absent code.** `C-FLOW-03` declared six
 FRs;
@@ -29,8 +30,10 @@ Found only because `ADR-004` requires every FR to be cited with a killed mutant.
 mutant
 to kill for code that does not exist** — which is exactly how both claims survived delivery.
 
-**`INT-US-18-MIG` is discharged; the contract stays open** on `TECH-062` and on its three unbuilt
-prerequisites.
+**`INT-US-18-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+while their cross-feature paths are unproven.
 
 ## Sub-Story Add-Ons
 

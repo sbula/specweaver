@@ -17,8 +17,8 @@
   | P-2 | That graph is persisted and re-read as a knowledge graph, extraction through store | cross-module | `B-SENS-02` | yes — **done** | — |
   | P-3 | Those boundaries are expressed as `tach.toml` in the analysed project, rebuilt from the graph | cross-feature | `C-EXEC-01` | yes — **done** | — |
   | P-4 | A boundary violation in the analysed project becomes an ERROR finding in its review | cross-feature | `C-EXEC-01` | yes — **done** | — |
-  | P-5 | Journey: an undocumented enterprise repository is mapped, given boundaries, and then reviewed against them in one run | cross-feature | `B-SENS-07` (unbuilt) | no | `B-SENS-07` — no resolver exists, so there are no boundaries to review against |
-  | P-6 | The graph covers a polyglot repository, not only its Python files | cross-feature | `TECH-061` | no | `TECH-061` — `collect_files` filters `.py` |
+  | P-5 | Journey: an undocumented enterprise repository is mapped, given boundaries, and then reviewed against them in one run | cross-feature | `B-SENS-07` | retired | `ADR-003` — owned by `B-SENS-07`, which declares this seam as its own FR |
+  | P-6 | The graph covers a polyglot repository, not only its Python files | cross-feature | `TECH-061` | moved | `TECH-061` owns the fix and its proof |
 
   **Three capabilities, all now cited and mutant-verified**: `D-SENS-01` (`INT-US-08-MIG`, seven FRs
   written from scratch — it had no design document at all), `B-SENS-02` (cited in an earlier pass), and
@@ -57,4 +57,7 @@
   enforcement story that only sees Python sees a fraction of the repositories it is aimed at, so this row
   is not cosmetic — it bounds the claim.
 
-  **`INT-US-20-MIG` is discharged (2026-08-17); the contract stays open** on P-5 and P-6.
+  **`INT-US-20-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.

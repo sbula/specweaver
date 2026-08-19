@@ -62,7 +62,8 @@
   into anything else changes what a pipeline does, which is a scope decision, and filing a ticket is
   not the same as taking it.
 
-  **`INT-US-10-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-5 and P-6.
+  **`INT-US-10-SF01-MIG` is discharged, and every path blocked on another ticket now names it.**
+  The contract stays open on P-6, which no other ticket owns — P-6 needs a scope decision.
 
   **P-5 closed 2026-08-18** —
   `tests/e2e/capabilities/assurance/test_planned_signatures_reach_drift_e2e.py`. Every existing test of

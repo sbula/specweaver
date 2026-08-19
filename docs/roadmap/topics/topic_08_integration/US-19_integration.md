@@ -1,7 +1,8 @@
 # US-19: Microservice Fleet Orchestration - Integration Contracts
 
 ## Base Story Contract (`INT-US-19`)
-* **Status:** ⬜ Pending — migration `INT-US-19-MIG` discharged 2026-08-17; the contract stays open
+* **Status:** ⬜ Pending — migration `INT-US-19-MIG` discharged 2026-08-17; no path
+  waits on this contract, so closure is a scope decision
 * **Integration Description:** US-19 orchestrates a fleet of 20+ microservices. It holds **two**
 closed
   capabilities — `C-FLOW-03` (fan-out) and `B-SENS-02` (knowledge graph) — with `C-FLOW-04` (Work
@@ -15,9 +16,9 @@ exit 0.
 |---|---|---|---|---|---|
 | P-1 | Wave scheduling, RESERVE locking, deferred JOIN synthesis, cascading aborts | single feature | `C-FLOW-03` | yes — **done** | — |
 | P-2 | Graph build, dedup, persistence, query, export | single feature | `B-SENS-02` | yes — **done** | — |
-| P-3 | Fan-out schedules waves from the topology the graph holds | cross-feature | this contract, deferred | no | `C-FLOW-04` |
-| P-4 | Collision safety under real concurrent fan-out | single feature | `TECH-062` | no — **not built** | `TECH-062` |
-| P-5 | Journey: 20+ services stay contract-synchronised across independent repos | cross-feature | this contract, deferred | no | `C-FLOW-04`, `A-VAL-06` |
+| P-3 | Fan-out schedules waves from the topology the graph holds | cross-feature | `C-FLOW-04` | retired | `ADR-003` — owned by `C-FLOW-04`, which declares this seam as its own FR |
+| P-4 | Collision safety under real concurrent fan-out | single feature | `TECH-062` | moved | `TECH-062` owns the fix and its proof |
+| P-5 | Journey: 20+ services stay contract-synchronised across independent repos | cross-feature | `A-VAL-06` and `C-FLOW-04` | retired | `ADR-003` — owned by `A-VAL-06` and `C-FLOW-04`, which declare this seam as its own FR |
 
 **Two closed capabilities, and P-3 is where they would meet — but not yet.** `C-FLOW-03` derives its
 waves from a dependency graph it builds itself from decomposed components (`_dependency_graph` in
@@ -28,8 +29,10 @@ without touching, and P-3 waits.
 That is worth stating plainly rather than inventing a seam: a story holding two closed features does
 not automatically have a runnable cross-feature path between them.
 
-**`INT-US-19-MIG` is discharged; the contract stays open** on `C-FLOW-04`, `A-VAL-06` and
-`TECH-062`.
+**`INT-US-19-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+while their cross-feature paths are unproven.
 
 ## Sub-Story Add-Ons
 
@@ -42,7 +45,7 @@ path inventory and any
   | # | Path | Span | Owner | Runnable today | Blocker |
   |---|---|---|---|---|---|
   | P-1 | Merkle hashing over a dependency boundary; staleness cache; upward invalidation | single feature | `A-SENS-01` | yes — **done** | — |
-  | P-2 | Journey: topology scales across independent repositories without a local rebuild | cross-feature | this contract, deferred | no | `A-SENS-02` |
+  | P-2 | Journey: topology scales across independent repositories without a local rebuild | cross-feature | `A-SENS-02` | retired | `ADR-003` — owned by `A-SENS-02`, which declares this seam as its own FR |
 
   **No cross-feature FR of its own, and so no design document.** P-1 is `A-SENS-01`'s own
   requirement: three FRs, all cited, each behind a killed mutant — `check_fr_coverage.py A-SENS-01`
@@ -55,7 +58,8 @@ path inventory and any
   undefined interface cannot fail for the right reason (`ADR-004` clause 4), and
   `check_xfail_blockers.py` holds the obligation once it is defined.
 
-  **`INT-US-19-SF01-MIG` is discharged (2026-08-17); the contract stays open** until `A-SENS-02`
-  lands and P-2
-  is written.
+  **`INT-US-19-SF01-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.
 

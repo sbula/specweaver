@@ -79,7 +79,7 @@
   | P-6 | An agent must propose a criticality per component; one is never arrived at by omission | cross-module | `C-VAL-03` | yes — **done** | — |
   | P-7 | Seam: the configured standards mode decides what the agent is told, and a project with nothing to learn from still gets defaults | cross-module | `D-VAL-04` | yes — **done** | — |
   | P-8 | Seam: prompt context is condensed to AST skeletons, and dependency neighbourhoods are answered from the in-memory graph | cross-module | `D-VAL-04` | yes — **done** | — |
-  | P-9 | Journey: a DAL declared in `context.yaml` changes which rules run against a specific file, end to end | cross-feature | `TECH-041` | no | `TECH-041` — proven link by link, never as a chain |
+  | P-9 | Journey: a DAL declared in `context.yaml` changes which rules run against a specific file, end to end | cross-feature | `TECH-041` | moved | `TECH-041` owns the fix and its proof |
 
   **Fourteen FRs across three capabilities, all cited, all behind killed mutants.** Two of the three
   had **no design document at all** or **no readable requirements**:
@@ -127,8 +127,10 @@
   add-on is not merely "closed for want of scope"; it has exactly one open journey, and it is already
   ticketed.
 
-  **`INT-US-25-SF01-MIG` is discharged (2026-08-17); the contract stays open** on P-9, which is
-  `TECH-041`'s to close.
+  **`INT-US-25-SF01-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.
 
 ---
 

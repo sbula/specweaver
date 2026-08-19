@@ -1,7 +1,8 @@
 # US-12: Legacy Spec Extraction (Reverse-Weaving) - Integration Contracts
 
 ## Base Story Contract (`INT-US-12`)
-* **Status:** ⬜ Pending — migration `INT-US-12-MIG` discharged 2026-08-17; the contract stays open
+* **Status:** ⬜ Pending — migration `INT-US-12-MIG` discharged 2026-08-17; no path
+  waits on this contract, so closure is a scope decision
 * **Integration Description:** US-12's only closed capability is `B-SENS-02` (Persistent Knowledge
   Graph Builder). Everything else it needs is unbuilt, so this contract's whole content is a path
   inventory plus one deferred journey.
@@ -14,7 +15,7 @@
 |---|---|---|---|---|---|
 | P-1 | AST dicts → nodes; dedup; SQLite persist; subgraph query; GraphML export | single feature | `B-SENS-02` | yes — **done** | — |
 | P-2 | Real polyglot extraction → graph nodes | cross-feature | `INT-US-10` FR-1 | yes — **done** | — |
-| P-3 | Journey: `sw capture` reads the graph and drafts a spec from undocumented code | cross-feature | this contract, deferred | no | `C-INTL-03` |
+| P-3 | Journey: `sw capture` reads the graph and drafts a spec from undocumented code | cross-feature | `C-INTL-03` | retired | `ADR-003` — owned by `C-INTL-03`, which declares this seam as its own FR |
 
 **This contract declares no cross-feature FR of its own, and has no design document as a result.**
 Both runnable rows were discharged elsewhere — P-1 is `B-SENS-02`'s own requirement, backfilled once
@@ -28,11 +29,10 @@ is undefined. A test written against an undefined
 interface cannot fail for the right reason (`ADR-004` clause 4), and `check_xfail_blockers.py` holds
 the obligation the moment it is defined.
 
-**`INT-US-12-MIG` is discharged; the contract stays open.** A migration finishes; a contract keeps
-its
-deferred rows until every path in the story is proven. US-12 closes when `C-INTL-03` lands and P-3
-is
-written.
+**`INT-US-12-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+while their cross-feature paths are unproven.
 
 ## Sub-Story Add-Ons
 

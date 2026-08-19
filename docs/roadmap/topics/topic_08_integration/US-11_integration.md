@@ -1,7 +1,8 @@
 # US-11: GraphRAG for Brownfield Scale - Integration Contracts
 
 ## Base Story Contract (`INT-US-11`)
-* **Status:** ⬜ Pending — migration `INT-US-11-MIG` discharged 2026-08-17; the contract stays open
+* **Status:** ⬜ Pending — migration `INT-US-11-MIG` discharged 2026-08-17; no path
+  waits on this contract, so closure is a scope decision
 * **Integration Description:** US-11's only closed capability is `B-SENS-02` (Persistent Knowledge
   Graph Builder). Everything else it needs is unbuilt, so this contract's whole content is a path
   inventory plus one deferred journey.
@@ -14,7 +15,7 @@
 |---|---|---|---|---|---|
 | P-1 | AST dicts → nodes; dedup; SQLite persist; subgraph query; GraphML export | single feature | `B-SENS-02` | yes — **done** | — |
 | P-2 | Real polyglot extraction → graph nodes | cross-feature | `INT-US-10` FR-1 | yes — **done** | — |
-| P-3 | Journey: a query returns the right context from a federated graph without blowing up the context window | cross-feature | this contract, deferred | no | `A-SENS-02`, `B-SENS-03` |
+| P-3 | Journey: a query returns the right context from a federated graph without blowing up the context window | cross-feature | `A-SENS-02` and `B-SENS-03` | retired | `ADR-003` — owned by `A-SENS-02` and `B-SENS-03`, which declare this seam as its own FR |
 
 **This contract declares no cross-feature FR of its own, and has no design document as a result.**
 Both runnable rows were discharged elsewhere — P-1 is `B-SENS-02`'s own requirement, backfilled once
@@ -29,11 +30,10 @@ undefined. A test written against an undefined
 interface cannot fail for the right reason (`ADR-004` clause 4), and `check_xfail_blockers.py` holds
 the obligation the moment it is defined.
 
-**`INT-US-11-MIG` is discharged; the contract stays open.** A migration finishes; a contract keeps
-its
-deferred rows until every path in the story is proven. US-11 closes when `A-SENS-02`, `B-SENS-03`
-lands and P-3 is
-written.
+**`INT-US-11-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+while their cross-feature paths are unproven.
 
 ## Sub-Story Add-Ons
 
@@ -46,7 +46,7 @@ inventory and any
   | # | Path | Span | Owner | Runnable today | Blocker |
   |---|---|---|---|---|---|
   | P-1 | Merkle hashing over a dependency boundary; staleness cache; upward invalidation | single feature | `A-SENS-01` | yes — **done** | — |
-  | P-2 | Journey: a long-running agent keeps a bounded working set as the graph grows | cross-feature | this contract, deferred | no | `A-FLOW-02`, `A-INTL-04` |
+  | P-2 | Journey: a long-running agent keeps a bounded working set as the graph grows | cross-feature | `A-FLOW-02` and `A-INTL-04` | retired | `ADR-003` — owned by `A-FLOW-02` and `A-INTL-04`, which declare this seam as its own FR |
 
   **No cross-feature FR of its own, and so no design document.** P-1 is `A-SENS-01`'s own
   requirement: three FRs, all cited, each behind a killed mutant — `check_fr_coverage.py A-SENS-01`
@@ -60,7 +60,8 @@ inventory and any
   undefined interface cannot fail for the right reason (`ADR-004` clause 4), and
   `check_xfail_blockers.py` holds the obligation once it is defined.
 
-  **`INT-US-11-SF01-MIG` is discharged (2026-08-17); the contract stays open** until `A-FLOW-02`,
-  `A-INTL-04` lands and P-2
-  is written.
+  **`INT-US-11-SF01-MIG` is discharged, and every deferred path now names the ticket that owns it.**
+  No path waits on this contract. Whether it closes is a scope decision under `ADR-004`, which
+  reopened the one `CLOSED EMPTY` of this shape: a contract over closed capabilities is not empty
+  while their cross-feature paths are unproven.
 
