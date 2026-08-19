@@ -80,7 +80,8 @@ computed, carried, and dropped one call short of use.
 Forwarding it was deliberately **not** done here, because it would be inert: no QA runner branches on
 `dal_level` today, it is only logged. Wiring a value nothing consumes, with a test that cannot observe
 it, is the substitution this ticket exists to correct. What the pipeline should do about strictness on
-generated code is a scope decision, and it needs its own ticket.
+generated code is a scope decision, and it is filed as
+[`TECH-067`](../TECH-067/TECH-067_design.md).
 
 ## Verifiable Proof
 
