@@ -65,12 +65,26 @@ _FR_TABLE = """
 """
 
 
-def _registry(root: Path, *, matrix: str, roadmap: str = "", designs: dict[str, str] | None = None):
-    """Build a throwaway `docs/roadmap/` — matrix, master roadmap, and feature designs."""
+def _registry(
+    root: Path,
+    *,
+    matrix: str,
+    roadmap: str = "",
+    designs: dict[str, str] | None = None,
+    stories: dict[str, str] | None = None,
+):
+    """Build a throwaway `docs/roadmap/` — matrix, master roadmap, story documents, designs.
+
+    The `stories` plane is not decoration: `ADR-005` made a story's own document the evidence for a
+    green claim, so a fixture without one is a registry where nothing can ever be proven.
+    """
     roadmap_dir = root / "docs" / "roadmap"
     (roadmap_dir / "features" / "topic_01").mkdir(parents=True, exist_ok=True)
+    (roadmap_dir / "stories").mkdir(parents=True, exist_ok=True)
     (roadmap_dir / "capability_matrix.md").write_text(matrix, encoding="utf-8")
     (roadmap_dir / "master_story_roadmap.md").write_text(roadmap, encoding="utf-8")
+    for name, body in (stories or {}).items():
+        (roadmap_dir / "stories" / f"{name}.md").write_text(body, encoding="utf-8")
     for cap, body in (designs or {}).items():
         d = roadmap_dir / "features" / "topic_01" / cap
         d.mkdir(parents=True, exist_ok=True)
@@ -79,16 +93,17 @@ def _registry(root: Path, *, matrix: str, roadmap: str = "", designs: dict[str, 
 
 
 class TestUnprovenGreenFindings:
-    """`TECH-060` FR-4 — a green unit holding closed features with NO integration contract.
+    """`ADR-005` — a green story holding closed features that cites no spanning test of its own.
 
     The distinctive word is **no**. `group_flag_findings` and `story_flag_findings` compare a flag
-    with the children that are present, so an unchecked integration entry already forces `🟡` and is
-    covered. Neither can see a child that was never written — and a check that never looks is
+    with the children that are present, so an unchecked child already forces `🟡` and is covered.
+    Neither can see a child that was never written — and a check that never looks is
     indistinguishable from one that passes, which is this module's own founding argument.
 
-    Zero-tolerance, not ratcheted. The design assumed it would fire on all 27 migration entries on
-    day one; measured after they were registered, it fires on none, because those units are `🟡` or
-    their entries are `[ ]`. Nothing to carry forward.
+    **What counts as evidence moved; the rule did not.** It was a delivered `INT-US` line beside the
+    capabilities. That line is retired, so the check reads the story's own document for an
+    integration or e2e test file. Left keyed on the line, it would have found nothing and passed all
+    16 green units in silence — the exact shape of failure this class exists to name.
     """
 
     _MATRIX = "| **DAL-C** | `✅ C-FLOW-01`: One<br>`✅ C-FLOW-02`: Two |\n"
@@ -107,18 +122,20 @@ class TestUnprovenGreenFindings:
         assert len(found) == 1
         assert "Some Group" in found[0].unit
 
-    def test_a_green_group_with_a_delivered_contract_passes(
-        self, cdc: ModuleType, tmp_path: Path
-    ) -> None:
+    def test_a_group_is_judged_through_its_story(self, cdc: ModuleType, tmp_path: Path) -> None:
+        """An add-on group has no number of its own, so it is covered by its story's evidence.
+
+        Its own green claim is held honest elsewhere: `group_flag_findings` keeps it `🟡` while its
+        entry in the story document is open.
+        """
         roadmap = (
             "### 🟡 US-1: Story\n"
             "*   **Sub-Story Add-Ons:**\n"
             "    *   🟢 **Some Group:**\n"
-            "        *   `✅` **INT-US-01-SF01:** Some Group\n"
             "        *   `✅` **C-FLOW-01:** One\n"
         )
         root = _registry(tmp_path, matrix=self._MATRIX, roadmap=roadmap)
-        assert cdc.unproven_green_findings(root) == []
+        assert len(cdc.unproven_green_findings(root)) == 1
 
     def test_a_green_group_with_nothing_closed_owes_nothing(
         self, cdc: ModuleType, tmp_path: Path
@@ -155,32 +172,34 @@ class TestUnprovenGreenFindings:
         assert len(found) == 1
         assert found[0].unit == "US-1"
 
-    def test_a_green_story_with_its_base_contract_passes(
+    def test_a_green_story_citing_a_spanning_test_passes(
         self, cdc: ModuleType, tmp_path: Path
     ) -> None:
         roadmap = (
-            "### 🟢 US-1: Story\n"
-            "*   **Core Required (MVS):**\n"
-            "    *   `✅` **INT-US-01:** Base Integration Contract\n"
-            "    *   `✅` **C-FLOW-01:** One\n"
+            "### 🟢 US-1: Story\n*   **Core Required (MVS):**\n    *   `✅` **C-FLOW-01:** One\n"
         )
-        root = _registry(tmp_path, matrix=self._MATRIX, roadmap=roadmap)
+        stories = {"US-01": "* **Verifiable Proof:** `tests/e2e/capabilities/a/test_a_e2e.py`\n"}
+        root = _registry(tmp_path, matrix=self._MATRIX, roadmap=roadmap, stories=stories)
         assert cdc.unproven_green_findings(root) == []
 
-    def test_a_migration_entry_is_not_the_contract(self, cdc: ModuleType, tmp_path: Path) -> None:
-        """A `-MIG` entry is the task of building the inventory, not the proof it produced."""
+    def test_a_unit_test_is_not_a_spanning_proof(self, cdc: ModuleType, tmp_path: Path) -> None:
+        """A seam proven by a unit test with the other side mocked proves the mock."""
         roadmap = (
-            "### 🟢 US-1: Story\n"
-            "*   **Core Required (MVS):**\n"
-            "    *   `✅` **INT-US-01-MIG:** Migration\n"
-            "    *   `✅` **C-FLOW-01:** One\n"
+            "### 🟢 US-1: Story\n*   **Core Required (MVS):**\n    *   `✅` **C-FLOW-01:** One\n"
+        )
+        stories = {"US-01": "* **Verifiable Proof:** `tests/unit/a/test_a.py`\n"}
+        root = _registry(tmp_path, matrix=self._MATRIX, roadmap=roadmap, stories=stories)
+        assert len(cdc.unproven_green_findings(root)) == 1
+
+    def test_a_missing_story_document_is_not_evidence(
+        self, cdc: ModuleType, tmp_path: Path
+    ) -> None:
+        """Absence must read as unproven, never as clean — the module's founding argument."""
+        roadmap = (
+            "### 🟢 US-1: Story\n*   **Core Required (MVS):**\n    *   `✅` **C-FLOW-01:** One\n"
         )
         root = _registry(tmp_path, matrix=self._MATRIX, roadmap=roadmap)
         assert len(cdc.unproven_green_findings(root)) == 1
-
-    def test_the_live_registry_is_clean(self, cdc: ModuleType) -> None:
-        """Zero-tolerance: `TECH-060` FR-2/FR-3 brought the registry to consistency."""
-        assert cdc.unproven_green_findings(REPO_ROOT / "docs" / "roadmap") == []
 
 
 class TestGroupFlagFindings:

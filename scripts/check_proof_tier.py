@@ -78,14 +78,24 @@ OK = "ok"
 UNIT_ONLY = "unit_only"
 NO_TEST_FILE = "no_test_file"
 
+#: A cited path that names no file in the tree. Found 2026-08-19: four citations had kept the old
+#: e2e layout after the tests moved under `capabilities/`, and every gate read them as proof. A path
+#: is only better than a directory if it resolves — otherwise it is a directory with a longer name.
+MISSING_FILE = "missing_file"
+
 #: An entry is the `## Base Story` heading or a top-level bold bullet naming an add-on group.
 #: Capturing both in one pattern is what keeps add-ons from being swallowed into the base block.
 #:
-#: **The trailing `$` is load-bearing.** `ADR-005` removed the `(`INT-US-NN`)` suffix these used to
-#: end with, and the first replacement matched any bold bullet — which swallowed `**Status:**`,
-#: `**Verifiable Proof:**` and every path-list bullet, so one file reported a dozen entries. A name
-#: bullet carries nothing after the bold run; a field bullet carries a colon and its value.
-_ENTRY = re.compile(r"^(?:##\s+(?P<h>Base Story)\s*$|\*\s+\*\*(?P<b>[^*:]+?)\*\*\s*$)", re.M)
+#: `ADR-005` removed the `(`INT-US-NN`)` suffix these used to end with, which was what made an entry
+#: bullet unmistakable. Two things replace it. The **field names are excluded by name**, because a
+#: field bullet shares the entry's shape; matching only the colon-free shape instead looked right and
+#: skipped two live add-ons written as `* **Name:** description`. And an entry must **carry a Status
+#: bullet** — see `contract_entries`, where that requirement also drops the path-list bullets that
+#: repeat an add-on's name further down the same document.
+_FIELDS = r"Status|Integration Description|Verifiable Proof|Notes|User Benefit|Integration Seams"
+_ENTRY = re.compile(
+    rf"^(?:##\s+(?P<h>Base Story)\s*$|\*\s+\*\*(?!(?:{_FIELDS})\b)(?P<b>[^*]+?):?\*\*)", re.M
+)
 
 _STATUS = re.compile(r"\*\*Status:\*\*\s*(\S+)")
 
@@ -139,10 +149,25 @@ def contract_entries(text: str, source: Path) -> list[Entry]:
     matches greedily across add-on boundaries, which credits one entry with a neighbour's proof —
     the first prototype of this checker reported 1 violation instead of 3 for exactly that reason.
     """
-    matches = list(_ENTRY.finditer(text))
+    candidates = list(_ENTRY.finditer(text))
+
+    # An entry declares a state, so a candidate with no `**Status:**` before the next candidate is
+    # not one: it is a bullet repeating an add-on's name to introduce its path list, or a bold label
+    # inside a long field. Both are filtered FIRST, and that order is load-bearing -- filtering while
+    # walking still lets a non-entry END the block above it. `US-09`'s base story cites its e2e file
+    # 22 lines below a `**Backlog (deferred, documented):**` label, and cutting there reported the
+    # story as citing no test at all.
+    qualifying = [
+        m
+        for i, m in enumerate(candidates)
+        if _STATUS.search(
+            text[m.end() : candidates[i + 1].start() if i + 1 < len(candidates) else len(text)]
+        )
+    ]
+
     entries: list[Entry] = []
-    for i, m in enumerate(matches):
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+    for i, m in enumerate(qualifying):
+        end = qualifying[i + 1].start() if i + 1 < len(qualifying) else len(text)
         block = text[m.end() : end]
         status = _STATUS.search(block)
         proof = proof_segment(block)
@@ -261,6 +286,31 @@ def violations_in(text: str, source: Path) -> list[Entry]:
     return [e for e in contract_entries(text, source) if e.delivered and e.verdict != OK]
 
 
+def missing_citations(entry: Entry, root: Path = REPO_ROOT) -> list[str]:
+    """Cited test paths that do not exist. Judged against the tree, not against the text."""
+    return sorted({p for p in _TEST_FILE.findall(entry.proof) if not (root / p).is_file()})
+
+
+def all_dead_citations(root: Path = REPO_ROOT) -> list[tuple[str, list[str]]]:
+    """`(entry key, dead paths)` for every entry citing a test file that is not there.
+
+    Reported separately from the tier verdicts rather than folded into them, and deliberately: a
+    verdict is derived from the proof TEXT, so a synthesised one would be re-derived by
+    `Entry.verdict` and read as whatever its marker string happened to contain.
+
+    Not ratcheted. A dead path is a typo or a moved file, always fixable now, and there were four —
+    all of them e2e citations left behind when the tier moved under `capabilities/`.
+    """
+    found: list[tuple[str, list[str]]] = []
+    for path in sorted(CONTRACTS.glob("US-*.md")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for entry in contract_entries(text, path):
+            dead = missing_citations(entry, root)
+            if dead:
+                found.append((entry.key, dead))
+    return found
+
+
 def all_violations() -> list[Entry]:
     found: list[Entry] = []
     for path in sorted(CONTRACTS.glob("US-*.md")):
@@ -273,6 +323,22 @@ def load_baseline() -> dict[str, dict[str, str]]:
         return {}
     data: dict[str, dict[str, str]] = json.loads(BASELINE.read_text(encoding="utf-8"))
     return data
+
+
+def _report_dead_citations() -> bool:
+    """Print any entry citing a test file that is not in the tree. True if there were any."""
+    dead = all_dead_citations()
+    if not dead:
+        return False
+    print(f"Citations naming no file: {len(dead)}\n")
+    for key, paths in dead:
+        print(f"  {key}\n      {', '.join(paths)}")
+    print(
+        "\nA path is only better than a directory if it resolves. Four of these were e2e citations "
+        "left behind when the tier moved under `capabilities/`, and every gate read them as proof — "
+        "so fix the path, or cite the test that actually carries the claim."
+    )
+    return True
 
 
 def _report_collisions() -> bool:
@@ -357,6 +423,9 @@ def main(argv: list[str] | None = None) -> int:
     if _report_collisions():
         return 1
 
+    if _report_dead_citations():
+        return 1
+
     baseline = load_baseline()
     if not baseline and found:
         print(
@@ -377,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"  {e.key}\n      {what}")
         print(
-            "\nAn INT-US story is an integration contract, so its proof must be integration or e2e "
+            "\nA seam FR spans features, so its proof must be integration or e2e "
             "tests naming real files. A unit test alongside them is fine; a unit test instead of "
             "them is not."
         )

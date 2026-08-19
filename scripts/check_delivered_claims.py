@@ -158,12 +158,46 @@ def story_flag_findings(roadmap_root: Path) -> list[StoryFinding]:
     return found
 
 
+#: An entry in a story document. The name is the whole identity `ADR-005` left it, and two bullet
+#: shapes are in use for it — `* **Name**` and `* **Name:** description` — so neither may be assumed.
+#: The field names are excluded by name because they share both shapes; the alternative was matching
+#: only the shape without a colon, which silently skipped two live add-ons.
+_FIELDS = (
+    r"Status|Integration Description|Verifiable Proof|Notes|User Benefit|Paths|Integration Seams"
+)
+_STORY_ENTRY = re.compile(rf"^\*\s+\*\*(?!(?:{_FIELDS})\b)([^*]+?):?\*\*", re.M)
+_ENTRY_STATUS = re.compile(r"\*\*Status:\*\*\s*(\S+)")
+
+
+def _open_story_entries(roadmap_root: Path) -> set[str]:
+    """Add-on group names whose entry in a story document is not marked delivered."""
+    found: set[str] = set()
+    for path in sorted((roadmap_root / STORIES).glob("US-*.md")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        matches = list(_STORY_ENTRY.finditer(text))
+        for i, m in enumerate(matches):
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            status = _ENTRY_STATUS.search(text[m.end() : end])
+            if status is not None and "✅" not in status.group(1):
+                found.add(m.group(1).strip())
+    return found
+
+
 def group_flag_findings(roadmap_root: Path) -> list[GroupFinding]:
-    """Every add-on group whose flag disagrees with its own children."""
+    """Every add-on group whose flag disagrees with its own children.
+
+    **A group's children are not its whole obligation.** `ADR-005` moved the group's spanning tests
+    into its story document, so a group can hold nothing but `✅` capabilities and still owe a proof.
+    Judging the checkboxes alone would have flipped five such groups to `🟢` the day the `INT-US`
+    lines were deleted — `Recursive Planning` among them, whose cited proof is four unit tests that
+    both integration files patch out. So an open entry in the story document holds the group at `🟡`,
+    and that is the flag agreeing with the evidence rather than contradicting it.
+    """
     path = roadmap_root / "master_story_roadmap.md"
     if not path.is_file():
         return []
 
+    open_entries = _open_story_entries(roadmap_root)
     lines = path.read_text(encoding="utf-8").splitlines()
     found: list[GroupFinding] = []
     index = 0
@@ -180,6 +214,8 @@ def group_flag_findings(roadmap_root: Path) -> list[GroupFinding]:
             cursor += 1
         if total and flag in _DERIVED_FLAGS:
             want = _expected_flag(done, total)
+            if want == "🟢" and name in open_entries:
+                want = "🟡"
             if want != flag:
                 found.append(GroupFinding(name, f"{done} of {total} done, so {want} not {flag}"))
         index = cursor
@@ -189,37 +225,70 @@ def group_flag_findings(roadmap_root: Path) -> list[GroupFinding]:
 #: A capability id, as opposed to a dependency reference (`US-4 Core`) or a bootstrap step.
 _CAPABILITY_ID = re.compile(r"^[A-E]-[A-Z]+-\d+$")
 
-#: An integration contract id. `-MIG` is DELIBERATELY excluded: a migration entry is the task of
-#: building the inventory, not the proof it produces, so a green unit citing only its `-MIG` still
-#: owes a contract.
-_CONTRACT_ID = re.compile(r"^INT-US-\d+(?:-(?:SF\d+|SUB))?$")
+#: Where a story keeps its own paths and seams, `ADR-005`. There is no separate contract entry to
+#: look for any more: the evidence is this document's `Verifiable Proof` fields.
+STORIES = "stories"
+
+#: An integration or e2e test FILE. A directory or a bare marker is not evidence — nothing pins
+#: which test carries the claim, which is `check_proof_tier.py`'s finding applied here.
+_SPANNING_TEST = re.compile(r"tests/(?:integration|e2e)/[\w./-]+\.py")
 
 #: Any checkbox item on either plane, with its indent, so one walk can judge both.
 _ANY_ITEM = re.compile(r"^( {4,})\*   `(✅|\[ \])` \*\*([\w-]+)")
 
 
+def _story_number(unit: str) -> str | None:
+    """`US-9` -> `09`, the story-document suffix. `None` for an add-on group, which has no number."""
+    m = re.match(r"^US-(\d+)$", unit)
+    return f"{int(m.group(1)):02d}" if m else None
+
+
+def _stories_with_spanning_proof(roadmap_root: Path) -> set[str]:
+    """Story numbers whose own document cites at least one integration or e2e test file."""
+    found: set[str] = set()
+    for path in sorted((roadmap_root / STORIES).glob("US-*.md")):
+        if _SPANNING_TEST.search(path.read_text(encoding="utf-8", errors="replace")):
+            found.add(path.stem.removeprefix("US-"))
+    return found
+
+
 def unproven_green_findings(roadmap_root: Path) -> list[UnprovenGreenFinding]:
-    """`ADR-004` clause 5: a green unit holding closed features must have a delivered contract.
+    """`ADR-005`: a green story holding closed features must cite a spanning test of its own.
 
     The distinctive word is **absence**. `group_flag_findings` and `story_flag_findings` compare a
-    flag with the children present, so an UNCHECKED integration entry already forces `🟡` and needs
-    no new rule. Neither can see a child nobody wrote — and a check that never looks is
-    indistinguishable from one that passes, which is the argument this whole module rests on.
+    flag with the children present, so an unchecked child already forces `🟡` and needs no new rule.
+    Neither can see a child nobody wrote — and a check that never looks is indistinguishable from
+    one that passes, which is the argument this whole module rests on.
 
-    Zero-tolerance. The design expected this to fire on all 27 migration entries; measured once they
-    were registered it fires on none, because those units are `🟡` or their contracts are `[ ]`.
+    What counts as evidence changed with the ADR and the *rule* did not. It used to look for a
+    delivered `INT-US` line beside the capabilities; that line is gone, so it reads the story's own
+    document and asks whether any `Verifiable Proof` there names an integration or e2e test file.
+    Keying it on the retired line would have made the check pass by finding nothing, on all 16 green
+    units at once.
+
+    Ratcheted rather than zero-tolerance, and that is a change of state, not of standard: the
+    evidence for these 16 was never written, and `ADR-005` clause 6 makes each one a `TECH` ticket
+    rather than an edit to closed work. The count may fall, never rise.
     """
     roadmap = (roadmap_root / "master_story_roadmap.md").read_text(encoding="utf-8")
+    proven = _stories_with_spanning_proof(roadmap_root)
 
     findings: list[UnprovenGreenFinding] = []
     unit: str | None = None
     flag: str | None = None
+    story_no: str | None = None
     depth = 4
     closed: list[str] = []
     contract_done = False
 
     def judge() -> None:
-        if unit is not None and flag == "🟢" and closed and not contract_done:
+        if (
+            unit is not None
+            and flag == "🟢"
+            and closed
+            and not contract_done
+            and story_no not in proven
+        ):
             findings.append(
                 UnprovenGreenFinding(
                     unit,
@@ -235,6 +304,8 @@ def unproven_green_findings(roadmap_root: Path) -> list[UnprovenGreenFinding]:
             unit = story.group(2) if story else group.group(2)
             flag = (story or group).group(1)
             depth = 4 if story else 8
+            if story is not None:
+                story_no = _story_number(story.group(2))
             closed, contract_done = [], False
             continue
         item = _ANY_ITEM.match(line)
@@ -243,9 +314,7 @@ def unproven_green_findings(roadmap_root: Path) -> list[UnprovenGreenFinding]:
         if len(item.group(1)) != depth:
             continue
         state, ident = item.group(2), item.group(3)
-        if _CONTRACT_ID.match(ident):
-            contract_done = contract_done or state == "✅"
-        elif _CAPABILITY_ID.match(ident) and state == "✅":
+        if _CAPABILITY_ID.match(ident) and state == "✅":
             closed.append(ident)
     judge()
     return findings
