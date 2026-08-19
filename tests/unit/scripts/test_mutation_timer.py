@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -36,6 +37,29 @@ def mutation() -> ModuleType:
     sys.modules["mutation"] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="module")
+def timer_units(mutation: ModuleType) -> Callable[[], dict[str, str]]:
+    """`_mutation_timer.timer_units`, loaded by PATH rather than by name.
+
+    `scripts/` is not a package and nothing here puts it on `sys.path`, so a bare
+    `from _mutation_timer import ...` only resolved when some *other* test module in the same
+    process had already extended the path. Serially that happened to hold; under `-n auto` the
+    five tests below landed in a worker where it did not, and failed with `ModuleNotFoundError`
+    — a result decided by scheduling rather than by the code under test.
+
+    Depending on `mutation` keeps the sibling loaded first, which is the order the real entry
+    point uses.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "_mutation_timer", REPO_ROOT / "scripts" / "_mutation_timer.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["_mutation_timer"] = module
+    spec.loader.exec_module(module)
+    return module.timer_units
 
 
 class TestTimerUnits:
@@ -123,20 +147,18 @@ class TestTimerUnitsCarryAUsablePath:
     Proves: TECH-058 FR-2
     """
 
-    def test_the_service_sets_a_path_including_the_venv(self) -> None:
-        from _mutation_timer import timer_units
-
+    def test_the_service_sets_a_path_including_the_venv(
+        self, timer_units: Callable[[], dict[str, str]]
+    ) -> None:
         service = timer_units()["service"]
 
         path_lines = [line for line in service.splitlines() if line.startswith("Environment=PATH=")]
         assert path_lines, f"no PATH is set, so the suite cannot find `tach`:\n{service}"
         assert ".venv/bin" in path_lines[0], path_lines[0]
 
-    def test_the_path_is_absolute(self) -> None:
+    def test_the_path_is_absolute(self, timer_units: Callable[[], dict[str, str]]) -> None:
         """A relative entry breaks the moment a test chdirs into a temp worktree — the same trap,
         one line further down the guide."""
-        from _mutation_timer import timer_units
-
         path_line = next(
             line
             for line in timer_units()["service"].splitlines()
@@ -146,10 +168,10 @@ class TestTimerUnitsCarryAUsablePath:
         venv_entry = next(p for p in value.split(":") if ".venv/bin" in p)
         assert venv_entry.startswith("/"), venv_entry
 
-    def test_the_system_directories_survive(self) -> None:
+    def test_the_system_directories_survive(
+        self, timer_units: Callable[[], dict[str, str]]
+    ) -> None:
         """The control: prepending the venv must not drop `/usr/bin`, or `git` and `podman` vanish."""
-        from _mutation_timer import timer_units
-
         path_line = next(
             line
             for line in timer_units()["service"].splitlines()
@@ -172,19 +194,17 @@ class TestTimerUnitsRaiseTheFileDescriptorLimit:
     Proves: TECH-058 FR-3
     """
 
-    def test_the_service_raises_nofile(self) -> None:
-        from _mutation_timer import timer_units
-
+    def test_the_service_raises_nofile(self, timer_units: Callable[[], dict[str, str]]) -> None:
         service = timer_units()["service"]
 
         assert any(line.startswith("LimitNOFILE=") for line in service.splitlines()), (
             f"the unit inherits systemd's 1024 soft limit, which the suite exhausts:\n{service}"
         )
 
-    def test_the_limit_is_high_enough_for_a_worker_per_core(self) -> None:
+    def test_the_limit_is_high_enough_for_a_worker_per_core(
+        self, timer_units: Callable[[], dict[str, str]]
+    ) -> None:
         """1024 is the default that broke it; the value has to be well clear of that."""
-        from _mutation_timer import timer_units
-
         line = next(
             entry
             for entry in timer_units()["service"].splitlines()
