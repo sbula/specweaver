@@ -31,13 +31,14 @@ description: "Phase 4: Run the test tiers this story requires at this commit poi
 
      - **Capability stories** (`C-FLOW-12`) are unit-led; integration and e2e arrive at `sf` and
        `feature`.
-     - **Integration stories** (`INT-US-21`) run **no unit tier at all** — integration and e2e
-       from the first commit. If you find yourself wanting a unit test in an INT story, that is
-       not a coverage gap to fill here: it is the signal that the capability underneath shipped
-       incomplete, and it belongs upstream as its own story.
+     - **A (sub)story's spanning tests** run at integration and e2e tier only, from the first
+       commit. `ADR-005` puts them in the (sub)story itself, so they arrive with its work rather
+       than in a separate entry. If you find yourself wanting a unit test to stand in for one,
+       that is not a coverage gap to fill here: it is the signal that the capability underneath
+       shipped incomplete, and it belongs upstream as its own story.
      - **DAL shifts the whole profile.** DAL-A runs every tier at full scope from `cb`; DAL-B one
-       state earlier than baseline; DAL-D/E later. An INT story inherits the **most critical** DAL
-       among the capabilities it integrates — and note the direction: DAL-A is Mission-Critical,
+       state earlier than baseline; DAL-D/E later. A spanning test inherits the **most critical**
+       DAL among the capabilities it crosses — and note the direction: DAL-A is Mission-Critical,
        DAL-E is Prototyping, so "most critical" is the *lowest* letter.
 
      `python scripts/tests.py matrix` prints every profile.

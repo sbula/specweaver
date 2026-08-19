@@ -20,9 +20,10 @@ maintain graphical Mermaid mappings during pre-commit.
 
 6.3.1. **[🚨 MANDATORY STATE SYNC]** You MUST physically update the `master_story_roadmap.md` to reflect the correct state:
      - Update colors (`🟢`, `🟡`, `🔴`) and check off boxes (`[x]`) for the User Story and any Add-Ons you implemented.
-       > **"Add-Ons" means minted sub-story IDs (`INT-US-NN-SFxx`), never a design's `SF-NN`
-       > sub-features.** Read as the latter this line is a standing order to corrupt the roadmap,
-       > which is how that defect was introduced. Full contract:
+       > **"Add-Ons" means the add-on capability groups, never a design's `SF-NN` sub-features.**
+       > Read as the latter this line is a standing order to corrupt the roadmap, which is how that
+       > defect was introduced. `ADR-005` also retired the `INT-US-NN-SFxx` lines this once named.
+       > Full contract:
        > `.claude/skills/specweaver-ticket/references/roadmap-placement.md`.
      - **[🚨 PROOF MANDATE]**: If you change a status to `🟢 Completed` or check an `[x]` box, you
        **MUST** paste the exact filepath of the passing E2E integration test into the

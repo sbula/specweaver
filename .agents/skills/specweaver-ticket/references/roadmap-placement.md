@@ -36,14 +36,16 @@ the part that outlives the ticket. Put a generalisable lesson there, not at laye
 
 **R-PLACE — a line exists only for something with its own registry ID.**
 
-A `US-N` entry lists capability IDs and `INT-US-NN-SFxx` sub-story IDs, one line each. A design
-document's `SF-01` is internal decomposition: no registry ID, no independent existence, and it never
-appears here.
+A `US-N` entry lists capability IDs, one line each. A design document's `SF-01` is internal
+decomposition: no registry ID, no independent existence, and it never appears here.
 
-> **Two different things are spelled "SF", and this is the trap.** `INT-US-21-SF01` is a *minted
-> sub-story* with its own design and integration contract — it belongs. `SF-01` in a design's
-> Sub-Feature Breakdown is *internal decomposition* — it never does. `US-21` lists the first and not
-> the second. Getting this backwards is the original defect this contract was written for.
+> **`ADR-005` removed a third kind of line.** A `US-N` entry used to list `INT-US-NN-SFxx` sub-story
+> IDs beside its capabilities. The family is retired: a (sub)story's spanning tests are among its own
+> tests, so its integration state is its own status and needs no separate line. Never add one back.
+>
+> **"SF" still spells two things, and that is still the trap.** `SF-01` in a design's Sub-Feature
+> Breakdown is internal decomposition and never appears here. Getting this backwards is the original
+> defect this contract was written for.
 
 **R-DEPTH — no line in any markdown file exceeds 200 characters.**
 
@@ -117,7 +119,9 @@ noticed. `check_roadmap_placement.py` now rejects it.
 
 ## When you are updating roadmap state after a commit
 
-Check off the boxes for the User Story and any **sub-story add-ons** (`INT-US-NN-SFxx`) you
-implemented. **"Add-Ons" here means minted sub-story IDs, never a design's `SF-NN` sub-features.**
-Read as the latter, that instruction is a standing order to corrupt this file — which is how the
-defect that produced this contract was introduced.
+Check off the boxes for the User Story and for each **capability** you implemented. Never for a
+design's `SF-NN` sub-features — read that way, this instruction is a standing order to corrupt the
+file, which is how the defect that produced this contract was introduced.
+
+A (sub)story goes green only when its spanning tests are green too, `ADR-005` clause 4. A feature
+that compiles is not a (sub)story that is finished.

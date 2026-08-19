@@ -1,6 +1,6 @@
 # ADR 004: Integration Belongs to the Consumer When Unbuilt, to the Story When Closed
 
-**Status:** Accepted
+**Status:** Superseded by `ADR-005` (2026-08-19) — the separate integration artifact is retired
 **Date:** August 17, 2026
 **Supersedes:** `ADR-003` — Integration Belongs to the Consumer, Not to a Separate Story
 **Context:** the 2026-08-17 audit of integration coverage across all 28 user stories

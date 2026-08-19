@@ -53,27 +53,33 @@ override — an overridable gate becomes a habit.
 > every bundled pipeline step resolves to a real handler; no field documented as "set by X" is
 > unwritten.
 
-## Phase 0b: The (Sub)Story Contract (`ADR-004`)
+## Phase 0b: The (Sub)Story Path List (`ADR-005`)
 
-0b.1. Every (sub)story carries a contract — its `INT-US-NN` / `INT-US-NN-SFxx` entry — holding a
-      **path inventory** and the **cross-feature (N)FRs** the inventory generates. This skill owns
-      that artifact. If the (sub)story you are entering has none, create it before Phase 1; if it
-      has one, you are extending it.
+0b.1. Every (sub)story carries a **path list** — every path through it, one row each, with the
+      **seam (N)FRs** the crossing paths generate. It lives in the (sub)story itself. There is no
+      separate integration entry and no `INT-US` identifier; `ADR-005` retired the family. If the
+      (sub)story you are entering has no list, create it before Phase 1; if it has one, you are
+      extending it.
 
-0b.2. Fill the inventory with every path through the (sub)story, one row each, with its owner and
-      status. Ownership is decided by **span**:
+0b.2. Fill the list with every path, one row each, with its owner and status. Ownership is decided by
+      **span**:
 
 | Path | Owner | Written when |
 |---|---|---|
 | One feature can walk it | that feature | inside the feature's own TDD cycle |
-| Crosses several features | this contract | as soon as the interface is defined |
-| Touches an interface not yet defined | this contract, deferred | when the blocking capability's design lands |
+| Crosses several features | this (sub)story | now, red, as soon as the interface is defined |
+| Touches an interface not yet defined | this (sub)story | now, as `xfail(strict=True)` naming the blocker |
 
-0b.3. A path a single feature can walk is **never** restated on the contract. That is `ADR-003`'s
-      Type A, and restating it is what made `INT-US-28` credit 41 unit tests to a seam with six
-      claims while both capabilities read as untested for three months.
+0b.3. **Nothing is deferred to a later entry.** A path whose other side is unbuilt still gets its
+      test now, marked `xfail(strict=True)` with the blocker named. It fails today for the right
+      reason and turns green loudly when the last related (sub)story lands.
+      `check_xfail_blockers.py` fails the marker once its blocker is `✅`.
 
-0b.4. The inventory is expected to change. A contract or a scope that turns out wrong is edited, not
+0b.4. A path a single feature can walk is **never** restated at (sub)story level. Restating one is
+      what credited 41 unit tests to a seam holding six claims while both capabilities read as
+      untested for three months.
+
+0b.5. The path list is expected to change. A list or a scope that turns out wrong is edited, not
       worked around.
 
 > [!CAUTION]

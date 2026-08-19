@@ -36,52 +36,53 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > STOP only at the defined HITL gates. Never add extra stops.
 
 > [!CAUTION]
-> **The integration and e2e proof belongs to the capability, never to an `INT-US` story.**
-> A test that cannot go RED proves nothing, and RED is only available while the feature is
-> unimplemented. Collecting the seam into an integration story that runs *after* the capability
-> ships means its first run is green against code that already exists — it asserts the present,
-> not the contract.
+> **Integration is implicit in the (sub)story. There is no integration story.** `ADR-005` retires
+> the `INT-US` family outright — `INT-US-NN`, `INT-US-NN-SFxx` and `-MIG` alike. Never mint one,
+> never reference one, not as a dependency and not as a tombstone.
 >
-> **Every capability not yet `✅` is responsible for its own integration and e2e testing.** No
-> exceptions, nothing deferred to a later story: it declares its seam FRs and proves them at
-> integration/e2e tier inside its own TDD cycle, red before the code they judge. This has not
-> been the practice historically — the delivered corpus carries the debt — so it binds the work
-> in front of you, not a backfill programme.
+> **A test that cannot go RED proves nothing, and RED is only available before the code exists.**
+> A test written after the code is green on its first run: it asserts the present state instead of
+> a contract the code must satisfy. So the test comes first, and it gets the chance to fail.
 >
-> It follows that you **never mint or reference an `INT-US-NN` / `INT-US-NN-SFxx` for work that is
-> not built yet** — not as a dependency, not as a retirement tombstone. There is nothing left for
-> such a story to own.
+> **A (sub)story owns every test it needs, including the ones that span features.** If one feature
+> alone cannot prove it, the spanning test is still part of this (sub)story. It is not deferred, and
+> it is not handed to a separate entry.
 >
-> An `INT-US` entry is legitimate in exactly one place: a (sub)story that **already holds a
-> finished feature**, where `finished-stories-immutable` bars the closed capability from taking
-> the FR and the proof has nowhere else to live.
+> **When a related (sub)story is unbuilt, write the test now anyway** and commit it as
+> `pytest.mark.xfail(strict=True)` naming the blocker. It fails today for the right reason.
+> `strict=True` makes an unexpected pass a failure, so the suite says so out loud the moment the
+> last related (sub)story lands. `check_xfail_blockers.py` fails any such marker whose named
+> blocker has become `✅`, so it cannot rot into a permanent exemption.
 >
-> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose
-> satisfaction needs something from outside — a call into another module, data handed across a
-> boundary, a format or schema both sides must agree on, an ordering, a shared file — is a
-> **seam FR**: a hidden contract with another feature. Those, and only those, are what an
-> integration test proves. Name them as seams when you write the FR table, because a seam FR
-> proven by a unit test with the other side mocked proves the mock, not the contract. `TECH-041`
-> is one instance: `C-VAL-03` is `✅` and its DAL override is proven link by link, never as a
-> chain.
+> **The (sub)story is finished when those tests are green** — not when its own feature compiles.
 >
-> **There, an OPEN `INT-US` is load-bearing — never delete it.** It is the only record that a
-> feature which is already implemented has not been integration-tested. Removing it does not
-> retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
-> the integration being written and passing. It never closes by being tidied away.
+> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose satisfaction
+> needs something from outside — a call into another module, data handed across a boundary, a format
+> or schema both sides must agree on, an ordering, a shared file — is a **seam FR**: a hidden
+> contract with another feature. Those, and only those, are what a spanning test proves. Name them
+> as seams when you write the FR table, because a seam FR proven by a unit test with the other side
+> mocked proves the mock, not the contract. `TECH-041` is one instance: `C-VAL-03` is `✅` and its
+> DAL override is proven link by link, never as a chain.
+>
+> **A missing spanning test under an already-finished (sub)story is a defect in delivered work**, so
+> it becomes a `TECH` ticket that owns the test and writes it red first. That is the rule for every
+> other defect in closed code. Integration used to be the one carve-out, and the carve-out is what
+> grew a second registry: measured 2026-08-19, 31 of 36 open contract rows were tracking work that
+> another ticket already owned.
 
 > [!CAUTION]
-> **Before Phase 3 can bind requirements to surfaces, the (sub)story contract must exist.**
-> `ADR-004`: every (sub)story holds a contract — its `INT-US` entry — carrying the path inventory
-> and the cross-feature (N)FRs. Starting a design inside a (sub)story is what creates it.
+> **Before Phase 3 can bind requirements to surfaces, the (sub)story must list its paths.**
+> `ADR-005`: every (sub)story holds a **path list** — every path a user walks through it, one row
+> each, with the span that decides who proves it. The list lives in the (sub)story, not in a separate
+> entry. Starting a design inside a (sub)story is what creates it.
 >
-> If the contract is absent, **stop and create it** (`specweaver-feature` Phase 0b) before
-> continuing. A design that binds FRs to surfaces without one has nowhere to put the requirements
-> that cross a feature boundary, and they end up restated on this capability — which is the defect
-> `ADR-003` measured and `ADR-004` re-scoped.
+> If the list is absent, **stop and create it** (`specweaver-feature` Phase 0b) before continuing. A
+> design that binds FRs to surfaces without one has nowhere to record the requirements that cross a
+> feature boundary, and they end up restated on this capability.
 >
-> Only the paths that cross a feature boundary go there. A path this one feature can walk alone is
-> this feature's own FR.
+> A path this one feature can walk alone is this feature's own FR. A path that crosses features is a
+> seam FR, and its test is written red first — `xfail(strict=True)` naming the blocker while a
+> related (sub)story is unbuilt.
 
 > [!IMPORTANT]
 > **When you stop at a HITL gate, the decision is now invisible to everyone but this conversation.**

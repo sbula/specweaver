@@ -150,8 +150,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 > **This is the only home for `SF-NN`.** A sub-feature has no registry ID and no existence outside
 > this document — it never appears in `master_story_roadmap.md`, which carries one line per minted
-> ID. The contract, and the trap where `INT-US-NN-SFxx` and `SF-NN` are both spelled "SF", is in
-> `.claude/skills/specweaver-ticket/references/roadmap-placement.md`.
+> ID. The contract is in `.claude/skills/specweaver-ticket/references/roadmap-placement.md`.
 >
 > **Two digits, always** — `SF-01`, never `SF-1`, in headings, `Depends on` and filenames alike.
 > The template below said `SF-1` rather than `SF-01` until 2026-08-12 and so taught the form the convention forbids.

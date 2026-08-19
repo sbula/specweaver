@@ -84,36 +84,37 @@ Each ID family has a **different** authoritative source. Pick the right one:
 |---|---|---|
 | Technical debt | `TECH-014` | **`ls docs/roadmap/features/topic_07_technical_debt/`** — one directory per ticket |
 | Capability | `C-FLOW-12` | `docs/roadmap/capability_matrix.md` **and** `docs/roadmap/topics/topic_NN_*.md` |
-| Sub-story add-on | `INT-US-21-SF02` | `docs/roadmap/topics/topic_08_integration/US-NN_integration.md` |
 
 > [!CAUTION]
-> **`ADR-003`: do NOT mint a new `INT-US-NN` / `INT-US-NN-SFNN` for seam or capability work.**
-> Integration now belongs to the capability that creates the seam, as one of **its own FRs** — which
-> `check_fr_coverage.py` and `check_fr_sweep.py` already enforce. Before minting anything in this
-> family, classify the claim:
+> **`ADR-005`: the `INT-US` family is retired. Never mint one.** No `INT-US-NN`, no
+> `INT-US-NN-SFxx`, no `-MIG` — not for a seam, not for a journey, not as a tombstone. There is no
+> registry for them and no authoritative source to check, because the family has no members going
+> forward.
+>
+> **Integration is implicit in the (sub)story.** A path the (sub)story cannot prove with one feature
+> alone is a **seam FR** on that (sub)story, and its test is written **red first**. Where the other
+> side is unbuilt, the test is still written now, as `pytest.mark.xfail(strict=True)` naming the
+> blocker; it turns green loudly when the last related (sub)story lands.
+>
+> So, before minting anything for a claim that crosses features, classify it:
 >
 > * **restates what a capability does** → it belongs in that capability's design. Mint nothing.
-> * **a seam** (this module calls/reads/persists through another) → an FR on the **consumer**
->   capability. Mint nothing.
-> * **a user-visible journey across capabilities** (*"the journey costs exactly one LLM call"*) →
->   still legitimate, as a **journey proof**: e2e tests only, declares no FRs, implements nothing.
+> * **a seam under a (sub)story that is not finished** → a seam FR on that (sub)story, test red
+>   first. Mint nothing.
+> * **a seam under a (sub)story that is already finished** → a gap in delivered work, which is a
+>   **defect**. `finished-stories-immutable` bars editing the closed story, so **mint a `TECH`
+>   ticket**: it owns the seam FR and writes the failing test first. This is the only minting this
+>   bullet ever permits.
 >
-> **The seam bullet's "Mint nothing" holds only while the consumer is UNBUILT.** If the consumer is
-> already `✅`, `finished-stories-immutable` forbids adding the FR to it, so "it moves to the
-> capability" moves it nowhere — **mint a ticket instead**, which owns the seam FR and writes the
-> failing integration/e2e test first.
->
-> **Retiring an existing entry follows the same rule**, and it is enforced:
-> `scripts/check_retirement_targets.py` in `quality.py doc` fails a `RETIRED … by ADR-003` note
-> whose destination is `✅`, is absent from the capability matrix, or is **not named at all**. When
-> it fires, the retirement does not happen — pick a real disposition instead: **un-retire** (the
-> seam is genuinely missing), **`CLOSED EMPTY`** (nothing left to build, only a scope decision), or
-> a new ticket. See the 2026-08-16 addendum to `ADR-003` for the audit that produced this.
+> **Retirement notes already in the tree still hold.** `scripts/check_retirement_targets.py` fails a
+> `RETIRED … by ADR-003` note whose destination is `✅`, absent from the capability matrix, or not
+> named at all. It keeps judging what was written before `ADR-005`; it gains no new subjects.
 >
 > Measured 2026-08-13: 63 pre-allocated `Sub-Story Integration (Pending Design)` entries existed and
-> **not one had a design document or a feature directory**. The family's failure mode is a second
-> place to make claims that no gate compares against code — `INT-US-21-SUB` advertised recursive
-> decomposition that was never built, through delivery and an epic closure (`TECH-038`).
+> **not one had a design document or a feature directory**. Measured again 2026-08-19, after a full
+> migration: **31 of 36 open contract rows named another ticket as their blocker** — the same work
+> written twice. The family's failure mode is a second place to make claims that no gate compares
+> against code, and it reappeared every time the family was allowed to keep one member.
 
 > [!WARNING]
 > For **TECH** IDs the topic doc is NOT authoritative — it has historically listed only a subset.

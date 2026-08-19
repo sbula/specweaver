@@ -150,48 +150,49 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > authored code.
 
 > [!CAUTION]
-> **The integration and e2e proof belongs to the capability, never to an `INT-US` story.**
-> A test that cannot go RED proves nothing, and RED is only available while the feature is
-> unimplemented. Collecting the seam into an integration story that runs *after* the capability
-> ships means its first run is green against code that already exists — it asserts the present,
-> not the contract.
+> **Integration is implicit in the (sub)story. There is no integration story.** `ADR-005` retires
+> the `INT-US` family outright — `INT-US-NN`, `INT-US-NN-SFxx` and `-MIG` alike. Never mint one,
+> never reference one, not as a dependency and not as a tombstone.
 >
-> **Every capability not yet `✅` is responsible for its own integration and e2e testing.** No
-> exceptions, nothing deferred to a later story: it declares its seam FRs and proves them at
-> integration/e2e tier inside its own TDD cycle, red before the code they judge. This has not
-> been the practice historically — the delivered corpus carries the debt — so it binds the work
-> in front of you, not a backfill programme.
+> **A test that cannot go RED proves nothing, and RED is only available before the code exists.**
+> A test written after the code is green on its first run: it asserts the present state instead of
+> a contract the code must satisfy. So the test comes first, and it gets the chance to fail.
 >
-> It follows that you **never mint or reference an `INT-US-NN` / `INT-US-NN-SFxx` for work that is
-> not built yet** — not as a dependency, not as a retirement tombstone. There is nothing left for
-> such a story to own.
+> **A (sub)story owns every test it needs, including the ones that span features.** If one feature
+> alone cannot prove it, the spanning test is still part of this (sub)story. It is not deferred, and
+> it is not handed to a separate entry.
 >
-> An `INT-US` entry is legitimate in exactly one place: a (sub)story that **already holds a
-> finished feature**, where `finished-stories-immutable` bars the closed capability from taking
-> the FR and the proof has nowhere else to live.
+> **When a related (sub)story is unbuilt, write the test now anyway** and commit it as
+> `pytest.mark.xfail(strict=True)` naming the blocker. It fails today for the right reason.
+> `strict=True` makes an unexpected pass a failure, so the suite says so out loud the moment the
+> last related (sub)story lands. `check_xfail_blockers.py` fails any such marker whose named
+> blocker has become `✅`, so it cannot rot into a permanent exemption.
 >
-> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose
-> satisfaction needs something from outside — a call into another module, data handed across a
-> boundary, a format or schema both sides must agree on, an ordering, a shared file — is a
-> **seam FR**: a hidden contract with another feature. Those, and only those, are what an
-> integration test proves. Name them as seams when you write the FR table, because a seam FR
-> proven by a unit test with the other side mocked proves the mock, not the contract. `TECH-041`
-> is one instance: `C-VAL-03` is `✅` and its DAL override is proven link by link, never as a
-> chain.
+> **The (sub)story is finished when those tests are green** — not when its own feature compiles.
 >
-> **There, an OPEN `INT-US` is load-bearing — never delete it.** It is the only record that a
-> feature which is already implemented has not been integration-tested. Removing it does not
-> retire the debt; it hides it, and the story then reads as proven. An `INT-US` line closes by
-> the integration being written and passing. It never closes by being tidied away.
+> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose satisfaction
+> needs something from outside — a call into another module, data handed across a boundary, a format
+> or schema both sides must agree on, an ordering, a shared file — is a **seam FR**: a hidden
+> contract with another feature. Those, and only those, are what a spanning test proves. Name them
+> as seams when you write the FR table, because a seam FR proven by a unit test with the other side
+> mocked proves the mock, not the contract. `TECH-041` is one instance: `C-VAL-03` is `✅` and its
+> DAL override is proven link by link, never as a chain.
+>
+> **A missing spanning test under an already-finished (sub)story is a defect in delivered work**, so
+> it becomes a `TECH` ticket that owns the test and writes it red first. That is the rule for every
+> other defect in closed code. Integration used to be the one carve-out, and the carve-out is what
+> grew a second registry: measured 2026-08-19, 31 of 36 open contract rows were tracking work that
+> another ticket already owned.
 
 > [!IMPORTANT]
-> **Read the (sub)story contract's path inventory before scheduling anything** (`ADR-004`).
-> Each cross-feature row is a task, and a row is scheduled at the commit boundary where **the
-> interface it exercises first exists** — not where the implementation lands. That is what lets the
-> test fail before it passes.
+> **Read the (sub)story's path list before scheduling anything** (`ADR-005`).
+> Each crossing row is a task of this (sub)story — never of a separate entry, because there is none.
+> A row is scheduled at the commit boundary where **the interface it exercises first exists**, not
+> where the implementation lands. That is what lets the test fail before it passes.
 >
-> A row whose interface is not yet defined is not schedulable here. Leave it deferred against its
-> blocking capability and say so; `check_xfail_blockers.py` will not let it be forgotten.
+> A row whose interface is not yet defined is still scheduled, as `xfail(strict=True)` naming the
+> blocker. It fails today for the right reason and turns green loudly when the blocker lands;
+> `check_xfail_blockers.py` will not let the marker be forgotten.
 
 ## MCP Tool Guidance
 

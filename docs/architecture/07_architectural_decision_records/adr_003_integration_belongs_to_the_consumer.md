@@ -1,6 +1,6 @@
 # ADR 003: Integration Belongs to the Consumer, Not to a Separate Story
 
-**Status:** Superseded by `ADR-004` (2026-08-17)
+**Status:** Superseded by `ADR-004` (2026-08-17), then by `ADR-005` (2026-08-19)
 **Date:** August 13, 2026
 **Context:** `TECH-017` proof audit — measured evidence that the capability/integration split
 produced unproven capabilities and unfalsifiable contracts

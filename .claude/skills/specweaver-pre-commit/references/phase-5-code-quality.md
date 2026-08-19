@@ -70,8 +70,8 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
      from 5.1 on purpose** — it checks registries, not code, and a stale roadmap checkbox must not
      fail a code gate. Both steps are required; neither substitutes for the other.
 
-     **Proof tier** (`TECH-017`). Every DELIVERED `INT-US-NN` contract entry must cite at least one
-     integration or e2e test **file**. Unit tests alongside them are fine; unit tests instead of
+     **Proof tier** (`TECH-017`). Every **seam FR** of a delivered (sub)story must cite at least
+     one integration or e2e test **file**. Unit tests alongside them are fine; unit tests instead of
      them are the defect. So is naming a directory, a bare `pytest -m integration`, or a suite in
      prose — a place is not a proof, and nothing pins which test carries the claim. Ratcheted:
      three known violations are frozen in `scripts/baselines/proof_tier.json`, each with a reason

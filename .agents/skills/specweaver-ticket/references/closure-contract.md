@@ -31,9 +31,10 @@ All four, before any status becomes `🟢` / `✅`:
    directory, a bare `pytest -m integration`, or a suite named in prose is not a proof — nothing
    pins which test carries the claim. `scripts/check_proof_tier.py` enforces the tier; it cannot
    enforce the truth.
-4. **The proof is at the right tier.** An `INT-US-NN` story is an integration contract, so its proof
-   is integration and e2e tests. Unit tests belong there only to fill a narrow gap found while
-   integrating.
+4. **The proof is at the right tier.** A **seam FR** — one whose satisfaction needs something from
+   outside the feature — is proven by integration and e2e tests. A unit test with the other side
+   mocked proves the mock. Unit tests belong beside a seam proof only to fill a narrow gap found
+   while integrating.
 
 ## What FR coverage proves, and what it cannot
 
