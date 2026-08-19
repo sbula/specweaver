@@ -108,7 +108,7 @@ class TestInstallTimer:
             mutation.install_timer(tmp_path / "nope")
 
 
-class TestTheUnitCarriesAUsablePath:
+class TestTimerUnitsCarryAUsablePath:
     """A systemd user service inherits a minimal PATH, and `.venv/bin` is not on it.
 
     The unit runs `.venv/bin/python` by absolute path, so Python itself starts — which is why this
@@ -156,3 +156,38 @@ class TestTheUnitCarriesAUsablePath:
             if line.startswith("Environment=PATH=")
         )
         assert "/usr/bin" in path_line, path_line
+
+
+class TestTimerUnitsRaiseTheFileDescriptorLimit:
+    """A systemd user service starts with `nofile` soft-limited to 1024; a login shell gets 524288.
+
+    The suite runs under `pytest -n auto`, which is 24 workers on this machine, and 1024 descriptors
+    between them is not enough. The result is not a clean failure: roughly 690 `OSError`s scattered
+    across unrelated unit tests, none of which fail on their own or in any pair of tiers. Every tier
+    passes alone; only the whole suite exhausts the limit.
+
+    Confirmed causally — raising only this limit, changing nothing else, takes the baseline from
+    `green=False code=1` to `green=True code=0`.
+
+    Proves: TECH-058 FR-3
+    """
+
+    def test_the_service_raises_nofile(self) -> None:
+        from _mutation_timer import timer_units
+
+        service = timer_units()["service"]
+
+        assert any(line.startswith("LimitNOFILE=") for line in service.splitlines()), (
+            f"the unit inherits systemd's 1024 soft limit, which the suite exhausts:\n{service}"
+        )
+
+    def test_the_limit_is_high_enough_for_a_worker_per_core(self) -> None:
+        """1024 is the default that broke it; the value has to be well clear of that."""
+        from _mutation_timer import timer_units
+
+        line = next(
+            entry
+            for entry in timer_units()["service"].splitlines()
+            if entry.startswith("LimitNOFILE=")
+        )
+        assert int(line.split("=", 1)[1]) >= 16384, line

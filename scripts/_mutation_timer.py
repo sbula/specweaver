@@ -50,6 +50,11 @@ Environment=PY_COLORS=0
 # ExecStart names the interpreter absolutely — but the suite shells out to a bare `tach`, and
 # without it that is a collection error, which makes the baseline red while naming no failing test.
 Environment=PATH={REPO_ROOT}/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# A user service starts with `nofile` soft-limited to 1024, where a login shell gets 524288.
+# `pytest -n auto` is one worker per core, and between them 1024 descriptors run out — as roughly
+# 690 OSErrors scattered across unrelated unit tests, none of which fail alone or in any pair of
+# tiers. Raising only this takes the baseline from red to green.
+LimitNOFILE=65536
 ExecStart={python} {REPO_ROOT}/scripts/mutation.py --corpus-dir docs/roadmap/features
 """
     timer = f"""[Unit]
