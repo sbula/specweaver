@@ -14,6 +14,8 @@ per the implementation plan) — this keeps the test independent of that follow-
 Proves: TECH-031 FR-1, TECH-031 FR-2, TECH-031 FR-3, TECH-031 FR-4
 Proves: TECH-031 FR-5, TECH-031 FR-6, TECH-031 FR-7
 Proves: TECH-031 FR-8, TECH-031 FR-9
+Proves: B-EXEC-01 FR-2, B-EXEC-01 FR-3, B-EXEC-01 FR-4
+Proves: B-EXEC-01 FR-5, B-EXEC-01 FR-8
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.commons.prepare_plan import plan_for
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
@@ -181,6 +184,72 @@ def _image_available(image: str) -> bool:
     except (OSError, subprocess.TimeoutExpired):
         return False
     return probe.returncode == 0
+
+
+class TestArtifactsLandInScratch:
+    """`B-EXEC-01` FR-4: what a Python run writes goes to `/scratch`, never the read-only source.
+
+    The mechanism did not exist. `plan_for` returned an empty environment for Python, so pytest wrote
+    `.pytest_cache` and coverage wrote `.coverage` beside the code — inside the mount the container
+    cannot write to. The suite survived that because pytest degrades quietly when its cache directory
+    is unwritable, which is not the same as being redirected, and coverage output went nowhere a
+    caller could read.
+
+    Split in two on purpose. What the plan SUPPLIES needs a Python project; what the container DOES
+    with it needs neither a manifest nor the uv image, and adding a `pyproject.toml` to the second
+    would drag the whole prepare phase into a test about file placement.
+    """
+
+    @staticmethod
+    def _python_project(tmp_path: Path) -> Path:
+        source = tmp_path / "declared"
+        source.mkdir(parents=True, exist_ok=True)
+        (source / "pyproject.toml").write_text(
+            '[project]\nname = "demo"\nversion = "0"\n[dependency-groups]\ndev = ["pytest"]\n',
+            encoding="utf-8",
+        )
+        return source
+
+    def test_the_plan_redirects_coverage_for_a_python_project(self, tmp_path: Path) -> None:
+        env = plan_for(self._python_project(tmp_path)).execute_env
+
+        assert env["COVERAGE_FILE"] == "/scratch/.coverage"
+
+    def test_the_plan_redirects_the_pytest_cache_too(self, tmp_path: Path) -> None:
+        """`PYTEST_ADDOPTS` carries it, because pytest has no environment variable of its own."""
+        env = plan_for(self._python_project(tmp_path)).execute_env
+
+        assert "/scratch/.pytest_cache" in env["PYTEST_ADDOPTS"]
+
+    def test_the_redirected_coverage_file_lands_in_scratch(self, tmp_path: Path) -> None:
+        """The other half: the path the plan names is one the container can actually write."""
+        mounts = _mounts(tmp_path)
+        executor = ContainerSubprocessExecutor(
+            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="artifact-scratch"
+        )
+
+        result = executor.execute(
+            ["sh", "-c", "echo x > $COVERAGE_FILE"],
+            extra_env={"COVERAGE_FILE": "/scratch/.coverage"},
+        )
+
+        assert result.exit_code == 0, result.stderr
+        assert (mounts.scratch_root / ".coverage").is_file()
+
+    def test_the_unredirected_path_would_have_failed(self, tmp_path: Path) -> None:
+        """The control, and the reason the redirection is not decoration.
+
+        Without it, coverage writes beside the code — which is the mount FR-2 makes read-only.
+        """
+        mounts = _mounts(tmp_path)
+        executor = ContainerSubprocessExecutor(
+            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="artifact-ro"
+        )
+
+        result = executor.execute(["sh", "-c", "echo x > /workspace/.coverage"])
+
+        assert result.exit_code != 0
+        assert not (mounts.source_root / ".coverage").exists()
 
 
 class TestPrepareAndExecuteShareAnEnvironment:

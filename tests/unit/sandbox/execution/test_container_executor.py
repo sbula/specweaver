@@ -2,7 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for ContainerMounts and ContainerSubprocessExecutor (B-EXEC-01)."""
+"""Tests for ContainerMounts and ContainerSubprocessExecutor (B-EXEC-01).
+Proves: B-EXEC-01 FR-6, B-EXEC-01 FR-7
+
+FR-6 is dual-engine support and FR-7 is failing closed when neither engine is usable. Both are
+exercised here against a patched `PATH` rather than by installing a second runtime: `podman` preferred
+when both are present, `docker` when podman is absent, and a fall-through when podman is on the PATH
+but not live — which is the case a which-check alone reports as available.
+"""
 
 from __future__ import annotations
 

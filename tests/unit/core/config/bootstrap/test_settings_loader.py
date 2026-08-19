@@ -16,7 +16,13 @@ from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
 class TestSandboxSettingsModel:
     """Bare-model tests for SandboxSettings (B-EXEC-01).
 
-    Loader-level (specweaver.toml -> SandboxSettings) tests land in T11.
+        Loader-level (specweaver.toml -> SandboxSettings) tests land in T11.
+
+    Proves: B-EXEC-01 FR-9
+
+    FR-9 is the opt-in default: `execution_mode` is `host` unless a project asks for `container`. It is
+    asserted here because that is where the default lives, and a default is only a default where it is
+    declared.
     """
 
     def test_defaults_to_host_mode(self):

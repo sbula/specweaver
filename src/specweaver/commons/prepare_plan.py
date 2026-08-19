@@ -160,6 +160,19 @@ class PreparePlan:
     execute_env: dict[str, str] = field(default_factory=dict)
 
 
+#: Where a Python run puts the files it writes, so none of them lands on the read-only source mount.
+#:
+#: `/scratch` is the writable mount; the source tree is `:ro`. Without these, pytest writes
+#: `.pytest_cache` and coverage writes `.coverage` next to the code — inside the mount the container
+#: cannot write to. The suite happened to survive that, because pytest degrades quietly when its
+#: cache directory is unwritable; "happened to survive" is not the same as redirected, and coverage
+#: output was going nowhere a caller could read it.
+_PYTHON_ARTIFACT_ENV = {
+    "COVERAGE_FILE": "/scratch/.coverage",
+    "PYTEST_ADDOPTS": "-o cache_dir=/scratch/.pytest_cache",
+}
+
+
 def plan_for(source_root: Path) -> PreparePlan:
     """What the prepare phase will do with the project at `source_root`."""
     toolchain = detect_toolchain(source_root)
@@ -192,7 +205,14 @@ def plan_for(source_root: Path) -> PreparePlan:
 
     groups = tuple(_groups_holding_a_runner(manifest_text))
     if _manifest_declares_a_runner(manifest_text):
-        return PreparePlan(route, "pyproject.toml", groups, warnings=tuple(warnings))
+        return PreparePlan(
+            route,
+            "pyproject.toml",
+            groups,
+            warnings=tuple(warnings),
+            env=dict(_PYTHON_ARTIFACT_ENV),
+            execute_env=dict(_PYTHON_ARTIFACT_ENV),
+        )
 
     fallback: ToolingSource | None = declared_pytest(source_root)
     if fallback is not None:
@@ -202,7 +222,14 @@ def plan_for(source_root: Path) -> PreparePlan:
                 f"engine and will not be installed — plugins declared there will be missing."
             )
         return PreparePlan(
-            route, fallback.path, groups, fallback.skipped, tuple(warnings), source=fallback
+            route,
+            fallback.path,
+            groups,
+            fallback.skipped,
+            tuple(warnings),
+            source=fallback,
+            env=dict(_PYTHON_ARTIFACT_ENV),
+            execute_env=dict(_PYTHON_ARTIFACT_ENV),
         )
 
     warnings.append(
@@ -210,7 +237,14 @@ def plan_for(source_root: Path) -> PreparePlan:
         "sandbox will install pytest itself. Its version is not the project's choice and any "
         "plugins the suite needs will be absent — results will say so."
     )
-    return PreparePlan(route, "sandbox", groups, warnings=tuple(warnings))
+    return PreparePlan(
+        route,
+        "sandbox",
+        groups,
+        warnings=tuple(warnings),
+        env=dict(_PYTHON_ARTIFACT_ENV),
+        execute_env=dict(_PYTHON_ARTIFACT_ENV),
+    )
 
 
 def _plan_for_other(toolchain: str, source_root: Path) -> PreparePlan:

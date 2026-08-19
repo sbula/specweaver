@@ -260,7 +260,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
     *   `✅` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Containerized Isolation:**
+    *   🟢 **Containerized Isolation:**
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
         *   `✅` **B-EXEC-01:** Ephemeral Podman Sub-Containers
     *   🔴 **Security Defenses:**
