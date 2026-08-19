@@ -433,24 +433,30 @@ log rather than the program's output — both measured, neither fixed here.
 
 ## Verifiable Proof
 
-Every file below passes and does not skip, except where a live container engine is absent — the
-integration tier skips cleanly on that and only on that (NFR-10), which is an environment
-capability rather than anything this repo controls.
+Every file below passes and does not skip, except on a missing environment capability — a live
+container engine, or a toolchain the test drives. Those are the only reasons any of them skip.
 
-- `tests/unit/sandbox/execution/test_container_executor_prepare.py` — FR-1, FR-2, FR-3, FR-4, FR-5,
-  FR-6, FR-8
+- `tests/unit/sandbox/execution/test_container_executor_prepare.py` — FR-1 to FR-6, FR-8
+- `tests/unit/sandbox/execution/test_container_polyglot.py` — FR-17, FR-18
 - `tests/unit/commons/test_tooling_sources.py` — FR-7, including a run against all 30 real `tox.ini`
   files from the corpus
-- `tests/unit/commons/test_prepare_plan.py` — FR-10, and the two tests that tie the plan to what the
+- `tests/unit/commons/test_prepare_plan.py` — FR-10, and the two tests tying the plan to what the
   executor does
+- `tests/unit/commons/test_prepare_plan_languages.py` — FR-16
 - `tests/unit/sandbox/language/core/language/python/test_toolchain_absence.py` — FR-9
-- `tests/integration/sandbox/execution/test_container_executor_integration.py` — FR-1 to FR-9 against
-  live podman, across six project shapes
+- `tests/unit/sandbox/language/core/language/rust/test_cargo_output.py` — FR-11
+- `tests/unit/sandbox/language/core/language/rust/test_cargo_diagnostics.py` — FR-19
+- `tests/unit/sandbox/language/core/test_junit_reports.py` — FR-15, FR-18
+- `tests/unit/sandbox/language/core/test_runner_migration.py` — FR-14, FR-19
+- `tests/integration/sandbox/execution/test_container_executor_integration.py` — FR-1 to FR-9,
+  FR-17, FR-18 against live podman, across nine project shapes
+- `tests/integration/sandbox/language/test_polyglot_runners_live.py` — FR-11 to FR-15, FR-19 against
+  real `cargo`, `mvn` and `kotlinc`
 - `tests/e2e/capabilities/sandbox/test_preflight_reports_the_prepare_plan_e2e.py` — FR-10 through the
   real `sw` CLI in a subprocess
 
-`python scripts/check_fr_coverage.py TECH-031` exits 0: ten FRs, each planned and each carried by an
-authoritative `Proves:` tag in two files.
+`python scripts/check_fr_coverage.py TECH-031` exits 0: nineteen FRs, each planned and each carried
+by an authoritative `Proves:` tag.
 
 **Each citation was checked by mutation against the file that claims it, and two of the ten failed
 that check first.** FR-3's assertion tested that `/cache/venv/bin` appeared *in* `PATH` rather than
