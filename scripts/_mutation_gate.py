@@ -92,6 +92,17 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
         return GateResult(True, f"report is {age_hours:.0f}h old — the scheduler may have stopped")
 
     report = _read_json(report_path, {})
+    # A red baseline invalidates every verdict in the report, which the summary already states in
+    # as many words. Checked before the findings, because there is no point asking whether findings
+    # were read when none of them mean anything. A report with no baseline recorded was run with
+    # `--no-baseline` and never claimed to know.
+    baseline = (report.get("summary") or {}).get("baseline")
+    if baseline is not None and not baseline.get("green"):
+        return GateResult(
+            True,
+            f"the baseline was not green ({baseline.get('failed', '?')} failing), so every verdict "
+            f"in this report was judged against a tree whose suite never passed",
+        )
     # `TECH-056`: a **disposition**, not mere presence. `record_run` runs at the end of the same
     # session that discovers a finding and writes it as `{"runs": 1}` with nothing decided, so
     # keying on presence let every run mark its own findings read — and this gate then announced

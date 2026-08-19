@@ -106,3 +106,53 @@ class TestInstallTimer:
         monkeypatch.setattr(Path, "mkdir", _no_mkdir)
         with pytest.raises(OSError):
             mutation.install_timer(tmp_path / "nope")
+
+
+class TestTheUnitCarriesAUsablePath:
+    """A systemd user service inherits a minimal PATH, and `.venv/bin` is not on it.
+
+    The unit runs `.venv/bin/python` by absolute path, so Python itself starts — which is why this
+    looked fine. But the suite shells out: `tests/unit/test_architecture.py` invokes a bare `tach`,
+    and the tach pytest plugin does the same at collection. Without `.venv/bin` on PATH that is a
+    collection error, and a collection error makes the whole baseline red while naming no failing
+    test — which is exactly the shape the nightly report showed: `green=false, failed=0`.
+
+    Trap 2 in `docs/dev_guides/working_in_this_repo.md`, arriving by a route that guide does not
+    cover: the PATH is missing from a unit file rather than from a shell.
+
+    Proves: TECH-058 FR-2
+    """
+
+    def test_the_service_sets_a_path_including_the_venv(self) -> None:
+        from _mutation_timer import timer_units
+
+        service = timer_units()["service"]
+
+        path_lines = [line for line in service.splitlines() if line.startswith("Environment=PATH=")]
+        assert path_lines, f"no PATH is set, so the suite cannot find `tach`:\n{service}"
+        assert ".venv/bin" in path_lines[0], path_lines[0]
+
+    def test_the_path_is_absolute(self) -> None:
+        """A relative entry breaks the moment a test chdirs into a temp worktree — the same trap,
+        one line further down the guide."""
+        from _mutation_timer import timer_units
+
+        path_line = next(
+            line
+            for line in timer_units()["service"].splitlines()
+            if line.startswith("Environment=PATH=")
+        )
+        value = path_line.removeprefix("Environment=PATH=")
+        venv_entry = next(p for p in value.split(":") if ".venv/bin" in p)
+        assert venv_entry.startswith("/"), venv_entry
+
+    def test_the_system_directories_survive(self) -> None:
+        """The control: prepending the venv must not drop `/usr/bin`, or `git` and `podman` vanish."""
+        from _mutation_timer import timer_units
+
+        path_line = next(
+            line
+            for line in timer_units()["service"].splitlines()
+            if line.startswith("Environment=PATH=")
+        )
+        assert "/usr/bin" in path_line, path_line

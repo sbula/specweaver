@@ -393,7 +393,10 @@ def _cmd_gate(args: Any) -> int:
     print(f"BLOCKED: {result.reason}")
     for finding in result.unconfirmed:
         print(f"  unconfirmed: {finding}")
-    print("\nconfirm with: mutation.py --confirm '<id>' --as <disposition> --why '<why>'")
+    if result.unconfirmed:
+        # Only when there is something to confirm. A block on staleness or a red baseline is not
+        # fixed by recording a disposition, and offering that sends the reader nowhere.
+        print("\nconfirm with: mutation.py --confirm '<id>' --as <disposition> --why '<why>'")
     return 1
 
 

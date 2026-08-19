@@ -46,6 +46,10 @@ Documentation=file://{REPO_ROOT}/docs/dev_guides/writing_mutation_campaigns.md
 Type=oneshot
 WorkingDirectory={REPO_ROOT}
 Environment=PY_COLORS=0
+# A user service inherits a minimal PATH without `.venv/bin`. Python starts anyway, because
+# ExecStart names the interpreter absolutely — but the suite shells out to a bare `tach`, and
+# without it that is a collection error, which makes the baseline red while naming no failing test.
+Environment=PATH={REPO_ROOT}/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart={python} {REPO_ROOT}/scripts/mutation.py --corpus-dir docs/roadmap/features
 """
     timer = f"""[Unit]

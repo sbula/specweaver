@@ -223,3 +223,53 @@ class TestOverrideCensus:
         """The whole point of a ratchet: debt may be repaid, never taken on silently."""
         assert gate.ratchet_ok(current=1, baseline=2) is True
         assert gate.ratchet_ok(current=2, baseline=2) is True
+
+
+class TestARedBaselineBlocks:
+    """A run whose baseline was red proves nothing, and the gate must not call it clear.
+
+    The report already records this and the summary already says it in as many words — *every
+    verdict below is meaningless while the baseline is red* — but the gate never read the field. So
+    the nightly announced `CLEAR: every finding carries a disposition` about twenty-six mutants that
+    had been judged against a tree whose suite never ran.
+
+    That is the same failure the gate exists to prevent, one level up: not a finding nobody read,
+    but a whole session nobody could have learned anything from.
+
+    Proves: TECH-056 FR-2
+    """
+
+    @staticmethod
+    def _report(tmp_path, baseline: dict) -> Path:
+        report = tmp_path / "mutation_report.json"
+        report.write_text(
+            json.dumps({"summary": {"baseline": baseline, "verdict": "PASSED"}, "campaigns": []}),
+            encoding="utf-8",
+        )
+        return report
+
+    def test_a_red_baseline_blocks_even_with_no_findings(self, gate, tmp_path) -> None:
+
+        report = self._report(tmp_path, {"green": False, "failed": 0})
+        ledger = tmp_path / "ledger.json"
+
+        result = gate.gate_verdict(report, ledger)
+
+        assert result.blocked, "a session judged against a broken tree was reported as clear"
+        assert "baseline" in result.reason.lower(), result.reason
+
+    def test_a_green_baseline_is_judged_on_its_findings(self, gate, tmp_path) -> None:
+        """The control: the new rule must not swallow the one the gate already had."""
+        report = self._report(tmp_path, {"green": True, "failed": 0})
+        ledger = tmp_path / "ledger.json"
+
+        result = gate.gate_verdict(report, ledger)
+
+        assert not result.blocked, result.reason
+
+    def test_a_report_with_no_baseline_recorded_is_judged_as_before(self, gate, tmp_path) -> None:
+        """A session run with `--no-baseline` says nothing about the tree, and never claimed to."""
+        report = tmp_path / "mutation_report.json"
+        report.write_text(json.dumps({"summary": {"verdict": "PASSED"}, "campaigns": []}), "utf-8")
+
+        assert not gate.gate_verdict(report, tmp_path / "ledger.json").blocked
