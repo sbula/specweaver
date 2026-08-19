@@ -81,10 +81,27 @@ Neither case needs a third kind of entry, and neither edits closed work.
 * `check_retirement_targets.py` loses its subject once the family is gone. Until then it still holds
   the retirements already recorded.
 
+## The sweep, as executed 2026-08-19
+
+* The 28 contract documents are `docs/roadmap/stories/US-NN.md`, holding each story's own path list.
+* The 46 `INT-US` entry lines and the `-MIG` ledger section left `master_story_roadmap.md`. One
+  preamble line says where a story's paths live.
+* `check_delivered_claims.py`, `check_proof_tier.py`, `check_story_preconditions.py`,
+  `check_retirement_targets.py`, `session_handover.py`, `_story_resolution.py` and `tests.py` were
+  re-pointed. `tests.py` takes `US-21`; the retired id fails naming what to pass instead.
+* Four defects surfaced and were fixed rather than frozen: a proof-tier parser blinded by the missing
+  id, an entry block cut at any bold label, two documents whose bullet shape no parser had ever read,
+  and four citations naming test files that no longer existed. The proof-tier baseline is now empty
+  and the FR sweep re-froze 148 → 136.
+
+**The identifiers already spent are frozen, not renamed.** The 8 design directories under
+`features/topic_08_integration/`, their FR tables, and roughly 175 test files citing `INT-US-24 FR-3`
+are the record of delivered work. Renaming them would break every citation without changing what was
+built, so `INT-US-NN FR-N` stays readable and no new one is minted.
+
 ## What is knowingly not decided here
 
-* **The migration order.** 207 roadmap documents, 19 gate scripts and 14 skill files reference the
-  family. This ADR states the target; the sweep is its own work, and until it lands the registry
-  holds both shapes.
 * **Whether a spanning test is `integration` or `e2e` tier.** Unchanged: the tier follows what the
   test drives, which `check_proof_tier.py` already judges.
+* **The 10 stories citing no spanning test.** 18 of 28 cite one. The rest are `⬜`, and under clause 6
+  each becomes a `TECH` ticket when someone picks it up — not a backfill programme decided here.
