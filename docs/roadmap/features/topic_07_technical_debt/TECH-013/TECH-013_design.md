@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-013
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: DELIVERED 2026-08-19
 - **Origin**: Recorded during `C-EXEC-06 SF-03`'s implementation-plan Phase 4 (2026-07-20). SF-03 wires
   per-run (session) isolation policy at the **CLI** composition roots only (matching where `enforce_isolation`
   already lives) and explicitly deferred the **API** run sites to this ticket.
@@ -41,14 +41,51 @@ boundary and keep the sub-feature tight. The shared policy-resolution helper SF-
 sites when this ticket is picked up — the fix is expected to be small (call the same helper alongside an
 `enforce_isolation` resolution at each API run site).
 
-## Candidate Approaches (not yet designed)
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | The policy decision has one home | `apply_isolation_policy` | freezes both the per-step and per-run policies onto a context from resolved settings | the CLI and the API answer the question the same way, because they call the same function rather than each carrying a copy |
+| FR-2 | Every API run root resolves it | `start_pipeline_run`, `resume_run`, `submit_gate_decision` | resolve settings and apply the policy before the run begins | an API-triggered run honours `[sandbox]` isolation, instead of running with it off because of which door the run came through |
+
+## What the fix was
+
+The resolver lived in `core/flow/interfaces/cli.py` as a private function, beside one of the two
+composition roots `ADR-002` defines. It moved to `core/flow/engine/isolation.py`, next to
+`apply_session_policy`, which it already called.
+
+**It takes resolved settings rather than a database**, and that is the shape decision. The CLI
+resolves synchronously and the API with `load_settings_async`; sharing a function that loads settings
+itself would have meant calling the sync loader inside an async endpoint and blocking the event loop
+in order to share the part that was never the problem. What is shared is the *application* of the
+policy, which is the part that was missing.
+
+All three endpoints call it, not just the one the ticket's example named — `resume_run` and
+`submit_gate_decision` build a `RunContext` too, and a fix applied to `start_pipeline_run` alone
+would have looked complete.
+
+## One trap recorded
+
+The helper was first inserted directly above `async def start_pipeline_run`, which put it **between
+the route decorator and its endpoint**. FastAPI then treated the helper as the decorated route and
+refused to build the app at all: `Invalid args for response field ... Database`. Three test modules
+failed at collection, none of them about isolation.
+
+## Verifiable Proof
+
+| FR | Test |
+|---|---|
+| FR-1 | `tests/integration/interfaces/api/test_api_run_isolation_policy.py` — reading the per-step policy as `False`, or skipping the per-run half, each fail one. The disabled-policy control is what stops an always-on resolver passing |
+| FR-2 | the same file — removing the call from one endpoint fails the structural check, which is the regression the three-root shape invites |
+
+## Candidate Approaches (as filed)
 1. **Reuse the CLI helper at each API run site** — recommended; call `apply_session_policy(context, settings,
    logger)` (and resolve `enforce_isolation`) in `start_pipeline_run`/`resume_run`/`submit_gate_decision`.
 2. **Centralize composition-root policy resolution** — one factory that both CLI and API call to build a
    fully-policied `RunContext`, eliminating the drift risk entirely (larger; overlaps with `TECH-006`'s
    RunContext-God-Object concerns).
 
-## Non-Goals (proposed, pending design)
+## Non-Goals
 - Changing isolation semantics or the `allowed_paths` derivation (owned by `C-EXEC-06`).
 - The broader RunContext-construction refactor (that's `TECH-006`).
 

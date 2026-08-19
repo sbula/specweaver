@@ -314,3 +314,66 @@ async def test_drift_handler_analyze_failure(tmp_path: Path, plan_yaml_content: 
     assert result.output["is_drifted"] is True
     assert "llm_root_cause" in result.output
     assert "LLM analysis failed: API Timeout" in result.output["llm_root_cause"]
+
+
+async def test_a_non_python_target_is_distinguishable_from_a_clean_one(
+    tmp_path: Path, plan_yaml_content: str
+) -> None:
+    """`B-VAL-01` P-6: an unchecked file must not report the same thing as a checked, clean one.
+
+    Proves: B-VAL-01 P-6
+
+    The handler returned `PASSED` with `drift_count: 0` for any suffix that is not `.py`, so a
+    polyglot repository's drift check read as clean rather than as unchecked and a caller could not
+    tell the two apart. The AST layer beneath it is polyglot — java, kotlin, rust and typescript
+    parsers all ship — so the silence was the gate's, not the parsers'.
+
+    This is the decision `TECH-064` took for architecture checks, applied to the same shape here:
+    **unsupported must not look like clean**. It stays `PASSED`, because a language this tool does
+    not parse is not the project's fault and failing the step would break every polyglot pipeline;
+    what changes is that the result says so, in a field a caller can read.
+    """
+    plan_file = tmp_path / "plan.yaml"
+    plan_file.write_text(plan_yaml_content)
+    target = tmp_path / "src" / "Service.java"
+    target.parent.mkdir()
+    target.write_text("public class Service { }\n", encoding="utf-8")
+
+    step = PipelineStep(
+        name="drift_check",
+        action=StepAction.DETECT,
+        target=StepTarget.DRIFT,
+        params={"target_path": str(target), "plan_path": str(plan_file)},
+    )
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
+
+    result = await DriftCheckHandler().execute(step, context)
+
+    assert result.status == StepStatus.PASSED
+    assert result.output["drift_count"] == 0
+    assert result.output.get("note"), "an unchecked file reports exactly like a clean one"
+    assert ".java" in result.output["note"]
+
+
+async def test_a_checked_clean_file_carries_no_such_note(
+    tmp_path: Path, plan_yaml_content: str
+) -> None:
+    """The control. A note on every result would make the field meaningless."""
+    plan_file = tmp_path / "plan.yaml"
+    plan_file.write_text(plan_yaml_content)
+    target = tmp_path / "src" / "test.py"
+    target.parent.mkdir()
+    target.write_text("def my_func(x, y) -> int:\n    return x + y\n", encoding="utf-8")
+
+    step = PipelineStep(
+        name="drift_check",
+        action=StepAction.DETECT,
+        target=StepTarget.DRIFT,
+        params={"target_path": str(target), "plan_path": str(plan_file)},
+    )
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
+
+    result = await DriftCheckHandler().execute(step, context)
+
+    assert result.status == StepStatus.PASSED
+    assert not result.output.get("note")

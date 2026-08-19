@@ -58,6 +58,38 @@ def _derive_allowed_paths(spec_path: Path) -> list[str]:
     return [f"src/{stem}.py", f"tests/test_{stem}.py"]
 
 
+def apply_isolation_policy(
+    context: RunContext,
+    settings: Any,
+    logger: logging.Logger,
+) -> None:
+    """Freeze BOTH worktree-isolation policies onto the context, from resolved settings.
+
+    Per-step (`enforce_isolation`) and per-run (`session_isolation` + `allowed_paths`). This is the
+    composition-root decision `ADR-002` places at the edge, and it lives here rather than beside one
+    edge because there are two: `sw run`/`sw resume` and the API's run endpoints. It used to live in
+    the CLI module alone, so an API-triggered run executed with isolation off whatever `[sandbox]`
+    declared.
+
+    Takes RESOLVED settings rather than a database, because the two roots resolve differently — the
+    CLI synchronously, the API with `load_settings_async` — and calling the sync loader inside an
+    async endpoint would block the event loop to share code that is not the part worth sharing.
+
+    Deliberately does NOT populate `context.model.config`: that would also expose
+    `[sandbox] execution_mode` and incidentally activate container QA on this path.
+
+    **Best-effort by contract:** a settings-resolution failure must never crash a run, so the
+    policies fall back to their defaults (off).
+    """
+    try:
+        context.isolation = context.isolation.model_copy(
+            update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
+        )
+        apply_session_policy(context, settings, logger)
+    except Exception:  # best-effort here — never crash a run over policy resolution
+        logger.debug("Could not apply worktree isolation policy; defaults (off) will be used.")
+
+
 def apply_session_policy(
     context: RunContext,
     settings: Any,

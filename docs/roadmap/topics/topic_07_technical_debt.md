@@ -174,7 +174,7 @@ critical for long-term project viability.
   > non-functional for multi-step untrusted loops: the reconcile never committed, and the second isolated step crashed. **✅ RESOLVED (2026-07-21) by `C-EXEC-06`** (per-run/session worktree isolation)
   > — retained as the record of the defect and of what fixed it.
 
-* **`TECH-013` 🔴: API Composition Roots Do Not Resolve Worktree-Isolation Policy**
+* **`TECH-013` 🟢: API Composition Roots Do Not Resolve Worktree-Isolation Policy**
   > [Description](../features/topic_07_technical_debt/TECH-013/TECH-013_design.md) | _Status: STUB. Origin: recorded during `C-EXEC-06 SF-03` implementation-plan Phase 4 (2026-07-20)._ |
   > `C-EXEC-06 SF-03` wired session-isolation policy on the **CLI** composition root only. The API run sites (`interfaces/api/v1/pipelines.py`) resolve neither `enforce_isolation` nor the session
   > policy, so a run started through the REST API silently gets a different execution posture than the same run started from the CLI. `apply_session_policy` was written to be reusable verbatim here.

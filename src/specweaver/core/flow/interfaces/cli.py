@@ -302,20 +302,18 @@ def _apply_isolation_policy(context: RunContext, db: Database, project_path: Pat
     policies fall back to their defaults (off).
     """
     from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.flow.engine.isolation import apply_session_policy
+    from specweaver.core.flow.engine.isolation import apply_isolation_policy
 
     try:
         settings = load_settings(db, project_path.name)
-        context.isolation = context.isolation.model_copy(
-            update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
-        )
-        apply_session_policy(context, settings, logger)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(
             "Could not resolve settings for project '%s'; worktree isolation "
             "policy will use its default (off).",
             project_path.name,
         )
+        return
+    apply_isolation_policy(context, settings, logger)
 
 
 def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) -> None:

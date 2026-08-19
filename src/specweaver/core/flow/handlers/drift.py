@@ -70,12 +70,20 @@ class DriftCheckHandler:
 
         if target_path.suffix != ".py":
             logger.info(f"Skipping AST drift parsing for non-python file: {target_path}")
+            # `PASSED` with `drift_count: 0` and nothing else is what a CHECKED, clean file returns,
+            # so a caller could not tell "no drift" from "never looked". The step still passes — a
+            # language this tool does not parse is not the project's fault, and failing here would
+            # break every polyglot pipeline — but the result now says which of the two it is.
             return StepResult(
                 status=StepStatus.PASSED,
                 output={
                     "is_drifted": False,
                     "drift_count": 0,
                     "findings": [],
+                    "note": (
+                        f"Drift was not checked: no AST drift parser for '{target_path.suffix}' "
+                        "files. This is not a clean result."
+                    ),
                 },
                 started_at=started,
                 completed_at=_now_iso(),

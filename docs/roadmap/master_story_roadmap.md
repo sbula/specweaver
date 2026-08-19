@@ -64,7 +64,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 | Ticket | What you misread without it |
 |---|---|
-| `TECH-013` 🔴 | API composition roots do not resolve worktree-isolation policy, so a served run ignores it. |
+| `TECH-011` 🔴 | Pipeline step params are unvalidated at load, so a malformed step fails mid-run. |
 | `TECH-011` 🔴 | Pipeline step params are unvalidated at load, so a malformed step fails mid-run. |
 | `TECH-057` 🔴 | The nightly runs its mutants one at a time, so the corpus takes hours it need not. |
 
@@ -282,7 +282,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Code-to-Spec Drift Checking:**
+    *   🟢 **Code-to-Spec Drift Checking:**
         *   `✅` **B-VAL-01:** AST Drift Detection
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
@@ -456,7 +456,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Recursive Planning:**
+    *   🟢 **Recursive Planning:**
         *   `✅` **C-INTL-01:** Iterative Decomposition
     *   🔴 **Multi-Level Recursive Decomposition** *(the `AD-2` half `C-INTL-01` never built)*:
         *   `[ ]` **C-INTL-07:** Multi-Level Recursive Decomposition
@@ -556,7 +556,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
     *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
-    *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
+    *   `✅` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
     *   `✅` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
     *   `✅` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
     *   `✅` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)

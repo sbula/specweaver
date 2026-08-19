@@ -40,6 +40,68 @@ def list_pipelines() -> list[dict[str, str]]:
     return [{"name": n, "source": "bundled"} for n in names]
 
 
+async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) -> None:
+    """Rebuild a parked run's context and hand it back to the bridge.
+
+    `resume_run` and `submit_gate_decision` both do exactly this — a gate decision resumes the run it
+    unblocks — and they carried the same thirty lines twice. The isolation policy is one line each of
+    them needs, and a shared block is one place to forget it rather than two.
+    """
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
+
+    project_root = await resolve_project_root(run.project_name, db)
+    pipeline_def = load_pipeline(Path(run.pipeline_name))
+    context = RunContext(
+        project_path=project_root,
+        spec_path=Path(run.spec_path),
+        output_dir=project_root / "src",
+    )
+    await _apply_isolation(context, db, run.project_name)
+
+    from specweaver.interfaces.api.event_bridge import get_event_bridge
+
+    bridge = get_event_bridge()
+    runner = PipelineRunner(
+        pipeline_def,
+        context,
+        store=store,
+        on_event=bridge.make_event_callback(run_id),
+    )
+
+    try:
+        bridge.start_run(run_id, runner.resume(run_id))
+    except RuntimeError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="MAX_CONCURRENT_RUNS",
+            status_code=429,
+        ) from exc
+
+
+async def _apply_isolation(context: RunContext, db: Database, project: str) -> None:
+    """Resolve the worktree-isolation policy for an API-triggered run.
+
+    `ADR-002` puts this decision at the composition root, and there are two: the CLI's `sw run` /
+    `sw resume`, and these endpoints. Only the CLI resolved it, so an API-launched run executed with
+    isolation OFF whatever `[sandbox]` declared — untrusted generated code running against the real
+    worktree because of which door the run came through.
+
+    Async on purpose: the settings loader has an async form, and calling the sync one inside an
+    endpoint would block the event loop.
+    """
+    from specweaver.core.config.bootstrap.settings_loader import load_settings_async
+    from specweaver.core.flow.engine.isolation import apply_isolation_policy
+
+    try:
+        settings = await load_settings_async(db, project)
+    except Exception:  # best-effort by contract — a policy lookup must not fail a run
+        logger.debug("Could not resolve settings for '%s'; isolation defaults to off.", project)
+        return
+    apply_isolation_policy(context, settings, logger)
+
+
 @router.post("/pipelines/{name}/run", response_model=PipelineRunResponse)
 async def start_pipeline_run(
     name: str,
@@ -82,16 +144,12 @@ async def start_pipeline_run(
         )
 
     # Build context
-    # KNOWN GAP: the API run sites (this one, resume_run, submit_gate_decision) do not set
-    # `context.isolation.enforce_isolation` from
-    # `await load_settings_async(...).sandbox.enforce_worktree_isolation`, so API-launched runs
-    # ignore the worktree-isolation policy. The CLI `sw run`/`resume` paths do resolve it. Settings
-    # are reachable here via `db` + `body.project`; what is missing is an API-run test harness.
     context = RunContext(
         project_path=project_root,
         spec_path=spec_path,
         output_dir=project_root / "src",
     )
+    await _apply_isolation(context, db, body.project)
 
     # State store
     state_db = state_db_path()
@@ -205,8 +263,6 @@ async def resume_run(
     db: Database = _db_dep,
 ) -> PipelineRunResponse:
     """Resume a parked pipeline run."""
-    from specweaver.core.flow.engine.parser import load_pipeline
-    from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
@@ -229,33 +285,7 @@ async def resume_run(
         )
 
     # Rebuild context
-    project_root = await resolve_project_root(run.project_name, db)
-    pipeline_def = load_pipeline(Path(run.pipeline_name))
-    context = RunContext(
-        project_path=project_root,
-        spec_path=Path(run.spec_path),
-        output_dir=project_root / "src",
-    )
-
-    from specweaver.interfaces.api.event_bridge import get_event_bridge
-
-    bridge = get_event_bridge()
-    event_cb = bridge.make_event_callback(run_id)
-    runner = PipelineRunner(
-        pipeline_def,
-        context,
-        store=store,
-        on_event=event_cb,
-    )
-
-    try:
-        bridge.start_run(run_id, runner.resume(run_id))
-    except RuntimeError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="MAX_CONCURRENT_RUNS",
-            status_code=429,
-        ) from exc
+    await _resume_existing_run(run, run_id, db, store)
 
     return PipelineRunResponse(
         run_id=run_id,
@@ -313,35 +343,7 @@ async def submit_gate_decision(
         return {"detail": f"Run '{run_id}' rejected and marked as failed."}
 
     # Approve → resume
-    from specweaver.core.flow.engine.parser import load_pipeline
-    from specweaver.core.flow.engine.runner import PipelineRunner
 
-    project_root = await resolve_project_root(run.project_name, db)
-    pipeline_def = load_pipeline(Path(run.pipeline_name))
-    context = RunContext(
-        project_path=project_root,
-        spec_path=Path(run.spec_path),
-        output_dir=project_root / "src",
-    )
-
-    from specweaver.interfaces.api.event_bridge import get_event_bridge
-
-    bridge = get_event_bridge()
-    event_cb = bridge.make_event_callback(run_id)
-    runner = PipelineRunner(
-        pipeline_def,
-        context,
-        store=store,
-        on_event=event_cb,
-    )
-
-    try:
-        bridge.start_run(run_id, runner.resume(run_id))
-    except RuntimeError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="MAX_CONCURRENT_RUNS",
-            status_code=429,
-        ) from exc
+    await _resume_existing_run(run, run_id, db, store)
 
     return {"detail": f"Run '{run_id}' approved and resumed."}
