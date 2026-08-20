@@ -50,6 +50,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import re
 import shutil
@@ -57,6 +59,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -107,6 +110,42 @@ def apply_mutation(path: Path, old: str, new: str) -> None:
     if count > 1:
         raise ValueError(f"anchor appears {count} times in {path} — make it unique")
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def _log_records(path: Path) -> list[dict[str, Any]]:
+    """Every record pytest wrote, as objects.
+
+    Raises rather than returning nothing when the file is absent: no log means pytest died before
+    writing one, and reading that as "no test objected" is a false survival — the most expensive
+    wrong answer this runner can give.
+    """
+    if not path.is_file():
+        raise FileNotFoundError(f"pytest wrote no report log: {path}")
+    records: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.strip():
+            with contextlib.suppress(json.JSONDecodeError):
+                records.append(json.loads(line))
+    return records
+
+
+def killers_from_log(path: Path) -> list[str]:
+    """Test ids that objected, sorted, each named once however many phases failed."""
+    return sorted(
+        {
+            str(r["nodeid"])
+            for r in _log_records(path)
+            if r.get("$report_type") == "TestReport" and r.get("outcome") == "failed"
+        }
+    )
+
+
+def collection_failed(path: Path) -> bool:
+    """Whether pytest failed to collect — nothing ran, so nothing was measured."""
+    return any(
+        r.get("$report_type") == "CollectReport" and r.get("outcome") == "failed"
+        for r in _log_records(path)
+    )
 
 
 def killers(output: str) -> list[str]:
@@ -180,9 +219,21 @@ def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> 
     return _run_rc(cmd, cwd, env_extra)[0]
 
 
-def run_pytest(cmd: list[str], sandbox: Path, env: dict[str, str]) -> tuple[str, int]:
-    """A pytest run inside a sandbox, time-boxed. The only way this runner should start one."""
-    return _run_rc(cmd, sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
+def run_pytest(
+    cmd: list[str], sandbox: Path, env: dict[str, str]
+) -> tuple[str, int, list[str], bool]:
+    """A time-boxed pytest run whose results are **read**, not scraped.
+
+    Returns the output and exit code for diagnosis, plus the killers and whether collection
+    failed, both taken from `--report-log`. The human output is never parsed for results: a node
+    id is not recoverable from it once the id contains a space.
+    """
+    log = sandbox / ".mutation-report.jsonl"
+    log.unlink(missing_ok=True)
+    out, code = _run_rc([*cmd, f"--report-log={log}"], sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
+    if code == TIMEOUT_RC or not log.is_file():
+        return out, code, [], False
+    return out, code, killers_from_log(log), collection_failed(log)
 
 
 def _build_sandbox(sandbox: Path) -> None:
@@ -291,7 +342,7 @@ def run_one(
             cmd += tests.split()
         else:
             cmd += ["-n", "auto"]
-        out, code = run_pytest(cmd, sandbox, env)
+        out, code, found, collect_failed = run_pytest(cmd, sandbox, env)
     finally:
         target.write_text(original, encoding="utf-8")
 
@@ -307,9 +358,8 @@ def run_one(
             f"the test is waiting for.",
             "code": code,
         }
-    if is_broken(out):
+    if collect_failed or is_broken(out):
         return {"verdict": "BROKEN", "killers": [], "detail": out[-800:], "code": code}
-    found = killers(out)
     return {"verdict": verdict(found), "killers": found, "detail": "", "code": code}
 
 

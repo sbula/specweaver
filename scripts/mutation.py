@@ -249,8 +249,8 @@ def confirm_kill(sandbox: Path, killer_ids: list[str]) -> bool:
     if not killer_ids:
         return False
     cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider", *killer_ids]
-    _out, code = run_pytest(cmd, sandbox, _mutate.sandbox_env(sandbox))
-    return code == 0
+    _out, code, failed, broke = run_pytest(cmd, sandbox, _mutate.sandbox_env(sandbox))
+    return code == 0 and not failed and not broke
 
 
 def snapshot_cleanliness(sandbox: Path) -> set[str]:

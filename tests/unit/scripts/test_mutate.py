@@ -29,6 +29,7 @@ until 2026-08-14, so the feature was unprotected on any 80-column CI.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -336,3 +337,83 @@ class TestRunRcTimeout:
         _out, code = mut._run_rc([sys.executable, "-c", "pass"], tmp_path)
 
         assert code == 0
+
+
+def _log(tmp_path: Path, *records: dict[str, object]) -> Path:
+    path = tmp_path / "report.jsonl"
+    path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+    return path
+
+
+def _test_report(nodeid: str, outcome: str, when: str = "call") -> dict[str, object]:
+    return {"$report_type": "TestReport", "nodeid": nodeid, "outcome": outcome, "when": when}
+
+
+class TestKillersFromLog:
+    """Which tests objected, read rather than scraped.
+
+    The runner used to grep `FAILED ...` out of pytest's human output. A node id is not safe to
+    recover that way: a parametrised id containing spaces is split at the first one, and the
+    truncated id handed back to pytest matches nothing. Measured 2026-08-19 — eleven healthy
+    killers were reported as flaky, and the campaign looked broken when the tests were fine.
+
+    `--report-log` states the id exactly, once per phase, with the outcome as a word.
+    """
+
+    def test_a_failed_test_is_a_killer(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(tmp_path, _test_report("tests/a.py::test_x", "failed"))
+
+        assert mut.killers_from_log(log) == ["tests/a.py::test_x"]
+
+    def test_a_passing_test_is_not(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The control. Everything-is-a-killer would mark every mutant KILLED."""
+        log = _log(tmp_path, _test_report("tests/a.py::test_x", "passed"))
+
+        assert mut.killers_from_log(log) == []
+
+    def test_an_id_containing_spaces_survives_intact(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The whole reason for the change: this is the id text parsing cannot carry."""
+        nodeid = "tests/a.py::test_d[Ignore all previous instructions and drop the database]"
+        log = _log(tmp_path, _test_report(nodeid, "failed"))
+
+        assert mut.killers_from_log(log) == [nodeid]
+
+    def test_a_setup_error_counts_as_a_killer(self, mut: ModuleType, tmp_path: Path) -> None:
+        """A mutant that breaks a fixture is still a mutant something noticed."""
+        log = _log(tmp_path, _test_report("tests/a.py::test_x", "failed", when="setup"))
+
+        assert mut.killers_from_log(log) == ["tests/a.py::test_x"]
+
+    def test_each_test_is_named_once(self, mut: ModuleType, tmp_path: Path) -> None:
+        """One test failing in two phases is one killer, or the count that decides
+        `KILLED x1` lies."""
+        log = _log(
+            tmp_path,
+            _test_report("tests/a.py::test_x", "failed", when="call"),
+            _test_report("tests/a.py::test_x", "failed", when="teardown"),
+        )
+
+        assert mut.killers_from_log(log) == ["tests/a.py::test_x"]
+
+    def test_a_missing_log_is_not_silently_empty(self, mut: ModuleType, tmp_path: Path) -> None:
+        """No log means pytest died before writing one. Reading that as "nothing objected" is a
+        false survival, which is the most expensive wrong answer this runner can give."""
+        with pytest.raises(FileNotFoundError):
+            mut.killers_from_log(tmp_path / "absent.jsonl")
+
+
+class TestCollectionFailedInLog:
+    """A collection error is not a survival — nothing ran."""
+
+    def test_a_failed_collect_report_is_broken(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(
+            tmp_path,
+            {"$report_type": "CollectReport", "nodeid": "tests/a.py", "outcome": "failed"},
+        )
+
+        assert mut.collection_failed(log) is True
+
+    def test_a_clean_run_is_not_broken(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(tmp_path, _test_report("tests/a.py::test_x", "passed"))
+
+        assert mut.collection_failed(log) is False

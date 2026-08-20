@@ -400,14 +400,16 @@ class TestConfirmKill:
     def test_a_killer_that_passes_unmutated_is_confirmed(
         self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("1 passed\n", 0))
+        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("1 passed\n", 0, [], False))
         assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is True
 
     def test_a_killer_that_fails_unmutated_is_not_confirmed(
         self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         monkeypatch.setattr(
-            mutation, "run_pytest", lambda *a, **k: ("FAILED tests/a.py::test_x\n1 failed\n", 1)
+            mutation,
+            "run_pytest",
+            lambda *a, **k: ("1 failed\n", 1, ["tests/a.py::test_x"], False),
         )
         assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is False
 
@@ -417,7 +419,9 @@ class TestConfirmKill:
         """The cost control: one to three node ids, never the whole scope."""
         seen: list[list[str]] = []
         monkeypatch.setattr(
-            mutation, "run_pytest", lambda cmd, *a, **k: (seen.append(cmd), ("1 passed\n", 0))[1]
+            mutation,
+            "run_pytest",
+            lambda cmd, *a, **k: (seen.append(cmd), ("1 passed\n", 0, [], False))[1],
         )
         mutation.confirm_kill(tmp_path, ["tests/a.py::test_x", "tests/b.py::test_y"])
         assert "tests/a.py::test_x" in seen[0]
@@ -432,7 +436,9 @@ class TestConfirmKill:
         self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """[Hostile] A node id that no longer exists exits 4 and must not read as a green re-run."""
-        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("no tests ran\n", 4))
+        monkeypatch.setattr(
+            mutation, "run_pytest", lambda *a, **k: ("no tests ran\n", 4, [], False)
+        )
         assert mutation.confirm_kill(tmp_path, ["tests/gone.py::test_x"]) is False
 
     def test_the_session_uses_confirmations_answer_rather_than_assuming_it(
