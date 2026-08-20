@@ -93,6 +93,7 @@ class MutantRun:
     derived_id: str
     outcome: str
     killers: list[str] = field(default_factory=list)
+    killer_records: list[dict[str, Any]] = field(default_factory=list)
     detail: str = ""
     leaked: list[str] = field(default_factory=list)
     drift: str = "OK"
@@ -111,6 +112,7 @@ Verdict = _verdict_mod.Verdict
 is_finding = _verdict_mod.is_finding
 verdict_of = _verdict_mod.verdict_of
 campaign_verdict = _verdict_mod.campaign_verdict
+scope_killers = _verdict_mod.scope_killers
 
 
 #: The prefix every session sandbox carries. Used to recognise our own orphans and, just as
@@ -189,7 +191,7 @@ def confirm_kill(sandbox: Path, killer_ids: list[str]) -> bool:
     if not killer_ids:
         return False
     cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider", *killer_ids]
-    _out, code, failed, broke = run_pytest(cmd, sandbox, _mutate.sandbox_env(sandbox))
+    _out, code, failed, broke, _records = run_pytest(cmd, sandbox, _mutate.sandbox_env(sandbox))
     return code == 0 and not failed and not broke
 
 
@@ -333,6 +335,7 @@ def _run_mutant(sandbox: Path, mutant: Any, target: str, *, drift: str = "OK") -
         derived_id=mutant.derived_id,
         outcome=outcome_of(code),
         killers=list(raw["killers"]),
+        killer_records=list(raw.get("killer_records", [])),
         detail=str(raw.get("detail", "")),
         drift=drift,
     )
@@ -516,9 +519,12 @@ def _judge(
                     "derived_id": judgement.derived_id,
                     "verdict": judgement.verdict,
                     "reason": judgement.reason,
+                    "explanation": judgement.explanation,
                     "drift": judgement.drift,
                     "confirmed": run.confirmed,
-                    "killers": list(run.killers),
+                    # Scoped here because this is the only place that holds both the killers and
+                    # the campaign that asked for them.
+                    "killers": scope_killers(run.killer_records, scope=campaign.scope),
                     "leaked": list(run.leaked),
                     "detail": run.detail,
                 }

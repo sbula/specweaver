@@ -257,6 +257,47 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 4. SF-04
 5. SF-05 and SF-06 in parallel (both depend only on SF-04)
 
+## Data contract re-engineering (2026-08-20)
+
+**Recorded here by explicit exception.** `finished-stories-immutable` would make this a new ticket;
+the decision was to amend `TECH-049` instead, because the work re-shapes the structures this ticket
+defined rather than adding a capability beside them.
+
+The four JSON structures were duct-taped: shell output embedded in JSON, three verdict
+vocabularies at three levels, two overlapping free-text fields, derived counts stored beside the
+detail they can contradict, and a ledger that deleted a finding's history the moment it stopped
+appearing. Settled across six rounds of `/grill-me mutation-json`; the agreed contract is the
+authority for the stages below.
+
+**Vocabulary.** `report` is retired — it meant the JSON, the file and the prose. A session writes a
+**session record**; `--summary` renders it; the **ledger** is the durable part.
+
+**Verdicts name what we learned, not the mutant's fate.** `PROTECTED`, `UNPROTECTED`,
+`UNMEASURED`, each with a reason code taken from what the runner can actually distinguish.
+`KILLED`/`SURVIVED` invert against test semantics — the good line reads as the bad one — and that
+inversion confused the people designing the replacement twice in one sitting. Every verdict except
+`PROTECTED` is a finding; `INDETERMINATE` and `STALE` used to pass the gate, so two of the three
+ways to learn nothing were silent.
+
+**Stages.** A: vocabulary and reasons. B: killers carry `in_scope` and their crash message.
+C: session record drops every derived field. D: ledger keeps a history of state changes, closes
+rather than deletes, and distinguishes a fix from a withdrawal. E: campaign `schema: 2` with
+mutant provenance. F: the rename.
+
+### Measured while doing it, so it is not rediscovered
+
+- **A mutant must not make a test *wait*.** The campaign guide says to mutate a guard so it fails
+  closed; hanging is that rule's other shape and the guide does not name it. A mutant that removed
+  a WebSocket's terminal event left the nightly session blocked for eighty minutes with zero CPU,
+  having judged nothing. Runs are now time-boxed and a cut-off is `UNMEASURED`, never a survival.
+- **Test results are read, not scraped.** Parsing `FAILED …` out of pytest's console cannot carry a
+  node id containing a space — eleven healthy killers were reported flaky before anyone asked why.
+  `pytest-reportlog` is a dev dependency and the records are read as JSON.
+- **The doubles for `run_pytest` must match its arity.** Its return grew twice in one afternoon and
+  every unit test passed both times while a real session died on the unpack: four separate
+  monkeypatch lambdas had not grown with it. There is now one shared double, and a test that calls
+  the real function.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |

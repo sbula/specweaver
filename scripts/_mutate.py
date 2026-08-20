@@ -129,15 +129,51 @@ def _log_records(path: Path) -> list[dict[str, Any]]:
     return records
 
 
+#: pytest colours its assertion diffs and `reprcrash.message` keeps the escapes verbatim. A
+#: stored record is read by machines and by greps, neither of which has any use for them.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _crash_message(record: dict[str, Any]) -> str | None:
+    """The first line of why a test objected, or `None` when it left no crash repr.
+
+    Only the first line: `reprcrash.message` carries the whole assertion diff with colour codes,
+    and a record is for scanning. The full text is in the run's output, which is kept for
+    diagnosis.
+    """
+    longrepr = record.get("longrepr")
+    if not isinstance(longrepr, dict):
+        return None
+    crash = longrepr.get("reprcrash")
+    if not isinstance(crash, dict) or not crash.get("message"):
+        return None
+    return _ANSI.sub("", str(crash["message"]).splitlines()[0])
+
+
+def killer_records(path: Path) -> list[dict[str, Any]]:
+    """Which tests objected and why, sorted, one entry per test.
+
+    A bare node id cannot tell a mutant killed by the planted guard from one killed by an
+    unrelated fixture error — both read as a kill, and the campaign then certifies a requirement
+    nothing protects.
+    """
+    seen: dict[str, str | None] = {}
+    for record in _log_records(path):
+        if record.get("$report_type") != "TestReport" or record.get("outcome") != "failed":
+            continue
+        nodeid = str(record["nodeid"])
+        if seen.get(nodeid) is None:
+            seen[nodeid] = _crash_message(record)
+    return [{"nodeid": nodeid, "message": seen[nodeid]} for nodeid in sorted(seen)]
+
+
 def killers_from_log(path: Path) -> list[str]:
-    """Test ids that objected, sorted, each named once however many phases failed."""
-    return sorted(
-        {
-            str(r["nodeid"])
-            for r in _log_records(path)
-            if r.get("$report_type") == "TestReport" and r.get("outcome") == "failed"
-        }
-    )
+    """Test ids that objected, sorted, each named once however many phases failed.
+
+    Derived from `killer_records` rather than parsed again: two readers of one log are two things
+    that can disagree, and a disagreement here means one of them is lying about coverage.
+    """
+    return [str(record["nodeid"]) for record in killer_records(path)]
 
 
 def collection_failed(path: Path) -> bool:
@@ -221,7 +257,7 @@ def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> 
 
 def run_pytest(
     cmd: list[str], sandbox: Path, env: dict[str, str]
-) -> tuple[str, int, list[str], bool]:
+) -> tuple[str, int, list[str], bool, list[dict[str, Any]]]:
     """A time-boxed pytest run whose results are **read**, not scraped.
 
     Returns the output and exit code for diagnosis, plus the killers and whether collection
@@ -235,8 +271,14 @@ def run_pytest(
         args = [*cmd, f"--report-log={log}"]
         out, code = _run_rc(args, sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
         if code == TIMEOUT_RC or not log.is_file():
-            return out, code, [], False
-        return out, code, killers_from_log(log), collection_failed(log)
+            return out, code, [], False, []
+        return (
+            out,
+            code,
+            killers_from_log(log),
+            collection_failed(log),
+            killer_records(log),
+        )
 
 
 def _build_sandbox(sandbox: Path) -> None:
@@ -326,6 +368,7 @@ def run_one(
         return {
             "verdict": "BROKEN",
             "killers": [],
+            "killer_records": [],
             "detail": f"{file} not in the sandbox",
             "code": 3,
         }
@@ -345,7 +388,7 @@ def run_one(
             cmd += tests.split()
         else:
             cmd += ["-n", "auto"]
-        out, code, found, collect_failed = run_pytest(cmd, sandbox, env)
+        out, code, found, collect_failed, records = run_pytest(cmd, sandbox, env)
     finally:
         target.write_text(original, encoding="utf-8")
 
@@ -356,14 +399,27 @@ def run_one(
         return {
             "verdict": "BROKEN",
             "killers": [],
+            "killer_records": [],
             "detail": f"timed out after {MUTANT_TIMEOUT_SECONDS:g}s — the mutant made a test wait "
             f"rather than fail. Choose one that breaks the behaviour without removing whatever "
             f"the test is waiting for.",
             "code": code,
         }
     if collect_failed or is_broken(out):
-        return {"verdict": "BROKEN", "killers": [], "detail": out[-800:], "code": code}
-    return {"verdict": verdict(found), "killers": found, "detail": "", "code": code}
+        return {
+            "verdict": "BROKEN",
+            "killers": [],
+            "killer_records": [],
+            "detail": out[-800:],
+            "code": code,
+        }
+    return {
+        "verdict": verdict(found),
+        "killers": found,
+        "killer_records": records,
+        "detail": "",
+        "code": code,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

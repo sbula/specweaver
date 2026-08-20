@@ -84,6 +84,7 @@ def _as_dict(result: Any) -> dict[str, Any]:
         "derived_id": result.derived_id,
         "verdict": result.verdict,
         "reason": result.reason,
+        "explanation": getattr(result, "explanation", ""),
         "drift": result.drift,
         "confirmed": getattr(result, "confirmed", False),
         "killers": list(getattr(result, "killers", [])),

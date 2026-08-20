@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -417,3 +418,225 @@ class TestCollectionFailedInLog:
         log = _log(tmp_path, _test_report("tests/a.py::test_x", "passed"))
 
         assert mut.collection_failed(log) is False
+
+
+class TestKillerRecordsFromLog:
+    """A killer says which test objected **and why**.
+
+    A bare node id cannot distinguish a mutant killed by the guard we planted from one killed by
+    an unrelated fixture error or a broken import. Both read `KILLED`, and the campaign then
+    certifies a requirement that nothing actually protects — the failure this whole tool exists to
+    catch, committed by the tool itself.
+
+    `reprcrash.message` is present on every failed record and was being discarded.
+    """
+
+    def _failed(self, nodeid: str, message: str | None) -> dict[str, object]:
+        record: dict[str, object] = {
+            "$report_type": "TestReport",
+            "nodeid": nodeid,
+            "outcome": "failed",
+            "when": "call",
+        }
+        if message is not None:
+            record["longrepr"] = {"reprcrash": {"message": message}}
+        return record
+
+    def test_a_killer_carries_the_reason_it_objected(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(tmp_path, self._failed("tests/a.py::test_x", "AssertionError: guard missing"))
+
+        assert mut.killer_records(log) == [
+            {"nodeid": "tests/a.py::test_x", "message": "AssertionError: guard missing"}
+        ]
+
+    def test_only_the_first_line_of_the_message_is_kept(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        """`reprcrash.message` carries the whole assertion diff, colour codes and all. The first
+        line is what a human scans; the rest belongs in the failure output, not in a record."""
+        log = _log(
+            tmp_path,
+            self._failed("tests/a.py::test_x", "AssertionError: boom\nassert 1 == 2\n  - 2"),
+        )
+
+        assert mut.killer_records(log)[0]["message"] == "AssertionError: boom"
+
+    def test_a_failure_with_no_message_is_still_a_killer(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        """Graceful degradation: a test can fail without a crash repr, and losing the killer
+        would turn a real kill into a false survival."""
+        log = _log(tmp_path, self._failed("tests/a.py::test_x", None))
+
+        records = mut.killer_records(log)
+
+        assert records[0]["nodeid"] == "tests/a.py::test_x"
+        assert records[0]["message"] is None
+
+    def test_a_passing_test_is_not_a_record(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The control."""
+        log = _log(tmp_path, _test_report("tests/a.py::test_x", "passed"))
+
+        assert mut.killer_records(log) == []
+
+    def test_records_and_ids_agree(self, mut: ModuleType, tmp_path: Path) -> None:
+        """Two readers of the same log must not disagree about who objected."""
+        log = _log(
+            tmp_path,
+            self._failed("tests/b.py::test_y", "boom"),
+            self._failed("tests/a.py::test_x", "bang"),
+        )
+
+        assert [r["nodeid"] for r in mut.killer_records(log)] == mut.killers_from_log(log)
+
+
+class TestRunPytestContract:
+    """`run_pytest` returns what its callers unpack.
+
+    Story 4, and the only test here that would have caught the real bug. The return grew from two
+    values to four, then to five, and **every unit test passed both times** while a real session
+    died on the unpack — because the callers were monkeypatched with doubles that had not grown
+    with it. A mock proving the mock, twice in one afternoon.
+
+    So this calls the real function against a real pytest run. It is the arity, the order and the
+    types that matter; the numbers in them are pytest's business.
+    """
+
+    def _suite(self, tmp_path: Path, body: str) -> Path:
+        target = tmp_path / "test_probe.py"
+        target.write_text(body, encoding="utf-8")
+        return target
+
+    def _cmd(self, target: Path) -> list[str]:
+        return [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(target)]
+
+    def test_it_returns_the_five_values_its_callers_unpack(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        target = self._suite(tmp_path, "def test_ok():\n    assert True\n")
+
+        result = mut.run_pytest(self._cmd(target), tmp_path, dict(os.environ))
+
+        assert len(result) == 5, "callers unpack five; a change here breaks them silently"
+
+    def test_the_five_are_output_code_killers_collected_records(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        """Order matters as much as arity — a swapped pair unpacks fine and means nothing."""
+        target = self._suite(tmp_path, "def test_fails():\n    assert False, 'boom'\n")
+
+        out, code, killers, collect_failed, records = mut.run_pytest(
+            self._cmd(target), tmp_path, dict(os.environ)
+        )
+
+        assert isinstance(out, str)
+        assert code != 0
+        assert killers == ["test_probe.py::test_fails"]
+        assert collect_failed is False
+        assert [r["nodeid"] for r in records] == killers
+
+    def test_records_and_killers_never_disagree(self, mut: ModuleType, tmp_path: Path) -> None:
+        """Two readers of one log. If they can disagree, one of them is lying about coverage."""
+        target = self._suite(
+            tmp_path,
+            "def test_a():\n    assert False\ndef test_b():\n    assert True\n",
+        )
+
+        _out, _code, killers, _collect, records = mut.run_pytest(
+            self._cmd(target), tmp_path, dict(os.environ)
+        )
+
+        assert [r["nodeid"] for r in records] == killers
+
+    def test_a_run_that_overruns_still_returns_the_same_shape(
+        self, mut: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Story 3. The timeout path is the one that returns early, so it is the one most likely
+        to be left behind when the tuple grows."""
+        monkeypatch.setattr(mut, "MUTANT_TIMEOUT_SECONDS", 1.0)
+        cmd = [sys.executable, "-c", "import time; time.sleep(30)"]
+
+        out, code, killers, collect_failed, records = mut.run_pytest(
+            cmd, tmp_path, dict(os.environ)
+        )
+
+        assert code == mut.TIMEOUT_RC
+        assert "timed out" in out.lower()
+        assert (killers, collect_failed, records) == ([], False, [])
+
+
+class TestKillerRecordsDeduplication:
+    """Story 1 — one test, one record, and the phase that had something to say wins.
+
+    A test can fail in `setup`, `call` and `teardown`. Only one of those usually carries a crash
+    message, and it is not always the first: a fixture that fails in teardown after the call
+    already failed reports its message second. Keeping whichever came first would drop the reason
+    and leave a killer that cannot explain itself.
+    """
+
+    def _failed(self, when: str, message: str | None) -> dict[str, object]:
+        record: dict[str, object] = {
+            "$report_type": "TestReport",
+            "nodeid": "tests/a.py::test_x",
+            "outcome": "failed",
+            "when": when,
+        }
+        if message is not None:
+            record["longrepr"] = {"reprcrash": {"message": message}}
+        return record
+
+    def test_two_failing_phases_make_one_record(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(tmp_path, self._failed("call", "boom"), self._failed("teardown", "later"))
+
+        assert len(mut.killer_records(log)) == 1
+
+    def test_a_later_phase_supplies_a_message_the_first_lacked(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        log = _log(tmp_path, self._failed("call", None), self._failed("teardown", "the reason"))
+
+        assert mut.killer_records(log)[0]["message"] == "the reason"
+
+    def test_the_first_message_is_not_overwritten_by_a_later_one(
+        self, mut: ModuleType, tmp_path: Path
+    ) -> None:
+        """The control. The rule is "fill a gap", not "last one wins" — the call phase is where
+        the real assertion lives and a teardown error must not displace it."""
+        log = _log(
+            tmp_path, self._failed("call", "the real one"), self._failed("teardown", "noise")
+        )
+
+        assert mut.killer_records(log)[0]["message"] == "the real one"
+
+
+class TestCrashMessageIsPlainText:
+    """RED-1.1 — a machine-readable field must not carry terminal escapes.
+
+    pytest colours its assertion diffs, and `reprcrash.message` keeps the escape sequences
+    verbatim: a probe of a real failure showed `\x1b[91m` inside the message. The first line is
+    usually clean, which is exactly the kind of "usually" that ships. A consumer of this JSON —
+    a dashboard, a diff, a grep — has no reason to handle ANSI, and a colour code in a stored
+    record is noise nobody can read back.
+    """
+
+    def _record(self, message: str) -> dict[str, object]:
+        return {
+            "$report_type": "TestReport",
+            "nodeid": "tests/a.py::test_x",
+            "outcome": "failed",
+            "when": "call",
+            "longrepr": {"reprcrash": {"message": message}},
+        }
+
+    def test_escape_sequences_are_stripped(self, mut: ModuleType, tmp_path: Path) -> None:
+        log = _log(tmp_path, self._record("\x1b[91mAssertionError\x1b[0m: boom"))
+
+        assert mut.killer_records(log)[0]["message"] == "AssertionError: boom"
+
+    def test_plain_text_is_untouched(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The control: stripping must not eat ordinary punctuation."""
+        log = _log(tmp_path, self._record("AssertionError: assert '0.0.0.0' == '127.0.0.1'"))
+
+        assert mut.killer_records(log)[0]["message"] == (
+            "AssertionError: assert '0.0.0.0' == '127.0.0.1'"
+        )

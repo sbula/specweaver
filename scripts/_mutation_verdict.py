@@ -14,7 +14,7 @@ confused the people designing this vocabulary twice in one sitting.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class MutantRun(Protocol):
@@ -74,6 +74,23 @@ class Verdict:
 def _files_of(node_ids: list[str]) -> set[str]:
     """The files a list of node ids belongs to. Node ids are `path::test`."""
     return {node.split("::", 1)[0] for node in node_ids}
+
+
+def scope_killers(records: list[dict[str, Any]], *, scope: list[str]) -> list[dict[str, Any]]:
+    """Mark each killer with whether the campaign named its file.
+
+    Marked, never filtered: a bystander that objected is evidence about the scope, and dropping
+    it leaves a reader unable to see why the verdict went the way it did.
+    """
+    scoped = set(scope)
+    return [
+        {
+            "nodeid": record["nodeid"],
+            "in_scope": str(record["nodeid"]).split("::", 1)[0] in scoped,
+            "message": record.get("message"),
+        }
+        for record in records
+    ]
 
 
 def verdict_of(

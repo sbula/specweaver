@@ -392,6 +392,30 @@ class TestRunMutantDrift:
         assert run.outcome == "KILL", "a drifted mutant still runs and still reports its outcome"
 
 
+def fake_run_pytest(
+    output: str = "1 passed\n",
+    code: int = 0,
+    killers: list[str] | None = None,
+    collect_failed: bool = False,
+    records: list[dict[str, object]] | None = None,
+    *,
+    seen: list[list[str]] | None = None,
+):
+    """The ONE double for `run_pytest`, so its shape cannot drift per test.
+
+    Four separate lambdas stood here. `run_pytest` grew from two return values to four, then to
+    five, and each time every test passed while a real session died on the unpack — the doubles
+    had not grown with it. One definition means one edit.
+    """
+
+    def _double(cmd: list[str], *args: object, **kwargs: object) -> tuple[object, ...]:
+        if seen is not None:
+            seen.append(cmd)
+        return (output, code, killers or [], collect_failed, records or [])
+
+    return _double
+
+
 class TestConfirmKill:
     """`FR-6` — a killer only counts if it passes without the mutant.
 
@@ -404,7 +428,7 @@ class TestConfirmKill:
     def test_a_killer_that_passes_unmutated_is_confirmed(
         self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("1 passed\n", 0, [], False))
+        monkeypatch.setattr(mutation, "run_pytest", fake_run_pytest())
         assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is True
 
     def test_a_killer_that_fails_unmutated_is_not_confirmed(
@@ -413,7 +437,7 @@ class TestConfirmKill:
         monkeypatch.setattr(
             mutation,
             "run_pytest",
-            lambda *a, **k: ("1 failed\n", 1, ["tests/a.py::test_x"], False),
+            fake_run_pytest("1 failed\n", 1, killers=["tests/a.py::test_x"]),
         )
         assert mutation.confirm_kill(tmp_path, ["tests/a.py::test_x"]) is False
 
@@ -422,11 +446,7 @@ class TestConfirmKill:
     ) -> None:
         """The cost control: one to three node ids, never the whole scope."""
         seen: list[list[str]] = []
-        monkeypatch.setattr(
-            mutation,
-            "run_pytest",
-            lambda cmd, *a, **k: (seen.append(cmd), ("1 passed\n", 0, [], False))[1],
-        )
+        monkeypatch.setattr(mutation, "run_pytest", fake_run_pytest(seen=seen))
         mutation.confirm_kill(tmp_path, ["tests/a.py::test_x", "tests/b.py::test_y"])
         assert "tests/a.py::test_x" in seen[0]
         assert "tests/b.py::test_y" in seen[0]
@@ -440,9 +460,7 @@ class TestConfirmKill:
         self, mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """[Hostile] A node id that no longer exists exits 4 and must not read as a green re-run."""
-        monkeypatch.setattr(
-            mutation, "run_pytest", lambda *a, **k: ("no tests ran\n", 4, [], False)
-        )
+        monkeypatch.setattr(mutation, "run_pytest", fake_run_pytest("no tests ran\n", 4))
         assert mutation.confirm_kill(tmp_path, ["tests/gone.py::test_x"]) is False
 
     def test_the_session_uses_confirmations_answer_rather_than_assuming_it(
@@ -459,7 +477,7 @@ class TestConfirmKill:
             "run_one",
             lambda *a, **k: {"verdict": "KILLED", "killers": ["t::x"], "detail": "", "code": 1},
         )
-        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("", 0))
+        monkeypatch.setattr(mutation, "run_pytest", fake_run_pytest(""))
         monkeypatch.setattr(mutation, "confirm_kill", lambda *a, **k: False)
 
         results = mutation.run_corpus(_FakeCorpus(["a"]), sandbox=tmp_path, confirm=True)
@@ -490,7 +508,7 @@ class TestJudge:
                 "code": 1,
             },
         )
-        monkeypatch.setattr(mutation, "run_pytest", lambda *a, **k: ("", 0))
+        monkeypatch.setattr(mutation, "run_pytest", fake_run_pytest(""))
         monkeypatch.setattr(mutation, "confirm_kill", lambda *a, **k: True)
         monkeypatch.setattr(mutation._corpus, "load_corpus", lambda _p: _FakeCorpus(["m"]))
 
@@ -798,3 +816,77 @@ class TestVerdictVocabulary:
         assert mutation.is_finding("UNPROTECTED") is True
         assert mutation.is_finding("UNMEASURED") is True
         assert mutation.is_finding("PROTECTED") is False
+
+
+class TestScopeKillers:
+    """Each killer says whether the campaign asked for it.
+
+    The verdict already refuses a kill that only bystanders noticed, but it says so once, at the
+    top, in prose. A reader looking at three killers cannot tell which of them the campaign
+    actually named — so `out-of-scope-killer` has to be taken on trust, and a campaign whose scope
+    is subtly wrong looks the same as one that is right.
+    """
+
+    def test_a_killer_the_campaign_named_is_in_scope(self, mutation: ModuleType) -> None:
+        records = mutation.scope_killers(
+            [{"nodeid": "tests/a.py::test_x", "message": "boom"}], scope=["tests/a.py"]
+        )
+
+        assert records == [{"nodeid": "tests/a.py::test_x", "in_scope": True, "message": "boom"}]
+
+    def test_a_bystander_is_marked_rather_than_dropped(self, mutation: ModuleType) -> None:
+        """Dropping it would hide the evidence that something noticed — which is the fact a
+        human needs to fix the scope."""
+        records = mutation.scope_killers(
+            [{"nodeid": "tests/elsewhere.py::test_y", "message": None}], scope=["tests/a.py"]
+        )
+
+        assert records[0]["in_scope"] is False
+        assert records[0]["nodeid"] == "tests/elsewhere.py::test_y"
+
+    def test_scoping_is_by_file_not_by_prefix(self, mutation: ModuleType) -> None:
+        """[Hostile] `tests/a.py` must not match `tests/a_helpers.py`, which a prefix check would
+        wave through and quietly widen every campaign's scope."""
+        records = mutation.scope_killers(
+            [{"nodeid": "tests/a_helpers.py::test_x", "message": None}], scope=["tests/a.py"]
+        )
+
+        assert records[0]["in_scope"] is False
+
+    def test_an_empty_scope_makes_nothing_in_scope(self, mutation: ModuleType) -> None:
+        """The control: a campaign that names no files has not named these."""
+        records = mutation.scope_killers(
+            [{"nodeid": "tests/a.py::test_x", "message": None}], scope=[]
+        )
+
+        assert records[0]["in_scope"] is False
+
+
+class TestScopeKillersHostileInput:
+    """Story 2 — a node id that is not shaped like one must not widen the scope.
+
+    `in_scope` decides whether a kill counts. Splitting on `::` and taking the head means anything
+    without a separator becomes its own "file", and a campaign whose scope happened to contain
+    that string would accept it. The failure is silent and in the permissive direction, which is
+    the one that certifies unprotected code.
+    """
+
+    def test_a_nodeid_without_a_separator_is_not_in_scope(self, mutation: ModuleType) -> None:
+        records = mutation.scope_killers(
+            [{"nodeid": "not-a-node-id", "message": None}], scope=["tests/a.py"]
+        )
+
+        assert records[0]["in_scope"] is False
+
+    def test_an_empty_nodeid_is_not_in_scope(self, mutation: ModuleType) -> None:
+        records = mutation.scope_killers([{"nodeid": "", "message": None}], scope=["tests/a.py"])
+
+        assert records[0]["in_scope"] is False
+
+    def test_a_scope_entry_is_matched_whole_not_as_a_prefix(self, mutation: ModuleType) -> None:
+        """[Hostile] `tests/a.py` must not admit `tests/a.py.bak::test_x`."""
+        records = mutation.scope_killers(
+            [{"nodeid": "tests/a.py.bak::test_x", "message": None}], scope=["tests/a.py"]
+        )
+
+        assert records[0]["in_scope"] is False
