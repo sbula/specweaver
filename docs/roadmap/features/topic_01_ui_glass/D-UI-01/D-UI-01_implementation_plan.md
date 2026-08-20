@@ -1,5 +1,11 @@
 # Feature 3.7 — `sw serve` REST API Server
 
+**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5.** The plan predates the FR ledger and was written
+as three TDD phases; the requirements were written afterwards, from why the capability exists
+rather than from an inventory of its routes. One plan, one owner — a retrospective split
+across the three phases would be fiction. Proof and mutants are tabulated in
+`D-UI-01_design.md`.
+
 Expose SpecWeaver CLI operations as REST endpoints via a FastAPI server. Foundation for all external
 UIs (web dashboard 3.8, VS Code extension 3.23, IntelliJ plugin). WebSocket channel for real-time
 pipeline progress events.

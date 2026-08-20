@@ -2,7 +2,9 @@
 
 - **Feature ID**: E-VAL-03
 - **Epic**: Topic 05 (Validation)
-- **Status**: ✅ Delivered — this document is a **record**, not a plan.
+- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
+  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
+  review and any corrections it produces.
 
 ## What shipped
 
@@ -54,7 +56,17 @@ unit tier.
 | NFR-1 | Cost | One pass per line, and the input is bounded: `FilePromptAdapter` refuses a file over 10MB **before** reading or scanning it |
 | NFR-2 | Determinism | Pure text in, text out — no model call, no network, no clock |
 
-## Scope
+## NON-CONFORMANCE — the shipped scan is not AST-based
+
+**Ruled 2026-08-19: this does not conform to the specification and must be corrected.**
+
+The capability is *AST Prompt Injection Sanitization* and the registry says it scans source
+code **ASTs**. What shipped scans rendered text line by line. The reasoning below was mine
+alone and was never agreed — breadth and the absence of a per-language parser dependency do
+not license changing what the capability is. Until the scan walks the AST, this capability is
+🔧 and its FR-1 is unmet as specified.
+
+## Scope (as built, pending correction)
 
 Detection is **line-based over the text as rendered**, not a per-language AST walk. Where the
 skeleton path runs, `extract_ast_skeleton` has already reduced the file to signatures and

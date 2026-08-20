@@ -2,7 +2,9 @@
 
 - **Feature ID**: B-FLOW-05
 - **Epic**: Topic 03 (Flow Engine)
-- **Status**: ✅ Delivered — this document is a **record**, not a plan.
+- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
+  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
+  review and any corrections it produces.
 - **DAL**: B (Severe failure)
 
 ## What shipped
@@ -36,6 +38,19 @@ failure this capability exists to stop.
 
 Token counts come back on every response and need no price list. `max_tokens_per_run` bounds the
 case `max_spend_usd` cannot.
+
+## OPEN — the limits are not where they belong
+
+**Ruled 2026-08-19.** Every LLM access, payment, pricing, token-consumption and limit
+parameter is to live in **one central place**. Whether that place is a file or the database
+is **still undecided**, and this capability must not settle it by default.
+
+What shipped puts `max_spend_usd` and `max_tokens_per_run` on `LLMSettings`, beside the model
+and the API key. That is one more scattered home for a number that belongs in the central
+one. The ceilings themselves stand; their location does not.
+
+The values `$25`, `20,000,000` and the 80% warning threshold were chosen by the agent with no
+input. They are placeholders, not decisions.
 
 ## Functional Requirements
 

@@ -2,7 +2,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for WebSocket pipeline streaming endpoint."""
+"""A run's progress is visible while it runs, not only once it ends.
+
+Proves: D-UI-01 FR-2
+
+A pipeline run takes minutes and gates on human decisions partway through. A remote UI that
+could only poll for a final result would be unable to show a gate, which makes the whole
+orchestration surface useless for the tablet dashboard it exists to feed.
+
+The events are the same NDJSON the CLI's own JSON display emits, so the two front ends
+cannot drift into describing the same run differently.
+"""
 
 from __future__ import annotations
 

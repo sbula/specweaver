@@ -37,6 +37,22 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    in the Progress Tracker.
 4. If `<sf_id>` is omitted and the design has sub-features: ask the user which sub-feature
    to plan. Do NOT plan all sub-features at once.
+5. **The design's grilling reached an empty frontier.** The design carries a
+   **Decisions taken with the user** section, and every open question in it is answered.
+
+   > [!CAUTION]
+   > A plan turns decisions into work, so an unsettled decision becomes built code. `APPROVED` on
+   > a design that was never grilled means the approver saw the agent's guesses for the first time
+   > at the gate — which is a rubber stamp, not a review.
+   >
+   > If the section is missing or holds an open question, **stop and tell the user to run
+   > `/grill-me <ID>`**. You cannot invoke it yourself, and you must not work around it by asking
+   > the questions in your own words.
+   >
+   > **Never let a plan settle a number the design left open.** A default chosen in a plan is a
+   > decision nobody agreed, wearing an implementation detail's clothes — which is how a `$25`
+   > spend cap that bills real money shipped in one session with no input.
+
 
 > [!IMPORTANT]
 > **TEST TIER MUST MATCH THE CLAIM, NOT THE STORY TYPE (`TECH-017`, `ADR-003`).** Decide the tier

@@ -168,8 +168,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-VAL-01:** Validation Engine (Foundation)
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Security Defenses:**
-        *   `✅` **E-VAL-03:** AST Prompt Injection Sanitization
+    *   🔴 **Security Defenses:**
+        *   `[ ]` **E-VAL-03:** AST Prompt Injection Sanitization
     *   🟡 **Enforce Internal Architecture:**
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
         *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
@@ -178,8 +178,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
-    *   🟢 **Rubrics-as-Content:**
-        *   `✅` **C-VAL-05:** Rubrics-as-Content Validation
+    *   🔴 **Rubrics-as-Content:**
+        *   `[ ]` **C-VAL-05:** Rubrics-as-Content Validation
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
 
@@ -215,8 +215,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
-    *   🟢 **Graduated Autonomy:**
-        *   `✅` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
+    *   🔴 **Graduated Autonomy:**
+        *   `[ ]` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
@@ -232,8 +232,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-04:** Unified Runner Architecture
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Security Defenses:**
-        *   `✅` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
+    *   🔴 **Security Defenses:**
+        *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   🟢 **Context Mention Highlighting:**
@@ -355,7 +355,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
-    *   `✅` **B-SENS-03:** AST-based semantic chunking
+    *   `[ ]` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
         *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring)

@@ -2,7 +2,9 @@
 
 - **Feature ID**: C-FLOW-11
 - **Epic**: Topic 03 (Flow Orchestration)
-- **Status**: ✅ Delivered — this document is a **record**, not a plan.
+- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
+  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
+  review and any corrections it produces.
 - **DAL**: C (Enterprise Standard) — the dial is itself assurance policy.
 
 ## What shipped

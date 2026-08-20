@@ -2,7 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for project management API endpoints (Phase 1 of 3.7)."""
+"""Project management over HTTP: register, list, rename, remove, select.
+
+Proves: D-UI-01 FR-1
+
+Project selection is the operation every other endpoint depends on — without it a remote
+caller has no way to say which project a run belongs to, and the API is a set of commands
+with nothing to run them against.
+"""
 
 from __future__ import annotations
 

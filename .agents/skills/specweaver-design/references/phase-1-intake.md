@@ -37,6 +37,36 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 > Never start research on a poorly defined feature — the entire design will be wrong.
 > A vague working definition produces vague requirements, which produce wrong code.
 
+> [!CAUTION]
+> **Phase 1 does not end with a working definition. It ends with `/grill-me`.**
+>
+> Answering the four intake questions from a registry entry proves the entry is readable, not that
+> the scope is agreed. Everything a design does not ask, it decides. Measured 2026-08-19 across six
+> capabilities built in one session: **twenty-five product-visible decisions were taken by the
+> agent with no input** — a `$25` default spend cap that bills real money, the DAL level at which
+> an agent is allowed to improvise, an agent turn ceiling, a chunk size, which prompt surfaces
+> count as untrusted, and a detection strategy that **did not conform to the capability's own
+> specification**. Every one was documented in the design. Not one was agreed. Documenting a guess
+> does not stop it being a guess.
+>
+> So: **tell the user to run `/grill-me <ID>` and stop.** You cannot invoke it — it is reserved for
+> explicit user invocation, and replicating its workflow by other means is forbidden. Ask, then
+> wait.
+>
+> Take the grilling to an **empty frontier** before Phase 2. Its output is what Phase 3 binds
+> requirements to, and what Phase 6 reviews against. A design that reaches Phase 6 with decisions
+> the user is seeing for the first time has turned the approval gate into a rubber stamp.
+>
+> **Two things are never the agent's call**, whatever else the grilling settles:
+> - anything that **spends money** — token budgets, spend ceilings, model choice, retry counts that
+>   multiply cost;
+> - anything that **relaxes a security boundary** — a DAL threshold, a bind address, a credential
+>   path, a sandbox limit.
+>
+> Record the grilling's settled decisions in the design under **Decisions taken with the user**, one
+> line each. That section is what makes Phase 6 reviewable; without it the approval has nothing to
+> check the code against.
+
 > [!IMPORTANT]
-> **CHECKPOINT:** Phase 1 complete. Working definition written.
+> **CHECKPOINT:** Phase 1 complete. Working definition written **and the grilling closed**.
 > Proceed to Phase 2 (Research).

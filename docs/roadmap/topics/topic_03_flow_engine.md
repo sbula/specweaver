@@ -67,7 +67,7 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`C-FLOW-10` 🔜: Deferred Router Mapping (Advanced Routing & Conditional Flows)** (Legacy: 3.25)<br>
   > _(new)_ | Advanced routing beyond basic `C-FLOW-02` Router-Based Control: deferred/suspended routing with `GATE_PENDING` state persistence and resume (the `INT-US-04-SF05` "Advanced Routing &
   > Conditional Flows" integration target). Split from `C-FLOW-02` during capability-ID normalization — both were the legacy "3.25".
-* **`C-FLOW-11` ✅: Graduated Autonomy (DAL-Driven Execution-Mode Dial)**<br>
+* **`C-FLOW-11` 🔧: Graduated Autonomy (DAL-Driven Execution-Mode Dial)**<br>
   > [Design](../features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) | _(new, 2026-07-21)_ | Execution rigidity is a DAL-driven **policy dial**, not an architectural constant: steps carry
   > `mode: oneshot | agentic` (tri-state, `oneshot` shipped — zero regression), an install sets `[autonomy]`, and the run's own DAL refuses agentic above `agentic_max_dal`. `agentic` runs a
   > bounded work unit behind a replaceable `AgentRuntime`; the shipped one drives the run's LLM in a tool loop, capped by turns **and** the `B-FLOW-05` spend ceiling. The runtime binding stayed
@@ -89,7 +89,7 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)<br>
   > Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_
-* **`B-FLOW-05` ✅: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
+* **`B-FLOW-05` 🔧: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
   > [Design](../features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md) | _(new)_ | A run carries two ceilings — `llm.max_spend_usd` and `llm.max_tokens_per_run` — checked in
   > `TelemetryCollector` before every request and fed by every completed call. Both are finite by default: a breaker that ships disabled stops nothing, and `max_retries` counts attempts, not money.
   > Tokens are a second ceiling because a model absent from the cost table prices at `0.0`, so cost alone cannot bound it. Split from `B-FLOW-03` (Friction Detection) during capability-ID

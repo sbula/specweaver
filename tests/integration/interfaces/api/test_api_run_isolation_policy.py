@@ -4,6 +4,7 @@
 """An API-triggered run honours the same `[sandbox]` isolation policy the CLI does.
 
 Proves: TECH-013 FR-1, TECH-013 FR-2
+Proves: D-UI-01 FR-4
 
 Worktree-isolation policy is a composition-root decision (`ADR-002`), and there are two roots: the
 CLI's `sw run` / `sw resume`, and these endpoints. Only the CLI resolved it. So an API-launched run

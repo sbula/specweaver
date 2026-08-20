@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "feature": "D-UI-01",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "The API is not network-reachable by default",
+      "scope": ["tests/unit/interfaces/cli/routers/test_serve_binds_locally.py"],
+      "mutants": [
+        {
+          "id": "bind-wildcard",
+          "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
+          "symbol": "serve",
+          "old": "        \"127.0.0.1\",\n        \"--host\",",
+          "new": "        \"0.0.0.0\",\n        \"--host\",",
+          "breaks": "an unauthenticated API binds every interface, so anything on the network can start pipeline runs"
+        },
+        {
+          "id": "host-not-forwarded",
+          "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
+          "symbol": "serve",
+          "old": "        host=host,",
+          "new": "        host=\"0.0.0.0\",",
+          "breaks": "the declared default is ignored and the server binds every interface regardless"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A failure is a typed error, not a traceback",
+      "scope": ["tests/unit/interfaces/api/test_error_contract.py"],
+      "mutants": [
+        {
+          "id": "error-code-dropped",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "specweaver_error_handler",
+          "old": "content={\"detail\": exc.detail, \"error_code\": exc.error_code},",
+          "new": "content={\"detail\": exc.detail},",
+          "breaks": "a client has nothing stable to branch on and must parse English"
+        },
+        {
+          "id": "default-status-is-server-fault",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "SpecWeaverAPIError.__init__",
+          "old": "        status_code: int = 400,",
+          "new": "        status_code: int = 500,",
+          "breaks": "a caller error is reported as a server fault, telling the client to retry something that will fail identically"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A run's progress is observable while it runs",
+      "scope": ["tests/unit/interfaces/api/v1/test_ws.py"],
+      "mutants": [
+        {
+          "id": "no-terminal-event",
+          "file": "src/specweaver/interfaces/api/v1/ws.py",
+          "symbol": "pipeline_ws",
+          "old": "await websocket.send_text(json.dumps({\"event\": \"done\"}))",
+          "new": "pass",
+          "breaks": "the socket closes with no terminal event, so a dashboard cannot tell completion from a dropped connection"
+        }
+      ]
+    }
+  ]
+}

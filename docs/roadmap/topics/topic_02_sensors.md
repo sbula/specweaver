@@ -61,7 +61,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no
   > rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data. **-> NOTE: Once implemented, use the graph to extract
   > active workspace languages and dynamically inject them into CodeStructureAtom to perfectly prune unsupported tool schemas.**
-* **`B-SENS-03` ✅: AST Semantic Chunking** (Legacy: 4.2)<br>
+* **`B-SENS-03` 🔧: AST Semantic Chunking** (Legacy: 4.2)<br>
   > [Design](../features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md) | AST-based semantic chunking (RAG foundation): one chunk per top-level symbol plus the preamble belonging to none, each
   > carrying path/symbol/language so a hit can be cited. Oversized symbols split into numbered parts; a parser that raises falls back to line windows. One of two Core MVS items in `US-11`.
   > _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) — ORIGINS.md § CrewAI)_

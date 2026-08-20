@@ -66,6 +66,20 @@ After the Design Document is written, evaluate and present the following consist
 ---
 
 ## HITL Gate (Mandatory — Always Fires)
+> [!CAUTION]
+> **Approval reviews the decisions, not just the document.** Before you stop here, the design must
+> carry a **Decisions taken with the user** section listing what `/grill-me` settled — one line
+> each. If it is absent, the grilling never happened and this gate is the first time the user is
+> seeing the agent's choices. That is a rubber stamp; send them to `/grill-me <ID>` instead and do
+> not present the design for approval.
+>
+> **Present the guesses, not the summary.** State plainly, in the approval request: every
+> product-visible number the design chose, every surface it decided to treat as trusted or
+> untrusted, and anything the implementation does that its registry entry does not say. Measured
+> 2026-08-19: a capability named *AST Prompt Injection Sanitization* shipped a line-based regex
+> scan, with the divergence written into a Scope section nobody had agreed. The design read as
+> complete. It did not conform to its own specification.
+
 
 6.6. Present the answers to all checks above to the user, including the Red/Blue Team findings and any corrections made.
      **STOP. Wait for explicit approval before finalizing the design.**
