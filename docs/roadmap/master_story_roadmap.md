@@ -525,6 +525,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **A-VAL-01:** Protocol/Schema Analyzers (.proto, openapi)
     *   `✅` **C-VAL-04:** Traceability Matrix Check
 *   **Sub-Story Add-Ons:**
+    *   🔴 **Cross-Service Deep Contract Checking:**
+        *   `[ ]` **A-VAL-06:** Industry Standard Bridges — owns this story's P-3/P-4 seams (assigned 2026-08-20); also listed in US-19
     *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-VAL-04`; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
 
 ### 🟢 US-23: Enterprise Tool Extension (MCP)
