@@ -41,9 +41,13 @@ if TYPE_CHECKING:
 #: way every morning after.
 NIGHTLY_HOUR = 3
 
-#: Verdicts that require a human to have looked. `INDETERMINATE` and `STALE` are deliberately not
-#: here; see the module docstring.
-BLOCKING_VERDICTS = ("FAIL", "BROKEN")
+#: Verdicts that require a human to have looked — everything except a clean pass.
+#:
+#: This used to exclude `INDETERMINATE` and `STALE`, so two of the three ways to learn nothing
+#: passed the gate silently. Under the vocabulary that replaced them, learning nothing is a
+#: finding: `UNMEASURED` means the campaign, the tests or the environment is broken, and every one
+#: of those is fixed by a human, not by waiting.
+BLOCKING_VERDICTS = ("UNPROTECTED", "UNMEASURED")
 
 #: Dispositions that release the gate **without the finding being resolved**, and so are the ones
 #: the census counts. `real-gap` means you fixed it; `stale-refreshed` means you re-read the claim
@@ -77,9 +81,13 @@ def load_ledger(path: Path) -> dict[str, Any]:
     return data
 
 
-def findings_in(report: dict[str, Any]) -> list[dict[str, Any]]:
-    """Every result across every campaign, flattened."""
-    return [r for campaign in report.get("campaigns", []) for r in campaign.get("results", [])]
+def findings_in(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every mutant in a session record.
+
+    The record stores a flat list; campaign grouping is derived from a mutant's id when a reader
+    wants it. Nothing here needs the grouping, so nothing here reconstructs it.
+    """
+    return list(record.get("mutants", []))
 
 
 def last_expected_run(now: float) -> float:
@@ -135,9 +143,9 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
         if entry.get("disposition")
     }
     unconfirmed = [
-        f["derived_id"]
+        f["id"]
         for f in findings_in(report)
-        if f.get("verdict") in BLOCKING_VERDICTS and f["derived_id"] not in known
+        if f.get("verdict") in BLOCKING_VERDICTS and f["id"] not in known
     ]
     if unconfirmed:
         return GateResult(True, "findings nobody has looked at", sorted(unconfirmed))
@@ -152,9 +160,7 @@ def record_run(report_path: Path, ledger_path: Path) -> dict[str, Any]:
     """
     report = _read_json(report_path, {})
     ledger = load_ledger(ledger_path)
-    present = {
-        f["derived_id"] for f in findings_in(report) if f.get("verdict") in BLOCKING_VERDICTS
-    }
+    present = {f["id"] for f in findings_in(report) if f.get("verdict") in BLOCKING_VERDICTS}
 
     kept: dict[str, Any] = {}
     for derived_id in present:

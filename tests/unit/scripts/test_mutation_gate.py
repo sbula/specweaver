@@ -46,17 +46,9 @@ def _report(tmp_path: Path, *results: dict[str, Any], age_hours: float = 0.0) ->
     path.write_text(
         json.dumps(
             {
-                "summary": {"head": "abc1234", "verdict": "FAILED"},
-                "campaigns": [
-                    {
-                        "feature": "F",
-                        "requirement": "FR-1",
-                        "verdict": "FAILED",
-                        "mutants_declared": len(results),
-                        "verdicts_returned": len(results),
-                        "results": list(results),
-                    }
-                ],
+                "schema": 1,
+                "session": {"head": "abc1234"},
+                "mutants": list(results),
             }
         ),
         encoding="utf-8",
@@ -69,8 +61,8 @@ def _report(tmp_path: Path, *results: dict[str, Any], age_hours: float = 0.0) ->
     return path
 
 
-def _finding(verdict: str = "FAIL", ident: str = "F FR-1 m") -> dict[str, Any]:
-    return {"derived_id": ident, "verdict": verdict, "reason": "", "drift": "OK", "detail": ""}
+def _finding(verdict: str = "UNPROTECTED", ident: str = "F FR-1 m") -> dict[str, Any]:
+    return {"id": ident, "verdict": verdict, "reason": "", "drift": "OK", "detail": ""}
 
 
 def _ledger(tmp_path: Path, **entries: dict[str, Any]) -> Path:
@@ -95,7 +87,7 @@ class TestGateVerdict:
         changed nothing. The mutant said so. Only a report that would otherwise clear can prove
         staleness is what blocked it.
         """
-        report = _report(tmp_path, _finding("PASS"), age_hours=49)
+        report = _report(tmp_path, _finding("PROTECTED"), age_hours=49)
         result = gate.gate_verdict(report, _ledger(tmp_path))
         assert result.blocked is True
         assert "old" in result.reason
@@ -126,7 +118,7 @@ class TestGateVerdict:
         assert gate.gate_verdict(_report(tmp_path, _finding()), ledger).blocked is False
 
     def test_a_broken_finding_also_needs_confirming(self, gate: ModuleType, tmp_path: Path) -> None:
-        result = gate.gate_verdict(_report(tmp_path, _finding("BROKEN")), _ledger(tmp_path))
+        result = gate.gate_verdict(_report(tmp_path, _finding("UNMEASURED")), _ledger(tmp_path))
         assert result.blocked is True
 
     def test_indeterminate_alone_does_not_block(self, gate: ModuleType, tmp_path: Path) -> None:
@@ -135,15 +127,23 @@ class TestGateVerdict:
         Blocking here would train people to confirm noise, and a gate whose findings are mostly
         noise is one nobody reads.
         """
-        result = gate.gate_verdict(_report(tmp_path, _finding("INDETERMINATE")), _ledger(tmp_path))
-        assert result.blocked is False
+        result = gate.gate_verdict(_report(tmp_path, _finding("UNMEASURED")), _ledger(tmp_path))
+        assert result.blocked is True
 
-    def test_stale_alone_does_not_block(self, gate: ModuleType, tmp_path: Path) -> None:
-        result = gate.gate_verdict(_report(tmp_path, _finding("STALE")), _ledger(tmp_path))
-        assert result.blocked is False
+    def test_learning_nothing_is_not_a_free_pass(self, gate: ModuleType, tmp_path: Path) -> None:
+        """This inverted with the vocabulary, and the inversion is the point.
+
+        `INDETERMINATE` and `STALE` used not to block, on the reasoning that they were noise and a
+        gate full of noise goes unread. What that actually bought was two of the three ways to
+        learn nothing passing silently — a corpus can rot toward zero coverage while every morning
+        reads clear. `UNMEASURED` says the campaign, the tests or the machine is broken, and each
+        of those is fixed by a person.
+        """
+        result = gate.gate_verdict(_report(tmp_path, _finding("UNMEASURED")), _ledger(tmp_path))
+        assert result.blocked is True
 
     def test_a_passing_report_clears(self, gate: ModuleType, tmp_path: Path) -> None:
-        result = gate.gate_verdict(_report(tmp_path, _finding("PASS")), _ledger(tmp_path))
+        result = gate.gate_verdict(_report(tmp_path, _finding("PROTECTED")), _ledger(tmp_path))
         assert result.blocked is False
 
 
@@ -160,7 +160,7 @@ class TestRecordRun:
     def test_a_finding_that_disappeared_is_pruned(self, gate: ModuleType, tmp_path: Path) -> None:
         """[Boundary] The ledger describes today, not an archive of everything ever seen."""
         ledger = _ledger(tmp_path, **{"F FR-1 gone": {"disposition": "will-fix", "runs": 9}})
-        gate.record_run(_report(tmp_path, _finding("PASS")), ledger)
+        gate.record_run(_report(tmp_path, _finding("PROTECTED")), ledger)
         assert "F FR-1 gone" not in json.loads(ledger.read_text())["findings"]
 
     def test_a_new_finding_starts_at_one(self, gate: ModuleType, tmp_path: Path) -> None:

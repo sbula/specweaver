@@ -46,57 +46,41 @@ def rep() -> ModuleType:
 
 def _document(**overrides: Any) -> dict[str, Any]:
     doc: dict[str, Any] = {
-        "summary": {
-            "generated_at": "2026-08-16T15:59:29+00:00",
+        "schema": 1,
+        "session": {
+            "started_at": "2026-08-16T15:59:29+00:00",
             "head": "abc1234",
             "dirty": False,
-            "verdict": "FAILED",
-            "baseline": {"green": True, "failed": 0},
-            "counts": {"pass": 24, "fail": 2, "indeterminate": 0, "stale": 0, "broken": 0},
-            "declared": 26,
-            "returned": 26,
-            "not_run": 0,
+            "baseline": {"ran": True, "green": True, "failed": 0},
         },
-        "campaigns": [
+        "mutants": [
             {
-                "feature": "TECH-054",
-                "requirement": "FR-1",
-                "verdict": "FAILED",
-                "mutants_declared": 2,
-                "verdicts_returned": 2,
-                "results": [
-                    {
-                        "derived_id": "TECH-054 FR-1 discovery-finds-nothing",
-                        "verdict": "PASS",
-                        "reason": "",
-                        "confirmed": False,
-                    },
-                    {
-                        "derived_id": "TECH-054 FR-1 project-filter-inverted",
-                        "verdict": "FAIL",
-                        "reason": "no tests were collected for this scope",
-                        "confirmed": False,
-                    },
-                ],
+                "id": "TECH-054 FR-1 discovery-finds-nothing",
+                "verdict": "PROTECTED",
+                "reason": None,
+                "explanation": "",
+                "confirmed": True,
+                "drift": "OK",
             },
             {
-                "feature": "TECH-055",
-                "requirement": "FR-1",
-                "verdict": "PASSED",
-                "mutants_declared": 1,
-                "verdicts_returned": 1,
-                "results": [
-                    {
-                        "derived_id": "TECH-055 FR-1 ok",
-                        "verdict": "PASS",
-                        "reason": "",
-                        "confirmed": False,
-                    }
-                ],
+                "id": "TECH-054 FR-1 project-filter-inverted",
+                "verdict": "UNMEASURED",
+                "reason": "nothing-collected",
+                "explanation": "no tests were collected for this scope",
+                "confirmed": False,
+                "drift": "OK",
+            },
+            {
+                "id": "TECH-055 FR-1 ok",
+                "verdict": "PROTECTED",
+                "reason": None,
+                "explanation": "",
+                "confirmed": True,
+                "drift": "OK",
             },
         ],
     }
-    doc["summary"].update(overrides)
+    doc["session"].update(overrides)
     return doc
 
 
@@ -146,7 +130,7 @@ class TestRenderSummary:
 
     def test_a_red_baseline_is_stated_before_any_verdict(self, rep: ModuleType) -> None:
         """Mutant verdicts against a red baseline are meaningless, so this cannot be a footnote."""
-        out = rep.render_summary(_document(baseline={"green": False, "failed": 3}))
+        out = rep.render_summary(_document(baseline={"ran": True, "green": False, "failed": 3}))
 
         head = out[: out.index("TECH-054")] if "TECH-054" in out else out
         assert "baseline" in head.lower() and "not green" in head.lower(), (
@@ -156,15 +140,11 @@ class TestRenderSummary:
     def test_an_empty_run_says_so_rather_than_looking_clean(self, rep: ModuleType) -> None:
         """No campaigns is not the same as everything passing, and must not read like it."""
         doc = _document()
-        doc["campaigns"] = []
-        doc["summary"]["counts"] = {
-            "pass": 0,
-            "fail": 0,
-            "indeterminate": 0,
-            "stale": 0,
-            "broken": 0,
-        }
-        doc["summary"]["declared"] = 0
+        doc["mutants"] = []
+
+        out = rep.render_summary(doc)
+
+        assert "NOT_RUN" in out or "no campaigns ran" in out
 
         out = rep.render_summary(doc)
 

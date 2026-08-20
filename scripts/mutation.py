@@ -207,6 +207,25 @@ def snapshot_cleanliness(sandbox: Path) -> set[str]:
     return {line for line in out.splitlines() if line.strip()}
 
 
+#: `git status --porcelain` status codes we can name. Anything else is kept as `other` rather
+#: than dropped or guessed: a rename, a copy and a merge conflict all have codes, and hiding one
+#: would hide a leak while misnaming it would misreport one.
+_LEAK_STATUS = {"??": "untracked", "M": "modified", "D": "deleted", "A": "untracked"}
+
+
+def leaked_entries(lines: set[str]) -> list[dict[str, str]]:
+    """Porcelain lines as `{path, status}`, ordered so two runs compare.
+
+    Porcelain is git's wire format. Embedding it made our schema depend on theirs and left the
+    two-character code undocumented in our own contract.
+    """
+    entries = []
+    for line in sorted(lines):
+        code, _, path = line.strip().partition(" ")
+        entries.append({"path": path.strip(), "status": _LEAK_STATUS.get(code.strip(), "other")})
+    return sorted(entries, key=lambda e: e["path"])
+
+
 def leaked_since(sandbox: Path, baseline: set[str]) -> list[str]:
     """Entries a mutant added that the build did not leave.
 
@@ -462,7 +481,9 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             remove_sandbox(sandbox)
 
-    document = _report.build_report(campaigns=campaigns, head=head, dirty=dirty, baseline=baseline)
+    document = _report.build_session_record(
+        campaigns=campaigns, head=head, dirty=dirty, baseline=baseline
+    )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
@@ -516,7 +537,7 @@ def _judge(
             # The report needs both, and `detail` is where a sandbox path would hide.
             verdicts.append(
                 {
-                    "derived_id": judgement.derived_id,
+                    "id": judgement.derived_id,
                     "verdict": judgement.verdict,
                     "reason": judgement.reason,
                     "explanation": judgement.explanation,
@@ -525,7 +546,7 @@ def _judge(
                     # Scoped here because this is the only place that holds both the killers and
                     # the campaign that asked for them.
                     "killers": scope_killers(run.killer_records, scope=campaign.scope),
-                    "leaked": list(run.leaked),
+                    "leaked": leaked_entries(set(run.leaked)),
                     "detail": run.detail,
                 }
             )

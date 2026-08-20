@@ -57,14 +57,15 @@ def gate() -> ModuleType:
     return module
 
 
-def _session_report(tmp_path: Path, verdict: str = "FAIL") -> Path:
+def _session_report(tmp_path: Path, verdict: str = "UNPROTECTED") -> Path:
     """What a corpus session leaves behind when a mutant survives."""
     path = tmp_path / "mutation_report.json"
     path.write_text(
         json.dumps(
             {
-                "summary": {"verdict": "FAILED"},
-                "campaigns": [{"results": [{"derived_id": FINDING, "verdict": verdict}]}],
+                "schema": 1,
+                "session": {"head": "abc1234"},
+                "mutants": [{"id": FINDING, "verdict": verdict}],
             }
         ),
         encoding="utf-8",
@@ -121,7 +122,7 @@ class TestASessionCannotMarkItsOwnFindingsAsRead:
     ) -> None:
         """[Boundary] `BROKEN` blocks too — a mutant that did not import measured nothing, and
         "we learned nothing about this claim" is not a state to walk past silently."""
-        report = _session_report(tmp_path, verdict="BROKEN")
+        report = _session_report(tmp_path, verdict="UNMEASURED")
         ledger = tmp_path / "ledger.json"
 
         gate.record_run(report, ledger)

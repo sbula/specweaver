@@ -275,23 +275,13 @@ class TestReportLedgerGateChain:
         report.write_text(
             json.dumps(
                 {
-                    "summary": {"head": "abc", "verdict": "FAILED"},
-                    "campaigns": [
+                    "schema": 1,
+                    "session": {"head": "abc"},
+                    "mutants": [
                         {
-                            "feature": "F",
-                            "requirement": "FR-1",
-                            "verdict": "FAILED",
-                            "mutants_declared": 1,
-                            "verdicts_returned": 1,
-                            "results": [
-                                {
-                                    "derived_id": "F FR-1 m",
-                                    "verdict": "FAIL",
-                                    "reason": "no test noticed",
-                                    "drift": "OK",
-                                    "detail": "",
-                                }
-                            ],
+                            "id": "F FR-1 m",
+                            "verdict": "UNPROTECTED",
+                            "reason": "no-killer",
                         }
                     ],
                 }

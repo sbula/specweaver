@@ -81,7 +81,7 @@ def _as_dict(result: Any) -> dict[str, Any]:
     if isinstance(result, dict):
         return result
     return {
-        "derived_id": result.derived_id,
+        "id": result.derived_id,
         "verdict": result.verdict,
         "reason": result.reason,
         "explanation": getattr(result, "explanation", ""),
@@ -128,15 +128,21 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
     Only failures are listed individually. Twenty-six passing lines would bury the two that matter,
     which is how "no tests were collected for this scope" sat unread for two days.
     """
-    summary = document.get("summary", {})
-    campaigns = document.get("campaigns", [])
-    counts = summary.get("counts", {})
+    summary = document.get("session", {})
+    campaigns = campaigns_of(document)
+    counts = counts_of(document)
     baseline = summary.get("baseline") or {}
+    mutants = mutants_of(document)
+    verdict = (
+        "NOT_RUN"
+        if not mutants
+        else ("PASSED" if all(m.get("verdict") == "PROTECTED" for m in mutants) else "FAILED")
+    )
 
     lines = [
         "MUTATION REPORT",
-        f"  verdict      {summary.get('verdict', '?')}",
-        f"  generated    {summary.get('generated_at', '(none)')}  ({_age(summary.get('generated_at', ''), now)})",
+        f"  verdict      {verdict}",
+        f"  generated    {summary.get('started_at', '(none)')}  ({_age(summary.get('started_at', ''), now)})",
         f"  commit       {summary.get('head', '?')}"
         + (
             "  **TREE WAS DIRTY — this verdict describes no commit**"
@@ -145,7 +151,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
         ),
     ]
 
-    if baseline:
+    if baseline.get("ran"):
         green = baseline.get("green")
         state = "green" if green else f"NOT GREEN ({baseline.get('failed', '?')} failed)"
         lines.append(f"  baseline     {state}")
@@ -155,7 +161,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
             )
 
     lines += [
-        f"  mutants      {summary.get('declared', 0)} declared, {summary.get('returned', 0)} returned"
+        f"  mutants      {len(mutants)} judged"
         f"  (protected {counts.get('protected', 0)},"
         f" unprotected {counts.get('unprotected', 0)},"
         f" unmeasured {counts.get('unmeasured', 0)},"
@@ -173,23 +179,112 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
         lines.append(
             f"   {mark} {campaign.get('feature', '?'):<12} {campaign.get('requirement', '?'):<6}"
             f" {campaign.get('verdict', '?'):<8}"
-            f" {campaign.get('mutants_declared', 0)} declared"
+            f" {len(campaign.get('mutants', []))} declared"
         )
 
-    failures = [
-        result
-        for campaign in campaigns
-        for result in campaign.get("results", [])
-        if result.get("verdict") != "PASS"
-    ]
+    failures = [m for m in mutants if m.get("verdict") != "PROTECTED"]
     if failures:
         lines += ["", f"  {len(failures)} mutant(s) not passing:"]
         for result in failures:
-            reason = result.get("reason") or "(no reason recorded)"
-            lines.append(f"    {result.get('derived_id', '?')}")
-            lines.append(f"      {result.get('verdict', '?')}: {reason}")
+            # The code is for scripts and the sentence is for the reader. Showing only the code
+            # made "nothing-collected" the whole explanation of a campaign that measured nothing.
+            code = result.get("reason") or "?"
+            said = result.get("explanation") or "(no explanation recorded)"
+            lines.append(f"    {result.get('id', '?')}")
+            lines.append(f"      {result.get('verdict', '?')} [{code}]: {said}")
 
     return "\n".join(lines)
+
+
+def mutants_of(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every mutant in a session record, whatever shape it is stored in."""
+    return list(record.get("mutants", []))
+
+
+def counts_of(record: dict[str, Any]) -> dict[str, int]:
+    """One key per verdict, plus drift, which is orthogonal to all three.
+
+    Computed, never stored. A count kept beside the detail it summarises is a second copy of one
+    fact, and this repo has already had a roll-up outlive the run it described.
+    """
+    tally = {"protected": 0, "unprotected": 0, "unmeasured": 0, "stale": 0}
+    for mutant in mutants_of(record):
+        key = str(mutant.get("verdict", "")).lower()
+        if key in tally:
+            tally[key] += 1
+        if mutant.get("drift") == "STALE":
+            tally["stale"] += 1
+    return tally
+
+
+def campaigns_of(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """The mutants regrouped by the campaign that declared them.
+
+    The grouping comes from the mutant's own id — `"<FEATURE> <REQUIREMENT> <slug>"` — which is
+    why the record stores a flat list. A campaign passes only when every one of its mutants is
+    protected; anything else is a finding somebody has to answer.
+    """
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for mutant in mutants_of(record):
+        parts = str(mutant.get("id", "")).split(" ")
+        key = (parts[0] if parts else "", parts[1] if len(parts) > 1 else "")
+        grouped.setdefault(key, []).append(mutant)
+    return [
+        {
+            "feature": feature,
+            "requirement": requirement,
+            "verdict": (
+                "PASSED" if all(m.get("verdict") == "PROTECTED" for m in mutants) else "FAILED"
+            ),
+            "mutants": mutants,
+        }
+        for (feature, requirement), mutants in sorted(grouped.items())
+    ]
+
+
+def _baseline_block(baseline: Any) -> dict[str, Any]:
+    """Whether a baseline ran, and what it found if so.
+
+    `{"green": null, "failed": 0}` could not tell *not attempted* from *attempted and
+    inconclusive*, and put a meaningless zero beside the null. Absence is a fact about the
+    session, not a null-valued property of one.
+    """
+    if baseline is None:
+        return {"ran": False}
+    return {
+        "ran": True,
+        "green": bool(getattr(baseline, "green", False)),
+        "failed": len(getattr(baseline, "failures", []) or []),
+    }
+
+
+def build_session_record(
+    *,
+    campaigns: list[dict[str, Any]],
+    head: str,
+    dirty: bool,
+    baseline: Any = None,
+) -> dict[str, Any]:
+    """What one session saw. Scratch, and it stores nothing it can recompute.
+
+    Session block first: a reader who stops after one block must still learn how old the evidence
+    is, and its absence is why the gate read CLEAR for two days.
+
+    The mutants are flat. Campaign grouping is derivable from a mutant's id, which already carries
+    the feature and the requirement, so storing the nesting as well would store the same fact
+    twice — and two copies of one fact are two things that can disagree.
+    """
+    document = {
+        "schema": 1,
+        "session": {
+            "started_at": datetime.now(UTC).isoformat(),
+            "head": head,
+            "dirty": dirty,
+            "baseline": _baseline_block(baseline),
+        },
+        "mutants": [_as_dict(result) for campaign in campaigns for result in campaign["results"]],
+    }
+    return sanitise_document(document)
 
 
 def build_report(

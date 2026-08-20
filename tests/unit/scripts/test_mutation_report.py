@@ -176,3 +176,207 @@ class TestExitCodeFor:
         is indistinguishable from a session where everything was protected.
         """
         assert report.exit_code_for([]) == 2
+
+
+class TestBuildSessionRecord:
+    """Stage C — the session record stores nothing it can recompute.
+
+    A stored roll-up is one that can disagree with its own detail, and this repo has already been
+    bitten by exactly that: a `CLEAR` verdict outlived the run it described. `counts`, `declared`,
+    `returned`, `not_run` and the per-campaign roll-up are all derivable from the mutants, so they
+    are derived at read time and not written down.
+    """
+
+    def _record(self, report: ModuleType, mutation: ModuleType, **kwargs: object) -> dict:
+        campaigns = kwargs.pop("campaigns", None) or [
+            {
+                "feature": "F",
+                "requirement": "FR-1",
+                "verdict": "PASSED",
+                "mutants_declared": 1,
+                "verdicts_returned": 1,
+                "results": [_verdict(mutation, "PROTECTED")],
+            }
+        ]
+        return report.build_session_record(
+            campaigns=campaigns, head="abc1234", dirty=False, **kwargs
+        )
+
+    def test_the_session_block_names_the_commit_and_the_time(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        session = self._record(report, mutation)["session"]
+
+        assert session["head"] == "abc1234"
+        assert session["started_at"]
+
+    def test_mutants_are_a_flat_list(self, report: ModuleType, mutation: ModuleType) -> None:
+        """Campaign grouping is derivable from the mutant id, which already carries feature and
+        requirement. Storing the nesting as well is storing the same fact twice."""
+        record = self._record(report, mutation)
+
+        assert isinstance(record["mutants"], list)
+        assert record["mutants"][0]["verdict"] == "PROTECTED"
+
+    def test_no_derived_counts_are_stored(self, report: ModuleType, mutation: ModuleType) -> None:
+        record = self._record(report, mutation)
+
+        for gone in ("counts", "declared", "returned", "not_run", "verdict"):
+            assert gone not in record["session"], f"{gone} is derivable and must not be stored"
+
+    def test_no_campaign_rollup_is_stored(self, report: ModuleType, mutation: ModuleType) -> None:
+        assert "campaigns" not in self._record(report, mutation)
+
+    def test_a_skipped_baseline_says_so_rather_than_using_null(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """`{"green": null, "failed": 0}` could not distinguish *not attempted* from *attempted
+        and inconclusive*, and put a meaningless `0` beside the null."""
+        assert self._record(report, mutation)["session"]["baseline"] == {"ran": False}
+
+    def test_a_baseline_that_ran_reports_its_outcome(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        baseline = mutation.Baseline(green=False, failures=["tests/a.py::test_x"], code=1)
+
+        assert self._record(report, mutation, baseline=baseline)["session"]["baseline"] == {
+            "ran": True,
+            "green": False,
+            "failed": 1,
+        }
+
+    def test_the_record_declares_its_schema(self, report: ModuleType, mutation: ModuleType) -> None:
+        """The ledger and the record are versioned separately; a reader must be able to tell
+        which shape it has."""
+        assert self._record(report, mutation)["schema"] == 1
+
+    def test_sandbox_paths_are_still_scrubbed(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """The control that must survive the reshape: the sanitiser is recursive so a field
+        nobody remembered still gets cleaned, and the mutants moved."""
+        campaigns = [
+            {
+                "feature": "F",
+                "requirement": "FR-1",
+                "verdict": "FAILED",
+                "mutants_declared": 1,
+                "verdicts_returned": 1,
+                "results": [
+                    {
+                        "derived_id": "F FR-1 m",
+                        "verdict": "UNMEASURED",
+                        "reason": "bad-anchor",
+                        "explanation": "",
+                        "drift": "OK",
+                        "confirmed": False,
+                        "killers": [],
+                        "leaked": [],
+                        "detail": "/tmp/sw-session-abc/scripts/x.py moved",
+                    }
+                ],
+            }
+        ]
+        record = self._record(report, mutation, campaigns=campaigns)
+
+        assert "/tmp/sw-session-abc" not in record["mutants"][0]["detail"]
+
+
+def _mutant(mid: str, verdict: str, reason: str | None = None) -> dict:
+    return {
+        "id": mid,
+        "verdict": verdict,
+        "reason": reason,
+        "explanation": "",
+        "drift": "OK",
+        "confirmed": True,
+        "killers": [],
+        "leaked": [],
+        "detail": "",
+    }
+
+
+class TestCountsOf:
+    """Everything the record no longer stores is computed here, from the one place it lives.
+
+    This is the other half of dropping the roll-ups. If the counts are not recomputed on read,
+    dropping them does not simplify the record — it deletes information. And because they are
+    computed from `mutants`, they cannot disagree with it, which a stored count could and did.
+    """
+
+    def _record(self, *mutants: dict) -> dict:
+        return {"schema": 1, "session": {"head": "abc"}, "mutants": list(mutants)}
+
+    def test_counts_are_computed_from_the_mutants(self, report: ModuleType) -> None:
+        record = self._record(
+            _mutant("F FR-1 a", "PROTECTED"),
+            _mutant("F FR-1 b", "UNPROTECTED", "no-killer"),
+            _mutant("G FR-2 c", "UNMEASURED", "timed-out"),
+        )
+
+        assert report.counts_of(record) == {
+            "protected": 1,
+            "unprotected": 1,
+            "unmeasured": 1,
+            "stale": 0,
+        }
+
+
+class TestCampaignsOf:
+    """`campaigns_of` — the grouping the record no longer stores."""
+
+    def _record(self, *mutants: dict) -> dict:
+        return {"schema": 1, "session": {"head": "abc"}, "mutants": list(mutants)}
+
+    def test_campaigns_are_grouped_from_the_mutant_id(self, report: ModuleType) -> None:
+        """The id already carries feature and requirement, which is why the nesting was dropped."""
+        record = self._record(
+            _mutant("F FR-1 a", "PROTECTED"),
+            _mutant("F FR-1 b", "PROTECTED"),
+            _mutant("G FR-2 c", "UNPROTECTED", "no-killer"),
+        )
+
+        grouped = report.campaigns_of(record)
+
+        assert [(c["feature"], c["requirement"], len(c["mutants"])) for c in grouped] == [
+            ("F", "FR-1", 2),
+            ("G", "FR-2", 1),
+        ]
+
+    def test_a_campaign_fails_when_any_mutant_is_a_finding(self, report: ModuleType) -> None:
+        record = self._record(
+            _mutant("F FR-1 a", "PROTECTED"), _mutant("F FR-1 b", "UNMEASURED", "timed-out")
+        )
+
+        assert report.campaigns_of(record)[0]["verdict"] == "FAILED"
+
+    def test_a_campaign_passes_when_every_mutant_is_protected(self, report: ModuleType) -> None:
+        """The control: a roll-up that always failed would be as useless as one that always
+        passed."""
+        record = self._record(_mutant("F FR-1 a", "PROTECTED"))
+
+        assert report.campaigns_of(record)[0]["verdict"] == "PASSED"
+
+    def test_an_empty_record_is_not_silently_a_pass(self, report: ModuleType) -> None:
+        """[Hostile] Zero mutants must never read as success — that is what a crashed session
+        looks like."""
+        record = self._record()
+
+        assert report.counts_of(record) == {
+            "protected": 0,
+            "unprotected": 0,
+            "unmeasured": 0,
+            "stale": 0,
+        }
+        assert report.campaigns_of(record) == []
+
+    def test_drift_is_counted_beside_the_verdict_not_instead_of_it(
+        self, report: ModuleType
+    ) -> None:
+        """A stale symbol is orthogonal to what the mutant taught us, so it has its own key."""
+        mutant = _mutant("F FR-1 a", "UNMEASURED", "symbol-drifted")
+        mutant["drift"] = "STALE"
+
+        counts = report.counts_of(self._record(mutant))
+
+        assert (counts["unmeasured"], counts["stale"]) == (1, 1)
