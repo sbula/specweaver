@@ -80,104 +80,6 @@ class TestSanitise:
         assert report.sanitise_document(doc) == doc
 
 
-class TestBuildReport:
-    """The document a machine reads after the sandbox is gone."""
-
-    def _doc(self, report: ModuleType, mutation: ModuleType, **over: Any) -> dict[str, Any]:
-        campaigns = over.pop(
-            "campaigns",
-            [
-                {
-                    "feature": "C-EXEC-06",
-                    "requirement": "FR-8",
-                    "verdict": "PASSED",
-                    "mutants_declared": 1,
-                    "verdicts_returned": 1,
-                    "results": [_verdict(mutation)],
-                }
-            ],
-        )
-        return report.build_report(campaigns=campaigns, head="abc1234", dirty=False, **over)
-
-    def test_the_summary_comes_first(self, report: ModuleType, mutation: ModuleType) -> None:
-        """A reader that stops after one block must still learn the verdict."""
-        doc = self._doc(report, mutation)
-        assert next(iter(doc)) == "summary"
-
-    def test_counts_match_the_results(self, report: ModuleType, mutation: ModuleType) -> None:
-        campaigns = [
-            {
-                "feature": "F",
-                "requirement": "FR-1",
-                "verdict": "FAILED",
-                "mutants_declared": 2,
-                "verdicts_returned": 2,
-                "results": [
-                    _verdict(mutation, "PROTECTED"),
-                    _verdict(mutation, "UNPROTECTED"),
-                ],
-            }
-        ]
-        doc = self._doc(report, mutation, campaigns=campaigns)
-        assert doc["summary"]["counts"]["protected"] == 1
-        assert doc["summary"]["counts"]["unprotected"] == 1
-
-    def test_a_failing_run_still_produces_a_report(
-        self, report: ModuleType, mutation: ModuleType
-    ) -> None:
-        """[Degradation] A run with nothing but failures is exactly when the report is needed."""
-        campaigns = [
-            {
-                "feature": "F",
-                "requirement": "FR-1",
-                "verdict": "FAILED",
-                "mutants_declared": 1,
-                "verdicts_returned": 1,
-                "results": [_verdict(mutation, "FAIL")],
-            }
-        ]
-        doc = self._doc(report, mutation, campaigns=campaigns)
-        assert doc["summary"]["verdict"] == "FAILED"
-
-    def test_the_document_never_carries_a_sandbox_path(
-        self, report: ModuleType, mutation: ModuleType
-    ) -> None:
-        campaigns = [
-            {
-                "feature": "F",
-                "requirement": "FR-1",
-                "verdict": "FAILED",
-                "mutants_declared": 1,
-                "verdicts_returned": 1,
-                "results": [_verdict(mutation, "BROKEN", reason="died in /tmp/sw-q-9/src/x.py")],
-            }
-        ]
-        doc = self._doc(report, mutation, campaigns=campaigns)
-        assert "/tmp/" not in json.dumps(doc)
-
-
-class TestExitCodeFor:
-    """`0` no-fail · `1` any-fail · `2` could not run."""
-
-    def test_all_passing_is_zero(self, report: ModuleType) -> None:
-        assert report.exit_code_for(["PASSED", "PASSED"]) == 0
-
-    def test_partial_is_still_zero(self, report: ModuleType) -> None:
-        """`PARTIAL` means unreadable, not broken — it must not read as a failure."""
-        assert report.exit_code_for(["PASSED", "PARTIAL"]) == 0
-
-    def test_any_failure_is_one(self, report: ModuleType) -> None:
-        assert report.exit_code_for(["PASSED", "FAILED"]) == 1
-
-    def test_nothing_to_run_is_two_not_zero(self, report: ModuleType) -> None:
-        """[Hostile] The false green this ticket has now fixed four times.
-
-        A session that found no corpus files has measured nothing, and reporting that as success
-        is indistinguishable from a session where everything was protected.
-        """
-        assert report.exit_code_for([]) == 2
-
-
 class TestBuildSessionRecord:
     """Stage C — the session record stores nothing it can recompute.
 
@@ -380,3 +282,46 @@ class TestCampaignsOf:
         counts = report.counts_of(self._record(mutant))
 
         assert (counts["unmeasured"], counts["stale"]) == (1, 1)
+
+
+class TestSessionVerdictOf:
+    """One derivation of "did this session pass", shared by the summary and the exit code.
+
+    RED-C.3. The prose and the exit code computed it separately — the renderer from the mutants,
+    `main` from the in-memory campaign list. They agreed on the day they were written, which is
+    the only day two derivations of one fact ever do.
+    """
+
+    def _record(self, *verdicts: str) -> dict:
+        return {
+            "schema": 1,
+            "session": {"head": "abc"},
+            "mutants": [{"id": f"F FR-1 m{i}", "verdict": v} for i, v in enumerate(verdicts)],
+        }
+
+    def test_all_protected_is_passed(self, report: ModuleType) -> None:
+        assert report.session_verdict_of(self._record("PROTECTED", "PROTECTED")) == "PASSED"
+
+    def test_one_finding_fails_the_session(self, report: ModuleType) -> None:
+        assert report.session_verdict_of(self._record("PROTECTED", "UNPROTECTED")) == "FAILED"
+
+    def test_learning_nothing_fails_the_session(self, report: ModuleType) -> None:
+        """`UNMEASURED` is a finding, so it cannot leave the session looking clean."""
+        assert report.session_verdict_of(self._record("UNMEASURED")) == "FAILED"
+
+    def test_judging_nothing_is_not_a_pass(self, report: ModuleType) -> None:
+        """[Hostile] An empty session is what a crash looks like, and must never read as success."""
+        assert report.session_verdict_of(self._record()) == "NOT_RUN"
+
+    def test_the_exit_code_uses_the_same_answer(self, report: ModuleType) -> None:
+        """The agreement this finding is about: one function, two readers."""
+        record = self._record("PROTECTED", "UNMEASURED")
+
+        assert report.session_verdict_of(record) == "FAILED"
+        assert report.exit_code_for(record) == 1
+
+    def test_an_empty_session_exits_two(self, report: ModuleType) -> None:
+        assert report.exit_code_for(self._record()) == 2
+
+    def test_a_clean_session_exits_zero(self, report: ModuleType) -> None:
+        assert report.exit_code_for(self._record("PROTECTED")) == 0

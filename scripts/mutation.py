@@ -499,7 +499,7 @@ def main(argv: list[str] | None = None) -> int:
         # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
         # able to run days later against a ledger that already knows how long a finding has been here.
         _gate.record_run(out, Path(args.ledger))
-    return _report.exit_code_for([c["verdict"] for c in campaigns])
+    return _report.exit_code_for(document)
 
 
 def _judge(

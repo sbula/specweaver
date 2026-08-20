@@ -133,11 +133,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
     counts = counts_of(document)
     baseline = summary.get("baseline") or {}
     mutants = mutants_of(document)
-    verdict = (
-        "NOT_RUN"
-        if not mutants
-        else ("PASSED" if all(m.get("verdict") == "PROTECTED" for m in mutants) else "FAILED")
-    )
+    verdict = session_verdict_of(document)
 
     lines = [
         "MUTATION REPORT",
@@ -242,6 +238,18 @@ def campaigns_of(record: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def session_verdict_of(record: dict[str, Any]) -> str:
+    """Did this session pass. The only place that answers it.
+
+    The prose and the exit code used to work it out separately, from different inputs. Two
+    derivations of one fact agree on the day they are written and not reliably after.
+    """
+    mutants = mutants_of(record)
+    if not mutants:
+        return "NOT_RUN"
+    return "PASSED" if all(m.get("verdict") == "PROTECTED" for m in mutants) else "FAILED"
+
+
 def _baseline_block(baseline: Any) -> dict[str, Any]:
     """Whether a baseline ran, and what it found if so.
 
@@ -287,57 +295,10 @@ def build_session_record(
     return sanitise_document(document)
 
 
-def build_report(
-    *,
-    campaigns: list[dict[str, Any]],
-    head: str,
-    dirty: bool,
-    baseline: Any = None,
-    not_run: int = 0,
-) -> dict[str, Any]:
-    """The document, summary first.
+def exit_code_for(record: dict[str, Any]) -> int:
+    """`0` nothing failed · `1` something failed · `2` could not run.
 
-    Summary first is not cosmetic: a reader that stops after one block must still learn the verdict,
-    and a machine that streams the file gets the decision before the detail.
+    Takes the record rather than a list of verdicts, so the code and the prose cannot disagree
+    about what the session concluded.
     """
-    declared = sum(c["mutants_declared"] for c in campaigns)
-    returned = sum(c["verdicts_returned"] for c in campaigns)
-    verdicts = [c["verdict"] for c in campaigns]
-
-    document = {
-        "summary": {
-            # First field for the same reason the summary is first: a reader who stops early must
-            # still learn how old the evidence is. Its absence is why `--gate` read CLEAR for two days.
-            "generated_at": datetime.now(UTC).isoformat(),
-            "head": head,
-            "dirty": dirty,
-            "verdict": "FAILED" if "FAILED" in verdicts else ("PASSED" if verdicts else "NOT_RUN"),
-            "baseline": {
-                "green": getattr(baseline, "green", None),
-                "failed": len(getattr(baseline, "failures", []) or []),
-            },
-            "counts": _counts(campaigns),
-            "declared": declared,
-            "returned": returned,
-            "not_run": not_run,
-        },
-        "campaigns": [
-            {
-                "feature": c["feature"],
-                "requirement": c["requirement"],
-                "verdict": c["verdict"],
-                "mutants_declared": c["mutants_declared"],
-                "verdicts_returned": c["verdicts_returned"],
-                "results": [_as_dict(r) for r in c["results"]],
-            }
-            for c in campaigns
-        ],
-    }
-    return sanitise_document(document)
-
-
-def exit_code_for(campaign_verdicts: list[str]) -> int:
-    """`0` nothing failed · `1` something failed · `2` could not run."""
-    if not campaign_verdicts:
-        return 2
-    return 1 if "FAILED" in campaign_verdicts else 0
+    return {"NOT_RUN": 2, "FAILED": 1}.get(session_verdict_of(record), 0)
