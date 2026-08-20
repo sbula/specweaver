@@ -225,7 +225,7 @@ its own capability, and are **explicitly out of scope** for this design:
 | INT-US-09-SF01 | Containerized Isolation | `D-EXEC-01` ✅ + `B-EXEC-01` ✅ (built) | Integration Pending Design — separate contract, container-scoped |
 | INT-US-09-SF02 | Security Defenses | `E-EXEC-02` (unbuilt) | Blocked on capability |
 | INT-US-09-SF03 | Extreme Execution Paranoia | `A-EXEC-01` (unbuilt) | Blocked on capability |
-| INT-US-09-SF04 | Mathematical Speed & Security (Rust) | `A-EXEC-03` (unbuilt) | Blocked on capability |
+| INT-US-09-SF04 | Mathematical Speed & Security (Rust) | `A-EXEC-03` (descoped 2026-08-20) | Terminal — scope descoped with its capability by the benefit review |
 
 ## Execution Order
 

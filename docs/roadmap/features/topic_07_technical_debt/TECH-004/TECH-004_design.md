@@ -358,7 +358,7 @@ stays inside the Rust boundary.
 
 | ID | Issue | Why Deferred |
 |----|-------|-------------|
-| A-EXEC-03 (roadmap) | Rust PyO3 graph engine | `GraphEngineProtocol` makes this mechanical. Trigger: >10K files. |
+| A-EXEC-03 (roadmap) | Rust PyO3 graph engine | `GraphEngineProtocol` makes this mechanical. Trigger: >10K files. *(2026-08-20: that capability was descoped; if the trigger ever fires, mint a new ticket — the protocol still makes it mechanical.)* |
 
 ## Session Handoff
 

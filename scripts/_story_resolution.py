@@ -50,8 +50,8 @@ def story_scope_text(story_id: str, doc_text: str) -> str:
 
     Scoping this precisely is the whole correctness of the DAL derivation. Scanning the entire
     document reads `US-09` as DAL-A, because its **Sub-Story Add-Ons** section mentions `A-EXEC-01`
-    and `A-EXEC-03` — capabilities those add-ons are BLOCKED ON, which the base story does not span
-    and which are not built. A base story spans the Core-Required MVS capabilities named in its
+    — a capability its add-on is BLOCKED ON, which the base story does not span and which is not
+    built. A base story spans the Core-Required MVS capabilities named in its
     Integration Description; an add-on group is separate scope, and pulling its capabilities into
     the base over-escalates every gate for work that has not happened.
 

@@ -283,9 +283,10 @@ construction (deliberate scope cut). CI provisioning of a real engine and the
 `execution_mode: "container"` requires an operator to build the image locally today.
 **Not part of this feature**: `INT-US-09` (the actual Base Integration Contract for US-9,
 integrating `US-5 Core` + `E-EXEC-01` + `C-EXEC-02`) has not been designed. `E-EXEC-02` (Air-
-Gapped Network Egress Control), `A-EXEC-01` (Extreme Execution Paranoia / Black Box Ledgers), and
-`A-EXEC-03` (Rust `libgit2` bindings) are separate, future capabilities that may build on top of
-`B-EXEC-01`'s `ContainerSubprocessExecutor`/mount contract if and when they are designed — they
-are not sub-features of `B-EXEC-01` and no work toward them exists yet.
+Gapped Network Egress Control) and `A-EXEC-01` (Extreme Execution Paranoia / Black Box Ledgers)
+are separate, future capabilities that may build on top of `B-EXEC-01`'s
+`ContainerSubprocessExecutor`/mount contract if and when they are designed — they are not
+sub-features of `B-EXEC-01` and no work toward them exists yet. *(Corrected 2026-08-20: this list
+also named `A-EXEC-03`, Rust `libgit2` bindings, since descoped by the benefit review.)*
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill. (Currently: none — all rows are ✅.)
