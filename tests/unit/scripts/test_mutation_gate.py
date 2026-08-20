@@ -114,7 +114,28 @@ class TestGateVerdict:
         assert "F FR-1 m" in result.unconfirmed
 
     def test_a_confirmed_failure_clears(self, gate: ModuleType, tmp_path: Path) -> None:
-        ledger = _ledger(tmp_path, **{"F FR-1 m": {"disposition": "will-fix", "runs": 1}})
+        ledger = _ledger(
+            tmp_path,
+            **{
+                "F FR-1 m": {
+                    "occurrences": 1,
+                    "history": [
+                        {
+                            "at": 0.0,
+                            "state": "open",
+                            "verdict": "UNPROTECTED",
+                            "reason": "no-killer",
+                        },
+                        {
+                            "at": 1.0,
+                            "state": "disposed",
+                            "disposition": "will-fix",
+                            "why": "recorded",
+                        },
+                    ],
+                }
+            },
+        )
         assert gate.gate_verdict(_report(tmp_path, _finding()), ledger).blocked is False
 
     def test_a_broken_finding_also_needs_confirming(self, gate: ModuleType, tmp_path: Path) -> None:
@@ -153,20 +174,73 @@ class TestRecordRun:
     def test_a_returning_finding_increments_its_count(
         self, gate: ModuleType, tmp_path: Path
     ) -> None:
-        ledger = _ledger(tmp_path, **{"F FR-1 m": {"disposition": "will-fix", "runs": 3}})
+        ledger = _ledger(
+            tmp_path,
+            **{
+                "F FR-1 m": {
+                    "occurrences": 3,
+                    "history": [
+                        {
+                            "at": 0.0,
+                            "state": "open",
+                            "verdict": "UNPROTECTED",
+                            "reason": "no-killer",
+                        },
+                        {
+                            "at": 1.0,
+                            "state": "disposed",
+                            "disposition": "will-fix",
+                            "why": "recorded",
+                        },
+                    ],
+                }
+            },
+        )
         gate.record_run(_report(tmp_path, _finding()), ledger)
-        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["runs"] == 4
+        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["occurrences"] == 4
 
-    def test_a_finding_that_disappeared_is_pruned(self, gate: ModuleType, tmp_path: Path) -> None:
-        """[Boundary] The ledger describes today, not an archive of everything ever seen."""
-        ledger = _ledger(tmp_path, **{"F FR-1 gone": {"disposition": "will-fix", "runs": 9}})
+    def test_a_finding_that_disappeared_is_closed_not_deleted(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """This rule inverted, and the inversion is the point.
+
+        Deleting on absence kept the file small and made the ledger unable to answer the one
+        question it exists for: how long did this defect live. A finding that was fixed left no
+        trace, and one that returned every few months read as six unrelated ones. It now closes,
+        carrying why it closed, and is pruned a year later.
+        """
+        ledger = _ledger(
+            tmp_path,
+            **{
+                "F FR-1 gone": {
+                    "occurrences": 9,
+                    "history": [
+                        {
+                            "at": 0.0,
+                            "state": "open",
+                            "verdict": "UNPROTECTED",
+                            "reason": "no-killer",
+                        },
+                        {
+                            "at": 1.0,
+                            "state": "disposed",
+                            "disposition": "will-fix",
+                            "why": "recorded",
+                        },
+                    ],
+                }
+            },
+        )
         gate.record_run(_report(tmp_path, _finding("PROTECTED")), ledger)
-        assert "F FR-1 gone" not in json.loads(ledger.read_text())["findings"]
+
+        entry = json.loads(ledger.read_text())["findings"]["F FR-1 gone"]
+        assert gate.current_state(entry) == "closed"
+        assert entry["history"][-1]["reason"] == "withdrawn"
 
     def test_a_new_finding_starts_at_one(self, gate: ModuleType, tmp_path: Path) -> None:
         ledger = _ledger(tmp_path)
         gate.record_run(_report(tmp_path, _finding()), ledger)
-        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["runs"] == 1
+        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["occurrences"] == 1
 
 
 class TestConfirm:
@@ -177,12 +251,15 @@ class TestConfirm:
     ) -> None:
         ledger = _ledger(tmp_path)
         gate.confirm(ledger, "F FR-1 m", disposition="will-fix", why="narrowing scope first")
+
         entry = json.loads(ledger.read_text())["findings"]["F FR-1 m"]
-        assert entry["disposition"] == "will-fix"
-        assert entry["why"] == "narrowing scope first"
+        disposed = [h for h in entry["history"] if h["state"] == "disposed"]
+        assert disposed[-1]["disposition"] == "will-fix"
+        assert disposed[-1]["why"] == "narrowing scope first"
+        assert disposed[-1]["at"], "when it was decided is the half a field could not carry"
 
     def test_an_unknown_disposition_is_refused(self, gate: ModuleType, tmp_path: Path) -> None:
-        """[Hostile] Four dispositions exist; a fifth would silently escape the census."""
+        """[Hostile] Six dispositions exist; a seventh would silently escape the census."""
         with pytest.raises(ValueError, match="disposition"):
             gate.confirm(_ledger(tmp_path), "F FR-1 m", disposition="probably-fine", why="x")
 
@@ -195,9 +272,24 @@ class TestConfirm:
         self, gate: ModuleType, tmp_path: Path
     ) -> None:
         """[Boundary] Deciding what to do about a finding must not reset how long it has been here."""
-        ledger = _ledger(tmp_path, **{"F FR-1 m": {"runs": 7}})
+        ledger = _ledger(
+            tmp_path,
+            **{
+                "F FR-1 m": {
+                    "occurrences": 7,
+                    "history": [
+                        {
+                            "at": 0.0,
+                            "state": "open",
+                            "verdict": "UNPROTECTED",
+                            "reason": "no-killer",
+                        }
+                    ],
+                }
+            },
+        )
         gate.confirm(ledger, "F FR-1 m", disposition="will-fix", why="still triaging")
-        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["runs"] == 7
+        assert json.loads(ledger.read_text())["findings"]["F FR-1 m"]["occurrences"] == 7
 
 
 class TestOverrideCensus:

@@ -114,7 +114,7 @@ class TestASessionCannotMarkItsOwnFindingsAsRead:
         gate.record_run(report, ledger)
         gate.record_run(report, ledger)
 
-        assert _entries(ledger)[FINDING]["runs"] == 2
+        assert _entries(ledger)[FINDING]["occurrences"] == 2
         assert gate.gate_verdict(report, ledger).blocked is True
 
     def test_a_broken_mutant_is_treated_the_same_way(
@@ -164,7 +164,7 @@ class TestConfirmingIsWhatClearsIt:
 
         gate.confirm(ledger, FINDING, disposition="will-fix", why="scheduled")
 
-        assert _entries(ledger)[FINDING]["runs"] == 2
+        assert _entries(ledger)[FINDING]["occurrences"] == 2
         assert gate.gate_verdict(report, ledger).blocked is False
 
     def test_a_later_session_keeps_the_disposition_and_the_gate_stays_clear(
@@ -183,5 +183,5 @@ class TestConfirmingIsWhatClearsIt:
 
         gate.record_run(report, ledger)
 
-        assert _entries(ledger)[FINDING]["disposition"] == "equivalent"
+        assert gate.latest_disposition(_entries(ledger)[FINDING]) == "equivalent"
         assert gate.gate_verdict(report, ledger).blocked is False

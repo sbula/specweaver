@@ -213,3 +213,46 @@ class TestScopeKillersHostileInput:
         )
 
         assert records[0]["in_scope"] is False
+
+
+class TestVerdictOfStaleAnchor:
+    """A mutant whose anchor no longer applies measured nothing.
+
+    Found by the e2e, which is the only tier that produces a real `STALE` run. The rules handled
+    `NOTHING_RAN`, `BROKEN` and `NO_KILL` and fell through for `STALE`, landing on rule 5 — no
+    in-scope killer — and reporting `UNPROTECTED`. That says *your code is unguarded*, which is a
+    claim about the code under test. The truth is that the code moved and the campaign never ran
+    against it: the fix is to the campaign, not to a missing test.
+
+    Reporting it as a coverage gap is the more expensive direction of wrong. It sends somebody to
+    write a test for a requirement that may already be perfectly protected.
+    """
+
+    def _run(self, mutation: ModuleType, **kwargs: object) -> object:
+        base = {
+            "derived_id": "F FR-1 m",
+            "outcome": "STALE",
+            "killers": [],
+            "detail": "anchor appears 0 times",
+            "drift": "STALE",
+        }
+        return mutation.MutantRun(**{**base, **kwargs})
+
+    def test_a_stale_anchor_is_unmeasured(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(self._run(mutation), scope=["tests/a.py"])
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "symbol-drifted")
+
+    def test_it_is_not_reported_as_a_coverage_gap(self, mutation: ModuleType) -> None:
+        """The specific wrong answer this replaces."""
+        v = mutation.verdict_of(self._run(mutation), scope=["tests/a.py"])
+
+        assert v.verdict != "UNPROTECTED"
+
+    def test_a_live_anchor_is_still_judged_normally(self, mutation: ModuleType) -> None:
+        """The control: only `STALE` takes this path."""
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NO_KILL", drift="OK"), scope=["tests/a.py"]
+        )
+
+        assert (v.verdict, v.reason) == ("UNPROTECTED", "no-killer")

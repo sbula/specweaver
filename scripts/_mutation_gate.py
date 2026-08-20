@@ -53,7 +53,16 @@ BLOCKING_VERDICTS = ("UNPROTECTED", "UNMEASURED")
 #: the census counts. `real-gap` means you fixed it; `stale-refreshed` means you re-read the claim
 #: and re-pinned it. Neither is a bypass.
 OVERRIDE_DISPOSITIONS = ("will-fix", "equivalent")
-DISPOSITIONS = ("real-gap", "equivalent", "will-fix", "stale-refreshed")
+#: `fixed-campaign` and `fixed-environment` answer an `UNMEASURED` finding, where `equivalent`
+#: is meaningless — the campaign or the machine was wrong, not the code under test.
+DISPOSITIONS = (
+    "real-gap",
+    "equivalent",
+    "will-fix",
+    "stale-refreshed",
+    "fixed-campaign",
+    "fixed-environment",
+)
 
 
 @dataclass(frozen=True)
@@ -140,7 +149,7 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
     known = {
         derived_id
         for derived_id, entry in load_ledger(ledger_path)["findings"].items()
-        if entry.get("disposition")
+        if latest_disposition(entry)
     }
     unconfirmed = [
         f["id"]
@@ -152,27 +161,144 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
     return GateResult(False, "every finding carries a disposition")
 
 
-def record_run(report_path: Path, ledger_path: Path) -> dict[str, Any]:
-    """Fold a report into the ledger: increment what returned, prune what is gone.
+#: How long a closed finding is kept. Long enough to answer "does this class of defect come
+#: back", bounded so the file cannot grow for ever. A reappearance reopens the entry and resets
+#: the clock, so a defect that returns every few months is never pruned.
+RETENTION_SECONDS = 365 * 86400.0
 
-    Pruning matters. Without it the file becomes an archive of everything ever seen, and the
-    recurrence count stops meaning "this is still happening" — which is the only reason it exists.
+
+def current_state(entry: dict[str, Any]) -> str:
+    """`open`, `closed`, or `unknown` — read from the last history entry that set a state.
+
+    Never a field beside the history. A stored current-state is a second copy of one fact, and two
+    copies are two things that can disagree.
     """
-    report = _read_json(report_path, {})
-    ledger = load_ledger(ledger_path)
-    present = {f["id"] for f in findings_in(report) if f.get("verdict") in BLOCKING_VERDICTS}
+    for event in reversed(entry.get("history", [])):
+        if event.get("state") in {"open", "closed"}:
+            return str(event["state"])
+    return "unknown"
 
-    kept: dict[str, Any] = {}
-    for derived_id in present:
-        entry = dict(ledger["findings"].get(derived_id, {}))
-        entry["runs"] = int(entry.get("runs", 0)) + 1
-        kept[derived_id] = entry
 
-    ledger["findings"] = kept
-    ledger["override_count"] = sum(
-        1 for e in kept.values() if e.get("disposition") in OVERRIDE_DISPOSITIONS
+def _last_open(entry: dict[str, Any]) -> dict[str, Any]:
+    for event in reversed(entry.get("history", [])):
+        if event.get("state") == "open":
+            return event
+    return {}
+
+
+def _closed_at(entry: dict[str, Any]) -> float | None:
+    """When this finding closed, or `None` if it is open.
+
+    The last *closure*, not the last history entry. A disposition recorded after a closure sits
+    later in the history, and reading the clock off the tail would restart the retention year from
+    a note — so a finding could be kept indefinitely by commenting on it.
+    """
+    for event in reversed(entry.get("history", [])):
+        if event.get("state") == "closed":
+            return float(event.get("at", 0.0))
+        if event.get("state") == "open":
+            return None
+    return None
+
+
+def _closure_reason(mutant_id: str, judged: dict[str, str], declared: set[str]) -> str:
+    """Why a finding stopped appearing — derived, never claimed.
+
+    "I fixed it" is exactly the assertion this tool exists to distrust, and a finding that closes
+    because somebody deleted its campaign must not read the same as one that closes because the
+    test was written.
+    """
+    if judged.get(mutant_id) == "PROTECTED":
+        return "fixed"
+    if mutant_id not in declared:
+        return "withdrawn"
+    return "unreachable"
+
+
+def fold_session(
+    ledger: dict[str, Any],
+    *,
+    judged: dict[str, str],
+    reasons: dict[str, str],
+    declared: set[str],
+    now: float,
+) -> dict[str, Any]:
+    """One session folded into the ledger: open what is new, close what is gone, prune what is old.
+
+    Pure, so the rules can be tested without a filesystem. `judged` is what this session concluded
+    per mutant, `declared` is what the corpus asked for — the difference between them is what
+    distinguishes a withdrawn mutant from one that never ran.
+    """
+    findings = {mid: v for mid, v in judged.items() if v in BLOCKING_VERDICTS}
+    out: dict[str, Any] = {}
+
+    for mutant_id, entry in ledger.get("findings", {}).items():
+        entry = {**entry, "history": list(entry.get("history", []))}
+        if mutant_id in findings:
+            continue  # handled below, where the arriving state is known
+        if current_state(entry) == "open":
+            entry["history"].append(
+                {
+                    "at": now,
+                    "state": "closed",
+                    "reason": _closure_reason(mutant_id, judged, declared),
+                }
+            )
+        closed_at = _closed_at(entry)
+        if closed_at is not None and now - closed_at > RETENTION_SECONDS:
+            continue
+        out[mutant_id] = entry
+
+    for mutant_id, verdict in findings.items():
+        entry = {**ledger.get("findings", {}).get(mutant_id, {})}
+        entry["history"] = list(entry.get("history", []))
+        entry.setdefault("first_seen", now)
+        entry["last_seen"] = now
+        entry["occurrences"] = int(entry.get("occurrences", 0)) + 1
+
+        latest = _last_open(entry) if current_state(entry) == "open" else {}
+        unchanged = latest.get("verdict") == verdict and latest.get("reason") == reasons.get(
+            mutant_id
+        )
+        if not unchanged:
+            entry["history"].append(
+                {
+                    "at": now,
+                    "state": "open",
+                    "verdict": verdict,
+                    "reason": reasons.get(mutant_id),
+                }
+            )
+        out[mutant_id] = entry
+
+    return {**ledger, "schema": ledger.get("schema", 1), "findings": out}
+
+
+def record_run(
+    report_path: Path,
+    ledger_path: Path,
+    *,
+    declared: set[str] | None = None,
+) -> dict[str, Any]:
+    """Fold a session record into the ledger.
+
+    `declared` is every mutant the corpus asked for. Without it a mutant that never ran cannot be
+    told from one somebody deleted, and those close for opposite reasons — the second is how a
+    ledger could be cleared by removing campaigns and read as a year of diligent fixing.
+    """
+    record = _read_json(report_path, {})
+    mutants = findings_in(record)
+    judged = {str(m["id"]): str(m.get("verdict", "")) for m in mutants if m.get("id")}
+    reasons = {str(m["id"]): m.get("reason") for m in mutants if m.get("id")}
+
+    ledger = fold_session(
+        load_ledger(ledger_path),
+        judged=judged,
+        reasons=reasons,
+        declared=set(declared) if declared is not None else set(judged),
+        now=time.time(),
     )
-    ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    write_ledger(ledger_path, ledger)
     return ledger
 
 
@@ -193,14 +319,47 @@ def confirm(ledger_path: Path, derived_id: str, *, disposition: str, why: str) -
 
     ledger = load_ledger(ledger_path)
     entry = dict(ledger["findings"].get(derived_id, {}))
-    entry.update({"disposition": disposition, "why": why.strip()})
-    entry.setdefault("runs", 1)
+    entry["history"] = [
+        *entry.get("history", []),
+        {
+            "at": time.time(),
+            "state": "disposed",
+            "disposition": disposition,
+            "why": why.strip(),
+        },
+    ]
     ledger["findings"][derived_id] = entry
-    ledger["override_count"] = sum(
-        1 for e in ledger["findings"].values() if e.get("disposition") in OVERRIDE_DISPOSITIONS
-    )
-    ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    write_ledger(ledger_path, ledger)
     return ledger
+
+
+def latest_disposition(entry: dict[str, Any]) -> str | None:
+    """The most recent decision a human recorded, or `None`.
+
+    Derived from the history for the same reason the state is: keeping it beside the history would
+    make the two able to disagree, and it is the history that carries when it was taken.
+    """
+    for event in reversed(entry.get("history", [])):
+        if event.get("state") == "disposed":
+            return str(event.get("disposition"))
+    return None
+
+
+def write_ledger(ledger_path: Path, ledger: dict[str, Any]) -> None:
+    """Persist the ledger, recomputing what the ratchet counts.
+
+    `override_count` is derived on write rather than maintained: it is a roll-up, and a roll-up
+    kept by hand is one that can disagree with what it summarises.
+    """
+    ledger = {
+        **ledger,
+        "override_count": sum(
+            1
+            for entry in ledger.get("findings", {}).values()
+            if latest_disposition(entry) in OVERRIDE_DISPOSITIONS
+        ),
+    }
+    ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
 
 
 def ratchet_ok(*, current: int, baseline: int) -> bool:

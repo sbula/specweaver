@@ -465,6 +465,10 @@ def main(argv: list[str] | None = None) -> int:
         paths += discover_corpora(Path(args.corpus_dir))
 
     campaigns: list[dict[str, Any]] = []
+    # Every mutant the corpus asked for, whether or not it returned a verdict. The ledger needs
+    # it to tell a mutant somebody deleted from one that failed to run: those close for opposite
+    # reasons, and treating a deletion as a fix would let the ledger be cleared by tidying.
+    declared: set[str] = set()
     baseline: Baseline | None = None
     head = _mutate._run(["git", "rev-parse", "--short", "HEAD"], REPO_ROOT).strip()
     dirty = bool(_mutate._run(["git", "status", "--porcelain"], REPO_ROOT).strip())
@@ -475,6 +479,7 @@ def main(argv: list[str] | None = None) -> int:
             if not args.no_baseline:
                 baseline = run_baseline(sandbox)
             for path in paths:
+                declared |= _declared_ids(path)
                 campaigns += _judge(
                     path, sandbox, baseline, confirm=not args.no_confirm, workers=args.workers
                 )
@@ -498,8 +503,17 @@ def main(argv: list[str] | None = None) -> int:
     if campaigns:
         # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
         # able to run days later against a ledger that already knows how long a finding has been here.
-        _gate.record_run(out, Path(args.ledger))
+        _gate.record_run(out, Path(args.ledger), declared=declared)
     return _report.exit_code_for(document)
+
+
+def _declared_ids(path: Path) -> set[str]:
+    """Every mutant id a corpus file declares, readable without running anything."""
+    try:
+        corpus = _corpus.load_corpus(path)
+    except Exception:
+        return set()
+    return {mutant.derived_id for campaign in corpus.campaigns for mutant in campaign.mutants}
 
 
 def _judge(

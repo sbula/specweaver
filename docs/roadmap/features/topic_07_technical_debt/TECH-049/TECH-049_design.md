@@ -284,6 +284,21 @@ C: session record drops every derived field. D: ledger keeps a history of state 
 rather than deletes, and distinguishes a fix from a withdrawal. E: campaign `schema: 2` with
 mutant provenance. F: the rename.
 
+### Stage D also fixed two defects the tiers below could not see
+
+- **A stale anchor was reported as a coverage gap.** `verdict_of` handled `NOTHING_RAN`, `BROKEN`
+  and `NO_KILL` and fell through for `STALE`, landing on "no in-scope killer" and answering
+  `UNPROTECTED` — a claim about the code under test. The truth is that the code moved and the
+  campaign never ran against it, so the fix is to the campaign. Reporting it the other way sends
+  somebody to write a test for a requirement that may already be protected. Only an end-to-end run
+  produces a real `STALE`, which is why nothing below that tier saw it.
+- **The retention clock read the last history entry rather than the closure.** A disposition
+  recorded after a finding closed sits later in the history, so the year restarted from the note —
+  a finding could be kept indefinitely by commenting on it. The first test written for this passed
+  against the bug, because the note was a day after the closure and both readings agreed; it only
+  discriminates once the gap straddles the retention boundary.
+
+
 ### Measured while doing it, so it is not rediscovered
 
 - **A mutant must not make a test *wait*.** The campaign guide says to mutate a guard so it fails

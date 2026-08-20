@@ -125,20 +125,25 @@ def verdict_of(
     # 2. Nothing collected is not a gap in the code — it is a scope that names no tests.
     if run.outcome == "NOTHING_RAN":
         return out(UNMEASURED, "nothing-collected", "no tests were collected for this scope")
-    # 3. Pytest itself broke; there is nothing here to judge.
+    # 3. The anchor no longer applies: the code moved, so nothing was measured against it.
+    #    Falling through to rule 5 reported this as `UNPROTECTED` — a claim about the code under
+    #    test — and sent readers to write a test for a requirement that may already be covered.
+    if run.outcome == "STALE":
+        return out(UNMEASURED, "symbol-drifted", run.detail[:200] or "the anchor no longer applies")
+    # 4. Pytest itself broke; there is nothing here to judge.
     if run.outcome == "BROKEN":
         return out(UNMEASURED, _broken_reason(run.detail), run.detail[:200])
-    # 4. Nothing objected. This is the one that means our code is unguarded.
+    # 5. Nothing objected. This is the one that means our code is unguarded.
     if run.outcome == "NO_KILL":
         return out(UNPROTECTED, "no-killer", "no test noticed the behaviour disappearing")
-    # 5. Something objected, but nothing the campaign named.
+    # 6. Something objected, but nothing the campaign named.
     if not (_files_of(run.killers) & scoped):
         return out(
             UNPROTECTED,
             "out-of-scope-killer",
             "killed only by tests outside this campaign's scope",
         )
-    # 6/7. An in-scope kill counts only once it reproduces without the mutant.
+    # 7/8. An in-scope kill counts only once it reproduces without the mutant.
     if not confirmed:
         return out(UNMEASURED, "killer-already-failing", "the killer fails without the mutant too")
     return out(PROTECTED, None, "an in-scope test objected, and passes without the mutant")
