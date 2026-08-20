@@ -112,4 +112,6 @@ This document tracks all capabilities related to static analysis, linting, rules
   > perfectly against the UI component specifications.
 * **`A-VAL-06` 🔜: Industry Standard Bridges** (Legacy: 3.41)<br>
   > _(new)_ | Adapters to interface seamlessly with massive open-source protocols: Pact.io (Consumer contract testing), Glean (Internal Fact Graphs), and ArchCodex (Drift Prevention).
+  > **Owns `US-22` P-3/P-4** _(assigned by the user 2026-08-20)_: cross-service deep contract checking — a schema change in one service surfacing as an untraced
+  > requirement in another, and the Python-vs-Rust-worker contract journey. Its design declares both as seam FRs, tests written red first.
 
