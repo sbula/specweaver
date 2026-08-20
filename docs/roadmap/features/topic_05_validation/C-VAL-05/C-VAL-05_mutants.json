@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "C-VAL-05",
   "campaigns": [
     {
@@ -13,6 +13,7 @@
       "mutants": [
         {
           "id": "override-ignored",
+          "origin": "authored",
           "file": "src/specweaver/assurance/validation/rubrics/loader.py",
           "symbol": "_candidates",
           "old": "roots.insert(0, (project_dir / \".specweaver\" / \"rubrics\", True))",
@@ -30,6 +31,7 @@
       "mutants": [
         {
           "id": "frozen-checksum",
+          "origin": "authored",
           "file": "src/specweaver/assurance/validation/rubrics/loader.py",
           "symbol": "load_rubric",
           "old": "checksum=hashlib.sha256(criteria.encode(\"utf-8\")).hexdigest(),",
@@ -48,6 +50,7 @@
       "mutants": [
         {
           "id": "contract-dropped",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/review.py",
           "symbol": "resolve_review_instructions",
           "old": "return review_instructions(rubric.criteria)",

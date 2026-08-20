@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-054",
   "campaigns": [
     {
@@ -12,6 +12,7 @@
       "mutants": [
         {
           "id": "discovery-finds-nothing",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/store.py",
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"WHERE project_name = ? AND status IN (?, ?) \"",
@@ -21,6 +22,7 @@
         },
         {
           "id": "latest-becomes-oldest",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/store.py",
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"ORDER BY updated_at DESC LIMIT 1\",\n                (project_name, *resumable),",
@@ -30,6 +32,7 @@
         },
         {
           "id": "resumable-filter-inverted",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/store.py",
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"WHERE project_name = ? AND status IN (?, ?) \"\n                \"ORDER BY updated_at DESC LIMIT 1\",",
@@ -39,6 +42,7 @@
         },
         {
           "id": "project-filter-inverted",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/store.py",
           "symbol": "StateStore.get_latest_resumable_run",
           "old": "\"SELECT * FROM flow_pipeline_runs \"\n                \"WHERE project_name = ? AND status IN (?, ?) \"",
@@ -48,6 +52,7 @@
         },
         {
           "id": "resume-restarts-from-step-zero",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner._execute_loop",
           "old": "        state = LoopState.for_run(run, approve_parked=approve_parked)",
@@ -67,6 +72,7 @@
       "mutants": [
         {
           "id": "bootstrap-prints-its-schema-again",
+          "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
           "symbol": "bootstrap_database",
           "old": "            logger.debug(\"LlmBase tables: %s\", LlmBase.metadata.tables.keys())",
@@ -76,6 +82,7 @@
         },
         {
           "id": "log-records-return-to-stdout",
+          "origin": "authored",
           "file": "src/specweaver/telemetry_logger.py",
           "symbol": "setup_logging",
           "old": "        console=Console(stderr=True), level=logging.WARNING, rich_tracebacks=True",
@@ -85,6 +92,7 @@
         },
         {
           "id": "the-active-project-never-changes",
+          "origin": "authored",
           "file": "src/specweaver/workspace/store.py",
           "symbol": "WorkspaceRepository.set_active_project",
           "old": "        if active:\n            active.value = name",

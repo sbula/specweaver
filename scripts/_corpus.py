@@ -48,9 +48,14 @@ from typing import Any
 
 #: Corpus format version. Bumped only when a change would make an older file misread rather than
 #: merely incomplete — a reader that guesses at an unknown shape is how a silent misparse starts.
-SCHEMA = 1
+SCHEMA = 2
 
-_MUTANT_KEYS = ("id", "file", "symbol", "old", "new", "breaks")
+#: `breaks` is not here: whether it is required depends on who wrote the mutant.
+_MUTANT_KEYS = ("id", "origin", "file", "symbol", "old", "new")
+
+#: Who made this mutant. A person owes the plain-words `breaks`; a generator has none to give,
+#: and a reader has to be able to tell an omission from the expected state.
+ORIGINS = ("authored", "derived")
 _CAMPAIGN_KEYS = ("requirement", "scope", "mutants")
 _SUFFIX = "_mutants.json"
 
@@ -69,11 +74,12 @@ class Mutant:
     """One deliberate edit that should break exactly one requirement."""
 
     id: str
+    origin: str
     file: str
     symbol: str
     old: str
     new: str
-    breaks: str
+    breaks: str | None
     derived_id: str
     symbol_sha: str | None = None
 
@@ -144,13 +150,27 @@ def _mutant_from(raw: dict[str, Any], *, where: str, feature: str, requirement: 
             f"{where}: 'file' must be a repo-relative path inside the tree, got {path_field!r}. "
             "A mutant that reaches outside the tree it measures is not measuring that tree"
         )
+    origin = raw["origin"]
+    if origin not in ORIGINS:
+        raise CorpusError(
+            f"{where}: unknown origin {origin!r}; expected one of {ORIGINS}. "
+            "A third provenance has no rules, and defaulting one would let generated mutants "
+            "claim a person wrote them"
+        )
+    if origin == "authored" and not str(raw.get("breaks") or "").strip():
+        raise CorpusError(
+            f"{where}: an authored mutant must say what it breaks. A survival is unreadable "
+            "without it — the report can say a test did not object, but not to what"
+        )
+
     return Mutant(
         id=raw["id"],
+        origin=origin,
         file=raw["file"],
         symbol=raw["symbol"],
         old=raw["old"],
         new=raw["new"],
-        breaks=raw["breaks"],
+        breaks=raw.get("breaks"),
         derived_id=f"{feature} {requirement} {raw['id']}",
         symbol_sha=raw.get("symbol_sha"),
     )

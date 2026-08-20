@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-058",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "the-baseline-drops-back-to-serial",
+          "origin": "authored",
           "file": "scripts/mutation.py",
           "symbol": "run_baseline",
           "old": "    cmd += [\"-n\", \"auto\", tests]",
@@ -20,11 +21,12 @@
         },
         {
           "id": "a-red-baseline-loses-its-failures",
+          "origin": "authored",
           "file": "scripts/mutation.py",
           "symbol": "run_baseline",
           "old": "    return Baseline(green=code == 0, failures=_mutate.killers(out), code=code)",
           "new": "    return Baseline(green=code == 0, failures=[], code=code)",
-          "breaks": "NFR-1: an already-broken tree stops being attributable, so `verdict_of` cannot mark the affected mutants INDETERMINATE and reports them as unprotected requirements instead — a finding that blames the corpus for a failure it did not cause",
+          "breaks": "NFR-1: an already-broken tree stops being attributable, so `verdict_of` cannot mark the affected mutants INDETERMINATE and reports them as unprotected requirements instead \u2014 a finding that blames the corpus for a failure it did not cause",
           "symbol_sha": "sha256:c4a1df42e3ce6cdd5b26b1db667ce4f62cbcbbac3e0b5390bd6efdf732f7e264"
         }
       ]

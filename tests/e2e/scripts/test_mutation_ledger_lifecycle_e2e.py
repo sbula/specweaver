@@ -53,7 +53,7 @@ def corpus(tmp_path: Path) -> Path:
     path.write_text(
         json.dumps(
             {
-                "schema": 1,
+                "schema": 2,
                 "feature": "F-LEDGER-01",
                 "campaigns": [
                     {
@@ -63,6 +63,7 @@ def corpus(tmp_path: Path) -> Path:
                         "mutants": [
                             {
                                 "id": "anchor-that-cannot-apply",
+                                "origin": "authored",
                                 "file": "scripts/_mutate.py",
                                 "symbol": "killers",
                                 "old": "THIS ANCHOR DOES NOT EXIST ANYWHERE",

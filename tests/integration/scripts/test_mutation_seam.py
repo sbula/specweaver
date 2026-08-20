@@ -52,7 +52,7 @@ def corpus() -> ModuleType:
 def corpus_file(tmp_path: Path) -> Path:
     """A campaign whose mutant neutralises orphan detection, scoped to the tests that cover it."""
     body = {
-        "schema": 1,
+        "schema": 2,
         "feature": "D-SENS-09",
         "campaigns": [
             {
@@ -61,6 +61,7 @@ def corpus_file(tmp_path: Path) -> Path:
                 "mutants": [
                     {
                         "id": "orphans-empty",
+                        "origin": "authored",
                         "file": "src/specweaver/graph/lineage/scanner.py",
                         "symbol": "check_lineage",
                         "old": "return sorted(orphans)",
@@ -128,6 +129,7 @@ class TestSandboxHygiene:
         campaign["mutants"].append(
             {
                 "id": "orphans-none",
+                "origin": "authored",
                 "file": "src/specweaver/graph/lineage/scanner.py",
                 "symbol": "check_lineage",
                 "old": "orphans: list[str] = []",

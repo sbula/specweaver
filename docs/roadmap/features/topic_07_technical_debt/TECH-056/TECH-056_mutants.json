@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-056",
   "campaigns": [
     {
@@ -12,6 +12,7 @@
       "mutants": [
         {
           "id": "presence-counts-as-having-been-read",
+          "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
           "old": "        if entry.get(\"disposition\")",
@@ -21,6 +22,7 @@
         },
         {
           "id": "nothing-ever-counts-as-read",
+          "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
           "old": "        if entry.get(\"disposition\")",
@@ -30,15 +32,17 @@
         },
         {
           "id": "a-blocking-finding-is-not-named",
+          "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
           "old": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] not in known",
           "new": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] in known",
-          "breaks": "the filter is inverted, so dispositioned findings block and new ones pass — the gate reports on precisely the set nobody needs to look at",
+          "breaks": "the filter is inverted, so dispositioned findings block and new ones pass \u2014 the gate reports on precisely the set nobody needs to look at",
           "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         },
         {
           "id": "a-confirmation-forgets-the-recurrence-count",
+          "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "record_run",
           "old": "        entry[\"runs\"] = int(entry.get(\"runs\", 0)) + 1",
@@ -48,11 +52,12 @@
         },
         {
           "id": "a-red-baseline-reads-as-green",
+          "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
           "old": "    if baseline is not None and not baseline.get(\"green\"):",
           "new": "    if False:",
-          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree — which it did, over 26 mutants, until the field was read",
+          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree \u2014 which it did, over 26 mutants, until the field was read",
           "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         }
       ]

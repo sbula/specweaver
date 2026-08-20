@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "C-FLOW-11",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "dal-ignored",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/autonomy.py",
           "symbol": "resolve_execution_mode",
           "old": "if DALLevel(dal).rank > DALLevel(ceiling).rank:",
@@ -28,6 +29,7 @@
       "mutants": [
         {
           "id": "tools-never-run",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/work_unit.py",
           "symbol": "InProcessAgentRuntime.run",
           "old": "result = await self._dispatcher.execute(call.name, call.args)",
@@ -45,6 +47,7 @@
       "mutants": [
         {
           "id": "turn-ceiling-lifted",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/work_unit.py",
           "symbol": "InProcessAgentRuntime.run",
           "old": "for turn in range(1, self._max_turns + 1):",

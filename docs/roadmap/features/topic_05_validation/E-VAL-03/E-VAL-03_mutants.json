@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "E-VAL-03",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "detector-blind",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/injection.py",
           "symbol": "_first_match",
           "old": "return min(matches, key=lambda found: found.start()) if matches else None",
@@ -29,6 +30,7 @@
       "mutants": [
         {
           "id": "truncate-to-match",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/injection.py",
           "symbol": "redact_injections",
           "old": "lines[index] = body[: found.start()] + MARKER + line[len(body) :]",
@@ -46,6 +48,7 @@
       "mutants": [
         {
           "id": "silent-redaction",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/prompt/adapter.py",
           "symbol": "FilePromptAdapter.get_prompt_content",
           "old": "attrs += f' redacted=\"{len(redaction.findings)}\"'",

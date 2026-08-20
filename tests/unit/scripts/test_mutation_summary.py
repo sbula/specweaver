@@ -149,3 +149,50 @@ class TestRenderSummary:
         out = rep.render_summary(doc)
 
         assert "no campaigns" in out.lower() or "0 campaign" in out.lower()
+
+
+class TestRenderSummaryShowsWhatBroke:
+    """RED-E.1 — the sentence every author is made to write must reach the reader.
+
+    `breaks` is required of every authored mutant, and its whole justification is that a survival
+    is unreadable without it: the report can say a test did not object, but not to *what*. It was
+    carried through the loader and shown nowhere, so the field was a tax on authors that bought
+    nothing at read time — and Stage E, which made it conditional on `origin`, is where that
+    became obvious.
+    """
+
+    def _record(self, breaks: str | None) -> dict:
+        return {
+            "schema": 1,
+            "session": {"started_at": "2026-08-20T00:00:00+00:00", "head": "abc", "dirty": False},
+            "mutants": [
+                {
+                    "id": "F FR-1 m",
+                    "verdict": "UNPROTECTED",
+                    "reason": "no-killer",
+                    "explanation": "no test noticed the behaviour disappearing",
+                    "breaks": breaks,
+                    "confirmed": False,
+                    "drift": "OK",
+                }
+            ],
+        }
+
+    def test_a_survival_says_what_stopped_working(self, rep: ModuleType) -> None:
+        out = rep.render_summary(self._record("the bind address is ignored"))
+
+        assert "the bind address is ignored" in out
+
+    def test_a_mutant_with_nothing_to_say_still_renders(self, rep: ModuleType) -> None:
+        """[Graceful] A derived mutant carries no `breaks`, and must not blank the line or crash."""
+        out = rep.render_summary(self._record(None))
+
+        assert "F FR-1 m" in out
+        assert "no-killer" in out
+
+    def test_a_protected_mutant_is_not_narrated(self, rep: ModuleType) -> None:
+        """The control: twenty-six passing lines would bury the two that matter."""
+        record = self._record("the bind address is ignored")
+        record["mutants"][0]["verdict"] = "PROTECTED"
+
+        assert "the bind address is ignored" not in rep.render_summary(record)

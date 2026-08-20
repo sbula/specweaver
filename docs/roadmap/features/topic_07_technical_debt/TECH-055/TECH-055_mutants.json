@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-055",
   "campaigns": [
     {
@@ -12,6 +12,7 @@
       "mutants": [
         {
           "id": "the-guard-is-not-autouse",
+          "origin": "authored",
           "file": "tests/conftest.py",
           "symbol": "_baselines_are_read_only",
           "old": "@pytest.fixture(autouse=True)\ndef _baselines_are_read_only()",
@@ -21,6 +22,7 @@
         },
         {
           "id": "the-guard-never-fails-the-test",
+          "origin": "authored",
           "file": "tests/conftest.py",
           "symbol": "_baselines_are_read_only",
           "old": "    if changed:\n        pytest.fail(",
@@ -30,15 +32,17 @@
         },
         {
           "id": "a-changed-file-is-not-reported",
+          "origin": "authored",
           "file": "tests/baseline_snapshot.py",
           "symbol": "rewrites",
           "old": "        elif after[name] != stamp:",
           "new": "        elif False:",
-          "breaks": "the one case that actually happened — same file, new content — is never reported. Chosen to fail CLOSED: the obvious mutant here inverts `!=` to `==`, which reports every UNCHANGED baseline instead, so the autouse guard then errors sixteen tests in teardown and the runner reads the whole run as BROKEN. Mutating a suite-wide fixture is self-referential; the mutant has to make the guard miss things, never invent them",
+          "breaks": "the one case that actually happened \u2014 same file, new content \u2014 is never reported. Chosen to fail CLOSED: the obvious mutant here inverts `!=` to `==`, which reports every UNCHANGED baseline instead, so the autouse guard then errors sixteen tests in teardown and the runner reads the whole run as BROKEN. Mutating a suite-wide fixture is self-referential; the mutant has to make the guard miss things, never invent them",
           "symbol_sha": "sha256:452464727e01a4b92c175c16b6d5d23b6c0001aab7baa1356bbe6b8ac640b611"
         },
         {
           "id": "a-deleted-baseline-is-not-reported",
+          "origin": "authored",
           "file": "tests/baseline_snapshot.py",
           "symbol": "rewrites",
           "old": "            reported.append(f\"{name}: deleted\")",
@@ -48,29 +52,32 @@
         },
         {
           "id": "a-missing-directory-is-silently-empty",
+          "origin": "authored",
           "file": "tests/baseline_snapshot.py",
           "symbol": "snapshot",
           "old": "        raise FileNotFoundError(f\"baseline directory not found: {directory}\")",
           "new": "        return {}",
-          "breaks": "two empty snapshots compare equal, so moving or deleting scripts/baselines/ disarms the guard on every test without a single failure — the TECH-032 shape, where a checker that cannot find its subject reports success",
+          "breaks": "two empty snapshots compare equal, so moving or deleting scripts/baselines/ disarms the guard on every test without a single failure \u2014 the TECH-032 shape, where a checker that cannot find its subject reports success",
           "symbol_sha": "sha256:b77f1331bed99a83aa8e168780b004b751e26290ecbf021d195b496cb0ebf3aa"
         },
         {
           "id": "the-snapshot-forgets-when-a-file-was-written",
+          "origin": "authored",
           "file": "tests/baseline_snapshot.py",
           "symbol": "snapshot",
           "old": "            f\"{hashlib.sha256(path.read_bytes()).hexdigest()}@{path.stat().st_mtime_ns}\"",
           "new": "            f\"{hashlib.sha256(path.read_bytes()).hexdigest()}\"",
-          "breaks": "a rewrite with identical bytes becomes invisible. Not academic: `record_run` rewrites the mutation ledger byte-identically whenever it has nothing to report, so `test_mutation_nightly.py` overwrote it on every suite run and the content-only first draft of this guard stayed silent — it would have spoken only on the day a finding existed, which is the one day the file's contents matter",
+          "breaks": "a rewrite with identical bytes becomes invisible. Not academic: `record_run` rewrites the mutation ledger byte-identically whenever it has nothing to report, so `test_mutation_nightly.py` overwrote it on every suite run and the content-only first draft of this guard stayed silent \u2014 it would have spoken only on the day a finding existed, which is the one day the file's contents matter",
           "symbol_sha": "sha256:b77f1331bed99a83aa8e168780b004b751e26290ecbf021d195b496cb0ebf3aa"
         },
         {
           "id": "the-snapshot-forgets-what-a-file-contains",
+          "origin": "authored",
           "file": "tests/baseline_snapshot.py",
           "symbol": "snapshot",
           "old": "            f\"{hashlib.sha256(path.read_bytes()).hexdigest()}@{path.stat().st_mtime_ns}\"",
           "new": "            f\"constant@{path.stat().st_mtime_ns}\"",
-          "breaks": "every write is still caught, but each is reported as 'rewritten with identical content' — so the message that says a gate's standard MOVED is never printed, and the reader is told the harmless version of the truth",
+          "breaks": "every write is still caught, but each is reported as 'rewritten with identical content' \u2014 so the message that says a gate's standard MOVED is never printed, and the reader is told the harmless version of the truth",
           "symbol_sha": "sha256:b77f1331bed99a83aa8e168780b004b751e26290ecbf021d195b496cb0ebf3aa"
         }
       ]

@@ -204,6 +204,8 @@ class _FakeMutant:
         self.symbol = "f"
         self.old = "a"
         self.new = "b"
+        self.breaks = "the thing stops working"
+        self.origin = "authored"
         self.symbol_sha = None
 
 

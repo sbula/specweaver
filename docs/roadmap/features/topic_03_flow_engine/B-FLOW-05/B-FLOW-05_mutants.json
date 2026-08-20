@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "B-FLOW-05",
   "campaigns": [
     {
@@ -12,6 +12,7 @@
       "mutants": [
         {
           "id": "spend-not-counted",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.record",
           "old": "self._spent_usd += cost_usd",
@@ -29,6 +30,7 @@
       "mutants": [
         {
           "id": "tool-path-unchecked",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
           "symbol": "TelemetryCollector.generate_with_tools",
           "old": "\"\"\"Proxy ``generate_with_tools()`` \u2014 captures cumulative usage.\"\"\"\n        self._budget.check()",
@@ -46,6 +48,7 @@
       "mutants": [
         {
           "id": "reviewer-swallows",
+          "origin": "authored",
           "file": "src/specweaver/workflows/review/reviewer.py",
           "symbol": "Reviewer._execute_review",
           "old": "        except BudgetExceededError:",

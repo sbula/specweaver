@@ -555,6 +555,10 @@ def _judge(
                     "verdict": judgement.verdict,
                     "reason": judgement.reason,
                     "explanation": judgement.explanation,
+                    # What the author said this mutant breaks. Required of every authored mutant
+                    # and, until now, shown nowhere — so a survival could say a test did not
+                    # object but never to what.
+                    "breaks": mutant.breaks,
                     "drift": judgement.drift,
                     "confirmed": run.confirmed,
                     # Scoped here because this is the only place that holds both the killers and

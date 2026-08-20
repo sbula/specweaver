@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "D-UI-01",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "bind-wildcard",
+          "origin": "authored",
           "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
           "symbol": "serve",
           "old": "        \"127.0.0.1\",\n        \"--host\",",
@@ -19,6 +20,7 @@
         },
         {
           "id": "host-not-forwarded",
+          "origin": "authored",
           "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
           "symbol": "serve",
           "old": "        host=host,",
@@ -36,6 +38,7 @@
       "mutants": [
         {
           "id": "error-code-dropped",
+          "origin": "authored",
           "file": "src/specweaver/interfaces/api/errors.py",
           "symbol": "specweaver_error_handler",
           "old": "content={\"detail\": exc.detail, \"error_code\": exc.error_code},",
@@ -44,6 +47,7 @@
         },
         {
           "id": "default-status-is-server-fault",
+          "origin": "authored",
           "file": "src/specweaver/interfaces/api/errors.py",
           "symbol": "SpecWeaverAPIError.__init__",
           "old": "        status_code: int = 400,",
@@ -61,6 +65,7 @@
       "mutants": [
         {
           "id": "wrong-terminal-event",
+          "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/ws.py",
           "symbol": "pipeline_ws",
           "old": "await websocket.send_text(json.dumps({\"event\": \"done\"}))",

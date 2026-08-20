@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-049",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "nothing-ran-reads-as-survival",
+          "origin": "authored",
           "file": "scripts/mutation.py",
           "symbol": "outcome_of",
           "old": "_OUTCOMES.get(code, \"BROKEN\")",
@@ -29,6 +30,7 @@
       "mutants": [
         {
           "id": "any-killer-counts",
+          "origin": "authored",
           "file": "scripts/mutation.py",
           "symbol": "verdict_of",
           "old": "if not (_files_of(run.killers) & scoped):",
@@ -47,6 +49,7 @@
       "mutants": [
         {
           "id": "confirmation-always-agrees",
+          "origin": "authored",
           "file": "scripts/mutation.py",
           "symbol": "confirm_kill",
           "old": "return code == 0",

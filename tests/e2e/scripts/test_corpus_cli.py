@@ -36,7 +36,7 @@ def apply_session_policy(policy):
 def workspace(tmp_path: Path) -> tuple[Path, Path]:
     (tmp_path / "isolation.py").write_text(_SOURCE, encoding="utf-8")
     body = {
-        "schema": 1,
+        "schema": 2,
         "feature": "C-EXEC-06",
         "campaigns": [
             {
@@ -45,6 +45,7 @@ def workspace(tmp_path: Path) -> tuple[Path, Path]:
                 "mutants": [
                     {
                         "id": "isolation-off",
+                        "origin": "authored",
                         "file": "isolation.py",
                         "symbol": "apply_session_policy",
                         "old": "return policy.enabled",

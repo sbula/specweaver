@@ -47,7 +47,7 @@ def corpus() -> ModuleType:
 @pytest.fixture
 def real_corpus_file(tmp_path: Path) -> Path:
     body = {
-        "schema": 1,
+        "schema": 2,
         "feature": "D-SENS-09",
         "campaigns": [
             {
@@ -56,6 +56,7 @@ def real_corpus_file(tmp_path: Path) -> Path:
                 "mutants": [
                     {
                         "id": "orphans-empty",
+                        "origin": "authored",
                         "file": TARGET,
                         "symbol": "check_lineage",
                         "old": "return sorted(orphans)",

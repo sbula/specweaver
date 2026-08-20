@@ -55,7 +55,7 @@ def _corpus_file(tmp_path: Path, mutant_id: str = "slug") -> Path:
     path.write_text(
         json.dumps(
             {
-                "schema": 1,
+                "schema": 2,
                 "feature": "F-EXEC-01",
                 "campaigns": [
                     {
@@ -65,6 +65,7 @@ def _corpus_file(tmp_path: Path, mutant_id: str = "slug") -> Path:
                         "mutants": [
                             {
                                 "id": mutant_id,
+                                "origin": "authored",
                                 "file": "scripts/_mutate.py",
                                 "symbol": "killers",
                                 "old": 'return [str(record["nodeid"]) for record in killer_records(path)]',

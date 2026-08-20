@@ -284,6 +284,20 @@ C: session record drops every derived field. D: ledger keeps a history of state 
 rather than deletes, and distinguishes a fix from a withdrawal. E: campaign `schema: 2` with
 mutant provenance. F: the rename.
 
+### Stage E found a field nobody could read
+
+`breaks` is required of every authored mutant, and its whole justification is that a survival is
+unreadable without it — the report can say a test did not object, but not to *what*. It was
+carried through the loader and **shown nowhere**, so it was a tax on authors that bought nothing at
+read time. Making it conditional on `origin` is what made that visible: reasoning about when the
+field may be absent forced the question of what it is for.
+
+The summary now prints it under any mutant that is not `PROTECTED`.
+
+`TECH-049_sf01_implementation_plan.md` records `Q6 | Schema version | "schema": 1` — the decision
+as taken then. Plans are historical here; the current version is `2` and lives in the loader and
+the campaign guide.
+
 ### Stage D also fixed two defects the tiers below could not see
 
 - **A stale anchor was reported as a coverage gap.** `verdict_of` handled `NOTHING_RAN`, `BROKEN`

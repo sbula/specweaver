@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "INT-US-16",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "flush-becomes-a-no-op",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/telemetry.py",
           "symbol": "flush_telemetry",
           "old": "llm.flush(db)",
@@ -30,11 +31,12 @@
       "mutants": [
         {
           "id": "telemetry-wrap-never-applied",
+          "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/factory.py",
           "symbol": "create_llm_adapter",
           "old": "if telemetry_project:",
           "new": "if False:",
-          "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded — the exact silent-no-op shape this contract exists to catch",
+          "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded \u2014 the exact silent-no-op shape this contract exists to catch",
           "symbol_sha": "sha256:20796656eab415b64c6179cb0fab7ec974c006cc7fa2c8688bbd78d90117f5cc"
         }
       ]

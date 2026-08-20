@@ -21,7 +21,7 @@ match it, which is what lets the duplicate-id check read one file instead of the
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "C-EXEC-06",
   "campaigns": [
     {
@@ -31,6 +31,7 @@ match it, which is what lets the duplicate-id check read one file instead of the
       "mutants": [
         {
           "id": "isolation-off",
+          "origin": "authored",
           "file": "src/specweaver/core/flow/engine/isolation.py",
           "symbol": "apply_session_policy",
           "old": "return policy.enabled",
@@ -44,6 +45,12 @@ match it, which is what lets the duplicate-id check read one file instead of the
 ```
 
 ## Choosing a mutant
+
+**`origin` says who wrote it.** `authored` means a person did, and a person owes the `breaks`
+line — a survival is unreadable without it, because the report can say a test did not object
+but not to what. `derived` is for mutants a generator produced; those carry no `breaks`, and
+the field is what lets a reader tell that from an authoring omission. There is no default:
+one would let generated mutants claim a person wrote them.
 
 **One campaign, one (N)FR.** A mutant should break *that* requirement and preferably nothing else.
 

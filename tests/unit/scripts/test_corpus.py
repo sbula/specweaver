@@ -55,6 +55,7 @@ def corpus() -> ModuleType:
 def _mutant(**over: Any) -> dict[str, Any]:
     base = {
         "id": "isolation-off",
+        "origin": "authored",
         "file": "src/specweaver/x.py",
         "symbol": "apply_session_policy",
         "old": "return policy.enabled",
@@ -76,7 +77,7 @@ def _campaign(**over: Any) -> dict[str, Any]:
 
 def _write(tmp_path: Path, feature: str = "C-EXEC-06", **over: Any) -> Path:
     """A corpus file named the way the loader expects: `<ID>_mutants.json`."""
-    body: dict[str, Any] = {"schema": 1, "feature": feature, "campaigns": [_campaign()]}
+    body: dict[str, Any] = {"schema": 2, "feature": feature, "campaigns": [_campaign()]}
     body.update(over)
     path = tmp_path / f"{feature}_mutants.json"
     path.write_text(json.dumps(body, indent=2), encoding="utf-8")
@@ -224,7 +225,7 @@ class TestLoadCorpusHostileInput:
         across them becomes invisible without loading the whole corpus.
         """
         path = tmp_path / "C-EXEC-06_mutants.json"
-        body = {"schema": 1, "feature": "B-INTL-09", "campaigns": [_campaign()]}
+        body = {"schema": 2, "feature": "B-INTL-09", "campaigns": [_campaign()]}
         path.write_text(json.dumps(body), encoding="utf-8")
         with pytest.raises(corpus.CorpusError, match="B-INTL-09"):
             corpus.load_corpus(path)
@@ -398,6 +399,7 @@ class TestDriftOf:
     def _pinned(self, corpus: ModuleType, source: Path, sha: str | None) -> Any:
         return corpus.Mutant(
             id="isolation-off",
+            origin="authored",
             file=source.name,
             symbol="apply_session_policy",
             old="return policy.enabled",
@@ -442,7 +444,7 @@ def corpus_with_source(tmp_path: Path) -> tuple[Path, Path]:
     src = tmp_path / "isolation.py"
     src.write_text(_SOURCE, encoding="utf-8")
     body = {
-        "schema": 1,
+        "schema": 2,
         "feature": "C-EXEC-06",
         "campaigns": [
             {
@@ -452,6 +454,7 @@ def corpus_with_source(tmp_path: Path) -> tuple[Path, Path]:
                 "mutants": [
                     {
                         "id": "isolation-off",
+                        "origin": "authored",
                         "file": "isolation.py",
                         "symbol": "apply_session_policy",
                         "old": "return policy.enabled",

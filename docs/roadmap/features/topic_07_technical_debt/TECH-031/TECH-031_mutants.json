@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "TECH-031",
   "campaigns": [
     {
@@ -11,11 +11,12 @@
       "mutants": [
         {
           "id": "venv-lands-in-the-read-only-workdir",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._prepare_container",
           "old": "f\"UV_PROJECT_ENVIRONMENT={_PREPARED_VENV}\",",
           "new": "\"UV_HTTP_TIMEOUT=60\",",
-          "breaks": "uv falls back to `.venv` in the workdir, which is `/workspace:ro` — the phase then fails for every project on every layout before the manifest is read",
+          "breaks": "uv falls back to `.venv` in the workdir, which is `/workspace:ro` \u2014 the phase then fails for every project on every layout before the manifest is read",
           "symbol_sha": "sha256:21164ed9de8b2a36112877a88eeb3ee763d489ed7e85064ff6d15f22313a14fc"
         }
       ]
@@ -29,6 +30,7 @@
       "mutants": [
         {
           "id": "the-lockfile-is-rewritten",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._prepare_steps",
           "old": "[\"uv\", \"sync\", \"--frozen\", *synced],",
@@ -47,11 +49,12 @@
       "mutants": [
         {
           "id": "the-image-interpreter-shadows-the-venv",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._build_container_cmd",
           "old": "f\"PATH={_CONTAINER_PATH}\"",
           "new": "f\"PATH=/usr/bin:{_CONTAINER_PATH}\"",
-          "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter — the membership check that used to pass this is why the assertion is positional",
+          "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter \u2014 the membership check that used to pass this is why the assertion is positional",
           "symbol_sha": "sha256:e582ffc16628e6f68d7bffa3a9bb5ead02266171821552ea56cc021b0872620f"
         }
       ]
@@ -66,11 +69,12 @@
       "mutants": [
         {
           "id": "a-failed-prepare-is-only-logged",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._ensure_prepared",
           "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
-          "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
+          "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite \u2014 both look like nothing happening",
           "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
         }
       ]
@@ -85,6 +89,7 @@
       "mutants": [
         {
           "id": "no-dependency-carries-a-runner",
+          "origin": "authored",
           "file": "src/specweaver/commons/prepare_plan.py",
           "symbol": "_declares_a_runner",
           "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
@@ -94,6 +99,7 @@
         },
         {
           "id": "a-runner-is-matched-as-a-substring",
+          "origin": "authored",
           "file": "src/specweaver/commons/prepare_plan.py",
           "symbol": "_declares_a_runner",
           "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
@@ -112,6 +118,7 @@
       "mutants": [
         {
           "id": "every-project-takes-the-frozen-route",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._ensure_prepared",
           "old": "locked=lockfile.exists()",
@@ -130,6 +137,7 @@
       "mutants": [
         {
           "id": "requirements-files-are-never-read",
+          "origin": "authored",
           "file": "src/specweaver/commons/tooling_sources.py",
           "symbol": "declared_pytest",
           "old": "    for name in _REQUIREMENT_FILES:",
@@ -148,6 +156,7 @@
       "mutants": [
         {
           "id": "a-supplied-runner-is-not-disclosed",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/python/runner.py",
           "symbol": "PythonQARunner.run_tests",
           "old": "toolchain_note=_supplied_note(self._executor),",
@@ -166,11 +175,12 @@
       "mutants": [
         {
           "id": "the-missing-module-is-not-recognised",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/python/toolchain_absence.py",
           "symbol": "absent_module",
           "old": "match = _NO_MODULE.search(result.stderr or \"\")",
           "new": "match = None",
-          "breaks": "the reason falls back to the interpreter's own line, naming `/cache/venv/bin/python` — a path inside our container that appears nowhere in the reader's project",
+          "breaks": "the reason falls back to the interpreter's own line, naming `/cache/venv/bin/python` \u2014 a path inside our container that appears nowhere in the reader's project",
           "symbol_sha": "sha256:7c09b37f337bc19969e4e49489b17e956a34a1dd0a0e3282f12d1ea0d96c6653"
         }
       ]
@@ -184,6 +194,7 @@
       "mutants": [
         {
           "id": "every-project-claims-to-be-reproducible",
+          "origin": "authored",
           "file": "src/specweaver/commons/prepare_plan.py",
           "symbol": "plan_for",
           "old": "route = \"locked\" if locked else \"resolved\"",
@@ -202,6 +213,7 @@
       "mutants": [
         {
           "id": "cargo-is-asked-for-json-it-cannot-emit",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/rust/runner.py",
           "symbol": "RustRunner.run_tests",
           "old": "cmd = [\"cargo\", \"test\"]",
@@ -220,15 +232,17 @@
       "mutants": [
         {
           "id": "a-failed-build-harvests-as-empty",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/toolchain.py",
           "symbol": "build_failed_without_results",
           "old": "    if total or result.exit_code == 0:",
           "new": "    if True:",
-          "breaks": "a build that never compiled reports `0 passed, 0 failed` — indistinguishable from a project with no tests",
+          "breaks": "a build that never compiled reports `0 passed, 0 failed` \u2014 indistinguishable from a project with no tests",
           "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
         },
         {
           "id": "a-red-suite-is-called-a-build-failure",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/toolchain.py",
           "symbol": "build_failed_without_results",
           "old": "    if total or result.exit_code == 0:",
@@ -247,6 +261,7 @@
       "mutants": [
         {
           "id": "the-failing-test-is-not-named",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/junit_reports.py",
           "symbol": "_failures_in",
           "old": "nodeid=f\"{case.classname}.{case.name}\",",
@@ -256,6 +271,7 @@
         },
         {
           "id": "the-stack-trace-is-dropped",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/junit_reports.py",
           "symbol": "_failures_in",
           "old": "stacktrace=stack[:_MAX_STACK],",
@@ -274,6 +290,7 @@
       "mutants": [
         {
           "id": "rust-is-not-recognised",
+          "origin": "authored",
           "file": "src/specweaver/commons/prepare_plan.py",
           "symbol": "_plan_for_other",
           "old": "    if toolchain == \"cargo\":",
@@ -292,6 +309,7 @@
       "mutants": [
         {
           "id": "every-toolchain-gets-the-python-image",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "_resolve_image",
           "old": "    if toolchain in _TOOLCHAIN_IMAGES:",
@@ -310,6 +328,7 @@
       "mutants": [
         {
           "id": "the-jvm-gets-a-read-only-workspace",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._workspace_mode",
           "old": "        return \"O\" if detect_toolchain(self._mounts.source_root) in (\"maven\", \"gradle\") else \"ro\"",
@@ -328,6 +347,7 @@
       "mutants": [
         {
           "id": "a-missing-report-reads-as-clean",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/toolchain.py",
           "symbol": "report_never_written",
           "old": "    if report.exists():",
@@ -346,15 +366,17 @@
       "mutants": [
         {
           "id": "each-diagnostic-is-reported-twice",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/maven_output.py",
           "symbol": "compile_errors",
           "old": "        if key in seen:",
           "new": "        if False:",
-          "breaks": "Maven prints every diagnostic twice — once compiling, once in the failure summary — so the caller sees double the errors that exist",
+          "breaks": "Maven prints every diagnostic twice \u2014 once compiling, once in the failure summary \u2014 so the caller sees double the errors that exist",
           "symbol_sha": "sha256:950311bf13c353a758df3db1b28e0b3f074ebdf8ea92494adb2a0cebe60b3b8b"
         },
         {
           "id": "the-build-log-is-returned-as-program-output",
+          "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/maven_output.py",
           "symbol": "program_output",
           "old": "        if _EXEC_BANNER.match(line.strip()):",

@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "feature": "B-SENS-03",
   "campaigns": [
     {
@@ -11,6 +11,7 @@
       "mutants": [
         {
           "id": "nested-not-filtered",
+          "origin": "authored",
           "file": "src/specweaver/workspace/analyzers/chunking.py",
           "symbol": "_top_level",
           "old": "return [name for name in symbols if \".\" not in name]",
@@ -29,6 +30,7 @@
       "mutants": [
         {
           "id": "split-truncates",
+          "origin": "authored",
           "file": "src/specweaver/workspace/analyzers/chunking.py",
           "symbol": "_split",
           "old": "return parts or [text]",
@@ -46,6 +48,7 @@
       "mutants": [
         {
           "id": "parser-failure-drops-file",
+          "origin": "authored",
           "file": "src/specweaver/workspace/analyzers/chunking.py",
           "symbol": "chunk_source",
           "old": "        symbols = []",
@@ -64,6 +67,7 @@
       "mutants": [
         {
           "id": "preamble-dropped",
+          "origin": "authored",
           "file": "src/specweaver/workspace/analyzers/chunking.py",
           "symbol": "chunk_source",
           "old": "        if head.strip():",

@@ -89,6 +89,7 @@ def _as_dict(result: Any) -> dict[str, Any]:
         "confirmed": getattr(result, "confirmed", False),
         "killers": list(getattr(result, "killers", [])),
         "leaked": list(getattr(result, "leaked", [])),
+        "breaks": getattr(result, "breaks", None),
         "detail": getattr(result, "detail", ""),
     }
 
@@ -188,6 +189,8 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
             said = result.get("explanation") or "(no explanation recorded)"
             lines.append(f"    {result.get('id', '?')}")
             lines.append(f"      {result.get('verdict', '?')} [{code}]: {said}")
+            if result.get("breaks"):
+                lines.append(f"      breaks: {result['breaks']}")
 
     return "\n".join(lines)
 
