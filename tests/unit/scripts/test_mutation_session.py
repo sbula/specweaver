@@ -245,7 +245,7 @@ class TestVerdictOf:
             scope=self._scope(),
             baseline_failures=["tests/unit/a.py::test_old"],
         )
-        assert v.verdict == "INDETERMINATE"
+        assert v.verdict == "UNMEASURED"
 
     def test_rule_1_a_baseline_failure_outside_scope_does_not_taint(
         self, mutation: ModuleType
@@ -261,25 +261,27 @@ class TestVerdictOf:
             scope=self._scope(),
             baseline_failures=["tests/unit/zzz.py::test_x"],
         )
-        assert v.verdict != "INDETERMINATE"
+        assert v.reason != "scope-already-red"
 
-    def test_rule_2_nothing_ran_is_a_failure(self, mutation: ModuleType) -> None:
+    def test_rule_2_nothing_ran_is_unmeasured_not_a_coverage_gap(
+        self, mutation: ModuleType
+    ) -> None:
         v = mutation.verdict_of(
             self._run(mutation, outcome="NOTHING_RAN", killers=[]), scope=self._scope()
         )
-        assert v.verdict == "FAIL"
+        assert v.verdict == "UNMEASURED"
 
     def test_rule_3_broken_passes_through_unjudged(self, mutation: ModuleType) -> None:
         v = mutation.verdict_of(
             self._run(mutation, outcome="BROKEN", killers=[]), scope=self._scope()
         )
-        assert v.verdict == "BROKEN"
+        assert v.verdict == "UNMEASURED"
 
     def test_rule_4_a_survival_is_a_failure(self, mutation: ModuleType) -> None:
         v = mutation.verdict_of(
             self._run(mutation, outcome="NO_KILL", killers=[]), scope=self._scope()
         )
-        assert v.verdict == "FAIL"
+        assert v.verdict == "UNPROTECTED"
 
     def test_rule_5_a_bystander_kill_is_a_failure(self, mutation: ModuleType) -> None:
         """The rule SF-03 exists for.
@@ -290,12 +292,12 @@ class TestVerdictOf:
         v = mutation.verdict_of(
             self._run(mutation, killers=["tests/unit/unrelated.py::test_y"]), scope=self._scope()
         )
-        assert v.verdict == "FAIL"
+        assert v.verdict == "UNPROTECTED"
         assert "scope" in v.reason
 
     def test_rule_6_an_in_scope_kill_passes(self, mutation: ModuleType) -> None:
         v = mutation.verdict_of(self._run(mutation), scope=self._scope(), confirmed=True)
-        assert v.verdict == "PASS"
+        assert v.verdict == "PROTECTED"
 
     def test_a_stale_mutant_still_carries_a_real_verdict(self, mutation: ModuleType) -> None:
         """`STALE` is a flag, not a verdict — collapsing them loses one of two answers.
@@ -306,14 +308,14 @@ class TestVerdictOf:
         v = mutation.verdict_of(
             self._run(mutation, drift="STALE"), scope=self._scope(), confirmed=True
         )
-        assert v.verdict == "PASS"
+        assert v.verdict == "PROTECTED"
         assert v.drift == "STALE"
 
     def test_an_unhashed_mutant_is_not_drift(self, mutation: ModuleType) -> None:
         v = mutation.verdict_of(
             self._run(mutation, drift="UNHASHED"), scope=self._scope(), confirmed=True
         )
-        assert v.verdict == "PASS"
+        assert v.verdict == "PROTECTED"
         assert v.drift == "UNHASHED"
 
 
@@ -334,12 +336,14 @@ class TestCampaignVerdict:
         verdicts = [self._v(mutation, "PASS"), self._v(mutation, "FAIL")]
         assert mutation.campaign_verdict(verdicts, declared=2) == "FAILED"
 
-    def test_only_indeterminate_is_partial(self, mutation: ModuleType) -> None:
-        verdicts = [self._v(mutation, "PASS"), self._v(mutation, "INDETERMINATE")]
-        assert mutation.campaign_verdict(verdicts, declared=2) == "PARTIAL"
+    def test_an_unmeasured_mutant_fails_the_campaign(self, mutation: ModuleType) -> None:
+        """This used to be `PARTIAL`. Learning nothing is now a finding like any other, so a
+        campaign carrying one has not passed — it has not been measured."""
+        verdicts = [self._v(mutation, "PROTECTED"), self._v(mutation, "UNMEASURED")]
+        assert mutation.campaign_verdict(verdicts, declared=2) == "FAILED"
 
     def test_all_passing_is_passed(self, mutation: ModuleType) -> None:
-        assert mutation.campaign_verdict([self._v(mutation, "PASS")], declared=1) == "PASSED"
+        assert mutation.campaign_verdict([self._v(mutation, "PROTECTED")], declared=1) == "PASSED"
 
     def test_an_empty_campaign_is_not_silently_passed(self, mutation: ModuleType) -> None:
         """[Hostile] Zero results against zero declared must not read as success."""
@@ -494,7 +498,7 @@ class TestJudge:
 
         assert len(judged) == 1
         assert judged[0]["verdicts_returned"] == judged[0]["mutants_declared"] == 1
-        assert judged[0]["results"][0]["verdict"] == "PASS"
+        assert judged[0]["results"][0]["verdict"] == "PROTECTED"
         assert judged[0]["verdict"] == "PASSED", "the campaign must agree with its own results"
 
 
@@ -686,3 +690,111 @@ class TestRunCorpusInParallel:
         _, _, built = self._run(mutation, monkeypatch, ["a", "b", "c"], workers=1)
 
         assert len(built) == 1
+
+
+class TestVerdictVocabulary:
+    """One vocabulary, naming what we learned rather than the mutant's fate.
+
+    `KILLED`/`SURVIVED` describe what happened to the mutant, and they invert against test
+    semantics: "5 killed" is the success line and "1 survived" is the alarm. Read quickly by a
+    tired human at 08:00 they mean the opposite of how they sound, and this session confused them
+    twice while designing the replacement.
+
+    The three below say what the run taught us about our own code, so good news reads as good.
+    Every verdict that is not `PROTECTED` is a finding and needs a human's answer --- including
+    `UNMEASURED`, which used to pass the gate in two of its three forms.
+    """
+
+    def _run(self, mutation: ModuleType, **kwargs: object) -> object:
+        base = {
+            "derived_id": "F FR-1 m",
+            "outcome": "KILL",
+            "killers": ["tests/a.py::test_x"],
+            "detail": "",
+            "drift": "OK",
+        }
+        return mutation.MutantRun(**{**base, **kwargs})
+
+    def test_an_in_scope_confirmed_kill_is_protected(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(self._run(mutation), scope=["tests/a.py"], confirmed=True)
+
+        assert v.verdict == "PROTECTED"
+        assert v.reason is None, "a clean pass has no `why`"
+
+    def test_nothing_objecting_is_unprotected_with_a_code(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NO_KILL", killers=[]), scope=["tests/a.py"]
+        )
+
+        assert (v.verdict, v.reason) == ("UNPROTECTED", "no-killer")
+
+    def test_an_out_of_scope_killer_is_unprotected_not_protected(
+        self, mutation: ModuleType
+    ) -> None:
+        """A bystander test dying proves something noticed, never that this requirement is
+        covered."""
+        v = mutation.verdict_of(
+            self._run(mutation, killers=["tests/elsewhere.py::test_y"]),
+            scope=["tests/a.py"],
+            confirmed=True,
+        )
+
+        assert (v.verdict, v.reason) == ("UNPROTECTED", "out-of-scope-killer")
+
+    def test_an_unconfirmed_kill_is_unmeasured(self, mutation: ModuleType) -> None:
+        """The killer fails without the mutant too, so the run measured the test, not the code."""
+        v = mutation.verdict_of(self._run(mutation), scope=["tests/a.py"], confirmed=False)
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "killer-already-failing")
+
+    def test_collecting_nothing_is_unmeasured_not_unprotected(self, mutation: ModuleType) -> None:
+        """A scope naming no tests is a broken campaign, not a gap in the code."""
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NOTHING_RAN", killers=[]), scope=["tests/a.py"]
+        )
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "nothing-collected")
+
+    def test_a_red_scope_is_unmeasured(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(mutation),
+            scope=["tests/a.py"],
+            baseline_failures=["tests/a.py::test_other"],
+            confirmed=True,
+        )
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "scope-already-red")
+
+    def test_a_broken_run_keeps_its_specific_reason(self, mutation: ModuleType) -> None:
+        """`bad-anchor` and `timed-out` need telling apart: one is a campaign someone wrote
+        wrong, the other is a test that hangs. Both are UNMEASURED and the fixes differ."""
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="BROKEN", detail="timed out after 900s", killers=[]),
+            scope=["tests/a.py"],
+        )
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "timed-out")
+
+    def test_a_bad_anchor_is_told_apart_from_a_hang(self, mutation: ModuleType) -> None:
+        v = mutation.verdict_of(
+            self._run(
+                mutation, outcome="BROKEN", detail="anchor appears 3 times in x.py", killers=[]
+            ),
+            scope=["tests/a.py"],
+        )
+
+        assert (v.verdict, v.reason) == ("UNMEASURED", "bad-anchor")
+
+    def test_every_verdict_carries_a_human_explanation(self, mutation: ModuleType) -> None:
+        """The code is for machines; a human still has to read the morning summary."""
+        v = mutation.verdict_of(
+            self._run(mutation, outcome="NO_KILL", killers=[]), scope=["tests/a.py"]
+        )
+
+        assert v.explanation and " " in v.explanation
+
+    def test_only_protected_is_not_a_finding(self, mutation: ModuleType) -> None:
+        """The control on the whole vocabulary: exactly one of the three is good news."""
+        assert mutation.is_finding("UNPROTECTED") is True
+        assert mutation.is_finding("UNMEASURED") is True
+        assert mutation.is_finding("PROTECTED") is False

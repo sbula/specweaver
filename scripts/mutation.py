@@ -99,78 +99,18 @@ class MutantRun:
     confirmed: bool = False
 
 
-@dataclass(frozen=True)
-class Verdict:
-    """What a mutant's run means for the requirement it was aimed at."""
-
-    derived_id: str
-    verdict: str
-    reason: str = ""
-    drift: str = "OK"
-
-
-def _files_of(node_ids: list[str]) -> set[str]:
-    """The files a list of node ids belongs to. Node ids are `path::test`."""
-    return {node.split("::", 1)[0] for node in node_ids}
-
-
-def verdict_of(
-    run: MutantRun,
-    *,
-    scope: list[str],
-    baseline_failures: list[str] | None = None,
-    confirmed: bool = False,
-) -> Verdict:
-    """Seven ordered rules, first match wins. The order is the design, not an implementation detail.
-
-    The distinction this whole sub-feature exists for: `KILL` means *tests failed*; `PASS` means
-    *this requirement is protected*. A bystander test dying satisfies the first and not the second,
-    and treating them as one is how a campaign certifies a requirement nothing covers.
-
-    `drift` rides through rather than deciding anything. "The code moved" and "the requirement is
-    unprotected" need different responses, and a result that can only say one of them makes the
-    other invisible.
-    """
-    scoped = set(scope)
-
-    def out(verdict: str, why: str = "") -> Verdict:
-        return Verdict(run.derived_id, verdict, why, run.drift)
-
-    # 1. A baseline failure inside this scope makes everything else unreadable.
-    if _files_of(list(baseline_failures or [])) & scoped:
-        return out("INDETERMINATE", "a test in this scope was already failing before the mutant")
-    # 2. Nothing collected is not a survival — it is a scope that measured nothing.
-    if run.outcome == "NOTHING_RAN":
-        return out("FAIL", "no tests were collected for this scope")
-    # 3. Pytest itself broke; there is nothing here to judge.
-    if run.outcome == "BROKEN":
-        return out("BROKEN", run.detail[:200])
-    # 4. Nothing objected.
-    if run.outcome == "NO_KILL":
-        return out("FAIL", "no test noticed the behaviour disappearing")
-    # 5. Something objected, but nothing the campaign named.
-    if not (_files_of(run.killers) & scoped):
-        return out("FAIL", "killed only by tests outside this campaign's scope")
-    # 6/7. An in-scope kill counts only once it reproduces without the mutant.
-    if not confirmed:
-        return out("FAIL", "flaky: the killer fails without the mutant too")
-    return out("PASS")
-
-
-def campaign_verdict(verdicts: list[Verdict], *, declared: int) -> str:
-    """`FR-8` — accounting first, then the worst verdict present.
-
-    Accounting comes first because a campaign that lost a result cannot be scored on the results it
-    kept: the missing one is exactly where a crash or a silent skip would hide.
-    """
-    if len(verdicts) != declared or not verdicts:
-        return "FAILED"
-    kinds = {v.verdict for v in verdicts}
-    if "FAIL" in kinds or "BROKEN" in kinds:
-        return "FAILED"
-    if kinds - {"PASS"}:
-        return "PARTIAL"
-    return "PASSED"
+#: What a mutant taught us about our own code. Named for the conclusion, not for the mutant's
+#: fate: `KILLED`/`SURVIVED` invert against test semantics, so the good line reads as the bad one.
+# The verdict vocabulary lives beside this module. Re-exported at module level, not imported
+# where used: the session tests patch these names on `mutation` itself.
+_verdict_mod = _sibling("_mutation_verdict")
+PROTECTED = _verdict_mod.PROTECTED
+UNPROTECTED = _verdict_mod.UNPROTECTED
+UNMEASURED = _verdict_mod.UNMEASURED
+Verdict = _verdict_mod.Verdict
+is_finding = _verdict_mod.is_finding
+verdict_of = _verdict_mod.verdict_of
+campaign_verdict = _verdict_mod.campaign_verdict
 
 
 #: The prefix every session sandbox carries. Used to recognise our own orphans and, just as

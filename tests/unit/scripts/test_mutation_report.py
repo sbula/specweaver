@@ -112,12 +112,15 @@ class TestBuildReport:
                 "verdict": "FAILED",
                 "mutants_declared": 2,
                 "verdicts_returned": 2,
-                "results": [_verdict(mutation, "PASS"), _verdict(mutation, "FAIL")],
+                "results": [
+                    _verdict(mutation, "PROTECTED"),
+                    _verdict(mutation, "UNPROTECTED"),
+                ],
             }
         ]
         doc = self._doc(report, mutation, campaigns=campaigns)
-        assert doc["summary"]["counts"]["pass"] == 1
-        assert doc["summary"]["counts"]["fail"] == 1
+        assert doc["summary"]["counts"]["protected"] == 1
+        assert doc["summary"]["counts"]["unprotected"] == 1
 
     def test_a_failing_run_still_produces_a_report(
         self, report: ModuleType, mutation: ModuleType

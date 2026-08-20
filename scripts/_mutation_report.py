@@ -57,7 +57,8 @@ def sanitise_document(node: Any) -> Any:
 
 
 def _counts(campaigns: list[dict[str, Any]]) -> dict[str, int]:
-    tally = {"pass": 0, "fail": 0, "indeterminate": 0, "stale": 0, "broken": 0}
+    """One key per verdict, plus drift, which is orthogonal to all three."""
+    tally = {"protected": 0, "unprotected": 0, "unmeasured": 0, "stale": 0}
     for campaign in campaigns:
         for result in campaign["results"]:
             data = _as_dict(result)
@@ -154,9 +155,10 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
 
     lines += [
         f"  mutants      {summary.get('declared', 0)} declared, {summary.get('returned', 0)} returned"
-        f"  (pass {counts.get('pass', 0)}, fail {counts.get('fail', 0)},"
-        f" indeterminate {counts.get('indeterminate', 0)},"
-        f" stale {counts.get('stale', 0)}, broken {counts.get('broken', 0)})",
+        f"  (protected {counts.get('protected', 0)},"
+        f" unprotected {counts.get('unprotected', 0)},"
+        f" unmeasured {counts.get('unmeasured', 0)},"
+        f" stale {counts.get('stale', 0)})",
         "",
     ]
 
