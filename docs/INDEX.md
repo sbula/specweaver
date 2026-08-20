@@ -8,6 +8,9 @@ Guide to the documentation structure. Start with the [README](../README.md) for 
 
 | Document | Status | Description |
 |----------|:------:|-------------|
+| [What the project is](../.agents/PROJECT.md) | ✅ | **Start here if you are an agent** — scope, layout, testing, expected documentation |
+| [How we work](../.agents/PRINCIPLES.md) | ✅ | The non-negotiables, and why each one exists |
+| [Where the project is](../.agents/STATE.md) | ✅ | Delivered, set back, missing. Updated at commit boundaries |
 | [Quick-Start Guide](quickstart.md) | ✅ | From `sw init` to a completed pipeline run in 5 minutes |
 | [Developer Guide](developer_guide.html) | ✅ | Architecture overview, diagrams, onboarding (open in browser) |
 | [Working in This Repo](dev_guides/working_in_this_repo.md) | ✅ | **Read before your first change** — the operational traps that have actually cost sessions |
