@@ -52,8 +52,9 @@ This document tracks all capabilities related to static analysis, linting, rules
   > _(split from 3.20)_ | Injects strict constraints or relaxed defaults into the fixed 10-test battery based on the target module's domain risk (DAL) via "Fractal Resolution," outsourcing FFI
   > boundary checks to native tools (Tach, ArchUnit, ESLint). Replaced legacy Database Validation Overrides with Pipeline YAML Inheritance. **Complete**: 3684 tests.
 * **`C-VAL-04` ✅: Traceability Matrix Check** (Legacy: 3.21)<br>
-  > _(new)_ | Mathematically counts FRs/NFRs in the L3 spec and asserts exact matching `@traces(req_id)` tags in the AST of generated test files. Hard-fails pipeline if coverage is incomplete,
-  > preventing "Correlated Hallucinations."
+  > _(new)_ | Counts FRs/NFRs in the L3 spec and asserts exact matching `@traces(req_id)` tags in the AST of generated test files. Hard-fails the pipeline when a
+  > requirement has **zero** tests — an omission detector. It cannot vouch for test *quality*: the tag is written by the same LLM as the test, so a hallucinated
+  > test carries a well-formed tag. Test quality is `A-VAL-03`'s (mutation) job. _(Re-worded 2026-08-20, [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md).)_
 * **`C-VAL-05` 🔧: Rubrics-as-Content Validation**<br>
   > [Description](../features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) | _(new, 2026-07-21)_ | "Rules as code, rubrics as content": the review engine and its response contract stay code;
   > the spec and code **review criteria** become versioned markdown rubrics — shipped defaults, per-project `.specweaver/rubrics/` overrides, DAL-gated variants, and id/version/checksum/source
@@ -76,11 +77,16 @@ This document tracks all capabilities related to static analysis, linting, rules
   > and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness. _(2026-07-21: design **rubric-first** on the `C-VAL-05` substrate — the
   > C10 rule class is a thin engine shim; the completeness criteria live in a versioned, DAL-gated rubric file, not in Python.)_
 * **`B-VAL-04` 🔜: SWE-Bench QA Gates** (Legacy: 3.47)<br>
-  > _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to mathematically prove that platform extensions haven't degraded the
-  > internal token costs or success rate.
+  > _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to show that platform changes
+  > haven't degraded token costs or success rate. Consumer: the release gate before trusting a new platform version with real-money projects. **Hard requirement**
+  > _(2026-08-20 [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))_: model-pinned, multi-run, with known variance — unpinned, the score
+  > measures the plugged-in model, not the platform.
 * **`B-VAL-05` 🔜: DAL Architecture Gate**<br>
   > _(new)_ | A new `sw check` Validation Engine rule that asserts a package's dependencies do not violate DAL boundaries (e.g., ensuring a DAL-A component never imports a DAL-C component). Enforces
   > architectural testing intensity requirements using the Persistent Knowledge Graph.
+  > **DAL calibration gate** _(2026-08-20)_: do not design per-level behaviour yet — the tier count is an empirical question the first real multi-criticality
+  > project (the trading system) will answer. Measured 2026-08-20: every live DAL consumer decides on strict/relaxed only. See the
+  > [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md).
 
 * **`B-VAL-06` 🔜: Cohesion & Coupling Metrics (LCOM4, CBO, Instability)**<br>
   > [Description](../features/topic_05_validation/B-VAL-06/B-VAL-06_design.md) | _(2026-07-28 — split out of `C-VAL-06` because it needs tooling that does not exist for Python and must not gate the
@@ -92,12 +98,15 @@ This document tracks all capabilities related to static analysis, linting, rules
   > _(new)_ | Native parsing of `.proto` (gRPC), `openapi.yaml`, and AsyncAPI files to catch contract drift across polyglot microservices. **Complete**: Implementation of native YAML/Proto extractors,
   > Atom/Tool orchestrator bindings, and C13 Contract Drift Rule natively mapped against AST validation.
 * **`A-VAL-02` 🔜: Symbolic Math Validation** (Legacy: 3.39)<br>
-  > _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code.
+  > _(new)_ | Specialized rules verifying that mathematical formulas and numeric properties in generated code match the spec's formulas — transcription checking;
+  > a transposed sign in a pricing formula costs real money. Grounded in the trading system (US-13/US-18). _(Re-scoped 2026-08-20,
+  > [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md): the ML half — "verify FinBERT calculations" — was removed; a neural net's outputs cannot
+  > be formally verified, and "proves secure / discovers 0-days" promised a different universe than the mechanism delivers.)_
 * **`A-VAL-03` 🔜: Mutation Testing Gates** (Legacy: 4.7)<br>
   > `future_capabilities_reference.md` §13, §14 | Verification gates (mutation testing, assertion density). See `TECH-049`.
-* **`A-VAL-04` 🔜: Rust PyO3 Validations** (Legacy: Backlog)<br>
-  > _(new)_ | To mathematically unlock 10x-50x performance scaling and guarantee absolute memory-safe LLM sandboxing. Static Validation Rule Pipelines: Rewrite regex-heavy mathematical validation
-  > tasks natively in compiled Rust engine cores to instantly evaluate multi-thousand line specs.
+* **`A-VAL-04` ⚰️ RETIRED:** *(Rust PyO3 Validations — retired 2026-08-20 by the [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md):
+  validation is milliseconds beside the LLM calls that dominate every pipeline, and rewriting validation rules in Rust does nothing for the sandbox — the
+  sandbox's threat is what generated code does, not how the validator allocates memory. ID is dead — do NOT reuse.)*
 * **`A-VAL-05` 🔜: Multi-Modal Visual Quality Gates (V-Series)** (Legacy: 4.11)<br>
   > _(new)_ | Expanding the validation engine battery with `V-Series` rules using VLM (Vision LLMs) + Headless Browsers (Playwright) via internal Docker rendering, calculating visual UI drift
   > perfectly against the UI component specifications.

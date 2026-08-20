@@ -58,6 +58,8 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(new)_ | Allows the runner to dispatch authenticated webhooks or trigger remote Jenkins/GitHub Actions upon successful validation.
 * **`C-FLOW-09` 🔜: DAL CI/CD Risk Evaluation**
   > _(new)_ | Auto-rejects PRs if changes cause architectural degradation (e.g., DAL-C attempting to import DAL-A).
+  > **DAL calibration gate** _(2026-08-20)_: do not design per-level behaviour yet — the tier count is an empirical question the trading project will answer.
+  > Measured 2026-08-20: every live DAL consumer decides on strict/relaxed only. See the [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md).
 * **`C-FLOW-13` 🔜: Model Catalogue**
   > [Census](../../analysis/model_pricing_2026-08-16.md) | _(2026-08-16 — from `INT-US-16` CB-2, asking who keeps the price table true.)_ | `E-FLOW-03` registered
   > PROVIDERS; nothing registers MODELS. All 19 rates live as `default_costs` dicts in five adapter classes, so a new Gemini needs no new adapter and still needs a source change, a release and an

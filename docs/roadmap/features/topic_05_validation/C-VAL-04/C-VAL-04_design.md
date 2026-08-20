@@ -7,10 +7,13 @@
 
 ## Feature Overview
 
-Feature 3.21 adds an Automated Traceability Matrix (`@traces`) to the validation layer. It solves
-"Correlated Hallucinations" (where tests pass but don't map to actual requirements) by
-mathematically counting Functional and Non-Functional Requirements in the L3 Spec and asserting
-exact matching `@traces(req_id)` tags in the AST of generated test files. It interacts natively with
+Feature 3.21 adds an Automated Traceability Matrix (`@traces`) to the validation layer. It
+detects **omissions** — requirements no test claims at all — by counting Functional and
+Non-Functional Requirements in the L3 Spec and asserting exact matching `@traces(req_id)` tags in
+the AST of generated test files. *(Corrected 2026-08-20: this design originally claimed to solve
+"Correlated Hallucinations". It cannot — the tag is written by the same LLM as the test, so a
+hallucinated test carries a well-formed tag. Test quality is `A-VAL-03`'s (mutation) territory; see
+`docs/analysis/benefit_chain_analysis_2026-08-20.md`.)* It interacts natively with
 the Markdown spec parser, AST extraction tools, and validation pipelines, and does NOT touch
 execution logic or runtime behavior.
 Key constraints: Hard-fails the validation pipeline if coverage is incomplete. Must use structural AST parsing instead of naive text search.

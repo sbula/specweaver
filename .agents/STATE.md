@@ -23,7 +23,10 @@ Read the design before touching either. Each says so in its own first section.
 | `E-VAL-03` | It is named *AST* Prompt Injection Sanitization. It scans rendered text line by line. It does not conform to its own specification |
 | `B-FLOW-05` | Its ceilings sit on `LLMSettings`. Every LLM access, payment, pricing, token and limit parameter is to live in **one central place** — file or database is still undecided |
 
-`B-FLOW-05` is blocked on that decision. `E-VAL-03` is not blocked; it needs rebuilding.
+`B-FLOW-05` is blocked on that decision. `E-VAL-03` was ruled **nonsense** under the 2026-08-20
+benefit review — do **not** rebuild it. Its disposition (retire the ID, delete `injection.py`,
+keep `escaping.py`, possibly mint the structure-into-prompts replacement) awaits the user. Read
+`docs/analysis/benefit_chain_analysis_2026-08-20.md` §8 first.
 
 ## Live and worth knowing
 
@@ -36,6 +39,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 
 | What | Result |
 |---|---|
+| Benefit-chain review, whole roadmap | 3 retirements (`A-VAL-04`, `A-EXEC-03`, `C-SENS-06`), `A-SENS-03` folded into `A-SENS-01`, `A-UI-01` re-scoped to tamper-evident agent audit, DAL consumers gated on trading-project calibration. Record: `docs/analysis/benefit_chain_analysis_2026-08-20.md` |
 | Mutation data contract, six stages | Four JSON structures re-engineered after six rounds of grilling |
 | Verdicts | `PROTECTED` / `UNPROTECTED` / `UNMEASURED`. Every one that is not a pass is a finding |
 | The ledger | Findings close with a reason instead of vanishing. Kept 12 months |

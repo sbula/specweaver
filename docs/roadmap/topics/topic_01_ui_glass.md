@@ -52,8 +52,11 @@ This document tracks all capabilities related to the User Interface, visual dash
   > _(new)_ | Execute `sw init`, `draft`, and `check` workflows externally outside SpecWeaver's boundary (e.g., orchestrating an external 20-microservice proprietary trading system).
 
 ## DAL-A: Mission-Critical
-* **`A-UI-01` 🔜: Dark Factory Compliance Logging** (Legacy: 4.12)<br>
-  > _(new)_ | Integrating with Artifact Lineage to emit immutable, signed ledgers matching Model IDs/Spec Hashes directly to physical Lines of Code for Enterprise regulatory audits.
+* **`A-UI-01` 🔜: Tamper-Evident Agent Audit Ledger** (Legacy: 4.12)<br>
+  > _(new; re-scoped 2026-08-20 — [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))_ | Integrates with Artifact Lineage (`B-SENS-01`) to make
+  > the audit trail tamper-evident (append-only, hash-chained). The adversary is the agent itself: it runs with write access on the machine that produces the
+  > record. The consumer is the operator auditing agent work remotely (`D-UI-06` + US-6), not a regulator — the former "Dark Factory Compliance Logging"
+  > framing named a consumer that does not exist.
 * **`A-UI-02` 🔜: Standardized Benchmarking CI** (Legacy: 6.1)<br>
   > _(new)_ | Adapt an internal pipeline designed specifically to ingest public `SWE-bench` tickets, generate code, and produce normalized dashboard validation of Attributed Lifecycle Scores
   > regression.

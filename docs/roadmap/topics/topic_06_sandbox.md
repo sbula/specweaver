@@ -65,9 +65,11 @@ This document tracks all capabilities related to process isolation, execution bo
   > Prioritizes state determinism over execution speed.
 * **`A-EXEC-02` 🔜: Fuzzing Harnesses** (Legacy: 4.13)<br>
   > _(new)_ | Replaces parameterised scenarios with dynamically written `libFuzzer` logic loops against the generated AST for deep memory safety checks on C++/Rust targets.
-* **`A-EXEC-03` 🔜: Rust PyO3 AST & Sandbox C-Bindings** (Legacy: Backlog)<br>
-  > _(new)_ | Polyglot AST Skeleton Extractor & Macro Evaluator natively in Rust (using Rayon for C-level concurrency). Git Worktree Bouncer Sandbox: Replace the OS-level `subprocess.run(["git"])`
-  > Python diff-striping mechanics with native Rust `libgit2` C-bindings.
+  > **Gated** _(2026-08-20 [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))_: sequenced behind `D-INTL-08` (polyglot implement loop) AND a
+  > real native-code target — the trading system as planned is not one.
+* **`A-EXEC-03` ⚰️ RETIRED:** *(Rust PyO3 AST & Sandbox C-Bindings — retired 2026-08-20 by the
+  [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md): it speeds steps that are milliseconds beside the LLM calls dominating every run; no
+  measured wait on the bouncer or extractor was ever recorded. ID is dead — do NOT reuse.)*
 * **`A-EXEC-04` 🔜: Advanced Row-Level Task Locking**
   > _(new)_ | Advanced transactional concurrency beyond basic OCC. Pessimistic row-level locking (SELECT FOR UPDATE semantics), WAL2 mode evaluation, and multi-agent deadlock detection for fleets of
   > 20+ simultaneous agents. Builds on `B-INTL-09`'s basic heartbeat/OCC foundation.

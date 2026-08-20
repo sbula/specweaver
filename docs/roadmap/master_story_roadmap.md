@@ -172,8 +172,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
     *   🟡 **Rubrics-as-Content:**
         *   `🔧` **C-VAL-05:** Rubrics-as-Content Validation
-    *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
+    *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-VAL-04` optimized a non-bottleneck; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
 
 ### 🟢 US-2: The Interactive Drafter
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
@@ -262,8 +261,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
     *   🟢 **Framework Native Understanding:**
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
-    *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **D-SENS-04:** Parallel AST Extraction Engine
+    *   🔴 **Parallel Extraction (measurement-gated):**
+        *   `[ ]` **D-SENS-04:** Parallel AST Extraction Engine — build only on a measured scan-time need (see topic_02)
 
 ---
 
@@ -323,8 +322,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **B-EXEC-04:** [Kernel-Enforced Resource Bounds (cgroups v2)](features/topic_06_sandbox/B-EXEC-04/B-EXEC-04_design.md)
     *   🔴 **Extreme Execution Paranoia:**
         *   `[ ]` **A-EXEC-01:** Functional Agent Sandboxing (Black Box Ledgers)
-    *   🔴 **Mathematical Speed & Security (Rust):**
-        *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
+    *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-EXEC-03`; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
     *   🟢 **Per-Run (Session) Worktree Isolation:**
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
@@ -351,7 +349,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
         *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring)
-        *   `[ ]` **A-SENS-03:** Event-driven knowledge graph updates
+        *   `[ ]` **A-SENS-03:** Event trigger for `A-SENS-01` semantic-hash sync (folded 2026-08-20; daemon-mode consumers only)
     *   🔴 **Static Code Flow Analysis:**
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
@@ -377,8 +375,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Automated Code Purging:**
         *   `[ ]` **A-FLOW-03:** Dead Code Detection & Analysis (finding unreachable functions using the graph for human review)
 
-### 🟡 US-13: Financial-Grade Math Proofs
-**Benefit:** *The agent mathematically proves its algorithms are secure before I deploy them to production, discovering 0-days natively.*
+### 🟡 US-13: Financial Math Validation
+**Benefit:** *Mathematical formulas in generated code provably match the spec's formulas before deployment — a transposed sign in a pricing formula costs real money.*
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -415,7 +413,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🟡 **Enterprise Compliance Protocols:**
         *   `✅` **B-SENS-01:** Artifact lineage graph
-        *   `[ ]` **A-UI-01:** 'Dark Factory' Compliance Logging
+        *   `[ ]` **A-UI-01:** Tamper-Evident Agent Audit Ledger
     *   🔴 **Zero-Trust ACL:**
         *   `[ ]` **B-EXEC-02:** Tiered access rights & Provenance tracking
 
@@ -447,7 +445,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
-    *   `[ ]` **B-VAL-04:** Agent Platform Benchmarking (`sw eval`)
+    *   `[ ]` **B-VAL-04:** Agent Platform Benchmarking (`sw eval`) — model-pinned, multi-run, known variance (else the score measures the model, not the platform)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Continuous Integration:**
         *   `[ ]` **A-UI-02:** Standardized Benchmarking CI
@@ -488,6 +486,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-20: Enterprise Architecture Enforcement
 **Benefit:** *My project cannot degrade — test intensity is enforced per DAL and forbidden dependencies are blocked across the DAG.*
+> **DAL calibration gate** _(2026-08-20)_: the tier count is an empirical question the trading project will answer; no consumer designs per-level behaviour
+> before that. Measured: every live DAL decision is strict/relaxed. See the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md).
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
@@ -525,8 +525,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **A-VAL-01:** Protocol/Schema Analyzers (.proto, openapi)
     *   `✅` **C-VAL-04:** Traceability Matrix Check
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Mathematical Speed & Security:**
-        *   `[ ]` **A-VAL-04:** Rust PyO3 Validations (Massive performance scale for deep contract checking)
+    *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-VAL-04`; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
 
 ### 🟢 US-23: Enterprise Tool Extension (MCP)
 **Benefit:** *I can instantly plug SpecWeaver into my company's internal tools (Jira, Confluence) using the Model Context Protocol without writing custom Python adapters.*

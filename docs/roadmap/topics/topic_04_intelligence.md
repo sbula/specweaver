@@ -90,8 +90,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | Agent isolation patterns (multi-agent review). Ensures that multiple agents reviewing the same architecture operate in secure, independent sandboxes to prevent contextual contamination
   > or collective hallucinations. _(2026-07-21: depends on `C-FLOW-11` (single-agent work units) + `C-EXEC-06` (session isolation) — multi-agent is N work units, not a separate execution substrate.)_
 * **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
-  > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether
-  > the code failed the scenario, or if the scenario was written incorrectly.
+  > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario,
+  > and judges whether the code failed the scenario, or if the scenario was written incorrectly.
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system. _(2026-07-21: the LLM-judgment half should be
   > designed **rubric-first** on the `C-VAL-05` substrate — graph-diff mechanics stay code, review criteria become rubric content.)_
@@ -106,10 +106,12 @@ This document tracks all capabilities related to LLM integration, specification 
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>
-  > _(inspired by Cavekit)_ | Branches the Arbiter Agent into the `sw draft` phase to run a Red Team adversarial challenge on the Spec. Mathematically disproves/attacks the L3 Spec for contradictions
-  > and edge-cases *before* generation, minimizing downstream rollout failures.
+  > _(inspired by Cavekit)_ | Branches the Arbiter Agent into the `sw draft` phase to run a Red Team adversarial challenge on the Spec. Attacks the L3 Spec for
+  > contradictions and edge-cases *before* generation, minimizing downstream rollout failures.
 * **`A-INTL-02` 🔜: LLM Symbolic Execution** (Legacy: 4.14)<br>
-  > _(new)_ | Using heuristics to actively guide strict symbolic compilers (like KLEE) by aggressively pruning execution trees to natively discover 0-days.
+  > _(new)_ | Using heuristics to actively guide strict symbolic compilers (like KLEE) by pruning execution trees to find memory-safety defects. **Gated**
+  > _(2026-08-20 [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))_: KLEE targets native code — sequenced behind `D-INTL-08` (polyglot
+  > implement loop) AND a real C/C++ or Rust target; the trading system as planned is not one.
 * **`A-INTL-03` 🔜: Socratic Drafting** (Legacy: 5.6)<br>
   > Phase A+B (seeds in Phase 2) | Socratic drafting flow — topology-aware questioning during `sw draft`
 * **`A-INTL-04` 🔜: Memory Consolidation** (Legacy: 5.7)<br>
