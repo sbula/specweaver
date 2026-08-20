@@ -171,14 +171,19 @@ class TestKillers:
         assert mut.is_broken(out) is True
 
 
-class TestVerdict:
-    """`verdict` — the one word the audit cites."""
+class TestOutcome:
+    """`outcome` — what happened to the run, not what it means.
 
-    def test_no_killers_means_survived(self, mut: ModuleType) -> None:
-        assert mut.verdict([]) == "SURVIVED"
+    Renamed from `verdict`, which now names the judgement: scope, confirmation and baseline
+    applied. One word for two layers is how a reader comes to believe a bystander test proves a
+    requirement.
+    """
 
-    def test_any_killer_means_killed(self, mut: ModuleType) -> None:
-        assert mut.verdict(["tests/unit/a.py::test_one"]) == "KILLED"
+    def test_no_killers_is_silent(self, mut: ModuleType) -> None:
+        assert mut.outcome([]) == "SILENT"
+
+    def test_any_killer_objected(self, mut: ModuleType) -> None:
+        assert mut.outcome(["tests/unit/a.py::test_one"]) == "OBJECTED"
 
 
 class TestProbePath:
@@ -242,7 +247,7 @@ class TestRunOneRestoresTheFile:
 
         result = mut.run_one(tmp_path, file="src/thing.py", old="return 1", new="return 2")
 
-        assert result["verdict"] == "SURVIVED"
+        assert result["outcome"] == "SILENT"
         assert target.read_text(encoding="utf-8") == original
 
     def test_the_file_is_restored_even_when_the_run_raises(

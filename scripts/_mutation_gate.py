@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 #: The hour the nightly session is scheduled for. The gate measures freshness against the
 #: schedule rather than against a tolerance, because a tolerance is a window in which a dead
 #: scheduler looks alive: a 48-hour allowance let a run that hung at 03:00 and never wrote a
-#: report be answered with the previous morning's verdict, and it would have kept answering that
+#: record be answered with the previous morning's verdict, and it would have kept answering that
 #: way every morning after.
 NIGHTLY_HOUR = 3
 
@@ -100,47 +100,47 @@ def findings_in(record: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def last_expected_run(now: float) -> float:
-    """The most recent moment the nightly session should have produced a report.
+    """The most recent moment the nightly session should have produced a session record.
 
     Today's scheduled hour once it has passed, else yesterday's. Comparing against this rather
     than against an age in hours is what makes a silent scheduler visible: the answer changes the
-    moment a run is due, so a report that was current an hour ago becomes stale on schedule.
+    moment a run is due, so a session record that was current an hour ago becomes stale on schedule.
     """
     parts = time.localtime(now)
     todays = time.mktime((parts.tm_year, parts.tm_mon, parts.tm_mday, NIGHTLY_HOUR, 0, 0, 0, 0, -1))
     return todays if todays <= now else todays - 86400
 
 
-def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
+def gate_verdict(record_path: Path, ledger_path: Path) -> GateResult:
     """Three rules, in order.
 
-    Staleness first: a verdict computed from a report nobody produced is worse than no verdict, and
+    Staleness first: a verdict computed from a session record nobody produced is worse than no verdict, and
     checking the contents of a file that may be a week old would answer the wrong question.
     """
     expected = last_expected_run(time.time())
-    if not report_path.is_file():
-        return GateResult(True, "no report — the session has not run")
-    mtime = report_path.stat().st_mtime
+    if not record_path.is_file():
+        return GateResult(True, "no session record — the session has not run")
+    mtime = record_path.stat().st_mtime
     if mtime < expected:
         age_hours = (time.time() - mtime) / 3600
         return GateResult(
             True,
             f"the {time.strftime('%Y-%m-%d %H:%M', time.localtime(expected))} session did not "
-            f"leave a report — the newest is {age_hours:.0f}h old. A run that hangs, crashes or "
-            f"never starts writes nothing, so an old report is the symptom, not the all-clear",
+            f"leave a session record — the newest is {age_hours:.0f}h old. A run that hangs, crashes or "
+            f"never starts writes nothing, so an old session record is the symptom, not the all-clear",
         )
 
-    report = _read_json(report_path, {})
-    # A red baseline invalidates every verdict in the report, which the summary already states in
+    record = _read_json(record_path, {})
+    # A red baseline invalidates every verdict in the session record, which the summary already states in
     # as many words. Checked before the findings, because there is no point asking whether findings
-    # were read when none of them mean anything. A report with no baseline recorded was run with
+    # were read when none of them mean anything. A record with no baseline recorded was run with
     # `--no-baseline` and never claimed to know.
-    baseline = (report.get("summary") or {}).get("baseline")
+    baseline = (record.get("summary") or {}).get("baseline")
     if baseline is not None and not baseline.get("green"):
         return GateResult(
             True,
             f"the baseline was not green ({baseline.get('failed', '?')} failing), so every verdict "
-            f"in this report was judged against a tree whose suite never passed",
+            f"in this record was judged against a tree whose suite never passed",
         )
     # `TECH-056`: a **disposition**, not mere presence. `record_run` runs at the end of the same
     # session that discovers a finding and writes it as `{"runs": 1}` with nothing decided, so
@@ -153,7 +153,7 @@ def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
     }
     unconfirmed = [
         f["id"]
-        for f in findings_in(report)
+        for f in findings_in(record)
         if f.get("verdict") in BLOCKING_VERDICTS and f["id"] not in known
     ]
     if unconfirmed:
@@ -275,7 +275,7 @@ def fold_session(
 
 
 def record_run(
-    report_path: Path,
+    record_path: Path,
     ledger_path: Path,
     *,
     declared: set[str] | None = None,
@@ -286,7 +286,7 @@ def record_run(
     told from one somebody deleted, and those close for opposite reasons — the second is how a
     ledger could be cleared by removing campaigns and read as a year of diligent fixing.
     """
-    record = _read_json(report_path, {})
+    record = _read_json(record_path, {})
     mutants = findings_in(record)
     judged = {str(m["id"]): str(m.get("verdict", "")) for m in mutants if m.get("id")}
     reasons = {str(m["id"]): m.get("reason") for m in mutants if m.get("id")}

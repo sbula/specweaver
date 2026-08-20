@@ -84,10 +84,10 @@ class TestLoadCampaign:
 
 
 _RESULTS: list[dict[str, object]] = [
-    {**_mutant(claim="C9 — healthy"), "verdict": "KILLED", "killers": ["t::a", "t::b"]},
-    {**_mutant(claim="C1 — unprotected"), "verdict": "SURVIVED", "killers": []},
-    {**_mutant(claim="C4 — bad anchor"), "verdict": "BROKEN", "killers": []},
-    {**_mutant(claim="C7 — lone guard"), "verdict": "KILLED", "killers": ["t::only"]},
+    {**_mutant(claim="C9 — healthy"), "outcome": "OBJECTED", "killers": ["t::a", "t::b"]},
+    {**_mutant(claim="C1 — unprotected"), "outcome": "SILENT", "killers": []},
+    {**_mutant(claim="C4 — bad anchor"), "outcome": "BROKEN", "killers": []},
+    {**_mutant(claim="C7 — lone guard"), "outcome": "OBJECTED", "killers": ["t::only"]},
 ]
 _META: dict[str, object] = {
     "head": "abc1234",
@@ -101,9 +101,9 @@ _META: dict[str, object] = {
 class TestRenderReport:
     """`render_report` — ordered by what needs a decision, and honest about its own gaps."""
 
-    def test_survived_comes_first(self, camp: ModuleType) -> None:
+    def test_unprotected_comes_first(self, camp: ModuleType) -> None:
         body = camp.render_report(_RESULTS, _META)
-        order = [body.index(k) for k in ("SURVIVED", "KILLED x1", "BROKEN")]
+        order = [body.index(k) for k in ("UNPROTECTED", "PROTECTED x1", "UNMEASURED")]
         assert order == sorted(order), body
 
     def test_a_lone_protector_is_called_out_separately_from_healthy_kills(
@@ -111,7 +111,7 @@ class TestRenderReport:
     ) -> None:
         """The whole reason to pay for full runs: `KILLED x1` must not read as `KILLED`."""
         body = camp.render_report(_RESULTS, _META)
-        assert "KILLED x1" in body
+        assert "PROTECTED x1" in body
         assert "t::only" in body
 
     def test_the_header_states_what_makes_it_reproducible(self, camp: ModuleType) -> None:
@@ -133,3 +133,32 @@ class TestRenderReport:
     def test_a_clean_tree_says_so(self, camp: ModuleType) -> None:
         body = camp.render_report(_RESULTS, {**_META, "dirty": False})
         assert "CLEAN" in body
+
+
+class TestBucketCountsTheProtectors:
+    """A single point of protection is not the same as protection.
+
+    Found by mutating `_bucket` to collapse `PROTECTED x1` into `PROTECTED`: nothing objected.
+    The distinction is this module's stated reason for running every mutant fully rather than with
+    `--fast`, because stopping at the first failure cannot count killers — and the first real
+    measurement it produced was a feature guarded by one test out of 6829, which failed at
+    `COLUMNS=80`. A plain `PROTECTED` would have called that healthy.
+
+    So the count is load-bearing, and until now it was unguarded.
+    """
+
+    def _result(self, killers: list[str]) -> dict[str, object]:
+        return {"outcome": "OBJECTED", "killers": killers, "claim": "c", "detail": ""}
+
+    def test_one_killer_is_flagged_as_a_single_point(self, camp: ModuleType) -> None:
+        assert camp._bucket(self._result(["t::a"])) == "PROTECTED x1"
+
+    def test_two_killers_are_plain_protection(self, camp: ModuleType) -> None:
+        """The control. Flagging everything would make the distinction meaningless."""
+        assert camp._bucket(self._result(["t::a", "t::b"])) == "PROTECTED"
+
+    def test_the_single_point_sorts_above_healthy_kills(self, camp: ModuleType) -> None:
+        """It needs a human's eye, so it must not be buried among the lines that do not."""
+        order = camp._ORDER
+
+        assert order.index("PROTECTED x1") < order.index("PROTECTED")

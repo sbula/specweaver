@@ -14,16 +14,16 @@ file is the work:
 
 | Section | Why it is there |
 |---|---|
-| `SURVIVED` | nothing noticed the behaviour disappearing — the claim is unproven whatever cites it |
-| `KILLED x1` | a single point of protection, named. One flaky or skipped test from none |
+| `UNPROTECTED` | nothing noticed the behaviour disappearing — the claim is unproven whatever cites it |
+| `PROTECTED x1` | a single point of protection, named. One flaky or skipped test from none |
 | `BROKEN` | the mutant did not import, so the run proves nothing — a bad anchor, not a result |
-| `KILLED` | genuinely protected. One line each; nothing to act on |
+| `PROTECTED` | genuinely protected. One line each; nothing to act on |
 
-`KILLED x1` is why the default is a full run per mutant rather than `--fast`. Stopping at the first
+`PROTECTED x1` is why the default is a full run per mutant rather than `--fast`. Stopping at the first
 failure classifies faster but cannot count killers, and the count is the finding: neutralising
 `sw check --lineage` orphan detection is caught by exactly one test out of 6840, and that test
 failed at `COLUMNS=80` until 2026-08-14 — so the feature was unguarded on any 80-column CI while its
-ledger entry looked green. A plain KILLED verdict would have called that healthy.
+ledger entry looked green. A plain PROTECTED verdict would have called that healthy.
 
 > [!IMPORTANT]
 > **A report is an input to a decision, never a record of one.** Nothing here writes to the proof
@@ -67,7 +67,7 @@ _REQUIRED = ("file", "old", "new", "claim")
 def load_campaign(path: Path) -> list[dict[str, str]]:
     """Parse and validate, so a mutant the runner cannot act on is refused before any sandbox work.
 
-    `claim` is required for the same reason a verdict needs evidence: a `SURVIVED` with no claim
+    `claim` is required for the same reason a verdict needs evidence: an `UNPROTECTED` with no claim
     says a line is unprotected without saying why anyone should care, and the report is unusable.
     """
     entries = json.loads(path.read_text(encoding="utf-8"))
@@ -81,21 +81,26 @@ def load_campaign(path: Path) -> list[dict[str, str]]:
 
 
 def _bucket(result: dict[str, object]) -> str:
-    if result["verdict"] == "SURVIVED":
-        return "SURVIVED"
-    if result["verdict"] == "BROKEN":
-        return "BROKEN"
-    return "KILLED x1" if len(result["killers"]) == 1 else "KILLED"
+    """The shared vocabulary, plus the one distinction only this tool draws.
+
+    `PROTECTED x1` is a single point of protection: genuinely killed, by one test. It is not a
+    fourth verdict — it is `PROTECTED` with the count that decides whether to trust it.
+    """
+    if result["outcome"] == "SILENT":
+        return "UNPROTECTED"
+    if result["outcome"] == "BROKEN":
+        return "UNMEASURED"
+    return "PROTECTED x1" if len(result["killers"]) == 1 else "PROTECTED"
 
 
-_ORDER = ("SURVIVED", "KILLED x1", "BROKEN", "KILLED")
+_ORDER = ("UNPROTECTED", "PROTECTED x1", "UNMEASURED", "PROTECTED")
 
 _BLURB = {
-    "SURVIVED": "Nothing objected. The claim is unproven whatever cites it — unless the mutant is "
+    "UNPROTECTED": "Nothing objected. The claim is unproven whatever cites it — unless the mutant is "
     "*equivalent*, meaning it does not change observable behaviour. Check that before recording.",
-    "KILLED x1": "One test protects this. Not a failure, but one flaky or skipped test from none.",
-    "BROKEN": "The mutant did not import, so the run proves nothing. Needs a better anchor.",
-    "KILLED": "Genuinely protected. Nothing to act on.",
+    "PROTECTED x1": "One test protects this. Not a failure, but one flaky or skipped test from none.",
+    "UNMEASURED": "The mutant did not import, so the run proves nothing. Needs a better anchor.",
+    "PROTECTED": "Genuinely protected. Nothing to act on.",
 }
 
 
@@ -130,7 +135,7 @@ def render_report(results: list[dict[str, object]], meta: dict[str, object]) -> 
         for row in rows:
             lines.append(f"- **{row['claim']}**")
             lines.append(f"  - `{row['file']}` :: `{row['old']}` → `{row['new']}`")
-            if name == "BROKEN" and row.get("detail"):
+            if name == "UNMEASURED" and row.get("detail"):
                 lines.append(f"  - {str(row['detail']).strip().splitlines()[-1][:160]}")
             for killer in list(row["killers"])[:12]:
                 lines.append(f"  - killed by `{killer}`")
@@ -188,7 +193,7 @@ def main(argv: list[str] | None = None) -> int:
                     fast=args.fast,
                 )
             except (ValueError, RuntimeError) as exc:
-                result = {"verdict": "BROKEN", "killers": [], "detail": str(exc)}
+                result = {"outcome": "BROKEN", "killers": [], "detail": str(exc)}
             print(f"      {result['verdict']} ({len(result['killers'])} killer(s))", flush=True)
             results.append({**entry, **result})
     except KeyboardInterrupt:

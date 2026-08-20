@@ -46,7 +46,7 @@ class TestNightlySession:
     def test_the_timers_command_line_runs_the_real_corpus(self, tmp_path: Path) -> None:
         import sys
 
-        out = tmp_path / "mutation_report.json"
+        out = tmp_path / "mutation_session.json"
         done = subprocess.run(
             [
                 sys.executable,

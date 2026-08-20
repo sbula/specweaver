@@ -51,7 +51,7 @@ def _sibling(name: str) -> Any:
 
 _mutate = _sibling("_mutate")
 _corpus = _sibling("_corpus")
-_report = _sibling("_mutation_report")
+_report = _sibling("_session_record")
 _timer = _sibling("_mutation_timer")
 _gate = _sibling("_mutation_gate")
 _pool = _sibling("_mutation_pool")
@@ -403,19 +403,19 @@ def _cmd_install() -> int:
 
 
 def _cmd_summary(report: Path) -> int:
-    """Re-render a report already on disk. Reads nothing else and runs nothing."""
+    """Re-render a session record already on disk. Reads nothing else and runs nothing."""
     if not report.is_file():
-        print(f"no report at {report} — run the corpus first", file=sys.stderr)
+        print(f"no session record at {report} — run the corpus first", file=sys.stderr)
         return 1
     print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run a session and write the report a gate will read hours later.
+    """Run a session and write the session record a gate will read hours later.
 
     Exit codes report the health of the RUN: `0` nothing failed, `1` something did, `2` it could not
-    run. Whether feature work continues is a separate decision made against the report, not against
+    run. Whether feature work continues is a separate decision made against the session record, not against
     this number.
     """
     import argparse
@@ -423,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", action="append", default=[], help="a corpus file; repeatable")
     ap.add_argument("--corpus-dir", help="discover every <ID>_mutants.json beneath this directory")
-    ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "mutation_report.json"))
+    ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "mutation_session.json"))
     ap.add_argument("--no-baseline", action="store_true", help="skip the full-suite baseline")
     ap.add_argument("--no-confirm", action="store_true", help="do not re-run killers unmutated")
     ap.add_argument(
@@ -499,7 +499,7 @@ def main(argv: list[str] | None = None) -> int:
     readable = out.with_suffix(".md")
     readable.write_text(summary + "\n", encoding="utf-8")
     print(summary)
-    print(f"\nreport: {out}\nsummary: {readable}")
+    print(f"\nrecord: {out}\nsummary: {readable}")
     if campaigns:
         # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
         # able to run days later against a ledger that already knows how long a finding has been here.

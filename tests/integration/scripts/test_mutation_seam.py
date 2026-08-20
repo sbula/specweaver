@@ -232,7 +232,7 @@ class TestReportOutlivesTheSandbox:
         data["campaigns"][0]["mutants"][0]["old"] = "THIS ANCHOR DOES NOT EXIST"
         corpus_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-        out = tmp_path / "mutation_report.json"
+        out = tmp_path / "mutation_session.json"
         # `--ledger` is not optional here even though the test says nothing about ledgers:
         # `main` records the run, and without it `record_run` appends to the REAL
         # `scripts/baselines/mutation_findings.json` (`TECH-055`).

@@ -4,7 +4,7 @@
 
 """The one artefact of a mutation session that outlives it.
 
-The sandbox is a detached worktree, removed when the run ends. So a report that points into it is
+The sandbox is a detached worktree, removed when the run ends. So a session record that points into it is
 unreadable by the time anyone acts on it — and "anyone" includes the gate, which reads this file
 hours later on a machine that has since rebooted.
 
@@ -17,7 +17,7 @@ Paths are rewritten to **repo-relative** rather than blanked: the sandbox mirror
 `/tmp/sw-x-1/src/specweaver/x.py` is genuinely `src/specweaver/x.py`, and a placeholder would throw
 away the only half of the string worth reading.
 
-## Exit codes report the run, not the decision
+## Exit codes state the run, not the decision
 
 `0` nothing failed · `1` something failed · `2` could not run. **Zero campaigns is `2`, not `0`** —
 a session that found no corpus is a session that measured nothing, and reporting that as success is
@@ -97,12 +97,12 @@ def _as_dict(result: Any) -> dict[str, Any]:
 def _age(generated_at: str, now: str | None) -> str:
     """How old this evidence is, in words a reader will notice.
 
-    `--gate` reported CLEAR for two days against a report from before the change it was judging. The
+    `--gate` reported CLEAR for two days against a session record from before the change it was judging. The
     file's mtime knew; the document did not, and the document is what gets read. So the age travels
     with the verdict.
     """
     if not generated_at:
-        return "age unknown — this report predates `generated_at`"
+        return "age unknown — this record predates `started_at`"
     if now is None:
         now = datetime.now(UTC).isoformat()
     try:
@@ -118,7 +118,7 @@ def _age(generated_at: str, now: str | None) -> str:
 
 
 def render_summary(document: dict[str, Any], now: str | None = None) -> str:
-    """The report as prose, derived from the same document the JSON holds.
+    """The session record as prose, derived from the same document the JSON holds.
 
     A pure function of `document`, deliberately: the JSON stays the single source of truth and this is
     a view of it, so the two cannot drift. Written because the machine-readable format was hand-parsed
@@ -137,7 +137,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
     verdict = session_verdict_of(document)
 
     lines = [
-        "MUTATION REPORT",
+        "MUTATION SESSION",
         f"  verdict      {verdict}",
         f"  generated    {summary.get('started_at', '(none)')}  ({_age(summary.get('started_at', ''), now)})",
         f"  commit       {summary.get('head', '?')}"

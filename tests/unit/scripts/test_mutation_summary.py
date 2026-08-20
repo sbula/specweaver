@@ -35,11 +35,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 @pytest.fixture
 def rep() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
-        "_mutation_report", REPO_ROOT / "scripts" / "_mutation_report.py"
+        "_session_record", REPO_ROOT / "scripts" / "_session_record.py"
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    sys.modules["_mutation_report"] = module
+    sys.modules["_session_record"] = module
     spec.loader.exec_module(module)
     return module
 

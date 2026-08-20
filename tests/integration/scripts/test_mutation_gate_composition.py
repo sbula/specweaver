@@ -59,7 +59,7 @@ def gate() -> ModuleType:
 
 def _session_report(tmp_path: Path, verdict: str = "UNPROTECTED") -> Path:
     """What a corpus session leaves behind when a mutant survives."""
-    path = tmp_path / "mutation_report.json"
+    path = tmp_path / "mutation_session.json"
     path.write_text(
         json.dumps(
             {

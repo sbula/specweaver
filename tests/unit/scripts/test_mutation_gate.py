@@ -42,7 +42,7 @@ def gate() -> ModuleType:
 
 
 def _report(tmp_path: Path, *results: dict[str, Any], age_hours: float = 0.0) -> Path:
-    path = tmp_path / "mutation_report.json"
+    path = tmp_path / "mutation_session.json"
     path.write_text(
         json.dumps(
             {
@@ -74,10 +74,10 @@ def _ledger(tmp_path: Path, **entries: dict[str, Any]) -> Path:
 class TestGateVerdict:
     """Three rules, and what each of them refuses to do."""
 
-    def test_a_missing_report_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
+    def test_a_missing_record_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
         result = gate.gate_verdict(tmp_path / "absent.json", _ledger(tmp_path))
         assert result.blocked is True
-        assert "report" in result.reason
+        assert "session record" in result.reason
 
     def test_a_report_older_than_48h_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
         """A scheduler that quietly stopped must not read as a clean bill of health.
@@ -342,7 +342,7 @@ class TestARedBaselineBlocks:
 
     @staticmethod
     def _report(tmp_path, baseline: dict) -> Path:
-        report = tmp_path / "mutation_report.json"
+        report = tmp_path / "mutation_session.json"
         report.write_text(
             json.dumps({"summary": {"baseline": baseline, "verdict": "PASSED"}, "campaigns": []}),
             encoding="utf-8",
@@ -370,7 +370,7 @@ class TestARedBaselineBlocks:
 
     def test_a_report_with_no_baseline_recorded_is_judged_as_before(self, gate, tmp_path) -> None:
         """A session run with `--no-baseline` says nothing about the tree, and never claimed to."""
-        report = tmp_path / "mutation_report.json"
+        report = tmp_path / "mutation_session.json"
         report.write_text(json.dumps({"summary": {"verdict": "PASSED"}, "campaigns": []}), "utf-8")
 
         assert not gate.gate_verdict(report, tmp_path / "ledger.json").blocked

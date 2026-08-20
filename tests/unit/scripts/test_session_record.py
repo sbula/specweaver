@@ -42,7 +42,7 @@ def _load(name: str) -> ModuleType:
 
 @pytest.fixture(scope="module")
 def report() -> ModuleType:
-    return _load("_mutation_report")
+    return _load("_session_record")
 
 
 @pytest.fixture(scope="module")

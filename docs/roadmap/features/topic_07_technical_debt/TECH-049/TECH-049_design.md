@@ -82,7 +82,7 @@ undecidable.
 | FR-6 | Kill confirmation | Runner | The system SHALL re-run the killers **without** the mutant before recording `PASS` | A flaky test can no longer read as protection |
 | FR-7 | Sandbox hygiene | Runner | The system SHALL reset the mutated file and verify the sandbox is clean (`git status --porcelain` empty) between mutants | State written by one mutant's tests cannot leak into the next |
 | FR-8 | Accounting | Evaluator | The system SHALL fail a campaign when verdicts returned ≠ mutants declared, and SHALL rate a campaign `FAILED` on any `FAIL`, `PARTIAL` when the only non-passes are `INDETERMINATE` or `STALE`, else `PASSED` | Crashes, interrupts and silent skips surface instead of reading as a clean run, and an unreadable result is not scored as a defect |
-| FR-9 | Single report | Reporter | The system SHALL write one `.tmp/mutation_report.json` with a `summary` block first, **self-contained** — no path into the sandbox in any field, captured output included — and exit `0` no-fail / `1` any-fail / `2` could-not-run | A machine can evaluate the run after the sandbox is gone |
+| FR-9 | Single session record | Reporter | The system SHALL write one `.tmp/mutation_session.json` with a `summary` block first, **self-contained** — no path into the sandbox in any field, captured output included — and exit `0` no-fail / `1` any-fail / `2` could-not-run | A machine can evaluate the run after the sandbox is gone |
 | FR-10 | Scheduler | Host | The system SHALL run the whole corpus on a schedule without human invocation | A measurement nobody triggers is a measurement nobody makes |
 | FR-11 | Session gate | Gate | The system SHALL block on any unconfirmed finding and release once every finding carries a **confirmation with a disposition** (`real-gap` · `equivalent` · `will-fix` · `stale-refreshed`). It SHALL NOT require a re-run to prove a fix, and SHALL treat a missing or stale report as blocking | Findings get read rather than accumulating, without paying for an on-demand corpus run; the next scheduled run re-measures anyway |
 | FR-11a | Repeat findings | Reporter | The system SHALL mark a finding that recurred in consecutive runs with the number of runs it has survived | A `will-fix` that never got fixed is visible instead of being re-confirmed forever |
@@ -102,7 +102,7 @@ undecidable.
 | FR-5 | Which tests cite a requirement | `_citations` · `strict_citations(text) -> dict[str, set[str]]` | read `scripts/_citations.py:38-60` |
 | FR-7 | Reset between mutants | `_mutate` · `reset_file(sandbox, file)` (`git checkout --`, one file only) | read `scripts/_mutate.py:218-220` |
 | FR-9 | Report ordering precedent | `_mutate_campaign` · `render_report(results, meta)`, `_ORDER`, `_bucket()` | read `scripts/_mutate_campaign.py:82-147` |
-| FR-11 | The report to gate on, and the ledger of dispositions | `_mutation_report` · `.tmp/mutation_report.json`; `scripts/baselines/mutation_findings.json` | read `scripts/_mutation_report.py`, `scripts/baselines/suppressions.json` |
+| FR-11 | The session record to gate on, and the ledger of dispositions | `_session_record` · `.tmp/mutation_session.json`; `scripts/baselines/mutation_findings.json` | read `scripts/_session_record.py`, `scripts/baselines/suppressions.json` |
 | FR-12 | Ratchet mechanics | `check_suppressions` · frozen baseline JSON, `--update-baseline`, fail-on-growth | read `scripts/check_suppressions.py:1-30`, `scripts/baselines/suppressions.json` |
 
 **Outcome of the fixpoint.** Every row converged on a surface that exists. Two rewrote an FR:
@@ -116,7 +116,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 | NFR-1 | Corpus runtime | **≤ 4 s per mutant end-to-end**, counting the mutated run *and* FR-6's confirmation re-run. Expressed per mutant on purpose: a campaign holds several mutants, so an absolute wall-clock target silently assumes a mutants-per-requirement ratio nobody has measured. Measured basis: 1.24 s for a scoped mutated run. At ~511 campaign-able requirements and 3 mutants each, ≤ 4 s/mutant puts a full corpus near 100 min — an input to AD-8, not a contradiction of it. **[proof: meta — a scheduling budget, held by measurement rather than by a wall-clock assertion, which would be flaky under load]** |
 | NFR-1a | Baseline runtime | The once-per-session full-suite baseline completes in **≤ 10 min**. Measured: a fresh sandbox collects 6952/6983 in a 71.7 s full-suite mutant run. **[proof: meta — same reason as NFR-1]** |
 | NFR-2 | Colour-free pipeline | `PY_COLORS=0` in the sandbox environment; parsers strip SGR before matching. Already delivered in `72b82df8`. |
-| NFR-3 | Report survives teardown | No value in `mutation_report.json` may contain a sandbox path — **including captured pytest output**, which carries absolute sandbox paths in tracebacks and must be rewritten to repo-relative before it is stored. The sandbox is a detached worktree deleted at end of run. |
+| NFR-3 | The record survives teardown | No value in `mutation_session.json` may contain a sandbox path — **including captured pytest output**, which carries absolute sandbox paths in tracebacks and must be rewritten to repo-relative before it is stored. The sandbox is a detached worktree deleted at end of run. |
 | NFR-4 | Baseline economy | The full suite runs **once** per session, never per mutant. |
 | NFR-5 | Override visibility | Override count may fall, never rise. Re-freeze is an explicit flag producing a reviewable diff. |
 | NFR-6 | Gate isolation | No `quality.py` gate (`quick`/`cb`/`sf`/`feature`/`doc`) may invoke the session gate. **[proof: meta — rule about the diff]** |
@@ -221,7 +221,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 - **Scope**: One self-contained JSON report, summary first, with exit codes.
 - **FRs**: [FR-9]
 - **Inputs**: Verdicts from SF-03; session metadata.
-- **Outputs**: `.tmp/mutation_report.json`; process exit code.
+- **Outputs**: `.tmp/mutation_session.json`; process exit code.
 - **Depends on**: SF-03
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_sf04_implementation_plan.md
 
@@ -236,7 +236,7 @@ gained the collected-count assert once `run_one` proved to have no zero-collecti
 ### SF-06: Session Gate and Override Census
 - **Scope**: Block on unconfirmed findings, release on confirmation with a disposition, track recurrence, and carry a ratcheted human override.
 - **FRs**: [FR-11, FR-11a, FR-12]
-- **Inputs**: `.tmp/mutation_report.json`; prior run results; the override baseline.
+- **Inputs**: `.tmp/mutation_session.json`; prior run results; the override baseline.
 - **Outputs**: A session verdict; per-finding dispositions; recurrence counts; a ratcheted override census.
 - **Depends on**: SF-04
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-049/TECH-049_sf06_implementation_plan.md
@@ -283,6 +283,25 @@ ways to learn nothing were silent.
 C: session record drops every derived field. D: ledger keeps a history of state changes, closes
 rather than deletes, and distinguishes a fix from a withdrawal. E: campaign `schema: 2` with
 mutant provenance. F: the rename.
+
+### Stage F retired the word
+
+`report` named the JSON, the file **and** the prose, which is why discussing any of them needed a
+sentence of preamble first. A session now writes a **session record** — `_session_record.py`,
+`.tmp/mutation_session.json` — and `--summary` renders it. The FR table and bindings above are
+updated with it: a binding that points at a file which no longer exists cannot be verified, which
+is the whole job of that column.
+
+Two findings deferred from Stage B land here.
+
+`_mutate.verdict()` returned `KILLED`/`SURVIVED` while `verdict` had come to mean the judgement —
+scope, confirmation and baseline applied. One word across two layers is how a reader comes to
+believe a bystander test proves a requirement. It is now `outcome()`, returning `OBJECTED`/`SILENT`:
+what happened to the run, never what it means.
+
+`_mutate_campaign.py` still spoke the retired vocabulary in its output and its own documentation.
+It now uses the shared one, keeping the single distinction only it draws — `PROTECTED x1`, meaning
+genuinely killed but by one test, which is a count beside a verdict rather than a fourth verdict.
 
 ### Stage E found a field nobody could read
 

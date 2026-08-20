@@ -197,8 +197,15 @@ def is_broken(output: str) -> bool:
     return bool(_INTERNAL.search(plain) or _SUMMARY_ERROR.search(plain))
 
 
-def verdict(found: list[str]) -> str:
-    return "KILLED" if found else "SURVIVED"
+def outcome(found: list[str]) -> str:
+    """Whether any test objected. The raw fact, not what it means.
+
+    Named `outcome` because `verdict` now means the judgement — scope, confirmation and baseline
+    applied — and one word for two layers is how a reader comes to believe a bystander test
+    proves a requirement. `OBJECTED`/`SILENT` describe the run; `PROTECTED`/`UNPROTECTED`
+    describe our code.
+    """
+    return "OBJECTED" if found else "SILENT"
 
 
 def _verify_isolated(module_file: str, sandbox: Path) -> None:
@@ -366,7 +373,7 @@ def run_one(
     target = sandbox / file
     if not target.is_file():
         return {
-            "verdict": "BROKEN",
+            "outcome": "BROKEN",
             "killers": [],
             "killer_records": [],
             "detail": f"{file} not in the sandbox",
@@ -397,7 +404,7 @@ def run_one(
         # blocks on it, because a mutant that hangs is a defect in the campaign or in the test,
         # and both need a human.
         return {
-            "verdict": "BROKEN",
+            "outcome": "BROKEN",
             "killers": [],
             "killer_records": [],
             "detail": f"timed out after {MUTANT_TIMEOUT_SECONDS:g}s — the mutant made a test wait "
@@ -407,14 +414,14 @@ def run_one(
         }
     if collect_failed or is_broken(out):
         return {
-            "verdict": "BROKEN",
+            "outcome": "BROKEN",
             "killers": [],
             "killer_records": [],
             "detail": out[-800:],
             "code": code,
         }
     return {
-        "verdict": verdict(found),
+        "outcome": outcome(found),
         "killers": found,
         "killer_records": records,
         "detail": "",
@@ -446,7 +453,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
         found = list(result["killers"])
-        print(f"{verdict(found)} — {len(found)} test(s) objected to the change\n")
+        print(f"{outcome(found)} — {len(found)} test(s) objected to the change\n")
         for test in found:
             print(f"  {test}")
         if not found:
