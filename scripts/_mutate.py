@@ -228,12 +228,15 @@ def run_pytest(
     failed, both taken from `--report-log`. The human output is never parsed for results: a node
     id is not recoverable from it once the id contains a space.
     """
-    log = sandbox / ".mutation-report.jsonl"
-    log.unlink(missing_ok=True)
-    out, code = _run_rc([*cmd, f"--report-log={log}"], sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
-    if code == TIMEOUT_RC or not log.is_file():
-        return out, code, [], False
-    return out, code, killers_from_log(log), collection_failed(log)
+    # Outside the worktree on purpose: anything written inside it is picked up by the cleanliness
+    # snapshot and reported as an artifact the mutant leaked.
+    with tempfile.TemporaryDirectory(prefix="sw-mutation-log-") as tmp:
+        log = Path(tmp) / "report.jsonl"
+        args = [*cmd, f"--report-log={log}"]
+        out, code = _run_rc(args, sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
+        if code == TIMEOUT_RC or not log.is_file():
+            return out, code, [], False
+        return out, code, killers_from_log(log), collection_failed(log)
 
 
 def _build_sandbox(sandbox: Path) -> None:
