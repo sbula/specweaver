@@ -49,7 +49,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 - **The `C-FLOW-11` pilot is unwired.** The dial exists; `sw implement` still runs one-shot, so no
   user path reaches `agentic` mode.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when
-  somebody remembers the story.
+  somebody remembers the story. `check_stale_delivered.py` now catches the *other* half — prose
+  calling a `🔧` capability delivered — but nothing stops the flag itself being flipped.
 - **`A-SENS-02`** is the last open item in `US-11`'s Core MVS. Its grilling has three unanswered
   questions. **It is not the next thing** — the six above are.
 

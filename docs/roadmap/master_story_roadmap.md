@@ -25,54 +25,42 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Graduated Autonomy (`C-FLOW-11`)** ← BOTH PREREQUISITES JUST LANDED
-   * **Features:** `C-FLOW-11` — pipeline work steps gain `mode: oneshot | agentic`, resolved at the
-     composition root from DAL policy. Prereqs: `C-EXEC-06` ✅, `C-VAL-05` ✅, `B-FLOW-05` ✅.
-     Details: [topic_03](topics/topic_03_flow_engine.md).
-   * **Pros:** The two things it was waiting for now exist. `C-VAL-05` proved the "engine hard /
-     content soft" pattern it is the other half of, and its budget-capped work unit needs exactly
-     the ceiling `B-FLOW-05` shipped — an agentic step is the loop that runs away. It is also the
-     **hard blocker** on `A-INTL-03` (Socratic Drafting) and the US-02 and US-03 add-ons, so it
-     unblocks more than it delivers.
-   * **Cons:** Engine work on the execution path, which the two candidates before it were not.
-     `agentic` is a new failure surface; `oneshot` default keeps the regression risk at zero.
-   * **ROI:** **High** — the Hard Blocker Rule points here, and the work is cheapest now while the
-     rubric and budget substrates are fresh.
-2. **Kernel-Enforced Resource Bounds (`B-EXEC-04`)** ← SECURITY MANDATE (may preempt 1)
+> [!CAUTION]
+> **Nothing in this queue is the next thing to do.** Six capabilities are `🔧` — built, proven, and
+> never approved — and two of them are known wrong. Finish those first. They are listed in
+> `.agents/STATE.md`, which is the file to read before this one.
+>
+> This queue ranks what to start **after** that. `C-FLOW-11` used to head it and has since been
+> built; it is not a candidate any more.
+
+1. **Kernel-Enforced Resource Bounds (`B-EXEC-04`)** ← SECURITY MANDATE
    * **Features:** `B-EXEC-04` — cgroups v2 `pids.max` scoped to a process subtree. Prereqs: none.
      Details: [topic_06](topics/topic_06_sandbox.md).
    * **Pros:** `C-EXEC-02` FR-11 promises a fork-bombing script is capped, and today that promise
      rests on a best-effort `RLIMIT_NPROC` backstop which is per-real-UID and therefore bounds the
      machine's user rather than the sandbox. Two sampling-based repairs were tried and measured to
-     fail. This is the mechanism that can actually hold, and it **removes** the backstop.
-   * **Cons:** Linux-only and needs a real cgroups v2 delegation story; no epic unlock.
+     fail. This is the mechanism that can hold, and it **removes** the backstop.
+   * **Cons:** Linux-only, needs a real cgroups v2 delegation story, no epic unlock.
    * **ROI:** **Risk-driven** — an unmet FR on the untrusted-execution path, with the replacement
      already named in the design and in `CLAUDE.md`.
-3. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY
+2. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY
    * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree +
      `sw run`/`sw resume` escalation wiring), integration implicit per `ADR-005`. Prereqs: `C-EXEC-06` ✅.
      Details: [topic_06](topics/topic_06_sandbox.md) / [US-09.md](stories/US-09.md).
    * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution
      surface (LLM-derived scenario tests over LLM-generated code, now LIVE via
-     `sw run scenario_integration`) has the weakest default; also contains scenario artifact
-     droppings + the bare-pytest collection hazard documented in the dev guide.
-   * **Cons:** Engine/capability work; no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
-   * **ROI:** **Medium** — medium-high effort for security parity + workspace hygiene; cheapest while the
-     run-journey context from `INT-US-24` is still fresh, and it batches with the same
-     high-criticality modules (DAL Batching Rule).
-4. **Multi-Stage Reviews (`E-VAL-04`)** ← CHEAPEST BITE ON FRESH SUBSTRATE
+     `sw run scenario_integration`) has the weakest default.
+   * **Cons:** Engine work; no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
+   * **ROI:** **Medium** — security parity plus workspace hygiene; cheapest while the run-journey
+     context from `INT-US-24` is still fresh, and it batches with the same high-criticality modules.
+3. **Multi-Stage Reviews (`E-VAL-04`)** ← CHEAPEST BITE
    * **Features:** `E-VAL-04` — configurable multi-stage review pipeline, designed rubric-first on
-     `C-VAL-05`. Prereqs: `C-VAL-05` ✅, `E-VAL-02` ✅, `B-VAL-02` ✅. Details: [topic_05](topics/topic_05_validation.md).
-   * **Pros:** Every prerequisite is delivered and the rubric loader was built to carry exactly this
-     — a stage is a rubric file plus a `load_rubric` call, not a new rule class. Closes the last
-     open capability in the US-01 "Configurable Multi-Stage Reviews" add-on.
-   * **Cons:** Smallest strategic payoff of the four; no blocker relieved.
-   * **ROI:** **Medium-high** — least effort per unit of delivered capability, and it is the test of
-     whether `C-VAL-05`'s substrate actually pays out. If adding a stage is not cheap, that is worth
-     knowing before `B-VAL-03` and `B-INTL-08` are designed on the same assumption.
-
-*`C-VAL-05`, `E-VAL-03` and `B-FLOW-05` — the three candidates this queue previously held — are
-delivered. Each is recorded in its topic doc and its design document.*
+     `C-VAL-05` 🔧. Prereqs: `E-VAL-02` ✅, `B-VAL-02` ✅, and `C-VAL-05` **approved**.
+     Details: [topic_05](topics/topic_05_validation.md).
+   * **Pros:** A stage becomes a rubric file plus a `load_rubric` call rather than a rule class.
+   * **Cons:** Blocked until `C-VAL-05` is approved, which is a set-back item. Smallest strategic payoff.
+   * **ROI:** **Medium-high** — least effort per unit of capability, and it is the test of whether
+     `C-VAL-05`'s substrate actually pays out before `B-VAL-03` and `B-INTL-08` bet on it.
 
 ### 🔭 Focus Points
 
@@ -81,7 +69,7 @@ rank by proximity to a closed story. A capability can appear in both.*
 
 **Focus 1 — `US-11` (GraphRAG for Brownfield Scale) and its add-ons.**
 
-Core MVS is **one capability from 🟢**: `B-SENS-03` ✅ shipped the chunking half, and `A-SENS-02`
+Core MVS is **one capability from 🟢**: `B-SENS-03` 🔧 shipped the chunking half, and `A-SENS-02`
 (Postgres Apache AGE + pgvector sidecar) is all that remains. It is the highest-leverage single
 item on the board — it also closes `US-12`'s *Massive Scale Context Retrieval* and `US-19`'s
 *Distributed Topology Scaling*, so **one capability moves three stories**. It has no design
@@ -108,7 +96,7 @@ this roadmap can buy.
 |---|---|---|
 | `US-6` | `D-UI-01` | **Already in progress** — TDD phases 1–3 done, 57 API tests. Nearest thing on the board to finished, and it is also half of `US-7` |
 | `US-20` | `B-VAL-05` | A battery rule over DAL boundaries; both the battery and the DAL machinery already exist |
-| `US-14` | `A-INTL-01` | Adversarial spec review — a rubric plus a review stage now that `C-VAL-05` ✅ ships the substrate |
+| `US-14` | `A-INTL-01` | Adversarial spec review — a rubric plus a review stage now that `C-VAL-05` 🔧 ships the substrate |
 | `US-10` | `C-UI-01` | Pipeline visualiser on the delivered dashboard; also closes `US-20`'s *DAG Visualization* |
 | `US-15` | `C-UI-02` | Traceability matrix UX over `C-VAL-04` ✅ |
 | `US-8` | `D-INTL-04` | Design questionnaire; has an architecture document already |

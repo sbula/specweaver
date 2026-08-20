@@ -143,6 +143,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         # capability. A delivered one cannot accept the FR, so the scope lands nowhere and no
         # other gate can see it -- `check_fr_coverage.py` judges only FRs somebody wrote.
         "retirement_targets": "all",
+        "stale_delivered": "all",
         "delivered_claims": "all",
         "xfail_blockers": "all",
         "skill_sync": "all",
@@ -217,6 +218,7 @@ class TestDocTrackIsSeparate:
             "roadmap_sync",
             "roadmap_placement",
             "retirement_targets",
+            "stale_delivered",
             "delivered_claims",
             "xfail_blockers",
             "skill_sync",

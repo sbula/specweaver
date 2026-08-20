@@ -147,6 +147,10 @@ MATRIX: dict[str, dict[str, str]] = {
     # delivered — finished-stories-immutable forbids the FR, so the scope lands nowhere and
     # `check_fr_coverage.py` cannot see it, because it only judges FRs somebody wrote.
     "retirement_targets": {"doc": "all"},
+    # The matrix flag is the fact; prose asserting a different one is a second copy. Six
+    # capabilities went `✅` -> `🔧` and twelve places still said delivered, with the queue
+    # offering an already-built capability as its first candidate.
+    "stale_delivered": {"doc": "all"},
     # `TECH-053`: a ✅ nothing can verify. Two shapes no other gate sees — an add-on group flag that
     # contradicts its own children, and a delivered capability with no design or no FRs, which
     # `fr_sweep` scores as zero-uncited and therefore perfect. 62 delivered, 1 clean.
