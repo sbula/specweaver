@@ -119,6 +119,21 @@ one nobody reads; a handover that is an index of them is the one that works.
 **Do not turn it into a changelog.** `git log --oneline` covers what changed. The handover covers what
 is *unfinished, undecided, or not to be repeated*.
 
+### Two files, and they are not the same thing
+
+| File | Holds | Lives |
+|---|---|---|
+| `.agents/STATE.md` | Where the **project** stands — delivered, set back, missing | Committed |
+| `.tmp/HANDOVER.md` | Where **this session** stands — open gates, loose ends | Gitignored |
+
+**Update `STATE.md` when this boundary changed the project's position**: a capability flag moved, a
+correction became owed, something that was missing is now there. It is short on purpose; if the
+answer is "nothing changed for the project", change nothing.
+
+Nothing checks `STATE.md` for staleness. A confident file describing a repo that has moved is the
+same defect as a stale suite count, and it fails silently — which is why updating it is a step here
+rather than a habit.
+
 The *state* half is generated, so do not hand-write it:
 
 ```bash
