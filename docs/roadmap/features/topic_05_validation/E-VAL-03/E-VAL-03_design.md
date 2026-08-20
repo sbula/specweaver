@@ -6,6 +6,16 @@
   Phase 6 gate was never run for this capability. Status returns to ✅ only after that
   review and any corrections it produces.
 
+## NON-CONFORMANCE — the shipped scan is not AST-based
+
+**Ruled 2026-08-19: this does not conform to the specification and must be corrected.**
+
+The capability is *AST Prompt Injection Sanitization* and the registry says it scans source
+code **ASTs**. What shipped scans rendered text line by line. The reasoning below was mine
+alone and was never agreed — breadth and the absence of a per-language parser dependency do
+not license changing what the capability is. Until the scan walks the AST, this capability is
+🔧 and its FR-1 is unmet as specified.
+
 ## What shipped
 
 `src/specweaver/infrastructure/llm/injection.py` recognises instruction-shaped text in untrusted
@@ -55,16 +65,6 @@ unit tier.
 |---|-----|-------------|
 | NFR-1 | Cost | One pass per line, and the input is bounded: `FilePromptAdapter` refuses a file over 10MB **before** reading or scanning it |
 | NFR-2 | Determinism | Pure text in, text out — no model call, no network, no clock |
-
-## NON-CONFORMANCE — the shipped scan is not AST-based
-
-**Ruled 2026-08-19: this does not conform to the specification and must be corrected.**
-
-The capability is *AST Prompt Injection Sanitization* and the registry says it scans source
-code **ASTs**. What shipped scans rendered text line by line. The reasoning below was mine
-alone and was never agreed — breadth and the absence of a per-language parser dependency do
-not license changing what the capability is. Until the scan walks the AST, this capability is
-🔧 and its FR-1 is unmet as specified.
 
 ## Scope (as built, pending correction)
 

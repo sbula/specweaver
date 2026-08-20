@@ -96,7 +96,8 @@ $PY scripts/mutation.py --install-timer   # nightly at 03:00
 > `docs/dev_guides/writing_mutation_campaigns.md`.
 
 > [!IMPORTANT]
-> **The suite is green on Linux as of 2026-08-18: `7511 passed, 11 skipped, 1 xfailed` in ~1m15 (`-n auto`),
+> **The suite is green on Linux as of 2026-08-20: `8111 passed, 11 skipped` in ~1m27 (`-n auto`).**
+> (Historic: `7511 passed, 11 skipped, 1 xfailed` in ~1m15 on 2026-08-18,
 > measured over three consecutive runs.** The one `xfail` is strict and names its blocker — see `check_xfail_blockers.py`.
 > **There are no accepted deltas.** A failure you see is a failure you caused — do not go looking
 > for a "known Linux failure" list to file it under.
@@ -140,6 +141,40 @@ The four that cost the most, in case you read nothing else:
    matched, a `status == "success"` that any cheaper call satisfied.
 4. **When a measurement surprises you, suspect the instrument first.** A survey reported 28 delivered
    capabilities in a story that holds 2; the parser had run past the section.
+
+## Where this repo is right now (2026-08-20)
+
+> [!CAUTION]
+> **Six capabilities are `🔧`, not `✅`.** `E-VAL-03`, `C-VAL-05`, `B-FLOW-05`, `C-FLOW-11`,
+> `B-SENS-03`, `D-UI-01` are built, tested and proven — and the `specweaver-design` **Phase 6
+> approval gate has never run for any of them**. `🔧` is not a softer `✅` and not "not started";
+> the legend is at the top of the Active Routing Queue. **Nothing automatically stops you flipping
+> one to `✅`. Do not.** The evidence is complete; the sign-off is not, and only the user can give
+> it.
+>
+> **Two of them are wrong and say so in their own designs — read those before touching either.**
+> `E-VAL-03` does not conform to its specification (it is named *AST* Prompt Injection Sanitization
+> and scans rendered text line by line). `B-FLOW-05`'s ceilings sit on `LLMSettings`, and every
+> LLM access, payment, pricing, token and limit parameter is to live in **one central place** —
+> file or database still undecided.
+>
+> **Finish the set-back work before proposing anything new.** That includes not opening a new
+> capability because it looked like the next thing in a queue.
+
+> [!IMPORTANT]
+> **`llm.max_spend_usd` defaults to `$25` and `llm.max_tokens_per_run` to 20,000,000.** A run that
+> reaches either stops with `BudgetExceededError` naming the setting. This is deliberate — a
+> breaker that ships disabled stops nothing — but it is live, it bills real money below that
+> ceiling, and the numbers are placeholders nobody has agreed. Disable with `null`; `0` means
+> *refuse everything*, so a mistyped ceiling fails closed.
+
+> [!IMPORTANT]
+> **A design starts with `/grill-me <ID>`, which only the user can invoke.** `specweaver-design`
+> Phase 1 now ends by telling them to run it and stopping; Phase 6 refuses to present a design
+> without a record of what it settled. Two things are never yours to decide: anything that
+> **spends money**, and anything that **relaxes a security boundary**. Measured 2026-08-19 — twenty-five
+> product-visible decisions were taken by an agent in one session, every one documented in a
+> design, and not one agreed. Documenting a guess does not stop it being a guess.
 
 ## Critical Rules
 
