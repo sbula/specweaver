@@ -100,10 +100,19 @@ class TestGateVerdict:
         assert result.blocked is True
         assert "old" in result.reason
 
-    def test_a_report_within_48h_is_not_stale(self, gate: ModuleType, tmp_path: Path) -> None:
-        """[Boundary] One missed night is not a block — two is. 47h must pass."""
+    def test_a_report_older_than_the_last_scheduled_run_is_stale(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Boundary] This replaced a 48-hour tolerance, and the tolerance was the bug.
+
+        One missed night used to be forgiven so a reboot would not read as a block. What it
+        actually forgave was a nightly that hung at 03:00 and wrote nothing: at 04:22 the gate
+        answered CLEAR from the previous morning's report, 20 hours old and well inside the
+        window. Freshness is now measured against the schedule, so a run that was due and did not
+        report is an alarm on the morning it happens.
+        """
         report = _report(tmp_path, age_hours=47)
-        assert gate.gate_verdict(report, _ledger(tmp_path)).blocked is False
+        assert gate.gate_verdict(report, _ledger(tmp_path)).blocked is True
 
     def test_an_unconfirmed_failure_blocks_and_names_it(
         self, gate: ModuleType, tmp_path: Path
@@ -273,3 +282,70 @@ class TestARedBaselineBlocks:
         report.write_text(json.dumps({"summary": {"verdict": "PASSED"}, "campaigns": []}), "utf-8")
 
         assert not gate.gate_verdict(report, tmp_path / "ledger.json").blocked
+
+
+class TestLastExpectedRun:
+    """The nightly's own schedule decides what "current" means, not a fixed tolerance.
+
+    Measured 2026-08-20: a 03:00 run wedged on a mutant that made a WebSocket test wait for a
+    message that never arrived. It never wrote a report. At 04:22 the gate read the previous
+    morning's report — 20 hours old, inside the 48-hour tolerance — and answered CLEAR. A nightly
+    that had been hung for eighty minutes reported as a clean bill of health, and would have done
+    so again the next morning, and the next.
+
+    **A missing report for a run that should have happened is an alarm, not a pass.**
+    """
+
+    def test_a_report_from_before_todays_run_is_stale(self, gate: ModuleType) -> None:
+        now = time.mktime((2026, 8, 20, 4, 22, 0, 0, 0, -1))
+        yesterday_morning = time.mktime((2026, 8, 19, 7, 59, 0, 0, 0, -1))
+
+        assert yesterday_morning < gate.last_expected_run(now)
+
+    def test_a_report_from_after_todays_run_is_current(self, gate: ModuleType) -> None:
+        """The control. A gate that called everything stale would be switched off in a week."""
+        now = time.mktime((2026, 8, 20, 4, 22, 0, 0, 0, -1))
+        this_morning = time.mktime((2026, 8, 20, 3, 30, 0, 0, 0, -1))
+
+        assert this_morning >= gate.last_expected_run(now)
+
+    def test_before_the_run_hour_yesterdays_report_still_counts(self, gate: ModuleType) -> None:
+        """At 02:00 the night's run has not happened yet, so last night's report is the current
+        one. Alarming then would fire every single night."""
+        now = time.mktime((2026, 8, 20, 2, 0, 0, 0, 0, -1))
+        yesterday_morning = time.mktime((2026, 8, 19, 3, 30, 0, 0, 0, -1))
+
+        assert yesterday_morning >= gate.last_expected_run(now)
+
+
+class TestGateVerdictStaleness:
+    """`gate_verdict` — what the human is told."""
+
+    def _report(self, tmp_path: Path, age_seconds: float) -> Path:
+        report = tmp_path / "report.json"
+        report.write_text(json.dumps({"summary": {}, "campaigns": []}), "utf-8")
+        stamp = time.time() - age_seconds
+        import os
+
+        os.utime(report, (stamp, stamp))
+        return report
+
+    def test_a_report_older_than_the_last_run_blocks(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        report = self._report(tmp_path, age_seconds=26 * 3600)
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert result.blocked
+        assert "did not" in result.reason or "no report" in result.reason
+
+    def test_a_fresh_report_does_not_block_on_staleness(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """The control: freshness must not become a second way to fail an otherwise clean run."""
+        report = self._report(tmp_path, age_seconds=60)
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert not result.blocked

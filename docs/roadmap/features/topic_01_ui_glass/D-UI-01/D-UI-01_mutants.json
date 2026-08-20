@@ -5,7 +5,9 @@
     {
       "requirement": "FR-3",
       "title": "The API is not network-reachable by default",
-      "scope": ["tests/unit/interfaces/cli/routers/test_serve_binds_locally.py"],
+      "scope": [
+        "tests/unit/interfaces/cli/routers/test_serve_binds_locally.py"
+      ],
       "mutants": [
         {
           "id": "bind-wildcard",
@@ -28,7 +30,9 @@
     {
       "requirement": "FR-5",
       "title": "A failure is a typed error, not a traceback",
-      "scope": ["tests/unit/interfaces/api/test_error_contract.py"],
+      "scope": [
+        "tests/unit/interfaces/api/test_error_contract.py"
+      ],
       "mutants": [
         {
           "id": "error-code-dropped",
@@ -51,15 +55,17 @@
     {
       "requirement": "FR-2",
       "title": "A run's progress is observable while it runs",
-      "scope": ["tests/unit/interfaces/api/v1/test_ws.py"],
+      "scope": [
+        "tests/unit/interfaces/api/v1/test_ws.py"
+      ],
       "mutants": [
         {
-          "id": "no-terminal-event",
+          "id": "wrong-terminal-event",
           "file": "src/specweaver/interfaces/api/v1/ws.py",
           "symbol": "pipeline_ws",
           "old": "await websocket.send_text(json.dumps({\"event\": \"done\"}))",
-          "new": "pass",
-          "breaks": "the socket closes with no terminal event, so a dashboard cannot tell completion from a dropped connection"
+          "new": "await websocket.send_text(json.dumps({\"event\": \"still-working\"}))",
+          "breaks": "the socket closes after announcing the wrong terminal event, so a dashboard cannot tell completion from a dropped connection"
         }
       ]
     }

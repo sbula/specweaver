@@ -136,7 +136,23 @@ def _verify_isolated(module_file: str, sandbox: Path) -> None:
         )
 
 
-def _run_rc(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> tuple[str, int]:
+#: How long one mutant's test run may take before it is cut off and reported. A scoped run is
+#: seconds and a whole-suite one is a couple of minutes, so this is far above any healthy
+#: mutant and far below a session anyone would wait for.
+MUTANT_TIMEOUT_SECONDS = 900.0
+
+#: Exit code reported for a command the time box cut off. 124 is what `timeout(1)` uses, so a
+#: reader who greps for it finds the convention rather than a number this repo invented.
+TIMEOUT_RC = 124
+
+
+def _run_rc(
+    cmd: list[str],
+    cwd: Path,
+    env_extra: dict[str, str] | None = None,
+    *,
+    timeout: float | None = None,
+) -> tuple[str, int]:
     """Output **and** the exit code.
 
     `_run` discarded the code, and pytest says things through it that it says nowhere else: `4` for
@@ -147,12 +163,26 @@ def _run_rc(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) 
     where they are.
     """
     env = {**os.environ, **(env_extra or {})}
-    done = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, check=False)
+    try:
+        done = subprocess.run(
+            cmd, cwd=cwd, env=env, capture_output=True, text=True, check=False, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as expired:
+        # A hang is the one failure this runner cannot inherit: every other bad mutant returns
+        # something, and this one returns nothing for as long as the session is allowed to live.
+        partial = (expired.stdout or b"") if isinstance(expired.stdout, bytes) else b""
+        text = partial.decode("utf-8", "replace") if partial else ""
+        return f"{text}\ncommand timed out after {timeout:g}s: {' '.join(cmd)}", TIMEOUT_RC
     return done.stdout + done.stderr, done.returncode
 
 
 def _run(cmd: list[str], cwd: Path, env_extra: dict[str, str] | None = None) -> str:
     return _run_rc(cmd, cwd, env_extra)[0]
+
+
+def run_pytest(cmd: list[str], sandbox: Path, env: dict[str, str]) -> tuple[str, int]:
+    """A pytest run inside a sandbox, time-boxed. The only way this runner should start one."""
+    return _run_rc(cmd, sandbox, env, timeout=MUTANT_TIMEOUT_SECONDS)
 
 
 def _build_sandbox(sandbox: Path) -> None:
@@ -261,10 +291,22 @@ def run_one(
             cmd += tests.split()
         else:
             cmd += ["-n", "auto"]
-        out, code = _run_rc(cmd, sandbox, env)
+        out, code = run_pytest(cmd, sandbox, env)
     finally:
         target.write_text(original, encoding="utf-8")
 
+    if code == TIMEOUT_RC:
+        # Not a survival and not a kill: nothing was measured. Reported as BROKEN so the gate
+        # blocks on it, because a mutant that hangs is a defect in the campaign or in the test,
+        # and both need a human.
+        return {
+            "verdict": "BROKEN",
+            "killers": [],
+            "detail": f"timed out after {MUTANT_TIMEOUT_SECONDS:g}s — the mutant made a test wait "
+            f"rather than fail. Choose one that breaks the behaviour without removing whatever "
+            f"the test is waiting for.",
+            "code": code,
+        }
     if is_broken(out):
         return {"verdict": "BROKEN", "killers": [], "detail": out[-800:], "code": code}
     found = killers(out)

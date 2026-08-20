@@ -34,9 +34,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
-#: Two missed nightly runs. One skipped night — a reboot, a laptop lid — must not read as a block,
-#: and a scheduler that quietly stopped must not read as a clean bill of health.
-STALE_AFTER_HOURS = 48
+#: The hour the nightly session is scheduled for. The gate measures freshness against the
+#: schedule rather than against a tolerance, because a tolerance is a window in which a dead
+#: scheduler looks alive: a 48-hour allowance let a run that hung at 03:00 and never wrote a
+#: report be answered with the previous morning's verdict, and it would have kept answering that
+#: way every morning after.
+NIGHTLY_HOUR = 3
 
 #: Verdicts that require a human to have looked. `INDETERMINATE` and `STALE` are deliberately not
 #: here; see the module docstring.
@@ -79,17 +82,36 @@ def findings_in(report: dict[str, Any]) -> list[dict[str, Any]]:
     return [r for campaign in report.get("campaigns", []) for r in campaign.get("results", [])]
 
 
+def last_expected_run(now: float) -> float:
+    """The most recent moment the nightly session should have produced a report.
+
+    Today's scheduled hour once it has passed, else yesterday's. Comparing against this rather
+    than against an age in hours is what makes a silent scheduler visible: the answer changes the
+    moment a run is due, so a report that was current an hour ago becomes stale on schedule.
+    """
+    parts = time.localtime(now)
+    todays = time.mktime((parts.tm_year, parts.tm_mon, parts.tm_mday, NIGHTLY_HOUR, 0, 0, 0, 0, -1))
+    return todays if todays <= now else todays - 86400
+
+
 def gate_verdict(report_path: Path, ledger_path: Path) -> GateResult:
     """Three rules, in order.
 
     Staleness first: a verdict computed from a report nobody produced is worse than no verdict, and
     checking the contents of a file that may be a week old would answer the wrong question.
     """
+    expected = last_expected_run(time.time())
     if not report_path.is_file():
         return GateResult(True, "no report — the session has not run")
-    age_hours = (time.time() - report_path.stat().st_mtime) / 3600
-    if age_hours > STALE_AFTER_HOURS:
-        return GateResult(True, f"report is {age_hours:.0f}h old — the scheduler may have stopped")
+    mtime = report_path.stat().st_mtime
+    if mtime < expected:
+        age_hours = (time.time() - mtime) / 3600
+        return GateResult(
+            True,
+            f"the {time.strftime('%Y-%m-%d %H:%M', time.localtime(expected))} session did not "
+            f"leave a report — the newest is {age_hours:.0f}h old. A run that hangs, crashes or "
+            f"never starts writes nothing, so an old report is the symptom, not the all-clear",
+        )
 
     report = _read_json(report_path, {})
     # A red baseline invalidates every verdict in the report, which the summary already states in

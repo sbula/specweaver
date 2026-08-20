@@ -60,7 +60,7 @@ UNIT_NAME = _timer.UNIT_NAME
 timer_units = _timer.timer_units
 install_timer = _timer.install_timer
 
-_run_rc = _mutate._run_rc
+_run_rc, run_pytest = _mutate._run_rc, _mutate.run_pytest
 
 #: What an exit code means for a run. `NOTHING_RAN` is the one that matters: it is the difference
 #: between "no test objected" and "no test was asked", which look identical in the output.
@@ -249,7 +249,7 @@ def confirm_kill(sandbox: Path, killer_ids: list[str]) -> bool:
     if not killer_ids:
         return False
     cmd = [sys.executable, "-m", "pytest", "-q", "--tb=no", "-p", "no:cacheprovider", *killer_ids]
-    _out, code = _run_rc(cmd, sandbox, _mutate.sandbox_env(sandbox))
+    _out, code = run_pytest(cmd, sandbox, _mutate.sandbox_env(sandbox))
     return code == 0
 
 

@@ -294,3 +294,45 @@ class TestRunOneSplitsTheTestTarget:
         )
         assert "tests/a" in seen[0] and "tests/b" in seen[0]
         assert "tests/a tests/b" not in seen[0]
+
+
+class TestRunRcTimeout:
+    """A mutant that makes a test wait forever must end the mutant, not the session.
+
+    Measured 2026-08-20: a mutant removed a WebSocket's terminal `done` event, so the test that
+    reads until `done` waited for a message that would never arrive. `subprocess.run` had no
+    timeout, so the nightly session blocked on it — 80 minutes with zero CPU and no output, still
+    "running", having judged nothing and written no report.
+
+    A hang is the one failure a mutation runner cannot afford to inherit: every other bad mutant
+    returns something. This one returns nothing, forever, and takes the whole corpus with it.
+    """
+
+    def test_a_command_that_overruns_is_cut_off(self, mut: ModuleType, tmp_path: Path) -> None:
+        out, code = mut._run_rc(
+            [sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, timeout=1.0
+        )
+
+        assert code == mut.TIMEOUT_RC
+        assert "timed out" in out.lower()
+
+    def test_the_timeout_names_the_limit_it_hit(self, mut: ModuleType, tmp_path: Path) -> None:
+        """A report saying only "timed out" cannot tell a slow suite from a hung one."""
+        out, _code = mut._run_rc(
+            [sys.executable, "-c", "import time; time.sleep(30)"], tmp_path, timeout=1.0
+        )
+
+        assert "1" in out
+
+    def test_a_command_that_finishes_is_untouched(self, mut: ModuleType, tmp_path: Path) -> None:
+        """The control. A timeout that fired early would fail every real mutant as a hang."""
+        out, code = mut._run_rc([sys.executable, "-c", "print('done')"], tmp_path, timeout=30.0)
+
+        assert code == 0
+        assert "done" in out
+
+    def test_no_timeout_still_means_no_timeout(self, mut: ModuleType, tmp_path: Path) -> None:
+        """Git calls share this helper and are not the thing being time-boxed."""
+        _out, code = mut._run_rc([sys.executable, "-c", "pass"], tmp_path)
+
+        assert code == 0
