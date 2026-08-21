@@ -184,7 +184,7 @@ ambiguous target becomes a `GHOST` rather than a guess.
 |---|---|---|
 | NFR-1 | Cold build time | A cold build of ~3,000 source files SHALL complete in ≤ 60 s. Basis: 2.8 ms/file measured on 358 Python files here (`CONTAINS` only, serial) × 3,000 = 8.4 s, × 4 for four more kinds plus resolution ≈ 34 s, leaving ~1.8× for heavier grammars. **Delegated to the agent by the user; derived, not agreed** |
 | NFR-2 | Per-service build time | A single service of ~190 files SHALL complete in ≤ 5 s, on the same basis |
-| NFR-3 | *(withdrawn)* | The ≤ 250 ms single-file incremental target left this ticket. No incremental path exists — `build_target` re-ingests every file — and a successor ticket owns it, sequenced ahead of `B-SENS-09` |
+| NFR-3 | *(withdrawn)* | The ≤ 250 ms single-file incremental target left this ticket. No incremental path exists — `build_target` re-ingests every file — and `TECH-070` owns it, sequenced ahead of `B-SENS-09` |
 | NFR-4 | Resolution purity | Resolution SHALL NOT read the filesystem. **[proof: arch — `graph/core/engine/context.yaml` forbids `os` and `pathlib`]** |
 | NFR-5 | Ghost metadata size | A `GHOST` node's metadata SHALL stay under the 2 KB cap enforced by `GraphNode.validate_metadata_size` (RT-25) |
 | NFR-6 | Parse failure is visible | A parser raising on one file SHALL leave the build running and the file marked unparsed, never abort the build and never fail silently |
@@ -340,7 +340,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 - Any consumer of the edges. Readers are `B-SENS-09`, `B-VAL-07` and the blast-radius seam owners.
   This ticket makes the graph true; it does not make it used.
 - Dynamic dispatch resolution. A `CALLS` edge asserts a syntactic call site and nothing more.
-- An incremental build path. Withdrawn at `NFR-3`; a successor ticket owns it.
+- An incremental build path. Withdrawn at `NFR-3`; `TECH-070` owns it.
 
 ## Session Handoff
 
@@ -350,8 +350,8 @@ tooling on a separate track from the product graph, and wiring one to the other 
 a new edge kind: `repository.py`'s `data.get("type", "CALLS")` would fabricate a kind, and a removed
 edge is never deleted, so every retired call would leave a permanent phantom dependency.
 
-**Also outstanding, and not part of any sub-feature**: mint the successor ticket for the withdrawn
-`NFR-3` — the ≤250 ms single-file incremental target — and sequence it ahead of `B-SENS-09`.
+**Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
+sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.
 
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there with the skill named for that column. `SF-03` and `SF-04` may run in parallel

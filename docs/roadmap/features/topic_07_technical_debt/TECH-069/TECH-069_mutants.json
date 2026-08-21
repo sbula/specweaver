@@ -91,6 +91,24 @@
           "breaks": "a deleted or corrupt baseline reads as green, so the gate reports a pass for a comparison it never made -- the stale-verdict shape this repo has already been burned by twice"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "The stub exemption cannot swallow a real design",
+      "scope": [
+        "tests/unit/scripts/test_check_decision_citations.py"
+      ],
+      "mutants": [
+        {
+          "id": "everything-is-a-stub",
+          "origin": "authored",
+          "file": "scripts/check_decision_citations.py",
+          "symbol": "audit_design",
+          "old": "    if _STUB_STATUS.search(text):",
+          "new": "    if True:",
+          "breaks": "every design is treated as un-designed, so the check reports nothing and the ratchet holds at whatever it last recorded -- the gate is switched off while still printing a pass"
+        }
+      ]
     }
   ]
 }

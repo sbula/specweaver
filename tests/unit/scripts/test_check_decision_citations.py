@@ -3,7 +3,7 @@
 
 """A design must account for every must-not-guess trigger, and say what a fired one settled.
 
-Proves: TECH-069 FR-1, FR-2, FR-3, FR-4, FR-5
+Proves: TECH-069 FR-1, FR-2, FR-3, FR-4, FR-5, FR-6
 
 `PRINCIPLES.md` §2 lists the decisions an agent may not take alone. Nothing read a design against
 that list, so the list was advisory: an agent could settle a spend ceiling, a
@@ -190,3 +190,24 @@ def test_a_wrapped_bullet_is_read_as_one_line() -> None:
         "- `T-SPEND`, `T-BOUNDARY`,\n  `T-PROVEN`: not touched. Nothing here spends or exposes."
     )
     assert audit_design(text, TRIGGERS) == ()
+
+
+def test_a_stub_has_no_decisions_to_record() -> None:
+    """A design not yet run through `specweaver-design` is exempt, and that is not a loophole.
+
+    Found by minting `TECH-070`: the stub pushed the count above its baseline, so the doc gate
+    failed on a correctly-minted ticket. Counting a stub conflates "designed without recording the
+    decisions" — the defect — with "not designed yet", which is the right state for a fresh ticket.
+    Left unfixed, every future mint would go red, which is how a gate gets switched off.
+    """
+    stub = (
+        "# Design: Something\n\n- **Status**: STUB — not yet run through the "
+        "`specweaver-design` skill\n\n## Problem Statement\n\nNothing decided yet.\n"
+    )
+    assert audit_design(stub, TRIGGERS) == ()
+
+
+def test_a_design_that_is_not_a_stub_is_still_counted() -> None:
+    """The exemption keys on the status line, so it cannot swallow a real design."""
+    real = "# Design: Something\n\n- **Status**: APPROVED (2026-08-21)\n\n## Scope\n\nBuilt.\n"
+    assert audit_design(real, TRIGGERS)

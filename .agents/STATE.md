@@ -49,7 +49,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | The grilling, flipped | The agent starts `/grill-me` itself when a trigger fires and prints its recommendation; the reply is what closes the question. A run with no user stops rather than proceeding. Gates design Phase 1 and Phase 6, and the plan skill |
 | `decision_citations` gate | Reads every design against §2 and ratchets what does not account for it. The trigger list is read from `PRINCIPLES.md`, so adding one stays a single-place edit |
 | `TECH-068` designed | Design APPROVED 2026-08-21. Five sub-features, 16 FRs, none planned yet. The review found two persistence defects the ticket now owns: an edge with no kind defaults to `CALLS`, and an edge the rebuilt graph drops is never deleted — both unreachable until `CALLS` lands, both then permanent |
-| `TECH-069` minted | The decision-citations gate has a ticket, five FRs, 25 tests and five killed mutants. `🔧`: no implementation plan owns the FRs |
+| `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
+| `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
 | Nightly mutation, clear | Gate `CLEAR` for the first time in the session: 67 judged, 67 protected, 0 unprotected, 0 unmeasured. `TECH-049` and `TECH-056` corpora re-anchored onto the code the vocabulary refactor moved — the five blocking findings were drift, not gaps |
 | Two reports, two names | `_mutate_campaign.py` writes `mutation_campaign_report.md`; the nightly keeps `mutation_session.md` beside its record. One word apart cost a misreading |
 
@@ -61,7 +62,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   somebody remembers the story. `check_stale_delivered.py` catches the *other* half — prose calling
   a `🔧` capability delivered — and `T-PROVEN` now names the flip as the user's call, but nothing
   mechanical stops the flag being flipped.
-- **No design accounts for the §2 triggers.** All 137, and `decision_citations` is ratcheted there:
+- **No non-stub design accounts for the §2 triggers.** 127 of them, and `decision_citations` is ratcheted there:
   the count can fall but not rise, so nothing forces the backlog down. A design gains its
   `Decisions taken with the user` section when somebody next opens it.
 - **`A-SENS-02`** is the last open item in `US-11`'s Core MVS. Its grilling has three unanswered

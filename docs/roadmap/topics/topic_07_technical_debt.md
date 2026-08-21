@@ -33,6 +33,11 @@ critical for long-term project viability.
   > `EdgeKind` declares nine kinds (`ontology.py`); `mapper.py:112` is the only edge construction site and writes `CONTAINS` alone. The delivered "semantic Knowledge Graph" is a containment
   > inventory: every dependency traversal — blast radius, context packing, dependent verification — returns a trivial result. Owns the syntactic kinds (`IMPORTS`, `CALLS`, `EXTENDS`,
   > `IMPLEMENTS`), test red first. `B-SENS-08` (framework edges) and the graph readers sequence behind it.
+* **`TECH-070` 🔴: Every Graph Build Re-Ingests Every File**
+  > [Description](../features/topic_07_technical_debt/TECH-070/TECH-070_design.md) | _Status: STUB. Origin: 2026-08-21, `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to
+  > build it on._ | `ingest_target` re-parses every collected file every run; measured 358 files at 1.00s cold and 0.84s on a second run, which is a full re-parse, not an increment.
+  > `get_all_file_hashes` already returns the per-file hash that would make skipping possible and has no caller in the build path. Sequenced **ahead of `B-SENS-09`**, which packs context per agent turn.
+
 * **`TECH-061` 🟢: The Knowledge Graph Is Python-Only**
   > [Description](../features/topic_07_technical_debt/TECH-061/TECH-061_design.md) | _Status: STUB. Origin: found 2026-08-17 by `INT-US-10` FR-1, the first integration test written under `ADR-004`._ |
   > `GraphOrchestrator.collect_files` filters `.py` and nothing else (`orchestrator.py:85-97`), while `D-SENS-03` ships Go/Kotlin/Java/C++/Rust extractors and both the adapter and the mapper are
@@ -265,7 +270,7 @@ critical for long-term project viability.
 * **`TECH-069` 🔧: Nothing Read a Design Against the Must-Not-Guess Triggers**
   > [Description](../features/topic_07_technical_debt/TECH-069/TECH-069_design.md) | _(2026-08-21 — finding `R-1.1` of the trigger rule's red/blue review.)_ | `PRINCIPLES.md` §2 names the decisions
   > an agent may not take alone and nothing compared a design against it, so the rule written to stop guessing was itself a guard that could not fail. Measured: 137 designs, none carrying the section.
-  > **BUILT 2026-08-21** (`0f1f0c02`), 5 FRs, 25 tests, 5 killed mutants. `🔧` not `🟢`: no implementation plan owns the FRs, and the Phase 6 gate has never run.
+  > **BUILT 2026-08-21** (`0f1f0c02`), 6 FRs, 27 tests, 6 killed mutants. `🔧` not `🟢`: no implementation plan owns the FRs, and the Phase 6 gate has never run.
 
 ## Documentation & Knowledge Architecture
 * **`TECH-060` 🟢: Integration Migration to (Sub)Story Path Inventories**

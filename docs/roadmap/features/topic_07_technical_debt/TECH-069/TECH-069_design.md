@@ -34,7 +34,8 @@ Measured 2026-08-21: **137 designs, none carrying a `Decisions taken with the us
 - `T-DEFAULT`: fired — a design accounts for the list only when it names **every** trigger, not at
   least one, because "at least one" is a guard that barely fails. A `fired` trigger must also carry
   what was settled, which is what makes the section evidence rather than a checklist.
-- `T-POSTURE`: fired — a mention the parser cannot read counts as missing, and a missing or
+- `T-POSTURE`: fired — a mention the parser cannot read counts as missing, while a design not yet
+  designed is exempt rather than counted, and a missing or
   unreadable baseline fails closed. A ratchet nobody can read is not a ratchet.
 - `T-NAME`: fired — `TECH-069` minted after both authoritative commands proved it free. The two
   disagreed at `TECH-099`, which is fixture data in `tests/unit/scripts/test_check_roadmap_sync.py`,
@@ -48,6 +49,7 @@ Measured 2026-08-21: **137 designs, none carrying a `Decisions taken with the us
 | FR-2 | Every trigger accounted for | the check | require a design's `Decisions taken with the user` section to name every trigger | naming one trigger and stopping does not pass |
 | FR-3 | A fired trigger carries its answer | the check | require text recording what was settled after the `fired` marker | the section is evidence, not a checklist |
 | FR-4 | Unreadable counts as missing | the check | treat a trigger mentioned without a marker as unaccounted | an unreadable design goes red rather than quiet |
+| FR-6 | A stub has nothing to record | the check | exempt a design whose status line reads `STUB` | a freshly minted ticket does not fail the gate for lacking decisions it cannot yet have, and the exemption keys on the status line so it cannot swallow a real design |
 | FR-5 | The count may fall, never rise | the check | compare the unaccounted count against a recorded baseline, failing closed when the baseline is missing or unreadable | the backlog cannot grow, and a broken ratchet cannot read as a pass |
 
 ## Non-Functional Requirements
@@ -59,8 +61,8 @@ Measured 2026-08-21: **137 designs, none carrying a `Decisions taken with the us
 
 ## Verifiable Proof
 
-`tests/unit/scripts/test_check_decision_citations.py` — 24 tests, all passing, none skipped.
-`docs/roadmap/features/topic_07_technical_debt/TECH-069/TECH-069_mutants.json` — five authored
+`tests/unit/scripts/test_check_decision_citations.py` — 27 tests, all passing, none skipped.
+`docs/roadmap/features/topic_07_technical_debt/TECH-069/TECH-069_mutants.json` — six authored
 mutants, one per FR.
 
 ## Non-Goals

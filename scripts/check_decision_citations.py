@@ -43,6 +43,11 @@ BASELINE_PATH = REPO_ROOT / "scripts" / "baselines" / "decision_citations.json"
 
 SECTION_TITLE = "decisions taken with the user"
 
+# A design not yet run through `specweaver-design` has no decisions to record, so requiring the
+# section of it would fail every freshly minted ticket -- which is how a gate gets switched off.
+# The exemption keys on the status line, so it cannot swallow a design that was actually written.
+_STUB_STATUS = re.compile(r"^\s*-\s*\*\*Status\*\*:\s*STUB\b", re.IGNORECASE | re.MULTILINE)
+
 _HEADING = re.compile(r"^#{1,6}\s+(?P<title>.+?)\s*$")
 _TRIGGER = re.compile(r"`(T-[A-Z]+)`")
 _TABLE_ROW = re.compile(r"^\|")
@@ -101,6 +106,8 @@ def _logical_lines(lines: list[str]) -> list[str]:
 
 def audit_design(text: str, triggers: frozenset[str]) -> tuple[str, ...]:
     """Report why a design does not account for the triggers. Empty means it does."""
+    if _STUB_STATUS.search(text):
+        return ()
     lines = _section_lines(text)
     if lines is None:
         return ("no `Decisions taken with the user` section",)
