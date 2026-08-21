@@ -306,7 +306,9 @@ tooling on a separate track from the product graph, and wiring one to the other 
 - **FRs**: [FR-1, FR-2, FR-7, FR-11, FR-13]
 - **Inputs**: `SF-02`'s seam contract; `TAGS_QUERY` from the python, rust, java and go packages.
 - **Outputs**: `extract_call_sites` on the interface; `CALLS` edges with resolution and ambiguity handling; `NFR-1`/`NFR-2` measured.
-- **Depends on**: SF-02
+- **Depends on**: SF-03 — **corrected 2026-08-21.** Both need one symbol index, and resolving
+  against whatever the build has accumulated is not deterministic: `collect_files` returns a set
+  and `ingest_target` iterates it. `SF-03` builds the index; this reuses it.
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf04_implementation_plan.md
 
 ### SF-05: `CALLS` where no upstream query exists
@@ -323,7 +325,9 @@ tooling on a separate track from the product graph, and wiring one to the other 
    the `"CALLS"` fallback that would fabricate a kind, and the stale edge that would never be
    removed. Both are unreachable today and both go live the moment `SF-04` lands.
 2. `SF-02` — the seam, widened once. `AD-1` is what lets the next two run side by side.
-3. `SF-03` and `SF-04` in parallel — both depend only on `SF-02`, and neither reshapes the seam.
+3. `SF-03`, then `SF-04`. **Corrected 2026-08-21**: they were planned in parallel because neither
+   reshapes the seam, which is true and was not sufficient — both resolve a symbol name to a node,
+   and an order-dependent resolution is not deterministic. `SF-03` owns the index.
 4. `SF-05` — depends on `SF-04`. Last on purpose: typescript and kotlin expose no query constant at
    all, so the risk is isolated where it cannot block the other edge kinds.
 
@@ -333,8 +337,8 @@ tooling on a separate track from the product graph, and wiring one to the other 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
