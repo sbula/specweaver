@@ -61,7 +61,7 @@ class GraphBuilder:
         to safely upsert/remove nodes from the engine.
         """
         new_nodes, new_edges = self.mapper.map_ast_to_nodes(
-            filepath, ast_data, frozenset(self.known_files)
+            filepath, ast_data, frozenset(self.known_files), self.symbol_index
         )
         new_hashes = {node.semantic_hash for node in new_nodes}
         new_edge_keys = {(e.source_hash, e.target_hash) for e in new_edges}

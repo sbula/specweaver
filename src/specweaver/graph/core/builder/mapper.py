@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-from typing import Any
+from typing import Any, ClassVar
 
 from specweaver.graph.core.engine.hashing import SemanticHasher
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
@@ -9,9 +9,12 @@ from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 _MODULE_SEPARATORS = (".", "::", "/")
 
-# A module we did not collect still gets a node, so a traversal can tell "nothing imports this"
-# from "its importer is outside what we parsed". The prefix cannot collide with a real path.
-_GHOST_PREFIX = "<unresolved-module>/"
+# Something we did not collect still gets a node, so a traversal can tell "nothing depends on this"
+# from "what depends on it is outside what we parsed". The prefixes cannot collide with a real path,
+# and they are SEPARATE per kind: a module named `Foo` and a type named `Foo` are different unknowns,
+# and one ghost for both would report a file's missing dependency as a type's missing parent.
+_GHOST_MODULE_PREFIX = "<unresolved-module>/"
+_GHOST_TYPE_PREFIX = "<unresolved-type>/"
 
 
 def _module_segments(module: str) -> list[str]:
@@ -76,6 +79,7 @@ class OntologyMapper:
         filepath: str,
         ast_data: dict[str, Any] | None,
         known_files: frozenset[str] = frozenset(),
+        symbol_index: dict[str, set[str]] | None = None,
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """
         Parses an AST dictionary and returns a list of mapped GraphNodes and GraphEdges.
@@ -121,6 +125,7 @@ class OntologyMapper:
                 continue
 
             self._map_child(filepath, child, file_hash, nodes, edges, depth=1)
+            self._map_supertypes(filepath, child, symbol_index or {}, edges)
 
         return nodes, edges
 
@@ -141,11 +146,56 @@ class OntologyMapper:
             target = (
                 self.hasher.hash_file(resolved)
                 if resolved is not None
-                else self.hasher.hash_file(f"{_GHOST_PREFIX}{module}")
+                else self.hasher.hash_file(f"{_GHOST_MODULE_PREFIX}{module}")
             )
             edges.append(
                 GraphEdge(source_hash=file_hash, target_hash=target, kind=EdgeKind.IMPORTS)
             )
+
+    _SUPERTYPE_EDGE_KINDS: ClassVar[dict[str, EdgeKind]] = {
+        "extends": EdgeKind.EXTENDS,
+        "implements": EdgeKind.IMPLEMENTS,
+    }
+
+    def _map_supertypes(
+        self,
+        filepath: str,
+        child: dict[str, Any],
+        symbol_index: dict[str, set[str]],
+        edges: list[GraphEdge],
+    ) -> None:
+        """One edge per declared supertype, from the type to the type it names.
+
+        Type to type, not file to file: `IMPORTS` already answers which files a file depends on, and
+        this answers which type another is built from. Unresolved and ambiguous both become a ghost —
+        two classes of one name are not one class, and a reader following an invented parent is worse
+        served than one seeing a visible unknown.
+        """
+        name = child.get("name")
+        if not name:
+            return
+        source = self.hasher.hash_node(filepath, str(name))
+        for record in child.get("supertypes", []) or []:
+            if not isinstance(record, dict):
+                continue
+            kind = self._SUPERTYPE_EDGE_KINDS.get(str(record.get("kind", "")))
+            supertype = record.get("name")
+            if kind is None or not supertype:
+                continue
+            edges.append(
+                GraphEdge(
+                    source_hash=source,
+                    target_hash=self._supertype_target(str(supertype), symbol_index),
+                    kind=kind,
+                )
+            )
+
+    def _supertype_target(self, name: str, symbol_index: dict[str, set[str]]) -> str:
+        """The node the supertype names, or a ghost when it names no single one of ours."""
+        declared_in = symbol_index.get(name, set())
+        if len(declared_in) == 1:
+            return self.hasher.hash_node(next(iter(declared_in)), name)
+        return self.hasher.hash_file(f"{_GHOST_TYPE_PREFIX}{name}")
 
     def _check_depth(
         self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int

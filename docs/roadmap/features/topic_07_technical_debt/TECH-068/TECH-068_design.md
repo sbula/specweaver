@@ -337,7 +337,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -353,18 +353,12 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: `SF-01` and `SF-02` are committed. A real build of `src/specweaver/graph` now
-persists 114 `CONTAINS` and 60 `IMPORTS` with 21 ghosts — the first dependency edges the graph has
-ever held. `SF-03` and `SF-04` are unblocked and may run in parallel.
+**Current status**: `SF-01`, `SF-02` and `SF-03` are committed. A real build of `src/specweaver`
+persists 2698 `CONTAINS`, 2274 `IMPORTS` and 341 `EXTENDS` at 4.7 ms/file — three of the four kinds
+this ticket owns. `SF-04` is the last.
 
-**Next step**: the implementation-plan skill for `SF-03` (supertypes) or `SF-04` (`CALLS`). Both
-depend only on `SF-02`, and `AD-1`'s single seam widening is what lets them fill fields rather than
-reshape the payload.
-
-**Corrections `SF-01` and `SF-02` made to delivered work**, each found by research rather than
-assumed: the persisted edge kind was wrong for every edge ever written; a departed edge survived
-forever; every Python relative import reported its imported symbol instead of its module, which also
-made any package using them infer the `adapter` archetype.
+**Next step**: the implementation-plan skill for `SF-04` — `CALLS` where the grammar already ships
+the query. It reuses `SF-03`'s symbol index, which is why its dependency moved here.
 
 **Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
 sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.

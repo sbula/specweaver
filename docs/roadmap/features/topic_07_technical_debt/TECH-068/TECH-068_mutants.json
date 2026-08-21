@@ -329,6 +329,60 @@
           "breaks": "implemented interfaces never cross the seam, so a type that implements but does not extend appears to inherit nothing"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A supertype becomes an edge to the type it names, of the kind the grammar stated",
+      "scope": [
+        "tests/integration/graph/test_supertypes_become_edges.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-supertype-edges",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper.map_ast_to_nodes",
+          "old": "            self._map_supertypes(filepath, child, symbol_index or {}, edges)",
+          "new": "            pass",
+          "breaks": "no EXTENDS or IMPLEMENTS edge is built, so an inheritance traversal returns nothing and the two kinds this sub-feature exists for stay absent"
+        },
+        {
+          "id": "implementation-emitted-as-extension",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper",
+          "old": "        \"implements\": EdgeKind.IMPLEMENTS,",
+          "new": "        \"implements\": EdgeKind.EXTENDS,",
+          "breaks": "the kind the grammar stated is collapsed at the last step, so a reader asking which types fulfil an interface gets nothing while EXTENDS reports twice what it should"
+        },
+        {
+          "id": "ambiguity-resolved-to-a-guess",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper._supertype_target",
+          "old": "        if len(declared_in) == 1:",
+          "new": "        if declared_in:",
+          "breaks": "a supertype name declared in two files resolves to whichever the set yields first, so a name collision becomes a parent that is right by accident or wrong in silence"
+        },
+        {
+          "id": "the-edge-runs-file-to-file",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper._map_supertypes",
+          "old": "        source = self.hasher.hash_node(filepath, str(name))",
+          "new": "        source = self.hasher.hash_file(filepath)",
+          "breaks": "inheritance is recorded from the FILE rather than the type, so a file declaring two classes appears to inherit from both hierarchies and neither type has a parent of its own"
+        },
+        {
+          "id": "one-ghost-namespace-for-two-kinds",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "_GHOST_TYPE_PREFIX",
+          "old": "_GHOST_TYPE_PREFIX = \"<unresolved-type>/\"",
+          "new": "_GHOST_TYPE_PREFIX = \"<unresolved-module>/\"",
+          "breaks": "an unresolved module and an unresolved type of the same name become ONE ghost node, so a file's missing dependency and a type's missing parent are reported as the same unknown"
+        }
+      ]
     }
   ]
 }
