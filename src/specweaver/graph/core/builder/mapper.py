@@ -7,6 +7,59 @@ from specweaver.graph.core.engine.hashing import SemanticHasher
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
+_MODULE_SEPARATORS = (".", "::", "/")
+
+# A module we did not collect still gets a node, so a traversal can tell "nothing imports this"
+# from "its importer is outside what we parsed". The prefix cannot collide with a real path.
+_GHOST_PREFIX = "<unresolved-module>/"
+
+
+def _module_segments(module: str) -> list[str]:
+    """The path-ish parts of an import, whatever the language spelled them with.
+
+    Python writes `a.b`, Rust `crate::alpha::beta`, Go and TypeScript `a/b`. Empty parts fall out,
+    which is what turns a relative `.sibling` into `['sibling']` without a special case.
+    """
+    normalised = module
+    for separator in _MODULE_SEPARATORS:
+        normalised = normalised.replace(separator, "\x00")
+    return [part for part in normalised.split("\x00") if part]
+
+
+def resolve_module(module: str, known_files: frozenset[str]) -> str | None:
+    """The one collected file an import names, or None when it names no single one.
+
+    Suffix-matching, longest first: `crate::alpha::beta` finds `src/alpha/beta.rs` because `crate`
+    is not a directory. A package is tried as both `a/b.<ext>` and `a/b/__init__.<ext>`. Matching is
+    case-insensitive because `normalize_path` lowercases before hashing (RT-21), so a case-sensitive
+    match here would disagree with the hash it is about to compute.
+
+    None covers unresolved AND ambiguous alike. `ADR-006` makes the graph the truth store, so a
+    reader seeing a visible unknown is better served than one following an invented dependency.
+    """
+    segments = _module_segments(module)
+    if not segments:
+        return None
+
+    lowered = {path.replace("\\", "/").lower(): path for path in known_files}
+    for start in range(len(segments)):
+        stem = "/".join(segments[start:])
+        matches = {original for lower, original in lowered.items() if _matches_stem(lower, stem)}
+        if len(matches) == 1:
+            return matches.pop()
+        if matches:
+            return None
+    return None
+
+
+def _matches_stem(candidate: str, stem: str) -> bool:
+    """Whether a collected path is the module `stem`, as a file or as a package."""
+    for tail in (stem, f"{stem}/__init__"):
+        without_suffix = candidate.rsplit(".", 1)[0]
+        if without_suffix == tail or without_suffix.endswith(f"/{tail}"):
+            return True
+    return False
+
 
 class OntologyMapper:
     """
@@ -19,7 +72,10 @@ class OntologyMapper:
         self.hasher = SemanticHasher(id_prefix)
 
     def map_ast_to_nodes(
-        self, filepath: str, ast_data: dict[str, Any] | None
+        self,
+        filepath: str,
+        ast_data: dict[str, Any] | None,
+        known_files: frozenset[str] = frozenset(),
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """
         Parses an AST dictionary and returns a list of mapped GraphNodes and GraphEdges.
@@ -46,6 +102,8 @@ class OntologyMapper:
         if not ast_data or not isinstance(ast_data, dict):
             return nodes, edges
 
+        self._map_imports(ast_data.get("imports", []), file_hash, known_files, edges)
+
         # 2. Extract children based on type
         children = ast_data.get("children", [])
         if not isinstance(children, list):
@@ -58,6 +116,29 @@ class OntologyMapper:
             self._map_child(filepath, child, file_hash, nodes, edges, depth=1)
 
         return nodes, edges
+
+    def _map_imports(
+        self,
+        imports: Any,
+        file_hash: str,
+        known_files: frozenset[str],
+        edges: list[GraphEdge],
+    ) -> None:
+        """One `IMPORTS` edge per import: to the file it names, or to a ghost when it names none."""
+        if not isinstance(imports, list):
+            return
+        for module in imports:
+            if not isinstance(module, str) or not _module_segments(module):
+                continue
+            resolved = resolve_module(module, known_files)
+            target = (
+                self.hasher.hash_file(resolved)
+                if resolved is not None
+                else self.hasher.hash_file(f"{_GHOST_PREFIX}{module}")
+            )
+            edges.append(
+                GraphEdge(source_hash=file_hash, target_hash=target, kind=EdgeKind.IMPORTS)
+            )
 
     def _check_depth(
         self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int

@@ -33,13 +33,19 @@ class GraphBuilder:
         self.mapper = OntologyMapper(id_prefix=id_prefix)
         self.id_prefix = id_prefix
         self.hasher = SemanticHasher(id_prefix=id_prefix)
+        # Every file this build collected. The mapper sees one file at a time and cannot
+        # resolve an import without it; empty means every import becomes a ghost, which is
+        # correct for a single-file ingest rather than a defect.
+        self.known_files: set[str] = set()
 
     def ingest_ast(self, filepath: str, ast_data: dict[str, Any]) -> None:
         """
         Takes raw AST data, maps it to the ontology, and calculates deltas
         to safely upsert/remove nodes from the engine.
         """
-        new_nodes, new_edges = self.mapper.map_ast_to_nodes(filepath, ast_data)
+        new_nodes, new_edges = self.mapper.map_ast_to_nodes(
+            filepath, ast_data, frozenset(self.known_files)
+        )
         new_hashes = {node.semantic_hash for node in new_nodes}
         new_edge_keys = {(e.source_hash, e.target_hash) for e in new_edges}
 
@@ -116,6 +122,7 @@ class GraphBuilder:
             return 1
 
         files = self.collect_files(target_path)
+        self.known_files = set(files)
         count = 0
         for f in files:
             self.ingest_file(f)

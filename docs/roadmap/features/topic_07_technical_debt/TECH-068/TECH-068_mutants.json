@@ -111,6 +111,60 @@
           "breaks": "supertypes and calls are absent rather than empty, so SF-03 and SF-04 must reshape the payload instead of filling it and can no longer run in parallel -- AD-1 undone"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "An import becomes an edge to the file it names, or to a ghost",
+      "scope": [
+        "tests/integration/graph/test_imports_become_edges.py"
+      ],
+      "mutants": [
+        {
+          "id": "imports-become-no-edges",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper._map_imports",
+          "old": "        self._map_imports(ast_data.get(\"imports\", []), file_hash, known_files, edges)",
+          "new": "        pass",
+          "breaks": "no IMPORTS edge is built at all, which is the state the graph shipped in: nine kinds declared, one written"
+        },
+        {
+          "id": "an-unresolved-import-vanishes",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper._map_imports",
+          "old": "            resolved = resolve_module(module, known_files)",
+          "new": "            resolved = resolve_module(module, known_files)\n            if resolved is None:\n                continue",
+          "breaks": "an import outside the parsed set produces nothing instead of a ghost, so a traversal cannot tell 'nothing imports this' from 'its importer is outside what we parsed'"
+        },
+        {
+          "id": "ambiguity-becomes-a-guess",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "resolve_module",
+          "old": "        if matches:\n            return None",
+          "new": "        if matches:\n            return sorted(matches)[0]",
+          "breaks": "two collected files matching one import resolve to whichever sorts first, so a name collision becomes a dependency that looks exactly like a real one -- ADR-006 makes the graph the truth store"
+        },
+        {
+          "id": "a-package-no-longer-resolves",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "resolve_module",
+          "old": "    for tail in (stem, f\"{stem}/__init__\"):",
+          "new": "    for tail in (stem,):",
+          "breaks": "a package is only ever matched as a module file, so every import of a directory with an __init__ becomes a ghost"
+        },
+        {
+          "id": "only-the-whole-module-path-is-tried",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "resolve_module",
+          "old": "    for start in range(len(segments)):",
+          "new": "    for start in range(1):",
+          "breaks": "a leading segment that is not a directory -- rust's `crate`, a source root -- stops the module resolving, so whole languages ghost silently"
+        }
+      ]
     }
   ]
 }
