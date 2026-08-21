@@ -165,6 +165,51 @@
           "breaks": "a leading segment that is not a directory -- rust's `crate`, a source root -- stops the module resolving, so whole languages ghost silently"
         }
       ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "A file the build could not read is visible on its node",
+      "scope": [
+        "tests/integration/graph/test_unparsed_files_are_visible.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-read-failure-goes-quiet",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "        ast_data[\"unparsed\"] = \"read\"",
+          "new": "        pass",
+          "breaks": "a file nobody could open looks exactly like a file with nothing in it, so a traversal returning no edges has two meanings and the reader cannot tell which"
+        },
+        {
+          "id": "a-parser-failure-goes-quiet",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "        ast_data[\"unparsed\"] = \"parse\"",
+          "new": "        pass",
+          "breaks": "a grammar that raised leaves no record, so a whole file's dependencies are silently absent from the graph"
+        },
+        {
+          "id": "the-node-drops-the-marker",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper.map_ast_to_nodes",
+          "old": "metadata={\"unparsed\": unparsed} if unparsed else {},",
+          "new": "metadata={},",
+          "breaks": "the seam knows the file failed and the graph does not, so the fact dies at the boundary it was discovered on"
+        },
+        {
+          "id": "every-file-is-marked-unparsed",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper.map_ast_to_nodes",
+          "old": "metadata={\"unparsed\": unparsed} if unparsed else {},",
+          "new": "metadata={\"unparsed\": unparsed or \"read\"},",
+          "breaks": "the marker is present on every node, so it distinguishes nothing -- a flag that is always set carries no information at all"
+        }
+      ]
     }
   ]
 }

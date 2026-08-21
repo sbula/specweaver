@@ -63,6 +63,11 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         code = path.read_text(encoding="utf-8")
     except Exception:
         logger.exception("extract_ast_dict: Failed to read file %s", filepath)
+        # A flag, not a collection: its ABSENCE is the ordinary case, so it is set only on a real
+        # failure. A warning in a log is invisible to a graph reader and unreadable to a human
+        # across thousands of files, which is how "could not open" and "nothing in it" became the
+        # same answer.
+        ast_data["unparsed"] = "read"
         return ast_data
 
     try:
@@ -71,6 +76,7 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         ast_data["imports"] = parser.extract_imports(code)
     except Exception:
         logger.exception("extract_ast_dict: Parser failed on %s", filepath)
+        ast_data["unparsed"] = "parse"
         return ast_data
 
     for symbol in symbols:

@@ -332,7 +332,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -349,17 +349,18 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: `SF-01` is committed — three boundaries, both FRs proven, five mutants killed.
-`SF-02` onwards are unplanned.
+**Current status**: `SF-01` and `SF-02` are committed. A real build of `src/specweaver/graph` now
+persists 114 `CONTAINS` and 60 `IMPORTS` with 21 ghosts — the first dependency edges the graph has
+ever held. `SF-03` and `SF-04` are unblocked and may run in parallel.
 
-**Next step**: the implementation-plan skill for `SF-02` — *The seam carries dependencies, and
-`IMPORTS` lands through it*. Its only dependency, `SF-01`, is committed.
+**Next step**: the implementation-plan skill for `SF-03` (supertypes) or `SF-04` (`CALLS`). Both
+depend only on `SF-02`, and `AD-1`'s single seam widening is what lets them fill fields rather than
+reshape the payload.
 
-**What `SF-01` changed beyond its own scope**: `FR-14` turned out to be firing rather than latent.
-The engine wrote the edge kind under `kind` and the store read `type`, so a real build persisted 108
-edges all typed `CALLS` when every one was `CONTAINS`. Eight existing store tests hand-built their
-graphs with the store's own key and so could not see it. The attribute is now named once, as
-`EDGE_KIND_ATTR`, imported by both sides.
+**Corrections `SF-01` and `SF-02` made to delivered work**, each found by research rather than
+assumed: the persisted edge kind was wrong for every edge ever written; a departed edge survived
+forever; every Python relative import reported its imported symbol instead of its module, which also
+made any package using them infer the `adapter` archetype.
 
 **Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
 sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.

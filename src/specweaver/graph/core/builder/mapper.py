@@ -94,8 +94,15 @@ class OntologyMapper:
         elif "\\" in filepath:
             basename = filepath.split("\\")[-1]
 
+        # A file the build could not read carries that on its node, so a traversal returning no
+        # edges can be told apart from one whose file was never opened.
+        unparsed = (ast_data or {}).get("unparsed") if isinstance(ast_data, dict) else None
         file_node = GraphNode(
-            semantic_hash=file_hash, kind=NodeKind.FILE, name=basename, file_id=filepath
+            semantic_hash=file_hash,
+            kind=NodeKind.FILE,
+            name=basename,
+            file_id=filepath,
+            metadata={"unparsed": unparsed} if unparsed else {},
         )
         nodes.append(file_node)
 
