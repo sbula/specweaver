@@ -148,13 +148,13 @@ ambiguous target becomes a `GHOST` rather than a guess.
 | # | FR | Actor | Action | Outcome |
 |---|---|---|---|---|
 | FR-1 | Call-site extraction on the contract | `AbstractParser` | expose `extract_call_sites(code)` | each qualified caller symbol maps to the callee names it invokes |
-| FR-2 | Upstream call queries | python/rust/java/go parsers | derive call sites from the grammar's shipped `tags.scm` `@reference.call` | no call query for these languages is maintained in this repository |
-| FR-3 | Local call queries | typescript/c/cpp/kotlin parsers | derive call sites from a `.scm` query held in this repository | call sites are returned for languages whose grammars ship no query |
+| FR-2 | Upstream call queries | python/rust/java/go parsers | derive call sites from the grammar package's `TAGS_QUERY` constant, which carries `@reference.call` | no call query for these languages is maintained here, and no file is read — the query is an imported string, so `ast.parsers` stays pure-logic |
+| FR-3 | Local call queries | typescript/c/cpp/kotlin parsers | derive call sites from a query held in this repository | call sites are returned for languages upstream does not cover. **The cost is asymmetric**: `c` and `cpp` expose a `TAGS_QUERY` carrying definitions only, so their call patterns extend an existing query; `typescript` and `kotlin` expose no constant at all and start from the grammar |
 | FR-4 | Supertypes on the contract | `AbstractParser` | expose `extract_supertypes(code)` | each type's supertypes are reported with extension and implementation distinguished |
 | FR-5 | Imports cross the seam | `extract_ast_dict` | emit the file's imported module paths from `extract_imports` | the mapper receives imports it currently never sees |
 | FR-6 | Supertypes cross the seam | `extract_ast_dict` | emit each symbol's supertypes with their kind | the mapper can tell an extended class from an implemented interface |
 | FR-7 | Call sites cross the seam | `extract_ast_dict` | emit each symbol's call sites | the mapper receives call sites it currently never sees |
-| FR-8 | `IMPORTS` edges | the mapper | emit one `IMPORTS` edge per import, importing file node → imported module's file node | an import traversal returns the files a file depends on |
+| FR-8 | `IMPORTS` edges | the mapper | resolve each imported module path against the `file_id`s already in the parsed set — never against the filesystem (`NFR-4`) — and emit one `IMPORTS` edge from the importing file's node to the resolved file's node | an import traversal returns the files a file depends on; a module outside the parsed set becomes a `GHOST` under `FR-12` |
 | FR-9 | `EXTENDS` edges | the mapper | emit one `EXTENDS` edge from a type to each class it extends | a type hierarchy is traversable |
 | FR-10 | `IMPLEMENTS` edges | the mapper | emit one `IMPLEMENTS` edge from a type to each interface it implements | interface fulfilment is distinguishable from class extension |
 | FR-11 | `CALLS` edges | the mapper | emit one `CALLS` edge from the calling procedure's node to the called procedure's node | caller/callee traversal returns real results |
@@ -162,6 +162,7 @@ ambiguous target becomes a `GHOST` rather than a guess.
 | FR-13 | Ambiguous targets | the mapper | emit exactly one `GHOST` edge when a name matches more than one node | a name collision never becomes a fabricated dependency |
 | FR-14 | Explicit edge kinds | the mapper | set `EdgeKind` on every edge it constructs | the persistence fallback never supplies a kind for an edge that omits one |
 | FR-15 | Unparsed files are visible | the builder | mark a file whose parse failed as unparsed on its node | a reader distinguishes an absent edge from an unread file |
+| FR-16 | Stale edges are removed | the store | delete an edge that the rebuilt graph no longer contains, rather than only inserting the ones it does | a call deleted from the source stops being a dependency |
 
 ## Requirement–Surface Bindings
 
@@ -173,6 +174,8 @@ ambiguous target becomes a `GHOST` rather than a guess.
 | FR-2 | a call query per grammar | grammar wheels · `queries/tags.scm` | **ran** a scan of the installed wheels — present in python, rust, java, go; absent in ts, c, cpp; kotlin ships no `.scm` |
 | FR-12 | a node for an unresolved target | `graph/core/store` · `SqliteGraphRepository.persist_semantic_digraph` | **ran** it — an edge to an unknown hash created `('unknown-target', is_active=0)` and stored `{"raw": "os.getcwd"}` on the edge |
 | FR-14 | an explicit edge kind | `graph/core/store` · `graph_edges.type` | read `graph/core/store/repository.py` — `data.get("type", "CALLS")` |
+| FR-16 | removal of an edge the graph no longer holds | `graph/core/store` · `persist_semantic_digraph` | **ran** it — persisted a graph with an `a→b` edge, then the same graph without it; the row survived. `persist` only `INSERT OR REPLACE`s and nothing deletes edges |
+| FR-2 | the call query as a value, not a file | grammar packages · `TAGS_QUERY` | **ran** it — `tree_sitter_python.TAGS_QUERY` is a 350-char module constant; rust, java and go likewise |
 | FR-5/6/7 | the seam itself | `workspace/ast/adapters` · `extract_ast_dict(filepath) -> dict[str, Any]` | **ran** it — emits `{"type", "name"}` per child and nothing more |
 
 ## Non-Functional Requirements
@@ -186,7 +189,7 @@ ambiguous target becomes a `GHOST` rather than a guess.
 | NFR-5 | Ghost metadata size | A `GHOST` node's metadata SHALL stay under the 2 KB cap enforced by `GraphNode.validate_metadata_size` (RT-25) |
 | NFR-6 | Parse failure is visible | A parser raising on one file SHALL leave the build running and the file marked unparsed, never abort the build and never fail silently |
 | NFR-7 | Contract stability | `extract_framework_markers`' return shape SHALL remain unchanged. Three callers outside this feature depend on it — `core/flow/handlers/validation.py` and twice `sandbox/code_structure/core/atom.py`, where it is an agent-facing tool intent |
-| NFR-8 | Case collision | Cross-file resolution SHALL NOT treat two files differing only in case as the same file, despite `normalize_file_id` lowercasing `file_id` (RT-21) |
+| NFR-8 | Case collision | Two files differing only in case share a `file_id` and therefore a node, because `normalize_file_id` lowercases it by design (RT-21). Resolution inherits that and this design does not correct it — doing so means changing RT-21, which is out of scope. **[proof: none — a scope statement, not a requirement]** |
 
 ## External Dependencies
 
@@ -265,54 +268,69 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Sub-Feature Breakdown
 
-### SF-01: The seam carries dependencies, and `IMPORTS` lands through it
-- **Scope**: Widen the AST-to-graph contract once and prove it end to end with the cheapest edge kind.
-- **FRs**: [FR-5, FR-8, FR-12, FR-14, FR-15]
-- **Inputs**: `AbstractParser.extract_imports`; the existing `extract_ast_dict`; `graph_edges.metadata`.
-- **Outputs**: a declared seam contract carrying imports, supertypes and call sites; `IMPORTS` edges; `GHOST` edges for unresolved targets; the `AD-3` boundary declared.
+> Restructured during the Phase 6 red/blue review. `FR-16` took `SF-01` to six FRs, past the
+> agent-sized bound — and the two edge-write traps are persistence correctness, independent of the
+> seam, so they became a sub-feature of their own that lands before anything writes a new edge kind.
+
+### SF-01: Close the edge-write traps
+- **Scope**: Make the persistence layer safe for edge kinds it has never carried.
+- **FRs**: [FR-14, FR-16]
+- **Inputs**: the existing `persist_semantic_digraph` and `graph_edges` table.
+- **Outputs**: every edge carries an explicit kind; an edge the rebuilt graph no longer holds is deleted rather than left behind.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf01_implementation_plan.md
 
-### SF-02: Supertypes, with extension and implementation told apart
-- **Scope**: Add the supertype surface and emit `EXTENDS` and `IMPLEMENTS`.
-- **FRs**: [FR-4, FR-6, FR-9, FR-10]
-- **Inputs**: `SF-01`'s seam contract; the existing per-language base extraction.
-- **Outputs**: `extract_supertypes` on every parser; `EXTENDS` and `IMPLEMENTS` edges.
+### SF-02: The seam carries dependencies, and `IMPORTS` lands through it
+- **Scope**: Widen the AST-to-graph contract once and prove it end to end with the cheapest edge kind.
+- **FRs**: [FR-5, FR-8, FR-12, FR-15]
+- **Inputs**: `AbstractParser.extract_imports`; the existing `extract_ast_dict`; `SF-01`'s edge-write guarantees.
+- **Outputs**: a declared seam contract carrying imports, supertypes and call sites; `IMPORTS` edges; `GHOST` edges for unresolved targets; unparsed files marked; the `AD-3` boundary declared.
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf02_implementation_plan.md
 
-### SF-03: `CALLS` where the grammar already ships the query
-- **Scope**: Add call-site extraction and resolution, covering the four languages upstream supports.
-- **FRs**: [FR-1, FR-2, FR-7, FR-11, FR-13]
-- **Inputs**: `SF-01`'s seam contract; the shipped `tags.scm` for python, rust, java, go.
-- **Outputs**: `extract_call_sites` on the interface; `CALLS` edges with resolution and ambiguity handling; `NFR-1`/`NFR-2` measured.
-- **Depends on**: SF-01
+### SF-03: Supertypes, with extension and implementation told apart
+- **Scope**: Add the supertype surface and emit `EXTENDS` and `IMPLEMENTS`.
+- **FRs**: [FR-4, FR-6, FR-9, FR-10]
+- **Inputs**: `SF-02`'s seam contract; the existing per-language base extraction.
+- **Outputs**: `extract_supertypes` on every parser; `EXTENDS` and `IMPLEMENTS` edges.
+- **Depends on**: SF-02
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf03_implementation_plan.md
 
-### SF-04: `CALLS` where no upstream query exists
-- **Scope**: Write and maintain call queries for the grammars that ship none.
-- **FRs**: [FR-3]
-- **Inputs**: `SF-03`'s extraction and resolution mechanism.
-- **Outputs**: repository-held `.scm` call queries for typescript, c, cpp and kotlin; `NFR-1`/`NFR-2` re-measured.
-- **Depends on**: SF-03
+### SF-04: `CALLS` where the grammar already ships the query
+- **Scope**: Add call-site extraction and resolution, covering the four languages upstream supports.
+- **FRs**: [FR-1, FR-2, FR-7, FR-11, FR-13]
+- **Inputs**: `SF-02`'s seam contract; `TAGS_QUERY` from the python, rust, java and go packages.
+- **Outputs**: `extract_call_sites` on the interface; `CALLS` edges with resolution and ambiguity handling; `NFR-1`/`NFR-2` measured.
+- **Depends on**: SF-02
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf04_implementation_plan.md
+
+### SF-05: `CALLS` where no upstream query exists
+- **Scope**: Write and maintain call queries for the grammars upstream does not cover.
+- **FRs**: [FR-3]
+- **Inputs**: `SF-04`'s extraction and resolution mechanism; `c` and `cpp`'s existing `TAGS_QUERY` to extend.
+- **Outputs**: repository-held call queries for typescript, c, cpp and kotlin; `NFR-1`/`NFR-2` re-measured.
+- **Depends on**: SF-04
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf05_implementation_plan.md
 
 ## Execution Order
 
-1. `SF-01` — no dependencies, start immediately. It carries `FR-14`, which must land before any
-   `CALLS` edge exists.
-2. `SF-02` and `SF-03` in parallel — both depend only on `SF-01`, and `AD-1` is what makes that
-   possible: neither reshapes the seam, each fills a field.
-3. `SF-04` — depends on `SF-03`. Last on purpose, because the Kotlin risk is isolated here.
+1. `SF-01` — no dependencies. It closes both edge-write traps before any new edge kind is written:
+   the `"CALLS"` fallback that would fabricate a kind, and the stale edge that would never be
+   removed. Both are unreachable today and both go live the moment `SF-04` lands.
+2. `SF-02` — the seam, widened once. `AD-1` is what lets the next two run side by side.
+3. `SF-03` and `SF-04` in parallel — both depend only on `SF-02`, and neither reshapes the seam.
+4. `SF-05` — depends on `SF-04`. Last on purpose: typescript and kotlin expose no query constant at
+   all, so the risk is isolated where it cannot block the other edge kinds.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The seam carries dependencies | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-02 | Supertypes told apart | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-03 | `CALLS` from upstream queries | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | `CALLS` where none ships | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Close the edge-write traps | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The seam carries dependencies | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
 
