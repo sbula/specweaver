@@ -28,6 +28,33 @@
           "breaks": "a missing or undeclared kind is written to the column instead of refused, so a None or a typo becomes an edge type no reader can interpret and no gate can see"
         }
       ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "An edge the rebuilt graph no longer holds does not survive",
+      "scope": [
+        "tests/integration/graph/test_stale_edges_are_removed.py"
+      ],
+      "mutants": [
+        {
+          "id": "nothing-is-cleared",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository._clear_edges_of",
+          "old": "        for i in range(0, len(ids), 999):",
+          "new": "        for i in range(0, 0, 999):",
+          "breaks": "the clear loop never runs, so INSERT OR REPLACE leaves every departed edge in place forever -- a retired call stays a dependency and the set only grows"
+        },
+        {
+          "id": "the-clear-is-unscoped",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository._clear_edges_of",
+          "old": "f\"DELETE FROM graph_edges WHERE source_id IN ({placeholders})\",",
+          "new": "\"DELETE FROM graph_edges\",",
+          "breaks": "every service's edges are deleted by any build, because graph_edges carries no service_name and the node ids are the only thing scoping the sweep"
+        }
+      ]
     }
   ]
 }

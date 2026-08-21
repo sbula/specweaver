@@ -103,12 +103,15 @@ real database can answer.
 
 1. Write the failing test first: persist a graph containing `a→b`, persist the same graph without
    that edge, assert the row is gone. It survives today. **Red before green.**
-2. Delete edges for the nodes being written that the incoming graph no longer contains. Pseudocode,
-   in order:
-   - collect the edge keys the incoming graph holds;
-   - for the nodes in this write, read the edge keys the database holds;
-   - delete the difference, chunked at 5,000;
+2. Clear the outgoing edges of the nodes being written, then insert. Pseudocode, in order:
+   - for the nodes in this write, delete their edge rows, chunked against SQLite's variable limit;
    - then insert, as now.
+
+   **Corrected during development.** This step originally specified a diff — read what the database
+   holds, delete only what the incoming graph has dropped. A mutation pass showed the difference is
+   not observable: the insert that follows restores everything still held, so ignoring the diff
+   entirely changed no test. Two mutants survived against it. Clear-then-insert is the same
+   behaviour with a branch removed, and all three mutants against it are killed.
 3. Scope the deletion to the nodes in this write. A global diff would delete another service's
    edges, because `graph_edges` carries no `service_name` of its own.
 

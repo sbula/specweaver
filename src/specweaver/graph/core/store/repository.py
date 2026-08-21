@@ -150,6 +150,31 @@ class SqliteGraphRepository:
                 hash_to_id[h] = int_id
         return hash_to_id
 
+    def _clear_edges_of(self, cursor: sqlite3.Cursor, written_ids: set[int]) -> None:
+        """Drop every outgoing edge of the nodes in this write, before the write re-adds them.
+
+        `INSERT OR REPLACE` alone leaves a departed edge in place forever: the in-memory engine drops
+        it on re-ingest, so the graph is right in memory and wrong on disk from the next load onward.
+        Harmless while `CONTAINS` was the only kind, because it dies with its symbol; once `CALLS`
+        exists every retired call would leave a phantom dependency and the set only grows.
+
+        Clear-then-insert rather than diff-then-delete. A mutation pass showed the difference is not
+        observable — the insert that follows restores everything the graph still holds — so the diff
+        was a branch that could not be tested, and this is the same behaviour without it.
+
+        Scoped to the nodes in THIS write. `graph_edges` carries no `service_name`, so a wider sweep
+        would delete another service's rows; the node ids are what carry the service. That also keeps
+        a build scoped to one directory from treating the rest of the tree as removed.
+        """
+        ids = list(written_ids)
+        for i in range(0, len(ids), 999):
+            chunk = ids[i : i + 999]
+            placeholders = ",".join(["?"] * len(chunk))
+            cursor.execute(
+                f"DELETE FROM graph_edges WHERE source_id IN ({placeholders})",
+                chunk,
+            )
+
     def persist_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:  # type: ignore[type-arg]
         node_batch, ghost_batch = self._extract_nodes(semantic_digraph)
 
@@ -183,6 +208,8 @@ class SqliteGraphRepository:
                     meta_str = json.dumps(data.get("metadata", {}), default=str)
                     kind = _edge_kind(source_hash, target_hash, data)
                     edge_batch.append((source_id, target_id, kind, meta_str))
+
+            self._clear_edges_of(cursor, set(hash_to_id.values()))
 
             edge_sql = """
                 INSERT OR REPLACE INTO graph_edges (source_id, target_id, type, metadata)
