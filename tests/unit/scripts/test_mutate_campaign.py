@@ -162,3 +162,25 @@ class TestBucketCountsTheProtectors:
         order = camp._ORDER
 
         assert order.index("PROTECTED x1") < order.index("PROTECTED")
+
+
+# The by-hand tool and the nightly must not write the same file.
+#
+# Two markdown files in `.tmp/` a single word apart is a trap that has already cost a reading:
+# `mutation_report.md` was the campaign tool's abandoned output and `mutation_session.md` was the
+# nightly's fresh one, and the stale name is the one that got opened. The two defaults are pinned
+# apart here so a rename cannot quietly put them back together.
+
+
+def test_the_campaign_writes_its_own_file(camp: ModuleType) -> None:
+    assert camp.DEFAULT_OUT.name == "mutation_campaign_report.md"
+
+
+def test_the_two_defaults_differ(camp: ModuleType) -> None:
+    assert camp.DEFAULT_OUT.name != "mutation_session.md"
+
+
+def test_the_nightly_derives_its_report_from_its_record() -> None:
+    """`--out` names the pair, so a custom run cannot clobber the nightly's report."""
+    source = (REPO_ROOT / "scripts" / "mutation.py").read_text(encoding="utf-8")
+    assert 'readable = out.with_suffix(".md")' in source

@@ -53,7 +53,9 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / ".tmp" / "mutation_report.md"
+# Named apart from the nightly's `mutation_session.md` on purpose: two reports one word apart
+# in `.tmp/` is how a stale by-hand run got read as last night's.
+DEFAULT_OUT = REPO_ROOT / ".tmp" / "mutation_campaign_report.md"
 
 _spec = importlib.util.spec_from_file_location("_mutate", Path(__file__).parent / "_mutate.py")
 assert _spec is not None and _spec.loader is not None
