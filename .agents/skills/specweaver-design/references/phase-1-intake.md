@@ -59,8 +59,8 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 >
 > **Some decisions are never the agent's**, whatever else the grilling settles. The twelve triggers
 > and the test that finds them are in `.agents/PRINCIPLES.md` §2:
-> `T-SPEND` · `T-BOUNDARY` · `T-POSTURE` · `T-DIVERGE` · `T-SCOPE` · `T-ORDER` · `T-ARCH` ·
-> `T-NAME` · `T-UNDO` · `T-DEFAULT` · `T-DATA` · `T-OBLIGATION`.
+> `T-SPEND` · `T-BOUNDARY` · `T-POSTURE` · `T-DIVERGE` · `T-SCOPE` · `T-ORDER` ·
+> `T-PROVEN` · `T-ARCH` · `T-NAME` · `T-UNDO` · `T-DEFAULT` · `T-DATA` · `T-OBLIGATION`.
 >
 > Read it before Phase 2 and name every trigger this capability touches. Each one goes to the user
 > unsettled — no default, no placeholder, no reasonable-looking assumption.

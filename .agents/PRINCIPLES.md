@@ -46,6 +46,7 @@ told? Then it was never yours.
 | The agreement | `T-DIVERGE` | Building something other than what the spec says, including when the substitute looks better |
 | | `T-SCOPE` | What the thing will not do — Non-Goals, deferrals, retirements, half-a-capability calls |
 | | `T-ORDER` | Which of two open journeys goes first |
+| | `T-PROVEN` | Calling something proven — flipping `🔧` to `✅`, judging a mutant equivalent, declaring a claim covered or a gate green |
 | Expensive to take back | `T-ARCH` | Where a thing lives and what it may need — the one central home, a new service to operate, a boundary an ADR already set |
 | | `T-NAME` | A name anything can depend on — CLI flags, config keys, API fields, verdict vocabularies |
 | | `T-UNDO` | An act that cannot be walked back — deletes, migrations, rewriting history, dropping a public surface |
