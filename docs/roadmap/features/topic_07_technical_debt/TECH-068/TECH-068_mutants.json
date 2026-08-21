@@ -26,6 +26,15 @@
           "old": "if kind not in {k.value for k in EdgeKind}:",
           "new": "if False:",
           "breaks": "a missing or undeclared kind is written to the column instead of refused, so a None or a typo becomes an edge type no reader can interpret and no gate can see"
+        },
+        {
+          "id": "the-engine-drifts-again",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/core.py",
+          "symbol": "InMemoryGraphEngine.upsert_edge",
+          "old": "**{EDGE_KIND_ATTR: edge.kind.value}",
+          "new": "**{\"type\": edge.kind.value}",
+          "breaks": "the engine names the attribute itself instead of importing the shared constant, which is exactly how the original defect arose -- two modules independently choosing what to call the same thing, each self-consistent and neither able to see the other"
         }
       ]
     },

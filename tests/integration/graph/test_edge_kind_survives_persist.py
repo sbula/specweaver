@@ -25,7 +25,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.graph.core.engine.core import InMemoryGraphEngine
-from specweaver.graph.core.engine.models import EdgeKind, GraphEdge, GraphNode, NodeKind
+from specweaver.graph.core.engine.models import (
+    EDGE_KIND_ATTR,
+    EdgeKind,
+    GraphEdge,
+    GraphNode,
+    NodeKind,
+)
 from specweaver.graph.core.store.repository import SqliteGraphRepository
 
 if TYPE_CHECKING:
@@ -82,7 +88,7 @@ def test_an_edge_with_no_kind_is_refused(tmp_path: Path) -> None:
 def test_an_edge_whose_kind_is_not_a_declared_kind_is_refused(tmp_path: Path) -> None:
     """Hostile input: a string that is not an `EdgeKind` member must not reach the column."""
     graph = copy.deepcopy(_engine_with(EdgeKind.CONTAINS).export_semantic_digraph())
-    graph.edges["src", "dst"]["kind"] = "NOT_A_KIND"
+    graph.edges["src", "dst"][EDGE_KIND_ATTR] = "NOT_A_KIND"
     with pytest.raises(ValueError, match="NOT_A_KIND"):
         SqliteGraphRepository(str(tmp_path / "g.db"), "svc").persist_semantic_digraph(graph)
 
@@ -96,4 +102,23 @@ def test_the_export_path_and_the_store_agree_on_the_key(tmp_path: Path) -> None:
     attrs = graph.edges["src", "dst"]
     db = str(tmp_path / "g.db")
     SqliteGraphRepository(db, "svc").persist_semantic_digraph(graph)
-    assert _stored_types(db) == [attrs["kind"]]
+    assert _stored_types(db) == [attrs[EDGE_KIND_ATTR]]
+
+
+def test_the_engine_and_the_store_name_the_attribute_identically() -> None:
+    """The two halves cannot drift apart again, because there is only one name.
+
+    Proves: TECH-068 FR-14
+
+    This is the guardrail shipped with the fix. The defect was not a wrong value — it was two
+    modules independently choosing what to call the same thing, each self-consistent, neither
+    able to see the other. A shared constant removes the possibility rather than watching for it.
+
+    The assertion deliberately names no key of its own: it takes the attribute dict the engine
+    produced and asks the store's own reader to interpret it. Renaming either side breaks it.
+    """
+    from specweaver.graph.core.store.repository import _edge_kind
+
+    attrs = _engine_with(EdgeKind.EXTENDS).export_semantic_digraph().edges["src", "dst"]
+    assert EDGE_KIND_ATTR in attrs
+    assert _edge_kind("src", "dst", attrs) == EdgeKind.EXTENDS.value

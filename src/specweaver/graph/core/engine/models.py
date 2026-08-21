@@ -41,6 +41,16 @@ class GraphNode(BaseModel):
         return v
 
 
+EDGE_KIND_ATTR = "kind"
+"""The networkx edge attribute an edge's `EdgeKind` is stored under.
+
+Named once because naming it twice is what broke it. The engine wrote `kind`, the store read
+`type`, each half self-consistent and neither able to see the other, so every edge ever persisted
+took the store's `"CALLS"` fallback. Both sides import this now; the `graph_edges` column keeps its
+own name because it is part of the primary key.
+"""
+
+
 class GraphEdge(BaseModel):
     """
     Represents a directional relationship between two GraphNodes.

@@ -8,7 +8,7 @@ from typing import Any
 
 import networkx as nx
 
-from specweaver.graph.core.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.models import EDGE_KIND_ATTR, GraphEdge, GraphNode
 
 
 class InMemoryGraphEngine:
@@ -37,7 +37,9 @@ class InMemoryGraphEngine:
     def upsert_edge(self, edge: GraphEdge) -> None:
         """Add or update an edge in the graph."""
         with self._lock:
-            self._nx_graph.add_edge(edge.source_hash, edge.target_hash, kind=edge.kind.value)
+            self._nx_graph.add_edge(
+                edge.source_hash, edge.target_hash, **{EDGE_KIND_ATTR: edge.kind.value}
+            )
 
     def remove_edge(self, source_hash: str, target_hash: str) -> None:
         """Remove an edge from the graph."""

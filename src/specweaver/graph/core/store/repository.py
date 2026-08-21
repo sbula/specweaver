@@ -8,7 +8,7 @@ from typing import Any
 
 import networkx as nx
 
-from specweaver.graph.core.engine.models import EdgeKind
+from specweaver.graph.core.engine.models import EDGE_KIND_ATTR, EdgeKind
 
 
 def _edge_kind(source_hash: str, target_hash: str, data: dict[str, Any]) -> str:
@@ -19,7 +19,7 @@ def _edge_kind(source_hash: str, target_hash: str, data: dict[str, Any]) -> str:
     mistake, and it defaulted every edge to `CALLS` — a fabricated dependency indistinguishable
     from a real one.
     """
-    kind = data.get("kind")
+    kind = data.get(EDGE_KIND_ATTR)
     if kind not in {k.value for k in EdgeKind}:
         raise ValueError(
             f"edge {source_hash} -> {target_hash} carries no declared EdgeKind: {kind!r}. "

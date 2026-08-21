@@ -121,10 +121,14 @@ nothing, and the test must go red.
 ### CB-3 — The blind spot cannot regrow
 
 **Proves**: `FR-14` (guard)
-**Tier**: unit.
+**Tier**: integration. **Corrected from unit during development** — the claim is that two modules
+agree, which is a seam even though both sides are pure. The dev skill's rule is explicit that the
+seam is the claim.
 
-1. A test asserting that the store reads the same attribute key the engine writes, so the two cannot
-   drift apart again silently. This is the guardrail the ticket ships with its fix.
+1. Name the attribute **once**, as a shared constant both sides import, so drift becomes impossible
+   rather than merely detectable. This is the guardrail the ticket ships with its fix.
+2. The assertion names no key of its own: it takes the attribute dict the engine produced and asks
+   the store's own reader to interpret it.
 
 **Done when**: the test is green **and** changing either side's key makes it red.
 
@@ -136,7 +140,7 @@ nothing, and the test must go red.
 | an edge with no kind is refused | unit | FR-14 | today a missing kind silently becomes `CALLS` |
 | a removed edge does not survive a re-persist | integration | FR-16 | nothing deletes edges |
 | deletion does not cross service boundaries | integration | FR-16 | the new delete could over-reach |
-| engine and store agree on the attribute key | unit | FR-14 | the guard against regrowth |
+| engine and store agree on the attribute key | integration | FR-14 | the constant does not exist yet |
 
 Four buckets: happy path (kind round-trips), boundary (empty edge set, an edge with no kind),
 graceful degradation (a database with pre-existing wrong rows is corrected by the next build),
