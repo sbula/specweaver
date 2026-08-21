@@ -22,10 +22,13 @@ HIGH finding when run afterwards — on code already committed.
 user and wait: each answer is theirs. A question still open blocks the phase — it never becomes a
 default.
 
-The grilling offers a recommended answer beside each question. **A recommendation is a proposal,
-never a decision** — only the user's reply closes one. *You decide* is a reply: record it as a
-delegation, naming the question and who delegated it. With no user in the run — cron, CI, a
-headless agent — a fired trigger stops the work and writes down the open question.
+**Print your recommended answer beside each question.** It is what makes a reply cheap and fast,
+and it shows the user what you would have assumed.
+
+**The reply is what closes the question.** Move to the next phase once every question in the
+frontier carries the user's own words. *You decide* counts — record it as a delegation naming the
+question and who delegated it. With no user in the run — cron, CI, a headless agent — a fired
+trigger stops the work and writes down the open question.
 
 ## 2. What is never yours to decide
 
