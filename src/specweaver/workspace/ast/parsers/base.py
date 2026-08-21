@@ -64,6 +64,57 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
         """Tree-sitter query for extracting comments/trace tags."""
 
+    # Node types that declare a type. Empty means the language has no such concept, or that this
+    # ticket has not reached it — either way the parser reports nothing rather than guessing.
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ()
+
+    def extract_supertypes(self, code: str) -> dict[str, dict[str, list[str]]]:
+        """Walk for type declarations and ask the language what each one inherits."""
+        if not code.strip() or not self.TYPE_DECLARATION_NODES:
+            return {}
+
+        found: dict[str, dict[str, list[str]]] = {}
+        stack = [self.parser.parse(code.encode("utf-8")).root_node]
+        while stack:
+            node = stack.pop()
+            stack.extend(node.children)
+            if node.type not in self.TYPE_DECLARATION_NODES:
+                continue
+            name = self._declared_type_name(node)
+            if name:
+                found[name] = self._supertypes_of(node)
+        return found
+
+    def _declared_type_name(self, node: typing.Any) -> str | None:
+        """The declared name, which every grammar here spells as an identifier child."""
+        for child in node.children:
+            if child.type in ("identifier", "type_identifier"):
+                return str(self._extract_marker_text(child))
+        return None
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """What this type inherits. A language that separates the two kinds overrides this."""
+        return {"extends": [], "implements": []}
+
+    @staticmethod
+    def _type_names_in(node: typing.Any | None) -> list[str]:
+        """The bare type names in a clause, so `Base<T>` contributes `Base`."""
+        if node is None:
+            return []
+        names: list[str] = []
+        stack = [node]
+        while stack:
+            current = stack.pop(0)
+            # `Base<T>` is a dependency on `Base`. `T` is a type parameter, not a supertype, so the
+            # argument list is never descended into.
+            if current.type in ("type_arguments", "type_parameters"):
+                continue
+            if current.type in ("type_identifier", "identifier", "scoped_type_identifier"):
+                names.append(current.text.decode("utf-8"))
+                continue
+            stack = list(current.children) + stack
+        return names
+
     @abstractmethod
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         """Finds the bounding node for a given symbol name."""

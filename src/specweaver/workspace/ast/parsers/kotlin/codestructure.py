@@ -18,6 +18,18 @@ logger = logging.getLogger(__name__)
 class KotlinCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_kotlin.language)
 
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """Kotlin holds both kinds in one list, so every supertype is reported as extension.
+
+        `class Impl : Base(), Runner` distinguishes them only by the constructor call on `Base`, and
+        `by` delegation or a base with no explicit invocation breaks that convention. Settled with
+        the user: report extension only rather than be right most of the time.
+        """
+        specifiers = next((c for c in node.children if c.type == "delegation_specifiers"), None)
+        return {"extends": self._type_names_in(specifiers), "implements": []}
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

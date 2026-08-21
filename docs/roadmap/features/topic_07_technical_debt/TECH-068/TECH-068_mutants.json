@@ -210,6 +210,61 @@
           "breaks": "the marker is present on every node, so it distinguishes nothing -- a flag that is always set carries no information at all"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A parser separates extension from implementation, and refuses to guess where it cannot",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_supertypes.py",
+        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py"
+      ],
+      "mutants": [
+        {
+          "id": "java-collapses-the-two-clauses",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/java/codestructure.py",
+          "symbol": "JavaCodeStructure._supertypes_of",
+          "old": "\"implements\": self._type_names_in(by_type.get(\"super_interfaces\")),",
+          "new": "\"implements\": [],",
+          "breaks": "Java's super_interfaces are dropped, so a language whose grammar states the distinction plainly loses it anyway -- exactly the flattening extract_framework_markers already does and that FR-4 exists to avoid"
+        },
+        {
+          "id": "kotlin-guesses-by-parenthesis",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py",
+          "symbol": "KotlinCodeStructure._supertypes_of",
+          "old": "return {\"extends\": self._type_names_in(specifiers), \"implements\": []}",
+          "new": "names = self._type_names_in(specifiers)\n        return {\"extends\": names[:1], \"implements\": names[1:]}",
+          "breaks": "Kotlin supertypes are split by position, which is right for ordinary code and silently wrong for `by` delegation or a base with no explicit constructor call -- a wrong IMPLEMENTS edge looks exactly like a correct one"
+        },
+        {
+          "id": "type-arguments-become-supertypes",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._type_names_in",
+          "old": "            if current.type in (\"type_arguments\", \"type_parameters\"):",
+          "new": "            if False:",
+          "breaks": "`Base<T>` reports a dependency on the type parameter T as well as on Base, so every generic supertype invents an edge to a type that does not exist"
+        },
+        {
+          "id": "the-fallback-shape-is-wrong",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._supertypes_of",
+          "old": "        return {\"extends\": [], \"implements\": []}",
+          "new": "        return {\"extends\": []}",
+          "breaks": "the next language to declare TYPE_DECLARATION_NODES without a hook gets a payload missing `implements`, so every consumer that reads both keys breaks on it -- a branch nothing reached until a test was written for it"
+        },
+        {
+          "id": "a-language-without-the-concept-raises",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser.extract_supertypes",
+          "old": "        if not code.strip() or not self.TYPE_DECLARATION_NODES:\n            return {}",
+          "new": "        if not self.TYPE_DECLARATION_NODES:\n            raise NotImplementedError(self.__class__.__name__)",
+          "breaks": "SQL, markdown and C abort the build instead of reporting nothing, so one file in a language with no inheritance takes down the whole graph"
+        }
+      ]
     }
   ]
 }

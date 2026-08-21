@@ -18,6 +18,17 @@ logger = logging.getLogger(__name__)
 class TypeScriptCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_typescript.language_typescript)
 
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """TypeScript wraps both clauses in `class_heritage`, and keeps them distinct inside it."""
+        heritage = next((c for c in node.children if c.type == "class_heritage"), None)
+        clauses = {c.type: c for c in (heritage.children if heritage else ())}
+        return {
+            "extends": self._type_names_in(clauses.get("extends_clause")),
+            "implements": self._type_names_in(clauses.get("implements_clause")),
+        }
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

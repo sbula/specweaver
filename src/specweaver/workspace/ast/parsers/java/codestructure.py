@@ -18,6 +18,19 @@ logger = logging.getLogger(__name__)
 class JavaCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_java.language)
 
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "class_declaration",
+        "interface_declaration",
+    )
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """Java's grammar names the two separately, so the graph can keep them apart."""
+        by_type = {child.type: child for child in node.children}
+        return {
+            "extends": self._type_names_in(by_type.get("superclass")),
+            "implements": self._type_names_in(by_type.get("super_interfaces")),
+        }
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

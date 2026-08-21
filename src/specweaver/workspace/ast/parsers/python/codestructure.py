@@ -22,6 +22,13 @@ class PythonCodeStructure(ClassBasedParser):
 
     grammar = staticmethod(tree_sitter_python.language)
 
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_definition",)
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """Python has no interfaces, so there is no distinction here to lose."""
+        bases = next((c for c in node.children if c.type == "argument_list"), None)
+        return {"extends": self._type_names_in(bases), "implements": []}
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

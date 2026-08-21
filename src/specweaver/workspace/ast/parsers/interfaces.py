@@ -101,6 +101,20 @@ class CodeStructureInterface(ABC):
         """Extract framework-specific markers like annotations, decorators, and inheritance."""
 
     @abstractmethod
+    def extract_supertypes(self, code: str) -> dict[str, dict[str, list[str]]]:
+        """Each type's supertypes, with extension and implementation kept apart.
+
+        Returns:
+            `{type_name: {"extends": [...], "implements": [...]}}`. A language whose grammar does
+            not separate the two reports everything under `extends` rather than guessing — Kotlin
+            holds both in one `delegation_specifiers` list where only a parenthesis convention
+            distinguishes them, and `by` delegation breaks that convention.
+
+        Separate from `extract_framework_markers`, whose flat `extends` list has callers outside the
+        graph and must not change shape.
+        """
+
+    @abstractmethod
     def extract_traceability_tags(self, code: str) -> set[str]:
         """Extract all `@trace(ID)` tags embedded in source comments.
 
