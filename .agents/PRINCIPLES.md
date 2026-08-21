@@ -22,9 +22,15 @@ HIGH finding when run afterwards — on code already committed.
 user and wait: each answer is theirs. A question still open blocks the phase — it never becomes a
 default.
 
+The grilling offers a recommended answer beside each question. **A recommendation is a proposal,
+never a decision** — only the user's reply closes one. *You decide* is a reply: record it as a
+delegation, naming the question and who delegated it. With no user in the run — cron, CI, a
+headless agent — a fired trigger stops the work and writes down the open question.
+
 ## 2. What is never yours to decide
 
-You work alone. These twelve are the exception: settle them **with the user**, never by assuming.
+You work alone. The triggers below are the exception: settle them **with the user**, never by
+assuming.
 
 **The test.** If this is wrong and it ships, does the user have to pay, accept risk, migrate, or be
 told? Then it was never yours.
@@ -50,11 +56,12 @@ reasonable-looking assumption. **Documenting a guess does not stop it being a gu
 Everything else is yours: module shape, test tier, fixture design, a library with no cost and no
 security surface, either of two implementations that both meet every FR. So is anything an ADR, a
 design's *Decisions taken with the user* section, or this file has already settled — read it, and
-build on it.
+build on it. A settled decision covers the exact question it answered; a new number, a new surface
+or a wider scope is a fresh trigger, not a precedent.
 
 Measured 2026-08-19: twenty-five product-visible decisions were taken by an agent in one session.
 Every one was written into a design. Not one was agreed. `T-OBLIGATION` is the only trigger above
-with no local incident behind it; each of the other eleven names something this repo has hit.
+with no local incident behind it; every other one names something this repo has hit.
 
 ## 3. Test first, and let it fail
 
