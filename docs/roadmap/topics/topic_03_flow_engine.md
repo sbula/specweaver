@@ -91,6 +91,9 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)<br>
   > Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_
+  > **Boundary** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: this is the **locate** step — vectors and
+  > scores nominate candidates and hand them to `B-SENS-09` for exact
+  > graph closure. Its output never feeds a gate or blast radius: no correctness decision consumes vector output (ADR-006 decision 3).
 * **`B-FLOW-05` 🔧: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
   > [Design](../features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md) | _(new)_ | A run carries two ceilings — `llm.max_spend_usd` and `llm.max_tokens_per_run` — checked in
   > `TelemetryCollector` before every request and fed by every completed call. Both are finite by default: a breaker that ships disabled stops nothing, and `max_retries` counts attempts, not money.
@@ -108,3 +111,5 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > decide if the isolated code should be deleted or kept for future use.
 * **`A-FLOW-04` 🔜: Blast-Radius Circuit Breaker**
   > _(new)_ | Failsafe mechanism that calculates the topological impact of an autonomous hotfix and halts execution if the blast radius exceeds threshold tolerances.
+  > **Data source** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: `B-SENS-02` graph traversal, same seam as
+  > `B-EXEC-03`; behind `TECH-068`/`B-SENS-08`.

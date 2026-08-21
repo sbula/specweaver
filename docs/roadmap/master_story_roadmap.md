@@ -116,8 +116,10 @@ capability that closes `US-6`.
 
 ### 🔧 Debt Sequencing
 
-*Nothing open. All 64 `TECH` tickets are delivered, each with its FRs cited and behind a killed
-mutant. Full record: [topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
+*One open. `TECH-068` (the graph's missing dependency edges) blocks every graph reader minted by
+[ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) — `B-SENS-08`, `B-SENS-09`, `B-VAL-07` — so it precedes them all. Every other
+`TECH` ticket is delivered, each with its FRs cited and behind a killed mutant. Full record:
+[topic_07](topics/topic_07_technical_debt.md) and the [TECH ledger](#-technical-debt-tech).*
 
 *This table ranked open debt by what it invalidated. It stays, empty, because the next ticket needs
 somewhere to go — and because an empty ranking is a fact worth being able to read, where a deleted
@@ -208,6 +210,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
     *   🟡 **Graduated Autonomy:**
         *   `🔧` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
+    *   🔴 **Graph-Invariant Verification** *([ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: verify)*:
+        *   `[ ]` **B-VAL-07:** Graph-Invariant Verification — generated changes checked against unchanged dependents; behind `TECH-068`
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
@@ -348,8 +352,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `🔧` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
-        *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring)
+        *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring) — the **locate** step; hands candidates to `B-SENS-09`, never to a gate
         *   `[ ]` **A-SENS-03:** Event trigger for `A-SENS-01` semantic-hash sync (folded 2026-08-20; daemon-mode consumers only)
+    *   🔴 **Deterministic Context Packing** *([ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: contextualize)*:
+        *   `[ ]` **B-SENS-09:** Deterministic Context Packing — graph closure into prompts; behind `TECH-068`
+        *   `[ ]` **B-SENS-08:** Framework-Semantic Graph Edges — edge truth on framework code; behind `TECH-068`; also listed in US-12
     *   🔴 **Static Code Flow Analysis:**
         *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
@@ -370,6 +377,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-INTL-03:** Reverse-Weaving (`sw capture`)
 *   **Sub-Story Add-Ons:**
+    *   🔴 **Framework Edge Truth:**
+        *   `[ ]` **B-SENS-08:** Framework-Semantic Graph Edges — Spring/Quarkus DI, routes and listeners made visible to the graph; the legacy-Java case this story reverse-weaves; also in US-11
     *   🔴 **Massive Scale Context Retrieval:**
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   🔴 **Automated Code Purging:**
@@ -664,3 +673,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
     *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
     *   `✅` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)
+    *   `🔴` **TECH-068:** [The Knowledge Graph Emits One of Its Nine Declared Edge Kinds](features/topic_07_technical_debt/TECH-068/TECH-068_design.md)

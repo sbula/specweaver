@@ -303,3 +303,16 @@ Patterns adopted for SpecWeaver:
 Blueprint references:
 - [`src/tree_climber/dataflow/solver.py`](https://github.com/bstee615/tree-climber/blob/main/src/tree_climber/dataflow/solver.py) - Iterative set convergence algorithm for IN/OUT facts.
 - [`src/tree_climber/ast_utils.py`](https://github.com/bstee615/tree-climber/blob/main/src/tree_climber/ast_utils.py) - Mapping Tree-Sitter nodes to edges via visitors.
+
+## Graph & Retrieval (ADR-006)
+
+- **Jasmine** (ASE 2022, <https://dl.acm.org/doi/10.1145/3551349.3556910>) — proof that Spring DI breaks vanilla static call
+  graphs and framework-aware completion repairs them. The argument behind `B-SENS-08`.
+- **jQAssistant Spring plugin** (<https://github.com/jqassistant-plugin/jqassistant-spring-plugin>) — production precedent for a
+  Java architecture graph with framework concepts as first-class rules.
+- **CodexGraph** (NAACL 2025, <https://aclanthology.org/2025.naacl-long.7.pdf>) — LLM agents over a code graph DB; schema
+  independently matches `B-SENS-02`'s ontology. RepoGraph's +32.8% rel. SWE-bench is the measured payoff for graph-guided context.
+- **Joern / Code Property Graph** (<https://docs.joern.io/code-property-graph/>) — AST, CFG and dataflow as layers of one graph;
+  the model behind ADR-006 decision 4 (`B-SENS-04/05` are layers, not stores).
+- **HybridRAG / GraphRAG literature** (<https://arxiv.org/html/2408.04948v1>, <https://arxiv.org/pdf/2507.03608>) — vector-seeded
+  graph traversal beats either store alone; the locate → contextualize shape of ADR-006 decision 2.

@@ -52,7 +52,10 @@ This document tracks all capabilities related to process isolation, execution bo
 * **`B-EXEC-02` 🔜: Tiered Access Rights** (Legacy: 4.4)<br>
   > `future_capabilities_reference.md` §1 | Tiered access rights (zero-trust knowledge)
 * **`B-EXEC-03` 🔜: Blast Radius Enforcement** (Legacy: 4.8)<br>
-  > `future_capabilities_reference.md` §16 | Blast radius / locality enforcement
+  > `future_capabilities_reference.md` §16 | Blast radius / locality enforcement.
+  > **Data source** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_:
+  > the `B-SENS-02` graph — symbol-level `CALLS`/`IMPORTS` closure, replacing the decomposer's LLM-guessed
+  > blast radius. Sequenced behind `TECH-068`; honest on framework code only with `B-SENS-08`.
 
 * **`B-EXEC-04` 🔜: Kernel-Enforced Resource Bounds (cgroups v2)**<br>
   > [Design](../features/topic_06_sandbox/B-EXEC-04/B-EXEC-04_design.md) | _(2026-08-12 — split out of `TECH-029`.)_ | `C-EXEC-02` FR-11 promises a fork-bombing script is capped by default; on Linux

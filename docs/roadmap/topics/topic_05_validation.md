@@ -88,6 +88,11 @@ This document tracks all capabilities related to static analysis, linting, rules
   > project (the trading system) will answer. Measured 2026-08-20: every live DAL consumer decides on strict/relaxed only. See the
   > [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md).
 
+* **`B-VAL-07` 🔜: Graph-Invariant Verification**<br>
+  > _(minted 2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: verify.)_ | Diffs the `B-SENS-02` graph
+  > before/after a generated change: a dangling `CALLS`/`IMPLEMENTS`/`EXTENDS` edge — a dependent the generation never touched — becomes a finding before
+  > merge; today nothing checks unchanged dependents. Graph-checked, not guaranteed, on dynamic languages; reads traversal only, never vector output.
+  > Substrate for `B-INTL-08`. Behind `TECH-068`.
 * **`B-VAL-06` 🔜: Cohesion & Coupling Metrics (LCOM4, CBO, Instability)**<br>
   > [Description](../features/topic_05_validation/B-VAL-06/B-VAL-06_design.md) | _(2026-07-28 — split out of `C-VAL-06` because it needs tooling that does not exist for Python and must not gate the
   > cheap rules.)_ | `C-VAL-06`'s attribute count detects **that** a class is a god object; **LCOM4** says **where to cut it** — the connected components *are* the split, which is a refactoring

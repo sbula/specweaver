@@ -93,8 +93,11 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario,
   > and judges whether the code failed the scenario, or if the scenario was written incorrectly.
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
-  > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system. _(2026-07-21: the LLM-judgment half should be
-  > designed **rubric-first** on the `C-VAL-05` substrate — graph-diff mechanics stay code, review criteria become rubric content.)_
+  > _(re-worded 2026-08-21 — [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md): "replaces text diffs" named a consumer that cannot
+  > exist; nobody reads a dataflow-graph diff instead of code.)_ |
+  > **Augments** text-based PR review with the graph diff `B-VAL-07` computes: the review narrative explains how the change alters call and dataflow chains,
+  > beside the diff, not instead of it. _(2026-07-21: the LLM-judgment half designed **rubric-first** on the `C-VAL-05` substrate — graph-diff mechanics stay
+  > code, review criteria become rubric content.)_ Builds on `B-VAL-07`.
 * **`B-INTL-09` 🟡: Agent Memory Bank**
   > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state
   > machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md).

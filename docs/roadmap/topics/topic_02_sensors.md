@@ -60,16 +60,20 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > orthogonal to AST dependencies. **Complete**: 3591 tests.
 * **`B-SENS-02` ✅: Knowledge Graph Builder** (Legacy: 3.32f)<br>
   > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no
-  > rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data. **-> NOTE: Once implemented, use the graph to extract
-  > active workspace languages and dynamically inject them into CodeStructureAtom to perfectly prune unsupported tool schemas.**
+  > rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data.
+  > **Readers** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: `B-SENS-09`, `B-VAL-07`, the blast-radius seams
+  > (`B-EXEC-03`, `A-FLOW-04`), `A-SENS-04`, and language-pruning for `CodeStructureAtom` tool schemas — all behind `TECH-068`, which owns the missing edge kinds.
 * **`B-SENS-03` 🔧: AST Semantic Chunking** (Legacy: 4.2)<br>
   > [Design](../features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md) | AST-based semantic chunking (RAG foundation): one chunk per top-level symbol plus the preamble belonging to none, each
   > carrying path/symbol/language so a hit can be cited. Oversized symbols split into numbered parts; a parser that raises falls back to line windows. One of two Core MVS items in `US-11`.
   > _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) — ORIGINS.md § CrewAI)_
 * **`B-SENS-04` 🔮: Static Control Flow Graph (CFG)**<br>
   > _(extracted from B-SENS-02)_ | Maps execution branches (True/False edges). Restricted strictly to statically typed languages (Java, C++) to avoid dynamic scoping tar pits.
+  > **A layer on `B-SENS-02`'s one graph** (Code Property Graph model, Joern), never a second store —
+  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) decision 4.
 * **`B-SENS-05` 🔮: Static Dataflow Solver**<br>
   > _(extracted from B-SENS-02)_ | Computes Def-Use chains using Kildall's framework. Highly experimental. Restricted to statically typed languages.
+  > **A layer on `B-SENS-02`'s one graph**, same rule — [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) decision 4.
 * **`B-SENS-07` 🔜: Language-Agnostic Dependency Resolution**<br>
   > _(2026-08-18 — split out of the `INT-US-20` P-5 journey.)_ | Resolves each language's import syntax into
   > canonical `MODULE` identities in the existing Universal Ontology, so boundary decisions are one graph query
@@ -78,6 +82,16 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > `INT-US-20` P-5 and the brownfield journeys in US-11, US-12, US-26. Measurements and scope:
   > [analysis](../../analysis/polyglot_dependency_resolution_2026-08-18.md).
 
+* **`B-SENS-08` 🔜: Framework-Semantic Graph Edges**<br>
+  > _(minted 2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: contextualize.)_ | DI, routes and listeners
+  > produce no syntactic call site, so a call graph over framework code lies (Jasmine, ASE 2022). Extends the five delivered framework schemas from
+  > annotation→comment (`B-INTL-02`) to annotation→typed edge for the `B-SENS-02` builder; also `A-SENS-04`'s cross-service edge source. Polyglot via the
+  > schemas; JVM-first (`US-12`). Behind `TECH-068`.
+* **`B-SENS-09` 🔜: Deterministic Context Packing**<br>
+  > _(minted 2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: contextualize.)_ | Given the symbol a task will
+  > change, traverse the `B-SENS-02` graph — callers, callees, type contracts, 1–2 hops — and pack exactly that closure into the prompt. Selection, not
+  > compression: the skeleton shrinks a file already chosen. Receives candidates from `B-FLOW-04`, never the reverse. Successor to the `E-VAL-03`
+  > re-reading. Behind `TECH-068`.
 * **`B-SENS-06` 🔜: OSV Vulnerability Feed Ingestion**
   > _(new)_ | Automatically maps known CVEs from the OSV database against the active workspace topology graph.
 
@@ -96,6 +110,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`A-SENS-04` 🔮: Federated Microservice System Graph**<br>
   > _(new)_ | A high-level system architecture graph that links all microservices together *exclusively* via their external interfaces (REST APIs, Kafka, RabbitMQ, shared file systems). It strictly
   > obscures internal microservice logic, creating a pure Enterprise-level GraphRAG layer. Relies on strict ID prefixes (e.g., `srv:billing`) generated by local B-SENS-02 engines to dynamically fuse
-  > API contracts without context bloat.
+  > API contracts without context bloat. **Edge source** _(2026-08-21)_: the cross-service edges — REST clients, listener topics — are exactly what `B-SENS-08`
+  > derives from framework annotations; this capability federates those edges, it does not invent its own extraction.
 * **`A-SENS-05` 🔜: APM Telemetry Ingestion (Sentry/Datadog)**
   > _(new)_ | Feeds production stack traces directly into the Knowledge Graph to pinpoint failing AST nodes.

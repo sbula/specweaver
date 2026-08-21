@@ -1,5 +1,84 @@
 {
-  "findings": {},
+  "findings": {
+    "TECH-049 FR-5 any-killer-counts": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    },
+    "TECH-056 FR-1 presence-counts-as-having-been-read": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "scope-already-red"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    },
+    "TECH-056 FR-1 nothing-ever-counts-as-read": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "scope-already-red"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    },
+    "TECH-056 FR-1 a-blocking-finding-is-not-named": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "scope-already-red"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    },
+    "TECH-056 FR-1 a-confirmation-forgets-the-recurrence-count": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "scope-already-red"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    },
+    "TECH-056 FR-1 a-red-baseline-reads-as-green": {
+      "history": [
+        {
+          "at": 1787281386.0787365,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "scope-already-red"
+        }
+      ],
+      "first_seen": 1787281386.0787365,
+      "last_seen": 1787281386.0787365,
+      "occurrences": 1
+    }
+  },
   "override_count": 0,
   "schema": 1
 }

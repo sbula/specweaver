@@ -25,7 +25,7 @@ Read the design before touching either. Each says so in its own first section.
 
 `B-FLOW-05` is blocked on that decision. `E-VAL-03` was ruled **nonsense** under the 2026-08-20
 benefit review — do **not** rebuild it. Its disposition (retire the ID, delete `injection.py`,
-keep `escaping.py`, possibly mint the structure-into-prompts replacement) awaits the user. Read
+keep `escaping.py`) awaits the user; the structure-into-prompts successor is now minted as `B-SENS-09`. Read
 `docs/analysis/benefit_chain_analysis_2026-08-20.md` §8 first.
 
 ## Live and worth knowing
@@ -39,6 +39,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 
 | What | Result |
 |---|---|
+| Graph/vector wiring (ADR-006) | `TECH-068` + `B-SENS-08`/`B-SENS-09`/`B-VAL-07` minted; locate→contextualize→verify recorded with the no-gates-on-vectors invariant; readers sequenced behind edge truth |
 | Benefit-chain review, whole roadmap | 3 retirements (`A-VAL-04`, `A-EXEC-03`, `C-SENS-06`), `A-SENS-03` folded into `A-SENS-01`, `A-UI-01` re-scoped to tamper-evident agent audit, DAL consumers gated on trading-project calibration. Record: `docs/analysis/benefit_chain_analysis_2026-08-20.md` |
 | Mutation data contract, six stages | Four JSON structures re-engineered after six rounds of grilling |
 | Verdicts | `PROTECTED` / `UNPROTECTED` / `UNMEASURED`. Every one that is not a pass is a finding |
