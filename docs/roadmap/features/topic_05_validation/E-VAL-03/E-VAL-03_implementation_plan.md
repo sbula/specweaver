@@ -1,3 +1,5 @@
+> **⚰️ RETIRED 2026-08-21.** See the design's retirement banner. Record only.
+
 # E-VAL-03 — AST Prompt Injection Sanitization
 
 **FRs owned: FR-1, FR-2, FR-3, FR-4.** One module and one call site; splitting four requirements

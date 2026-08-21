@@ -4,9 +4,10 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**Six capabilities are `🔧`, not `✅`.**
+**Five capabilities are `🔧`, not `✅`.**
 
-`E-VAL-03` · `C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `B-SENS-03` · `D-UI-01`
+`C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `B-SENS-03` · `D-UI-01`
+(`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
 They are built, tested and proven. The `specweaver-design` **Phase 6 approval gate has never run
 for any of them**.
@@ -14,19 +15,15 @@ for any of them**.
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
 
-## Two of them are wrong
+## One of them is wrong
 
-Read the design before touching either. Each says so in its own first section.
+Read the design before touching it. It says so in its own first section.
 
 | Capability | What is wrong |
 |---|---|
-| `E-VAL-03` | It is named *AST* Prompt Injection Sanitization. It scans rendered text line by line. It does not conform to its own specification |
 | `B-FLOW-05` | Its ceilings sit on `LLMSettings`. Every LLM access, payment, pricing, token and limit parameter is to live in **one central place** — file or database is still undecided |
 
-`B-FLOW-05` is blocked on that decision. `E-VAL-03` was ruled **nonsense** under the 2026-08-20
-benefit review — do **not** rebuild it. Its disposition (retire the ID, delete `injection.py`,
-keep `escaping.py`) awaits the user; the structure-into-prompts successor is now minted as `B-SENS-09`. Read
-`docs/analysis/benefit_chain_analysis_2026-08-20.md` §8 first.
+`B-FLOW-05` is blocked on that decision.
 
 ## Live and worth knowing
 
@@ -39,6 +36,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 
 | What | Result |
 |---|---|
+| `E-VAL-03` retired, executed | Detector + 3 test files + mutants deleted, `FilePromptAdapter` unwired, `escaping.py` kept (`E-INTL-01`); registry tombstoned everywhere; US-04's *sanitized* clause closed by decision |
 | Graph/vector wiring (ADR-006) | `TECH-068` + `B-SENS-08`/`B-SENS-09`/`B-VAL-07` minted; locate→contextualize→verify recorded with the no-gates-on-vectors invariant; readers sequenced behind edge truth |
 | Benefit-chain review, whole roadmap | 3 retirements (`A-VAL-04`, `A-EXEC-03`, `C-SENS-06`), `A-SENS-03` folded into `A-SENS-01`, `A-UI-01` re-scoped to tamper-evident agent audit, DAL consumers gated on trading-project calibration. Record: `docs/analysis/benefit_chain_analysis_2026-08-20.md` |
 | Mutation data contract, six stages | Four JSON structures re-engineered after six rounds of grilling |

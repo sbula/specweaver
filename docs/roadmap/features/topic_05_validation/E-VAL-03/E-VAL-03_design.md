@@ -1,10 +1,17 @@
 # Design: AST Prompt Injection Sanitization
 
+> **⚰️ RETIRED 2026-08-21 by the user.** Ruled **nonsense** under the benefit test
+> (`docs/analysis/benefit_chain_analysis_2026-08-20.md` §8): working perfectly, the filter blocks
+> crude attacks the sandbox/review/scenario layers already survive, cannot see semantic poisoning,
+> and — being best-effort — nothing may ever rely on it. `injection.py`, its three test files and
+> its mutants are deleted; `escaping.py` (structural correctness) stays under `E-INTL-01`. The
+> slot's benefit-positive re-reading — structure INTO prompts — is minted as `B-SENS-09`
+> (`ADR-006`). The FR/NFR tables below were removed with the code so the descope is visible; this
+> document remains as the record of what was built and why it was wrong.
+
 - **Feature ID**: E-VAL-03
 - **Epic**: Topic 05 (Validation)
-- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
-  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
-  review and any corrections it produces.
+- **Status**: ⚰️ RETIRED 2026-08-21 — see the banner above. Never approved; Phase 6 never ran.
 
 ## NON-CONFORMANCE — the shipped scan is not AST-based
 
@@ -37,34 +44,7 @@ author's own words.
 
 ## Functional Requirements
 
-| # | FR | Actor | Action | Outcome |
-|---|-----|-------|--------|---------|
-| FR-1 | Recognise an order aimed at the model | System | Matches verb *and* object together — `ignore the above`, `you are now`, a role header, a chat-template token — under case and whitespace variation | A payload is caught however it is spelled, while `ignore_previous_state`, `SYSTEM_TIMEOUT` and `disregards whitespace` are left alone |
-| FR-2 | Keep the order out of the prompt | System | Replaces the span *and the rest of its line* wherever a file enters `FilePromptAdapter` | The payload's object goes with its verb, and the surrounding file still reaches the model |
-| FR-3 | Say what was removed | System | Adds `redacted="N"` to the `<file>` tag and logs the file and line numbers at warning level | A redaction is legible to the model and auditable by a human; a clean file carries neither |
-| FR-4 | Trust what the user wrote | System | Scans file-shaped context only, never `add_instructions` | A spec that legitimately quotes `ignore previous instructions` still works |
-
-Proof is by citation in the test files, read by `check_fr_coverage.py`. Each FR is behind a killed
-mutant: neutering the detector, flagging every line, truncating to the match instead of the line
-end, dropping the attribute, and dropping the log each fail the tests that claim them.
-
-## Requirement–Surface Bindings
-
-| FR | Data needed | Provider · surface | Verified how |
-|---|---|---|---|
-| FR-2 | The point every file-shaped context passes through | `E-INTL-01` · `FilePromptAdapter.get_prompt_content()` | read `src/specweaver/infrastructure/llm/prompt/adapter.py` — `add_file`, `add_file_context`, `add_mentioned_files` and the skeleton path all render there |
-| FR-2 | The escaping applied after redaction | `E-INTL-01` · `escaping.apply_escaping(text, strategy)` | read `src/specweaver/infrastructure/llm/escaping.py` — structural only, so it passes an intact instruction through every strategy |
-| FR-4 | The untrusted/trusted split | `E-INTL-01` · `PromptBuilder.add_instructions()` | read `src/specweaver/infrastructure/llm/prompt/adders.py` — instructions carry what SpecWeaver and the user wrote, so they are not scanned |
-
-All three are inside `infrastructure.llm`, so no `tach` boundary is crossed and the proof stays at
-unit tier.
-
-## Non-Functional Requirements
-
-| # | NFR | Requirement |
-|---|-----|-------------|
-| NFR-1 | Cost | One pass per line, and the input is bounded: `FilePromptAdapter` refuses a file over 10MB **before** reading or scanning it |
-| NFR-2 | Determinism | Pure text in, text out — no model call, no network, no clock |
+*(FR-1..FR-4, the surface bindings, and NFR-1..NFR-2 were descoped 2026-08-21 with the code that carried them — see the retirement banner.)*
 
 ## Scope (as built, pending correction)
 
