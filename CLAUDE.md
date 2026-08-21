@@ -19,8 +19,9 @@ each one an incident that cost a session.
 
 1. **Use the skill.** Find the one covering your task before improvising. `specweaver-pre-commit`
    runs before *every* commit.
-2. **Never decide money or security.** Budgets, ceilings, DAL thresholds, bind addresses,
-   credential paths. Those are the user's.
+2. **Twelve decisions are the user's, not yours.** Money, security posture, scope, architecture,
+   defaults, anything that cannot be walked back. The triggers and the test are in
+   [`PRINCIPLES.md`](.agents/PRINCIPLES.md) §2.
 3. **Test first, and watch it fail.** A test that cannot fail is decoration.
 4. **No subprocess.** Use `SubprocessExecutor` from `specweaver.sandbox.execution.executor`.
 

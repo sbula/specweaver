@@ -21,16 +21,39 @@ HIGH finding when run afterwards — on code already committed.
 **`/grill-me` can only be invoked by the user.** A design starts by asking them to run it, then
 stopping. Do not ask its questions in your own words instead.
 
-## 2. Two things are never yours to decide
+## 2. What is never yours to decide
 
-- Anything that **spends money** — budgets, ceilings, model choice, retry counts that multiply cost.
-- Anything that **relaxes a security boundary** — a DAL threshold, a bind address, a credential
-  path, a sandbox limit.
+You work alone. These twelve are the exception: settle them **with the user**, never by assuming.
+
+**The test.** If this is wrong and it ships, does the user have to pay, accept risk, migrate, or be
+told? Then it was never yours.
+
+| Group | Trigger | Fires on |
+|---|---|---|
+| Cost and exposure | `T-SPEND` | A number that turns into a bill — ceilings, budgets, model choice, retry counts, turn limits |
+| | `T-BOUNDARY` | Anything untrusted code can reach — DAL thresholds, bind addresses, credential paths, sandbox limits, and what counts as untrusted |
+| | `T-POSTURE` | What happens when a check cannot run — fail open or fail closed, whether a missing measurement counts as a pass |
+| The agreement | `T-DIVERGE` | Building something other than what the spec says, including when the substitute looks better |
+| | `T-SCOPE` | What the thing will not do — Non-Goals, deferrals, retirements, half-a-capability calls |
+| | `T-ORDER` | Which of two open journeys goes first |
+| Expensive to take back | `T-ARCH` | Where a thing lives and what it may need — the one central home, a new service to operate, a boundary an ADR already set |
+| | `T-NAME` | A name anything can depend on — CLI flags, config keys, API fields, verdict vocabularies |
+| | `T-UNDO` | An act that cannot be walked back — deletes, migrations, rewriting history, dropping a public surface |
+| Shipped, then lived with | `T-DEFAULT` | A value the user lives with and is never asked about — chunk sizes, thresholds, time-boxes, warning percentages |
+| | `T-DATA` | Data that persists or leaves — retention, what is stored, what goes to a third party |
+| | `T-OBLIGATION` | A promise that binds the user — dependency licences, third-party terms, compliance claims |
+
+A trigger that fires goes to the user unsettled. It does not get a default, a placeholder, or a
+reasonable-looking assumption. **Documenting a guess does not stop it being a guess.**
+
+Everything else is yours: module shape, test tier, fixture design, a library with no cost and no
+security surface, either of two implementations that both meet every FR. So is anything an ADR, a
+design's *Decisions taken with the user* section, or this file has already settled — read it, and
+build on it.
 
 Measured 2026-08-19: twenty-five product-visible decisions were taken by an agent in one session.
-Every one was written into a design. Not one was agreed.
-
-**Documenting a guess does not stop it being a guess.**
+Every one was written into a design. Not one was agreed. `T-OBLIGATION` is the only trigger above
+with no local incident behind it; each of the other eleven names something this repo has hit.
 
 ## 3. Test first, and let it fail
 
