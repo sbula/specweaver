@@ -74,22 +74,27 @@ def test_register_adapter():
 @patch("specweaver.infrastructure.llm.adapters.registry.importlib.import_module")
 def test_ensure_discovered_swallows_syntax_error(mock_import):
     """If a dynamic adapter has a SyntaxError or other generic Exception, the registry shouldn't crash."""
-    # Reset internal discovery state
+    # Snapshot BEFORE mutating, restore BOTH in a finally: leaving `_DISCOVERED = True`
+    # beside a pre-discovery (possibly empty) registry freezes "discovered, but empty",
+    # and every later registry consumer on the same worker reads {}.
     import specweaver.infrastructure.llm.adapters.registry as registry_module
 
-    registry_module._DISCOVERED = False
+    old_discovered = registry_module._DISCOVERED
     old_registry = dict(registry_module._REGISTRY)
+    try:
+        registry_module._DISCOVERED = False
 
-    # Force a SyntaxError unconditionally during dynamic import
-    mock_import.side_effect = SyntaxError("invalid syntax")
+        # Force a SyntaxError unconditionally during dynamic import
+        mock_import.side_effect = SyntaxError("invalid syntax")
 
-    # Should not raise
-    _ensure_discovered()
+        # Should not raise
+        _ensure_discovered()
 
-    # Needs to flip back discovered flag otherwise later tests in session complain
-    assert registry_module._DISCOVERED is True
-    registry_module._REGISTRY.clear()
-    registry_module._REGISTRY.update(old_registry)
+        assert registry_module._DISCOVERED is True
+    finally:
+        registry_module._REGISTRY.clear()
+        registry_module._REGISTRY.update(old_registry)
+        registry_module._DISCOVERED = old_discovered
 
 
 def test_ensure_discovered_implicit_namespace_package():
