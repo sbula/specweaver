@@ -64,6 +64,34 @@
           "breaks": "every service's edges are deleted by any build, because graph_edges carries no service_name and the node ids are the only thing scoping the sweep"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A relative import names a module, and a relative import is internal",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/python/test_relative_imports.py",
+        "tests/integration/workspace/test_relative_imports_are_internal.py"
+      ],
+      "mutants": [
+        {
+          "id": "relative-imports-report-their-symbol",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/python/codestructure.py",
+          "symbol": "PythonCodeStructure._from_import_modules",
+          "old": "        relative = next(iter(self._children_of_type(node, \"relative_import\")), None)",
+          "new": "        relative = None",
+          "breaks": "every relative import reports the imported SYMBOL instead of the module, so a real dependency resolves to no file and reads as an unknown one -- 27 such imports in this repo's own src"
+        },
+        {
+          "id": "a-relative-import-reads-as-external",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/factory.py",
+          "symbol": "PythonAnalyzer._is_external",
+          "old": "        if not top:\n            return False",
+          "new": "        if False:\n            return False",
+          "breaks": "a relative import's root is the empty string, which is absent from the stdlib list and is not specweaver, so any package using relative imports infers the adapter archetype instead of pure-logic"
+        }
+      ]
     }
   ]
 }

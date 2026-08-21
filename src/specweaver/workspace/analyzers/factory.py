@@ -272,6 +272,10 @@ class PythonAnalyzer(TreeSitterAnalyzerBase):
         return imp.split(".")[0]
 
     def _is_external(self, top: str) -> bool:
+        # A relative import has no root — `".sibling".split(".")[0]` is the empty string. The dots
+        # say the dependency lives inside this package, so it can never make the module an adapter.
+        if not top:
+            return False
         return top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver")
 
     def get_test_file_pattern(self) -> str:

@@ -332,7 +332,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The seam carries dependencies | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |

@@ -122,23 +122,49 @@ class PythonCodeStructure(ClassBasedParser):
         return code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
 
     def _process_import_node(self, node: typing.Any, imports: set[str]) -> None:
-        """Record the module an import statement names.
-
-        `import a.b` and `import a.b as c` both contribute `a.b`; `from a.b import x` contributes
-        `a.b` only — the FIRST dotted_name, since the imported names are dotted_names too.
-        """
+        """Record the module an import statement names."""
         if node.type == "import_statement":
-            for child in node.children:
-                if child.type == "dotted_name":
-                    imports.add(self._extract_marker_text(child))
-                elif child.type == "aliased_import":
-                    for aliased in self._children_of_type(child, "dotted_name"):
-                        imports.add(self._extract_marker_text(aliased))
-                        break
+            imports.update(self._plain_import_modules(node))
         elif node.type == "import_from_statement":
-            for child in self._children_of_type(node, "dotted_name"):
-                imports.add(self._extract_marker_text(child))
-                break
+            imports.update(self._from_import_modules(node))
+
+    def _plain_import_modules(self, node: typing.Any) -> typing.Iterator[str]:
+        """`import a.b` and `import a.b as c` both name `a.b`."""
+        for child in node.children:
+            if child.type == "dotted_name":
+                yield self._extract_marker_text(child)
+            elif child.type == "aliased_import":
+                for aliased in self._children_of_type(child, "dotted_name"):
+                    yield self._extract_marker_text(aliased)
+                    break
+
+    def _from_import_modules(self, node: typing.Any) -> typing.Iterator[str]:
+        """The module a `from ... import ...` names, relative or not.
+
+        The grammar wraps a relative module in `relative_import`, whose own text is the whole path —
+        `.sibling`, `..pkg.mod`. Reading only the statement's direct `dotted_name` children found
+        the imported NAME instead, so every relative import reported a symbol.
+        """
+        relative = next(iter(self._children_of_type(node, "relative_import")), None)
+        if relative is None:
+            yield from self._first_dotted_name(node)
+            return
+
+        prefix = self._extract_marker_text(relative)
+        if next(iter(self._children_of_type(relative, "dotted_name")), None) is not None:
+            yield prefix
+            return
+
+        # `from . import a, b` names no module of its own; each imported name is a submodule of the
+        # package the dots point at, so both spellings of one dependency agree.
+        for child in self._children_of_type(node, "dotted_name"):
+            yield f"{prefix}{self._extract_marker_text(child)}"
+
+    def _first_dotted_name(self, node: typing.Any) -> typing.Iterator[str]:
+        """`from a.b import x` names `a.b` — the FIRST dotted_name, since `x` is one too."""
+        for child in self._children_of_type(node, "dotted_name"):
+            yield self._extract_marker_text(child)
+            return
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
