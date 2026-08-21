@@ -31,7 +31,10 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
     the universal AST dictionary expected by the OntologyMapper.
     """
     logger.debug("extract_ast_dict called for %s", filepath)
-    ast_data: dict[str, Any] = {"type": "module", "children": []}
+    # The seam declares every dependency kind the mapper will ever need, populated or not, so a
+    # later sub-feature fills a field rather than reshaping the payload and forcing its siblings to
+    # follow. An absent key and an empty one must not mean the same thing to a reader.
+    ast_data: dict[str, Any] = {"type": "module", "imports": [], "children": []}
 
     path = Path(filepath)
     if not path.exists():
@@ -65,6 +68,7 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
     try:
         symbols = parser.list_symbols(code)
         markers = parser.extract_framework_markers(code)
+        ast_data["imports"] = parser.extract_imports(code)
     except Exception:
         logger.exception("extract_ast_dict: Parser failed on %s", filepath)
         return ast_data
@@ -73,6 +77,8 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         # If 'extends' is present, the parser identified it as a class
         is_class = "extends" in markers.get(symbol, {})
         node_type = "class_definition" if is_class else "function_definition"
-        ast_data["children"].append({"type": node_type, "name": symbol})
+        ast_data["children"].append(
+            {"type": node_type, "name": symbol, "supertypes": [], "calls": []}
+        )
 
     return ast_data

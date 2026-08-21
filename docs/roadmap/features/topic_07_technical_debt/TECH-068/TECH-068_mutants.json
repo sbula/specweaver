@@ -70,7 +70,8 @@
       "title": "A relative import names a module, and a relative import is internal",
       "scope": [
         "tests/unit/workspace/ast/parsers/python/test_relative_imports.py",
-        "tests/integration/workspace/test_relative_imports_are_internal.py"
+        "tests/integration/workspace/test_relative_imports_are_internal.py",
+        "tests/integration/workspace/test_seam_carries_dependencies.py"
       ],
       "mutants": [
         {
@@ -90,6 +91,24 @@
           "old": "        if not top:\n            return False",
           "new": "        if False:\n            return False",
           "breaks": "a relative import's root is the empty string, which is absent from the stdlib list and is not specweaver, so any package using relative imports infers the adapter archetype instead of pure-logic"
+        },
+        {
+          "id": "the-seam-drops-imports",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "        ast_data[\"imports\"] = parser.extract_imports(code)",
+          "new": "        pass",
+          "breaks": "the mapper receives no imports, so IMPORTS edges cannot be built at all -- the state the graph shipped in, where nine kinds were declared and one was written"
+        },
+        {
+          "id": "the-contract-loses-its-declared-fields",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "{\"type\": node_type, \"name\": symbol, \"supertypes\": [], \"calls\": []}",
+          "new": "{\"type\": node_type, \"name\": symbol}",
+          "breaks": "supertypes and calls are absent rather than empty, so SF-03 and SF-04 must reshape the payload instead of filling it and can no longer run in parallel -- AD-1 undone"
         }
       ]
     }
