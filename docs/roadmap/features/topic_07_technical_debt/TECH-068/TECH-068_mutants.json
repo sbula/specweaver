@@ -106,9 +106,9 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
           "symbol": "extract_ast_dict",
-          "old": "{\"type\": node_type, \"name\": symbol, \"supertypes\": [], \"calls\": []}",
-          "new": "{\"type\": node_type, \"name\": symbol}",
-          "breaks": "supertypes and calls are absent rather than empty, so SF-03 and SF-04 must reshape the payload instead of filling it and can no longer run in parallel -- AD-1 undone"
+          "old": "                \"calls\": [],",
+          "new": "                \"calls_absent\": [],",
+          "breaks": "the `calls` field SF-04 will fill is absent rather than declared and empty, so that sub-feature must reshape the payload instead of filling it -- AD-1 undone, and a consumer is left guessing whether a missing key means no calls or an older writer"
         }
       ]
     },
@@ -291,6 +291,42 @@
           "old": "                index.setdefault(str(name), set()).add(filepath)",
           "new": "                index[str(name)] = {filepath}",
           "breaks": "two classes of the same name collapse to whichever the walk saw last, so an ambiguous supertype resolves to a real edge that is right by accident or wrong in silence"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "The seam carries each type's supertypes with their kind",
+      "scope": [
+        "tests/integration/workspace/test_seam_carries_supertypes.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-seam-drops-supertypes",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "\"supertypes\": _supertype_records(supertypes.get(symbol, {})),",
+          "new": "\"supertypes\": [],",
+          "breaks": "the mapper receives no supertype at all, so EXTENDS and IMPLEMENTS cannot be built -- the field stays declared and permanently empty, which reads as 'this type inherits nothing'"
+        },
+        {
+          "id": "every-supertype-becomes-extension",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "_supertype_records",
+          "old": "        {\"name\": name, \"kind\": kind}",
+          "new": "        {\"name\": name, \"kind\": \"extends\"}",
+          "breaks": "the kind the grammar stated is thrown away at the seam, so Java's implements collapses into extends -- the same flattening extract_framework_markers already does and that FR-4 was written to undo"
+        },
+        {
+          "id": "implementation-is-dropped-entirely",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "_supertype_records",
+          "old": "        for kind in (\"extends\", \"implements\")",
+          "new": "        for kind in (\"extends\",)",
+          "breaks": "implemented interfaces never cross the seam, so a type that implements but does not extend appears to inherit nothing"
         }
       ]
     }

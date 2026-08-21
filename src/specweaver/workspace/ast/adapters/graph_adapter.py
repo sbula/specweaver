@@ -25,6 +25,20 @@ def parseable_suffixes() -> frozenset[str]:
     return frozenset(suffix for group in get_default_parsers() for suffix in group)
 
 
+def _supertype_records(by_kind: dict[str, list[str]]) -> list[dict[str, str]]:
+    """Flatten `{"extends": [...], "implements": [...]}` into records the mapper can walk.
+
+    A list rather than the mapping the parser returns, because `SF-02` declared this field as a list
+    and changing a declared empty value's type is a reshape however small it looks. Records also
+    carry a third kind later without moving anything again.
+    """
+    return [
+        {"name": name, "kind": kind}
+        for kind in ("extends", "implements")
+        for name in by_kind.get(kind, [])
+    ]
+
+
 def extract_ast_dict(filepath: str) -> dict[str, Any]:
     """
     Adapter that wraps the polyglot Tree-Sitter parsers to output
@@ -74,6 +88,7 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         symbols = parser.list_symbols(code)
         markers = parser.extract_framework_markers(code)
         ast_data["imports"] = parser.extract_imports(code)
+        supertypes = parser.extract_supertypes(code)
     except Exception:
         logger.exception("extract_ast_dict: Parser failed on %s", filepath)
         ast_data["unparsed"] = "parse"
@@ -84,7 +99,12 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         is_class = "extends" in markers.get(symbol, {})
         node_type = "class_definition" if is_class else "function_definition"
         ast_data["children"].append(
-            {"type": node_type, "name": symbol, "supertypes": [], "calls": []}
+            {
+                "type": node_type,
+                "name": symbol,
+                "supertypes": _supertype_records(supertypes.get(symbol, {})),
+                "calls": [],
+            }
         )
 
     return ast_data

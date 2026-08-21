@@ -131,6 +131,24 @@
       "first_seen": 1787281386.0787365,
       "last_seen": 1787318410.8638937,
       "occurrences": 3
+    },
+    "TECH-068 FR-5 the-contract-loses-its-declared-fields": {
+      "history": [
+        {
+          "at": 1787339268.190703,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787339440.883903,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787339268.190703,
+      "last_seen": 1787339388.3046896,
+      "occurrences": 2
     }
   },
   "override_count": 0,
