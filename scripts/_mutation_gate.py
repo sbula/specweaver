@@ -143,7 +143,7 @@ def gate_verdict(record_path: Path, ledger_path: Path) -> GateResult:
             f"in this record was judged against a tree whose suite never passed",
         )
     # `TECH-056`: a **disposition**, not mere presence. `record_run` runs at the end of the same
-    # session that discovers a finding and writes it as `{"runs": 1}` with nothing decided, so
+    # session that discovers a finding and writes it as `{"occurrences": 1}` with nothing decided, so
     # keying on presence let every run mark its own findings read — and this gate then announced
     # "every finding carries a disposition" about entries that carried none. It could not block.
     known = {

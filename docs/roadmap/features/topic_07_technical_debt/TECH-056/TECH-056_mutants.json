@@ -15,40 +15,40 @@
           "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
-          "old": "        if entry.get(\"disposition\")",
-          "new": "        if entry is not None",
+          "old": "\n        if latest_disposition(entry)\n",
+          "new": "\n        if entry is not None\n",
           "breaks": "the defect this ticket fixed, restored exactly: `record_run` writes every finding at the end of the session that found it, so keying on presence means a survival is marked read by the run that discovered it and the gate can never block",
-          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
+          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
         },
         {
           "id": "nothing-ever-counts-as-read",
           "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
-          "old": "        if entry.get(\"disposition\")",
-          "new": "        if False",
+          "old": "\n        if latest_disposition(entry)\n",
+          "new": "\n        if False\n",
           "breaks": "the opposite failure and the more corrosive one: a confirmed finding re-blocks every morning, so `--confirm` stops meaning anything and the gate is disabled by whoever is on call",
-          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
+          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
         },
         {
           "id": "a-blocking-finding-is-not-named",
           "origin": "authored",
           "file": "scripts/_mutation_gate.py",
           "symbol": "gate_verdict",
-          "old": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] not in known",
-          "new": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"derived_id\"] in known",
-          "breaks": "the filter is inverted, so dispositioned findings block and new ones pass \u2014 the gate reports on precisely the set nobody needs to look at",
-          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
+          "old": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"id\"] not in known",
+          "new": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"id\"] in known",
+          "breaks": "the filter is inverted, so dispositioned findings block and new ones pass — the gate reports on precisely the set nobody needs to look at",
+          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
         },
         {
           "id": "a-confirmation-forgets-the-recurrence-count",
           "origin": "authored",
           "file": "scripts/_mutation_gate.py",
-          "symbol": "record_run",
-          "old": "        entry[\"runs\"] = int(entry.get(\"runs\", 0)) + 1",
-          "new": "        entry[\"runs\"] = 1",
+          "symbol": "fold_session",
+          "old": "        entry[\"occurrences\"] = int(entry.get(\"occurrences\", 0)) + 1",
+          "new": "        entry[\"occurrences\"] = 1",
           "breaks": "NFR-2: every finding looks new every morning, so a `will-fix` that has been re-confirmed for a fortnight is indistinguishable from one raised last night, and the only pressure on a fix nobody makes disappears",
-          "symbol_sha": "sha256:81d2d20090e933a570f7a8112caa9197e9048220f5cec91a491889fe5be7805d"
+          "symbol_sha": "sha256:c4114b5574450fa9778a677b1cd5c5b41c75feca429dfb51ca2726dca989e356"
         },
         {
           "id": "a-red-baseline-reads-as-green",
@@ -57,7 +57,7 @@
           "symbol": "gate_verdict",
           "old": "    if baseline is not None and not baseline.get(\"green\"):",
           "new": "    if False:",
-          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree \u2014 which it did, over 26 mutants, until the field was read",
+          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree — which it did, over 26 mutants, until the field was read",
           "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
         }
       ]

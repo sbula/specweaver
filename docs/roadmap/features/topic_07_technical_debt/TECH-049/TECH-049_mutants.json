@@ -31,12 +31,12 @@
         {
           "id": "any-killer-counts",
           "origin": "authored",
-          "file": "scripts/mutation.py",
+          "file": "scripts/_mutation_verdict.py",
           "symbol": "verdict_of",
           "old": "if not (_files_of(run.killers) & scoped):",
           "new": "if False:",
           "breaks": "any test dying certifies the requirement, so a campaign passes on tests it never named",
-          "symbol_sha": "sha256:93502a51f15e4cf09f0d2bb4e84a167f5425fe63219f0d2262f3c2f7768d226d"
+          "symbol_sha": "sha256:f998ce7676916b13023a8f0aebb6198e89fbc703801b27932b1ce4f1358af3cf"
         }
       ]
     },
