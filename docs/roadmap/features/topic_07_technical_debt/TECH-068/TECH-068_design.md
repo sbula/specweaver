@@ -331,7 +331,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Close the edge-write traps | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -349,11 +349,17 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: Design APPROVED (2026-08-21). No sub-feature has an implementation plan yet.
-**Next step**: Trigger the implementation-plan skill for `SF-01` — *Close the edge-write traps*
-(`FR-14`, `FR-16`). It has no dependencies and both traps must close before any sub-feature writes
-a new edge kind: `repository.py`'s `data.get("type", "CALLS")` would fabricate a kind, and a removed
-edge is never deleted, so every retired call would leave a permanent phantom dependency.
+**Current status**: `SF-01` is committed — three boundaries, both FRs proven, five mutants killed.
+`SF-02` onwards are unplanned.
+
+**Next step**: the implementation-plan skill for `SF-02` — *The seam carries dependencies, and
+`IMPORTS` lands through it*. Its only dependency, `SF-01`, is committed.
+
+**What `SF-01` changed beyond its own scope**: `FR-14` turned out to be firing rather than latent.
+The engine wrote the edge kind under `kind` and the store read `type`, so a real build persisted 108
+edges all typed `CALLS` when every one was `CONTAINS`. Eight existing store tests hand-built their
+graphs with the store's own key and so could not see it. The attribute is now named once, as
+`EDGE_KIND_ATTR`, imported by both sides.
 
 **Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
 sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.
