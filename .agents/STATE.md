@@ -45,17 +45,23 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Test results | Read as JSON, not scraped from pytest's console |
 | Mutants | Time-boxed at 900s. A hang is `UNMEASURED`, never a survival |
 | The nightly gate | A run that leaves no record is an alarm, not a pass |
-| Skills | The agent starts `/grill-me` itself when a `PRINCIPLES.md` §2 trigger fires; it gates design Phase 1 and Phase 6, and the plan skill. Answers stay the user's |
+| Must-not-guess triggers | `PRINCIPLES.md` §2 replaced *money and security* with thirteen named triggers, each grounded in an incident here. `T-DIVERGE` and `T-ORDER` carry thresholds so they fire on something |
+| The grilling, flipped | The agent starts `/grill-me` itself when a trigger fires and prints its recommendation; the reply is what closes the question. A run with no user stops rather than proceeding. Gates design Phase 1 and Phase 6, and the plan skill |
+| `decision_citations` gate | Reads every design against §2 and ratchets what does not account for it. The trigger list is read from `PRINCIPLES.md`, so adding one stays a single-place edit |
 
 ## Still missing
 
 - **The `C-FLOW-11` pilot is unwired.** The dial exists; `sw implement` still runs one-shot, so no
   user path reaches `agentic` mode.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when
-  somebody remembers the story. `check_stale_delivered.py` now catches the *other* half — prose
-  calling a `🔧` capability delivered — but nothing stops the flag itself being flipped.
+  somebody remembers the story. `check_stale_delivered.py` catches the *other* half — prose calling
+  a `🔧` capability delivered — and `T-PROVEN` now names the flip as the user's call, but nothing
+  mechanical stops the flag being flipped.
+- **No design accounts for the §2 triggers.** All 137, and `decision_citations` is ratcheted there:
+  the count can fall but not rise, so nothing forces the backlog down. A design gains its
+  `Decisions taken with the user` section when somebody next opens it.
 - **`A-SENS-02`** is the last open item in `US-11`'s Core MVS. Its grilling has three unanswered
-  questions. **It is not the next thing** — the six above are.
+  questions. **It is not the next thing** — the set-back capabilities above are.
 
 ## The queue
 
