@@ -216,7 +216,8 @@
       "title": "A parser separates extension from implementation, and refuses to guess where it cannot",
       "scope": [
         "tests/unit/workspace/ast/parsers/test_supertypes.py",
-        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py"
+        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py",
+        "tests/integration/graph/test_symbol_index_is_built_once.py"
       ],
       "mutants": [
         {
@@ -263,6 +264,33 @@
           "old": "        if not code.strip() or not self.TYPE_DECLARATION_NODES:\n            return {}",
           "new": "        if not self.TYPE_DECLARATION_NODES:\n            raise NotImplementedError(self.__class__.__name__)",
           "breaks": "SQL, markdown and C abort the build instead of reporting nothing, so one file in a language with no inheritance takes down the whole graph"
+        },
+        {
+          "id": "no-symbol-index",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphBuilder.ingest_target",
+          "old": "        self.symbol_index = _index_types(parsed)",
+          "new": "        pass",
+          "breaks": "nothing maps a type name to the file declaring it, so a supertype can only ever resolve to a ghost and the inheritance half of the graph stays empty"
+        },
+        {
+          "id": "the-prepass-re-parses",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphBuilder.ingest_target",
+          "old": "            self.ingest_ast(path, parsed[path])",
+          "new": "            self.ingest_file(path)",
+          "breaks": "every file is read twice -- the measured 2.8 ms/file becomes 5.6, which at the reference workload's 3,000 files is ~17s against NFR-1's 60s budget for everything this ticket adds"
+        },
+        {
+          "id": "a-name-in-two-files-keeps-one",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "_index_types",
+          "old": "                index.setdefault(str(name), set()).add(filepath)",
+          "new": "                index[str(name)] = {filepath}",
+          "breaks": "two classes of the same name collapse to whichever the walk saw last, so an ambiguous supertype resolves to a real edge that is right by accident or wrong in silence"
         }
       ]
     }

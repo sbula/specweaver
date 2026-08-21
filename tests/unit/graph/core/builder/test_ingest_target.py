@@ -48,37 +48,46 @@ def test_collect_files_directory(builder, tmp_path):
 
 
 def test_ingest_target_single_file(builder, monkeypatch, tmp_path):
-    """[Happy Path] ingest_target calls ingest_file once for a single file."""
+    """[Happy Path] ingest_target ingests a single file exactly once.
+
+    Asserts the outcome rather than the delegation. `ingest_target` used to call `ingest_file`,
+    which re-reads the file; it now reuses what the prepass already read, because parsing twice
+    doubles the per-file cost `TECH-068` NFR-1 is measured against. The claim was never that one
+    method calls another — it is that each collected file is ingested once.
+    """
     f = tmp_path / "foo.py"
     f.write_text("")
 
     mock_ingest = MagicMock()
-    monkeypatch.setattr(builder, "ingest_file", mock_ingest)
+    monkeypatch.setattr(builder, "ingest_ast", mock_ingest)
 
     count = builder.ingest_target(f)
 
     assert count == 1
-    mock_ingest.assert_called_once_with(str(f))
+    assert [call.args[0] for call in mock_ingest.call_args_list] == [str(f)]
 
 
 def test_ingest_target_directory(builder, monkeypatch, tmp_path):
-    """[Happy Path] ingest_target calls ingest_file for each file in directory."""
+    """[Happy Path] ingest_target ingests every file in the directory, each exactly once."""
     (tmp_path / "a.py").write_text("")
     (tmp_path / "b.py").write_text("")
 
     mock_ingest = MagicMock()
-    monkeypatch.setattr(builder, "ingest_file", mock_ingest)
+    monkeypatch.setattr(builder, "ingest_ast", mock_ingest)
 
     count = builder.ingest_target(tmp_path)
 
     assert count == 2
     assert mock_ingest.call_count == 2
+    assert sorted(call.args[0] for call in mock_ingest.call_args_list) == sorted(
+        [str(tmp_path / "a.py"), str(tmp_path / "b.py")]
+    )
 
 
 def test_ingest_target_empty_directory(builder, monkeypatch, tmp_path):
-    """[Boundary] Empty directory calls ingest_file 0 times."""
+    """[Boundary] Empty directory ingests nothing."""
     mock_ingest = MagicMock()
-    monkeypatch.setattr(builder, "ingest_file", mock_ingest)
+    monkeypatch.setattr(builder, "ingest_ast", mock_ingest)
 
     count = builder.ingest_target(tmp_path)
 

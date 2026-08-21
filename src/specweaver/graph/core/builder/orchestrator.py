@@ -11,6 +11,19 @@ if TYPE_CHECKING:
     from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 
 
+def _index_types(parsed: dict[str, dict[str, Any]]) -> dict[str, set[str]]:
+    """Map each declared type name to the files declaring it."""
+    index: dict[str, set[str]] = {}
+    for filepath, payload in parsed.items():
+        for child in payload.get("children", []) or []:
+            if not isinstance(child, dict) or child.get("type") != "class_definition":
+                continue
+            name = child.get("name")
+            if name:
+                index.setdefault(str(name), set()).add(filepath)
+    return index
+
+
 class GraphBuilder:
     """
     Application layer orchestrator for the Knowledge Graph.
@@ -37,6 +50,10 @@ class GraphBuilder:
         # resolve an import without it; empty means every import becomes a ghost, which is
         # correct for a single-file ingest rather than a defect.
         self.known_files: set[str] = set()
+        # Every declared type name mapped to the files declaring it. Built before any edge, so a
+        # supertype resolves the same way whichever file the build reaches first. A name in two
+        # files stays in two: they are not one type, and the caller must be able to see that.
+        self.symbol_index: dict[str, set[str]] = {}
 
     def ingest_ast(self, filepath: str, ast_data: dict[str, Any]) -> None:
         """
@@ -121,13 +138,28 @@ class GraphBuilder:
             self.ingest_file(str(target_path))
             return 1
 
-        files = self.collect_files(target_path)
+        files = sorted(self.collect_files(target_path))
         self.known_files = set(files)
-        count = 0
-        for f in files:
-            self.ingest_file(f)
-            count += 1
-        return count
+
+        # Read every file BEFORE any edge is built. A supertype names a symbol, and symbols are only
+        # known after parsing — so resolving against whatever has been ingested so far would depend
+        # on the order files happen to arrive in. `collect_files` returns a set, so that order is not
+        # even stable between runs of the same tree.
+        #
+        # What is read here is kept and reused below. Parsing twice would double the per-file cost
+        # `NFR-1`'s budget is measured against.
+        parsed = {path: self._parse(path) for path in files}
+        self.symbol_index = _index_types(parsed)
+
+        for path in files:
+            self.ingest_ast(path, parsed[path])
+        return len(files)
+
+    def _parse(self, filepath: str) -> dict[str, Any]:
+        """One read of one file, or the empty payload `ingest_file` would have used."""
+        if self.parser is None or not Path(filepath).exists():
+            return {"type": "module", "imports": [], "children": []}
+        return dict(self.parser(filepath))
 
     def _get_existing_elements(
         self, filepath: str, norm_path: str, file_hash: str
