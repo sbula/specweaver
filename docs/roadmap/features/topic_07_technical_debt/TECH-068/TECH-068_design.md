@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-068
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: DRAFT
+- **Status**: APPROVED (2026-08-21)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_design.md
 
 ## Feature Overview
@@ -344,9 +344,15 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval.
-**Next step**: After approval, trigger the implementation-plan skill for `SF-01`. Separately, mint
-the successor ticket for the withdrawn `NFR-3` incremental target and sequence it ahead of
-`B-SENS-09`.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
-resume from there using the appropriate skill.
+**Current status**: Design APPROVED (2026-08-21). No sub-feature has an implementation plan yet.
+**Next step**: Trigger the implementation-plan skill for `SF-01` — *Close the edge-write traps*
+(`FR-14`, `FR-16`). It has no dependencies and both traps must close before any sub-feature writes
+a new edge kind: `repository.py`'s `data.get("type", "CALLS")` would fabricate a kind, and a removed
+edge is never deleted, so every retired call would leave a permanent phantom dependency.
+
+**Also outstanding, and not part of any sub-feature**: mint the successor ticket for the withdrawn
+`NFR-3` — the ≤250 ms single-file incremental target — and sequence it ahead of `B-SENS-09`.
+
+**If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ in any row and
+resume from there with the skill named for that column. `SF-03` and `SF-04` may run in parallel
+sessions once `SF-02` is committed.

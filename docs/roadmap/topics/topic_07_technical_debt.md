@@ -26,8 +26,9 @@ critical for long-term project viability.
   > `C-FLOW-03` is `✅` and two of its six FRs describe mechanisms **absent from `src/`**: `SW_PORT_OFFSET` port-offset injection, and `gc.auto 0` plus serialised worktree creation. `run_fan_out` IS
   > concurrent (`asyncio.gather`) and its sub-runs can each `git worktree add`, so both hazards are live. FR rows deleted per `TECH-046`; the work carried here. No mutant exists for absent code.
 
-* **`TECH-068` 🔴: The Knowledge Graph Emits One of Its Nine Declared Edge Kinds**
-  > [Description](../features/topic_07_technical_debt/TECH-068/TECH-068_design.md) | _Status: STUB. Origin: 2026-08-21, measured while wiring graph consumers
+* **`TECH-068` 🟡: The Knowledge Graph Emits One of Its Nine Declared Edge Kinds**
+  > [Description](../features/topic_07_technical_debt/TECH-068/TECH-068_design.md) | _Status: DESIGN APPROVED 2026-08-21, five sub-features,
+  > none planned. Origin: 2026-08-21, measured while wiring graph consumers
   > ([ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))._ |
   > `EdgeKind` declares nine kinds (`ontology.py`); `mapper.py:112` is the only edge construction site and writes `CONTAINS` alone. The delivered "semantic Knowledge Graph" is a containment
   > inventory: every dependency traversal — blast radius, context packing, dependent verification — returns a trivial result. Owns the syntactic kinds (`IMPORTS`, `CALLS`, `EXTENDS`,

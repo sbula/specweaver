@@ -48,6 +48,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Must-not-guess triggers | `PRINCIPLES.md` §2 replaced *money and security* with thirteen named triggers, each grounded in an incident here. `T-DIVERGE` and `T-ORDER` carry thresholds so they fire on something |
 | The grilling, flipped | The agent starts `/grill-me` itself when a trigger fires and prints its recommendation; the reply is what closes the question. A run with no user stops rather than proceeding. Gates design Phase 1 and Phase 6, and the plan skill |
 | `decision_citations` gate | Reads every design against §2 and ratchets what does not account for it. The trigger list is read from `PRINCIPLES.md`, so adding one stays a single-place edit |
+| `TECH-068` designed | Design APPROVED 2026-08-21. Five sub-features, 16 FRs, none planned yet. The review found two persistence defects the ticket now owns: an edge with no kind defaults to `CALLS`, and an edge the rebuilt graph drops is never deleted — both unreachable until `CALLS` lands, both then permanent |
+| `TECH-069` minted | The decision-citations gate has a ticket, five FRs, 25 tests and five killed mutants. `🔧`: no implementation plan owns the FRs |
 | Nightly mutation, clear | Gate `CLEAR` for the first time in the session: 67 judged, 67 protected, 0 unprotected, 0 unmeasured. `TECH-049` and `TECH-056` corpora re-anchored onto the code the vocabulary refactor moved — the five blocking findings were drift, not gaps |
 | Two reports, two names | `_mutate_campaign.py` writes `mutation_campaign_report.md`; the nightly keeps `mutation_session.md` beside its record. One word apart cost a misreading |
 
