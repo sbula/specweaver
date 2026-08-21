@@ -82,6 +82,23 @@ def _section_lines(text: str) -> list[str] | None:
     return None if start is None else lines[start:]
 
 
+def _logical_lines(lines: list[str]) -> list[str]:
+    """Rejoin a markdown bullet with the lines it wraps onto.
+
+    Authors wrap prose; a bullet listing eight trigger ids and its `not touched` marker routinely
+    lands on two physical lines. Matching line by line reported those ids as unmarked, which is a
+    false failure on correct prose -- and a gate that cries wolf is one somebody switches off.
+    """
+    joined: list[str] = []
+    for line in lines:
+        continuation = bool(joined) and line.startswith((" ", "\t")) and bool(line.strip())
+        if continuation:
+            joined[-1] = f"{joined[-1].rstrip()} {line.strip()}"
+        else:
+            joined.append(line)
+    return joined
+
+
 def audit_design(text: str, triggers: frozenset[str]) -> tuple[str, ...]:
     """Report why a design does not account for the triggers. Empty means it does."""
     lines = _section_lines(text)
@@ -90,7 +107,7 @@ def audit_design(text: str, triggers: frozenset[str]) -> tuple[str, ...]:
 
     accounted: set[str] = set()
     reasons: list[str] = []
-    for line in lines:
+    for line in _logical_lines(lines):
         mentioned = set(_TRIGGER.findall(line)) & triggers
         if not mentioned:
             continue

@@ -3,6 +3,8 @@
 
 """A design must account for every must-not-guess trigger, and say what a fired one settled.
 
+Proves: TECH-069 FR-1, FR-2, FR-3, FR-4, FR-5
+
 `PRINCIPLES.md` §2 lists the decisions an agent may not take alone. Nothing read a design against
 that list, so the list was advisory: an agent could settle a spend ceiling, a
 retention period or a proven-verdict, write it into a design, and pass every gate in the repo.
@@ -174,4 +176,17 @@ class TestOverBaseline:
 @pytest.mark.parametrize("marker", ["not touched", "NOT TOUCHED", "Not Touched"])
 def test_the_marker_is_case_insensitive(marker: str) -> None:
     text = _design(f"- `T-SPEND`, `T-BOUNDARY`, `T-PROVEN`: {marker}")
+    assert audit_design(text, TRIGGERS) == ()
+
+
+def test_a_wrapped_bullet_is_read_as_one_line() -> None:
+    """A markdown author wraps at 100 chars; the trigger ids and the marker land on separate lines.
+
+    Found by running the gate against `TECH-069`'s own design. Line-by-line matching reported eight
+    triggers as unmarked when the bullet plainly marked them, which is a false failure — and a gate
+    that fails on correct prose is one somebody switches off.
+    """
+    text = _design(
+        "- `T-SPEND`, `T-BOUNDARY`,\n  `T-PROVEN`: not touched. Nothing here spends or exposes."
+    )
     assert audit_design(text, TRIGGERS) == ()
