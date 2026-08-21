@@ -49,9 +49,9 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 > specification**. Every one was documented in the design. Not one was agreed. Documenting a guess
 > does not stop it being a guess.
 >
-> So: **tell the user to run `/grill-me <ID>` and stop.** You cannot invoke it — it is reserved for
-> explicit user invocation, and replicating its workflow by other means is forbidden. Ask, then
-> wait.
+> So: **run `/grill-me <ID>` yourself** as soon as a trigger appears, and put every question to the
+> user. Their answers are the only ones that close it — a question you answer on their behalf is the
+> guess this rule exists to stop. Wait.
 >
 > Take the grilling to an **empty frontier** before Phase 2. Its output is what Phase 3 binds
 > requirements to, and what Phase 6 reviews against. A design that reaches Phase 6 with decisions

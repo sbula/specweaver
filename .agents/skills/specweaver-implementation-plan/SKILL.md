@@ -45,9 +45,8 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    > a design that was never grilled means the approver saw the agent's guesses for the first time
    > at the gate — which is a rubber stamp, not a review.
    >
-   > If the section is missing or holds an open question, **stop and tell the user to run
-   > `/grill-me <ID>`**. You cannot invoke it yourself, and you must not work around it by asking
-   > the questions in your own words.
+   > If the section is missing or holds an open question, **run `/grill-me <ID>`** and put the open
+   > questions to the user. Their answers close them. Plan work resumes once the frontier is empty.
    >
    > **Never let a plan settle a number the design left open.** A default chosen in a plan is a
    > decision nobody agreed, wearing an implementation detail's clothes — which is how a `$25`

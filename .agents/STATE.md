@@ -45,7 +45,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Test results | Read as JSON, not scraped from pytest's console |
 | Mutants | Time-boxed at 900s. A hang is `UNMEASURED`, never a survival |
 | The nightly gate | A run that leaves no record is an alarm, not a pass |
-| Skills | `/grill-me` now gates design Phase 1 and Phase 6, and the plan skill |
+| Skills | The agent starts `/grill-me` itself when a `PRINCIPLES.md` §2 trigger fires; it gates design Phase 1 and Phase 6, and the plan skill. Answers stay the user's |
 
 ## Still missing
 

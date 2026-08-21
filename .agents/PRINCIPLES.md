@@ -18,8 +18,9 @@ Before starting any task, find the skill that covers it. They are in `.claude/sk
 **`specweaver-pre-commit` runs before every commit, not after.** It was skipped once and found a
 HIGH finding when run afterwards — on code already committed.
 
-**`/grill-me` can only be invoked by the user.** A design starts by asking them to run it, then
-stopping. Do not ask its questions in your own words instead.
+**Start `/grill-me` yourself the moment a trigger from §2 appears.** Put every question to the
+user and wait: each answer is theirs. A question still open blocks the phase — it never becomes a
+default.
 
 ## 2. What is never yours to decide
 
