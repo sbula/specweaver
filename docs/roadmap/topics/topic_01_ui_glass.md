@@ -37,7 +37,8 @@ This document tracks all capabilities related to the User Interface, visual dash
 ## DAL-C: Enterprise Standard
 * **`C-UI-01` 🔜: Pipeline Visualizer** (Legacy: 3.33a)<br>
   > _(brought forward)_ | Native static HTML exporter (powered by PyVis/D3.js). Visually exposes calculated Degree Centrality (God Nodes) and cluster communities from the AST graph engine directly to
-  > developers.
+  > developers. **Graph reader** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: centrality over a
+  > `CONTAINS`-only graph is meaningless — behind `TECH-068`.
 * **`C-UI-02` 🔜: Traceability Matrix UX** (Legacy: 3.48)<br>
   > _(inspired by Cavekit)_ | Exposes the underlying Artifact Lineage Graph to the user via a Markdown/CLI matrix view. Visually maps Spec Requirements to planned components/tasks before execution to
   > allow human auditing of requirement coverage.

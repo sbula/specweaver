@@ -84,6 +84,7 @@ The add-on groups behind it, nearest first:
 | 🔴 Cross-Language Dependency Resolution | `B-SENS-07` | single item |
 | 🔴 Microservice Federation | `A-SENS-04` | single item |
 | 🔴 Dynamic Knowledge Relevance | `B-FLOW-04`, `A-SENS-03` | retrieval scoring; wants `A-SENS-02` first |
+| 🔴 Deterministic Context Packing | `B-SENS-09`, `B-SENS-08` | ADR-006 contextualize step; behind `TECH-068` |
 | 🔴 Static Code Flow Analysis | `B-SENS-04`, `B-SENS-05` | statically-typed languages only, by design |
 
 **Focus 2 — the 🟡 harvest: stories one capability from green.**

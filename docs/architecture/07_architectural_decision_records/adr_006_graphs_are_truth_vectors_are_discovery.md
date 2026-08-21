@@ -88,7 +88,7 @@ What produces what, and who reads it — the single orientation table for this a
 | Component | Produces | Read by |
 |---|---|---|
 | `D-SENS-02/03` parsers ✅ | AST symbols per file | `B-SENS-02` builder · skeletons (`D-VAL-04`) |
-| `B-SENS-02` builder ✅ | graph nodes + `CONTAINS` | `B-SENS-09`, `B-VAL-07`, blast-radius seams *(all pending `TECH-068`)* |
+| `B-SENS-02` builder ✅ | graph nodes + `CONTAINS` | `B-SENS-09`, `B-VAL-07`, blast-radius seams, `C-UI-01`, `B-SENS-06`, `A-SENS-05` *(all pending `TECH-068`)* |
 | `TECH-068` 🔴 | syntactic edges (`IMPORTS`, `CALLS`, `EXTENDS`, `IMPLEMENTS`) | every graph reader |
 | Framework schemas ✅ (`workflows/evaluators/frameworks/`) | annotation semantics | `B-INTL-02` prompt comments ✅ · `B-SENS-08` edges 🔜 |
 | `B-SENS-08` 🔜 | framework edges (`INJECTS`-class, routes, listeners; `PUBLISHES`/`SUBSCRIBES`) | blast radius · `B-SENS-09` · `B-VAL-07` · `A-SENS-04` (cross-service linkage) |
@@ -98,6 +98,9 @@ What produces what, and who reads it — the single orientation table for this a
 | `B-SENS-09` 🔜 | packed subgraph context in prompts | `sw draft`/`implement`/`review` loops |
 | `B-VAL-07` 🔜 | broken-dependent findings post-generation | pipeline gates · `B-INTL-08` 🔮 |
 | `A-SENS-01` ✅ | Merkle staleness | incremental graph/pipeline refresh (`A-SENS-03` = trigger only) |
+| `C-UI-01` 🔜 | god-node / centrality visualisation | developers — meaningless before `TECH-068` |
+| `B-SENS-06` 🔜 | CVE reachability (`CALLS` closure to vulnerable functions) | fleet remediation (US-26) — behind `TECH-068` |
+| `A-SENS-05` 🔜 | stack-trace → graph-node resolution | self-healing loop (US-27) — behind `TECH-068` |
 
 ## Prior Art
 

@@ -93,7 +93,9 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > compression: the skeleton shrinks a file already chosen. Receives candidates from `B-FLOW-04`, never the reverse. Successor to the `E-VAL-03`
   > re-reading. Behind `TECH-068`.
 * **`B-SENS-06` 🔜: OSV Vulnerability Feed Ingestion**
-  > _(new)_ | Automatically maps known CVEs from the OSV database against the active workspace topology graph.
+  > _(new)_ | Automatically maps known CVEs from the OSV database against the active workspace topology graph. **Graph reader** _(2026-08-21,
+  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: "do we call the vulnerable function" is `CALLS`-closure over
+  > `B-SENS-02` — its edge over plain dependency scanners — so the reachability half sits behind `TECH-068`.
 
 ## DAL-A: Mission-Critical
 * **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
@@ -113,4 +115,5 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > API contracts without context bloat. **Edge source** _(2026-08-21)_: the cross-service edges — REST clients, listener topics — are exactly what `B-SENS-08`
   > derives from framework annotations; this capability federates those edges, it does not invent its own extraction.
 * **`A-SENS-05` 🔜: APM Telemetry Ingestion (Sentry/Datadog)**
-  > _(new)_ | Feeds production stack traces directly into the Knowledge Graph to pinpoint failing AST nodes.
+  > _(new)_ | Feeds production stack traces directly into the Knowledge Graph to pinpoint failing AST nodes. **Graph reader** _(2026-08-21,
+  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: trace-frame → node resolution reads `B-SENS-02`; behind `TECH-068`.
