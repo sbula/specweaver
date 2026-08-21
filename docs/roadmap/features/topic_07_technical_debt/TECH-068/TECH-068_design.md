@@ -22,6 +22,11 @@ graph is a containment inventory:
 - `graph/core/engine/ontology.py` declares nine edge kinds.
 - `graph/core/builder/mapper.py` is the only `GraphEdge` construction site. It emits `CONTAINS`
   (file → symbol) and nothing else.
+- **In the database it is worse.** `SF-01`'s Phase 0 research found the engine writes the kind under
+  `kind` and the store reads `type`, so `repository.py`'s `"CALLS"` fallback fires on every edge.
+  Measured: a real build of `src/specweaver/graph` persisted **108 edges, all typed `CALLS`**, and
+  every one is a `CONTAINS` edge. The persisted graph claims a call graph it does not have and holds
+  no `CONTAINS` rows at all. `FR-14` owns this.
 
 Every planned reader needs dependency edges, not containment: blast radius needs `CALLS`/`IMPORTS`
 closure, context packing needs caller/callee traversal (`B-SENS-09`), post-generation verification
@@ -326,7 +331,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Close the edge-write traps | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Close the edge-write traps | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | `CALLS` from upstream queries | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |

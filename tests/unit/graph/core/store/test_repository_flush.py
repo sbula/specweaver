@@ -25,7 +25,7 @@ def test_flush_happy_path(repo):
     g.add_node(
         "test_service:ast:456", file_id="file1", package_name="pkg1", metadata={"key": "value2"}
     )
-    g.add_edge("test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1})
+    g.add_edge("test_service:ast:123", "test_service:ast:456", kind="CALLS", metadata={"weight": 1})
 
     repo.persist_semantic_digraph(g)
 
@@ -78,7 +78,7 @@ def test_flush_large_graph_chunking(repo):
         g.add_node(f"test_service:ast:{i}", file_id="file1", package_name="pkg1", metadata={})
         if i > 0:
             g.add_edge(
-                f"test_service:ast:{i - 1}", f"test_service:ast:{i}", type="CALLS", metadata={}
+                f"test_service:ast:{i - 1}", f"test_service:ast:{i}", kind="CALLS", metadata={}
             )
 
     repo.persist_semantic_digraph(g)
@@ -141,7 +141,7 @@ def test_flush_lazy_target(repo):
 
     g = nx.DiGraph()
     g.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
-    g.add_edge("test_service:ast:123", "test_service:ast:GHOST", type="CALLS", metadata={})
+    g.add_edge("test_service:ast:123", "test_service:ast:GHOST", kind="CALLS", metadata={})
     # Notice "test_service:ast:GHOST" is NOT added as a node with metadata.
 
     repo.persist_semantic_digraph(g)
@@ -172,7 +172,7 @@ def test_flush_unserializable_metadata(repo):
     g.add_edge(
         "test_service:ast:123",
         "test_service:ast:123",
-        type="CALLS",
+        kind="CALLS",
         metadata={"unserializable": set([4, 5])},
     )
 

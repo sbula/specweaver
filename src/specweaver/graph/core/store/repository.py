@@ -8,6 +8,25 @@ from typing import Any
 
 import networkx as nx
 
+from specweaver.graph.core.engine.models import EdgeKind
+
+
+def _edge_kind(source_hash: str, target_hash: str, data: dict[str, Any]) -> str:
+    """The kind the engine wrote, refused rather than defaulted when it is absent or unknown.
+
+    `upsert_edge` stores it under `kind`; this column is called `type` and is part of the primary
+    key, so the two names differ by schema rather than by mistake. Reading the wrong one is the
+    mistake, and it defaulted every edge to `CALLS` — a fabricated dependency indistinguishable
+    from a real one.
+    """
+    kind = data.get("kind")
+    if kind not in {k.value for k in EdgeKind}:
+        raise ValueError(
+            f"edge {source_hash} -> {target_hash} carries no declared EdgeKind: {kind!r}. "
+            f"An edge without a kind is not given one here."
+        )
+    return str(kind)
+
 
 class SqliteGraphRepository:
     """SQLite implementation of the Graph Repository."""
@@ -162,7 +181,8 @@ class SqliteGraphRepository:
                 target_id = hash_to_id.get(target_hash)
                 if source_id is not None and target_id is not None:
                     meta_str = json.dumps(data.get("metadata", {}), default=str)
-                    edge_batch.append((source_id, target_id, data.get("type", "CALLS"), meta_str))
+                    kind = _edge_kind(source_hash, target_hash, data)
+                    edge_batch.append((source_id, target_id, kind, meta_str))
 
             edge_sql = """
                 INSERT OR REPLACE INTO graph_edges (source_id, target_id, type, metadata)

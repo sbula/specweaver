@@ -44,7 +44,7 @@ def test_roundtrip_preserves_nodes_and_edges(repo):
         clone_hash="c2",
     )
     g_in.add_edge(
-        "test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1}
+        "test_service:ast:123", "test_service:ast:456", kind="CALLS", metadata={"weight": 1}
     )
 
     repo.persist_semantic_digraph(g_in)

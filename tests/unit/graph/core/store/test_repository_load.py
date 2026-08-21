@@ -34,7 +34,7 @@ def test_load_happy_path(repo):
         clone_hash="c2",
     )
     g_in.add_edge(
-        "test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1}
+        "test_service:ast:123", "test_service:ast:456", kind="CALLS", metadata={"weight": 1}
     )
 
     repo.persist_semantic_digraph(g_in)
@@ -83,7 +83,7 @@ def test_load_ignores_ghost_nodes(repo):
     """Test that load_from_db ignores lazy targets that were never resolved."""
     g_in = nx.DiGraph()
     g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
-    g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", type="CALLS", metadata={})
+    g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", kind="CALLS", metadata={})
     repo.persist_semantic_digraph(g_in)
 
     g_out = repo.load_from_db()

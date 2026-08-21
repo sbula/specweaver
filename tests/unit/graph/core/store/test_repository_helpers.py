@@ -68,7 +68,7 @@ def test_full_graph_lifecycle(repo):
     g1 = nx.DiGraph()
     g1.add_node("test_service:ast:1", file_id="file1", clone_hash="v1")
     g1.add_node("test_service:ast:2", file_id="file2", clone_hash="v1")
-    g1.add_edge("test_service:ast:1", "test_service:ast:2", type="CALLS")
+    g1.add_edge("test_service:ast:1", "test_service:ast:2", kind="CALLS")
     repo.persist_semantic_digraph(g1)
 
     g_out = repo.load_from_db()
@@ -79,7 +79,7 @@ def test_full_graph_lifecycle(repo):
     g2 = nx.DiGraph()
     # Node 1 changes its hash to 1_new, node 2 is unaffected (lazy target)
     g2.add_node("test_service:ast:1_new", file_id="file1", clone_hash="v2")
-    g2.add_edge("test_service:ast:1_new", "test_service:ast:2", type="CALLS")
+    g2.add_edge("test_service:ast:1_new", "test_service:ast:2", kind="CALLS")
 
     # In a real orchestrator, we would purge file1 before flushing its new state
     repo.purge_file("file1")

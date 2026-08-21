@@ -1,0 +1,33 @@
+{
+  "schema": 2,
+  "feature": "TECH-068",
+  "campaigns": [
+    {
+      "requirement": "FR-14",
+      "title": "The persisted edge kind is the edge's kind, and a missing one is refused",
+      "scope": [
+        "tests/integration/graph/test_edge_kind_survives_persist.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-fallback-returns",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.persist_semantic_digraph",
+          "old": "kind = _edge_kind(source_hash, target_hash, data)",
+          "new": "kind = data.get(\"type\", \"CALLS\")",
+          "breaks": "the store reads the key the engine does not write, so every edge is stored as CALLS -- measured before the fix as 108 CONTAINS edges all typed CALLS, a call graph the repository never had"
+        },
+        {
+          "id": "an-unknown-kind-reaches-the-column",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "_edge_kind",
+          "old": "if kind not in {k.value for k in EdgeKind}:",
+          "new": "if False:",
+          "breaks": "a missing or undeclared kind is written to the column instead of refused, so a None or a typo becomes an edge type no reader can interpret and no gate can see"
+        }
+      ]
+    }
+  ]
+}
