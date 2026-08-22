@@ -15,6 +15,7 @@ _MODULE_SEPARATORS = (".", "::", "/")
 # and one ghost for both would report a file's missing dependency as a type's missing parent.
 _GHOST_MODULE_PREFIX = "<unresolved-module>/"
 _GHOST_TYPE_PREFIX = "<unresolved-type>/"
+_GHOST_PROCEDURE_PREFIX = "<unresolved-procedure>/"
 
 
 def _module_segments(module: str) -> list[str]:
@@ -80,6 +81,7 @@ class OntologyMapper:
         ast_data: dict[str, Any] | None,
         known_files: frozenset[str] = frozenset(),
         symbol_index: dict[str, set[str]] | None = None,
+        procedure_index: dict[str, set[tuple[str, str]]] | None = None,
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """
         Parses an AST dictionary and returns a list of mapped GraphNodes and GraphEdges.
@@ -114,6 +116,9 @@ class OntologyMapper:
             return nodes, edges
 
         self._map_imports(ast_data.get("imports", []), file_hash, known_files, edges)
+        # A call outside any declaration belongs to the file: module-level code is a real
+        # dependency, and there is no symbol to attribute it to.
+        self._map_calls(file_hash, ast_data.get("calls", []), procedure_index or {}, edges)
 
         # 2. Extract children based on type
         children = ast_data.get("children", [])
@@ -126,6 +131,13 @@ class OntologyMapper:
 
             self._map_child(filepath, child, file_hash, nodes, edges, depth=1)
             self._map_supertypes(filepath, child, symbol_index or {}, edges)
+            if child.get("name"):
+                self._map_calls(
+                    self.hasher.hash_node(filepath, str(child["name"])),
+                    child.get("calls", []),
+                    procedure_index or {},
+                    edges,
+                )
 
         return nodes, edges
 
@@ -196,6 +208,39 @@ class OntologyMapper:
         if len(declared_in) == 1:
             return self.hasher.hash_node(next(iter(declared_in)), name)
         return self.hasher.hash_file(f"{_GHOST_TYPE_PREFIX}{name}")
+
+    def _map_calls(
+        self,
+        source: str,
+        callees: Any,
+        procedure_index: dict[str, set[tuple[str, str]]],
+        edges: list[GraphEdge],
+    ) -> None:
+        """One `CALLS` edge per call site, to the procedure it names or to a ghost.
+
+        A recursive call becomes a self-edge rather than being filtered: a function calling itself
+        is a real dependency, and a traversal that silently drops it is wrong about the graph.
+        """
+        if not isinstance(callees, list):
+            return
+        for callee in callees:
+            if not isinstance(callee, str) or not callee:
+                continue
+            edges.append(
+                GraphEdge(
+                    source_hash=source,
+                    target_hash=self._callee_target(callee, procedure_index),
+                    kind=EdgeKind.CALLS,
+                )
+            )
+
+    def _callee_target(self, name: str, procedure_index: dict[str, set[tuple[str, str]]]) -> str:
+        """The procedure the call names, or a ghost when it names no single one of ours."""
+        declared_in = procedure_index.get(name, set())
+        if len(declared_in) == 1:
+            filepath, qualified = next(iter(declared_in))
+            return self.hasher.hash_node(filepath, qualified)
+        return self.hasher.hash_file(f"{_GHOST_PROCEDURE_PREFIX}{name}")
 
     def _check_depth(
         self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int

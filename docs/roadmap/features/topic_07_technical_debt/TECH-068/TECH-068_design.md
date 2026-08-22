@@ -338,7 +338,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 | SF-01 | Close the edge-write traps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
@@ -353,12 +353,14 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: `SF-01`, `SF-02` and `SF-03` are committed. A real build of `src/specweaver`
-persists 2698 `CONTAINS`, 2274 `IMPORTS` and 341 `EXTENDS` at 4.7 ms/file — three of the four kinds
-this ticket owns. `SF-04` is the last.
+**Current status**: `SF-01` through `SF-04` are committed. A real build of `src/specweaver`
+persists **9103 `CALLS`, 2704 `CONTAINS`, 2274 `IMPORTS` and 341 `EXTENDS`** with 989 ghosts, at
+7.3 ms/file — 21.8s projected at the reference workload against `NFR-1`'s 60s. The graph declared
+nine edge kinds and wrote one; it now writes four.
 
-**Next step**: the implementation-plan skill for `SF-04` — `CALLS` where the grammar already ships
-the query. It reuses `SF-03`'s symbol index, which is why its dependency moved here.
+**Next step**: the implementation-plan skill for `SF-05` — `CALLS` for typescript, c, cpp and
+kotlin, whose grammars ship no call query. Kotlin ships no `.scm` of any kind and is the risk this
+decomposition isolated here on purpose.
 
 **Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
 sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.

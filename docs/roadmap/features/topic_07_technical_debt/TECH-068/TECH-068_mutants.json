@@ -356,12 +356,12 @@
           "breaks": "the kind the grammar stated is collapsed at the last step, so a reader asking which types fulfil an interface gets nothing while EXTENDS reports twice what it should"
         },
         {
-          "id": "ambiguity-resolved-to-a-guess",
+          "id": "supertype-ambiguity-resolved-to-a-guess",
           "origin": "authored",
           "file": "src/specweaver/graph/core/builder/mapper.py",
           "symbol": "OntologyMapper._supertype_target",
-          "old": "        if len(declared_in) == 1:",
-          "new": "        if declared_in:",
+          "old": "        declared_in = symbol_index.get(name, set())\n        if len(declared_in) == 1:",
+          "new": "        declared_in = symbol_index.get(name, set())\n        if declared_in:",
           "breaks": "a supertype name declared in two files resolves to whichever the set yields first, so a name collision becomes a parent that is right by accident or wrong in silence"
         },
         {
@@ -435,7 +435,8 @@
       "title": "Procedures are indexed in their own namespace, by the name a call is written with",
       "scope": [
         "tests/integration/graph/test_procedure_index.py",
-        "tests/integration/graph/test_symbol_index_is_built_once.py"
+        "tests/integration/graph/test_symbol_index_is_built_once.py",
+        "tests/integration/graph/test_calls_become_edges.py"
       ],
       "mutants": [
         {
@@ -473,6 +474,42 @@
           "old": "            name = str(child.get(\"name\") or \"\")\n            if name:",
           "new": "            name = str(child.get(\"name\") or \"\")\n            if True:",
           "breaks": "an empty name keys the index on the empty string, which a malformed payload can then match against, resolving a call to whatever nameless thing was indexed"
+        },
+        {
+          "id": "no-calls-edges",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper.map_ast_to_nodes",
+          "old": "                    child.get(\"calls\", []),",
+          "new": "                    [],",
+          "breaks": "no CALLS edge is built from any symbol, so caller/callee traversal returns nothing -- the question every named reader of this graph exists to ask"
+        },
+        {
+          "id": "module-level-calls-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper.map_ast_to_nodes",
+          "old": "        self._map_calls(file_hash, ast_data.get(\"calls\", []), procedure_index or {}, edges)",
+          "new": "        pass",
+          "breaks": "a decorator argument or a constant built by a call never becomes an edge, so a whole class of real file-level dependencies is absent from the graph"
+        },
+        {
+          "id": "ambiguity-resolved-to-a-guess",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "OntologyMapper._callee_target",
+          "old": "        declared_in = procedure_index.get(name, set())\n        if len(declared_in) == 1:",
+          "new": "        declared_in = procedure_index.get(name, set())\n        if declared_in:",
+          "breaks": "a callee name declared twice resolves to whichever the set yields first, so a name collision becomes a call that is right by accident or wrong in silence -- and `run`, `check` and `execute` collide 14, 26 and 25 times in this repository alone"
+        },
+        {
+          "id": "the-procedure-ghost-shares-a-namespace",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "_GHOST_PROCEDURE_PREFIX",
+          "old": "_GHOST_PROCEDURE_PREFIX = \"<unresolved-procedure>/\"",
+          "new": "_GHOST_PROCEDURE_PREFIX = \"<unresolved-type>/\"",
+          "breaks": "a missing function and a missing base class of the same name become one ghost, so a reader cannot tell which kind of thing is absent -- the third of three namespaces, after SF-03 separated the first two"
         }
       ]
     },

@@ -233,6 +233,24 @@
       "first_seen": 1787339268.190703,
       "last_seen": 1787378798.7684832,
       "occurrences": 4
+    },
+    "TECH-068 FR-9 ambiguity-resolved-to-a-guess": {
+      "history": [
+        {
+          "at": 1787379016.2364283,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787379255.4665043,
+          "state": "closed",
+          "reason": "withdrawn"
+        }
+      ],
+      "first_seen": 1787379016.2364283,
+      "last_seen": 1787379216.5355372,
+      "occurrences": 4
     }
   },
   "override_count": 0,
