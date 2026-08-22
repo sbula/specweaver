@@ -278,7 +278,13 @@ class SqliteGraphRepository:
                 except json.JSONDecodeError:
                     metadata = {}
 
-                nx_graph.add_edge(source_hash, target_hash, type=edge_type, metadata=metadata)
+                # Under `EDGE_KIND_ATTR`, not under the column's name. The column is called
+                # `type` because it is part of the primary key; the graph attribute has one name,
+                # and writing the column's name here is what made a loaded graph unpersistable --
+                # `_edge_kind` refuses an edge with no kind, which is every edge this returned.
+                nx_graph.add_edge(
+                    source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}
+                )
 
         return nx_graph
 

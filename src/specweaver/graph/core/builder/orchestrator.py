@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.graph.core.builder.mapper import OntologyMapper
 from specweaver.graph.core.engine.hashing import SemanticHasher
+from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict, parseable_suffixes
 
 if TYPE_CHECKING:
     from specweaver.graph.core.engine.protocol import GraphEngineProtocol
@@ -145,8 +146,6 @@ class GraphBuilder:
         adapter and not on `workspace.ast.parsers`, and that boundary is the reason the two ended up
         restating each other. A language added to the registry is now collected with no edit here.
         """
-        from specweaver.workspace.ast.adapters.graph_adapter import parseable_suffixes
-
         return parseable_suffixes()
 
     def collect_files(self, target_path: Path) -> set[str]:
@@ -256,7 +255,6 @@ class GraphOrchestrator:
         from specweaver.assurance.graph.loader import load_topology
         from specweaver.graph.core.engine.core import InMemoryGraphEngine
         from specweaver.graph.core.store.repository import SqliteGraphRepository
-        from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 
         service_name = "default"
         topology = load_topology(project_path)

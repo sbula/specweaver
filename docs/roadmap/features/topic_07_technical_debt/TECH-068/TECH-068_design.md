@@ -290,6 +290,11 @@ tooling on a separate track from the product graph, and wiring one to the other 
 - **FRs**: [FR-5, FR-8, FR-12, FR-15]
 - **Inputs**: `AbstractParser.extract_imports`; the existing `extract_ast_dict`; `SF-01`'s edge-write guarantees.
 - **Outputs**: a declared seam contract carrying imports, supertypes and call sites; `IMPORTS` edges; `GHOST` edges for unresolved targets; unparsed files marked; the `AD-3` boundary declared.
+  > **The `AD-3` half of this Outputs line was not produced by `SF-02`.** The sub-feature was
+  > marked `Committed ✅` with it listed here while all three of `AD-3`'s obligations were
+  > unmet, and no commit boundary in `SF-02`'s implementation plan ever scheduled it — the
+  > plan does not mention `AD-3` at all. Executed 2026-08-22 by the retrospective
+  > pre-commit gate; see that section above.
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_sf02_implementation_plan.md
 
@@ -350,6 +355,38 @@ tooling on a separate track from the product graph, and wiring one to the other 
   This ticket makes the graph true; it does not make it used.
 - Dynamic dispatch resolution. A `CALLS` edge asserts a syntactic call site and nothing more.
 - An incremental build path. Withdrawn at `NFR-3`; `TECH-070` owns it.
+
+## Retrospective Pre-Commit Gate — 2026-08-22
+
+`specweaver-pre-commit` was **never invoked** during the five sub-features of this ticket. Its
+individual gates were run in its place, and the Progress Tracker's `Pre-Commit ✅` column records
+that substitute, not the skill. The skill was then run once, retrospectively, over the whole
+session (`897c229c..HEAD`). Running a skill's commands is a subset of the skill; it is not the
+skill. This is what the difference cost.
+
+### Fixed at this boundary
+
+| # | Finding | Resolution |
+|---|---|---|
+| A-1 | **`AD-3` was approved and never executed.** All three obligations were unmet, and `SF-02` was marked `Committed ✅` with "the `AD-3` boundary declared" among its Outputs | Executed. `specweaver.workspace.ast.adapters` is declared in `graph/core/builder/context.yaml`; both inline imports in `orchestrator.py` are lifted to module level; two rows are in Known Boundary Violations. The guardrail that ships with it is `tests/unit/graph/core/builder/test_declared_imports.py` |
+| G-1 | **`load_from_db` and `persist_semantic_digraph` disagreed on the edge attribute** — a regression `SF-01` introduced. `SF-01` made the store refuse an edge carrying no kind; the loader kept writing the column's name, `type`. A graph read back out of the database could never be written to it again | `load_from_db` writes `EDGE_KIND_ATTR`, the one name. `tests/integration/graph/test_the_graph_survives_a_reload.py` holds the round trip, including the agreement test. Two unit tests that had pinned `"type"` in place were repaired |
+| G-3 | **Nothing drove a real parse to a persisted edge.** Each half was proven and the pair was not: the polyglot test stops at the engine, the persist test hand-builds its nodes, and the only real `build_target` test asserts nodes exclusively. Not one assertion anywhere touched `graph_edges` | `tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py` — the first assertion on `graph_edges` from real parser output, through the shipped `sw graph build` |
+| — | **`python scripts/_mutate.py` crashed on every invocation.** `main` read `result["verdict"]`; `run_one` has returned `outcome` since `e98777ea`. The library path stayed healthy, so the campaign runner worked and the documented command did not | Fixed, with an agreement test asserting every key `main` reads is one `run_one` returns |
+
+Reachability of G-1 on the shipped path was **nil, by accident**: `purge_stale_entries` tombstones
+every file outside the current target and `load_from_db` filters `is_active = 1`, so no loaded edge
+survived to be re-persisted. `TECH-070` is an incremental rebuild — keeping unchanged files loaded
+rather than re-ingesting them is the entire point of it, and that is exactly the state that raised.
+
+### Open, and the user's to schedule
+
+| # | Finding | Note |
+|---|---|---|
+| G-2 | `FR-12` says the ghost edge carries the unresolved raw name in its metadata. It carries `{}` — the name survives only inside the one-way target hash, so `os.getcwd` and `mystery_call` are two indistinguishable ghosts. The acceptance criterion is met; the stated mechanism is not. `graph_edges` already has a metadata column, so this is wiring. `NFR-5` (ghost metadata under 2 KB) is vacuously true for the same reason | Recorded in `docs/dev_guides/ontology_mapping.md` |
+| G-4 | Go and Rust report no supertypes. Go has struct and interface embedding, Rust has `impl Trait for X`, and `FR-4`/`FR-9`/`FR-10` name no language exemption. Both ship `TYPE_DECLARATION_NODES = ()`, and `test_every_shipped_parser_returns_the_declared_shape` loops over the returned dict — an empty dict runs the body zero times, so it passes over them vacuously (pattern 8) | Either build them or descope them in the FR table, so the gap is visible |
+| G-5 | `BaseTreeSitterParser._supertypes_of` is unreachable: every parser that sets `TYPE_DECLARATION_NODES` also overrides it, and every parser that does not returns `{}` before reaching it | Surfaced by mutation during `SF-03` and left in place |
+| G-6 | `resolve_module` and `_matches_stem` have no unit tests. The whole resolution rule — longest-suffix-first, package `__init__` fallback, case-insensitivity to agree with RT-21, ambiguity collapsing to `None` — is exercised only through integration tests that write real files. `NFR-8` is a scope statement with **[proof: none]**, and nothing pins the case-insensitive match RT-21 depends on | Pure function, two arguments, every branch reachable |
+| — | **`allowed_imports` is not in the `context.yaml` schema.** `docs/architecture/03_system_topology/context_yaml_spec.md` declares `consumes` and `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. `AD-3` was therefore an instruction to add an entry to a key with no reader, which is why it could be marked delivered without happening. Whether the graph package should migrate to `consumes` is an architectural call | `T-ARCH` — the user's, not the agent's |
 
 ## Session Handoff
 

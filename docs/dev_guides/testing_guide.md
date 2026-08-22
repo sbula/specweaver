@@ -264,10 +264,45 @@ pytest tests/unit/validation tests/integration/validation
 ```
 
 ## 9. Pre-Commit Test Gap Analysis
-Before marking a feature as done, run the `/pre-commit-test-gap` workflow (`.agents/workflows/pre-commit-test-gap.md`). This workflow:
-1. Reviews every modified source file line-by-line
-2. Identifies untested branches, guards, and edge cases
-3. Produces a gap table per module
+Before marking a feature as done, run the **`specweaver-pre-commit` skill** and let its Phase 2
+drive the gap analysis (`.agents/skills/specweaver-pre-commit/references/phase-2-test-gap.md`).
+It reads every modified source file line by line, names the untested branches, guards and edge
+cases, and produces a coverage matrix per module.
+
+> This section used to point at `.agents/workflows/pre-commit-test-gap.md`. **No such file, and no
+> such directory** — a pointer that resolves to nothing reports success by never running, which is
+> the same defect class as a rule nothing reads.
+
+### Two questions a coverage matrix cannot answer
+
+Per-function coverage looks identical whether or not these hold, which is why they are asked
+separately rather than left to the matrix:
+
+1. **Is this only ever used in sequence with something else?** Then a test of each end is not a
+   test of the pair. `TECH-056`'s two functions each passed every assertion they had while the
+   composition they exist for could not work. `TECH-068` produced two more: the graph engine wrote
+   the edge kind under one attribute name and the store read another, so 108 persisted edges all
+   took the store's `"CALLS"` fallback; the fix then left the *loader* writing the old name, so a
+   graph read back out of the database could never be written to it again.
+
+2. **Does anything else in the repo do this same job?** Then assert that they **agree**.
+   `TECH-058`'s asymmetry — one whole-suite runner passing `-n auto` and the other not — was
+   plainly visible in both files and in neither test.
+
+**The agreement test is the cheap answer to both.** Hand one half's real output to the other half's
+real reader, and name no key, constant or literal of your own:
+
+```python
+def test_the_loader_and_the_store_name_the_attribute_identically(tmp_path):
+    repo.persist_semantic_digraph(_graph(("a", "b", EdgeKind.EXTENDS)))
+    attrs = repo.load_from_db().edges["a", "b"]      # what one half produced
+    assert _edge_kind("a", "b", attrs) == "EXTENDS"  # read by the other half's own reader
+```
+
+Renaming either side breaks it. An assertion that spells the key itself does not: it pins the
+literal in place and passes for both halves independently, which is exactly how the split above
+survived twenty-two green tests. Two unit tests in `tests/unit/graph/core/store/` asserted
+`edge["type"] == "CALLS"` and had to be repaired for this reason.
 
 ## 10. Coverage Target
 The project aims for **70–90% test coverage**. This balances thorough testing with practical development speed.

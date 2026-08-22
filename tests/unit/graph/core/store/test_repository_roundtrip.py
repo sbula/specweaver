@@ -17,7 +17,7 @@ FR-2's claim is "exact structural duplicates are merged to a single Node ID". Th
 import networkx as nx
 import pytest
 
-from specweaver.graph.core.store.repository import SqliteGraphRepository
+from specweaver.graph.core.store.repository import SqliteGraphRepository, _edge_kind
 
 
 @pytest.fixture
@@ -63,7 +63,10 @@ def test_roundtrip_preserves_nodes_and_edges(repo):
 
     assert g_out.nodes["test_service:ast:123"]["metadata"] == {"key": "val"}
     assert g_out.has_edge("test_service:ast:123", "test_service:ast:456")
-    assert g_out.edges["test_service:ast:123", "test_service:ast:456"]["type"] == "CALLS"
+    # Through the store's own reader rather than a literal key: naming the column's name here is
+    # what pinned the load/persist split in place.
+    edge = g_out.edges["test_service:ast:123", "test_service:ast:456"]
+    assert _edge_kind("test_service:ast:123", "test_service:ast:456", edge) == "CALLS"
 
 
 def test_roundtrip_empty_graph(repo):

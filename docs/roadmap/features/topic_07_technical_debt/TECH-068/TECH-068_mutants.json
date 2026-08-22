@@ -661,6 +661,89 @@
           "breaks": "one language silently stops contributing CALLS edges while every other keeps working, so the graph looks populated and is blind to a whole language -- the composition defect no single language's tests can see"
         }
       ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "A graph read back out of the database can be written to it again",
+      "scope": [
+        "tests/integration/graph/test_the_graph_survives_a_reload.py",
+        "tests/unit/graph/core/store/test_repository_load.py",
+        "tests/unit/graph/core/store/test_repository_roundtrip.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-loader-writes-the-columns-name",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.load_from_db",
+          "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
+          "new": "source_hash, target_hash, metadata=metadata, **{\"type\": edge_type}",
+          "breaks": "the loader restores the kind under the column's name while the store reads EDGE_KIND_ATTR, so every edge load_from_db returns is one persist_semantic_digraph refuses -- a graph read out of the database can never be written back, which is the state TECH-070's incremental rebuild produces on purpose"
+        },
+        {
+          "id": "the-loader-drops-the-kind-entirely",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.load_from_db",
+          "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
+          "new": "source_hash, target_hash, metadata=metadata",
+          "breaks": "a reloaded edge carries no kind at all, so a traversal cannot tell a call from a containment and the next persist refuses the whole graph"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A real build through the shipped command writes typed edges to disk",
+      "scope": [
+        "tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-seam-stops-carrying-calls",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "call_sites = parser.extract_call_sites(code)",
+          "new": "call_sites = {}",
+          "breaks": "the parser still finds every call and the seam drops them all, so the persisted graph holds containment and imports only -- the silent-empty result this ticket exists to remove, and invisible to every test that stops at the engine"
+        },
+        {
+          "id": "import-resolution-always-ghosts",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "resolve_module",
+          "old": "    segments = _module_segments(module)",
+          "new": "    segments = _module_segments(module); return None",
+          "breaks": "every import resolves to a ghost instead of the collected file it names, so the edge COUNT is unchanged and the dependency graph points at nothing -- a shape no assertion on totals can see"
+        },
+        {
+          "id": "stale-edges-are-never-cleared-through-a-real-build",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.persist_semantic_digraph",
+          "old": "            self._clear_edges_of(cursor, set(hash_to_id.values()))",
+          "new": "            pass",
+          "breaks": "a call deleted from a real source file keeps its edge on disk forever, so the phantom dependency set only grows across rebuilds"
+        }
+      ]
+    },
+    {
+      "requirement": "AD-3",
+      "title": "The builder's module-level crossings are the ones its context.yaml declares",
+      "scope": [
+        "tests/unit/graph/core/builder/test_declared_imports.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-approved-crossing-is-undeclared-again",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/context.yaml",
+          "symbol": "allowed_imports",
+          "old": "  - \"specweaver.workspace.ast.adapters\"\n",
+          "new": "  # - \"specweaver.workspace.ast.adapters\"  # MUTANT\n",
+          "breaks": "the import stays and the declaration goes, which is exactly the state AD-3 was approved to fix and sat in undetected for the whole ticket -- tach cannot see it because tach.toml already permits the crossing and the rule lives only in context.yaml"
+        }
+      ]
     }
   ]
 }

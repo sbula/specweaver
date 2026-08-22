@@ -447,7 +447,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"could not run: {args.file} not found in the sandbox", file=sys.stderr)
             return 2
         result = run_one(sandbox, file=args.file, old=args.old, new=args.new, tests=args.tests)
-        if result["verdict"] == "BROKEN":
+        if result["outcome"] == "BROKEN":
             print("BROKEN MUTANT — it does not import, so the run proves nothing.\n")
             print(result["detail"])
             return 2

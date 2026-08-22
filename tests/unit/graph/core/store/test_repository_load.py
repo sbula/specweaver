@@ -7,7 +7,8 @@ import sqlite3
 import networkx as nx
 import pytest
 
-from specweaver.graph.core.store.repository import SqliteGraphRepository
+from specweaver.graph.core.engine.models import EDGE_KIND_ATTR
+from specweaver.graph.core.store.repository import SqliteGraphRepository, _edge_kind
 
 
 @pytest.fixture
@@ -59,7 +60,11 @@ def test_load_happy_path(repo):
     # Verify edges
     assert g_out.has_edge(id_123, id_456)
     edge_data = g_out.edges[id_123, id_456]
-    assert edge_data["type"] == "CALLS"
+    # Read through `EDGE_KIND_ATTR` and the store's own reader, never through a literal key. This
+    # assertion used to name `"type"` -- the COLUMN's name -- and so pinned the very split that
+    # made a loaded graph unpersistable: `_edge_kind` refuses an edge carrying no kind.
+    assert _edge_kind(id_123, id_456, edge_data) == "CALLS"
+    assert EDGE_KIND_ATTR in edge_data
     assert edge_data["metadata"] == {"weight": 1}
 
 

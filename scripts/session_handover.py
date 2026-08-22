@@ -195,6 +195,42 @@ def _all_open_rows() -> list[OpenRow]:
     ]
 
 
+#: A handover past this is not a handover any more. Generous -- a rich one runs a few KB.
+_MAX_BYTES = 256 * 1024
+#: Below this many non-blank lines, repetition is ordinary prose rather than rot.
+_MIN_LINES_TO_JUDGE = 400
+#: Under this share of distinct lines, the file is a loop's output rather than a document.
+_MIN_DISTINCT_RATIO = 0.2
+
+
+def degenerate_reason(text: str) -> str | None:
+    """Why this handover has stopped being readable, or None when it is fine.
+
+    Measured 2026-08-22: this file held **23 MB across 332,068 lines with 122 distinct ones** -- one
+    section repeated about ten thousand times, several copies corrupted mid-line, and the content it
+    buried was months stale. `.tmp/` is gitignored, so no diff, no gate and no human ever saw it.
+
+    `splice` did not cause it and this does not imply otherwise: verified against the real file --
+    one marker pair, and a re-run changed zero bytes. The point is narrower. This tool writes the
+    file at every commit boundary, so it is the only thing positioned to notice when the file has
+    rotted underneath it, and a scratch file nobody reads rots in complete silence.
+
+    Reports; never blocks. Refusing to write would strand a commit boundary on a gitignored scratch
+    file, which is a worse outcome than the rot it is warning about.
+    """
+    size = len(text.encode("utf-8"))
+    if size > _MAX_BYTES:
+        return f"{size:,} bytes -- far larger than a handover anybody reads"
+
+    lines = [line for line in text.splitlines() if line.strip()]
+    if len(lines) < _MIN_LINES_TO_JUDGE:
+        return None
+    distinct = len(set(lines))
+    if distinct / len(lines) < _MIN_DISTINCT_RATIO:
+        return f"{len(lines):,} lines and only {distinct:,} distinct -- it is repeating itself"
+    return None
+
+
 def splice(existing: str, block: str) -> str:
     """Replace the generated block, returning everything else unchanged.
 
@@ -387,8 +423,20 @@ def main(argv: list[str] | None = None) -> int:
     HANDOVER.parent.mkdir(parents=True, exist_ok=True)
     HANDOVER.write_text(updated, encoding="utf-8")
     verb = "updated" if existing is not TEMPLATE else "created"
-    print(f"handover {verb}: {HANDOVER.relative_to(REPO_ROOT)}")
+    # Relative when it sits under the repo, absolute otherwise. `relative_to` RAISES on a path
+    # outside the root rather than returning something absolute, so the fallback is required, not
+    # decorative -- it is what lets this run against a handover anywhere.
+    try:
+        shown: Path | str = HANDOVER.relative_to(REPO_ROOT)
+    except ValueError:
+        shown = HANDOVER
+    print(f"handover {verb}: {shown}")
     print("  the human sections were not touched — fill them in yourself")
+
+    rot = degenerate_reason(updated)
+    if rot:
+        print(f"\n  WARNING: this handover is {rot}.")
+        print("  Rewrite the human sections by hand; the generated block is not the problem.")
     return 0
 
 

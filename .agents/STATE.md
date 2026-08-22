@@ -50,6 +50,12 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | `decision_citations` gate | Reads every design against §2 and ratchets what does not account for it. The trigger list is read from `PRINCIPLES.md`, so adding one stays a single-place edit |
 | `TECH-068` designed | Design APPROVED 2026-08-21. Five sub-features, 16 FRs, none planned yet. The review found two persistence defects the ticket now owns: an edge with no kind defaults to `CALLS`, and an edge the rebuilt graph drops is never deleted — both unreachable until `CALLS` lands, both then permanent |
 | `TECH-068` SF-01 delivered | Both edge-write traps closed. `FR-14` was firing, not latent: a real build stored 108 edges typed `CALLS` where every one was `CONTAINS`, because the engine wrote `kind` and the store read `type`. The attribute is named once now. Stale edges are cleared before each write. 20 new tests, 5 killed mutants — the graph's first corpus |
+| `TECH-068` SF-02…SF-05 delivered | The seam carries imports, supertypes and call sites; `EXTENDS`/`IMPLEMENTS` told apart across five languages; `CALLS` from upstream tags queries where they ship and from queries written here where they do not. Measured on `src/specweaver`, 358 files in 2.71s: **9106 `CALLS`, 2705 `CONTAINS`, 2274 `IMPORTS`, 341 `EXTENDS`**, 989 ghosts. `NFR-1` 22.7s against a 60s budget |
+| `TECH-068` pre-commit, retrospectively | **The skill was never invoked across the ticket's seventeen boundaries** — its commands were run in its place, so Phases 1, 2, 3 and 7 never happened. Run once over the whole session, it found three defects and an unexecuted decision. Two were introduced by the ticket's own work |
+| The loader could not be re-read | `SF-01` taught the store to refuse a kindless edge and left `load_from_db` writing the column's name, so a graph read out of the database could never be written back. Nil on the shipped path by accident — `purge_stale_entries` hides it — and directly in `TECH-070`'s way |
+| `AD-3` executed, four weeks late | Approved 2026-08-21, never done; `SF-02` shipped marked `Committed ✅` with it among its Outputs, and its plan never scheduled it. Root cause: **`allowed_imports` is not in the `context.yaml` schema and nothing read it.** Declared, imports lifted, two ledger rows, and a guardrail test that ships with it |
+| The first real assertion on `graph_edges` | Nothing had ever driven a real parse through to a persisted edge — the polyglot test stops at the engine, the persist test hand-builds nodes, the only real `build_target` test counts nodes. 23 tests added this boundary, every one probed; `_clear_edges_of` went from 1 test protecting it to 6 |
+| The handover had rotted to 23 MB | 332,068 lines, **122 of them distinct** — one section repeated ~10,000 times, some copies corrupted mid-line, burying content months stale. `.tmp/` is gitignored, so no diff and no gate ever saw it. `session_handover.py` was cleared by measurement, not assumption: one marker pair, a re-run changing zero bytes. It now warns when the file it writes has stopped being readable |
 | `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
 | Nightly mutation, clear | Gate `CLEAR` for the first time in the session: 67 judged, 67 protected, 0 unprotected, 0 unmeasured. `TECH-049` and `TECH-056` corpora re-anchored onto the code the vocabulary refactor moved — the five blocking findings were drift, not gaps |
@@ -66,6 +72,18 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 - **No non-stub design accounts for the §2 triggers.** 127 of them, and `decision_citations` is ratcheted there:
   the count can fall but not rise, so nothing forces the backlog down. A design gains its
   `Decisions taken with the user` section when somebody next opens it.
+- **Four `TECH-068` findings are open and unscheduled**, recorded in its design's *Retrospective
+  Pre-Commit Gate* section: `FR-12`'s ghost edges carry no raw name (so `NFR-5` is vacuously true);
+  Go and Rust report no supertypes though both have the concept, and the contract test passes over
+  them vacuously; `BaseTreeSitterParser._supertypes_of` is unreachable; `resolve_module` has no unit
+  tests, so nothing pins the case-insensitive match RT-21 depends on. Building or descoping the
+  first two changes what the product emits — the user's call, not the agent's.
+
+- **`allowed_imports` is a rule nothing reads.** `context_yaml_spec.md` declares `consumes` and
+  `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. One
+  test now enforces it for `graph/core/builder`. Whether the package migrates to `consumes` is
+  `T-ARCH`.
+
 - **`A-SENS-02`** is the last open item in `US-11`'s Core MVS. Its grilling has three unanswered
   questions. **It is not the next thing** — the set-back capabilities above are.
 

@@ -645,3 +645,75 @@ class TestCrashMessageIsPlainText:
         assert mut.killer_records(log)[0]["message"] == (
             "AssertionError: assert '0.0.0.0' == '127.0.0.1'"
         )
+
+
+class TestMainReadsTheKeyRunOneReturns:
+    """`main` and `run_one` are the two halves of one call, and only the pair is the claim.
+
+    `run_one` returns its judgement under `outcome`; `main` read it under `verdict`, so the
+    command-line path raised `KeyError` on **every** invocation and never reached a verdict at all.
+    Both halves were self-consistent — the rename in `e98777ea` moved the producer and missed this
+    one consumer — and neither half's own tests could see it, because no test called `main`.
+
+    The library path stayed healthy the whole time, which is why the campaign runner works and the
+    documented `python scripts/_mutate.py --file ... --old ... --new ...` does not. That is the
+    `TECH-056` shape: two green halves and a composition that cannot run.
+    """
+
+    def _fake_result(self, outcome: str) -> dict[str, object]:
+        return {
+            "outcome": outcome,
+            "killers": [],
+            "killer_records": [],
+            "detail": "it does not import",
+            "code": 1,
+        }
+
+    def test_main_reports_a_broken_mutant_instead_of_raising(
+        self, mut: ModuleType, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Graceful degradation: a mutant that does not import must be SAID, not raised."""
+        monkeypatch.setattr(mut, "_build_sandbox", lambda _sandbox: None)
+        monkeypatch.setattr(Path, "is_file", lambda _self: True)
+        monkeypatch.setattr(mut, "run_one", lambda *a, **k: self._fake_result("BROKEN"))
+
+        code = mut.main(["--file", "src/x.py", "--old", "a", "--new", "b"])
+
+        assert code == 2
+        assert "BROKEN MUTANT" in capsys.readouterr().out
+
+    def test_main_reports_the_tests_that_objected(
+        self, mut: ModuleType, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Happy path: the verdict the tool exists to print must actually reach the terminal.
+
+        The killer list is what `main` re-derives its own headline from, so a run with one is the
+        only shape that exercises the reporting path rather than the empty-set message.
+        """
+        monkeypatch.setattr(mut, "_build_sandbox", lambda _sandbox: None)
+        monkeypatch.setattr(Path, "is_file", lambda _self: True)
+        killed = {**self._fake_result("KILLED"), "killers": ["tests/a.py::test_x"]}
+        monkeypatch.setattr(mut, "run_one", lambda *a, **k: killed)
+
+        mut.main(["--file", "src/x.py", "--old", "a", "--new", "b"])
+
+        out = capsys.readouterr().out
+        assert "tests/a.py::test_x" in out
+        assert "1 test(s) objected" in out
+
+    def test_every_key_main_reads_is_one_run_one_returns(self, mut: ModuleType) -> None:
+        """The agreement test, stated once so a future rename cannot repeat the split.
+
+        Names no key of its own: it takes `run_one`'s declared shape and asserts `main` reaches for
+        nothing outside it.
+        """
+        import inspect
+        import re
+
+        source = inspect.getsource(mut.main)
+        read = set(re.findall(r'result\[\s*"([a-z_]+)"\s*\]', source))
+
+        assert read, "no `result[...]` access found — this test no longer watches anything"
+        assert read <= set(self._fake_result("SURVIVED")), (
+            f"`main` reads keys `run_one` does not return: {sorted(read - set(self._fake_result('x')))}"
+        )

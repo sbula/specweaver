@@ -118,6 +118,36 @@ def test_another_services_edges_are_untouched(tmp_path: Path) -> None:
     assert ("p", "q") in _edges(db)
 
 
+def test_an_edge_whose_kind_changed_leaves_one_row_not_two(tmp_path: Path) -> None:
+    """Boundary: `type` is part of the primary key, so a changed kind is a NEW row.
+
+    `INSERT OR REPLACE` cannot replace `(a, b, CALLS)` with `(a, b, IMPORTS)` -- the keys differ,
+    so both survive and the pair contradicts itself: one edge carrying two kinds, which the
+    in-memory engine cannot even represent. The clear is what collapses it.
+
+    Found by the red team asking whether a SET comparison could see duplication. It cannot, and the
+    e2e that owns the rebuild claim compares real rows now -- but this state is not reachable from
+    a source edit, because a given pair's kind does not change in practice. So the claim is proven
+    here, where it can be built, rather than left to a scenario that cannot produce it.
+    """
+    db = str(tmp_path / "g.db")
+    repo = SqliteGraphRepository(db, "svc")
+
+    engine = InMemoryGraphEngine()
+    for name in ("a", "b"):
+        engine.upsert_node(
+            GraphNode(semantic_hash=name, kind=NodeKind.PROCEDURE, name=name, file_id=f"{name}.py")
+        )
+    engine.upsert_edge(GraphEdge(source_hash="a", target_hash="b", kind=EdgeKind.CALLS))
+    repo.persist_semantic_digraph(engine.export_semantic_digraph())
+
+    engine.upsert_edge(GraphEdge(source_hash="a", target_hash="b", kind=EdgeKind.IMPORTS))
+    repo.persist_semantic_digraph(engine.export_semantic_digraph())
+
+    kinds = [row[0] for row in sqlite3.connect(db).cursor().execute("SELECT type FROM graph_edges")]
+    assert kinds == ["IMPORTS"], f"the old kind survived alongside the new one: {kinds}"
+
+
 def test_a_purged_file_leaves_no_edges_behind(tmp_path: Path) -> None:
     """Composition: node tombstoning and edge deletion must agree, not fight.
 

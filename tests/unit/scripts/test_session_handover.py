@@ -185,3 +185,80 @@ class TestNeedsYou:
 
         assert "9" in block
         assert "git push" in block
+
+
+class TestDegenerate:
+    """A handover that has rotted must say so, because nothing else will look at it.
+
+    Measured 2026-08-22: `.tmp/HANDOVER.md` held **23 MB across 332,068 lines with 122 distinct
+    ones** — one section repeated roughly ten thousand times, some copies corrupted mid-line. It had
+    been that way for an unknown number of sessions. `.tmp/` is gitignored, so no diff, no gate and
+    no reader ever saw it, and the content it buried was months stale.
+
+    `splice` was not the cause and this does not accuse it: verified on the real file, one marker
+    pair and a re-run changing zero bytes. The point is that a file this tool writes on every commit
+    boundary can rot underneath it in silence, and the tool is the only thing positioned to notice.
+    """
+
+    def test_a_normal_handover_is_not_flagged(self, ho: ModuleType) -> None:
+        """The control, and the one that matters: a false alarm here trains people to ignore it."""
+        text = "# Handover\n\n" + "\n".join(f"- a real and distinct line {i}" for i in range(200))
+
+        assert ho.degenerate_reason(text) is None
+
+    def test_a_short_repetitive_handover_is_not_flagged(self, ho: ModuleType) -> None:
+        """Boundary: real handovers repeat themselves — blank lines, list markers, headings.
+
+        Repetition only means rot at scale, so the guard must not fire on a small file that happens
+        to say the same thing twice.
+        """
+        text = "# Handover\n\n" + "\n".join(["- the same line"] * 30)
+
+        assert ho.degenerate_reason(text) is None
+
+    def test_the_real_shape_that_rotted_is_flagged(self, ho: ModuleType) -> None:
+        """Happy path for the guard: thousands of lines, almost none of them distinct."""
+        section = ["## `TECH-068` — a section", "", "Some prose about it.", ""]
+        text = "# Handover\n\n" + "\n".join(section * 3000)
+
+        reason = ho.degenerate_reason(text)
+        assert reason is not None
+        assert "distinct" in reason
+
+    def test_an_enormous_handover_is_flagged_even_if_every_line_differs(
+        self, ho: ModuleType
+    ) -> None:
+        """Boundary: size alone is enough. Nobody reads a megabyte of handover, distinct or not."""
+        text = "# Handover\n\n" + "\n".join(f"- distinct line number {i}" for i in range(60000))
+
+        reason = ho.degenerate_reason(text)
+        assert reason is not None
+        assert "large" in reason.lower() or "bytes" in reason.lower()
+
+    def test_an_empty_handover_is_not_flagged(self, ho: ModuleType) -> None:
+        """Hostile: nothing to divide by. A ratio guard that raises on the empty case is a new bug."""
+        assert ho.degenerate_reason("") is None
+        assert ho.degenerate_reason("   \n\n  \n") is None
+
+    def test_main_warns_rather_than_refusing_to_write(
+        self,
+        ho: ModuleType,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Graceful degradation: the warning must not cost the user the run.
+
+        Blocking here would strand the boundary on a gitignored scratch file, which is worse than
+        the rot. It reports and writes.
+        """
+        handover = tmp_path / "HANDOVER.md"
+        handover.write_text("# Handover\n\n" + "\n".join(["## same"] * 12000), encoding="utf-8")
+        monkeypatch.setattr(ho, "HANDOVER", handover)
+        monkeypatch.setattr(ho, "render_state", lambda **_: "## State\n\n- nothing")
+
+        code = ho.main([])
+
+        assert code == 0
+        assert "distinct" in capsys.readouterr().out
+        assert "## State" in handover.read_text(encoding="utf-8")

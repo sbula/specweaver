@@ -2,6 +2,12 @@ module_name: "specweaver.graph.core.builder"
 description: "Application Orchestration layer. Builds graphs from files and syncs with the store."
 layer: "Application"
 allowed_imports:
+  # AD-3 (TECH-068, approved 2026-08-21). The dependency direction is already correct --
+  # `builder` is Application and `adapters` is Domain -- and the import already existed; it was
+  # only ever undeclared and hidden inline, which is the recorded "hiding dependencies via
+  # inline imports" anti-pattern. `tach` cannot see it: `tach.toml` permits the crossing and the
+  # archetype rule lives only here.
+  - "specweaver.workspace.ast.adapters"
   - "specweaver.graph.core.engine"
   - "specweaver.graph.core.store"
   - "specweaver.commons"

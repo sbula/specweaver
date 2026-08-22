@@ -26,6 +26,41 @@ class GraphEngineProtocol(Protocol):
     def clear_cache(self) -> None: ...
 ```
 
+## Every Edge Carries Its Kind
+
+An edge's kind lives on the networkx edge attribute named by `EDGE_KIND_ATTR`, which the engine, the
+store and the loader all import rather than spell. It is one of the nine `EdgeKind` members; the
+store **refuses** an edge that carries no kind rather than supplying one.
+
+```python
+from specweaver.graph.core.engine.models import EDGE_KIND_ATTR
+from specweaver.graph.core.engine.ontology import EdgeKind
+
+graph = engine.export_semantic_digraph()
+calls = [
+    (u, v) for u, v, data in graph.edges(data=True)
+    if data.get(EDGE_KIND_ATTR) == EdgeKind.CALLS.value
+]
+```
+
+Never read the attribute by literal name. The `graph_edges` **column** is called `type` because it
+is part of the primary key, and reading the column's name off a graph is what caused the two
+`TECH-068` defects the anti-patterns list records.
+
+A build of `src/specweaver` (358 files) produces roughly **9,100 `CALLS`, 2,700 `CONTAINS`, 2,270
+`IMPORTS` and 340 `EXTENDS`** edges, plus about 990 ghosts.
+
+## Ghost Targets Are Answers, Not Failures
+
+An edge whose target is not something the build parsed still exists, pointing at a `GHOST` node. So
+a traversal returning nothing means *nothing depends on this*, and never *what depends on it was
+outside what we parsed*. Ambiguity ghosts too: a name declared in two files is not one thing, and a
+reader following an invented dependency is worse served than one seeing a visible unknown.
+
+Ghost namespaces are separate per kind — a module, a type and a procedure sharing a name are three
+different unknowns. See `docs/dev_guides/ontology_mapping.md` for the resolution rules and for the
+one known gap: the unresolved raw name does not yet reach the edge's metadata.
+
 ## Basic Subgraph Querying
 The most common operation is extracting a localized subgraph around a specific node (e.g., a modified file or a newly discovered function) using its semantic hash.
 
