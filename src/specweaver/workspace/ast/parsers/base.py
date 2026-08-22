@@ -124,8 +124,16 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
             if node.type not in self.TYPE_DECLARATION_NODES:
                 continue
             name = self._declared_type_name(node)
-            if name:
-                found[name] = self._supertypes_of(node)
+            if not name:
+                continue
+            # MERGED, not assigned. One type can be declared across several nodes -- Rust spreads
+            # `Impl` over `struct Impl;` and every `impl Trait for Impl` block -- and assigning let
+            # whichever node the walk reached last silently erase the others. The walk order is an
+            # implementation detail of this loop, so the result was not even stable.
+            entry = found.setdefault(name, {"extends": [], "implements": []})
+            for kind, supertypes in self._supertypes_of(node).items():
+                seen = entry.setdefault(kind, [])
+                seen.extend(s for s in supertypes if s not in seen)
         return found
 
     # `field_identifier` is how C and C++ spell a member's name; it appears in no other

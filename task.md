@@ -24,11 +24,11 @@ Both are declared FRs of an open ticket that were never fully built. No new tick
 - [x] 2 — Mapper puts the unresolved raw name on every ghost edge (imports, supertypes, calls) — `mapper.py` / `test_ghost_raw_names.py`
 - [x] 3 — The raw name is capped so a pathological identifier cannot abort a build (`NFR-5`, `NFR-6`) — `mapper.py`, `models.py`
 - [x] **CB-1 — FR-12: an unresolved target says what it was**
-- [ ] 4 — `extract_supertypes` MERGES per name instead of overwriting — `base.py` / `test_supertypes.py`
-- [ ] 5 — Go reports struct and interface embedding as extension — `go/codestructure.py` / `test_go_supertypes.py`
-- [ ] 6 — Rust reports `impl T for X` as implementation and `trait A: B` as extension — `rust/codestructure.py` / `test_rust_supertypes.py`
-- [ ] 7 — The contract test names every shipped parser explicitly, so an empty result is a declared exemption rather than a loop that never runs — `test_every_parser_answers_the_contract.py`
-- [ ] **CB-2 — FR-4: every language answers the supertype contract**
+- [x] 4 — `extract_supertypes` MERGES per name instead of overwriting — `base.py` / `test_supertypes.py`
+- [x] 5 — Go reports struct and interface embedding as extension — `go/codestructure.py` / `test_go_supertypes.py`
+- [x] 6 — Rust reports `impl T for X` as implementation and `trait A: B` as extension — `rust/codestructure.py` / `test_rust_supertypes.py`
+- [x] 7 — The contract test names every shipped parser explicitly, so an empty result is a declared exemption rather than a loop that never runs — `test_every_parser_answers_the_contract.py`
+- [x] **CB-2 — FR-4: every language answers the supertype contract**
 - [ ] 8 — The adapter treats a declared type as a type, so Go and Rust types are indexable targets — `graph_adapter.py` / seam tests
 - [ ] 9 — Go and Rust hierarchies resolve to real nodes in a real build — integration + e2e
 - [ ] **CB-3 — FR-9 / FR-10: the hierarchy is traversable in every language**

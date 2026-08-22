@@ -16,10 +16,58 @@ from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 logger = logging.getLogger(__name__)
 
 
+def _embedded_nodes(body: typing.Any | None) -> list[typing.Any]:
+    """The nodes a struct or interface body embeds, in source order.
+
+    A struct embed is a `field_declaration` carrying a type and **no** `field_identifier`. That
+    missing name is the entire difference between `Base` and `Y int`; without the check, every
+    field's type would be reported as a supertype. An interface embed is a `type_elem`, which is
+    what separates it from the `method_elem`s beside it.
+
+    Module level, and returning nodes rather than names, because it needs nothing from the parser.
+    """
+    if body is None:
+        return []
+    found: list[typing.Any] = []
+    for holder in body.children:
+        children = holder.children if holder.type == "field_declaration_list" else [holder]
+        for node in children:
+            embedded = node.type == "field_declaration" and not any(
+                c.type == "field_identifier" for c in node.children
+            )
+            if embedded or node.type == "type_elem":
+                found.append(node)
+    return found
+
+
 class GoCodeStructure(FunctionBasedParser):
     """Go tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_go.language)
+
+    # `type_spec` is the shared shape: `type Impl struct {...}` and `type R interface {...}` are
+    # both a `type_declaration` wrapping one, so naming the wrapper would need two entries and
+    # naming the spec needs one.
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("type_spec",)
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """What this type embeds. Embedding is reported as EXTENSION.
+
+        Settled with the user 2026-08-22, against minting a tenth `EdgeKind`. Go embedding is
+        composition with method promotion rather than inheritance -- but the ontology defines
+        extension as "A is built from B", which is what embedding does, and a new kind is a change
+        every reader inherits including the ones not built yet.
+
+        `implements` is empty and always will be. Go's interface satisfaction is structural and
+        implicit: no syntax expresses it, so no AST can report it. That is the language, not a gap.
+        """
+        # `_find_type_body` already answers this — it was written for symbol editing and does the
+        # identical job. Inlining the same two-branch check beside it would be one behaviour
+        # spelled twice, which is how this ticket's worst defects started.
+        names = [
+            n for e in _embedded_nodes(self._find_type_body(node)) for n in self._type_names_in(e)
+        ]
+        return {"extends": names, "implements": []}
 
     TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_go.TAGS_QUERY
     CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (

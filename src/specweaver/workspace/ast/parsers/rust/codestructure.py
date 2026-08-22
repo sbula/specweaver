@@ -15,8 +15,59 @@ from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 logger = logging.getLogger(__name__)
 
 
+def _bare(name: str) -> str:
+    """`crate::traits::Tr` is `Tr`.
+
+    Resolution indexes bare declared names, so a full path could never match an index key and would
+    ghost even when the trait is right there in the parsed set. `_index_procedures` takes the last
+    segment for the same reason.
+    """
+    return name.rsplit("::", 1)[-1]
+
+
 class RustCodeStructure(FunctionBasedParser):
     grammar = staticmethod(tree_sitter_rust.language)
+
+    # Every node that declares or extends a type. `impl_item` is here because an impl block is
+    # where Rust records what a type implements -- the type's own declaration never mentions it.
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "struct_item",
+        "enum_item",
+        "union_item",
+        "trait_item",
+        "impl_item",
+    )
+
+    def _declared_type_name(self, node: typing.Any) -> str | None:
+        """The type a node is ABOUT.
+
+        Rust is the one language here where that is not the first identifier. In
+        `impl Runner for Impl` both `Runner` and `Impl` are direct children, and the shared
+        implementation takes the first -- which would key the entry under the TRAIT and have the
+        graph assert `Runner implements Runner`: wrong, and self-consistent enough to survive a
+        careless read.
+        """
+        if node.type != "impl_item":
+            return super()._declared_type_name(node)
+        return self._impl_type_name(node)
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """Rust's grammar separates the two kinds, so neither has to be guessed.
+
+        `impl Trait for Type` is implementation. `trait A: B` is extension -- a supertrait bound
+        really is one trait built on another. An inherent `impl Type` is neither.
+        """
+        # Field-addressed, not positional. `impl_item` names both halves — `trait` and `type` —
+        # and `trait_item` names its `bounds`, so nothing here has to count children or find the
+        # `for` keyword. Kotlin's call query is positional only because that grammar exposes no
+        # fields; where fields exist they are the robust way to ask.
+        if node.type == "impl_item":
+            traits = self._type_names_in(node.child_by_field_name("trait"))
+            return {"extends": [], "implements": [_bare(t) for t in traits]}
+        if node.type == "trait_item":
+            bounds = self._type_names_in(node.child_by_field_name("bounds"))
+            return {"extends": [_bare(b) for b in bounds], "implements": []}
+        return {"extends": [], "implements": []}
 
     TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_rust.TAGS_QUERY
     CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
@@ -79,16 +130,17 @@ class RustCodeStructure(FunctionBasedParser):
         return True
 
     def _impl_type_name(self, impl_item: typing.Any) -> str | None:
-        """The type an `impl` block is for, unwrapping a generic to its base identifier."""
-        type_node = impl_item.child_by_field_name("type")
-        if not type_node:
-            return None
-        if type_node.type == "type_identifier":
-            return self._text_of(type_node)
-        if type_node.type == "generic_type":
-            base = next(self._children_of_type(type_node, "type_identifier"), None)
-            return self._text_of(base) if base else None
-        return None
+        """The type an `impl` block is for, unwrapped to its base identifier.
+
+        Handled by `_type_names_in`, which already skips type arguments, so `Vec<T>` is `Vec` and
+        `&Foo` is `Foo`. The hand-rolled version this replaces knew `type_identifier` and
+        `generic_type` and returned None for every other shape — `impl A for &Foo` scoped its
+        methods to nothing, and `FR-4` would have reported no subject for it at all.
+
+        `_bare` because a path cannot match the bare declared names resolution indexes.
+        """
+        names = self._type_names_in(impl_item.child_by_field_name("type"))
+        return _bare(names[0]) if names else None
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         """The `impl` type a function lives in — Rust's equivalent of a method's class."""
