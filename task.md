@@ -29,9 +29,9 @@ Both are declared FRs of an open ticket that were never fully built. No new tick
 - [x] 6 — Rust reports `impl T for X` as implementation and `trait A: B` as extension — `rust/codestructure.py` / `test_rust_supertypes.py`
 - [x] 7 — The contract test names every shipped parser explicitly, so an empty result is a declared exemption rather than a loop that never runs — `test_every_parser_answers_the_contract.py`
 - [x] **CB-2 — FR-4: every language answers the supertype contract**
-- [ ] 8 — The adapter treats a declared type as a type, so Go and Rust types are indexable targets — `graph_adapter.py` / seam tests
-- [ ] 9 — Go and Rust hierarchies resolve to real nodes in a real build — integration + e2e
-- [ ] **CB-3 — FR-9 / FR-10: the hierarchy is traversable in every language**
+- [x] 8 — The adapter treats a declared type as a type, so Go and Rust types are indexable targets — `graph_adapter.py` / seam tests
+- [x] 9 — Go and Rust hierarchies resolve to real nodes in a real build — integration + e2e
+- [x] **CB-3 — FR-9 / FR-10: the hierarchy is traversable in every language**
 
 ## Decisions taken with the user
 

@@ -230,6 +230,30 @@ def test_an_unresolved_dependency_says_what_it_could_not_find(tmp_path: Path) ->
     assert "Base" in named, f"the unresolved supertype was not named: {sorted(named)}"
 
 
+def test_a_go_hierarchy_resolves_through_the_shipped_command(tmp_path: Path) -> None:
+    """Happy path for FR-9 in a language the curly-brace assumptions do not fit.
+
+    Go declares no `extends` anywhere, its parser returns no framework markers, and until this
+    boundary every Go type reached the graph classified as a PROCEDURE — so a Go dependency could
+    only ever point at a ghost, however well the parser read the source. This is the assertion that
+    the whole chain now says otherwise, run the way a user runs it.
+    """
+    project = _project(
+        tmp_path,
+        {
+            "src/base.go": "package m\ntype Base struct {\n\tX int\n}\n",
+            "src/impl.go": "package m\ntype Impl struct {\n\tBase\n\tY int\n}\n",
+        },
+    )
+
+    _build(project)
+
+    extends = {(s, t) for s, t, kind in _edges(project) if kind == EdgeKind.EXTENDS.value}
+    assert any(s.endswith("impl.go") and t.endswith("base.go") for s, t in extends), (
+        f"the Go embed did not resolve to the collected file: {extends}"
+    )
+
+
 def test_an_unreadable_file_does_not_cost_the_other_files_their_edges(tmp_path: Path) -> None:
     """Hostile: a directory wearing a source file's name must not take the build down.
 

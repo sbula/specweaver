@@ -99,8 +99,16 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         return ast_data
 
     for symbol in symbols:
-        # If 'extends' is present, the parser identified it as a class
-        is_class = "extends" in markers.get(symbol, {})
+        # A name `extract_supertypes` reports IS a type — that method walks type declarations and
+        # nothing else, so its keys are the parser's own answer to "is this a type". The older test,
+        # an `extends` key in the framework markers, only appears where a language happens to
+        # populate them: Go returns `{}` from that method, so every Go struct and interface was
+        # classified a PROCEDURE. `_index_types` indexes types only, so nothing Go declared could
+        # ever be the target of anybody's supertype edge, however well the parser reported them.
+        #
+        # Both tests are kept. The markers path still classifies languages whose types carry no
+        # supertype entry, and dropping it would reclassify them the other way.
+        is_class = symbol in supertypes or "extends" in markers.get(symbol, {})
         node_type = "class_definition" if is_class else "function_definition"
         ast_data["children"].append(
             {
