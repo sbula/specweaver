@@ -55,6 +55,9 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | The loader could not be re-read | `SF-01` taught the store to refuse a kindless edge and left `load_from_db` writing the column's name, so a graph read out of the database could never be written back. Nil on the shipped path by accident — `purge_stale_entries` hides it — and directly in `TECH-070`'s way |
 | `AD-3` executed, four weeks late | Approved 2026-08-21, never done; `SF-02` shipped marked `Committed ✅` with it among its Outputs, and its plan never scheduled it. Root cause: **`allowed_imports` is not in the `context.yaml` schema and nothing read it.** Declared, imports lifted, two ledger rows, and a guardrail test that ships with it |
 | The first real assertion on `graph_edges` | Nothing had ever driven a real parse through to a persisted edge — the polyglot test stops at the engine, the persist test hand-builds nodes, the only real `build_target` test counts nodes. 23 tests added this boundary, every one probed; `_clear_edges_of` went from 1 test protecting it to 6 |
+| Ghost edges say what they are | `FR-12` promised the unresolved raw name in edge metadata and delivered `{}`; three of the four links were already right and the engine dropped it. `os.getcwd` and `mystery_call` are two different ghosts again. Oversized identifiers truncate rather than abort a build |
+| Go and Rust joined the supertype contract | Both returned `{}` and the contract test looped over it, so the gap read as coverage. Go embedding is `EXTENDS` (**the user's call**, over a tenth `EdgeKind`); Rust separates `impl T for X` from `trait A: B` cleanly. Building it exposed that every Go type reached the graph classified as a PROCEDURE, so no Go hierarchy could ever resolve — classification now reads the parser's own answer |
+| Two limits recorded, not crossed | A reload drops every ghost edge (`load_from_db` filters on `is_active`, ghosts are stored inactive) — a tested decision, so `T-DIVERGE`. And a Rust trait is not a symbol, so `IMPLEMENTS` always ghosts; both have tests pinning the present behaviour |
 | The handover had rotted to 23 MB | 332,068 lines, **122 of them distinct** — one section repeated ~10,000 times, some copies corrupted mid-line, burying content months stale. `.tmp/` is gitignored, so no diff and no gate ever saw it. `session_handover.py` was cleared by measurement, not assumption: one marker pair, a re-run changing zero bytes. It now warns when the file it writes has stopped being readable |
 | `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
@@ -72,12 +75,12 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 - **No non-stub design accounts for the §2 triggers.** 127 of them, and `decision_citations` is ratcheted there:
   the count can fall but not rise, so nothing forces the backlog down. A design gains its
   `Decisions taken with the user` section when somebody next opens it.
-- **Four `TECH-068` findings are open and unscheduled**, recorded in its design's *Retrospective
-  Pre-Commit Gate* section: `FR-12`'s ghost edges carry no raw name (so `NFR-5` is vacuously true);
-  Go and Rust report no supertypes though both have the concept, and the contract test passes over
-  them vacuously; `BaseTreeSitterParser._supertypes_of` is unreachable; `resolve_module` has no unit
-  tests, so nothing pins the case-insensitive match RT-21 depends on. Building or descoping the
-  first two changes what the product emits — the user's call, not the agent's.
+- **Four `TECH-068` findings remain**, recorded in its design's *Retrospective Pre-Commit Gate*
+  section. Two are chores: `BaseTreeSitterParser._supertypes_of` is unreachable, and
+  `resolve_module` has no unit tests so nothing pins the case-insensitive match RT-21 depends on.
+  Two are decisions: a **reload drops every ghost edge** (`T-DIVERGE` — a tested decision, and the
+  one `TECH-070` walks into), and a **Rust trait is not a symbol**, so `IMPLEMENTS` always ghosts.
+  The two the user chose to build on 2026-08-22 are closed.
 
 - **`allowed_imports` is a rule nothing reads.** `context_yaml_spec.md` declares `consumes` and
   `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. One
