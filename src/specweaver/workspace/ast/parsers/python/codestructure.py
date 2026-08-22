@@ -29,6 +29,12 @@ class PythonCodeStructure(ClassBasedParser):
         bases = next((c for c in node.children if c.type == "argument_list"), None)
         return {"extends": self._type_names_in(bases), "implements": []}
 
+    TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_python.TAGS_QUERY
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "function_definition",
+        "class_definition",
+    )
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

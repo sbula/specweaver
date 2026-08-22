@@ -115,6 +115,10 @@ def test_the_census_finds_the_known_offenders() -> None:
     # test exists to catch `measure` collapsing to nothing, not to pin a debt number that reduction
     # work is meant to shrink. The named-class assertion below is the real anti-collapse guard.
     assert len(current) >= 2, f"expected the known offenders, found {len(current)}"
-    assert any("BaseTreeSitterParser" in name for name in current), (
+    # A NAMED class, not just a count: without one this degrades into the length check above, which
+    # the comment there calls insufficient on purpose. `BaseTreeSitterParser` held the role until
+    # `TECH-068` gave it methods sharing its parser and language, which made it cohesive and dropped
+    # it from the census legitimately. `TopologyGraph` is the canary now, outside that ticket's reach.
+    assert any("TopologyGraph" in name for name in current), (
         "the most incohesive class in the repo is missing from the census"
     )

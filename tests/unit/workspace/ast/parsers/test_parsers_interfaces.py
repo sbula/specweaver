@@ -38,6 +38,9 @@ def test_code_structure_interface_enforces_abstract_methods() -> None:  # noqa: 
         def extract_supertypes(self, code: str) -> dict[str, dict[str, list[str]]]:
             return {}
 
+        def extract_call_sites(self, code: str) -> dict[str, list[str]]:
+            return {}
+
         def extract_imports(self, code: str) -> list[str]:
             return []
 

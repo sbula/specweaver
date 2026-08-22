@@ -64,6 +64,49 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
         """Tree-sitter query for extracting comments/trace tags."""
 
+    # The grammar's own tags query, when it ships one. A module constant, so reading it is an
+    # import rather than file I/O and this boundary stays pure-logic.
+    TAGS_QUERY: typing.ClassVar[str | None] = None
+
+    # Declarations a call can sit inside. Joined outward, so a method's calls are attributed to
+    # `Impl.go` and not `go` — the node hash is built from the qualified name.
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = ()
+
+    def extract_call_sites(self, code: str) -> dict[str, list[str]]:
+        """What each symbol calls, from the grammar's tags query."""
+        if not code.strip() or not self.TAGS_QUERY:
+            return {}
+
+        from tree_sitter import Query, QueryCursor
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        calls: dict[str, list[str]] = {}
+        cursor = QueryCursor(Query(self.language, self.TAGS_QUERY))
+        for _pattern, captured in cursor.matches(tree.root_node):
+            # `name` is shared with the definition patterns, so a match without `reference.call`
+            # would contribute the declaration's own name as though something had called it.
+            if "reference.call" not in captured:
+                continue
+            for node in captured.get("name", []):
+                caller = self._enclosing_symbol(node)
+                callee = node.text
+                if callee is None:
+                    continue
+                calls.setdefault(caller, []).append(callee.decode("utf-8"))
+        return calls
+
+    def _enclosing_symbol(self, node: typing.Any) -> str:
+        """The qualified name of the declaration a node sits in, or "" for the file itself."""
+        names: list[str] = []
+        current = node.parent
+        while current is not None:
+            if current.type in self.CALLER_SCOPE_NODES:
+                declared = self._declared_type_name(current)
+                if declared:
+                    names.append(declared)
+            current = current.parent
+        return ".".join(reversed(names))
+
     # Node types that declare a type. Empty means the language has no such concept, or that this
     # ticket has not reached it — either way the parser reports nothing rather than guessing.
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ()

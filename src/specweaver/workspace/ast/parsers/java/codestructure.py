@@ -31,6 +31,13 @@ class JavaCodeStructure(ClassBasedParser):
             "implements": self._type_names_in(by_type.get("super_interfaces")),
         }
 
+    TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_java.TAGS_QUERY
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "method_declaration",
+        "class_declaration",
+        "interface_declaration",
+    )
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

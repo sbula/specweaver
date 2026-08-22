@@ -115,6 +115,16 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
+    def extract_call_sites(self, code: str) -> dict[str, list[str]]:
+        """Each symbol mapped to the bare names it calls.
+
+        Returns:
+            `{qualified_caller: [callee, ...]}`. A call outside any declaration is attributed to the
+            empty key, meaning the file itself — module-level code is a real dependency. A language
+            whose grammar ships no call query reports nothing rather than raising.
+        """
+
+    @abstractmethod
     def extract_traceability_tags(self, code: str) -> set[str]:
         """Extract all `@trace(ID)` tags embedded in source comments.
 

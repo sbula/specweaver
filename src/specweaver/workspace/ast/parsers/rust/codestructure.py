@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 class RustCodeStructure(FunctionBasedParser):
     grammar = staticmethod(tree_sitter_rust.language)
 
+    TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_rust.TAGS_QUERY
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "function_item",
+        "impl_item",
+        "mod_item",
+    )
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

@@ -1,9 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Every parser the factory ships answers the supertype contract, whatever its language can express.
+"""Every parser the factory ships answers the type and call contracts, whatever its language expresses.
 
-Proves: TECH-068 FR-4
+Proves: TECH-068 FR-4, FR-1
 
 `extract_supertypes` is abstract on `CodeStructureInterface`, so a parser that forgot it cannot be
 instantiated — but nothing proved that the ones which DO implement it agree on the shape they return.
@@ -57,3 +57,23 @@ def test_every_parser_survives_source_it_cannot_parse() -> None:
     """Hostile: one unreadable file must not take the whole build down."""
     for _exts, parser in get_default_parsers().items():
         assert isinstance(parser.extract_supertypes("!!! not source at all ((("), dict)
+
+
+def test_every_shipped_parser_returns_call_sites_in_the_declared_shape() -> None:
+    """The set is the claim. Four languages read calls from an upstream query and six report none;
+    each passes its own tests, and none of them says the six stay silent rather than raising."""
+    for exts, parser in get_default_parsers().items():
+        source = next((_SOURCE[e] for e in exts if e in _SOURCE), "")
+        result = parser.extract_call_sites(source)
+        assert isinstance(result, dict), f"{type(parser).__name__} returned {type(result)}"
+        for caller, callees in result.items():
+            assert isinstance(caller, str)
+            assert all(isinstance(c, str) for c in callees), f"{type(parser).__name__}: {callees}"
+
+
+def test_a_language_with_no_upstream_call_query_is_silent_rather_than_raising() -> None:
+    """Graceful degradation: SF-05 owns those four, and one file must not take down a build."""
+    parsers = get_default_parsers()
+    for ext in (".kt", ".ts", ".c", ".cpp"):
+        parser = next(p for exts, p in parsers.items() if ext in exts)
+        assert parser.extract_call_sites(_SOURCE.get(ext, "")) == {}

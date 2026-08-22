@@ -383,6 +383,52 @@
           "breaks": "an unresolved module and an unresolved type of the same name become ONE ghost node, so a file's missing dependency and a type's missing parent are reported as the same unknown"
         }
       ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "A parser reports what each symbol calls, attributed to the qualified caller",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_call_sites.py",
+        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-caller-is-unqualified",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._enclosing_symbol",
+          "old": "        return \".\".join(reversed(names))",
+          "new": "        return names[0] if names else \"\"",
+          "breaks": "a method's calls are attributed to `go` rather than `Impl.go`, so every CALLS edge from a method points out of a node hash that does not exist"
+        },
+        {
+          "id": "module-level-calls-are-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser.extract_call_sites",
+          "old": "                caller = self._enclosing_symbol(node)\n",
+          "new": "                caller = self._enclosing_symbol(node)\n                if not caller:\n                    continue\n",
+          "breaks": "a call outside any declaration -- a decorator argument, a constant built by calling something -- disappears, so a whole class of real dependencies is silently absent"
+        },
+        {
+          "id": "a-language-without-a-query-raises",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser.extract_call_sites",
+          "old": "        if not code.strip() or not self.TAGS_QUERY:\n            return {}",
+          "new": "        if not code.strip():\n            return {}",
+          "breaks": "kotlin, typescript, c and cpp abort instead of reporting nothing, so one file in a language SF-05 has not reached yet takes down the whole build"
+        },
+        {
+          "id": "definitions-counted-as-calls",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser.extract_call_sites",
+          "old": "            if \"reference.call\" not in captured:",
+          "new": "            if False:",
+          "breaks": "the `name` capture is shared with the definition patterns, so every declared symbol is reported as something that called itself -- CALLS edges would be manufactured for code that calls nothing"
+        }
+      ]
     }
   ]
 }
