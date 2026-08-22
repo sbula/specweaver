@@ -128,11 +128,31 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
                 found[name] = self._supertypes_of(node)
         return found
 
+    # `field_identifier` is how C and C++ spell a member's name; it appears in no other
+    # grammar here, so naming it once costs nothing and saves a language override.
+    _NAME_NODE_TYPES: typing.ClassVar[tuple[str, ...]] = (
+        "identifier",
+        "type_identifier",
+        "field_identifier",
+    )
+
     def _declared_type_name(self, node: typing.Any) -> str | None:
-        """The declared name, which every grammar here spells as an identifier child."""
+        """The declared name of a type or function.
+
+        Most grammars spell it as a direct identifier child. C and C++ do not: a
+        `function_definition` holds `primitive_type`, `function_declarator`, `compound_statement`,
+        and the name lives inside the declarator. Descending one level when no direct child matches
+        keeps that in one place rather than in two language overrides.
+        """
         for child in node.children:
-            if child.type in ("identifier", "type_identifier"):
+            if child.type in self._NAME_NODE_TYPES:
                 return str(self._extract_marker_text(child))
+        for child in node.children:
+            if not child.type.endswith("declarator"):
+                continue
+            for grandchild in child.children:
+                if grandchild.type in self._NAME_NODE_TYPES:
+                    return str(self._extract_marker_text(grandchild))
         return None
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:

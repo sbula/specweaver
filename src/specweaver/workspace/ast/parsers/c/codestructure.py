@@ -19,6 +19,13 @@ class CCodeStructure(FunctionBasedParser):
 
     grammar = staticmethod(tree_sitter_c.language)
 
+    # Held here because this grammar ships no tags query. Original work, written from
+    # the grammar by inspection rather than adapted from upstream.
+    TAGS_QUERY: typing.ClassVar[str | None] = """
+        (call_expression function: (identifier) @name) @reference.call
+        """
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = ("function_definition",)
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

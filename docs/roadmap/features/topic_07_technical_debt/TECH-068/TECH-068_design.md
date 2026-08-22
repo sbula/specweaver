@@ -339,7 +339,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | `CALLS` where none ships | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | `CALLS` where none ships | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
 

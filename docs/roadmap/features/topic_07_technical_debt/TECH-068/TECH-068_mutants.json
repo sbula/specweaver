@@ -558,6 +558,43 @@
           "breaks": "every symbol is credited with the file's module-level calls instead of its own, so the graph reports calls nobody made and misses every call that was"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The grammars that ship no call query get one held here",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_local_call_queries.py",
+        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py"
+      ],
+      "mutants": [
+        {
+          "id": "typescript-captures-the-receiver",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py",
+          "symbol": "TypeScriptCodeStructure",
+          "old": "(member_expression property: (property_identifier) @name)",
+          "new": "(member_expression object: (identifier) @name)",
+          "breaks": "`obj.deep()` reports a call to `obj` instead of `deep`, so every method call invents a dependency on the receiver and loses the real one"
+        },
+        {
+          "id": "the-declarator-descent-is-removed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._declared_type_name",
+          "old": "        for child in node.children:\n            if not child.type.endswith(\"declarator\"):\n                continue\n",
+          "new": "        for child in ():\n            if not child.type.endswith(\"declarator\"):\n                continue\n",
+          "breaks": "C and C++ hold a function's name inside its declarator, so every call in those languages is attributed to the file rather than to the function that made it"
+        },
+        {
+          "id": "field-identifier-unrecognised",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._NAME_NODE_TYPES",
+          "old": "        \"field_identifier\",\n",
+          "new": "        \"field_identifier_\",\n",
+          "breaks": "a C++ method's name is a field_identifier, so its calls are attributed to the enclosing class instead of the method -- K rather than K.go, which is a node that exists but is the wrong one"
+        }
+      ]
     }
   ]
 }

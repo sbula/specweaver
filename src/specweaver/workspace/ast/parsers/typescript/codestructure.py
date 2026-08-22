@@ -29,6 +29,21 @@ class TypeScriptCodeStructure(ClassBasedParser):
             "implements": self._type_names_in(clauses.get("implements_clause")),
         }
 
+    # Held here because this grammar ships no tags query. Original work, written from
+    # the grammar by inspection rather than adapted from upstream.
+    TAGS_QUERY: typing.ClassVar[str | None] = """
+        (call_expression
+          function: [
+            (identifier) @name
+            (member_expression property: (property_identifier) @name)
+          ]) @reference.call
+        """
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "class_declaration",
+        "method_definition",
+        "function_declaration",
+    )
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """
