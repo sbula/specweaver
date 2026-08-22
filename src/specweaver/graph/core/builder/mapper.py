@@ -47,7 +47,11 @@ def resolve_module(module: str, known_files: frozenset[str]) -> str | None:
 
     lowered = {path.replace("\\", "/").lower(): path for path in known_files}
     for start in range(len(segments)):
-        stem = "/".join(segments[start:])
+        # LOWERED, like the candidates above. Lowering only one side is not case-insensitive
+        # matching, it is a filter that happens to accept lowercase imports: `import Models`
+        # against a collected `Models.py` resolved to nothing, while `from models import ...`
+        # against the same file worked. Any capitalised module name ghosted.
+        stem = "/".join(segments[start:]).lower()
         matches = {original for lower, original in lowered.items() if _matches_stem(lower, stem)}
         if len(matches) == 1:
             return matches.pop()

@@ -116,7 +116,8 @@
       "requirement": "FR-8",
       "title": "An import becomes an edge to the file it names, or to a ghost",
       "scope": [
-        "tests/integration/graph/test_imports_become_edges.py"
+        "tests/integration/graph/test_imports_become_edges.py",
+        "tests/unit/graph/core/builder/test_resolve_module.py"
       ],
       "mutants": [
         {
@@ -163,6 +164,15 @@
           "old": "    for start in range(len(segments)):",
           "new": "    for start in range(1):",
           "breaks": "a leading segment that is not a directory -- rust's `crate`, a source root -- stops the module resolving, so whole languages ghost silently"
+        },
+        {
+          "id": "the-stem-is-not-lowered",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "resolve_module",
+          "old": "        stem = \"/\".join(segments[start:]).lower()",
+          "new": "        stem = \"/\".join(segments[start:])",
+          "breaks": "lowering only the candidates is not case-insensitive matching, it is a filter that happens to accept lowercase imports -- `import Models` against a collected Models.py resolves to a ghost while `from models import ...` against the same file resolves, so every capitalised module name loses its dependency edge"
         }
       ]
     },
@@ -218,7 +228,8 @@
         "tests/unit/workspace/ast/parsers/test_supertypes.py",
         "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py",
         "tests/integration/graph/test_symbol_index_is_built_once.py",
-        "tests/unit/workspace/ast/parsers/test_cpp_supertypes.py"
+        "tests/unit/workspace/ast/parsers/test_cpp_supertypes.py",
+        "tests/unit/workspace/ast/parsers/test_supertypes.py"
       ],
       "mutants": [
         {
@@ -247,15 +258,6 @@
           "old": "            if current.type in (\"type_arguments\", \"type_parameters\"):",
           "new": "            if False:",
           "breaks": "`Base<T>` reports a dependency on the type parameter T as well as on Base, so every generic supertype invents an edge to a type that does not exist"
-        },
-        {
-          "id": "the-fallback-shape-is-wrong",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/ast/parsers/base.py",
-          "symbol": "BaseTreeSitterParser._supertypes_of",
-          "old": "        return {\"extends\": [], \"implements\": []}",
-          "new": "        return {\"extends\": []}",
-          "breaks": "the next language to declare TYPE_DECLARATION_NODES without a hook gets a payload missing `implements`, so every consumer that reads both keys breaks on it -- a branch nothing reached until a test was written for it"
         },
         {
           "id": "a-language-without-the-concept-raises",
@@ -319,6 +321,15 @@
           "old": "        return {\"extends\": self._type_names_in(clause), \"implements\": []}",
           "new": "        return {\"extends\": [], \"implements\": self._type_names_in(clause)}",
           "breaks": "C++ has no interfaces, so an IMPLEMENTS edge there asserts a relationship the language cannot express -- and a reader asking which C++ types extend a base gets nothing"
+        },
+        {
+          "id": "the-base-guesses-instead-of-refusing",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._supertypes_of",
+          "old": "        raise NotImplementedError(\n            f\"{type(self).__name__} declares TYPE_DECLARATION_NODES but no _supertypes_of, so \"",
+          "new": "        return {\"extends\": [], \"implements\": []}\n        raise NotImplementedError(\n            f\"{type(self).__name__} declares TYPE_DECLARATION_NODES but no _supertypes_of, so \"",
+          "breaks": "a language that declares its type nodes and never says what they inherit gets a silent 'inherits nothing' -- indistinguishable from a language with no inheritance, and wrong in exactly the way nobody looks for"
         }
       ]
     },

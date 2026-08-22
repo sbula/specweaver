@@ -59,6 +59,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Go and Rust joined the supertype contract | Both returned `{}` and the contract test looped over it, so the gap read as coverage. Go embedding is `EXTENDS` (**the user's call**, over a tenth `EdgeKind`); Rust separates `impl T for X` from `trait A: B` cleanly. Building it exposed that every Go type reached the graph classified as a PROCEDURE, so no Go hierarchy could ever resolve — classification now reads the parser's own answer |
 | Rust traits became visible | Recorded as a limit, then re-measured on the user's challenge and found to be **one line** of query. It mattered more than the first note said: Rust has no struct inheritance, so every hierarchy edge it can emit targets a trait, and a supertrait bound produced **no edge at all** — `FR-9` delivered nothing for the language until this |
 | A reload keeps its unknowns | Recorded as `T-DIVERGE`, then measured on the user's challenge and found not to be a decision at all: the test justifying it described the target as a *"lazy target that was never resolved"* — the dangling-edge model **`AD-4` retired in this same ticket** — and derived its requirement from the mechanism. Three lines of SQL; 2 of 8371 tests moved, both asserting exactly this. `TECH-070` no longer starts on a landmine |
+| Every capitalised import ghosted | Found by writing the unit tests `resolve_module` never had. The case-lowering was one-sided — candidates lowered, the module stem not — so `import Models` against a collected `Models.py` resolved to a ghost while `from models import ...` against the same file resolved. The docstring had claimed case-insensitive matching all along. `NFR-8`'s **[proof: none]** is now agreement tests in both directions |
+| A dead default became a contract | `BaseTreeSitterParser._supertypes_of` returned "inherits nothing" for a language that declared its type nodes and never said what they inherit. Unreachable today, wrong the moment a language is added. `SF-03` found it by mutation and wrote a test that pinned what the branch returned; it now refuses instead, naming the class and what it must implement |
 | The handover had rotted to 23 MB | 332,068 lines, **122 of them distinct** — one section repeated ~10,000 times, some copies corrupted mid-line, burying content months stale. `.tmp/` is gitignored, so no diff and no gate ever saw it. `session_handover.py` was cleared by measurement, not assumption: one marker pair, a re-run changing zero bytes. It now warns when the file it writes has stopped being readable |
 | `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
@@ -79,9 +81,11 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 - **Four `TECH-068` findings remain**, recorded in its design's *Retrospective Pre-Commit Gate*
   section. Two are chores: `BaseTreeSitterParser._supertypes_of` is unreachable, and
   `resolve_module` has no unit tests so nothing pins the case-insensitive match RT-21 depends on.
-  Both are chores, and neither blocks anything. Every decision the gate surfaced was measured and
-  closed on 2026-08-22 — including two first recorded as limits (Rust trait visibility, the ghost
-  reload) that turned out to be small once somebody measured instead of estimating.
+  **Nothing is open.** All eight were closed on 2026-08-22, including two first recorded as limits
+  (Rust trait visibility, the ghost reload) that turned out to be small once somebody measured
+  instead of estimating. The last two, filed as chores, each turned up a live defect while being
+  done. `TECH-068` is now a closure decision rather than a work item — and that decision is
+  `T-PROVEN`, the user's.
 
 - **`allowed_imports` is a rule nothing reads.** `context_yaml_spec.md` declares `consumes` and
   `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. One

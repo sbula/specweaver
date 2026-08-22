@@ -164,8 +164,22 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
         return None
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
-        """What this type inherits. A language that separates the two kinds overrides this."""
-        return {"extends": [], "implements": []}
+        """What this type inherits. Every language declaring `TYPE_DECLARATION_NODES` implements it.
+
+        This used to return `{"extends": [], "implements": []}` — a silent "inherits nothing" for a
+        language that declared its type nodes and never said what they inherit. Measured across all
+        ten shipped parsers, the body was unreachable: each one that declares types overrides this,
+        and each one that does not returns before the walk reaches it.
+
+        Unreachable is not harmless. The moment a language is added and its type nodes declared, the
+        default answers on its behalf — wrongly, quietly, and in the exact shape of a language with
+        no inheritance at all. A refusal turns a dead branch into the only useful thing it can be.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} declares TYPE_DECLARATION_NODES but no _supertypes_of, so "
+            f"nothing says what its types inherit. Implement _supertypes_of, or drop "
+            f"TYPE_DECLARATION_NODES if the language has no such concept."
+        )
 
     @staticmethod
     def _type_names_in(node: typing.Any | None) -> list[str]:
