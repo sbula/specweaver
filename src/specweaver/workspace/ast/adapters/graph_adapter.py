@@ -48,7 +48,7 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
     # The seam declares every dependency kind the mapper will ever need, populated or not, so a
     # later sub-feature fills a field rather than reshaping the payload and forcing its siblings to
     # follow. An absent key and an empty one must not mean the same thing to a reader.
-    ast_data: dict[str, Any] = {"type": "module", "imports": [], "children": []}
+    ast_data: dict[str, Any] = {"type": "module", "imports": [], "calls": [], "children": []}
 
     path = Path(filepath)
     if not path.exists():
@@ -89,6 +89,10 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         markers = parser.extract_framework_markers(code)
         ast_data["imports"] = parser.extract_imports(code)
         supertypes = parser.extract_supertypes(code)
+        call_sites = parser.extract_call_sites(code)
+        # Module-level code has no enclosing declaration, so no child owns it. The file does — the
+        # same reason `imports` sits here rather than on a child.
+        ast_data["calls"] = call_sites.get("", [])
     except Exception:
         logger.exception("extract_ast_dict: Parser failed on %s", filepath)
         ast_data["unparsed"] = "parse"
@@ -103,7 +107,7 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
                 "type": node_type,
                 "name": symbol,
                 "supertypes": _supertype_records(supertypes.get(symbol, {})),
-                "calls": [],
+                "calls": call_sites.get(symbol, []),
             }
         )
 

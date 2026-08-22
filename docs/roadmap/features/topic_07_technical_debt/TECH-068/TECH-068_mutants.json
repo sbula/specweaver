@@ -106,9 +106,9 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
           "symbol": "extract_ast_dict",
-          "old": "                \"calls\": [],",
-          "new": "                \"calls_absent\": [],",
-          "breaks": "the `calls` field SF-04 will fill is absent rather than declared and empty, so that sub-feature must reshape the payload instead of filling it -- AD-1 undone, and a consumer is left guessing whether a missing key means no calls or an older writer"
+          "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
+          "new": "{\"type\": \"module\", \"calls\": [], \"children\": []}",
+          "breaks": "the file-level `imports` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no imports or a writer that predates the field"
         }
       ]
     },
@@ -473,6 +473,52 @@
           "old": "            name = str(child.get(\"name\") or \"\")\n            if name:",
           "new": "            name = str(child.get(\"name\") or \"\")\n            if True:",
           "breaks": "an empty name keys the index on the empty string, which a malformed payload can then match against, resolving a call to whatever nameless thing was indexed"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The seam carries what each symbol calls, and what the file itself calls",
+      "scope": [
+        "tests/integration/workspace/test_seam_carries_calls.py",
+        "tests/integration/workspace/test_seam_carries_dependencies.py"
+      ],
+      "mutants": [
+        {
+          "id": "children-carry-no-calls",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "\"calls\": call_sites.get(symbol, []),",
+          "new": "\"calls\": [],",
+          "breaks": "the mapper receives no callee, so CALLS edges cannot be built at all -- the field stays declared and permanently empty, which reads as 'this symbol calls nothing'"
+        },
+        {
+          "id": "module-level-calls-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "        ast_data[\"calls\"] = call_sites.get(\"\", [])",
+          "new": "        pass",
+          "breaks": "a decorator argument or a constant built by a call never reaches the graph, so a whole class of real file-level dependencies is silently absent"
+        },
+        {
+          "id": "the-file-level-key-is-absent",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
+          "new": "{\"type\": \"module\", \"imports\": [], \"children\": []}",
+          "breaks": "the file-level `calls` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no calls or an older writer"
+        },
+        {
+          "id": "a-childs-calls-come-from-the-file",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "extract_ast_dict",
+          "old": "\"calls\": call_sites.get(symbol, []),",
+          "new": "\"calls\": call_sites.get(\"\", []),",
+          "breaks": "every symbol is credited with the file's module-level calls instead of its own, so the graph reports calls nobody made and misses every call that was"
         }
       ]
     }

@@ -18,24 +18,6 @@
       "last_seen": 1787318171.3065884,
       "occurrences": 2
     },
-    "TECH-068 FR-5 the-contract-loses-its-declared-fields": {
-      "history": [
-        {
-          "at": 1787339268.190703,
-          "state": "open",
-          "verdict": "UNMEASURED",
-          "reason": "symbol-drifted"
-        },
-        {
-          "at": 1787339440.883903,
-          "state": "closed",
-          "reason": "fixed"
-        }
-      ],
-      "first_seen": 1787339268.190703,
-      "last_seen": 1787339388.3046896,
-      "occurrences": 2
-    },
     "TECH-068 FR-9 implementation-emitted-as-extension": {
       "history": [
         {
@@ -222,6 +204,35 @@
       "first_seen": 1787281386.0787365,
       "last_seen": 1787367806.5468712,
       "occurrences": 2
+    },
+    "TECH-068 FR-5 the-contract-loses-its-declared-fields": {
+      "history": [
+        {
+          "at": 1787339268.190703,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787339440.883903,
+          "state": "closed",
+          "reason": "fixed"
+        },
+        {
+          "at": 1787378675.0977576,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787378846.8454447,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787339268.190703,
+      "last_seen": 1787378798.7684832,
+      "occurrences": 4
     }
   },
   "override_count": 0,
