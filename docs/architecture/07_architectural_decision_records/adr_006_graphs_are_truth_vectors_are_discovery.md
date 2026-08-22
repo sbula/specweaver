@@ -25,7 +25,8 @@ symbol name the user does not have.
 Measured state when this ADR was written:
 
 * The graph had **zero readers** outside its own builder. Its ontology declares nine edge kinds;
-  the mapper emits one (`CONTAINS`). `TECH-068` owns that defect.
+  the mapper emitted one (`CONTAINS`). `TECH-068` owned that defect and has closed it in code:
+  a real build now persists `CONTAINS`, `IMPORTS`, `EXTENDS` and `CALLS`.
 * Framework code hides its edges from every parser: Spring/Quarkus dependency injection, HTTP
   routes, and event listeners produce **no syntactic call site**. A call graph over such code is
   incomplete, and analysis built on it reports safety that does not exist (Jasmine, ASE 2022,
@@ -89,7 +90,7 @@ What produces what, and who reads it — the single orientation table for this a
 |---|---|---|
 | `D-SENS-02/03` parsers ✅ | AST symbols per file | `B-SENS-02` builder · skeletons (`D-VAL-04`) |
 | `B-SENS-02` builder ✅ | graph nodes + `CONTAINS` | `B-SENS-09`, `B-VAL-07`, blast-radius seams, `C-UI-01`, `B-SENS-06`, `A-SENS-05` *(all pending `TECH-068`)* |
-| `TECH-068` 🔴 | syntactic edges (`IMPORTS`, `CALLS`, `EXTENDS`, `IMPLEMENTS`) | every graph reader |
+| `TECH-068` 🟡 | syntactic edges (`IMPORTS`, `CALLS`, `EXTENDS`, `IMPLEMENTS`) — **built 2026-08-22**, closure outstanding | every graph reader |
 | Framework schemas ✅ (`workflows/evaluators/frameworks/`) | annotation semantics | `B-INTL-02` prompt comments ✅ · `B-SENS-08` edges 🔜 |
 | `B-SENS-08` 🔜 | framework edges (`INJECTS`-class, routes, listeners; `PUBLISHES`/`SUBSCRIBES`) | blast radius · `B-SENS-09` · `B-VAL-07` · `A-SENS-04` (cross-service linkage) |
 | `B-SENS-03` 🔧 | symbol chunks | `A-SENS-02` embeddings 🔜 |
@@ -120,8 +121,9 @@ Full links: `ORIGINS.md` § Graph & Retrieval.
 
 ## Consequences
 
-* `TECH-068` is the only open debt ticket and blocks the reader family; the Debt Sequencing
-  section carries it.
+* `TECH-068` is built and committed, so the reader family is unblocked in code; its closure is
+  outstanding. `TECH-069` and `TECH-070` are also open, so it is no longer the only debt ticket —
+  the Debt Sequencing section carries all three.
 * `B-SENS-08`, `B-SENS-09`, `B-VAL-07` are designed **against this ADR**: their designs cite the
   step they implement, their seam FRs name the stores they read, and their first tests go red
   against the missing edges.
