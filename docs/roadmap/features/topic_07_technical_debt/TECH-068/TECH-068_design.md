@@ -339,7 +339,7 @@ tooling on a separate track from the product graph, and wiring one to the other 
 | SF-02 | The seam carries dependencies | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Supertypes told apart | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | `CALLS` from upstream queries | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | `CALLS` where none ships | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | `CALLS` where none ships | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Non-Goals
 
@@ -353,17 +353,20 @@ tooling on a separate track from the product graph, and wiring one to the other 
 
 ## Session Handoff
 
-**Current status**: `SF-01` through `SF-04` are committed. A real build of `src/specweaver`
-persists **9103 `CALLS`, 2704 `CONTAINS`, 2274 `IMPORTS` and 341 `EXTENDS`** with 989 ghosts, at
-7.3 ms/file — 21.8s projected at the reference workload against `NFR-1`'s 60s. The graph declared
-nine edge kinds and wrote one; it now writes four.
+**Current status**: every sub-feature is committed. Measured on `src/specweaver`, 358 files in
+2.71s at 7.6 ms/file: **9106 `CALLS`, 2705 `CONTAINS`, 2274 `IMPORTS`, 341 `EXTENDS`** and 989
+ghosts. `NFR-1` projects to 22.7s against a 60s budget and `NFR-2` to 1.4s against 5s. All 16 FRs
+are cited by a test; the corpus holds 60 killed mutants across twelve campaigns.
 
-**Next step**: the implementation-plan skill for `SF-05` — `CALLS` for typescript, c, cpp and
-kotlin, whose grammars ship no call query. Kotlin ships no `.scm` of any kind and is the risk this
-decomposition isolated here on purpose.
+**Next step**: the ticket has not been declared finished. Closing it is `T-PROVEN` — the user's call,
+not the agent's — and `specweaver-feature`'s closure gate is what runs before `Status: COMPLETE`.
 
-**Also outstanding, and not part of any sub-feature**: `TECH-070` owns the withdrawn `NFR-3` and is
-sequenced ahead of `B-SENS-09`. It is minted and un-designed; `TECH-068` does not depend on it.
+**Known rough edge, unrelated to this ticket**: `scripts/tests.py cb` fails a commit boundary that
+changes no source, because its unit tier finds nothing to mirror and reports `0 path(s)` as a
+failure. `SF-05` CB-4 was such a boundary. Not worked around here.
+
+**Also outstanding**: `TECH-070` owns the withdrawn `NFR-3` and is sequenced ahead of `B-SENS-09`.
+It is minted and un-designed; `TECH-068` does not depend on it.
 
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there with the skill named for that column. `SF-03` and `SF-04` may run in parallel
