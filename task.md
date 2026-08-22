@@ -12,14 +12,14 @@ Scope: every commit from `897c229c` (session start) to `HEAD`.
 
 - [x] 1 — Architecture verification (1 finding: AD-3 never executed)
 - [x] 2 — Test gap (7 findings, HITL at §2.8) analysis (HITL, combined with Phase 1 findings)
-- [x] 3 — Implement missing tests (HITL) — 18 new tests, AD-3 executed, 2 repaired
-- [x] 4 — Full test suite (8285 passed, 11 skipped)
+- [x] 3 — Implement missing tests (HITL) — 23 new tests, AD-3 executed, 2 repaired
+- [x] 4 — Full test suite (8295 passed, 11 skipped)
 - [x] 5 — Code quality (cb 15/15, doc 14/14)
 - [x] 6 — Documentation
 - [x] 7 — Walkthrough artifact
 - [x] 7.5 — Red/Blue (2 cycles, 6 findings, 3 fixed, 3 refuted) — HITL
 - [x] 7.9 — Handover and STATE
-- [/] 8 — Commit boundary
+- [x] 8 — Commit boundary (71a0d011)
 
 ## Where to look instead
 
