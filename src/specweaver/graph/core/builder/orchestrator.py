@@ -11,6 +11,26 @@ if TYPE_CHECKING:
     from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 
 
+def _index_procedures(parsed: dict[str, dict[str, Any]]) -> dict[str, set[tuple[str, str]]]:
+    """Map each procedure's BARE name to the `(file, qualified name)` pairs declaring it.
+
+    A call is written bare — `helper()`, `self.other()` — while the node hash is built from the
+    qualified name, so the lookup key and the value cannot be the same string. Types need no such
+    thing, which is the second reason this is a separate structure rather than a shared one; the
+    first is that a `class Foo` and a `def Foo` are different symbols and neither should make the
+    other ambiguous.
+    """
+    index: dict[str, set[tuple[str, str]]] = {}
+    for filepath, payload in parsed.items():
+        for child in payload.get("children", []) or []:
+            if not isinstance(child, dict) or child.get("type") != "function_definition":
+                continue
+            name = str(child.get("name") or "")
+            if name:
+                index.setdefault(name.rsplit(".", 1)[-1], set()).add((filepath, name))
+    return index
+
+
 def _index_types(parsed: dict[str, dict[str, Any]]) -> dict[str, set[str]]:
     """Map each declared type name to the files declaring it."""
     index: dict[str, set[str]] = {}
@@ -54,6 +74,9 @@ class GraphBuilder:
         # supertype resolves the same way whichever file the build reaches first. A name in two
         # files stays in two: they are not one type, and the caller must be able to see that.
         self.symbol_index: dict[str, set[str]] = {}
+        # Procedures live in their own namespace: a `class Foo` and a `def Foo` are
+        # different symbols, and one index would make each ambiguous for the other's sake.
+        self.procedure_index: dict[str, set[tuple[str, str]]] = {}
 
     def ingest_ast(self, filepath: str, ast_data: dict[str, Any]) -> None:
         """
@@ -150,6 +173,7 @@ class GraphBuilder:
         # `NFR-1`'s budget is measured against.
         parsed = {path: self._parse(path) for path in files}
         self.symbol_index = _index_types(parsed)
+        self.procedure_index = _index_procedures(parsed)
 
         for path in files:
             self.ingest_ast(path, parsed[path])

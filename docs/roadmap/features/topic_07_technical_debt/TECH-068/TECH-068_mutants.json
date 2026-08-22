@@ -429,6 +429,52 @@
           "breaks": "the `name` capture is shared with the definition patterns, so every declared symbol is reported as something that called itself -- CALLS edges would be manufactured for code that calls nothing"
         }
       ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "Procedures are indexed in their own namespace, by the name a call is written with",
+      "scope": [
+        "tests/integration/graph/test_procedure_index.py",
+        "tests/integration/graph/test_symbol_index_is_built_once.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-procedure-index",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphBuilder.ingest_target",
+          "old": "        self.procedure_index = _index_procedures(parsed)",
+          "new": "        pass",
+          "breaks": "nothing maps a callee name to the procedure declaring it, so every CALLS edge can only ever reach a ghost and the call half of the graph stays empty"
+        },
+        {
+          "id": "one-namespace-for-both-kinds",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "_index_procedures",
+          "old": "            if not isinstance(child, dict) or child.get(\"type\") != \"function_definition\":",
+          "new": "            if not isinstance(child, dict):",
+          "breaks": "types enter the procedure index, so a `class Foo` makes a `def Foo` ambiguous and both ghost where neither actually collided"
+        },
+        {
+          "id": "indexed-by-the-qualified-name",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "_index_procedures",
+          "old": "                index.setdefault(name.rsplit(\".\", 1)[-1], set()).add((filepath, name))",
+          "new": "                index.setdefault(name, set()).add((filepath, name))",
+          "breaks": "a method is filed under `Impl.other` while a call is written `other`, so no method call ever resolves and every one becomes a ghost"
+        },
+        {
+          "id": "an-unnamed-declaration-is-indexed",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "_index_procedures",
+          "old": "            name = str(child.get(\"name\") or \"\")\n            if name:",
+          "new": "            name = str(child.get(\"name\") or \"\")\n            if True:",
+          "breaks": "an empty name keys the index on the empty string, which a malformed payload can then match against, resolving a call to whatever nameless thing was indexed"
+        }
+      ]
     }
   ]
 }
