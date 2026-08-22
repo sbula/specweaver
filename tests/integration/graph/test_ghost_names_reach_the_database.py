@@ -79,18 +79,13 @@ def test_a_resolved_edge_is_still_anonymous(tmp_path: Path) -> None:
     assert "helper" not in _raw_names(db)
 
 
-def test_a_reload_drops_ghost_edges_today(tmp_path: Path) -> None:
-    """The recorded limit of `FR-12`, asserted so it cannot change without somebody noticing.
+def test_the_name_survives_a_reload(tmp_path: Path) -> None:
+    """The fourth link, and the one that used to drop everything.
 
-    `load_from_db` filters both endpoints on `is_active = 1` and a ghost is stored with `0`, so a
-    reloaded graph holds none of them — the raw name is in the column and does not survive the trip
-    back into memory. `test_load_ignores_ghost_nodes` calls that deliberate, and it is: a build that
-    re-ingests every file rebuilds its ghosts, so nothing is lost today.
-
-    This test exists so the day it stops being true is loud. `TECH-070` is that day: an incremental
-    rebuild leaves unchanged files loaded rather than re-ingested, and their ghost edges would go
-    missing on every pass. Overturning a tested decision is `T-DIVERGE` and belongs to the user, so
-    this asserts the present behaviour rather than the behaviour somebody might prefer.
+    `load_from_db` filtered both endpoints on `is_active = 1` and a ghost is stored with `0`, so a
+    graph read back held no ghost edges at all — the raw name reached the column and never came
+    home. That was asserted by a test describing the target as a "lazy target that was never
+    resolved", which is the dangling-edge model `AD-4` retired in this same ticket.
     """
     db = _build_and_persist(tmp_path, {"a.py": "def f():\n    mystery_call()\n"})
 
@@ -99,11 +94,24 @@ def test_a_reload_drops_ghost_edges_today(tmp_path: Path) -> None:
     carried = {
         data.get("metadata", {}).get("raw") for _u, _v, data in reloaded.edges(data=True)
     } - {None}
-    assert carried == set(), (
-        "a ghost edge survived a reload — if that is now intended, `test_load_ignores_ghost_nodes` "
-        "and this test both need revisiting, and TECH-070 gets simpler"
+    assert "mystery_call" in carried
+
+
+def test_a_partial_rebuild_keeps_what_it_did_not_re_ingest(tmp_path: Path) -> None:
+    """The state `TECH-070` is built to produce, proven now rather than discovered there.
+
+    An incremental rebuild leaves unchanged files loaded rather than re-ingested. Their edges pass
+    through nothing that would re-derive them, so whatever the reload dropped is simply gone — and
+    the next persist writes that loss to disk.
+    """
+    db = _build_and_persist(
+        tmp_path, {"a.py": "def f():\n    mystery_call()\n", "b.py": "def g():\n    pass\n"}
     )
-    assert "mystery_call" in _raw_names(db), "the database must still hold what the reload drops"
+    repo = SqliteGraphRepository(db, "svc")
+
+    repo.persist_semantic_digraph(repo.load_from_db())
+
+    assert "mystery_call" in _raw_names(db), "a rebuild that re-ingested nothing lost the unknown"
 
 
 def test_an_absurd_identifier_reaches_the_column_truncated(tmp_path: Path) -> None:

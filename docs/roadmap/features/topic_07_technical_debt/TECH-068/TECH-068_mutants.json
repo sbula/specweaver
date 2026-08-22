@@ -760,7 +760,8 @@
       "scope": [
         "tests/unit/graph/core/builder/test_ghost_raw_names.py",
         "tests/integration/graph/test_ghost_names_reach_the_database.py",
-        "tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py"
+        "tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py",
+        "tests/unit/graph/core/store/test_repository_load.py"
       ],
       "mutants": [
         {
@@ -789,6 +790,24 @@
           "old": "    if _encoded_size(value) <= METADATA_MAX_BYTES:\n        return value",
           "new": "    return value",
           "breaks": "an identifier past the 2KB cap reaches the model validator, which raises inside the mapper where nothing catches it, so one pathological file aborts an entire build -- NFR-6 forbids exactly that"
+        },
+        {
+          "id": "the-reload-drops-every-ghost",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.load_from_db",
+          "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
+          "new": "                  AND n2.is_active = 1",
+          "breaks": "a graph read back out of the database holds no ghost edges, so it says nothing depends on this about every dependency outside the parsed set -- and an incremental rebuild then writes that loss to disk"
+        },
+        {
+          "id": "the-reload-lets-tombstones-back-in",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository.load_from_db",
+          "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
+          "new": "                  AND (n2.is_active = 1 OR n2.is_active = 0)",
+          "breaks": "the fix goes too wide: is_active=0 covers tombstones as well as ghosts, so a deleted file's nodes return and purge_stale_entries is undone"
         }
       ]
     },

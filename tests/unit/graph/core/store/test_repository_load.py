@@ -84,8 +84,47 @@ def test_load_ignores_tombstoned_nodes(repo):
     assert "test_service:ast:123" not in g_out.nodes
 
 
-def test_load_ignores_ghost_nodes(repo):
-    """Test that load_from_db ignores lazy targets that were never resolved."""
+def test_load_keeps_ghost_edges(repo):
+    """A reload holds the unresolved dependencies the build found.
+
+    Proves: TECH-068 FR-12
+
+    **This test asserted the opposite until 2026-08-22**, and its own words say why that was
+    wrong. It described the target as a *"lazy target that was never resolved"* — the
+    `target_id = -1` dangling-edge model that `AD-4` retired in this same ticket, and which
+    `ontology_mapping.md` no longer describes because the code cannot express it. Ghosts are not
+    placeholders awaiting a later pass; there is no later pass. They are the answer.
+
+    Its reasoning was also circular: *"the GHOST node is inserted as is_active=0, THEREFORE it
+    should not be in the loaded graph"* derives the requirement from the mechanism, so it could
+    never have failed for a reason anybody chose.
+
+    What it cost: a graph read back out of the database said "nothing depends on this" about every
+    dependency outside the parsed set — the exact confusion `FR-12` exists to remove, and the one
+    the design's "this ticket makes the graph true" rules out.
+    """
+    g_in = nx.DiGraph()
+    g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
+    g_in.add_edge(
+        "test_service:ast:123", "test_service:ast:GHOST", kind="CALLS", metadata={"raw": "mystery"}
+    )
+    repo.persist_semantic_digraph(g_in)
+
+    g_out = repo.load_from_db()
+
+    assert g_out.has_edge("test_service:ast:123", "test_service:ast:GHOST")
+    assert g_out.edges["test_service:ast:123", "test_service:ast:GHOST"]["metadata"] == {
+        "raw": "mystery"
+    }
+
+
+def test_a_reloaded_ghost_carries_no_attributes(repo):
+    """Boundary: the in-memory convention for a ghost is a node with NO attributes.
+
+    `_extract_nodes` decides what is a ghost by `if not data`, so a ghost restored with attributes
+    would be written back as an ACTIVE node — resurrecting every unresolved target as though the
+    build had found it. Left to `add_edge`, which creates a missing node bare, the two halves agree.
+    """
     g_in = nx.DiGraph()
     g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
     g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", kind="CALLS", metadata={})
@@ -93,11 +132,46 @@ def test_load_ignores_ghost_nodes(repo):
 
     g_out = repo.load_from_db()
 
-    # The GHOST node is inserted as is_active=0 by flush_to_db.
-    # Therefore, it should NOT be in the loaded graph.
-    assert len(g_out.nodes) == 1
-    # Because the edge target is missing, the edge should be dropped during load!
-    assert len(g_out.edges) == 0
+    assert g_out.nodes["test_service:ast:GHOST"] == {}
+
+
+def test_a_reloaded_ghost_is_not_written_back_as_active(repo):
+    """Composition: load and persist hold different notions of "ghost" and must agree.
+
+    One reads `is_active`, the other reads "has no attributes". Only the round trip says they mean
+    the same thing, and each half's own tests pass either way.
+    """
+    g_in = nx.DiGraph()
+    g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
+    g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", kind="CALLS", metadata={})
+    repo.persist_semantic_digraph(g_in)
+
+    repo.persist_semantic_digraph(repo.load_from_db())
+
+    with sqlite3.connect(repo.db_path) as conn:
+        resurrected = conn.execute(
+            "SELECT count(*) FROM graph_nodes WHERE is_active = 1 AND file_id = ''"
+        ).fetchone()[0]
+    assert resurrected == 0
+
+
+def test_load_still_ignores_a_tombstoned_node(repo):
+    """Hostile: `is_active = 0` means two things and only `file_id` separates them.
+
+    A ghost carries no file; a tombstone carries the path its file came from. Loading ghosts must
+    not smuggle deleted files back in beside them — that would undo `purge_stale_entries` entirely.
+    """
+    g_in = nx.DiGraph()
+    g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
+    g_in.add_node("test_service:ast:456", file_id="file2", package_name="pkg1", metadata={})
+    g_in.add_edge("test_service:ast:123", "test_service:ast:456", kind="CALLS", metadata={})
+    repo.persist_semantic_digraph(g_in)
+    repo.purge_stale_entries({"file1"})
+
+    g_out = repo.load_from_db()
+
+    assert "test_service:ast:456" not in g_out.nodes
+    assert not g_out.edges
 
 
 def test_load_corrupted_node_metadata(repo):
