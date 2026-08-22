@@ -7,6 +7,14 @@
 `typescript` character-for-character identical, `kotlin` differing by a single blank line. The only
 genuinely per-language part is the tree-sitter query naming that language's class and function
 declarations, which is the same shape as the `SCM_*` properties already on the base.
+
+Proves: TECH-068 NFR-7
+
+`TECH-068` added `extract_supertypes` beside this method rather than widening it, because three
+callers outside that feature read this shape — `core/flow/handlers/validation.py` and twice
+`sandbox/code_structure/core/atom.py`, where it is an agent-facing tool intent.
+`test_a_class_entry_carries_its_bases` is what holds the shape: every class entry carries `extends`
+and `decorators`, whatever the language.
 """
 
 from __future__ import annotations

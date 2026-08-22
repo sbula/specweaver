@@ -3,7 +3,7 @@
 
 """An edge to a GHOST says what it could not resolve.
 
-Proves: TECH-068 FR-12
+Proves: TECH-068 FR-12, NFR-5
 
 `FR-12` reads: *emit an edge to a `GHOST` node carrying the unresolved raw name in edge metadata*.
 Only the first half was built. The name survives inside the target hash and a hash is one-way, so

@@ -2,6 +2,22 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Collecting and ingesting a target, once per file.
+
+Proves: TECH-068 NFR-1, NFR-2
+
+Both budgets rest on the same quantity — the per-file cost — so both rest on the same mechanism:
+each collected file is read exactly once. `ingest_target` used to call `ingest_file`, which re-reads
+the file, and a second read doubles the number the 60 s and 5 s budgets are measured against.
+
+A wall-clock assertion is the wrong instrument for those budgets: it measures the machine running
+CI as much as the code, and a flaky performance test gets deleted rather than investigated. The
+figures are re-measured at closure and recorded in the design; what a test can hold is the property
+that keeps them true.
+"""
+
+from __future__ import annotations
+
 from unittest.mock import MagicMock
 
 import pytest

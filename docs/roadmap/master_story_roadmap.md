@@ -84,7 +84,7 @@ The add-on groups behind it, nearest first:
 | 🔴 Cross-Language Dependency Resolution | `B-SENS-07` | single item |
 | 🔴 Microservice Federation | `A-SENS-04` | single item |
 | 🔴 Dynamic Knowledge Relevance | `B-FLOW-04`, `A-SENS-03` | retrieval scoring; wants `A-SENS-02` first |
-| 🔴 Deterministic Context Packing | `B-SENS-09`, `B-SENS-08` | ADR-006 contextualize step; `TECH-068`'s edges are built, its closure is not |
+| 🔴 Deterministic Context Packing | `B-SENS-09`, `B-SENS-08` | ADR-006 contextualize step; `TECH-068` closed 2026-08-22, so edge truth is in place |
 | 🔴 Static Code Flow Analysis | `B-SENS-04`, `B-SENS-05` | statically-typed languages only, by design |
 
 **Focus 2 — the 🟡 harvest: stories one capability from green.**
@@ -117,10 +117,12 @@ capability that closes `US-6`.
 
 ### 🔧 Debt Sequencing
 
-*Two open. `TECH-068` (the graph's missing dependency edges) is **built and committed** — all five
-sub-features, 16 FRs cited, 60 killed mutants — so the readers minted by
-[ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) are unblocked in code. Its closure is outstanding, and only the user can
-declare it. `TECH-070` (every graph build re-ingests every file) is `🔴` and un-designed, sequenced
+*One open. `TECH-068` (the graph's missing dependency edges) is **closed 2026-08-22** — all five
+sub-features, 16 of 16 FRs cited, 78 killed mutants, and a retrospective `specweaver-pre-commit`
+sweep that found three defects and an unexecuted architectural decision before it shut — so the
+readers minted by
+[ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md)
+are unblocked. `TECH-070` (every graph build re-ingests every file) is `🔴` and un-designed, sequenced
 ahead of `B-SENS-09`. Every other `TECH` ticket is delivered, each with its FRs cited and behind a
 killed mutant. Full record: [topic_07](topics/topic_07_technical_debt.md) and the
 [TECH ledger](#-technical-debt-tech).*
@@ -676,6 +678,6 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-065:** [Parameterised Annotations Never Match a Framework Schema](features/topic_07_technical_debt/TECH-065/TECH-065_design.md)
     *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
     *   `✅` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)
-    *   `🟡` **TECH-068:** [The Knowledge Graph Emits One of Its Nine Declared Edge Kinds](features/topic_07_technical_debt/TECH-068/TECH-068_design.md)
+    *   `✅` **TECH-068:** [The Knowledge Graph Emits One of Its Nine Declared Edge Kinds](features/topic_07_technical_debt/TECH-068/TECH-068_design.md)
     *   `🔴` **TECH-069:** [Nothing Read a Design Against the Must-Not-Guess Triggers](features/topic_07_technical_debt/TECH-069/TECH-069_design.md)
     *   `🔴` **TECH-070:** [Every Graph Build Re-Ingests Every File](features/topic_07_technical_debt/TECH-070/TECH-070_design.md)

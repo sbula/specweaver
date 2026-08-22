@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-068
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (2026-08-21)
+- **Status**: COMPLETE (2026-08-22)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-068/TECH-068_design.md
 
 ## Feature Overview
@@ -189,9 +189,8 @@ ambiguous target becomes a `GHOST` rather than a guess.
 |---|---|---|
 | NFR-1 | Cold build time | A cold build of ~3,000 source files SHALL complete in ≤ 60 s. Basis: 2.8 ms/file measured on 358 Python files here (`CONTAINS` only, serial) × 3,000 = 8.4 s, × 4 for four more kinds plus resolution ≈ 34 s, leaving ~1.8× for heavier grammars. **Delegated to the agent by the user; derived, not agreed** |
 | NFR-2 | Per-service build time | A single service of ~190 files SHALL complete in ≤ 5 s, on the same basis |
-| NFR-3 | *(withdrawn)* | The ≤ 250 ms single-file incremental target left this ticket. No incremental path exists — `build_target` re-ingests every file — and `TECH-070` owns it, sequenced ahead of `B-SENS-09` |
 | NFR-4 | Resolution purity | Resolution SHALL NOT read the filesystem. **[proof: arch — `graph/core/engine/context.yaml` forbids `os` and `pathlib`]** |
-| NFR-5 | Ghost metadata size | A `GHOST` node's metadata SHALL stay under the 2 KB cap enforced by `GraphNode.validate_metadata_size` (RT-25) |
+| NFR-5 | Ghost metadata size | Metadata on a `GHOST` node **or on an edge pointing at one** SHALL stay under the 2 KB cap (RT-25), named once as `METADATA_MAX_BYTES`. Widened at closure: `FR-12` puts the unresolved raw name on the EDGE, so the edge is where real, caller-uncontrolled data now lives — the node's stays `{}`. An identifier past the cap is truncated with a visible mark rather than refused, because the validator raises inside the mapper where nothing catches it, and `NFR-6` forbids one file aborting a build |
 | NFR-6 | Parse failure is visible | A parser raising on one file SHALL leave the build running and the file marked unparsed, never abort the build and never fail silently |
 | NFR-7 | Contract stability | `extract_framework_markers`' return shape SHALL remain unchanged. Three callers outside this feature depend on it — `core/flow/handlers/validation.py` and twice `sandbox/code_structure/core/atom.py`, where it is an agent-facing tool intent |
 | NFR-8 | Case collision | Two files differing only in case share a `file_id` and therefore a node, because `normalize_file_id` lowercases it by design (RT-21). Resolution inherits that and this design does not correct it — doing so means changing RT-21, which is out of scope. **[proof: none — a scope statement, not a requirement]** |
@@ -400,13 +399,37 @@ record of what was found still reads in order.)*
 
 ## Session Handoff
 
-**Current status**: every sub-feature is committed. Measured on `src/specweaver`, 358 files in
-2.71s at 7.6 ms/file: **9106 `CALLS`, 2705 `CONTAINS`, 2274 `IMPORTS`, 341 `EXTENDS`** and 989
-ghosts. `NFR-1` projects to 22.7s against a 60s budget and `NFR-2` to 1.4s against 5s. All 16 FRs
-are cited by a test; the corpus holds 60 killed mutants across twelve campaigns.
+**Verifiable Proof** — the files that carry the claim, all passing and none skipped:
 
-**Next step**: the ticket has not been declared finished. Closing it is `T-PROVEN` — the user's call,
-not the agent's — and `specweaver-feature`'s closure gate is what runs before `Status: COMPLETE`.
+| Claim | Test file | Tier |
+|---|---|---|
+| the shipped command persists typed edges | `tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py` | e2e |
+| every language contributes edges | `tests/integration/graph/test_every_language_reaches_the_graph.py` | integration |
+| a hierarchy resolves in Go and Rust | `tests/integration/graph/test_polyglot_hierarchies_resolve.py` | integration |
+| an unresolved target says what it was | `tests/integration/graph/test_ghost_names_reach_the_database.py` | integration |
+| a persisted graph can be read back | `tests/integration/graph/test_the_graph_survives_a_reload.py` | integration |
+| an edge keeps the kind it was made with | `tests/integration/graph/test_edge_kind_survives_persist.py` | integration |
+| a dropped edge stops being a dependency | `tests/integration/graph/test_stale_edges_are_removed.py` | integration |
+
+**Feature complete.** Closed 2026-08-22 after `specweaver-feature` Phase 4: the FR ledger reports
+16 of 16 requirements planned and cited, and `tests.py feature` ran every tier at full scope —
+7,238 unit, 911 integration, 256 e2e, none failing.
+
+Re-measured at closure on `src/specweaver`, 358 files in **2.73s at 7.6 ms/file** — unchanged by the
+work the retrospective gate added: **9,136 `CALLS`, 2,714 `CONTAINS`, 2,274 `IMPORTS`, 341
+`EXTENDS`**, 991 ghosts, and **8,711 edges naming the target they could not resolve**. `NFR-1`
+projects to 22.9s against a 60s budget and `NFR-2` to 1.45s against 5s.
+
+**What closing it actually took.** Every sub-feature was marked committed on 2026-08-21 with the
+ticket looking finished. `specweaver-pre-commit` had never been invoked across its seventeen
+boundaries — its commands were run in its place — and running it once retrospectively found three
+defects and an approved architectural decision that was never executed. Two of the three were
+introduced by this ticket's own work. Four further findings were raised at that gate; the user chose
+to build all of them, and two first recorded as *limits* turned out to be one line each once
+somebody measured instead of estimating.
+
+**Next**: the readers `ADR-006` sequences behind edge truth — `B-SENS-09`, `B-VAL-07`, `B-SENS-08`,
+`C-UI-01`, `B-SENS-06`, `A-SENS-05`. `TECH-070` precedes `B-SENS-09`.
 
 **Known rough edge, unrelated to this ticket**: `scripts/tests.py cb` fails a commit boundary that
 changes no source, because its unit tier finds nothing to mirror and reports `0 path(s)` as a

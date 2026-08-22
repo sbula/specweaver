@@ -90,7 +90,7 @@ What produces what, and who reads it — the single orientation table for this a
 |---|---|---|
 | `D-SENS-02/03` parsers ✅ | AST symbols per file | `B-SENS-02` builder · skeletons (`D-VAL-04`) |
 | `B-SENS-02` builder ✅ | graph nodes + `CONTAINS` | `B-SENS-09`, `B-VAL-07`, blast-radius seams, `C-UI-01`, `B-SENS-06`, `A-SENS-05` *(all pending `TECH-068`)* |
-| `TECH-068` 🟡 | syntactic edges (`IMPORTS`, `CALLS`, `EXTENDS`, `IMPLEMENTS`) — **built 2026-08-22**, closure outstanding | every graph reader |
+| `TECH-068` 🟢 | syntactic edges (`IMPORTS`, `CALLS`, `EXTENDS`, `IMPLEMENTS`) — **closed 2026-08-22** | every graph reader |
 | Framework schemas ✅ (`workflows/evaluators/frameworks/`) | annotation semantics | `B-INTL-02` prompt comments ✅ · `B-SENS-08` edges 🔜 |
 | `B-SENS-08` 🔜 | framework edges (`INJECTS`-class, routes, listeners; `PUBLISHES`/`SUBSCRIBES`) | blast radius · `B-SENS-09` · `B-VAL-07` · `A-SENS-04` (cross-service linkage) |
 | `B-SENS-03` 🔧 | symbol chunks | `A-SENS-02` embeddings 🔜 |
@@ -121,9 +121,8 @@ Full links: `ORIGINS.md` § Graph & Retrieval.
 
 ## Consequences
 
-* `TECH-068` is built and committed, so the reader family is unblocked in code; its closure is
-  outstanding. `TECH-069` and `TECH-070` are also open, so it is no longer the only debt ticket —
-  the Debt Sequencing section carries all three.
+* `TECH-068` closed 2026-08-22, so the reader family is unblocked. `TECH-069` and `TECH-070` remain
+  open, so it was never the only debt ticket — the Debt Sequencing section carries them.
 * `B-SENS-08`, `B-SENS-09`, `B-VAL-07` are designed **against this ADR**: their designs cite the
   step they implement, their seam FRs name the stores they read, and their first tests go red
   against the missing edges.

@@ -3,7 +3,7 @@
 
 """A file the build could not read is marked, so an absent edge is not mistaken for no edge.
 
-Proves: TECH-068 FR-15
+Proves: TECH-068 FR-15, NFR-6
 
 `extract_ast_dict` catches, logs a warning and returns an empty tree. A warning is invisible to a
 graph reader, and across thousands of files it is unreadable to a human too — so a file nobody could
