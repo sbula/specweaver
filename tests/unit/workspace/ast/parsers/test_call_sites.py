@@ -67,9 +67,14 @@ class TestExtractCallSites:
         code = "package m\nfunc a() { helper() }"
         assert _parser(".go").extract_call_sites(code)["a"] == ["helper"]
 
-    def test_a_language_with_no_upstream_query_reports_nothing(self) -> None:
-        """Graceful degradation: SF-05 owns those, and silence is better than an exception."""
-        assert _parser(".kt").extract_call_sites("fun a() { helper() }") == {}
+    def test_a_language_with_no_call_concept_reports_nothing(self) -> None:
+        """Graceful degradation: silence is better than an exception mid-build.
+
+        This named Kotlin until `SF-05` gave it a locally-held query. `sql` and `markdown` have no
+        calls to find at all, so they keep the property Kotlin only had while it was unsupported.
+        """
+        assert _parser(".sql").extract_call_sites("SELECT 1;") == {}
+        assert _parser(".md").extract_call_sites("# Title\n") == {}
 
     def test_empty_source_reports_nothing(self) -> None:
         assert _parser(".py").extract_call_sites("") == {}

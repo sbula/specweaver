@@ -59,9 +59,13 @@ def test_module_level_calls_are_carried_by_the_file(tmp_path: Path) -> None:
     assert ast["calls"] == ["build"]
 
 
-def test_a_language_with_no_call_query_carries_empty_lists(tmp_path: Path) -> None:
-    """Graceful degradation: SF-05 owns those four, and the shape must not depend on the language."""
-    ast = _seam(tmp_path, "m.kt", "fun a() { helper() }")
+def test_a_language_with_no_call_concept_carries_empty_lists(tmp_path: Path) -> None:
+    """Graceful degradation: the shape must not depend on the language.
+
+    This named Kotlin until `SF-05` gave it a locally-held query. `sql` has no calls to find, so it
+    keeps the property and the assertion stays about the shape rather than about one language.
+    """
+    ast = _seam(tmp_path, "m.sql", "SELECT 1;")
     assert ast["calls"] == []
     assert all(child["calls"] == [] for child in ast["children"])
 

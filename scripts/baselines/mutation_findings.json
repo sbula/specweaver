@@ -251,6 +251,114 @@
       "first_seen": 1787379016.2364283,
       "last_seen": 1787379216.5355372,
       "occurrences": 4
+    },
+    "TECH-068 FR-1 the-caller-is-unqualified": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
+    },
+    "TECH-068 FR-1 module-level-calls-are-dropped": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
+    },
+    "TECH-068 FR-1 a-language-without-a-query-raises": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
+    },
+    "TECH-068 FR-1 definitions-counted-as-calls": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
+    },
+    "TECH-068 FR-7 module-level-calls-dropped": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
+    },
+    "TECH-068 FR-7 the-file-level-key-is-absent": {
+      "history": [
+        {
+          "at": 1787381996.9716327,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1787382271.8867176,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787381996.9716327,
+      "last_seen": 1787382215.1126487,
+      "occurrences": 2
     }
   },
   "override_count": 0,

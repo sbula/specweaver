@@ -30,6 +30,23 @@ class KotlinCodeStructure(ClassBasedParser):
         specifiers = next((c for c in node.children if c.type == "delegation_specifiers"), None)
         return {"extends": self._type_names_in(specifiers), "implements": []}
 
+    # Held here because `tree-sitter-kotlin` ships no `.scm` of any kind. Original work, written
+    # from the grammar by inspection.
+    #
+    # POSITIONAL, unavoidably: `call_expression` exposes no field names, so unlike every other
+    # language here the pattern cannot state which child is the callee. The second line is
+    # constrained to an identifier that FOLLOWS something — without that, `obj.deep()` matches the
+    # receiver as well, because a receiver is an identifier too. `test_kotlin_call_query.py` pins
+    # every shape so a grammar change surfaces as a red rather than as a thinner graph.
+    TAGS_QUERY: typing.ClassVar[str | None] = """
+        (call_expression (identifier) @name) @reference.call
+        (call_expression (navigation_expression (_) (identifier) @name)) @reference.call
+        """
+    CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "class_declaration",
+        "function_declaration",
+    )
+
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
         return """

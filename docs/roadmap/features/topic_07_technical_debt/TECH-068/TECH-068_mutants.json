@@ -564,7 +564,8 @@
       "title": "The grammars that ship no call query get one held here",
       "scope": [
         "tests/unit/workspace/ast/parsers/test_local_call_queries.py",
-        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py"
+        "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py",
+        "tests/unit/workspace/ast/parsers/test_kotlin_call_query.py"
       ],
       "mutants": [
         {
@@ -593,6 +594,33 @@
           "old": "        \"field_identifier\",\n",
           "new": "        \"field_identifier_\",\n",
           "breaks": "a C++ method's name is a field_identifier, so its calls are attributed to the enclosing class instead of the method -- K rather than K.go, which is a node that exists but is the wrong one"
+        },
+        {
+          "id": "kotlin-navigation-unconstrained",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py",
+          "symbol": "KotlinCodeStructure",
+          "old": "(call_expression (navigation_expression (_) (identifier) @name)) @reference.call",
+          "new": "(call_expression (navigation_expression (identifier) @name)) @reference.call",
+          "breaks": "the receiver of a method call is reported as a call too, because a receiver is an identifier -- `obj.deep()` invents a dependency on `obj`. This is the naive pattern, and the reason the constrained one exists"
+        },
+        {
+          "id": "kotlin-plain-calls-lost",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py",
+          "symbol": "KotlinCodeStructure",
+          "old": "        (call_expression (identifier) @name) @reference.call\n",
+          "new": "        (call_expression (identifier) @name) @reference_call\n",
+          "breaks": "only method calls are seen, so every direct call in Kotlin -- the majority of them -- vanishes from the graph while method calls keep working, which reads as partial coverage rather than a broken query"
+        },
+        {
+          "id": "kotlin-callers-lose-their-class",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/kotlin/codestructure.py",
+          "symbol": "KotlinCodeStructure",
+          "old": "        \"class_declaration\",\n        \"function_declaration\",",
+          "new": "        \"function_declaration\",",
+          "breaks": "a method's calls are attributed to `go` rather than `K.go`, so every CALLS edge out of a Kotlin method points from a node hash that does not exist"
         }
       ]
     }

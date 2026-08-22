@@ -71,9 +71,13 @@ def test_every_shipped_parser_returns_call_sites_in_the_declared_shape() -> None
             assert all(isinstance(c, str) for c in callees), f"{type(parser).__name__}: {callees}"
 
 
-def test_a_language_with_no_upstream_call_query_is_silent_rather_than_raising() -> None:
-    """Graceful degradation: SF-05 owns those four, and one file must not take down a build."""
+def test_a_language_with_no_call_concept_is_silent_rather_than_raising() -> None:
+    """Graceful degradation: one file must not take down a build.
+
+    Named the four `SF-05` owned until it gave each of them a query. `sql` and `markdown` have no
+    calls to find, so the claim survives as a statement about the shape rather than about coverage.
+    """
     parsers = get_default_parsers()
-    for ext in (".kt", ".ts", ".c", ".cpp"):
+    for ext in (".sql", ".md"):
         parser = next(p for exts, p in parsers.items() if ext in exts)
         assert parser.extract_call_sites(_SOURCE.get(ext, "")) == {}
