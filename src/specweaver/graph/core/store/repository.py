@@ -260,6 +260,23 @@ class SqliteGraphRepository:
                     metadata=metadata,
                 )
 
+            # NOTE -- an open question, not an oversight. Both endpoints are filtered on
+            # `is_active = 1`, and a GHOST is stored with `is_active = 0`, so **every ghost edge is
+            # dropped on reload**: a graph read back out of the database says "nothing depends on
+            # this" about every dependency outside the parsed set.
+            #
+            # `test_load_ignores_ghost_nodes` asserts exactly this and calls it deliberate: ghosts
+            # are transient, and a build that re-ingests every file rebuilds them. That holds while
+            # every build is a full one. An incremental rebuild leaves unchanged files loaded rather
+            # than re-ingested, and their ghost edges would then be lost on every pass.
+            #
+            # Changing it means overturning a tested decision (`T-DIVERGE`), so it is the user's to
+            # take. `FR-12` is satisfied without it: the raw name is in the column, and a reader
+            # querying `graph_edges` sees it.
+            #
+            # The distinguishing fact, when it is decided: `is_active = 0` means two things, and
+            # only `file_id` separates them -- a ghost carries none, a tombstone carries the path
+            # its file came from.
             cursor.execute(
                 """
                 SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata

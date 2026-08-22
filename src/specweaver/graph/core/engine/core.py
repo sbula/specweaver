@@ -37,8 +37,14 @@ class InMemoryGraphEngine:
     def upsert_edge(self, edge: GraphEdge) -> None:
         """Add or update an edge in the graph."""
         with self._lock:
+            # The metadata rides with the kind. The store already persists `metadata` off the
+            # edge attributes and `load_from_db` already restores it; nothing wrote it, so the
+            # column held `{}` for every edge ever stored.
             self._nx_graph.add_edge(
-                edge.source_hash, edge.target_hash, **{EDGE_KIND_ATTR: edge.kind.value}
+                edge.source_hash,
+                edge.target_hash,
+                metadata=edge.metadata,
+                **{EDGE_KIND_ATTR: edge.kind.value},
             )
 
     def remove_edge(self, source_hash: str, target_hash: str) -> None:

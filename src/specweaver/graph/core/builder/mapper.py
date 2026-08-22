@@ -4,7 +4,7 @@
 from typing import Any, ClassVar
 
 from specweaver.graph.core.engine.hashing import SemanticHasher
-from specweaver.graph.core.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.models import GraphEdge, GraphNode, fit_metadata_value
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 _MODULE_SEPARATORS = (".", "::", "/")
@@ -54,6 +54,15 @@ def resolve_module(module: str, known_files: frozenset[str]) -> str | None:
         if matches:
             return None
     return None
+
+
+def _ghost(hasher: SemanticHasher, prefix: str, name: str) -> tuple[str, dict[str, Any]]:
+    """The ghost node an unresolved `name` points at, and the metadata saying what it was.
+
+    `FR-12`. One helper for all three namespaces because they are three call sites making one
+    promise: written separately, each could drift on its own while its own tests kept passing.
+    """
+    return hasher.hash_file(f"{prefix}{name}"), {"raw": fit_metadata_value(name)}
 
 
 def _matches_stem(candidate: str, stem: str) -> bool:
@@ -155,13 +164,19 @@ class OntologyMapper:
             if not isinstance(module, str) or not _module_segments(module):
                 continue
             resolved = resolve_module(module, known_files)
-            target = (
-                self.hasher.hash_file(resolved)
-                if resolved is not None
-                else self.hasher.hash_file(f"{_GHOST_MODULE_PREFIX}{module}")
-            )
+            meta: dict[str, Any] = {}
+            if resolved is not None:
+                target = self.hasher.hash_file(resolved)
+            else:
+                target, meta = _ghost(self.hasher, _GHOST_MODULE_PREFIX, module)
+
             edges.append(
-                GraphEdge(source_hash=file_hash, target_hash=target, kind=EdgeKind.IMPORTS)
+                GraphEdge(
+                    source_hash=file_hash,
+                    target_hash=target,
+                    kind=EdgeKind.IMPORTS,
+                    metadata=meta,
+                )
             )
 
     _SUPERTYPE_EDGE_KINDS: ClassVar[dict[str, EdgeKind]] = {
@@ -194,20 +209,19 @@ class OntologyMapper:
             supertype = record.get("name")
             if kind is None or not supertype:
                 continue
+            target, meta = self._supertype_target(str(supertype), symbol_index)
             edges.append(
-                GraphEdge(
-                    source_hash=source,
-                    target_hash=self._supertype_target(str(supertype), symbol_index),
-                    kind=kind,
-                )
+                GraphEdge(source_hash=source, target_hash=target, kind=kind, metadata=meta)
             )
 
-    def _supertype_target(self, name: str, symbol_index: dict[str, set[str]]) -> str:
-        """The node the supertype names, or a ghost when it names no single one of ours."""
+    def _supertype_target(
+        self, name: str, symbol_index: dict[str, set[str]]
+    ) -> tuple[str, dict[str, Any]]:
+        """The node the supertype names, or a ghost carrying the name it could not resolve."""
         declared_in = symbol_index.get(name, set())
         if len(declared_in) == 1:
-            return self.hasher.hash_node(next(iter(declared_in)), name)
-        return self.hasher.hash_file(f"{_GHOST_TYPE_PREFIX}{name}")
+            return self.hasher.hash_node(next(iter(declared_in)), name), {}
+        return _ghost(self.hasher, _GHOST_TYPE_PREFIX, name)
 
     def _map_calls(
         self,
@@ -226,21 +240,22 @@ class OntologyMapper:
         for callee in callees:
             if not isinstance(callee, str) or not callee:
                 continue
+            target, meta = self._callee_target(callee, procedure_index)
             edges.append(
                 GraphEdge(
-                    source_hash=source,
-                    target_hash=self._callee_target(callee, procedure_index),
-                    kind=EdgeKind.CALLS,
+                    source_hash=source, target_hash=target, kind=EdgeKind.CALLS, metadata=meta
                 )
             )
 
-    def _callee_target(self, name: str, procedure_index: dict[str, set[tuple[str, str]]]) -> str:
-        """The procedure the call names, or a ghost when it names no single one of ours."""
+    def _callee_target(
+        self, name: str, procedure_index: dict[str, set[tuple[str, str]]]
+    ) -> tuple[str, dict[str, Any]]:
+        """The procedure the call names, or a ghost carrying the name it could not resolve."""
         declared_in = procedure_index.get(name, set())
         if len(declared_in) == 1:
             filepath, qualified = next(iter(declared_in))
-            return self.hasher.hash_node(filepath, qualified)
-        return self.hasher.hash_file(f"{_GHOST_PROCEDURE_PREFIX}{name}")
+            return self.hasher.hash_node(filepath, qualified), {}
+        return _ghost(self.hasher, _GHOST_PROCEDURE_PREFIX, name)
 
     def _check_depth(
         self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int

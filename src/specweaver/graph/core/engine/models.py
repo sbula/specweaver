@@ -8,6 +8,45 @@ from pydantic import BaseModel, Field, field_validator
 
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
+METADATA_MAX_BYTES = 2048
+"""RT-25's cap on a node's or an edge's metadata, named once so both can honour the same number.
+
+It was a literal inside `GraphNode`'s validator. `FR-12` puts an unresolved raw name on an edge and
+that name comes from source nobody controls, so a second place needed the same limit -- and a limit
+spelled twice is the shape that produced this ticket's two worst defects.
+"""
+
+
+_TRUNCATION_MARK = "…"
+
+
+def _encoded_size(value: str) -> int:
+    """How many bytes `{"raw": value}` costs on disk. BYTES, not characters: `é` is two."""
+    return len(json.dumps({"raw": value}).encode("utf-8"))
+
+
+def fit_metadata_value(value: str) -> str:
+    """`value`, shortened until the metadata holding it fits `METADATA_MAX_BYTES`.
+
+    Shortened rather than refused. The validators raise, which is right for metadata a caller
+    assembled; this string is an identifier read out of source nobody controls, and the raise would
+    happen inside the mapper where nothing catches it -- one absurd identifier would abort an entire
+    build, which `NFR-6` forbids.
+
+    The mark is visible on purpose: a silently shortened name reads as a real, different name, and
+    a reader chasing it would look for a symbol that does not exist.
+    """
+    if _encoded_size(value) <= METADATA_MAX_BYTES:
+        return value
+    low, high = 0, len(value)
+    while low < high:
+        mid = (low + high + 1) // 2
+        if _encoded_size(value[:mid] + _TRUNCATION_MARK) <= METADATA_MAX_BYTES:
+            low = mid
+        else:
+            high = mid - 1
+    return value[:low] + _TRUNCATION_MARK
+
 
 class GraphNode(BaseModel):
     """
@@ -35,8 +74,8 @@ class GraphNode(BaseModel):
         """
         RT-25: Strictly enforce a 2KB limit on metadata to prevent DB bloat.
         """
-        payload_size = len(json.dumps(v))
-        if payload_size > 2048:
+        payload_size = len(json.dumps(v).encode("utf-8"))
+        if payload_size > METADATA_MAX_BYTES:
             raise ValueError(f"Metadata size {payload_size} bytes exceeds 2KB limit.")
         return v
 
@@ -59,3 +98,23 @@ class GraphEdge(BaseModel):
     source_hash: str
     target_hash: str
     kind: EdgeKind
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    """What the edge knows that its endpoints do not.
+
+    `FR-12`: an edge to a `GHOST` carries the raw name it could not resolve. The store materialises
+    a ghost node from an unknown target hash, by which point the name is gone -- a hash is one-way.
+    The edge is the only place that still has it.
+    """
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata_size(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """RT-25 again, and for the same reason: `graph_edges.metadata` is a column like any other.
+
+        The mapper truncates before it reaches here, so this is the backstop for a caller that
+        builds an edge by hand rather than the path a build takes.
+        """
+        payload_size = len(json.dumps(v).encode("utf-8"))
+        if payload_size > METADATA_MAX_BYTES:
+            raise ValueError(f"Metadata size {payload_size} bytes exceeds 2KB limit.")
+        return v

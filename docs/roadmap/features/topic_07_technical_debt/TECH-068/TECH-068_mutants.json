@@ -744,6 +744,44 @@
           "breaks": "the import stays and the declaration goes, which is exactly the state AD-3 was approved to fix and sat in undetected for the whole ticket -- tach cannot see it because tach.toml already permits the crossing and the rule lives only in context.yaml"
         }
       ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "An edge to a GHOST says what it could not resolve",
+      "scope": [
+        "tests/unit/graph/core/builder/test_ghost_raw_names.py",
+        "tests/integration/graph/test_ghost_names_reach_the_database.py",
+        "tests/e2e/capabilities/graph/test_graph_build_persists_edges_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-ghost-forgets-its-name",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/mapper.py",
+          "symbol": "_ghost",
+          "old": "return hasher.hash_file(f\"{prefix}{name}\"), {\"raw\": fit_metadata_value(name)}",
+          "new": "return hasher.hash_file(f\"{prefix}{name}\"), {}",
+          "breaks": "an unresolved target becomes a hash and nothing else, so a reader sees THAT something is unresolved and never WHAT -- os.getcwd and mystery_call are two indistinguishable ghosts, which is the state this requirement exists to remove"
+        },
+        {
+          "id": "the-engine-drops-the-metadata",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/core.py",
+          "symbol": "InMemoryGraphEngine.upsert_edge",
+          "old": "                metadata=edge.metadata,",
+          "new": "                metadata={},",
+          "breaks": "the mapper records the name and the engine drops it before the store ever sees it -- four links each passing their own tests while the chain delivers an empty column"
+        },
+        {
+          "id": "an-absurd-identifier-aborts-the-build",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/models.py",
+          "symbol": "fit_metadata_value",
+          "old": "    if _encoded_size(value) <= METADATA_MAX_BYTES:\n        return value",
+          "new": "    return value",
+          "breaks": "an identifier past the 2KB cap reaches the model validator, which raises inside the mapper where nothing catches it, so one pathological file aborts an entire build -- NFR-6 forbids exactly that"
+        }
+      ]
     }
   ]
 }

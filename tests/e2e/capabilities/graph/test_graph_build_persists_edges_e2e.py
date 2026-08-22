@@ -24,6 +24,7 @@ is mocked and nothing is hand-built.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import TYPE_CHECKING
 
@@ -206,6 +207,27 @@ def test_a_call_deleted_from_the_source_stops_being_a_dependency(tmp_path: Path)
     assert not any(s.endswith("orders.py") for s, _t in calls), (
         f"the deleted call survived: {calls}"
     )
+
+
+def test_an_unresolved_dependency_says_what_it_could_not_find(tmp_path: Path) -> None:
+    """Happy path for FR-12, through the shipped command.
+
+    `Runner extends Base` and `Base` is nowhere in this tree, so the edge points at a ghost. Before
+    this, the ghost was a hash and nothing else — a reader could see that something was unresolved
+    and had no way to learn what. The name is on the EDGE because the store materialises the ghost
+    node from an unknown hash, at which point the name is already gone.
+    """
+    project = _project(tmp_path, _TREE)
+
+    _build(project)
+
+    with sqlite3.connect(project / ".specweaver" / "graph.db") as conn:
+        named = {
+            json.loads(m or "{}").get("raw")
+            for m in (r[0] for r in conn.execute("SELECT metadata FROM graph_edges"))
+        } - {None}
+
+    assert "Base" in named, f"the unresolved supertype was not named: {sorted(named)}"
 
 
 def test_an_unreadable_file_does_not_cost_the_other_files_their_edges(tmp_path: Path) -> None:
