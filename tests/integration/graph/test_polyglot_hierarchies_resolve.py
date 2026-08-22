@@ -116,20 +116,38 @@ def test_a_rust_impl_emits_an_implements_edge(tmp_path: Path) -> None:
     assert any(src == "Impl" for src, _t, _raw in edges), f"no IMPLEMENTS edge for Impl: {edges}"
 
 
-def test_a_rust_trait_is_named_even_though_it_has_no_node(tmp_path: Path) -> None:
-    """Graceful degradation, and the recorded limit.
-
-    `list_symbols` does not report a trait, so `Runner` has no node and the edge ghosts. `FR-12` is
-    what keeps that useful: the ghost says which trait it was. This test is the record — if traits
-    ever become symbols it turns red and says so.
-    """
+def test_a_rust_impl_resolves_to_the_trait_it_names(tmp_path: Path) -> None:
+    """Happy path for `FR-10`: the trait is a real node, in another file, and the edge reaches it."""
     edges = _edges_of(_build(tmp_path, _RUST), EdgeKind.IMPLEMENTS)
 
-    impl_edges = [(target, raw) for src, target, raw in edges if src == "Impl"]
-    assert impl_edges == [("", "Runner")], (
-        f"expected one ghost edge naming Runner, got {impl_edges} — if traits are now symbols, "
-        f"this limit is lifted and the docstring above needs rewriting"
+    assert any(src == "Impl" and target.endswith("t.rs") for src, target, _raw in edges), (
+        f"the impl did not resolve to the trait's file: {edges}"
     )
+
+
+def test_a_supertrait_is_an_edge_at_all(tmp_path: Path) -> None:
+    """Happy path for `FR-9` in Rust, and the case that used to produce NOTHING.
+
+    Rust has no struct inheritance, so every hierarchy edge it can emit targets a trait. While a
+    trait was not a symbol, `Derived` had no child at the seam, so `_map_supertypes` never ran for
+    it — the edge was not ghosted, it was never built. `FR-9` delivered nothing for the language.
+    """
+    files = {"a.rs": "pub trait Base {}\npub trait Derived: Base {}\n"}
+
+    edges = _edges_of(_build(tmp_path, files), EdgeKind.EXTENDS)
+
+    assert any(src == "Derived" and target.endswith("a.rs") for src, target, _raw in edges), (
+        f"the supertrait produced no resolved edge: {edges}"
+    )
+
+
+def test_a_rust_trait_from_outside_the_build_still_ghosts_by_name(tmp_path: Path) -> None:
+    """Boundary: resolution must not start inventing traits to satisfy the tests above."""
+    files = {"i.rs": "struct Impl;\nimpl NotHere for Impl {}\n"}
+
+    edges = _edges_of(_build(tmp_path, files), EdgeKind.IMPLEMENTS)
+
+    assert [(t, r) for s, t, r in edges if s == "Impl"] == [("", "NotHere")]
 
 
 def test_go_and_rust_do_not_disturb_python(tmp_path: Path) -> None:

@@ -409,6 +409,15 @@
           "old": "_GHOST_TYPE_PREFIX = \"<unresolved-type>/\"",
           "new": "_GHOST_TYPE_PREFIX = \"<unresolved-module>/\"",
           "breaks": "an unresolved module and an unresolved type of the same name become ONE ghost node, so a file's missing dependency and a type's missing parent are reported as the same unknown"
+        },
+        {
+          "id": "a-rust-trait-is-invisible-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (trait_item name: (type_identifier) @name)\n",
+          "new": "        ; (trait_item name: (type_identifier) @name)  ; MUTANT\n",
+          "breaks": "a trait stops being a symbol, so it has no node and no child at the seam -- and since Rust has no struct inheritance, EVERY hierarchy edge the language can emit targets a trait. A supertrait bound then produces no edge at all, not even a ghost, because the mapper has no child to walk"
         }
       ]
     },

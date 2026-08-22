@@ -90,8 +90,14 @@ class RustCodeStructure(FunctionBasedParser):
 
     @property
     def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+        # A trait is a declared type, so it is a symbol. Without this line it was invisible to
+        # everything downstream -- no symbol, no child at the seam, no node in the graph -- and
+        # since Rust has no struct inheritance, EVERY hierarchy edge the language can produce
+        # targets a trait. `trait Derived: Base` emitted no edge at all, not even a ghost, because
+        # there was no child for the mapper to walk.
         return """
         (struct_item name: (type_identifier) @name)
+        (trait_item name: (type_identifier) @name)
         (impl_item type: (type_identifier) @name)
         (impl_item type: (generic_type (type_identifier) @name))
         (function_item name: (identifier) @name)

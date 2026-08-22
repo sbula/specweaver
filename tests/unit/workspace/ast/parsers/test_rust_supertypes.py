@@ -130,3 +130,54 @@ class TestRustCodeStructureDegradation:
     def test_hostile_input_does_not_raise(self, rust: RustCodeStructure) -> None:
         """Hostile: text that is not Rust and never claimed to be."""
         assert isinstance(rust.extract_supertypes("\x00\x01 ../../etc/passwd {{{"), dict)
+
+
+class TestRustCodeStructureReportsTraitsAsSymbols:
+    """A trait is a declared type, so it is a symbol like any other.
+
+    Proves: TECH-068 FR-9, FR-10
+
+    `SCM_SYMBOL_QUERY` matched `struct_item`, `impl_item` and `function_item` and no trait, so a
+    trait was invisible to everything downstream: no symbol, no child at the seam, no node in the
+    graph. Rust has no struct inheritance, so **every** Rust hierarchy edge targets a trait — which
+    made `FR-9` deliver literally nothing for the language. `trait Derived: Base` emitted no edge at
+    all, not even a ghost, because `Derived` was not a symbol for `_map_supertypes` to run on.
+    """
+
+    def test_a_trait_is_a_symbol(self, rust: RustCodeStructure) -> None:
+        """Happy path: without this there is no node for anything to point at."""
+        assert "Runner" in rust.list_symbols("pub trait Runner {\n    fn go(&self);\n}\n")
+
+    def test_a_supertrait_and_its_base_are_both_symbols(self, rust: RustCodeStructure) -> None:
+        """Happy path: both ends of a trait hierarchy, or the edge still cannot resolve."""
+        symbols = rust.list_symbols("trait Base {}\ntrait Derived: Base {}\n")
+
+        assert {"Base", "Derived"} <= set(symbols), symbols
+
+    def test_structs_and_functions_are_still_symbols(self, rust: RustCodeStructure) -> None:
+        """The control. Adding a pattern must not cost the ones that were already matching.
+
+        `list_symbols` feeds skeleton extraction and symbol editing as well as the graph, so a
+        regression here reaches well past this ticket.
+        """
+        code = "struct Impl;\nfn helper() {}\nimpl Impl { fn method(&self) {} }\n"
+
+        symbols = rust.list_symbols(code)
+
+        assert "Impl" in symbols
+        assert "helper" in symbols
+        assert any(s.endswith("method") for s in symbols), symbols
+
+    def test_a_trait_reports_its_own_supertypes_under_its_own_name(
+        self, rust: RustCodeStructure
+    ) -> None:
+        """Boundary: the symbol and the supertype entry must agree on the name, or they never meet.
+
+        `extract_supertypes` keys on the declared name and `list_symbols` produces the child the
+        seam carries. A mismatch leaves both halves passing their own tests while the edge is built
+        against a name no node has.
+        """
+        code = "trait Base {}\ntrait Derived: Base {}\n"
+
+        assert "Derived" in rust.list_symbols(code)
+        assert rust.extract_supertypes(code)["Derived"]["extends"] == ["Base"]

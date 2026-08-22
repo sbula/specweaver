@@ -57,7 +57,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | The first real assertion on `graph_edges` | Nothing had ever driven a real parse through to a persisted edge — the polyglot test stops at the engine, the persist test hand-builds nodes, the only real `build_target` test counts nodes. 23 tests added this boundary, every one probed; `_clear_edges_of` went from 1 test protecting it to 6 |
 | Ghost edges say what they are | `FR-12` promised the unresolved raw name in edge metadata and delivered `{}`; three of the four links were already right and the engine dropped it. `os.getcwd` and `mystery_call` are two different ghosts again. Oversized identifiers truncate rather than abort a build |
 | Go and Rust joined the supertype contract | Both returned `{}` and the contract test looped over it, so the gap read as coverage. Go embedding is `EXTENDS` (**the user's call**, over a tenth `EdgeKind`); Rust separates `impl T for X` from `trait A: B` cleanly. Building it exposed that every Go type reached the graph classified as a PROCEDURE, so no Go hierarchy could ever resolve — classification now reads the parser's own answer |
-| Two limits recorded, not crossed | A reload drops every ghost edge (`load_from_db` filters on `is_active`, ghosts are stored inactive) — a tested decision, so `T-DIVERGE`. And a Rust trait is not a symbol, so `IMPLEMENTS` always ghosts; both have tests pinning the present behaviour |
+| Rust traits became visible | Recorded as a limit, then re-measured on the user's challenge and found to be **one line** of query. It mattered more than the first note said: Rust has no struct inheritance, so every hierarchy edge it can emit targets a trait, and a supertrait bound produced **no edge at all** — `FR-9` delivered nothing for the language until this |
+| One limit recorded, not crossed | A reload drops every ghost edge — `load_from_db` filters on `is_active` and ghosts are stored inactive. A tested decision, so `T-DIVERGE`, and the one `TECH-070` walks into. A test pins the present behaviour |
 | The handover had rotted to 23 MB | 332,068 lines, **122 of them distinct** — one section repeated ~10,000 times, some copies corrupted mid-line, burying content months stale. `.tmp/` is gitignored, so no diff and no gate ever saw it. `session_handover.py` was cleared by measurement, not assumption: one marker pair, a re-run changing zero bytes. It now warns when the file it writes has stopped being readable |
 | `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
@@ -78,9 +79,9 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 - **Four `TECH-068` findings remain**, recorded in its design's *Retrospective Pre-Commit Gate*
   section. Two are chores: `BaseTreeSitterParser._supertypes_of` is unreachable, and
   `resolve_module` has no unit tests so nothing pins the case-insensitive match RT-21 depends on.
-  Two are decisions: a **reload drops every ghost edge** (`T-DIVERGE` — a tested decision, and the
-  one `TECH-070` walks into), and a **Rust trait is not a symbol**, so `IMPLEMENTS` always ghosts.
-  The two the user chose to build on 2026-08-22 are closed.
+  One is a decision: a **reload drops every ghost edge** (`T-DIVERGE` — a tested decision, and the
+  one `TECH-070` walks into). Everything else the user chose to build on 2026-08-22 is closed,
+  including the Rust trait visibility first recorded as a limit and then measured properly.
 
 - **`allowed_imports` is a rule nothing reads.** `context_yaml_spec.md` declares `consumes` and
   `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. One
