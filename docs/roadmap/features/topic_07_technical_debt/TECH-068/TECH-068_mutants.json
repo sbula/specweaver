@@ -217,7 +217,8 @@
       "scope": [
         "tests/unit/workspace/ast/parsers/test_supertypes.py",
         "tests/integration/workspace/ast/parsers/test_every_parser_answers_the_contract.py",
-        "tests/integration/graph/test_symbol_index_is_built_once.py"
+        "tests/integration/graph/test_symbol_index_is_built_once.py",
+        "tests/unit/workspace/ast/parsers/test_cpp_supertypes.py"
       ],
       "mutants": [
         {
@@ -291,6 +292,33 @@
           "old": "                index.setdefault(str(name), set()).add(filepath)",
           "new": "                index[str(name)] = {filepath}",
           "breaks": "two classes of the same name collapse to whichever the walk saw last, so an ambiguous supertype resolves to a real edge that is right by accident or wrong in silence"
+        },
+        {
+          "id": "cpp-struct-loses-its-inheritance",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py",
+          "symbol": "CppCodeStructure",
+          "old": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\n        \"class_specifier\",\n        \"struct_specifier\",\n    )",
+          "new": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\"class_specifier\",)",
+          "breaks": "a C++ `struct S : public Base` reports nothing, so half the language's inheritance is silently absent while `class` keeps working -- partial coverage that reads as full"
+        },
+        {
+          "id": "cpp-base-clause-never-read",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py",
+          "symbol": "CppCodeStructure",
+          "old": "        clause = next((c for c in node.children if c.type == \"base_class_clause\"), None)",
+          "new": "        clause = None",
+          "breaks": "every C++ type reports an empty supertype list, which is the state SF-03 left and this boundary exists to close: the graph says no C++ type inherits from anything"
+        },
+        {
+          "id": "cpp-bases-become-implementations",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py",
+          "symbol": "CppCodeStructure",
+          "old": "        return {\"extends\": self._type_names_in(clause), \"implements\": []}",
+          "new": "        return {\"extends\": [], \"implements\": self._type_names_in(clause)}",
+          "breaks": "C++ has no interfaces, so an IMPLEMENTS edge there asserts a relationship the language cannot express -- and a reader asking which C++ types extend a base gets nothing"
         }
       ]
     },

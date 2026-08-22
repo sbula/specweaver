@@ -19,6 +19,22 @@ class CppCodeStructure(ClassBasedParser):
 
     grammar = staticmethod(tree_sitter_cpp.language)
 
+    # `class Impl : ...` and `struct S : ...` are different node types and both carry a base
+    # clause, so declaring only the first would silently cover half the language.
+    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (
+        "class_specifier",
+        "struct_specifier",
+    )
+
+    def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
+        """C++ has no interfaces, so every base is extension.
+
+        `access_specifier` is its own node type, which is what keeps `public` and `private` out of
+        the names — `_type_names_in` collects identifiers and type identifiers only.
+        """
+        clause = next((c for c in node.children if c.type == "base_class_clause"), None)
+        return {"extends": self._type_names_in(clause), "implements": []}
+
     # Held here because this grammar ships no tags query. Original work, written from
     # the grammar by inspection rather than adapted from upstream.
     TAGS_QUERY: typing.ClassVar[str | None] = """
