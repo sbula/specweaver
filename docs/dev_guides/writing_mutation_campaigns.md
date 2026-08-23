@@ -143,6 +143,25 @@ it is wanted).
 
 Reformatting does not change it; renaming a local does; editing a docstring does not.
 
+> [!CAUTION]
+> **`UNHASHED` is legal, and it means drift detection is OFF for that mutant.** `drift_of` returns
+> it and can never return `STALE`, so a claim whose code has moved out from under it reads as fine
+> forever. Measured 2026-08-23: `TECH-068` shipped **78 of 78 mutants unhashed** while every older
+> corpus was at 100%, so the entire graph corpus had no drift detection at the exact moment
+> `TECH-070` was queued to move that code. **Pin the hash in the boundary that authors the mutant.**
+
+**Three anchors can never be hashed**, and `--refresh` refuses them rather than pinning a lie:
+
+- a **module-level constant** (`_GHOST_TYPE_PREFIX`)
+- a **class-level assignment** (`BaseTreeSitterParser._NAME_NODE_TYPES`) — note that a `@property`
+  *method* hashes fine, because it is a `def`
+- a file that is **not Python** (`context.yaml`)
+
+Only `def` and `class` carry an enclosing scope to fingerprint. Hashing against the whole module
+instead would mark the mutant stale on every unrelated edit, which is worse than not supporting it.
+If a claim matters and its anchor cannot be hashed, anchor it on the function that *reads* the
+constant instead.
+
 ## Maintenance
 
 ```bash

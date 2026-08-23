@@ -16,7 +16,8 @@
           "symbol": "SqliteGraphRepository.persist_semantic_digraph",
           "old": "kind = _edge_kind(source_hash, target_hash, data)",
           "new": "kind = data.get(\"type\", \"CALLS\")",
-          "breaks": "the store reads the key the engine does not write, so every edge is stored as CALLS -- measured before the fix as 108 CONTAINS edges all typed CALLS, a call graph the repository never had"
+          "breaks": "the store reads the key the engine does not write, so every edge is stored as CALLS -- measured before the fix as 108 CONTAINS edges all typed CALLS, a call graph the repository never had",
+          "symbol_sha": "sha256:9b253df06823d57d79448b8c05cd141f21308cfe82565cf9c8cd1f22c01f5f7a"
         },
         {
           "id": "an-unknown-kind-reaches-the-column",
@@ -25,7 +26,8 @@
           "symbol": "_edge_kind",
           "old": "if kind not in {k.value for k in EdgeKind}:",
           "new": "if False:",
-          "breaks": "a missing or undeclared kind is written to the column instead of refused, so a None or a typo becomes an edge type no reader can interpret and no gate can see"
+          "breaks": "a missing or undeclared kind is written to the column instead of refused, so a None or a typo becomes an edge type no reader can interpret and no gate can see",
+          "symbol_sha": "sha256:9cdd97307357d74d18b00cb7eea4cf19a05b31d303f46eec0a3bb41b6b5de3f3"
         },
         {
           "id": "the-engine-drifts-again",
@@ -34,7 +36,8 @@
           "symbol": "InMemoryGraphEngine.upsert_edge",
           "old": "**{EDGE_KIND_ATTR: edge.kind.value}",
           "new": "**{\"type\": edge.kind.value}",
-          "breaks": "the engine names the attribute itself instead of importing the shared constant, which is exactly how the original defect arose -- two modules independently choosing what to call the same thing, each self-consistent and neither able to see the other"
+          "breaks": "the engine names the attribute itself instead of importing the shared constant, which is exactly how the original defect arose -- two modules independently choosing what to call the same thing, each self-consistent and neither able to see the other",
+          "symbol_sha": "sha256:64b52cc31dc04ef8e2c06d412583870995c4b53a822d2040b2c06434505eea86"
         }
       ]
     },
@@ -52,7 +55,8 @@
           "symbol": "SqliteGraphRepository._clear_edges_of",
           "old": "        for i in range(0, len(ids), 999):",
           "new": "        for i in range(0, 0, 999):",
-          "breaks": "the clear loop never runs, so INSERT OR REPLACE leaves every departed edge in place forever -- a retired call stays a dependency and the set only grows"
+          "breaks": "the clear loop never runs, so INSERT OR REPLACE leaves every departed edge in place forever -- a retired call stays a dependency and the set only grows",
+          "symbol_sha": "sha256:1b2311c31d19e855a6b5b967c390b4bbb6f208d9153b102710c56b5517a9899c"
         },
         {
           "id": "the-clear-is-unscoped",
@@ -61,7 +65,8 @@
           "symbol": "SqliteGraphRepository._clear_edges_of",
           "old": "f\"DELETE FROM graph_edges WHERE source_id IN ({placeholders})\",",
           "new": "\"DELETE FROM graph_edges\",",
-          "breaks": "every service's edges are deleted by any build, because graph_edges carries no service_name and the node ids are the only thing scoping the sweep"
+          "breaks": "every service's edges are deleted by any build, because graph_edges carries no service_name and the node ids are the only thing scoping the sweep",
+          "symbol_sha": "sha256:1b2311c31d19e855a6b5b967c390b4bbb6f208d9153b102710c56b5517a9899c"
         }
       ]
     },
@@ -81,7 +86,8 @@
           "symbol": "PythonCodeStructure._from_import_modules",
           "old": "        relative = next(iter(self._children_of_type(node, \"relative_import\")), None)",
           "new": "        relative = None",
-          "breaks": "every relative import reports the imported SYMBOL instead of the module, so a real dependency resolves to no file and reads as an unknown one -- 27 such imports in this repo's own src"
+          "breaks": "every relative import reports the imported SYMBOL instead of the module, so a real dependency resolves to no file and reads as an unknown one -- 27 such imports in this repo's own src",
+          "symbol_sha": "sha256:d5b6722aacd58d22414cdabfc9e3a167791b67081942fb1df38f67f1659fb2d7"
         },
         {
           "id": "a-relative-import-reads-as-external",
@@ -90,7 +96,8 @@
           "symbol": "PythonAnalyzer._is_external",
           "old": "        if not top:\n            return False",
           "new": "        if False:\n            return False",
-          "breaks": "a relative import's root is the empty string, which is absent from the stdlib list and is not specweaver, so any package using relative imports infers the adapter archetype instead of pure-logic"
+          "breaks": "a relative import's root is the empty string, which is absent from the stdlib list and is not specweaver, so any package using relative imports infers the adapter archetype instead of pure-logic",
+          "symbol_sha": "sha256:f6b95d886fa116be124dbd7cdba5f218ecc4d1cfb4f5f9ba82f9b4fda7cf96bc"
         },
         {
           "id": "the-seam-drops-imports",
@@ -99,7 +106,8 @@
           "symbol": "extract_ast_dict",
           "old": "        ast_data[\"imports\"] = parser.extract_imports(code)",
           "new": "        pass",
-          "breaks": "the mapper receives no imports, so IMPORTS edges cannot be built at all -- the state the graph shipped in, where nine kinds were declared and one was written"
+          "breaks": "the mapper receives no imports, so IMPORTS edges cannot be built at all -- the state the graph shipped in, where nine kinds were declared and one was written",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "the-contract-loses-its-declared-fields",
@@ -108,7 +116,8 @@
           "symbol": "extract_ast_dict",
           "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
           "new": "{\"type\": \"module\", \"calls\": [], \"children\": []}",
-          "breaks": "the file-level `imports` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no imports or a writer that predates the field"
+          "breaks": "the file-level `imports` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no imports or a writer that predates the field",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         }
       ]
     },
@@ -127,7 +136,8 @@
           "symbol": "OntologyMapper._map_imports",
           "old": "        self._map_imports(ast_data.get(\"imports\", []), file_hash, known_files, edges)",
           "new": "        pass",
-          "breaks": "no IMPORTS edge is built at all, which is the state the graph shipped in: nine kinds declared, one written"
+          "breaks": "no IMPORTS edge is built at all, which is the state the graph shipped in: nine kinds declared, one written",
+          "symbol_sha": "sha256:550aec50f7303de248b6bf2095f6d14e16a91d20fbda931759328c60022164fb"
         },
         {
           "id": "an-unresolved-import-vanishes",
@@ -136,7 +146,8 @@
           "symbol": "OntologyMapper._map_imports",
           "old": "            resolved = resolve_module(module, known_files)",
           "new": "            resolved = resolve_module(module, known_files)\n            if resolved is None:\n                continue",
-          "breaks": "an import outside the parsed set produces nothing instead of a ghost, so a traversal cannot tell 'nothing imports this' from 'its importer is outside what we parsed'"
+          "breaks": "an import outside the parsed set produces nothing instead of a ghost, so a traversal cannot tell 'nothing imports this' from 'its importer is outside what we parsed'",
+          "symbol_sha": "sha256:550aec50f7303de248b6bf2095f6d14e16a91d20fbda931759328c60022164fb"
         },
         {
           "id": "ambiguity-becomes-a-guess",
@@ -145,7 +156,8 @@
           "symbol": "resolve_module",
           "old": "        if matches:\n            return None",
           "new": "        if matches:\n            return sorted(matches)[0]",
-          "breaks": "two collected files matching one import resolve to whichever sorts first, so a name collision becomes a dependency that looks exactly like a real one -- ADR-006 makes the graph the truth store"
+          "breaks": "two collected files matching one import resolve to whichever sorts first, so a name collision becomes a dependency that looks exactly like a real one -- ADR-006 makes the graph the truth store",
+          "symbol_sha": "sha256:e177f5d93c6a1c48b76f1970e93ad5186f34bbb1e7be47a45296fa524ed385ba"
         },
         {
           "id": "a-package-no-longer-resolves",
@@ -154,7 +166,8 @@
           "symbol": "resolve_module",
           "old": "    for tail in (stem, f\"{stem}/__init__\"):",
           "new": "    for tail in (stem,):",
-          "breaks": "a package is only ever matched as a module file, so every import of a directory with an __init__ becomes a ghost"
+          "breaks": "a package is only ever matched as a module file, so every import of a directory with an __init__ becomes a ghost",
+          "symbol_sha": "sha256:e177f5d93c6a1c48b76f1970e93ad5186f34bbb1e7be47a45296fa524ed385ba"
         },
         {
           "id": "only-the-whole-module-path-is-tried",
@@ -163,7 +176,8 @@
           "symbol": "resolve_module",
           "old": "    for start in range(len(segments)):",
           "new": "    for start in range(1):",
-          "breaks": "a leading segment that is not a directory -- rust's `crate`, a source root -- stops the module resolving, so whole languages ghost silently"
+          "breaks": "a leading segment that is not a directory -- rust's `crate`, a source root -- stops the module resolving, so whole languages ghost silently",
+          "symbol_sha": "sha256:e177f5d93c6a1c48b76f1970e93ad5186f34bbb1e7be47a45296fa524ed385ba"
         },
         {
           "id": "the-stem-is-not-lowered",
@@ -172,7 +186,8 @@
           "symbol": "resolve_module",
           "old": "        stem = \"/\".join(segments[start:]).lower()",
           "new": "        stem = \"/\".join(segments[start:])",
-          "breaks": "lowering only the candidates is not case-insensitive matching, it is a filter that happens to accept lowercase imports -- `import Models` against a collected Models.py resolves to a ghost while `from models import ...` against the same file resolves, so every capitalised module name loses its dependency edge"
+          "breaks": "lowering only the candidates is not case-insensitive matching, it is a filter that happens to accept lowercase imports -- `import Models` against a collected Models.py resolves to a ghost while `from models import ...` against the same file resolves, so every capitalised module name loses its dependency edge",
+          "symbol_sha": "sha256:e177f5d93c6a1c48b76f1970e93ad5186f34bbb1e7be47a45296fa524ed385ba"
         }
       ]
     },
@@ -190,7 +205,8 @@
           "symbol": "extract_ast_dict",
           "old": "        ast_data[\"unparsed\"] = \"read\"",
           "new": "        pass",
-          "breaks": "a file nobody could open looks exactly like a file with nothing in it, so a traversal returning no edges has two meanings and the reader cannot tell which"
+          "breaks": "a file nobody could open looks exactly like a file with nothing in it, so a traversal returning no edges has two meanings and the reader cannot tell which",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "a-parser-failure-goes-quiet",
@@ -199,7 +215,8 @@
           "symbol": "extract_ast_dict",
           "old": "        ast_data[\"unparsed\"] = \"parse\"",
           "new": "        pass",
-          "breaks": "a grammar that raised leaves no record, so a whole file's dependencies are silently absent from the graph"
+          "breaks": "a grammar that raised leaves no record, so a whole file's dependencies are silently absent from the graph",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "the-node-drops-the-marker",
@@ -208,7 +225,8 @@
           "symbol": "OntologyMapper.map_ast_to_nodes",
           "old": "metadata={\"unparsed\": unparsed} if unparsed else {},",
           "new": "metadata={},",
-          "breaks": "the seam knows the file failed and the graph does not, so the fact dies at the boundary it was discovered on"
+          "breaks": "the seam knows the file failed and the graph does not, so the fact dies at the boundary it was discovered on",
+          "symbol_sha": "sha256:52f2df16743ec13da76b608e1af8eefc215024c6f2755d3a2c43d43e6b25cfdf"
         },
         {
           "id": "every-file-is-marked-unparsed",
@@ -217,7 +235,8 @@
           "symbol": "OntologyMapper.map_ast_to_nodes",
           "old": "metadata={\"unparsed\": unparsed} if unparsed else {},",
           "new": "metadata={\"unparsed\": unparsed or \"read\"},",
-          "breaks": "the marker is present on every node, so it distinguishes nothing -- a flag that is always set carries no information at all"
+          "breaks": "the marker is present on every node, so it distinguishes nothing -- a flag that is always set carries no information at all",
+          "symbol_sha": "sha256:52f2df16743ec13da76b608e1af8eefc215024c6f2755d3a2c43d43e6b25cfdf"
         }
       ]
     },
@@ -239,7 +258,8 @@
           "symbol": "JavaCodeStructure._supertypes_of",
           "old": "\"implements\": self._type_names_in(by_type.get(\"super_interfaces\")),",
           "new": "\"implements\": [],",
-          "breaks": "Java's super_interfaces are dropped, so a language whose grammar states the distinction plainly loses it anyway -- exactly the flattening extract_framework_markers already does and that FR-4 exists to avoid"
+          "breaks": "Java's super_interfaces are dropped, so a language whose grammar states the distinction plainly loses it anyway -- exactly the flattening extract_framework_markers already does and that FR-4 exists to avoid",
+          "symbol_sha": "sha256:0b44ba1093f9f3577be002556fd07e5560917570c8e560cb10fbde4e22802dbf"
         },
         {
           "id": "kotlin-guesses-by-parenthesis",
@@ -248,7 +268,8 @@
           "symbol": "KotlinCodeStructure._supertypes_of",
           "old": "return {\"extends\": self._type_names_in(specifiers), \"implements\": []}",
           "new": "names = self._type_names_in(specifiers)\n        return {\"extends\": names[:1], \"implements\": names[1:]}",
-          "breaks": "Kotlin supertypes are split by position, which is right for ordinary code and silently wrong for `by` delegation or a base with no explicit constructor call -- a wrong IMPLEMENTS edge looks exactly like a correct one"
+          "breaks": "Kotlin supertypes are split by position, which is right for ordinary code and silently wrong for `by` delegation or a base with no explicit constructor call -- a wrong IMPLEMENTS edge looks exactly like a correct one",
+          "symbol_sha": "sha256:2c1ccc1922ec3afbb8e9ce4e143974c7d5aa089fc9cd2358be5809e88fda3aa3"
         },
         {
           "id": "type-arguments-become-supertypes",
@@ -257,7 +278,8 @@
           "symbol": "BaseTreeSitterParser._type_names_in",
           "old": "            if current.type in (\"type_arguments\", \"type_parameters\"):",
           "new": "            if False:",
-          "breaks": "`Base<T>` reports a dependency on the type parameter T as well as on Base, so every generic supertype invents an edge to a type that does not exist"
+          "breaks": "`Base<T>` reports a dependency on the type parameter T as well as on Base, so every generic supertype invents an edge to a type that does not exist",
+          "symbol_sha": "sha256:851c02f54b862710f7e0fc5d27071bf716f11548067821366f7e02def1ea5b61"
         },
         {
           "id": "a-language-without-the-concept-raises",
@@ -266,7 +288,8 @@
           "symbol": "BaseTreeSitterParser.extract_supertypes",
           "old": "        if not code.strip() or not self.TYPE_DECLARATION_NODES:\n            return {}",
           "new": "        if not self.TYPE_DECLARATION_NODES:\n            raise NotImplementedError(self.__class__.__name__)",
-          "breaks": "SQL, markdown and C abort the build instead of reporting nothing, so one file in a language with no inheritance takes down the whole graph"
+          "breaks": "SQL, markdown and C abort the build instead of reporting nothing, so one file in a language with no inheritance takes down the whole graph",
+          "symbol_sha": "sha256:71843f93b18503889f46f9bfb7d5a0590a8843588e9ddb2c2fa6602b5bad9d78"
         },
         {
           "id": "no-symbol-index",
@@ -275,7 +298,8 @@
           "symbol": "GraphBuilder.ingest_target",
           "old": "        self.symbol_index = _index_types(parsed)",
           "new": "        pass",
-          "breaks": "nothing maps a type name to the file declaring it, so a supertype can only ever resolve to a ghost and the inheritance half of the graph stays empty"
+          "breaks": "nothing maps a type name to the file declaring it, so a supertype can only ever resolve to a ghost and the inheritance half of the graph stays empty",
+          "symbol_sha": "sha256:9aa733e79660e8543e2a93a85c74d6f7b9ff74a56c0135abdc8b177c1399edea"
         },
         {
           "id": "the-prepass-re-parses",
@@ -284,7 +308,8 @@
           "symbol": "GraphBuilder.ingest_target",
           "old": "            self.ingest_ast(path, parsed[path])",
           "new": "            self.ingest_file(path)",
-          "breaks": "every file is read twice -- the measured 2.8 ms/file becomes 5.6, which at the reference workload's 3,000 files is ~17s against NFR-1's 60s budget for everything this ticket adds"
+          "breaks": "every file is read twice -- the measured 2.8 ms/file becomes 5.6, which at the reference workload's 3,000 files is ~17s against NFR-1's 60s budget for everything this ticket adds",
+          "symbol_sha": "sha256:9aa733e79660e8543e2a93a85c74d6f7b9ff74a56c0135abdc8b177c1399edea"
         },
         {
           "id": "a-name-in-two-files-keeps-one",
@@ -293,7 +318,8 @@
           "symbol": "_index_types",
           "old": "                index.setdefault(str(name), set()).add(filepath)",
           "new": "                index[str(name)] = {filepath}",
-          "breaks": "two classes of the same name collapse to whichever the walk saw last, so an ambiguous supertype resolves to a real edge that is right by accident or wrong in silence"
+          "breaks": "two classes of the same name collapse to whichever the walk saw last, so an ambiguous supertype resolves to a real edge that is right by accident or wrong in silence",
+          "symbol_sha": "sha256:ae5e14ebb69c9c16f1af9839085ff6f41789884ecc4e3ef9ff4e28be44d3d340"
         },
         {
           "id": "cpp-struct-loses-its-inheritance",
@@ -302,7 +328,8 @@
           "symbol": "CppCodeStructure",
           "old": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\n        \"class_specifier\",\n        \"struct_specifier\",\n    )",
           "new": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\"class_specifier\",)",
-          "breaks": "a C++ `struct S : public Base` reports nothing, so half the language's inheritance is silently absent while `class` keeps working -- partial coverage that reads as full"
+          "breaks": "a C++ `struct S : public Base` reports nothing, so half the language's inheritance is silently absent while `class` keeps working -- partial coverage that reads as full",
+          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
         },
         {
           "id": "cpp-base-clause-never-read",
@@ -311,7 +338,8 @@
           "symbol": "CppCodeStructure",
           "old": "        clause = next((c for c in node.children if c.type == \"base_class_clause\"), None)",
           "new": "        clause = None",
-          "breaks": "every C++ type reports an empty supertype list, which is the state SF-03 left and this boundary exists to close: the graph says no C++ type inherits from anything"
+          "breaks": "every C++ type reports an empty supertype list, which is the state SF-03 left and this boundary exists to close: the graph says no C++ type inherits from anything",
+          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
         },
         {
           "id": "cpp-bases-become-implementations",
@@ -320,7 +348,8 @@
           "symbol": "CppCodeStructure",
           "old": "        return {\"extends\": self._type_names_in(clause), \"implements\": []}",
           "new": "        return {\"extends\": [], \"implements\": self._type_names_in(clause)}",
-          "breaks": "C++ has no interfaces, so an IMPLEMENTS edge there asserts a relationship the language cannot express -- and a reader asking which C++ types extend a base gets nothing"
+          "breaks": "C++ has no interfaces, so an IMPLEMENTS edge there asserts a relationship the language cannot express -- and a reader asking which C++ types extend a base gets nothing",
+          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
         },
         {
           "id": "the-base-guesses-instead-of-refusing",
@@ -329,7 +358,8 @@
           "symbol": "BaseTreeSitterParser._supertypes_of",
           "old": "        raise NotImplementedError(\n            f\"{type(self).__name__} declares TYPE_DECLARATION_NODES but no _supertypes_of, so \"",
           "new": "        return {\"extends\": [], \"implements\": []}\n        raise NotImplementedError(\n            f\"{type(self).__name__} declares TYPE_DECLARATION_NODES but no _supertypes_of, so \"",
-          "breaks": "a language that declares its type nodes and never says what they inherit gets a silent 'inherits nothing' -- indistinguishable from a language with no inheritance, and wrong in exactly the way nobody looks for"
+          "breaks": "a language that declares its type nodes and never says what they inherit gets a silent 'inherits nothing' -- indistinguishable from a language with no inheritance, and wrong in exactly the way nobody looks for",
+          "symbol_sha": "sha256:98da70d752cd539782c29994a632a7e159353e78fc193fd48236adb51fa41920"
         }
       ]
     },
@@ -347,7 +377,8 @@
           "symbol": "extract_ast_dict",
           "old": "\"supertypes\": _supertype_records(supertypes.get(symbol, {})),",
           "new": "\"supertypes\": [],",
-          "breaks": "the mapper receives no supertype at all, so EXTENDS and IMPLEMENTS cannot be built -- the field stays declared and permanently empty, which reads as 'this type inherits nothing'"
+          "breaks": "the mapper receives no supertype at all, so EXTENDS and IMPLEMENTS cannot be built -- the field stays declared and permanently empty, which reads as 'this type inherits nothing'",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "every-supertype-becomes-extension",
@@ -356,7 +387,8 @@
           "symbol": "_supertype_records",
           "old": "        {\"name\": name, \"kind\": kind}",
           "new": "        {\"name\": name, \"kind\": \"extends\"}",
-          "breaks": "the kind the grammar stated is thrown away at the seam, so Java's implements collapses into extends -- the same flattening extract_framework_markers already does and that FR-4 was written to undo"
+          "breaks": "the kind the grammar stated is thrown away at the seam, so Java's implements collapses into extends -- the same flattening extract_framework_markers already does and that FR-4 was written to undo",
+          "symbol_sha": "sha256:41a93baef9acafe03ec3f213888e226adf3d627aaf9fbb062c2386adebaf06be"
         },
         {
           "id": "implementation-is-dropped-entirely",
@@ -365,7 +397,8 @@
           "symbol": "_supertype_records",
           "old": "        for kind in (\"extends\", \"implements\")",
           "new": "        for kind in (\"extends\",)",
-          "breaks": "implemented interfaces never cross the seam, so a type that implements but does not extend appears to inherit nothing"
+          "breaks": "implemented interfaces never cross the seam, so a type that implements but does not extend appears to inherit nothing",
+          "symbol_sha": "sha256:41a93baef9acafe03ec3f213888e226adf3d627aaf9fbb062c2386adebaf06be"
         }
       ]
     },
@@ -383,7 +416,8 @@
           "symbol": "OntologyMapper.map_ast_to_nodes",
           "old": "            self._map_supertypes(filepath, child, symbol_index or {}, edges)",
           "new": "            pass",
-          "breaks": "no EXTENDS or IMPLEMENTS edge is built, so an inheritance traversal returns nothing and the two kinds this sub-feature exists for stay absent"
+          "breaks": "no EXTENDS or IMPLEMENTS edge is built, so an inheritance traversal returns nothing and the two kinds this sub-feature exists for stay absent",
+          "symbol_sha": "sha256:52f2df16743ec13da76b608e1af8eefc215024c6f2755d3a2c43d43e6b25cfdf"
         },
         {
           "id": "implementation-emitted-as-extension",
@@ -392,7 +426,8 @@
           "symbol": "OntologyMapper",
           "old": "        \"implements\": EdgeKind.IMPLEMENTS,",
           "new": "        \"implements\": EdgeKind.EXTENDS,",
-          "breaks": "the kind the grammar stated is collapsed at the last step, so a reader asking which types fulfil an interface gets nothing while EXTENDS reports twice what it should"
+          "breaks": "the kind the grammar stated is collapsed at the last step, so a reader asking which types fulfil an interface gets nothing while EXTENDS reports twice what it should",
+          "symbol_sha": "sha256:79d8e14fb674083901ba45d1ad65f62759a2e306e1f3487f7c54a90a25a39010"
         },
         {
           "id": "supertype-ambiguity-resolved-to-a-guess",
@@ -401,7 +436,8 @@
           "symbol": "OntologyMapper._supertype_target",
           "old": "        declared_in = symbol_index.get(name, set())\n        if len(declared_in) == 1:",
           "new": "        declared_in = symbol_index.get(name, set())\n        if declared_in:",
-          "breaks": "a supertype name declared in two files resolves to whichever the set yields first, so a name collision becomes a parent that is right by accident or wrong in silence"
+          "breaks": "a supertype name declared in two files resolves to whichever the set yields first, so a name collision becomes a parent that is right by accident or wrong in silence",
+          "symbol_sha": "sha256:2066a121f83c6ab875d71666575411d59c0076fd2ecabe7cdead40098ce48345"
         },
         {
           "id": "the-edge-runs-file-to-file",
@@ -410,7 +446,8 @@
           "symbol": "OntologyMapper._map_supertypes",
           "old": "        source = self.hasher.hash_node(filepath, str(name))",
           "new": "        source = self.hasher.hash_file(filepath)",
-          "breaks": "inheritance is recorded from the FILE rather than the type, so a file declaring two classes appears to inherit from both hierarchies and neither type has a parent of its own"
+          "breaks": "inheritance is recorded from the FILE rather than the type, so a file declaring two classes appears to inherit from both hierarchies and neither type has a parent of its own",
+          "symbol_sha": "sha256:5e81e80bfa1d964ee2a1ee0d41848398058f849cc85d613ee94ba575045e4e5f"
         },
         {
           "id": "one-ghost-namespace-for-two-kinds",
@@ -420,15 +457,6 @@
           "old": "_GHOST_TYPE_PREFIX = \"<unresolved-type>/\"",
           "new": "_GHOST_TYPE_PREFIX = \"<unresolved-module>/\"",
           "breaks": "an unresolved module and an unresolved type of the same name become ONE ghost node, so a file's missing dependency and a type's missing parent are reported as the same unknown"
-        },
-        {
-          "id": "a-rust-trait-is-invisible-again",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
-          "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
-          "old": "        (trait_item name: (type_identifier) @name)\n",
-          "new": "        ; (trait_item name: (type_identifier) @name)  ; MUTANT\n",
-          "breaks": "a trait stops being a symbol, so it has no node and no child at the seam -- and since Rust has no struct inheritance, EVERY hierarchy edge the language can emit targets a trait. A supertrait bound then produces no edge at all, not even a ghost, because the mapper has no child to walk"
         }
       ]
     },
@@ -447,7 +475,8 @@
           "symbol": "BaseTreeSitterParser._enclosing_symbol",
           "old": "        return \".\".join(reversed(names))",
           "new": "        return names[0] if names else \"\"",
-          "breaks": "a method's calls are attributed to `go` rather than `Impl.go`, so every CALLS edge from a method points out of a node hash that does not exist"
+          "breaks": "a method's calls are attributed to `go` rather than `Impl.go`, so every CALLS edge from a method points out of a node hash that does not exist",
+          "symbol_sha": "sha256:87561ca25374f5dd0590492e9033698ff0756f137082e0e08916a7f51f0e54ee"
         },
         {
           "id": "module-level-calls-are-dropped",
@@ -456,7 +485,8 @@
           "symbol": "BaseTreeSitterParser.extract_call_sites",
           "old": "                caller = self._enclosing_symbol(node)\n",
           "new": "                caller = self._enclosing_symbol(node)\n                if not caller:\n                    continue\n",
-          "breaks": "a call outside any declaration -- a decorator argument, a constant built by calling something -- disappears, so a whole class of real dependencies is silently absent"
+          "breaks": "a call outside any declaration -- a decorator argument, a constant built by calling something -- disappears, so a whole class of real dependencies is silently absent",
+          "symbol_sha": "sha256:b5f8b6daee38f79b75d8882ef81f91c126963995865047181f06c5270cfd3373"
         },
         {
           "id": "a-language-without-a-query-raises",
@@ -465,7 +495,8 @@
           "symbol": "BaseTreeSitterParser.extract_call_sites",
           "old": "        if not code.strip() or not self.TAGS_QUERY:\n            return {}",
           "new": "        if not code.strip():\n            return {}",
-          "breaks": "kotlin, typescript, c and cpp abort instead of reporting nothing, so one file in a language SF-05 has not reached yet takes down the whole build"
+          "breaks": "kotlin, typescript, c and cpp abort instead of reporting nothing, so one file in a language SF-05 has not reached yet takes down the whole build",
+          "symbol_sha": "sha256:b5f8b6daee38f79b75d8882ef81f91c126963995865047181f06c5270cfd3373"
         },
         {
           "id": "definitions-counted-as-calls",
@@ -474,7 +505,8 @@
           "symbol": "BaseTreeSitterParser.extract_call_sites",
           "old": "            if \"reference.call\" not in captured:",
           "new": "            if False:",
-          "breaks": "the `name` capture is shared with the definition patterns, so every declared symbol is reported as something that called itself -- CALLS edges would be manufactured for code that calls nothing"
+          "breaks": "the `name` capture is shared with the definition patterns, so every declared symbol is reported as something that called itself -- CALLS edges would be manufactured for code that calls nothing",
+          "symbol_sha": "sha256:b5f8b6daee38f79b75d8882ef81f91c126963995865047181f06c5270cfd3373"
         }
       ]
     },
@@ -494,7 +526,8 @@
           "symbol": "GraphBuilder.ingest_target",
           "old": "        self.procedure_index = _index_procedures(parsed)",
           "new": "        pass",
-          "breaks": "nothing maps a callee name to the procedure declaring it, so every CALLS edge can only ever reach a ghost and the call half of the graph stays empty"
+          "breaks": "nothing maps a callee name to the procedure declaring it, so every CALLS edge can only ever reach a ghost and the call half of the graph stays empty",
+          "symbol_sha": "sha256:9aa733e79660e8543e2a93a85c74d6f7b9ff74a56c0135abdc8b177c1399edea"
         },
         {
           "id": "one-namespace-for-both-kinds",
@@ -503,7 +536,8 @@
           "symbol": "_index_procedures",
           "old": "            if not isinstance(child, dict) or child.get(\"type\") != \"function_definition\":",
           "new": "            if not isinstance(child, dict):",
-          "breaks": "types enter the procedure index, so a `class Foo` makes a `def Foo` ambiguous and both ghost where neither actually collided"
+          "breaks": "types enter the procedure index, so a `class Foo` makes a `def Foo` ambiguous and both ghost where neither actually collided",
+          "symbol_sha": "sha256:e187d3300172d0c4ed2d13ee0af64c716d4bfdbbe86b23d141b82d614db2f428"
         },
         {
           "id": "indexed-by-the-qualified-name",
@@ -512,7 +546,8 @@
           "symbol": "_index_procedures",
           "old": "                index.setdefault(name.rsplit(\".\", 1)[-1], set()).add((filepath, name))",
           "new": "                index.setdefault(name, set()).add((filepath, name))",
-          "breaks": "a method is filed under `Impl.other` while a call is written `other`, so no method call ever resolves and every one becomes a ghost"
+          "breaks": "a method is filed under `Impl.other` while a call is written `other`, so no method call ever resolves and every one becomes a ghost",
+          "symbol_sha": "sha256:e187d3300172d0c4ed2d13ee0af64c716d4bfdbbe86b23d141b82d614db2f428"
         },
         {
           "id": "an-unnamed-declaration-is-indexed",
@@ -521,7 +556,8 @@
           "symbol": "_index_procedures",
           "old": "            name = str(child.get(\"name\") or \"\")\n            if name:",
           "new": "            name = str(child.get(\"name\") or \"\")\n            if True:",
-          "breaks": "an empty name keys the index on the empty string, which a malformed payload can then match against, resolving a call to whatever nameless thing was indexed"
+          "breaks": "an empty name keys the index on the empty string, which a malformed payload can then match against, resolving a call to whatever nameless thing was indexed",
+          "symbol_sha": "sha256:e187d3300172d0c4ed2d13ee0af64c716d4bfdbbe86b23d141b82d614db2f428"
         },
         {
           "id": "no-calls-edges",
@@ -530,7 +566,8 @@
           "symbol": "OntologyMapper.map_ast_to_nodes",
           "old": "                    child.get(\"calls\", []),",
           "new": "                    [],",
-          "breaks": "no CALLS edge is built from any symbol, so caller/callee traversal returns nothing -- the question every named reader of this graph exists to ask"
+          "breaks": "no CALLS edge is built from any symbol, so caller/callee traversal returns nothing -- the question every named reader of this graph exists to ask",
+          "symbol_sha": "sha256:52f2df16743ec13da76b608e1af8eefc215024c6f2755d3a2c43d43e6b25cfdf"
         },
         {
           "id": "module-level-calls-dropped",
@@ -539,7 +576,8 @@
           "symbol": "OntologyMapper.map_ast_to_nodes",
           "old": "        self._map_calls(file_hash, ast_data.get(\"calls\", []), procedure_index or {}, edges)",
           "new": "        pass",
-          "breaks": "a decorator argument or a constant built by a call never becomes an edge, so a whole class of real file-level dependencies is absent from the graph"
+          "breaks": "a decorator argument or a constant built by a call never becomes an edge, so a whole class of real file-level dependencies is absent from the graph",
+          "symbol_sha": "sha256:52f2df16743ec13da76b608e1af8eefc215024c6f2755d3a2c43d43e6b25cfdf"
         },
         {
           "id": "ambiguity-resolved-to-a-guess",
@@ -548,7 +586,8 @@
           "symbol": "OntologyMapper._callee_target",
           "old": "        declared_in = procedure_index.get(name, set())\n        if len(declared_in) == 1:",
           "new": "        declared_in = procedure_index.get(name, set())\n        if declared_in:",
-          "breaks": "a callee name declared twice resolves to whichever the set yields first, so a name collision becomes a call that is right by accident or wrong in silence -- and `run`, `check` and `execute` collide 14, 26 and 25 times in this repository alone"
+          "breaks": "a callee name declared twice resolves to whichever the set yields first, so a name collision becomes a call that is right by accident or wrong in silence -- and `run`, `check` and `execute` collide 14, 26 and 25 times in this repository alone",
+          "symbol_sha": "sha256:f32d4822274a70a1f2ef7166259d2b20e95c1c6925ac4e4fa28a6aedc74a1004"
         },
         {
           "id": "the-procedure-ghost-shares-a-namespace",
@@ -576,7 +615,8 @@
           "symbol": "extract_ast_dict",
           "old": "\"calls\": call_sites.get(symbol, []),",
           "new": "\"calls\": [],",
-          "breaks": "the mapper receives no callee, so CALLS edges cannot be built at all -- the field stays declared and permanently empty, which reads as 'this symbol calls nothing'"
+          "breaks": "the mapper receives no callee, so CALLS edges cannot be built at all -- the field stays declared and permanently empty, which reads as 'this symbol calls nothing'",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "module-level-calls-dropped",
@@ -585,7 +625,8 @@
           "symbol": "extract_ast_dict",
           "old": "        ast_data[\"calls\"] = call_sites.get(\"\", [])",
           "new": "        pass",
-          "breaks": "a decorator argument or a constant built by a call never reaches the graph, so a whole class of real file-level dependencies is silently absent"
+          "breaks": "a decorator argument or a constant built by a call never reaches the graph, so a whole class of real file-level dependencies is silently absent",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "the-file-level-key-is-absent",
@@ -594,7 +635,8 @@
           "symbol": "extract_ast_dict",
           "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
           "new": "{\"type\": \"module\", \"imports\": [], \"children\": []}",
-          "breaks": "the file-level `calls` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no calls or an older writer"
+          "breaks": "the file-level `calls` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no calls or an older writer",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "a-childs-calls-come-from-the-file",
@@ -603,7 +645,8 @@
           "symbol": "extract_ast_dict",
           "old": "\"calls\": call_sites.get(symbol, []),",
           "new": "\"calls\": call_sites.get(\"\", []),",
-          "breaks": "every symbol is credited with the file's module-level calls instead of its own, so the graph reports calls nobody made and misses every call that was"
+          "breaks": "every symbol is credited with the file's module-level calls instead of its own, so the graph reports calls nobody made and misses every call that was",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         }
       ]
     },
@@ -624,7 +667,8 @@
           "symbol": "TypeScriptCodeStructure",
           "old": "(member_expression property: (property_identifier) @name)",
           "new": "(member_expression object: (identifier) @name)",
-          "breaks": "`obj.deep()` reports a call to `obj` instead of `deep`, so every method call invents a dependency on the receiver and loses the real one"
+          "breaks": "`obj.deep()` reports a call to `obj` instead of `deep`, so every method call invents a dependency on the receiver and loses the real one",
+          "symbol_sha": "sha256:b523beed1cc182b58250e8e7230fa816940f078377e010a4fe4ee58307942d28"
         },
         {
           "id": "the-declarator-descent-is-removed",
@@ -633,7 +677,8 @@
           "symbol": "BaseTreeSitterParser._declared_type_name",
           "old": "        for child in node.children:\n            if not child.type.endswith(\"declarator\"):\n                continue\n",
           "new": "        for child in ():\n            if not child.type.endswith(\"declarator\"):\n                continue\n",
-          "breaks": "C and C++ hold a function's name inside its declarator, so every call in those languages is attributed to the file rather than to the function that made it"
+          "breaks": "C and C++ hold a function's name inside its declarator, so every call in those languages is attributed to the file rather than to the function that made it",
+          "symbol_sha": "sha256:195ebb7f4505abb97003481c60433a82086a07cfd505825a468deff462efd131"
         },
         {
           "id": "field-identifier-unrecognised",
@@ -651,7 +696,8 @@
           "symbol": "KotlinCodeStructure",
           "old": "(call_expression (navigation_expression (_) (identifier) @name)) @reference.call",
           "new": "(call_expression (navigation_expression (identifier) @name)) @reference.call",
-          "breaks": "the receiver of a method call is reported as a call too, because a receiver is an identifier -- `obj.deep()` invents a dependency on `obj`. This is the naive pattern, and the reason the constrained one exists"
+          "breaks": "the receiver of a method call is reported as a call too, because a receiver is an identifier -- `obj.deep()` invents a dependency on `obj`. This is the naive pattern, and the reason the constrained one exists",
+          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
         },
         {
           "id": "kotlin-plain-calls-lost",
@@ -660,7 +706,8 @@
           "symbol": "KotlinCodeStructure",
           "old": "        (call_expression (identifier) @name) @reference.call\n",
           "new": "        (call_expression (identifier) @name) @reference_call\n",
-          "breaks": "only method calls are seen, so every direct call in Kotlin -- the majority of them -- vanishes from the graph while method calls keep working, which reads as partial coverage rather than a broken query"
+          "breaks": "only method calls are seen, so every direct call in Kotlin -- the majority of them -- vanishes from the graph while method calls keep working, which reads as partial coverage rather than a broken query",
+          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
         },
         {
           "id": "kotlin-callers-lose-their-class",
@@ -669,7 +716,8 @@
           "symbol": "KotlinCodeStructure",
           "old": "        \"class_declaration\",\n        \"function_declaration\",",
           "new": "        \"function_declaration\",",
-          "breaks": "a method's calls are attributed to `go` rather than `K.go`, so every CALLS edge out of a Kotlin method points from a node hash that does not exist"
+          "breaks": "a method's calls are attributed to `go` rather than `K.go`, so every CALLS edge out of a Kotlin method points from a node hash that does not exist",
+          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
         },
         {
           "id": "one-language-stops-contributing",
@@ -678,7 +726,8 @@
           "symbol": "GoCodeStructure",
           "old": "    TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_go.TAGS_QUERY",
           "new": "    TAGS_QUERY: typing.ClassVar[str | None] = None",
-          "breaks": "one language silently stops contributing CALLS edges while every other keeps working, so the graph looks populated and is blind to a whole language -- the composition defect no single language's tests can see"
+          "breaks": "one language silently stops contributing CALLS edges while every other keeps working, so the graph looks populated and is blind to a whole language -- the composition defect no single language's tests can see",
+          "symbol_sha": "sha256:99c5fbfdae8d73f12fe34c8660b4b3980c03547fd073e18ef296f62c3c17e97b"
         }
       ]
     },
@@ -698,7 +747,8 @@
           "symbol": "SqliteGraphRepository.load_from_db",
           "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
           "new": "source_hash, target_hash, metadata=metadata, **{\"type\": edge_type}",
-          "breaks": "the loader restores the kind under the column's name while the store reads EDGE_KIND_ATTR, so every edge load_from_db returns is one persist_semantic_digraph refuses -- a graph read out of the database can never be written back, which is the state TECH-070's incremental rebuild produces on purpose"
+          "breaks": "the loader restores the kind under the column's name while the store reads EDGE_KIND_ATTR, so every edge load_from_db returns is one persist_semantic_digraph refuses -- a graph read out of the database can never be written back, which is the state TECH-070's incremental rebuild produces on purpose",
+          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
         },
         {
           "id": "the-loader-drops-the-kind-entirely",
@@ -707,7 +757,8 @@
           "symbol": "SqliteGraphRepository.load_from_db",
           "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
           "new": "source_hash, target_hash, metadata=metadata",
-          "breaks": "a reloaded edge carries no kind at all, so a traversal cannot tell a call from a containment and the next persist refuses the whole graph"
+          "breaks": "a reloaded edge carries no kind at all, so a traversal cannot tell a call from a containment and the next persist refuses the whole graph",
+          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
         }
       ]
     },
@@ -725,7 +776,8 @@
           "symbol": "extract_ast_dict",
           "old": "call_sites = parser.extract_call_sites(code)",
           "new": "call_sites = {}",
-          "breaks": "the parser still finds every call and the seam drops them all, so the persisted graph holds containment and imports only -- the silent-empty result this ticket exists to remove, and invisible to every test that stops at the engine"
+          "breaks": "the parser still finds every call and the seam drops them all, so the persisted graph holds containment and imports only -- the silent-empty result this ticket exists to remove, and invisible to every test that stops at the engine",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
         },
         {
           "id": "import-resolution-always-ghosts",
@@ -734,7 +786,8 @@
           "symbol": "resolve_module",
           "old": "    segments = _module_segments(module)",
           "new": "    segments = _module_segments(module); return None",
-          "breaks": "every import resolves to a ghost instead of the collected file it names, so the edge COUNT is unchanged and the dependency graph points at nothing -- a shape no assertion on totals can see"
+          "breaks": "every import resolves to a ghost instead of the collected file it names, so the edge COUNT is unchanged and the dependency graph points at nothing -- a shape no assertion on totals can see",
+          "symbol_sha": "sha256:e177f5d93c6a1c48b76f1970e93ad5186f34bbb1e7be47a45296fa524ed385ba"
         },
         {
           "id": "stale-edges-are-never-cleared-through-a-real-build",
@@ -743,7 +796,8 @@
           "symbol": "SqliteGraphRepository.persist_semantic_digraph",
           "old": "            self._clear_edges_of(cursor, set(hash_to_id.values()))",
           "new": "            pass",
-          "breaks": "a call deleted from a real source file keeps its edge on disk forever, so the phantom dependency set only grows across rebuilds"
+          "breaks": "a call deleted from a real source file keeps its edge on disk forever, so the phantom dependency set only grows across rebuilds",
+          "symbol_sha": "sha256:9b253df06823d57d79448b8c05cd141f21308cfe82565cf9c8cd1f22c01f5f7a"
         }
       ]
     },
@@ -782,7 +836,8 @@
           "symbol": "_ghost",
           "old": "return hasher.hash_file(f\"{prefix}{name}\"), {\"raw\": fit_metadata_value(name)}",
           "new": "return hasher.hash_file(f\"{prefix}{name}\"), {}",
-          "breaks": "an unresolved target becomes a hash and nothing else, so a reader sees THAT something is unresolved and never WHAT -- os.getcwd and mystery_call are two indistinguishable ghosts, which is the state this requirement exists to remove"
+          "breaks": "an unresolved target becomes a hash and nothing else, so a reader sees THAT something is unresolved and never WHAT -- os.getcwd and mystery_call are two indistinguishable ghosts, which is the state this requirement exists to remove",
+          "symbol_sha": "sha256:90db04648a5a3747d9c5812611187936dd276a21a030c0323588d1038c133e95"
         },
         {
           "id": "the-engine-drops-the-metadata",
@@ -791,7 +846,8 @@
           "symbol": "InMemoryGraphEngine.upsert_edge",
           "old": "                metadata=edge.metadata,",
           "new": "                metadata={},",
-          "breaks": "the mapper records the name and the engine drops it before the store ever sees it -- four links each passing their own tests while the chain delivers an empty column"
+          "breaks": "the mapper records the name and the engine drops it before the store ever sees it -- four links each passing their own tests while the chain delivers an empty column",
+          "symbol_sha": "sha256:64b52cc31dc04ef8e2c06d412583870995c4b53a822d2040b2c06434505eea86"
         },
         {
           "id": "an-absurd-identifier-aborts-the-build",
@@ -800,7 +856,8 @@
           "symbol": "fit_metadata_value",
           "old": "    if _encoded_size(value) <= METADATA_MAX_BYTES:\n        return value",
           "new": "    return value",
-          "breaks": "an identifier past the 2KB cap reaches the model validator, which raises inside the mapper where nothing catches it, so one pathological file aborts an entire build -- NFR-6 forbids exactly that"
+          "breaks": "an identifier past the 2KB cap reaches the model validator, which raises inside the mapper where nothing catches it, so one pathological file aborts an entire build -- NFR-6 forbids exactly that",
+          "symbol_sha": "sha256:5935bd672c776f6f9dad35b992472bf4933a417571d3b096907fb7839cb03d45"
         },
         {
           "id": "the-reload-drops-every-ghost",
@@ -809,7 +866,8 @@
           "symbol": "SqliteGraphRepository.load_from_db",
           "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
           "new": "                  AND n2.is_active = 1",
-          "breaks": "a graph read back out of the database holds no ghost edges, so it says nothing depends on this about every dependency outside the parsed set -- and an incremental rebuild then writes that loss to disk"
+          "breaks": "a graph read back out of the database holds no ghost edges, so it says nothing depends on this about every dependency outside the parsed set -- and an incremental rebuild then writes that loss to disk",
+          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
         },
         {
           "id": "the-reload-lets-tombstones-back-in",
@@ -818,7 +876,8 @@
           "symbol": "SqliteGraphRepository.load_from_db",
           "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
           "new": "                  AND (n2.is_active = 1 OR n2.is_active = 0)",
-          "breaks": "the fix goes too wide: is_active=0 covers tombstones as well as ghosts, so a deleted file's nodes return and purge_stale_entries is undone"
+          "breaks": "the fix goes too wide: is_active=0 covers tombstones as well as ghosts, so a deleted file's nodes return and purge_stale_entries is undone",
+          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
         }
       ]
     },
@@ -838,7 +897,8 @@
           "symbol": "GoCodeStructure",
           "old": "TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\"type_spec\",)",
           "new": "TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ()",
-          "breaks": "Go reports no types at all, which is the state this closed -- and the state the old contract test passed over, because a loop across an empty result runs its body zero times and reads as coverage"
+          "breaks": "Go reports no types at all, which is the state this closed -- and the state the old contract test passed over, because a loop across an empty result runs its body zero times and reads as coverage",
+          "symbol_sha": "sha256:99c5fbfdae8d73f12fe34c8660b4b3980c03547fd073e18ef296f62c3c17e97b"
         },
         {
           "id": "a-named-field-becomes-a-supertype",
@@ -847,7 +907,8 @@
           "symbol": "_embedded_nodes",
           "old": "            embedded = node.type == \"field_declaration\" and not any(\n                c.type == \"field_identifier\" for c in node.children\n            )",
           "new": "            embedded = node.type == \"field_declaration\"",
-          "breaks": "the missing field name is the whole difference between an embed and an ordinary field, so a struct with five int fields would claim to extend int five times"
+          "breaks": "the missing field name is the whole difference between an embed and an ordinary field, so a struct with five int fields would claim to extend int five times",
+          "symbol_sha": "sha256:4eb5cf90a4e2d4ea55531eb9d9906f305f42a710477f065723469ed1388b8552"
         },
         {
           "id": "rust-keys-the-entry-under-the-trait",
@@ -856,7 +917,8 @@
           "symbol": "RustCodeStructure._declared_type_name",
           "old": "        if node.type != \"impl_item\":\n            return super()._declared_type_name(node)",
           "new": "        if True:\n            return super()._declared_type_name(node)",
-          "breaks": "the shared name-finder takes the FIRST identifier and in `impl Runner for Impl` that is the trait, so the graph asserts Runner implements Runner -- wrong, and self-consistent enough to survive a careless read"
+          "breaks": "the shared name-finder takes the FIRST identifier and in `impl Runner for Impl` that is the trait, so the graph asserts Runner implements Runner -- wrong, and self-consistent enough to survive a careless read",
+          "symbol_sha": "sha256:f071eee6728319ca860983aa100bc0c6808c02c9a959265c24e3a3c57559f66a"
         },
         {
           "id": "one-type-declared-twice-loses-half",
@@ -865,7 +927,8 @@
           "symbol": "BaseTreeSitterParser.extract_supertypes",
           "old": "            entry = found.setdefault(name, {\"extends\": [], \"implements\": []})",
           "new": "            entry = found[name] = {\"extends\": [], \"implements\": []}",
-          "breaks": "Rust spreads one type over `struct Impl;` and every `impl Trait for Impl` block, so assigning lets whichever node the walk reached last erase the others -- and the walk order is an implementation detail nobody controls"
+          "breaks": "Rust spreads one type over `struct Impl;` and every `impl Trait for Impl` block, so assigning lets whichever node the walk reached last erase the others -- and the walk order is an implementation detail nobody controls",
+          "symbol_sha": "sha256:71843f93b18503889f46f9bfb7d5a0590a8843588e9ddb2c2fa6602b5bad9d78"
         }
       ]
     },
@@ -884,7 +947,18 @@
           "symbol": "extract_ast_dict",
           "old": "        is_class = symbol in supertypes or \"extends\" in markers.get(symbol, {})",
           "new": "        is_class = \"extends\" in markers.get(symbol, {})",
-          "breaks": "classification falls back to framework markers, which Go does not populate, so every Go struct and interface becomes a PROCEDURE node -- _index_types never sees it and a Go supertype edge can only point at a ghost however well the parser read the source"
+          "breaks": "classification falls back to framework markers, which Go does not populate, so every Go struct and interface becomes a PROCEDURE node -- _index_types never sees it and a Go supertype edge can only point at a ghost however well the parser read the source",
+          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+        },
+        {
+          "id": "a-rust-trait-is-invisible-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (trait_item name: (type_identifier) @name)\n",
+          "new": "        ; (trait_item name: (type_identifier) @name)  ; MUTANT\n",
+          "breaks": "a trait stops being a symbol, so it has no node and no child at the seam -- and since Rust has no struct inheritance, EVERY hierarchy edge the language can emit targets a trait. A supertrait bound then produces no edge at all, not even a ghost, because the mapper has no child to walk",
+          "symbol_sha": "sha256:11c26fb99e97b30fc3dfdaa0ef0ae40b684ad1115d7ede189f87fa293888effc"
         }
       ]
     }
