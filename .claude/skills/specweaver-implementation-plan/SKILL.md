@@ -37,16 +37,16 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    in the Progress Tracker.
 4. If `<sf_id>` is omitted and the design has sub-features: ask the user which sub-feature
    to plan. Do NOT plan all sub-features at once.
-5. **The design's grilling reached an empty frontier.** The design carries a
-   **Decisions taken with the user** section, and every open question in it is answered.
+5. **The design's grilling reached an empty frontier.** Every fact a §2 trigger fired on carries
+   its `` `[agreed <date>]` `` marker in the sentence that states it, and no question is left open.
 
    > [!CAUTION]
    > A plan turns decisions into work, so an unsettled decision becomes built code. `APPROVED` on
    > a design that was never grilled means the approver saw the agent's guesses for the first time
    > at the gate — which is a rubber stamp, not a review.
    >
-   > If the section is missing or holds an open question, **run `/grill-me <ID>`** and put the open
-   > questions to the user. Their answers close them. Plan work resumes once the frontier is empty.
+   > If a triggered fact carries no marker, or a question is still open, **run `/grill-me <ID>`** and
+   > put the open questions to the user. Their answers close them. Plan work resumes once the frontier is empty.
    >
    > **Never let a plan settle a number the design left open.** A default chosen in a plan is a
    > decision nobody agreed, wearing an implementation detail's clothes — which is how a `$25`

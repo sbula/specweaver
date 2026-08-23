@@ -4,7 +4,7 @@
 - **Boundary**: CB-1 of 2 — *the gate is gone*
 - **Kind**: tooling · **DAL-C** (TECH default baseline)
 
-CB-2 — moving the settled-decision record inline — is appended to this file when it lands.
+CB-2 — moving the settled-decision record inline — is the second half, recorded at the foot of this file.
 
 ## What changed, and why
 
@@ -36,9 +36,11 @@ The generalised lesson is recorded in
 [`anti_patterns.md`](../../../architecture/06_lessons_and_future/anti_patterns.md) — *a gate that
 checks for words about a rule instead of the rule*.
 
-## Decisions taken with the user
+## What was settled, and when
 
-Written in the convention this ticket introduces, rather than the section it retires.
+Written in the convention this ticket introduces. The heading is deliberately *not* the retired one:
+a walkthrough is a record of one boundary, so these markers sit beside the facts they govern in the
+sections below as well — this list is the index, not the source.
 
 - Retire `TECH-069` entirely — deleted, not rescoped `[agreed 2026-08-23]`
 - The check, its baseline, its 27 tests and its 6 mutants go; the design stays as a banner-marked
@@ -142,3 +144,85 @@ Two are worth carrying forward, because both were assertions that would have rea
 That run also reports one `UNPROTECTED` mutant on `TECH-068` `FR-9`
 (*a-rust-trait-is-invisible-again*) — a real signal, unrelated to this boundary, and the user has
 scheduled the test review for later.
+
+---
+
+# CB-2 — decisions are written where the fact is
+
+Commit `a97c8e2d` removed the reader. This removes what it was reading for, and says where a
+settled decision goes instead.
+
+## The rule
+
+`PRINCIPLES.md` §2 no longer names a *Decisions taken with the user* section. It now says:
+
+> **Write a settled decision beside the fact it governs, marked `` `[agreed <date>]` `` (ISO date).**
+> Not in a section of its own. §5 is the reason: a list of decisions at the foot of a document is a
+> second copy of facts stated in the body, and the two drift the moment somebody edits the number
+> without scrolling down. Beside the fact, whoever changes it is looking straight at the marker.
+>
+> A trigger that did not fire is written **nowhere** — it has no fact to sit beside.
+
+## What CB-2 changed
+
+| # | Change |
+|---|---|
+| 7 | `PRINCIPLES.md` §2 — the settled-decision source becomes the inline marker; §5 cited as the reason |
+| 8 | `specweaver-design/references/phase-1-intake.md` × 2 trees |
+| 9 | `specweaver-design/references/phase-6-consistency.md` × 2 trees |
+| 10 | `specweaver-implementation-plan/SKILL.md` × 2 trees — two clauses each |
+| 12 | `STATE.md` — CB-1 had left two sentences that CB-2 makes false |
+| 13 | this section |
+
+Six skill files, three files mirrored across `.agents/` and `.claude/`. `check_skill_sync.py`
+confirms the trees agree; `grill-me` alone is a symlink and needed no second edit.
+
+## Two claims that were dropped, not moved
+
+**Phase 1 intake** said the section *"is what makes Phase 6 reviewable; without it the approval has
+nothing to check the code against."* That claim needs a human to read 139 designs, which does not
+scale and was the argument that retired the gate. Phase 6 now reads the marked sentences themselves,
+which is the same work at the moment it matters and over only the design in front of you.
+
+**Phase 6** said the design *"must carry a section listing what `/grill-me` settled."* It now says
+every fact a trigger fired on must carry its marker in the sentence that states it. The difference
+is what a rubber stamp looks like: a list can be written without asking anybody, and reads as
+diligence. A marker sits on a number the reviewer is already looking at.
+
+## A pre-existing bug fixed on contact
+
+`phase-1-intake.md` opened with *"The **twelve** triggers ..."* and then listed thirteen, in both
+trees. Wrong since `PRINCIPLES.md` §2 was rewritten. Fixed here because the pre-commit gate does not
+distinguish inherited defects from introduced ones.
+
+## What deliberately did not change
+
+- **The thirteen triggers.** They stay in §2 exactly as written. They are the agent's own detector,
+  and that half was never in doubt.
+- **`/grill-me`.** Untouched. It is what actually protects the user: plain questions, in the user's
+  language, with a recommendation beside each, at the moment the decision is live.
+- **The two designs that carry the old section.** `TECH-068` and `TECH-069` keep theirs as records
+  of what was decided when they were built. A delivered design is a record and is not rewritten
+  unless a statement in it has become false.
+
+## The gate that could not run
+
+CB-2 changed only prose, and `scripts/tests.py` refused it: a tier selecting no tests was treated
+as missing coverage without first asking whether there was any code to cover.
+
+Measured before deciding anything: **131 of the last 400 commits — 32% — changed no Python at all.**
+Every one would have been blocked. Two landed anyway (`00b78d5f`, `3db9de2f`) because nobody ran the
+gate on them. That is what an unrunnable gate buys: skipped on a third of commits, and then not
+trusted on the other two-thirds either.
+
+`quality.py` has carried a separate `doc` track for exactly this since it was written. The pattern
+was invented, proven, and applied to one of the two runners.
+
+Fixed in `083e7ef9`, ahead of this commit so that CB-2 itself is the end-to-end proof — it is
+documentation-only, and the gate now returns `no tests apply … this boundary changed no code`,
+exit 0.
+
+**The option not taken.** Running CB-2 as `--kind audit` would have passed immediately: that kind
+declares no tiers by design. It was rejected because `audit` means *produces findings, not code*,
+and this produces a rule — the label would have been false, and the gate would have stayed broken
+for the next 32% of commits. Recorded here so nobody reaches for it as a shortcut later.

@@ -58,10 +58,20 @@ A trigger that fires goes to the user unsettled. It does not get a default, a pl
 reasonable-looking assumption. **Documenting a guess does not stop it being a guess.**
 
 Everything else is yours: module shape, test tier, fixture design, a library with no cost and no
-security surface, either of two implementations that both meet every FR. So is anything an ADR, a
-design's *Decisions taken with the user* section, or this file has already settled — read it, and
-build on it. A settled decision covers the exact question it answered; a new number, a new surface
-or a wider scope is a fresh trigger, not a precedent.
+security surface, either of two implementations that both meet every FR. So is anything an ADR, this
+file, or a settled decision recorded in a design has already answered — read it, and build on it. A
+settled decision covers the exact question it answered; a new number, a new surface or a wider scope
+is a fresh trigger, not a precedent.
+
+**Write a settled decision beside the fact it governs, marked `` `[agreed <date>]` `` (ISO date).**
+Not in a section of its own. §5 is the reason: a list of decisions at the foot of a document is a
+second copy of facts stated in the body, and the two drift the moment somebody edits the number
+without scrolling down. Beside the fact, whoever changes it is looking straight at the marker.
+
+A trigger that did not fire is written **nowhere** — it has no fact to sit beside. The list of
+thirteen above is the detector; it is not a checklist to be transcribed. `TECH-069` was the gate
+that demanded the transcription, and it was retired 2026-08-23 for measuring vocabulary instead of
+truth: one bullet naming all thirteen as *not touched* satisfied it completely.
 
 Measured 2026-08-19: twenty-five product-visible decisions were taken by an agent in one session.
 Every one was written into a design. Not one was agreed. `T-OBLIGATION` is the only trigger above

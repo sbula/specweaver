@@ -67,11 +67,15 @@ After the Design Document is written, evaluate and present the following consist
 
 ## HITL Gate (Mandatory — Always Fires)
 > [!CAUTION]
-> **Approval reviews the decisions, not just the document.** Before you stop here, the design must
-> carry a **Decisions taken with the user** section listing what `/grill-me` settled — one line
-> each. If it is absent, the grilling never happened and this gate is the first time the user is
-> seeing the agent's choices. That is a rubber stamp; run `/grill-me <ID>`, close the frontier with
-> the user, and present the design for approval only then.
+> **Approval reviews the decisions, not just the document.** Before you stop here, every fact in the
+> design that a §2 trigger fired on must carry its `` `[agreed <date>]` `` marker, in the sentence
+> that states it. If no fact carries one, the grilling never happened and this gate is the first
+> time the user is seeing the agent's choices. That is a rubber stamp; run `/grill-me <ID>`, close
+> the frontier with the user, and present the design for approval only then.
+>
+> **Read the marked sentences, not a summary of them.** The marker sits on the fact so that you
+> check the decision against what the design actually says, rather than against a list that claims
+> to describe it.
 >
 > **Present the guesses, not the summary.** State plainly, in the approval request: every
 > product-visible number the design chose, every surface it decided to treat as trusted or

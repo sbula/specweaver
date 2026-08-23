@@ -57,7 +57,7 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 > requirements to, and what Phase 6 reviews against. A design that reaches Phase 6 with decisions
 > the user is seeing for the first time has turned the approval gate into a rubber stamp.
 >
-> **Some decisions are never the agent's**, whatever else the grilling settles. The twelve triggers
+> **Some decisions are never the agent's**, whatever else the grilling settles. The thirteen triggers
 > and the test that finds them are in `.agents/PRINCIPLES.md` §2:
 > `T-SPEND` · `T-BOUNDARY` · `T-POSTURE` · `T-DIVERGE` · `T-SCOPE` · `T-ORDER` ·
 > `T-PROVEN` · `T-ARCH` · `T-NAME` · `T-UNDO` · `T-DEFAULT` · `T-DATA` · `T-OBLIGATION`.
@@ -65,9 +65,14 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 > Read it before Phase 2 and name every trigger this capability touches. Each one goes to the user
 > unsettled — no default, no placeholder, no reasonable-looking assumption.
 >
-> Record the grilling's settled decisions in the design under **Decisions taken with the user**, one
-> line each. That section is what makes Phase 6 reviewable; without it the approval has nothing to
-> check the code against.
+> **Record each settled decision beside the fact it governs**, marked `` `[agreed <date>]` `` with an
+> ISO date — in the sentence that states the number, names the surface, or draws the boundary. Not
+> in a section of its own: `PRINCIPLES.md` §5 forbids the second copy, and a list at the foot of the
+> document drifts the moment somebody edits the body without scrolling down.
+>
+> A trigger that did not fire is recorded **nowhere**. It has no fact to sit beside, and the
+> thirteen are a detector, not a checklist to transcribe. The gate that demanded the transcription
+> was `TECH-069`, retired 2026-08-23 for measuring vocabulary instead of truth.
 
 > [!IMPORTANT]
 > **CHECKPOINT:** Phase 1 complete. Working definition written **and the grilling closed**.

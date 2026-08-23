@@ -75,13 +75,15 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   somebody remembers the story. `check_stale_delivered.py` catches the *other* half — prose calling
   a `🔧` capability delivered — and `T-PROVEN` now names the flip as the user's call, but nothing
   mechanical stops the flag being flipped.
-- **Nothing checks that a §2 trigger was put to the user.** Deliberate, 2026-08-23: the gate that
-  claimed to went out with `TECH-069`, because a keyword check cannot tell asking from typing. A
-  §2 and six skill files still ask for a `Decisions taken with the user` section, so **right now the
-  rule has no reader** — the anti-pattern this repo names. The commit that follows replaces it: a
-  settled decision goes `` `[agreed <date>]` `` beside the fact it governs, one copy, with rot
-  visible to whoever edits the fact. The 13 triggers in §2 remain the agent's own detector, and
-  `/grill-me` is what actually protects the user.
+- **Nothing checks that a §2 trigger was put to the user, and nothing will.** Deliberate,
+  2026-08-23: the gate that claimed to went out with `TECH-069`, because a keyword check cannot tell
+  asking from typing, and a record guaranteed to *exist* is worse than none — it turns the safe
+  failure (agent finds nothing, asks you) into the unsafe one (agent finds a rotten answer, builds
+  on it). A settled decision now goes `` `[agreed <date>]` `` **beside the fact it governs**, so it
+  is one copy and rot is in front of whoever edits the fact. A trigger that did not fire is written
+  nowhere. The 13 triggers in §2 remain the agent's own detector — that half was never in doubt —
+  and `/grill-me` is what actually protects you. **Nothing in the repo now asks for a `Decisions
+  taken with the user` section; two delivered designs still carry one as a record.**
 - **Four `TECH-068` findings remain**, recorded in its design's *Retrospective Pre-Commit Gate*
   section. Two are chores: `BaseTreeSitterParser._supertypes_of` is unreachable, and
   `resolve_module` has no unit tests so nothing pins the case-insensitive match RT-21 depends on.

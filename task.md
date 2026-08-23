@@ -54,23 +54,23 @@ Untouched: `quality.py` and its other four gates but for one row; `T-SPEND`, `T-
       counted them
 - [x] 6 — `.agents/STATE.md`: the gate row, the `TECH-069 minted` row and the "no non-stub design
       accounts" bullet all tell the truth
-- [/] **CB-1 — the check, its wiring, its tests and its claims are gone**
+- [x] **CB-1 — the check, its wiring, its tests and its claims are gone**
 
 ## Commit boundary 2 — decisions are written where the fact is
 
-- [ ] 7 — `PRINCIPLES.md` §2: the settled-decision source becomes the inline `` `[agreed <date>]` ``
+- [x] 7 — `PRINCIPLES.md` §2: the settled-decision source becomes the inline `` `[agreed <date>]` ``
       marker. The ADR and this-file clauses either side of it are left intact. §5 is cited as the reason
-- [ ] 8 — `specweaver-design/references/phase-1-intake.md` × 2 trees: record each settled decision
+- [x] 8 — `specweaver-design/references/phase-1-intake.md` × 2 trees: record each settled decision
       beside the fact it governs; a trigger that did not fire is written nowhere
-- [ ] 9 — `specweaver-design/references/phase-6-consistency.md` × 2 trees: approval reviews the
+- [x] 9 — `specweaver-design/references/phase-6-consistency.md` × 2 trees: approval reviews the
       inline decisions
-- [ ] 10 — `specweaver-implementation-plan/SKILL.md` × 2 trees: the precondition reads inline
+- [x] 10 — `specweaver-implementation-plan/SKILL.md` × 2 trees: the precondition reads inline
       decisions, not a section
 - [ ] 11 — `.tmp/HANDOVER.md`: replace the TECH-069 gate entry with the retirement outcome. It is
       gitignored, so no gate will ever catch it going stale
-- [ ] 12 — `.agents/STATE.md`: CB-1 left it saying *"right now the rule has no reader"* and *"the
+- [x] 12 — `.agents/STATE.md`: CB-1 left it saying *"right now the rule has no reader"* and *"the
       commit that follows replaces it"*. Both go stale the moment CB-2 lands — update them
-- [ ] 13 — `TECH-069_walkthrough.md`: it promises *"CB-2 … is appended to this file when it lands"*.
+- [x] 13 — `TECH-069_walkthrough.md`: it promises *"CB-2 … is appended to this file when it lands"*.
       Append it
 - [ ] **CB-2 — the rule and the six skill files say where a decision is written**
 
@@ -85,11 +85,24 @@ Untouched: `quality.py` and its other four gates but for one row; `T-SPEND`, `T-
 - [x] Phase 7 — walkthrough
 - [x] Phase 7.5 — red/blue on the diff
 - [x] Phase 7.9 — handover / STATE
-- [/] Phase 8 — commit boundary (HITL)
+- [x] Phase 8 — committed `a97c8e2d` commit boundary (HITL)
 
 **Finding against the skill itself:** `phase-3-implement-tests.md` contradicts itself — §3.1b orders
 a mandatory HITL yield, while the closing `IMPORTANT` says there is no gate and to proceed
 immediately to Phase 4. `SKILL.md` and `specweaver-dev` both say Phase 3 gates. Yielding.
+
+## CB-2 pre-commit gate (`specweaver-pre-commit`)
+
+- [x] Phase 1 — architecture: markdown only, zero imports, tach ✅ (vacuously). Key check: the rule is FULLY removed, every surviving mention read individually
+- [x] Phase 2 — test gap: 0 proposed stories. 2 findings, both fixed — the walkthrough used the retired heading; `phase-1-intake.md` said "twelve triggers" and listed thirteen
+- [x] Phase 3 — implement tests: no branch touched, no test written. Ruff clean
+- [ ] Phase 4 — full suite
+- [ ] Phase 5 — code quality
+- [ ] Phase 6 — documentation
+- [ ] Phase 7 — walkthrough
+- [ ] Phase 7.5 — red/blue on the diff
+- [ ] Phase 7.9 — handover / STATE
+- [ ] Phase 8 — commit boundary (HITL)
 
 ## Notes on tiers and proof
 
