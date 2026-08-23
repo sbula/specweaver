@@ -67,6 +67,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Four instructions contradicted another instruction | `AGENTS.md` said `/grill-me` is the user's to invoke while three other places say the agent starts it; `phase-3-implement-tests.md` closed with *NO HITL GATE HERE* four lines under its own mandatory yield; `phase-1-intake.md` kept its own copy of the 13 trigger names, already drifted to *twelve*; `AGENTS.md` still carried *never decide money or security*, the two words §2 replaced. **Three of the four had already drifted.** All four were §5 second copies |
 | `TECH-069` retired | Built 2026-08-21, retired by the user 2026-08-23 before it was ever approved. It checked that a design's `Decisions taken with the user` section named all 13 triggers — which one bullet listing them as `not touched` satisfies, and which flipping `fired — <answer>` to `not touched` satisfies while deleting the answer. It never read the rest of the design, so it could not contradict its own section. The deeper fault: guaranteeing the section EXISTS turns the safe failure — an agent finds nothing and asks — into the unsafe one, where it finds a possibly-rotten answer and builds on it. Check, baseline, 27 tests and 6 mutants deleted; the 13 triggers stay in §2 as the agent's own detector |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
+| The graph corpus had no drift detection | The 2026-08-23 nightly called `TECH-068` `FR-9` *a-rust-trait-is-invisible-again* **UNPROTECTED**. It is not — rerun against the whole suite, five tests object. The mutant was filed in `FR-9`'s campaign 1, whose declared proof covers **Java only**, so a Rust mutant scoped there is unprotected *by construction* and reads exactly like a real gap. Moved to campaign 2, beside its Go twin. It hid the larger fault: **0 of 78 mutants carried a `symbol_sha`** while every older corpus is at 100%, and `drift_of` returns `UNHASHED` and can never return `STALE` — so the whole graph corpus had drift detection off, with `TECH-070` queued next to move that exact code. 74 pinned one at a time through `--refresh`; 4 legitimately refuse. Corpus now 78/78 protected, gate `CLEAR` |
 | Nightly mutation, clear | Gate `CLEAR` for the first time in the session: 67 judged, 67 protected, 0 unprotected, 0 unmeasured. `TECH-049` and `TECH-056` corpora re-anchored onto the code the vocabulary refactor moved — the five blocking findings were drift, not gaps |
 | Two reports, two names | `_mutate_campaign.py` writes `mutation_campaign_report.md`; the nightly keeps `mutation_session.md` beside its record. One word apart cost a misreading |
 
@@ -100,6 +101,13 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `forbids`; `allowed_imports` appears in four `graph/**/context.yaml` files and nowhere else. One
   test now enforces it for `graph/core/builder`. Whether the package migrates to `consumes` is
   `T-ARCH`.
+
+- **Four `TECH-068` mutants can never have drift detection.** Three anchor on bare constants
+  (`_GHOST_TYPE_PREFIX`, `_GHOST_PROCEDURE_PREFIX`, `BaseTreeSitterParser._NAME_NODE_TYPES`) and one
+  on `context.yaml`. Only `def` and `class` carry an enclosing scope to fingerprint, and
+  `--refresh` refuses the rest rather than pinning a lie. Each stays `UNHASHED`, so the code under
+  it can move without the nightly saying so. The remedy where a claim matters is to re-anchor the
+  mutant on the function that *reads* the constant — not to loosen the hasher.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being
