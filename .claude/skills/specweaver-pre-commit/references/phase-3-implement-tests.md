@@ -33,6 +33,10 @@ approving the tests before you can start Phase 4.
      Phase 5; this is the fast subset for the loop you are in.
 
 > [!IMPORTANT]
-> **NO HITL GATE HERE:**: Phase 3 is complete. If all the required tests are implemented and passes
-> flawlessly, update `task.md` and PROCEED IMMEDIATELY to Phase 4. Do NOT stop to ask the user for
-> permission to continue.
+> **CHECKPOINT:** Phase 3 ends at the §3.1b yield, not here. Update `task.md`, present exactly which
+> edge cases you covered — or state plainly that no branch was touched and none were needed — and
+> wait. Phase 4 begins on the user's reply.
+>
+> This note used to read *"NO HITL GATE HERE, proceed immediately"*, contradicting §3.1b four lines
+> above it and `SKILL.md`, which names Phases 1, 2 and 3 as gated. An instruction that argues with
+> itself is obeyed selectively, which is the same as not existing.

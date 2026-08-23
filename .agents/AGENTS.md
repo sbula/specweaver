@@ -30,12 +30,15 @@ skip a phase. Never bypass a HITL gate.
 | `specweaver-ticket` | Minting a `TECH-NNN` or capability ID without collision |
 | `specweaver-live-llm` | **Only** on an explicit ask to hit a real provider API — it bills |
 
-`/grill-me` is invoked by the **user only**. A design starts by asking them to run it, then
-stopping.
+**You start `/grill-me` yourself** the moment a `PRINCIPLES.md` §2 trigger appears — then put every
+question to the user and wait. Their reply is what closes it; a question you answer on their behalf
+is the guess the rule exists to stop.
 
 ## The four rules that matter most
 
 1. **Use the skill.** Before improvising a procedure.
-2. **Never decide money or security.** Those are the user's.
+2. **Some decisions are never yours.** Money, security posture, scope, names, defaults, anything
+   that cannot be walked back. The thirteen triggers and the test that finds them are in
+   [`PRINCIPLES.md`](PRINCIPLES.md) §2 — read them there, not from a summary.
 3. **Test first, and watch it fail.**
 4. **No subprocess.** Use `SubprocessExecutor`.

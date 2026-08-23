@@ -57,10 +57,12 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 > requirements to, and what Phase 6 reviews against. A design that reaches Phase 6 with decisions
 > the user is seeing for the first time has turned the approval gate into a rubber stamp.
 >
-> **Some decisions are never the agent's**, whatever else the grilling settles. The thirteen triggers
-> and the test that finds them are in `.agents/PRINCIPLES.md` §2:
-> `T-SPEND` · `T-BOUNDARY` · `T-POSTURE` · `T-DIVERGE` · `T-SCOPE` · `T-ORDER` ·
-> `T-PROVEN` · `T-ARCH` · `T-NAME` · `T-UNDO` · `T-DEFAULT` · `T-DATA` · `T-OBLIGATION`.
+> **Some decisions are never the agent's**, whatever else the grilling settles. **Open
+> `.agents/PRINCIPLES.md` §2 and read the table** — the names are listed there with the *fires on*
+> column beside each, and a name without that column tells you nothing about when it applies.
+>
+> The names are deliberately not repeated here. This paragraph used to carry its own copy, which
+> drifted: it said *"the twelve triggers"* while listing thirteen. §5 — one fact, one place.
 >
 > Read it before Phase 2 and name every trigger this capability touches. Each one goes to the user
 > unsettled — no default, no placeholder, no reasonable-looking assumption.
