@@ -679,5 +679,8 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-066:** [Contract Drift Analysis Can Never Find Anything](features/topic_07_technical_debt/TECH-066/TECH-066_design.md)
     *   `✅` **TECH-067:** [The Pipeline Resolves a Module's DAL and Never Applies It](features/topic_07_technical_debt/TECH-067/TECH-067_design.md)
     *   `✅` **TECH-068:** [The Knowledge Graph Emits One of Its Nine Declared Edge Kinds](features/topic_07_technical_debt/TECH-068/TECH-068_design.md)
-    *   `🔴` **TECH-069:** [Nothing Read a Design Against the Must-Not-Guess Triggers](features/topic_07_technical_debt/TECH-069/TECH-069_design.md)
+    *   ⚰️ **TECH-069:** *(retired 2026-08-23 by the user — the decision-citation gate was
+        oversold; it read for keywords, never for truth.
+        Record: [design](features/topic_07_technical_debt/TECH-069/TECH-069_design.md).
+        ID is dead — do NOT reuse.)*
     *   `🔴` **TECH-070:** [Every Graph Build Re-Ingests Every File](features/topic_07_technical_debt/TECH-070/TECH-070_design.md)

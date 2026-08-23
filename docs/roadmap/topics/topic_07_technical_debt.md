@@ -265,10 +265,10 @@ critical for long-term project viability.
   > while `_mutate.run_one` adds `-n auto` on the same path. Measured in a sandbox: **291.2s serial vs 77.3s parallel, 3.8x** — 69% of a 6m51s session. A warm rerun cost +0.5s, so the recorded
   > cold-`__pycache__` explanation was simply wrong. **DELIVERED 2026-08-16:** two argv entries, five tests, two mutants.
 
-* **`TECH-069` 🔧: Nothing Read a Design Against the Must-Not-Guess Triggers**
-  > [Description](../features/topic_07_technical_debt/TECH-069/TECH-069_design.md) | _(2026-08-21 — finding `R-1.1` of the trigger rule's red/blue review.)_ | `PRINCIPLES.md` §2 names the decisions
-  > an agent may not take alone and nothing compared a design against it, so the rule written to stop guessing was itself a guard that could not fail. Measured: 137 designs, none carrying the section.
-  > **BUILT 2026-08-21** (`0f1f0c02`), 6 FRs, 27 tests, 6 killed mutants. `🔧` not `🟢`: no implementation plan owns the FRs, and the Phase 6 gate has never run.
+* **`TECH-069` ⚰️ RETIRED:** *(Nothing Read a Design Against the Must-Not-Guess Triggers — retired 2026-08-23 by the user, ruled **oversold**: it checked that a design's
+  > `Decisions taken with the user` section named all 13 triggers, which one bullet listing them as `not touched` satisfies. It never read the rest of the design, and guaranteeing the
+  > section EXISTS turns the safe failure — an agent finds nothing and asks — into the unsafe one. Check, baseline, 27 tests and 6 mutants deleted; the 13 triggers stay in §2.
+  > Record: [design](../features/topic_07_technical_debt/TECH-069/TECH-069_design.md). ID is dead — do NOT reuse.)*
 
 ## Documentation & Knowledge Architecture
 * **`TECH-060` 🟢: Integration Migration to (Sub)Story Path Inventories**

@@ -151,11 +151,6 @@ MATRIX: dict[str, dict[str, str]] = {
     # capabilities went `✅` -> `🔧` and twelve places still said delivered, with the queue
     # offering an already-built capability as its first candidate.
     "stale_delivered": {"doc": "all"},
-    # `PRINCIPLES.md` §2 names the decisions an agent may not take alone, and nothing read a design
-    # against that list -- 137 designs, none carrying a `Decisions taken with the user` section. The
-    # trigger list is read from `PRINCIPLES.md`, so the check cannot drift from it. Ratcheted on the
-    # count of designs that do not account for it; repo-wide because the list changes, not the diff.
-    "decision_citations": {"doc": "all"},
     # `TECH-053`: a ✅ nothing can verify. Two shapes no other gate sees — an add-on group flag that
     # contradicts its own children, and a delivered capability with no design or no FRs, which
     # `fr_sweep` scores as zero-uncited and therefore perfect. 62 delivered, 1 clean.

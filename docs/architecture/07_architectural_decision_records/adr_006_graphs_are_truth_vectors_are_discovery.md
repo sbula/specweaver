@@ -121,8 +121,9 @@ Full links: `ORIGINS.md` § Graph & Retrieval.
 
 ## Consequences
 
-* `TECH-068` closed 2026-08-22, so the reader family is unblocked. `TECH-069` and `TECH-070` remain
-  open, so it was never the only debt ticket — the Debt Sequencing section carries them.
+* `TECH-068` closed 2026-08-22, so the reader family is unblocked. `TECH-070` remains open, so it
+  was never the only debt ticket — the Debt Sequencing section carries it. (`TECH-069` was retired
+  2026-08-23 by the user and is no longer debt.)
 * `B-SENS-08`, `B-SENS-09`, `B-VAL-07` are designed **against this ADR**: their designs cite the
   step they implement, their seam FRs name the stores they read, and their first tests go red
   against the missing edges.

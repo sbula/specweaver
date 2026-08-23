@@ -1,45 +1,101 @@
-# Task: TECH-068 — the two open gate findings
+# Task: retire TECH-069, and record decisions inline
 
-**Skill**: `specweaver-dev` · **Story**: TECH-068 (`🟡`, open) · **Kind**: bugfix
-Both are declared FRs of an open ticket that were never fully built. No new ticket.
+**Skill**: `specweaver-dev` · **Story**: TECH-069 (`🔧`, retired by the user) · **Kind**: tooling
 
-## Research (done, measured — do not re-derive)
+The user retired the capability after the `specweaver-design` Phase 1 grilling. The gate is deleted
+outright; the record it checked is replaced by an inline marker beside the fact it governs.
+
+Retire `TECH-069` entirely — the check is deleted, not rescoped `[agreed 2026-08-23]`. The check,
+its baseline, its 27 tests and its 6 mutants go; the design is kept as a banner-marked retirement
+record, per the `E-VAL-03` precedent `[agreed 2026-08-23]`. An inline decision is written
+`` `[agreed <date>]` `` in backticks — chosen over a bolded prose form because it is greppable and
+carries its own date `[agreed 2026-08-23]`; the date is ISO `YYYY-MM-DD`, matching every other date
+in this repo. The `Decisions taken with the user` section is removed from the rule and the six skill
+files: it is a second copy of a fact, and `PRINCIPLES.md` §5 already forbids that
+`[agreed 2026-08-23]`. No replacement check is built here — removal only `[agreed 2026-08-23]`.
+
+**A trigger that did not fire is written nowhere.** It has no fact to sit beside, and the user ruled
+the `not touched` line valueless. The 13-item list survives in `PRINCIPLES.md` §2 and `/grill-me`
+walks it, so nothing is lost but the unverifiable receipt.
+
+Untouched: `quality.py` and its other four gates but for one row; `T-SPEND`, `T-BOUNDARY`,
+`T-ORDER`, `T-PROVEN`, `T-DATA`, `T-OBLIGATION`, `T-DEFAULT`.
+
+## Research (measured this session — do not re-derive)
 
 | Fact | Evidence |
 |---|---|
-| `GraphEdge` has **no** metadata field | `models.py` — `source_hash`, `target_hash`, `kind`, nothing else |
-| `upsert_edge` writes only `EDGE_KIND_ATTR` | `core.py` — so nothing can reach `graph_edges.metadata`, which the store already reads |
-| The 2 KB cap is hard-coded in `GraphNode` | `models.py:39` — `if payload_size > 2048` |
-| Go embedding is detectable | struct: `field_declaration` with a `type_identifier` and **no** `field_identifier`. interface: `type_elem > type_identifier` |
-| Go has **no** syntactic `implements` | interface satisfaction is structural and implicit — nothing in the AST expresses it |
-| Rust distinguishes both cleanly | `impl_item` with `for` → implements; `trait_item > trait_bounds` → extends; `impl_item` without `for` → inherent, nothing |
-| Rust's declared name is **not** the first identifier | `impl Runner for Impl` — the subject is the SECOND `type_identifier`. `_declared_type_name` would pick `Runner` |
-| One Rust type appears in several nodes | `struct Impl;` and `impl Runner for Impl` both name `Impl`; the base `extract_supertypes` **overwrites**, so one clobbers the other |
-| Go types are classified as procedures today | `extract_framework_markers` returns `{}` for Go, so the adapter's `is_class` is false and `_index_types` never sees them — a Go supertype could only ever ghost |
-| Rust already half-reports it | markers give `Impl: extends: [Runner]` — flattened, kinds lost. That is the gap `FR-4` exists to close |
+| The check is on `doc` only, 1 row of 14 | `quality.py` MATRIX; `quick`/`cb`/`sf`/`feature` never name it |
+| 13 triggers, 139 designs, 127 unaccounted, 12 pass | 10 of the 12 pass only as `STUB`-exempt |
+| Only 2 designs pass on merit | `TECH-068`, `TECH-069` — both written after the gate shipped |
+| The gate is defeated by one line | all 13 named `not touched` on one bullet passes |
+| The truth-destroying edit is one word | `fired — <answer>` → `not touched` passes, reason gone |
+| The check never reads the rest of the design | so `not touched` beside a live number passes |
+| `.agents/` and `.claude/` design skills are **separate copies** | `grill-me` alone is a symlink |
+| The two registries already disagree | `topic_07` says `🔧`, `master_story_roadmap:682` says `🔴` |
+| **No skill or doc names the script** | only `TECH-069`'s own design and mutants do — no dangling ref |
+| **`TECH-069`'s FRs/NFRs are in neither sweep baseline** | its FRs are all cited; its NFRs carry `[proof: ...]` |
+| **`baseline_snapshot.py` enumerates by `rglob`** | deleting one baseline file breaks no guard |
+| **`check_retirement_targets.py` matches `INT-US-*` only** | a `TECH` retirement note is outside its grammar |
 
-## Tasks
+## Commit boundary 1 — the gate is gone
 
-- [x] 1 — `GraphEdge` gains `metadata`; `upsert_edge` writes it — `models.py`, `core.py` / `test_edge_metadata.py`
-- [x] 2 — Mapper puts the unresolved raw name on every ghost edge (imports, supertypes, calls) — `mapper.py` / `test_ghost_raw_names.py`
-- [x] 3 — The raw name is capped so a pathological identifier cannot abort a build (`NFR-5`, `NFR-6`) — `mapper.py`, `models.py`
-- [x] **CB-1 — FR-12: an unresolved target says what it was**
-- [x] 4 — `extract_supertypes` MERGES per name instead of overwriting — `base.py` / `test_supertypes.py`
-- [x] 5 — Go reports struct and interface embedding as extension — `go/codestructure.py` / `test_go_supertypes.py`
-- [x] 6 — Rust reports `impl T for X` as implementation and `trait A: B` as extension — `rust/codestructure.py` / `test_rust_supertypes.py`
-- [x] 7 — The contract test names every shipped parser explicitly, so an empty result is a declared exemption rather than a loop that never runs — `test_every_parser_answers_the_contract.py`
-- [x] **CB-2 — FR-4: every language answers the supertype contract**
-- [x] 8 — The adapter treats a declared type as a type, so Go and Rust types are indexable targets — `graph_adapter.py` / seam tests
-- [x] 9 — Go and Rust hierarchies resolve to real nodes in a real build — integration + e2e
-- [x] **CB-3 — FR-9 / FR-10: the hierarchy is traversable in every language**
+- [x] 1 — `test_quality_runner.py` asserts the `doc` gate does **not** name `decision_citations`
+      (by absence, not by a count — a magic `13` breaks on the next doc check) — **RED first**
+- [x] 2 — Unwire: drop the MATRIX row (`quality.py`) and the runner entry (`_quality_checks.py`) → GREEN
+- [x] 3 — Delete `scripts/check_decision_citations.py`, `scripts/baselines/decision_citations.json`,
+      `tests/unit/scripts/test_check_decision_citations.py`, `TECH-069_mutants.json`
+- [x] 4 — Tombstone the registries in the `E-VAL-03` grammar: `topic_07_technical_debt.md`
+      (`⚰️ RETIRED` + *ID is dead — do NOT reuse*), `master_story_roadmap.md:682`,
+      `adr_006_...md:124`. The `🔧`/`🔴` disagreement dies with the entry
+- [x] 5 — `TECH-069_design.md` becomes a retirement record: `> **⚰️ RETIRED 2026-08-23 by the
+      user.**` banner naming the reason, and `Status: ⚰️ RETIRED 2026-08-23`. FR/NFR tables removed
+      because a retired capability may not keep making claims — **not** for the sweeps, which never
+      counted them
+- [x] 6 — `.agents/STATE.md`: the gate row, the `TECH-069 minted` row and the "no non-stub design
+      accounts" bullet all tell the truth
+- [/] **CB-1 — the check, its wiring, its tests and its claims are gone**
 
-## Decisions taken with the user
+## Commit boundary 2 — decisions are written where the fact is
 
-- `T-SPEND`, `T-BOUNDARY`, `T-POSTURE`, `T-DIVERGE`, `T-ORDER`, `T-UNDO`, `T-DATA`, `T-OBLIGATION`: not touched
-- `T-SCOPE`: fired — the user said "do the two open findings" after being shown both at the §2.8 gate
-- `T-PROVEN`: not touched — closing TECH-068 stays the user's call
-- `T-NAME`: fired — Go embedding emits `EXTENDS`, not a tenth `EdgeKind`. Chosen by the user
-  2026-08-22 over `EMBEDS`: the ontology already defines `EXTENDS` as "A is built from B", and a
-  tenth kind is `T-ARCH` for every reader, including the ones not built yet
-- `T-ARCH`: not touched — the ontology stays at nine kinds
-- `T-DEFAULT`: not touched — the raw-name cap reuses `RT-25`'s agreed 2 KB rather than introducing a number
+- [ ] 7 — `PRINCIPLES.md` §2: the settled-decision source becomes the inline `` `[agreed <date>]` ``
+      marker. The ADR and this-file clauses either side of it are left intact. §5 is cited as the reason
+- [ ] 8 — `specweaver-design/references/phase-1-intake.md` × 2 trees: record each settled decision
+      beside the fact it governs; a trigger that did not fire is written nowhere
+- [ ] 9 — `specweaver-design/references/phase-6-consistency.md` × 2 trees: approval reviews the
+      inline decisions
+- [ ] 10 — `specweaver-implementation-plan/SKILL.md` × 2 trees: the precondition reads inline
+      decisions, not a section
+- [ ] 11 — `.tmp/HANDOVER.md`: replace the TECH-069 gate entry with the retirement outcome. It is
+      gitignored, so no gate will ever catch it going stale
+- [ ] 12 — `.agents/STATE.md`: CB-1 left it saying *"right now the rule has no reader"* and *"the
+      commit that follows replaces it"*. Both go stale the moment CB-2 lands — update them
+- [ ] 13 — `TECH-069_walkthrough.md`: it promises *"CB-2 … is appended to this file when it lands"*.
+      Append it
+- [ ] **CB-2 — the rule and the six skill files say where a decision is written**
+
+## CB-1 pre-commit gate (`specweaver-pre-commit`)
+
+- [x] Phase 1 — architecture: tach pass, no imports changed. 3 findings, 0 blocking (A2 discharged by CB-2; A3 pre-existing root `context.yaml` stub, recorded)
+- [x] Phase 2 — test gap: coverage matrix + 0 proposed stories, justified per bucket. Guards 2/2. New test probed by mutation — 5 objections
+- [x] Phase 3 — implement tests: **no branch was touched, so no test was written.** Both trimmed literals verified still exact-set. Ruff clean
+- [x] Phase 4 — full suite
+- [x] Phase 5 — code quality (`quality.py cb`)
+- [x] Phase 6 — documentation
+- [x] Phase 7 — walkthrough
+- [x] Phase 7.5 — red/blue on the diff
+- [x] Phase 7.9 — handover / STATE
+- [/] Phase 8 — commit boundary (HITL)
+
+**Finding against the skill itself:** `phase-3-implement-tests.md` contradicts itself — §3.1b orders
+a mandatory HITL yield, while the closing `IMPORTANT` says there is no gate and to proceed
+immediately to Phase 4. `SKILL.md` and `specweaver-dev` both say Phase 3 gates. Yielding.
+
+## Notes on tiers and proof
+
+- Task 1 is the only genuine red→green cycle here. Deletions and prose edits have no honest test;
+  writing one would be the decoration `PRINCIPLES.md` §3 forbids.
+- The existing gates carry the rest: `check_skill_sync.py` holds the two trees in parity,
+  `check_skill_references.py` catches a skill pointing at a deleted file, and `quality.py doc` must
+  go green at 13 checks.
+- No new check is built.

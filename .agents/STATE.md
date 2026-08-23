@@ -47,7 +47,6 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | The nightly gate | A run that leaves no record is an alarm, not a pass |
 | Must-not-guess triggers | `PRINCIPLES.md` §2 replaced *money and security* with thirteen named triggers, each grounded in an incident here. `T-DIVERGE` and `T-ORDER` carry thresholds so they fire on something |
 | The grilling, flipped | The agent starts `/grill-me` itself when a trigger fires and prints its recommendation; the reply is what closes the question. A run with no user stops rather than proceeding. Gates design Phase 1 and Phase 6, and the plan skill |
-| `decision_citations` gate | Reads every design against §2 and ratchets what does not account for it. The trigger list is read from `PRINCIPLES.md`, so adding one stays a single-place edit |
 | `TECH-068` designed | Design APPROVED 2026-08-21. Five sub-features, 16 FRs, none planned yet. The review found two persistence defects the ticket now owns: an edge with no kind defaults to `CALLS`, and an edge the rebuilt graph drops is never deleted — both unreachable until `CALLS` lands, both then permanent |
 | `TECH-068` SF-01 delivered | Both edge-write traps closed. `FR-14` was firing, not latent: a real build stored 108 edges typed `CALLS` where every one was `CONTAINS`, because the engine wrote `kind` and the store read `type`. The attribute is named once now. Stale edges are cleared before each write. 20 new tests, 5 killed mutants — the graph's first corpus |
 | `TECH-068` SF-02…SF-05 delivered | The seam carries imports, supertypes and call sites; `EXTENDS`/`IMPLEMENTS` told apart across five languages; `CALLS` from upstream tags queries where they ship and from queries written here where they do not. Measured on `src/specweaver`, 358 files in 2.71s: **9106 `CALLS`, 2705 `CONTAINS`, 2274 `IMPORTS`, 341 `EXTENDS`**, 989 ghosts. `NFR-1` 22.7s against a 60s budget |
@@ -63,7 +62,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 | Every capitalised import ghosted | Found by writing the unit tests `resolve_module` never had. The case-lowering was one-sided — candidates lowered, the module stem not — so `import Models` against a collected `Models.py` resolved to a ghost while `from models import ...` against the same file resolved. The docstring had claimed case-insensitive matching all along. `NFR-8`'s **[proof: none]** is now agreement tests in both directions |
 | A dead default became a contract | `BaseTreeSitterParser._supertypes_of` returned "inherits nothing" for a language that declared its type nodes and never said what they inherit. Unreachable today, wrong the moment a language is added. `SF-03` found it by mutation and wrote a test that pinned what the branch returned; it now refuses instead, naming the class and what it must implement |
 | The handover had rotted to 23 MB | 332,068 lines, **122 of them distinct** — one section repeated ~10,000 times, some copies corrupted mid-line, burying content months stale. `.tmp/` is gitignored, so no diff and no gate ever saw it. `session_handover.py` was cleared by measurement, not assumption: one marker pair, a re-run changing zero bytes. It now warns when the file it writes has stopped being readable |
-| `TECH-069` minted | The decision-citations gate has a ticket, six FRs, 27 tests and six killed mutants. Using it found two false-positive classes in it — a wrapped markdown bullet, and stub designs counted as un-accounted. `🔧`: no implementation plan owns the FRs |
+| `TECH-069` retired | Built 2026-08-21, retired by the user 2026-08-23 before it was ever approved. It checked that a design's `Decisions taken with the user` section named all 13 triggers — which one bullet listing them as `not touched` satisfies, and which flipping `fired — <answer>` to `not touched` satisfies while deleting the answer. It never read the rest of the design, so it could not contradict its own section. The deeper fault: guaranteeing the section EXISTS turns the safe failure — an agent finds nothing and asks — into the unsafe one, where it finds a possibly-rotten answer and builds on it. Check, baseline, 27 tests and 6 mutants deleted; the 13 triggers stay in §2 as the agent's own detector |
 | `TECH-070` minted | `🔴` STUB. Every graph build re-ingests every file; `TECH-068` gate G2 withdrew its ≤250 ms target for want of a path to build it on. Sequenced ahead of `B-SENS-09` |
 | Nightly mutation, clear | Gate `CLEAR` for the first time in the session: 67 judged, 67 protected, 0 unprotected, 0 unmeasured. `TECH-049` and `TECH-056` corpora re-anchored onto the code the vocabulary refactor moved — the five blocking findings were drift, not gaps |
 | Two reports, two names | `_mutate_campaign.py` writes `mutation_campaign_report.md`; the nightly keeps `mutation_session.md` beside its record. One word apart cost a misreading |
@@ -76,9 +75,13 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   somebody remembers the story. `check_stale_delivered.py` catches the *other* half — prose calling
   a `🔧` capability delivered — and `T-PROVEN` now names the flip as the user's call, but nothing
   mechanical stops the flag being flipped.
-- **No non-stub design accounts for the §2 triggers.** 127 of them, and `decision_citations` is ratcheted there:
-  the count can fall but not rise, so nothing forces the backlog down. A design gains its
-  `Decisions taken with the user` section when somebody next opens it.
+- **Nothing checks that a §2 trigger was put to the user.** Deliberate, 2026-08-23: the gate that
+  claimed to went out with `TECH-069`, because a keyword check cannot tell asking from typing. A
+  §2 and six skill files still ask for a `Decisions taken with the user` section, so **right now the
+  rule has no reader** — the anti-pattern this repo names. The commit that follows replaces it: a
+  settled decision goes `` `[agreed <date>]` `` beside the fact it governs, one copy, with rot
+  visible to whoever edits the fact. The 13 triggers in §2 remain the agent's own detector, and
+  `/grill-me` is what actually protects the user.
 - **Four `TECH-068` findings remain**, recorded in its design's *Retrospective Pre-Commit Gate*
   section. Two are chores: `BaseTreeSitterParser._supertypes_of` is unreachable, and
   `resolve_module` has no unit tests so nothing pins the case-insensitive match RT-21 depends on.

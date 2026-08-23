@@ -2,10 +2,23 @@
 
 - **Feature ID**: TECH-069
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: DRAFT
+- **Status**: ⚰️ RETIRED 2026-08-23 — see the banner above. Never approved; Phase 6 never ran.
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-069/TECH-069_design.md
 - **Origin**: 2026-08-21, from the red/blue review of the must-not-guess trigger rule. Finding
   `R-1.1`: the rule was advisory because no gate compared a design against it.
+
+> **⚰️ RETIRED 2026-08-23 by the user.** Ruled **oversold** under the benefit test: the check
+> looked for keywords, never for truth. One bullet naming all 13 triggers `not touched` passes it,
+> and flipping `fired — <answer>` to `not touched` passes it while deleting the answer. It never
+> read the rest of the design, so it could not contradict a claim its own section made. The deeper
+> fault is that guaranteeing the section EXISTS converts the safe failure — an agent finds nothing
+> and asks the user — into the unsafe one, where it finds a possibly-rotten answer and builds on
+> it; and `what the user agreed` is testimony, so a stale entry can never be recomputed and caught.
+> `PRINCIPLES.md` §5 already forbade the second copy. `check_decision_citations.py`, its baseline,
+> its 27 tests and its 6 mutants are deleted. The 13 triggers stay in §2 — they work as the agent's
+> own detector. A settled decision moves to `` `[agreed <date>]` `` beside the fact it governs; that
+> half lands in the commit after this one, so between the two the section is asked for and unread. The FR/NFR tables below were removed with the code so the descope is visible; this
+> document remains as the record of what was built and why it was wrong.
 
 > **Proportionality.** One check script and a ratchet. It is a ticket because the gate shipped with
 > no registry entry, no FR table and no mutants — a quality gate nothing governs is the same defect
@@ -43,27 +56,15 @@ Measured 2026-08-21: **137 designs, none carrying a `Decisions taken with the us
 
 ## Functional Requirements
 
-| # | FR | Actor | Action | Outcome |
-|---|---|---|---|---|
-| FR-1 | One list, one place | the check | read the trigger IDs from `PRINCIPLES.md` §2's table, and only from table rows | adding or dropping a trigger stays a single-place edit, and prose cannot invent one |
-| FR-2 | Every trigger accounted for | the check | require a design's `Decisions taken with the user` section to name every trigger | naming one trigger and stopping does not pass |
-| FR-3 | A fired trigger carries its answer | the check | require text recording what was settled after the `fired` marker | the section is evidence, not a checklist |
-| FR-4 | Unreadable counts as missing | the check | treat a trigger mentioned without a marker as unaccounted | an unreadable design goes red rather than quiet |
-| FR-6 | A stub has nothing to record | the check | exempt a design whose status line reads `STUB` | a freshly minted ticket does not fail the gate for lacking decisions it cannot yet have, and the exemption keys on the status line so it cannot swallow a real design |
-| FR-5 | The count may fall, never rise | the check | compare the unaccounted count against a recorded baseline, failing closed when the baseline is missing or unreadable | the backlog cannot grow, and a broken ratchet cannot read as a pass |
+*Removed 2026-08-23 with the code they described. The design is a record, not a live claim.*
 
 ## Non-Functional Requirements
 
-| # | NFR | Threshold / Constraint |
-|---|---|---|
-| NFR-1 | Gate placement | Runs on the `doc` track, repo-wide, because the trigger list changes rather than the diff. **[proof: meta — rule about which gate the check joins]** |
-| NFR-2 | Baseline hygiene | The baseline is version-controlled under `scripts/baselines/` and never written by the suite (`TECH-055` guard) |
+*Removed 2026-08-23 with the code they described.*
 
 ## Verifiable Proof
 
-`tests/unit/scripts/test_check_decision_citations.py` — 27 tests, all passing, none skipped.
-`docs/roadmap/features/topic_07_technical_debt/TECH-069/TECH-069_mutants.json` — six authored
-mutants, one per FR.
+*Withdrawn. The tests and mutants that carried it are deleted.*
 
 ## Non-Goals
 
@@ -75,4 +76,4 @@ mutants, one per FR.
 
 ## Next Step
 
-Delivered and committed (`0f1f0c02`). Awaiting the Phase 6 approval gate, which only the user can run.
+None. Retired 2026-08-23. The ID is dead and must not be reused.

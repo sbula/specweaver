@@ -144,9 +144,6 @@ EXPECTED: dict[str, dict[str, str]] = {
         # other gate can see it -- `check_fr_coverage.py` judges only FRs somebody wrote.
         "retirement_targets": "all",
         "stale_delivered": "all",
-        # `PRINCIPLES.md` §2 names the decisions an agent may not take alone; nothing read a design
-        # against that list, so it was advisory. Ratcheted on designs that do not account for it.
-        "decision_citations": "all",
         "delivered_claims": "all",
         "xfail_blockers": "all",
         "skill_sync": "all",
@@ -222,7 +219,6 @@ class TestDocTrackIsSeparate:
             "roadmap_placement",
             "retirement_targets",
             "stale_delivered",
-            "decision_citations",
             "delivered_claims",
             "xfail_blockers",
             "skill_sync",
@@ -233,6 +229,16 @@ class TestDocTrackIsSeparate:
             "fr_sweep",
             "nfr_sweep",
         }
+
+    def test_the_decision_citations_gate_is_retired(self, q: ModuleType) -> None:
+        """`TECH-069` is retired, so no gate may still reach for its check.
+
+        Asserted by ABSENCE of the name rather than by the doc gate's size: a count would go red
+        on the next doc check anybody adds, which is a guard that fails for the wrong reason.
+        """
+        assert "decision_citations" not in q.CHECKS
+        assert "decision_citations" not in q.MATRIX
+        assert "decision_citations" not in {p.check for p in q.resolve_plans("doc")}
 
     def test_doc_is_not_in_the_code_ladder(self, q: ModuleType) -> None:
         assert "doc" not in q.CODE_GATES
