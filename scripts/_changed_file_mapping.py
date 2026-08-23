@@ -68,6 +68,16 @@ def domain_parts(rel: Path) -> tuple[str, ...]:
     return parts[1:] if parts and parts[0] in DOMAIN_CONTAINERS else parts
 
 
+def carries_no_code(changed: list[Path]) -> bool:
+    """True when nothing in the diff is Python.
+
+    Deliberately narrow -- `.py` anywhere in the diff, never "mostly documents" and never
+    "outside docs/". A wider condition is the one way this turns into a hole: a source change
+    riding in behind a README with no tier run at all.
+    """
+    return not any(path.suffix == ".py" for path in changed)
+
+
 def blocked_reason(tier: str, changed: list[Path]) -> str:
     """WHICH cause applies. The message this replaced asserted the source one unconditionally,
     so it was flatly false for a tests-only change — see `TestBlockedReason`.

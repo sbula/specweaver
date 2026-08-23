@@ -126,6 +126,7 @@ _changed_file_mapping = _load_sibling("_changed_file_mapping")
 _src_relative = _changed_file_mapping.src_relative
 _tier_relative = _changed_file_mapping.tier_relative
 _blocked_reason = _changed_file_mapping.blocked_reason
+carries_no_code = _changed_file_mapping.carries_no_code
 domain_parts = _changed_file_mapping.domain_parts
 
 
@@ -457,11 +458,28 @@ def run_tier(selection: Selection, paths: list[Path], workers: str) -> int:
 def run_selections(
     selections: list[Selection], changed: list[Path], workers: str
 ) -> list[tuple[Selection, int, int]]:
-    """Run each selected tier, treating an empty selection as a failure rather than a pass."""
+    """Run each selected tier. An empty selection fails, UNLESS the boundary changed no code.
+
+    A tier that selects nothing while Python changed is missing coverage and blocks. A tier that
+    selects nothing because the boundary is documentation has nothing to be missing, and blocking
+    it made a third of this repo's commits unable to satisfy their own gate -- so they skipped it,
+    and the gate stopped running on the other two-thirds too. `quality.py` has carried a separate
+    `doc` track for this since it was written; this is the equivalent.
+
+    The zero is DECLARED, never quiet: a silent no-tier run is indistinguishable from a passing
+    one, which is why `--kind audit` prints its own zero out loud.
+    """
     results: list[tuple[Selection, int, int]] = []
     for selection in selections:
         paths = paths_for(selection.tier, selection.scope, changed)
         if not paths:
+            if carries_no_code(changed):
+                print(
+                    f"\nno tests apply: {selection.tier} at scope '{selection.scope}' selected "
+                    "nothing, and this boundary changed no code."
+                )
+                results.append((selection, 0, 0))
+                continue
             print(
                 f"\nBLOCKED: {selection.tier} at scope '{selection.scope}' selected NO tests: "
                 f"{_blocked_reason(selection.tier, changed)}."

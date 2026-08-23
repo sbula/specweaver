@@ -505,15 +505,55 @@ class TestBlockedReason:
     def test_an_empty_selection_is_reported_and_counted_as_a_failure(
         self, tr: ModuleType, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """No pytest subprocess runs here — `run_selections` returns before `run_tier`."""
+        """A tier selecting nothing while Python DID change is missing coverage, and still blocks.
+
+        No pytest subprocess runs here — `run_selections` returns before `run_tier`.
+        """
         selection = tr.Selection("unit", "module")
 
-        results = tr.run_selections([selection], [Path("README.md")], "1")
+        results = tr.run_selections([selection], [Path("src/specweaver/nonexistent/a.py")], "1")
         out = capsys.readouterr().out
 
         assert results == [(selection, 1, 0)]
         assert "BLOCKED" in out
-        assert "nothing you changed resolves to this tier at all" in out
+
+    def test_a_boundary_that_changed_no_code_declares_no_tiers_instead_of_blocking(
+        self, tr: ModuleType, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """32% of this repo's commits are documentation-only and every one of them was blocked.
+
+        `quality.py` has carried a separate `doc` track for exactly this since it was written;
+        this runner never gained the equivalent, so a third of all commits could not satisfy
+        their own gate. Two landed anyway (`00b78d5f`, `3db9de2f`) because nobody ran it — which
+        is what an unrunnable gate buys you.
+
+        It must DECLARE the zero, never go quiet: a silent no-tier run is indistinguishable from
+        a passing one, which is the reason `--kind audit` prints its own zero out loud.
+        """
+        selection = tr.Selection("unit", "module")
+
+        results = tr.run_selections([selection], [Path("docs/x.md"), Path("README.md")], "1")
+        out = capsys.readouterr().out
+
+        assert results == [(selection, 0, 0)]
+        assert "BLOCKED" not in out
+        assert "no code" in out
+
+    def test_one_python_file_among_many_documents_still_blocks(
+        self, tr: ModuleType, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """The hole this fix could open, closed: code must never ride in behind documentation.
+
+        The condition is `no .py in the diff`, not `mostly documents` and not `outside docs/`.
+        One Python file and the tier blocks exactly as before.
+        """
+        selection = tr.Selection("unit", "module")
+        changed = [Path("docs/a.md"), Path("README.md"), Path("src/specweaver/nonexistent/a.py")]
+
+        results = tr.run_selections([selection], changed, "1")
+
+        assert results == [(selection, 1, 0)]
+        assert "BLOCKED" in capsys.readouterr().out
 
     def test_a_gate_script_mirrors_to_the_scripts_test_package(self, tr: ModuleType) -> None:
         """`scripts/` is mirrored by `tests/unit/scripts/`, so changing a gate must select it.
