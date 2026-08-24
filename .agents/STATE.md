@@ -110,6 +110,26 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   it can move without the nightly saying so. The remedy where a claim matters is to re-anchor the
   mutant on the function that *reads* the constant — not to loosen the hasher.
 
+- **The knowledge graph has no reader, and none is designed.** `ADR-006` names eight —
+  `B-SENS-08`, `B-SENS-09`, `B-VAL-07`, `B-FLOW-04`, `C-UI-01`, `B-SENS-06`, `A-SENS-05`,
+  `B-INTL-08` — and **every one is `🔜`/`🔮` with no design document at all**. Measured 2026-08-24:
+  `GraphOrchestrator` and `SqliteGraphRepository` are referenced only inside `graph/`; the sole
+  entry point is `sw graph build`, typed by hand. `B-SENS-09` (packing a subgraph into `sw draft` /
+  `implement` / `review` prompts) is the only one that reaches a user path — it is what would make
+  the graph pay for itself.
+
+- **`TECH-070` rests on two unknowns and its urgency is unmeasurable, not low.** Its case is
+  *"every build re-ingests every file"*, quoting **358 files / 2.71 s**. That figure is SpecWeaver
+  parsing **its own source** — a test fixture, not a workload. The graph is built over the *target
+  project*, and there is no target project. Its second argument — *"`B-SENS-09` packs per turn, so a
+  full rebuild compounds"* — is an assumption about a design nobody has written. Both become
+  measurable the moment a reader exists.
+
+- **`mutation.py --gate` is BLOCKED** on five `TECH-056 FR-1` findings, all `UNMEASURED
+  [scope-already-red]` — collateral of the 2026-08-24 red baseline, not findings about the code.
+  Dispositioning them is the human act the gate exists to force; an agent clearing its own run's
+  findings is the exact defect `TECH-056` fixed. A green baseline tonight clears them on its own.
+
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being
   documentation-only. Nothing runs the *whole* runner over a synthetic docs-only diff, so a future
