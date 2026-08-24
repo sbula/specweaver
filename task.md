@@ -1,114 +1,51 @@
-# Task: retire TECH-069, and record decisions inline
+# Task: the nightly baseline says how many tests failed, never which
 
-**Skill**: `specweaver-dev` · **Story**: TECH-069 (`🔧`, retired by the user) · **Kind**: tooling
+**Skill**: `specweaver-dev` · **Story**: ticket-less bugfix on dev tooling · **Kind**: bugfix
 
-The user retired the capability after the `specweaver-design` Phase 1 grilling. The gate is deleted
-outright; the record it checked is replaced by an inline marker beside the fact it governs.
+Found 2026-08-24 looking at the nightly. Third night running the baseline was red; the first two
+were dirty-tree artefacts, this one was a clean commit (`eeaa84ee`) and therefore real. It cannot be
+diagnosed, because the record keeps the count and throws the names away.
 
-Retire `TECH-069` entirely — the check is deleted, not rescoped `[agreed 2026-08-23]`. The check,
-its baseline, its 27 tests and its 6 mutants go; the design is kept as a banner-marked retirement
-record, per the `E-VAL-03` precedent `[agreed 2026-08-23]`. An inline decision is written
-`` `[agreed <date>]` `` in backticks — chosen over a bolded prose form because it is greppable and
-carries its own date `[agreed 2026-08-23]`; the date is ISO `YYYY-MM-DD`, matching every other date
-in this repo. The `Decisions taken with the user` section is removed from the rule and the six skill
-files: it is a second copy of a fact, and `PRINCIPLES.md` §5 already forbids that
-`[agreed 2026-08-23]`. No replacement check is built here — removal only `[agreed 2026-08-23]`.
-
-**A trigger that did not fire is written nowhere.** It has no fact to sit beside, and the user ruled
-the `not touched` line valueless. The 13-item list survives in `PRINCIPLES.md` §2 and `/grill-me`
-walks it, so nothing is lost but the unverifiable receipt.
-
-Untouched: `quality.py` and its other four gates but for one row; `T-SPEND`, `T-BOUNDARY`,
-`T-ORDER`, `T-PROVEN`, `T-DATA`, `T-OBLIGATION`, `T-DEFAULT`.
-
-## Research (measured this session — do not re-derive)
+## Research (measured — do not re-derive)
 
 | Fact | Evidence |
 |---|---|
-| The check is on `doc` only, 1 row of 14 | `quality.py` MATRIX; `quick`/`cb`/`sf`/`feature` never name it |
-| 13 triggers, 139 designs, 127 unaccounted, 12 pass | 10 of the 12 pass only as `STUB`-exempt |
-| Only 2 designs pass on merit | `TECH-068`, `TECH-069` — both written after the gate shipped |
-| The gate is defeated by one line | all 13 named `not touched` on one bullet passes |
-| The truth-destroying edit is one word | `fired — <answer>` → `not touched` passes, reason gone |
-| The check never reads the rest of the design | so `not touched` beside a live number passes |
-| `.agents/` and `.claude/` design skills are **separate copies** | `grill-me` alone is a symlink |
-| The two registries already disagree | `topic_07` says `🔧`, `master_story_roadmap:682` says `🔴` |
-| **No skill or doc names the script** | only `TECH-069`'s own design and mutants do — no dangling ref |
-| **`TECH-069`'s FRs/NFRs are in neither sweep baseline** | its FRs are all cited; its NFRs carry `[proof: ...]` |
-| **`baseline_snapshot.py` enumerates by `rglob`** | deleting one baseline file breaks no guard |
-| **`check_retirement_targets.py` matches `INT-US-*` only** | a `TECH` retirement note is outside its grammar |
+| The names ARE captured | `mutation.py:252` — `failures=_mutate.killers(out)` |
+| `Baseline` carries them | `mutation.py:81-86` — `green`, `failures: list[str]`, `code` |
+| The record discards them | `_session_record.py:268` — `"failed": len(getattr(baseline, "failures", []) or [])` |
+| A test pins the discard | `test_session_record.py:139` supplies `failures=["tests/a.py::test_x"]` and asserts the block is exactly `{ran, green, failed: 1}` |
+| `failed` has exactly two readers | `_session_record.py:153` (prose) and `_mutation_gate.py:142` (gate message) |
+| A red baseline voids the whole run | `_session_record.py:155` — *"every verdict below is meaningless while the baseline is red"*; 145 verdicts lost on 2026-08-24 |
+| The suite is green now | 8381 passed exit 0, and the blamed scope alone 36 passed — so the failure is flaky or environment-bound at 03:00 |
 
-## Commit boundary 1 — the gate is gone
+## Decisions
 
-- [x] 1 — `test_quality_runner.py` asserts the `doc` gate does **not** name `decision_citations`
-      (by absence, not by a count — a magic `13` breaks on the next doc check) — **RED first**
-- [x] 2 — Unwire: drop the MATRIX row (`quality.py`) and the runner entry (`_quality_checks.py`) → GREEN
-- [x] 3 — Delete `scripts/check_decision_citations.py`, `scripts/baselines/decision_citations.json`,
-      `tests/unit/scripts/test_check_decision_citations.py`, `TECH-069_mutants.json`
-- [x] 4 — Tombstone the registries in the `E-VAL-03` grammar: `topic_07_technical_debt.md`
-      (`⚰️ RETIRED` + *ID is dead — do NOT reuse*), `master_story_roadmap.md:682`,
-      `adr_006_...md:124`. The `🔧`/`🔴` disagreement dies with the entry
-- [x] 5 — `TECH-069_design.md` becomes a retirement record: `> **⚰️ RETIRED 2026-08-23 by the
-      user.**` banner naming the reason, and `Status: ⚰️ RETIRED 2026-08-23`. FR/NFR tables removed
-      because a retired capability may not keep making claims — **not** for the sweeps, which never
-      counted them
-- [x] 6 — `.agents/STATE.md`: the gate row, the `TECH-069 minted` row and the "no non-stub design
-      accounts" bullet all tell the truth
-- [x] **CB-1 — the check, its wiring, its tests and its claims are gone**
+- `failures` is **added**, `failed` **stays** `[agreed 2026-08-24]`. Removing the count would touch
+  the gate, the summary renderer and their tests — a refactor wearing a bugfix's clothes. Both are
+  written by one function from one object in one instant, so they cannot drift apart.
+- The **JSON keeps every name**; the **prose caps at 10** with a `... and N more` line, following
+  `check_decision_citations.py`'s existing shape. Not a new number.
+- **Schema stays at 1.** Adding a key is additive — every existing reader keeps working, and the
+  only readers are in this repo.
 
-## Commit boundary 2 — decisions are written where the fact is
+## Commit boundary 1 — a red baseline names what was red
 
-- [x] 7 — `PRINCIPLES.md` §2: the settled-decision source becomes the inline `` `[agreed <date>]` ``
-      marker. The ADR and this-file clauses either side of it are left intact. §5 is cited as the reason
-- [x] 8 — `specweaver-design/references/phase-1-intake.md` × 2 trees: record each settled decision
-      beside the fact it governs; a trigger that did not fire is written nowhere
-- [x] 9 — `specweaver-design/references/phase-6-consistency.md` × 2 trees: approval reviews the
-      inline decisions
-- [x] 10 — `specweaver-implementation-plan/SKILL.md` × 2 trees: the precondition reads inline
-      decisions, not a section
-- [ ] 11 — `.tmp/HANDOVER.md`: replace the TECH-069 gate entry with the retirement outcome. It is
-      gitignored, so no gate will ever catch it going stale
-- [x] 12 — `.agents/STATE.md`: CB-1 left it saying *"right now the rule has no reader"* and *"the
-      commit that follows replaces it"*. Both go stale the moment CB-2 lands — update them
-- [x] 13 — `TECH-069_walkthrough.md`: it promises *"CB-2 … is appended to this file when it lands"*.
-      Append it
-- [ ] **CB-2 — the rule and the six skill files say where a decision is written**
-
-## CB-1 pre-commit gate (`specweaver-pre-commit`)
-
-- [x] Phase 1 — architecture: tach pass, no imports changed. 3 findings, 0 blocking (A2 discharged by CB-2; A3 pre-existing root `context.yaml` stub, recorded)
-- [x] Phase 2 — test gap: coverage matrix + 0 proposed stories, justified per bucket. Guards 2/2. New test probed by mutation — 5 objections
-- [x] Phase 3 — implement tests: **no branch was touched, so no test was written.** Both trimmed literals verified still exact-set. Ruff clean
-- [x] Phase 4 — full suite
-- [x] Phase 5 — code quality (`quality.py cb`)
-- [x] Phase 6 — documentation
-- [x] Phase 7 — walkthrough
-- [x] Phase 7.5 — red/blue on the diff
-- [x] Phase 7.9 — handover / STATE
-- [x] Phase 8 — committed `a97c8e2d` commit boundary (HITL)
-
-**Finding against the skill itself:** `phase-3-implement-tests.md` contradicts itself — §3.1b orders
-a mandatory HITL yield, while the closing `IMPORTANT` says there is no gate and to proceed
-immediately to Phase 4. `SKILL.md` and `specweaver-dev` both say Phase 3 gates. Yielding.
-
-## CB-2 pre-commit gate (`specweaver-pre-commit`)
-
-- [x] Phase 1 — architecture: markdown only, zero imports, tach ✅ (vacuously). Key check: the rule is FULLY removed, every surviving mention read individually
-- [x] Phase 2 — test gap: 0 proposed stories. 2 findings, both fixed — the walkthrough used the retired heading; `phase-1-intake.md` said "twelve triggers" and listed thirteen
-- [x] Phase 3 — implement tests: no branch touched, no test written. Ruff clean
-- [ ] Phase 4 — full suite
-- [ ] Phase 5 — code quality
-- [ ] Phase 6 — documentation
-- [ ] Phase 7 — walkthrough
-- [ ] Phase 7.5 — red/blue on the diff
-- [ ] Phase 7.9 — handover / STATE
-- [ ] Phase 8 — commit boundary (HITL)
+- [ ] 1 — `test_session_record.py` asserts the block carries `failures` and that the names survive
+      verbatim — **RED first**, the test currently pins their removal
+- [ ] 2 — `_baseline_block` writes `failures` alongside `failed` -> GREEN
+- [ ] 3 — `test_mutation_summary.py` asserts the prose PRINTS the names when the baseline is red,
+      and caps at 10 with a `... and N more` line — **RED first**
+- [ ] 4 — the prose renderer prints them -> GREEN
+- [ ] 5 — probe both with `_mutate.py`: neutralise each and confirm the suite objects
+- [ ] **CB-1 — a red baseline is diagnosable**
 
 ## Notes on tiers and proof
 
-- Task 1 is the only genuine red→green cycle here. Deletions and prose edits have no honest test;
-  writing one would be the decoration `PRINCIPLES.md` §3 forbids.
-- The existing gates carry the rest: `check_skill_sync.py` holds the two trees in parity,
-  `check_skill_references.py` catches a skill pointing at a deleted file, and `quality.py doc` must
-  go green at 13 checks.
-- No new check is built.
+- Unit tier throughout. `_baseline_block` and the renderer are pure functions over a dataclass;
+  there is no seam and no journey here.
+- **Composition check (2.5c):** these two are used in sequence — the writer produces the block the
+  renderer consumes. A test of each alone would pass while the pair disagreed about the key's name,
+  which is `TECH-068`'s `kind`/`type` defect exactly. Task 3 drives the renderer from a block built
+  by the real writer, not from a hand-made dict.
+- **Out of scope, named rather than hidden:** this makes the failure *diagnosable*, it does not find
+  it. The flaky test stays unknown until it recurs — with names attached.

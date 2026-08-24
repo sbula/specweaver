@@ -137,6 +137,64 @@ class TestRenderSummary:
             f"a red baseline must be visible before the results it invalidates:\n{out}"
         )
 
+    def test_a_red_baseline_names_what_was_red(self, rep: ModuleType) -> None:
+        """`1 failed` is not actionable. Three nightly runs were lost to exactly that."""
+        out = rep.render_summary(
+            _document(
+                baseline={
+                    "ran": True,
+                    "green": False,
+                    "failed": 2,
+                    "failures": ["tests/a.py::test_x", "tests/b.py::test_y"],
+                }
+            )
+        )
+
+        assert "tests/a.py::test_x" in out
+        assert "tests/b.py::test_y" in out
+
+    def test_a_long_failure_list_is_capped_and_says_how_many_it_hid(self, rep: ModuleType) -> None:
+        """A whole-suite collapse must not bury the verdicts underneath it.
+
+        Capped at ten with the remainder counted, the shape `check_decision_citations.py` already
+        used. A truncation that does not say it truncated reads as the complete list.
+        """
+        names = [f"tests/t{i}.py::test_{i}" for i in range(12)]
+        out = rep.render_summary(
+            _document(baseline={"ran": True, "green": False, "failed": 12, "failures": names})
+        )
+
+        assert names[0] in out
+        assert names[11] not in out
+        assert "2 more" in out
+
+    def test_a_red_baseline_with_no_names_shows_the_exit_code(self, rep: ModuleType) -> None:
+        """Otherwise a collection failure is indistinguishable from a clean-but-red run."""
+        out = rep.render_summary(
+            _document(
+                baseline={"ran": True, "green": False, "failed": 0, "failures": [], "code": 2}
+            )
+        )
+
+        assert "exit 2" in out
+
+    def test_a_record_written_before_names_were_kept_still_renders(self, rep: ModuleType) -> None:
+        """`--summary` replays records off disk, so it meets ones older than this field.
+
+        Two render paths exist, not one: `mutation.py` builds and renders in the same run, and it
+        also reads an archived record and renders that. Every record written before 2026-08-24 has
+        `failed` and no `failures`, and the whole point of keeping them on disk is reading them
+        later.
+
+        This test could not go RED -- the behaviour already worked, on `.get(...) or []`. Its
+        validity rests on the probe instead: replacing that with `baseline["failures"]` makes this
+        test fail, which is the only evidence that it constrains anything.
+        """
+        out = rep.render_summary(_document(baseline={"ran": True, "green": False, "failed": 1}))
+
+        assert "NOT GREEN (1 failed)" in out
+        assert "meaningless" in out
+
     def test_an_empty_run_says_so_rather_than_looking_clean(self, rep: ModuleType) -> None:
         """No campaigns is not the same as everything passing, and must not read like it."""
         doc = _document()

@@ -139,13 +139,100 @@ class TestBuildSessionRecord:
     def test_a_baseline_that_ran_reports_its_outcome(
         self, report: ModuleType, mutation: ModuleType
     ) -> None:
-        baseline = mutation.Baseline(green=False, failures=["tests/a.py::test_x"], code=1)
+        """A red baseline names what was red.
+
+        The count alone made three consecutive nightly runs undiagnosable: a red baseline voids
+        every verdict in the session, and `1 failed` gives nobody anything to act on. The runner
+        has had the names all along -- `run_baseline` builds `Baseline(failures=killers(out))` --
+        and this block took `len()` of them.
+        """
+        baseline = mutation.Baseline(
+            green=False, failures=["tests/a.py::test_x", "tests/b.py::test_y"], code=1
+        )
 
         assert self._record(report, mutation, baseline=baseline)["session"]["baseline"] == {
             "ran": True,
             "green": False,
-            "failed": 1,
+            "failed": 2,
+            "failures": ["tests/a.py::test_x", "tests/b.py::test_y"],
+            "code": 1,
         }
+
+    def test_a_green_baseline_carries_an_empty_list_rather_than_no_key(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """Present-and-empty, so a reader never has to tell `no failures` from `field not written`.
+
+        The same reasoning as `{"ran": False}` above: absence is a different fact from zero.
+        """
+        baseline = mutation.Baseline(green=True, failures=[], code=0)
+        block = self._record(report, mutation, baseline=baseline)["session"]["baseline"]
+
+        assert block["failures"] == []
+        assert block["green"] is True
+
+    def test_a_baseline_object_without_failures_does_not_crash_the_record(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """The record is written at the end of a long run; it degrades rather than losing it all."""
+
+        class _Older:
+            green = False
+
+        block = self._record(report, mutation, baseline=_Older())["session"]["baseline"]
+
+        assert block["failures"] == []
+        assert block["failed"] == 0
+
+    def test_a_sandbox_path_inside_a_failure_name_is_scrubbed(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """A new field carrying a leaked path is exactly what the recursive sanitiser is for.
+
+        Asserted rather than assumed: `sanitise_document` walks lists, so this should hold by
+        construction -- and `by construction` is the claim that turns out false.
+        """
+        baseline = mutation.Baseline(
+            green=False, failures=["/tmp/sw-session-abc/tests/a.py::test_x"], code=1
+        )
+
+        block = self._record(report, mutation, baseline=baseline)["session"]["baseline"]
+
+        assert block["failures"] == ["tests/a.py::test_x"]
+
+    def test_a_baseline_that_could_not_collect_says_so_rather_than_reporting_zero(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """`0 failed` and `pytest could not start` are different facts and looked identical.
+
+        `killers()` returns `[]` when pytest itself errored -- a broken conftest, a bad import --
+        so the block read `green: false, failed: 0` and named nothing. That is the same
+        undiagnosable state the failure names were added to close, one field over: `Baseline`
+        carries `code` and this block dropped it exactly as it dropped `failures`.
+        """
+        baseline = mutation.Baseline(green=False, failures=[], code=2)
+
+        block = self._record(report, mutation, baseline=baseline)["session"]["baseline"]
+
+        assert block["code"] == 2
+        assert block["failed"] == 0
+
+    def test_the_names_the_writer_stores_are_the_names_the_report_prints(
+        self, report: ModuleType, mutation: ModuleType
+    ) -> None:
+        """The pair, driven end to end -- never a hand-built dict handed to the renderer.
+
+        Each half can pass alone while the two disagree about the key's name, and nothing would
+        say so. That is `TECH-068`'s defect exactly: the engine wrote the edge kind under `kind`,
+        the store read `type`, both halves had complete passing tests, and 108 persisted edges
+        took the store's fallback.
+        """
+        baseline = mutation.Baseline(green=False, failures=["tests/z.py::test_boom"], code=1)
+
+        record = self._record(report, mutation, baseline=baseline)
+        rendered = report.render_summary(record)
+
+        assert "tests/z.py::test_boom" in rendered
 
     def test_the_record_declares_its_schema(self, report: ModuleType, mutation: ModuleType) -> None:
         """The ledger and the record are versioned separately; a reader must be able to tell

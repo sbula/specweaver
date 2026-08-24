@@ -35,6 +35,11 @@ from typing import Any
 #: with a `sw-` prefix, and the segment after it is the mirror of the repo tree.
 _SANDBOX_PATH = re.compile(r"/(?:private/)?tmp/sw-[A-Za-z0-9_-]+/")
 
+#: How many failing test names the PROSE prints before summarising the rest. The JSON keeps all of
+#: them -- the record is the record. Ten with the remainder counted is the shape the repo already
+#: used for oversized findings; a truncation that does not say it truncated reads as a full list.
+_BASELINE_NAMES_SHOWN = 10
+
 
 def sanitise(text: str) -> str:
     """A string with sandbox prefixes rewritten away, leaving the repo-relative remainder."""
@@ -151,11 +156,18 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
     if baseline.get("ran"):
         green = baseline.get("green")
         state = "green" if green else f"NOT GREEN ({baseline.get('failed', '?')} failed)"
+        if not green and not (baseline.get("failures") or []):
+            state += f", pytest exit {baseline.get('code', '?')}"
         lines.append(f"  baseline     {state}")
         if not green:
             lines.append(
                 "               every verdict below is meaningless while the baseline is red"
             )
+            failures = baseline.get("failures") or []
+            lines += [f"               {name}" for name in failures[:_BASELINE_NAMES_SHOWN]]
+            if len(failures) > _BASELINE_NAMES_SHOWN:
+                hidden = len(failures) - _BASELINE_NAMES_SHOWN
+                lines.append(f"               ... and {hidden} more")
 
     lines += [
         f"  mutants      {len(mutants)} judged"
@@ -262,10 +274,16 @@ def _baseline_block(baseline: Any) -> dict[str, Any]:
     """
     if baseline is None:
         return {"ran": False}
+    failures = [str(name) for name in (getattr(baseline, "failures", None) or [])]
     return {
         "ran": True,
         "green": bool(getattr(baseline, "green", False)),
-        "failed": len(getattr(baseline, "failures", []) or []),
+        "failed": len(failures),
+        "failures": failures,
+        # `killers()` returns nothing when pytest ITSELF errored, so `failed: 0` beside
+        # `green: false` means either "red with no names" or "could not collect". The exit code is
+        # the only thing that tells them apart, and `Baseline` has carried it all along.
+        "code": int(getattr(baseline, "code", 0) or 0),
     }
 
 
