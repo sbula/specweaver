@@ -89,6 +89,21 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
+**Every field carries a marker, not just `Purpose`.** A registry nobody has confirmed should say
+so on every line, or the eye reads the unmarked ones as settled.
+
+| Marker | Means |
+|---|---|
+| 🟡 | **derived from a document, never confirmed by the user.** Name the source |
+| 🔴 | **nothing anywhere says this.** A gap to close |
+
+`—` still means *there are none*, and it takes 🟡 like any other value: "this capability needs
+nothing from another" is a claim somebody has to agree with.
+
+**A marker is removed only when the user says so.** Not when it looks obvious, not when a design
+states it, not when three documents agree. The markers are the difference between a draft that is
+honest about its status and one that quietly becomes the record.
+
 **Four legal `Purpose` values, and they are not interchangeable.**
 
 | Value | Means | Is it a gap? |
