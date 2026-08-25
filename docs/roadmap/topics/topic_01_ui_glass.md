@@ -10,7 +10,7 @@ still marked ungrilled.
 ## DAL-E: Prototyping
 
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)
-  > - **Purpose:** One entry point (`sw`) routing every user command — scaffold, draft, check, review, implement
+  > - **Purpose:** UNKNOWN — the design states seven FRs and never states a why. "Establishes the foundational CLI entry point" is what it is, not what it is for
   > - **Trigger:** When a developer runs `sw <command>`
   > - **Needs:** —
   > - **Reads:** command-line arguments

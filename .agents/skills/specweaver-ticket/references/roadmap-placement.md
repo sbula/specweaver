@@ -90,6 +90,19 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
 > [!CAUTION]
+> **`Purpose` is not `Produces` restated.** If the only sentence you can write describes what the
+> thing *is* or *does*, the purpose was never recorded and the honest value is `UNKNOWN`.
+>
+> The test: **would this sentence help someone decide whether to build it?** *"One entry point
+> routing every user command"* fails — it is circular, the CLI exists so that a CLI exists.
+> *"Without it every front end shells out to the CLI and parses console output"* passes — it names
+> the pain avoided. Both were written for topic 01 on the same afternoon; the first was a design's
+> *what* dressed up as a *why*, and it survived until the user read it back.
+>
+> A design can be rich in what and silent on why. `E-UI-01` has seven FRs with actor, action and
+> outcome, and no purpose anywhere.
+
+> [!CAUTION]
 > **Read the feature folder before writing `UNKNOWN`.** The topic entry is layer 2; the design at
 > layer 3 usually holds the purpose, the actors and the outcomes, and the topic entry frequently
 > does not link to it. Measured 2026-08-25 while converting topic 01: three of its capabilities had
