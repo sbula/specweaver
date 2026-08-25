@@ -10,22 +10,22 @@ still marked ungrilled.
 ## DAL-E: Prototyping
 
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)
-  > - **Purpose:** UNKNOWN — never grilled. The superseded entry said only "CLI Scaffold"
-  > - **Trigger:** UNKNOWN
-  > - **Needs:** UNKNOWN
-  > - **Reads:** UNKNOWN
-  > - **Produces:** UNKNOWN
-  > - **Enables:** every `sw` command → an entry point to attach to
-  > - **Done when:** UNKNOWN
+  > - **Purpose:** One entry point (`sw`) routing every user command — scaffold, draft, check, review, implement
+  > - **Trigger:** When a developer runs `sw <command>`
+  > - **Needs:** —
+  > - **Reads:** command-line arguments
+  > - **Produces:** memory → routing to each command's implementation · `sw init` → target project scaffold and configuration
+  > - **Enables:** `init` · `draft` · `check spec|code` · `review spec|code` · `implement` → the seven commands the product is used through
+  > - **Done when:** all seven commands route to their implementation (FR-1..FR-7)
 
 * **`E-UI-02` ✅: Web Dashboard** (Legacy: 3.8 / 4.10)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: approve pending reviews away from a desk ("the tablet train scenario")
+  > - **Purpose:** Approve a pending review from a tablet — the "train" scenario the capability was justified by
   > - **Trigger:** When an operator opens the dashboard served by `sw serve`
-  > - **Needs:** `D-UI-01` → the REST endpoints it renders
-  > - **Reads:** per-project pipeline storage
-  > - **Produces:** memory → server-rendered HTML (FastAPI + Jinja2/HTMX, no JS framework)
-  > - **Enables:** operator → project list, pipeline status, HITL approve/reject, verdict display
-  > - **Done when:** UNKNOWN — 3142 tests pass, but no statement of what the operator can now do that they could not
+  > - **Needs:** `D-UI-01` → the REST/WebSocket contract it calls
+  > - **Reads:** per-project pipeline storage — a SQLite `pipelines` table
+  > - **Produces:** memory → server-rendered HTML (FastAPI + Jinja2/HTMX, no JS framework, mobile-responsive)
+  > - **Enables:** operator → project list, pipeline status, HITL approve/reject, verdict display, remarks
+  > - **Done when:** an operator approves a pending review from a tablet, with no terminal
 
 * **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37, inspired by PasteMax)
   > - **Purpose:** UNKNOWN — never grilled. Claimed: DX polish for iterative spec authoring
@@ -48,13 +48,13 @@ still marked ungrilled.
 ## DAL-D: Internal Tooling
 
 * **`D-UI-01` 🔧: Core Orchestration API** (Legacy: 3.7 MVP)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: foundation for remote orchestration and the tablet dashboard
-  > - **Trigger:** When `sw serve` is running and a request arrives
-  > - **Needs:** the CLI command layer → the behaviour each endpoint exposes
-  > - **Reads:** UNKNOWN
-  > - **Produces:** memory → HTTP responses for `init`, `projects`, `use`, `pipelines`, `run`, `resume`, `review`, `check`
-  > - **Enables:** `E-UI-02` → the dashboard it renders · `D-UI-03..07` → endpoints to extend
-  > - **Done when:** UNKNOWN — 57 API tests pass; no statement of which remote task becomes possible
+  > - **Purpose:** Give every external front end a contract to call. Without it each one shells out to the CLI and parses console output
+  > - **Trigger:** When `sw serve` is running and a request or WebSocket connection arrives
+  > - **Needs:** the CLI command layer → the operations each route exposes
+  > - **Reads:** project, pipeline and run state
+  > - **Produces:** memory → 23 HTTP routes (projects, pipelines, runs, review, check, constitution, standards) · a WebSocket streaming run progress live
+  > - **Enables:** `E-UI-02` tablet dashboard · `D-UI-03` VS Code · an IntelliJ plugin · `D-UI-04`..`D-UI-07` → endpoints to extend
+  > - **Done when:** a front end drives a run end to end without shelling out to the CLI
 
 * **`D-UI-02` 🔜: Structured Output Schemas** (Legacy: 3.34)
   > - **Purpose:** UNKNOWN — never grilled. Claimed: one result renders three ways without restating it

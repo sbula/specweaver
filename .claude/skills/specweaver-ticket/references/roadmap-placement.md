@@ -89,6 +89,16 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
+> [!CAUTION]
+> **Read the feature folder before writing `UNKNOWN`.** The topic entry is layer 2; the design at
+> layer 3 usually holds the purpose, the actors and the outcomes, and the topic entry frequently
+> does not link to it. Measured 2026-08-25 while converting topic 01: three of its capabilities had
+> designs, all three were marked `UNKNOWN` from the topic entry alone, and all three stated a real
+> purpose — `D-UI-01`'s was a whole paragraph about front ends otherwise shelling out to the CLI.
+>
+> **`UNKNOWN` means nobody ever wrote it down. It does not mean nobody looked.** Check
+> `features/<topic>/<ID>/` first; only then is `UNKNOWN` an honest answer.
+
 **`—` is the only legal way to say "none".** **`UNKNOWN` is the only legal way to say "nobody
 decided this"** — and it is a real answer, not a failure. An entry whose `Purpose` is `UNKNOWN` is
 telling you the truth: the capability was designed without anyone asking what it was for. Writing a
