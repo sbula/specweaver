@@ -57,19 +57,51 @@ meant two rules and one number.
 Wrapping is free: markdown renders a wrapped line identically. **Split only at spaces outside
 backtick spans and outside `[text](url)` links**, or you will break a code span or a link.
 
-**R-ENTRY — a topic entry is at most 4 lines' worth of content.**
+**R-ENTRY — a topic entry is seven keyed fields, no prose.**
 
-Measured in *effective* lines — content length over the line limit — so **not wrapping is not an
-escape**. Ratcheted per entry; a NEW entry gets no free first offence.
+A topic entry is written *before* any design exists. It sets direction, and it must stay readable
+without opening anything else. Fixed keys, fixed order, every key present:
 
-The 4 comes from pre-drift practice, not from taste: capability entries across topics 01–06 have a
-median of 247 characters, and the oldest TECH cohort (`TECH-001..013`, before the inflation began)
-588. A TECH entry is legitimately ~2.4× a capability entry — and not the 10× later cohorts reached.
-One number covers both kinds; there is no per-kind allowance.
+```
+* **`<ID>` <status>: <Short name>**
+  > **Purpose:**   <what becomes possible that is not possible now>
+  > **Trigger:**   When|While|If|Where <condition> — or Always
+  > **Needs:**     <ID> → <what data from it>
+  > **Reads:**     <kinds of input, never file names>
+  > **Produces:**  <file|db|memory|prompt> → <what content>
+  > **Enables:**   <ID or user path> → <for what>
+  > **Done when:** <one falsifiable statement>
+```
 
-**When an entry is too long, redistribute — never delete.** Move each fact to the layer that owns
-it and check it survives there before cutting. 39 entries were redistributed on 2026-08-13 and
-**21 facts** would have been lost to a trim-by-eye.
+**Length: as short as possible, as long as needed.** Two words is a valid value; so is five lines.
+What is forbidden is prose, a missing key, and a key filled with hedging.
+
+> [!CAUTION]
+> **A hard cap is still live and this rule does not remove it.** `_entry_depth.py` enforces
+> `MAX_ENTRY_LINES = 4` measured as content ÷ 200 — an **800-character ceiling per entry**. The
+> seven fields fit under it today (topic 01's largest entry is 742 characters), but they fit by
+> being terse, not by the cap having gone. A capability that genuinely needs more will be blocked.
+> **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
+> the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
+
+**`—` is the only legal way to say "none".** **`UNKNOWN` is the only legal way to say "nobody
+decided this"** — and it is a real answer, not a failure. An entry whose `Purpose` is `UNKNOWN` is
+telling you the truth: the capability was designed without anyone asking what it was for. Writing a
+plausible purpose there instead is the defect this format exists to end.
+
+**Why these seven.** `Trigger` is [EARS](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax)
+(Mavin et al., RE'09; used by NASA, Airbus, Bosch, Rolls-Royce, Siemens) — a constrained clause
+order and a keyword vocabulary, which is what removes ambiguity from natural-language requirements.
+`Done when` is from feature-brief practice: *define what better means before starting*. It is the
+field that cannot be written without knowing what was wanted, which is why it is the one that
+catches a capability nobody grilled.
+
+**Names never appear.** `Reads: java source files`, never a path. A topic entry outlives every file
+name in it, and a name here is a second copy of a fact the design owns.
+
+**When a field will not fit, the fact belongs deeper — redistribute, never delete.** Move it to the
+layer that owns it and check it survives there before cutting. 39 entries were redistributed on
+2026-08-13 and **21 facts** would have been lost to a trim-by-eye.
 
 **R-ONCE — a registry ID gets one line per story entry.**
 
