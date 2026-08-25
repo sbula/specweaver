@@ -89,6 +89,24 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
+**Three legal `Purpose` values, and they are not interchangeable.**
+
+| Value | Means | Is it a gap? |
+|---|---|---|
+| a why | somebody decided, and wrote it down | no |
+| `FOUNDATIONAL: <what stands on it>` | no independent value; it exists so other things can exist | **no** |
+| `UNKNOWN` | nobody ever decided this | **yes** |
+
+**`FOUNDATIONAL` is not a licence to say nothing.** The floor must name what stands on it.
+*"A scaffold"* is not an answer. *"The floor every `sw` command stands on — without it there is no
+product surface, only libraries"* is: it says what breaks without it, which is the same job a why
+does.
+
+**Use it only where the thing has no value of its own.** `E-UI-01` qualifies — a CLI entry point is
+worth nothing except that commands hang off it. `D-UI-01` does not: a callable contract has value
+whether or not a front end exists yet, and its design says so. Marking a real gap `FOUNDATIONAL` to
+avoid asking is the same defect as inventing a purpose, one word cheaper.
+
 > [!CAUTION]
 > **`Purpose` is not `Produces` restated.** If the only sentence you can write describes what the
 > thing *is* or *does*, the purpose was never recorded and the honest value is `UNKNOWN`.

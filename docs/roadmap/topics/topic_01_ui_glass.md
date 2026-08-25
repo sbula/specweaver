@@ -3,14 +3,15 @@
 Capabilities for the user interface, dashboards, and external developer touchpoints.
 
 Entries follow `R-ENTRY` (`specweaver-ticket/references/roadmap-placement.md`): seven keyed fields,
-no prose. `—` means none. **`UNKNOWN` means nobody decided it** — a real answer, not a gap to fill
-with something plausible. Where the superseded entry made a claim, it is carried as `Claimed:` and
+no prose. `—` means none. **`UNKNOWN` means nobody decided it** — a real answer, not a gap to fill with
+something plausible. **`FOUNDATIONAL:` means the purpose is genuinely thin**, and it must still name
+what stands on the floor. Where the superseded entry made a claim, it is carried as `Claimed:` and
 still marked ungrilled.
 
 ## DAL-E: Prototyping
 
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)
-  > - **Purpose:** UNKNOWN — the design states seven FRs and never states a why. "Establishes the foundational CLI entry point" is what it is, not what it is for
+  > - **Purpose:** FOUNDATIONAL: the floor every `sw` command stands on. Without it SpecWeaver is libraries with no way for a person to invoke them
   > - **Trigger:** When a developer runs `sw <command>`
   > - **Needs:** —
   > - **Reads:** command-line arguments
