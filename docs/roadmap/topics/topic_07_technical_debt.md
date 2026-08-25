@@ -5,6 +5,11 @@ architectural epics required to ensure the platform remains stable, secure, and 
 as it scales to enterprise levels. These stories do not add new user-facing features but are
 critical for long-term project viability.
 
+> **Entries below are prose, and stay that way.** A TECH ticket fixes an already-implemented story;
+> 65 of the 67 here are closed. The seven-field `R-ENTRY` format exists to decide about work not yet
+> done, and finished debt has nothing left to decide. **New TECH entries use the format** — see
+> `specweaver-ticket/references/roadmap-placement.md`.
+
 ## Domain-Driven Design (DDD)
 * **`TECH-001` 🟢: Domain-Driven Design Unification**
   > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | _(2026-07-13)_ | The codebase had drifted from its declared DDD/hexagonal structure, with domain logic reachable

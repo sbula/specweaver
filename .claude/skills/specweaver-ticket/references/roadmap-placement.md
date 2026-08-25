@@ -89,6 +89,12 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
+**Existing `topic_07` entries stay as prose.** A TECH ticket fixes an already-implemented story,
+and 65 of its 67 entries are closed. The seven fields are for deciding about work not yet done;
+imposing them on finished debt would manufacture hundreds of `🔴`s describing work that is over.
+**Every NEW entry uses the format — TECH included.** The format earns its place where a decision is
+still open, which is exactly where a new ticket sits.
+
 **Write the value plainly. Markers are the exception.**
 
 | Marker | Means |
