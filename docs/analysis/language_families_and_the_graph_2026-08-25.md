@@ -107,6 +107,58 @@ all eight are `🔜`/`🔮` with no design document.
 
 ---
 
+## 4b. A call resolves only when its bare name is globally unique
+
+Cross-file, cross-folder and cross-module resolution **does** work: `procedure_index` is built from
+every collected file. The rule is one line in `_callee_target`:
+
+```python
+declared_in = procedure_index.get(name, set())
+if len(declared_in) == 1:      # resolve
+return _ghost(...)             # zero, or two or more
+```
+
+**Bare-name matching, no type information.** Measured on this repo's Python alone:
+
+| | |
+|---|---|
+| Distinct procedure names | 1,374 |
+| Declared exactly once — a call *can* resolve | 1,141 |
+| Declared more than once — every call **ghosts** | 233 |
+| **Declarations behind a duplicated name** | **1,088 of 2,229 — 48%** |
+
+`__init__` ×131 · `check` ×26 · `execute` ×25 · `run` ×14. The index is **global across languages**,
+so a Java `execute` and a Python `execute` collide with each other.
+
+**The ghost rate understates it.** When a bare name IS unique it resolves — even where `thing.save()`
+and that lone `save` are unrelated. A unique name is not the same as the right target, and nothing
+tracks what `thing` is.
+
+What is missing here is **type resolution**: knowing the receiver's type is what turns `save()` into
+*"`OrderRepository.save`"*. No parser here does it, and it is **static work, not dynamics**.
+
+## 4c. Framework binding produces no edges
+
+Where the wiring is an annotation or a config file rather than a call site — Spring injection, HTTP
+routes, event listeners — the graph sees nothing. This is still static: the binding **is** written
+down, just not where the call is.
+
+The vocabulary is ready and unused: `CONSUMES`, `FULFILLS`, `PUBLISHES`, `SUBSCRIBES` have **no
+writer**, and `extract_framework_markers` returns `{}` on the declarative tier.
+
+That is `B-SENS-08`, which `ADR-006` calls *"a precondition, not an enhancement"* for every reader.
+`🔜`, no design document.
+
+## 4d. So: three gaps, and only one is dynamics
+
+| Gap | What it needs | Status |
+|---|---|---|
+| A call resolves only on a globally unique bare name | **type resolution** | static, not built, unowned |
+| Framework binding yields no edges | **framework semantics** | static, `B-SENS-08`, planned |
+| What actually ran | tracing, stack traces | dynamic, `A-SENS-05`, planned |
+
+The graph today models *"the text says `save()`"* — not *"this object's `save` is that method."*
+
 ## 5. What would actually be needed — derived, not invented
 
 There is no reader, so "needed" cannot be measured. It can only be derived from the three questions
@@ -136,6 +188,31 @@ Not a plan — a reading of what blocks what.
 4. **`STATE`, `NAMESPACE`, descriptions: not yet.** Every language has constants and doc comments,
    and nothing would read them. Building them now repeats the mistake this repo retired a capability
    for on 2026-08-23.
+
+## 7. Scope — analysis is broad, implementation is not
+
+**Analysis** covers whatever a target project contains: the ten parsed today, plus markdown, HTML,
+config and schema formats. Understanding a concept is cheap; a family that is understood and not yet
+parsed costs nothing.
+
+**Implementation focuses on eight** `[agreed 2026-08-25]`:
+
+| Language | Parser | Classification today |
+|---|---|---|
+| Java | ✅ built | `enum` mis-filed |
+| Kotlin | ✅ built | `object` mis-filed |
+| Python | ✅ built | correct |
+| Rust | ✅ built | `enum`/`union` declared as types but never reported |
+| TypeScript | ✅ built | `interface`/`enum`/type alias never reported |
+| SQL | ✅ built | `TABLE`/`VIEW` mis-filed |
+| markdown | ✅ built | every heading mis-filed; symbols are for the **editor**, not the graph |
+| **proto** | ❌ **does not exist** | — |
+
+`proto` is anticipated but unbuilt: `tiers.py` shaped its declarative tier around it — *"a
+declarative language **with real imports** — `proto` does"* — and no parser directory exists.
+
+**Out of implementation focus: C, C++, Go.** All three are built. Go is one of only two languages
+classifying correctly today; C and C++ carry the mis-filings recorded in §1 and keep them for now.
 
 ## What this record does not claim
 
