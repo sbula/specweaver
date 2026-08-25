@@ -5,7 +5,7 @@ Capabilities for the user interface, dashboards, and external developer touchpoi
 Entries follow `R-ENTRY` (`specweaver-ticket/references/roadmap-placement.md`): seven keyed fields,
 no prose. `—` means none. **`UNKNOWN` means nobody decided it** — a real answer, not a gap to fill with
 something plausible. **`FOUNDATIONAL:` means the purpose is genuinely thin**, and it must still name
-what stands on the floor. **🟡 means derived from an existing document, never confirmed** — the
+what stands on the floor. **🟡 means derived, never confirmed by the user** — including from a design, because the designs were written without grilling either — the
 source is named so you can judge whether it actually explains this capability. Where the superseded
 entry made a claim, it is carried as `Claimed:` and
 still marked ungrilled.
@@ -13,7 +13,7 @@ still marked ungrilled.
 ## DAL-E: Prototyping
 
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)
-  > - **Purpose:** FOUNDATIONAL: the floor every `sw` command stands on. Without it SpecWeaver is libraries with no way for a person to invoke them
+  > - **Purpose:** 🟡 derived from the design + my judgement — FOUNDATIONAL: the floor every `sw` command stands on. Without it SpecWeaver is libraries with no way for a person to invoke them
   > - **Trigger:** When a developer runs `sw <command>`
   > - **Needs:** —
   > - **Reads:** command-line arguments
@@ -22,7 +22,7 @@ still marked ungrilled.
   > - **Done when:** all seven commands route to their implementation (FR-1..FR-7)
 
 * **`E-UI-02` ✅: Web Dashboard** (Legacy: 3.8 / 4.10)
-  > - **Purpose:** Approve a pending review from a tablet — the "train" scenario the capability was justified by
+  > - **Purpose:** 🟡 derived from its design: approve a pending review from a tablet — the "train" scenario the design says the capability was justified by
   > - **Trigger:** When an operator opens the dashboard served by `sw serve`
   > - **Needs:** `D-UI-01` → the REST/WebSocket contract it calls
   > - **Reads:** per-project pipeline storage — a SQLite `pipelines` table
@@ -52,7 +52,7 @@ still marked ungrilled.
 ## DAL-D: Internal Tooling
 
 * **`D-UI-01` 🔧: Core Orchestration API** (Legacy: 3.7 MVP)
-  > - **Purpose:** Give every external front end a contract to call. Without it each one shells out to the CLI and parses console output
+  > - **Purpose:** 🟡 derived from its design: give every external front end a contract to call. Without it each one shells out to the CLI and parses console output
   > - **Trigger:** When `sw serve` is running and a request or WebSocket connection arrives
   > - **Needs:** the CLI command layer → the operations each route exposes
   > - **Reads:** project, pipeline and run state
@@ -169,9 +169,8 @@ still marked ungrilled.
 ## DAL-A: Mission-Critical
 
 * **`A-UI-01` 🔜: Tamper-Evident Agent Audit Ledger** (Legacy: 4.12)
-  > - **Purpose:** Make the agent's audit trail tamper-evident. **The adversary is the agent
-  >   itself** — it runs with write access on the machine producing the record.
-  >   Re-scoped 2026-08-20 ([benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))
+  > - **Purpose:** 🟡 derived from its design + the 2026-08-20 benefit review: make the agent's audit trail tamper-evident. The adversary is the agent itself, holding write access on the
+  >   machine that produces the record
   > - **Trigger:** When an agent action is recorded
   > - **Needs:** `B-SENS-01` → artifact lineage records
   > - **Reads:** —

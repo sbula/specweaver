@@ -108,6 +108,11 @@ to one capability under it — `E-UI-03` (a file watcher) sits under `US-7`, who
 VS Code, and inheriting it silently would manufacture a false purpose. Where the inherited benefit
 does not explain the capability, write **`Poor fit — needs you`** and leave it for the human.
 
+**A design's stated purpose is not an agreed purpose.** The designs were written by an agent
+without grilling anybody, which is the whole reason this format exists. Lifting a why out of one and
+writing it plain says *settled* about something nobody settled. It carries 🟡 like any other
+derivation, with the design named as the source.
+
 **Deriving is not deciding.** A 🟡 value is a candidate to confirm, and it stays 🟡 until the user
 says otherwise. Quietly promoting one to a plain why is inventing a purpose with extra steps.
 
