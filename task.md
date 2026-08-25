@@ -1,51 +1,56 @@
-# Task: the nightly baseline says how many tests failed, never which
+# Task: a type is a type in every language
 
-**Skill**: `specweaver-dev` · **Story**: ticket-less bugfix on dev tooling · **Kind**: bugfix
+**Skill**: `specweaver-dev` · **Story**: defect in `TECH-068`'s delivered classifier · **Kind**: bugfix
 
-Found 2026-08-24 looking at the nightly. Third night running the baseline was red; the first two
-were dirty-tree artefacts, this one was a clean commit (`eeaa84ee`) and therefore real. It cannot be
-diagnosed, because the record keeps the count and throws the names away.
+`graph_adapter.py:112` decides `is_class = symbol in supertypes or "extends" in markers`. That asks
+*"does it inherit?"* and reads the silence as *"it is not a type."* Two different questions, one
+answer — so every language with types but no inheritance mis-files everything it declares.
 
 ## Research (measured — do not re-derive)
 
 | Fact | Evidence |
 |---|---|
-| The names ARE captured | `mutation.py:252` — `failures=_mutate.killers(out)` |
-| `Baseline` carries them | `mutation.py:81-86` — `green`, `failures: list[str]`, `code` |
-| The record discards them | `_session_record.py:268` — `"failed": len(getattr(baseline, "failures", []) or [])` |
-| A test pins the discard | `test_session_record.py:139` supplies `failures=["tests/a.py::test_x"]` and asserts the block is exactly `{ran, green, failed: 1}` |
-| `failed` has exactly two readers | `_session_record.py:153` (prose) and `_mutation_gate.py:142` (gate message) |
-| A red baseline voids the whole run | `_session_record.py:155` — *"every verdict below is meaningless while the baseline is red"*; 145 verdicts lost on 2026-08-24 |
-| The suite is green now | 8381 passed exit 0, and the blamed scope alone 36 passed — so the failure is flaky or environment-bound at 03:00 |
+| `extract_supertypes` DOES record a type that inherits nothing | `base.py` — `setdefault(name, {"extends": [], "implements": []})` runs BEFORE the supertype loop |
+| It returns `{}` early when the parser declares no type nodes | `base.py:116` — `if not code.strip() or not self.TYPE_DECLARATION_NODES` |
+| 7 of 10 parsers declare them | cpp, go, java, kotlin, python, rust, typescript — and all 7 classify correctly |
+| 3 declare none | **c, sql, markdown** — so every symbol they report becomes a `PROCEDURE` |
+| C reports `struct`, `enum`, `union` as symbols | `c/codestructure.py` `SCM_SYMBOL_QUERY` |
+| SQL reports `create_table`, `create_view`, `create_function` | `sql/codestructure.py` `SCM_SYMBOL_QUERY` |
+| Markdown reports every heading | `markdown/codestructure.py` — `(section (atx_heading ...))` |
+| All three ARE collected | `parseable_suffixes()` returns `.c .h .sql .md .mdx` among 17 |
+| Nothing consumes markdown symbols | grep across `src/` — every hit is unrelated prose handling |
+| The base REFUSES a type-declaring parser with no `_supertypes_of` | `base.py:179` — so "has types, no inheritance" must be said out loud |
+| `NodeKind` was never the problem | `DATA_STRUCTURE`, not `CLASS` — paradigm-neutral, simply never reached |
 
 ## Decisions
 
-- `failures` is **added**, `failed` **stays** `[agreed 2026-08-24]`. Removing the count would touch
-  the gate, the summary renderer and their tests — a refactor wearing a bugfix's clothes. Both are
-  written by one function from one object in one instant, so they cannot drift apart.
-- The **JSON keeps every name**; the **prose caps at 10** with a `... and N more` line, following
-  `check_decision_citations.py`'s existing shape. Not a new number.
-- **Schema stays at 1.** Adding a key is additive — every existing reader keeps working, and the
-  only readers are in this repo.
+- C `struct`/`enum`/`union` and SQL `TABLE`/`VIEW` are `DATA_STRUCTURE` `[agreed 2026-08-24]` —
+  each is "a named shape other things refer to", which is what the kind means. SQL `FUNCTION` stays
+  a `PROCEDURE`, which it already was.
+- **Markdown stops reporting headings as symbols** `[agreed 2026-08-24]`. A heading is neither a
+  shape nor a procedure; nothing reads them and no edge kind connects them. Inventing a vocabulary
+  entry for an unused concept is what `TECH-069` was retired for. If document structure becomes
+  useful it arrives with the reader that needs it.
 
-## Commit boundary 1 — a red baseline names what was red
+## Commit boundary 1 — every language's types are types
 
-- [ ] 1 — `test_session_record.py` asserts the block carries `failures` and that the names survive
-      verbatim — **RED first**, the test currently pins their removal
-- [ ] 2 — `_baseline_block` writes `failures` alongside `failed` -> GREEN
-- [ ] 3 — `test_mutation_summary.py` asserts the prose PRINTS the names when the baseline is red,
-      and caps at 10 with a `... and N more` line — **RED first**
-- [ ] 4 — the prose renderer prints them -> GREEN
-- [ ] 5 — probe both with `_mutate.py`: neutralise each and confirm the suite objects
-- [ ] **CB-1 — a red baseline is diagnosable**
+- [ ] 1 — Integration seam test FIRST: a C struct, a SQL table and a Rust trait each reach the graph
+      as `DATA_STRUCTURE` — **RED**, C and SQL are `PROCEDURE` today
+- [ ] 2 — C declares `TYPE_DECLARATION_NODES` and answers `_supertypes_of` -> `{}` — the language
+      has types and no inheritance, said explicitly rather than by silence
+- [ ] 3 — SQL declares `TABLE`/`VIEW` as type nodes, same explicit `{}`; `FUNCTION` untouched
+- [ ] 4 — Markdown stops reporting headings as symbols
+- [ ] 5 — The contract test gains its missing third category: **has types, has no inheritance**.
+      Today it has only *must report a type* and *no type concept*, and C sits in the wrong one
+- [ ] **CB-1 — a struct, a table and a trait are all data structures**
 
 ## Notes on tiers and proof
 
-- Unit tier throughout. `_baseline_block` and the renderer are pure functions over a dataclass;
-  there is no seam and no journey here.
-- **Composition check (2.5c):** these two are used in sequence — the writer produces the block the
-  renderer consumes. A test of each alone would pass while the pair disagreed about the key's name,
-  which is `TECH-068`'s `kind`/`type` defect exactly. Task 3 drives the renderer from a block built
-  by the real writer, not from a hand-made dict.
-- **Out of scope, named rather than hidden:** this makes the failure *diagnosable*, it does not find
-  it. The flaky test stays unknown until it recurs — with names attached.
+- **Task 1 is integration and it is the point.** The claim spans parser -> adapter -> mapper ->
+  engine. A unit test that `extract_supertypes` now returns a key proves one end; the defect lives
+  in the seam, where `is_class` reads one function's silence as another question's answer. That is
+  the `TECH-056` shape the dev skill names, and it is why the seam test is written first.
+- Unit tests per parser follow, for the boundary each language draws.
+- **Not in scope, named:** the `class_definition` / `function_definition` strings the adapter uses
+  are object-oriented names for a paradigm-neutral idea. Renaming them touches every parser test
+  and proves nothing new. Recorded, not done.

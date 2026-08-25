@@ -258,8 +258,8 @@
         }
       ],
       "first_seen": 1787281386.0787365,
-      "last_seen": 1787540631.5021396,
-      "occurrences": 6
+      "last_seen": 1787627031.8549435,
+      "occurrences": 7
     },
     "TECH-056 FR-1 nothing-ever-counts-as-read": {
       "history": [
@@ -310,8 +310,8 @@
         }
       ],
       "first_seen": 1787281386.0787365,
-      "last_seen": 1787540631.5021396,
-      "occurrences": 6
+      "last_seen": 1787627031.8549435,
+      "occurrences": 7
     },
     "TECH-056 FR-1 a-blocking-finding-is-not-named": {
       "history": [
@@ -362,8 +362,8 @@
         }
       ],
       "first_seen": 1787281386.0787365,
-      "last_seen": 1787540631.5021396,
-      "occurrences": 5
+      "last_seen": 1787627031.8549435,
+      "occurrences": 6
     },
     "TECH-056 FR-1 a-confirmation-forgets-the-recurrence-count": {
       "history": [
@@ -414,8 +414,8 @@
         }
       ],
       "first_seen": 1787281386.0787365,
-      "last_seen": 1787540631.5021396,
-      "occurrences": 5
+      "last_seen": 1787627031.8549435,
+      "occurrences": 6
     },
     "TECH-056 FR-1 a-red-baseline-reads-as-green": {
       "history": [
@@ -460,8 +460,8 @@
         }
       ],
       "first_seen": 1787281386.0787365,
-      "last_seen": 1787540631.5021396,
-      "occurrences": 4
+      "last_seen": 1787627031.8549435,
+      "occurrences": 5
     }
   },
   "override_count": 0,
