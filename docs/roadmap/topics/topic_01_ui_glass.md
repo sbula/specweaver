@@ -2,188 +2,183 @@
 
 Capabilities for the user interface, dashboards, and external developer touchpoints.
 
-Entries follow `R-ENTRY` (`specweaver-ticket/references/roadmap-placement.md`): seven keyed fields,
-no prose. **Every field is marked: 🟡 derived from a document and unconfirmed · 🔴 nothing anywhere says it.**
-`—` means none. **`UNKNOWN` means nobody decided it** — a real answer, not a gap to fill with
-something plausible. **`FOUNDATIONAL:` means the purpose is genuinely thin**, and it must still name
-what stands on the floor. **🟡 means derived, never confirmed by the user** — including from a design, because the designs were written without grilling either — the
-source is named so you can judge whether it actually explains this capability. Where the superseded
-entry made a claim, it is carried as `Claimed:` and
-still marked ungrilled.
+Seven keyed fields per entry, no prose (`R-ENTRY`). Values are written plainly.
+**🟡 marks a guess** · **🔴 marks nothing found**. Markers are the exception.
 
 ## DAL-E: Prototyping
 
 * **`E-UI-01` ✅: CLI Scaffold** (Legacy: Step 1)
-  > - **Purpose:** 🟡 derived from the design + my judgement — FOUNDATIONAL: the floor every `sw` command stands on. Without it SpecWeaver is libraries with no way for a person to invoke them
-  > - **Trigger:** 🟡 When a developer runs `sw <command>`
-  > - **Needs:** 🟡 —
-  > - **Reads:** 🟡 command-line arguments
-  > - **Produces:** 🟡 memory → routing to each command's implementation · `sw init` → target project scaffold and configuration
-  > - **Enables:** 🟡 `init` · `draft` · `check spec|code` · `review spec|code` · `implement` → the seven commands the product is used through
-  > - **Done when:** 🟡 all seven commands route to their implementation (FR-1..FR-7)
+  > - **Purpose:** Single entry point for all user commands. Validates input, routes to the right workflow
+  > - **Trigger:** When a user runs `sw <command>`
+  > - **Needs:** —
+  > - **Reads:** command-line arguments
+  > - **Produces:** routing to each command's workflow · `sw init` writes the project scaffold and config
+  > - **Enables:** `init` · `draft` · `check` · `review` · `implement`
+  > - **Done when:** all seven commands route to their workflow
 
 * **`E-UI-02` ✅: Web Dashboard** (Legacy: 3.8 / 4.10)
-  > - **Purpose:** 🟡 derived from its design: approve a pending review from a tablet — the "train" scenario the design says the capability was justified by
-  > - **Trigger:** 🟡 When an operator opens the dashboard served by `sw serve`
-  > - **Needs:** 🟡 `D-UI-01` → the REST/WebSocket contract it calls
-  > - **Reads:** 🟡 per-project pipeline storage — a SQLite `pipelines` table
-  > - **Produces:** 🟡 memory → server-rendered HTML (FastAPI + Jinja2/HTMX, no JS framework, mobile-responsive)
-  > - **Enables:** 🟡 operator → project list, pipeline status, HITL approve/reject, verdict display, remarks
-  > - **Done when:** 🟡 an operator approves a pending review from a tablet, with no terminal
+  > - **Purpose:** Review and approve pipeline work from a browser, including a tablet away from the desk
+  > - **Trigger:** When an operator opens the dashboard
+  > - **Needs:** `D-UI-01` → REST and WebSocket endpoints
+  > - **Reads:** per-project pipeline storage
+  > - **Produces:** server-rendered HTML — FastAPI + Jinja2/HTMX, mobile-responsive, no JS framework
+  > - **Enables:** operator → project list, pipeline status, approve/reject, verdicts
+  > - **Done when:** an operator approves a pending review from a tablet, with no terminal
 
-* **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37, inspired by PasteMax)
-  > - **Purpose:** 🟡 derived — `US-7` benefit is about VS Code and does **not** fit a file watcher. Nearest stated intent, from the superseded entry: DX polish for iterative authoring.
-  >   **Poor fit — needs you**
-  > - **Trigger:** 🟡 When a spec file changes on disk
-  > - **Needs:** 🔴 UNKNOWN → whatever runs validation
-  > - **Reads:** 🟡 spec files on disk
-  > - **Produces:** 🔴 UNKNOWN → a re-validation result, destination unstated
-  > - **Enables:** 🟡 spec author → validation without re-running a command
-  > - **Done when:** 🔴 UNKNOWN
+* **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37)
+  > - **Purpose:** Re-validate a spec as it is edited, instead of re-running `check` by hand
+  > - **Trigger:** When a spec file changes on disk
+  > - **Needs:** the validation battery
+  > - **Reads:** spec files
+  > - **Produces:** 🟡 a re-validation result — where it surfaces is unstated
+  > - **Enables:** spec author → feedback while writing
+  > - **Done when:** 🔴
 
-* **`E-UI-04` 🔜: CLI Command Arch Separation** (Legacy: Backlog)
-  > - **Purpose:** 🟡 derived — `US-1` benefit (prove a spec's structural quality) does **not** explain a CLI refactor. **Poor fit — needs you**
-  > - **Trigger:** 🟡 Always — a structural property of the CLI layer
-  > - **Needs:** 🟡 —
-  > - **Reads:** 🟡 the CLI layer's own source
-  > - **Produces:** 🔴 UNKNOWN → documentation, refactor, or both; the entry says "audit and refactor"
-  > - **Enables:** 🔴 UNKNOWN
-  > - **Done when:** 🔴 UNKNOWN — "strictly separate Discovery from Validation" states a shape, not a test
+* **`E-UI-04` 🔜: CLI Command Arch Separation**
+  > - **Purpose:** 🟡 Make each CLI command's job unambiguous — discovery separated from validation
+  > - **Trigger:** Always
+  > - **Needs:** —
+  > - **Reads:** the CLI layer
+  > - **Produces:** 🟡 a refactored CLI layer, and documented behaviour per entry point
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
 
 ## DAL-D: Internal Tooling
 
 * **`D-UI-01` 🔧: Core Orchestration API** (Legacy: 3.7 MVP)
-  > - **Purpose:** 🟡 derived from its design: give every external front end a contract to call. Without it each one shells out to the CLI and parses console output
-  > - **Trigger:** 🟡 When `sw serve` is running and a request or WebSocket connection arrives
-  > - **Needs:** 🟡 the CLI command layer → the operations each route exposes
-  > - **Reads:** 🟡 project, pipeline and run state
-  > - **Produces:** 🟡 memory → 23 HTTP routes (projects, pipelines, runs, review, check, constitution, standards) · a WebSocket streaming run progress live
-  > - **Enables:** 🟡 `E-UI-02` tablet dashboard · `D-UI-03` VS Code · an IntelliJ plugin · `D-UI-04`..`D-UI-07` → endpoints to extend
-  > - **Done when:** 🟡 a front end drives a run end to end without shelling out to the CLI
+  > - **Purpose:** Give external front ends a contract to call, so none has to shell out to the CLI and parse its output
+  > - **Trigger:** When `sw serve` is running and a request arrives
+  > - **Needs:** the CLI command layer
+  > - **Reads:** project, pipeline and run state
+  > - **Produces:** 23 HTTP routes · a WebSocket streaming run progress live
+  > - **Enables:** `E-UI-02` · `D-UI-03` · `D-UI-04`..`D-UI-07`
+  > - **Done when:** a front end drives a run end to end without the CLI
 
 * **`D-UI-02` 🔜: Structured Output Schemas** (Legacy: 3.34)
-  > - **Purpose:** 🟡 derived from `US-6`: control pipelines from a browser on a tablet. One result shape so console, browser and IDE need not each restate it
-  > - **Trigger:** 🟡 When a pipeline step produces a result
-  > - **Needs:** 🟡 validation, review and generation steps → their result data
-  > - **Reads:** 🟡 —
-  > - **Produces:** 🟡 memory → declarative JSON schemas for pipeline results
-  > - **Enables:** 🟡 CLI → Rich console · Web UI → cards · IDE → inline decorations
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** One result shape rendered three ways — console, browser, IDE — without each restating it
+  > - **Trigger:** When a pipeline step produces a result
+  > - **Needs:** the validation, review and generation steps
+  > - **Reads:** —
+  > - **Produces:** JSON schemas for pipeline results
+  > - **Enables:** CLI → Rich console · web → cards · IDE → inline decorations
+  > - **Done when:** 🔴
 
 * **`D-UI-03` 🔜: VS Code Extension** (Legacy: 3.35)
-  > - **Purpose:** 🟡 derived from `US-7`: approve/reject generated code inside VS Code without switching to the terminal
-  > - **Trigger:** 🟡 When the extension is open in an editor
-  > - **Needs:** 🟡 `D-UI-01` → REST endpoints · `D-UI-02` → the schemas it renders
-  > - **Reads:** 🟡 —
-  > - **Produces:** 🔴 UNKNOWN → editor UI: project tree, inline verdicts, approve/reject, progress panel
-  > - **Enables:** 🟡 developer → review without leaving the editor
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** Approve or reject generated code inside the editor, without switching to a terminal
+  > - **Trigger:** When the extension is open
+  > - **Needs:** `D-UI-01` → endpoints · `D-UI-02` → schemas
+  > - **Reads:** —
+  > - **Produces:** editor UI — project tree, inline verdicts, approve/reject, progress panel
+  > - **Enables:** developer → review in place
+  > - **Done when:** 🔴
 
 * **`D-UI-04` 🔜: REST API — Interactive Authoring**
-  > - **Purpose:** 🟡 derived from `US-2`: have the LLM co-author a spec section by section — from the UI, not only the CLI
-  > - **Trigger:** 🟡 When a request arrives for `draft`, `implement` or `scan`
-  > - **Needs:** 🟡 `D-UI-01` → the server to extend
-  > - **Reads:** 🔴 UNKNOWN
-  > - **Produces:** 🟡 memory → HTTP responses for `draft`, `implement`, `scan`
-  > - **Enables:** 🔴 UNKNOWN → "the UI", unnamed
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** Co-author a spec with the LLM from the UI, not only the CLI
+  > - **Trigger:** When a request arrives for `draft`, `implement` or `scan`
+  > - **Needs:** `D-UI-01`
+  > - **Reads:** 🔴
+  > - **Produces:** HTTP endpoints for `draft`, `implement`, `scan`
+  > - **Enables:** 🟡 the web UI
+  > - **Done when:** 🔴
 
 * **`D-UI-05` 🔜: REST API — Enterprise Configuration**
-  > - **Purpose:** 🟡 derived — `US-4` benefit is autonomous multi-step workflows, which does not obviously need config endpoints. **Weak fit — needs you**
-  > - **Trigger:** 🟡 When a request arrives for `config`, `list-rules`, `standards` or `constitution`
-  > - **Needs:** 🟡 `D-UI-01` → the server to extend
-  > - **Reads:** 🟡 project configuration
-  > - **Produces:** 🟡 memory → HTTP responses; UNKNOWN whether it also writes configuration
-  > - **Enables:** 🔴 UNKNOWN
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** 🟡 Manage project configuration from the UI instead of editing YAML by hand
+  > - **Trigger:** When a request arrives for `config`, `list-rules`, `standards` or `constitution`
+  > - **Needs:** `D-UI-01`
+  > - **Reads:** project configuration
+  > - **Produces:** 🟡 HTTP endpoints — whether they also write is unstated
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
 
 * **`D-UI-06` 🔜: REST API — Telemetry & Auditing**
-  > - **Purpose:** 🟡 derived from `US-16`: see exactly what each agent spends, detect LLM friction, and route tasks to cheaper models. **Same purpose as `B-FLOW-05`**
-  > - **Trigger:** 🟡 When a request arrives for `costs`, `usage`, `lineage` or `drift`
-  > - **Needs:** 🟡 `D-UI-01` → the server to extend
-  > - **Reads:** 🟡 the SQLite ledgers
-  > - **Produces:** 🟡 memory → HTTP responses carrying ledger content
-  > - **Enables:** 🟡 `A-UI-01` → the remote operator it names as its consumer
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** See what each agent spends and where runs slow down, so tasks can be routed to cheaper models
+  > - **Trigger:** When a request arrives for `costs`, `usage`, `lineage` or `drift`
+  > - **Needs:** `D-UI-01` · the telemetry ledgers
+  > - **Reads:** the SQLite ledgers
+  > - **Produces:** HTTP endpoints carrying ledger content
+  > - **Enables:** `A-UI-01` → the remote operator it names as its consumer
+  > - **Done when:** 🔴
+  > - **Note:** same purpose as `C-UI-03` and `B-FLOW-05` — three capabilities, one benefit
 
 * **`D-UI-07` 🔜: REST API — Systems Integration**
-  > - **Purpose:** 🟡 derived from `US-6`: keep the REST surface complete so the browser client is never blocked on a missing endpoint
-  > - **Trigger:** 🟡 When a request arrives for `hooks`, `update` or `remove`
-  > - **Needs:** 🟡 `D-UI-01` → the server to extend
-  > - **Reads:** 🔴 UNKNOWN
-  > - **Produces:** 🟡 memory → HTTP responses for `hooks`, `update`, `remove`
-  > - **Enables:** 🔴 UNKNOWN
-  > - **Done when:** 🔴 UNKNOWN
-  > - **Standing rule:** 🟡 a new CLI command requires a matching endpoint sub-capability, so the REST surface cannot fall behind
+  > - **Purpose:** 🟡 Keep the REST surface complete, so a UI client is never blocked on a missing endpoint
+  > - **Trigger:** When a request arrives for `hooks`, `update` or `remove`
+  > - **Needs:** `D-UI-01`
+  > - **Reads:** 🔴
+  > - **Produces:** HTTP endpoints for `hooks`, `update`, `remove`
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Standing rule:** a new CLI command requires a matching endpoint, so the REST surface cannot fall behind
 
 ## DAL-C: Enterprise Standard
 
 * **`C-UI-01` 🔜: Pipeline Visualizer** (Legacy: 3.33a)
-  > - **Purpose:** 🟡 derived from `US-10`: instantly see a visual map of a 20-year-old C++ monolith's God Nodes and dependencies
-  > - **Trigger:** 🟡 When a developer exports the view
-  > - **Needs:** 🟡 `TECH-068` → real edge kinds. Centrality over a `CONTAINS`-only graph is
-  >   meaningless ([ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md), 2026-08-21)
-  > - **Reads:** 🟡 the knowledge graph
-  > - **Produces:** 🟡 file → static HTML (PyVis/D3.js)
-  > - **Enables:** 🟡 developer → sees degree centrality and cluster communities
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** See a visual map of a large unfamiliar codebase — god nodes, clusters, dependencies
+  > - **Trigger:** When a developer exports the view
+  > - **Needs:** `TECH-068` → real edge kinds. Centrality over a `CONTAINS`-only graph is meaningless
+  > - **Reads:** the knowledge graph
+  > - **Produces:** file → static HTML (PyVis/D3.js)
+  > - **Enables:** developer → sees degree centrality and cluster communities
+  > - **Done when:** 🔴
 
-* **`C-UI-02` 🔜: Traceability Matrix UX** (Legacy: 3.48, inspired by Cavekit)
-  > - **Purpose:** 🟡 derived from `US-15`: hand an auditor a ledger proving which LLM generated which line from which requirement. **Contradicts `A-UI-01`**, which was re-scoped away from
-  >   the regulator consumer as one that does not exist. **Needs you**
-  > - **Trigger:** 🟡 When a plan exists and before it is executed
-  > - **Needs:** 🟡 the artifact lineage graph → spec-to-component links
-  > - **Reads:** 🟡 spec requirements, planned components and tasks
-  > - **Produces:** 🟡 memory → a Markdown/CLI matrix view
-  > - **Enables:** 🟡 reviewer → sees which requirements have no planned component
-  > - **Done when:** 🔴 UNKNOWN
+* **`C-UI-02` 🔜: Traceability Matrix UX** (Legacy: 3.48)
+  > - **Purpose:** 🟡 Check requirement coverage before execution — which requirements have no planned
+  >   component. `US-15` frames this as a ledger for a compliance auditor; `A-UI-01` says that
+  >   consumer does not exist. **Needs you**
+  > - **Trigger:** When a plan exists, before it is executed
+  > - **Needs:** the artifact lineage graph
+  > - **Reads:** spec requirements, planned components and tasks
+  > - **Produces:** a Markdown/CLI matrix view
+  > - **Enables:** reviewer → sees which requirements have no planned component
+  > - **Done when:** 🔴
 
 * **`C-UI-03` 🔜: Analytics Dashboard** (Legacy: 4.5a)
-  > - **Purpose:** 🟡 derived from `US-16`: see what each agent spends and route tasks to cheaper models. **Same purpose as `D-UI-06` and `B-FLOW-05`** — three capabilities, one benefit
-  > - **Trigger:** 🔴 UNKNOWN
-  > - **Needs:** 🟡 telemetry → per-run cost and usage. **Overlaps `B-FLOW-05`** — see [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md)
-  > - **Reads:** 🟡 the telemetry ledger
-  > - **Produces:** 🔴 UNKNOWN → cost breakdown by task type across models
-  > - **Enables:** 🔴 UNKNOWN → who chooses a model, and on what evidence, is unstated
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** Cost and friction per task type across models, so the right model is chosen per task
+  > - **Trigger:** 🔴
+  > - **Needs:** the telemetry ledger
+  > - **Reads:** telemetry
+  > - **Produces:** 🟡 a cost breakdown by task type across models
+  > - **Enables:** model choice per task
+  > - **Done when:** 🔴
+  > - **Note:** same purpose as `D-UI-06` and `B-FLOW-05`
 
 ## DAL-B: High-Assurance
 
 * **`B-UI-01` 🔜: Real-Time Feedback Sensor Dashboard** (Legacy: 4.10b)
-  > - **Purpose:** 🟡 derived from `US-6`: watch a run progress from a browser rather than a terminal
-  > - **Trigger:** 🟡 While a pipeline run is executing
-  > - **Needs:** 🟡 `PipelineRunner` → DAG state transitions and file diffs
-  > - **Reads:** 🟡 —
-  > - **Produces:** 🔴 UNKNOWN → a streaming graph; transport and destination unstated
-  > - **Enables:** 🔴 UNKNOWN
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** 🟡 Watch a run progress live — state transitions and file diffs — instead of reading logs afterwards
+  > - **Trigger:** While a run is executing
+  > - **Needs:** `PipelineRunner` → DAG state transitions and file diffs
+  > - **Reads:** —
+  > - **Produces:** 🟡 a streaming graph; transport unstated
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
 
 * **`B-UI-02` 🔜: External Proprietary Validation** (Legacy: 6.2)
-  > - **Purpose:** 🟡 derived from `US-18`: prove the platform works by using it to build and manage an external proprietary trading system. Matches `PROJECT.md`'s enterprise-ready criterion
-  > - **Trigger:** 🔴 UNKNOWN
-  > - **Needs:** 🔴 UNKNOWN
-  > - **Reads:** 🟡 an external codebase — named example: a 20-microservice proprietary trading system
-  > - **Produces:** 🔴 UNKNOWN
-  > - **Enables:** 🟡 the enterprise-ready criterion → "used on an external system that is not this one" (`PROJECT.md`)
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** Prove the platform works by using it on an external system that is not SpecWeaver itself
+  > - **Trigger:** 🔴
+  > - **Needs:** 🔴
+  > - **Reads:** an external codebase — named example: a 20-microservice proprietary trading system
+  > - **Produces:** 🔴
+  > - **Enables:** the enterprise-ready criterion in `PROJECT.md`
+  > - **Done when:** 🟡 `sw init`, `draft` and `check` complete against an external system
 
 ## DAL-A: Mission-Critical
 
 * **`A-UI-01` 🔜: Tamper-Evident Agent Audit Ledger** (Legacy: 4.12)
-  > - **Purpose:** 🟡 derived from its design + the 2026-08-20 benefit review: make the agent's audit trail tamper-evident. The adversary is the agent itself, holding write access on the
-  >   machine that produces the record
-  > - **Trigger:** 🟡 When an agent action is recorded
-  > - **Needs:** 🟡 `B-SENS-01` → artifact lineage records
-  > - **Reads:** 🟡 —
-  > - **Produces:** 🟡 db → append-only, hash-chained audit entries
-  > - **Enables:** 🟡 `D-UI-06` + US-6 → an operator auditing agent work remotely. **Not a regulator** — the former "Dark Factory Compliance Logging" framing named a consumer that does not exist
-  > - **Done when:** 🔴 UNKNOWN — but the adversary and the consumer are both named, which is more than any other entry here has
+  > - **Purpose:** Make the agent's audit trail tamper-evident. The adversary is the agent itself — it
+  >   has write access to the machine that produces the record
+  > - **Trigger:** When an agent action is recorded
+  > - **Needs:** `B-SENS-01` → artifact lineage records
+  > - **Reads:** —
+  > - **Produces:** db → append-only, hash-chained audit entries
+  > - **Enables:** `D-UI-06` → an operator auditing agent work remotely. Not a regulator
+  > - **Done when:** 🔴
 
 * **`A-UI-02` 🔜: Standardized Benchmarking CI** (Legacy: 6.1)
-  > - **Purpose:** 🟡 derived from `US-17`: prove SpecWeaver has not degraded by autonomously solving standardized SWE-bench tickets before every release
-  > - **Trigger:** 🔴 UNKNOWN
-  > - **Needs:** 🔴 UNKNOWN
-  > - **Reads:** 🟡 public `SWE-bench` tickets
-  > - **Produces:** 🔴 UNKNOWN → normalized dashboard validation
-  > - **Enables:** 🔴 UNKNOWN
-  > - **Done when:** 🔴 UNKNOWN
+  > - **Purpose:** Prove SpecWeaver has not got worse, by solving standard SWE-bench tickets before a release
+  > - **Trigger:** 🟡 Before every release
+  > - **Needs:** 🔴
+  > - **Reads:** public SWE-bench tickets
+  > - **Produces:** 🟡 normalized scores
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴

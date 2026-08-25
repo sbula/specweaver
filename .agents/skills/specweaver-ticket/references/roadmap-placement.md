@@ -89,95 +89,24 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
-**Every field carries a marker, not just `Purpose`.** A registry nobody has confirmed should say
-so on every line, or the eye reads the unmarked ones as settled.
+**Write the value plainly. Markers are the exception.**
 
 | Marker | Means |
 |---|---|
-| 🟡 | **derived from a document, never confirmed by the user.** Name the source |
-| 🔴 | **nothing anywhere says this.** A gap to close |
+| *(none)* | clear, high confidence, low chance of being wrong — **the normal case** |
+| 🟡 | a guess |
+| 🔴 | nothing found anywhere |
 
-`—` still means *there are none*, and it takes 🟡 like any other value: "this capability needs
-nothing from another" is a claim somebody has to agree with.
+**A marker on every line is noise, and noise is what the format exists to remove.** Marking
+provenance — *derived from `US-7`*, *the superseded entry said* — belongs nowhere near a registry
+entry: the reader wants the answer, not its pedigree. If a value is right, write it.
 
-**A marker is removed only when the user says so.** Not when it looks obvious, not when a design
-states it, not when three documents agree. The markers are the difference between a draft that is
-honest about its status and one that quietly becomes the record.
+**`Purpose` is one short sentence a person can read once.** What it is, and why it is here.
+*"Single entry point for all user commands. Validates input, routes to the right workflow."* — that
+is the length and the register. Not a paragraph, not a citation, not a hedge.
 
-**Four legal `Purpose` values, and they are not interchangeable.**
-
-| Value | Means | Is it a gap? |
-|---|---|---|
-| a why | somebody decided, and wrote it down | no |
-| `FOUNDATIONAL: <what stands on it>` | no independent value; it exists so other things can exist | **no** |
-| `🟡 derived from <source>: <why>` | pieced together from an existing document, **never confirmed** | **yes — a small one** |
-| `UNKNOWN` | nothing anywhere says why | **yes** |
-
-**🟡 exists because most purposes were written down at the wrong layer.** Measured 2026-08-25 on
-topic 01: fourteen entries had no purpose in their topic entry or design, and **every one of them
-had a parent `US-NN` story in `master_story_roadmap.md` carrying a stated benefit in the user's own
-voice.** The purpose was never missing; layer 2 and layer 3 had simply lost it.
-
-**Always name the source, and say when the fit is poor.** A story benefit belongs to the story, not
-to one capability under it — `E-UI-03` (a file watcher) sits under `US-7`, whose benefit is about
-VS Code, and inheriting it silently would manufacture a false purpose. Where the inherited benefit
-does not explain the capability, write **`Poor fit — needs you`** and leave it for the human.
-
-**A design's stated purpose is not an agreed purpose.** The designs were written by an agent
-without grilling anybody, which is the whole reason this format exists. Lifting a why out of one and
-writing it plain says *settled* about something nobody settled. It carries 🟡 like any other
-derivation, with the design named as the source.
-
-**Deriving is not deciding.** A 🟡 value is a candidate to confirm, and it stays 🟡 until the user
-says otherwise. Quietly promoting one to a plain why is inventing a purpose with extra steps.
-
-**`FOUNDATIONAL` is not a licence to say nothing.** The floor must name what stands on it.
-*"A scaffold"* is not an answer. *"The floor every `sw` command stands on — without it there is no
-product surface, only libraries"* is: it says what breaks without it, which is the same job a why
-does.
-
-**Use it only where the thing has no value of its own.** `E-UI-01` qualifies — a CLI entry point is
-worth nothing except that commands hang off it. `D-UI-01` does not: a callable contract has value
-whether or not a front end exists yet, and its design says so. Marking a real gap `FOUNDATIONAL` to
-avoid asking is the same defect as inventing a purpose, one word cheaper.
-
-> [!CAUTION]
-> **`Purpose` is not `Produces` restated.** If the only sentence you can write describes what the
-> thing *is* or *does*, the purpose was never recorded and the honest value is `UNKNOWN`.
->
-> The test: **would this sentence help someone decide whether to build it?** *"One entry point
-> routing every user command"* fails — it is circular, the CLI exists so that a CLI exists.
-> *"Without it every front end shells out to the CLI and parses console output"* passes — it names
-> the pain avoided. Both were written for topic 01 on the same afternoon; the first was a design's
-> *what* dressed up as a *why*, and it survived until the user read it back.
->
-> A design can be rich in what and silent on why. `E-UI-01` has seven FRs with actor, action and
-> outcome, and no purpose anywhere.
-
-> [!CAUTION]
-> **Read the feature folder before writing `UNKNOWN`.** The topic entry is layer 2; the design at
-> layer 3 usually holds the purpose, the actors and the outcomes, and the topic entry frequently
-> does not link to it. Measured 2026-08-25 while converting topic 01: three of its capabilities had
-> designs, all three were marked `UNKNOWN` from the topic entry alone, and all three stated a real
-> purpose — `D-UI-01`'s was a whole paragraph about front ends otherwise shelling out to the CLI.
->
-> **`UNKNOWN` means nobody ever wrote it down. It does not mean nobody looked.** Check
-> `features/<topic>/<ID>/` first; only then is `UNKNOWN` an honest answer.
-
-**`—` is the only legal way to say "none".** **`UNKNOWN` is the only legal way to say "nobody
-decided this"** — and it is a real answer, not a failure. An entry whose `Purpose` is `UNKNOWN` is
-telling you the truth: the capability was designed without anyone asking what it was for. Writing a
-plausible purpose there instead is the defect this format exists to end.
-
-**Why these seven.** `Trigger` is [EARS](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax)
-(Mavin et al., RE'09; used by NASA, Airbus, Bosch, Rolls-Royce, Siemens) — a constrained clause
-order and a keyword vocabulary, which is what removes ambiguity from natural-language requirements.
-`Done when` is from feature-brief practice: *define what better means before starting*. It is the
-field that cannot be written without knowing what was wanted, which is why it is the one that
-catches a capability nobody grilled.
-
-**Names never appear.** `Reads: java source files`, never a path. A topic entry outlives every file
-name in it, and a name here is a second copy of a fact the design owns.
+**`FOUNDATIONAL:`** stays available for a capability with no independent value, and it must still
+name what stands on the floor. **`UNKNOWN`** is written 🔴.
 
 **When a field will not fit, the fact belongs deeper — redistribute, never delete.** Move it to the
 layer that owns it and check it survives there before cutting. 39 entries were redistributed on
