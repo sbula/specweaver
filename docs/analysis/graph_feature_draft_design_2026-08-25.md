@@ -152,6 +152,86 @@ nothing to unwire.
 
 ---
 
+## 7b. The five features, spelled out
+
+### F1 — Nodes have identity (`name`, `kind`)
+
+| | |
+|---|---|
+| **Prerequisite** | none. The mapper already computes both and throws them away at `_extract_nodes` |
+| **Existing help** | our own code. Two columns on `graph_nodes`, two fields in the SELECT |
+| **Worth it** | **unconditionally.** Nothing can be asked of the graph without it |
+| **Consumer** | every reader, and `sw graph` itself — you cannot even print what is in a file today |
+| **Benefit** | the graph becomes queryable at all. This is the difference between a store and a heap |
+
+### F2 — Every declaration classified correctly
+
+| | |
+|---|---|
+| **Prerequisite** | F1 — a kind you cannot store is not worth computing |
+| **Existing help** | our own `TYPE_DECLARATION_NODES` machinery. The missing piece is **one guard**: every node type a parser reports is accounted for, type or deliberately procedure |
+| **Worth it** | **yes, and cheap.** The guard is the deliverable; the six language fixes fall out of it |
+| **Consumer** | anything asking "what implements this" or "show me the types here" |
+| **Benefit** | a struct, a table and a trait stop claiming to be functions |
+
+### F3 — Calls resolve by type, not by name
+
+| | |
+|---|---|
+| **Prerequisite** | F1 |
+| **Existing help** | **large, and external.** [SCIP](https://scip-code.org/) — Sourcegraph's indexing protocol — gives compiler-accurate definitions and references. Indexers exist for **Java + Kotlin** (`scip-java`), **Python** (`scip-python`), **TypeScript** (`scip-typescript`), **Rust** (via rust-analyzer), plus Go, C, C++, C#, Ruby, PHP |
+| **Worth it** | **yes — but as an integration, not a build.** Writing type resolution ourselves is months per language and Python would still be wrong. SCIP is compiler-accurate because the indexer ran the compiler |
+| **The cost** | SCIP indexers need a **buildable project**. Tree-sitter reads any file as it lies. That is a real trade, not a detail |
+| **Consumer** | blast radius, impact analysis, `B-VAL-07` — every question of the form "what breaks if I change this" |
+| **Benefit** | the 48% ghost rate goes away, and a resolved call points at the right target rather than a same-named one |
+
+### F4 — Signatures
+
+| | |
+|---|---|
+| **Prerequisite** | F1 |
+| **Existing help** | tree-sitter already sees parameters; **SCIP carries them directly**, so if F3 lands via SCIP this arrives with it |
+| **Worth it** | **only for the verify step.** Without it the graph says "the edge still exists", never "the contract still holds" |
+| **Consumer** | `B-VAL-07`, and any review that asks whether a change broke a caller |
+| **Benefit** | "you changed this function's shape and these three callers pass the old one" |
+
+### F5 — Framework binding produces edges
+
+| | |
+|---|---|
+| **Prerequisite** | F1, F2. Not F3 — a Spring wiring is a declaration, not a call |
+| **Existing help** | **our own repo already holds it**: five schema files under `workflows/evaluators/frameworks/` (spring-boot, quarkus, nestjs, fastapi, actix-web), today feeding only prompt comments. The prior art is named in `ADR-006`: Jasmine, ASE 2022 |
+| **Worth it** | **yes, for any project using a framework** — which is most of them |
+| **Consumer** | the same as F3, plus anything reasoning about routes or events |
+| **Benefit** | "nothing depends on this" stops being a lie in framework code. Today it is one |
+
+### What is deliberately not in the set
+
+`STATE` and `NAMESPACE` nodes, descriptions, incremental build. None changes whether a question can
+be answered — only how much is stored or how fast.
+
+## 7c. Ordering
+
+No dates. The order is forced by dependency and by risk.
+
+1. **F1 — identity.** Everything is blocked on it and it is two columns. Nothing else may start first.
+2. **F2 — the classification guard.** Cheap, and it stops the corpus of wrong kinds growing while
+   the rest is built.
+3. **Decide F3's mechanism.** `T-ARCH`, and the user's: **adopt SCIP, or build resolution ourselves.**
+   Everything downstream changes shape depending on the answer, so it is decided before either.
+4. **F3 — resolution**, by whichever route step 3 chose.
+5. **F4 — signatures.** Free with SCIP; separate work without it. This is why step 3 comes first.
+6. **F5 — framework edges.** Independent of F3, so it can run in parallel with 4–5 if there is reason to.
+
+**A reader is worth building after F1 and F2** — that is the point where "where is X" and "what is
+in this file" become answerable, and the first honest comparison against file-skeleton context
+becomes possible. It does not need to wait for F3.
+
+Sources: [SCIP](https://scip-code.org/) ·
+[SCIP vs LSIF](https://sourcegraph.com/blog/announcing-scip) ·
+[scip-typescript](https://github.com/sourcegraph/scip-typescript) ·
+[indexer list](https://sourcegraph.com/docs/code-search/code-navigation/writing_an_indexer)
+
 ## 8. What this draft concludes
 
 1. **The reason to build it is sound.** Exact traversal answers a question vectors cannot, and
