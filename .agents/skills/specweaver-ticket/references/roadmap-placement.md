@@ -64,14 +64,19 @@ without opening anything else. Fixed keys, fixed order, every key present:
 
 ```
 * **`<ID>` <status>: <Short name>**
-  > **Purpose:**   <what becomes possible that is not possible now>
-  > **Trigger:**   When|While|If|Where <condition> — or Always
-  > **Needs:**     <ID> → <what data from it>
-  > **Reads:**     <kinds of input, never file names>
-  > **Produces:**  <file|db|memory|prompt> → <what content>
-  > **Enables:**   <ID or user path> → <for what>
-  > **Done when:** <one falsifiable statement>
+  > - **Purpose:** <what becomes possible that is not possible now>
+  > - **Trigger:** When|While|If|Where <condition> — or Always
+  > - **Needs:** <ID> → <what data from it>
+  > - **Reads:** <kinds of input, never file names>
+  > - **Produces:** <file|db|memory|prompt> → <what content>
+  > - **Enables:** <ID or user path> → <for what>
+  > - **Done when:** <one falsifiable statement>
 ```
+
+**Each field is a list item, and that is not cosmetic.** Consecutive `>` lines without list markers
+collapse into a single rendered paragraph, so the seven fields become a wall of text and `Enables:`
+has to be hunted for. As list items each field renders on its own line. A value that wraps continues
+with `>` + three spaces so it stays inside its own bullet.
 
 **Length: as short as possible, as long as needed.** Two words is a valid value; so is five lines.
 What is forbidden is prose, a missing key, and a key filled with hedging.
