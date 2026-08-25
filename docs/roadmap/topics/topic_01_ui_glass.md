@@ -5,7 +5,9 @@ Capabilities for the user interface, dashboards, and external developer touchpoi
 Entries follow `R-ENTRY` (`specweaver-ticket/references/roadmap-placement.md`): seven keyed fields,
 no prose. `—` means none. **`UNKNOWN` means nobody decided it** — a real answer, not a gap to fill with
 something plausible. **`FOUNDATIONAL:` means the purpose is genuinely thin**, and it must still name
-what stands on the floor. Where the superseded entry made a claim, it is carried as `Claimed:` and
+what stands on the floor. **🟡 means derived from an existing document, never confirmed** — the
+source is named so you can judge whether it actually explains this capability. Where the superseded
+entry made a claim, it is carried as `Claimed:` and
 still marked ungrilled.
 
 ## DAL-E: Prototyping
@@ -29,7 +31,8 @@ still marked ungrilled.
   > - **Done when:** an operator approves a pending review from a tablet, with no terminal
 
 * **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37, inspired by PasteMax)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: DX polish for iterative spec authoring
+  > - **Purpose:** 🟡 derived — `US-7` benefit is about VS Code and does **not** fit a file watcher. Nearest stated intent, from the superseded entry: DX polish for iterative authoring.
+  >   **Poor fit — needs you**
   > - **Trigger:** When a spec file changes on disk
   > - **Needs:** UNKNOWN → whatever runs validation
   > - **Reads:** spec files on disk
@@ -38,7 +41,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`E-UI-04` 🔜: CLI Command Arch Separation** (Legacy: Backlog)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: eliminate ambiguity about what each CLI entry point does
+  > - **Purpose:** 🟡 derived — `US-1` benefit (prove a spec's structural quality) does **not** explain a CLI refactor. **Poor fit — needs you**
   > - **Trigger:** Always — a structural property of the CLI layer
   > - **Needs:** —
   > - **Reads:** the CLI layer's own source
@@ -58,7 +61,7 @@ still marked ungrilled.
   > - **Done when:** a front end drives a run end to end without shelling out to the CLI
 
 * **`D-UI-02` 🔜: Structured Output Schemas** (Legacy: 3.34)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: one result renders three ways without restating it
+  > - **Purpose:** 🟡 derived from `US-6`: control pipelines from a browser on a tablet. One result shape so console, browser and IDE need not each restate it
   > - **Trigger:** When a pipeline step produces a result
   > - **Needs:** validation, review and generation steps → their result data
   > - **Reads:** —
@@ -67,7 +70,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`D-UI-03` 🔜: VS Code Extension** (Legacy: 3.35)
-  > - **Purpose:** UNKNOWN — never grilled
+  > - **Purpose:** 🟡 derived from `US-7`: approve/reject generated code inside VS Code without switching to the terminal
   > - **Trigger:** When the extension is open in an editor
   > - **Needs:** `D-UI-01` → REST endpoints · `D-UI-02` → the schemas it renders
   > - **Reads:** —
@@ -76,7 +79,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`D-UI-04` 🔜: REST API — Interactive Authoring**
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: interactive co-authoring from the UI
+  > - **Purpose:** 🟡 derived from `US-2`: have the LLM co-author a spec section by section — from the UI, not only the CLI
   > - **Trigger:** When a request arrives for `draft`, `implement` or `scan`
   > - **Needs:** `D-UI-01` → the server to extend
   > - **Reads:** UNKNOWN
@@ -85,7 +88,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`D-UI-05` 🔜: REST API — Enterprise Configuration**
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: move YAML configuration into the UI
+  > - **Purpose:** 🟡 derived — `US-4` benefit is autonomous multi-step workflows, which does not obviously need config endpoints. **Weak fit — needs you**
   > - **Trigger:** When a request arrives for `config`, `list-rules`, `standards` or `constitution`
   > - **Needs:** `D-UI-01` → the server to extend
   > - **Reads:** project configuration
@@ -94,7 +97,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`D-UI-06` 🔜: REST API — Telemetry & Auditing**
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: expose SQLite ledgers to managers and auditors
+  > - **Purpose:** 🟡 derived from `US-16`: see exactly what each agent spends, detect LLM friction, and route tasks to cheaper models. **Same purpose as `B-FLOW-05`**
   > - **Trigger:** When a request arrives for `costs`, `usage`, `lineage` or `drift`
   > - **Needs:** `D-UI-01` → the server to extend
   > - **Reads:** the SQLite ledgers
@@ -103,7 +106,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`D-UI-07` 🔜: REST API — Systems Integration**
-  > - **Purpose:** UNKNOWN — never grilled
+  > - **Purpose:** 🟡 derived from `US-6`: keep the REST surface complete so the browser client is never blocked on a missing endpoint
   > - **Trigger:** When a request arrives for `hooks`, `update` or `remove`
   > - **Needs:** `D-UI-01` → the server to extend
   > - **Reads:** UNKNOWN
@@ -115,7 +118,7 @@ still marked ungrilled.
 ## DAL-C: Enterprise Standard
 
 * **`C-UI-01` 🔜: Pipeline Visualizer** (Legacy: 3.33a)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: expose god-nodes and clusters to developers
+  > - **Purpose:** 🟡 derived from `US-10`: instantly see a visual map of a 20-year-old C++ monolith's God Nodes and dependencies
   > - **Trigger:** When a developer exports the view
   > - **Needs:** `TECH-068` → real edge kinds. Centrality over a `CONTAINS`-only graph is
   >   meaningless ([ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md), 2026-08-21)
@@ -125,7 +128,8 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`C-UI-02` 🔜: Traceability Matrix UX** (Legacy: 3.48, inspired by Cavekit)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: human auditing of requirement coverage before execution
+  > - **Purpose:** 🟡 derived from `US-15`: hand an auditor a ledger proving which LLM generated which line from which requirement. **Contradicts `A-UI-01`**, which was re-scoped away from
+  >   the regulator consumer as one that does not exist. **Needs you**
   > - **Trigger:** When a plan exists and before it is executed
   > - **Needs:** the artifact lineage graph → spec-to-component links
   > - **Reads:** spec requirements, planned components and tasks
@@ -134,7 +138,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`C-UI-03` 🔜: Analytics Dashboard** (Legacy: 4.5a)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: data-driven model selection insights
+  > - **Purpose:** 🟡 derived from `US-16`: see what each agent spends and route tasks to cheaper models. **Same purpose as `D-UI-06` and `B-FLOW-05`** — three capabilities, one benefit
   > - **Trigger:** UNKNOWN
   > - **Needs:** telemetry → per-run cost and usage. **Overlaps `B-FLOW-05`** — see [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md)
   > - **Reads:** the telemetry ledger
@@ -145,7 +149,7 @@ still marked ungrilled.
 ## DAL-B: High-Assurance
 
 * **`B-UI-01` 🔜: Real-Time Feedback Sensor Dashboard** (Legacy: 4.10b)
-  > - **Purpose:** UNKNOWN — never grilled
+  > - **Purpose:** 🟡 derived from `US-6`: watch a run progress from a browser rather than a terminal
   > - **Trigger:** While a pipeline run is executing
   > - **Needs:** `PipelineRunner` → DAG state transitions and file diffs
   > - **Reads:** —
@@ -154,7 +158,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN
 
 * **`B-UI-02` 🔜: External Proprietary Validation** (Legacy: 6.2)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: run `init`, `draft` and `check` against a system outside SpecWeaver's own boundary
+  > - **Purpose:** 🟡 derived from `US-18`: prove the platform works by using it to build and manage an external proprietary trading system. Matches `PROJECT.md`'s enterprise-ready criterion
   > - **Trigger:** UNKNOWN
   > - **Needs:** UNKNOWN
   > - **Reads:** an external codebase — named example: a 20-microservice proprietary trading system
@@ -176,7 +180,7 @@ still marked ungrilled.
   > - **Done when:** UNKNOWN — but the adversary and the consumer are both named, which is more than any other entry here has
 
 * **`A-UI-02` 🔜: Standardized Benchmarking CI** (Legacy: 6.1)
-  > - **Purpose:** UNKNOWN — never grilled. Claimed: regression signal on Attributed Lifecycle Scores
+  > - **Purpose:** 🟡 derived from `US-17`: prove SpecWeaver has not degraded by autonomously solving standardized SWE-bench tickets before every release
   > - **Trigger:** UNKNOWN
   > - **Needs:** UNKNOWN
   > - **Reads:** public `SWE-bench` tickets

@@ -89,13 +89,27 @@ What is forbidden is prose, a missing key, and a key filled with hedging.
 > **Whether that ceiling stays is undecided** — it is a real trade between "as long as needed" and
 > the drift to 5,624-character entries the cap was built to stop. Do not raise it without a decision.
 
-**Three legal `Purpose` values, and they are not interchangeable.**
+**Four legal `Purpose` values, and they are not interchangeable.**
 
 | Value | Means | Is it a gap? |
 |---|---|---|
 | a why | somebody decided, and wrote it down | no |
 | `FOUNDATIONAL: <what stands on it>` | no independent value; it exists so other things can exist | **no** |
-| `UNKNOWN` | nobody ever decided this | **yes** |
+| `🟡 derived from <source>: <why>` | pieced together from an existing document, **never confirmed** | **yes — a small one** |
+| `UNKNOWN` | nothing anywhere says why | **yes** |
+
+**🟡 exists because most purposes were written down at the wrong layer.** Measured 2026-08-25 on
+topic 01: fourteen entries had no purpose in their topic entry or design, and **every one of them
+had a parent `US-NN` story in `master_story_roadmap.md` carrying a stated benefit in the user's own
+voice.** The purpose was never missing; layer 2 and layer 3 had simply lost it.
+
+**Always name the source, and say when the fit is poor.** A story benefit belongs to the story, not
+to one capability under it — `E-UI-03` (a file watcher) sits under `US-7`, whose benefit is about
+VS Code, and inheriting it silently would manufacture a false purpose. Where the inherited benefit
+does not explain the capability, write **`Poor fit — needs you`** and leave it for the human.
+
+**Deriving is not deciding.** A 🟡 value is a candidate to confirm, and it stays 🟡 until the user
+says otherwise. Quietly promoting one to a plain why is inventing a purpose with extra steps.
 
 **`FOUNDATIONAL` is not a licence to say nothing.** The floor must name what stands on it.
 *"A scaffold"* is not an answer. *"The floor every `sw` command stands on — without it there is no
