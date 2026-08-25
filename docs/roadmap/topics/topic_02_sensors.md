@@ -1,119 +1,284 @@
 # Topic 02: Context & Sensors (Perception)
 
-This document tracks all capabilities related to the AST, knowledge graphs, and workspace understanding.
+Capabilities for the AST, knowledge graphs, and workspace understanding.
+
+Seven keyed fields per entry, no prose (`R-ENTRY`). Values are written plainly.
+**🟡 marks a guess** · **🔴 marks nothing found**. Markers are the exception.
 
 ## DAL-E: Prototyping
-* **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)<br>
-  > _(new)_ | Agents and Engine have secure, role-gated filesystem access. Agents see only whitelisted boundaries.
-* **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
-  > `_(new)_` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `sandbox/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()`
-  > on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See
-  > [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
+
+* **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)
+  > - **Purpose:** Give agents filesystem access that is role-gated, so an agent sees only the files its task allows
+  > - **Trigger:** When an agent or the engine reads or writes a file
+  > - **Needs:** —
+  > - **Reads:** the workspace, within whitelisted boundaries
+  > - **Produces:** file access, refused outside the boundary
+  > - **Enables:** every agent tool that touches disk
+  > - **Done when:** an agent cannot read a file outside its granted boundary
+
+* **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)
+  > - **Purpose:** Let the LLM look things up itself — read files, search the web — instead of guessing from what it was handed
+  > - **Trigger:** When an LLM call is made with tools enabled
+  > - **Needs:** `E-SENS-01` → boundary enforcement
+  > - **Reads:** workspace files · the web
+  > - **Produces:** tool results returned into the model's context
+  > - **Enables:** Reviewer · Planner
+  > - **Done when:** six tools — four filesystem, two web — resolve through one provider-agnostic call
+
 * **`E-SENS-03` ✅: Context Ledgers & Workspace Boundaries**
-  > _(new)_ | Security boundaries restricting agent filesystem visibility exclusively to the scope of their assigned task. **Complete** — delivered in the legacy 3.10/3.11 era, before capability-ID
-  > normalization (registry flip missed until the 2026-07-21 sync sweep): `sandbox/security.py` (`FolderGrant` + `AccessMode` READ/WRITE/FULL hierarchy), task-scoped grant construction in
-  > `sandbox/dispatcher.py`, proven by `tests/unit/sandbox/test_security.py` + `test_security_readonly.py`; consumed by the 🟢 US-5 contract.
+  > - **Purpose:** Restrict what an agent can see to the scope of its assigned task, not the whole repo
+  > - **Trigger:** When a task is dispatched to an agent
+  > - **Needs:** —
+  > - **Reads:** the task's declared scope
+  > - **Produces:** a task-scoped grant — READ / WRITE / FULL
+  > - **Enables:** `E-SENS-01` · `E-SENS-02` · the `US-5` contract
+  > - **Done when:** an agent's grant is built from its task and refuses everything outside it
 
 ## DAL-D: Internal Tooling
-* **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
-  > _(new)_ | In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts. Language-agnostic code analysis framework for auto-generating missing
-  > `context.yaml`.
-* **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)<br>
-  > _(new)_ | _Pivoted from Context Ledger (304 Caching) to prevent LLM memory hallucination._ Provides read_skeleton, read_symbol, and AST mutation capabilities via Tree-Sitter. Target expansion to
-  > 25 languages mapping native graph relationships. **Complete**: SF-01 (Read) and SF-02 (Write) across 5 languages fully completed and bound to Engine with 90%+ coverage.
-* **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)<br>
-  > _(new)_ | Targeted expansion of Tree-sitter grammars focusing strictly on high-value enterprise domains: **Markdown** (mandatory for Spec.md traceability bounds), **C/C++** (Systems/Legacy),
-  > **Go** (Cloud-Native infrastructure), and **Standard SQL** (baseline ANSI schemas to empower the DB Context Harness), avoiding dialect nightmare traps. **Complete:** Markdown, C/C++, Go, and SQL
-  > parsers are completed with Dot-Notation and capability filtering.
+
+* **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)
+  > - **Purpose:** Know which module depends on which, so impact can be judged and prompts can carry the right neighbours
+  > - **Trigger:** When the project is scanned
+  > - **Needs:** —
+  > - **Reads:** `context.yaml` files
+  > - **Produces:** memory → an in-memory dependency graph
+  > - **Enables:** impact analysis · context-enriched prompts
+  > - **Done when:** 🟡 a missing `context.yaml` can be generated from the code
+
+* **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)
+  > - **Purpose:** Read and edit code by symbol rather than by line, so an agent never has to hold a whole file
+  > - **Trigger:** When a caller asks for a skeleton, a symbol, or a symbol edit
+  > - **Needs:** —
+  > - **Reads:** source files in the supported languages
+  > - **Produces:** memory → skeletons, symbol bodies, and applied AST mutations
+  > - **Enables:** `context_assembler` · every AST-editing tool · `B-SENS-02`
+  > - **Done when:** read and write both work across five languages
+
+* **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)
+  > - **Purpose:** Cover the languages enterprise targets actually use — systems, cloud, schemas, and spec documents
+  > - **Trigger:** When a file of one of these types is parsed
+  > - **Needs:** `D-SENS-02` → the extractor to extend
+  > - **Reads:** Markdown · C/C++ · Go · standard ANSI SQL
+  > - **Produces:** memory → parsed symbols per language
+  > - **Enables:** spec traceability (Markdown) · legacy and cloud codebases · the DB context harness
+  > - **Done when:** all four parsers report symbols with dot-notation and capability filtering
+
 * **`D-SENS-04` 🔜: Parallel AST Extraction Engine**
-  > _(new)_ | Leverages Rust's Rayon library via PyO3 to parse and extract Tree-Sitter ASTs across millions of lines of code concurrently.
-  > **Gated on a measurement** _(2026-08-20 [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md))_: build only when an initial scan of a real
-  > target has a measured wall time that hurts; none is recorded today.
+  > - **Purpose:** Parse very large codebases concurrently, when a serial scan is measurably too slow
+  > - **Trigger:** When a scan's wall time hurts on a real target
+  > - **Needs:** `D-SENS-02`
+  > - **Reads:** source files
+  > - **Produces:** 🟡 the same ASTs, extracted in parallel via Rust Rayon through PyO3
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Gate:** build only once a measured scan time on a real target is recorded. None exists
+
 * **`D-SENS-05` 🔜: Markdown AST Mutators**
-  > _(new)_ | High-assurance AST mutators specifically for injecting and extracting structured data from Spec.md documents.
+  > - **Purpose:** 🟡 Inject and extract structured data in spec documents reliably, rather than by text matching
+  > - **Trigger:** When a spec document is written to or read structurally
+  > - **Needs:** `D-SENS-03` → the Markdown parser
+  > - **Reads:** spec documents
+  > - **Produces:** 🟡 edited spec documents
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
 
 ## DAL-C: Enterprise Standard
-* **`C-SENS-01` ✅: Spec-Mention Detection** (Legacy: 3.11)<br>
-  > _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls. Pure-logic `llm/mention_scanner/` module + resolver with workspace boundary enforcement. Follow-up
-  > injection wired through `Reviewer.mentioned_files` param. **Complete**: scanner, resolver, PromptBuilder integration, follow-up injection, 3353 tests. See
-  > [implementation plan](features/topic_02_sensors/C-SENS-01/C-SENS-01_implementation_plan.md).
-* **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)<br>
-  > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-01, SF-02, SF-03 (Polyglot
-  > Hashing), SF-04 (Analyzer DI), and SF-05 (DI Remediation).
-* **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>
-  > `future_capabilities_reference.md` §11 | Symbol index + anti-hallucination gate
-* **`C-SENS-04` 🔜: Infrastructure-as-Code Extraction (HCL2)**<br>
-  > _(new)_ | Expansion of the Tree-Sitter Polyglot engine to specifically parse HashiCorp Configuration Language (Terraform/OpenTofu). Allows the agent to understand infrastructure topology, map
-  > cloud resource dependencies, and validate IAC spec drift.
-* **`C-SENS-05` 🔮: Embedded SQL Extraction**<br>
-  > _(new)_ | Extracts embedded SQL strings from host languages (e.g., Python, Java) and parses them using the SQL Tree-Sitter grammar to map cross-domain dependencies between code and database
-  > schemas. Deferred from B-SENS-02 to prevent scope creep.
-* **`C-SENS-06` ⚰️ RETIRED:** *(Event-Sourced 4D Graph — retired 2026-08-20 by the [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md):
-  no story claims it and no consumer ever asked a point-in-time architecture question; git already holds history. ID is dead — do NOT reuse.)*
-* **`C-SENS-07` 🔜: Polyglot Expansion (TypeSpec)**<br>
-  > _(new)_ | Targeted expansion of Tree-sitter grammars to parse TypeSpec (https://typespec.io/), using the community parser (https://github.com/happenslol/tree-sitter-typespec). This is crucial for
-  > securely mapping cross-platform API contracts and enabling deterministic semantic truth engines.
+
+* **`C-SENS-01` ✅: Spec-Mention Detection** (Legacy: 3.11)
+  > - **Purpose:** When the model names a file or spec it has not been shown, fetch it and hand it back — instead of letting it invent the contents
+  > - **Trigger:** When an LLM response is received
+  > - **Needs:** `E-SENS-01` → boundary enforcement
+  > - **Reads:** LLM responses · the files they name
+  > - **Produces:** memory → mentioned files injected into the follow-up call
+  > - **Enables:** Reviewer → follow-up calls that see what was referenced
+  > - **Done when:** a named file is pulled into the next call, and one outside the boundary is refused
+
+* **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)
+  > - **Purpose:** Keep binaries, caches and vendor trees out of every scan, so the agent's view is the project and not its litter
+  > - **Trigger:** When files are collected for any scan
+  > - **Needs:** —
+  > - **Reads:** file extensions · default patterns · per-project overrides · `.specweaverignore`
+  > - **Produces:** memory → the filtered file set every scan uses
+  > - **Enables:** every scan, parse and hash
+  > - **Done when:** three tiers apply in order and a project override wins
+
+* **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)
+  > - **Purpose:** 🟡 Refuse generated code that calls a symbol which does not exist — an anti-hallucination gate
+  > - **Trigger:** 🟡 After code is generated, before it is accepted
+  > - **Needs:** 🟡 a symbol index — `B-SENS-02` is the nearest candidate
+  > - **Reads:** 🟡 generated code
+  > - **Produces:** 🔴
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+
+* **`C-SENS-04` 🔜: Infrastructure-as-Code Extraction (HCL2)**
+  > - **Purpose:** Understand infrastructure the same way as code — what resources exist, what depends on what, and where the spec has drifted
+  > - **Trigger:** When a Terraform or OpenTofu file is parsed
+  > - **Needs:** `D-SENS-02` → the extractor to extend
+  > - **Reads:** HCL2 files
+  > - **Produces:** 🟡 cloud resource nodes and dependencies
+  > - **Enables:** 🟡 IaC spec-drift validation
+  > - **Done when:** 🔴
+
+* **`C-SENS-05` 🔮: Embedded SQL Extraction**
+  > - **Purpose:** Link code to the database it actually touches, by parsing SQL written inside host languages
+  > - **Trigger:** When a host-language file contains an SQL string
+  > - **Needs:** `D-SENS-03` → the SQL parser
+  > - **Reads:** Python, Java and similar sources containing embedded SQL
+  > - **Produces:** 🟡 cross-domain edges between code and schema
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Note:** deferred out of `B-SENS-02` to prevent scope creep
+
+* **`C-SENS-06` ⚰️ RETIRED:** *(Event-Sourced 4D Graph — retired 2026-08-20 by the
+  [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md): no story claims it, no
+  consumer ever asked a point-in-time architecture question, and git already holds history.
+  ID is dead — do NOT reuse.)*
+
+* **`C-SENS-07` 🔜: Polyglot Expansion (TypeSpec)**
+  > - **Purpose:** 🟡 Map API contracts written in TypeSpec, so cross-platform interfaces are visible to the graph
+  > - **Trigger:** When a TypeSpec file is parsed
+  > - **Needs:** `D-SENS-02` → the extractor to extend · a community tree-sitter grammar
+  > - **Reads:** TypeSpec files
+  > - **Produces:** 🟡 API contract symbols
+  > - **Enables:** 🟡 `A-SENS-04` cross-service linkage
+  > - **Done when:** 🔴
 
 ## DAL-B: High-Assurance
-* **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
-  > `future_capabilities_reference.md` §17 | Core database-backed lineage tracking and #sw-artifact tagging. Enables exact LLM provenance attribution and cost-per-feature analysis while remaining
-  > orthogonal to AST dependencies. **Complete**: 3591 tests.
-* **`B-SENS-02` ✅: Knowledge Graph Builder** (Legacy: 3.32f)<br>
-  > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no
-  > rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data.
-  > **Readers** _(2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: `B-SENS-09`, `B-VAL-07`, the blast-radius seams
-  > (`B-EXEC-03`, `A-FLOW-04`), `A-SENS-04`, and language-pruning for `CodeStructureAtom` tool schemas — all behind `TECH-068`, which owns the missing edge kinds.
-* **`B-SENS-03` 🔧: AST Semantic Chunking** (Legacy: 4.2)<br>
-  > [Design](../features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md) | AST-based semantic chunking (RAG foundation): one chunk per top-level symbol plus the preamble belonging to none, each
-  > carrying path/symbol/language so a hit can be cited. Oversized symbols split into numbered parts; a parser that raises falls back to line windows. One of two Core MVS items in `US-11`.
-  > _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) — ORIGINS.md § CrewAI)_
-* **`B-SENS-04` 🔮: Static Control Flow Graph (CFG)**<br>
-  > _(extracted from B-SENS-02)_ | Maps execution branches (True/False edges). Restricted strictly to statically typed languages (Java, C++) to avoid dynamic scoping tar pits.
-  > **A layer on `B-SENS-02`'s one graph** (Code Property Graph model, Joern), never a second store —
-  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) decision 4.
-* **`B-SENS-05` 🔮: Static Dataflow Solver**<br>
-  > _(extracted from B-SENS-02)_ | Computes Def-Use chains using Kildall's framework. Highly experimental. Restricted to statically typed languages.
-  > **A layer on `B-SENS-02`'s one graph**, same rule — [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) decision 4.
-* **`B-SENS-07` 🔜: Language-Agnostic Dependency Resolution**<br>
-  > _(2026-08-18 — split out of the `INT-US-20` P-5 journey.)_ | Resolves each language's import syntax into
-  > canonical `MODULE` identities in the existing Universal Ontology, so boundary decisions are one graph query
-  > instead of five external tools — two of which are stubs. **Supersedes the Python special case rather than
-  > joining it**: the design MUST specify a time-boxed dual-run against tach, ending in its removal. Blocks
-  > `INT-US-20` P-5 and the brownfield journeys in US-11, US-12, US-26. Measurements and scope:
-  > [analysis](../../analysis/polyglot_dependency_resolution_2026-08-18.md).
 
-* **`B-SENS-08` 🔜: Framework-Semantic Graph Edges**<br>
-  > _(minted 2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: contextualize.)_ | DI, routes and listeners
-  > produce no syntactic call site, so a call graph over framework code lies (Jasmine, ASE 2022). Extends the five delivered framework schemas from
-  > annotation→comment (`B-INTL-02`) to annotation→typed edge for the `B-SENS-02` builder; also `A-SENS-04`'s cross-service edge source. Polyglot via the
-  > schemas; JVM-first (`US-12`). Behind `TECH-068`.
-* **`B-SENS-09` 🔜: Deterministic Context Packing**<br>
-  > _(minted 2026-08-21, [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: contextualize.)_ | Given the symbol a task will
-  > change, traverse the `B-SENS-02` graph — callers, callees, type contracts, 1–2 hops — and pack exactly that closure into the prompt. Selection, not
-  > compression: the skeleton shrinks a file already chosen. Receives candidates from `B-FLOW-04`, never the reverse. Successor to the `E-VAL-03`
-  > re-reading. Behind `TECH-068`.
+* **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)
+  > - **Purpose:** Know which LLM produced which artifact, so provenance and cost can be attributed per feature
+  > - **Trigger:** When an artifact is generated
+  > - **Needs:** —
+  > - **Reads:** generation events
+  > - **Produces:** db → lineage records · `#sw-artifact` tags in the artifacts
+  > - **Enables:** `A-UI-01` tamper-evidence · `D-UI-06` telemetry · cost-per-feature
+  > - **Done when:** every generated artifact traces back to the model and request that made it
+
+* **`B-SENS-02` ✅: Knowledge Graph Builder** (Legacy: 3.32f)
+  > - **Purpose:** Hold a class- and function-level map of the codebase that survives restarts, so questions about structure are answered exactly rather than by search
+  > - **Trigger:** When `sw graph build` is run
+  > - **Needs:** `D-SENS-02` → parsed ASTs
+  > - **Reads:** source files of every supported language
+  > - **Produces:** db → nodes and edges in SQLite · memory → NetworkX for fast queries
+  > - **Enables:** `B-SENS-09` · `B-VAL-07` · blast radius (`B-EXEC-03`, `A-FLOW-04`) · `A-SENS-04` · `C-UI-01`
+  > - **Done when:** a rebuild reproduces the graph without re-reading everything from scratch
+  > - **Known gaps:** a stored node keeps no `kind` or `name`; six languages mis-file their types; a call resolves only on a globally unique bare name
+
+* **`B-SENS-03` 🔧: AST Semantic Chunking** (Legacy: 4.2)
+  > - **Purpose:** Cut code into chunks a retrieval hit can be cited from — one per top-level symbol, each carrying its path and symbol
+  > - **Trigger:** When a file is chunked for the vector store
+  > - **Needs:** `D-SENS-02` → symbols per file
+  > - **Reads:** source files
+  > - **Produces:** memory → chunks carrying path, symbol and language
+  > - **Enables:** `A-SENS-02` vector store · `B-FLOW-04` retrieval
+  > - **Done when:** an oversized symbol splits into numbered parts, and a parser failure falls back to line windows
+  > - **Note:** one of two Core MVS items in `US-11`. A TypeScript interface is never reported as a symbol, so it can never become its own chunk
+
+* **`B-SENS-04` 🔮: Static Control Flow Graph (CFG)**
+  > - **Purpose:** 🟡 Know which branches can execute, so analysis can follow paths rather than just call names
+  > - **Trigger:** 🔴
+  > - **Needs:** `B-SENS-02` → the one graph this layers onto
+  > - **Reads:** statically typed sources only — Java, C++
+  > - **Produces:** 🟡 True/False execution edges on the existing graph
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Rule:** a layer on `B-SENS-02`'s single graph, never a second store (`ADR-006` decision 4)
+
+* **`B-SENS-05` 🔮: Static Dataflow Solver**
+  > - **Purpose:** 🟡 Know where a value is defined and where it is used, so changes to data can be traced
+  > - **Trigger:** 🔴
+  > - **Needs:** `B-SENS-02` · 🟡 likely `B-SENS-04`
+  > - **Reads:** statically typed sources only
+  > - **Produces:** 🟡 def-use chains, via Kildall's framework
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Rule:** a layer on the single graph, same as `B-SENS-04`. Highly experimental
+
 * **`B-SENS-06` 🔜: OSV Vulnerability Feed Ingestion**
-  > _(new)_ | Automatically maps known CVEs from the OSV database against the active workspace topology graph. **Graph reader** _(2026-08-21,
-  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: "do we call the vulnerable function" is `CALLS`-closure over
-  > `B-SENS-02` — its edge over plain dependency scanners — so the reachability half sits behind `TECH-068`.
+  > - **Purpose:** Answer "do we actually call the vulnerable function", not just "is the package present" — which is what a plain dependency scanner cannot do
+  > - **Trigger:** 🟡 When the OSV feed is ingested or the workspace is scanned
+  > - **Needs:** `TECH-068` → `CALLS` edges, for the reachability half
+  > - **Reads:** the OSV database · the workspace topology graph
+  > - **Produces:** 🟡 CVE-to-node mappings with reachability
+  > - **Enables:** fleet remediation (`US-26`)
+  > - **Done when:** 🔴
+
+* **`B-SENS-07` 🔜: Language-Agnostic Dependency Resolution**
+  > - **Purpose:** Turn every language's import syntax into one canonical module identity, so a boundary question is one graph query instead of five external tools — two of which are stubs
+  > - **Trigger:** When imports are resolved during a graph build
+  > - **Needs:** `B-SENS-02` → the ontology to resolve into
+  > - **Reads:** import statements in every supported language
+  > - **Produces:** canonical `MODULE` identities in the graph
+  > - **Enables:** `INT-US-20` P-5 · the brownfield journeys in `US-11`, `US-12`, `US-26`
+  > - **Done when:** a time-boxed dual-run against `tach` ends in `tach`'s removal
+  > - **Note:** supersedes the Python special case rather than joining it
+
+* **`B-SENS-08` 🔜: Framework-Semantic Graph Edges**
+  > - **Purpose:** Dependency injection, routes and listeners produce no call site, so a call graph over framework code lies. Turn the framework's own annotations into real edges
+  > - **Trigger:** When a file using a known framework is parsed
+  > - **Needs:** `B-SENS-02` → the builder · the five delivered framework schemas
+  > - **Reads:** framework annotations — Spring Boot, Quarkus, NestJS, FastAPI, Actix-web
+  > - **Produces:** typed edges — injection, routes, listeners (`CONSUMES`, `FULFILLS`, `PUBLISHES`, `SUBSCRIBES`)
+  > - **Enables:** `B-SENS-09` · `B-VAL-07` · blast radius · `A-SENS-04`'s cross-service edges
+  > - **Done when:** 🔴
+  > - **Note:** `ADR-006` calls this a precondition for every reader, not an enhancement. JVM first (`US-12`)
+
+* **`B-SENS-09` 🔜: Deterministic Context Packing**
+  > - **Purpose:** Given the symbol a task will change, put exactly its callers, callees and type contracts in the prompt — selection, not compression
+  > - **Trigger:** When a prompt is assembled for a task with a known target symbol
+  > - **Needs:** `B-SENS-02` → the graph · `TECH-068` → real edges · `B-FLOW-04` → candidate symbols
+  > - **Reads:** the knowledge graph
+  > - **Produces:** prompt → a packed subgraph closure, 1–2 hops
+  > - **Enables:** `sw draft` · `sw implement` · `sw review`
+  > - **Done when:** 🔴
+  > - **Note:** the only graph reader on a user path. Receives candidates from `B-FLOW-04`, never the reverse
 
 ## DAL-A: Mission-Critical
-* **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
-  > _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project
-  > crawls. **Complete:** SF-01, SF-02, SF-03, and SF-04 (Incremental Pipeline Bypassing).
-* **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)<br>
-  > _(new)_ | Toggle between local SQLite/BM25 (Bicycle mode) and a unified **PostgreSQL (Apache AGE + pgvector)** sidecar (Rocket mode) to map cross-service GraphRAG topologies and vectors in a
-  > single transactional backend. Phase D.1 → D.2
-* **`A-SENS-03` 🔜: Event Trigger for Semantic-Hash Sync** (Legacy: 5.2)<br>
-  > Phase D | _(Re-scoped 2026-08-20, [benefit review](../../analysis/benefit_chain_analysis_2026-08-20.md): folded into `A-SENS-01` — a second update
-  > mechanism is redundant; freshness at read time is already guaranteed by lazy hash sync, and eager events would need hash comparison as their own recovery
-  > path anyway.)_ A thin file/commit trigger that invokes `A-SENS-01`'s incremental sync, built only when a daemon-mode consumer exists (`sw serve` live
-  > graph, `E-UI-03` watcher). Not an independent event-sourced update path.
-* **`A-SENS-04` 🔮: Federated Microservice System Graph**<br>
-  > _(new)_ | A high-level system architecture graph that links all microservices together *exclusively* via their external interfaces (REST APIs, Kafka, RabbitMQ, shared file systems). It strictly
-  > obscures internal microservice logic, creating a pure Enterprise-level GraphRAG layer. Relies on strict ID prefixes (e.g., `srv:billing`) generated by local B-SENS-02 engines to dynamically fuse
-  > API contracts without context bloat. **Edge source** _(2026-08-21)_: the cross-service edges — REST clients, listener topics — are exactly what `B-SENS-08`
-  > derives from framework annotations; this capability federates those edges, it does not invent its own extraction.
+
+* **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)
+  > - **Purpose:** Know a file changed when anything it imports changed, so the topology stays in sync without crawling the whole project
+  > - **Trigger:** When a hash is read
+  > - **Needs:** `D-SENS-01` → the topology graph
+  > - **Reads:** source files and their import graph
+  > - **Produces:** db → Merkle-tree dependency hashes
+  > - **Enables:** incremental pipeline bypassing · `A-SENS-03`
+  > - **Done when:** a change to an imported module changes the importer's hash
+
+* **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)
+  > - **Purpose:** Run graph and vectors in one transactional backend at scale, instead of two local stores
+  > - **Trigger:** 🟡 When the project is switched from local mode to sidecar mode
+  > - **Needs:** `B-SENS-02` → graph content · `B-SENS-03` → chunks to embed
+  > - **Reads:** the local SQLite graph and chunk store
+  > - **Produces:** db → PostgreSQL with Apache AGE and pgvector
+  > - **Enables:** cross-service GraphRAG · `A-SENS-04`
+  > - **Done when:** 🟡 the same queries answer identically in local and sidecar mode
+
+* **`A-SENS-03` 🔜: Event Trigger for Semantic-Hash Sync** (Legacy: 5.2)
+  > - **Purpose:** Invoke `A-SENS-01`'s incremental sync on a file or commit event, once something needs a live graph rather than a read-time one
+  > - **Trigger:** When a file changes or a commit lands
+  > - **Needs:** `A-SENS-01` → the sync it invokes
+  > - **Reads:** file and commit events
+  > - **Produces:** a sync call — not an independent update path
+  > - **Enables:** 🟡 `sw serve` live graph · `E-UI-03` watcher
+  > - **Done when:** 🔴
+  > - **Gate:** build only when a daemon-mode consumer exists. Freshness at read time is already guaranteed
+
+* **`A-SENS-04` 🔮: Federated Microservice System Graph**
+  > - **Purpose:** See how services connect through their external interfaces alone — REST, Kafka, queues — without dragging every service's internals into context
+  > - **Trigger:** 🔴
+  > - **Needs:** `B-SENS-08` → the cross-service edges · `B-SENS-02` → per-service graphs with ID prefixes
+  > - **Reads:** per-service graphs, prefixed (`srv:billing`)
+  > - **Produces:** 🟡 a system-level graph linking services by interface only
+  > - **Enables:** 🔴
+  > - **Done when:** 🔴
+  > - **Note:** federates `B-SENS-08`'s edges; it does not extract its own
+
 * **`A-SENS-05` 🔜: APM Telemetry Ingestion (Sentry/Datadog)**
-  > _(new)_ | Feeds production stack traces directly into the Knowledge Graph to pinpoint failing AST nodes. **Graph reader** _(2026-08-21,
-  > [ADR-006](../../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md))_: trace-frame → node resolution reads `B-SENS-02`; behind `TECH-068`.
+  > - **Purpose:** Point a production stack trace at the exact node in the graph, so a failure lands on code rather than on a log line
+  > - **Trigger:** When a stack trace arrives from APM
+  > - **Needs:** `B-SENS-02` → nodes to resolve against · `TECH-068` → real edges
+  > - **Reads:** production stack traces
+  > - **Produces:** 🟡 trace frame → graph node resolutions
+  > - **Enables:** the self-healing loop (`US-27`)
+  > - **Done when:** 🔴
