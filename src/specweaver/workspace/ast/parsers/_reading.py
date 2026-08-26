@@ -274,6 +274,40 @@ class SymbolReadingMixin:
                 return str(self._doc_of(name_node))
         return ""
 
+    def extract_symbol_signature(self, code: str, symbol_name: str) -> str:
+        """One symbol's contract: its description, then its declaration without the body.
+
+        The per-symbol form of `extract_skeleton`, which produces this shape for a whole file. A
+        whole-file skeleton is a poor retrieval unit -- large and vague, so it matches everything
+        and discriminates nothing.
+
+        **No `{ ... }` placeholder**, unlike `extract_skeleton`. A skeleton chunk is labelled as
+        one, so a placeholder would be the same three characters repeated in every skeleton chunk
+        in the corpus, carrying nothing.
+
+        Never raises. SQL has no body to remove -- `extract_symbol_body` raises there, because the
+        declarative tier has no target block -- so its whole declaration is the answer.
+        """
+        if not symbol_name:
+            return ""
+        try:
+            declaration = self.extract_symbol(code, symbol_name)
+        except CodeStructureError:
+            return ""
+
+        try:
+            body = self.extract_symbol_body(code, symbol_name)
+        except CodeStructureError:
+            body = ""
+
+        signature = declaration
+        if body and declaration.endswith(body):
+            signature = declaration[: -len(body)]
+        signature = signature.rstrip()
+
+        doc = self.extract_symbol_doc(code, symbol_name)
+        return f"{doc}\n{signature}" if doc else signature
+
     def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
         """The access level of one symbol, as a word from `VISIBILITY`. Never raises.
 

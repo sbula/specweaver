@@ -48,7 +48,7 @@
    }
   },
   {
-   "requirement": "FR-4",
+   "requirement": "FR-16",
    "title": "An unreadable file is still indexed",
    "scope": [
     "tests/unit/workspace/analyzers/test_semantic_chunking.py"
@@ -63,10 +63,15 @@
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal"
     }
-   ]
+   ],
+   "rekeyed": {
+    "from": "FR-4",
+    "date": "2026-08-26",
+    "reason": "Re-keyed 2026-08-26. The claim survives verbatim; only its number moved. `FR-4` now means 'Go has no private' and this campaign proves 'an unreadable file is still indexed', which the 2026-08-26 design calls `FR-16`. Left as `FR-4` the nightly would report a green claim nobody makes -- the same defect that retired `FR-1` and `FR-3`."
+   }
   },
   {
-   "requirement": "FR-5",
+   "requirement": "FR-17",
    "title": "Nothing is dropped",
    "scope": [
     "tests/unit/workspace/analyzers/test_semantic_chunking.py",
@@ -82,7 +87,12 @@
      "new": "        if False:",
      "breaks": "imports and the module docstring never reach the index"
     }
-   ]
+   ],
+   "rekeyed": {
+    "from": "FR-5",
+    "date": "2026-08-26",
+    "reason": "Re-keyed 2026-08-26. Same claim, new number: `FR-5` now means 'a symbol yields its description'. Found when SF-02's FR-5 campaign landed and the runner reported SEVEN mutants under one requirement -- six new and one that had nothing to do with them."
+   }
   },
   {
    "requirement": "FR-1",
@@ -171,6 +181,114 @@
      "new": "            matched = level in requested",
      "breaks": "`AD-5`. SQL and markdown have no access concept and report `unknown`, so treating it as a level nobody requests empties the index for two of the eight target languages",
      "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-5",
+   "title": "A description is what was written above THIS declaration, and nothing else",
+   "scope": [
+    "tests/unit/workspace/ast/parsers/test_symbol_docs.py"
+   ],
+   "mutants": [
+    {
+     "id": "a-distant-comment-becomes-a-description",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "sibling_doc",
+     "old": "        if _last_content_row(sibling, raw) + 1 != below.start_point[0]:",
+     "new": "        if False:",
+     "breaks": "attachment. `prev_sibling` alone finds a comment three blank lines above, so without the gap check every file's licence header becomes the description of its first declaration -- and every test about a PRESENT description still passes, which is why this mutant is the one that matters",
+     "symbol_sha": "sha256:bf269278e17cd17569b44fcf20dadb9f168d9158380b08d6c4cfb23c966a81b7"
+    },
+    {
+     "id": "only-the-nearest-comment-line-is-taken",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "sibling_doc",
+     "old": "        below = sibling\n        sibling = sibling.prev_sibling",
+     "new": "        break",
+     "breaks": "stacked doc blocks. `///` and `//` lines arrive one node each, so taking only the nearest returns a doc block's last line and gives no sign the rest was dropped",
+     "symbol_sha": "sha256:bf269278e17cd17569b44fcf20dadb9f168d9158380b08d6c4cfb23c966a81b7"
+    },
+    {
+     "id": "the-wrapper-climb-stops",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "_anchor",
+     "old": "    while node.parent is not None and node.parent.start_point[0] == node.start_point[0]:",
+     "new": "    while False:",
+     "breaks": "every documented TYPE in TypeScript and Go, whose comment precedes a wrapper -- an `export_statement` and a `type_declaration` -- rather than the declaration itself. A fixed per-language depth passed every method-level test and failed four of eight type-level ones",
+     "symbol_sha": "sha256:c6583c42d661b55085f2b5eca4f6be01eaa28582f17edd5d438c534e73387e4b"
+    },
+    {
+     "id": "the-climb-reaches-the-file",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "_anchor",
+     "old": "    while node.parent is not None and node.parent.start_point[0] == node.start_point[0]:",
+     "new": "    while node.parent is not None:",
+     "breaks": "the opposite: climbing past the declaration to the file itself, so one comment somewhere near the top becomes the description of everything in it",
+     "symbol_sha": "sha256:c6583c42d661b55085f2b5eca4f6be01eaa28582f17edd5d438c534e73387e4b"
+    },
+    {
+     "id": "comment-markers-reach-the-index",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "_clean_line",
+     "old": "        for marker in _LEADING_MARKERS:",
+     "new": "        for marker in ():",
+     "breaks": "the description's text. `/**`, `///` and `#` appear in every doc in a language, so they carry no signal and make same-language chunks look alike to an embedding",
+     "symbol_sha": "sha256:0a626740a695f22cf25f503ce9305bf4604ea8347f31d2530e9830d55e3b329a"
+    },
+    {
+     "id": "python-stops-reading-its-docstring",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+     "symbol": "docstring_doc",
+     "old": "    if literal.type != \"string\":",
+     "new": "    if True:",
+     "breaks": "Python's descriptions entirely. It is the one language whose description is not a comment, so no sibling walk substitutes for this",
+     "symbol_sha": "sha256:8a22ee802a00ee3157f6d8158b2d752eb948d11c21ab0ad6693164385443974b"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-6",
+   "title": "A signature is the declaration without its body, behind its description",
+   "scope": [
+    "tests/unit/workspace/ast/parsers/test_symbol_signatures.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-body-is-not-elided",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+     "symbol": "SymbolReadingMixin.extract_symbol_signature",
+     "old": "        if body and declaration.endswith(body):",
+     "new": "        if False:",
+     "breaks": "the whole point: a skeleton chunk carrying the full implementation is the body chunk again, and the two layers stop being distinguishable",
+     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
+    },
+    {
+     "id": "the-description-is-dropped",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+     "symbol": "SymbolReadingMixin.extract_symbol_signature",
+     "old": "        return f\"{doc}\\n{signature}\" if doc else signature",
+     "new": "        return signature",
+     "breaks": "`FR-6`'s other half. A signature without its description is the thing `extract_symbol` already returned, and the reason this accessor exists is that a name and a shape retrieve worse than a name, a shape and a sentence",
+     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
+    },
+    {
+     "id": "a-language-with-no-body-raises",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+     "symbol": "SymbolReadingMixin.extract_symbol_signature",
+     "old": "        except CodeStructureError:\n            body = \"\"",
+     "new": "        except CodeStructureError:\n            raise",
+     "breaks": "SQL. The declarative tier has no target block, so `extract_symbol_body` raises there -- and this is called once per symbol during a whole-repository scan, where one raise takes the scan down",
+     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
     }
    ]
   }

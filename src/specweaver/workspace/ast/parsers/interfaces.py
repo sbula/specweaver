@@ -101,6 +101,15 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
+    def extract_symbol_signature(self, code: str, symbol_name: str) -> str:
+        """One symbol's description followed by its declaration, with the body removed.
+
+        The per-symbol form of `extract_skeleton`. `""` when the symbol is not there. **Never
+        raises** — a language with no body, such as SQL, returns its whole declaration rather than
+        an error.
+        """
+
+    @abstractmethod
     def extract_symbol_doc(self, code: str, symbol_name: str) -> str:
         """The description attached to one symbol, with its comment markers removed.
 

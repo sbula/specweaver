@@ -130,11 +130,17 @@ owned by `A-SENS-02`; nothing here claims it.
 | FR-1 | A symbol is chunked once, as a whole | **replaced** by FR-8 + FR-12 — a chunk may now hold several whole units, and lines are deliberately in two layers | **retire** |
 | FR-2 | A chunk can be cited | **replaced** by FR-13 + FR-14 — citation now needs scope, not only path and symbol | none |
 | FR-3 | An oversized symbol splits rather than truncating | **replaced** by FR-10 — line splitting is demoted to a last resort behind FR-8 | **retire** |
-| FR-4 | An unreadable file is still indexed | **survives** as FR-16, plus the line-window flag | **re-key**, do not retire — the protection is still real |
-| FR-5 | Nothing is dropped | **survives** as FR-17, narrowed to the body layer | **re-key**, and re-check the mutant still fails under the narrowed claim |
+| FR-4 | An unreadable file is still indexed | **survives** as FR-16, plus the line-window flag | **re-keyed 2026-08-26** — the claim is verbatim, only its number moved |
+| FR-5 | Nothing is dropped | **survives** as FR-17, narrowed to the body layer | **re-keyed 2026-08-26**, earlier than planned — see below |
 
 Re-keying and retiring both go through `scripts/_corpus.py`; `--retire` takes a reason and a date so
 the removal is a recorded decision rather than a deletion.
+
+**The re-keying could not wait for SF-05, and the corpus is what said so.** The plan deferred it to
+the boundary that changes the pinned code. But when SF-02 added its `FR-5` campaign, the nightly
+runner reported **seven mutants under one requirement** — six about descriptions and one about
+chunking, sharing a key and nothing else. A number is conflated the moment two claims hold it, not
+when the code beneath one of them changes. Both were re-keyed on 2026-08-26.
 
 ## Requirement–Surface Bindings
 
@@ -298,7 +304,7 @@ which is the boundary that was agreed.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Visibility is a value | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Signature and description | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Signature and description | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | A parser does not lose names | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Code is cut into whole units | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Nothing is lost | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -322,10 +328,10 @@ which is the boundary that was agreed.
 
 ## Session Handoff
 
-**Current status**: Design **APPROVED** 2026-08-26. **SF-01 is delivered** — all three commit
-boundaries committed, 9 mutants protected. SF-02, SF-03 and SF-04 have no dependencies and may run
+**Current status**: Design **APPROVED** 2026-08-26. **SF-01 and SF-02 are delivered** — 18
+mutants protected across six live campaigns. SF-02, SF-03 and SF-04 have no dependencies and may run
 in parallel sessions.
-**Next step**: `specweaver-implementation-plan` for SF-02, SF-03 or SF-04 — the Progress Tracker prevents double work.
+**Next step**: `specweaver-implementation-plan` for SF-03 or SF-04 — the Progress Tracker prevents double work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there. The 32 grilling decisions are recorded inline, each marked `[agreed 2026-08-26]`
 beside the fact it governs — do not re-ask them.

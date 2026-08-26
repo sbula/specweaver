@@ -46,3 +46,33 @@ a struct, which no fixed depth can express.
 
 6 mutants, 6 kills. M4 (Python's docstring reader) has a single point of protection.
 Record: `B-SENS-03_sf02_cb1_walkthrough.md`
+
+---
+
+# CB-2 — `extract_symbol_signature`  (FR-6)
+
+- [x] **T1** — Red: `tests/unit/workspace/ast/parsers/test_symbol_signatures.py`
+- [x] **T2** — `extract_symbol_signature` on the mixin: doc from CB-1 + declaration minus the body **span**
+- [x] **T3** — SQL: no body to remove, so the declaration is returned whole
+- [x] **T4** — Abstract method + `CompleteParser` stub
+- [x] **T5** — Mutant: the body elision is skipped. Killed by a paired assertion — a body token
+      **absent** AND the signature text **present**. Absence alone passes when the function returns
+      `""`; presence alone passes when nothing was elided.
+
+**Shape decision (mine, recorded):** the result is `"<description>\n<signature>"` with the
+description omitted when empty, and **no `{ ... }` placeholder** — unlike `extract_skeleton`, which
+keeps one. `FR-12` puts `layer: skeleton` on the chunk, so the reader already knows the body was
+elided; a placeholder would be the same three characters in every skeleton chunk in the corpus.
+The description is stripped, per `[agreed 2026-08-26]` Q40, for the same reason it is in `FR-5`.
+
+## CB-2 done — SF-02 COMPLETE
+
+3 mutants, 3 kills. S3 (SQL's missing body) has a single point of protection.
+
+**The corpus caught the design's CRITICAL finding a second time.** FR-4 and FR-5 were planned to be
+re-keyed "when SF-05 changes the code they pin". Wrong: the moment SF-02's FR-5 campaign landed, the
+runner reported SEVEN mutants under one requirement. A number is conflated when two claims hold it,
+not when the code beneath one changes. Both re-keyed with reasons.
+
+Ledger: FR-1 4 · FR-2 3 · FR-5 6 · FR-6 3 · FR-16 1 · FR-17 1 — 18 protected, 0 stale.
+Record: `B-SENS-03_sf02_cb2_walkthrough.md`
