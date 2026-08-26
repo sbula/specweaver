@@ -62,6 +62,57 @@ class Chunk:
     #: a consumer cannot rank one below the other. A symbol sliced at line 400 is no more a whole
     #: unit than the blob is, which is why `FR-10`'s last resort sets it too.
     is_line_window: bool = False
+    #: The access level of what this chunk holds: one of `VISIBILITY`. `unknown` for a gap, the
+    #: preamble, a line window, and whenever the parser could not answer.
+    visibility: str = "unknown"
+    #: The narrow radius — the directory this file sits in. Java's package-private is literally
+    #: this, and a helper shared inside one package is legitimately internal to it.
+    package: str = ""
+    #: The wide radius — the nearest ancestor the caller identified as a build unit: a crate, a
+    #: service, a module. `""` means **not known**, never *the same as `package`*: a chunk claiming
+    #: a boundary the caller never established would answer "is this outside my service?" from a
+    #: guess.
+    unit: str = ""
+
+
+def _directory_of(path: str) -> str:
+    """The directory part of a path, on either platform's separator.
+
+    Not `pathlib`: it resolves against the platform running the scan, so a Windows path handed to a
+    Linux worker would come back whole and the chunk would claim the entire path as its package.
+    A scan reads paths as data, so they are split as data.
+    """
+    cut = max(path.rfind("/"), path.rfind("\\"))
+    return path[:cut] if cut > 0 else ""
+
+
+def _unit_of(path: str, markers: frozenset[str]) -> str:
+    """The nearest ancestor directory the caller marked as a build unit, or `""`.
+
+    **Nearest, not first.** A repository root and a nested package both hold a manifest, and the
+    file belongs to the inner one — taking any match would put every file in the repo root.
+
+    Matching is on a path **boundary**, so `src/apple` is not a unit of `src/app/mod`.
+    """
+    best = ""
+    # `sorted`, not the set's own order. A frozenset iterates by hash, which is stable within one
+    # process and not across runs -- so two candidates of equal length would tie differently on
+    # different days, and `NFR-4` says the same input gives the same chunks. Added when two mutants
+    # came back SILENT: an order-dependent implementation cannot be pinned by a deterministic test.
+    #
+    # Sorting is on the MARKER PATHS, so `src/app/build.gradle` precedes `src/app/mod/go.mod` while
+    # `src/app/pyproject.toml` follows it. Length is what decides; the sort only makes which
+    # candidate is seen first a fact rather than a coin toss.
+    for marker in sorted(markers):
+        directory = _directory_of(marker)
+        if not directory:
+            continue
+        # On a path BOUNDARY: a bare prefix would make `src/app` a unit of `src/application`.
+        if any(path.startswith(directory + sep) for sep in ("/", "\\")) and len(directory) > len(
+            best
+        ):
+            best = directory
+    return best
 
 
 def _parent_of(name: str, texts: dict[str, str]) -> str | None:
@@ -164,6 +215,9 @@ def _emit(
     symbols: tuple[str, ...] | None = None,
     *,
     line_window: bool = False,
+    visibility: str = "unknown",
+    package: str = "",
+    unit: str = "",
 ) -> list[Chunk]:
     if not text.strip():
         return []
@@ -183,6 +237,9 @@ def _emit(
             parts=len(pieces),
             symbols=inside,
             is_line_window=windowed,
+            visibility=visibility,
+            package=package,
+            unit=unit,
         )
         for index, piece in enumerate(pieces, start=1)
     ]
@@ -200,6 +257,10 @@ class _Cut:
     path: str
     language: str
     max_chars: int
+    #: The two radii, resolved once from what the caller supplied. Every chunk of a file carries
+    #: the same pair, because they are properties of the file rather than of the cut.
+    package: str
+    unit: str
     #: True when the parser could not read this file at all. Distinct from *a file with no
     #: symbols*, which is readable and simply declares nothing — a comment-only file is a whole
     #: unit, and a file no grammar handles is not.
@@ -211,6 +272,11 @@ class _Cut:
     #: cross a level, so `None` disables merging entirely rather than treating every symbol as
     #: alike — not knowing is not the same as knowing they match.
     levels: dict[str, str] | None
+
+
+def _level_of(cut: _Cut, name: str) -> str:
+    """One symbol's level, or `unknown` when the parser could not answer for the file."""
+    return "unknown" if cut.levels is None else cut.levels.get(name, "unknown")
 
 
 def _walk(text: str, names: list[str], cut: _Cut) -> list[Chunk]:
@@ -275,6 +341,12 @@ class _Run:
             self._cut.max_chars,
             tuple(self._inside),
             line_window=self._cut.unreadable,
+            # The level its members SHARE. `absorb` never lets two levels into one run, so there
+            # is exactly one -- but taking a member's level after the fact would be a different
+            # claim, and `FR-9`'s guard test passes either way.
+            visibility=self._level or "unknown",
+            package=self._cut.package,
+            unit=self._cut.unit,
         )
         self._text, self._inside, self._level = "", [], None
         return chunks
@@ -297,6 +369,8 @@ class _Run:
             self._cut.max_chars,
             (),
             line_window=self._cut.unreadable,
+            package=self._cut.package,
+            unit=self._cut.unit,
         )
 
     def absorb(self, name: str, text: str) -> list[Chunk]:
@@ -317,9 +391,11 @@ class _Run:
                 self._cut.max_chars,
                 (name,),
                 line_window=self._cut.unreadable,
+                package=self._cut.package,
+                unit=self._cut.unit,
             )
 
-        level = self._cut.levels.get(name, "unknown")
+        level = _level_of(self._cut, name)
         flushed: list[Chunk] = []
         if self._inside and (level != self._level or not self._fits(text)):
             flushed = self.flush()
@@ -356,14 +432,33 @@ def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
     parent's, and a symbol with no children falls through to the line split.
     """
     if _weight(text) <= cut.max_chars:
-        return _emit(text, cut.path, name, cut.language, cut.max_chars)
+        return _emit(
+            text,
+            cut.path,
+            name,
+            cut.language,
+            cut.max_chars,
+            visibility=_level_of(cut, name),
+            package=cut.package,
+            unit=cut.unit,
+        )
 
     children = _children_of(name, cut.order, cut.parents)
     if not children:
         # FR-10: no nested symbols left, so lines are all that remain. `_emit` sets the flag
         # when it has to cut; passing it here covers the case where the whole symbol still fits
         # in one piece but was reached by giving up on structure.
-        return _emit(text, cut.path, name, cut.language, cut.max_chars, line_window=cut.unreadable)
+        return _emit(
+            text,
+            cut.path,
+            name,
+            cut.language,
+            cut.max_chars,
+            line_window=cut.unreadable,
+            visibility=_level_of(cut, name),
+            package=cut.package,
+            unit=cut.unit,
+        )
 
     return _walk(text, children, cut)
 
@@ -402,6 +497,7 @@ def chunk_source(
     parser: Any,
     language: str,
     max_chars: int = _DEFAULT_MAX_CHARS,
+    markers: frozenset[str] = frozenset(),
 ) -> list[Chunk]:
     """Split `code` into semantic chunks, falling back to line windows when it will not parse.
 
@@ -428,7 +524,16 @@ def chunk_source(
 
     parents = {name: _parent_of(name, texts) for name in order}
     cut = _Cut(
-        path, language, max_chars, unreadable, texts, order, parents, _levels(code, parser, order)
+        path,
+        language,
+        max_chars,
+        _directory_of(path),
+        _unit_of(path, markers),
+        unreadable,
+        texts,
+        order,
+        parents,
+        _levels(code, parser, order),
     )
     tops = [n for n in order if parents[n] is None]
 
@@ -439,6 +544,6 @@ def chunk_source(
     head, _, rest = code.partition(first)
     if not head.strip():
         return _walk(code, tops, cut)
-    return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(
-        first + rest, tops, cut
-    )
+    return _emit(
+        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit
+    ) + _walk(first + rest, tops, cut)

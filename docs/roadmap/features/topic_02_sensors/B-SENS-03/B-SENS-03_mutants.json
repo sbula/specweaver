@@ -63,7 +63,7 @@
      "old": "        order, unreadable = [], True",
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
     },
     {
      "id": "a-line-window-is-not-flagged",
@@ -73,7 +73,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = False",
      "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
-     "symbol_sha": "sha256:51c529e1145ab1dd2ce01a1ddce8f3550dc789df4ca733a66989f46c1bc050c1"
+     "symbol_sha": "sha256:a755ae967e7cf6b32516a3e8e971e453a4acce45f759aefb8360b23fca60cd26"
     },
     {
      "id": "everything-is-a-line-window",
@@ -83,7 +83,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = True",
      "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
-     "symbol_sha": "sha256:51c529e1145ab1dd2ce01a1ddce8f3550dc789df4ca733a66989f46c1bc050c1"
+     "symbol_sha": "sha256:a755ae967e7cf6b32516a3e8e971e453a4acce45f759aefb8360b23fca60cd26"
     },
     {
      "id": "an-unreadable-file-reads-as-readable",
@@ -93,7 +93,7 @@
      "old": "        order, unreadable = [], True",
      "new": "        order, unreadable = [], False",
      "breaks": "the one case `len(pieces) > 1` cannot infer: a SMALL file no grammar handles arrives in one piece, so nothing about the cut says it was never understood",
-     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
     }
    ],
    "rekeyed": {
@@ -115,10 +115,10 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "    return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(",
-     "new": "    return [] + _walk(",
-     "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass",
-     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+     "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+     "new": "        \"\", path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+     "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass. Re-anchored a THIRD time on 2026-08-26 when SF-06 CB-1 gave the preamble call its scope arguments -- six re-anchors in this story, each one a correction the drift check forced rather than a silent pass",
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
     }
    ],
    "rekeyed": {
@@ -439,7 +439,7 @@
      "old": "    tops = [n for n in order if parents[n] is None]",
      "new": "    tops = [n for n in order if \".\" not in n]",
      "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
     }
    ]
   },
@@ -460,7 +460,7 @@
      "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
      "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
      "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
-     "symbol_sha": "sha256:087f91cb4990c6bd4ab0ba2e77176e674514e6962c62bdb4a59fd81f3798b04c"
+     "symbol_sha": "sha256:07aa3f26b04a8631019defe2589472b3fc1dba4d7d9c323bf14a7890f23bb0a6"
     },
     {
      "id": "a-line-longer-than-the-budget-is-never-cut",
@@ -490,7 +490,7 @@
      "old": "        if self._inside and (level != self._level or not self._fits(text)):",
      "new": "        if self._inside and (not self._fits(text)):",
      "breaks": "the one thing merging can get dangerously wrong. A public getter combined with a private helper puts the private one into every result that asks for the public interface -- `FR-2`'s filter undone one layer up, where no filter can see it. This mutant was SILENT on its first run: the test's budget let the class fit whole, so nothing split, nothing merged, and the assertion iterated one chunk while proving nothing",
-     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
+     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
     },
     {
      "id": "merging-is-disabled",
@@ -500,7 +500,7 @@
      "old": "        if self._inside and (level != self._level or not self._fits(text)):",
      "new": "        if True:",
      "breaks": "the requirement itself. Twelve three-line getters go back to twelve chunks of near-identical shape, which match everything and discriminate nothing",
-     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
+     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
     },
     {
      "id": "the-text-between-merged-symbols-is-dropped",
@@ -530,7 +530,7 @@
      "old": "        if self._cut.levels is None:",
      "new": "        if False:",
      "breaks": "the same thing from the consuming end: with no levels known, `.get(name, \"unknown\")` makes every symbol alike and merging resumes across visibility",
-     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
+     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
     }
    ]
   },
@@ -546,10 +546,10 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(",
-     "new": "return _emit(head, path, \"\", language, max_chars, ()) + _walk(",
+     "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+     "new": "        head, path, \"\", language, max_chars, (), package=cut.package, unit=cut.unit",
      "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
-     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
     },
     {
      "id": "every-gap-becomes-the-module",
@@ -559,7 +559,7 @@
      "old": "            self._inside[0] if len(self._inside) == 1 else \"\",",
      "new": "            self._inside[0] if len(self._inside) == 1 else _MODULE_CHUNK,",
      "breaks": "the half that gives the name meaning. A stray comment in the middle of a file, or a `class Foo:` header inside a symbol, would be indexed as the module's own description -- worse than leaving it anonymous, because it reads as an answer",
-     "symbol_sha": "sha256:f0fca7f0692bbea82cd6562f1bdbdab5fa43c9788aadbaee74d92a1b44d0e7e0"
+     "symbol_sha": "sha256:f7d5820fde78a999bbaf9369705f2b9c1e53ec8ab6eb5741fb2839793a3445e0"
     }
    ]
   },
@@ -589,6 +589,55 @@
      "new": "    return out",
      "breaks": "totality on the tail. Whatever is still accumulating when the pieces run out -- a trailing constant, a module-level call, the last merged run in the file -- is never emitted. Replaced 2026-08-26: the first version made every gap join the buffer, which moves chunk boundaries and loses nothing, and came back UNPROTECTED because it was EQUIVALENT rather than because a test was missing",
      "symbol_sha": "sha256:6207cc5725b4874a328323120db98726eb72473c4c6d70cf97b3b85931128d96"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-14",
+   "title": "A chunk knows which boundary it sits inside, at both radii",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_scope.py"
+   ],
+   "mutants": [
+    {
+     "id": "unit-falls-back-to-package",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "chunk_source",
+     "old": "        _unit_of(path, markers),",
+     "new": "        _directory_of(path),",
+     "breaks": "`AD-5`'s reasoning at the wider radius. A chunk claiming a unit boundary the caller never established answers *is this outside my service?* from a guess -- the same failure as reporting `public` for a language with no such concept",
+     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+    },
+    {
+     "id": "visibility-is-never-known",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_level_of",
+     "old": "    return \"unknown\" if cut.levels is None else cut.levels.get(name, \"unknown\")",
+     "new": "    return \"unknown\"",
+     "breaks": "the whole point of the label. Every chunk reads `unknown`, so a query-time filter scoped by where the asker sits cannot tell an interface from an internal -- and `unknown` counts as VISIBLE, so it fails open",
+     "symbol_sha": "sha256:fc065eff1708a0993a98dff30942bc35a79cce1a0f9bb700b62e48c0a2716fa5"
+    },
+    {
+     "id": "the-first-marker-wins-not-the-nearest",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_unit_of",
+     "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
+     "new": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and not best:",
+     "breaks": "the nearest-wins rule. A repository root and a nested package both hold a manifest, so taking any match puts every file in the repo root and the narrow question stops being answerable. This mutant was SILENT twice: once because the implementation iterated a frozenset and could not be pinned, and once because the fixture's marker names sorted so that first-match gave the right answer anyway",
+     "symbol_sha": "sha256:7271f2ecacc1a84efa176d7df8283ac03c32add7efb48467b0655c28dd999ac4"
+    },
+    {
+     "id": "a-marker-matches-on-a-bare-prefix",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_unit_of",
+     "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
+     "new": "        if path.startswith(directory) and len(directory) > len(best):",
+     "breaks": "the path boundary. A marker at `src/app` would claim every file under `src/application`, putting one service's code inside another's unit",
+     "symbol_sha": "sha256:7271f2ecacc1a84efa176d7df8283ac03c32add7efb48467b0655c28dd999ac4"
     }
    ]
   }

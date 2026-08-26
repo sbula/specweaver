@@ -553,6 +553,24 @@
       "last_seen": 1787769959.9785078,
       "occurrences": 3
     },
+    "B-SENS-03 FR-17 the-trailing-remainder-is-dropped": {
+      "history": [
+        {
+          "at": 1787769959.9785078,
+          "state": "open",
+          "verdict": "UNPROTECTED",
+          "reason": "no-killer"
+        },
+        {
+          "at": 1787770020.4773552,
+          "state": "closed",
+          "reason": "withdrawn"
+        }
+      ],
+      "first_seen": 1787769959.9785078,
+      "last_seen": 1787769959.9785078,
+      "occurrences": 1
+    },
     "B-SENS-03 FR-17 preamble-dropped": {
       "history": [
         {
@@ -576,29 +594,40 @@
           "at": 1787770020.4773552,
           "state": "closed",
           "reason": "fixed"
+        },
+        {
+          "at": 1787781618.9712553,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787781739.8559937,
+          "state": "closed",
+          "reason": "fixed"
         }
       ],
       "first_seen": 1787765762.1590164,
-      "last_seen": 1787769959.9785078,
-      "occurrences": 2
+      "last_seen": 1787781689.6668122,
+      "occurrences": 5
     },
-    "B-SENS-03 FR-17 the-trailing-remainder-is-dropped": {
+    "B-SENS-03 FR-15 the-preamble-loses-its-name": {
       "history": [
         {
-          "at": 1787769959.9785078,
+          "at": 1787781618.9712553,
           "state": "open",
-          "verdict": "UNPROTECTED",
-          "reason": "no-killer"
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
         },
         {
-          "at": 1787770020.4773552,
+          "at": 1787781739.8559937,
           "state": "closed",
-          "reason": "withdrawn"
+          "reason": "fixed"
         }
       ],
-      "first_seen": 1787769959.9785078,
-      "last_seen": 1787769959.9785078,
-      "occurrences": 1
+      "first_seen": 1787781618.9712553,
+      "last_seen": 1787781689.6668122,
+      "occurrences": 3
     }
   },
   "override_count": 0,
