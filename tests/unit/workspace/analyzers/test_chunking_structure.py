@@ -58,7 +58,7 @@ class TestChunkSourceSplitsOnNestedSymbols:
         code = _fat_class(methods=6, statements=20)
         chunks = _chunks(parsers["py"], code, max_chars=400)
 
-        named = {c.symbol for c in chunks if c.symbol}
+        named = {name for c in chunks for name in c.symbols}
         assert named == {f"Fat.m{i}" for i in range(6)}
 
     def test_no_chunk_is_a_numbered_slice_of_the_class(
@@ -75,8 +75,8 @@ class TestChunkSourceSplitsOnNestedSymbols:
         """[Boundary] The control. Splitting is what *over budget* triggers, not what class means —
         a rule that always split would satisfy both assertions above."""
         code = _fat_class(methods=2, statements=1)
-        chunks = [c for c in _chunks(parsers["py"], code, max_chars=4000) if c.symbol]
-        assert [c.symbol for c in chunks] == ["Fat"]
+        named = [n for c in _chunks(parsers["py"], code, max_chars=4000) for n in c.symbols]
+        assert named == ["Fat"]
 
     def test_a_method_too_big_even_alone_falls_back_to_lines(
         self, parsers: dict[str, typing.Any]
@@ -84,9 +84,9 @@ class TestChunkSourceSplitsOnNestedSymbols:
         """[Boundary] `FR-10`. When a symbol has no nested symbols left and is still over budget,
         line cutting is what remains — now the last resort rather than the only one."""
         code = _fat_class(methods=1, statements=200)
-        chunks = [c for c in _chunks(parsers["py"], code, max_chars=300) if c.symbol]
+        chunks = [c for c in _chunks(parsers["py"], code, max_chars=300) if c.symbols]
 
-        assert {c.symbol for c in chunks} == {"Fat.m0"}
+        assert {n for c in chunks for n in c.symbols} == {"Fat.m0"}
         assert max(c.parts for c in chunks) > 1
 
     def test_splitting_recurses(self, parsers: dict[str, typing.Any]) -> None:
@@ -106,9 +106,9 @@ class TestChunkSourceSplitsOnNestedSymbols:
         code = f"class Outer:\n{inner}\n"
         chunks = _chunks(parsers["py"], code, max_chars=120)
 
-        deep = [c for c in chunks if c.symbol and "deep_" in c.symbol]
-        assert len(deep) == 6, [c.symbol for c in chunks]
-        assert all(c.parts == 1 for c in deep)
+        deep = [name for c in chunks for name in c.symbols if "deep_" in name]
+        assert len(deep) == 6, [c.symbols for c in chunks]
+        assert all(c.parts == 1 for c in chunks)
 
 
 class TestChunkSourceNestingIsNotPunctuation:
@@ -122,7 +122,7 @@ class TestChunkSourceNestingIsNotPunctuation:
         an estate would have been missing from the index with nothing to show it.
         """
         code = "CREATE TABLE public.orders (id INT);\nCREATE VIEW summary AS SELECT 1;\n"
-        named = {c.symbol for c in _chunks(parsers["sql"], code, lang="sql") if c.symbol}
+        named = {n for c in _chunks(parsers["sql"], code, lang="sql") for n in c.symbols}
         assert named == {"public.orders", "summary"}
 
     def test_a_real_nested_symbol_is_still_treated_as_nested(
@@ -131,7 +131,7 @@ class TestChunkSourceNestingIsNotPunctuation:
         """[Happy path] The other half. A rule that called everything top-level would pass the
         test above and index every method twice."""
         code = "class Beta:\n    def go(self):\n        return 1\n"
-        named = [c.symbol for c in _chunks(parsers["py"], code, max_chars=4000) if c.symbol]
+        named = [n for c in _chunks(parsers["py"], code, max_chars=4000) for n in c.symbols]
         assert named == ["Beta"]
 
     def test_a_dotted_name_whose_prefix_is_not_a_symbol_is_top_level(
@@ -140,7 +140,7 @@ class TestChunkSourceNestingIsNotPunctuation:
         """[Hostile] Said as a rule rather than as SQL. Three conditions, ANDed: the prefix must be
         a reported symbol, the name must extend it, and the text must actually be inside."""
         code = "CREATE FUNCTION analytics.total() RETURNS INT AS $$ SELECT 1 $$ LANGUAGE SQL;\n"
-        named = {c.symbol for c in _chunks(parsers["sql"], code, lang="sql") if c.symbol}
+        named = {n for c in _chunks(parsers["sql"], code, lang="sql") for n in c.symbols}
         assert named == {"analytics.total"}
 
 

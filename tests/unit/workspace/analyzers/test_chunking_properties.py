@@ -46,13 +46,21 @@ class Beta:
 
 
 class _MinimalParser:
-    """Implements the two methods the chunker is allowed to need, and nothing else.
+    """Implements the whole surface the chunker is allowed to need, and nothing else.
 
     If the module ever reaches for `extract_skeleton`, a language table or a file extension, this
     raises `AttributeError` and the polyglot claim is measurably false.
+
+    **The surface grew on 2026-08-26.** `FR-9` may not merge across a visibility level, so the
+    chunker now asks `list_symbols(visibility=[level])` as well. That is the same method with an
+    argument the interface already declares, not a new dependency — but a stub that did not accept
+    it fell into the chunker's `except Exception` and reported every symbol as `unknown`, which
+    merged everything. A degradation that silent is worth a stub that says so.
     """
 
-    def list_symbols(self, code: str) -> list[str]:
+    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+        if visibility is not None:
+            return ["alpha", "Beta"] if "public" in visibility else []
         return ["alpha", "Beta"]
 
     def extract_symbol(self, code: str, name: str) -> str:
@@ -67,7 +75,7 @@ def test_two_methods_are_the_whole_parser_contract() -> None:
     """NFR-1. Any installed language tier works without per-language code here."""
     chunks = chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="whatever")
 
-    assert {c.symbol for c in chunks} >= {"alpha", "Beta"}
+    assert {name for c in chunks for name in c.symbols} >= {"alpha", "Beta"}
 
 
 def test_every_non_blank_character_survives() -> None:

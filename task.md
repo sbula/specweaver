@@ -32,3 +32,20 @@ reading `NO TEST` — which is true.
       are none left
 - [x] **T4** — Mutants: containment always false (the class stops splitting into methods) · the
       dot filter restored (`public.orders` disappears)
+
+---
+
+# CB-4 — small neighbours merge  (FR-9)
+
+**Pulled forward, and stated rather than slipped in:** `Chunk` gains `symbols: tuple[str, ...]`,
+which is the *contained names* half of `FR-13` (SF-06). `FR-9` cannot be honest without it — a
+merged chunk holds several symbols, so `symbol` cannot name it, and merging twelve getters into
+three **anonymous** chunks loses more than it gains. The rest of `FR-13` — content hash, package,
+unit — stays in SF-06.
+
+- [x] **T1** — Red: `tests/unit/workspace/analyzers/test_chunking_merge.py`
+- [x] **T2** — `Chunk.symbols`, set for every chunk including unmerged ones
+- [x] **T3** — Greedy merge of consecutive units, **within one visibility level**, including the
+      text between them so `FR-17` stays trivially true
+- [x] **T4** — Visibility fetched **five times per file**, not once per symbol
+- [x] **T5** — Mutants: the visibility guard dropped · merging disabled

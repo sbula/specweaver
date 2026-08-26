@@ -306,7 +306,7 @@ which is the boundary that was agreed.
 | SF-01 | Visibility is a value | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Signature and description | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | A parser does not lose names | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Code is cut into whole units | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Code is cut into whole units | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Nothing is lost | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Every chunk is labelled | SF-01..04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -328,10 +328,10 @@ which is the boundary that was agreed.
 
 ## Session Handoff
 
-**Current status**: Design **APPROVED** 2026-08-26. **SF-01, SF-02 and SF-03 are delivered** — 23
-mutants protected across eight live campaigns. SF-02, SF-03 and SF-04 have no dependencies and may run
+**Current status**: Design **APPROVED** 2026-08-26. **SF-01 to SF-04 are delivered** — 30 mutants
+protected across twelve live campaigns. SF-02, SF-03 and SF-04 have no dependencies and may run
 in parallel sessions.
-**Next step**: `specweaver-implementation-plan` for SF-04 — the Progress Tracker prevents double work.
+**Next step**: `specweaver-implementation-plan` for SF-05 — the Progress Tracker prevents double work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there. The 32 grilling decisions are recorded inline, each marked `[agreed 2026-08-26]`
 beside the fact it governs — do not re-ask them.

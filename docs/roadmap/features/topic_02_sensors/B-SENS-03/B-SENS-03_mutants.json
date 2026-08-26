@@ -62,7 +62,7 @@
      "old": "        order = []",
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:a3edd0defd2131d4263856c70b12adcdb3d9e7efcdaf4e8f7a780f30b106f66b"
+     "symbol_sha": "sha256:256cc076590e55635ee43149433563481b5ba1773ae72f38818b9623469b12c8"
     }
    ],
    "rekeyed": {
@@ -83,10 +83,11 @@
      "id": "preamble-dropped",
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        if head.strip():",
-     "new": "        if False:",
-     "breaks": "imports and the module docstring never reach the index"
+     "symbol": "_Run.absorb_gap",
+     "old": "        return self.flush() + _emit(",
+     "new": "        return self.flush() + (",
+     "breaks": "imports and the module docstring never reach the index. Re-anchored 2026-08-26: SF-04 CB-4 moved the preamble onto the standalone-gap path, and its old anchor `if head.strip():` now belongs to FR-9's between-text mutant one requirement over -- two claims would have shared one line",
+     "symbol_sha": "sha256:efc59eb0d011d8f7039e05a281561e7d7347ad5f0967306f1b1e57dd1d16045e"
     }
    ],
    "rekeyed": {
@@ -407,7 +408,7 @@
      "old": "    return _walk(code, [n for n in order if parents[n] is None], cut)",
      "new": "    return _walk(code, [n for n in order if \".\" not in n], cut)",
      "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:a3edd0defd2131d4263856c70b12adcdb3d9e7efcdaf4e8f7a780f30b106f66b"
+     "symbol_sha": "sha256:256cc076590e55635ee43149433563481b5ba1773ae72f38818b9623469b12c8"
     }
    ]
   },
@@ -428,6 +429,45 @@
      "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
      "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
      "symbol_sha": "sha256:81bcfeb6f687e3fb09ee5de95fb85b9dbe9e251f68f1a79d622de2a57e742b53"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-9",
+   "title": "Small neighbours merge, and never across a visibility level",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_merge.py"
+   ],
+   "mutants": [
+    {
+     "id": "a-private-symbol-joins-a-public-chunk",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_Run.absorb",
+     "old": "        if self._inside and (level != self._level or not self._fits(text)):",
+     "new": "        if self._inside and (not self._fits(text)):",
+     "breaks": "the one thing merging can get dangerously wrong. A public getter combined with a private helper puts the private one into every result that asks for the public interface -- `FR-2`'s filter undone one layer up, where no filter can see it. This mutant was SILENT on its first run: the test's budget let the class fit whole, so nothing split, nothing merged, and the assertion iterated one chunk while proving nothing",
+     "symbol_sha": "sha256:41bb8daa9051fe5266753a4054565b9b549bf701f2acc004fe10a9ba15cc8c9a"
+    },
+    {
+     "id": "merging-is-disabled",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_Run.absorb",
+     "old": "        if self._inside and (level != self._level or not self._fits(text)):",
+     "new": "        if True:",
+     "breaks": "the requirement itself. Twelve three-line getters go back to twelve chunks of near-identical shape, which match everything and discriminate nothing",
+     "symbol_sha": "sha256:41bb8daa9051fe5266753a4054565b9b549bf701f2acc004fe10a9ba15cc8c9a"
+    },
+    {
+     "id": "the-text-between-merged-symbols-is-dropped",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_walk",
+     "old": "        if head:",
+     "new": "        if head.strip():",
+     "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
+     "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
     }
    ]
   }

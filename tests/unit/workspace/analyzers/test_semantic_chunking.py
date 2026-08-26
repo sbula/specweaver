@@ -59,24 +59,30 @@ def _chunk(parser: object, code: str = SOURCE, **kwargs: object) -> list[Chunk]:
     return chunk_source(code, path="mod.py", parser=parser, language="python", **kwargs)
 
 
-def test_each_top_level_symbol_becomes_its_own_chunk(python_parser: object) -> None:
-    symbols = {c.symbol for c in _chunk(python_parser)}
+def test_every_top_level_symbol_is_named_by_some_chunk(python_parser: object) -> None:
+    """This read *its own chunk* until 2026-08-26, and `FR-9` made that false: small neighbours are
+    combined, so `alpha` and `Beta` may share one. What must stay true is that neither disappears —
+    a symbol nothing names is a symbol nothing can retrieve."""
+    named = {name for c in _chunk(python_parser) for name in c.symbols}
 
-    assert "alpha" in symbols
-    assert "Beta" in symbols
+    assert "alpha" in named
+    assert "Beta" in named
 
 
 def test_a_nested_symbol_does_not_become_a_second_chunk(python_parser: object) -> None:
     """`Beta.go` lives inside `Beta`. Emitting both would index the same lines twice and make a
-    retrieval hit ambiguous about which unit it found."""
-    symbols = [c.symbol for c in _chunk(python_parser)]
+    retrieval hit ambiguous about which unit it found.
 
-    assert "Beta.go" not in symbols
+    Still true after `FR-8`: a class splits into its methods only when it is over budget, and this
+    one is not."""
+    named = [name for c in _chunk(python_parser) for name in c.symbols]
+
+    assert "Beta.go" not in named
 
 
 def test_a_chunk_holds_the_whole_symbol(python_parser: object) -> None:
-    """FR-1. The point of the capability: never half a function."""
-    alpha = next(c for c in _chunk(python_parser) if c.symbol == "alpha")
+    """The point of the capability: never half a function — whether or not it shares its chunk."""
+    alpha = next(c for c in _chunk(python_parser) if "alpha" in c.symbols)
 
     assert "def alpha(x):" in alpha.text
     assert "return x + 1" in alpha.text
@@ -128,8 +134,9 @@ def test_a_split_symbol_loses_no_lines(python_parser: object) -> None:
 
 
 def test_a_symbol_that_fits_is_one_part(python_parser: object) -> None:
-    """The control for FR-3. Splitting everything would defeat the whole capability."""
-    alpha = next(c for c in _chunk(python_parser) if c.symbol == "alpha")
+    """The control: splitting everything would defeat the whole capability. Read through `symbols`
+    rather than `symbol`, because `FR-9` may have combined it with a neighbour."""
+    alpha = next(c for c in _chunk(python_parser) if "alpha" in c.symbols)
 
     assert (alpha.part, alpha.parts) == (1, 1)
 

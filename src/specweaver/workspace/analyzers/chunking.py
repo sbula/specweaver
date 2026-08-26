@@ -39,6 +39,14 @@ class Chunk:
     language: str
     part: int = 1
     parts: int = 1
+    #: Every symbol inside this chunk, in source order. One name for a chunk that holds one
+    #: symbol, several for a merged chunk, none for a gap or a line window.
+    #:
+    #: A merged chunk cannot be named by `symbol` — it holds more than one — and a merged chunk
+    #: with no names at all is an anonymous chunk, which is the defect this capability exists to
+    #: remove. So `FR-9` could not be delivered without this field, and it is here rather than in
+    #: SF-06 for that reason. The rest of `FR-13` — content hash, package, unit — is still SF-06's.
+    symbols: tuple[str, ...] = ()
 
 
 def _parent_of(name: str, texts: dict[str, str]) -> str | None:
@@ -114,9 +122,17 @@ def _split(text: str, max_chars: int) -> list[str]:
     return parts or [text]
 
 
-def _emit(text: str, path: str, symbol: str, language: str, max_chars: int) -> list[Chunk]:
+def _emit(
+    text: str,
+    path: str,
+    symbol: str,
+    language: str,
+    max_chars: int,
+    symbols: tuple[str, ...] | None = None,
+) -> list[Chunk]:
     if not text.strip():
         return []
+    inside = symbols if symbols is not None else ((symbol,) if symbol else ())
     pieces = _split(text, max_chars)
     return [
         Chunk(
@@ -126,6 +142,7 @@ def _emit(text: str, path: str, symbol: str, language: str, max_chars: int) -> l
             language=language,
             part=index,
             parts=len(pieces),
+            symbols=inside,
         )
         for index, piece in enumerate(pieces, start=1)
     ]
@@ -146,29 +163,126 @@ class _Cut:
     texts: dict[str, str]
     order: list[str]
     parents: dict[str, str | None]
+    #: Each symbol's access level. Merging may not cross one, so this is needed per symbol — but
+    #: `extract_symbol_visibility` re-parses the file on every call, which would be one parse per
+    #: symbol. Filled from one `list_symbols` call per level instead, and the vocabulary is closed.
+    levels: dict[str, str]
 
 
 def _walk(text: str, names: list[str], cut: _Cut) -> list[Chunk]:
     """Cut `text` at each of `names`, in source order, losing nothing between them.
 
     The file and a class are the same problem at two scales — a run of symbols with text around
-    them — so this is written once and used by both. Whatever sits between the symbols is emitted
-    **unnamed**: it belongs to no symbol, and naming it after the container would put the container
-    in the index beside its own members.
+    them — so this is written once and used by both.
+
+    Two passes, in cAST's order: **split, then merge.** The first produces one piece per symbol
+    plus whatever sits between them; the second combines the small ones. Reversing the two would
+    not converge.
     """
-    chunks: list[Chunk] = []
+    pieces: list[tuple[str, str, list[Chunk] | None]] = []
     remainder = text
     for name in names:
         body = cut.texts.get(name, "")
         if not body.strip() or body not in remainder:
             continue
         head, _, remainder = remainder.partition(body)
-        if head.strip():
-            chunks.extend(_emit(head, cut.path, "", cut.language, cut.max_chars))
-        chunks.extend(_emit_unit(body, name, cut))
+        if head:
+            # Kept even when it is only whitespace. Before merging, blank runs between symbols
+            # belonged to no chunk and nothing noticed. Now a merged chunk concatenates the pieces
+            # it covers, so dropping the run between two methods produced `... + 1clas` -- text
+            # that never existed in the file. `_emit` still discards a blank piece that ends up
+            # standing alone.
+            pieces.append((head, "", None))
+        if _weight(body) <= cut.max_chars:
+            pieces.append((body, name, None))
+        else:
+            # Already too big to merge with anything. It goes through `_emit_unit`, which splits
+            # it on structure, and the finished chunks pass through the merge untouched.
+            pieces.append((body, name, _emit_unit(body, name, cut)))
     if remainder.strip():
-        chunks.extend(_emit(remainder, cut.path, "", cut.language, cut.max_chars))
-    return chunks
+        pieces.append((remainder, "", None))
+    return _merge(pieces, cut)
+
+
+class _Run:
+    """A run of neighbours being combined, and the rules for what may join it.
+
+    A class rather than three locals threaded through a loop: `check_complexity` put `_merge` at 19
+    against a ceiling of 15, and the branches it was counting were all *"may this piece join?"* —
+    one question, asked of one piece of state.
+    """
+
+    def __init__(self, cut: _Cut) -> None:
+        self._cut = cut
+        self._text = ""
+        self._inside: list[str] = []
+        self._level: str | None = None
+
+    def _fits(self, text: str) -> bool:
+        return _weight(self._text + text) <= self._cut.max_chars
+
+    def flush(self) -> list[Chunk]:
+        """Emit whatever has accumulated, and start again."""
+        chunks = _emit(
+            self._text,
+            self._cut.path,
+            self._inside[0] if len(self._inside) == 1 else "",
+            self._cut.language,
+            self._cut.max_chars,
+            tuple(self._inside),
+        )
+        self._text, self._inside, self._level = "", [], None
+        return chunks
+
+    def absorb_gap(self, text: str) -> list[Chunk]:
+        """Text belonging to no symbol: it travels with the run, or stands alone.
+
+        Carried **even when it is only whitespace**. Before merging, a blank run between two
+        methods belonged to no chunk and nothing noticed; now a merged chunk concatenates what it
+        covers, so dropping it produced `... + 1clas` — text that never existed in the file.
+        """
+        if self._inside and self._fits(text):
+            self._text += text
+            return []
+        return self.flush() + _emit(
+            text, self._cut.path, "", self._cut.language, self._cut.max_chars, ()
+        )
+
+    def absorb(self, name: str, text: str) -> list[Chunk]:
+        """A symbol: it joins the run, or ends it and starts the next.
+
+        **It may not join across a visibility level.** A public getter combined with a private
+        helper puts the private one into every result that asks for the public interface —
+        `FR-2`'s filter undone one layer up, where no filter can see it.
+        """
+        level = self._cut.levels.get(name, "unknown")
+        flushed: list[Chunk] = []
+        if self._inside and (level != self._level or not self._fits(text)):
+            flushed = self.flush()
+        self._text += text
+        self._inside.append(name)
+        self._level = level
+        return flushed
+
+
+def _merge(pieces: list[tuple[str, str, list[Chunk] | None]], cut: _Cut) -> list[Chunk]:
+    """Greedily combine consecutive small pieces that share one visibility level.
+
+    *Adjacent* means consecutive with nothing unmergeable between: two public methods on either
+    side of a private one are not neighbours, and combining them would reorder the file.
+    """
+    out: list[Chunk] = []
+    run = _Run(cut)
+    for text, name, finished in pieces:
+        if finished is not None:
+            out.extend(run.flush())
+            out.extend(finished)
+        elif name:
+            out.extend(run.absorb(name, text))
+        else:
+            out.extend(run.absorb_gap(text))
+    out.extend(run.flush())
+    return out
 
 
 def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
@@ -185,6 +299,26 @@ def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
         return _emit(text, cut.path, name, cut.language, cut.max_chars)  # FR-10: the last resort
 
     return _walk(text, children, cut)
+
+
+def _levels(code: str, parser: Any, order: list[str]) -> dict[str, str]:
+    """Each symbol's access level, in one call per level rather than one per symbol.
+
+    `extract_symbol_visibility` re-parses the file every time it is asked, so asking per symbol is
+    one parse per symbol — a thousand of them for a thousand-symbol file. `list_symbols` answers a
+    whole level at once, and `VISIBILITY` is closed, so the cost is a constant.
+
+    A symbol whose language cannot say arrives in the `public` bucket and is recorded as public.
+    That is `AD-5` — `unknown` counts as visible — applied to merging rather than restated.
+    """
+    levels: dict[str, str] = {}
+    for level in ("public", "protected", "internal", "private"):
+        try:
+            for name in parser.list_symbols(code, visibility=[level]):
+                levels.setdefault(name, level)
+        except Exception:
+            logger.debug("Chunking: %r visibility unavailable, treating as unknown", level)
+    return {name: levels.get(name, "unknown") for name in order}
 
 
 def chunk_source(
@@ -218,5 +352,5 @@ def chunk_source(
             logger.debug("Chunking %s: could not extract %r, skipping", path, name)
 
     parents = {name: _parent_of(name, texts) for name in order}
-    cut = _Cut(path, language, max_chars, texts, order, parents)
+    cut = _Cut(path, language, max_chars, texts, order, parents, _levels(code, parser, order))
     return _walk(code, [n for n in order if parents[n] is None], cut)
