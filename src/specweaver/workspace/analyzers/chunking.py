@@ -50,6 +50,21 @@ def _top_level(symbols: list[str]) -> list[str]:
     return [name for name in symbols if "." not in name]
 
 
+def _weight(text: str) -> int:
+    """How much of `text` counts towards the budget: its non-whitespace characters.
+
+    Counting every character let **indentation decide where code was cut**. Deeply nested Java and
+    flat Python were judged by different standards for the same amount of code, and reformatting a
+    file moved its chunk boundaries without a line of it changing — which, once anything is
+    embedded, costs a re-index of the whole repository.
+
+    cAST measures the same way, and for the same reason: consistency across coding styles and
+    languages. The trade is that *raw* length is then unbounded; `NFR-3` states it rather than
+    leaving it to be discovered.
+    """
+    return len("".join(text.split()))
+
+
 def _split(text: str, max_chars: int) -> list[str]:
     """Break oversized text on line boundaries, keeping every line.
 
@@ -58,11 +73,15 @@ def _split(text: str, max_chars: int) -> list[str]:
     """
     parts: list[str] = []
     current = ""
+    weight = 0
     for line in text.splitlines(keepends=True):
-        if current and len(current) + len(line) > max_chars:
+        line_weight = _weight(line)
+        if current and weight + line_weight > max_chars:
             parts.append(current)
             current = ""
+            weight = 0
         current += line
+        weight += line_weight
     if current:
         parts.append(current)
     return parts or [text]

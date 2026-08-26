@@ -361,6 +361,25 @@
      "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
     }
    ]
+  },
+  {
+   "requirement": "FR-11",
+   "title": "Indentation does not decide where code is cut",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_budget.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-budget-counts-whitespace-again",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_weight",
+     "old": "    return len(\"\".join(text.split()))",
+     "new": "    return len(text)",
+     "breaks": "consistency across coding styles. Counting every character lets indentation decide where code is cut, so deeply nested Java and flat Python are judged by different standards for the same amount of code -- and reformatting a file moves its chunk boundaries without a line of it changing, which costs a re-index of the whole repository once anything is embedded",
+     "symbol_sha": "sha256:b4f647c557ec0450333b418ccc40c6c5c5b3633e2eef5ac7b13b76bc3a17b928"
+    }
+   ]
   }
  ]
 }
