@@ -62,7 +62,7 @@
      "old": "        order = []",
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:256cc076590e55635ee43149433563481b5ba1773ae72f38818b9623469b12c8"
+     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
     }
    ],
    "rekeyed": {
@@ -405,10 +405,10 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "    return _walk(code, [n for n in order if parents[n] is None], cut)",
-     "new": "    return _walk(code, [n for n in order if \".\" not in n], cut)",
+     "old": "    tops = [n for n in order if parents[n] is None]",
+     "new": "    tops = [n for n in order if \".\" not in n]",
      "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:256cc076590e55635ee43149433563481b5ba1773ae72f38818b9623469b12c8"
+     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
     }
    ]
   },
@@ -468,6 +468,35 @@
      "new": "        if head.strip():",
      "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
      "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-15",
+   "title": "The head of a file has a name, and nothing else borrows it",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_preamble.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-preamble-loses-its-name",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "chunk_source",
+     "old": "return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(",
+     "new": "return _emit(head, path, \"\", language, max_chars, ()) + _walk(",
+     "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
+     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
+    },
+    {
+     "id": "every-gap-becomes-the-module",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_Run.flush",
+     "old": "            self._inside[0] if len(self._inside) == 1 else \"\",",
+     "new": "            self._inside[0] if len(self._inside) == 1 else _MODULE_CHUNK,",
+     "breaks": "the half that gives the name meaning. A stray comment in the middle of a file, or a `class Foo:` header inside a symbol, would be indexed as the module's own description -- worse than leaving it anonymous, because it reads as an answer",
+     "symbol_sha": "sha256:763d3d1568218c60f9633fd7df815596019327221287e16bc504269511bc2bae"
     }
    ]
   }

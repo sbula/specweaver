@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 #: unit. Symbols above it are split rather than truncated.
 _DEFAULT_MAX_CHARS = 4000
 
+#: What the head of a file is called: its docstring, its imports and its top-level constants.
+#:
+#: Angle brackets are not a legal identifier in any of the eight target languages, so no parser can
+#: report a symbol by this name and the two can never be confused. It names the run **before the
+#: first symbol** and nothing else -- text between two symbols is not the module's description.
+_MODULE_CHUNK = "<module>"
+
 
 @dataclass(frozen=True)
 class Chunk:
@@ -353,4 +360,15 @@ def chunk_source(
 
     parents = {name: _parent_of(name, texts) for name in order}
     cut = _Cut(path, language, max_chars, texts, order, parents, _levels(code, parser, order))
-    return _walk(code, [n for n in order if parents[n] is None], cut)
+    tops = [n for n in order if parents[n] is None]
+
+    first = next((texts[n] for n in tops if texts.get(n, "").strip() and texts[n] in code), None)
+    if first is None:
+        return _walk(code, tops, cut)  # nothing parsed: there is no "before the first symbol"
+
+    head, _, rest = code.partition(first)
+    if not head.strip():
+        return _walk(code, tops, cut)
+    return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(
+        first + rest, tops, cut
+    )
