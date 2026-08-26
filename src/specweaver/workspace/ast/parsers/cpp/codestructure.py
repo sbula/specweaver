@@ -9,15 +9,75 @@ import typing
 import tree_sitter_cpp
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers.interfaces import Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
+
+
+#: Where a declaration can sit such that access rules apply to it.
+_DECLARATION_HOSTS = ("function_definition", "declaration", "field_declaration")
+
+_CPP_LABELS: dict[str, "Visibility"] = {
+    "public": "public",
+    "protected": "protected",
+    "private": "private",
+}
+
+
+def _enclosing_declaration(name_node: typing.Any) -> typing.Any | None:
+    """The declaration this identifier belongs to, or None if it is not inside one."""
+    parent = name_node.parent
+    while parent and parent.type not in _DECLARATION_HOSTS:
+        parent = parent.parent
+    return parent
+
+
+def _preceding_access_specifier(declaration: typing.Any) -> str | None:
+    """The nearest `public:` / `private:` / `protected:` label above this declaration.
+
+    C++ access is positional: a label applies to everything after it until the next one, so the
+    answer is the closest preceding sibling, not a property of the declaration itself.
+    """
+    sibling = declaration.prev_sibling
+    while sibling:
+        if sibling.type == "access_specifier":
+            return (
+                typing.cast("bytes", sibling.text or b"").decode("utf-8").replace(":", "").strip()
+            )
+        sibling = sibling.prev_sibling
+    return None
+
+
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """C++ access is positional, and the default depends on `class` versus `struct`.
+
+    This parser answered the question correctly before SF-01 and is the shape the other nine grew
+    into. It moves out of the class for the same reason theirs did: the rule needs no object.
+    """
+    declaration = _enclosing_declaration(name_node)
+    if declaration is None:
+        return "public"  # a free function or global
+
+    container = declaration.parent
+    if not (container and container.type == "field_declaration_list"):
+        return "public"
+
+    class_or_struct = container.parent
+    if not class_or_struct:
+        return "public"
+    default: Visibility = "private" if class_or_struct.type == "class_specifier" else "public"
+
+    # Mapped rather than returned raw: the label is text lifted straight out of the source, so
+    # returning it would leak a word outside `VISIBILITY` if it were ever malformed.
+    return _CPP_LABELS.get(_preceding_access_specifier(declaration) or "", default)
 
 
 class CppCodeStructure(ClassBasedParser):
     """AST parser for C++ source files."""
 
     grammar = staticmethod(tree_sitter_cpp.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     # `class Impl : ...` and `struct S : ...` are different node types and both carry a base
     # clause, so declaring only the first would silently cover half the language.
@@ -105,48 +165,6 @@ class CppCodeStructure(ClassBasedParser):
 
     def supported_parameters(self) -> list[str]:
         return ["visibility"]
-
-    #: Where a declaration can sit such that access rules apply to it.
-    _DECLARATION_HOSTS = ("function_definition", "declaration", "field_declaration")
-
-    @classmethod
-    def _enclosing_declaration(cls, name_node: typing.Any) -> typing.Any | None:
-        """The declaration this identifier belongs to, or None if it is not inside one."""
-        parent = name_node.parent
-        while parent and parent.type not in cls._DECLARATION_HOSTS:
-            parent = parent.parent
-        return parent
-
-    def _preceding_access_specifier(self, declaration: typing.Any) -> str | None:
-        """The nearest `public:` / `private:` / `protected:` label above this declaration.
-
-        C++ access is positional: a label applies to everything after it until the next one, so the
-        answer is the closest preceding sibling, not a property of the declaration itself.
-        """
-        sibling = declaration.prev_sibling
-        while sibling:
-            if sibling.type == "access_specifier":
-                return self._text_of(sibling).replace(":", "").strip()
-            sibling = sibling.prev_sibling
-        return None
-
-    def _get_symbol_visibility(self, name_node: typing.Any) -> str:
-        """The access level of a symbol — `public` for anything outside a class or struct."""
-        declaration = self._enclosing_declaration(name_node)
-        if not declaration:
-            return "public"  # a free function or global
-
-        container = declaration.parent
-        if not (container and container.type == "field_declaration_list"):
-            return "public"
-
-        # `class` members default to private, `struct` members to public.
-        class_or_struct = container.parent
-        if not class_or_struct:
-            return "public"
-        default = "private" if class_or_struct.type == "class_specifier" else "public"
-
-        return self._preceding_access_specifier(declaration) or default
 
     def _check_attributes_in_node(
         self, child: typing.Any, query_str: str, decorator_filter: str

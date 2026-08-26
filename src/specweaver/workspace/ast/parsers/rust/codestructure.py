@@ -9,10 +9,29 @@ import typing
 import tree_sitter_rust
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
+
+
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """Rust is private by default, and `pub(crate)` is a third level a boolean cannot see.
+
+    A trait member carries no modifier of its own and takes the trait's, so a method of a
+    `pub trait` is public. Reading it as hidden dropped every trait method from the public set --
+    the same defect as Java's, from the same cause.
+    """
+    declaration = name_node.parent
+    if declaration is None:
+        return "unknown"
+    for child in declaration.children:
+        if child.type == "visibility_modifier":
+            text = typing.cast("bytes", child.text or b"").decode("utf-8")
+            # `pub` is public; `pub(crate)`, `pub(super)` and `pub(in ...)` are module-scoped.
+            return "internal" if "(" in text else "public"
+    return "public" if _vis.enclosed_by(declaration, ("trait_item",), ("impl_item",)) else "private"
 
 
 def _bare(name: str) -> str:
@@ -27,6 +46,7 @@ def _bare(name: str) -> str:
 
 class RustCodeStructure(FunctionBasedParser):
     grammar = staticmethod(tree_sitter_rust.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     # Every node that declares or extends a type. `impl_item` is here because an impl block is
     # where Rust records what a type implements -- the type's own declaration never mentions it.

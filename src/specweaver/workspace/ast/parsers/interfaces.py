@@ -21,6 +21,25 @@ class CodeStructureError(Exception):
     """Raised when the CodeStructure parser encounters a fatal error or cannot resolve a symbol."""
 
 
+#: The one vocabulary every language's access levels normalise onto.
+#:
+#: Ten languages disagree, and a consumer filtering across them cannot work on raw keywords: Java
+#: says `package-private`, Kotlin `internal`, Rust `pub(crate)`, Go says nothing at all and encodes
+#: it in capitalisation. They are the same idea -- *visible inside this module, not outside it* --
+#: so they are one word here.
+#:
+#: **`internal` is not a softer `private`.** Go has no `private`: a lowercase identifier is visible
+#: to its whole package, and mapping it to `private` would hide code from the package-mates
+#: entitled to use it. The distinction is the reason this is five words and not three.
+#:
+#: **`unknown` means the language cannot say**, as SQL and markdown cannot. Recorded as its own
+#: word rather than as `public`, so nothing downstream ever reads a claim the language never made.
+VISIBILITY: tuple[str, ...] = ("public", "protected", "internal", "private", "unknown")
+
+#: The same set as a type, so mypy rejects a typo that the tuple alone would only catch at runtime.
+Visibility = typing.Literal["public", "protected", "internal", "private", "unknown"]
+
+
 class CodeStructureInterface(ABC):
     """Common abstraction for Polyglot AST extraction.
 
@@ -79,6 +98,26 @@ class CodeStructureInterface(ABC):
 
         Raises:
             CodeStructureError: If the symbol cannot be found in the AST.
+        """
+
+    @abstractmethod
+    def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
+        """The access level of one symbol, as a word from `VISIBILITY`.
+
+        Answers *what* a symbol's visibility is, where `list_symbols(visibility=...)` only ever
+        answered *does it match*. A consumer that has to label a symbol -- rather than filter a
+        list -- has no other way to ask.
+
+        **Never raises.** This is called once per symbol during a whole-repository scan, so a name
+        that cannot be found, an empty file or source no grammar can read all answer `unknown`
+        rather than taking the scan down with them.
+
+        Args:
+            code: The raw source code of the file.
+            symbol_name: A name as `list_symbols` reports it, dot-scoped (e.g. `Order.submit`).
+
+        Returns:
+            One of `VISIBILITY`.
         """
 
     @abstractmethod

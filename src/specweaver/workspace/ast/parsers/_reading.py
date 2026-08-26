@@ -22,7 +22,7 @@ import typing
 
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,17 @@ class SymbolReadingMixin:
         def _extract_marker_text(self, node: typing.Any) -> str: ...
         def _extract_bases(self, target_node: typing.Any) -> list[str]: ...
         def _extract_decorators(self, target_node: typing.Any) -> list[str]: ...
+
+    @staticmethod
+    def _get_symbol_visibility(name_node: typing.Any) -> Visibility:
+        """This declaration's access level, as a word from `VISIBILITY`.
+
+        The one hook every language overrides, and a **static** one: the answer is a function of
+        the node alone. Default is `unknown`, not `public` — a language that has not answered the
+        question must say so rather than assert something it cannot know. SQL and markdown
+        genuinely have no access concept and keep this default.
+        """
+        return "unknown"
 
     def _is_symbol_hidden(self, parent: typing.Any) -> bool:
         """Whether this declaration is hidden from outside its module.
@@ -219,27 +230,48 @@ class SymbolReadingMixin:
         scope = self._get_symbol_scope(name_node)
         return f"{scope}.{sym_name}" if scope else sym_name
 
+    def _declared_names(self, code: str) -> list[tuple[str, typing.Any]]:
+        """Every declaration this grammar reports, as `(scoped_name, name_node)` in source order.
+
+        Shared by `list_symbols` and `extract_symbol_visibility` so the two can never disagree
+        about what a symbol is called. Two copies of the same lookup are two places it can drift.
+        """
+        if not code.strip():
+            return []
+        tree = self.parser.parse(code.encode("utf-8"))
+        cursor = QueryCursor(Query(self.language, self.SCM_SYMBOL_QUERY))
+        return [
+            (self._scoped_name(name_node), name_node)
+            for _match_id, match_dict in cursor.matches(tree.root_node)
+            for name_node in match_dict.get("name", [])
+        ]
+
+    def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
+        """The access level of one symbol, as a word from `VISIBILITY`. Never raises.
+
+        `unknown` is the answer for a name that is not there, an empty name, an empty file and
+        source no grammar can read. All four are reached during a real scan, and none of them is
+        worth failing a whole repository over.
+        """
+        if not symbol_name:
+            return "unknown"
+        for name, name_node in self._declared_names(code):
+            if name == symbol_name:
+                return self._get_symbol_visibility(name_node)
+        return "unknown"
+
     def list_symbols(
         self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
     ) -> list[str]:
-        if not code.strip():
-            return []
-
         framework_markers = {}
         if decorator_filter:
             framework_markers = self.extract_framework_markers(code)
 
-        tree = self.parser.parse(code.encode("utf-8"))
-        query = Query(self.language, self.SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
-
         symbols = [
             name
-            for _match_id, match_dict in matches
-            for name_node in match_dict.get("name", [])
+            for name, name_node in self._declared_names(code)
             if self._is_symbol_valid(
-                name := self._scoped_name(name_node),
+                name,
                 name_node,
                 visibility,
                 decorator_filter,

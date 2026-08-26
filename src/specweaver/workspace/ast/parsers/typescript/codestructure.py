@@ -9,14 +9,30 @@ import typing
 import tree_sitter_typescript
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """TypeScript has two independent axes, and the more restrictive one wins.
+
+    A member's `private`/`protected` is class-level; `export` is module-level. Collapsing them is
+    why every member of an exported class -- private ones included -- read as public.
+    """
+    declared = _vis.keyword_level(
+        name_node.parent, "accessibility_modifier", _vis.TYPESCRIPT_ACCESS
+    )
+    if declared is not None:
+        return declared
+    return "public" if _vis.has_ancestor(name_node.parent, "export_statement") else "internal"
+
+
 class TypeScriptCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_typescript.language_typescript)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
 

@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface, Visibility
 
 
 def test_code_structure_interface_enforces_abstract_methods() -> None:  # noqa: C901
@@ -71,6 +71,9 @@ def test_code_structure_interface_enforces_abstract_methods() -> None:  # noqa: 
 
         def extract_traceability_tags(self, code: str) -> set[str]:
             return set()
+
+        def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
+            return "unknown"
 
     parser = CompleteParser()
     assert parser.get_binary_ignore_patterns() == ["*.mock"]

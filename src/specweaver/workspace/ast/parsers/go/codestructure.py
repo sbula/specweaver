@@ -7,13 +7,28 @@ from __future__ import annotations
 
 import logging
 import typing
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from specweaver.workspace.ast.parsers.interfaces import Visibility
 
 import tree_sitter_go
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
+
+
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """Go encodes visibility in capitalisation, and has exactly two levels.
+
+    A lowercase identifier is **`internal`, never `private`**: it is visible to the whole package,
+    and calling it private would hide it from the package-mates entitled to use it.
+    """
+    short = _vis.name_text(name_node)
+    return "public" if short[:1].isupper() else "internal"
 
 
 def _embedded_nodes(body: typing.Any | None) -> list[typing.Any]:
@@ -44,6 +59,7 @@ class GoCodeStructure(FunctionBasedParser):
     """Go tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_go.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     # `type_spec` is the shared shape: `type Impl struct {...}` and `type R interface {...}` are
     # both a `type_declaration` wrapping one, so naming the wrapper would need two entries and

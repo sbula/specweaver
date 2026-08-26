@@ -11,16 +11,37 @@ import typing
 import tree_sitter_python
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
+
+
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """Python has no access keywords, so the name IS the modifier.
+
+    `__init__` and `__mangled` differ by a trailing pair of underscores and by nothing else, and
+    the old filter treated them alike. They are opposites: a dunder is protocol a caller is meant
+    to use, while a single-leading `__` asks the interpreter to mangle the name precisely so
+    outsiders cannot reach it. Measured 2026-08-26: `__mangled` was in the `exposes:` list of
+    every generated `context.yaml`.
+    """
+    short = _vis.name_text(name_node)
+    if short.startswith("__") and short.endswith("__"):
+        return "public"
+    if short.startswith("__"):
+        return "private"
+    if short.startswith("_"):
+        return "internal"
+    return "public"
 
 
 class PythonCodeStructure(ClassBasedParser):
     """Python tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_python.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_definition",)
 

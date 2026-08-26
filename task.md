@@ -79,6 +79,8 @@ filter's branch cannot change their answer. There is no behaviour there to prote
 **P2 is the one that mattered.** It is the only probe that reaches the integration test, which is
 the proof that the seam into `context.yaml` is genuinely covered rather than assumed.
 
+## CB-1 complete. CB-2 below.
+
 ## Phase 2 gap, closed — 2026-08-26
 
 `_is_symbol_valid` answers **two** questions, and CB-3 deletes four copies of it. The decorator half
@@ -91,3 +93,16 @@ was pinned nowhere. Added 21 assertions and three probes:
 | P8 | `if not any(decorator_filter in d ...)` in `_reading.py` | 67 | 7 |
 
 **Eight probes, eight kills.** Every branch of `_is_symbol_valid` that CB-3 touches is now held.
+
+---
+
+# CB-2 — visibility becomes a value  ✅
+
+- [x] `VISIBILITY` + `Visibility` in `interfaces.py`
+- [x] static `_get_symbol_visibility` hook on the mixin, default `unknown`
+- [x] per-language `_visibility_of`, all ten
+- [x] C++ returns checked against the vocabulary
+- [x] 6 mutants, 6 kills (M3, M4 single point of protection)
+- [x] class-health regression caught and fixed by restructure, NOT by re-freezing
+
+Record: `B-SENS-03_sf01_cb2_walkthrough.md`

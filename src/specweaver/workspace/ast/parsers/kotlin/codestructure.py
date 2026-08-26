@@ -9,14 +9,25 @@ import typing
 import tree_sitter_kotlin
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """Kotlin is public by default and says the other three out loud, so no container check.
+
+    `internal` is Kotlin's own word and means here what it means everywhere else in this
+    vocabulary: visible inside this module, not outside it.
+    """
+    return _vis.keyword_level(name_node.parent, "modifiers", _vis.KOTLIN_ACCESS) or "public"
+
+
 class KotlinCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_kotlin.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
 

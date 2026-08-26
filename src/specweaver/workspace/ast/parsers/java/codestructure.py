@@ -9,14 +9,35 @@ import typing
 import tree_sitter_java
 from tree_sitter import Query, QueryCursor
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
 
 
+def _visibility_of(name_node: typing.Any) -> Visibility:
+    """Java's default depends on the container, which is the part a boolean cannot carry.
+
+    No modifier inside a class is package-private -- `internal`. No modifier inside an interface is
+    **implicitly public by the JLS**, and reading it as hidden dropped every interface method from
+    the public set.
+    """
+    declaration = name_node.parent
+    if declaration is None:
+        return "unknown"
+    declared = _vis.keyword_level(declaration, "modifiers", _vis.JAVA_ACCESS)
+    if declared is not None:
+        return declared
+    inside_interface = _vis.enclosed_by(
+        declaration, ("interface_declaration",), ("class_declaration", "enum_declaration")
+    )
+    return "public" if inside_interface else "internal"
+
+
 class JavaCodeStructure(ClassBasedParser):
     grammar = staticmethod(tree_sitter_java.language)
+    _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (
         "class_declaration",
