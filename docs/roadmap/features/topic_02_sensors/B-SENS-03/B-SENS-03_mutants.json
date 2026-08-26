@@ -321,6 +321,46 @@
      "symbol_sha": "sha256:f99ed8da993fa887c4b3f6af760081c0c818815c8473a90e542c75c1983e9e0f"
     }
    ]
+  },
+  {
+   "requirement": "FR-18",
+   "title": "A Rust trait's members are symbols, and they carry the trait's name",
+   "scope": [
+    "tests/unit/workspace/ast/parsers/rust/test_rust_trait_members.py",
+    "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
+   ],
+   "mutants": [
+    {
+     "id": "required-trait-methods-are-invisible",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+     "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
+     "old": "        (function_signature_item name: (identifier) @name)",
+     "new": "        (struct_item name: (type_identifier) @name)",
+     "breaks": "the first of two causes. A trait's REQUIRED method is a `function_signature_item`, a different node type from `function_item` -- so the part of a trait that IS the contract had no symbol, no chunk and no node in the graph",
+     "symbol_sha": "sha256:60575adbecad87365467b153c2b2bb5f72eea0cc19073e8cf0c7d67060f3a9f4"
+    },
+    {
+     "id": "a-trait-member-loses-its-scope",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+     "symbol": "RustCodeStructure._get_symbol_scope",
+     "old": "            if parent.type == \"trait_item\":",
+     "new": "            if False:",
+     "breaks": "the second cause, which is independent: a defaulted trait method was reported as the bare name `name`, colliding with every other `name` in the estate. Fixing only the query gives `Shape.area` unscoped; fixing only the scope leaves it missing",
+     "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
+    },
+    {
+     "id": "an-impl-method-scopes-to-the-trait-instead-of-the-type",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+     "symbol": "RustCodeStructure._get_symbol_scope",
+     "old": "            if parent.type == \"impl_item\":\n                name = self._impl_type_name(parent)",
+     "new": "            if False:\n                name = self._impl_type_name(parent)",
+     "breaks": "the branch order. In `impl Shape for C` both a trait and an impl are in scope and the method belongs to `C`; walking up finds the `impl_item` first. A walk that stopped at whichever it met without caring which would get every trait implementation backwards",
+     "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
+    }
+   ]
   }
  ]
 }

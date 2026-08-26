@@ -83,7 +83,10 @@ EXPECTED: dict[str, dict[str, str]] = {
     },
     "rust": {
         "Shape": "public",
-        "name": "public",  # trait member; arrives unscoped today, SF-03 FR-18 fixes the NAME
+        # Both trait members, both public: a member carries no modifier of its own and takes
+        # the trait's. `Shape.area` did not exist as a symbol at all until SF-03.
+        "Shape.area": "public",
+        "Shape.name": "public",
         "Circle": "public",
         "Circle.area": "public",
         "Circle.crate_only": "internal",  # pub(crate)

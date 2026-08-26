@@ -211,9 +211,13 @@ _TS_ALL = [
     "free",
     "notExported",
 ]
+#: `Shape.area` JOINED and the bare `name` became `Shape.name` on 2026-08-26
+#: `[agreed 2026-08-26]`. A required trait method is a `function_signature_item`, which was in
+#: no query at all, and the scope walk knew `impl_item` and not `trait_item`.
 _RS_ALL = [
     "Shape",
-    "name",
+    "Shape.area",
+    "Shape.name",
     "Circle",
     "Circle.area",
     "Circle.crate_only",
@@ -273,7 +277,10 @@ PUBLIC_ONLY: dict[str, list[str]] = {
     # `name` — the trait's defaulted method — JOINED `[agreed 2026-08-26]`, same rule as Java's.
     # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a request for `public` excludes it.
     # That one follows from `FR-1`'s vocabulary rather than being a separate decision.
-    "rust": ["Shape", "name", "Circle", "Circle.area", "free"],
+    # The trait's members JOINED `[agreed 2026-08-26]`, same rule as Java's -- and they now
+    # carry the trait's name, where the defaulted one used to arrive as a bare `name`.
+    # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a `public` request excludes it.
+    "rust": ["Shape", "Shape.area", "Shape.name", "Circle", "Circle.area", "free"],
     "go": ["Circle", "Circle.Area", "Free"],
     # WAS EMPTY for every request `[agreed 2026-08-26]`. C reports `unknown`, and `unknown` counts
     # as visible, so a request for the visible set now gets an answer instead of silence.

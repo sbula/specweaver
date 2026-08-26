@@ -37,3 +37,18 @@ captures nothing but `object_reference`, so the guard can never be false. The gu
 the mutant now targets `_named_nodes`' exact text match, which is what actually enforces strictness.
 
 Corpus: 20 judged, 20 protected, 0 stale. Record: `B-SENS-03_sf03_cb1_walkthrough.md`
+
+---
+
+# CB-2 — Rust reports its trait members  (FR-18)
+
+- [x] **T1** — Red: `tests/unit/workspace/ast/parsers/rust/test_rust_trait_members.py`
+- [x] **T2** — `function_signature_item name: (identifier) @name` in the query
+- [x] **T3** — `_get_symbol_scope`: both item types, and walk up for `trait_item` as well as `impl_item`
+- [x] **T4** — Update the three Rust literals in the two nets, reasons inline
+- [x] **T5** — Two mutants, because there are two causes: the query line, and the `trait_item` branch
+
+## CB-2 done — SF-03 COMPLETE
+
+3 mutants, 3 kills. Corpus: 23 judged, 23 protected, 0 stale.
+Record: `B-SENS-03_sf03_cb2_walkthrough.md`

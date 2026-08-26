@@ -115,12 +115,16 @@ class RustCodeStructure(FunctionBasedParser):
         # since Rust has no struct inheritance, EVERY hierarchy edge the language can produce
         # targets a trait. `trait Derived: Base` emitted no edge at all, not even a ghost, because
         # there was no child for the mapper to walk.
+        # `function_signature_item` is a trait's REQUIRED method -- `fn area(&self) -> f64;` with
+        # no body. It is a different node type from `function_item`, and naming only the latter
+        # made the part of a trait that IS the contract invisible: no symbol, no chunk, no node.
         return """
         (struct_item name: (type_identifier) @name)
         (trait_item name: (type_identifier) @name)
         (impl_item type: (type_identifier) @name)
         (impl_item type: (generic_type (type_identifier) @name))
         (function_item name: (identifier) @name)
+        (function_signature_item name: (identifier) @name)
         """
 
     @property
@@ -160,9 +164,20 @@ class RustCodeStructure(FunctionBasedParser):
         names = self._type_names_in(impl_item.child_by_field_name("type"))
         return _bare(names[0]) if names else None
 
+    #: The two shapes a Rust method can take. A trait's required methods are signature items and
+    #: its defaulted ones are function items, so a scope walk that knows only one loses half of
+    #: every trait.
+    _METHOD_ITEMS = ("function_item", "function_signature_item")
+
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
-        """The `impl` type a function lives in — Rust's equivalent of a method's class."""
-        if not name_node.parent or name_node.parent.type != "function_item":
+        """What a method belongs to: the `impl` type, or the trait that declares it.
+
+        **The first of the two wins, and which one that is matters.** In `impl Shape for C` both an
+        `impl_item` and a trait name are in play, and the method belongs to `C` — walking up finds
+        the `impl_item` first, which is why the branches are tested in walk order rather than by
+        preferring one type.
+        """
+        if not name_node.parent or name_node.parent.type not in self._METHOD_ITEMS:
             return None
 
         parent = name_node.parent.parent
@@ -171,6 +186,10 @@ class RustCodeStructure(FunctionBasedParser):
                 name = self._impl_type_name(parent)
                 if name:
                     return name
+            if parent.type == "trait_item":
+                declared = parent.child_by_field_name("name")
+                if declared is not None:
+                    return typing.cast("bytes", declared.text or b"").decode("utf-8")
             parent = parent.parent
         return None
 
@@ -188,7 +207,16 @@ class RustCodeStructure(FunctionBasedParser):
         parent = name_node.parent
         if parent and parent.type == "generic_type":
             parent = parent.parent
-        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
+        # `trait_item` and `function_signature_item` joined this list with `FR-18`. A name that
+        # `list_symbols` reports and `extract_symbol` cannot resolve is a name in a list, not a
+        # symbol -- and a trait's required methods were exactly that.
+        if parent and parent.type in (
+            "function_item",
+            "function_signature_item",
+            "struct_item",
+            "impl_item",
+            "trait_item",
+        ):
             return parent
         return None
 
