@@ -2,7 +2,7 @@
 
 - **Feature ID**: B-SENS-03
 - **Phase**: Topic 02 (Sensors)
-- **Status**: DRAFT — rewritten 2026-08-26 after the approval grilling that was never run
+- **Status**: APPROVED 2026-08-26 — rewritten after the approval grilling that was never run
 - **DAL**: B (Severe failure) `[agreed 2026-08-26]`
 - **Design Doc**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md
 
@@ -94,13 +94,14 @@ for the per-language classification measurements this design does not repeat.
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Visibility is a value | Parser | Reports a symbol's access level as one of `public` · `protected` · `internal` · `private` · `unknown`, via a single value hook. It replaces the visibility role of **both** existing shapes — the boolean `_is_symbol_hidden` (Java, Kotlin, Rust, TypeScript) and the inline `"public" in visibility` test inside the `_is_symbol_valid` overrides (C, C++, Go, Python) | A consumer can ask *what* a symbol's visibility is, not only *is it public* |
+| FR-1 | Visibility is a value | Parser | Reports a symbol's access level as one of `public` · `protected` · `internal` · `private` · `unknown`, via a single value hook. **A member with no modifier takes its container's rule** — inside a class it is the language's default, inside an interface or trait it is implicitly public and inherits the container's own level. It replaces the visibility role of **both** existing shapes — the boolean `_is_symbol_hidden` (Java, Kotlin, Rust, TypeScript) and the inline `"public" in visibility` test inside the `_is_symbol_valid` overrides (C, C++, Go, Python) | A consumer can ask *what* a symbol's visibility is, not only *is it public* |
 | FR-2 | The filter cannot fail open | Parser | `list_symbols(visibility=[...])` returns exactly the symbols whose level is in the request; `unknown` matches a request containing `public` | Asking for `["private"]` returns private symbols — today it returns the entire file |
 | FR-3 | Export is not accessibility | TypeScript parser | Reports a `private` member of an exported class as `private`, and a non-exported top-level declaration as `internal` | The two independent axes stop being collapsed into one |
 | FR-4 | Go has no private | Go parser | Maps a lowercase identifier to `internal`, never to `private` | A package-mate's legitimate use is not hidden from it |
 | FR-5 | A symbol yields its description | Parser | A new accessor returns the doc comment attached to a symbol. **`extract_symbol` is not changed** | Descriptions reach the index in every language, not only Python |
 | FR-6 | A symbol yields its signature | Parser | A new accessor returns signature plus doc comment, body elided — the per-symbol form of `extract_skeleton` | The skeleton layer of `FR-12` has something to be built from |
 | FR-7 | One object, one name | SQL parser | Reports `public.orders` as a single symbol | The index stops containing a chunk named `public` |
+| FR-18 | A parser does not lose names | Rust parser | Reports a trait's **required** and **defaulted** methods, each with its scoped name (`T.x`, `T.y`) | Measured 2026-08-26: `pub trait T { fn x(&self); fn y(&self)->i32 {1} }` reports `['T', 'y', ...]` — `T.x` is absent entirely and `y` carries no scope. `FR-8` cannot split a trait and `FR-13` cannot name its parts until this holds |
 | FR-8 | An oversized symbol splits on structure | Chunker | Splits a symbol over budget into its **nested symbols** | A class becomes its methods, each one whole code — not lines 400–500 of something |
 | FR-9 | Small neighbours merge | Chunker | Greedily combines adjacent small siblings up to the budget, **only where they share one visibility level and one layer** | Twelve three-line getters stop being twelve near-identical chunks that match everything — without a public getter smuggling a private helper into a public-filtered result |
 | FR-10 | Line cutting is the last resort | Chunker | Cuts on line boundaries into numbered `part`/`parts` only when a single symbol is still over budget after `FR-8` | Measured: this path drops from 97 symbols to 15 |
@@ -157,7 +158,7 @@ the removal is a recorded decision rather than a deletion.
 | NFR-2 | Pure | Text in, chunks out. No filesystem, no network, no embedding, no storage. Package and unit arrive as data **[proof: arch — archetype/tach gate]** |
 | NFR-3 | Budget | A parameter, default **4,000 non-whitespace characters**. **This number is a guess and is agreed to stay one** `[agreed 2026-08-26]` — cAST publishes no size ablation, and no scan has ever run on a real target. Recalibrating it is a written precondition on `A-SENS-02` **[proof: unit — the default and its unit]**. Consequence, stated rather than discovered: a non-whitespace budget leaves **raw** chunk length unbounded, so deeply indented source produces physically larger chunks than flat source. cAST accepts the same trade; a model with a hard input cap is `A-SENS-02`'s problem to clamp |
 | NFR-4 | Deterministic | The same input yields the same chunks, in the same order, with the same hashes. Merging makes this load-bearing: it depends on `list_symbols` returning source order, which must be asserted rather than assumed **[proof: unit]** |
-| NFR-5 | Backward compatible | `list_symbols(visibility=["public"])` returns the identical set to today for **all ten** parsers — eight are fixed here, and the two outside the focus (C, C++) must not regress. Two live callers depend on it — `analyzers/factory.py:191` and the agent-facing `sandbox/code_structure/core/atom.py:139` **[proof: unit]** |
+| NFR-5 | Backward compatible | `list_symbols(visibility=["public"])` returns the identical set to today for **all ten** parsers, **except four deltas agreed on 2026-08-26 and enumerated in SF-01's plan**: Python's `__secret` leaves the public set, C stops returning empty, and Java interface members and Rust trait members join it. Two live callers depend on this surface — `analyzers/factory.py:191`, which feeds the generated `context.yaml` `exposes:` list, and the agent-facing `sandbox/code_structure/core/atom.py:139` **[proof: integration — the claim crosses into `workspace/context`, so a unit test of the parser cannot make it]** |
 | NFR-6 | Separable layers | Skeleton and body chunks are independently selectable, so `A-SENS-02` can decide what leaves the machine. **That decision is not taken here** `[agreed 2026-08-26]` **[proof: unit — layer field is set and filterable]** |
 | NFR-7 | Never a gate | No output of this feature may reach a correctness decision (`ADR-006` decision 3) **[proof: none — scope statement, no threshold to assert]** |
 
@@ -247,11 +248,11 @@ the removal is a recorded decision rather than a deletion.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf02_implementation_plan.md
 
-### SF-03: SQL reports one name per object
-- **Scope**: one tree-sitter query, one file
-- **FRs**: [FR-7]
-- **Inputs**: `sql/codestructure.py` `SCM_SYMBOL_QUERY`
-- **Outputs**: `public.orders` as a single symbol
+### SF-03: A parser does not lose names
+- **Scope**: the two places a symbol query drops or mangles a name. Two tree-sitter queries in two files — no shared code is touched, so the Q9 rule holds `[agreed 2026-08-26]`
+- **FRs**: [FR-7, FR-18]
+- **Inputs**: `sql/codestructure.py` and `rust/codestructure.py` `SCM_SYMBOL_QUERY`
+- **Outputs**: `public.orders` as one symbol; `T.x` and `T.y` reported and scoped
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf03_implementation_plan.md
 
@@ -262,8 +263,8 @@ the removal is a recorded decision rather than a deletion.
 - **FRs**: [FR-8, FR-9, FR-10, FR-11]
 - **Inputs**: source text; scoped symbol names from `list_symbols`
 - **Outputs**: chunks that are whole units or whole runs of units
-- **Depends on**: none — but its **SQL** output stays wrong until SF-03 lands, because `FR-8`
-  splits on names SQL reports incorrectly. Not a cycle: SF-04 is fully testable on the other seven
+- **Depends on**: none — but its **SQL and Rust-trait** output stays wrong until SF-03 lands,
+  because `FR-8` splits on names those two parsers report incorrectly. Not a cycle: SF-04 is fully testable on the other seven
   languages, and SF-06 already depends on SF-03
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf04_implementation_plan.md
 
@@ -278,7 +279,7 @@ the removal is a recorded decision rather than a deletion.
 ### SF-06: Every chunk is labelled
 - **Scope**: the two layers, and everything a consumer needs to place and filter a hit
 - **FRs**: [FR-12, FR-13, FR-14]
-- **Inputs**: SF-01's visibility values, SF-02's signatures, SF-03's SQL names, SF-04's chunks, and a marker set from the caller
+- **Inputs**: SF-01's visibility values, SF-02's signatures, SF-03's recovered names, SF-04's chunks, and a marker set from the caller
 - **Outputs**: skeleton and body chunks carrying scoped name, contained names, content hash, visibility, package, unit, layer
 - **Depends on**: SF-01, SF-02, SF-03, SF-04
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf06_implementation_plan.md
@@ -296,12 +297,12 @@ which is the boundary that was agreed.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Visibility is a value | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-02 | Signature and description | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-03 | SQL reports one name | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | Code is cut into whole units | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-05 | Nothing is lost | SF-04 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-06 | Every chunk is labelled | SF-01..04 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Visibility is a value | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Signature and description | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | A parser does not lose names | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Code is cut into whole units | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Nothing is lost | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Every chunk is labelled | SF-01..04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Non-Goals
 
@@ -321,8 +322,8 @@ which is the boundary that was agreed.
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval (Phase 6).
-**Next step**: After approval, trigger the implementation-plan skill for SF-01.
+**Current status**: Design **APPROVED** 2026-08-26. SF-01 is in planning.
+**Next step**: `specweaver-implementation-plan` for SF-01, then dev. SF-02, SF-03 and SF-04 may run in parallel sessions — the Progress Tracker prevents double work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there. The 32 grilling decisions are recorded inline, each marked `[agreed 2026-08-26]`
 beside the fact it governs — do not re-ask them.
