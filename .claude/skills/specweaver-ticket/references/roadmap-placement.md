@@ -66,17 +66,36 @@ without opening anything else. Fixed keys, fixed order, every key present:
 * **`<ID>` <status>: <Short name>**
   > - **Purpose:** <what becomes possible that is not possible now>
   > - **Trigger:** When|While|If|Where <condition> — or Always
-  > - **Needs:** <ID> → <what data from it>
+  > - **Precondition:** <ID> → <what must already be true or delivered>
   > - **Reads:** <kinds of input, never file names>
   > - **Produces:** <file|db|memory|prompt> → <what content>
   > - **Enables:** <ID or user path> → <for what>
   > - **Done when:** <one falsifiable statement>
+  > - **Limits:** <what this does not do, and what is known wrong>   (optional)
+  > - **Note:** <anything the seven cannot carry>                     (optional)
 ```
 
 **Each field is a list item, and that is not cosmetic.** Consecutive `>` lines without list markers
 collapse into a single rendered paragraph, so the seven fields become a wall of text and `Enables:`
 has to be hunted for. As list items each field renders on its own line. A value that wraps continues
 with `>` + three spaces so it stays inside its own bullet.
+
+**`Precondition` and `Enables` are the same axis, opposite directions.** What must hold before this
+capability can exist, and what becomes possible once it does. `Precondition` is not "what data this
+consumes" — that is `Reads`. A gate, a blocker and a hard requirement are all preconditions and all
+belong here; none of them gets its own key.
+
+**`Limits` is the only place a caveat may live.** *"Cannot do X"*, *"known wrong"*, *"not wired
+yet"*, *"out of scope"* — one field, one name. A limit is frequently the most useful line on an
+entry, because it stops a reader trusting the capability for something it never claimed. It is not
+a precondition: `C-VAL-04` works completely today and still cannot tell a *wrong* test from a
+missing one.
+
+**Nine names, two keys.** The first sweep of topics 01–06 invented 24 field names for what turned
+out to be three ideas: preconditions, limits, and provenance. Preconditions folded into
+`Precondition`, limits into `Limits`, and provenance was deleted — *"re-scoped on <date>"*,
+*"supersedes X"* is pedigree, and a registry entry carries the answer, not its history.
+**Do not invent a key.** If a value has no home in the nine, it is a `Note` or it does not belong.
 
 **Length: as short as possible, as long as needed.** Two words is a valid value; so is five lines.
 What is forbidden is prose, a missing key, and a key filled with hedging.
