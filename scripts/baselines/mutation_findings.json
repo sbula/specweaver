@@ -255,6 +255,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "scope-already-red"
+        },
+        {
+          "at": 1787749000.8931146,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,
@@ -307,6 +312,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "scope-already-red"
+        },
+        {
+          "at": 1787749000.8931146,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,
@@ -359,6 +369,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "scope-already-red"
+        },
+        {
+          "at": 1787749000.8931146,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,
@@ -411,6 +426,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "scope-already-red"
+        },
+        {
+          "at": 1787749000.8931146,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,
@@ -457,6 +477,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "scope-already-red"
+        },
+        {
+          "at": 1787749000.8931146,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,

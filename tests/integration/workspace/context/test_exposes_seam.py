@@ -86,25 +86,29 @@ class TestTheExposesListIsExactlyThis:
     def test_the_generated_exposes_list(self, tmp_path: Path) -> None:
         """[Happy path] Measured 2026-08-26. Two entries here are the reason SF-01 exists.
 
-        `Order.__checksum` is **name-mangled** — Python mangles it specifically so nothing outside
-        the class can reach it — and it is in the list that says what this module exposes.
-
-        `Order._validate` and `_round` are correctly absent, so the filter is doing *something*;
-        it simply stops looking after one underscore.
+        `Order.__checksum` is **gone** as of 2026-08-26. It used to be here: name-mangled, and in
+        the list that says what this module exposes. `Order._validate` and `_round` were always
+        correctly absent — the old filter simply stopped looking after one underscore.
         """
         assert _infer(tmp_path) == [
             "Order",
-            "Order.__checksum",
             "Order.__init__",
             "Order.__repr__",
             "Order.submit",
             "place",
         ]
 
-    def test_the_name_mangled_member_is_currently_exposed(self, tmp_path: Path) -> None:
-        """[Hostile] Stated on its own so the diff in CB-3 is unmissable rather than one line in
-        a list. When SF-01 lands, this assertion inverts and that is the whole point of it."""
-        assert "Order.__checksum" in _infer(tmp_path)
+    def test_the_name_mangled_member_is_no_longer_exposed(self, tmp_path: Path) -> None:
+        """[Hostile] This read `in` until 2026-08-26 `[agreed 2026-08-26]`, and it was true.
+
+        `__checksum` is name-mangled precisely so nothing outside the class can reach it, and it
+        was in the list that tells the rest of the system what this module exposes. `__init__` and
+        `__repr__` stay, because a dunder is interface rather than accident — one column apart in
+        the source, and opposite answers.
+        """
+        exposed = _infer(tmp_path)
+        assert "Order.__checksum" not in exposed
+        assert "Order.__init__" in exposed
 
     def test_a_single_underscore_member_is_not_exposed(self, tmp_path: Path) -> None:
         """[Happy path] The control. Without it, a filter that dropped *everything* would satisfy

@@ -88,19 +88,6 @@ class JavaCodeStructure(ClassBasedParser):
         (block_comment) @comment
         """
 
-    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
-        """Java is package-private by default, so anything without `public` is hidden."""
-        if parent and parent.type in (
-            "class_declaration",
-            "method_declaration",
-            "interface_declaration",
-            "enum_declaration",
-        ):
-            for child in parent.children:
-                if child.type == "modifiers" and child.text and b"public" in child.text:
-                    return False
-        return True
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:
             return None

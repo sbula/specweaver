@@ -147,14 +147,6 @@ class RustCodeStructure(FunctionBasedParser):
     def supported_parameters(self) -> list[str]:
         return ["visibility"]
 
-    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
-        """Rust is private by default, so anything without a `pub` modifier is hidden."""
-        if parent:
-            for child in parent.children:
-                if child.type == "visibility_modifier":
-                    return False
-        return True
-
     def _impl_type_name(self, impl_item: typing.Any) -> str | None:
         """The type an `impl` block is for, unwrapped to its base identifier.
 

@@ -257,160 +257,38 @@ UNFILTERED: dict[str, list[str]] = {
 #: `visibility=["public"]`. This is the set `extract_public_symbols` feeds into the generated
 #: `context.yaml` `exposes:` list, which is why four of its entries went to the user as decisions.
 PUBLIC_ONLY: dict[str, list[str]] = {
-    # `Store.__mangled` IS HERE. Name-mangled and in the public set — the leak SF-01 CB-3 closes.
-    # `__init__` and `__repr__` are here too and stay: they are interface, not accident.
-    "python": ["Store", "Store.__init__", "Store.__repr__", "Store.get", "Store.__mangled", "free"],
-    # `Shape.area` and `Shape.name` are ABSENT. Both are implicitly public by JLS; Java's filter
-    # reads "no modifier" as hidden, which is right for a class and wrong for an interface.
-    "java": ["Shape", "Circle", "Circle.area", "Circle.name"],
+    # `Store.__mangled` LEFT on 2026-08-26 `[agreed 2026-08-26]`. It was here — name-mangled, and
+    # in the list that writes `exposes:`. `__init__` and `__repr__` stay: dunders are interface.
+    "python": ["Store", "Store.__init__", "Store.__repr__", "Store.get", "free"],
+    # `Shape.area` and `Shape.name` JOINED `[agreed 2026-08-26]`. Both are implicitly public by
+    # JLS; the old filter read "no modifier" as hidden, which is right for a class only.
+    "java": ["Shape", "Shape.area", "Shape.name", "Circle", "Circle.area", "Circle.name"],
     "kotlin": ["Shape", "Shape.area", "Circle", "Circle.area", "free"],
-    # `Circle.log` (protected) and `Circle.helper` (private) ARE HERE: TypeScript checks only
-    # whether an ancestor is exported and never reads a member's accessibility modifier.
-    "typescript": ["Circle", "Circle.area", "Circle.log", "Circle.helper", "free"],
-    # Trait members absent, same cause as Java. `Circle.crate_only` is `pub(crate)` and is here.
-    "rust": ["Shape", "Circle", "Circle.area", "Circle.crate_only", "free"],
+    # `Circle.log` (protected) and `Circle.helper` (private) LEFT. TypeScript now reads a member's
+    # accessibility instead of only asking whether an ancestor is exported (`FR-3`).
+    "typescript": ["Circle", "Circle.area", "free"],
+    # `name` — the trait's defaulted method — JOINED `[agreed 2026-08-26]`, same rule as Java's.
+    # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a request for `public` excludes it.
+    # That one follows from `FR-1`'s vocabulary rather than being a separate decision.
+    "rust": ["Shape", "name", "Circle", "Circle.area", "free"],
     "go": ["Circle", "Circle.Area", "Free"],
-    # EMPTY. C's filter is `return visibility is None`, so any request answers with silence.
-    "c": [],
+    # WAS EMPTY for every request `[agreed 2026-08-26]`. C reports `unknown`, and `unknown` counts
+    # as visible, so a request for the visible set now gets an answer instead of silence.
+    "c": _C_ALL,
     "cpp": ["Widget", "Widget.visible", "Plain", "Plain.open", "free_fn"],
     "sql": _SQL_ALL,
     "markdown": _MD_ALL,
 }
 
-#: What a request for a level OTHER than `public` returns today. Nine of the ten ignore it entirely
-#: and hand back the whole file — the fail-open `FR-2` exists to close. C++ is the one that filters.
-FAILS_OPEN_TO: dict[str, list[str]] = {
-    "python": _PY_ALL,
-    "java": _JAVA_ALL,
-    "kotlin": _KT_ALL,
-    "typescript": _TS_ALL,
-    "rust": _RS_ALL,
-    "go": _GO_ALL,
-    "sql": _SQL_ALL,
-    "markdown": _MD_ALL,
-    "c": [],
-}
-
-
-#: A decorated symbol beside an undecorated one, for the five languages that have the concept.
-#: Without this, every `decorator_filter` assertion would be "returns nothing" against a fixture
-#: containing no decorators — true for free, and blind to a filter that rejects everything.
-DECORATED: dict[str, str] = {
-    "python": "import x\n\n@x.Inject\ndef wired(): return 1\n\ndef plain(): return 2\n",
-    "java": "public class W {\n  @Inject public void wired() {}\n  public void plain() {}\n}\n",
-    "kotlin": "class W {\n  @Inject fun wired() {}\n  fun plain() {}\n}\n",
-    "typescript": "export class W {\n  @Inject wired(): void {}\n  plain(): void {}\n}\n",
-    "rust": "#[Inject]\npub fn wired() -> i32 { 1 }\npub fn plain() -> i32 { 2 }\n",
-}
-
-#: What `decorator_filter` does to the main fixtures, which carry no decorators at all. Three
-#: parsers do something other than "return the matching ones", and all three are deliberate.
-UNDECORATED_UNDER_FILTER: dict[str, list[str]] = {
-    "cpp": [],
-    "go": [],  # a hard `return False` — "Go does not have decorators"
-    "java": [],
-    "kotlin": [],
-    "python": [],
-    "rust": [],
-    "typescript": [],
-    "markdown": _MD_ALL,  # ignores the filter entirely
-    "sql": _SQL_ALL,  # ignores it too
-}
-
-
-#: Both filters at once, measured 2026-08-26. Literals, so the assertion cannot be satisfied by
-#: two broken calls agreeing with each other.
-BOTH_FILTERS: dict[str, list[str]] = {
-    "python": ["wired"],
-    "java": ["W.wired"],
-    "kotlin": ["W.wired"],
-    "typescript": ["W.wired"],
-    "rust": ["wired"],
-}
-
-
-class TestListSymbolsDecoratorFilter:
-    """`decorator_filter` shares `_is_symbol_valid` with visibility, and SF-01 CB-3 DELETES four
-    copies of that function.
-
-    Nothing pinned this before. C raises on purpose and Go returns nothing on purpose; both
-    behaviours live inside functions the next boundary removes, and both would have gone silently.
-    Found by the pre-commit Phase 2 test-gap analysis, not by the plan.
-    """
-
-    @pytest.mark.parametrize("lang", sorted(DECORATED), ids=str)
-    def test_the_filter_keeps_the_decorated_symbol(
-        self, parsers: dict[str, typing.Any], lang: str
-    ) -> None:
-        """[Happy path] The half that cannot pass for free: a matching symbol survives."""
-        kept = parsers[lang].list_symbols(DECORATED[lang], decorator_filter="Inject")
-        assert [s for s in kept if s.endswith("wired")] == kept
-        assert kept != []
-
-    @pytest.mark.parametrize("lang", sorted(DECORATED), ids=str)
-    def test_the_filter_drops_the_undecorated_neighbour(
-        self, parsers: dict[str, typing.Any], lang: str
-    ) -> None:
-        """[Happy path] The control. Its neighbour is in the unfiltered listing and not here."""
-        code = DECORATED[lang]
-        assert any(s.endswith("plain") for s in parsers[lang].list_symbols(code))
-        assert not any(
-            s.endswith("plain") for s in parsers[lang].list_symbols(code, decorator_filter="Inject")
-        )
-
-    @pytest.mark.parametrize("lang", sorted(BOTH_FILTERS), ids=str)
-    def test_both_filters_together_still_keep_the_decorated_symbol(
-        self, parsers: dict[str, typing.Any], lang: str
-    ) -> None:
-        """[Boundary] The combination CB-3's rewrite must preserve. One function answers both
-        questions, so a rewrite that gets either wrong shows up here.
-
-        Asserted against a **literal**, not against the same call with one argument removed. The
-        first draft compared the unit with itself, which passes whenever both halves break the
-        same way — the vacuous shape `test-quality.md` calls pattern 7, found by the Phase 7.5
-        review of this very file.
-        """
-        assert (
-            parsers[lang].list_symbols(
-                DECORATED[lang], visibility=["public"], decorator_filter="Inject"
-            )
-            == BOTH_FILTERS[lang]
-        )
-
-    @pytest.mark.parametrize("lang", sorted(UNDECORATED_UNDER_FILTER), ids=str)
-    def test_a_fixture_with_no_decorators_under_the_filter(
-        self, parsers: dict[str, typing.Any], lang: str
-    ) -> None:
-        """[Boundary] markdown and SQL ignore `decorator_filter` outright and return everything.
-        Pinned so removing their inherited filter is a visible change rather than a quiet one."""
-        assert (
-            parsers[lang].list_symbols(FIXTURES[lang], decorator_filter="Inject")
-            == UNDECORATED_UNDER_FILTER[lang]
-        )
-
-    def test_c_refuses_the_filter_rather_than_answering_it(
-        self, parsers: dict[str, typing.Any]
-    ) -> None:
-        """[Hostile] C raises instead of returning a wrong answer — `c/codestructure.py:84`.
-
-        The one parser that treats an unsupported filter as an error. It is the right call and it
-        is undocumented anywhere else, so CB-3 must not delete it by accident.
-        """
-        from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
-
-        with pytest.raises(CodeStructureError):
-            parsers["c"].list_symbols(FIXTURES["c"], decorator_filter="Inject")
-
-    def test_go_rejects_every_symbol_because_go_has_no_decorators(
-        self, parsers: dict[str, typing.Any]
-    ) -> None:
-        """[Hostile] Go answers with nothing rather than raising — `go/codestructure.py:129`.
-
-        Stated separately from the table above because it is a deliberate `return False`, not an
-        absence of decorated symbols, and the two are indistinguishable in a count.
-        """
-        assert parsers["go"].list_symbols(FIXTURES["go"], decorator_filter="Inject") == []
-        assert parsers["go"].list_symbols(FIXTURES["go"]) != []
+#: Where the fail-open used to be recorded.
+#:
+#: This file once carried `FAILS_OPEN_TO` and a class asserting that a request for `protected`,
+#: `private` or a nonsense word returned the WHOLE FILE on nine of ten parsers. That was the defect
+#: `FR-2` closed on 2026-08-26. It is deleted rather than inverted here: a net exists to make one
+#: change readable, and keeping a defect pinned after it is fixed turns the record into a claim.
+#:
+#: The positive form — a request returns exactly the level asked for — lives in
+#: `test_visibility_filter.py`, where it is the requirement rather than the archaeology.
 
 
 class TestListSymbolsCoversEveryParser:
@@ -429,23 +307,6 @@ class TestListSymbolsTodaysAnswers:
     def test_public_only_listing(self, parsers: dict[str, typing.Any], lang: str) -> None:
         assert (
             parsers[lang].list_symbols(FIXTURES[lang], visibility=["public"]) == PUBLIC_ONLY[lang]
-        )
-
-
-@pytest.mark.parametrize("lang", sorted(FAILS_OPEN_TO), ids=str)
-@pytest.mark.parametrize("request_", [["protected"], ["private"], ["nonsense"]], ids=lambda r: r[0])
-class TestListSymbolsFailsOpen:
-    """[Hostile] Asking for anything but `public` returns the WHOLE FILE on nine of ten parsers.
-
-    Pinned because it is the defect, not despite it. `FR-2` inverts this and the diff to these
-    literals is how that change is read in review.
-    """
-
-    def test_a_non_public_request_is_ignored(
-        self, parsers: dict[str, typing.Any], lang: str, request_: list[str]
-    ) -> None:
-        assert (
-            parsers[lang].list_symbols(FIXTURES[lang], visibility=request_) == FAILS_OPEN_TO[lang]
         )
 
 
@@ -494,21 +355,16 @@ class TestListSymbolsEdgesAndHostileInput:
         """[Boundary] The early return is on `code.strip()`, not on `code`."""
         assert parsers[lang].list_symbols("   \n\t\n  ") == []
 
-    def test_an_empty_visibility_list_is_falsy_and_filters_nothing(
+    def test_an_empty_visibility_list_filters_nothing(
         self, parsers: dict[str, typing.Any], lang: str
     ) -> None:
-        """[Hostile] `[]` is falsy, so today it means *no filter* rather than *nothing matches*.
+        """[Hostile] `[]` means *no filter*, and now means it everywhere.
 
-        C and C++ are the exceptions and return nothing. Neither tests truthiness: C++ tests
-        membership, and C asks `visibility is None`, so an empty list reads as *a filter was
-        requested* and drops everything. Three behaviours from one input is exactly what one
-        shared filter removes.
-
-        Measured, not reasoned: the first draft of this test predicted C would behave like the
-        other eight and it does not.
+        Three answers came from this one input before 2026-08-26: eight parsers read it as falsy
+        and returned everything, while C asked `visibility is None` and C++ tested membership, so
+        both returned nothing. One shared filter is what removed the disagreement.
         """
-        expected: list[str] = [] if lang in {"cpp", "c"} else UNFILTERED[lang]
-        assert parsers[lang].list_symbols(FIXTURES[lang], visibility=[]) == expected
+        assert parsers[lang].list_symbols(FIXTURES[lang], visibility=[]) == UNFILTERED[lang]
 
     def test_unparseable_source_degrades_without_raising(
         self, parsers: dict[str, typing.Any], lang: str

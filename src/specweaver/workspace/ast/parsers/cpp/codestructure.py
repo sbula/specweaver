@@ -166,6 +166,16 @@ class CppCodeStructure(ClassBasedParser):
     def supported_parameters(self) -> list[str]:
         return ["visibility"]
 
+    def _matches_decorator(
+        self,
+        sym_name: str,
+        name_node: typing.Any,
+        decorator_filter: str,
+        framework_markers: dict[str, typing.Any],
+    ) -> bool:
+        """C++ attributes are read off the node, not from the framework-marker table."""
+        return self._has_decorator(name_node, decorator_filter)
+
     def _check_attributes_in_node(
         self, child: typing.Any, query_str: str, decorator_filter: str
     ) -> bool:
@@ -195,27 +205,6 @@ class CppCodeStructure(ClassBasedParser):
             ):
                 return True
         return False
-
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        if name_node is None:
-            return True
-
-        if visibility is not None:
-            actual_vis = self._get_symbol_visibility(name_node)
-            if actual_vis not in visibility:
-                return False
-
-        if decorator_filter is not None:
-            return self._has_decorator(name_node, decorator_filter)
-
-        return True
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:

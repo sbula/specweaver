@@ -95,16 +95,25 @@ class SymbolReadingMixin:
         """
         return "unknown"
 
-    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
-        """Whether this declaration is hidden from outside its module.
+    #: The tree-sitter query naming this language's decorators and bases, if it has any.
+    SCM_FRAMEWORK_QUERY: str = ""
 
-        The **only** thing the shared filter varied by across four languages, so it is the hook.
-        Default is "nothing is hidden": a language that has not opted in must not silently start
-        dropping symbols. Java, Rust and TypeScript answer *"has no `public` modifier"*; Kotlin
-        answers *"has `private`, `protected` or `internal`"* — the same question with the polarity
-        its grammar happens to use.
+    def _matches_decorator(
+        self,
+        sym_name: str,
+        name_node: typing.Any,
+        decorator_filter: str,
+        framework_markers: dict[str, typing.Any],
+    ) -> bool:
+        """Whether this symbol carries the requested annotation.
+
+        A hook, because the honest answer differs by language rather than by grammar: C has no
+        decorators and raises rather than answer one, Go has none and answers nothing, C++ reads
+        attributes off the node instead of the marker table. Three different claims, and
+        collapsing them would lose two.
         """
-        return False
+        decorators = framework_markers.get(sym_name, {}).get("decorators", [])
+        return any(decorator_filter in d for d in decorators)
 
     def _is_symbol_valid(
         self,
@@ -114,35 +123,28 @@ class SymbolReadingMixin:
         decorator_filter: str | None,
         framework_markers: dict[str, typing.Any],
     ) -> bool:
-        """Filter a symbol by the requested visibility and decorator.
+        """The one filter, for all ten parsers.
 
-        Shared by Java, Kotlin, Rust and TypeScript, which differ by at most one token; the pair
-        `{_is_symbol_valid, _is_symbol_public|_is_symbol_private}` is its own cohesive component.
+        It reads the symbol's actual level and asks whether that level was requested. The version
+        this replaces tested `"public" in visibility` and let every other value fall through to
+        True, so a request for `["private"]` returned the whole file -- and one of the two live
+        callers passes whatever an agent typed.
 
-        A **default, not a prohibition**: a language whose filtering is
-        genuinely different still overrides this outright, as C, C++, Go, Python and the
-        declarative tier all do.
+        `unknown` counts as visible: SQL and markdown have no access concept, and hiding them would
+        empty the index for two of the eight target languages. It is not a wildcard, though, so a
+        request for `["private"]` does not match it.
         """
-        if (
-            visibility
-            and "public" in visibility
-            and name_node
-            and self._is_symbol_hidden(name_node.parent)
-        ):
-            return False
-
-        if decorator_filter:
-            decorators = framework_markers.get(sym_name, {}).get("decorators", [])
-            if not any(decorator_filter in d for d in decorators):
+        if visibility:
+            level = self._get_symbol_visibility(name_node) if name_node is not None else "unknown"
+            requested = set(visibility)
+            matched = "public" in requested if level == "unknown" else level in requested
+            if not matched:
                 return False
 
-        return True
+        if decorator_filter:
+            return self._matches_decorator(sym_name, name_node, decorator_filter, framework_markers)
 
-    #: The tree-sitter query naming this language's class and function declarations, captured as
-    #: `@name` plus `@cls`/`@fn`. Data, because it is the ONLY thing the four framework-aware
-    #: parsers vary by; the walk below is shared. Empty means "report nothing",
-    #: so a language that never sets it is not obliged to.
-    SCM_FRAMEWORK_QUERY: str = ""
+        return True
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
         """Decorators, and bases for a class, per declared symbol.
@@ -240,11 +242,17 @@ class SymbolReadingMixin:
             return []
         tree = self.parser.parse(code.encode("utf-8"))
         cursor = QueryCursor(Query(self.language, self.SCM_SYMBOL_QUERY))
-        return [
-            (self._scoped_name(name_node), name_node)
-            for _match_id, match_dict in cursor.matches(tree.root_node)
-            for name_node in match_dict.get("name", [])
-        ]
+        seen: dict[str, typing.Any] = {}
+        for _match_id, match_dict in cursor.matches(tree.root_node):
+            for name_node in match_dict.get("name", []):
+                # First occurrence wins. A name can be declared twice -- Rust reports `Circle` for
+                # both `pub struct Circle` and `impl Circle`, and only the first carries the
+                # visibility. Deduplicating HERE rather than after filtering is what stops
+                # `list_symbols(visibility=...)` and `extract_symbol_visibility` disagreeing about
+                # the same symbol: measured, `Circle` came back under BOTH `["public"]` and
+                # `["private"]`.
+                seen.setdefault(self._scoped_name(name_node), name_node)
+        return list(seen.items())
 
     def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
         """The access level of one symbol, as a word from `VISIBILITY`. Never raises.
@@ -278,7 +286,7 @@ class SymbolReadingMixin:
                 framework_markers,
             )
         ]
-        return list(dict.fromkeys(symbols))  # de-duplicated, first-seen order preserved
+        return symbols  # `_declared_names` already de-duplicated, in source order
 
     def extract_traceability_tags(self, code: str) -> set[str]:
         if not code.strip():

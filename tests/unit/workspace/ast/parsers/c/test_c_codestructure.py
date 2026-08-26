@@ -101,10 +101,16 @@ def test_c_parser_raises_on_decorator_filter(parser: CCodeStructure) -> None:
         parser.list_symbols(code, decorator_filter="inline")
 
 
-def test_c_parser_visibility_returns_empty(parser: CCodeStructure) -> None:
+def test_c_parser_visibility_returns_its_symbols(parser: CCodeStructure) -> None:
+    """C has no access concept, so it reports `unknown` — and `unknown` counts as visible.
+
+    This asserted `len(symbols) == 0` until 2026-08-26 `[agreed 2026-08-26]`. The old filter read
+    `visibility is None`, so ANY request answered with silence. Nothing is not a truthful answer to
+    *"which symbols are visible"* in a language where they all are.
+    """
     code = "int compute() { return 0; }"
-    symbols = parser.list_symbols(code, visibility=["public"])
-    assert len(symbols) == 0
+    assert parser.list_symbols(code, visibility=["public"]) == ["compute"]
+    assert parser.list_symbols(code, visibility=["private"]) == []
 
 
 def test_c_parser_default_directory_ignores(parser: CCodeStructure) -> None:

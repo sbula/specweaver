@@ -9,15 +9,33 @@ import typing
 import tree_sitter_c
 from tree_sitter import Query
 
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
+
+
+def _refuse_decorator_filter(
+    sym_name: str,
+    name_node: typing.Any,
+    decorator_filter: str,
+    framework_markers: dict[str, typing.Any],
+) -> bool:
+    """C has no decorators, so a request to filter by one has no truthful answer.
+
+    Refusing is the right call and it is the only parser that makes it: returning nothing would
+    read as *no symbol carries that annotation*, which is a claim about the code rather than about
+    the question.
+    """
+    logger.error("Decorator filtering requested but not supported in C parsers")
+    raise CodeStructureError("Decorator filtering is not supported in C parsers")
 
 
 class CCodeStructure(FunctionBasedParser):
     """AST parser for C source files."""
 
     grammar = staticmethod(tree_sitter_c.language)
+    _matches_decorator = staticmethod(_refuse_decorator_filter)
 
     # Held here because this grammar ships no tags query. Original work, written from
     # the grammar by inspection rather than adapted from upstream.
@@ -71,23 +89,6 @@ class CCodeStructure(FunctionBasedParser):
 
     def supported_parameters(self) -> list[str]:
         return []
-
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        # C does not support decorator filters in this MVP.
-        if decorator_filter is not None:
-            from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
-
-            logger.error("Decorator filtering requested but not supported in C parsers")
-            raise CodeStructureError("Decorator filtering is not supported in C parsers")
-        # C does not have class visibility (public/private).
-        return visibility is None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         target_scope, target_name = self._split_scope(symbol_name)

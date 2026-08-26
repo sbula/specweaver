@@ -34,9 +34,12 @@ SpecWeaver formally injects nine `ToolDefinitions` into the Agent's runtime prom
     
 *   **`list_symbols`**
     *   **Goal**: Return a flattened array of all targetable symbols.
-    *   **Behavior**: Optionally uses `visibility` or `decorator_filter` parameters (such as
-        `'public'` or `'RestController'`) to return exact topological matches without dumping their
-        bodies. **Note:** Returns symbols strictly in Dot-Notation (e.g.,
+    *   **Behavior**: Optionally uses `visibility` or `decorator_filter` parameters to return
+        exact topological matches without dumping their bodies. `visibility` takes any of
+        `public` · `protected` · `internal` · `private` · `unknown`, and returns **only** those
+        levels — it understood the single word `'public'` and silently returned everything for any
+        other value until 2026-08-26. Its purpose is **information hiding**: build against a
+        module's interface so its internals stay free to change. It is not a security boundary. **Note:** Returns symbols strictly in Dot-Notation (e.g.,
         `['Database', 'Database.connect']`) to prevent scope ambiguity.
     
 *   **`read_symbol`**
@@ -117,7 +120,12 @@ calls and improves pipeline stability.
 If you are expanding the engine's functionality, here is the operational flow logic of the AST tool layer:
 
 1. **Untrusted LLM Output**: The Agent emits a JSON intent (e.g., `replace_symbol_body("src/Backend.ts", "calculateHash", "...")`).
-2. **`CodeStructureTool` Validation**: The Tool bounds-checks the request against the Role `FolderGrant` and target `visibility`.
+2. **`CodeStructureTool` Validation**: The Tool bounds-checks the request against the Role
+   `FolderGrant` — the **path**, and only the path (`interfaces/tool.py`, `_check_grant`).
+   `visibility` is a *relevance* filter the caller chooses, not an access control: it is
+   passed straight through to the parser. Anyone who can read the file can read its private
+   symbols, and the index is not a permission system. This line claimed otherwise until
+   2026-08-26.
 3. **Tree-Sitter Orchestration (Dependency Injection)**: To maintain architectural purity,
    `CodeStructureAtom` does *not* directly instantiate polyglot C-binaries. Instead, standard
    `specweaver.workspace.ast.parsers` interfaces are retrieved from `RunContext` (in tools like the

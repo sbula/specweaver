@@ -73,10 +73,6 @@ class DeclarativeParser(BaseTreeSitterParser):
     one value is a normal thing for a subclass to do.
     """
 
-    def _is_symbol_valid(self, *args: typing.Any, **kwargs: typing.Any) -> bool:
-        """Every declaration is valid: there is no body whose shape could be wrong."""
-        return True
-
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
         """No executable body to edit. Markdown overrides — a section IS its block."""
         return None

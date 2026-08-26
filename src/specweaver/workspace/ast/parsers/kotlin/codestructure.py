@@ -88,20 +88,6 @@ class KotlinCodeStructure(ClassBasedParser):
         (block_comment) @comment
         """
 
-    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
-        """Kotlin is public by default, so only an explicit modifier hides a declaration."""
-        if parent:
-            for child in parent.children:
-                if child.type == "modifiers":
-                    mod_text = child.text
-                    if mod_text and (
-                        b"private" in mod_text
-                        or b"protected" in mod_text
-                        or b"internal" in mod_text
-                    ):
-                        return True
-        return False
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:
             return None

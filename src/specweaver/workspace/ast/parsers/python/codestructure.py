@@ -83,29 +83,6 @@ class PythonCodeStructure(ClassBasedParser):
         (comment) @comment
         """
 
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        if (
-            visibility
-            and "public" in visibility
-            and sym_name.split(".")[-1].startswith("_")
-            and not sym_name.split(".")[-1].startswith("__")
-        ):
-            return False
-
-        if decorator_filter:
-            decs = framework_markers.get(sym_name, {}).get("decorators", [])
-            if not any(decorator_filter in d for d in decs):
-                return False
-
-        return True
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:
             return None

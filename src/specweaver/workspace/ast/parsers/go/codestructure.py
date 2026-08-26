@@ -21,6 +21,20 @@ from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 logger = logging.getLogger(__name__)
 
 
+def _no_decorators(
+    sym_name: str,
+    name_node: typing.Any,
+    decorator_filter: str,
+    framework_markers: dict[str, typing.Any],
+) -> bool:
+    """Go has no decorators, so nothing can carry one.
+
+    Stated rather than left to fall out of an empty marker table: the two are indistinguishable in
+    the result and only one of them is a claim about the language.
+    """
+    return False
+
+
 def _visibility_of(name_node: typing.Any) -> Visibility:
     """Go encodes visibility in capitalisation, and has exactly two levels.
 
@@ -59,6 +73,7 @@ class GoCodeStructure(FunctionBasedParser):
     """Go tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_go.language)
+    _matches_decorator = staticmethod(_no_decorators)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
     # `type_spec` is the shared shape: `type Impl struct {...}` and `type R interface {...}` are
@@ -133,25 +148,6 @@ class GoCodeStructure(FunctionBasedParser):
                 for type_node in self._children_of_type(param, "type_identifier", "pointer_type"):
                     return self._text_of(type_node).replace("*", "")
         return None
-
-    def _is_symbol_valid(
-        self,
-        sym_name: str,
-        name_node: typing.Any | None,
-        visibility: list[str] | None,
-        decorator_filter: str | None,
-        framework_markers: dict[str, typing.Any],
-    ) -> bool:
-        if decorator_filter:
-            return False  # Go does not have decorators
-
-        if visibility and "public" in visibility:
-            # In Go, public symbols start with an uppercase letter
-            short_name = sym_name.split(".")[-1]
-            if short_name and not short_name[0].isupper():
-                return False
-
-        return True
 
     def _resolve_symbol_parent(self, name_node: typing.Any) -> typing.Any | None:
         parent = name_node.parent

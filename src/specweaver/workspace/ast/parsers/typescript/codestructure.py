@@ -90,14 +90,6 @@ class TypeScriptCodeStructure(ClassBasedParser):
         (comment) @comment
         """
 
-    def _is_symbol_hidden(self, parent: typing.Any) -> bool:
-        """A TypeScript declaration is module-local unless some ancestor exports it."""
-        while parent:
-            if parent.type == "export_statement":
-                return False
-            parent = parent.parent
-        return True
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         if not name_node.parent:
             return None

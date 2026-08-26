@@ -106,3 +106,15 @@ was pinned nowhere. Added 21 assertions and three probes:
 - [x] class-health regression caught and fixed by restructure, NOT by re-freezing
 
 Record: `B-SENS-03_sf01_cb2_walkthrough.md`
+
+---
+
+# CB-3 — the filter consumes the value  ✅  SF-01 COMPLETE
+
+- [x] one filter for all ten; **nine** copies removed, not eight (the declarative tier had a ninth)
+- [x] C's raise and Go's declared `False` preserved via a `_matches_decorator` hook
+- [x] dedup moved before the filter — Rust reported `Circle` as both public and private
+- [x] CB-1's net updated: five agreed deltas + two `FR-2` consequences, each with its decision
+- [x] `test_symbol_filtering.py` widened from four parsers to ten
+- [x] dev guide's false security claim corrected
+- [x] corpus: FR-1 and FR-3 retired with reasons; FR-1/FR-2 campaigns added — 9 protected, 0 stale
