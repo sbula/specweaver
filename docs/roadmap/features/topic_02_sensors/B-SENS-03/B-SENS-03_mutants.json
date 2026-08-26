@@ -447,8 +447,9 @@
    "requirement": "FR-10",
    "title": "Line cutting is the last resort, not the first",
    "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_structure.py",
-    "tests/unit/workspace/analyzers/test_chunking_budget.py"
+    "tests/unit/workspace/analyzers/test_chunking_budget.py",
+    "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
+    "tests/unit/workspace/analyzers/test_chunking_structure.py"
    ],
    "mutants": [
     {
@@ -460,6 +461,16 @@
      "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
      "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
      "symbol_sha": "sha256:087f91cb4990c6bd4ab0ba2e77176e674514e6962c62bdb4a59fd81f3798b04c"
+    },
+    {
+     "id": "a-line-longer-than-the-budget-is-never-cut",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_slice_long_line",
+     "old": "    if _weight(line) <= max_chars:\n        return [line]",
+     "new": "    if True:\n        return [line]",
+     "breaks": "the one case a line boundary cannot serve. A minified bundle or a single-line JSON has no newline, so an 800,000-character file came back as ONE chunk against a budget of 4,000 -- measured. Whatever embeds that either fails or silently truncates",
+     "symbol_sha": "sha256:033e25098709ea54cc47707ee933ab4d056d5cdd028f76c15f7c95a141baa92a"
     }
    ]
   },
@@ -467,6 +478,7 @@
    "requirement": "FR-9",
    "title": "Small neighbours merge, and never across a visibility level",
    "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
     "tests/unit/workspace/analyzers/test_chunking_merge.py"
    ],
    "mutants": [
@@ -478,7 +490,7 @@
      "old": "        if self._inside and (level != self._level or not self._fits(text)):",
      "new": "        if self._inside and (not self._fits(text)):",
      "breaks": "the one thing merging can get dangerously wrong. A public getter combined with a private helper puts the private one into every result that asks for the public interface -- `FR-2`'s filter undone one layer up, where no filter can see it. This mutant was SILENT on its first run: the test's budget let the class fit whole, so nothing split, nothing merged, and the assertion iterated one chunk while proving nothing",
-     "symbol_sha": "sha256:41bb8daa9051fe5266753a4054565b9b549bf701f2acc004fe10a9ba15cc8c9a"
+     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
     },
     {
      "id": "merging-is-disabled",
@@ -488,7 +500,7 @@
      "old": "        if self._inside and (level != self._level or not self._fits(text)):",
      "new": "        if True:",
      "breaks": "the requirement itself. Twelve three-line getters go back to twelve chunks of near-identical shape, which match everything and discriminate nothing",
-     "symbol_sha": "sha256:41bb8daa9051fe5266753a4054565b9b549bf701f2acc004fe10a9ba15cc8c9a"
+     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
     },
     {
      "id": "the-text-between-merged-symbols-is-dropped",
@@ -499,6 +511,26 @@
      "new": "        if head.strip():",
      "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
      "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
+    },
+    {
+     "id": "unknown-visibility-merges-again",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_levels",
+     "old": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)\n            return None",
+     "new": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)",
+     "breaks": "the guard's FAILURE MODE. Falling back to a dict where every symbol reads `unknown` means every symbol matches every other, so a private one merges into a public chunk -- `FR-2`'s filter undone one layer up, failing in the same direction the original defect failed. Not knowing is not the same as knowing they are alike",
+     "symbol_sha": "sha256:dd6c99fc19b2b7b7b04016af17840938a853754e6ba947e87c46e6325ba868e2"
+    },
+    {
+     "id": "the-fail-closed-branch-is-skipped",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_Run.absorb",
+     "old": "        if self._cut.levels is None:",
+     "new": "        if False:",
+     "breaks": "the same thing from the consuming end: with no levels known, `.get(name, \"unknown\")` makes every symbol alike and merging resumes across visibility",
+     "symbol_sha": "sha256:ca141864caf8950d23338f2d7743b1b3281b051516e05f007ae63f54ec4476fb"
     }
    ]
   },
