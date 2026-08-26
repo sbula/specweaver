@@ -79,7 +79,9 @@ DOCUMENTED: dict[str, tuple[str, str, str]] = {
 #: Languages with no doc-comment concept at all. SQL's `SCM_COMMENT_QUERY` is empty; markdown's
 #: captures `html_block`, which is not a comment node by any reading.
 NO_DOC_CONCEPT: dict[str, tuple[str, str]] = {
-    "sql": ("CREATE TABLE public.orders (id INT);\n", "orders"),
+    # `public.orders`, not `orders`. Keyed on the bare name this asserted `""` for a symbol
+    # that does not exist -- true, and nothing to do with SQL having no doc-comment concept.
+    "sql": ("CREATE TABLE public.orders (id INT);\n", "public.orders"),
     "markdown": ("# Title\n\nSome prose.\n", "Title"),
 }
 

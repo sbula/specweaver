@@ -232,7 +232,10 @@ _CPP_ALL = [
     "Plain.open",
     "free_fn",
 ]
-_SQL_ALL = ["public", "orders", "summary", "analytics", "total"]
+#: `public.orders` and `analytics.total` were each reported as TWO symbols until 2026-08-26
+#: `[agreed 2026-08-26]`: the capture sat on `identifier`, and an `object_reference` holds one
+#: per name part. The index carried a chunk literally named `public`.
+_SQL_ALL = ["public.orders", "summary", "analytics.total"]
 _MD_ALL = ["Title", "Title.Section", "Title.Section.Deep"]
 
 #: `list_symbols(code)` with no filter — every name each parser can see.

@@ -291,6 +291,36 @@
      "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
     }
    ]
+  },
+  {
+   "requirement": "FR-7",
+   "title": "A qualified SQL object is one symbol, not one per name part",
+   "scope": [
+    "tests/unit/workspace/ast/parsers/sql/test_sql_qualified_names.py",
+    "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-capture-drops-back-to-the-identifier",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/sql/codestructure.py",
+     "symbol": "SqlCodeStructure.SCM_SYMBOL_QUERY",
+     "old": "        (create_table (object_reference) @name)",
+     "new": "        (create_table (object_reference (identifier) @name))",
+     "breaks": "the defect exactly as it shipped: an `object_reference` holds one identifier per name part, so `public.orders` reports as TWO symbols and the index gains a chunk named after a schema. A test asserting `'public.orders' in symbols` would pass with both fragments still present, which is why the assertions are on the exact list",
+     "symbol_sha": "sha256:fb66682908dc54d7627a50f78e9d6cf9b52684a80ab82877e18a83dce4251deb"
+    },
+    {
+     "id": "a-bare-name-resolves-to-a-qualified-object",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/ast/parsers/base.py",
+     "symbol": "BaseTreeSitterParser._named_nodes",
+     "old": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\") == target_name:",
+     "new": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\").endswith(target_name):",
+     "breaks": "strict resolution `[agreed 2026-08-26]`. `orders` would resolve to `public.orders`, which is the bare-name matching that gives the knowledge graph its measured 48% ghost rate -- a name that looks unique is not the same as the right target. Re-pointed here on 2026-08-26: the first version aimed at a type guard in the SQL parser that turned out to be EQUIVALENT, because the query can only produce that node type. Strictness was never in the branch it named",
+     "symbol_sha": "sha256:f99ed8da993fa887c4b3f6af760081c0c818815c8473a90e542c75c1983e9e0f"
+    }
+   ]
   }
  ]
 }

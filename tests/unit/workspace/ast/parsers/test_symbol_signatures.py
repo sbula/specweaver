@@ -150,7 +150,7 @@ class TestExtractSymbolSignatureEdges:
         whole declaration is the answer rather than an error."""
         code = "CREATE TABLE public.orders (id INT);\n"
         assert (
-            parsers["sql"].extract_symbol_signature(code, "orders")
+            parsers["sql"].extract_symbol_signature(code, "public.orders")
             == "CREATE TABLE public.orders (id INT)"
         )
 

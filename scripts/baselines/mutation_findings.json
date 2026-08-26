@@ -487,6 +487,24 @@
       "first_seen": 1787281386.0787365,
       "last_seen": 1787713431.2713926,
       "occurrences": 6
+    },
+    "B-SENS-03 FR-7 a-bare-name-resolves-to-a-qualified-object": {
+      "history": [
+        {
+          "at": 1787755035.7813373,
+          "state": "open",
+          "verdict": "UNPROTECTED",
+          "reason": "no-killer"
+        },
+        {
+          "at": 1787755098.8549702,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787755035.7813373,
+      "last_seen": 1787755035.7813373,
+      "occurrences": 1
     }
   },
   "override_count": 0,
