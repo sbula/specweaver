@@ -506,42 +506,6 @@
       "last_seen": 1787755035.7813373,
       "occurrences": 1
     },
-    "B-SENS-03 FR-16 parser-failure-drops-file": {
-      "history": [
-        {
-          "at": 1787763646.5867312,
-          "state": "open",
-          "verdict": "UNMEASURED",
-          "reason": "symbol-drifted"
-        },
-        {
-          "at": 1787763717.6595316,
-          "state": "closed",
-          "reason": "fixed"
-        }
-      ],
-      "first_seen": 1787763646.5867312,
-      "last_seen": 1787763685.2454686,
-      "occurrences": 2
-    },
-    "B-SENS-03 FR-17 preamble-dropped": {
-      "history": [
-        {
-          "at": 1787765762.1590164,
-          "state": "open",
-          "verdict": "UNMEASURED",
-          "reason": "symbol-drifted"
-        },
-        {
-          "at": 1787765804.793303,
-          "state": "closed",
-          "reason": "fixed"
-        }
-      ],
-      "first_seen": 1787765762.1590164,
-      "last_seen": 1787765762.1590164,
-      "occurrences": 1
-    },
     "B-SENS-03 FR-8 a-dot-means-nested-again": {
       "history": [
         {
@@ -558,6 +522,82 @@
       ],
       "first_seen": 1787768984.0039787,
       "last_seen": 1787768984.0039787,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-16 parser-failure-drops-file": {
+      "history": [
+        {
+          "at": 1787763646.5867312,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787763717.6595316,
+          "state": "closed",
+          "reason": "fixed"
+        },
+        {
+          "at": 1787769959.9785078,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787770020.4773552,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787763646.5867312,
+      "last_seen": 1787769959.9785078,
+      "occurrences": 3
+    },
+    "B-SENS-03 FR-17 preamble-dropped": {
+      "history": [
+        {
+          "at": 1787765762.1590164,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787765804.793303,
+          "state": "closed",
+          "reason": "fixed"
+        },
+        {
+          "at": 1787769959.9785078,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "run-failed"
+        },
+        {
+          "at": 1787770020.4773552,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787765762.1590164,
+      "last_seen": 1787769959.9785078,
+      "occurrences": 2
+    },
+    "B-SENS-03 FR-17 the-trailing-remainder-is-dropped": {
+      "history": [
+        {
+          "at": 1787769959.9785078,
+          "state": "open",
+          "verdict": "UNPROTECTED",
+          "reason": "no-killer"
+        },
+        {
+          "at": 1787770020.4773552,
+          "state": "closed",
+          "reason": "withdrawn"
+        }
+      ],
+      "first_seen": 1787769959.9785078,
+      "last_seen": 1787769959.9785078,
       "occurrences": 1
     }
   },

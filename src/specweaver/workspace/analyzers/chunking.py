@@ -54,6 +54,14 @@ class Chunk:
     #: remove. So `FR-9` could not be delivered without this field, and it is here rather than in
     #: SF-06 for that reason. The rest of `FR-13` — content hash, package, unit — is still SF-06's.
     symbols: tuple[str, ...] = ()
+    #: True when this chunk was cut by lines rather than at a boundary the code has — because the
+    #: parser could not read the file at all, or because a symbol had no nested symbols left and
+    #: was still over budget.
+    #:
+    #: Without it a binary blob and a module preamble are the same thing: both carry no symbol, and
+    #: a consumer cannot rank one below the other. A symbol sliced at line 400 is no more a whole
+    #: unit than the blob is, which is why `FR-10`'s last resort sets it too.
+    is_line_window: bool = False
 
 
 def _parent_of(name: str, texts: dict[str, str]) -> str | None:
@@ -136,11 +144,17 @@ def _emit(
     language: str,
     max_chars: int,
     symbols: tuple[str, ...] | None = None,
+    *,
+    line_window: bool = False,
 ) -> list[Chunk]:
     if not text.strip():
         return []
     inside = symbols if symbols is not None else ((symbol,) if symbol else ())
     pieces = _split(text, max_chars)
+    # More than one piece means this text was cut by lines: `_split` knows no other boundary. So
+    # the flag is set either because the caller already knows the file is unreadable, or because
+    # the cut happened here.
+    windowed = line_window or len(pieces) > 1
     return [
         Chunk(
             text=piece,
@@ -150,6 +164,7 @@ def _emit(
             part=index,
             parts=len(pieces),
             symbols=inside,
+            is_line_window=windowed,
         )
         for index, piece in enumerate(pieces, start=1)
     ]
@@ -167,6 +182,10 @@ class _Cut:
     path: str
     language: str
     max_chars: int
+    #: True when the parser could not read this file at all. Distinct from *a file with no
+    #: symbols*, which is readable and simply declares nothing — a comment-only file is a whole
+    #: unit, and a file no grammar handles is not.
+    unreadable: bool
     texts: dict[str, str]
     order: list[str]
     parents: dict[str, str | None]
@@ -237,6 +256,7 @@ class _Run:
             self._cut.language,
             self._cut.max_chars,
             tuple(self._inside),
+            line_window=self._cut.unreadable,
         )
         self._text, self._inside, self._level = "", [], None
         return chunks
@@ -252,7 +272,13 @@ class _Run:
             self._text += text
             return []
         return self.flush() + _emit(
-            text, self._cut.path, "", self._cut.language, self._cut.max_chars, ()
+            text,
+            self._cut.path,
+            "",
+            self._cut.language,
+            self._cut.max_chars,
+            (),
+            line_window=self._cut.unreadable,
         )
 
     def absorb(self, name: str, text: str) -> list[Chunk]:
@@ -303,7 +329,10 @@ def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
 
     children = _children_of(name, cut.order, cut.parents)
     if not children:
-        return _emit(text, cut.path, name, cut.language, cut.max_chars)  # FR-10: the last resort
+        # FR-10: no nested symbols left, so lines are all that remain. `_emit` sets the flag
+        # when it has to cut; passing it here covers the case where the whole symbol still fits
+        # in one piece but was reached by giving up on structure.
+        return _emit(text, cut.path, name, cut.language, cut.max_chars, line_window=cut.unreadable)
 
     return _walk(text, children, cut)
 
@@ -345,11 +374,12 @@ def chunk_source(
     Whatever belongs to no symbol — the module docstring, imports, top-level statements — is kept
     as a preamble chunk. It is usually the part that says what the file depends on.
     """
+    unreadable = False
     try:
         order = parser.list_symbols(code)
     except Exception:
         logger.debug("Chunking %s: symbol listing failed, falling back to line windows", path)
-        order = []
+        order, unreadable = [], True
 
     texts: dict[str, str] = {}
     for name in order:
@@ -359,7 +389,9 @@ def chunk_source(
             logger.debug("Chunking %s: could not extract %r, skipping", path, name)
 
     parents = {name: _parent_of(name, texts) for name in order}
-    cut = _Cut(path, language, max_chars, texts, order, parents, _levels(code, parser, order))
+    cut = _Cut(
+        path, language, max_chars, unreadable, texts, order, parents, _levels(code, parser, order)
+    )
     tops = [n for n in order if parents[n] is None]
 
     first = next((texts[n] for n in tops if texts.get(n, "").strip() and texts[n] in code), None)

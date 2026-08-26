@@ -49,8 +49,9 @@
   },
   {
    "requirement": "FR-16",
-   "title": "An unreadable file is still indexed",
+   "title": "An unreadable file is still indexed, and says it is not a whole unit",
    "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_totality.py",
     "tests/unit/workspace/analyzers/test_semantic_chunking.py"
    ],
    "mutants": [
@@ -59,10 +60,40 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "        order = []",
+     "old": "        order, unreadable = [], True",
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
+     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
+    },
+    {
+     "id": "a-line-window-is-not-flagged",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_emit",
+     "old": "    windowed = line_window or len(pieces) > 1",
+     "new": "    windowed = False",
+     "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
+     "symbol_sha": "sha256:51c529e1145ab1dd2ce01a1ddce8f3550dc789df4ca733a66989f46c1bc050c1"
+    },
+    {
+     "id": "everything-is-a-line-window",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_emit",
+     "old": "    windowed = line_window or len(pieces) > 1",
+     "new": "    windowed = True",
+     "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
+     "symbol_sha": "sha256:51c529e1145ab1dd2ce01a1ddce8f3550dc789df4ca733a66989f46c1bc050c1"
+    },
+    {
+     "id": "an-unreadable-file-reads-as-readable",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "chunk_source",
+     "old": "        order, unreadable = [], True",
+     "new": "        order, unreadable = [], False",
+     "breaks": "the one case `len(pieces) > 1` cannot infer: a SMALL file no grammar handles arrives in one piece, so nothing about the cut says it was never understood",
+     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
     }
    ],
    "rekeyed": {
@@ -83,11 +114,11 @@
      "id": "preamble-dropped",
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_Run.absorb_gap",
-     "old": "        return self.flush() + _emit(",
-     "new": "        return self.flush() + (",
-     "breaks": "imports and the module docstring never reach the index. Re-anchored 2026-08-26: SF-04 CB-4 moved the preamble onto the standalone-gap path, and its old anchor `if head.strip():` now belongs to FR-9's between-text mutant one requirement over -- two claims would have shared one line",
-     "symbol_sha": "sha256:efc59eb0d011d8f7039e05a281561e7d7347ad5f0967306f1b1e57dd1d16045e"
+     "symbol": "chunk_source",
+     "old": "    return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(",
+     "new": "    return [] + _walk(",
+     "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass",
+     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
     }
    ],
    "rekeyed": {
@@ -408,7 +439,7 @@
      "old": "    tops = [n for n in order if parents[n] is None]",
      "new": "    tops = [n for n in order if \".\" not in n]",
      "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
+     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
     }
    ]
   },
@@ -428,7 +459,7 @@
      "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
      "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
      "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
-     "symbol_sha": "sha256:81bcfeb6f687e3fb09ee5de95fb85b9dbe9e251f68f1a79d622de2a57e742b53"
+     "symbol_sha": "sha256:087f91cb4990c6bd4ab0ba2e77176e674514e6962c62bdb4a59fd81f3798b04c"
     }
    ]
   },
@@ -486,7 +517,7 @@
      "old": "return _emit(head, path, _MODULE_CHUNK, language, max_chars, ()) + _walk(",
      "new": "return _emit(head, path, \"\", language, max_chars, ()) + _walk(",
      "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
-     "symbol_sha": "sha256:d59f89ec72f199f5a7796e1570986fe2953833ab3b9900d98d099407383e54e0"
+     "symbol_sha": "sha256:c35c26816f4c9316aa287ed805d0f1fcf35714529056cf9b39771408bca82da7"
     },
     {
      "id": "every-gap-becomes-the-module",
@@ -496,7 +527,36 @@
      "old": "            self._inside[0] if len(self._inside) == 1 else \"\",",
      "new": "            self._inside[0] if len(self._inside) == 1 else _MODULE_CHUNK,",
      "breaks": "the half that gives the name meaning. A stray comment in the middle of a file, or a `class Foo:` header inside a symbol, would be indexed as the module's own description -- worse than leaving it anonymous, because it reads as an answer",
-     "symbol_sha": "sha256:763d3d1568218c60f9633fd7df815596019327221287e16bc504269511bc2bae"
+     "symbol_sha": "sha256:f0fca7f0692bbea82cd6562f1bdbdab5fa43c9788aadbaee74d92a1b44d0e7e0"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-17",
+   "title": "Nothing is dropped, and no chunk is text the file never had",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_totality.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-text-between-symbols-is-dropped",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_walk",
+     "old": "        if head:",
+     "new": "        if head.strip():",
+     "breaks": "verbatim-ness, and totality does NOT catch it -- that is the whole reason this requirement has two halves. Totality compares non-whitespace characters, so dropping the blank run between two merged symbols satisfies it while producing `... return 1clas s Beta:`, a chunk whose content never existed in the file and which no reader could locate in it",
+     "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
+    },
+    {
+     "id": "the-final-flush-never-happens",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_merge",
+     "old": "    out.extend(run.flush())\n    return out",
+     "new": "    return out",
+     "breaks": "totality on the tail. Whatever is still accumulating when the pieces run out -- a trailing constant, a module-level call, the last merged run in the file -- is never emitted. Replaced 2026-08-26: the first version made every gap join the buffer, which moves chunk boundaries and loses nothing, and came back UNPROTECTED because it was EQUIVALENT rather than because a test was missing",
+     "symbol_sha": "sha256:6207cc5725b4874a328323120db98726eb72473c4c6d70cf97b3b85931128d96"
     }
    ]
   }
