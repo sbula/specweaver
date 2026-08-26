@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md
 - **Design Section**: §Sub-Feature Breakdown → Group A → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf01_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: APPROVED 2026-08-26
 - **FRs**: FR-1, FR-2, FR-3, FR-4 · **NFRs**: NFR-5 (backward compatibility)
 
 ## Research Notes

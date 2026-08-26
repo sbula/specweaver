@@ -1,56 +1,93 @@
-# Task: a type is a type in every language
+# task.md — B-SENS-03 SF-01, CB-1: the net
 
-**Skill**: `specweaver-dev` · **Story**: defect in `TECH-068`'s delivered classifier · **Kind**: bugfix
+**Plan**: `docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_sf01_implementation_plan.md`
+**Boundary**: CB-1 of 3 · **FRs**: none directly — this boundary serves **NFR-5**
+**Goal**: capture what all ten parsers return **today**, so CB-3's change is a readable diff.
 
-`graph_adapter.py:112` decides `is_class = symbol in supertypes or "extends" in markers`. That asks
-*"does it inherit?"* and reads the silence as *"it is not a type."* Two different questions, one
-answer — so every language with types but no inheritance mis-files everything it declares.
+## Why this boundary has no red
 
-## Research (measured — do not re-derive)
+`NFR-5` is a **must-not-change** requirement. The only way to prove "did not change" is to capture
+before and compare after, so these tests are green on their first run **by design**. That is not a
+vacuous test — it is a regression net, and its ability to fail is proved by **probe**, not by red
+(dev skill 3.2b). **CB-1 is not finished until every probe kills it.**
 
-| Fact | Evidence |
+## Test matrix
+
+| Bucket | Story |
 |---|---|
-| `extract_supertypes` DOES record a type that inherits nothing | `base.py` — `setdefault(name, {"extends": [], "implements": []})` runs BEFORE the supertype loop |
-| It returns `{}` early when the parser declares no type nodes | `base.py:116` — `if not code.strip() or not self.TYPE_DECLARATION_NODES` |
-| 7 of 10 parsers declare them | cpp, go, java, kotlin, python, rust, typescript — and all 7 classify correctly |
-| 3 declare none | **c, sql, markdown** — so every symbol they report becomes a `PROCEDURE` |
-| C reports `struct`, `enum`, `union` as symbols | `c/codestructure.py` `SCM_SYMBOL_QUERY` |
-| SQL reports `create_table`, `create_view`, `create_function` | `sql/codestructure.py` `SCM_SYMBOL_QUERY` |
-| Markdown reports every heading | `markdown/codestructure.py` — `(section (atx_heading ...))` |
-| All three ARE collected | `parseable_suffixes()` returns `.c .h .sql .md .mdx` among 17 |
-| Nothing consumes markdown symbols | grep across `src/` — every hit is unrelated prose handling |
-| The base REFUSES a type-declaring parser with no `_supertypes_of` | `base.py:179` — so "has types, no inheritance" must be said out loud |
-| `NodeKind` was never the problem | `DATA_STRUCTURE`, not `CLASS` — paradigm-neutral, simply never reached |
+| **Happy path** | Each of the ten parsers, a real fixture: exact `list_symbols(code)` and exact `list_symbols(code, visibility=["public"])` |
+| **Boundary/edge** | Empty string · whitespace only · a file with imports and no symbols · `visibility=[]` (falsy — today means *no filter*) |
+| **Graceful degradation** | Source tree-sitter cannot parse · a parser whose `supported_parameters()` omits `visibility` (C, SQL, markdown) |
+| **Hostile** | `visibility=["nonsense"]` — **today returns the whole file**, which is the fail-open itself · `["public","nonsense"]` · a symbol whose `name_node` is `None` |
 
-## Decisions
+**Used in sequence?** Yes — `list_symbols` → `extract_public_symbols` → `ContextInferrer` → the
+`exposes:` list in a generated `context.yaml`. A unit test of either end is not a test of the pair,
+so **T2 is integration**.
 
-- C `struct`/`enum`/`union` and SQL `TABLE`/`VIEW` are `DATA_STRUCTURE` `[agreed 2026-08-24]` —
-  each is "a named shape other things refer to", which is what the kind means. SQL `FUNCTION` stays
-  a `PROCEDURE`, which it already was.
-- **Markdown stops reporting headings as symbols** `[agreed 2026-08-24]`. A heading is neither a
-  shape nor a procedure; nothing reads them and no edge kind connects them. Inventing a vocabulary
-  entry for an unused concept is what `TECH-069` was retired for. If document structure becomes
-  useful it arrives with the reader that needs it.
+**Does anything else do this job?** Yes — four parsers carry their own filter. Asserting they
+*agree* is CB-3's job (the structural invariant widens from four parsers to ten); CB-1 captures each
+separately so the diff shows which one moved.
 
-## Commit boundary 1 — every language's types are types
+## Tasks
 
-- [ ] 1 — Integration seam test FIRST: a C struct, a SQL table and a Rust trait each reach the graph
-      as `DATA_STRUCTURE` — **RED**, C and SQL are `PROCEDURE` today
-- [ ] 2 — C declares `TYPE_DECLARATION_NODES` and answers `_supertypes_of` -> `{}` — the language
-      has types and no inheritance, said explicitly rather than by silence
-- [ ] 3 — SQL declares `TABLE`/`VIEW` as type nodes, same explicit `{}`; `FUNCTION` untouched
-- [ ] 4 — Markdown stops reporting headings as symbols
-- [ ] 5 — The contract test gains its missing third category: **has types, has no inheritance**.
-      Today it has only *must report a type* and *no type concept*, and C sits in the wrong one
-- [ ] **CB-1 — a struct, a table and a trait are all data structures**
+- [x] **T1** — Characterization, all ten parsers.
+  - test: `tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py` (new)
+  - src: none
+  - Each fixture **must carry the shape whose delta this plan predicts**, or the net cannot show it:
+    Python `__dunder__` + `__mangled` + `_leading` · Java `interface` · Rust `pub trait` (required
+    **and** defaulted method) · TypeScript exported class with `private`/`protected` members · Go
+    lowercase · C `static` · C++ class vs struct defaults · SQL `schema.table` · markdown headings.
 
-## Notes on tiers and proof
+- [x] **T2** — The seam, pinned exactly.
+  - test: `tests/integration/workspace/context/test_exposes_seam.py` (new)
+  - src: none
+  - `tests/integration/workspace/context/test_scan_and_infer.py:50` already walks this seam, but
+    asserts with `in` / `not in`, so it cannot see a set change. T2 asserts the **exact** `exposes`
+    list, over its **own `tmp_path` project** — the shared `sample_project` fixture is left alone so
+    nothing else moves under it.
 
-- **Task 1 is integration and it is the point.** The claim spans parser -> adapter -> mapper ->
-  engine. A unit test that `extract_supertypes` now returns a key proves one end; the defect lives
-  in the seam, where `is_class` reads one function's silence as another question's answer. That is
-  the `TECH-056` shape the dev skill names, and it is why the seam test is written first.
-- Unit tests per parser follow, for the boundary each language draws.
-- **Not in scope, named:** the `class_definition` / `function_definition` strings the adapter uses
-  are object-oriented names for a paradigm-neutral idea. Renaming them touches every parser test
-  and proves nothing new. Recorded, not done.
+- [x] **T3** — Probes. **One per filter path, not one in total.**
+  - `_reading.py` covers only the four shared parsers. C, C++, Go and Python each carry their own.
+  - | # | File | `--old` | `--new` |
+    |---|---|---|---|
+    | P1 | `_reading.py` | `and "public" in visibility` | `and False` |
+    | P2 | `python/codestructure.py` | `and "public" in visibility` | `and False` |
+    | P3 | `go/codestructure.py` | `if visibility and "public" in visibility:` | `if False:` |
+    | P4 | `c/codestructure.py` | `return visibility is None` | `return True` |
+    | P5 | `cpp/codestructure.py` | *(its `_is_symbol_valid` visibility branch)* | neutralised |
+  - **Done when**: T1 (and T2 for P2) appear in the objectors list for **every** probe. A probe
+    nothing kills means the net has a hole over that parser, and CB-1 is not finished.
+
+## Pre-commit phases
+
+- [x] Phase 1 architecture · [ ] Phase 2 test gap (HITL) · [ ] Phase 3 implement (HITL)
+- [x] Phase 4 suite · [ ] Phase 5 quality · [ ] Phase 6 docs · [ ] Phase 7 walkthrough · [ ] Phase 7.5 red/blue (HITL)
+
+## T3 results — 2026-08-26, all five killed
+
+| Probe | File | Objections | Named this net |
+|---|---|---|---|
+| P1 | `_reading.py` | 52 | `test_public_only_listing[java\|kotlin\|rust\|typescript]` |
+| P2 | `python/codestructure.py` | 53 | `test_public_only_listing[python]` **and 3 of `test_exposes_seam.py`** |
+| P3 | `go/codestructure.py` | 48 | `test_public_only_listing[go]` |
+| P4 | `c/codestructure.py` | 52 | 5 tests, including all three `FailsOpen` rows for C |
+| P5 | `cpp/codestructure.py` | 54 | 6 tests, including all four `CppAlreadyDoesItRight` rows |
+
+**P1 does not name markdown or SQL, and that is correct** — neither hides anything, so the shared
+filter's branch cannot change their answer. There is no behaviour there to protect.
+
+**P2 is the one that mattered.** It is the only probe that reaches the integration test, which is
+the proof that the seam into `context.yaml` is genuinely covered rather than assumed.
+
+## Phase 2 gap, closed — 2026-08-26
+
+`_is_symbol_valid` answers **two** questions, and CB-3 deletes four copies of it. The decorator half
+was pinned nowhere. Added 21 assertions and three probes:
+
+| Probe | Neutralised | Objections | Named |
+|---|---|---|---|
+| P6 | Go's `return False  # Go does not have decorators` | 48 | 2 |
+| P7 | C's `raise CodeStructureError(...)` | 48 | 1 |
+| P8 | `if not any(decorator_filter in d ...)` in `_reading.py` | 67 | 7 |
+
+**Eight probes, eight kills.** Every branch of `_is_symbol_valid` that CB-3 touches is now held.

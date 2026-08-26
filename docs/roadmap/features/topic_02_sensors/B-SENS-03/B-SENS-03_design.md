@@ -297,7 +297,7 @@ which is the boundary that was agreed.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Visibility is a value | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Visibility is a value | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Signature and description | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | A parser does not lose names | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Code is cut into whole units | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -322,7 +322,7 @@ which is the boundary that was agreed.
 
 ## Session Handoff
 
-**Current status**: Design **APPROVED** 2026-08-26. SF-01 is in planning.
+**Current status**: Design **APPROVED** 2026-08-26. SF-01's plan is APPROVED; dev is at CB-1.
 **Next step**: `specweaver-implementation-plan` for SF-01, then dev. SF-02, SF-03 and SF-04 may run in parallel sessions — the Progress Tracker prevents double work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there. The 32 grilling decisions are recorded inline, each marked `[agreed 2026-08-26]`
