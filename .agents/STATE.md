@@ -134,9 +134,12 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   measurable the moment a reader exists.
 
 - **`mutation.py --gate` is BLOCKED** on five `TECH-056 FR-1` findings, all `UNMEASURED
-  [scope-already-red]` — collateral of the 2026-08-24 red baseline, not findings about the code.
+  [scope-already-red]` — collateral of a red baseline, not findings about the code.
   Dispositioning them is the human act the gate exists to force; an agent clearing its own run's
-  findings is the exact defect `TECH-056` fixed. A green baseline tonight clears them on its own.
+  findings is the exact defect `TECH-056` fixed. A green baseline clears them on its own.
+  **The cause is fixed as of 2026-08-26**: the red was one test that read a wall clock it did not
+  control, and it was wrong for exactly the minute the nightly starts in. Four nights read as
+  flaky and none of them were. Record: `TECH-049_fr11_walkthrough.md`.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being

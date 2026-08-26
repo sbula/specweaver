@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -411,21 +413,45 @@ class TestLastExpectedRun:
 
 
 class TestGateVerdictStaleness:
-    """`gate_verdict` — what the human is told."""
+    """`gate_verdict` — what the human is told.
 
-    def _report(self, tmp_path: Path, age_seconds: float) -> Path:
+    **Every test here pins the clock, and that is not tidiness.** "Fresh" is not an age: a report
+    is current when it was written *after the last scheduled run*, and `NIGHTLY_HOUR` is 3. A
+    report sixty seconds old is fresh at 10:00 and stale at 03:00:30, because at 03:00:30 sixty
+    seconds ago was yesterday's business.
+
+    This class used to assert that a sixty-second-old report never blocks. That is false for one
+    minute of every day — 03:00:00 to 03:01:00 — and the nightly runs at 03:00. It failed on the
+    2026-08-26 run, took the whole baseline red with it, and voided all 145 verdicts including the
+    five `TECH-056` mutants that share this file. Wall-clock time is an input; an input a test does
+    not control is not a test.
+    """
+
+    def _report(self, tmp_path: Path, written_at: float) -> Path:
         report = tmp_path / "report.json"
         report.write_text(json.dumps({"summary": {}, "campaigns": []}), "utf-8")
-        stamp = time.time() - age_seconds
-        import os
-
-        os.utime(report, (stamp, stamp))
+        os.utime(report, (written_at, written_at))
         return report
 
+    @staticmethod
+    def _at(gate: ModuleType, monkeypatch: pytest.MonkeyPatch, when: float) -> None:
+        """Hold `gate`'s view of now at `when`, leaving the real `time` module alone."""
+        monkeypatch.setattr(
+            gate,
+            "time",
+            SimpleNamespace(
+                time=lambda: when,
+                localtime=time.localtime,
+                mktime=time.mktime,
+                strftime=time.strftime,
+            ),
+        )
+
     def test_a_report_older_than_the_last_run_blocks(
-        self, gate: ModuleType, tmp_path: Path
+        self, gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        report = self._report(tmp_path, age_seconds=26 * 3600)
+        self._at(gate, monkeypatch, time.mktime((2026, 8, 26, 10, 0, 0, 0, 0, -1)))
+        report = self._report(tmp_path, time.mktime((2026, 8, 25, 3, 5, 0, 0, 0, -1)))
 
         result = gate.gate_verdict(report, tmp_path / "ledger.json")
 
@@ -433,11 +459,40 @@ class TestGateVerdictStaleness:
         assert "did not" in result.reason or "no report" in result.reason
 
     def test_a_fresh_report_does_not_block_on_staleness(
-        self, gate: ModuleType, tmp_path: Path
+        self, gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The control: freshness must not become a second way to fail an otherwise clean run."""
-        report = self._report(tmp_path, age_seconds=60)
+        self._at(gate, monkeypatch, time.mktime((2026, 8, 26, 10, 0, 0, 0, 0, -1)))
+        report = self._report(tmp_path, time.mktime((2026, 8, 26, 3, 5, 0, 0, 0, -1)))
 
         result = gate.gate_verdict(report, tmp_path / "ledger.json")
 
         assert not result.blocked
+
+    def test_during_the_run_minute_tonights_report_is_current(
+        self, gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """03:00:30, report written ten seconds ago — by tonight's run. It must not block.
+
+        This is what the old sixty-second test meant to say. Reproduced against the shipped gate
+        before the fix: at this instant a sixty-second-old report blocks, and it is right to.
+        """
+        self._at(gate, monkeypatch, time.mktime((2026, 8, 26, 3, 0, 30, 0, 0, -1)))
+        report = self._report(tmp_path, time.mktime((2026, 8, 26, 3, 0, 20, 0, 0, -1)))
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert not result.blocked
+
+    def test_during_the_run_minute_a_report_from_before_it_still_blocks(
+        self, gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The other half, and the one the nightly tripped over. 03:00:30, report written at
+        02:59:30 — sixty seconds old, and from before tonight's run started. Age says fresh; the
+        schedule says tonight produced nothing yet. The schedule wins."""
+        self._at(gate, monkeypatch, time.mktime((2026, 8, 26, 3, 0, 30, 0, 0, -1)))
+        report = self._report(tmp_path, time.mktime((2026, 8, 26, 2, 59, 30, 0, 0, -1)))
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert result.blocked

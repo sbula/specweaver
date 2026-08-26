@@ -58,6 +58,35 @@
           "symbol_sha": "sha256:55a67f1fb5ed12dc25e3699d2ad3eb57b452fa8039a153e977c1eae2b4302bb9"
         }
       ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "A report from before the last scheduled run is stale, and stale blocks",
+      "scope": [
+        "tests/unit/scripts/test_mutation_gate.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-stale-report-reads-as-current",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "    if mtime < expected:",
+          "new": "    if False:",
+          "breaks": "FR-11's `SHALL treat a missing or stale report as blocking`. A nightly that hangs writes nothing, so yesterday's report is still on disk and the gate answers CLEAR over a run that never happened. Measured 2026-08-20: a wedged 03:00 run reported a clean bill of health at 04:22 and would have every morning after",
+          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+        },
+        {
+          "id": "every-report-reads-as-stale",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "    if mtime < expected:",
+          "new": "    if True:",
+          "breaks": "the opposite, and the one that gets the gate switched off: a report written by tonight's own run blocks anyway, so freshness becomes a second way to fail a clean night and nobody trusts the verdict",
+          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+        }
+      ]
     }
   ]
 }
