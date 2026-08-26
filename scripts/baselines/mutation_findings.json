@@ -505,6 +505,24 @@
       "first_seen": 1787755035.7813373,
       "last_seen": 1787755035.7813373,
       "occurrences": 1
+    },
+    "B-SENS-03 FR-16 parser-failure-drops-file": {
+      "history": [
+        {
+          "at": 1787763646.5867312,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787763717.6595316,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787763646.5867312,
+      "last_seen": 1787763685.2454686,
+      "occurrences": 2
     }
   },
   "override_count": 0,

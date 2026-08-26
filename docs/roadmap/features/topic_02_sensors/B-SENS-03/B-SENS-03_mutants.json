@@ -59,9 +59,10 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "        symbols = []",
+     "old": "        order = []",
      "new": "        return []",
-     "breaks": "a file whose parser raises vanishes from the index with no signal"
+     "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
+     "symbol_sha": "sha256:a3edd0defd2131d4263856c70b12adcdb3d9e7efcdaf4e8f7a780f30b106f66b"
     }
    ],
    "rekeyed": {
@@ -378,6 +379,55 @@
      "new": "    return len(text)",
      "breaks": "consistency across coding styles. Counting every character lets indentation decide where code is cut, so deeply nested Java and flat Python are judged by different standards for the same amount of code -- and reformatting a file moves its chunk boundaries without a line of it changing, which costs a re-index of the whole repository once anything is embedded",
      "symbol_sha": "sha256:b4f647c557ec0450333b418ccc40c6c5c5b3633e2eef5ac7b13b76bc3a17b928"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-8",
+   "title": "An oversized symbol is cut where the code has a seam",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_structure.py"
+   ],
+   "mutants": [
+    {
+     "id": "nothing-is-ever-nested",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_parent_of",
+     "old": "    body = texts.get(name, \"\")\n    if not body:\n        return None",
+     "new": "    body = texts.get(name, \"\")\n    if body:\n        return None",
+     "breaks": "the whole rule. With no symbol nested in any other, an oversized class has no children to split into and falls straight through to the line cut -- 97 of this repository's 1,102 top-level symbols, each becoming numbered slices with one starting mid-method",
+     "symbol_sha": "sha256:c73e0885e260a43a3d0f4c1556fb2feada00aec4c030f9644d1a5c630ab10a33"
+    },
+    {
+     "id": "a-dot-means-nested-again",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "chunk_source",
+     "old": "    return _walk(code, [n for n in order if parents[n] is None], cut)",
+     "new": "    return _walk(code, [n for n in order if \".\" not in n], cut)",
+     "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
+     "symbol_sha": "sha256:a3edd0defd2131d4263856c70b12adcdb3d9e7efcdaf4e8f7a780f30b106f66b"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-10",
+   "title": "Line cutting is the last resort, not the first",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_structure.py",
+    "tests/unit/workspace/analyzers/test_chunking_budget.py"
+   ],
+   "mutants": [
+    {
+     "id": "lines-are-cut-before-structure-is-tried",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_emit_unit",
+     "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
+     "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
+     "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
+     "symbol_sha": "sha256:81bcfeb6f687e3fb09ee5de95fb85b9dbe9e251f68f1a79d622de2a57e742b53"
     }
    ]
   }

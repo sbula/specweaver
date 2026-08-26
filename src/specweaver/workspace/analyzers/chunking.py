@@ -41,13 +41,40 @@ class Chunk:
     parts: int = 1
 
 
-def _top_level(symbols: list[str]) -> list[str]:
-    """Drop nested names — a method's text is already inside its class's chunk.
+def _parent_of(name: str, texts: dict[str, str]) -> str | None:
+    """The symbol this one is nested in, or None when it stands on its own.
 
-    Emitting both would index the same lines twice and leave a hit ambiguous about which unit it
-    found.
+    **Containment decides.** A symbol is nested when its text lies inside another symbol's, and the
+    parent is the smallest such symbol — which is what "nested" means in a tree.
+
+    A dot decides nothing, and cannot. `FR-7` made `public.orders` a top-level SQL object whose
+    name contains one; the rule this replaces — *drop every name with a dot* — dropped every
+    qualified table and function in an estate from the index. And scoped names go only one level
+    deep: Python reports a nested class's method as `Inner.deep_0`, never
+    `Outer.Inner.deep_0`, so at depth two the name has no prefix that is a symbol at all. The
+    dotted prefix is kept only as a **fast path** for the common single-level case; containment is
+    the rule behind it and answers both.
     """
-    return [name for name in symbols if "." not in name]
+    body = texts.get(name, "")
+    if not body:
+        return None
+
+    prefix, dot, _ = name.rpartition(".")
+    if dot and prefix in texts and body in texts[prefix]:
+        return prefix
+
+    smallest: str | None = None
+    for other, other_body in texts.items():
+        if other == name or len(other_body) <= len(body) or body not in other_body:
+            continue
+        if smallest is None or len(other_body) < len(texts[smallest]):
+            smallest = other
+    return smallest
+
+
+def _children_of(parent: str, order: list[str], parents: dict[str, str | None]) -> list[str]:
+    """The symbols nested directly in `parent`, in source order."""
+    return [name for name in order if parents.get(name) == parent]
 
 
 def _weight(text: str) -> int:
@@ -104,6 +131,62 @@ def _emit(text: str, path: str, symbol: str, language: str, max_chars: int) -> l
     ]
 
 
+@dataclass(frozen=True)
+class _Cut:
+    """Everything a cut needs to know about the file it is cutting.
+
+    Bundled because `_walk` and `_emit_unit` are mutually recursive and would otherwise pass six
+    arguments back and forth at every level, which is how the two loops came to be written out
+    twice in the first place.
+    """
+
+    path: str
+    language: str
+    max_chars: int
+    texts: dict[str, str]
+    order: list[str]
+    parents: dict[str, str | None]
+
+
+def _walk(text: str, names: list[str], cut: _Cut) -> list[Chunk]:
+    """Cut `text` at each of `names`, in source order, losing nothing between them.
+
+    The file and a class are the same problem at two scales — a run of symbols with text around
+    them — so this is written once and used by both. Whatever sits between the symbols is emitted
+    **unnamed**: it belongs to no symbol, and naming it after the container would put the container
+    in the index beside its own members.
+    """
+    chunks: list[Chunk] = []
+    remainder = text
+    for name in names:
+        body = cut.texts.get(name, "")
+        if not body.strip() or body not in remainder:
+            continue
+        head, _, remainder = remainder.partition(body)
+        if head.strip():
+            chunks.extend(_emit(head, cut.path, "", cut.language, cut.max_chars))
+        chunks.extend(_emit_unit(body, name, cut))
+    if remainder.strip():
+        chunks.extend(_emit(remainder, cut.path, "", cut.language, cut.max_chars))
+    return chunks
+
+
+def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
+    """One symbol, cut on structure while it can be and on lines only when it cannot.
+
+    The recursion terminates by construction: each child's text is strictly shorter than its
+    parent's, and a symbol with no children falls through to the line split.
+    """
+    if _weight(text) <= cut.max_chars:
+        return _emit(text, cut.path, name, cut.language, cut.max_chars)
+
+    children = _children_of(name, cut.order, cut.parents)
+    if not children:
+        return _emit(text, cut.path, name, cut.language, cut.max_chars)  # FR-10: the last resort
+
+    return _walk(text, children, cut)
+
+
 def chunk_source(
     code: str,
     *,
@@ -122,26 +205,18 @@ def chunk_source(
     as a preamble chunk. It is usually the part that says what the file depends on.
     """
     try:
-        symbols = _top_level(parser.list_symbols(code))
+        order = parser.list_symbols(code)
     except Exception:
         logger.debug("Chunking %s: symbol listing failed, falling back to line windows", path)
-        symbols = []
+        order = []
 
-    chunks: list[Chunk] = []
-    remainder = code
-    for name in symbols:
+    texts: dict[str, str] = {}
+    for name in order:
         try:
-            body = parser.extract_symbol(code, name)
+            texts[name] = parser.extract_symbol(code, name)
         except Exception:
             logger.debug("Chunking %s: could not extract %r, skipping", path, name)
-            continue
-        if not body.strip() or body not in remainder:
-            continue
-        head, _, remainder = remainder.partition(body)
-        if head.strip():
-            chunks.extend(_emit(head, path, "", language, max_chars))
-        chunks.extend(_emit(body, path, name, language, max_chars))
 
-    if remainder.strip():
-        chunks.extend(_emit(remainder, path, "", language, max_chars))
-    return chunks
+    parents = {name: _parent_of(name, texts) for name in order}
+    cut = _Cut(path, language, max_chars, texts, order, parents)
+    return _walk(code, [n for n in order if parents[n] is None], cut)
