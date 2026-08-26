@@ -3,7 +3,19 @@
 
 """Source is split where it means something, not every N characters.
 
-Proves: B-SENS-03 FR-1, B-SENS-03 FR-2, B-SENS-03 FR-3, B-SENS-03 FR-4, B-SENS-03 FR-5
+Proves: B-SENS-03 FR-16, B-SENS-03 FR-17
+
+**This tag used to read `FR-1, FR-2, FR-3, FR-4, FR-5`, and those numbers now mean other things.**
+The 2026-08-26 design gave `FR-1` to *visibility is a value* and `FR-3` to *TypeScript's export is
+not accessibility*, so a chunking file claiming them told `check_fr_coverage` that Go's visibility
+rule was proven here. It was the third place one renumbering conflated a claim — the mutation
+corpus caught the first two.
+
+Only the claims that survive **verbatim** are tagged: an unreadable file is still indexed
+(`FR-16`), and a split loses no lines (`FR-17`). The rest of this file still guards real behaviour
+and claims no requirement, because the requirements it proved do not exist any more. SF-04's
+remaining boundaries rewrite those tests and tag them then — inventing a number for them now would
+be the same defect wearing a correction's clothes.
 
 Retrieval over a brownfield estate is only as good as its units. A fixed-size window cuts a
 function in half, so the half that gets retrieved is missing its signature or its return, and the

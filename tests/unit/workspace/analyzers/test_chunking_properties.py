@@ -3,7 +3,14 @@
 
 """Properties the chunker must hold whatever language it is pointed at.
 
-Proves: B-SENS-03 NFR-1, B-SENS-03 NFR-2, B-SENS-03 NFR-3
+Proves: B-SENS-03 NFR-1, B-SENS-03 NFR-2, B-SENS-03 NFR-4, B-SENS-03 FR-17
+
+**The numbers under this tag moved on 2026-08-26 and the claims did not.** `NFR-2` used to mean
+*Total* and now means *Pure*; `NFR-3` used to mean *Pure* and now means *Budget*. So totality — every
+non-blank character survives — is `FR-17`, purity is `NFR-2`, and determinism is `NFR-4`. Polyglot
+is still `NFR-1`.
+
+Left as it was, this file claimed the chunker proves a **budget** it does not measure.
 
 These are the three claims the design makes about the module rather than about one behaviour, and
 each is the kind that quietly stops being true. Polyglot support decays the moment a language
