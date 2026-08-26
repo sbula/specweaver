@@ -111,10 +111,12 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   it can move without the nightly saying so. The remedy where a claim matters is to re-anchor the
   mutant on the function that *reads* the constant — not to loosen the hasher.
 
-- **The 800-character entry cap is undecided.** It has fired three times (`B-FLOW-05`, `C-VAL-05`
-  twice) and every time was met by cutting words rather than by raising it. The rule says "as short
-  as possible, as long as needed"; the gate enforces 800. They disagree. `C-VAL-05` is now 787
-  characters — four words from red, with two 🟡 fields still to be filled in the gap-filling pass.
+- **The 800-character entry cap is retired by decision `[agreed 2026-08-26]`, and the gate still
+  enforces it.** *"I do not like any number here — as less as possible, as many as needed."* The
+  cap fired three times (`B-FLOW-05`, `C-VAL-05` twice) and every time was met by cutting words.
+  `MAX_ENTRY_LINES` in `_entry_depth.py` has not been removed yet; until it is, `C-VAL-05` sits at
+  787 characters with two 🟡 fields still to fill. **The replacement is not another number** — what
+  `R-ENTRY` already forbids is prose, a missing key, and hedging.
 
 - **The knowledge graph has no reader, and none is designed.** `ADR-006` names eight —
   `B-SENS-08`, `B-SENS-09`, `B-VAL-07`, `B-FLOW-04`, `C-UI-01`, `B-SENS-06`, `A-SENS-05`,
