@@ -22,6 +22,7 @@ import typing
 
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _docs
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 
 logger = logging.getLogger(__name__)
@@ -253,6 +254,25 @@ class SymbolReadingMixin:
                 # `["private"]`.
                 seen.setdefault(self._scoped_name(name_node), name_node)
         return list(seen.items())
+
+    #: How this language carries a description. The default reads the comment written above the
+    #: declaration; Python binds `docstring_doc`, because its docstring is inside the body and no
+    #: walk above the declaration will ever find it.
+    _doc_of = staticmethod(_docs.sibling_doc)
+
+    def extract_symbol_doc(self, code: str, symbol_name: str) -> str:
+        """The description attached to one symbol, marker-free, or `""`. Never raises.
+
+        Attachment is a tree position **and** a line gap: a comment separated by a blank line is
+        about something else. Without that, a file's licence header becomes the description of its
+        first declaration.
+        """
+        if not symbol_name:
+            return ""
+        for name, name_node in self._declared_names(code):
+            if name == symbol_name:
+                return str(self._doc_of(name_node))
+        return ""
 
     def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
         """The access level of one symbol, as a word from `VISIBILITY`. Never raises.

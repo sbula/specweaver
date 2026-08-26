@@ -11,6 +11,7 @@ import typing
 import tree_sitter_python
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _docs
 from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
@@ -41,6 +42,7 @@ class PythonCodeStructure(ClassBasedParser):
     """Python tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_python.language)
+    _doc_of = staticmethod(_docs.docstring_doc)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_definition",)

@@ -101,6 +101,18 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
+    def extract_symbol_doc(self, code: str, symbol_name: str) -> str:
+        """The description attached to one symbol, with its comment markers removed.
+
+        `""` when the symbol has none, when the language has no doc-comment concept, or when the
+        nearest comment is separated from the declaration by a blank line — a note about something
+        else rather than a description of this.
+
+        **Never raises**, for the same reason `extract_symbol_visibility` does not: it is called
+        once per symbol during a whole-repository scan.
+        """
+
+    @abstractmethod
     def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
         """The access level of one symbol, as a word from `VISIBILITY`.
 

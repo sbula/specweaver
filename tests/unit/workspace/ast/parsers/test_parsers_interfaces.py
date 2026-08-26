@@ -75,6 +75,9 @@ def test_code_structure_interface_enforces_abstract_methods() -> None:  # noqa: 
         def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
             return "unknown"
 
+        def extract_symbol_doc(self, code: str, symbol_name: str) -> str:
+            return ""
+
     parser = CompleteParser()
     assert parser.get_binary_ignore_patterns() == ["*.mock"]
     assert parser.get_default_directory_ignores() == ["mock_modules/"]
