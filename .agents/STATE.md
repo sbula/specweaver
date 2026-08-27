@@ -139,6 +139,14 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **One record path meant the last writer won.** Closed 2026-08-27. The nightly wrote
+  `.tmp/mutation_session.json` at 03:04 and a by-hand run overwrote it at 05:13; the 187-mutant
+  result was gone, with no copy anywhere. Every run now writes
+  `.tmp/sessions/<started_at>_<scope>.json` and the gate picks the newest record that **answers for
+  the corpus** — not the newest record `[agreed 2026-08-27]`. The systemd unit needed no change; it
+  passes no `--out`. Record: `TECH-049_record_store_walkthrough.md`. **Nothing prunes the store
+  yet** — that is the next boundary.
+
 - **The gate judged whatever record it found, however little it covered.** Found and closed
   2026-08-27. `--corpus <one file>` writes a record shaped **exactly** like the nightly's; a
   by-hand run at 05:13 covering 51 mutants overwrote the 03:00 nightly's 187 and `--gate` answered
@@ -176,7 +184,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **Three further boundaries are planned and agreed**
+  `TECH-049_gate_readability_walkthrough.md`. **Two further boundaries are planned and agreed**
   (`task.md`): scoped runs withdrawing findings they never looked at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`

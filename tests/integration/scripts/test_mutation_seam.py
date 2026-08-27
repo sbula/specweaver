@@ -232,7 +232,7 @@ class TestReportOutlivesTheSandbox:
         data["campaigns"][0]["mutants"][0]["old"] = "THIS ANCHOR DOES NOT EXIST"
         corpus_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-        out = tmp_path / "mutation_session.json"
+        store = tmp_path / "sessions"
         # `--ledger` is not optional here even though the test says nothing about ledgers:
         # `main` records the run, and without it `record_run` appends to the REAL
         # `scripts/baselines/mutation_findings.json` (`TECH-055`).
@@ -241,15 +241,16 @@ class TestReportOutlivesTheSandbox:
                 "--corpus",
                 str(corpus_file),
                 "--out",
-                str(out),
+                str(store),
                 "--no-baseline",
                 "--ledger",
                 str(tmp_path / "ledger.json"),
             ]
         )
 
-        assert out.is_file(), "a report must exist even when every mutant failed"
-        written = out.read_text(encoding="utf-8")
+        records = list(store.glob("*.json"))
+        assert len(records) == 1, "a report must exist even when every mutant failed"
+        written = records[0].read_text(encoding="utf-8")
         assert "/tmp/" not in written, "the sandbox is gone; nothing may point into it"
         assert "scanner.py" in written, "and the useful half of the path survived"
         assert code in {0, 1}
@@ -272,7 +273,9 @@ class TestReportLedgerGateChain:
     def test_a_finding_blocks_until_confirmed_then_clears(
         self, mutation: ModuleType, tmp_path: Path
     ) -> None:
-        report = tmp_path / "report.json"
+        store = tmp_path / "sessions"
+        store.mkdir()
+        report = store / "2026-08-27T03-00-00.000000-00-00_full.json"
         ledger = tmp_path / "ledger.json"
         report.write_text(
             json.dumps(
@@ -296,7 +299,7 @@ class TestReportLedgerGateChain:
             encoding="utf-8",
         )
 
-        blocked = mutation.main(["--gate", "--out", str(report), "--ledger", str(ledger)])
+        blocked = mutation.main(["--gate", "--out", str(store), "--ledger", str(ledger)])
         assert blocked == 1, "an unread finding must block"
 
         confirmed = mutation.main(
@@ -313,7 +316,7 @@ class TestReportLedgerGateChain:
         )
         assert confirmed == 0
 
-        assert mutation.main(["--gate", "--out", str(report), "--ledger", str(ledger)]) == 0
+        assert mutation.main(["--gate", "--out", str(store), "--ledger", str(ledger)]) == 0
         assert json.loads(ledger.read_text())["override_count"] == 1, "and the census counted it"
 
 

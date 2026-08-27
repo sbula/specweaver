@@ -46,7 +46,7 @@ class TestNightlySession:
     def test_the_timers_command_line_runs_the_real_corpus(self, tmp_path: Path) -> None:
         import sys
 
-        out = tmp_path / "mutation_session.json"
+        store = tmp_path / "sessions"
         done = subprocess.run(
             [
                 sys.executable,
@@ -54,7 +54,7 @@ class TestNightlySession:
                 "--corpus-dir",
                 CHEAP_CORPUS_DIR,
                 "--out",
-                str(out),
+                str(store),
                 "--no-baseline",
                 # `TECH-055`: `main` folds its report into a ledger, and the default is the real
                 # `scripts/baselines/mutation_findings.json`. Without an override, every suite run
@@ -69,9 +69,11 @@ class TestNightlySession:
             check=False,
         )
         assert done.returncode in {0, 1}, done.stderr
-        assert out.is_file(), "the nightly run must leave a report behind"
+        records = list(store.glob("*.json"))
+        assert len(records) == 1, "the nightly run must leave a report behind"
+        assert "_full" in records[0].name, "and it must say it swept the whole corpus"
 
-        record = json.loads(out.read_text(encoding="utf-8"))
+        record = json.loads(records[0].read_text(encoding="utf-8"))
         features = {str(m["id"]).split(" ")[0] for m in record["mutants"]}
         assert "TECH-049" in features, "the corpus discovered its own first campaign"
         # Accounting used to compare two stored totals. Both were derived from the results, so
@@ -81,7 +83,14 @@ class TestNightlySession:
         assert all(m.get("verdict") for m in record["mutants"]), (
             "accounting: every mutant that returned carries a verdict"
         )
-        assert "/tmp/" not in out.read_text(encoding="utf-8")
+        # `NFR-3` says no **sandbox** path may survive, and `/tmp/sw-` is what a sandbox is.
+        # This asserted `"/tmp/"` outright, which is a stricter claim than the requirement and
+        # held only while no mutant's captured output happened to mention another `/tmp` path.
+        # One now does: pytest rewrites `assert latest_covering_record(store) is None` into a
+        # message containing the store's own `tmp_path`, and that is neither a sandbox path nor
+        # something the sanitiser should rewrite. Assert the requirement, not a proxy for it.
+        written = records[0].read_text(encoding="utf-8")
+        assert "/tmp/sw-" not in written, "the sandbox is gone; nothing may point into it"
 
 
 @pytest.mark.e2e

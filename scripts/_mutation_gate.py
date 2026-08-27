@@ -132,6 +132,45 @@ def last_expected_run(now: float) -> float:
     return todays if todays <= now else todays - 86400
 
 
+def latest_covering_record(store: Path) -> Path | None:
+    """The newest record in the store that answers for the whole corpus, or `None`.
+
+    **Newest is not the answer; newest that covers is.** A scoped run five minutes ago says nothing
+    about the campaigns it skipped, however recent it is — and under one-file-one-path such a run
+    did not merely out-rank the nightly, it destroyed it: a 05:13 by-hand run overwrote a 03:00
+    nightly's 187-mutant result on 2026-08-27 and there was no copy anywhere.
+
+    Names sort chronologically because `record_name` leads with the timestamp, so this needs no
+    stat call and no clock of its own.
+
+    An unreadable record is skipped, never raised on. A run killed mid-write leaves one, and a
+    selection that raised would make every good record in the store unreachable because of the
+    newest byte.
+    """
+    if not store.is_dir():
+        return None
+    for path in sorted(store.glob("*.json"), reverse=True):
+        record = _read_json(path, {})
+        if ((record.get(SESSION_BLOCK) or {}).get("scope") or {}).get("kind") == "full":
+            return path
+    return None
+
+
+def gate_store(
+    store: Path, ledger_path: Path, *, current_tree_sha: str | None = None
+) -> GateResult:
+    """The morning question, asked of the store rather than of a path somebody may have overwritten."""
+    chosen = latest_covering_record(store)
+    if chosen is None:
+        return GateResult(
+            True,
+            f"no record in {store} answers for the corpus — the session has not run, or every "
+            f"record there covers only part of it. A scoped run cannot stand in for the nightly, "
+            f"however recent it is",
+        )
+    return gate_verdict(chosen, ledger_path, current_tree_sha=current_tree_sha)
+
+
 def gate_verdict(
     record_path: Path, ledger_path: Path, *, current_tree_sha: str | None = None
 ) -> GateResult:

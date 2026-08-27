@@ -82,7 +82,15 @@ undecidable.
 | FR-6 | Kill confirmation | Runner | The system SHALL re-run the killers **without** the mutant before recording `PASS` | A flaky test can no longer read as protection |
 | FR-7 | Sandbox hygiene | Runner | The system SHALL reset the mutated file and verify the sandbox is clean (`git status --porcelain` empty) between mutants | State written by one mutant's tests cannot leak into the next |
 | FR-8 | Accounting | Evaluator | The system SHALL fail a campaign when verdicts returned ≠ mutants declared, and SHALL rate a campaign `FAILED` on any `FAIL`, `PARTIAL` when the only non-passes are `INDETERMINATE` or `STALE`, else `PASSED` | Crashes, interrupts and silent skips surface instead of reading as a clean run, and an unreadable result is not scored as a defect |
-| FR-9 | Single session record | Reporter | The system SHALL write one `.tmp/mutation_session.json` with a `session` block first (spelled `summary` until `68a089d4`; corrected here `[agreed 2026-08-27]` because the producer, the renderer and the gate must name it identically and one of the three did not — see `_session_record.SESSION_BLOCK`), **self-contained** — no path into the sandbox in any field, captured output included — and exit `0` no-fail / `1` any-fail / `2` could-not-run | A machine can evaluate the run after the sandbox is gone |
+| FR-9 | Single session record | Reporter | The system SHALL write one record per run into a store — `.tmp/sessions/<started_at>_<scope>.json` — with a `session` block first, **self-contained** — no path into the sandbox in any field, captured output included — and exit `0` no-fail / `1` any-fail / `2` could-not-run | A machine can evaluate the run after the sandbox is gone |
+
+**`FR-9` was one file at one fixed path until `[agreed 2026-08-27]`.** Two corrections, each
+beside what it governs. The block was spelled `summary` until `68a089d4` renamed it in the
+producer and the renderer and left the gate's single reader behind — it is
+`_session_record.SESSION_BLOCK` now, imported by both sides rather than spelled by either. And one
+path meant the last writer won: a 05:13 by-hand run overwrote a 03:00 nightly's 187-mutant result
+and no copy of it existed anywhere. Every run gets its own file; the gate picks the newest that
+answers for the corpus.
 | FR-10 | Scheduler | Host | The system SHALL run the whole corpus on a schedule without human invocation | A measurement nobody triggers is a measurement nobody makes |
 | FR-11 | Session gate | Gate | The system SHALL block on any unconfirmed finding and release once every finding carries a **confirmation with a disposition** (`real-gap` · `equivalent` · `will-fix` · `stale-refreshed`). It SHALL NOT require a re-run to prove a fix, and SHALL treat a missing or stale report as blocking | Findings get read rather than accumulating, without paying for an on-demand corpus run; the next scheduled run re-measures anyway |
 | FR-11a | Repeat findings | Reporter | The system SHALL mark a finding that recurred in consecutive runs with the number of runs it has survived | A `will-fix` that never got fixed is visible instead of being re-confirmed forever |

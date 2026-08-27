@@ -382,7 +382,7 @@ def _cmd_confirm(args: Any, ap: Any) -> int:
 
 def _cmd_gate(args: Any) -> int:
     """Blocked or clear, and when blocked, exactly what to do about it."""
-    result = _gate.gate_verdict(
+    result = _gate.gate_store(
         Path(args.out), Path(args.ledger), current_tree_sha=_reach.current_tree_sha()
     )
     if not result.blocked:
@@ -405,10 +405,11 @@ def _cmd_install() -> int:
     return 0
 
 
-def _cmd_summary(report: Path) -> int:
-    """Re-render a session record already on disk. Reads nothing else and runs nothing."""
-    if not report.is_file():
-        print(f"no session record at {report} — run the corpus first", file=sys.stderr)
+def _cmd_summary(store: Path) -> int:
+    """Re-render the record that answers for the corpus. Reads nothing else and runs nothing."""
+    report = _gate.latest_covering_record(store)
+    if report is None:
+        print(f"no record in {store} answers for the corpus — run it first", file=sys.stderr)
         return 1
     print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
     return 0
@@ -426,7 +427,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--corpus", action="append", default=[], help="a corpus file; repeatable")
     ap.add_argument("--corpus-dir", help="discover every <ID>_mutants.json beneath this directory")
-    ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "mutation_session.json"))
+    # The store, not a file — one path per run meant the last writer won. See `_run_reach`.
+    ap.add_argument("--out", default=str(REPO_ROOT / ".tmp" / "sessions"))
     ap.add_argument("--no-baseline", action="store_true", help="skip the full-suite baseline")
     ap.add_argument("--no-confirm", action="store_true", help="do not re-run killers unmutated")
     ap.add_argument(
@@ -464,11 +466,9 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_summary(Path(args.out))
 
     paths = [Path(p) for p in args.corpus]
-    # Whether this run may conclude anything from a finding's ABSENCE. A bare `--corpus-dir` is the
-    # operator saying *I swept this tree*; naming individual corpora is not, and the two mixed is a
-    # narrowed sweep that states completeness of neither. `fold_session` cannot work this out —
-    # from inside, a scoped run's `declared` set is identical to a whole-corpus run whose campaigns
-    # were deleted, and those close a finding for opposite reasons.
+    # Whether this run may conclude anything from a finding's ABSENCE. `fold_session` cannot work
+    # it out: from inside, a scoped run's `declared` set is identical to a whole-corpus run whose
+    # campaigns were deleted, and those close a finding for opposite reasons. See `_run_reach`.
     full_sweep = bool(args.corpus_dir) and not args.corpus
     if args.corpus_dir:
         paths += discover_corpora(Path(args.corpus_dir))
@@ -503,8 +503,9 @@ def main(argv: list[str] | None = None) -> int:
         tree_sha=_reach.tree_sha(),
         baseline=baseline,
     )
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
+    store = Path(args.out)
+    store.mkdir(parents=True, exist_ok=True)
+    out = store / _report.record_name(document)
     out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
     # The nightly's journal used to carry a path and nothing else, so a FAILED run looked identical

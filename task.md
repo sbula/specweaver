@@ -114,13 +114,18 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-5 — one store, one record per run  (Q4, Q9)
 
-- [ ] **T1** — Red: two runs in the same second leave two records, neither overwriting the other.
-- [ ] **T2** — Red: the gate picks the newest **covering** record and ignores a newer scoped one.
-- [ ] **T3** — Red: no covering record at all blocks, saying the nightly has not run.
-- [ ] **T4** — Green: `.tmp/sessions/`; `--out` and `--gate` follow; systemd unit updated.
-- [ ] **T5** — Correct `TECH-049` `FR-9`: one file becomes one store, `summary` becomes `session`.
+- [x] **T1** — Red: two runs in the same second leave two records, neither overwriting the other.
+- [x] **T2** — Red: the gate picks the newest **covering** record and ignores a newer scoped one.
+- [x] **T3** — Red: no covering record at all blocks, saying the nightly has not run.
+- [x] **T4** — Green: `.tmp/sessions/`; `--out` and `--gate` follow; systemd unit updated.
+- [x] **T5** — Correct `TECH-049` `FR-9`: one file becomes one store, `summary` becomes `session`.
       One edit, beside the fact, saying why.
-- [ ] **T6** — Mutants: the gate takes the newest record regardless of scope · the suffix is dropped.
+- [x] **T6** — Mutants: four. Newest-regardless-of-scope · oldest-chosen · microseconds lost ·
+      a scope reaching the filesystem raw.
+- [x] **T7** — The systemd unit needed no change: it passes no `--out`. Checked, not assumed.
+- [x] **T8** — CB-2's one-name-one-place guard fired on me — a literal `"session"` in `mutation.py`.
+- [x] **T9** — A delivered assertion was stricter than `NFR-3` (`/tmp/` vs `/tmp/sw-`). Narrowed to
+      the requirement, recorded in the walkthrough rather than done quietly.
 
 **Every check before the commit.**
 

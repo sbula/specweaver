@@ -185,3 +185,158 @@ class TestGateVerdictAdmissibility:
         report = self._record(tmp_path, scope={"kind": "full"})
 
         assert not gate.gate_verdict(report, tmp_path / "ledger.json", current_tree_sha="x").blocked
+
+
+class TestLatestCoveringRecord:
+    """Which record in the store answers this morning's question.
+
+    Proves: TECH-049 FR-9, FR-11
+
+    One file at one path meant the last writer won, and the last writer is usually a by-hand run.
+    On 2026-08-27 a 05:13 run overwrote the 03:00 nightly and the nightly's 187-mutant result was
+    simply gone — not stale, not refused, **absent**, with no way to get it back.
+
+    A store fixes the loss. The selection is what stops it becoming a new way to answer wrongly: the
+    newest record is not the answer, the newest record that **covers the corpus** is. A scoped run
+    five minutes ago says nothing about the campaigns it skipped, however recent it is.
+    """
+
+    @staticmethod
+    def _store(tmp_path: Path, *records: tuple[str, dict[str, Any]]) -> Path:
+        store = tmp_path / "sessions"
+        store.mkdir()
+        for name, scope in records:
+            document = _record.build_session_record(
+                campaigns=[], head="abc1234", dirty=False, scope=scope
+            )
+            (store / name).write_text(json.dumps(document), encoding="utf-8")
+        return store
+
+    def test_the_newest_full_sweep_is_chosen(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Happy] two nightlies in the store; this morning's is the one that answers."""
+        store = self._store(
+            tmp_path,
+            ("2026-08-26T03-00-00_full.json", {"kind": "full"}),
+            ("2026-08-27T03-00-00_full.json", {"kind": "full"}),
+        )
+
+        chosen = gate.latest_covering_record(store)
+
+        assert chosen is not None
+        assert chosen.name == "2026-08-27T03-00-00_full.json"
+
+    def test_a_newer_scoped_record_does_not_win(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Hostile] the 05:13 run, exactly. Recency is not coverage.
+
+        Under one-file-one-path this record did not merely win — it destroyed the other one.
+        """
+        store = self._store(
+            tmp_path,
+            ("2026-08-27T03-00-00_full.json", {"kind": "full"}),
+            (
+                "2026-08-27T05-13-05_b-sens-03.json",
+                {"kind": "scoped", "corpora": ["B-SENS-03_mutants.json"]},
+            ),
+        )
+
+        chosen = gate.latest_covering_record(store)
+
+        assert chosen is not None
+        assert chosen.name == "2026-08-27T03-00-00_full.json", (
+            "a scoped run answered for the corpus because it happened to be newer"
+        )
+
+    def test_a_store_of_only_scoped_records_answers_nothing(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Boundary] plenty of records, none of them evidence about the corpus."""
+        store = self._store(
+            tmp_path,
+            ("2026-08-27T05-13-05_a.json", {"kind": "scoped", "corpora": ["A.json"]}),
+            ("2026-08-27T06-13-05_b.json", {"kind": "scoped", "corpora": ["B.json"]}),
+        )
+
+        assert gate.latest_covering_record(store) is None
+
+    def test_an_empty_store_answers_nothing(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Boundary] a first run, or a cleared `.tmp`."""
+        assert gate.latest_covering_record(self._store(tmp_path)) is None
+
+    def test_a_missing_store_answers_nothing(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Graceful degradation] the directory need not exist yet, and that is not a crash."""
+        assert gate.latest_covering_record(tmp_path / "never-created") is None
+
+    def test_an_unreadable_record_does_not_hide_the_rest(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Hostile] a half-written file in the store must not take the store down with it.
+
+        A run killed mid-write leaves one. If selection raised, one corrupt file would make every
+        good record unreachable — the whole store answering nothing because of the newest byte.
+        """
+        store = self._store(tmp_path, ("2026-08-27T03-00-00_full.json", {"kind": "full"}))
+        (store / "2026-08-27T09-00-00_full.json").write_text('{"schema": 1, "sess', "utf-8")
+
+        chosen = gate.latest_covering_record(store)
+
+        assert chosen is not None
+        assert chosen.name == "2026-08-27T03-00-00_full.json"
+
+
+class TestRecordName:
+    """A filename per run, and two runs in one second must not become one record."""
+
+    @staticmethod
+    def _named(started_at: str, scope: dict[str, Any]) -> str:
+        """The name the producer would give a record with this timestamp and this reach."""
+        document = _record.build_session_record(
+            campaigns=[], head="abc1234", dirty=False, scope=scope
+        )
+        document["session"]["started_at"] = started_at
+        return str(_record.record_name(document))
+
+    def test_two_runs_in_the_same_second_get_different_names(self) -> None:
+        """[Boundary] the nightly and a by-hand run can start in the same second.
+
+        `started_at` carries microseconds, so this is not a hypothetical guard bolted on — it is
+        the reason the timestamp is used whole rather than truncated to seconds for tidiness.
+        """
+        a = self._named("2026-08-27T03:00:00.000001+00:00", {"kind": "full"})
+        b = self._named("2026-08-27T03:00:00.900002+00:00", {"kind": "full"})
+
+        assert a != b
+
+    def test_the_name_says_what_the_run_covered(self) -> None:
+        """[Happy] a human reading `ls` must be able to tell a nightly from a by-hand run."""
+        full = self._named("2026-08-27T03:00:00.000001+00:00", {"kind": "full"})
+        scoped = self._named(
+            "2026-08-27T05:13:05.000001+00:00",
+            {"kind": "scoped", "corpora": ["B-SENS-03_mutants.json"]},
+        )
+
+        assert "full" in full
+        assert "full" not in scoped
+        assert "B-SENS-03" in scoped
+
+    def test_the_name_is_a_usable_filename(self) -> None:
+        """[Hostile] an ISO timestamp carries `:` and `+`, and a corpus name carries a path.
+
+        Neither may reach the filesystem as-is: `:` is illegal on Windows and a separator in a
+        scope, and an unsanitised corpus name could walk out of the store entirely.
+        """
+        name = self._named(
+            "2026-08-27T05:13:05.000001+00:00",
+            {"kind": "scoped", "corpora": ["../../etc/passwd"]},
+        )
+
+        assert ":" not in name
+        assert "/" not in name
+        assert ".." not in name
+        assert name.endswith(".json")
+
+    def test_a_scope_with_no_corpora_still_names_a_file(self) -> None:
+        """[Graceful degradation] an odd scope must not produce an empty or dangling name."""
+        name = self._named("2026-08-27T05:13:05.000001+00:00", {"kind": "scoped"})
+
+        assert name.endswith(".json")
+        assert len(name) > len(".json")

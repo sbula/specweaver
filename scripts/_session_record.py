@@ -49,10 +49,49 @@ MUTANTS_BLOCK = "mutants"
 #: with a `sw-` prefix, and the segment after it is the mirror of the repo tree.
 _SANDBOX_PATH = re.compile(r"/(?:private/)?tmp/sw-[A-Za-z0-9_-]+/")
 
+#: Anything that must not reach a filename. Deny-list rather than allow-list would let a new
+#: separator through the day somebody adds one to a scope.
+_FILENAME_UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
+_LABEL_UNSAFE = re.compile(r"[^A-Za-z0-9_-]")
+
 #: How many failing test names the PROSE prints before summarising the rest. The JSON keeps all of
 #: them -- the record is the record. Ten with the remainder counted is the shape the repo already
 #: used for oversized findings; a truncation that does not say it truncated reads as a full list.
 _BASELINE_NAMES_SHOWN = 10
+
+
+def record_name(document: dict[str, Any]) -> str:
+    """One filename per run, sortable, and legible in an `ls`.
+
+    Takes the whole document rather than its parts: this module owns the record's shape, and a
+    caller assembling the name from `started_at` and `scope` would be a second place that has to
+    know those key names. That is the drift `SESSION_BLOCK` exists to stop, one level down.
+
+    Sortable because selection reads the store by name: the timestamp leads, and it keeps its
+    microseconds. Truncating to seconds would look tidier and would let a nightly and a by-hand
+    run that started in the same second become one record — which is the loss this store exists
+    to prevent, reintroduced by rounding.
+
+    Legible because a human scanning `.tmp/sessions/` has to be able to tell a nightly from a
+    by-hand run without opening either.
+
+    Everything outside `[A-Za-z0-9._-]` is replaced. `:` and `+` come from the ISO timestamp and
+    are illegal or ambiguous as filenames; a corpus name is untrusted enough that `../` reaching
+    the filesystem would let a scope walk out of the store.
+    """
+    session = document.get(SESSION_BLOCK) or {}
+    started_at = str(session.get("started_at") or "")
+    scope = session.get("scope") or {}
+    kind = str(scope.get("kind") or "unknown")
+    if kind == "full":
+        label = "full"
+    else:
+        corpora = [str(c) for c in (scope.get("corpora") or [])]
+        label = "+".join(c.removesuffix("_mutants.json") for c in corpora) or "empty"
+    # The timestamp keeps its dot — that is the microsecond separator. The label does not need
+    # one, and allowing it there would let `..` through a scope into a filename.
+    stamp = _FILENAME_UNSAFE.sub("-", started_at)
+    return f"{stamp}_{_LABEL_UNSAFE.sub('-', label)[:60]}.json"
 
 
 def working_tree_sha(diff: str, untracked: dict[str, str]) -> str:

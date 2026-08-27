@@ -64,7 +64,8 @@
       "title": "A report from before the last scheduled run is stale, and stale blocks",
       "scope": [
         "tests/unit/scripts/test_mutation_gate.py",
-        "tests/unit/scripts/test_session_record.py"
+        "tests/unit/scripts/test_session_record.py",
+        "tests/unit/scripts/test_mutation_gate_admissibility.py"
       ],
       "mutants": [
         {
@@ -146,6 +147,26 @@
           "new": "if True:",
           "breaks": "a record naming a commit is refused because somebody started editing, so the gate blocks every morning for a verdict the working tree cannot affect",
           "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "the-newest-record-wins-regardless-of-scope",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "latest_covering_record",
+          "old": "if ((record.get(SESSION_BLOCK) or {}).get(\"scope\") or {}).get(\"kind\") == \"full\":",
+          "new": "if True:",
+          "breaks": "a scoped run five minutes ago answers for the campaigns it skipped, purely because it is the most recent file in the store",
+          "symbol_sha": "sha256:c254fcd075a1746065fa0353c3f3f3ed3e28a0bfeb5300babafa1a4d528b72f1"
+        },
+        {
+          "id": "the-oldest-covering-record-is-chosen",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "latest_covering_record",
+          "old": "for path in sorted(store.glob(\"*.json\"), reverse=True):",
+          "new": "for path in sorted(store.glob(\"*.json\")):",
+          "breaks": "the gate answers from the first nightly ever recorded and never sees a newer one, so the store makes it permanently stale instead of current",
+          "symbol_sha": "sha256:c254fcd075a1746065fa0353c3f3f3ed3e28a0bfeb5300babafa1a4d528b72f1"
         }
       ]
     },
@@ -203,7 +224,8 @@
       "requirement": "FR-9",
       "title": "The record fingerprints the tree it measured, both halves",
       "scope": [
-        "tests/unit/scripts/test_session_record.py"
+        "tests/unit/scripts/test_session_record.py",
+        "tests/unit/scripts/test_mutation_gate_admissibility.py"
       ],
       "mutants": [
         {
@@ -215,6 +237,26 @@
           "new": "    for name in sorted([]):",
           "breaks": "the sandbox copies untracked files in, so a diff-only fingerprint says the tree is unchanged while the thing measured is not",
           "symbol_sha": "sha256:d1ebc398036edd74f2c49dbcb751338ac216af0d5ad76898d09eff4689dc265a"
+        },
+        {
+          "id": "two-runs-in-one-second-become-one-record",
+          "origin": "authored",
+          "file": "scripts/_session_record.py",
+          "symbol": "record_name",
+          "old": "stamp = _FILENAME_UNSAFE.sub(\"-\", started_at)",
+          "new": "stamp = _FILENAME_UNSAFE.sub(\"-\", started_at.split(\".\")[0])",
+          "breaks": "truncating the timestamp to seconds makes a nightly and a by-hand run that start in the same second collide — the exact loss the store exists to prevent, reintroduced by rounding",
+          "symbol_sha": "sha256:dbde7bb5a14d4487234b5a838c7697029eaedb6ec017dea0fd75dbf8d0467b9f"
+        },
+        {
+          "id": "a-scope-reaches-the-filesystem-raw",
+          "origin": "authored",
+          "file": "scripts/_session_record.py",
+          "symbol": "record_name",
+          "old": "return f\"{stamp}_{_LABEL_UNSAFE.sub('-', label)[:60]}.json\"",
+          "new": "return f\"{stamp}_{label}.json\"",
+          "breaks": "a corpus name carrying separators lands in the filename unsanitised, so a scope can name a path outside the store",
+          "symbol_sha": "sha256:dbde7bb5a14d4487234b5a838c7697029eaedb6ec017dea0fd75dbf8d0467b9f"
         }
       ]
     }
