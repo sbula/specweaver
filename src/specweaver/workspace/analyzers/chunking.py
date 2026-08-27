@@ -13,8 +13,9 @@ symbol cannot be cited, and an agent that cannot cite cannot be checked.
 
 from __future__ import annotations
 
+import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, replace
 from typing import Any
 
 from specweaver.workspace.analyzers._scope import directory_of, levels_of, unit_of
@@ -84,6 +85,29 @@ class Chunk:
     #: both halves -- because a skeleton is a description and a signature CONCATENATED, so it is
     #: not a slice of the file and never could be.
     layer: str = "body"
+    #: sha256 over the text **and every other label**, so a re-index can ask *did this change*
+    #: rather than wiping the store and embedding everything again.
+    #:
+    #: Every label, because a chunk whose text is unchanged and whose `visibility` was corrected
+    #: from `public` to `private` is a **different row** — a consumer filtering by visibility would
+    #: otherwise keep serving the old answer while the row looked current.
+    content_hash: str = ""
+
+
+def content_hash(chunk: Chunk) -> str:
+    """A chunk's identity: sha256 over its text and every label except this one.
+
+    **Excluding itself is what makes it recomputable.** A hash that fed on its own field would
+    depend on whatever the field happened to hold, so checking a stored chunk for freshness would
+    give a different answer than computing it fresh — and every row would read as stale.
+
+    The fields are taken in declaration order and separated by a byte that cannot appear in a
+    field's own rendering, so `("a", "bc")` and `("ab", "c")` cannot collide.
+    """
+    parts = [
+        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != "content_hash"
+    ]
+    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
 
 
 def _parent_of(name: str, texts: dict[str, str]) -> str | None:
@@ -145,7 +169,7 @@ def _emit(
     # the cut happened here.
     windowed = line_window or len(pieces) > 1
     return [
-        Chunk(
+        _sealed(
             text=piece,
             path=path,
             symbol=symbol,
@@ -161,6 +185,12 @@ def _emit(
         )
         for index, piece in enumerate(pieces, start=1)
     ]
+
+
+def _sealed(**labels: Any) -> Chunk:
+    """A chunk with its identity stamped on, which is the only way one is ever built here."""
+    chunk = Chunk(**labels)
+    return replace(chunk, content_hash=content_hash(chunk))
 
 
 @dataclass(frozen=True)

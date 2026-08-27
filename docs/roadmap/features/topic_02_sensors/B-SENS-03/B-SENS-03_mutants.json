@@ -73,7 +73,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = False",
      "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
-     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
+     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
     },
     {
      "id": "everything-is-a-line-window",
@@ -83,7 +83,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = True",
      "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
-     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
+     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
     },
     {
      "id": "an-unreadable-file-reads-as-readable",
@@ -676,7 +676,56 @@
      "old": "    layer: str = \"body\",\n) -> list[Chunk]:",
      "new": "    layer: str = \"body\",\n) -> list[Chunk]:\n    layer = \"body\"",
      "breaks": "the label, without touching the content. Every chunk reads `body`, so `FR-17`'s totality would bind the skeletons too -- and a skeleton is a description and a signature concatenated, which no totality claim can hold for",
-     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
+     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-13",
+   "title": "A chunk's identity covers every label, not only its text",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_identity.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-hash-covers-text-only",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "content_hash",
+     "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
+     "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name == \"text\"",
+     "breaks": "the reason the field exists. A chunk whose text is unchanged and whose `visibility` was corrected from `public` to `private` is a DIFFERENT row -- hashing the text alone leaves the stale one looking current, and a consumer filtering by visibility keeps serving the old answer",
+     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+    },
+    {
+     "id": "the-hash-is-constant",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "content_hash",
+     "old": "    return hashlib.sha256(\"\\x00\".join(parts).encode(\"utf-8\")).hexdigest()",
+     "new": "    return \"0\" * 64",
+     "breaks": "identity altogether: every chunk in the estate is the same chunk, so a re-index either replaces everything or nothing",
+     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+    },
+    {
+     "id": "the-hash-feeds-on-itself",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "content_hash",
+     "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
+     "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk)",
+     "breaks": "recomputability. A hash that includes its own field depends on whatever that field held, so checking a stored chunk for freshness gives a different answer than computing it fresh -- and every row reads as stale",
+     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+    },
+    {
+     "id": "chunks-are-emitted-unsealed",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_sealed",
+     "old": "    chunk = Chunk(**labels)\n    return replace(chunk, content_hash=content_hash(chunk))",
+     "new": "    return Chunk(**labels)",
+     "breaks": "the field ever being filled. Every chunk carries the empty default, so a store keyed on it collapses the whole estate into one row",
+     "symbol_sha": "sha256:66cc8d9c796516a505a5ebe968a02043c8510aa0684d1598166679c54676eb8c"
     }
    ]
   }

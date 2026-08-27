@@ -25,3 +25,14 @@ mypy · complexity · class health · duplication · conventions · tach.
 - [x] **T6** — Mutants: skeletons merge · the layer is never set
 
 **Every check before the commit.**
+
+---
+
+# CB-3 — a chunk can be identified  (FR-13)  — LAST REQUIREMENT
+
+- [x] **T1** — Red: `tests/unit/workspace/analyzers/test_chunking_identity.py`
+- [x] **T2** — `content_hash` over the text **and every other label**
+- [x] **T3** — The hash is not part of its own input, asserted
+- [x] **T4** — Mutants: the hash covers text only · the hash is constant
+
+**Every check before the commit.**
