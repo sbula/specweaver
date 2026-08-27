@@ -133,14 +133,16 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-6 — retention by state, not by age  (Q5, Q6, Q7)
 
-- [ ] **T1** — Red: a `FAILED` record survives a later `PASSED` record of **narrower** scope.
-- [ ] **T2** — Red: a `FAILED` record is deleted by a later `PASSED` record of covering scope.
-- [ ] **T3** — Red: a `NOT_RUN` record is kept, exactly as a `FAILED` one.
-- [ ] **T4** — Red: past **20** unsuperseded records the run warns and deletes nothing, and
+- [x] **T1** — Red: a `FAILED` record survives a later `PASSED` record of **narrower** scope.
+- [x] **T2** — Red: a `FAILED` record is deleted by a later `PASSED` record of covering scope.
+- [x] **T3** — Red: a `NOT_RUN` record is kept, exactly as a `FAILED` one.
+- [x] **T4** — Red: past **20** unsuperseded records the run warns and deletes nothing, and
       `--gate` prints the same warning.
-- [ ] **T5** — Green: pruning runs at the **start** of a session, so a crashed run still gets swept.
-- [ ] **T6** — Mutants: a narrow pass supersedes a wide failure · the warning never fires ·
-      pruning deletes a failure.
+- [x] **T5** — Green: pruning runs at the **start** of a session, so a crashed run still gets swept.
+- [x] **T6** — Mutants: six. One came back SILENT and found a hole in my own sweep tests; one
+      read UNPROTECTED because it was filed under a campaign whose scope did not own its test.
+- [x] **T7** — CB-5's flagged extraction happened: `_cli_commands.py` takes the four sub-commands
+      that do not run a corpus. `mutation.py` 600 → 554.
 
 **Every check before the commit.**
 

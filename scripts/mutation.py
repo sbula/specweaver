@@ -54,6 +54,8 @@ _corpus = _sibling("_corpus")
 _report = _sibling("_session_record")
 _timer = _sibling("_mutation_timer")
 _reach = _sibling("_run_reach")
+_store = _sibling("_record_store")
+_cli = _sibling("_cli_commands")
 _gate = _sibling("_mutation_gate")
 _pool = _sibling("_mutation_pool")
 
@@ -367,54 +369,6 @@ def discover_corpora(root: Path) -> list[Path]:
     return sorted(root.rglob("*_mutants.json"))
 
 
-def _cmd_confirm(args: Any, ap: Any) -> int:
-    """Record one decision. `--as` and `--why` are both required, and that is the point."""
-    if not args.disposition or not args.why:
-        ap.error("--confirm needs --as <disposition> and --why <reason>")
-    try:
-        _gate.confirm(Path(args.ledger), args.confirm, disposition=args.disposition, why=args.why)
-    except ValueError as exc:
-        print(f"could not confirm: {exc}", file=sys.stderr)
-        return 2
-    print(f"{args.confirm}: {args.disposition} — {args.why}")
-    return 0
-
-
-def _cmd_gate(args: Any) -> int:
-    """Blocked or clear, and when blocked, exactly what to do about it."""
-    result = _gate.gate_store(
-        Path(args.out), Path(args.ledger), current_tree_sha=_reach.current_tree_sha()
-    )
-    if not result.blocked:
-        print(f"CLEAR: {result.reason}")
-        return 0
-    print(f"BLOCKED: {result.reason}")
-    for finding in result.unconfirmed:
-        print(f"  unconfirmed: {finding}")
-    if result.unconfirmed:
-        # Only when there is something to confirm. A block on staleness or a red baseline is not
-        # fixed by recording a disposition, and offering that sends the reader nowhere.
-        print("\nconfirm with: mutation.py --confirm '<id>' --as <disposition> --why '<why>'")
-    return 1
-
-
-def _cmd_install() -> int:
-    for path in install_timer():
-        print(f"wrote {path}")
-    print(f"enable with: systemctl --user enable --now {UNIT_NAME}.timer")
-    return 0
-
-
-def _cmd_summary(store: Path) -> int:
-    """Re-render the record that answers for the corpus. Reads nothing else and runs nothing."""
-    report = _gate.latest_covering_record(store)
-    if report is None:
-        print(f"no record in {store} answers for the corpus — run it first", file=sys.stderr)
-        return 1
-    print(_report.render_summary(json.loads(report.read_text(encoding="utf-8"))))
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
     """Run a session and write the session record a gate will read hours later.
 
@@ -456,14 +410,18 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.confirm:
-        return _cmd_confirm(args, ap)
+        return _cli.cmd_confirm(args, ap)
     if args.gate:
-        return _cmd_gate(args)
+        return _cli.cmd_gate(args)
     if args.install_timer:
-        return _cmd_install()
+        return _cli.cmd_install()
 
     if args.summary:
-        return _cmd_summary(Path(args.out))
+        return _cli.cmd_summary(Path(args.out))
+
+    # Before anything can fail. A run that crashes never reaches its own end, and a crashing run
+    # is what keeps producing the records worth sweeping. See `_record_store`.
+    _cli.announce_sweep(Path(args.out))
 
     paths = [Path(p) for p in args.corpus]
     # Whether this run may conclude anything from a finding's ABSENCE. `fold_session` cannot work

@@ -303,3 +303,96 @@ class TestMainDeclaresTheRunsReach:
         )
 
         assert seen.get("full_sweep") is False
+
+
+class TestMainSweepsTheStore:
+    """The retention rule must actually run, and at the right end of a session.
+
+    `_record_store` is pure and its tests hand it tuples. That proves the rule and not the wiring —
+    a `sweep` nothing calls prunes nothing, and the store grows for ever while every unit test
+    stays green. That is the shape of every defect this ticket has fixed so far.
+
+    **At the start of the session, not the end.** A run that crashes never reaches its own end, and
+    a crashing run is exactly what keeps producing the records worth sweeping — so pruning on the
+    way out stops happening precisely when it is needed.
+    """
+
+    @staticmethod
+    def _record_at(store: Path, name: str, verdict: str, scope: dict[str, Any]) -> None:
+        record = _load("_session_record")
+        document = record.build_session_record(
+            campaigns=[{"results": [{"id": "F FR-1 m", "verdict": verdict}]}],
+            head="abc1234",
+            dirty=False,
+            scope=scope,
+        )
+        store.mkdir(parents=True, exist_ok=True)
+        (store / name).write_text(json.dumps(document), encoding="utf-8")
+
+    def test_a_run_prunes_what_a_later_clean_run_superseded(
+        self, mutation: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Happy] two records in the store, one superseded, and a session starting."""
+        store = tmp_path / "sessions"
+        self._record_at(store, "01_full.json", "UNPROTECTED", {"kind": "full"})
+        self._record_at(store, "02_full.json", "PROTECTED", {"kind": "full"})
+        corpus = _corpus_file(tmp_path)
+
+        monkeypatch.setattr(mutation, "build_sandbox", lambda: Path("/nonexistent"))
+        monkeypatch.setattr(mutation, "remove_sandbox", lambda _s: None)
+        monkeypatch.setattr(mutation, "run_baseline", lambda _s: None)
+        monkeypatch.setattr(
+            mutation, "_judge", lambda *a, **k: [{"requirement": "FR-1", "results": []}]
+        )
+        monkeypatch.setattr(mutation._gate, "record_run", lambda *a, **k: {})
+        mutation.main(
+            [
+                "--corpus",
+                str(corpus),
+                "--no-baseline",
+                "--out",
+                str(store),
+                "--ledger",
+                str(tmp_path / "ledger.json"),
+            ]
+        )
+
+        assert not (store / "01_full.json").exists(), "a superseded record survived the session"
+        assert (store / "02_full.json").exists(), "and the record that superseded it did not"
+
+    def test_the_sweep_happens_before_the_run_can_crash(
+        self, mutation: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Graceful degradation] the session dies mid-judging and the store is still swept.
+
+        Pruning at the end would skip exactly the runs whose records need pruning most.
+        """
+        store = tmp_path / "sessions"
+        self._record_at(store, "01_full.json", "UNPROTECTED", {"kind": "full"})
+        self._record_at(store, "02_full.json", "PROTECTED", {"kind": "full"})
+        corpus = _corpus_file(tmp_path)
+
+        def _explode(*_a: Any, **_k: Any) -> None:
+            raise RuntimeError("the session died")
+
+        monkeypatch.setattr(mutation, "build_sandbox", lambda: Path("/nonexistent"))
+        monkeypatch.setattr(mutation, "remove_sandbox", lambda _s: None)
+        monkeypatch.setattr(mutation, "run_baseline", lambda _s: None)
+        monkeypatch.setattr(mutation, "_judge", _explode)
+
+        with pytest.raises(RuntimeError):
+            mutation.main(
+                [
+                    "--corpus",
+                    str(corpus),
+                    "--no-baseline",
+                    "--out",
+                    str(store),
+                    "--ledger",
+                    str(tmp_path / "ledger.json"),
+                ]
+            )
+
+        assert not (store / "01_full.json").exists(), (
+            "the sweep runs at the end, so a session that crashes never prunes anything"
+        )

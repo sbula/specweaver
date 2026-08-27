@@ -225,7 +225,9 @@
       "title": "The record fingerprints the tree it measured, both halves",
       "scope": [
         "tests/unit/scripts/test_session_record.py",
-        "tests/unit/scripts/test_mutation_gate_admissibility.py"
+        "tests/unit/scripts/test_mutation_gate_admissibility.py",
+        "tests/unit/scripts/test_record_store.py",
+        "tests/integration/scripts/test_mutation_ledger_seam.py"
       ],
       "mutants": [
         {
@@ -257,6 +259,56 @@
           "new": "return f\"{stamp}_{label}.json\"",
           "breaks": "a corpus name carrying separators lands in the filename unsanitised, so a scope can name a path outside the store",
           "symbol_sha": "sha256:dbde7bb5a14d4487234b5a838c7697029eaedb6ec017dea0fd75dbf8d0467b9f"
+        },
+        {
+          "id": "a-narrow-pass-supersedes-a-wide-failure",
+          "origin": "authored",
+          "file": "scripts/_record_store.py",
+          "symbol": "covers",
+          "old": "    if outer.get(\"kind\") != \"scoped\" or inner.get(\"kind\") != \"scoped\":\n        return False",
+          "new": "    if outer.get(\"kind\") != \"scoped\" or inner.get(\"kind\") != \"scoped\":\n        return True",
+          "breaks": "a clean run over one campaign retires the record of a sweep that found something in the mutants it never looked at, and it looks exactly like progress: green, newer, and the red one gone",
+          "symbol_sha": "sha256:7a85848f3024bfce1e7e53c09b60eb23423dd57564847d745a296b51159aff7a"
+        },
+        {
+          "id": "any-later-record-supersedes",
+          "origin": "authored",
+          "file": "scripts/_record_store.py",
+          "symbol": "superseded",
+          "old": "later_verdict == _SUPERSEDING and covers(later_scope, scope)",
+          "new": "covers(later_scope, scope)",
+          "breaks": "a newer failure retires an older one, so a fault that keeps recurring leaves one record instead of a history",
+          "symbol_sha": "sha256:2dbbf57fd285d4e650c36c0a947edc8942627e4c5df0af60498c4b0e5aa6ba08"
+        },
+        {
+          "id": "the-backlog-warning-never-fires",
+          "origin": "authored",
+          "file": "scripts/_record_store.py",
+          "symbol": "overgrown",
+          "old": "if remaining <= WARN_ABOVE:",
+          "new": "if True:",
+          "breaks": "the store grows silently, and it lives in `.tmp/` where no gate and no diff would ever show it — the way the handover reached 23 MB",
+          "symbol_sha": "sha256:95480845e700294f1299dca6a43817e08579ca9eff61263df06a27c3f1e5e8a1"
+        },
+        {
+          "id": "pruning-deletes-a-failure",
+          "origin": "authored",
+          "file": "scripts/_record_store.py",
+          "symbol": "sweep",
+          "old": "    for name in superseded(entries):",
+          "new": "    for name in [e[0] for e in entries[:-1]]:",
+          "breaks": "everything but the newest record is deleted, so the evidence of an unfixed fault goes the moment any later session runs",
+          "symbol_sha": "sha256:25282d5ac0cb90db93c94d7e75866190d50eec282bd83dd7a0ee186fb675304f"
+        },
+        {
+          "id": "the-sweep-never-runs",
+          "origin": "authored",
+          "file": "scripts/mutation.py",
+          "symbol": "main",
+          "old": "    _cli.announce_sweep(Path(args.out))",
+          "new": "    pass",
+          "breaks": "the retention rule is written and nothing calls it, so the store grows for ever while every unit test of the rule stays green",
+          "symbol_sha": "sha256:518e9b03d7a8fb099291759b9e5f4e72c1d81b23b1ab61665345ceec75c08404"
         }
       ]
     }

@@ -139,6 +139,15 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **The session store keeps a failure until it is fixed.** Closed 2026-08-27. Retention is by
+  **state, not age** `[agreed 2026-08-27]`: a record is deleted only when a later `PASSED` record
+  of **covering** scope supersedes it, so a clean run over one campaign can never retire the record
+  of a sweep that found something in the mutants it skipped. `NOT_RUN` is kept exactly as `FAILED`.
+  **No cap** — a cap deletes the evidence of an unfixed fault — so the run and `--gate` both warn
+  past **20** unsuperseded records and delete none. The sweep runs at the **start** of a session,
+  because a run that crashes never reaches its own end. Record:
+  `TECH-049_retention_walkthrough.md`.
+
 - **One record path meant the last writer won.** Closed 2026-08-27. The nightly wrote
   `.tmp/mutation_session.json` at 03:04 and a by-hand run overwrote it at 05:13; the 187-mutant
   result was gone, with no copy anywhere. Every run now writes
@@ -184,8 +193,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **Two further boundaries are planned and agreed**
-  (`task.md`): scoped runs withdrawing findings they never looked at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
+  `TECH-049_gate_readability_walkthrough.md`. **One further boundary is planned and agreed**
+  (`task.md`): **CB-7**, the one-off `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being
