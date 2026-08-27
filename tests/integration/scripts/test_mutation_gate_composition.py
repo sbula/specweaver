@@ -45,6 +45,19 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 FINDING = "TECH-999 FR-1 a-real-survival"
 
 
+def _load(name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / "scripts" / f"{name}.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+#: The producer, so no test in this file describes a record no producer writes.
+_record = _load("_session_record")
+
+
 @pytest.fixture(scope="module")
 def gate() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
@@ -62,11 +75,12 @@ def _session_report(tmp_path: Path, verdict: str = "UNPROTECTED") -> Path:
     path = tmp_path / "mutation_session.json"
     path.write_text(
         json.dumps(
-            {
-                "schema": 1,
-                "session": {"head": "abc1234"},
-                "mutants": [{"id": FINDING, "verdict": verdict}],
-            }
+            _record.build_session_record(
+                scope={"kind": "full"},
+                campaigns=[{"results": [{"id": FINDING, "verdict": verdict}]}],
+                head="abc1234",
+                dirty=False,
+            )
         ),
         encoding="utf-8",
     )

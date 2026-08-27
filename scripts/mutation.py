@@ -53,6 +53,7 @@ _mutate = _sibling("_mutate")
 _corpus = _sibling("_corpus")
 _report = _sibling("_session_record")
 _timer = _sibling("_mutation_timer")
+_reach = _sibling("_run_reach")
 _gate = _sibling("_mutation_gate")
 _pool = _sibling("_mutation_pool")
 
@@ -381,7 +382,9 @@ def _cmd_confirm(args: Any, ap: Any) -> int:
 
 def _cmd_gate(args: Any) -> int:
     """Blocked or clear, and when blocked, exactly what to do about it."""
-    result = _gate.gate_verdict(Path(args.out), Path(args.ledger))
+    result = _gate.gate_verdict(
+        Path(args.out), Path(args.ledger), current_tree_sha=_reach.current_tree_sha()
+    )
     if not result.blocked:
         print(f"CLEAR: {result.reason}")
         return 0
@@ -493,7 +496,12 @@ def main(argv: list[str] | None = None) -> int:
             remove_sandbox(sandbox)
 
     document = _report.build_session_record(
-        campaigns=campaigns, head=head, dirty=dirty, baseline=baseline
+        campaigns=campaigns,
+        head=head,
+        dirty=dirty,
+        scope=_reach.scope_of(full_sweep=full_sweep, paths=paths),
+        tree_sha=_reach.tree_sha(),
+        baseline=baseline,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

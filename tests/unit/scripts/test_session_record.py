@@ -101,7 +101,7 @@ class TestBuildSessionRecord:
             }
         ]
         return report.build_session_record(
-            campaigns=campaigns, head="abc1234", dirty=False, **kwargs
+            scope={"kind": "full"}, campaigns=campaigns, head="abc1234", dirty=False, **kwargs
         )
 
     def test_the_session_block_names_the_commit_and_the_time(
@@ -412,3 +412,78 @@ class TestSessionVerdictOf:
 
     def test_a_clean_session_exits_zero(self, report: ModuleType) -> None:
         assert report.exit_code_for(self._record("PROTECTED")) == 0
+
+
+class TestWorkingTreeSha:
+    """A fingerprint of the tree a session actually measured.
+
+    Proves: TECH-049 FR-9
+
+    `_build_sandbox` makes the sandbox HEAD **plus** `git diff HEAD` **plus** every untracked file,
+    deliberately, so a run measures the tree you have rather than the last commit. That is a
+    feature: `dirty: true` is a designed input.
+
+    What it costs is reproducibility. A verdict over HEAD-plus-a-diff names no commit, so nobody
+    can re-derive it later — and the gate has no way to tell whether the diff it would need is
+    still there. This is that way: hash both halves, and a reader can ask whether the tree still
+    is what the record describes.
+
+    **Both halves.** Hashing only the diff would miss an untracked file, and forgetting untracked
+    files is not a subtle failure — a helper existing only in the working tree once made every
+    importing file fail to collect and reported the whole campaign BROKEN.
+    """
+
+    def test_the_same_tree_hashes_the_same(self, report: ModuleType) -> None:
+        """[Happy] the property the whole check rests on."""
+        a = report.working_tree_sha("diff text", {"new.py": "x = 1"})
+        b = report.working_tree_sha("diff text", {"new.py": "x = 1"})
+
+        assert a == b
+
+    def test_a_changed_diff_changes_the_hash(self, report: ModuleType) -> None:
+        """[Boundary] the tracked half."""
+        before = report.working_tree_sha("diff text", {})
+        after = report.working_tree_sha("diff text, edited", {})
+
+        assert before != after
+
+    def test_a_changed_untracked_file_changes_the_hash(self, report: ModuleType) -> None:
+        """[Boundary] the half a diff-only fingerprint would miss.
+
+        The sandbox copies untracked files in. A hash blind to them says the tree is unchanged
+        while the thing that was measured is not.
+        """
+        before = report.working_tree_sha("diff text", {"new.py": "x = 1"})
+        after = report.working_tree_sha("diff text", {"new.py": "x = 2"})
+
+        assert before != after
+
+    def test_a_new_untracked_file_changes_the_hash(self, report: ModuleType) -> None:
+        """[Boundary] adding one, not only editing one."""
+        before = report.working_tree_sha("", {})
+        after = report.working_tree_sha("", {"new.py": ""})
+
+        assert before != after
+
+    def test_the_order_files_arrive_in_does_not_matter(self, report: ModuleType) -> None:
+        """[Hostile] `git ls-files --others` ordering is not a contract.
+
+        A hash that depended on it would report the tree as changed at random, which is the kind of
+        flake that gets a check deleted rather than fixed.
+        """
+        a = report.working_tree_sha("d", {"a.py": "1", "b.py": "2"})
+        b = report.working_tree_sha("d", {"b.py": "2", "a.py": "1"})
+
+        assert a == b
+
+    def test_a_clean_tree_has_a_stable_fingerprint(self, report: ModuleType) -> None:
+        """[Graceful degradation] nothing uncommitted is a state, not a missing value.
+
+        It must still hash to something, and to the same thing every time, so a clean record can be
+        compared by the same rule as a dirty one instead of needing its own branch.
+        """
+        first = report.working_tree_sha("", {})
+        again = report.working_tree_sha("", {})
+
+        assert first == again
+        assert first.startswith("sha256:")

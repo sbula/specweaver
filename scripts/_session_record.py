@@ -27,6 +27,7 @@ gate's call, not this file's.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import UTC, datetime
 from typing import Any
@@ -52,6 +53,32 @@ _SANDBOX_PATH = re.compile(r"/(?:private/)?tmp/sw-[A-Za-z0-9_-]+/")
 #: them -- the record is the record. Ten with the remainder counted is the shape the repo already
 #: used for oversized findings; a truncation that does not say it truncated reads as a full list.
 _BASELINE_NAMES_SHOWN = 10
+
+
+def working_tree_sha(diff: str, untracked: dict[str, str]) -> str:
+    """A fingerprint of the tree a session measured: HEAD, plus everything uncommitted.
+
+    `_build_sandbox` builds the sandbox as HEAD **plus** `git diff HEAD` **plus** every untracked
+    file. That is deliberate — a run measures the tree you have — and it is why `dirty` is an input
+    rather than a fault. What it costs is reproducibility: a verdict over HEAD-plus-a-diff names no
+    commit, and nothing could tell whether the diff it rests on is still there.
+
+    Both halves are hashed. A diff-only fingerprint misses an untracked file, and forgetting
+    untracked files is not a subtle failure: a helper that existed only in the working tree once
+    made every importing file fail to collect and reported the whole campaign BROKEN.
+
+    Sorted, because `git ls-files --others` ordering is not a contract and a hash that depended on
+    it would report the tree as changed at random — the kind of flake that gets a check deleted
+    rather than fixed.
+    """
+    digest = hashlib.sha256()
+    digest.update(diff.encode("utf-8"))
+    for name in sorted(untracked):
+        digest.update(b"\0")
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(untracked[name].encode("utf-8"))
+    return f"sha256:{digest.hexdigest()}"
 
 
 def sanitise(text: str) -> str:
@@ -305,12 +332,19 @@ def build_session_record(
     campaigns: list[dict[str, Any]],
     head: str,
     dirty: bool,
+    scope: dict[str, Any],
+    tree_sha: str = "",
     baseline: Any = None,
 ) -> dict[str, Any]:
     """What one session saw. Scratch, and it stores nothing it can recompute.
 
     Session block first: a reader who stops after one block must still learn how old the evidence
     is, and its absence is why the gate read CLEAR for two days.
+
+    `scope` has no default, deliberately. It is the run saying what it may answer for, and a
+    default would be that claim made by whoever forgot to think about it — which is how a 51-mutant
+    by-hand run came to answer for a 187-mutant nightly. `tree_sha` fingerprints the uncommitted
+    work the sandbox carried, so a dirty verdict stays usable exactly as long as it is reproducible.
 
     The mutants are flat. Campaign grouping is derivable from a mutant's id, which already carries
     the feature and the requirement, so storing the nesting as well would store the same fact
@@ -322,6 +356,8 @@ def build_session_record(
             "started_at": datetime.now(UTC).isoformat(),
             "head": head,
             "dirty": dirty,
+            "scope": scope,
+            "tree_sha": tree_sha,
             "baseline": _baseline_block(baseline),
         },
         MUTANTS_BLOCK: [

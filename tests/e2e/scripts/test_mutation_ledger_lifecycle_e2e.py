@@ -81,10 +81,17 @@ def corpus(tmp_path: Path) -> Path:
 
 
 def _run(mutation: ModuleType, corpus: Path, out: Path, ledger: Path) -> int:
+    """A whole-corpus session over a one-file corpus.
+
+    `--corpus-dir` rather than `--corpus`: this file's subject is the ledger lifecycle, which needs
+    a record the gate will accept as answering for the corpus. A `--corpus <file>` run writes a
+    scoped record on purpose, and the gate refuses those — correctly, and for reasons that have
+    nothing to do with what these tests assert.
+    """
     return mutation.main(
         [
-            "--corpus",
-            str(corpus),
+            "--corpus-dir",
+            str(corpus.parent),
             "--no-baseline",
             "--out",
             str(out),

@@ -132,11 +132,20 @@ def last_expected_run(now: float) -> float:
     return todays if todays <= now else todays - 86400
 
 
-def gate_verdict(record_path: Path, ledger_path: Path) -> GateResult:
-    """Three rules, in order.
+def gate_verdict(
+    record_path: Path, ledger_path: Path, *, current_tree_sha: str | None = None
+) -> GateResult:
+    """Five rules, in order: is there a record, can it be read, is it evidence, what does it say.
 
     Staleness first: a verdict computed from a session record nobody produced is worse than no verdict, and
     checking the contents of a file that may be a week old would answer the wrong question.
+
+    Admissibility comes before the findings for the same reason the baseline does — there is no
+    point asking whether findings were read when the record cannot answer for the corpus, or
+    describes a tree that no longer exists.
+
+    `current_tree_sha` is taken by the caller, not here: `mutation.py` already shells out to git,
+    and a gate that did would be a second place computing one fact.
     """
     expected = last_expected_run(time.time())
     if not record_path.is_file():
@@ -186,6 +195,37 @@ def gate_verdict(record_path: Path, ledger_path: Path) -> GateResult:
             f"the baseline was not green ({baseline.get('failed', '?')} failing), so every verdict "
             f"in this record was judged against a tree whose suite never passed",
         )
+    session = record.get(SESSION_BLOCK) or {}
+    # Which corpora the run was pointed at, never how many mutants came back. A rule comparing the
+    # record's mutants against the corpus *now* blocks all day every day somebody adds one — the
+    # corpus grew by 7 on 2026-08-27 while that night's record held 187 — and `TECH-056` NFR-1 is
+    # explicit that a gate which blocks on ordinary work gets switched off. A full sweep stays a
+    # full sweep when a file inside it gains a row `[agreed 2026-08-27]`.
+    #
+    # Absence blocks. An older record cannot say what it covered, and reading silence as
+    # "everything" accepts exactly the records this rule refuses.
+    scope = session.get("scope") or {}
+    if scope.get("kind") != "full":
+        got = ", ".join(scope.get("corpora") or []) or "no scope recorded"
+        return GateResult(
+            True,
+            f"this record does not answer for the corpus — it covers {got}. A run over part of "
+            f"the corpus writes a record shaped exactly like the nightly's, and the gate cannot "
+            f"tell them apart from the contents alone",
+        )
+    # `dirty` is not the fault. The sandbox is HEAD **plus** your uncommitted work by design, so a
+    # dirty run measures the tree you actually have. What makes a verdict worthless is being
+    # unable to reproduce it — so the record carries a fingerprint of that tree and this re-takes
+    # it. Uncommitted work stays usable until it changes `[agreed 2026-08-27]`.
+    if session.get("dirty"):
+        recorded = session.get("tree_sha")
+        if current_tree_sha is None or recorded != current_tree_sha:
+            return GateResult(
+                True,
+                f"this verdict was measured over uncommitted work that is no longer in the tree — "
+                f"it names no commit, so nothing can re-derive it. Recorded {recorded}, "
+                f"the tree now is {current_tree_sha}",
+            )
     # `TECH-056`: a **disposition**, not mere presence. `record_run` runs at the end of the same
     # session that discovers a finding and writes it as `{"occurrences": 1}` with nothing decided, so
     # keying on presence let every run mark its own findings read — and this gate then announced

@@ -139,6 +139,16 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **The gate judged whatever record it found, however little it covered.** Found and closed
+  2026-08-27. `--corpus <one file>` writes a record shaped **exactly** like the nightly's; a
+  by-hand run at 05:13 covering 51 mutants overwrote the 03:00 nightly's 187 and `--gate` answered
+  CLEAR from it. A record now states its own reach and fingerprints the tree it measured, and the
+  gate refuses a scoped record, a record that cannot say what it covered, and a dirty one whose
+  uncommitted work has since changed. **`dirty` itself is not a fault** — the sandbox is HEAD plus
+  your diff by design; what is refused is a verdict nobody can reproduce `[agreed 2026-08-27]`.
+  Coverage is which corpora the run was pointed at, never a mutant count, or the gate would block
+  every day somebody adds one. Record: `TECH-049_admissibility_walkthrough.md`.
+
 - **A scoped mutation run withdrew every finding it never looked at.** Found and closed
   2026-08-27. `fold_session` read absence from the run's `declared` set as *somebody deleted this
   mutant*, which is right for the nightly and wrong for `--corpus <one file>`: every finding on
@@ -166,7 +176,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **Four further boundaries are planned and agreed**
+  `TECH-049_gate_readability_walkthrough.md`. **Three further boundaries are planned and agreed**
   (`task.md`): scoped runs withdrawing findings they never looked at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`

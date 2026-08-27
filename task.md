@@ -94,15 +94,19 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-4 — a record says what it covered, and the gate reads it  (Q2, Q3)
 
-- [ ] **T1** — Red: the record carries `session.scope` (full or the corpus files) and `session.diff_sha`.
-- [ ] **T2** — Red: a dirty record is admissible while the tree hashes the same.
-- [ ] **T3** — Red: the same record blocks once the tree changes, and the reason says so.
-- [ ] **T4** — Red: a scoped record blocks, naming the scope it got.
-- [ ] **T5** — Red: a full-sweep record does not block **after a corpus file grows**. The `TECH-056`
+- [x] **T1** — Red: the record carries `session.scope` (full or the corpus files) and `session.diff_sha`.
+- [x] **T2** — Red: a dirty record is admissible while the tree hashes the same.
+- [x] **T3** — Red: the same record blocks once the tree changes, and the reason says so.
+- [x] **T4** — Red: a scoped record blocks, naming the scope it got.
+- [x] **T5** — Red: a full-sweep record does not block **after a corpus file grows**. The `TECH-056`
       `NFR-1` control — this is the test that stops the gate being switched off.
-- [ ] **T6** — Green: producer writes `scope` and `diff_sha`; `gate_verdict` gains both rules,
+- [x] **T6** — Green: producer writes `scope` and `diff_sha`; `gate_verdict` gains both rules,
       after staleness and baseline, before findings.
-- [ ] **T7** — Mutants: the diff hash is ignored · the scope check is removed · a scoped record passes.
+- [x] **T7** — Mutants: six, all objected. Five under `FR-11`, one under a new `FR-9` campaign.
+- [x] **T8** — `scope` is required, not defaulted. Sixteen tests failed the moment it landed, and
+      three hand-built record shapes went with them — they call the producer now.
+- [x] **T9** — Two files over their ceilings, both mine, both with a real seam:
+      `_run_reach.py` (the duplication that caused it) and `test_mutation_gate_admissibility.py`.
 
 **Every check before the commit.**
 

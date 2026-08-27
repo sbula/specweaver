@@ -55,7 +55,7 @@
           "old": "return code == 0",
           "new": "return True",
           "breaks": "a permanently red test in scope certifies every requirement it touches, forever",
-          "symbol_sha": "sha256:55a67f1fb5ed12dc25e3699d2ad3eb57b452fa8039a153e977c1eae2b4302bb9"
+          "symbol_sha": "sha256:57148fd8f5d2df4a68015163a99967a068019c7a58a9ec15ad6a554ffc5f2d8b"
         }
       ]
     },
@@ -63,7 +63,8 @@
       "requirement": "FR-11",
       "title": "A report from before the last scheduled run is stale, and stale blocks",
       "scope": [
-        "tests/unit/scripts/test_mutation_gate.py"
+        "tests/unit/scripts/test_mutation_gate.py",
+        "tests/unit/scripts/test_session_record.py"
       ],
       "mutants": [
         {
@@ -74,7 +75,7 @@
           "old": "    if mtime < expected:",
           "new": "    if False:",
           "breaks": "FR-11's `SHALL treat a missing or stale report as blocking`. A nightly that hangs writes nothing, so yesterday's report is still on disk and the gate answers CLEAR over a run that never happened. Measured 2026-08-20: a wedged 03:00 run reported a clean bill of health at 04:22 and would have every morning after",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         },
         {
           "id": "every-report-reads-as-stale",
@@ -84,7 +85,7 @@
           "old": "    if mtime < expected:",
           "new": "    if True:",
           "breaks": "the opposite, and the one that gets the gate switched off: a report written by tonight's own run blocks anyway, so freshness becomes a second way to fail a clean night and nobody trusts the verdict",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         },
         {
           "id": "an-unreadable-record-is-a-quiet-night",
@@ -94,7 +95,57 @@
           "old": "if SESSION_BLOCK not in record:",
           "new": "if False:",
           "breaks": "corrupt JSON, a zero-byte file or a half-written record all parse to {} and every rule below reads that as nothing to report, so a run killed mid-write reports CLEAR with a fresh timestamp the staleness rule cannot fault",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "a-scoped-record-answers-for-the-corpus",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if scope.get(\"kind\") != \"full\":",
+          "new": "if False:",
+          "breaks": "a by-hand run over one campaign writes a record shaped exactly like the nightly's, and the gate judges 51 mutants as though they were 187",
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "a-record-with-no-scope-reads-as-full",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if scope.get(\"kind\") != \"full\":",
+          "new": "if scope.get(\"kind\", \"full\") != \"full\":",
+          "breaks": "silence about coverage is read as a claim of completeness, which accepts exactly the records the rule refuses",
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "a-vanished-tree-is-still-evidence",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if session.get(\"dirty\"):",
+          "new": "if False:",
+          "breaks": "a verdict measured over uncommitted work that has since changed still answers, and it names no commit anyone could re-derive it from",
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "an-unreadable-tree-counts-as-a-match",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if current_tree_sha is None or recorded != current_tree_sha:",
+          "new": "if current_tree_sha is not None and recorded != current_tree_sha:",
+          "breaks": "a fingerprint that could not be taken passes instead of blocking — the missing measurement counted as a pass",
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        },
+        {
+          "id": "a-clean-record-is-judged-on-the-working-tree",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if session.get(\"dirty\"):",
+          "new": "if True:",
+          "breaks": "a record naming a commit is refused because somebody started editing, so the gate blocks every morning for a verdict the working tree cannot affect",
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         }
       ]
     },
@@ -114,7 +165,7 @@
           "old": "baseline = (record.get(SESSION_BLOCK) or {}).get(\"baseline\") or {}",
           "new": "baseline = (record.get(\"summary\") or {}).get(\"baseline\") or {}",
           "breaks": "the gate stops using the producer's shared name for the record's first block and spells the retired one, so the baseline rule matches no document any producer writes and a red baseline reads as CLEAR — the defect itself, and the reason the name is a constant both sides import",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         },
         {
           "id": "a-red-baseline-no-longer-blocks",
@@ -124,7 +175,7 @@
           "old": "if baseline.get(\"ran\") and not baseline.get(\"green\"):",
           "new": "if False:",
           "breaks": "every verdict in a session judged against a tree whose suite never passed is reported as read",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         },
         {
           "id": "an-unmeasured-tree-reads-as-a-red-one",
@@ -134,7 +185,7 @@
           "old": "if baseline.get(\"ran\") and not baseline.get(\"green\"):",
           "new": "if not baseline.get(\"green\"):",
           "breaks": "a --no-baseline run records {'ran': false}, and dropping the flag turns 'nobody measured' into 'the tree was red' — the gate then blocks every run that never claimed to know",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
         },
         {
           "id": "a-red-baseline-with-no-count-stops-blocking",
@@ -144,7 +195,26 @@
           "old": "baseline.get('failed', '?')",
           "new": "baseline.get('failed', 0)",
           "breaks": "a red baseline that carries no failure count is described as '0 failing', which reads as a green tree in the one place a human looks",
-          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+          "symbol_sha": "sha256:237d8673fdd4857a02d2d594d916828c4b18d15a5937b74d4fde5b593ee219f0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "The record fingerprints the tree it measured, both halves",
+      "scope": [
+        "tests/unit/scripts/test_session_record.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-fingerprint-ignores-untracked-files",
+          "origin": "authored",
+          "file": "scripts/_session_record.py",
+          "symbol": "working_tree_sha",
+          "old": "    for name in sorted(untracked):",
+          "new": "    for name in sorted([]):",
+          "breaks": "the sandbox copies untracked files in, so a diff-only fingerprint says the tree is unchanged while the thing measured is not",
+          "symbol_sha": "sha256:d1ebc398036edd74f2c49dbcb751338ac216af0d5ad76898d09eff4689dc265a"
         }
       ]
     }

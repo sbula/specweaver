@@ -276,17 +276,22 @@ class TestReportLedgerGateChain:
         ledger = tmp_path / "ledger.json"
         report.write_text(
             json.dumps(
-                {
-                    "schema": 1,
-                    "session": {"head": "abc"},
-                    "mutants": [
+                _load("_session_record").build_session_record(
+                    scope={"kind": "full"},
+                    campaigns=[
                         {
-                            "id": "F FR-1 m",
-                            "verdict": "UNPROTECTED",
-                            "reason": "no-killer",
+                            "results": [
+                                {
+                                    "id": "F FR-1 m",
+                                    "verdict": "UNPROTECTED",
+                                    "reason": "no-killer",
+                                }
+                            ]
                         }
                     ],
-                }
+                    head="abc",
+                    dirty=False,
+                )
             ),
             encoding="utf-8",
         )
@@ -341,7 +346,7 @@ class TestTheGateReadsWhatTheProducerWrites:
     def _record(session_record: ModuleType, tmp_path: Path, baseline: Any) -> Path:
         """A record from the real producer. The point is that nothing here spells a key."""
         document = session_record.build_session_record(
-            campaigns=[], head="deadbee", dirty=False, baseline=baseline
+            scope={"kind": "full"}, campaigns=[], head="deadbee", dirty=False, baseline=baseline
         )
         path = tmp_path / "mutation_session.json"
         path.write_text(json.dumps(document), encoding="utf-8")
@@ -392,7 +397,11 @@ class TestTheGateReadsWhatTheProducerWrites:
         the gate blocks on a red baseline would pass again the next time one side is renamed.
         """
         document = session_record.build_session_record(
-            campaigns=[], head="deadbee", dirty=False, baseline=mutation.Baseline(green=False)
+            scope={"kind": "full"},
+            campaigns=[],
+            head="deadbee",
+            dirty=False,
+            baseline=mutation.Baseline(green=False),
         )
 
         # Not `gate.SESSION_BLOCK is session_record.SESSION_BLOCK`. CPython interns

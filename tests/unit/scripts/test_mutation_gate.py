@@ -52,14 +52,20 @@ def gate() -> ModuleType:
 
 
 def _report(tmp_path: Path, *results: dict[str, Any], age_hours: float = 0.0) -> Path:
+    """A nightly's record, from the producer. Nothing here spells the record's shape.
+
+    `_as_dict` already accepts a plain mutant dict, so a hand-built document buys nothing and costs
+    the drift that let `68a089d4` rename a block under the gate with every test still green.
+    """
     path = tmp_path / "mutation_session.json"
     path.write_text(
         json.dumps(
-            {
-                "schema": 1,
-                "session": {"head": "abc1234"},
-                "mutants": list(results),
-            }
+            _record.build_session_record(
+                scope={"kind": "full"},
+                campaigns=[{"results": list(results)}],
+                head="abc1234",
+                dirty=False,
+            )
         ),
         encoding="utf-8",
     )
@@ -367,7 +373,11 @@ class TestARedBaselineBlocks:
         report.write_text(
             json.dumps(
                 _record.build_session_record(
-                    campaigns=[], head="abc1234", dirty=False, baseline=baseline
+                    scope={"kind": "full"},
+                    campaigns=[],
+                    head="abc1234",
+                    dirty=False,
+                    baseline=baseline,
                 )
             ),
             encoding="utf-8",
@@ -486,7 +496,11 @@ class TestAnUnreadableRecordIsNotAPass:
             tmp_path,
             json.dumps(
                 _record.build_session_record(
-                    campaigns=[], head="abc1234", dirty=False, baseline=_Baseline(green=True)
+                    scope={"kind": "full"},
+                    campaigns=[],
+                    head="abc1234",
+                    dirty=False,
+                    baseline=_Baseline(green=True),
                 )
             ),
         )
@@ -549,7 +563,7 @@ class TestGateVerdictStaleness:
         report.write_text(
             json.dumps(
                 _record.build_session_record(
-                    campaigns=[], head="abc1234", dirty=False, baseline=None
+                    scope={"kind": "full"}, campaigns=[], head="abc1234", dirty=False, baseline=None
                 )
             ),
             encoding="utf-8",
