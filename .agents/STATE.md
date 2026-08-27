@@ -176,6 +176,16 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   Coverage is which corpora the run was pointed at, never a mutant count, or the gate would block
   every day somebody adds one. Record: `TECH-049_admissibility_walkthrough.md`.
 
+- **"Which model suits which task" has an analysis and no design.** Written 2026-08-27:
+  `docs/analysis/model_effectiveness_measurement_2026-08-27.md`. The `specweaver-design` run for
+  `B-FLOW-03` was **stopped at its Phase 1 gate** — the grilling showed the scope is not settled.
+  The document splits the problem three ways (the record · the quality axis · the post-mortem),
+  maps six delivered and nine undesigned capabilities onto them, and leaves **six questions open
+  with no defaults**, including what `B-FLOW-05` is — contested since 2026-08-19 and still
+  unanswered. It also re-took the price census the earlier one asked for: **Anthropic prices at
+  `$0.00` because the table's model ids reverse the real ones**, and Gemini Flash is ~10–19× too
+  cheap. **Read it before designing anything in this area; do not re-derive it.**
+
 - **A scoped mutation run withdrew every finding it never looked at.** Found and closed
   2026-08-27. `fold_session` read absence from the run's `declared` set as *somebody deleted this
   mutant*, which is right for the nightly and wrong for `--corpus <one file>`: every finding on
