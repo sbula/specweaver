@@ -150,8 +150,20 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-7 — the scratch that nothing prunes  (Q8)
 
-- [ ] **T1** — List every file in `.tmp/` for the user, then delete all but `HANDOVER.md` and the
+- [x] **T1** — List every file in `.tmp/` for the user, then delete all but `HANDOVER.md` and the
       live records.
-- [ ] **T2** — The walkthrough: `docs/roadmap/features/topic_07_technical_debt/TECH-049/`.
+- [x] **T2** — The walkthrough: `docs/roadmap/features/topic_07_technical_debt/TECH-049/`.
 
 **Every check before the commit.**
+
+**Closed 2026-08-27.** 68 files → 1. `topics_superseded/` was checked rather than assumed: all
+seven are byte-identical to a committed version, so git holds them.
+`TECH-049_tmp_sweep_walkthrough.md`.
+
+---
+
+# All seven boundaries are closed.
+
+The mutation session gate was measured, not inferred, at every step. Six of the seven boundaries
+found something the boundary before had missed, and three found defects in this work's own tests —
+two SILENT mutants and one assertion that could not fail.

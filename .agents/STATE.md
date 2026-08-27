@@ -139,6 +139,15 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **`.tmp/` had never been pruned by anything.** Swept once 2026-08-27 `[agreed 2026-08-27]`:
+  **68 files, 892 KB, oldest 2026-08-14 → one**, `HANDOVER.md`. It is gitignored, so no diff, no
+  gate and no review had ever seen it — the blind spot that let the handover reach 23 MB.
+  `.tmp/topics_superseded/` was checked rather than assumed: all seven pre-conversion topic
+  registries are **byte-identical to a committed version**, so git holds them and the copies were a
+  second copy of a fact. **No automatic prune, deliberately** — an unattended delete on a
+  gitignored directory removes evidence nobody can review. Record:
+  `TECH-049_tmp_sweep_walkthrough.md`.
+
 - **The session store keeps a failure until it is fixed.** Closed 2026-08-27. Retention is by
   **state, not age** `[agreed 2026-08-27]`: a record is deleted only when a later `PASSED` record
   of **covering** scope supersedes it, so a clean run over one campaign can never retire the record
@@ -193,8 +202,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **One further boundary is planned and agreed**
-  (`task.md`): **CB-7**, the one-off `.tmp/` sweep.
+  `TECH-049_gate_readability_walkthrough.md`. **All seven boundaries are closed** (`task.md`).
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being
