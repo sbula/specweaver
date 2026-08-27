@@ -31,6 +31,19 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 
+#: The two top-level blocks of a session record, named once so both sides of the seam import the
+#: name instead of spelling it. `68a089d4` renamed the first block `summary` -> `session` here and
+#: in the renderer, and left `_mutation_gate`'s single reader on the old spelling: each half kept
+#: its own tests and stayed green while the pair could not work, so the red-baseline rule matched
+#: no document any producer had written and could never fire.
+#:
+#: `anti_patterns.md` names this shape — *two modules naming one thing differently across a seam* —
+#: and asks for both halves of the remedy: the shared constant, and an agreement test that hands
+#: one side's output to the other side's reader. The test is
+#: `test_mutation_seam.py::TestTheGateReadsWhatTheProducerWrites`.
+SESSION_BLOCK = "session"
+MUTANTS_BLOCK = "mutants"
+
 #: A sandbox path. `_mutate` and `mutation` both build sandboxes under the system temp directory
 #: with a `sw-` prefix, and the segment after it is the mirror of the repo tree.
 _SANDBOX_PATH = re.compile(r"/(?:private/)?tmp/sw-[A-Za-z0-9_-]+/")
@@ -134,7 +147,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
     Only failures are listed individually. Twenty-six passing lines would bury the two that matter,
     which is how "no tests were collected for this scope" sat unread for two days.
     """
-    summary = document.get("session", {})
+    summary = document.get(SESSION_BLOCK, {})
     campaigns = campaigns_of(document)
     counts = counts_of(document)
     baseline = summary.get("baseline") or {}
@@ -209,7 +222,7 @@ def render_summary(document: dict[str, Any], now: str | None = None) -> str:
 
 def mutants_of(record: dict[str, Any]) -> list[dict[str, Any]]:
     """Every mutant in a session record, whatever shape it is stored in."""
-    return list(record.get("mutants", []))
+    return list(record.get(MUTANTS_BLOCK, []))
 
 
 def counts_of(record: dict[str, Any]) -> dict[str, int]:
@@ -305,13 +318,15 @@ def build_session_record(
     """
     document = {
         "schema": 1,
-        "session": {
+        SESSION_BLOCK: {
             "started_at": datetime.now(UTC).isoformat(),
             "head": head,
             "dirty": dirty,
             "baseline": _baseline_block(baseline),
         },
-        "mutants": [_as_dict(result) for campaign in campaigns for result in campaign["results"]],
+        MUTANTS_BLOCK: [
+            _as_dict(result) for campaign in campaigns for result in campaign["results"]
+        ],
     }
     return sanitise_document(document)
 

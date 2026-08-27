@@ -31,16 +31,24 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-@pytest.fixture(scope="module")
-def gate() -> ModuleType:
-    spec = importlib.util.spec_from_file_location(
-        "_mutation_gate", REPO_ROOT / "scripts" / "_mutation_gate.py"
-    )
+def _load(name: str) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / "scripts" / f"{name}.py")
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    sys.modules["_mutation_gate"] = module
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+#: The real producer and the real baseline type. Imported rather than imitated: a hand-written
+#: record shape is what let `68a089d4` rename the block under the gate and leave every test green.
+_record = _load("_session_record")
+_Baseline = _load("mutation").Baseline
+
+
+@pytest.fixture(scope="module")
+def gate() -> ModuleType:
+    return _load("_mutation_gate")
 
 
 def _report(tmp_path: Path, *results: dict[str, Any], age_hours: float = 0.0) -> Path:
@@ -339,21 +347,33 @@ class TestARedBaselineBlocks:
     That is the same failure the gate exists to prevent, one level up: not a finding nobody read,
     but a whole session nobody could have learned anything from.
 
-    Proves: TECH-056 FR-2
+    **Every record here comes from the producer.** This class used to hand-build
+    `{"summary": …, "campaigns": []}` — a shape no producer has written since `68a089d4` renamed
+    the block `session`, and one `findings_in` cannot read either. So the rule was proven against
+    a document nothing emits while the shipped gate could not fire at all. The pair is proven at
+    the integration tier, where it belongs; this file keeps the per-branch detail and buys it from
+    `build_session_record` so it can never again describe a record nobody writes.
+
+    Proves: TECH-049 FR-3a
     """
 
     @staticmethod
-    def _report(tmp_path, baseline: dict) -> Path:
+    def _report(tmp_path: Path, baseline: Any) -> Path:
+        """`baseline` is a real `Baseline`, or `None` for a `--no-baseline` run."""
         report = tmp_path / "mutation_session.json"
         report.write_text(
-            json.dumps({"summary": {"baseline": baseline, "verdict": "PASSED"}, "campaigns": []}),
+            json.dumps(
+                _record.build_session_record(
+                    campaigns=[], head="abc1234", dirty=False, baseline=baseline
+                )
+            ),
             encoding="utf-8",
         )
         return report
 
     def test_a_red_baseline_blocks_even_with_no_findings(self, gate, tmp_path) -> None:
 
-        report = self._report(tmp_path, {"green": False, "failed": 0})
+        report = self._report(tmp_path, _Baseline(green=False, failures=["t::a"], code=1))
         ledger = tmp_path / "ledger.json"
 
         result = gate.gate_verdict(report, ledger)
@@ -363,7 +383,7 @@ class TestARedBaselineBlocks:
 
     def test_a_green_baseline_is_judged_on_its_findings(self, gate, tmp_path) -> None:
         """The control: the new rule must not swallow the one the gate already had."""
-        report = self._report(tmp_path, {"green": True, "failed": 0})
+        report = self._report(tmp_path, _Baseline(green=True))
         ledger = tmp_path / "ledger.json"
 
         result = gate.gate_verdict(report, ledger)
@@ -371,9 +391,102 @@ class TestARedBaselineBlocks:
         assert not result.blocked, result.reason
 
     def test_a_report_with_no_baseline_recorded_is_judged_as_before(self, gate, tmp_path) -> None:
-        """A session run with `--no-baseline` says nothing about the tree, and never claimed to."""
+        """A session run with `--no-baseline` says nothing about the tree, and never claimed to.
+
+        The producer writes `{"ran": false}` here, not an absent block. A gate that asked whether
+        the block was present would read *nobody measured* as *the tree was red* and block every
+        `--no-baseline` run — the safe absence turned into the loud failure.
+        """
+        report = self._report(tmp_path, None)
+
+        assert json.loads(report.read_text())["session"]["baseline"] == {"ran": False}
+        assert not gate.gate_verdict(report, tmp_path / "ledger.json").blocked
+
+    def test_a_red_baseline_with_no_count_still_blocks(self, gate, tmp_path) -> None:
+        """[Boundary] the reason degrades to `?`; the verdict does not degrade to CLEAR.
+
+        A baseline block can reach the gate without `failed` — an older record, or a producer that
+        learned the tree was red without counting. The count is decoration on the message; the
+        block is the requirement.
+        """
         report = tmp_path / "mutation_session.json"
-        report.write_text(json.dumps({"summary": {"verdict": "PASSED"}, "campaigns": []}), "utf-8")
+        report.write_text(
+            json.dumps({"schema": 1, "session": {"baseline": {"ran": True, "green": False}}}),
+            encoding="utf-8",
+        )
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert result.blocked, result.reason
+        assert "? failing" in result.reason, result.reason
+
+
+class TestAnUnreadableRecordIsNotAPass:
+    """A record the gate cannot understand is not a clean bill of health.
+
+    Proves: TECH-049 FR-11
+
+    `_read_json` answers `{}` for anything it cannot parse, and every rule below it reads that as
+    *nothing to report*: no baseline block, so the baseline rule is silent; no mutants, so there
+    are no findings; `CLEAR: every finding carries a disposition`, about a file with nothing in it.
+
+    Measured against the shipped gate before this class existed — corrupt JSON, an empty file and a
+    record with its `session` block missing all three read `CLEAR`.
+
+    This is the same defect as the baseline reader one level down. `FR-11` already says a **missing**
+    record blocks; a record that arrives unreadable is missing in every sense that matters, and it
+    is what a run killed mid-write leaves behind. The staleness rule cannot catch it, because the
+    file's mtime is new — the nightly really did write it, just not all of it.
+    """
+
+    @staticmethod
+    def _written_now(tmp_path: Path, body: str) -> Path:
+        """On disk and fresh, so only readability is under test."""
+        path = tmp_path / "mutation_session.json"
+        path.write_text(body, encoding="utf-8")
+        now = time.time()
+        os.utime(path, (now, now))
+        return path
+
+    def test_a_record_that_is_not_json_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Hostile] a half-written file — the nightly killed mid-`write_text`."""
+        report = self._written_now(tmp_path, '{"schema": 1, "session": {"bas')
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert result.blocked, "an unparseable record was reported as a clean session"
+        assert "read" in result.reason.lower(), result.reason
+
+    def test_an_empty_record_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Hostile] zero bytes. `touch` on the record path must not clear the morning gate."""
+        report = self._written_now(tmp_path, "")
+
+        assert gate.gate_verdict(report, tmp_path / "ledger.json").blocked
+
+    def test_a_record_with_no_session_block_blocks(self, gate: ModuleType, tmp_path: Path) -> None:
+        """[Boundary] valid JSON, and still not a session record.
+
+        Distinct from the two above on purpose: this one parses. Nothing raises, nothing is caught,
+        and the document simply does not describe a run — which every rule below reads as silence.
+        """
+        report = self._written_now(tmp_path, json.dumps({"schema": 1, "mutants": []}))
+
+        result = gate.gate_verdict(report, tmp_path / "ledger.json")
+
+        assert result.blocked, "a document that describes no session was reported as one that did"
+
+    def test_a_readable_record_is_still_judged_on_its_contents(
+        self, gate: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Happy] the control. A rule that blocked every record would be switched off in a week."""
+        report = self._written_now(
+            tmp_path,
+            json.dumps(
+                _record.build_session_record(
+                    campaigns=[], head="abc1234", dirty=False, baseline=_Baseline(green=True)
+                )
+            ),
+        )
 
         assert not gate.gate_verdict(report, tmp_path / "ledger.json").blocked
 
@@ -428,8 +541,16 @@ class TestGateVerdictStaleness:
     """
 
     def _report(self, tmp_path: Path, written_at: float) -> Path:
+        """From the producer, so a record that ages is the record the nightly actually leaves."""
         report = tmp_path / "report.json"
-        report.write_text(json.dumps({"summary": {}, "campaigns": []}), "utf-8")
+        report.write_text(
+            json.dumps(
+                _record.build_session_record(
+                    campaigns=[], head="abc1234", dirty=False, baseline=None
+                )
+            ),
+            encoding="utf-8",
+        )
         os.utime(report, (written_at, written_at))
         return report
 

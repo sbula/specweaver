@@ -26,10 +26,31 @@ own NFR, which survived the design's Phase 6.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 import time
 from dataclasses import dataclass, field
+from pathlib import Path as _Path
 from typing import TYPE_CHECKING, Any
+
+
+def _sibling(name: str) -> Any:
+    spec = importlib.util.spec_from_file_location(name, _Path(__file__).parent / f"{name}.py")
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+#: Imported, not spelled. The producer owns the record's shape; this module reads it, and the one
+#: time the two spelled the first block separately the gate's baseline rule silently matched
+#: nothing for as long as it existed. `_session_record` imports nothing from here, so the direction
+#: is one-way and acyclic.
+_record = _sibling("_session_record")
+SESSION_BLOCK = _record.SESSION_BLOCK
+MUTANTS_BLOCK = _record.MUTANTS_BLOCK
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -96,7 +117,7 @@ def findings_in(record: dict[str, Any]) -> list[dict[str, Any]]:
     The record stores a flat list; campaign grouping is derived from a mutant's id when a reader
     wants it. Nothing here needs the grouping, so nothing here reconstructs it.
     """
-    return list(record.get("mutants", []))
+    return list(record.get(MUTANTS_BLOCK, []))
 
 
 def last_expected_run(now: float) -> float:
@@ -131,12 +152,35 @@ def gate_verdict(record_path: Path, ledger_path: Path) -> GateResult:
         )
 
     record = _read_json(record_path, {})
+    # A record that will not parse, or that parses into something with no session block, is not a
+    # quiet night. `_read_json` answers `{}` for anything it cannot read, and every rule below
+    # takes that as *nothing to report*: no baseline, so the baseline rule is silent; no mutants,
+    # so there are no findings; CLEAR, about a file with nothing in it.
+    #
+    # Measured before this rule existed: corrupt JSON, a zero-byte file and a document with the
+    # session block missing all three read CLEAR. Staleness cannot catch them — the mtime is new,
+    # because the nightly really did write the file, just not all of it.
+    if SESSION_BLOCK not in record:
+        return GateResult(
+            True,
+            f"the session record could not be read as one — no '{SESSION_BLOCK}' block. A run "
+            f"killed part-way through writing leaves exactly this, and its timestamp is new, so "
+            f"the staleness rule above cannot see it",
+        )
     # A red baseline invalidates every verdict in the session record, which the summary already states in
     # as many words. Checked before the findings, because there is no point asking whether findings
     # were read when none of them mean anything. A record with no baseline recorded was run with
     # `--no-baseline` and never claimed to know.
-    baseline = (record.get("summary") or {}).get("baseline")
-    if baseline is not None and not baseline.get("green"):
+    #
+    # `session` is where the producer puts it. This read spelled `summary` for as long as the rule
+    # existed, so it matched no document any producer had written and the rule could never fire —
+    # invisible because both sides had tests and neither test used the other side.
+    #
+    # `ran` is the flag, not the block's presence. The producer always writes a baseline block and
+    # says `{"ran": false}` when none was attempted, so testing the block for `None` reads
+    # *nobody measured* as *the tree was red* — the safe absence turned into the loud failure.
+    baseline = (record.get(SESSION_BLOCK) or {}).get("baseline") or {}
+    if baseline.get("ran") and not baseline.get("green"):
         return GateResult(
             True,
             f"the baseline was not green ({baseline.get('failed', '?')} failing), so every verdict "

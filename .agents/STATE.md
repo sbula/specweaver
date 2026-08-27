@@ -133,13 +133,23 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   full rebuild compounds"* — is an assumption about a design nobody has written. Both become
   measurable the moment a reader exists.
 
-- **`mutation.py --gate` is BLOCKED** on five `TECH-056 FR-1` findings, all `UNMEASURED
-  [scope-already-red]` — collateral of a red baseline, not findings about the code.
-  Dispositioning them is the human act the gate exists to force; an agent clearing its own run's
-  findings is the exact defect `TECH-056` fixed. A green baseline clears them on its own.
-  **The cause is fixed as of 2026-08-26**: the red was one test that read a wall clock it did not
-  control, and it was wrong for exactly the minute the nightly starts in. Four nights read as
-  flaky and none of them were. Record: `TECH-049_fr11_walkthrough.md`.
+- **`mutation.py --gate` is CLEAR as of 2026-08-27**, and the five `TECH-056 FR-1` findings are
+  closed. The 2026-08-27 nightly ran the full corpus at `1fe42809` against a **green** baseline —
+  187 judged, 187 protected, 0 unprotected, 0 unmeasured, 14 stale — and re-measured
+  `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
+  what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
+
+- **The gate could not read the record it is given, and four ways of learning nothing read as
+  CLEAR.** Found 2026-08-27. `68a089d4` renamed the session record's first block
+  `summary` -> `session` in the producer and the renderer and missed `_mutation_gate`'s single
+  reader, so the red-baseline rule matched no document any producer wrote and **could never fire**
+  — while a corrupt, empty or half-written record parsed to `{}` and read as a quiet night. Both
+  halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
+  `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
+  half's output to the other half's reader. Record:
+  `TECH-049_gate_readability_walkthrough.md`. **Six further boundaries are planned and agreed**
+  (`task.md`): the dangling-citation checker, scoped runs withdrawing findings they never looked
+  at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being

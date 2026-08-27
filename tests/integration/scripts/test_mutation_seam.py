@@ -310,3 +310,123 @@ class TestReportLedgerGateChain:
 
         assert mutation.main(["--gate", "--out", str(report), "--ledger", str(ledger)]) == 0
         assert json.loads(ledger.read_text())["override_count"] == 1, "and the census counted it"
+
+
+@pytest.fixture(scope="module")
+def session_record() -> ModuleType:
+    return _load("_session_record")
+
+
+@pytest.fixture(scope="module")
+def gate() -> ModuleType:
+    return _load("_mutation_gate")
+
+
+@pytest.mark.integration
+class TestTheGateReadsWhatTheProducerWrites:
+    """`build_session_record` then `gate_verdict` — the pair, over a record nobody hand-built.
+
+    Proves: TECH-049 FR-3a, FR-9, FR-11
+
+    Every existing test of the baseline rule constructs its own record. `68a089d4` renamed the
+    record's first block `summary` -> `session`, moved the producer and the renderer, and left the
+    gate's single reader on the old name. Both halves kept passing: the gate's tests fed it the old
+    shape, so the rule was proven against a document no producer has written since.
+
+    The one question neither side can ask alone is whether they still agree on where the baseline
+    is. That is this class.
+    """
+
+    @staticmethod
+    def _record(session_record: ModuleType, tmp_path: Path, baseline: Any) -> Path:
+        """A record from the real producer. The point is that nothing here spells a key."""
+        document = session_record.build_session_record(
+            campaigns=[], head="deadbee", dirty=False, baseline=baseline
+        )
+        path = tmp_path / "mutation_session.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        return path
+
+    def test_a_red_baseline_blocks_a_record_the_producer_wrote(
+        self, gate: ModuleType, session_record: ModuleType, mutation: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Graceful degradation] the tree never passed, so every verdict above is meaningless.
+
+        `TECH-049` FR-3a. This is the assertion the unit test believed it was making.
+        """
+        record = self._record(
+            session_record, tmp_path, mutation.Baseline(green=False, failures=["t::a"], code=1)
+        )
+
+        result = gate.gate_verdict(record, tmp_path / "ledger.json")
+
+        assert result.blocked, (
+            "a session judged against a tree whose suite never passed was reported clear; "
+            f"the producer wrote {json.loads(record.read_text())['session']['baseline']}"
+        )
+        assert "baseline" in result.reason.lower(), result.reason
+
+    def test_a_green_baseline_from_the_producer_is_judged_on_its_findings(
+        self, gate: ModuleType, session_record: ModuleType, mutation: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Happy] the control. A rule that blocked everything would be switched off in a week."""
+        record = self._record(session_record, tmp_path, mutation.Baseline(green=True))
+
+        assert not gate.gate_verdict(record, tmp_path / "ledger.json").blocked
+
+    def test_a_run_with_no_baseline_never_claimed_to_know(
+        self, gate: ModuleType, session_record: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Boundary] `--no-baseline` records `{"ran": false}` — absence, not a red tree."""
+        record = self._record(session_record, tmp_path, None)
+
+        assert not gate.gate_verdict(record, tmp_path / "ledger.json").blocked
+
+    def test_the_gate_looks_where_the_producer_puts_it(
+        self, gate: ModuleType, session_record: ModuleType, mutation: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Hostile] the rename, pinned as a contract rather than as two matching spellings.
+
+        A record carrying the pre-`68a089d4` `summary` block and nothing else must NOT satisfy the
+        gate's baseline rule, because no producer writes that shape any more. Asserting only that
+        the gate blocks on a red baseline would pass again the next time one side is renamed.
+        """
+        document = session_record.build_session_record(
+            campaigns=[], head="deadbee", dirty=False, baseline=mutation.Baseline(green=False)
+        )
+
+        # Not `gate.SESSION_BLOCK is session_record.SESSION_BLOCK`. CPython interns
+        # identifier-shaped literals, so that comparison is True even when the gate hard-codes its
+        # own `"session"` — it passes in exactly the state it claims to detect. Measured, not
+        # assumed: two modules each declaring `X = "session"` compare identical.
+        #
+        # The falsifiable form is that the name exists once in the whole package. A second
+        # spelling anywhere is the defect, whatever it happens to spell today.
+        spelled = [
+            path.name
+            for path in sorted((REPO_ROOT / "scripts").glob("*.py"))
+            if f'"{session_record.SESSION_BLOCK}"' in path.read_text(encoding="utf-8")
+        ]
+        assert spelled == ["_session_record.py"], (
+            "the session record's block name is spelled as a literal outside the module that owns "
+            f"it, in {spelled}. One name, one place — a second copy is what `68a089d4` renamed "
+            "half of"
+        )
+        block = document[session_record.SESSION_BLOCK]
+        assert "green" in block.get("baseline", {}), (
+            "the producer stopped writing the baseline under the shared name; the gate reads it "
+            "there, so move both or neither"
+        )
+
+        legacy = tmp_path / "legacy.json"
+        legacy.write_text(
+            json.dumps({"schema": 1, "summary": block, "mutants": []}), encoding="utf-8"
+        )
+
+        verdict = gate.gate_verdict(legacy, tmp_path / "ledger.json")
+
+        assert verdict.blocked, "a document describing no session was accepted as one that did"
+        assert "baseline" not in verdict.reason.lower(), (
+            "the gate honoured the retired `summary` block: it agreed with a document nothing "
+            f"produces instead of refusing to read it. Reason was {verdict.reason!r}"
+        )

@@ -74,7 +74,7 @@
           "old": "    if mtime < expected:",
           "new": "    if False:",
           "breaks": "FR-11's `SHALL treat a missing or stale report as blocking`. A nightly that hangs writes nothing, so yesterday's report is still on disk and the gate answers CLEAR over a run that never happened. Measured 2026-08-20: a wedged 03:00 run reported a clean bill of health at 04:22 and would have every morning after",
-          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
         },
         {
           "id": "every-report-reads-as-stale",
@@ -84,7 +84,67 @@
           "old": "    if mtime < expected:",
           "new": "    if True:",
           "breaks": "the opposite, and the one that gets the gate switched off: a report written by tonight's own run blocks anyway, so freshness becomes a second way to fail a clean night and nobody trusts the verdict",
-          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+        },
+        {
+          "id": "an-unreadable-record-is-a-quiet-night",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if SESSION_BLOCK not in record:",
+          "new": "if False:",
+          "breaks": "corrupt JSON, a zero-byte file or a half-written record all parse to {} and every rule below reads that as nothing to report, so a run killed mid-write reports CLEAR with a fresh timestamp the staleness rule cannot fault",
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3a",
+      "title": "A session judged against a red tree is not a clean bill of health",
+      "scope": [
+        "tests/unit/scripts/test_mutation_gate.py",
+        "tests/integration/scripts/test_mutation_seam.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-gate-reads-a-retired-key",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "baseline = (record.get(SESSION_BLOCK) or {}).get(\"baseline\") or {}",
+          "new": "baseline = (record.get(\"summary\") or {}).get(\"baseline\") or {}",
+          "breaks": "the gate stops using the producer's shared name for the record's first block and spells the retired one, so the baseline rule matches no document any producer writes and a red baseline reads as CLEAR — the defect itself, and the reason the name is a constant both sides import",
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+        },
+        {
+          "id": "a-red-baseline-no-longer-blocks",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if baseline.get(\"ran\") and not baseline.get(\"green\"):",
+          "new": "if False:",
+          "breaks": "every verdict in a session judged against a tree whose suite never passed is reported as read",
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+        },
+        {
+          "id": "an-unmeasured-tree-reads-as-a-red-one",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "if baseline.get(\"ran\") and not baseline.get(\"green\"):",
+          "new": "if not baseline.get(\"green\"):",
+          "breaks": "a --no-baseline run records {'ran': false}, and dropping the flag turns 'nobody measured' into 'the tree was red' — the gate then blocks every run that never claimed to know",
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
+        },
+        {
+          "id": "a-red-baseline-with-no-count-stops-blocking",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "gate_verdict",
+          "old": "baseline.get('failed', '?')",
+          "new": "baseline.get('failed', 0)",
+          "breaks": "a red baseline that carries no failure count is described as '0 failing', which reads as a green tree in the one place a human looks",
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
         }
       ]
     }
