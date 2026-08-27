@@ -25,6 +25,7 @@ decays the moment someone reaches for the file the text came from.
 from __future__ import annotations
 
 import builtins
+import typing
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -47,6 +48,16 @@ class Beta:
     def go(self):
         return 2
 '''
+
+
+def _body(code: str, **kw: typing.Any) -> list[typing.Any]:
+    """`chunk_source`, body layer only.
+
+    Totality, purity and determinism are claims about the body layer. `FR-12` narrows both halves
+    of `FR-17` to it, because a skeleton chunk is a description and a signature concatenated rather
+    than a slice of the file.
+    """
+    return [c for c in chunk_source(code, **kw) if c.layer == "body"]
 
 
 class _MinimalParser:
@@ -77,7 +88,7 @@ class _MinimalParser:
 
 def test_two_methods_are_the_whole_parser_contract() -> None:
     """NFR-1. Any installed language tier works without per-language code here."""
-    chunks = chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="whatever")
+    chunks = _body(SOURCE, path="m.x", parser=_MinimalParser(), language="whatever")
 
     assert {name for c in chunks for name in c.symbols} >= {"alpha", "Beta"}
 
@@ -88,7 +99,7 @@ def test_every_non_blank_character_survives() -> None:
     Comparing whitespace-stripped text catches a dropped preamble, a dropped remainder and a
     truncated split at once — the three ways content has gone missing here.
     """
-    chunks = chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="whatever")
+    chunks = _body(SOURCE, path="m.x", parser=_MinimalParser(), language="whatever")
 
     rejoined = "".join(c.text for c in chunks)
 
@@ -108,7 +119,7 @@ def test_totality_holds_when_a_symbol_is_split() -> None:
             return code.rstrip("\n")
 
     rejoined = "".join(
-        c.text for c in chunk_source(code, path="m.x", parser=_One(), language="x", max_chars=400)
+        c.text for c in _body(code, path="m.x", parser=_One(), language="x", max_chars=400)
     )
 
     assert "".join(rejoined.split()) == "".join(code.split())
@@ -126,12 +137,12 @@ def test_the_chunker_never_opens_a_file(monkeypatch: pytest.MonkeyPatch) -> None
 
     monkeypatch.setattr(builtins, "open", _refuse)
 
-    assert chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
+    assert _body(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
 
 
 def test_the_same_input_gives_the_same_chunks() -> None:
     """NFR-3's other half: no clock, no randomness, no accumulated state between calls."""
-    first = chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
-    second = chunk_source(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
+    first = _body(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
+    second = _body(SOURCE, path="m.x", parser=_MinimalParser(), language="x")
 
     assert first == second

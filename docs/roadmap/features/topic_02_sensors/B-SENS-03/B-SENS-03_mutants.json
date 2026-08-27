@@ -63,7 +63,7 @@
      "old": "        order, unreadable = [], True",
      "new": "        return []",
      "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     },
     {
      "id": "a-line-window-is-not-flagged",
@@ -73,7 +73,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = False",
      "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
-     "symbol_sha": "sha256:a755ae967e7cf6b32516a3e8e971e453a4acce45f759aefb8360b23fca60cd26"
+     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
     },
     {
      "id": "everything-is-a-line-window",
@@ -83,7 +83,7 @@
      "old": "    windowed = line_window or len(pieces) > 1",
      "new": "    windowed = True",
      "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
-     "symbol_sha": "sha256:a755ae967e7cf6b32516a3e8e971e453a4acce45f759aefb8360b23fca60cd26"
+     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
     },
     {
      "id": "an-unreadable-file-reads-as-readable",
@@ -93,7 +93,7 @@
      "old": "        order, unreadable = [], True",
      "new": "        order, unreadable = [], False",
      "breaks": "the one case `len(pieces) > 1` cannot infer: a SMALL file no grammar handles arrives in one piece, so nothing about the cut says it was never understood",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     }
    ],
    "rekeyed": {
@@ -118,7 +118,7 @@
      "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
      "new": "        \"\", path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
      "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass. Re-anchored a THIRD time on 2026-08-26 when SF-06 CB-1 gave the preamble call its scope arguments -- six re-anchors in this story, each one a correction the drift check forced rather than a silent pass",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     }
    ],
    "rekeyed": {
@@ -405,8 +405,8 @@
     {
      "id": "the-budget-counts-whitespace-again",
      "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_weight",
+     "file": "src/specweaver/workspace/analyzers/_sizing.py",
+     "symbol": "weight",
      "old": "    return len(\"\".join(text.split()))",
      "new": "    return len(text)",
      "breaks": "consistency across coding styles. Counting every character lets indentation decide where code is cut, so deeply nested Java and flat Python are judged by different standards for the same amount of code -- and reformatting a file moves its chunk boundaries without a line of it changing, which costs a re-index of the whole repository once anything is embedded",
@@ -439,7 +439,7 @@
      "old": "    tops = [n for n in order if parents[n] is None]",
      "new": "    tops = [n for n in order if \".\" not in n]",
      "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     }
    ]
   },
@@ -460,17 +460,17 @@
      "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
      "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
      "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
-     "symbol_sha": "sha256:07aa3f26b04a8631019defe2589472b3fc1dba4d7d9c323bf14a7890f23bb0a6"
+     "symbol_sha": "sha256:5b01f269b0525868dcca03114c268a266302f15aef31d4fde32a04c24b56f5ac"
     },
     {
      "id": "a-line-longer-than-the-budget-is-never-cut",
      "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_slice_long_line",
-     "old": "    if _weight(line) <= max_chars:\n        return [line]",
+     "file": "src/specweaver/workspace/analyzers/_sizing.py",
+     "symbol": "slice_long_line",
+     "old": "    if weight(line) <= max_chars:\n        return [line]",
      "new": "    if True:\n        return [line]",
      "breaks": "the one case a line boundary cannot serve. A minified bundle or a single-line JSON has no newline, so an 800,000-character file came back as ONE chunk against a budget of 4,000 -- measured. Whatever embeds that either fails or silently truncates",
-     "symbol_sha": "sha256:033e25098709ea54cc47707ee933ab4d056d5cdd028f76c15f7c95a141baa92a"
+     "symbol_sha": "sha256:1105c4a2a72d1c6cd3b8c6641a0fcf8076f56c739a279f8ab0211ec6a77e47c0"
     }
    ]
   },
@@ -510,13 +510,13 @@
      "old": "        if head:",
      "new": "        if head.strip():",
      "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
-     "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
+     "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
     },
     {
      "id": "unknown-visibility-merges-again",
      "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_levels",
+     "file": "src/specweaver/workspace/analyzers/_scope.py",
+     "symbol": "levels_of",
      "old": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)\n            return None",
      "new": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)",
      "breaks": "the guard's FAILURE MODE. Falling back to a dict where every symbol reads `unknown` means every symbol matches every other, so a private one merges into a public chunk -- `FR-2`'s filter undone one layer up, failing in the same direction the original defect failed. Not knowing is not the same as knowing they are alike",
@@ -549,7 +549,7 @@
      "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
      "new": "        head, path, \"\", language, max_chars, (), package=cut.package, unit=cut.unit",
      "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     },
     {
      "id": "every-gap-becomes-the-module",
@@ -578,7 +578,7 @@
      "old": "        if head:",
      "new": "        if head.strip():",
      "breaks": "verbatim-ness, and totality does NOT catch it -- that is the whole reason this requirement has two halves. Totality compares non-whitespace characters, so dropping the blank run between two merged symbols satisfies it while producing `... return 1clas s Beta:`, a chunk whose content never existed in the file and which no reader could locate in it",
-     "symbol_sha": "sha256:f515d593202949a76b1767ef02450062bdd5006e5c254df33ad152ad620bd0ec"
+     "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
     },
     {
      "id": "the-final-flush-never-happens",
@@ -604,10 +604,10 @@
      "origin": "authored",
      "file": "src/specweaver/workspace/analyzers/chunking.py",
      "symbol": "chunk_source",
-     "old": "        _unit_of(path, markers),",
-     "new": "        _directory_of(path),",
+     "old": "        unit_of(path, markers),",
+     "new": "        directory_of(path),",
      "breaks": "`AD-5`'s reasoning at the wider radius. A chunk claiming a unit boundary the caller never established answers *is this outside my service?* from a guess -- the same failure as reporting `public` for a language with no such concept",
-     "symbol_sha": "sha256:e5df2f6fc8deeb7dc7fc761f9463ff9e0a1e26bfc31b0084d99288a5c0fd37f5"
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
     },
     {
      "id": "visibility-is-never-known",
@@ -622,22 +622,61 @@
     {
      "id": "the-first-marker-wins-not-the-nearest",
      "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_unit_of",
+     "file": "src/specweaver/workspace/analyzers/_scope.py",
+     "symbol": "unit_of",
      "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
      "new": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and not best:",
      "breaks": "the nearest-wins rule. A repository root and a nested package both hold a manifest, so taking any match puts every file in the repo root and the narrow question stops being answerable. This mutant was SILENT twice: once because the implementation iterated a frozenset and could not be pinned, and once because the fixture's marker names sorted so that first-match gave the right answer anyway",
-     "symbol_sha": "sha256:7271f2ecacc1a84efa176d7df8283ac03c32add7efb48467b0655c28dd999ac4"
+     "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
     },
     {
      "id": "a-marker-matches-on-a-bare-prefix",
      "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_unit_of",
+     "file": "src/specweaver/workspace/analyzers/_scope.py",
+     "symbol": "unit_of",
      "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
      "new": "        if path.startswith(directory) and len(directory) > len(best):",
      "breaks": "the path boundary. A marker at `src/app` would claim every file under `src/application`, putting one service's code inside another's unit",
-     "symbol_sha": "sha256:7271f2ecacc1a84efa176d7df8283ac03c32add7efb48467b0655c28dd999ac4"
+     "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
+    }
+   ]
+  },
+  {
+   "requirement": "FR-12",
+   "title": "Two layers, and they split and merge separately",
+   "scope": [
+    "tests/unit/workspace/analyzers/test_chunking_layers.py"
+   ],
+   "mutants": [
+    {
+     "id": "the-skeleton-layer-is-never-emitted",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "chunk_source",
+     "old": "    return body + _skeletons(code, parser, cut, preamble)",
+     "new": "    return body",
+     "breaks": "the layer itself. The question asked first -- *what does this offer* -- has nothing to answer it, and a consumer ranking signatures above bodies has only bodies",
+     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+    },
+    {
+     "id": "skeletons-merge",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_skeletons",
+     "old": "            layer=\"skeleton\",\n        )\n    return chunks",
+     "new": "            layer=\"skeleton\",\n        )\n    return _merge([(c.text, c.symbol, None) for c in chunks], cut)",
+     "breaks": "the decision a measurement made. A skeleton is 99 non-whitespace characters at the median, so a 4,000 budget holds about forty -- and forty signatures in one chunk matches everything, which is the low-discrimination problem that made `FR-6` per-symbol rather than per-file",
+     "symbol_sha": "sha256:c17c6f98e8017e3b8ee7cc2743c36dccdb1d2a1b9af9750704832e0b96d4fafc"
+    },
+    {
+     "id": "every-chunk-claims-the-body-layer",
+     "origin": "authored",
+     "file": "src/specweaver/workspace/analyzers/chunking.py",
+     "symbol": "_emit",
+     "old": "    layer: str = \"body\",\n) -> list[Chunk]:",
+     "new": "    layer: str = \"body\",\n) -> list[Chunk]:\n    layer = \"body\"",
+     "breaks": "the label, without touching the content. Every chunk reads `body`, so `FR-17`'s totality would bind the skeletons too -- and a skeleton is a description and a signature concatenated, which no totality claim can hold for",
+     "symbol_sha": "sha256:0649fbda7555370776b80546a2bc7affbd344eebb12dcc5f9a570d706d88afb9"
     }
    ]
   }

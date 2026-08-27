@@ -57,7 +57,15 @@ def python_parser() -> object:
 
 
 def _chunk(parser: object, code: str = SOURCE, **kwargs: object) -> list[Chunk]:
-    return chunk_source(code, path="mod.py", parser=parser, language="python", **kwargs)
+    # **Body layer only.** `FR-12` added a skeleton chunk per symbol, and `FR-17` binds the
+    # body layer -- both halves -- because a skeleton is a description and a signature
+    # concatenated rather than a slice of the file. Every claim in this file is about how the
+    # body was cut, so the projection is filtered out here rather than in each assertion.
+    return [
+        c
+        for c in chunk_source(code, path="mod.py", parser=parser, language="python", **kwargs)
+        if c.layer == "body"
+    ]
 
 
 def test_every_top_level_symbol_is_named_by_some_chunk(python_parser: object) -> None:

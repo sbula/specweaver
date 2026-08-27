@@ -28,6 +28,17 @@ import pytest
 from specweaver.workspace.analyzers.chunking import chunk_source
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
+
+def _body(code: str, **kw: typing.Any) -> list[typing.Any]:
+    """`chunk_source`, body layer only.
+
+    `FR-12` adds a skeleton per reported symbol, so the class itself is named there even when the
+    body layer split it away — and a skeleton never ends in a newline. Every claim in this file is
+    about how the body was cut.
+    """
+    return [c for c in chunk_source(code, **kw) if c.layer == "body"]
+
+
 MIXED = (
     "class Bag:\n"
     "    def get_a(self):\n        return 1\n"
@@ -71,7 +82,7 @@ class TestChunkSourceMergingFailsClosed:
         result that asked for the public interface, which is exactly the defect `FR-2` closed one
         layer down.
         """
-        chunks = chunk_source(
+        chunks = _body(
             MIXED, path="m.py", parser=_NoVisibility(python_parser), language="python", max_chars=60
         )
         merged = [c for c in chunks if len(c.symbols) > 1]
@@ -80,7 +91,7 @@ class TestChunkSourceMergingFailsClosed:
     def test_the_symbols_still_all_appear(self, python_parser: typing.Any) -> None:
         """[Boundary] Failing closed means *not merging*, not *not indexing*. Refusing to emit
         would be a worse answer than merging was."""
-        chunks = chunk_source(
+        chunks = _body(
             MIXED, path="m.py", parser=_NoVisibility(python_parser), language="python", max_chars=60
         )
         assert {n for c in chunks for n in c.symbols} == {
@@ -95,9 +106,7 @@ class TestChunkSourceMergingFailsClosed:
         code = "class Bag:\n" + "".join(
             f"    def get_{n}(self):\n        return {n}\n" for n in range(8)
         )
-        chunks = chunk_source(
-            code, path="m.py", parser=python_parser, language="python", max_chars=120
-        )
+        chunks = _body(code, path="m.py", parser=python_parser, language="python", max_chars=120)
         assert any(len(c.symbols) > 1 for c in chunks), [c.symbols for c in chunks]
 
 
@@ -111,7 +120,7 @@ class TestChunkSourceSplitsALineThatIsItselfTooBig:
         about indentation, not about this.
         """
         one_line = "x=1;" * 20_000
-        chunks = chunk_source(
+        chunks = _body(
             one_line, path="bundle.min.js", parser=python_parser, language="python", max_chars=4000
         )
         assert len(chunks) > 1
@@ -121,7 +130,7 @@ class TestChunkSourceSplitsALineThatIsItselfTooBig:
         """[Boundary] `FR-17` on the new path. Cutting mid-line is a last resort, not a licence to
         drop what does not fit."""
         one_line = "x=1;" * 20_000
-        chunks = chunk_source(
+        chunks = _body(
             one_line, path="bundle.min.js", parser=python_parser, language="python", max_chars=4000
         )
         assert "".join(c.text for c in chunks) == one_line
@@ -130,7 +139,7 @@ class TestChunkSourceSplitsALineThatIsItselfTooBig:
         """[Boundary] `FR-16`. Cutting inside a line produces something even less like a whole unit
         than cutting between lines does, so it says so."""
         one_line = "x=1;" * 20_000
-        chunks = chunk_source(
+        chunks = _body(
             one_line, path="bundle.min.js", parser=python_parser, language="python", max_chars=4000
         )
         assert all(c.is_line_window for c in chunks)
@@ -139,7 +148,5 @@ class TestChunkSourceSplitsALineThatIsItselfTooBig:
         """[Happy path] The control. A mid-line cut must be the exception — a rule that always cut
         at N characters is the fixed-size window this whole capability replaced."""
         code = "def huge():\n" + "".join(f"    value_{n} = {n} + 1\n" for n in range(300))
-        chunks = chunk_source(
-            code, path="m.py", parser=python_parser, language="python", max_chars=300
-        )
+        chunks = _body(code, path="m.py", parser=python_parser, language="python", max_chars=300)
         assert all(c.text.endswith("\n") for c in chunks[:-1]), [c.text[-20:] for c in chunks[:-1]]

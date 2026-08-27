@@ -178,7 +178,11 @@ class TestChunkSourceLabelsTheVisibility:
 class TestChunkSourceScopeKeepsItsGuarantees:
     def test_nothing_is_lost(self, python_parser: typing.Any) -> None:
         """[Boundary] `FR-17`. Labels are added; content is not touched."""
-        joined = "".join(c.text for c in _chunks(python_parser, MIXED, max_chars=40))
+        # Body layer only: `FR-17` binds it, because a skeleton is a description and a
+        # signature concatenated rather than a slice of the file.
+        joined = "".join(
+            c.text for c in _chunks(python_parser, MIXED, max_chars=40) if c.layer == "body"
+        )
         assert "".join(joined.split()) == "".join(MIXED.split())
 
     def test_the_chunker_still_opens_no_file(self, python_parser: typing.Any) -> None:

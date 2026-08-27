@@ -17,6 +17,9 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from specweaver.workspace.analyzers._scope import directory_of, levels_of, unit_of
+from specweaver.workspace.analyzers._sizing import emit_split, weight
+
 logger = logging.getLogger(__name__)
 
 #: Big enough to hold most real symbols whole, small enough that a chunk stays a useful retrieval
@@ -73,46 +76,14 @@ class Chunk:
     #: a boundary the caller never established would answer "is this outside my service?" from a
     #: guess.
     unit: str = ""
-
-
-def _directory_of(path: str) -> str:
-    """The directory part of a path, on either platform's separator.
-
-    Not `pathlib`: it resolves against the platform running the scan, so a Windows path handed to a
-    Linux worker would come back whole and the chunk would claim the entire path as its package.
-    A scan reads paths as data, so they are split as data.
-    """
-    cut = max(path.rfind("/"), path.rfind("\\"))
-    return path[:cut] if cut > 0 else ""
-
-
-def _unit_of(path: str, markers: frozenset[str]) -> str:
-    """The nearest ancestor directory the caller marked as a build unit, or `""`.
-
-    **Nearest, not first.** A repository root and a nested package both hold a manifest, and the
-    file belongs to the inner one — taking any match would put every file in the repo root.
-
-    Matching is on a path **boundary**, so `src/apple` is not a unit of `src/app/mod`.
-    """
-    best = ""
-    # `sorted`, not the set's own order. A frozenset iterates by hash, which is stable within one
-    # process and not across runs -- so two candidates of equal length would tie differently on
-    # different days, and `NFR-4` says the same input gives the same chunks. Added when two mutants
-    # came back SILENT: an order-dependent implementation cannot be pinned by a deterministic test.
-    #
-    # Sorting is on the MARKER PATHS, so `src/app/build.gradle` precedes `src/app/mod/go.mod` while
-    # `src/app/pyproject.toml` follows it. Length is what decides; the sort only makes which
-    # candidate is seen first a fact rather than a coin toss.
-    for marker in sorted(markers):
-        directory = _directory_of(marker)
-        if not directory:
-            continue
-        # On a path BOUNDARY: a bare prefix would make `src/app` a unit of `src/application`.
-        if any(path.startswith(directory + sep) for sep in ("/", "\\")) and len(directory) > len(
-            best
-        ):
-            best = directory
-    return best
+    #: Which view this chunk belongs to: `body` is the code, `skeleton` is the description and the
+    #: signature with the body elided.
+    #:
+    #: They are separate because the questions are: *what does this offer* is asked before *how
+    #: does it work*, and a consumer ranks one above the other. `FR-17` binds the **body** layer --
+    #: both halves -- because a skeleton is a description and a signature CONCATENATED, so it is
+    #: not a slice of the file and never could be.
+    layer: str = "body"
 
 
 def _parent_of(name: str, texts: dict[str, str]) -> str | None:
@@ -151,61 +122,6 @@ def _children_of(parent: str, order: list[str], parents: dict[str, str | None]) 
     return [name for name in order if parents.get(name) == parent]
 
 
-def _weight(text: str) -> int:
-    """How much of `text` counts towards the budget: its non-whitespace characters.
-
-    Counting every character let **indentation decide where code was cut**. Deeply nested Java and
-    flat Python were judged by different standards for the same amount of code, and reformatting a
-    file moved its chunk boundaries without a line of it changing — which, once anything is
-    embedded, costs a re-index of the whole repository.
-
-    cAST measures the same way, and for the same reason: consistency across coding styles and
-    languages. The trade is that *raw* length is then unbounded; `NFR-3` states it rather than
-    leaving it to be discovered.
-    """
-    return len("".join(text.split()))
-
-
-def _slice_long_line(line: str, max_chars: int) -> list[str]:
-    """A single line, cut only if it alone exceeds the budget.
-
-    Cutting mid-line produces a fragment that is not lexically whole, which is what this module
-    exists to avoid — so it is the last resort **after** the last resort, and the ordinary path
-    returns the line untouched.
-
-    It is needed because a line boundary is not guaranteed to exist. A minified bundle or a
-    single-line JSON has none, and before this a 800,000-character file came back as **one** chunk
-    against a budget of 4,000. Whatever embeds that either fails or silently truncates. Found by a
-    retrospective red/blue on 2026-08-26.
-    """
-    if _weight(line) <= max_chars:
-        return [line]
-    return [line[at : at + max_chars] for at in range(0, len(line), max_chars)] or [line]
-
-
-def _split(text: str, max_chars: int) -> list[str]:
-    """Break oversized text on line boundaries, keeping every line.
-
-    Splitting mid-line would produce a fragment that is not even lexically whole, which is the
-    failure this module exists to avoid — just at a smaller scale.
-    """
-    parts: list[str] = []
-    current = ""
-    weight = 0
-    for line in text.splitlines(keepends=True):
-        for piece in _slice_long_line(line, max_chars):
-            piece_weight = _weight(piece)
-            if current and weight + piece_weight > max_chars:
-                parts.append(current)
-                current = ""
-                weight = 0
-            current += piece
-            weight += piece_weight
-    if current:
-        parts.append(current)
-    return parts or [text]
-
-
 def _emit(
     text: str,
     path: str,
@@ -218,11 +134,12 @@ def _emit(
     visibility: str = "unknown",
     package: str = "",
     unit: str = "",
+    layer: str = "body",
 ) -> list[Chunk]:
     if not text.strip():
         return []
     inside = symbols if symbols is not None else ((symbol,) if symbol else ())
-    pieces = _split(text, max_chars)
+    pieces = emit_split(text, max_chars)
     # More than one piece means this text was cut by lines: `_split` knows no other boundary. So
     # the flag is set either because the caller already knows the file is unreadable, or because
     # the cut happened here.
@@ -240,6 +157,7 @@ def _emit(
             visibility=visibility,
             package=package,
             unit=unit,
+            layer=layer,
         )
         for index, piece in enumerate(pieces, start=1)
     ]
@@ -303,7 +221,7 @@ def _walk(text: str, names: list[str], cut: _Cut) -> list[Chunk]:
             # that never existed in the file. `_emit` still discards a blank piece that ends up
             # standing alone.
             pieces.append((head, "", None))
-        if _weight(body) <= cut.max_chars:
+        if weight(body) <= cut.max_chars:
             pieces.append((body, name, None))
         else:
             # Already too big to merge with anything. It goes through `_emit_unit`, which splits
@@ -329,7 +247,7 @@ class _Run:
         self._level: str | None = None
 
     def _fits(self, text: str) -> bool:
-        return _weight(self._text + text) <= self._cut.max_chars
+        return weight(self._text + text) <= self._cut.max_chars
 
     def flush(self) -> list[Chunk]:
         """Emit whatever has accumulated, and start again."""
@@ -431,7 +349,7 @@ def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
     The recursion terminates by construction: each child's text is strictly shorter than its
     parent's, and a symbol with no children falls through to the line split.
     """
-    if _weight(text) <= cut.max_chars:
+    if weight(text) <= cut.max_chars:
         return _emit(
             text,
             cut.path,
@@ -463,31 +381,56 @@ def _emit_unit(text: str, name: str, cut: _Cut) -> list[Chunk]:
     return _walk(text, children, cut)
 
 
-def _levels(code: str, parser: Any, order: list[str]) -> dict[str, str] | None:
-    """Each symbol's access level, or **None when the parser could not answer**.
+def _skeletons(code: str, parser: Any, cut: _Cut, preamble: str) -> list[Chunk]:
+    """One chunk per reported symbol: its description and its signature, with the body gone.
 
-    `extract_symbol_visibility` re-parses the file every time it is asked, so asking per symbol is
-    one parse per symbol — a thousand of them for a thousand-symbol file. `list_symbols` answers a
-    whole level at once, and `VISIBILITY` is closed, so the cost is a constant.
+    **Per symbol, not per body chunk.** A class that fits is one body chunk and its methods are
+    none, but the skeleton layer still holds every method — that independence is what having two
+    layers is for, and `FR-12` says the two split and merge separately.
 
-    A symbol whose language cannot say arrives in the `public` bucket and is recorded as public.
-    That is `AD-5` — `unknown` counts as visible — applied to merging rather than restated.
+    **Never merged.** Measured across 921 symbols: 99 non-whitespace characters at the median, so a
+    4,000 budget would hold about forty. Forty signatures in one chunk matches everything, which is
+    the low-discrimination problem that made `FR-6` per-symbol rather than per-file.
 
-    **`None` rather than a dict of `unknown`, and the difference is the whole point.** Every symbol
-    reading `unknown` means every symbol matches every other, so a private one merges into a public
-    chunk — `FR-2`'s filter undone one layer up, failing in the same direction the original defect
-    failed. Not knowing is not the same as knowing they are alike. Found by a retrospective
-    red/blue on 2026-08-26, on a path no mutant could reach because no line was written for it.
+    **Never split in practice** — the largest measured is 1,563 — but `_emit` still does the
+    cutting, so a pathological one loses nothing.
+
+    The preamble is here too `[agreed 2026-08-26]`: it has no body to elide, so its skeleton is the
+    same text. Duplicated deliberately, because skeletons are ranked first and *what is this file
+    for* would otherwise live only in the layer read second.
     """
-    levels: dict[str, str] = {}
-    for level in ("public", "protected", "internal", "private"):
+    chunks: list[Chunk] = []
+    if preamble.strip():
+        chunks += _emit(
+            preamble,
+            cut.path,
+            _MODULE_CHUNK,
+            cut.language,
+            cut.max_chars,
+            (),
+            package=cut.package,
+            unit=cut.unit,
+            layer="skeleton",
+        )
+    for name in cut.order:
         try:
-            for name in parser.list_symbols(code, visibility=[level]):
-                levels.setdefault(name, level)
+            signature = parser.extract_symbol_signature(code, name)
         except Exception:
-            logger.debug("Chunking: visibility unavailable at %r; merging disabled", level)
-            return None
-    return {name: levels.get(name, "unknown") for name in order}
+            logger.debug("Chunking %s: no signature for %r, skipping", cut.path, name)
+            continue
+        chunks += _emit(
+            signature,
+            cut.path,
+            name,
+            cut.language,
+            cut.max_chars,
+            (name,),
+            visibility=_level_of(cut, name),
+            package=cut.package,
+            unit=cut.unit,
+            layer="skeleton",
+        )
+    return chunks
 
 
 def chunk_source(
@@ -527,23 +470,29 @@ def chunk_source(
         path,
         language,
         max_chars,
-        _directory_of(path),
-        _unit_of(path, markers),
+        directory_of(path),
+        unit_of(path, markers),
         unreadable,
         texts,
         order,
         parents,
-        _levels(code, parser, order),
+        levels_of(code, parser, order),
     )
     tops = [n for n in order if parents[n] is None]
 
     first = next((texts[n] for n in tops if texts.get(n, "").strip() and texts[n] in code), None)
     if first is None:
-        return _walk(code, tops, cut)  # nothing parsed: there is no "before the first symbol"
+        # Nothing parsed: there is no "before the first symbol", and no symbol to skeletonise.
+        return _walk(code, tops, cut)
 
     head, _, rest = code.partition(first)
-    if not head.strip():
-        return _walk(code, tops, cut)
-    return _emit(
-        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit
-    ) + _walk(first + rest, tops, cut)
+    preamble = head if head.strip() else ""
+    body = (
+        _emit(
+            head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit
+        )
+        + _walk(first + rest, tops, cut)
+        if preamble
+        else _walk(code, tops, cut)
+    )
+    return body + _skeletons(code, parser, cut, preamble)

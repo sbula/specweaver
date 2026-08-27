@@ -628,6 +628,114 @@
       "first_seen": 1787781618.9712553,
       "last_seen": 1787781689.6668122,
       "occurrences": 3
+    },
+    "B-SENS-03 FR-11 the-budget-counts-whitespace-again": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-10 a-line-longer-than-the-budget-is-never-cut": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-9 unknown-visibility-merges-again": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-14 unit-falls-back-to-package": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-14 the-first-marker-wins-not-the-nearest": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
+    },
+    "B-SENS-03 FR-14 a-marker-matches-on-a-bare-prefix": {
+      "history": [
+        {
+          "at": 1787803399.20836,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787803450.190146,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1787803399.20836,
+      "last_seen": 1787803399.20836,
+      "occurrences": 1
     }
   },
   "override_count": 0,

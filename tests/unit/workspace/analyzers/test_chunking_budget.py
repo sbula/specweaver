@@ -47,11 +47,15 @@ def _body(statements: int, indent: int) -> str:
 
 
 def _chunks(parser: object, code: str, max_chars: int) -> list[str]:
+    # **Body layer only.** `FR-12` added a skeleton chunk per symbol, and `FR-17` binds the
+    # body layer -- both halves -- because a skeleton is a description and a signature
+    # concatenated rather than a slice of the file.
     return [
         c.text
         for c in chunk_source(
             code, path="m.py", parser=parser, language="python", max_chars=max_chars
         )
+        if c.layer == "body"
     ]
 
 
