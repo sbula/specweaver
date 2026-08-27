@@ -5,7 +5,16 @@
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-058/TECH-058_implementation_plan.md
 - **Status**: APPROVED (2026-08-16)
 
-**FRs owned: FR-1.** One commit boundary.
+**FRs owned: FR-1, FR-2, FR-3.** One commit boundary.
+
+**`FR-2` and `FR-3` were back-declared `[agreed 2026-08-27]`.** This plan was written when the
+design's table held one row, and it shipped three things: `-n auto` on the baseline, `.venv/bin`
+on the unit's `PATH`, and `LimitNOFILE` above the inherited 1024. The last two carry their
+reasoning in comments in the shipped unit file and are covered by
+`test_mutation_timer.py::TestTimerUnitsCarryAUsablePath` and
+`::TestTimerUnitsRaiseTheFileDescriptorLimit`, which cited requirement ids that did not exist
+until `check_dangling_citations.py` found them. Nothing about the work changed — this line names
+what the boundary already delivered.
 
 ## CB-1
 

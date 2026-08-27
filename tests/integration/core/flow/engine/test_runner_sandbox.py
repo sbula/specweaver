@@ -333,7 +333,7 @@ async def test_execute_in_sandbox_rebinds_execution_root(
     # The isolated context handed to the handler points execution_root inside the worktree.
     assert seen["execution_root"] is not None
     assert ".worktrees" in str(seen["execution_root"])
-    # NFR-8: the policy the handler saw is a DIFFERENT INSTANCE from the one the original
+    # The policy the handler saw is a DIFFERENT INSTANCE from the one the original
     # context holds. `copy.copy` leaves them shared, so an in-place update would make these
     # identical AND would have leaked the worktree path onto the original — this identity
     # check is what makes the assertion below non-vacuous.
@@ -343,7 +343,7 @@ async def test_execute_in_sandbox_rebinds_execution_root(
     # once to cache the resolved `dal_level`, so a pre-run snapshot is stale by this point and
     # would fail for a reason unrelated to isolation.
     assert seen["policy"] is not context.isolation
-    # NFR-8: the ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
+    # The ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
     assert context.isolation.execution_root is None
     # The partial update carried every unlisted field through unchanged.
     assert seen["allowed_paths"] == preset_allowed

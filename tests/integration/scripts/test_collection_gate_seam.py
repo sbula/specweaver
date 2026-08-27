@@ -9,7 +9,8 @@ Proves: TECH-051 FR-1, TECH-051 FR-3, TECH-051 FR-5, TECH-051 FR-6, TECH-051 FR-
 `tests/unit/sandbox/protocol/` — the misplaced test moved home, the nine stubs filled — and those
 files cite `A-VAL-01`, the capability they prove. `check_fr_coverage` reads text rather than
 intent: a file naming two stories credits **each** story with **every** FR number in it, so adding
-`TECH-051 FR-6` to a file that also says `A-VAL-01 FR-3` invented a dangling `A-VAL-01 FR-6` and,
+`TECH-051 FR-6` to a file that also says `A-VAL-01 FR-3` invented a dangling sixth FR against
+that capability — which declares five — and,
 worse, a silent false credit of `A-VAL-01 FR-5` to a gRPC parser test that proves nothing about
 contract drift. One story per file. What proves FR-5 and FR-6 from here is
 `test_a_clean_tree_exits_zero` against the live repo: those twelve files are why the tree is clean.

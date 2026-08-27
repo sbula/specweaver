@@ -165,6 +165,11 @@ EXPECTED: dict[str, dict[str, str]] = {
         # Behavioural rows only -- a row proved by `tach` or `file_sizes`, or unfalsifiable as
         # written, is excused by an explicit `[proof: ...]` marker in the design.
         "nfr_sweep": "all",
+        # `TECH-047`'s other half, closed 2026-08-27: the ledger ran one way only, so a `Proves:`
+        # tag could credit evidence to a requirement no design declares and read exactly like
+        # proof of one that does. Swept rather than story-scoped for the same reason `fr_sweep`
+        # is -- 2 of the 9 found were on a story closed months earlier.
+        "dangling_citations": "all",
     },
 }
 
@@ -228,6 +233,7 @@ class TestDocTrackIsSeparate:
             "entry_depth",
             "fr_sweep",
             "nfr_sweep",
+            "dangling_citations",
         }
 
     def test_the_decision_citations_gate_is_retired(self, q: ModuleType) -> None:

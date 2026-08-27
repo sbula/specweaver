@@ -460,3 +460,183 @@ class TestOwnFrMentions:
         assert "cannot read" in err
         assert "FR-4" in err
         assert "FR-11" not in err
+
+
+# ---------------------------------------------------------------------------
+# The reverse direction: a citation naming a requirement no design declares
+# ---------------------------------------------------------------------------
+
+
+DESIGN_WITH_BOTH_TABLES = """\
+# Design: Something
+
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | First thing | Engine | does | happens |
+
+## Non-Functional Requirements
+
+| # | NFR | Threshold / Constraint |
+|---|-----|----------------------|
+| NFR-1 | Speed | under 50ms |
+"""
+
+
+class TestDanglingCitations:
+    """The ledger was one-directional, and the missing direction hid real defects.
+
+    It asked *is every declared FR cited* and never *does every citation name a declared FR*. So a
+    test could carry `Proves: TECH-056 FR-2` against a design that declares one FR and says so in
+    its own words — and the check printed `3 of 1 requirement(s)` and exited 0.
+
+    Measured across the repo on 2026-08-27: eight citations name a requirement neither table
+    declares, on six stories. `A-VAL-01 FR-6` is the one that proves the class matters — the citing
+    file's own docstring already explains that a cross-story text scan invented it, so a previous
+    session diagnosed this by hand and no gate has caught it since.
+
+    A dangling citation is not a cosmetic problem. It is proof credited to a requirement that does
+    not exist, which is indistinguishable from proof of one that does.
+    """
+
+    @staticmethod
+    def _story(tmp_path: Path, design: str, test_body: str) -> tuple[Path, Path]:
+        """A story complete enough that only a dangling citation can block it.
+
+        The implementation plan is not scenery. Without one, `missing_from_plan` blocks every
+        fixture story regardless — so `test_main_blocks_on_a_dangling_citation` passed with the
+        dangling rule deleted, and the mutant that removed it was SILENT. A guard that cannot fail
+        is not a guard, and this fixture is where that one hid.
+        """
+        features = tmp_path / "features" / "topic" / "X-Y-01"
+        features.mkdir(parents=True)
+        (features / "X-Y-01_design.md").write_text(design, encoding="utf-8")
+        (features / "X-Y-01_implementation_plan.md").write_text(
+            "# Plan\n\n**FRs owned: FR-1.**\n", encoding="utf-8"
+        )
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_thing.py").write_text(test_body, encoding="utf-8")
+        return tmp_path / "features", tests
+
+    def test_an_fr_the_design_does_not_declare_is_reported(
+        self, mod: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Hostile] the `TECH-056 FR-2` shape, reduced."""
+        features, tests = self._story(
+            tmp_path, DESIGN_WITH_BOTH_TABLES, '"""Proves: X-Y-01 FR-2"""\n'
+        )
+
+        dangling = mod.dangling_citations(features, tests, "X-Y-01")
+
+        assert "FR-2" in dangling, "a citation of an undeclared FR was not reported"
+        assert dangling["FR-2"] == ["test_thing.py"]
+
+    def test_an_nfr_the_design_declares_is_not_dangling(
+        self, mod: ModuleType, tmp_path: Path
+    ) -> None:
+        """[Boundary] the trap that makes a naive version useless.
+
+        NFRs are declared in their own table. A reverse check comparing every citation against the
+        **FR** table alone reports each of them as dangling: measured, that is 62 false positives
+        against 8 true ones, and a check that is 89% noise gets switched off in a week.
+        """
+        features, tests = self._story(
+            tmp_path, DESIGN_WITH_BOTH_TABLES, '"""Proves: X-Y-01 FR-1, X-Y-01 NFR-1"""\n'
+        )
+
+        assert mod.dangling_citations(features, tests, "X-Y-01") == {}
+
+    def test_an_nfr_no_table_declares_is_dangling(self, mod: ModuleType, tmp_path: Path) -> None:
+        """[Graceful degradation] `TECH-065`: a design with no NFR table, cited for `NFR-2`.
+
+        Absent table and empty table must read the same. A design that declares no NFRs cannot have
+        one proven.
+        """
+        features, tests = self._story(
+            tmp_path,
+            "# Design\n\n## Functional Requirements\n\n| FR-1 | a | b | c | d |\n",
+            '"""Proves: X-Y-01 NFR-2"""\n',
+        )
+
+        assert "NFR-2" in mod.dangling_citations(features, tests, "X-Y-01")
+
+    def test_a_fixture_id_is_exempt(self, mod: ModuleType, tmp_path: Path) -> None:
+        """[Boundary] `tests/CLAUDE.md` tells authors to give fixtures ids the design does not
+        declare, and names `FR-98`. The convention deliberately produces a dangling id, so the
+        check must honour it or contradict a rule already in use.
+
+        The floor is a property of the id, not of the file: the existing `fixture-data` marker is
+        file-level and would discard that file's real citations too.
+        """
+        features, tests = self._story(
+            tmp_path, DESIGN_WITH_BOTH_TABLES, '"""X-Y-01 FR-98 and X-Y-01 FR-99 are fixtures"""\n'
+        )
+
+        assert mod.dangling_citations(features, tests, "X-Y-01") == {}
+
+    def test_the_id_below_the_floor_is_still_checked(self, mod: ModuleType, tmp_path: Path) -> None:
+        """[Boundary] the other side of the fence. `FR-89` is a requirement id, not a fixture."""
+        features, tests = self._story(
+            tmp_path, DESIGN_WITH_BOTH_TABLES, '"""Proves: X-Y-01 FR-89"""\n'
+        )
+
+        assert "FR-89" in mod.dangling_citations(features, tests, "X-Y-01")
+
+    def test_a_clean_story_reports_nothing(self, mod: ModuleType, tmp_path: Path) -> None:
+        """[Happy] the control. A check that fired on everything would be switched off."""
+        features, tests = self._story(
+            tmp_path, DESIGN_WITH_BOTH_TABLES, '"""Proves: X-Y-01 FR-1"""\n'
+        )
+
+        assert mod.dangling_citations(features, tests, "X-Y-01") == {}
+
+    def test_main_blocks_on_a_dangling_citation(
+        self, mod: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """[Hostile] the whole point — it must change the exit code, not only the prose."""
+        features, tests = self._story(
+            tmp_path,
+            DESIGN_WITH_BOTH_TABLES,
+            '"""Proves: X-Y-01 FR-1, X-Y-01 NFR-1, X-Y-01 FR-2"""\n',
+        )
+
+        code = mod.main(["X-Y-01", "--features-root", str(features), "--tests-root", str(tests)])
+
+        out = capsys.readouterr().out
+        assert code == 1, "a dangling citation was reported and the story still passed"
+        assert "FR-2" in out
+        assert "carried by no implementation plan" not in out, (
+            "this story blocked for a different reason, so it proves nothing about dangling "
+            f"citations: {out}"
+        )
+        assert "cited by no test file" not in out, out
+
+
+class TestPrintLedgerRatio:
+    """`3 of 1 requirement(s)` was printed by the shipped checker, and it exited 0.
+
+    The numerator counted every strictly-cited id including NFRs; the denominator counted FR rows
+    only. A ratio above 1 is not a display bug — it is the reverse check missing, stated in
+    arithmetic, and it was on screen every time anyone ran the tool on `TECH-056`.
+    """
+
+    def test_the_numerator_counts_only_declared_frs(
+        self, mod: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        features = tmp_path / "features" / "topic" / "X-Y-02"
+        features.mkdir(parents=True)
+        (features / "X-Y-02_design.md").write_text(DESIGN_WITH_BOTH_TABLES, encoding="utf-8")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_t.py").write_text(
+            '"""Proves: X-Y-02 FR-1, X-Y-02 NFR-1"""\n', encoding="utf-8"
+        )
+
+        mod.main(
+            ["X-Y-02", "--features-root", str(tmp_path / "features"), "--tests-root", str(tests)]
+        )
+
+        out = capsys.readouterr().out
+        assert "1 of 1 requirement(s)" in out, out

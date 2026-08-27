@@ -29,9 +29,14 @@ class TestExtractReqIds:
         assert "NFR-3" in result
 
     def test_extracts_mixed_ids(self) -> None:
-        text = "FR-1 is critical. NFR-2 is also needed. FR-10 edge case."
+        # Ids at or above 90 are the fixture convention (`tests/CLAUDE.md`). Below it, these
+        # strings read as citations of `INT-US-24` — the story this file names — and credited it
+        # with requirements its design does not declare. Spelling the offending id here would
+        # re-create it, which is exactly how the docstring in `test_collection_gate_seam.py`
+        # describing this defect kept reproducing it.
+        text = "FR-91 is critical. NFR-92 is also needed. FR-90 edge case."
         result = ScenarioGenerator._extract_req_ids(text)
-        assert set(result) == {"FR-1", "NFR-2", "FR-10"}
+        assert set(result) == {"FR-91", "NFR-92", "FR-90"}
 
     def test_returns_empty_when_no_ids(self) -> None:
         text = "This spec has no requirement tags at all."
@@ -305,7 +310,7 @@ class TestFeedbackParam:
 
     async def test_hostile_feedback_text_lands_verbatim(self) -> None:
         # [Hostile] fences/braces/fake headings in the feedback are inert text.
-        hostile = '```json\n{"fake": "schema"}\n```\n## Scenarios\n[FR-9] {braces}'
+        hostile = '```json\n{"fake": "schema"}\n```\n## Scenarios\n[FR-99] {braces}'
         mock_llm = AsyncMock()
         mock_llm.generate.return_value = json.dumps(_VALID_SCENARIO_SET)
         gen = ScenarioGenerator(llm=mock_llm)

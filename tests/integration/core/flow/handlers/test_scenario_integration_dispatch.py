@@ -208,7 +208,7 @@ async def test_fr6_leaky_verdict_reaches_code_generator_vocabulary_free(tmp_path
     # [Hostile→Happy chain] the LLM's code_bug feedback LEAKS scenario
     # vocabulary → the real guard rewrites it → the REAL GenerateCodeHandler
     # extracts it and hands the Generator a validation_findings text with no
-    # scenario vocabulary. Pins NFR-8 on the integrated path, not just the
+    # scenario vocabulary. Pinned on the integrated path, not just the
     # guard's unit tests.
     ctx = _ctx(tmp_path)
     ctx.feedback["scenario_test_failures"] = _evidence_with_failure()

@@ -43,6 +43,13 @@ outlives the person who wrote it; the measurement is cheap and settles it.
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | The baseline runs the suite in parallel, as every other whole-suite run does | The nightly session | lays its baseline before judging any mutant | the suite runs under `-n auto`, so the baseline costs ~77s rather than ~291s, and a red baseline is still reported with its failures intact |
+| FR-2 | The unit hands the run a `PATH` that can find the toolchain | The systemd service | starts the nightly under a user manager, which supplies a minimal `PATH` without `.venv/bin` | `tach` — shelled out to by `test_architecture.py` and by the tach pytest plugin at collection — resolves, so the baseline reports failing tests rather than a collection error that reads `green=false, failed=0` |
+| FR-3 | The unit raises the file-descriptor limit before the suite needs it | The systemd service | starts a run that fans out one `-n auto` worker per core | `LimitNOFILE` is above the 1024 a user service inherits, so the suite does not exhaust descriptors as ~690 `OSError`s scattered across unrelated unit tests, none of which fail alone or in any pair of tiers |
+
+`FR-2` and `FR-3` were **delivered with this ticket and never written down** — added
+`[agreed 2026-08-27]` after `check_dangling_citations.py` found two tests citing them against a
+table that declared one requirement. Both are in the shipped unit file with their reasoning in
+comments; neither had a row here. The ticket did three things and this table claimed one.
 
 ## Non-Functional Requirements
 

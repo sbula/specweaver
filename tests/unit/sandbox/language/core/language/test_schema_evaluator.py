@@ -39,7 +39,7 @@ def test_schema_evaluator_translates_known_markers(sample_schemas):
 
 
 def test_schema_evaluator_skips_unsupported_languages(sample_schemas):
-    """Test that NFR-2 successfully skips applying Java logic to Python files."""
+    """Applying Java logic to a Python file is skipped, not attempted."""
     evaluator = SchemaEvaluator(sample_schemas)
     markers = {"decorators": {"RestController": []}, "bases": {}}
 

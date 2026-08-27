@@ -181,6 +181,14 @@ MATRIX: dict[str, dict[str, str]] = {
     # by `tach` or the `file_sizes` gate, or unfalsifiable as written, is excused by an explicit
     # `[proof: ...]` marker in the design, where the excuse is reviewable.
     "nfr_sweep": {"doc": "all"},
+    # The reverse of both sweeps above: they ask whether every declared requirement is cited, and
+    # nothing asked whether every citation names a declared one. So a `Proves:` tag could credit
+    # evidence to a requirement that does not exist and read exactly like proof of one that does.
+    # `check_fr_coverage.py` asks it per story and only at closure, which leaves it unasked for
+    # every story nobody is closing -- 2 of the 9 found on 2026-08-27 were on a story closed months
+    # earlier. Whole-repo here for the reason `development_framework.md` gives: a check that must
+    # be invoked to fire reports success by not running.
+    "dangling_citations": {"doc": "all"},
 }
 
 

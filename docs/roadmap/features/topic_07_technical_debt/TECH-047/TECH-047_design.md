@@ -106,6 +106,19 @@ commit that **improved the specification**. An unbuilt capability's requirements
 uncited; there is nothing to test yet. The census now reads the roadmap's markers and counts
 delivered stories only: 263 → 251, a change in what is counted and **not** evidence of testing.
 
+### The other limitation, fixed 2026-08-27
+
+The ledger ran in one direction only. It asked *is every declared FR cited* and never *does every
+citation name a declared FR*, so a `Proves:` tag could credit evidence to a requirement that does
+not exist and read exactly like proof of one that does. `TECH-056` declares a single FR and says so
+in its own prose; a test carried `Proves: TECH-056 FR-2`, and this checker printed
+`3 of 1 requirement(s)` and exited 0 — a ratio above 1 on screen every time anyone ran it.
+
+`dangling_citations()` closes it, and `check_dangling_citations.py` sweeps every design in the
+`doc` gate for the reason this ticket exists at all: a check that must be invoked to fire reports
+success by not running. Nine were found. Two were on a story closed months earlier, and one had
+already been diagnosed by hand in a test docstring that nothing ever acted on.
+
 ### What this ticket did not do
 
 The remaining 251 are verification work, itemised per FR by `check_fr_coverage.py <ID>`, and belong

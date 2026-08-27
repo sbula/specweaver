@@ -144,6 +144,13 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
             ignores_paths=True,
             script="check_nfr_sweep.py",
         ),
+        "dangling_citations": make(
+            "dangling_citations",
+            ("docs", "tests"),
+            _r._whole_repo("check_dangling_citations.py"),
+            ignores_paths=True,
+            script="check_dangling_citations.py",
+        ),
         "entry_depth": make(
             "entry_depth",
             ("docs",),

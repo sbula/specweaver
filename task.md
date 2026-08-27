@@ -58,12 +58,18 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-2 — a citation that names nothing  (defects 3 + 4)
 
-- [ ] **T1** — Red: `check_fr_coverage.py` fails a citation naming an FR the design does not declare.
-- [ ] **T2** — Red: the `3 of 1` ratio cannot be printed — a count above the declared total is the bug.
-- [ ] **T3** — Green: the check reads citations both ways.
-- [ ] **T4** — Re-home the red-baseline test. It proves `TECH-049` `FR-3a`, not a `TECH-056` `FR-2`
+- [x] **T1** — Red: `check_fr_coverage.py` fails a citation naming an FR the design does not declare.
+- [x] **T2** — Red: the `3 of 1` ratio cannot be printed — a count above the declared total is the bug.
+- [x] **T3** — Green: the check reads citations both ways.
+- [x] **T4** — Re-home the red-baseline test. It proves `TECH-049` `FR-3a`, not a `TECH-056` `FR-2`
       that never existed. Move the mutant to the campaign that matches.
-- [ ] **T5** — Mutants: a dangling citation passes · the reverse check never runs.
+- [x] **T5** — Mutants: a dangling citation passes · the reverse check never runs.
+- [x] **T6** — The sweep: `check_dangling_citations.py`, repo-wide, in the `doc` gate `[agreed 2026-08-27]`.
+- [x] **T7** — All 9 findings fixed. `TECH-058` gained `FR-2`/`FR-3` — delivered by its own
+      boundary, never written down `[agreed 2026-08-27]`.
+- [x] **T8** — A SILENT mutant exposed a vacuous test of mine: the fixture story had no plan, so
+      `missing_from_plan` blocked it whatever the dangling rule did. Fixture given a plan; the
+      assertion now requires the other two failures to be absent.
 
 **Every check before the commit.**
 

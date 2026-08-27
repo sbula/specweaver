@@ -139,6 +139,16 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **A citation could name a requirement that does not exist, and nothing looked.** Found and closed
+  2026-08-27. The FR ledger ran one way only — *is every declared FR cited* — so a `Proves:` tag
+  could credit evidence to an id no design declares and read exactly like proof of one that does.
+  `check_fr_coverage.py TECH-056` printed **`3 of 1 requirement(s)`** and exited `0`.
+  `check_dangling_citations.py` now sweeps all 139 designs in the `doc` gate, which is the
+  fourteenth check there. Nine were found: seven were stale prose or fixture strings; **`TECH-058`
+  gained `FR-2` and `FR-3`**, both delivered by its own boundary and never written down — the
+  systemd unit's `PATH` and its `LimitNOFILE`, which are what stop a red baseline that names no
+  failing test. Record: `TECH-047_dangling_citations_walkthrough.md`.
+
 - **The gate could not read the record it is given, and four ways of learning nothing read as
   CLEAR.** Found 2026-08-27. `68a089d4` renamed the session record's first block
   `summary` -> `session` in the producer and the renderer and missed `_mutation_gate`'s single
@@ -147,9 +157,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **Six further boundaries are planned and agreed**
-  (`task.md`): the dangling-citation checker, scoped runs withdrawing findings they never looked
-  at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
+  `TECH-049_gate_readability_walkthrough.md`. **Five further boundaries are planned and agreed**
+  (`task.md`): scoped runs withdrawing findings they never looked at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`
   proves `run_selections` returns a declared zero, and CB-2 exercised it end to end by being

@@ -93,7 +93,7 @@ async def test_fan_out_log_observability_context_isolation(
     caplog: pytest.LogCaptureFixture, tmp_path: Path
 ) -> None:
     """
-    NFR-4 (Integration): Validates that asynchronous execution contexts safely
+    Integration: Validates that asynchronous execution contexts safely
     isolate log streams by dynamically binding `run_id` tags directly inside
     the concurrent run, without cross-pollination.
     """

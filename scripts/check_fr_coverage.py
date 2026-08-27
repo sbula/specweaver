@@ -216,6 +216,66 @@ def cited_frs_in_tests(tests_root: Path, story: str) -> dict[str, list[str]]:
     return cited
 
 
+#: An NFR declaration: a row in the design's Non-Functional Requirements table. Parsed here rather
+#: than imported from `check_nfr_sweep` because that module ratchets an unrelated count; what this
+#: needs is only *which ids the design declares*, and duplicating the regex would be a second copy
+#: of one fact. The shape is the 3-column table 47 of 49 designs use, plus the 2-column variants.
+_NFR_DECLARATION = re.compile(r"^\s*\|\s*\**(NFR-\d+)\**\s*\|", re.MULTILINE)
+
+#: Requirement ids at or above this number are fixture data, never real requirements
+#: `[agreed 2026-08-27]`.
+#:
+#: `tests/CLAUDE.md` instructs authors to give fixtures "requirement ids the design does not
+#: declare (`FR-98`)", so the convention deliberately manufactures dangling ids and the reverse
+#: check below would contradict a rule already in use without this floor.
+#:
+#: A property of the **id**, not of the file. The `fixture-data` marker is file-level and would
+#: discard that file's genuine citations along with its fixtures — which is why `FR-98` exists as a
+#: convention beside the marker rather than instead of it.
+FIXTURE_ID_FLOOR = 90
+
+_ID_NUMBER = re.compile(r"-(\d+)$")
+
+
+def parse_design_nfrs(text: str) -> set[str]:
+    """NFR ids the design declares. An absent table and an empty one mean the same thing."""
+    return set(_NFR_DECLARATION.findall(text))
+
+
+def _is_fixture_id(requirement: str) -> bool:
+    match = _ID_NUMBER.search(requirement)
+    return match is not None and int(match.group(1)) >= FIXTURE_ID_FLOOR
+
+
+def dangling_citations(features_root: Path, tests_root: Path, story: str) -> dict[str, list[str]]:
+    """Citations naming a requirement **neither** of the story's tables declares.
+
+    The ledger used to ask only *is every declared FR cited*. The reverse question — *does every
+    citation name a declared requirement* — was never asked, so proof could be credited to a
+    requirement that does not exist, which is indistinguishable from proof of one that does.
+    `TECH-056` declares exactly one FR and says so in its own prose; a test carried
+    `Proves: TECH-056 FR-2` and the checker printed `3 of 1 requirement(s)` and exited 0.
+
+    **Both tables, or this is 89% noise.** Measured 2026-08-27: comparing every citation against
+    the FR table alone reports 70 dangling ids, 62 of which are NFRs the NFR table declares
+    perfectly well. Against both tables the answer is 10, of which 2 are the fixture convention.
+    A check that is mostly false positives is one nobody reads.
+    """
+    design = find_design_doc(features_root, story)
+    if design is None:
+        return {}
+    text = _read(design)
+    if text is None:
+        return {}
+    declared = set(parse_design_frs(text)) | parse_design_nfrs(text)
+    cited = cited_frs_in_tests(tests_root, story)
+    return {
+        requirement: files
+        for requirement, files in sorted(cited.items())
+        if requirement not in declared and not _is_fixture_id(requirement)
+    }
+
+
 def declared_frs(features_root: Path, story: str) -> tuple[list[str], str | None]:
     """The story's declared FR ledger, or ``([], reason)`` if it cannot be established."""
     design = find_design_doc(features_root, story)
@@ -318,9 +378,15 @@ def print_ledger(
             how = "Proves:" if fr in strict else "legacy"
             proof = f"{len(files)} test file(s)  [{how}]"
         print(f"  {fr:<7} {in_plan:<8} {proof}")
-    if frs and strict:
+    # Intersected with `frs` on purpose. `strict` holds every strictly-cited id for the story,
+    # NFRs included, while the denominator counts FR rows — so the raw numerator printed
+    # `3 of 1 requirement(s)` for `TECH-056`, a ratio above 1 that was the missing reverse check
+    # stated in arithmetic. It was on screen every time anyone ran the tool and read as a display
+    # quirk.
+    tagged = [fr for fr in frs if fr in strict]
+    if frs and tagged:
         print(
-            f"\n  {len(strict)} of {len(frs)} requirement(s) carry an authoritative `Proves:` tag"
+            f"\n  {len(tagged)} of {len(frs)} requirement(s) carry an authoritative `Proves:` tag"
         )
 
 
@@ -356,9 +422,16 @@ def main(argv: list[str] | None = None) -> int:
 
     missing_from_plan = [fr for fr in frs if fr not in planned]
     missing_from_tests = [fr for fr in frs if fr not in cited]
+    dangling = dangling_citations(features_root, Path(args.tests_root), story)
     print_ledger(frs, planned, cited, story)
 
     print()
+    if dangling:
+        for requirement, files in dangling.items():
+            print(
+                f"FAIL  cited by a test but declared by neither table: {requirement} "
+                f"<- {', '.join(files)}"
+            )
     if missing_from_plan:
         print(
             "FAIL  declared in the design but carried by no implementation plan: "
@@ -370,11 +443,13 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(missing_from_tests)
         )
 
-    if missing_from_plan or missing_from_tests:
+    if missing_from_plan or missing_from_tests or dangling:
         print(
             f"\nBLOCKED: {story} must not be declared finished. Every FR needs a plan that owns it "
-            "and a test that proves it. If an FR is genuinely out of scope, delete the row from "
-            "the design's FR table so the descoping is visible."
+            "and a test that proves it, and every citation must name a requirement the design "
+            "declares. If an FR is genuinely out of scope, delete the row from the design's FR "
+            "table so the descoping is visible; if a citation names an id that never existed, the "
+            "proof it claims does not exist either."
         )
         return 1
 
