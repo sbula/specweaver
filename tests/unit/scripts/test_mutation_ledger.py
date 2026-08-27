@@ -14,6 +14,11 @@ Two rules carry the redesign:
   second copy that can disagree with its own history, which is what this whole contract is against.
 - **Append only on change.** A session that sees the same finding in the same state writes nothing,
   so history grows with events rather than with runs.
+- **Absence means deletion only when the run looked everywhere.** Every `fold_session` call below
+  passes `full_sweep=True`, and that is a claim rather than boilerplate: these tests are about what
+  a session concludes from a finding **not appearing**, and only a run over the whole corpus can
+  conclude anything from that. A scoped run's silence about a campaign is not evidence about it.
+  `test_mutation_gate.py::TestFoldSession` holds the other side.
 """
 
 from __future__ import annotations
@@ -62,6 +67,7 @@ class TestFoldSessionOpening:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
         entry = ledger["findings"]["F FR-1 m"]
@@ -77,6 +83,7 @@ class TestFoldSessionOpening:
             reasons={},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
         assert ledger["findings"] == {}
@@ -88,6 +95,7 @@ class TestFoldSessionOpening:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=1000.0,
+            full_sweep=True,
         )
 
         entry = ledger["findings"]["F FR-1 m"]
@@ -105,6 +113,7 @@ class TestFoldSessionAppendOnChange:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
     def test_an_unchanged_finding_appends_nothing(self, gate: ModuleType) -> None:
@@ -114,6 +123,7 @@ class TestFoldSessionAppendOnChange:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=DAY,
+            full_sweep=True,
         )
 
         assert len(ledger["findings"]["F FR-1 m"]["history"]) == 1
@@ -126,6 +136,7 @@ class TestFoldSessionAppendOnChange:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=DAY,
+            full_sweep=True,
         )
 
         entry = ledger["findings"]["F FR-1 m"]
@@ -141,6 +152,7 @@ class TestFoldSessionAppendOnChange:
             reasons={"F FR-1 m": "timed-out"},
             declared={"F FR-1 m"},
             now=DAY,
+            full_sweep=True,
         )
 
         history = ledger["findings"]["F FR-1 m"]["history"]
@@ -158,6 +170,7 @@ class TestFoldSessionClosing:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
     def test_a_mutant_now_protected_closes_as_fixed(self, gate: ModuleType) -> None:
@@ -167,6 +180,7 @@ class TestFoldSessionClosing:
             reasons={},
             declared={"F FR-1 m"},
             now=DAY,
+            full_sweep=True,
         )
 
         last = ledger["findings"]["F FR-1 m"]["history"][-1]
@@ -175,7 +189,7 @@ class TestFoldSessionClosing:
     def test_a_mutant_gone_from_the_corpus_closes_as_withdrawn(self, gate: ModuleType) -> None:
         """Deleting the campaign must not read as a year of diligent fixing."""
         ledger = gate.fold_session(
-            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY
+            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY, full_sweep=True
         )
 
         last = ledger["findings"]["F FR-1 m"]["history"][-1]
@@ -183,7 +197,12 @@ class TestFoldSessionClosing:
 
     def test_a_declared_mutant_that_never_ran_closes_as_unreachable(self, gate: ModuleType) -> None:
         ledger = gate.fold_session(
-            self._opened(gate), judged={}, reasons={}, declared={"F FR-1 m"}, now=DAY
+            self._opened(gate),
+            judged={},
+            reasons={},
+            declared={"F FR-1 m"},
+            now=DAY,
+            full_sweep=True,
         )
 
         last = ledger["findings"]["F FR-1 m"]["history"][-1]
@@ -193,16 +212,18 @@ class TestFoldSessionClosing:
         """[Boundary] Append-on-change applies to closing too, or a closed finding grows a line
         a night for ever."""
         closed = gate.fold_session(
-            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY
+            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY, full_sweep=True
         )
-        again = gate.fold_session(closed, judged={}, reasons={}, declared=set(), now=2 * DAY)
+        again = gate.fold_session(
+            closed, judged={}, reasons={}, declared=set(), now=2 * DAY, full_sweep=True
+        )
 
         assert len(again["findings"]["F FR-1 m"]["history"]) == 2
 
     def test_a_reappearance_reopens_the_same_entry(self, gate: ModuleType) -> None:
         """One long-lived finding, not six short ones — which is what makes a period visible."""
         closed = gate.fold_session(
-            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY
+            self._opened(gate), judged={}, reasons={}, declared=set(), now=DAY, full_sweep=True
         )
         reopened = gate.fold_session(
             closed,
@@ -210,6 +231,7 @@ class TestFoldSessionClosing:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=30 * DAY,
+            full_sweep=True,
         )
 
         entry = reopened["findings"]["F FR-1 m"]
@@ -227,20 +249,27 @@ class TestFoldSessionRetention:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
-        return gate.fold_session(opened, judged={}, reasons={}, declared=set(), now=when)
+        return gate.fold_session(
+            opened, judged={}, reasons={}, declared=set(), now=when, full_sweep=True
+        )
 
     def test_a_finding_closed_recently_is_kept(self, gate: ModuleType) -> None:
         ledger = self._closed_at(gate, DAY)
 
-        pruned = gate.fold_session(ledger, judged={}, reasons={}, declared=set(), now=100 * DAY)
+        pruned = gate.fold_session(
+            ledger, judged={}, reasons={}, declared=set(), now=100 * DAY, full_sweep=True
+        )
 
         assert "F FR-1 m" in pruned["findings"]
 
     def test_a_finding_closed_over_a_year_ago_is_pruned(self, gate: ModuleType) -> None:
         ledger = self._closed_at(gate, DAY)
 
-        pruned = gate.fold_session(ledger, judged={}, reasons={}, declared=set(), now=400 * DAY)
+        pruned = gate.fold_session(
+            ledger, judged={}, reasons={}, declared=set(), now=400 * DAY, full_sweep=True
+        )
 
         assert "F FR-1 m" not in pruned["findings"]
 
@@ -253,6 +282,7 @@ class TestFoldSessionRetention:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
         later = gate.fold_session(
@@ -261,6 +291,7 @@ class TestFoldSessionRetention:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=800 * DAY,
+            full_sweep=True,
         )
 
         assert "F FR-1 m" in later["findings"]
@@ -276,6 +307,7 @@ class TestCurrentStateIsDerived:
             reasons={"F FR-1 m": "timed-out"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
         assert gate.current_state(ledger["findings"]["F FR-1 m"]) == "open"
@@ -287,8 +319,11 @@ class TestCurrentStateIsDerived:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
-        closed = gate.fold_session(opened, judged={}, reasons={}, declared=set(), now=DAY)
+        closed = gate.fold_session(
+            opened, judged={}, reasons={}, declared=set(), now=DAY, full_sweep=True
+        )
 
         assert gate.current_state(closed["findings"]["F FR-1 m"]) == "closed"
 
@@ -300,6 +335,7 @@ class TestCurrentStateIsDerived:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
 
         entry = ledger["findings"]["F FR-1 m"]
@@ -323,6 +359,7 @@ class TestConfirmWritesHistory:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
         path = tmp_path / "ledger.json"
         gate.write_ledger(path, ledger)
@@ -462,8 +499,11 @@ class TestRetentionClockReadsTheClosure:
             reasons={"F FR-1 m": "no-killer"},
             declared={"F FR-1 m"},
             now=0.0,
+            full_sweep=True,
         )
-        closed = gate.fold_session(opened, judged={}, reasons={}, declared=set(), now=DAY)
+        closed = gate.fold_session(
+            opened, judged={}, reasons={}, declared=set(), now=DAY, full_sweep=True
+        )
         entry = closed["findings"]["F FR-1 m"]
         # Late on purpose. A note written a day after the closure cannot tell the two readings
         # apart — both say "keep" or both say "prune" — so the test would pass either way. The gap
@@ -477,7 +517,9 @@ class TestRetentionClockReadsTheClosure:
         ledger = self._closed_then_disposed(gate)
 
         # 400 days after the closure, but only 101 after the note.
-        pruned = gate.fold_session(ledger, judged={}, reasons={}, declared=set(), now=401 * DAY)
+        pruned = gate.fold_session(
+            ledger, judged={}, reasons={}, declared=set(), now=401 * DAY, full_sweep=True
+        )
 
         assert "F FR-1 m" not in pruned["findings"]
 
@@ -491,6 +533,8 @@ class TestRetentionClockReadsTheClosure:
         """The other control — pruning must not become eager."""
         ledger = self._closed_then_disposed(gate)
 
-        kept = gate.fold_session(ledger, judged={}, reasons={}, declared=set(), now=10 * DAY)
+        kept = gate.fold_session(
+            ledger, judged={}, reasons={}, declared=set(), now=10 * DAY, full_sweep=True
+        )
 
         assert "F FR-1 m" in kept["findings"]

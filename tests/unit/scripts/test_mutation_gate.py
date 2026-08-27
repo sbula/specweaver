@@ -241,7 +241,10 @@ class TestRecordRun:
                 }
             },
         )
-        gate.record_run(_report(tmp_path, _finding("PROTECTED")), ledger)
+        # `full_sweep=True` is the claim under test, not boilerplate: absence means *deleted* only
+        # when the run looked everywhere. A scoped run reaching this line would be saying a mutant
+        # was deleted on the evidence of having not asked about it.
+        gate.record_run(_report(tmp_path, _finding("PROTECTED")), ledger, full_sweep=True)
 
         entry = json.loads(ledger.read_text())["findings"]["F FR-1 gone"]
         assert gate.current_state(entry) == "closed"
@@ -617,3 +620,131 @@ class TestGateVerdictStaleness:
         result = gate.gate_verdict(report, tmp_path / "ledger.json")
 
         assert result.blocked
+
+
+class TestFoldSession:
+    """What a run is allowed to conclude about findings it never looked at.
+
+    Proves: TECH-056 FR-1
+
+    `declared` was introduced so a mutant somebody **deleted** could be told from one that failed
+    to run — those close for opposite reasons, and treating a deletion as a fix would let the
+    ledger be cleared by tidying. It works for a run over the whole corpus.
+
+    It is wrong for a scoped one. `mutation.py --corpus <one file>` declares only that file's
+    mutants, so every finding on every other campaign is absent from `declared` and closes as
+    `withdrawn` — *somebody deleted this*. Reproduced against the shipped function on 2026-08-27:
+    one open finding, one run of an unrelated campaign, finding gone.
+
+    Nothing was lost in practice only because the ledger happened to hold no open findings that
+    week. The rule now is that **absence means deletion only when the run looked everywhere**
+    `[agreed 2026-08-27]`; a scoped run leaves what it did not examine exactly as it found it.
+    """
+
+    @staticmethod
+    def _open(reason: str = "no-killer") -> dict[str, Any]:
+        return {
+            "history": [{"at": 1.0, "state": "open", "verdict": "UNPROTECTED", "reason": reason}],
+            "first_seen": 1.0,
+            "last_seen": 1.0,
+            "occurrences": 1,
+        }
+
+    def test_a_scoped_run_leaves_a_finding_it_never_declared_open(self, gate: ModuleType) -> None:
+        """[Hostile] the defect, reduced to its three inputs."""
+        ledger = {"schema": 1, "findings": {"A FR-1 elsewhere": self._open()}}
+
+        out = gate.fold_session(
+            ledger,
+            judged={"B FR-1 here": "PROTECTED"},
+            reasons={},
+            declared={"B FR-1 here"},
+            full_sweep=False,
+            now=1000.0,
+        )
+
+        entry = out["findings"]["A FR-1 elsewhere"]
+        assert gate.current_state(entry) == "open", (
+            "a run that never looked at this finding closed it; the last event was "
+            f"{entry['history'][-1]}"
+        )
+
+    def test_a_full_sweep_still_withdraws_a_deleted_mutant(self, gate: ModuleType) -> None:
+        """[Happy] the rule the `declared` set was built for, and it must survive.
+
+        A run over the whole corpus that does not declare a mutant is evidence the mutant is gone.
+        Losing this would make a deleted campaign's findings immortal and the gate unclearable.
+        """
+        ledger = {"schema": 1, "findings": {"A FR-1 deleted": self._open()}}
+
+        out = gate.fold_session(
+            ledger,
+            judged={"B FR-1 here": "PROTECTED"},
+            reasons={},
+            declared={"B FR-1 here"},
+            full_sweep=True,
+            now=1000.0,
+        )
+
+        entry = out["findings"]["A FR-1 deleted"]
+        assert gate.current_state(entry) == "closed"
+        assert entry["history"][-1]["reason"] == "withdrawn"
+
+    def test_a_scoped_run_still_closes_what_it_did_declare_and_fixed(
+        self, gate: ModuleType
+    ) -> None:
+        """[Boundary] the rule narrows *absence*, not the run's own results.
+
+        A scoped run that declares a mutant and finds it protected has looked, and its answer
+        stands. Blocking that would make a scoped run unable to clear anything it fixed.
+        """
+        ledger = {"schema": 1, "findings": {"B FR-1 here": self._open()}}
+
+        out = gate.fold_session(
+            ledger,
+            judged={"B FR-1 here": "PROTECTED"},
+            reasons={},
+            declared={"B FR-1 here"},
+            full_sweep=False,
+            now=1000.0,
+        )
+
+        entry = out["findings"]["B FR-1 here"]
+        assert gate.current_state(entry) == "closed"
+        assert entry["history"][-1]["reason"] == "fixed"
+
+    def test_a_scoped_run_leaves_the_untouched_entry_byte_for_byte(self, gate: ModuleType) -> None:
+        """[Boundary] "left open" must also mean unedited.
+
+        An entry whose `last_seen` or `occurrences` moved would report a finding as seen on a night
+        that never examined it — the recurrence count is the only pressure on a `will-fix` nobody
+        gets to, and inflating it silently is the same lie in the other direction.
+        """
+        original = self._open()
+        ledger = {"schema": 1, "findings": {"A FR-1 elsewhere": dict(original)}}
+
+        out = gate.fold_session(
+            ledger,
+            judged={"B FR-1 here": "PROTECTED"},
+            reasons={},
+            declared={"B FR-1 here"},
+            full_sweep=False,
+            now=1000.0,
+        )
+
+        assert out["findings"]["A FR-1 elsewhere"] == original
+
+    def test_absence_defaults_to_leaving_the_finding_alone(self, gate: ModuleType) -> None:
+        """[Graceful degradation] a caller that says nothing must get the safe answer.
+
+        `full_sweep` defaults to False. A caller that forgets it under-closes, which shows up as a
+        finding that will not go away; the other default over-closes, which shows up as nothing at
+        all. Between a loud wrong answer and a silent one, this gate takes the loud one.
+        """
+        ledger = {"schema": 1, "findings": {"A FR-1 elsewhere": self._open()}}
+
+        out = gate.fold_session(
+            ledger, judged={"B FR-1 here": "PROTECTED"}, reasons={}, declared=set(), now=1000.0
+        )
+
+        assert gate.current_state(out["findings"]["A FR-1 elsewhere"]) == "open"

@@ -139,6 +139,15 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   `TECH-056 FR-1` as `PASSED`. Nobody dispositioned them; a green baseline cleared them, which is
   what the design said would happen. Cause record: `TECH-049_fr11_walkthrough.md`.
 
+- **A scoped mutation run withdrew every finding it never looked at.** Found and closed
+  2026-08-27. `fold_session` read absence from the run's `declared` set as *somebody deleted this
+  mutant*, which is right for the nightly and wrong for `--corpus <one file>`: every finding on
+  every other campaign is absent because nobody asked. It is the defect `declared` was added to
+  prevent, arriving through the door it left open. Nothing was lost — the ledger held no open
+  findings that week. `fold_session` and `record_run` now take `full_sweep`, defaulting to `False`
+  `[agreed 2026-08-27]`, and `main` derives it from the run's own flags. Record:
+  `TECH-056_scoped_withdrawal_walkthrough.md`.
+
 - **A citation could name a requirement that does not exist, and nothing looked.** Found and closed
   2026-08-27. The FR ledger ran one way only — *is every declared FR cited* — so a `Proves:` tag
   could credit evidence to an id no design declares and read exactly like proof of one that does.
@@ -157,7 +166,7 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
   halves had tests; the gate's built the retired shape by hand. Fixed at CB-1 with a shared
   `_session_record.SESSION_BLOCK`, an unreadable-record rule, and an agreement test that hands one
   half's output to the other half's reader. Record:
-  `TECH-049_gate_readability_walkthrough.md`. **Five further boundaries are planned and agreed**
+  `TECH-049_gate_readability_walkthrough.md`. **Four further boundaries are planned and agreed**
   (`task.md`): scoped runs withdrawing findings they never looked at, record admissibility, a per-run record store, state-based retention, and the `.tmp/` sweep.
 
 - **The gate runners have no test for their own docs-only path beyond the unit tier.** `083e7ef9`

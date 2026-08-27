@@ -461,6 +461,12 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_summary(Path(args.out))
 
     paths = [Path(p) for p in args.corpus]
+    # Whether this run may conclude anything from a finding's ABSENCE. A bare `--corpus-dir` is the
+    # operator saying *I swept this tree*; naming individual corpora is not, and the two mixed is a
+    # narrowed sweep that states completeness of neither. `fold_session` cannot work this out —
+    # from inside, a scoped run's `declared` set is identical to a whole-corpus run whose campaigns
+    # were deleted, and those close a finding for opposite reasons.
+    full_sweep = bool(args.corpus_dir) and not args.corpus
     if args.corpus_dir:
         paths += discover_corpora(Path(args.corpus_dir))
 
@@ -503,7 +509,7 @@ def main(argv: list[str] | None = None) -> int:
     if campaigns:
         # Recurrence is counted where the evidence arrives, not where it is read: the gate must be
         # able to run days later against a ledger that already knows how long a finding has been here.
-        _gate.record_run(out, Path(args.ledger), declared=declared)
+        _gate.record_run(out, Path(args.ledger), declared=declared, full_sweep=full_sweep)
     return _report.exit_code_for(document)
 
 

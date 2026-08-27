@@ -7,7 +7,9 @@
       "title": "Only a recorded disposition clears a finding",
       "scope": [
         "tests/integration/scripts/test_mutation_gate_composition.py",
-        "tests/unit/scripts/test_mutation_gate.py"
+        "tests/unit/scripts/test_mutation_gate.py",
+        "tests/unit/scripts/test_mutation_ledger.py",
+        "tests/integration/scripts/test_mutation_ledger_seam.py"
       ],
       "mutants": [
         {
@@ -18,7 +20,7 @@
           "old": "\n        if latest_disposition(entry)\n",
           "new": "\n        if entry is not None\n",
           "breaks": "the defect this ticket fixed, restored exactly: `record_run` writes every finding at the end of the session that found it, so keying on presence means a survival is marked read by the run that discovered it and the gate can never block",
-          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
         },
         {
           "id": "nothing-ever-counts-as-read",
@@ -28,7 +30,7 @@
           "old": "\n        if latest_disposition(entry)\n",
           "new": "\n        if False\n",
           "breaks": "the opposite failure and the more corrosive one: a confirmed finding re-blocks every morning, so `--confirm` stops meaning anything and the gate is disabled by whoever is on call",
-          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
         },
         {
           "id": "a-blocking-finding-is-not-named",
@@ -38,7 +40,7 @@
           "old": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"id\"] not in known",
           "new": "        if f.get(\"verdict\") in BLOCKING_VERDICTS and f[\"id\"] in known",
           "breaks": "the filter is inverted, so dispositioned findings block and new ones pass — the gate reports on precisely the set nobody needs to look at",
-          "symbol_sha": "sha256:31defd9b42c92453dc4f2c73e107b79526f688e9613b94a3009cc1b7bf993ccc"
+          "symbol_sha": "sha256:58d06a8f892de372c2d79f86df2e832818d34b9b84f216bc7afe4e55af15478b"
         },
         {
           "id": "a-confirmation-forgets-the-recurrence-count",
@@ -48,17 +50,57 @@
           "old": "        entry[\"occurrences\"] = int(entry.get(\"occurrences\", 0)) + 1",
           "new": "        entry[\"occurrences\"] = 1",
           "breaks": "NFR-2: every finding looks new every morning, so a `will-fix` that has been re-confirmed for a fortnight is indistinguishable from one raised last night, and the only pressure on a fix nobody makes disappears",
-          "symbol_sha": "sha256:c4114b5574450fa9778a677b1cd5c5b41c75feca429dfb51ca2726dca989e356"
+          "symbol_sha": "sha256:77185ed0a0d460b7708437c21506331979e679f0b84bdf7866e2f1b01fd969a3"
         },
         {
-          "id": "a-red-baseline-reads-as-green",
+          "id": "a-scoped-run-withdraws-what-it-never-saw",
           "origin": "authored",
           "file": "scripts/_mutation_gate.py",
-          "symbol": "gate_verdict",
-          "old": "    if baseline is not None and not baseline.get(\"green\"):",
-          "new": "    if False:",
-          "breaks": "the report records whether the suite passed before any mutant was applied, and every verdict in it is meaningless when that answer is no. Without this check the gate reports CLEAR over a session judged against a broken tree — which it did, over 26 mutants, until the field was read",
-          "symbol_sha": "sha256:6716c01854a857292279fb1aebc629035cfa4d509a0c7c5b34cdce9bbe38e7d5"
+          "symbol": "fold_session",
+          "old": "if not full_sweep and mutant_id not in declared and current_state(entry) == \"open\":",
+          "new": "if False:",
+          "breaks": "a run over one corpus file closes every open finding on every other campaign as `withdrawn` — closed with no human disposition, on the evidence of not having been asked about",
+          "symbol_sha": "sha256:77185ed0a0d460b7708437c21506331979e679f0b84bdf7866e2f1b01fd969a3"
+        },
+        {
+          "id": "no-run-may-withdraw-a-deleted-mutant",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "fold_session",
+          "old": "if not full_sweep and mutant_id not in declared and current_state(entry) == \"open\":",
+          "new": "if mutant_id not in declared and current_state(entry) == \"open\":",
+          "breaks": "a genuinely deleted mutant can never close, so its finding is immortal and the gate is unclearable — the opposite failure, and the reason the rule keys on the run's reach rather than on absence alone",
+          "symbol_sha": "sha256:77185ed0a0d460b7708437c21506331979e679f0b84bdf7866e2f1b01fd969a3"
+        },
+        {
+          "id": "absence-defaults-to-deletion",
+          "origin": "authored",
+          "file": "scripts/_mutation_gate.py",
+          "symbol": "fold_session",
+          "old": "    now: float,\n    full_sweep: bool = False,",
+          "new": "    now: float,\n    full_sweep: bool = True,",
+          "breaks": "a caller that forgets the flag over-closes instead of under-closing, so the mistake becomes a finding that vanished rather than one that will not go away",
+          "symbol_sha": "sha256:77185ed0a0d460b7708437c21506331979e679f0b84bdf7866e2f1b01fd969a3"
+        },
+        {
+          "id": "a-scoped-run-claims-the-whole-tree",
+          "origin": "authored",
+          "file": "scripts/mutation.py",
+          "symbol": "main",
+          "old": "full_sweep = bool(args.corpus_dir) and not args.corpus",
+          "new": "full_sweep = True",
+          "breaks": "every invocation tells the ledger it looked everywhere, so `--corpus <one file>` clears findings it never examined",
+          "symbol_sha": "sha256:70ac2638aa373cfddd92c772f124b04a8a26ce75d3372f39da28b9c9082b8ccd"
+        },
+        {
+          "id": "the-nightly-stops-claiming-its-sweep",
+          "origin": "authored",
+          "file": "scripts/mutation.py",
+          "symbol": "main",
+          "old": "full_sweep = bool(args.corpus_dir) and not args.corpus",
+          "new": "full_sweep = False",
+          "breaks": "no run can ever withdraw, so a deleted campaign's findings stay open for ever and the morning gate can never clear",
+          "symbol_sha": "sha256:70ac2638aa373cfddd92c772f124b04a8a26ce75d3372f39da28b9c9082b8ccd"
         }
       ]
     }

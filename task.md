@@ -77,11 +77,16 @@ mypy · complexity · class health · duplication · conventions · tach.
 
 # CB-3 — a run may not close what it never looked at  (Q1, defect 5)
 
-- [ ] **T1** — Red: a **scoped** run leaves an out-of-scope open finding open.
-- [ ] **T2** — Red: a **full** run still closes a genuinely deleted mutant as `withdrawn`.
-- [ ] **T3** — Red: a scoped run closes nothing as `withdrawn`, even inside its own scope.
-- [ ] **T4** — Green: `fold_session` takes the run's scope; only a full sweep may withdraw.
-- [ ] **T5** — Mutants: every run may withdraw · no run may withdraw.
+- [x] **T1** — Red: a **scoped** run leaves an out-of-scope open finding open.
+- [x] **T2** — Red: a **full** run still closes a genuinely deleted mutant as `withdrawn`.
+- [x] **T3** — Red: a scoped run closes nothing as `withdrawn`, even inside its own scope.
+- [x] **T4** — Green: `fold_session` takes the run's scope; only a full sweep may withdraw.
+- [x] **T5** — Mutants: every run may withdraw · no run may withdraw · the unsafe default ·
+      a scoped run claims the tree · the nightly stops claiming its sweep. Five, all in `TECH-056` `FR-1`.
+- [x] **T6** — The wiring, tested: `main` must TELL the ledger its reach. `fold_session` cannot
+      work it out — a scoped `declared` set is identical to a swept one whose campaigns were deleted.
+- [x] **T7** — Two corpus repairs: CB-1's moved baseline mutant deleted from `TECH-056`, and an
+      ambiguous two-function anchor made unique.
 
 **Every check before the commit.**
 

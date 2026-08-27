@@ -266,12 +266,23 @@ def fold_session(
     reasons: dict[str, str],
     declared: set[str],
     now: float,
+    full_sweep: bool = False,
 ) -> dict[str, Any]:
     """One session folded into the ledger: open what is new, close what is gone, prune what is old.
 
     Pure, so the rules can be tested without a filesystem. `judged` is what this session concluded
     per mutant, `declared` is what the corpus asked for — the difference between them is what
     distinguishes a withdrawn mutant from one that never ran.
+
+    **`full_sweep` is what makes that difference readable.** Absence from `declared` means
+    *deleted* only when the run looked everywhere. A scoped run — `--corpus <one file>` — declares
+    one campaign's mutants, so every finding elsewhere is absent for the trivial reason that
+    nobody asked about it, and closing those as `withdrawn` clears the ledger by tidying: exactly
+    the failure the `declared` set was added to prevent, arriving through the door it left open.
+
+    It defaults to `False` because the two mistakes are not symmetrical `[agreed 2026-08-27]`. A
+    caller that forgets it under-closes, and an unclosable finding is visible every morning. The
+    other default over-closes, and a finding that vanished is visible nowhere.
     """
     findings = {mid: v for mid, v in judged.items() if v in BLOCKING_VERDICTS}
     out: dict[str, Any] = {}
@@ -280,6 +291,12 @@ def fold_session(
         entry = {**entry, "history": list(entry.get("history", []))}
         if mutant_id in findings:
             continue  # handled below, where the arriving state is known
+        # Untouched, not merely unclosed: an entry whose `last_seen` or `occurrences` moved would
+        # report a finding as seen on a night that never examined it, and the recurrence count is
+        # the only pressure on a `will-fix` nobody gets to.
+        if not full_sweep and mutant_id not in declared and current_state(entry) == "open":
+            out[mutant_id] = ledger["findings"][mutant_id]
+            continue
         if current_state(entry) == "open":
             entry["history"].append(
                 {
@@ -323,6 +340,7 @@ def record_run(
     ledger_path: Path,
     *,
     declared: set[str] | None = None,
+    full_sweep: bool = False,
 ) -> dict[str, Any]:
     """Fold a session record into the ledger.
 
@@ -341,6 +359,7 @@ def record_run(
         reasons=reasons,
         declared=set(declared) if declared is not None else set(judged),
         now=time.time(),
+        full_sweep=full_sweep,
     )
     write_ledger(ledger_path, ledger)
     return ledger

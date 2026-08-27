@@ -148,13 +148,24 @@ class TestClosureReasonThroughTheRealChain:
     def test_a_mutant_deleted_from_the_corpus_closes_as_withdrawn(
         self, mutation: ModuleType, gate: ModuleType, tmp_path: Path
     ) -> None:
-        """Tidying a campaign away must never read like a year of diligent fixing."""
+        """Tidying a campaign away must never read like a year of diligent fixing.
+
+        `full_sweep=True` carries the whole claim. Deleting the corpus file and declaring nothing
+        is indistinguishable, from inside `fold_session`, from a scoped run that simply did not ask
+        about this campaign — and the difference between those two is the difference between
+        "this mutant is gone" and "I did not look".
+        """
         corpus = _corpus_file(tmp_path)
         mutant_id = next(iter(mutation._declared_ids(corpus)))
         ledger = _ledger_with_open_finding(gate, tmp_path, mutant_id)
         corpus.unlink()
 
-        gate.record_run(_record(tmp_path), ledger, declared=mutation._declared_ids(corpus))
+        gate.record_run(
+            _record(tmp_path),
+            ledger,
+            declared=mutation._declared_ids(corpus),
+            full_sweep=True,
+        )
 
         entry = json.loads(ledger.read_text(encoding="utf-8"))["findings"][mutant_id]
         assert entry["history"][-1]["reason"] == "withdrawn"
@@ -194,3 +205,101 @@ class TestClosureReasonThroughTheRealChain:
         assert entry["history"][-1]["reason"] != "withdrawn", (
             "the corpus still declares this mutant, so it was not withdrawn"
         )
+
+
+class TestMainDeclaresTheRunsReach:
+    """`mutation.py` must tell the ledger whether the run looked everywhere.
+
+    `fold_session` cannot know. It sees a `declared` set and a ledger, and a scoped run's `declared`
+    set is indistinguishable from a whole-corpus run whose campaigns were deleted — the two mean
+    opposite things and close a finding for opposite reasons.
+
+    The unit tests hand `full_sweep` in directly, which proves the rule and not the wiring. If
+    `main` never passed it, every scoped run would go on withdrawing findings it never examined and
+    every unit test would still pass. That is the exact shape of the defect this boundary fixes,
+    one level up: a rule proven on both sides of a seam that nothing drives across.
+    """
+
+    @staticmethod
+    def _captured(mutation: ModuleType, monkeypatch: pytest.MonkeyPatch, argv: list[str]) -> dict:
+        """Run `main` with the sandbox and the judging stubbed, and capture what it told the ledger.
+
+        Only the parts that cost a worktree are replaced. The argument parsing, the corpus
+        discovery and the call into `record_run` are the real ones — they are what is under test.
+        """
+        seen: dict[str, Any] = {}
+
+        def _record_run(_record: Path, _ledger: Path, **kwargs: Any) -> dict[str, Any]:
+            seen.update(kwargs)
+            return {}
+
+        monkeypatch.setattr(mutation, "build_sandbox", lambda: Path("/nonexistent"))
+        monkeypatch.setattr(mutation, "remove_sandbox", lambda _s: None)
+        monkeypatch.setattr(mutation, "run_baseline", lambda _s: None)
+        monkeypatch.setattr(
+            mutation, "_judge", lambda *a, **k: [{"requirement": "FR-1", "results": []}]
+        )
+        monkeypatch.setattr(mutation._gate, "record_run", _record_run)
+        mutation.main(argv)
+        return seen
+
+    def test_a_scoped_run_says_it_did_not_look_everywhere(
+        self, mutation: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Hostile] `--corpus <one file>` — the invocation that was clearing the ledger."""
+        corpus = _corpus_file(tmp_path)
+
+        seen = self._captured(
+            mutation,
+            monkeypatch,
+            ["--corpus", str(corpus), "--no-baseline", "--out", str(tmp_path / "r.json")],
+        )
+
+        assert seen.get("full_sweep") is False, (
+            "a run over one corpus file told the ledger it had looked everywhere, so every finding "
+            "on every other campaign closes as `withdrawn`"
+        )
+
+    def test_a_corpus_dir_run_says_it_did(
+        self, mutation: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Happy] the nightly's own invocation. `--corpus-dir` is what the systemd unit passes."""
+        _corpus_file(tmp_path)
+
+        seen = self._captured(
+            mutation,
+            monkeypatch,
+            ["--corpus-dir", str(tmp_path), "--no-baseline", "--out", str(tmp_path / "r.json")],
+        )
+
+        assert seen.get("full_sweep") is True
+
+    def test_a_dir_run_narrowed_by_an_explicit_file_is_not_a_full_sweep(
+        self, mutation: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """[Boundary] both flags at once.
+
+        `--corpus X --corpus-dir Y` is a mixture: wider than X alone, and not the clean statement
+        *I swept this tree* that a bare `--corpus-dir` makes. Reading the presence of the flag
+        alone would let one narrowing file ride along inside a claim of completeness.
+
+        A `--corpus-dir` pointed somewhere empty cannot exploit this: it discovers no corpora, so
+        there are no campaigns, and `main` folds nothing into the ledger at all.
+        """
+        corpus = _corpus_file(tmp_path)
+
+        seen = self._captured(
+            mutation,
+            monkeypatch,
+            [
+                "--corpus",
+                str(corpus),
+                "--corpus-dir",
+                str(tmp_path),
+                "--no-baseline",
+                "--out",
+                str(tmp_path / "r.json"),
+            ],
+        )
+
+        assert seen.get("full_sweep") is False
