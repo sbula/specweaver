@@ -6,7 +6,11 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 **Five capabilities are `🔧`, not `✅`.**
 
-`C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `B-SENS-03` · `D-UI-01`
+`C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `D-UI-01` — **and `B-SENS-03`, which is now different
+from the other four.** It was grilled to an empty frontier on 2026-08-26 (43 decisions, every one
+the user's), its design was rewritten and approved, and all six sub-features were built, tested and
+pinned. `check_fr_coverage` is green and 51 mutants are protected. **It is still `🔧` because only
+the user flips that flag** — not because anything is outstanding.
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
 They are built, tested and proven. The `specweaver-design` **Phase 6 approval gate has never run

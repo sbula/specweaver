@@ -2,7 +2,8 @@
 
 - **Feature ID**: B-SENS-03
 - **Phase**: Topic 02 (Sensors)
-- **Status**: APPROVED 2026-08-26 — rewritten after the approval grilling that was never run
+- **Status**: COMPLETE 2026-08-27 — all six sub-features delivered, FR ledger green,
+  51 mutants protected. **The roadmap flag stays `🔧`**: only the user flips it to `✅`
 - **DAL**: B (Severe failure) `[agreed 2026-08-26]`
 - **Design Doc**: docs/roadmap/features/topic_02_sensors/B-SENS-03/B-SENS-03_design.md
 
@@ -309,7 +310,7 @@ which is the boundary that was agreed.
 | SF-03 | A parser does not lose names | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Code is cut into whole units | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | Nothing is lost | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | Every chunk is labelled | SF-01..04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Every chunk is labelled | SF-01..04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Non-Goals
 
@@ -329,10 +330,15 @@ which is the boundary that was agreed.
 
 ## Session Handoff
 
-**Current status**: Design **APPROVED** 2026-08-26. **SF-01 to SF-05 are delivered** — 37 mutants
-protected across fourteen live campaigns. Only `FR-12`, `FR-13` and `FR-14` remain. SF-02, SF-03 and SF-04 have no dependencies and may run
+**Current status**: **COMPLETE.** All six sub-features delivered 2026-08-26/27. `check_fr_coverage`
+green — 18 FRs, every one planned and cited. `tests.py feature` green across unit, integration and
+e2e. **51 mutants, 51 protected, 0 stale.**
+
+**The roadmap entry is still `🔧`.** The code and its evidence exist; flipping it to `✅` is the
+user's call and nobody else's. SF-02, SF-03 and SF-04 have no dependencies and may run
 in parallel sessions.
-**Next step**: `specweaver-implementation-plan` for SF-06, the last one — the Progress Tracker prevents double work.
+**Next step**: the user decides whether `B-SENS-03` becomes `✅`. Then `A-SENS-02`, which is the
+other open item in `US-11`'s Core MVS and the first consumer of any of this. — the Progress Tracker prevents double work.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there. The 32 grilling decisions are recorded inline, each marked `[agreed 2026-08-26]`
 beside the fact it governs — do not re-ask them.
