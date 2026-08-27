@@ -3,7 +3,7 @@
 
 """What "too big" means, measured the way cAST measures it.
 
-Proves: B-SENS-03 FR-11
+Proves: B-SENS-03 FR-11, B-SENS-03 NFR-3
 
 The budget counted every character, so **indentation decided where code was cut**. Deeply nested
 Java and flat Python were judged by different standards for the same amount of code, and

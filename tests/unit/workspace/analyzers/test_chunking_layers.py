@@ -3,7 +3,7 @@
 
 """Two views of the same file: what it offers, and what it does.
 
-Proves: B-SENS-03 FR-12
+Proves: B-SENS-03 FR-12, B-SENS-03 NFR-6
 
 A retrieval hit on a body tells you how something works. A hit on a signature tells you it exists
 and what it promises — and that is the question asked first, so the two are separate layers and a
