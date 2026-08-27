@@ -63,15 +63,12 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `D-INTL-01` → generation against a decided plan
   > - **Done when:** architecture decisions exist as an artifact before generation runs
 
-* **`D-INTL-04` 🔜: Design Questionnaire** (Legacy: 3.52)
-  > - **Purpose:** Stop the model inventing a solution on a greenfield project, by bounding its choices with the user's answers first
-  > - **Trigger:** Before `sw plan` or `sw draft` on a new project
-  > - **Precondition:** `C-VAL-05` → rubric content, as the question source
-  > - **Reads:** the user's answers — persistence, authentication, archetype
-  > - **Produces:** file → a localized `context.yaml` bounding the solution space
-  > - **Enables:** greenfield bootstrap without a blank canvas
-  > - **Done when:** 🔴
-  > - **Note:** a rhythm harness plus rubric content — the grill pattern, one question at a time, facts self-served, decisions to the user. **Not hardcoded question trees**
+* **`D-INTL-04` ⚰️ RETIRED:** *(Design Questionnaire — absorbed into `D-INTL-07` Agentic Interview
+  Drafting as a second rubric, 2026-08-27. Both are one adaptive interview over different rubrics
+  producing different artefacts; two capabilities described one machine. Legacy 3.52; its
+  architecture note survives at `../../architecture/06_lessons_and_future/synthetic_commons_and_questionnaire_design.md`
+  — goal and output still stand, the fixed CLI wizard does not. ID is dead — do NOT reuse; the gap
+  to `D-INTL-05` is intentional.)*
 
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)
   > - **Purpose:** Tell the model what project it is in — name, archetype, language, date — so it stops guessing context it could have been given
@@ -92,13 +89,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** context passes between agents validated, not copied wholesale
 
 * **`D-INTL-07` 🔴: Agentic Interview Drafting (Grill-Style)**
-  > - **Purpose:** Draft a spec by adaptive interview rather than a fixed questionnaire — ask what this project needs asking, not a stock list
-  > - **Trigger:** When a user drafts a spec
+  > - **Purpose:** Draft by adaptive interview rather than a fixed questionnaire — ask what this project needs asking, not a stock list
+  > - **Trigger:** When a user drafts a spec, or bootstraps a greenfield project
   > - **Precondition:** `C-FLOW-11` → **BLOCKED on it** · `C-VAL-05` → soft dependency, rubric content
   > - **Reads:** the user's answers · rubric guidance as content
-  > - **Produces:** file → a spec meeting SpecWeaver's contract, via a separate synthesis pass
-  > - **Enables:** `INT-US-02-SF03`
+  > - **Produces:** file → a spec meeting SpecWeaver's contract · file → a **localized** `context.yaml` for a greenfield project
+  > - **Enables:** `INT-US-02-SF03` · greenfield bootstrap without a blank canvas
   > - **Done when:** the unchanged `INT-US-02` gates pass on an interview-drafted spec
+  > - **Note:** absorbs the former `D-INTL-04` (2026-08-27) — one interview harness, two rubrics, two artefacts
 
 * **`D-INTL-08` 🔜: Polyglot Implementation Loop**
   > - **Purpose:** Let `sw implement` target a language other than Python — five runners exist and no user path can reach them

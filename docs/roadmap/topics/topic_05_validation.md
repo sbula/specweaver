@@ -143,7 +143,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Precondition:** `E-INTL-03` → the review engine · the run's DAL
   > - **Reads:** markdown rubrics — shipped defaults, then `.specweaver/rubrics/` overrides, then a `<id>.<DAL>.md` variant
   > - **Produces:** prompt → review criteria · verdict record → rubric id, version, sha256 and source path
-  > - **Enables:** `E-VAL-04` · `B-VAL-03` · `B-INTL-08` · `D-INTL-04` · `D-INTL-07`
+  > - **Enables:** `E-VAL-04` · `B-VAL-03` · `B-INTL-08` · `D-INTL-07`
   > - **Done when:** editing a rubric changes the next review's verdict, with no code change
   > - **Limits:** thin content — three rubric files ship, no project override exists. `FR-2`–`FR-4` serve a user who does not exist yet
 

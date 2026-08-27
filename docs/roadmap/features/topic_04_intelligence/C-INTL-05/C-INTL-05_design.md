@@ -90,7 +90,10 @@ there are effectively 4 implicit profiles scattered across the codebase:
 - `C-INTL-04` (Conversation Summarization) — needs a new `summary` slot
 - `B-FLOW-04` (Hybrid RAG Orchestration) — needs `rag_context` slot
 - `A-INTL-04` (Memory Consolidation) — needs `consolidated_memory` slot
-- `D-INTL-04` (Design Questionnaire) — needs `questionnaire_state` slot
+- `D-INTL-07` (Agentic Interview Drafting) — needs `questionnaire_state` slot. Corrected
+  `[agreed 2026-08-27]`: this row named `D-INTL-04`, retired into `D-INTL-07` as its bootstrap
+  rubric. A forward dependency naming a dead id is a claim somebody would act on, which is the
+  one case a delivered design is edited
 
 ### External Tools
 

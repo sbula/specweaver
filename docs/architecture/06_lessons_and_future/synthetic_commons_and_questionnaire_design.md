@@ -9,6 +9,20 @@ Canvas Syndrome" and "Parallel Duplication").
 
 ## Feature 3.52: Interactive Design Questionnaire
 
+> [!IMPORTANT]
+> **Superseded in mechanism, 2026-08-27. Kept unedited below as the record.**
+> This became capability `D-INTL-04`, which was retired into **`D-INTL-07` (Agentic Interview
+> Drafting)** as its bootstrap rubric `[agreed 2026-08-27]`.
+>
+> **Still true:** the goal — an unsupervised LLM must not guess persistence, auth or archetype on a
+> blank canvas; the output — a `context.yaml`, **localized to the directory the command ran in**;
+> and the *Monolith* mitigation below.
+>
+> **No longer the plan:** the mechanic. The fixed three-question `Typer` wizard described here is
+> the hardcoded question tree the roadmap rejected on 2026-07-21. `D-INTL-07` replaces it with an
+> adaptive interview — rounds over a frontier, a recommended answer beside every question, facts
+> looked up rather than asked, and an unanswered question that blocks rather than defaulting.
+
 **Goal**: Prevent "Blank Canvas Syndrome" where an unsupervised LLM guesses critical bounds (Database framework, Authentication layer) during greenfield generation, causing architectural debt. 
 
 **Mechanic**: Enforce hard CLI Wizard constraints prior to executing the `sw draft` / `sw plan` prompt.

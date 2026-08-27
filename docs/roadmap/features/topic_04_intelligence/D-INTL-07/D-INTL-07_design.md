@@ -21,7 +21,23 @@ the old engine's interview quality is frozen as of that decision.**
 
 ## Goal
 
-A grill-style **agentic drafting engine** for the draft step:
+A grill-style **agentic interview engine**. One harness, two rubrics, two artefacts
+`[agreed 2026-08-27]` — `D-INTL-04` was folded in here because both were an adaptive interview over
+different rubrics producing different files, which is one machine described twice:
+
+| Rubric | Trigger | Renders |
+|---|---|---|
+| **spec** | `sw draft` on an existing project | a spec meeting SpecWeaver's contract |
+| **bootstrap** (the former `D-INTL-04`) | `sw init` / `sw draft` on a greenfield project | a **localized** `context.yaml` bounding the solution space |
+
+**The load-bearing requirement is that the harness makes an unanswered question un-passable.**
+Not the rubric, and not the model's manners: an LLM told *"do not guess"* guesses. In this repo the
+same protocol works only because a human is on the other end and `PRINCIPLES.md` §2 blocks the
+phase; `STATE.md` records that **nothing checks it and nothing will**, and `TECH-069` was retired
+for trying — a keyword check cannot tell asking from typing. A product cannot inherit that
+discipline from a skill, so this capability has to build it.
+
+For the draft step:
 
 1. **Interview** — an agentic work unit (a `C-FLOW-11` work unit with a mounted interview rubric) conducts
    an adaptive grilling: one question at a time with a recommended answer, facts looked up in the
@@ -56,8 +72,17 @@ A grill-style **agentic drafting engine** for the draft step:
 - **Consumed by:** `INT-US-02-SF03` (the US-2 sub-story wiring this engine into `sw draft` /
   `new_feature`). The `INT-US-02` base contract's gates (validate→review chain, bounded loop, provider
   wiring, proof) are reused verbatim — they gate whatever engine produced the spec.
-- **Sibling:** `D-INTL-04` (Design Questionnaire — greenfield bootstrap → `context.yaml`), already
-  annotated grill-me-pattern; shares the interview-rhythm rubric approach but targets a different artifact.
+- **ABSORBED:** `D-INTL-04` (Design Questionnaire — greenfield bootstrap → `context.yaml`), retired
+  into this capability 2026-08-27 `[agreed 2026-08-27]` as the **bootstrap rubric**. It was already
+  annotated grill-me-pattern and shared the interview rhythm; the only differences were the rubric
+  content and the output renderer, and neither is a capability. Its ID is tombstoned in topic 04 and
+  must not be reused.
+  - **What came across from its Legacy-3.52 architecture note** (`docs/architecture/06_lessons_and_future/synthetic_commons_and_questionnaire_design.md`,
+    kept unedited as the record): the goal — stop the model guessing persistence and auth on a blank
+    canvas; the output — a `context.yaml`, **localized to the directory the command ran in**; and the
+    *Monolith* mitigation, that a global `react-node` answer must not bind a Python subsystem.
+  - **What did not**: its mechanic, a fixed three-question `Typer` wizard. That is the hardcoded
+    question tree this capability exists to replace, and it was already rejected on 2026-07-21.
 
 ## Candidate Approaches (not yet designed)
 1. Work-unit role "drafter": interview rubric + synthesis rubric mounted; tools = read-only workspace
@@ -68,7 +93,6 @@ A grill-style **agentic drafting engine** for the draft step:
 
 ## Non-Goals (proposed, pending design)
 - Changing the spec contract or the S-battery (the gates are the fixed point).
-- Greenfield bootstrap interviews (`D-INTL-04`'s scope).
 - Building any interview loop outside a `C-FLOW-11` work unit.
 
 ## Next Step

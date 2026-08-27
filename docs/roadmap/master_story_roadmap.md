@@ -100,7 +100,7 @@ this roadmap can buy.
 | `US-14` | `A-INTL-01` | Adversarial spec review — a rubric plus a review stage now that `C-VAL-05` 🔧 ships the substrate |
 | `US-10` | `C-UI-01` | Pipeline visualiser on the delivered dashboard; also closes `US-20`'s *DAG Visualization* |
 | `US-15` | `C-UI-02` | Traceability matrix UX over `C-VAL-04` ✅ |
-| `US-8` | `D-INTL-04` | Design questionnaire; has an architecture document already |
+| `US-8` | `D-INTL-07` | Greenfield bootstrap, now a second rubric on the interview engine that `US-2` needs; blocked on `C-FLOW-11` |
 | `US-11` | `A-SENS-02` | See Focus 1 — highest leverage, lowest cheapness |
 | `US-12` | `C-INTL-03` | Reverse-weaving (`sw capture`) |
 | `US-13` | `A-VAL-02` | Symbolic maths validation; needs a solver, so cheap it is not |
@@ -304,12 +304,14 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Real-time File Tracking:**
         *   `[ ]` **E-UI-03:** File watcher (Auto-re-validate specs on save)
 
-### 🟡 US-8: The Greenfield Bootstrap Wizard
-**Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
+### 🟡 US-8: The Greenfield Bootstrap Interview
+**Benefit:** *When starting a new project, an adaptive interview bounds the LLM's architecture
+choices so it doesn't hallucinate invalid tech stacks.* Renamed from *Wizard* 2026-08-27: the
+fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold retired.
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
-    *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
+    *   `[ ]` **D-INTL-07:** Agentic Interview Drafting — greenfield `context.yaml` rubric; absorbed the former `D-INTL-04` 2026-08-27, blocked on `C-FLOW-11`
 *   **Sub-Story Add-Ons:**
     *   🔴 **Socratic Context Gathering:**
         *   `[ ]` **A-INTL-03:** Socratic drafting flow
@@ -475,8 +477,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **US-14 Core** *(provides Adversarial Review)*
     *   `[ ]` **B-UI-02:** External Proprietary Validation
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Secure Sandboxed Operations:**
-        *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
     *   🔴 **CI/CD Pipeline Integration:**
         *   `[ ]` **C-FLOW-08:** Pluggable Webhook & CI Invocation
 
