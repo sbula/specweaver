@@ -164,7 +164,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a rebuild reproduces the graph without re-reading everything from scratch
   > - **Limits:** a stored node keeps no `kind` or `name`; six languages mis-file their types; a call resolves only on a globally unique bare name
 
-* **`B-SENS-03` 🔧: AST Semantic Chunking** (Legacy: 4.2)
+* **`B-SENS-03` ✅: AST Semantic Chunking** (Legacy: 4.2)
   > - **Purpose:** Cut code into chunks a retrieval hit can be cited from — one per top-level symbol, each carrying its path and symbol
   > - **Trigger:** When a file is chunked for the vector store
   > - **Precondition:** `D-SENS-02` → symbols per file

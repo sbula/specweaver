@@ -69,7 +69,7 @@ rank by proximity to a closed story. A capability can appear in both.*
 
 **Focus 1 — `US-11` (GraphRAG for Brownfield Scale) and its add-ons.**
 
-Core MVS is **one capability from 🟢**: `B-SENS-03` 🔧 shipped the chunking half, and `A-SENS-02`
+Core MVS is **one capability from 🟢**: `B-SENS-03` ✅ shipped the chunking half, and `A-SENS-02`
 (Postgres Apache AGE + pgvector sidecar) is all that remains. It is the highest-leverage single
 item on the board — it also closes `US-12`'s *Massive Scale Context Retrieval* and `US-19`'s
 *Distributed Topology Scaling*, so **one capability moves three stories**. It has no design
@@ -354,7 +354,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
-    *   `🔧` **B-SENS-03:** AST-based semantic chunking
+    *   `✅` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
         *   `[ ]` **B-FLOW-04:** Hybrid RAG orchestration (composite scoring) — the **locate** step; hands candidates to `B-SENS-09`, never to a gate
