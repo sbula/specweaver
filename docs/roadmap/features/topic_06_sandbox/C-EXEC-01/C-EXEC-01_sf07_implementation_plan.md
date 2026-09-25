@@ -1,104 +1,79 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-07: Target Rule C05 Subsumption (Tach)]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-07 — Target Rule C05 Subsumption (Tach)
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-07
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf07_implementation_plan.md
-- **Status**: COMPLETED
+# C-EXEC-01 SF-07 — Target Rule C05 Subsumption (Tach)
 
-**FRs owned: FR-4.** Rule C05 turns a tach boundary violation in an *analysed* project into an
-ERROR `Finding` a reviewer can act on. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
-`INT-US-01-SF02-MIG`. This is the product-facing half of the capability, as against the repo's
-own hygiene. Mutant: the no-violations branch forced true — 4 fail across three tiers.
+**Status**: COMPLETED · **FRs owned**: FR-4 · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-07
 
+FR-4: rule C05 turns a tach boundary violation in an *analysed* project into an ERROR `Finding` a
+reviewer can act on — the product-facing half of the capability, as against the repo's own hygiene.
+Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: the
+no-violations branch forced true — 4 fail across three tiers.
+
+**Since moved** (2026-07-10, `f74f5844`, TECH-01b SF-4): C05 no longer builds a `PythonQARunner`;
+it reads `self.context["qa_architecture_result"]`, filled by the flow layer's validation hydrator.
+`loom/commons/qa_runner/` is now `sandbox/qa_runner/core/` (interface) and
+`sandbox/language/core/<lang>/runner.py`; `run_architecture_check` gained a `dal_level` argument
+and runs tach through the executor. Paths below are as of the plan's date.
 
 ## Goal
-Gut the legacy hardcoded AST parser inside `c05_import_direction.py` and replace it with a
-generalized architecture boundary check on the target project. To ensure SpecWeaver remains strictly
-polyglot-capable, C05 will delegate to the `QARunnerInterface` rather than executing `tach`
-directly. This requires expanding the L4/L5 QA Runner capabilities and fixing existing L2
-Architectural DMZ violations.
 
----
+Replace the hardcoded AST parser in `c05_import_direction.py` with an architecture boundary check
+on the target project. C05 delegates to `QARunnerInterface` rather than running `tach` itself, so
+it stays polyglot. This extends the L4/L5 QA Runner and fixes existing L2 Architectural DMZ
+violations.
 
-## 1. Loom Commons Interfaces (`src/specweaver/loom/commons/qa_runner/`)
+## Changes
 
-### [MODIFY] `interface.py`
-- Inherit polyglot architecture patterns by introducing two new data classes: `ArchitectureViolation` (file, code, message, rule_uri) and `ArchitectureRunResult` (violation_count, violations).
-- Add new abstract method `run_architecture_check(self, target: str) -> ArchitectureRunResult` to the base `QARunnerInterface`.
+1. **`src/specweaver/loom/commons/qa_runner/interface.py`**
+   - New dataclasses `ArchitectureViolation` (file, code, message, rule_uri) and
+     `ArchitectureRunResult` (violation_count, violations).
+   - New abstract method `run_architecture_check(self, target: str) -> ArchitectureRunResult` on
+     `QARunnerInterface`.
+2. **`python/runner.py`** — `run_architecture_check(...)` runs
+   `uv run tach check --output json` (or `tach check`) via `subprocess.run`, pointed strictly at
+   `self._cwd` (the target workspace). Handles `subprocess.CalledProcessError` and parses Tach's
+   JSON array (`UndeclaredDependency`). Returns an empty result if parsing fails/hangs or no
+   boundary metadata is found.
+3. **`typescript/runner.py`, `java/runner.py`, `kotlin/runner.py`, `rust/runner.py`** — the new
+   abstract method forces every adapter to implement it; without this exact stub test orchestration
+   crashes:
+   ```python
+   def run_architecture_check(self, target: str) -> ArchitectureRunResult:
+       # Native checks (e.g. ArchUnit/ESLint) deferred to Feature 3.20b
+       return ArchitectureRunResult(violation_count=0, violations=[])
+   ```
+4. **`src/specweaver/loom/atoms/qa_runner/atom.py`** — new intent handler `_intent_run_architecture`
+   returning `AtomResult`: reads `target` from the context, calls
+   `self._runner.run_architecture_check(target)`, exports `violation_count` and the serialized
+   violations, maps to `SUCCESS` or `FAILED`.
+5. **`src/specweaver/loom/tools/qa_runner/`**
+   - `tool.py` — whitelist `run_architecture` in `ROLE_INTENTS` for `implementer`, `reviewer`,
+     `planner`; add `run_architecture_check(self, target: str) -> ToolResult` dispatching the same
+     atom intent.
+   - `definitions.py` — `INTENT_DEFINITIONS["run_architecture"]` with one string target parameter.
+6. **`src/specweaver/validation/context.yaml`** — add `specweaver/loom/commons/qa_runner` to
+   `consumes`. Rules C03 (Tests Pass) and C04 (Coverage) already import L4 components past the DMZ
+   guards; this makes that explicit without opening broad I/O gaps.
+7. **`rules/code/c05_import_direction.py`**
+   - Remove `ast.parse` and the static `_FORBIDDEN_RULES` mapping.
+   - Resolve the project root (as `c03` does) and create `PythonQARunner(cwd=project_root)`
+     (future: dynamic language adapter); call `.run_architecture_check(target)`.
+   - Zero violations → `self._pass("All structural architecture boundaries verified")`.
+   - Each `ArchitectureViolation` → `Finding(message=..., severity=Severity.ERROR)`.
+   - No `tach.toml` in the workspace → detect empty results / fallback exceptions and return
+     `self._skip(...)` until SF-08 generates one.
 
-### [MODIFY] `python/runner.py`
-- Implement `run_architecture_check(...)` using Python's `subprocess.run` to orchestrate `uv run tach check --output json` (or `tach check`).
-- The execution must point strictly at `self._cwd` (the target workspace).
-- Gracefully handle `subprocess.CalledProcessError` to parse errors from Tach's JSON array output formats (`UndeclaredDependency`).
-- Safely yield an empty result if parsing fails/hangs or if no bounding metadata was detected.
+## Traps
 
-### [MODIFY] `typescript/runner.py`, `java/runner.py`, `kotlin/runner.py`, `rust/runner.py`
-- Polyglot Engine Safety: To satisfy the ABC constraint imposed by adding `run_architecture_check` to the Interface, all other language adapters MUST implement a safe stub:
-  ```python
-  def run_architecture_check(self, target: str) -> ArchitectureRunResult:
-      # Native checks (e.g. ArchUnit/ESLint) deferred to Feature 3.20b
-      return ArchitectureRunResult(violation_count=0, violations=[])
-  ```
-- Failure to implement this exact stub will cause test orchestration crashes.
+- **JSON schema:** Tach nests `Located -> details -> Code -> UndeclaredDependency`. Parse with
+  `.get()` defaults so an API bump fails cleanly instead of a `KeyError` inside the workflow engine.
+- **Speed:** the AST check took ms. If the subprocess adds > 400ms across unit tests, mock C05 in
+  unit runs outside E2E.
+- **`tach` must resolve** inside the venv running the code; SpecWeaver ships it as a
+  dev-dependency.
 
----
+## Tests
 
-## 2. Loom Atom Engine (`src/specweaver/loom/atoms/qa_runner/`)
-
-### [MODIFY] `atom.py`
-- Introduce a new Intent handler: `_intent_run_architecture` returning `AtomResult`.
-- Extract `target` from the orchestration context.
-- Delegate checking safely via `self._runner.run_architecture_check(target)`.
-- Export `violation_count` alongside standard list serialized violation exports mapping to `SUCCESS` or `FAILED` AtomStatuses.
-
----
-
-## 3. Loom Tools Interface (`src/specweaver/loom/tools/qa_runner/`)
-
-### [MODIFY] `tool.py`
-- Update `ROLE_INTENTS` to whitelist `run_architecture` for `implementer`, `reviewer`, and `planner`.
-- Add `run_architecture_check(self, target: str) -> ToolResult` dispatching the identical atom intent sequence.
-
-### [MODIFY] `definitions.py`
-- Map the exposed LLM intent. Add an `INTENT_DEFINITIONS["run_architecture"]` with the single standard string target parameter. 
-
----
-
-## 4. Validation Engine Domain (`src/specweaver/validation/`)
-
-### [MODIFY] `context.yaml`
-- **Architectural Cleanup**: Formalize `specweaver/loom/commons/qa_runner` into the `consumes` array.
-- Current rules C03 (Tests Pass) and C04 (Coverage) implicitly bypass global DMZ guards by importing
-  L4 components. Allowing this formally stabilizes the Validation engine's usage of external
-  interface wrappers without opening up broad I/O gaps.
-
-### [MODIFY] `rules/code/c05_import_direction.py`
-- **Tear Down**: Remove all dependency on `ast.parse` and statically scoped `_FORBIDDEN_RULES` mappings.
-- **Pipeline Setup**: Resolve the project root dynamically (similarly to `c03`) and initialize `PythonQARunner(cwd=project_root)`. *(Future: upgrade to dynamic language adapter)*.
-- **Execution**: Await/trigger `.run_architecture_check(target)`.
-- **Parsing**: 
-  - If output counts equal 0: return `self._pass("All structural architecture boundaries verified")`.
-  - Iterate through `ArchitectureViolation` structures returned by the interface, mapping them exactly to `Finding(message=..., severity=Severity.ERROR)`.
-  - *Mitigation strategy*: If the workspace lacks underlying configuration (missing `tach.toml`),
-    detect empty results / specific fallback exceptions and return `self._skip(...)` to safely defer
-    execution until SF-08 automaps boundaries in newer topologies.
-
----
-
-## Technical Audit & Gotchas (Phase 2 & 3 Notes)
-*   **JSON Schema**: Tach's output shape features nested
-    `Located -> details -> Code -> UndeclaredDependency` dictionaries. The parsing step inside
-    `PythonQARunner` must fail cleanly if Tach bumps APIs, using standard `.get()` defaulting to
-    prevent `KeyError` crashes deep inside the workflow engine.
-*   **Performance Cache**: Evaluating constraints using the AST historically takes ms. If passing
-    boundaries to subprocesses generates > 400ms lag across unit tests, C05's testing footprint must
-    be heavily mocked during unit runs outside E2E.
-*   **`tach` System Requirement**: Assumes `tach` is resolvable inside the venv executing the
-    codebase. Because SpecWeaver controls the execution environments and provides Tach as a
-    dev-dependency, tests will pass locally.
-
-## Verification
-- Complete standard Pre-Commit Workflow phases.
-- Unit Testing: Validate that `c05_import_direction` skips smoothly on invalid target environments and gracefully maps Tach errors into `RuleResult` failures holding multiple `Findings`.
-- Cross architecture tests spanning PythonQARunner outputs to `Validation` interfaces must seamlessly decouple dependencies. 
+- `c05_import_direction` skips on invalid target environments and maps Tach errors into a
+  `RuleResult` failure holding multiple `Findings`.
+- Cross-layer tests from `PythonQARunner` output to the `Validation` interfaces.
+- Standard pre-commit workflow.

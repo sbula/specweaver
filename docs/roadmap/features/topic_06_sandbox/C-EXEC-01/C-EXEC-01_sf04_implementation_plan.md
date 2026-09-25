@@ -1,28 +1,24 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-04: Public Interface Enforcement]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-04 — Public Interface Enforcement
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Status**: APPROVED
+# C-EXEC-01 SF-04 — Public Interface Enforcement
 
-**FRs owned: FR-3.** Public surfaces declared through `interfaces:` instead of `__init__.py`
-re-export hacks. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`.
+**Status**: APPROVED · **FRs owned**: FR-3 · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-04
 
-**The soft-deprecation guard had never run its assertion** — it matched a module prefix
-`tach.toml` does not use. Fixed, and it now asserts the block was found.
+FR-3 (public surfaces declared through `interfaces:`, not `__init__.py` re-export hacks) recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Its soft-deprecation guard now
+asserts the block was found (it had matched a module prefix `tach.toml` does not use).
 
+**Since moved:** `loom/` now lives under `sandbox/` (e.g. `sandbox/qa_runner/core/`). Paths below
+are as of the plan's date.
 
-## 1. Goal
-Delete all remaining `__init__.py` proxy-export boilerplate files deep inside `src/specweaver` and
-enforce their replacement with native, computationally-evaluated Rust boundaries using Tach's
-`interfaces:` registry. With this, any new agent can systematically modify exactly what needs to be
-changed without any guesswork.
+## Goal
 
-## 2. Proposed Changes
+Delete the remaining `__init__.py` proxy-export files inside `src/specweaver` and replace them with
+Tach's `interfaces:` registry, so the public surface of each module is explicit.
 
-### Layer 1: Core Bounded Contexts Registry (`tach.toml`)
-#### [MODIFY] `tach.toml`
-The following components must have their `[[interfaces]]` blocks formally deployed to replace `__init__.py`. 
-*Note: Any external import targeting a file not explicitly defined in these lists will trigger a static architectural failure.*
+## Changes
+
+1. **`tach.toml`** — `[[interfaces]]` blocks replace `__init__.py`. An external import of a file
+   not listed here is an architecture failure.
 
 ```toml
 [[interfaces]]
@@ -46,44 +42,38 @@ from = ["src.specweaver.core.loom"]
 expose = ["atoms", "commons", "dispatcher", "security", "tools"]
 ```
 
-### Layer 2: LLM Adapter Registry Refactor
-#### [NEW] `src/specweaver/llm/adapters/registry.py`
-- Copy the dynamic plugin loader (`_ensure_discovered()`, `register_adapter()`) natively into this explicit file instead of burying it in an init module.
-#### [DELETE] `src/specweaver/llm/adapters/__init__.py`
-#### [MODIFY] Import Path Rewiring
-- Rewrite `from specweaver.infrastructure.llm.adapters import ...` to
-  `from specweaver.infrastructure.llm.adapters.registry import ...` inside
-  `src/specweaver/llm/factory.py`, `src/specweaver/llm/telemetry.py`,
-  `src/specweaver/llm/router.py`.
+2. **LLM adapter registry**
+   - NEW `src/specweaver/llm/adapters/registry.py` — the dynamic plugin loader
+     (`_ensure_discovered()`, `register_adapter()`) moves here from the init module.
+   - DELETE `src/specweaver/llm/adapters/__init__.py`.
+   - Rewrite `from specweaver.infrastructure.llm.adapters import ...` to
+     `from specweaver.infrastructure.llm.adapters.registry import ...` in
+     `src/specweaver/llm/factory.py`, `src/specweaver/llm/telemetry.py`,
+     `src/specweaver/llm/router.py`.
+3. **Loom proxies — DELETE:**
+   - `src/specweaver/loom/atoms/__init__.py`
+   - `src/specweaver/loom/atoms/filesystem/__init__.py`
+   - `src/specweaver/loom/atoms/git/__init__.py`
+   - `src/specweaver/loom/atoms/qa_runner/__init__.py`
+   - `src/specweaver/loom/commons/__init__.py`
+   - `src/specweaver/loom/commons/filesystem/__init__.py`
+   - `src/specweaver/loom/commons/git/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/java/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/kotlin/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/python/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/rust/__init__.py`
+   - `src/specweaver/loom/commons/qa_runner/typescript/__init__.py`
+   - `src/specweaver/loom/tools/__init__.py`
+   - `src/specweaver/loom/tools/filesystem/__init__.py`
+   - `src/specweaver/loom/tools/git/__init__.py`
+   - `src/specweaver/loom/tools/qa_runner/__init__.py`
+   - `src/specweaver/loom/tools/web/__init__.py`
+4. **Loom import rewiring** — `from specweaver.core.loom.tools.git import GitTool` becomes
+   `from specweaver.core.loom.tools.git.tool import GitTool`. Boundary checks rely on Tach alone.
 
-### Layer 3: Loom Boilerplate Extinction
-#### [DELETE] The Loom Proxy Sub-Tree
-The following arbitrary proxies must be physically deleted:
-- `src/specweaver/loom/atoms/__init__.py`
-- `src/specweaver/loom/atoms/filesystem/__init__.py`
-- `src/specweaver/loom/atoms/git/__init__.py`
-- `src/specweaver/loom/atoms/qa_runner/__init__.py`
-- `src/specweaver/loom/commons/__init__.py`
-- `src/specweaver/loom/commons/filesystem/__init__.py`
-- `src/specweaver/loom/commons/git/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/java/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/kotlin/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/python/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/rust/__init__.py`
-- `src/specweaver/loom/commons/qa_runner/typescript/__init__.py`
-- `src/specweaver/loom/tools/__init__.py`
-- `src/specweaver/loom/tools/filesystem/__init__.py`
-- `src/specweaver/loom/tools/git/__init__.py`
-- `src/specweaver/loom/tools/qa_runner/__init__.py`
-- `src/specweaver/loom/tools/web/__init__.py`
+## Tests
 
-#### [MODIFY] Loom Path Rewiring
-Consumers previously calling `from specweaver.core.loom.tools.git import GitTool` must explicitly
-call `from specweaver.core.loom.tools.git.tool import GitTool`. All boundary verification relies
-strictly on Tach.
-
-## 3. Verification
-1. Run `tach check` to prove interfaces block illegal imports.
-2. Run `ruff run` to locate mis-linked internal imports following the `__init__.py` purge.
-3. Run `pytest` to guarantee the dynamic LLM adapter factory functions stably internally.
+1. `tach check` — interfaces block illegal imports.
+2. `ruff run` — finds mis-linked internal imports after the `__init__.py` purge.
+3. `pytest` — the dynamic LLM adapter factory still works.

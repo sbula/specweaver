@@ -1,24 +1,19 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-02: Resource & Core Capability Hardening]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-02 — Resource & Core Capability Hardening
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf02_implementation_plan.md
-- **Status**: APPROVED
+# C-EXEC-01 SF-02 — Resource & Core Capability Hardening
 
-**FRs owned: none.** SF-02 extended FR-1's declaration to the resource and capability layers;
-it added no requirement of its own. Recorded 2026-08-17 from `INT-US-01-SF02-MIG` so the
-silence is deliberate.
+**Status**: APPROVED · **FRs owned**: none · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-02
 
+No FR of its own: SF-02 extends FR-1's declaration to the resource and capability layers. Recorded
+2026-08-17 from `INT-US-01-SF02-MIG` so the silence is deliberate.
 
-## Feature Scope Overview
-This Sub-Feature formalizes the Resource and Core Capability modules (`project`, `context`, `graph`, `llm`) into the `tach.toml` registry.
+## Goal
 
-## Proposed Changes
+Register the resource and core capability modules (`project`, `context`, `graph`, `llm`) in
+`tach.toml`.
 
-### 1. Architecture Linter Configuration
-#### [MODIFY] `tach.toml`
-- Append four new independent modules explicitly outlining their dependencies against the Base layers and each other.
+## Changes
+
+1. **`tach.toml`** — four modules with their dependencies on the base layer and each other:
 
 ```toml
 [[modules]]
@@ -54,22 +49,16 @@ depends_on = [
 strict = true
 ```
 
-### 2. Base Layer Boilerplate Cleanup
-#### [DELETE] `src/specweaver/project/__init__.py`
-#### [DELETE] `src/specweaver/context/__init__.py`
-#### [DELETE] `src/specweaver/graph/__init__.py`
-#### [DELETE] `src/specweaver/llm/__init__.py`
-- *Context: Cleaning up the legacy `__all__` encapsulation since `tach` will map public boundaries.*
+2. **Delete** the legacy `__all__` encapsulation — `tach` maps the public boundaries:
+   `src/specweaver/project/__init__.py`, `src/specweaver/context/__init__.py`,
+   `src/specweaver/graph/__init__.py`, `src/specweaver/llm/__init__.py`.
 
-## User Review Required
 > [!IMPORTANT]
-> The DAG mapping has been determined via rigorous codebase inspection (`llm` imports `config` and
-> `graph`; `graph` imports `context`). If any underlying code is using dynamic or hidden upstream
-> imports (e.g. `llm` importing `cli`), it will break in runtime after Tach enforces this isolation.
+> The DAG comes from codebase inspection (`llm` imports `config` and `graph`; `graph` imports
+> `context`). A dynamic or hidden upstream import (e.g. `llm` importing `cli`) breaks at runtime
+> once Tach enforces this.
 
-## Open Questions
-- None.
+## Tests
 
-## Verification Plan
-1. **Automated Validation**: `tach check` will verify the math of the bounded contexts.
-2. **Pre-Commit Suite**: `python -m pytest tests/` and `ruff check` will operate naturally inside the gating sequence.
+1. `tach check` verifies the bounded contexts.
+2. `python -m pytest tests/` and `ruff check` in the gate.

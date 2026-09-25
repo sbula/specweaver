@@ -1,85 +1,51 @@
-# Implementation Plan: Context Hydration & Handover Engine [SF-02: Prompt Assembly via Inversion of Control]
-- **Feature ID**: D-INTL-06
-- **Sub-Feature**: SF-02 — Prompt Assembly via Inversion of Control
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_sf02_implementation_plan.md
-- **Status**: DRAFT
+# D-INTL-06 SF-02 — Prompt Assembly via Inversion of Control
 
----
+**Status**: DRAFT (implemented and committed — see the design's Progress Tracker) · **FRs owned**:
+FR-6, FR-7 · **NFRs**: NFR-2, NFR-5, NFR-6, NFR-7, NFR-8, NFR-9 · **Depends on**: SF-01 · Design:
+[D-INTL-06_design.md](D-INTL-06_design.md) §Sub-features → SF-02
 
-## Scope Summary
+**Since moved** (2026-08-12, `0f5f16b9`): `_build_base_prompt()` lives in
+`core/flow/handlers/prompting.py`, re-exported from `base`; `include_rules` became
+`profile: RenderProfile` (`C-INTL-05`). Line refs below are as of the plan's date.
 
-SF-02 centralizes prompt assembly via **Inversion of Control** in the Application Layer. A
-module-level async function `_build_base_prompt()` in `core.flow.handlers.base` builds a base
-`PromptBuilder` (instructions, project metadata, constitution, standards, memory hydration) and each
-handler passes it down to its Domain Layer workflow method. Each workflow method adds only its
-domain-specific blocks on top.
+## Goal
 
-This eliminates a ~150-line DRY violation across the codebase and establishes a single integration
-point for all future context sources — without introducing a `workflows/commons` module, which would
-violate DDD bounded context isolation.
+A module-level async function `_build_base_prompt()` in `core.flow.handlers.base` builds the base
+`PromptBuilder` (instructions, project metadata, constitution, standards, memory hydration). Each
+handler passes it down to its Domain Layer workflow method, which adds only its domain-specific
+blocks. Removes a ~150-line DRY violation and gives future context sources one integration point,
+without a `workflows/commons` module (which would break DDD bounded context isolation).
 
-### Modified Files
+## Where it plugs in
 
-**Application Layer (`core.flow.handlers`):**
-- `src/specweaver/core/flow/handlers/base.py` — Add `async _build_base_prompt()` with fail-safe memory hydration
-- `src/specweaver/core/flow/handlers/generation.py` — Call `_build_base_prompt()`, pass builder to generator
-- `src/specweaver/core/flow/handlers/review.py` — Call `_build_base_prompt()`, pass builder to reviewer
-- `src/specweaver/core/flow/handlers/draft.py` — Call `_build_base_prompt(..., include_rules=False)`, pass builder to drafter (2-Tier enforcement)
+| # | Fact | Source |
+|---|---|---|
+| RN-1 | There are **6 files** with PromptBuilder usage, not 5: `generator.py` — `generate_code()` + `generate_tests()` (2 call sites); `reviewer.py` — `review_spec()` + `review_code()` (2); `planner.py` — `generate_plan()` (1); `drafter.py` — `_generate_section()` (1); `feature_drafter.py` — `_generate_section()` (1); `decomposer.py` — `decompose()` (1). `decomposer.py` is **minimal** (no constitution, no standards, no plan, no skeleton_files) and builds a structural architecture map, not code — **excluded** (HITL). | `workflows/planning/decomposer.py:83-97` |
+| RN-3 | `PromptBuilder.add_context()` signature verified (below); called as `builder.add_context(block, "agent_memory", priority=2)`. | `infrastructure/llm/prompt_builder.py:178-201` |
+| RN-4 | `RunContext` already has `context.db: Any = None` (line 60) and `context.project_path: Path` (required, line 45) — no parameter threading needed. | `core/flow/handlers/base.py:28-71` |
+| RN-5 | `core.flow` has `depends_on = []`; `workspace.memory` already exposes `hydrator` (line 243-244). Add `src.specweaver.workspace.memory` to `core.flow`'s `depends_on`. | `tach.toml:15` |
+| RN-6 | The generator handler passed `constitution=context.constitution` but not `standards=context.standards` (lines 146-158 `generate_code()`, lines 236-250 `generate_tests()`); `_generate_plan_artifact()` (line 352-361) and the reviewer passed both. A pre-SF-02 hotfix added it to `GenerateCodeHandler._execute()` and `GenerateTestsHandler._execute()`; `_build_base_prompt()` now always adds standards. | `core/flow/handlers/generation.py:146-158` |
+| RN-7 | DB access pattern from handlers (below); `_build_base_prompt()` must be `async` to use `async with`. | `core/flow/handlers/generation.py:163-172` |
+| RN-8 | `ArbiterHandler` builds raw `Message` prompts, no `PromptBuilder` — exclusion is correct. | `core/flow/handlers/arbiter.py` |
+| RN-9 | `core.flow` consumes `specweaver/config`, `specweaver/llm`, `specweaver/review`, `specweaver/implementation`, `specweaver/planning`, `specweaver/validation` and several sandbox modules — not `specweaver/workspace/memory`, which is added. No workflow `context.yaml` changes: workflows get a pre-built `PromptBuilder` and never import `workspace.memory`. | `core/flow/context.yaml:18-31` |
+| RN-10 | All 5 workflow modules import `PromptBuilder` inline (acknowledged anti-pattern in the architecture reference, used to break circular imports). `_build_base_prompt()` imports `PromptBuilder` and `MemoryHydrator` inline too. | — |
+| RN-11 | `ScenarioGenerator.generate_scenarios()` builds a raw string via static `_build_prompt()` and calls `self._llm.generate(prompt)`; its handler (`core/flow/handlers/scenario.py`) passes `constitution` and `project_metadata` directly. Out of scope. | `workflows/scenarios/scenario_generator.py:47-86, 183-227` |
 
-**Domain Layer (`workflows`):**
-- `src/specweaver/workflows/implementation/generator.py` — Replace param list with `base_prompt: PromptBuilder`
-- `src/specweaver/workflows/review/reviewer.py` — Replace param list with `base_prompt: PromptBuilder`
-- `src/specweaver/workflows/planning/planner.py` — Replace param list with `base_prompt: PromptBuilder`
-- `src/specweaver/workflows/drafting/drafter.py` — Replace param list with `base_prompt: PromptBuilder`
-- `src/specweaver/workflows/drafting/feature_drafter.py` — Replace param list with `base_prompt: PromptBuilder`
+RN-7 pattern:
 
-**Boundary Declarations:**
-- `src/specweaver/core/flow/context.yaml` — Add `specweaver/workspace/memory` to `consumes`
-- `tach.toml` — Add `src.specweaver.workspace.memory` to `core.flow` `depends_on`
+```python
+if context.db:
+    async with context.db.async_session_scope() as session:
+        # ... use session ...
+```
 
-### Test Files
-- `tests/unit/core/flow/handlers/test_build_base_prompt.py` — NEW (unit tests for `_build_base_prompt`)
-- `tests/integration/core/flow/handlers/test_prompt_hydration.py` — NEW (integration with in-memory SQLite)
-- Regression updates within each modified workflow module test file
+RN-3 signature:
 
-### NOT Modified (Explicitly Excluded)
-- `RunContext` (no new fields — `db` and `project_path` already exist)
-- `PromptBuilder` (no new methods — uses existing `add_context()`)
-- `interfaces/cli/*` (no CLI changes)
-- `interfaces/api/*` (no API changes)
-- `ArbiterHandler` (uses minimal prompt via raw `Message` — excluded per FR-6)
-- `workflows/planning/decomposer.py` (Excluded per HITL Phase 4 — operates at different abstraction level)
-- `workflows/scenarios/scenario_generator.py` (Does NOT use `PromptBuilder` — builds raw string prompts directly. No refactoring needed.)
-- All workflow `context.yaml` files (no new domain dependencies introduced)
+```python
+def add_context(self, text: str, label: str, *, priority: int = 3) -> PromptBuilder:
+```
 
-**FRs covered**: FR-6 (Base Prompt Assembly), FR-7 (Handler Assembly Method)
-**NFRs covered**: NFR-2 (architectural placement), NFR-5 (backward compat), NFR-6 (observability), NFR-7 (test coverage), NFR-8 (file size), NFR-9 (fail-safe hydration)
-
----
-
-## Research Notes
-
-### RN-1: Decomposer PromptBuilder Usage — 6th Module Not in Design Scope
-
-**Source**: `workflows/planning/decomposer.py:83-97`
-
-The design doc says "5 workflow modules" use PromptBuilder. In practice, there are **6 files** with PromptBuilder usage:
-1. `generator.py` — `generate_code()` + `generate_tests()` (2 call sites)
-2. `reviewer.py` — `review_spec()` + `review_code()` (2 call sites)
-3. `planner.py` — `generate_plan()` (1 call site)
-4. `drafter.py` — `_generate_section()` (1 call site)
-5. `feature_drafter.py` — `_generate_section()` (1 call site)
-6. `decomposer.py` — `decompose()` (1 call site)
-
-The `decomposer.py` has a **minimal** PromptBuilder usage (no constitution, no standards, no plan, no skeleton_files).
-
-**Resolved**: Excluded (HITL Phase 4 Decision). The decomposer does not generate code, it generates a structural architecture map. Constitution/standards are irrelevant to it.
-
-### RN-2: Prompt Assembly Chain Differences Across Modules
-
-Analyzing the exact assembly chain per module reveals significant variation:
+**RN-2 — assembly chain per module:**
 
 | Module | instructions | project_metadata | file | constitution | standards | plan | topology | env_context | skeleton_files | dictator | validation | mentioned_files |
 |--------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -91,69 +57,11 @@ Analyzing the exact assembly chain per module reveals significant variation:
 | drafter._generate_section | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | feature_drafter._generate_section | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-**Impact**: The `_build_base_prompt()` method produces a **base** PromptBuilder (instructions +
-project_metadata + constitution + standards + memory context). Each handler then adds
-handler-specific blocks (plan, topology, skeleton_files) before passing the builder to the workflow
-method. The workflow method adds only domain-specific blocks (file, dictator, validation, etc.).
+So `_build_base_prompt()` produces the **base** (instructions + project_metadata + constitution +
+standards + memory context); the handler adds handler-specific blocks (plan, topology,
+skeleton_files); the workflow method adds domain blocks (file, dictator, validation, etc.).
 
-### RN-3: PromptBuilder `add_context()` Signature (Verified)
-
-**Source**: `infrastructure/llm/prompt_builder.py:178-201`
-
-```python
-def add_context(self, text: str, label: str, *, priority: int = 3) -> PromptBuilder:
-```
-
-Per design: `_build_base_prompt` calls `builder.add_context(block, "agent_memory", priority=2)`.
-
-### RN-4: RunContext Already Has `db` and `project_path`
-
-**Source**: `core/flow/handlers/base.py:28-71`
-
-- `context.db: Any = None` — Database instance (line 60)
-- `context.project_path: Path` — Required field (line 45)
-
-`_build_base_prompt()` accesses these directly from `RunContext`. No parameter threading through workflow methods needed for hydration.
-
-### RN-5: `tach.toml` — `core.flow` Needs `workspace.memory` Dependency
-
-**Source**: `tach.toml:15`
-
-`core.flow` currently has `depends_on = []`. To legally import `MemoryHydrator` from
-`workspace.memory`, we must add `src.specweaver.workspace.memory` to its `depends_on` list. The
-`workspace.memory` module already has an `[[interfaces]]` entry exposing `hydrator` (line 243-244).
-
-### RN-6: `standards` Param Not Passed by Generator Handler
-
-**Source**: `core/flow/handlers/generation.py:146-158`
-
-The `GenerateCodeHandler` passes `constitution=context.constitution` but NOT
-`standards=context.standards` at lines 146-158 (`generate_code()`) and lines 236-250
-(`generate_tests()`). This is currently a bug/missing feature — the generator's `generate_code()`
-signature accepts `standards` but the handler doesn't pass it. The `_generate_plan_artifact()`
-method (line 352-361) DOES pass both `constitution` and `standards`. The reviewer handler also
-passes both.
-
-**Impact**: Pre-SF-02 Hotfix. A separate commit will add `standards=context.standards` to both
-`GenerateCodeHandler._execute()` and `GenerateTestsHandler._execute()`. The SF-02 refactoring will
-then centralize this fix inside `_build_base_prompt()`.
-
-### RN-11: ScenarioGenerator Does NOT Use PromptBuilder
-
-**Source**: `workflows/scenarios/scenario_generator.py:47-86, 183-227`
-
-`ScenarioGenerator.generate_scenarios()` builds a raw string prompt via `_build_prompt()` (static
-method) and calls `self._llm.generate(prompt)` directly — it does NOT use `PromptBuilder`. The
-handler (`core/flow/handlers/scenario.py`) passes `constitution` and `project_metadata` as
-individual params. This module is completely outside the `_build_base_prompt()` refactoring scope.
-
-**Resolved**: Explicitly excluded. No PromptBuilder usage, no refactoring needed.
-
-### RN-12: Handler Coverage Audit — All 16 Handler Files Verified
-
-**Source**: `core/flow/handlers/` directory listing (16 files)
-
-Full audit of which handlers are in scope:
+**RN-12 — all 16 handler files in `core/flow/handlers/`:**
 
 | Handler File | Uses PromptBuilder? | In Scope? | Notes |
 |---|:-:|:-:|---|
@@ -174,50 +82,12 @@ Full audit of which handlers are in scope:
 | `drift.py` | No | ❌ | Drift detection |
 | `validation.py` | No | ❌ | Validation handler |
 
-### RN-7: `async_session_scope()` Pattern for Hydration
+## Changes
 
-**Source**: `core/flow/handlers/generation.py:163-172`
+### CB-1 — Foundation: `_build_base_prompt()`
 
-The existing pattern for database access from handlers:
-```python
-if context.db:
-    async with context.db.async_session_scope() as session:
-        # ... use session ...
-```
-
-`_build_base_prompt()` uses this same pattern for hydration. The method must be `async` to support `async with`.
-
-### RN-8: Arbiter Exclusion is Correct
-
-**Source**: `core/flow/handlers/arbiter.py`
-
-The `ArbiterHandler` builds prompts using raw `Message` construction, NOT via `PromptBuilder`. It has no overlap with the base prompt assembly. Exclusion is architecturally correct.
-
-### RN-9: `context.yaml` `consumes` — `core.flow` Needs `workspace/memory`
-
-**Source**: `core/flow/context.yaml:18-31`
-
-`core.flow` currently consumes `specweaver/config`, `specweaver/llm`, `specweaver/review`,
-`specweaver/implementation`, `specweaver/planning`, `specweaver/validation`, and several sandbox
-modules. It does NOT currently consume `specweaver/workspace/memory`. This must be added.
-
-No workflow `context.yaml` files need updating — workflow modules receive a pre-built `PromptBuilder` and do not import `workspace.memory` themselves.
-
-### RN-10: Inline Import Pattern Is Established
-
-All 5 workflow modules import `PromptBuilder` inside their methods (inline imports). This is
-acknowledged tech debt (anti-pattern in architecture reference) but is the established codebase
-pattern for breaking circular imports. `_build_base_prompt()` will use the same inline import
-pattern for `PromptBuilder` and `MemoryHydrator`.
-
----
-
-## Proposed Changes
-
-### Commit Boundary 1: Foundation — `_build_base_prompt()`
-
-#### [MODIFY] `core/flow/handlers/base.py`
-Add a module-level async function (not a method on any class — `base.py` defines `RunContext` and `StepHandler` protocol, there is no `BaseHandler` class):
+1. **`core/flow/handlers/base.py`** — a module-level async function (there is no `BaseHandler`
+   class; `base.py` defines `RunContext` and the `StepHandler` protocol):
 
 ```python
 async def _build_base_prompt(
@@ -280,105 +150,107 @@ async def _build_base_prompt(
     return builder
 ```
 
-#### [MODIFY] `core/flow/context.yaml`
-Add `specweaver/workspace/memory` to `consumes`.
+2. **`core/flow/context.yaml`** — add `specweaver/workspace/memory` to `consumes`.
+3. **`tach.toml`** — add `workspace.memory` to `core.flow` depends_on:
 
-#### [MODIFY] `tach.toml`
-Add `workspace.memory` to `core.flow` depends_on:
 ```toml
 { path = "src.specweaver.core.flow", depends_on = [
     "src.specweaver.workspace.memory"
 ] },
 ```
 
-#### [NEW] `tests/unit/core/flow/handlers/test_build_base_prompt.py`
-- Test `_build_base_prompt()` with `db=None` → no `agent_memory` block (fail-safe path)
-- Test with `include_rules=True` → constitution + standards added
-- Test with `include_rules=False` → constitution + standards NOT added (2-Tier enforcement)
-- Test hydration failure (db raises Exception) → WARNING logged, builder returned without memory
-- Test skeleton_files passthrough to PromptBuilder constructor
-- Test `project_metadata=None` → gracefully skipped (PromptBuilder.add_project_metadata handles None)
-- Test logging at INFO for successful hydration, WARNING for failures
-- Test two consecutive calls return independent builders (no shared mutable state)
+### CB-2 — Generator, Planner & Reviewer
 
----
+The planner handler (`_generate_plan_artifact`) lives inside `generation.py`, so all
+`generation.py` changes are here.
 
-### Commit Boundary 2: Workflow Refactoring — Generator, Planner & Reviewer
+4. **`core/flow/handlers/generation.py`**
+   - Pre-SF-02 hotfix: add `standards=context.standards` to the `generate_code()` and
+     `generate_tests()` calls (RN-6).
+   - `GenerateCodeHandler._execute()`: `_build_base_prompt(context, CODE_GEN_INSTRUCTIONS, skeleton_files=...)`,
+     add plan/topology/env_context, pass the builder. `GenerateTestsHandler._execute()`: same.
+   - `_generate_plan_artifact()`: `_build_base_prompt(context, plan_instructions)` (the planner uses
+     inline instruction strings, not a module constant), pass the builder to `planner.generate_plan()`.
+5. **`workflows/implementation/generator.py`** — `generate_code()` and `generate_tests()` replace
+   (`constitution`, `standards`, `plan`, `topology`, `project_metadata`, `skeleton_files`) with
+   `base_prompt: PromptBuilder`; bodies add only `add_file()`, `add_artifact_tagging()`,
+   `add_dictator_overrides()`, `add_context(validation_findings)`, `add_context(environment_context)`.
+6. **`workflows/planning/planner.py`** — replace (`constitution`, `standards`, `project_metadata`,
+   `spec_content`, etc.) with `base_prompt: PromptBuilder`; body adds `add_context(spec_content)`.
+7. **`core/flow/handlers/review.py`** — `_build_base_prompt(context, REVIEW_INSTRUCTIONS, skeleton_files=...)`,
+   add topology, pass `base_prompt=builder` to `reviewer.review_spec()` / `review_code()`.
+8. **`workflows/review/reviewer.py`** — `base_prompt: PromptBuilder`; body adds `add_file()`,
+   `add_mentioned_files()`.
 
-**Note**: The planner handler (`_generate_plan_artifact`) lives inside `generation.py`, not a separate handler file. All `generation.py` changes are in this boundary.
+### CB-3 — Drafter & Feature Drafter
 
-#### [MODIFY] `core/flow/handlers/generation.py`
-- Pre-SF-02 Hotfix: Add `standards=context.standards` to `generate_code()` and `generate_tests()` calls (RN-6)
-- `GenerateCodeHandler._execute()`: Call `_build_base_prompt(context, CODE_GEN_INSTRUCTIONS, skeleton_files=...)`, add plan/topology/env_context, pass builder
-- `GenerateTestsHandler._execute()`: Same pattern
-- `_generate_plan_artifact()`: Call `_build_base_prompt(context, plan_instructions)` (note: the
-  planner uses inline instruction strings, not a module-level constant), pass builder to
-  `planner.generate_plan()`
+9. **`core/flow/handlers/draft.py`** — **2-Tier Handover**:
+   `_build_base_prompt(context, instructions, include_rules=False)`, so the Drafter gets Agent
+   Memory but never Tier-1 Constitution/Standards; pass `base_prompt=builder`.
+10. **`workflows/drafting/drafter.py`** — `base_prompt: PromptBuilder`; body adds
+    `add_context(user_input)` and per-section topology.
+11. **`workflows/drafting/feature_drafter.py`** — same as `drafter.py`.
 
-#### [MODIFY] `workflows/implementation/generator.py`
-- `generate_code()`: Replace parameter list (`constitution`, `standards`, `plan`, `topology`, `project_metadata`, `skeleton_files`) with `base_prompt: PromptBuilder`
-- `generate_tests()`: Same signature change
-- Method bodies just add domain-specific blocks: `add_file()`, `add_artifact_tagging()`, `add_dictator_overrides()`, `add_context(validation_findings)`, `add_context(environment_context)`
+### CB-4 — Integration tests & docs
 
-#### [MODIFY] `workflows/planning/planner.py`
-- Replace parameter list (`constitution`, `standards`, `project_metadata`, `spec_content`, etc.) with `base_prompt: PromptBuilder`
-- Method body adds: `add_context(spec_content)`
+12. Docs: `docs/dev_guides/agent_memory_state_tracking.md` (handler-based prompt assembly
+    examples); `D-INTL-06_design.md` (Progress Tracker); `docs/architecture/architecture_reference.md`
+    (`_build_base_prompt()` pattern in the Feature Map).
 
-#### [MODIFY] `core/flow/handlers/review.py`
-- Call `_build_base_prompt(context, REVIEW_INSTRUCTIONS, skeleton_files=...)`
-- Add topology to builder
-- Pass `base_prompt=builder` to `reviewer.review_spec()` / `review_code()`
+**Modified files:**
 
-#### [MODIFY] `workflows/review/reviewer.py`
-- Replace parameter list with `base_prompt: PromptBuilder`
-- Method body adds: `add_file()`, `add_mentioned_files()`
+**Application Layer (`core.flow.handlers`):**
+- `src/specweaver/core/flow/handlers/base.py` — Add `async _build_base_prompt()` with fail-safe memory hydration
+- `src/specweaver/core/flow/handlers/generation.py` — Call `_build_base_prompt()`, pass builder to generator
+- `src/specweaver/core/flow/handlers/review.py` — Call `_build_base_prompt()`, pass builder to reviewer
+- `src/specweaver/core/flow/handlers/draft.py` — Call `_build_base_prompt(..., include_rules=False)`, pass builder to drafter (2-Tier enforcement)
 
-#### Regression Tests
-- Existing tests in `tests/unit/workflows/implementation/test_generator_*.py` must continue passing
-- Existing tests in `tests/unit/workflows/review/test_reviewer_*.py` must continue passing
-- Existing tests in `tests/unit/workflows/planning/test_planner_*.py` must continue passing
-- New test: prompt output with `db=None` is identical to current behavior (minus agent_memory addition)
+**Domain Layer (`workflows`):**
+- `src/specweaver/workflows/implementation/generator.py` — Replace param list with `base_prompt: PromptBuilder`
+- `src/specweaver/workflows/review/reviewer.py` — Replace param list with `base_prompt: PromptBuilder`
+- `src/specweaver/workflows/planning/planner.py` — Replace param list with `base_prompt: PromptBuilder`
+- `src/specweaver/workflows/drafting/drafter.py` — Replace param list with `base_prompt: PromptBuilder`
+- `src/specweaver/workflows/drafting/feature_drafter.py` — Replace param list with `base_prompt: PromptBuilder`
 
----
+**Boundary Declarations:**
+- `src/specweaver/core/flow/context.yaml` — Add `specweaver/workspace/memory` to `consumes`
+- `tach.toml` — Add `src.specweaver.workspace.memory` to `core.flow` `depends_on`
 
-### Commit Boundary 3: Workflow Refactoring — Drafter & Feature Drafter
+**NOT modified:**
 
-#### [MODIFY] `core/flow/handlers/draft.py`
-- **2-Tier Handover Enforcement**: Call `_build_base_prompt(context, instructions, include_rules=False)`
-- This mathematically guarantees the Drafter receives Agent Memory but is strictly isolated from Tier-1 Constitution/Standards rules
-- Pass `base_prompt=builder` to drafter methods
+- `RunContext` (no new fields — `db` and `project_path` already exist)
+- `PromptBuilder` (no new methods — uses existing `add_context()`)
+- `interfaces/cli/*` (no CLI changes)
+- `interfaces/api/*` (no API changes)
+- `ArbiterHandler` (uses minimal prompt via raw `Message` — excluded per FR-6)
+- `workflows/planning/decomposer.py` (Excluded per HITL Phase 4 — operates at different abstraction level)
+- `workflows/scenarios/scenario_generator.py` (Does NOT use `PromptBuilder` — builds raw string prompts directly. No refactoring needed.)
+- All workflow `context.yaml` files (no new domain dependencies introduced)
 
-#### [MODIFY] `workflows/drafting/drafter.py`
-- Replace parameter list with `base_prompt: PromptBuilder`
-- Method body adds: `add_context(user_input)`, per-section topology
+## Tests
 
-#### [MODIFY] `workflows/drafting/feature_drafter.py`
-- Same pattern as `drafter.py`
+| Tier | File | Cases |
+|---|---|---|
+| Unit (CB-1) | `tests/unit/core/flow/handlers/test_build_base_prompt.py` (NEW) | `db=None` → no `agent_memory` block (fail-safe path); `include_rules=True` → constitution + standards added; `include_rules=False` → not added (2-Tier); db raises Exception → WARNING logged, builder returned without memory; skeleton_files passed to the PromptBuilder constructor; `project_metadata=None` → skipped (PromptBuilder.add_project_metadata handles None); INFO on successful hydration, WARNING on failure; two consecutive calls return independent builders (no shared mutable state) |
+| Regression (CB-2) | `tests/unit/workflows/implementation/test_generator_*.py`, `tests/unit/workflows/review/test_reviewer_*.py`, `tests/unit/workflows/planning/test_planner_*.py` | keep passing; new: prompt with `db=None` identical to current behavior (minus agent_memory addition) |
+| Regression (CB-3) | drafter and feature_drafter tests | keep passing |
+| Integration (CB-4) | `tests/integration/core/flow/handlers/test_prompt_hydration.py` (NEW), in-memory SQLite | 1. pre-populate tasks (IN_PROGRESS, BLOCKED, DONE with handover); 2. call `_build_base_prompt()` with a real DB session; 3. `<context label="agent_memory">` in the built prompt; 4. task titles and handover notes present; 5. empty memory bank → no `agent_memory` block; 6. corrupted handover_context → WARNING, no crash |
 
-#### Regression Tests
-- All existing drafter and feature_drafter tests must continue passing
+Commands:
 
----
+1. `pytest tests/unit/core/flow/handlers/test_build_base_prompt.py -v` — all new unit tests pass
+2. `pytest tests/integration/core/flow/handlers/test_prompt_hydration.py -v` — integration tests pass
+3. `pytest tests/unit/workflows/ -v` — all existing workflow tests pass (regression)
+4. `pytest tests/unit/core/flow/handlers/ -v` — all handler tests pass (regression)
+5. `tach check` — no architectural boundary violations
+6. `mypy src/specweaver/core/flow/handlers/base.py` — type safety
+7. `ruff check src/specweaver/core/flow/` — linting clean
+8. Full test suite (`pytest`) — all 4600+ tests pass
 
-### Commit Boundary 4: Integration Tests & Documentation
+Manual: inspect the prompt structure. Prompts are NOT identical to pre-SF-02 (standards are now
+injected) — assert a `<standards>` XML block in Generator prompts.
 
-#### [NEW] `tests/integration/core/flow/handlers/test_prompt_hydration.py`
-Integration test with in-memory SQLite:
-1. Pre-populate memory bank with tasks (IN_PROGRESS, BLOCKED, DONE with handover)
-2. Call `_build_base_prompt()` with real DB session
-3. Assert `<context label="agent_memory">` appears in built prompt
-4. Assert task titles and handover notes are present
-5. Test empty memory bank → no `agent_memory` block
-6. Test corrupted handover_context → graceful degradation (WARNING log, no crash)
-
-#### Documentation Updates
-- Update `docs/dev_guides/agent_memory_state_tracking.md` — add handler-based prompt assembly examples
-- Update `D-INTL-06_design.md` — mark SF-02 in Progress Tracker
-- Update `docs/architecture/architecture_reference.md` — document `_build_base_prompt()` pattern in Feature Map
-
----
-
-## HITL Decisions Resolved (Phase 4)
+## Decisions (audit)
 
 1. **Decomposer**: Excluded (operates at different abstraction level).
 2. **Standards Gap**: Pre-SF-02 hotfix commit, then `_build_base_prompt()` centralizes this fix.
@@ -391,20 +263,3 @@ Integration test with in-memory SQLite:
 9. **Architecture**: Inversion of Control via module-level `_build_base_prompt()` in `core.flow.handlers.base` — no `workflows/commons` module (DDD compliance).
 10. **Import DAG**: Verified clean — `core.flow` → `workspace.memory` is a new downward dependency, no cycles.
 11. **Scenario Handler**: Explicitly excluded — `ScenarioGenerator` doesn't use `PromptBuilder` (RN-11).
-
----
-
-## Verification Plan
-
-### Automated Tests
-1. `pytest tests/unit/core/flow/handlers/test_build_base_prompt.py -v` — all new unit tests pass
-2. `pytest tests/integration/core/flow/handlers/test_prompt_hydration.py -v` — integration tests pass
-3. `pytest tests/unit/workflows/ -v` — all existing workflow tests pass (regression)
-4. `pytest tests/unit/core/flow/handlers/ -v` — all handler tests pass (regression)
-5. `tach check` — no architectural boundary violations
-6. `mypy src/specweaver/core/flow/handlers/base.py` — type safety
-7. `ruff check src/specweaver/core/flow/` — linting clean
-8. Full test suite (`pytest`) — all 4600+ tests pass
-
-### Manual Verification
-- Inspect prompt output structure. Prompts will NOT be identical to pre-SF-02 (due to standard injection). Assert presence of `<standards>` XML block in Generator prompts.

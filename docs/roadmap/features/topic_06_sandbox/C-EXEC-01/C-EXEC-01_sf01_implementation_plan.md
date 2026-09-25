@@ -1,37 +1,26 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-01: Initialization & Base Layer Isolation]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-01 — Initialization & Base Layer Isolation
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf01_implementation_plan.md
-- **Status**: APPROVED
+# C-EXEC-01 SF-01 — Initialization & Base Layer Isolation
 
-**FRs owned: FR-1.** The `tach.toml` layer declaration itself, base layer first. Recorded
-2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: a declared module
-path pointing at a namespace that does not exist.
+**Status**: APPROVED · **FRs owned**: FR-1 · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-01
 
+FR-1 recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: a
+declared module path pointing at a namespace that does not exist.
 
-## Feature Scope Overview
-This Sub-Feature initializes `Tach` into SpecWeaver and formally defines the bottom-most
-dependencies (the "Base Layer"). It guarantees that `config`, `standards`, and `logging.py` operate
-completely stateless and free from any upward dependency entanglements.
+## Goal
 
-## Proposed Changes
+Install `Tach` and declare the bottom-most layer: `config`, `standards` and `logging.py` stay
+stateless, with no upward dependency.
 
-### 1. Build and CI Dependencies
-#### [MODIFY] `pyproject.toml`
-- Add `"tach"` to the `[project.optional-dependencies] dev` array. 
-- *Context: Aligns tightly with standard Python packaging constraints mapped in Phase 4.*
+## Changes
 
-#### [MODIFY] `.agents/workflows/pre-commit/phase-2-code-quality.md`
-- Inject a mandatory step forcing the AI agent to execute `tach check` alongside `ruff` and `mypy`. 
-- *Context: As decided in Phase 4, we integrate this strictly into the internal workflow gate rather than relying on external developer git-hooks.*
+1. **`pyproject.toml`** — add `"tach"` to the `[project.optional-dependencies] dev` array.
+2. **`.agents/workflows/pre-commit/phase-2-code-quality.md`** — a mandatory step runs `tach check`
+   alongside `ruff` and `mypy`. Enforcement sits in the internal workflow gate, not in developer
+   git-hooks.
+3. **`tach.toml` (NEW; or `tach.yml`)** — root layer graph; three independent base modules
+   (`src.specweaver.core.config`, `src.specweaver.assurance.standards`, logging). Exact syntax, so
+   no configuration key is invented:
 
-### 2. Architecture Linter Configuration & Cleanup
-#### [NEW] `tach.toml`
-- Create the root layer-graph configuration file.
-- Define three completely independent modules to guarantee stateless base behaviors. 
-- **CRITICAL SYNTAX HINT:** An incoming agent must use exact syntax so it does not hallucinate configuration keys.
 ```toml
 [modules]
 [[modules.path]]
@@ -54,24 +43,18 @@ depends_on = [
 strict = true
 ```
 
-#### [DELETE] Base Layer Boilerplate
-- Delete `src/specweaver/config/__init__.py` and `src/specweaver/standards/__init__.py`. 
-- *Context: As we formalize each layer into Tach, we must systematically clean up the legacy, manual
-  `__all__ = [...]` export logic behind us. This prevents two conflicting architectural systems from
-  existing simultaneously.*
+4. **Delete** `src/specweaver/config/__init__.py` and `src/specweaver/standards/__init__.py` — the
+   manual `__all__ = [...]` exports go as each layer moves into Tach, so two boundary systems never
+   coexist.
 
-> [!CAUTION]  
-> If `tach check` throws any violation indicating that `config` or `standards` accidentally
-> references a domain model from `src/specweaver/validation` or `src/specweaver/flow`, **the
-> workflow must fail**. Those upstream references must be surgically severed and passed via
-> arguments to maintain strict Base Layer statelessness.
+> [!CAUTION]
+> If `tach check` reports `config` or `standards` referencing a domain model from
+> `src/specweaver/validation` or `src/specweaver/flow`, **the workflow must fail**. Cut that
+> reference and pass the value as an argument.
 
-## Verification Plan
+## Tests
 
-### Automated Tests
-1. Run `pip install -e ".[dev]"` to confirm `tach` installs successfully via `pyproject.toml`.
-2. Run `tach sync` or manually author `tach.toml` root constraints.
-3. Run `tach check` from the project root. Expect a zero exit code if the Base Layer isolates successfully.
-
-### Quality Gates
-- Proceed through `/pre-commit` workflow, confirming the new Phase 2 gate successfully enforces `tach check`.
+1. `pip install -e ".[dev]"` — `tach` installs via `pyproject.toml`.
+2. `tach sync`, or author the `tach.toml` root constraints by hand.
+3. `tach check` from the project root — zero exit code.
+4. `/pre-commit` — the new Phase 2 gate enforces `tach check`.

@@ -1,43 +1,29 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-03: Presentation Layer Sterilization]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-03 — Presentation Layer Sterilization
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf03_implementation_plan.md
-- **Status**: APPROVED
+# C-EXEC-01 SF-03 — Presentation Layer Sterilization
 
-**FRs owned: FR-2.** Enforcement — no domain module may depend on `api` or `cli`. Recorded
-2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`.
+**Status**: APPROVED · **FRs owned**: FR-2 · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-03
 
-**The enforcing assertion allowed 95 violations** until 2026-08-17, a baseline from
-2026-05-25 that the codebase had long since cleared. It is zero now. See the design's findings
-section — a forbidden import verified to pass the whole suite under the old bound.
+FR-2 (no domain module may depend on `api` or `cli`) recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-01-SF02-MIG`. The enforcing assertion is zero violations; it allowed 95 until
+2026-08-17 (a 2026-05-25 baseline) — see the design's Architecture guards.
 
+## Goal
 
-## 1. Goal
-Enforce that no domain logic inside `src/specweaver` is mathematically allowed to depend on `api` or `cli`.
+No domain logic inside `src/specweaver` may depend on `api` or `cli`.
 
-## 2. Proposed Changes
+## Changes
 
-### Configuration Binding
-#### [MODIFY] `tach.toml`
-- Declare `src.specweaver.interfaces.api` and `src.specweaver.interfaces.cli` as tracked modules.
-- Run `tach sync` to auto-populate the massive `depends_on` graphs for these layers (which consume
-  almost all underlying components). Because they are registered at the physical ceiling of the
-  module stack, no other module will have them in its dependency list, mathematically sterilizing
-  the presentation layer.
+1. **`tach.toml`** — declare `src.specweaver.interfaces.api` and `src.specweaver.interfaces.cli`
+   as tracked modules; `tach sync` fills their large `depends_on` lists (they consume almost every
+   component). They sit at the top of the stack, so no other module lists them as a dependency.
+2. **`src/specweaver/cli/__init__.py`** — kept: it holds the Typer `@app.callback()` lifecycle.
+   Prune lines 78-95, the backward-compatible re-exports
+   (`from specweaver.interfaces.cli._helpers import...`); `tach` now defines the interface bounds.
+3. **`src/specweaver/api/__init__.py`** — no change: no `__all__` blocks or domain logic; kept for
+   package compliance.
 
-### Boilerplate Cleanup
-#### [MODIFY] `src/specweaver/cli/__init__.py`
-- Unlike the resource capabilities, the CLI `__init__.py` houses the core Typer `@app.callback()` lifecycle and cannot be deleted.
-- I will prune lines 78-95 which contain legacy backward-compatible re-exports
-  (`from specweaver.interfaces.cli._helpers import...`) since this violates Python clean
-  architecture when `tach` defines the interface bounds. 
+## Tests
 
-#### [NO CHANGE] `src/specweaver/api/__init__.py`
-- Contains no domain logic hacking or `__all__` blockages. Retained as-is for package compliance.
-
-## Verification
-1. `tach sync` explicitly establishes the DAG.
-2. `tach check` ensures `api` and `cli` sit explicitly at the top of the dependency funnel.
-3. `ruff` and `pytest` confirm no broken CLI integrations.
+1. `tach sync` establishes the DAG.
+2. `tach check` — `api` and `cli` sit at the top of the dependency funnel.
+3. `ruff` and `pytest` — no broken CLI integrations.

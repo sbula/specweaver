@@ -1,55 +1,32 @@
-# Implementation Plan: Feature 3.20a [SF-06: Global Implicit Namespace Conversion]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-06 — Global Implicit Namespace Conversion
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-06
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf06_implementation_plan.md
-- **Status**: COMPLETED
+# C-EXEC-01 SF-06 — Global Implicit Namespace Conversion
 
-**FRs owned: none.** The last 20 `__init__.py` proxies were deleted here; the requirement that
-replaced them is NFR-1, marked `[proof: meta]` because it is a one-time refactor over the tree
-rather than a runtime behaviour. Recorded 2026-08-17 from `INT-US-01-SF02-MIG`.
+**Status**: COMPLETED · **FRs owned**: none (NFR-1) · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-06
 
+No FR: deleting the last 20 `__init__.py` proxies is NFR-1, marked `[proof: meta]` because it is a
+one-time refactor over the tree, not a runtime behaviour. Recorded 2026-08-17 from
+`INT-US-01-SF02-MIG`.
 
-## 1. Description
-This plan executes SF-06: The final completion of SpecWeaver's transition into a PEP-420
-architecture. We will delete all remaining `__init__.py` boilerplate encapsulation proxy files
-inside `src/specweaver/` and enforce global strict topology checks using Tach. 
+## Goal
 
----
+Finish the move to a PEP-420 layout: delete all remaining `__init__.py` encapsulation proxies inside
+`src/specweaver/` and enforce global strict topology with Tach.
 
-## 2. Technical Implementation Steps
+## Changes
 
-### Step 1: De-Encapsulation (Delete Proxy Files)
-#### [DELETE] `src/specweaver/**/__init__.py`
-Hard-delete the 20 internal `__init__.py` files physically inside the `src/specweaver/` tree.
-> [!IMPORTANT]
-> Do NOT touch the `tests/` directory unless strictly necessary. This conversion is purely aimed at decoupling the structural boundaries of the `src/` runtime engine.
+1. **Delete `src/specweaver/**/__init__.py`** — the 20 internal files in the `src/specweaver/`
+   tree.
+   > [!IMPORTANT]
+   > Do NOT touch `tests/` unless strictly necessary; this change targets the `src/` runtime only.
+2. **`pyproject.toml`** — an implicit namespace package is no longer discoverable, so add
+   `pythonpath = ["src"]` to `[tool.pytest.ini_options]`; otherwise all 3,700+ tests fail with
+   `ModuleNotFoundError`.
+3. **`tach.toml`** — layer boundaries existed, but undeclared lateral crossings were not blocked.
+   Set global `strict = true` or `exact = true` (whichever this Tach configuration supports);
+   document or explicitly whitelist any newly flagged implicit dependency.
 
-### Step 2: Pytest PYTHONPATH Fix
-#### [MODIFY] `pyproject.toml`
-Turning `src/specweaver/` into an implicit namespace package removes its inherent discoverability.
-To prevent all 3,700+ tests from catastrophically failing with `ModuleNotFoundError`, we must point
-pytest to our runtime root.
-- Add `pythonpath = ["src"]` explicitly inside the `[tool.pytest.ini_options]` block.
+## Tests
 
-### Step 3: Global Strict Topology (Tach)
-#### [MODIFY] `tach.toml`
-Currently, SpecWeaver defines layer boundaries but doesn't strictly shut out undeclared lateral crossings.
-- Set global `strict = true` or `exact = true` globally for strict enforcement depending on our
-  exact Tach configuration to mathematically lock down remaining isolation barriers. Ensure any
-  newly flagged implicit dependencies are documented or explicitly whitelisted.
-
----
-
-## 3. Backlog / Deferred
-None.
-
----
-
-## 4. Verification Plan
-
-### Automated Tests
-1. `tach check` must succeed.
-2. The entire test suite (`python -m pytest tests/`) must effortlessly complete exactly as it did before.
-3. E2E pre-commit hooks `/pre-commit` must be utilized.
+1. `tach check` succeeds.
+2. `python -m pytest tests/` passes as before.
+3. `/pre-commit`.

@@ -1,87 +1,58 @@
-# Implementation Plan: Internal Layer Enforcement (Tach) [SF-08: TopologyGraph to Tach Adapter]
-- **Feature ID**: 3.20a
-- **Sub-Feature**: SF-08 — TopologyGraph to Tach Adapter
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-08
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-01/C-EXEC-01_sf08_implementation_plan.md
-- **Status**: APPROVED
+# C-EXEC-01 SF-08 — TopologyGraph to Tach Adapter
 
-**FRs owned: FR-5.** A `TopologyGraph` written out as the target project's `tach.toml`.
-Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. **FR-5 is new** —
-this sub-feature shipped with no requirement describing it.
+**Status**: APPROVED · **FRs owned**: FR-5 · **Feature ID**: 3.20a · Design:
+[C-EXEC-01_design.md](C-EXEC-01_design.md) §Sub-features → SF-08
 
-Its first mutant was an *equivalent* one: disabling the `[[modules]]` purge changes nothing while
-the graph is populated, because the rebuild reassigns the key. The purge only matters for an
-emptied topology, which is now the test.
+FR-5 (a `TopologyGraph` written out as the target project's `tach.toml`) is new — this sub-feature
+shipped without a requirement. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-01-SF02-MIG`. Its first mutant was *equivalent*: disabling the `[[modules]]` purge changes
+nothing while the graph is populated, because the rebuild reassigns the key; the purge matters only
+for an emptied topology, which is now the test.
 
+**Since moved:** `src/specweaver/project/tach_sync.py` → `src/specweaver/workspace/project/tach_sync.py`
+(`sync_tach_toml(graph, target_path)`); `scan` is wired in `workspace/project/interfaces/cli.py`.
+Paths below are as of the plan's date.
 
-## Goal Description
+## Goal
 
-Build an adapter that bridges SpecWeaver's internal topological model (`context.yaml` defined via
-`TopologyGraph`) into Tach's native format (`tach.toml`). When SpecWeaver maps the internal bounded
-contexts of a target codebase, this capability synchronizes those architectural bounds into
-mathematical `.toml` configuration natively checked by CI/CD.
+When SpecWeaver maps the bounded contexts of a target codebase (`context.yaml` → `TopologyGraph`),
+write them into the target's `tach.toml` so its CI/CD checks them.
 
-## User Decisions (Phase 4 Audits Merged)
-- **Module Placement**: Implemented in `src/specweaver/project/tach_sync.py`. The `graph/` module is
-  strictly `pure-logic` and cannot perform File I/O. The `project/` module (`adapter` archetype)
-  owns `.specweaver/` directory setup and filesystem orchestration, making it the architecturally
-  correct home for writing `.toml` configuration.
-- **Serialization Engine**: We will add `tomlkit` to `pyproject.toml`. Python 3.11's built-in
-  `tomllib` is read-only, and `tomli-w` strips out developer comments. `tomlkit` safely preserves
-  existing document formatting and comments, crucial for preserving root properties in `tach.toml`.
-- **Sync Strategy**: The system will read the existing `tach.toml` file (if any) using `tomlkit`. It
-  will preserve root definitions (e.g. `exclude = []` and `source_roots = ["."]`), but it will
-  perform a Destructive Overwrite on the `[[modules]]` and `[[interfaces]]` mappings. The single
-  source of truth for dependencies is `context.yaml`; thus, the `tach.toml` internal structure must
-  exactly mirror `TopologyGraph.nodes`.
-- **UX Integration**: This synchronization will be appended natively to `sw scan` inside
-  `src/specweaver/cli/projects.py`. No new CLI flags or commands are needed. The execution mimics
-  `scaffold.py`, returning a `TachSyncResult` to standard output indicating the modified counts.
+## Decisions
 
-## Proposed Changes
+| # | Question | Chosen | Why |
+|---|---|---|---|
+| 1 | Module placement | `src/specweaver/project/tach_sync.py` | `graph/` is `pure-logic` and cannot do file I/O; `project/` (`adapter` archetype) already owns `.specweaver/` setup and filesystem work |
+| 2 | Serializer | add `tomlkit` to `pyproject.toml` | Python 3.11's `tomllib` is read-only; `tomli-w` drops developer comments; `tomlkit` keeps formatting, comments and root properties |
+| 3 | Sync strategy | keep root definitions (e.g. `exclude = []`, `source_roots = ["."]`); destructively overwrite `[[modules]]` and `[[interfaces]]` | `context.yaml` is the single source of truth; `tach.toml` must mirror `TopologyGraph.nodes` |
+| 4 | UX | run inside `sw scan` (`src/specweaver/cli/projects.py`), no new flag or command | Mimics `scaffold.py`: returns a `TachSyncResult` and prints the modified counts |
 
-### Configuration
-#### [MODIFY] pyproject.toml
-- Add `tomlkit>=0.12.0` to the main project `dependencies` array.
+## Changes
 
-### Project Module (Adapter)
-#### [NEW] src/specweaver/project/tach_sync.py
-Create `tach_sync.py`:
-- Import `TopologyGraph` and `tomlkit`.
-- Implement `sync_tach_toml(graph: TopologyGraph, project_path: Path) -> TachSyncResult`
-  - Loads an existing `tach.toml` via `tomlkit.parse` if `(project_path / "tach.toml").exists()`, otherwise builds a new empty TOML document using `tomlkit.document()`.
-  - Sets root elements `source_roots = ["."]` and `exact = true`.
-  - Delete any existing `"modules"` or `"interfaces"` node arrays.
-  - Iterate through `graph.nodes.values()`. For each `TopologyNode`:
-    - Add a `[[modules]]` block: `path` maps to node Python import path logic, `depends_on` array maps exactly to `consumes`.
-    - If `node.exposes` is populated, add an `[[interfaces]]` block: `from` maps to the module path, `expose` maps exactly to `exposes`.
-  - Dump the document string using `tomlkit.dumps()` and overwrite `tach.toml`.
-- Returns a `TachSyncResult` dataclass counting updated module paths.
+1. **`pyproject.toml`** — add `tomlkit>=0.12.0` to the main `dependencies` array.
+2. **NEW `src/specweaver/project/tach_sync.py`** — imports `TopologyGraph` and `tomlkit`;
+   `sync_tach_toml(graph: TopologyGraph, project_path: Path) -> TachSyncResult`:
+   - load the file via `tomlkit.parse` if `(project_path / "tach.toml").exists()`, else
+     `tomlkit.document()`;
+   - set root `source_roots = ["."]` and `exact = true`;
+   - delete any existing `"modules"` / `"interfaces"` arrays;
+   - for each `TopologyNode` in `graph.nodes.values()`: a `[[modules]]` block (`path` = the node's
+     Python import path, `depends_on` = `consumes`); if `node.exposes` is set, an `[[interfaces]]`
+     block (`from` = module path, `expose` = `exposes`);
+   - write `tomlkit.dumps()` over `tach.toml`; return a `TachSyncResult` dataclass counting updated
+     module paths.
+3. **`src/specweaver/project/context.yaml`** — `consumes` gains `specweaver/graph`; `exposes` gains
+   `sync_tach_toml` and `TachSyncResult`.
+4. **`src/specweaver/cli/projects.py`** — in the `scan()` Typer command, after `context.yaml`
+   auto-inference: `graph = TopologyGraph.from_project(project_path)`,
+   `result = sync_tach_toml(graph, project_path)`, then a rich console line (e.g.
+   `[bold]Tach Sync[/bold]: synchronized X modules boundaries into tach.toml`).
 
-#### [MODIFY] src/specweaver/project/context.yaml
-- Update `consumes` array to explicitly permit `specweaver/graph`.
-- Update `exposes` array to include `sync_tach_toml` and `TachSyncResult`.
+## Tests
 
-### CLI Orchestrator
-#### [MODIFY] src/specweaver/cli/projects.py
-- Update the `scan()` Typer command.
-- After all `context.yaml` auto-inference completes, build the graph: `graph = TopologyGraph.from_project(project_path)`.
-- Execute the adapter: `result = sync_tach_toml(graph, project_path)`.
-- Append a rich console output summarizing the synchronization (e.g. `[bold]Tach Sync[/bold]: synchronized X modules boundaries into tach.toml`).
-
-## Verification Plan
-
-### Automated Tests
-- Create `tests/unit/project/test_tach_sync.py`:
-  - Verify initialization of a raw `tach.toml` when none exists, correctly mapping a mocked `TopologyGraph`.
-  - Verify deep-merge: Pass an existing `tomlkit` document containing `exclude = ["dist"]` and verify that the sync removes old modules but keeps the `exclude` root target.
-- Run `pytest tests/unit/project/test_tach_sync.py` natively.
-- Run E2E logic checking `import tomlkit`.
-
-### Pre-Commit Gate
-- Normal autonomous `ruff check`, `mypy` tests.
-- Architecture Validation will successfully evaluate since `project/context.yaml` now officially consumes `graph`.
-
-## Session Handoff
-Feature 3.20a SF-08 Implementation complete.
+- `tests/unit/project/test_tach_sync.py`:
+  - no `tach.toml` → a new one built from a mocked `TopologyGraph`;
+  - an existing `tomlkit` document with `exclude = ["dist"]` → old modules removed, `exclude` kept.
+- `pytest tests/unit/project/test_tach_sync.py`; an E2E check of `import tomlkit`.
+- Gate: `ruff check`, `mypy`; the architecture check passes since `project/context.yaml` consumes
+  `graph`.

@@ -1,63 +1,65 @@
-# Design: Context Hydration & Handover Engine
+# D-INTL-06 — Context Hydration & Handover Engine
 
-- **Feature ID**: D-INTL-06
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03 committed. · **Phase**: 3 · **Feature ID**:
+D-INTL-06
 
-## Feature Overview
+| | |
+|---|---|
+| Reads from | `B-INTL-09` (Agent Memory Bank) — read API, `HandoverContext`, 8KB payload limit |
+| Used by | `INT-US-28` (integration contract); every `PromptBuilder`-based handler |
+| Future consumers | `C-INTL-04` (conversation history), knowledge graph snippets — through `_build_base_prompt()` |
+| Not touched | write-side schema, state machine, entity definitions (all `B-INTL-09`); `PromptBuilder` methods; CLI; API |
 
-Feature D-INTL-06 adds a **Context Hydration & Handover Engine** to the SpecWeaver intelligence layer. It solves agent context degradation during multi-step workflows by:
+## What it does
 
-1. **Hydrating** — querying the Memory Bank (B-INTL-09) for active task state, blockers, and handover notes.
-2. **Formatting** — rendering retrieved context as JSON prompt blocks with strict token budgets, trust tagging, and multi-layer prompt injection defense.
-3. **Injecting** — automatically including memory context in every LLM prompt via handler-level prompt assembly (Inversion of Control).
-4. **Handing over** — defining formal protocols for safely passing accumulated context between agents.
+Stops agent context degrading across a multi-step workflow:
 
-The hydration is **self-contained inside the Application Layer** — a module-level async function
-`_build_base_prompt()` in `core.flow.handlers.base` internally calls `MemoryHydrator` when building
-any prompt. No CLI, API, or RunContext modifications are needed. This eliminates entry-point
-coupling and ensures every LLM interaction is automatically memory-aware.
+1. **Hydrating** — queries the Memory Bank (B-INTL-09) for active task state, blockers and handover
+   notes.
+2. **Formatting** — renders them as a JSON prompt block with a token budget, trust tagging and
+   multi-layer prompt injection defense.
+3. **Injecting** — every LLM prompt gets the memory block through handler-level prompt assembly
+   (Inversion of Control).
+4. **Handing over** — at the end of a run, saves telemetry onto the active task so the next agent
+   inherits it.
 
-D-INTL-06 does NOT touch the write-side schema, state machine, or entity definitions (owned by
-B-INTL-09). Key constraints: 8KB payload limit (B-INTL-09), Pydantic validation, multi-layer prompt
-injection defense (trust tagging + field truncation + pattern stripping + JSON serialization +
-framing instructions), structured logging, tach boundary compliance, and zero-regression
-compatibility with the existing 4,600+ test suite.
+Hydration is self-contained in the Application Layer: the module-level async function
+`_build_base_prompt()` in `core.flow.handlers.base` calls `MemoryHydrator` whenever it builds a
+prompt. No CLI, API or `RunContext` entry-point wiring, so every LLM interaction is memory-aware.
 
-## Research Findings
+Constraints: 8KB payload limit (B-INTL-09), Pydantic validation, multi-layer prompt injection
+defense (trust tagging + field truncation + pattern stripping + JSON serialization + framing
+instructions), structured logging, tach boundary compliance, zero regression on the 4,600+ test
+suite.
 
-### Codebase Patterns
+## Why this way
 
-**1. Existing PromptBuilder Context Injection Chain (Reusable)**
-The `PromptBuilder` (597 lines, `infrastructure/llm/prompt_builder.py`) already implements:
-- Priority-ordered, token-aware hybrid truncation
-- XML-tagged block assembly (`<context>`, `<file>`, `<topology>`, `<standards>`, `<plan>`, etc.)
-- `add_context(text, label, *, priority=3)` — the injection point for D-INTL-06
-- Auto-scaling for topology blocks based on content-to-budget ratio
+- **One assembly point.** 5 workflow modules (`generator.py`, `reviewer.py`, `planner.py`,
+  `drafter.py`, `feature_drafter.py`) each built a `PromptBuilder` with the same ~30-line chain
+  (~150 (30 × 5) lines); a new context source meant touching all 5. Now it is ~50 lines in one
+  function plus a 2-line call each (~10 (5 × 2-line call)), and a new source touches 1 place.
+- **Inversion of Control, not a shared domain module.** `workflows/commons` would couple isolated
+  bounded contexts (DDD anti-pattern). `core.flow` already has the orchestrator archetype and legal
+  access to both `llm` and `workspace.memory`.
+- **Replaced during design** (4 Red Team / Blue Team cycles, 47 findings, 5 critical boundary
+  violations): `memory_assembler.py`, `add_memory_context()` on PromptBuilder,
+  `RunContext.memory_context`, CLI/API wiring and `workflows/commons` — all replaced by
+  `_build_base_prompt()`, which needs none of them.
 
-**Impact**: D-INTL-06 uses the existing `add_context()` method. No new methods on `PromptBuilder` are needed.
+## Architecture
 
-**2. Memory Bank Read API (Already Exists in B-INTL-09)**
-The `MemoryRepository` (via `MemoryRepositoryCoreMixin`) exposes:
-- `list_tasks(project_name, *, status=...)` — filter by single status
-- `get_task(task_id)` — full task dict including `handover_context`
-- `list_defects(task_id, *, status=...)` — for surfacing blockers
-- `HandoverContext.from_json_str()` — Pydantic deserialization
-
-**Impact**: All read-side data access exists. D-INTL-06 adds a retrieval + formatting layer on top.
-
-**Note**: `list_tasks()` accepts a single `TaskStatus`, not a list. The hydrator makes separate calls per status (IN_PROGRESS, BLOCKED, UPSTREAM_BLOCKED) and merges results.
-
-**3. Repeated Prompt Assembly Pattern (DRY Violation)**
-5 workflow modules (`generator.py`, `reviewer.py`, `planner.py`, `drafter.py`, `feature_drafter.py`)
-each independently build a `PromptBuilder` and repeat the same assembly chain. Adding any new
-context source requires modifying all 5. The `ArbiterHandler` is excluded from base prompt assembly
-since it deliberately uses a minimal prompt (raw `Message` construction) for unbiased fault
-arbitration. The `ScenarioGenerator` is excluded because it builds raw string prompts and does NOT
-use `PromptBuilder`.
-
-**4. Architectural Boundary Analysis**
+```mermaid
+graph LR
+    H["Handlers<br/>generation · review · draft"] --> BP["_build_base_prompt()<br/>core.flow.handlers"]
+    BP --> PB["PromptBuilder<br/>add_context(block, 'agent_memory', priority=2)"]
+    BP -->|"fail-safe"| MH["MemoryHydrator<br/>workspace.memory"]
+    MH --> QS["MemoryQueryService<br/>read side"]
+    QS --> DB[("Memory Bank<br/>B-INTL-09")]
+    R["PipelineRunner<br/>finally"] --> SH["save_handover_context()<br/>core.flow.engine.handover"]
+    SH --> MR["MemoryRepository<br/>update_handover_context()"]
+    MR --> DB
+    BP -->|"pre-built builder"| W["Workflow modules<br/>add domain blocks only"]
+```
 
 | Module | Archetype | Can consume `workspace.memory`? | Can consume `llm`? |
 |--------|-----------|-------------------------------|-------------------|
@@ -65,12 +67,24 @@ use `PromptBuilder`.
 | `core.flow` | orchestrator | ✅ (add to consumes) | ✅ |
 | `infrastructure.llm` | adapter | ❌ | ✅ (self) |
 
-**Resolution**: Prompt assembly lives in a module-level function `_build_base_prompt()` in
-`core.flow.handlers.base` (Application Layer, orchestrator archetype). `core.flow` adds
-`specweaver/workspace/memory` to its `consumes`, legally gaining access to `MemoryHydrator`. No new
-domain modules needed. No CLI, API, or RunContext modifications needed.
+`core.flow` adds `specweaver/workspace/memory` to its `consumes` and gains `MemoryHydrator`. No new
+domain modules. No intermediate DTO: `_build_base_prompt()` reads `RunContext` fields
+(`constitution`, `standards`, `db`, `project_path`); workflow modules receive a pre-built
+`PromptBuilder` and add only domain-specific blocks.
 
-**5. Modules That Will Be Touched**
+**Reused, not changed:**
+
+- `PromptBuilder` (597 lines, `infrastructure/llm/prompt_builder.py`): priority-ordered,
+  token-aware hybrid truncation; XML-tagged blocks (`<context>`, `<file>`, `<topology>`,
+  `<standards>`, `<plan>`, etc.); auto-scaling topology blocks by content-to-budget ratio; and
+  `add_context(text, label, *, priority=3)` — the injection point. No new methods.
+- Memory Bank read API (`MemoryRepository` via `MemoryRepositoryCoreMixin`):
+  `list_tasks(project_name, *, status=...)` (one status per call), `get_task(task_id)` (full task
+  dict incl. `handover_context`), `list_defects(task_id, *, status=...)`,
+  `HandoverContext.from_json_str()` (Pydantic deserialization).
+
+**Excluded from base assembly:** `ArbiterHandler` (minimal prompt via raw `Message`, for unbiased
+fault arbitration); `ScenarioGenerator` (raw string prompts, no `PromptBuilder`).
 
 | File | Change Type | Reason |
 |------|-------------|--------|
@@ -88,38 +102,25 @@ domain modules needed. No CLI, API, or RunContext modifications needed.
 | `core/flow/engine/runner.py` | MODIFY | Add `on_pipeline_complete` callback parameter |
 | `tach.toml` | MODIFY | Add `workspace.memory` to `core.flow` depends_on |
 
-**NOT modified**: `RunContext` (no new fields), `PromptBuilder` (no new methods), CLI (`interfaces/cli/`), API (`interfaces/api/`), workflow `context.yaml` files (no new domain dependencies).
+**NOT modified**: `RunContext` (no new fields), `PromptBuilder` (no new methods), CLI
+(`interfaces/cli/`), API (`interfaces/api/`), workflow `context.yaml` files (no new domain
+dependencies). SF-03 later changed two rows: the runner calls `save_handover_context()` directly
+instead of taking a callback, and `RunContext` gained `task_id`.
 
-**Boundary Note**: No intermediate DTO is needed. `_build_base_prompt()` reads directly from
-`RunContext` fields (`constitution`, `standards`, `db`, `project_path`). Workflow modules receive a
-pre-built `PromptBuilder` and add only domain-specific blocks.
+**Boundary changes.** `core/flow/context.yaml`:
 
-### External Tools
+```yaml
+consumes:
+  # ... existing entries ...
+  - specweaver/workspace/memory  # NEW: for MemoryHydrator in _build_base_prompt()
+```
 
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| SQLAlchemy | >=2.0.0 | `AsyncSession`, `select` | pyproject.toml (already used) |
-| Pydantic | >=2.0 | `BaseModel`, `field_validator` | pyproject.toml (already used) |
+`tach.toml`: add `src.specweaver.workspace.memory` to `core.flow`'s `depends_on` so
+`_build_base_prompt()` can import `MemoryHydrator`. `workspace.memory` itself was registered in
+SF-01 (`tach.toml` line 36, `[[interfaces]]` exposing `hydrator`, `queries`, `models`, `store`,
+`errors`, `repository`, lines 243-244). No workflow `context.yaml` updates.
 
-No new external dependencies.
-
-### Blueprint References
-- **LangGraph State Machine Pattern** — shared state object where nodes read/write to a common memory
-- **Aider Repo Map Architecture** — dynamic context sizing via proportional scaling
-- **CrewAI Task-Level Handover** — structured handover schema (files_touched, errors, summary)
-- **Context Engineering (2025-2026)** — context window as RAM; prune stale; XML semantic tags
-
-### Industry Pattern Analysis
-
-| Pattern | Adopted? | Implementation |
-|---------|----------|---------------|
-| Transparent Context Injection | ✅ | Handler-internal hydration — workflow modules don’t know about memory |
-| Topic-Based Retrieval | ✅ | Status-filtered queries (active tasks only) |
-| Context Isolation | ✅ | Per-project and per-worker_id filtering |
-| Memory Poisoning Defense | ✅ | Pydantic validation + XML escaping + trust tagging |
-| Token Budget Management | ✅ | Priority-based truncation (priority=2) + 2048-token cap |
-
-## Handoff Boundary: B-INTL-09 ↔ D-INTL-06
+**Handoff boundary B-INTL-09 ↔ D-INTL-06:**
 
 | Concern | Owner | Responsibility |
 |---------|-------|---------------|
@@ -130,6 +131,43 @@ No new external dependencies.
 | **Read-side retrieval** | **D-INTL-06** | Queries Memory Bank for active context |
 | **Prompt formatting** | **D-INTL-06** | Structures context as XML with escape + trust tags |
 | **Handover protocols** | **D-INTL-06** | Rules for when/what to hand over between agents |
+
+**Dependencies:** none new. SQLAlchemy >=2.0.0 (`AsyncSession`, `select`) and Pydantic >=2.0
+(`BaseModel`, `field_validator`) are already in pyproject.toml.
+
+**Patterns borrowed:**
+
+| Pattern | Adopted? | Implementation |
+|---------|----------|---------------|
+| Transparent Context Injection | ✅ | Handler-internal hydration — workflow modules don’t know about memory |
+| Topic-Based Retrieval | ✅ | Status-filtered queries (active tasks only) |
+| Context Isolation | ✅ | Per-project and per-worker_id filtering |
+| Memory Poisoning Defense | ✅ | Pydantic validation + XML escaping + trust tagging |
+| Token Budget Management | ✅ | Priority-based truncation (priority=2) + 2048-token cap |
+
+Blueprints: **LangGraph State Machine Pattern** (shared state object nodes read/write);
+**Aider Repo Map Architecture** (dynamic context sizing via proportional scaling); **CrewAI
+Task-Level Handover** (structured handover schema: files_touched, errors, summary); **Context
+Engineering (2025-2026)** (context window as RAM; prune stale; XML semantic tags).
+
+## Decisions
+
+| # | Decision | Rationale | Switch? |
+|---|----------|-----------|---------|
+| AD-1 | `MemoryHydrator` in `workspace/memory/hydrator.py` | Memory retrieval is a workspace concern. Read-only, same module as `MemoryRepository`. | No |
+| AD-2 | Use existing `add_context()` — no new PromptBuilder method | `add_context(text, "agent_memory", priority=2)` provides all needed functionality. Eliminates cross-boundary import (PromptBuilder doesn't need to know about HydrationResult). | No |
+| AD-3 | Hydration via Inversion of Control in Application Layer | A module-level function `_build_base_prompt()` in `core.flow.handlers.base` (Application Layer, orchestrator archetype). `core.flow` adds `workspace/memory` to its `consumes`, legally gaining access to `MemoryHydrator`. It calls hydration internally, making it transparent to all workflow callers. No new domain modules needed. | No |
+| AD-4 | Priority=2 for memory context | Places it after instructions (0), project metadata (1), and files (1), but before topology (3) and generic context (3). Under token pressure, topology is dropped before memory context. | No |
+| AD-5 | 2048 token hard cap | ≤10% of a typical 20K context window. First-pass guard by hydrator, second-pass by PromptBuilder priority truncation. | No |
+| AD-6 | Query IN_PROGRESS + BLOCKED + UPSTREAM_BLOCKED | PENDING has no context. DONE > 24h is stale. ARCHIVED has null context. UPSTREAM_BLOCKED provides dependency visibility (blockers section only). | No |
+| AD-7 | No intermediate DTO — RunContext is sufficient | `_build_base_prompt()` reads directly from `RunContext` fields (`constitution`, `standards`, `db`, `project_path`, `project_metadata`). No `PromptContext` DTO needed. Workflow modules receive a pre-built `PromptBuilder`. This eliminates cross-boundary DTO coupling. | No |
+| AD-8 | No new domain modules — pure DDD isolation maintained | Prompt assembly stays in the Application Layer (`core.flow`) as a module-level function. No `workflows/commons` module. Workflow domain modules remain isolated bounded contexts with no shared dependencies. `core.flow` already has the orchestrator archetype and legal access to both `llm` and `workspace.memory`. | No |
+| AD-9 | Handover notes tagged with `trust="low"` | LLM-generated summaries from previous agents are untrusted. The trust tag signals to the LLM that these are prior agent outputs, not system instructions. Combined with JSON serialization (NFR-10), trust tagging (NFR-11), field truncation (NFR-12), and pattern stripping (NFR-13). | No |
+| AD-10 | Handover save via callback injection | `PipelineRunner` accepts `on_pipeline_complete` callback (same pattern as `on_event`). The callback is wired at the entry point layer that already imports `workspace`. The runner itself never imports `workspace`. **Superseded by SF-03:** once SF-02 let `core.flow` consume `workspace.memory`, the runner calls `save_handover_context()` in its `finally` — no callback, no CLI/API wiring. | No |
+| AD-11 | 5-layer prompt injection defense | Defense-in-depth against indirect prompt injection through the memory hydration pipeline: (1) Pydantic schema validation at write time (B-INTL-09), (2) JSON serialization at format time (NFR-10), (3) trust tagging in output (NFR-11), (4) field-level truncation (NFR-12), (5) injection pattern stripping (NFR-13). Plus: system instruction framing around memory block (SF-02, `_build_base_prompt`). | No |
+
+Also decided: each prompt build triggers a fresh hydration (~6 per pipeline run, <50ms each, <300ms
+total) — no cache; a TTL cache keyed by `project_name` only if profiling shows a bottleneck.
 
 ## Functional Requirements
 
@@ -144,6 +182,15 @@ No new external dependencies.
 | FR-7 | Handler Prompt Assembly Function | System | `_build_base_prompt()` is a module-level async function in `core.flow.handlers.base` (there is no `BaseHandler` class — `base.py` defines `RunContext` and `StepHandler` protocol). It accepts `context: RunContext`, `instructions: str`, and optional keyword args `include_rules: bool = True` and `skeleton_files: dict[str, str] | None = None`. No intermediate DTO is needed — all data is read directly from `RunContext` fields (`constitution`, `standards`, `db`, `project_path`, `project_metadata`). Workflow modules receive a pre-built `PromptBuilder` and add only domain-specific blocks (file content, dictator overrides, mentioned files, etc.). | Clean IoC separation: Application Layer assembles base prompt, Domain Layer adds domain-specific context. |
 | FR-8 | Handover Protocol: Save | System | The save protocol is implemented as an `on_pipeline_complete` callback injected into `PipelineRunner` (following the existing `on_event` callback pattern). The callback receives step results, collects `files_touched`, `errors_encountered`, `summary` (LLM-generated 1-sentence status), and `metadata` (step count, model). It calls `MemoryRepository.update_handover_context()`. The callback is wired at the entry point layer (`core/flow/interfaces/cli.py`), which captures the `task_id` obtained from `acquire_task()` via closure. The `PipelineRunner` itself does NOT import from `workspace` and does not know about tasks. Fires in a `finally` block to ensure save on `KeyboardInterrupt`. D-INTL-06 defines the protocol; B-INTL-09 executes the write. | Next agent inherits factual telemetry. No boundary violations. |
 | FR-9 | Handover Protocol: Bootstrap | System | When an agent acquires a task with non-null `handover_context`, the hydrator deserializes and validates it. It is formatted simply as a `<handover_notes>` sub-element under that specific task's entry within the standard `<active_tasks>` block, tagged with `trust="low"`. The LLM naturally correlates these notes with its current assignment. | Agents don't start from scratch on retried tasks. |
+
+**Where the build differs from the FR wording** (intent unchanged; details in each plan's As built):
+
+| FR | As built |
+|---|---|
+| FR-1, FR-3, FR-5 | One `MemoryQueryService` read layer: multi-status `in_()` query, DONE tasks via `max_age_hours=24` (`hydrator.py:162`), defects batch-fetched — not per-status `list_tasks` / per-task `list_defects` |
+| FR-2, FR-9 | `format_prompt_block()` returns JSON (`json.dumps`) inside `<agent_memory trust="low">`, which PromptBuilder wraps in `<context label="agent_memory">`; no XML escaping. Trust is also carried by the `_trust: "low"` / `_trust_policy` fields. Handover summaries sit on each task (`handover_summary`) and in a top-level `handover_notes` list, not in a `<handover_notes>` sub-element |
+| FR-6, FR-7 | `include_rules` was later replaced by `profile: RenderProfile` (`C-INTL-05`); the function now lives in `core/flow/handlers/prompting.py`, re-exported from `base` |
+| FR-8 | No callback: `PipelineRunner` calls `save_handover_context()` (`core/flow/engine/handover.py`) in the `finally` of `run()`/`resume()`; the summary is a static string, not LLM-generated (see SF-03) |
 
 ## Non-Functional Requirements
 
@@ -163,120 +210,37 @@ No new external dependencies.
 | NFR-12 | Prompt Injection Defense: Field Truncation | Individual fields MUST be truncated before serialization: task titles ≤200 chars, handover summaries ≤500 chars, defect titles ≤200 chars, defect descriptions ≤500 chars. Limits payload size for injection attacks. |
 | NFR-13 | Prompt Injection Defense: Pattern Stripping | A configurable blocklist of known injection patterns (e.g., "ignore previous instructions", `<\|im_start\|>`, `[INST]`) MUST be stripped from all text fields before serialization. This is a defense-in-depth layer — not the primary defense. |
 
-## Refactoring Targets (ROI Analysis)
+## Findings still open
 
-### RT-1: Base Prompt Assembly Extraction
+- **FR-1, FR-2, FR-3 and FR-7 carry no `Proves:` citation.** Tests were written under `INT-US-28`
+  and credited only there, so `check_fr_coverage.py D-INTL-06` reported `BLOCKED` with nothing
+  cited. Re-attributed 2026-08-13 (`TECH-017` SF-01): four unit files under `tests/unit/workspace/`
+  and `tests/unit/core/flow/` (49 tests), each read against each requirement; FR-4, FR-5, FR-6,
+  FR-8 and FR-9 now cite specific test functions. No requirement re-worded, no test changed.
+  Full finding: `docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
+- **"Uncited" is not "untested".** FR-3's filtering (ARCHIVED, cross-project, DONE older than 24h)
+  is not in the hydrator — it delegates, passing `max_age_hours=24` to the repository
+  (`hydrator.py:162`). Its proof, if any, sits in the repository's test file, which never names
+  `D-INTL-06`. Confirming that is `CB-2`'s work. The general shape (a citation in a file that names
+  no story is **invisible** to the ledger — a different defect from absent proof) is recorded
+  against `B-INTL-09`.
+- **RT-2 not done:** `GenerateCodeHandler` and `GenerateTestsHandler` share ~90% identical code;
+  the proposed `_generate_common()` in `generation.py` would shrink the blast radius of prompt
+  wiring.
 
-**Current State**: 5 workflow modules each independently construct a `PromptBuilder` and repeat the same ~30-line assembly chain.
-
-**Proposal**: Extract into a module-level function `_build_base_prompt()` in `core.flow.handlers.base` (Inversion of Control) with internal memory hydration.
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Prompt assembly code (total) | ~150 (30 × 5) | ~50 (handler method) + ~10 (5 × 2-line call) |
-| Modules to touch for new context source | 5 | 1 |
-| Risk of inconsistent prompt construction | High | Zero |
-
-**ROI**: **Very High**. The handler method also serves as the single integration point for future features (C-INTL-04 conversation history, knowledge graph snippets).
-
-### RT-2: Flow Handler Generation Redundancy
-
-**Current State**: `GenerateCodeHandler` and `GenerateTestsHandler` share ~90% identical code.
-
-**Proposal**: Extract shared logic into `_generate_common()` within `generation.py`.
-
-**ROI**: **High**. Reduces blast radius for prompt assembly wiring.
-
-### RT-3: Tach Registration for `workspace.memory`
-
-**Current State**: ✅ Done (SF-01). `workspace.memory` is registered in `tach.toml` (line 36) with
-`[[interfaces]]` exposing `hydrator`, `queries`, `models`, `store`, `errors`, `repository` (lines
-243-244).
-
-**Remaining**: Add `src.specweaver.workspace.memory` to `core.flow`'s `depends_on` list so `_build_base_prompt()` can legally import `MemoryHydrator`.
-
-**ROI**: **Mandatory** — required for `core.flow` to legally import the hydrator.
-
-## External Dependencies
-
-No new external dependencies. SQLAlchemy >=2.0.0 and Pydantic >=2.0 already in `pyproject.toml`.
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Switch? |
-|---|----------|-----------|---------|
-| AD-1 | `MemoryHydrator` in `workspace/memory/hydrator.py` | Memory retrieval is a workspace concern. Read-only, same module as `MemoryRepository`. | No |
-| AD-2 | Use existing `add_context()` — no new PromptBuilder method | `add_context(text, "agent_memory", priority=2)` provides all needed functionality. Eliminates cross-boundary import (PromptBuilder doesn't need to know about HydrationResult). | No |
-| AD-3 | Hydration via Inversion of Control in Application Layer | A module-level function `_build_base_prompt()` in `core.flow.handlers.base` (Application Layer, orchestrator archetype). `core.flow` adds `workspace/memory` to its `consumes`, legally gaining access to `MemoryHydrator`. It calls hydration internally, making it transparent to all workflow callers. No new domain modules needed. | No |
-| AD-4 | Priority=2 for memory context | Places it after instructions (0), project metadata (1), and files (1), but before topology (3) and generic context (3). Under token pressure, topology is dropped before memory context. | No |
-| AD-5 | 2048 token hard cap | ≤10% of a typical 20K context window. First-pass guard by hydrator, second-pass by PromptBuilder priority truncation. | No |
-| AD-6 | Query IN_PROGRESS + BLOCKED + UPSTREAM_BLOCKED | PENDING has no context. DONE > 24h is stale. ARCHIVED has null context. UPSTREAM_BLOCKED provides dependency visibility (blockers section only). | No |
-| AD-7 | No intermediate DTO — RunContext is sufficient | `_build_base_prompt()` reads directly from `RunContext` fields (`constitution`, `standards`, `db`, `project_path`, `project_metadata`). No `PromptContext` DTO needed. Workflow modules receive a pre-built `PromptBuilder`. This eliminates cross-boundary DTO coupling. | No |
-| AD-8 | No new domain modules — pure DDD isolation maintained | Prompt assembly stays in the Application Layer (`core.flow`) as a module-level function. No `workflows/commons` module. Workflow domain modules remain isolated bounded contexts with no shared dependencies. `core.flow` already has the orchestrator archetype and legal access to both `llm` and `workspace.memory`. | No |
-| AD-9 | Handover notes tagged with `trust="low"` | LLM-generated summaries from previous agents are untrusted. The trust tag signals to the LLM that these are prior agent outputs, not system instructions. Combined with JSON serialization (NFR-10), trust tagging (NFR-11), field truncation (NFR-12), and pattern stripping (NFR-13). | No |
-| AD-10 | Handover save via callback injection | `PipelineRunner` accepts `on_pipeline_complete` callback (same pattern as `on_event`). The callback is wired at the entry point layer that already imports `workspace`. The runner itself never imports `workspace`. | No |
-| AD-11 | 5-layer prompt injection defense | Defense-in-depth against indirect prompt injection through the memory hydration pipeline: (1) Pydantic schema validation at write time (B-INTL-09), (2) JSON serialization at format time (NFR-10), (3) trust tagging in output (NFR-11), (4) field-level truncation (NFR-12), (5) injection pattern stripping (NFR-13). Plus: system instruction framing around memory block (SF-02, `_build_base_prompt`). | No |
-
-## Boundary Changes Required
-
-### `core/flow/context.yaml` — Add `workspace/memory` to consumes
-
-```yaml
-consumes:
-  # ... existing entries ...
-  - specweaver/workspace/memory  # NEW: for MemoryHydrator in _build_base_prompt()
-```
-
-### `tach.toml` — Add `workspace.memory` to `core.flow` depends_on
-
-No new module registration needed. No workflow `context.yaml` updates needed.
-
-## Developer Guides Required
+## Developer guides
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
 | Guide-1 | Update `agent_memory_state_tracking.md` with hydration/handover protocol usage | ✅ Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Memory Hydrator & HydrationResult DTO
-- **Scope**: Pure read-side retrieval service + DTO with JSON formatting and multi-layer prompt injection defense.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
-- **Inputs**: `AsyncSession`, `project_name`, optional `worker_id`
-- **Outputs**: `HydrationResult` DTO with `format_prompt_block() -> str`
-- **Depends on**: none (B-INTL-09 committed)
-- **tach**: Register `workspace.memory` in `tach.toml` + `[[interfaces]]`
-- **Impl Plan**: D-INTL-06_sf01_implementation_plan.md
-
-### SF-02: Prompt Assembly via Inversion of Control
-- **Scope**: Add `_build_base_prompt()` to `core.flow.handlers.base` (Application Layer) with
-  fail-safe memory hydration. Refactor all 5 workflow modules to accept `base_prompt: PromptBuilder`
-  instead of individual params. Handlers call `_build_base_prompt()` and pass the pre-built builder
-  down. `include_rules=False` for drafting enforces 2-Tier Handover. Add `workspace/memory` to
-  `core.flow` consumes. Include before/after prompt regression tests.
-- **FRs**: [FR-6, FR-7]
-- **Inputs**: `RunContext` (already contains constitution, standards, db, project_path)
-- **Outputs**: Pre-configured `PromptBuilder` with memory context included
-- **Depends on**: SF-01
-- **tach**: Add `workspace.memory` to `core.flow` depends_on
-- **Impl Plan**: D-INTL-06_sf02_implementation_plan.md
-
-### SF-03: Handover Protocols
-- **Scope**: Implement save protocol via `on_pipeline_complete` callback injection into
-  `PipelineRunner` (fires in `finally` block). CLI entry point provides the `task_id` via closure.
-  Implement bootstrap protocol (standard task list formatting with trust tagging). Wire callback at
-  entry point layer (`core/flow/interfaces/cli.py`).
-- **FRs**: [FR-8, FR-9]
-- **Inputs**: Completed pipeline step results; `on_pipeline_complete` callback
-- **Outputs**: `HandoverContext` persisted; notes included in `<agent_memory>` block
-- **Depends on**: SF-01, SF-02
-- **Impl Plan**: D-INTL-06_sf03_implementation_plan.md
-
-## Execution Order
-
-1. **SF-01** (no deps — start immediately)
-2. **SF-02** (depends on SF-01 — sequential)
-3. **SF-03** (depends on SF-01 + SF-02 — sequential)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | Memory Hydrator & HydrationResult DTO — read-side retrieval service + DTO with JSON formatting and multi-layer prompt injection defense. tach: register `workspace.memory` in `tach.toml` + `[[interfaces]]`. | FR-1, FR-2, FR-3, FR-4, FR-5 | `AsyncSession`, `project_name`, optional `worker_id` → `HydrationResult` DTO with `format_prompt_block() -> str` | none (B-INTL-09 committed) | [sf01](D-INTL-06_sf01_implementation_plan.md) |
+| SF-02 | Prompt Assembly via Inversion of Control — `_build_base_prompt()` in `core.flow.handlers.base` with fail-safe hydration; all 5 workflow modules take `base_prompt: PromptBuilder` instead of individual params; handlers build and pass it down; `include_rules=False` for drafting enforces 2-Tier Handover; `workspace/memory` added to `core.flow` consumes and `depends_on`; before/after prompt regression tests. | FR-6, FR-7 | `RunContext` (already contains constitution, standards, db, project_path) → pre-configured `PromptBuilder` with memory context | SF-01 | [sf02](D-INTL-06_sf02_implementation_plan.md) |
+| SF-03 | Handover Protocols — save protocol in `PipelineRunner`'s `finally` block; bootstrap protocol (standard task list formatting with trust tagging). | FR-8, FR-9 | Completed pipeline step results → `HandoverContext` persisted; notes included in `<agent_memory>` block | SF-01, SF-02 | [sf03](D-INTL-06_sf03_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -285,48 +249,3 @@ No new module registration needed. No workflow `context.yaml` updates needed.
 | SF-01 | Memory Hydrator & DTO | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Prompt Assembly via IoC | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Handover Protocols | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Red Team Audit Summary
-
-This design has been through **4 full Red Team / Blue Team adversarial audit cycles** (47 total
-findings, 5 critical boundary violations caught and resolved) plus a **post-audit DDD correction**
-that replaced `workflows/commons` with Inversion of Control via `_build_base_prompt()`. Key
-outcomes:
-
-- **Removed**: `memory_assembler.py`, `add_memory_context()` on PromptBuilder, `RunContext.memory_context` field, CLI/API wiring, `workflows/commons` module (DDD anti-pattern)
-- **Added**: `_build_base_prompt()` in Application Layer (`core.flow.handlers.base`),
-  `include_rules` flag for 2-Tier Handover, NFR-9 (fail-safe), NFR-10 (XML escape), NFR-11
-  (well-formedness), AD-9 (trust tags), AD-10 (callback injection for handover save)
-- **Security**: 5-layer defense (Pydantic schema validation → JSON serialization → trust tagging → field truncation → injection pattern stripping). Plus system instruction framing in SF-02.
-- **Architecture**: Handler-internal hydration eliminates all entry-point coupling. No intermediate
-  DTO needed — RunContext is sufficient. Handover save uses callback injection — no boundary
-  violation in PipelineRunner.
-
-## Session Handoff
-
-**Current status**: SF-01 Committed ✅. SF-02 Committed ✅. SF-03 Committed ✅. Feature Complete!
-**Next step**: Proceed to next feature on the roadmap.
-**If resuming mid-feature**: D-INTL-06 is fully closed.
-
-## Test attribution repaired, 2026-08-13 (`TECH-017` SF-01)
-
-`D-INTL-06` read as **9 requirements with zero cited tests** — `check_fr_coverage.py D-INTL-06` reported
-`BLOCKED` — and it was never untested. Its tests were written under `INT-US-28`, the integration
-contract that consumed it, and credited only there. four unit files under `tests/unit/workspace/` and `tests/unit/core/flow/` (49 tests) proved this capability all along
-without naming it.
-
-Each test was read against each requirement before anything was cited. FR-4, FR-5, FR-6, FR-8 and FR-9 now carry a
-`Proves:` citation naming the specific test functions. **FR-1, FR-2, FR-3 and FR-7 remain uncited**
-and are left visible rather than papered over.
-
-**Corrected 2026-08-13, same day: "uncited" is not "untested".** `FR-3` (selective filtering —
-ARCHIVED, cross-project, DONE older than 24h) is not implemented *in* the hydrator at all: it
-delegates, passing `max_age_hours=24` to the repository (`hydrator.py:162`). So its proof, if it
-exists, sits in the repository's test file — which never names `D-INTL-06`, so the gate cannot see
-it. Confirming that, rather than assuming it, is `CB-2`'s work.
-
-The general shape is recorded against `B-INTL-09`: a citation living in a file that names no story
-makes proof **invisible** to the ledger, which is a different defect from proof being absent.
-
-No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
-`docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
