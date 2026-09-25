@@ -1,80 +1,59 @@
-# Implementation Plan: Dynamic Risk-Based Rulesets (DAL) [SF-02: Fractal Resolution Engine]
+# C-VAL-03 SF-02 — Fractal Resolution Engine
 
-**FRs owned: FR-3.** Fractal resolution — the nearest tier declared at or above the target.
-Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the walk
-stopped at the target's own directory, which leaves the resolver working and strips inheritance
-from most of the tree — 17 fail.
-
-
-- **Feature ID**: 3.20b
-- **Sub-Feature**: SF-02 — Fractal Resolution Engine
-- **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md
-- **Status**: APPROVED
+**Status**: APPROVED · COMPLETE · **FRs owned**: FR-3 (recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-25-SF01-MIG`) · Design:
+[C-VAL-03_design.md](C-VAL-03_design.md) · Feature ID 3.20b
 
 ## Goal
 
-Provide O(1) cached directory-tree walking to incrementally resolve the exact Design Assurance Level
-(DAL) of any target file. Instead of defaulting to project-wide settings, the engine will search up
-from the target file directory to locate the nearest `context.yaml` and parse its
-`operational.dal_level`. 
-Additionally, manage the Global Fallback Default behavior: If no target file context exists,
-gracefully fallback to a DB-backed global threshold, seeded safely to the maximum security setting
-(DAL_A) upon setup.
+Resolve the DAL of any target file: the nearest tier declared at or above it. O(1) cached walk up
+from the file's directory to the nearest `context.yaml` with `operational.dal_level`.
 
-## Architectural Decisions & HITL Responses (Merged)
+No tier found → fall back to a DB-backed project default, seeded to the maximum (`DAL_A`) at setup.
 
-1. **Resolution Engine Placement (Zero-Trust):** The resolution engine (`dal_resolver.py`) will live
-   inside the `specweaver/config/` module, safely serving as a leaf node which `flow` handles
-   correctly without cyclical dependency boundary violations.
-2. **Orchestration Bridging:** The `ValidateSpecHandler` and `ValidateCodeHandler`
-   (`flow/_validation.py`) will directly invoke the DAL lookup locally, check defaults if necessary,
-   and manually map the DAL matrices into standard `apply_settings_to_pipeline()`.
-3. **Boundary Condition (Root Detection):** The resolver will walk from the target file upward but
-   aggressively halt precisely at the system `project_root` returning `None` instead of infinitely
-   scanning outside the project.
-4. **Configurable Default DAL:** If the scanner returns `None`, the Orchestrator will query the
-   database for the newly supported `default_dal` field to use as the fallback. During project
-   initialization, this field seeds to `DAL_A` (Flight-Critical) to ensure extreme governance
-   adoption for new and legacy project onboarding.
-5. **Config DB Scope:** Feature 3.5's massive Validation DB Overrides Cleanup is successfully quarantined to sub-feature **SF-03** to eliminate regression risks and preserve testability.
+## Changes
 
-## Proposed Changes
+1. **`specweaver/config/_schema.py`** — DB migration `SCHEMA_V13`: table `projects` gains
+   `default_dal VARCHAR NOT NULL DEFAULT 'DAL_A'`.
+2. **`specweaver/config/_db_config_mixin.py` & `database.py`** — `get_default_dal(project_name)`,
+   `set_default_dal(project_name, dal)`; register `SCHEMA_V13` in the migrations list of
+   `database.py`.
+3. **`specweaver/config/dal_resolver.py`** — `DALResolver`:
+   - constructed with `project_root: Path`; cache `self._cache: dict[Path, DALLevel | None]`.
+   - `resolve(target_path: Path) -> DALLevel | None`: walk `target_path.parents`, parsing
+     `context.yaml` in order; return `None` once outside `project_root`.
+   - A `dal_level` string not in `DALLevel` → `ValueError` at once (fail-secure).
+   - Malformed YAML does not abort the walk (added during Task 2).
+4. **`specweaver/flow/_validation.py`** — `ValidateSpecHandler.execute` and
+   `ValidateCodeHandler.execute`:
+   1. `DALResolver(context.project_path)`; `dal = dal_resolver.resolve(target)`.
+   2. `if not dal:` → `dal = context.db.get_default_dal()`.
+   3. `dal_settings = context.settings.dal_matrix.matrix.get(dal)`.
+   4. If set, deep-merge it (plain dict merge) over `context.settings.validation` and rebuild a
+      `ValidationSettings`.
+   5. `apply_settings_to_pipeline(pipeline, merged_settings)`.
+5. **`specweaver/config/context.yaml`** — add `DALResolver` to `exposes:`.
 
-### `specweaver/config/_schema.py` -> [COMPLETED]
-- Increment DB Migrations adding `SCHEMA_V13` to augment table `projects` with `default_dal VARCHAR NOT NULL DEFAULT 'DAL_A'`.
+All five are done.
 
-### `specweaver/config/_db_config_mixin.py` & `database.py` -> [COMPLETED]
-- Add `get_default_dal(project_name)` and `set_default_dal(project_name, dal)`.
-- Register `SCHEMA_V13` inside `database.py` global migrations list.
+## Tests
 
-### `specweaver/config/dal_resolver.py` -> [COMPLETED]
-- Implement `DALResolver` class.
-- Accepts `project_root: Path` in construction.
-- Contains an internal `self._cache: dict[Path, DALLevel | None]` instance dictionary.
-- Method `resolve(target_path: Path) -> DALLevel | None`: Walk `target_path.parents`, parsing
-  `context.yaml` sequentially. Halts immediately and returns `None` upon breaking out of
-  `project_root`. **NOTE:** If a `dal_level` string is found but is invalid (not in `DALLevel`
-  enum), raise a `ValueError` immediately (Fail-Secure).
-- *Deviation/Addition (Task 2)*: Implemented fail-safe resilience against malformed YAML structures to prevent `context.yaml` syntax errors from aborting traversal.
+| File | Covers |
+|---|---|
+| `tests/unit/config/test_dal_resolver.py` | valid / invalid / missing `.yaml`; memoization (against patches); the `project_root` cutoff |
+| `tests/unit/config/test_database.py` | `SCHEMA_V13` migration on fresh and upgraded DBs |
 
-### `specweaver/flow/_validation.py` -> [COMPLETED]
-- Update `ValidateSpecHandler.execute` and `ValidateCodeHandler.execute` to instantiate `DALResolver(context.project_path)`.
-- Invoke `dal = dal_resolver.resolve(target)`.
-- `if not dal:` execute `dal = context.db.get_default_dal()`.
-- Fetch the specific risk constraints via `dal_settings = context.settings.dal_matrix.matrix.get(dal)`.
-- If constraints exist, safely deep-merge them over the baseline `context.settings.validation` overrides using a pure python dictionary merge, and reconstruct a new `ValidationSettings` object.
-- Finally, invoke `apply_settings_to_pipeline(pipeline, merged_settings)`.
+Mutant: stopping the walk at the target's own directory leaves the resolver working and strips
+inheritance from most of the tree — 17 fail.
 
-### `specweaver/config/context.yaml` -> [COMPLETED]
-- Expose `DALResolver` to project boundaries via explicit `exposes:` array modifications.
+Gate: `/pre-commit` (10-test validation battery, `tree-sitter` drift checks, type checks, style).
 
-## Verification Plan
+## Decisions (audit)
 
-### Automated Tests
-- `tests/unit/config/test_dal_resolver.py`: Ensure parsing of valid/invalid/missing `.yaml`
-  structures, verify memoization performance against patches, and ensure strict `project_root`
-  boundary cutoffs.
-- `tests/unit/config/test_database.py`: Verify `SCHEMA_V13` SQLite schema migrations construct seamlessly natively across both fresh DB instances and upgraded instances.
-
-### Pre-commit Validation
-- Run `/pre-commit` workflow on completion to automatically run the 10-test validation battery, `tree-sitter` drift checks, type-checking, and styling logic.
+| # | Decision | Why |
+|---|---|---|
+| 1 | Resolver (`dal_resolver.py`) lives in `specweaver/config/` | A leaf node `flow` can call without a boundary cycle |
+| 2 | `ValidateSpecHandler` / `ValidateCodeHandler` (`flow/_validation.py`) look up the DAL, apply the default, and map the matrix into `apply_settings_to_pipeline()` | The handlers already own pipeline setup |
+| 3 | The walk halts at `project_root` and returns `None` | Never scan outside the project |
+| 4 | `None` → the DB's `default_dal`, seeded `DAL_A` (Flight-Critical) at project init | Strictest governance for new and legacy projects on onboarding |
+| 5 | Feature 3.5's Validation DB Overrides cleanup is kept to **SF-03** | Limits regression risk; keeps SF-02 testable |

@@ -1,81 +1,52 @@
-# Implementation Plan: JVM Handlers [SF-02: Java & Kotlin]
-- **Feature ID**: 3.19
-- **Sub-Feature**: SF-02 — JVM Handlers (Java & Kotlin)
-- **Design Document**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf02_implementation_plan.md
-- **Status**: COMPLETED
+# D-VAL-03 SF-02 — JVM Handlers (Java & Kotlin)
 
-**FRs owned: FR-5, FR-6.** The Java and Kotlin runners over Gradle and Maven. Recorded
-2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Both mutants conflate the
-compile intent with a full `build`, and both die.
+**Status**: COMPLETED · **FRs owned**: FR-5, FR-6 (recorded 2026-08-17 under `specweaver-dev`
+§3.2c, from `INT-US-03-SF01-MIG`) · **Depends on**: SF-01 · Design:
+[D-VAL-03_design.md](D-VAL-03_design.md) §Sub-Feature Breakdown → SF-02 · Feature ID 3.19
 
+## Goal
 
-## Goal Description
-Implement the `JavaRunner` and `KotlinRunner` classes inheriting from `QARunnerInterface`. These
-runners will map the 5 polyglot intents (run_tests, run_linter, run_complexity, run_compiler,
-run_debugger) directly into Gradle and Maven CLI executions.
+`JavaRunner` and `KotlinRunner`, inheriting `QARunnerInterface`, map the 5 polyglot intents
+(run_tests, run_linter, run_complexity, run_compiler, run_debugger) onto Gradle and Maven CLI calls.
 
-## Proposed Changes
+## Changes
 
-### `specweaver.core.loom.atoms.qa_runner`
-Contains the orchestrator resolving logic to instantiate appropriate language engines.
+1. **`specweaver.core.loom.atoms.qa_runner`** — `src/specweaver/loom/atoms/qa_runner/atom.py`
+   [MODIFY]: `_resolve_runner` accepts `java` and `kotlin` contexts; `JavaRunner` and `KotlinRunner`
+   are added to the `runners` dictionary.
+2. **`specweaver.core.loom.commons.qa_runner.jvm`** (shared JVM primitives and parser wrappers)
+   - `src/specweaver/loom/commons/qa_runner/java.py` [NEW], inherits `QARunnerInterface`:
+     - Anchors on `pom.xml` or `build.gradle` up the directory graph. Both present → `build.gradle`
+       wins; the build tool is cached for all sub-commands.
+     - Test commands for `mvn` / `gradlew`. **Wipes old XML (rm -rf) before running tests**, then
+       `junitparser` reads the report directories — no stale output.
+     - PMD SARIF parsed with built-in `json.loads`, no third-party package.
+   - `src/specweaver/loom/commons/qa_runner/kotlin.py` [NEW], inherits `QARunnerInterface`:
+     - `detekt` lint calls under Maven and Gradle; same anchoring as Java.
+     - Same `json.loads` SARIF parsing, SARIF 2.1 schema.
+3. **Tests** — subprocess patched via `unittest.mock.patch`, no CLI overrides:
+   - `tests/unit/loom/commons/qa_runner/test_java.py` [NEW] — patches `subprocess.run`; mock JVM
+     SARIF payloads through the parsers.
+   - `tests/unit/loom/commons/qa_runner/test_kotlin.py` [NEW] — `QARunnerInterface` conformance as
+     for java.py; `detekt` payload maps to SARIF blocks.
 
-#### [MODIFY] `src/specweaver/loom/atoms/qa_runner/atom.py`
-- Modify `_resolve_runner` to accept `java` and `kotlin` contexts natively.
-- Import `JavaRunner` and `KotlinRunner` conditionally or directly mapping them efficiently into the `runners` dictionary graph without error.
+## Tests
 
----
+`pytest tests/unit/loom/commons/qa_runner/test_java.py tests/unit/loom/commons/qa_runner/test_kotlin.py`
+— the parsers extract `LintError` paths from standard payloads with no real CLI. Manual
+verification: N/A (fully mocked and deterministic).
 
-### `specweaver.core.loom.commons.qa_runner.jvm`
-Contains the shared JVM execution primitives, parser wrappers, and specific Kotlin/Java interfaces.
+Mutants: both conflate the compile intent with a full `build`, and both die.
 
-#### [NEW] `src/specweaver/loom/commons/qa_runner/java.py`
-- Inherits `QARunnerInterface`.
-- Implements structural target anchoring (scans for `pom.xml` or `build.gradle` up the directory
-  graph). If both exist, prioritizes `build.gradle`, caching the determined build tool wrapper for
-  all sub-commands.
-- Formats test commands mapping to `mvn` / `gradlew`. Uses `junitparser` natively on target
-  directories **after executing a forced XML wipe/rm -rf prior to invoking tests** to skip stale
-  output parsing reliably.
-- Extends standard `pmd` SARIF parsing using built-in `json.loads` rather than 3rd party package references, resolving NFR requirements directly to Python primitives.
-- Restricts subprocess tests entirely via `unittest.mock.patch` without CLI overrides.
+## Decisions
 
-#### [NEW] `src/specweaver/loom/commons/qa_runner/kotlin.py`
-- Inherits `QARunnerInterface`.
-- Implements `detekt` specific CLI calls mapped under Maven and Gradle scopes for linting.
-- Mirrors structural anchoring behavior cleanly.
-- Implements exactly identical `json.loads` based SARIF outputs matching standard SARIF 2.1 schemas perfectly without bloat.
+- **SARIF parsing:** `detekt` emits standard `run -> results -> locations` JSON; walk it by hand with
+  the standard `json` module (approved at the HITL gate).
+- **JUnit:** `junitparser.JUnitXml.fromfile()` over `pathlib.Path.rglob("*.xml")` on `build/` and
+  `target/` respectively, accumulating failures.
 
-### `tests`
-Contains isolated unittest pipelines strictly enforcing isolation boundaries.
+## As built
 
-#### [NEW] `tests/unit/loom/commons/qa_runner/test_java.py`
-- Implements isolated validation wrappers enforcing test paths natively. Patches `subprocess.run` to
-  guarantee external execution bypass for JVM environments locally. Provides mock generic JVM SARIF
-  payloads to be evaluated via the parsing abstractions perfectly.
-
-#### [NEW] `tests/unit/loom/commons/qa_runner/test_kotlin.py`
-- Implements isolated validation logic ensuring `QARunnerInterface` conformance exactly equivalent to java.py while validating its Kotlin `detekt` payload maps appropriately to SARIF blocks cleanly.
-
-## Verification Plan
-
-### Automated Tests
-- Run
-  `pytest tests/unit/loom/commons/qa_runner/test_java.py tests/unit/loom/commons/qa_runner/test_kotlin.py`
-  natively to validate parser extraction correctly isolates `LintError` paths from standard payloads
-  cleanly without a valid CLI trigger cleanly.
-
-### Manual Verification
-- N/A. Handled via fully abstracted and deterministic testing.
-
-## Status Tracking
 - [x] **Batch 1**: Atom Resolution Engine & Interface Stubs (Completed)
 - [x] **Batch 2**: JavaRunner implementation (Maven/Gradle) (Completed)
 - [x] **Batch 3**: KotlinRunner implementation (Gradle/detekt) (Completed)
-
-## Research Notes
-- **SARIF Parsing**: `detekt` outputs strictly standard `run -> results -> locations` json bindings.
-  We enforce manual tree traversal using standard python JSON natively as approved via HITL gate
-  findings.
-- **JUnitParser Details**: `junitparser.JUnitXml.fromfile()` will loop via `pathlib.Path.rglob("*.xml")` on `build/` and `target/` respectively to accumulate failure matrices directly.

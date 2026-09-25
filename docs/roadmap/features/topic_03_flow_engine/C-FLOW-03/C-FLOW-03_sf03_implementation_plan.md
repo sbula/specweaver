@@ -1,90 +1,74 @@
-# Implementation Plan: Multi-spec pipeline fan-out [SF-03: Parallel Engine Hardening]
-- **Feature ID**: 3.27
-- **Sub-Feature**: SF-03 — Parallel Engine Hardening
-- **Design Document**: docs/roadmap/phase_3/feature_3.27/feature_3.27_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf03_implementation_plan.md
-- **Status**: APPROVED
+# C-FLOW-03 SF-03 — Parallel Engine Hardening
 
-**FRs owned: FR-5.** Deferred artifact synthesis behind the JOIN wave. Recorded 2026-08-17 under
-`specweaver-dev` §3.2c, from `INT-US-18-MIG`. Proof and mutant:
-`tests/unit/core/flow/handlers/test_decompose.py` — skipping `_run_wave_n` fails it.
+**Status**: APPROVED · **FRs owned**: FR-5 — deferred artifact synthesis behind the JOIN wave
+(recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-18-MIG`) · **Depends on**: SF-02 ·
+Design: [C-FLOW-03_design.md](C-FLOW-03_design.md) §Sub-Feature Breakdown → SF-03 · Feature ID 3.27
+
+Proof and mutant: `tests/unit/core/flow/handlers/test_decompose.py` — skipping `_run_wave_n` fails it.
 
 **FR-3 and FR-4 are NOT owned here, or anywhere.** Both were declared and never built; the rows are
 deleted from the design and the work is `TECH-062`.
 
+## Goal
 
-## Research Notes
-- **GateType.JOIN**: Needs to be explicitly added to `GateType` enum in `src/specweaver/core/flow/models.py`.
-- **Join Gate Evaluation Strategy**: The `GateEvaluator` in `src/specweaver/core/flow/gates.py` must
-  handle `GateType.JOIN`. Since `fan_out()` runs parallel pipelines that aren't natively
-  cross-communicating beyond `asyncio.gather()`, achieving a strict `JOIN` means separating the
-  shared module document writing to the Orchesterator DAG Wave layer (Wave 0) OR interpreting
-  `GateType.JOIN` inside `fan_out()` specifically (e.g. parent pipeline awaits until sub_pipelines
-  hit their JOIN gates, then proceed? No, orchestrator handles topological waves. It is easier to
-  schedule step batches.)
-- **Throttling LLMs horizontally**: The `asyncio.Semaphore` must span parallel test tasks running
-  under `asyncio.gather()`. Since `factory.py` spawns multiple `gemini.py` instances per
-  `RunContext`, instance-level semaphores inside `.generate()` will *fail* to prevent global 429
-  timeouts. We must introduce a global `_PROVIDER_SEMAPHORES` lazy-locked dict (or wrap the
-  `asyncio.Semaphore` transparently in `LLMAdapter` via class-variables or inside `factory.py` as an
-  `AsyncRateLimiterAdapter`). Using a decorator or singleton `get_semaphore(provider)` inside
-  `generate()` guarantees safe API access bounds.
+Shared documentation steps run after the parallel runs (JOIN), and LLM calls are throttled per
+provider across all of them.
 
-## HITL Resolution (Phase 4)
-- **`GateType.JOIN` Execution Architecture**: User approved **Option B**. The DAG `TopologyGraph`
-  and `OrchestrateComponentsHandler` strips steps generating documentation to run strictly
-  sequentially after `fan_out` completes.
-- **Global LLM Throttling Isolation**: User approved **Option A**. The Factory layer dynamically
-  creates an `AsyncRateLimiterAdapter(adapter, limit)` wrapper leveraging a single global
-  `asyncio.Semaphore` pool mapped by provider name.
+## Where it plugs in
 
-## Code Changes
+- **JOIN:** `GateType.JOIN` goes into the `GateType` enum in `src/specweaver/core/flow/models.py`;
+  the `GateEvaluator` in `src/specweaver/core/flow/gates.py` must handle it. `fan_out()` pipelines
+  do not talk to each other beyond `asyncio.gather()`, so a strict JOIN means either moving shared
+  document writes to the orchestrator's DAG wave layer (Wave 0), or interpreting JOIN inside
+  `fan_out()`. The orchestrator already handles topological waves, so scheduling step batches there
+  is simpler.
+- **Throttling:** the `asyncio.Semaphore` must span parallel tasks under `asyncio.gather()`.
+  `factory.py` spawns several `gemini.py` instances per `RunContext`, so an instance-level semaphore
+  inside `.generate()` cannot prevent global 429 timeouts. Options: a global `_PROVIDER_SEMAPHORES`
+  lazy-locked dict, a class-variable semaphore in `LLMAdapter`, or an `AsyncRateLimiterAdapter` in
+  `factory.py`. A decorator or singleton `get_semaphore(provider)` inside `generate()` bounds API
+  access.
 
-### [MODIFY] `src/specweaver/core/flow/models.py`
-**Goal**: Expand Gate logic to support delayed execution tagging natively via YAML pipeline definitions.
-- **Modifications**:
-  - Extend the `GateType` enum to explicitly include `JOIN`.
+## Changes
 
-### [NEW] `src/specweaver/infrastructure/llm/adapters/_rate_limit.py`
-**Goal**: Enforce centralized asynchronous throttling horizontally without breaking the adapter contract.
-- **Modifications**:
-  - Implement `class AsyncRateLimiterAdapter(LLMAdapter)`.
-  - Maintain a global registry `_PROVIDER_SEMAPHORES: dict[str, asyncio.Semaphore]`.
-  - Override `.generate()` and `.generate_stream()` to wrap physical calls uniquely like: `async with _PROVIDER_SEMAPHORES[self._wrapped.provider_name]:`.
-  - **Logging & Exceptions**: Must include robust `logger.debug` statements indicating when a lock
-    is being awaited and successfully acquired per `run_id`. Must trap underlying Asyncio timeout
-    errors and re-raise them specifically as clear, meaningful `LLMAdapterError` messages explaining
-    the exact concurrent failure.
+1. **[MODIFY] `src/specweaver/core/flow/models.py`** — `GateType` gains `JOIN`, usable from YAML
+   pipeline definitions for delayed execution.
+2. **[NEW] `src/specweaver/infrastructure/llm/adapters/_rate_limit.py`** —
+   `class AsyncRateLimiterAdapter(LLMAdapter)`:
+   - global registry `_PROVIDER_SEMAPHORES: dict[str, asyncio.Semaphore]`;
+   - `.generate()` and `.generate_stream()` wrap each call in `async with _PROVIDER_SEMAPHORES[self._wrapped.provider_name]:`;
+   - `logger.debug` when a lock is awaited and acquired, per `run_id`; asyncio timeouts re-raised as
+     clear `LLMAdapterError` messages naming the concurrent failure.
+3. **[MODIFY] `src/specweaver/infrastructure/llm/factory.py`** — in `create_llm_adapter()`, wrap the
+   base adapter: `adapter = AsyncRateLimiterAdapter(adapter)`. This bounds API traffic across all
+   parallel Git sandbox sessions from `fan_out()`.
+4. **[MODIFY] `src/specweaver/core/flow/_decompose.py`** — `OrchestrateComponentsHandler.execute()`:
+   1. after `sub_pipelines` are built from the decomposition JSON, strip every `PipelineStep` with
+      `gate.type == GateType.JOIN`;
+   2. run the remaining components in parallel;
+   3. once all parallel runs finish without critical failure, build and run a final sequential
+      "Wave N" pipeline of the captured `JOIN` documentation steps;
+   4. `logger.info` how many `JOIN` steps were stripped from `fan_out`, and when Wave N starts. A
+      Wave N failure raises with "Post-execution Artifact Join synchronization failed."
 
-### [MODIFY] `src/specweaver/infrastructure/llm/factory.py`
-**Goal**: Transparently inject the limiter wrapper.
-- **Modifications**:
-  - Inside `create_llm_adapter()`, after the base adapter is created, dynamically proxy it via
-    `adapter = AsyncRateLimiterAdapter(adapter)`. This automatically bounds API traffic across all
-    parallel Git sandbox sessions generated by `fan_out()`.
+## Tests
 
-### [MODIFY] `src/specweaver/core/flow/_decompose.py`
-**Goal**: Enforce the `JOIN` step-stripping topological rules natively.
-- **Modifications**:
-  - In `OrchestrateComponentsHandler.execute()`, after `sub_pipelines` are prepared via Decomposition JSON, filter all `PipelineStep` entries possessing `gate.type == GateType.JOIN`.
-  - Schedule parallel evaluation for remaining components.
-  - Upon completion across all parallel runs without critical failures, explicitly generate and
-    execute a final "Wave N" sequential Pipeline processing the captured `JOIN` artifact
-    documentation steps.
-  - **Logging & Exceptions**: Inject explicit `logger.info` declaring how many `JOIN` steps were
-    successfully stripped from `fan_out`, and an explicit log statement when triggering the final
-    Wave N sequential sync. Ensure if Wave N fails, the exception clearly details "Post-execution
-    Artifact Join synchronization failed."
+- **Unit:** `AsyncRateLimiterAdapter` blocks rapid consecutive `generate()` bursts across mocked
+  concurrent calls.
+- **Integration:** `OrchestrateComponentsHandler` runs `[GateType.JOIN]` artifacts only after all
+  sibling `Orchestrator` elements resolve; execution-log order shows no overlap.
 
-## Verification Plan
+## Decisions (HITL, Phase 4)
 
-### Automated Tests
-- **Unit**: Verify `AsyncRateLimiterAdapter` successfully locks rapid consecutive `generate()` bursts natively blocking mocked concurrent invocations.
-- **Integration**: Verify `OrchestrateComponentsHandler` cleanly isolates `[GateType.JOIN]`
-  artifacts to trigger exactly after all sibling `Orchestrator` elements resolve successfully. Wait,
-  verify execution logs order to ensure no overlaps.
+- **`GateType.JOIN` execution — Option B.** `OrchestrateComponentsHandler` (with the DAG
+  `TopologyGraph`) strips documentation steps and runs them sequentially after `fan_out` completes.
+- **Global LLM throttling — Option A.** The factory wraps each adapter in
+  `AsyncRateLimiterAdapter(adapter, limit)`, over one global `asyncio.Semaphore` pool keyed by
+  provider name.
 
-## Execution Results
+## As built
+
 - `[x]` Dev Implementation.
 - `[x]` Full Quality Gate passed.
+
+**Since moved** (noted 2026-09-25): `_run_wave_n` lives in `src/specweaver/core/flow/handlers/decompose.py`.

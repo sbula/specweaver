@@ -1,61 +1,92 @@
-# Design: Multi-spec pipeline fan-out
+# C-FLOW-03 — Multi-spec Pipeline Fan-out
 
-- **Feature ID**: 3.27
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/phase_3/feature_3.27/feature_3.27_design.md
+**Status**: APPROVED · **COMPLETE** — all sub-features implemented, tested and committed; 3986
+tests at completion. · **Phase**: 3 · **Feature ID**: 3.27
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | `PipelineRunner.fan_out(sub_pipelines, ...)` (`asyncio.gather()`), `OrchestrateComponentsHandler` |
+| Uses | Topology Graph (blast radius), Git Worktree Bouncer (3.26, `use_worktree` via `GitAtom`) |
+| Moved out | FR-3, FR-4 → [`TECH-062`](../../topic_07_technical_debt/TECH-062/TECH-062_design.md) |
+| Not touched | components with overlapping blast radiuses — serialized, never run together |
 
-Feature 3.27 adds multi-spec pipeline fan-out capabilities to the PipelineRunner.
-It solves the problem of serial execution bottleneck for disjoint components by spawning separate L3 pipelines for each component outputted by decomposition, running them fully in parallel.
-It interacts with the Topology Graph (to mathematically predict and enforce disjoint file blast
-radiuses) and the Git Worktree Bouncer (to isolate execution in separate sandboxes), while injecting
-offset hashes (`SW_PORT_OFFSET`) to prevent test side effects like port and DB locking, and does NOT
-touch components with overlapping blast radiuses (these must be handled safely or serialized).
-Key constraints: Must use Topology Graph for blast radius prediction, must run disjoint components
-fully in parallel within isolated separate sandboxes, must inject `SW_PORT_OFFSET` to avoid
-port/SQLite collisions, and must completely avoid git merge conflicts.
+## What it does
 
-## Research Findings
+Decomposition can yield several components. Instead of running them one after another, the
+orchestrator spawns one L3 pipeline per component and runs disjoint ones in parallel, each in its own
+worktree sandbox.
 
-### Codebase Patterns
-- **`PipelineRunner.fan_out(sub_pipelines, ...)`** already exists, and uses `asyncio.gather()` to run multiple pipelines concurrently.
-- **`OrchestrateComponentsHandler`** extracts decomposition components and currently triggers `fan_out` blindly.
-- **Git Worktree Bouncer** natively isolates filesystem context using the `use_worktree` flag on steps (via `GitAtom`).
-- **`TopologyGraph`** exposes robust dependency queries (`impact_of()`, `dependencies_of()`) allowing mathematically verifiable predictions of overlapping file blast radiuses.
+- The Topology Graph predicts each component's blast radius; overlapping components never run at the
+  same time, so parallel sandboxes never produce git merge conflicts.
+- `depends_on` orders components; a failure aborts its dependents.
+- A SQLite reservation gate parks a run whose resources another agent holds.
+- Shared artifacts (`README.md`, `context.yaml`) are written after the parallel runs, in a JOIN wave.
+- LLM calls are throttled per provider across all parallel runs.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| Git | ^2.30.0 | git worktree | Host Environment |
-| Python asyncio | ^3.10 | asyncio.gather | Host Environment |
+**Not built:** the per-sandbox `SW_PORT_OFFSET` (port/SQLite collision avoidance) and serialized
+`git worktree add` (FR-3, FR-4). The hazards are real — `run_fan_out` is concurrent via
+`asyncio.gather` and each sub-run can call `git worktree add` — so the work is `TECH-062`.
 
-### Blueprint References
-- Archon: Deterministic Collision Routing → Assigning deterministic hash-based port offsets to
-  temporary git worktree sandboxes, avoiding OS resource collisions (`EADDRINUSE` or SQLite locking)
-  during parallel test execution.
-- DMZ Ecosystem: Strict isolation principles separating executing worker agents from shared integration/documentation steps.
+## Architecture
+
+```mermaid
+graph LR
+    DP["DecompositionPlan<br/>depends_on + target_modules"] --> O["OrchestrateComponentsHandler<br/>graphlib DAG + impact_of collision check"]
+    O -->|"per ready, non-colliding component"| R["runner.run()<br/>own worktree, sf-{pipeline}-{task}"]
+    R --> G["GateType.RESERVE<br/>SQLiteReservationSystem"]
+    G -->|"locked"| PK["park → resumed by dispatcher"]
+    O -->|"after all runs"| J["Wave N<br/>stripped JOIN steps"]
+    R -.-> L["AsyncRateLimiterAdapter<br/>semaphore per provider"]
+```
+
+| Part | Lives in (as planned) |
+|---|---|
+| DAG dispatcher, JOIN stripping, Wave N | `src/specweaver/core/flow/_decompose.py` |
+| `target_modules` on `ComponentChange` | `src/specweaver/workflows/planning/decomposition.py` |
+| Reservation lock | `src/specweaver/core/flow/reservation.py` |
+| `RESERVE` / `JOIN` gates | `core/flow/state.py`, `models.py`, `gates.py` |
+| Rate limiter | `src/specweaver/infrastructure/llm/adapters/_rate_limit.py`, wired in `factory.py` |
+
+`TopologyGraph` supplies `impact_of()` and `dependencies_of()`, which resolve downstream impact
+recursively.
+
+External tools: Git ^2.30.0 (`git worktree add`, already integrated in 3.26; compat confirmed) and
+Python asyncio ^3.10 (`asyncio.gather`), both from the host environment.
+
+Blueprint references:
+
+- Archon: Deterministic Collision Routing — deterministic hash-based port offsets for temporary git
+  worktree sandboxes, avoiding OS resource collisions (`EADDRINUSE` or SQLite locking) during
+  parallel test runs.
+- DMZ Ecosystem: strict isolation of executing worker agents from shared integration/documentation
+  steps.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Static Wave Scheduling (DAG) via TopologyGraph | Deterministic wave generation guarantees collision-free sub-branches across the parallel grid, without the deadlock hazards of Dynamic Module Mutex locks. | No |
+| AD-2 | Deferred Documentation JOIN Gate | Separating code flows from shared reporting artifact updates (`README.md`, `context.yaml`) avoids markdown collisions. | No |
+| AD-3 | Component-Unique Branch Names | Replacing the generic `sf-temp` branch name with a unique per-component namespace prevents Git Branch Exclusivity errors without UUID overhead. | No |
+
+AD-1 as built: SF-01 (HITL) replaced strict sequential waves with a **dynamic DAG dispatcher** —
+a component starts the moment its dependencies finish, if its impact does not overlap a running one —
+so one straggler no longer stalls a whole wave.
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Blast Radius Wave Scheduling | Orchestrator | Analyzes each decomposed component against the `TopologyGraph` and explicitly enforces `depends_on` logical dependencies. | Identifies completely disjoint sets of components and assigns them to sequential execution "Waves" (DAG). |
-| FR-2 | Resource Reservation Locking | PipelineRunner | Checks an SQLite Reservation Table before spawning worktrees. | Cross-feature multi-agent collisions are gracefully parked if modules or ports intersect. |
-**FR-3 and FR-4 were deleted 2026-08-17, not delivered.** Both described mechanisms that do not
-exist in `src/`: `SW_PORT_OFFSET` appears nowhere, and no `gc.auto` configuration or worktree-creation
-serialisation exists. The hazards are real — `run_fan_out` is genuinely concurrent via
-`asyncio.gather` and its sub-runs can each call `git worktree add` — so the work moved to
-[`TECH-062`](../../topic_07_technical_debt/TECH-062/TECH-062_design.md) rather than being dropped.
-
-Deleted rather than left standing, following `TECH-046`: an FR that advertises unbuilt behaviour
-survives delivery and epic closure unless the descope is made visible. Found only because `ADR-004`'s
-migration requires citing every FR with a killed mutant, and there is no mutant to kill for code that
-does not exist.
-
+| FR-2 | Resource Reservation Locking | PipelineRunner | Checks an SQLite Reservation Table before spawning worktrees. | Cross-feature multi-agent collisions are parked if modules or ports intersect. |
 | FR-5 | Deferred Artifact Synthesis | Orchestrator | Delays generation of shared documentation (`README.md`, `context.yaml`) until after parallel execution. | Implements a `GateType.JOIN` ensuring shared artifacts are merged safely without collision. |
-| FR-6 | DAG Cascading Failures | PipelineRunner | Monitors wave batch execution states and aborts downstream dependents. | If Component A fails in Wave 1, Component B (which conceptually `depends_on` A) is safely aborted in Wave 2. |
+| FR-6 | DAG Cascading Failures | PipelineRunner | Monitors wave batch execution states and aborts downstream dependents. | If Component A fails in Wave 1, Component B (which conceptually `depends_on` A) is aborted in Wave 2. |
+
+**FR-3 and FR-4 were deleted 2026-08-17, not delivered.** Both described mechanisms absent from
+`src/`: `SW_PORT_OFFSET` appears nowhere, and no `gc.auto` configuration or worktree-creation
+serialisation exists. Deleted rather than left standing, following `TECH-046`: an FR advertising
+unbuilt behaviour survives delivery and epic closure unless the descope is visible. Found because
+`ADR-004`'s migration requires citing every FR with a killed mutant, and unbuilt code has no mutant.
 
 ## Non-Functional Requirements
 
@@ -63,84 +94,37 @@ does not exist.
 |---|-----|----------------------|
 | NFR-1 | Git Merge Safety | 100% guarantee that parallel sandboxes will not incur git merge conflicts. Achieved strictly by ensuring disjoint topological scopes. |
 | NFR-2 | Infrastructure Isolation | Package dependency updates (e.g. `pyproject.toml`) strictly serialize into a `Wave 0` infrastructure layer to prevent lock hash merge collisions entirely. |
-| NFR-3 | Rate Limit Resiliency | Must throttle LLM concurrent API calls natively with `asyncio.Semaphore()` bound to Provider configurations to stop HTTP 429 crash loops. |
-| NFR-4 | Log Observability | Parallel pipeline log streams must be strictly tagged by `run_id` to ensure humans can debug asynchronous failures without chaotic console interleaving. |
+| NFR-3 | Rate Limit Resiliency | Must throttle concurrent LLM API calls with `asyncio.Semaphore()` bound to Provider configurations to stop HTTP 429 crash loops. |
+| NFR-4 | Log Observability | Parallel pipeline log streams must be strictly tagged by `run_id` so humans can debug asynchronous failures without console interleaving. |
 
-## External Dependencies
+## Edge cases
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| Git | 2.30.0 | git worktree add | Yes | Already integrated in 3.26 |
+1. **DAG cycle** (A depends on B, B on A): `OrchestrateComponentsHandler` detects the cycle and
+   **fails fast** before any pipeline boots, instead of locking forever.
+2. **Orphaned SQLite lock (SIGKILL)**: if the daemon is hard-killed (e.g. OOM, Ctrl-C), a lock may
+   be orphaned. The locking schema checks the parent PID; a dead PID's lock is ignored by new jobs.
+3. **Full collision**: if 5 components all touch the same module (100% collision), scheduling
+   degrades to serial (Wave 1, Wave 2 ... Wave 5) instead of failing.
+4. **Straggler**: 4 tasks in a wave finish, 1 stalls forever — the DAG would stall. Standard
+   pipeline timeouts apply to the `asyncio` envelope, mark the straggler FAILED, and let downstream
+   aborts (FR-6) fire at once.
+5. **Disk exhaustion from crashed worktrees**: a `finally` block runs `git worktree remove --force`,
+   so temporary sandboxes never accumulate.
 
-## Architectural Decisions
+## Sub-features
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Static Wave Scheduling (DAG) via TopologyGraph | Deterministic Wave generation guarantees collision-free sub-branches across the parallel execution grid without introducing deadlock hazards found in Dynamic Module Mutex locks. | No |
-| AD-2 | Deferred Documentation JOIN Gate | Isolating executed code flows from aggregate shared reporting artifact updates (`README.md`, `context.yaml`) avoids massive markdown collisions. | No |
-| AD-3 | Component-Unique Branch Names | Directly overriding generic `sf-temp` branch names with unique component appended namespaces automatically intercepts Git Branch Exclusivity errors without UUID generation overhead. | No |
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Topological DAG Wave Generation: `DecompositionPlan` demands explicit `depends_on` and target modules; `TopologyGraph` collision detection in the orchestration layer splits components into mutually exclusive subsets. Input: DecompositionPlan, TopologyGraph. Output: batches of PipelineDefinitions safe to `fan_out`. | FR-1, FR-6 | — | [sf01](C-FLOW-03_sf01_implementation_plan.md) |
+| SF-02 | Sandbox Environmental Isolation: `PipelineRunner._execute_loop` and `RunContext` accept env-var propagation (like `SW_PORT_OFFSET`); serialized `git worktree add` against index-lock crashes; SQLite Resource Reservation. Input: RunContext hash hints, `use_worktree`. Output: env vars in executor sub-shells, overlapping sessions parked. | FR-2, FR-3, FR-4 | SF-01 | [sf02](C-FLOW-03_sf02_implementation_plan.md) |
+| SF-03 | Parallel Engine Hardening: provider-bound `asyncio.Semaphore` throttling; shared-file (docs, lock files) changes moved into deferred `GateType.JOIN` or sequential `Wave 0` steps. Input: package generation steps, pipeline configs. Output: no HTTP 429 timeouts or `.lock` file conflicts. | FR-5 | SF-02 | [sf03](C-FLOW-03_sf03_implementation_plan.md) |
 
-## Developer Guides Required
+SF-02's FR-3/FR-4 were never built — see Functional Requirements.
 
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Multi-Agent Scaling Guide | Detail how topology constraints affect L3 component generation and speed processing constraints. | ⬜ To be written during Pre-commit |
+Execution order: SF-01 (no deps) → SF-02 (depends on SF-01) → SF-03 (depends on SF-02).
 
-## Edge Cases Handled
-
-1. **DAG Cycle (Circular Dependencies)**: If the LLM generates a Decomposition Plan where Component
-   A depends on B, and B depends on A, the `OrchestrateComponentsHandler` will mathematically detect
-   the cycle and **fail fast** before any pipelines boot, rather than causing an infinite lock.
-2. **Orphaned SQLite Locks (SIGKILL)**: If the main daemon is hard-killed (e.g., OOM exception or
-   user hits Ctrl-C), the SQLite Resource Lock might be orphaned. The locking schema checks the
-   parent process PID; if the PID is dead, the stale lock is safely ignored by new jobs.
-3. **Graceful Parallel Degradation**: If 5 components are detected to all touch the exact same
-   module (i.e. 100% collision), the Wave Generator dynamically degrades to purely serial execution
-   (Wave 1, Wave 2 ... Wave 5) to guarantee safety, rather than failing altogether.
-4. **Straggler Tasks**: If 4 tasks in a wave finish quickly but 1 stalls infinitely, the entire DAG
-   stalls. To prevent this, standard pipeline timeouts apply forcefully to the `asyncio` envelope,
-   marking the straggler as FAILED and allowing downstream aborts (FR-6) to trigger immediately.
-5. **Disk Exhaustion from Crashed Worktrees**: If a task fails spectacularly, a `finally` block
-   strictly executes `git worktree remove --force`, guaranteeing that temporary sandboxes do not
-   accumulate and fill the developer's hard drive.
-
-## Sub-Feature Breakdown
-
-### SF-01: Topological DAG Wave Generation
-- **Scope**: Upgrades `DecompositionPlan` JSON schema to demand explicit `depends_on` nodes and
-  target modules. Implements `TopologyGraph` collision detection logic within the Orchestration
-  layer to classify components into mutually exclusive operational subsets (Waves).
-- **FRs**: [FR-1, FR-6]
-- **Inputs**: DecompositionPlan (Component JSON outputs), TopologyGraph.
-- **Outputs**: Computationally filtered batches of PipelineDefinitions ready for safe `fan_out`.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf01_implementation_plan.md
-
-### SF-02: Sandbox Environmental Isolation
-- **Scope**: Modifies `PipelineRunner._execute_loop` and `RunContext` to accept env-var propagation
-  (like `SW_PORT_OFFSET`), introduces strict serialized `git worktree add` loops to prevent index
-  locking crashes, and implements SQLite Resource Reservation logic.
-- **FRs**: [FR-2, FR-3, FR-4]
-- **Inputs**: RunContext hash hints, `use_worktree` context.
-- **Outputs**: Environment variables exposed correctly into spawned executor sub-shells, parked overlapping sessions gracefully.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf02_implementation_plan.md
-
-### SF-03: Parallel Engine Hardening
-- **Scope**: Embeds LLM-Provider bound `asyncio.Semaphore` throttling, extracts shared file
-  (Documentation/Lock files) modifications securely into deferred `GateType.JOIN` or sequential
-  `Wave 0` steps.
-- **FRs**: [FR-5]
-- **Inputs**: Package generation steps, pipeline configurations.
-- **Outputs**: Resilient orchestrator logic free of HTTP 429 timeouts and `.lock` file conflicts.
-- **Depends on**: SF-02
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf03_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (No deps - start immediately)
-2. SF-02 (Depends on SF-01)
-3. SF-03 (Depends on SF-02)
+Developer guide owed: **Multi-Agent Scaling Guide** — how topology constraints affect L3 component
+generation and speed. ⬜ To be written during Pre-commit.
 
 ## Progress Tracker
 
@@ -149,8 +133,3 @@ does not exist.
 | SF-01 | Topological DAG Wave Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Sandbox Environmental Isolation | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Parallel Engine Hardening | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature 3.27 is **COMPLETE**. All sub-features implemented, tested, and committed.
-**Test count at completion**: 3986 tests.

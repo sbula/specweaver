@@ -1,63 +1,50 @@
-# Implementation Plan: Project Metadata Injection
+# D-INTL-05 SF-01 — Project Metadata Injection
 
-- **Feature ID**: feature_3_15
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/D-INTL-05_design.md
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/D-INTL-05_implementation_plan.md
-- **Status**: COMPLETED
+**Status**: COMPLETED · **FRs owned**: FR-1, FR-2, FR-3 · **Depends on**: none · Design:
+[D-INTL-05_design.md](D-INTL-05_design.md) · Feature ID feature_3_15
 
-## Phase 4: Merge Findings (HITL Review)
+## Goal
 
-> [!NOTE]
-> All Phase 4 audit questions resolved securely via HITL approval.
+Every LLM prompt carries a `<project_metadata>` block built from one `ProjectMetadata` DTO per run,
+with an allowlisted config that can never contain `api_key`.
 
-### 1. Architecture (CRITICAL)
-- **Decision**: **Option B**. Build the DTO inside `RunContext.__init__` so it's globally available
-  to all execution contexts (pipelines and single-shot commands). (Note: A full refactor to push all
-  commands through `PipelineRunner` will be handled in Feature 3.13a).
+## Changes
 
-### 2. Data Model & Serialization (HIGH)
-- **Decision**: **Option B**. Create a strictly typed `PromptSafeConfig` in `llm/models.py` rather than a brittle dynamic dictionary.
+1. **`src/specweaver/llm/models.py`** [MODIFY]
+   - `PromptSafeConfig` Pydantic model: `llm_model`, `llm_provider`, `validation_rules`.
+   - `ProjectMetadata` Pydantic model: `project_name`, `archetype`, `language_target`, `date_iso`,
+     `safe_config: PromptSafeConfig`.
+2. **`src/specweaver/llm/prompt_builder.py`** [MODIFY] —
+   `add_project_metadata(self, metadata: ProjectMetadata | None) -> PromptBuilder`: renders the
+   metadata as YAML inside `<project_metadata>` tags, as a `_ContentBlock` with `priority=1`.
+   - Handoff Directive 1: serialize as YAML with plain `f-string` concatenation or
+     `json.dumps(dict, indent=2)` masquerading as YAML. Do NOT use `PyYAML` or `ruamel.yaml` (stream
+     I/O buffer compatibility issues).
+3. **`src/specweaver/flow/_base.py`** [MODIFY] `RunContext`
+   - `RunContext.__init__` builds the `ProjectMetadata` DTO at creation: `platform.platform()` and
+     `sys.version` inside `try/except` so it degrades if unavailable; the configured subset of
+     `SpecWeaverSettings` goes into `PromptSafeConfig`.
+   - Handoff Directive 2: `archetype` =
+     `specweaver.workspace.project.scaffold.load_context_yaml(project_path).archetype` if the file
+     exists, else `'generic'`.
+   - Handoff Directive 3: `language_target` defaults to the literal `'Unknown Environment'` if `sys`
+     or `platform` raise (never `None` — it violates the Pydantic schema).
+   - `project_metadata: ProjectMetadata` is a property of `RunContext`.
+4. **`src/specweaver/flow/*` (handlers)** [MODIFY] `_review.py`, `_generation.py`, `_draft.py`,
+   `constitution.py`, `planner.py` — wherever `PromptBuilder` is built, call
+   `builder.add_project_metadata(context.project_metadata)`.
 
-### 5. LLM Interaction & JSON Structure (HIGH)
-- **Decision**: **Option B**. Have `PromptBuilder` render the Pydantic DTO natively as a multi-line YAML structure inside the XML tag instead of a raw JSON string dump.
+## Tests
 
-*(Other categories: Default actions approved as documented in the Phase 2 audit).*
+- Unit: the safe subset mapping — `api_key` can never be serialized.
+- `sw pipeline run`: DB traces contain well-formed YAML inside the `<project_metadata>` block.
 
----
+## Decisions (audit, HITL)
 
-## Proposed Changes
+All audit questions resolved via HITL; other categories took the default actions of the audit.
 
-### `src/specweaver/llm/models.py`
-#### [MODIFY] 
-- **Action**: Add `PromptSafeConfig` Pydantic model containing `llm_model`, `llm_provider`, `validation_rules`.
-- **Action**: Add `ProjectMetadata` Pydantic model containing `project_name`, `archetype`, `language_target`, `date_iso`, and `safe_config: PromptSafeConfig`.
-
-### `src/specweaver/llm/prompt_builder.py`
-#### [MODIFY] 
-- **Action**: Add `add_project_metadata(self, metadata: ProjectMetadata | None) -> PromptBuilder`.
-- **Logic**: Construct a YAML representation of the metadata and insert it securely inside `<project_metadata>` tags. Add it as a `_ContentBlock` with `priority=1`.
-- **Handoff Directive 1**: Serialize visually as YAML using simple `f-string` concatenation or
-  `json.dumps(dict, indent=2)` masquerading as YAML. Do NOT use external libraries like `PyYAML` or
-  `ruamel.yaml` to avoid stream I/O buffer compatibility issues.
-
-### `src/specweaver/flow/_base.py`
-#### [MODIFY] Update `RunContext`
-- **Action**: Update `RunContext.__init__` to automatically synthesize the `ProjectMetadata` DTO
-  during creation. Use `platform.platform()` and `sys.version` wrapped in a `try/except` block to
-  gracefully degrade if unavailable. Pass the configured subset from `SpecWeaverSettings` to
-  `PromptSafeConfig`.
-- **Handoff Directive 2**: Extract `archetype` securely by calling
-  `specweaver.workspace.project.scaffold.load_context_yaml(project_path).archetype` if the file
-  exists, with a safe fallback to `'generic'`.
-- **Handoff Directive 3**: `language_target` must strictly default to the literal string
-  `'Unknown Environment'` if `sys` or `platform` modules raise exceptions (do NOT use `None` as it
-  violates the Pydantic schema).
-- **Action**: Make `project_metadata: ProjectMetadata` an accessible property of `RunContext`.
-
-### `src/specweaver/flow/*` (Handlers)
-#### [MODIFY] `_review.py`, `_generation.py`, `_draft.py`, `constitution.py`, `planner.py`
-- **Action**: Wherever `PromptBuilder` is instantiated, call `builder.add_project_metadata(context.project_metadata)` to inject the gathered context into the LLM.
-
-## Verification
-- Unit test coverage for the safe subset mapping (ensuring `api_key` can never be serialized).
-- Execute `sw pipeline run` and verify DB traces contain the well-formed YAML inside the `<project_metadata>` block.
+| # | Area | Chosen | Why |
+|---|---|---|---|
+| 1 | Architecture (CRITICAL) | **Option B** — build the DTO in `RunContext.__init__` | Available to all execution contexts, pipelines and single-shot commands. Pushing all commands through `PipelineRunner` is Feature 3.13a. |
+| 2 | Data model & serialization (HIGH) | **Option B** — typed `PromptSafeConfig` in `llm/models.py` | A dynamic dictionary is brittle |
+| 5 | LLM interaction & JSON structure (HIGH) | **Option B** — `PromptBuilder` renders the DTO as multi-line YAML inside the XML tag | Not a raw JSON string dump |

@@ -1,107 +1,102 @@
-# Design: Polyglot QARunner Interface
+# D-VAL-03 — Polyglot QARunner Interface
 
-- **Feature ID**: 3.19
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_design.md
+**Status**: APPROVED · **Phase**: 3 · **Feature ID**: 3.19
 
-## Feature Overview
+| | |
+|---|---|
+| Languages | Python, Kotlin, Java, Rust, TypeScript (React) |
+| Used by | Atoms (engine-internal rules) and Tools (agent-facing actions) |
+| Protocols | JUnit XML (tests), SARIF (lint, compile), DAP `OutputEvent` (debug) |
 
-Feature 3.19 transforms the `QARunnerInterface` from a Python-only construct into a
-fully-implemented polyglot execution engine spanning both **Atoms** (engine-internal rules) and
-**Tools** (agent-facing actions). It wraps the target-language CLI commands for Python, Kotlin,
-Java, Rust, and TypeScript (React) into dedicated language runner implementations. Each
-implementation will deeply integrate with its language's standard tooling (`cargo`, `gradlew`,
-`mvn`, `npm`/`jest`, `pytest`). Beyond testing, linting, and complexity, the interface is expanded
-to govern **compiling** and **debugging**, parsing test results into `TestRunResult`,
-`LintRunResult`, and `ComplexityRunResult` via open-source protocols (JUnit XML and SARIF), while
-routing detailed compiler/debugger standard errors back to the LLM agent identically.
+## What it does
 
-## Research Findings
+Turns `QARunnerInterface` from Python-only into a polyglot runner. One runner per language wraps
+that language's tooling (`cargo`, `gradlew`, `mvn`, `npm`/`jest`, `pytest`).
 
-### Codebase Patterns
-Presently, the `PythonQARunner` (`src/specweaver/loom/commons/qa_runner/python.py`) interacts
-directly with `pytest` and `ruff`. We will extend `src/specweaver/loom/commons/qa_runner/` by
-creating dedicated modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) that implement the
-expanded `QARunnerInterface`. Crucially, we must also update the Agent-facing Tool
-(`src/specweaver/loom/tools/qa_runner/tool.py`) to expose these new capabilities (`compile`,
-`debug`) so the AI Agents themselves can trigger native builds and debug execution loops just like
-the Pipeline Engine does with Atoms. 
+- Five intents: test, lint, complexity, **compile**, **debug**.
+- Results parse into `TestRunResult`, `LintRunResult` and `ComplexityRunResult` via JUnit XML and
+  SARIF.
+- Compiler and debugger stderr goes back to the LLM agent the same way.
+- Agents trigger `compile` and `debug` themselves through the tool
+  (`src/specweaver/loom/tools/qa_runner/tool.py`), just as the pipeline engine does through atoms.
 
-**Runner Resolution Strategy**: The factory function `_resolve_runner` will aggressively determine
-which runner (and build tool variant) to instantiate by first checking for explicit overrides in the
-local `context.yaml` of the target directory or Database Config. If absent, it will fall back to
-**target-aware structural tracing**—scanning upwards from the specific file/directory being executed
-looking for anchor files (e.g., if testing `src/native/rust_lib.rs`, it traces up to find a nested
-`Cargo.toml` → Rust Cargo runner; if testing `tests/test_py.py`, it traces up to root
-`pyproject.toml` → Python runner). This guarantees that heterogeneous workspaces (like Python
-projects with Rust extensions) are natively supported.
+## Architecture
 
-### External Tools & CLI Invocations
-The implementations MUST execute exact CLI patterns:
-- **JUnitParser / SARIF-tools**: Generalized outputs natively parsed.
-- **Rust (Cargo)**: Compile: `cargo build`. Test: `cargo test -- --format=json | cargo2junit > junit.xml`. Lint: `cargo clippy --message-format=json`.
-- **Java/Kotlin (Gradle)**: Compile: `gradlew classes` / `gradlew assemble`. Test: `gradlew test`
-  (JUnit in `build/test-results/test/`). Lint: `gradlew detekt --report sarif...` /
-  `gradlew pmdMain` (SARIF plugin).
-- **Java/Kotlin (Maven)**: Compile: `mvn compile`. Test: `mvn test` (JUnit in `target/surefire-reports/`). Lint: `mvn detekt:check` (SARIF) / `mvn pmd:pmd` (SARIF).
-- **TypeScript (NPM)**: Compile: `tsc --noEmit` or `npm run build`. Test: `jest --reporters=default --reporters=jest-junit`. Lint: `eslint -f sarif -o eslint.sarif`.
+```mermaid
+graph LR
+    A["Agent"] --> T["qa_runner/tool.py<br/>ROLE_INTENTS"]
+    E["Pipeline engine"] --> AT["qa_runner/atom.py<br/>_intent_*"]
+    T --> AT
+    AT --> R["_resolve_runner<br/>override, else anchor-file trace"]
+    R --> P["Python"] & J["Java"] & K["Kotlin"] & RS["Rust"] & TS["TypeScript"]
+    P & J & K & RS & TS --> PR["JUnit / SARIF parsers<br/>→ result models"]
+```
 
-### Blueprint References
-none stated
+Starting point: `PythonQARunner` (`src/specweaver/loom/commons/qa_runner/python.py`) called `pytest`
+and `ruff` directly. New modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) in
+`src/specweaver/loom/commons/qa_runner/` implement the expanded interface; SF-04 splits each into a
+package (`java/runner.py`, `java/parsers.py`).
+
+**Runner resolution.** `_resolve_runner` picks the runner and build-tool variant:
+
+1. an explicit override in the target directory's `context.yaml` or the Database Config;
+2. else **target-aware structural tracing** — scan up from the file or directory being run for an
+   anchor file. `src/native/rust_lib.rs` → nested `Cargo.toml` → Rust Cargo runner;
+   `tests/test_py.py` → root `pyproject.toml` → Python runner.
+
+This supports mixed workspaces, such as Python projects with Rust extensions.
+
+**CLI patterns.** The runners MUST run exactly these (JUnitParser / SARIF-tools parse the outputs):
+
+| Toolchain | Compile | Test | Lint |
+|---|---|---|---|
+| Rust (Cargo) | `cargo build` | see below | `cargo clippy --message-format=json` |
+| Java/Kotlin (Gradle) | `gradlew classes` / `gradlew assemble` | `gradlew test` (JUnit in `build/test-results/test/`) | `gradlew detekt --report sarif...` / `gradlew pmdMain` (SARIF plugin) |
+| Java/Kotlin (Maven) | `mvn compile` | `mvn test` (JUnit in `target/surefire-reports/`) | `mvn detekt:check` (SARIF) / `mvn pmd:pmd` (SARIF) |
+| TypeScript (NPM) | `tsc --noEmit` or `npm run build` | `jest --reporters=default --reporters=jest-junit` | `eslint -f sarif -o eslint.sarif` |
+
+Rust test: `cargo test -- --format=json | cargo2junit > junit.xml`. The pipe breaks the sandbox's
+no-pipes rule, so SF-03 runs `cargo2junit` as a separate subprocess.
+
+Blueprint references: none stated.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Dedicated Package Sub-Modules | Run logic, parsers and interfaces in per-language folders (e.g. `java/runner.py`, `java/parsers.py`) prevent God-class bloat as lint/test logic diversifies. | Yes |
+| AD-2 | E2E Subprocess Mocking | Mocked subprocess outputs let the full runner battery be tested on a Python-only local machine or CI. | No |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Unified Interface Refactor | System | Update `interface.py` | The bounds encompass Test, Lint, Complexity, **Compile**, and **Debug** — every runner implements all five or is not a runner. |
-| FR-2 | Agent-facing Tools | Agent | Update `qa_runner/tool.py` | The LLM agents natively gain permissioned access to trigger `compile()` and `debug()` through the Loom Sandbox, utilizing identical Black Box resolution patterns. |
+| FR-2 | Agent-facing Tools | Agent | Update `qa_runner/tool.py` | LLM agents gain permissioned access to trigger `compile()` and `debug()` through the Loom Sandbox, with the same Black Box resolution patterns. |
 | FR-3 | Python Support | System | Align `PythonQARunner` | Python executes tests, linting, complexity, compiling, and debugging by conforming to the new unified data models. |
-| FR-4 | Rust Support | System | Build `RustRunner` | Rust executes tests, linting, compiling, complexity natively via `cargo` wrappers mapping to generic bounds. |
-| FR-5 | Java Support | System | Build `JavaRunner` | Java executes tests, compilation, linting via Maven (`mvn compile/test/pmd`) and Gradle natively mapping outputs. |
+| FR-4 | Rust Support | System | Build `RustRunner` | Rust executes tests, linting, compiling, complexity via `cargo` wrappers mapping to generic bounds. |
+| FR-5 | Java Support | System | Build `JavaRunner` | Java executes tests, compilation, linting via Maven (`mvn compile/test/pmd`) and Gradle, mapping outputs. |
 | FR-6 | Kotlin Support | System | Build `KotlinRunner` | Kotlin executes tests, compilation, complexity via Gradle/Maven and `detekt` pushing SARIF maps. |
-| FR-7 | TypeScript Support| System | Build `TypeScriptRunner`| TS executes tests, compiling, linting/complexity natively via `tsc`, `jest-junit` and `eslint` SARIF formatters. |
+| FR-7 | TypeScript Support| System | Build `TypeScriptRunner`| TS executes tests, compiling, linting/complexity via `tsc`, `jest-junit` and `eslint` SARIF formatters. |
 
-### Two rows changed on contact (2026-08-17, `INT-US-03-SF01-MIG`)
+Two rows changed on 2026-08-17 (`INT-US-03-SF01-MIG`):
 
-**FR-8 (E2E Testing) is deleted.** It required that "every runner class must be rigorously tested" —
-a statement about the test suite, not about what the product does. It cannot fail in the way an FR
-fails: its negation is not a broken capability but an absent test, which is what
-`check_fr_coverage.py` already refuses at closure for every other row. Keeping it made the FR table
-partly a checklist of itself. The obligation is not lost — it is where it belongs, in the gate.
-
-**FR-1's second clause is struck**, and this one is a finding rather than tidying. It claimed *"the
-Data Models are expanded to support `stacktrace: str`, `rule_uri: str`, etc."* The fields do exist —
-`TestFailure`, `LintError` and `DebugRunResult` in `commons/qa.py` each declare one or both, defaulted
-to `""`.
-
-**Nothing ever writes them.** There is no assignment to `stacktrace=` or `rule_uri=` anywhere in
-`src/` or `tests/`. `arbiter.py` *reads* `f.get("stacktrace", "")` and therefore always reads the empty
-string.
-
-The `rule_uri` gap is the substantive half. FR-5, FR-6 and FR-7 all promise SARIF — `pmd:pmd
--Dpmd.format=sarif`, `detekt`, eslint's SARIF formatter — and `sandbox/language/core/sarif.py`
-genuinely parses it, building each `LintError` from `ruleId`, the message, and the physical location.
-It never reads the rule descriptor's `helpUri`, which is the field in SARIF that makes a finding
-*actionable*: the link to what the rule is and how to satisfy it. So the pipeline asks its linters for
-SARIF, receives the URI, and drops it.
-
-A clause describing fields that are declared but never populated cannot be falsified by any mutant —
-deleting the field breaks no caller, because there are none. Under §3.2c that is worse than silence,
-so the clause is struck and the state of affairs recorded here instead. **The remaining clause is
-strongly proven**: renaming `run_compiler` on the abstract base fails 228 tests and 11 collections.
-
-Populating `rule_uri` from `helpUri` is a real improvement and is **not ticketed here** — it changes
-what agents receive in a lint report, which is a scope decision, and filing a ticket is not the same
-as taking it.
+- **FR-8 (E2E Testing) deleted.** "Every runner class must be rigorously tested" is about the test
+  suite, not the product. Its negation is an absent test, which `check_fr_coverage.py` already
+  refuses at closure. The obligation lives in the gate.
+- **FR-1's second clause struck** — see Risks. It claimed *"the Data Models are expanded to support
+  `stacktrace: str`, `rule_uri: str`, etc."* A clause about fields that are declared but never
+  populated cannot be falsified by any mutant (deleting the field breaks no caller), which under
+  §3.2c is worse than silence. **The remaining clause is strongly proven**: renaming `run_compiler`
+  on the abstract base fails 228 tests and 11 collections.
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Performance | Parsers MUST resolve external CLI results securely and within the defined timeout bounds. |
-| NFR-2 | Testability | Tests for all 5 runners MUST mock subprocess shell executions seamlessly to prevent needing Java/Rust/Node installed on the CI testing environment. **[proof: meta — rule about tests, docs or the diff]** |
-| NFR-3 | Graceful Degradation | If a specific language runner cannot parse a SARIF/JUnit file (e.g., compile error prevented generation), it MUST dump the raw stderr into a generic `TestFailure` block instead of crashing the flow engine, actively feeding compile failures straight to the LLM agent. |
+| NFR-2 | Testability | Tests for all 5 runners MUST mock subprocess shell executions, so CI needs no Java/Rust/Node install. **[proof: meta — rule about tests, docs or the diff]** |
+| NFR-3 | Graceful Degradation | If a runner cannot parse a SARIF/JUnit file (e.g., compile error prevented generation), it MUST dump the raw stderr into a generic `TestFailure` block instead of crashing the flow engine, feeding compile failures straight to the LLM agent. |
 
 ## External Dependencies
 
@@ -110,55 +105,44 @@ as taking it.
 | `junitparser` | 3.1.2| `JUnitXml.fromfile()` | Yes | Required for test parsing |
 | `sarif-tools` | 1.0.0| `SARIF` schema models | Yes | Required for linting logs |
 
-## Architectural Decisions
+## Risks
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Dedicated Package Sub-Modules | Separating run logic, parsers, and interfaces into dedicated folders (e.g. `java/runner.py`, `java/parsers.py`) per language prevents God-class bloat as lint/test logic diversifies. | Yes |
-| AD-2 | E2E Subprocess Mocking | Mocking subprocess outputs allows the full battery of runners to be tested comprehensively on a Python-only local machine or CI. | No |
+**`stacktrace` and `rule_uri` are declared and never written.** `TestFailure`, `LintError` and
+`DebugRunResult` in `commons/qa.py` each declare one or both, defaulted to `""`. No assignment to
+`stacktrace=` or `rule_uri=` exists in `src/` or `tests/`. `arbiter.py` reads
+`f.get("stacktrace", "")` and so always reads the empty string.
 
-## Sub-Feature Breakdown
+`rule_uri` is the substantive half. FR-5, FR-6 and FR-7 promise SARIF (`pmd:pmd
+-Dpmd.format=sarif`, `detekt`, eslint's SARIF formatter), and `sandbox/language/core/sarif.py` parses
+it — each `LintError` from `ruleId`, the message and the physical location. It never reads the rule
+descriptor's `helpUri`, the link that makes a finding *actionable*. The pipeline asks for SARIF,
+receives the URI, and drops it.
 
-### SF-01: Core Interface, Compilers & Python/TS Handlers
-- **Scope**: Updates `interface.py` and `qa_runner/tool.py` to accept stacktraces/SARIF bounds and add `compile`/`debug` commands. Aligns the `PythonQARunner` and implements the `TypeScriptRunner`.
-- **FRs**: [FR-1, FR-2, FR-3, FR-7, FR-8]
-- **Inputs**: Polyglot execution parameters simulating Agents requesting builds/tests.
-- **Outputs**: Validated compile/debug/test/lint/complexity runners using mock JUnit/SARIF files.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf01_implementation_plan.md
+Populating `rule_uri` from `helpUri` is a real improvement and is **not ticketed here**: it changes
+what agents receive in a lint report, which is a scope decision.
 
-### SF-02: JVM Handlers (Java & Kotlin)
-- **Scope**: Implements `JavaRunner` and `KotlinRunner` compiling and parsing outputs from Gradle (`gradlew`), Maven (`mvn`), detekt, and PMD.
-- **FRs**: [FR-5, FR-6, FR-8]
-- **Inputs**: JVM polyglot requests and mock JVM fail/pass payloads.
-- **Outputs**: Validated Java and Kotlin compilation & test runners.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf02_implementation_plan.md
+## Sub-features
 
-### SF-03: Rust Handler
-- **Scope**: Implements `RustRunner` using Cargo and Clippy natively, mapping `cargo build` exits to the generic bounds.
-- **FRs**: [FR-4, FR-8]
-- **Inputs**: Rust polyglot requests.
-- **Outputs**: Validated Rust runner integrating `cargo`.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf03_implementation_plan.md
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Core Interface, Compilers & Python/TS Handlers. `interface.py` and `qa_runner/tool.py` gain stacktrace/SARIF bounds and `compile`/`debug`; aligns `PythonQARunner`; adds `TypeScriptRunner`. Inputs: polyglot parameters simulating agents requesting builds/tests. Outputs: compile/debug/test/lint/complexity runners validated against mock JUnit/SARIF files. | FR-1, FR-2, FR-3, FR-7, FR-8 | — | [sf01](D-VAL-03_sf01_implementation_plan.md) |
+| SF-02 | JVM Handlers (Java & Kotlin). `JavaRunner` and `KotlinRunner` over Gradle (`gradlew`), Maven (`mvn`), detekt and PMD. Validated with mock JVM fail/pass payloads. | FR-5, FR-6, FR-8 | SF-01 | [sf02](D-VAL-03_sf02_implementation_plan.md) |
+| SF-03 | Rust Handler. `RustRunner` over Cargo and Clippy, mapping `cargo build` exits to the generic bounds. | FR-4, FR-8 | SF-01 | [sf03](D-VAL-03_sf03_implementation_plan.md) |
+| SF-04 | Polyglot Submodule Architecture Refactor — see below. Input: the unified runner files. Output: per-language package modules. | FR-1 | SF-02, SF-03 | [sf04](D-VAL-03_sf04_implementation_plan.md) |
 
-### SF-04: Polyglot Submodule Architecture Refactor
-- **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package
-  submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and
-  integration test folders natively inside `tests/unit/.../java/` to prevent directory and module
-  bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract
-  values purely via structural SARIF properties instead of brittle string regex scraping (fixing
-  compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and
-  Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity
-  and structural coverage.**
-- **FRs**: [FR-1]
-- **Inputs**: Existing unified runner files.
-- **Outputs**: Clean domain-driven package modules mapping per-language correctly.
-- **Depends on**: SF-02, SF-03
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf04_implementation_plan.md
+SF-04 scope:
 
-## Execution Order
+- Split the god-classes (`java.py`, `kotlin.py`, `rust.py`) into package submodules
+  (`java/runner.py`, `java/parsers.py`); move their unit and integration tests into
+  `tests/unit/.../java/`.
+- **Rewrite `_parse_detekt_complexity` and `_parse_pmd_complexity` to read structural SARIF
+  properties instead of regex scraping**, which breaks on compiler upgrades.
+- **Evaluate and backfill E2E and unit test gaps across the Java/Kotlin/Rust handlers** for full
+  parity and structural coverage.
+
+The FR-8 cells record the original ownership; FR-8 has since been deleted (above).
+
+Execution order:
 
 1. SF-01 (Core Interface, Compilers & Python/TS)
 2. SF-02 (JVM Handlers) and SF-03 (Rust Handler) in parallel (both depend only on SF-01)
@@ -173,10 +157,4 @@ as taking it.
 | SF-03 | Rust Handler | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Submodule Refactoring | SF-02, SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
-## Session Handoff
-Execute `@[/dev]` targeting `docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf04_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
-**Current status**: Implementation Plan for SF-03 is APPROVED.
-**Next step**: Run the following command to begin building the code for SF-03 via TDD:
-`@[/dev] docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf03_implementation_plan.md`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
+**Next**: SF-04 Dev ([plan](D-VAL-03_sf04_implementation_plan.md)).

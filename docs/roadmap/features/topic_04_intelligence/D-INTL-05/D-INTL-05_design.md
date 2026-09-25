@@ -1,36 +1,61 @@
-# Design: Project metadata injection
+# D-INTL-05 — Project Metadata Injection
 
-- **Feature ID**: feature_3_15
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/D-INTL-05_design.md
+**Status**: APPROVED · **COMPLETE** and committed 2026-03-29 · **Phase**: 3 · **Feature ID**:
+feature_3_15 (the text called it Feature 3.13)
 
-## Feature Overview
+| | |
+|---|---|
+| Touches | `PromptBuilder`, the configuration module, `RunContext`, flow handlers |
+| Not touched | core LLM adapters, backend dispatch |
+| Related | Feature 3.5 detects the target codebase's languages; this feature does not |
 
-Feature 3.13 adds project metadata injection to the system prompt.
-It solves the issue of the LLM lacking specific environmental context by injecting the project name,
-root archetype, language target (Python/OS version), current date/time, and active configuration
-settings (like LLM profile and validation thresholds) into the prompt.
-It interacts with `PromptBuilder` and the configuration module, and does NOT touch the core LLM adapters or backend dispatch mechanisms.
-Key constraints: The generated metadata block must remain concise as to avoid consuming too much of the LLM context window.
+## What it does
 
-## Research Findings
+The LLM lacks environmental context. This feature adds a concise `<project_metadata>` block to the
+system prompt:
 
-### Codebase Patterns
-The `PromptBuilder` class in `src/specweaver/llm/prompt_builder.py` is the centralized place for
-assembling system prompts. It uses an XML-tagged structure mapping priority levels. We can extend it
-with an `add_project_metadata()` method and a new `_ContentBlock` for metadata. The active config
-can be retrieved from `SpecWeaverSettings`, and the project name from the database. Language target
-and OS info can be obtained via the standard Python `platform` and `sys` modules.
+- project name and root archetype;
+- language target (Python/OS version);
+- current date/time;
+- an allowlisted slice of active configuration (LLM profile, validation thresholds).
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| Python `platform` / `sys` | Built-in | `python_version()`, `system()` | Built-in |
-| datetime | Built-in | `datetime.now()` | Built-in |
+The block must stay small so it does not eat the context window.
 
-### Blueprint References
-Inspired by Aider's `get_platform_info()`, which explicitly tells the LLM the operating system, language version, and commit hashes to avoid syntax incompatible with the user's environment.
+Inspired by Aider's `get_platform_info()`, which tells the LLM the operating system, language
+version and commit hashes, so it avoids syntax incompatible with the user's environment.
+
+## Architecture
+
+```mermaid
+graph LR
+    S["SpecWeaverSettings<br/>allowlisted subset"] --> M["ProjectMetadata DTO<br/>built once per run"]
+    DB["project name"] --> M
+    P["platform / sys / datetime"] --> M
+    M --> RC["RunContext.project_metadata"]
+    RC --> H["flow handlers"]
+    H --> PB["PromptBuilder.add_project_metadata()<br/>priority 1"]
+```
+
+`PromptBuilder` (`src/specweaver/llm/prompt_builder.py`) is the one place system prompts are
+assembled, as XML-tagged blocks with priority levels. The feature adds `add_project_metadata()` and a
+new `_ContentBlock`. Config comes from `SpecWeaverSettings`, the project name from the database, OS
+and Python version from the standard `platform` and `sys` modules.
+
+| Tool | Version | Key API Surface |
+|------|---------|----------------|
+| Python `platform` / `sys` | Built-in | `python_version()`, `system()` |
+| datetime | Built-in | `datetime.now()` |
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Add `add_project_metadata` directly to `PromptBuilder` | Keeps prompt assembly logic centralized. No new module for simple string interpolation. | No |
+| AD-2 | Centralized `ProjectMetadata` DTO | Handlers should not each re-query the DB. `PipelineRunner` creates the DTO once and caches it in the flow context. | No |
+| AD-3 | Explicit "Language Target" = Environment | "Language target" means the OS/Python system version of the execution environment. It does NOT detect target codebase languages (already covered by Feature 3.5). | No |
+
+AD-2 as built: the plan's HITL review moved DTO creation into `RunContext.__init__`, so single-shot
+commands get it too, not only pipelines.
 
 ## Functional Requirements
 
@@ -38,7 +63,7 @@ Inspired by Aider's `get_platform_info()`, which explicitly tells the LLM the op
 |---|-----|-------|--------|---------|
 | FR-1 | Build Metadata DTO | PipelineRunner / Config | Create `ProjectMetadata` once per run | A single DTO containing project name, archetype, safe strictly-allowlisted config, OS (`platform`), Python version (`sys.version`), and Date is assembled and attached to the run state. |
 | FR-2 | Inject into Prompt | PromptBuilder | Call `.add_project_metadata()` | A `<project_metadata>` XML block is added to the prompt at priority 1 using the pre-assembled DTO. |
-| FR-3 | Provide safe config | Flow Handlers | Pass `ProjectMetadata` to `PromptBuilder` | Handlers inject the DTO cleanly without needing to manually fetch project parameters or scrub API keys. |
+| FR-3 | Provide safe config | Flow Handlers | Pass `ProjectMetadata` to `PromptBuilder` | Handlers inject the DTO without manually fetching project parameters or scrubbing API keys. |
 
 ## Non-Functional Requirements
 
@@ -54,38 +79,16 @@ Inspired by Aider's `get_platform_info()`, which explicitly tells the LLM the op
 |------|------------|----------------|-----------------|-------|
 | Python Standard Lib | 3.11+ | `sys.version_info`, `platform.system` | Y | Standard |
 
-## Architectural Decisions
+## Sub-features
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Add `add_project_metadata` directly to `PromptBuilder` | Keeps prompt assembly logic centralized. Avoids creating new modules for simple string interpolation. | No |
-| AD-2 | Centralized `ProjectMetadata` DTO | Handlers should not each re-query the DB. `PipelineRunner` creates the DTO once and caches it in the flow context. | No |
-| AD-3 | Explicit "Language Target" = Environment | We strictly use OS/Python system version to map the execution environment. We do NOT use this to detect target codebase languages (already covered by Feature 3.5). | No |
+Single feature, no decomposition.
 
-## Sub-Feature Breakdown
-
-Single feature — no decomposition.
-
-### SF-01: Metadata Injection implementation
-- **Scope**: Extend `PromptBuilder` to accept and format project metadata, and update handlers/orchestrators to provide it.
-- **FRs**: [FR-1, FR-2, FR-3]
-- **Inputs**: Current `SpecWeaverSettings`, Project name from context, system state.
-- **Outputs**: `<project_metadata>` tag within LLM prompt.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/feature_3_15_sf01_implementation_plan.md
-
-## Execution Order
-
-Single feature.
-1. SF-01 (no deps — start immediately)
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Metadata Injection: `PromptBuilder` accepts and formats project metadata; handlers/orchestrators provide it. Input: current `SpecWeaverSettings`, project name from context, system state. Output: `<project_metadata>` tag in the LLM prompt. | FR-1, FR-2, FR-3 | — | [plan](D-INTL-05_implementation_plan.md) |
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Metadata Injection | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature 3.13 COMPLETE and COMMITTED on 2026-03-29.
-**Next step**: Proceed to the next feature on the roadmap (`feature_3_16` or `feature_3_17`).

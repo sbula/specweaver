@@ -1,25 +1,28 @@
-# Feature 3.5 — Auto-Discover Standards from Codebase
+# E-VAL-02 — Implementation Plan (Feature 3.5, Auto-Discover Standards)
 
-**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7.** Recorded 2026-08-17 under `specweaver-dev`
-§3.2c, from `INT-US-01-SF03-MIG`. The plan predates the FR ledger — the capability had no design
-document at all, so there was no ownership to state and nothing for either sweep to count. One plan,
-one owner; a retrospective sub-feature split would be fiction.
+**Status**: ✅ Delivered · **FRs owned**: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7 (recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`) · Design:
+[E-VAL-02_design.md](E-VAL-02_design.md)
 
-Proof and mutants are tabulated in `E-VAL-02_design.md`. The one worth reading before touching this
-code: FR-5's first mutant removed `session.flush()` and the suite stayed green, because the session
-commits anyway. That was an equivalent mutant, not a gap.
+The plan predates the FR ledger and had no design, so there was no ownership to state. One plan, one
+owner; a retrospective sub-feature split would be fiction. Proof and mutants are in the design —
+read FR-5's before touching this code: removing `session.flush()` left the suite green because the
+session commits anyway. That was an equivalent mutant, not a gap.
 
+**Since moved** (noted 2026-09-25): the module lives at `src/specweaver/assurance/standards/`, and
+the table is `workspace_project_standards`. Paths and line refs below are as of the plan.
 
-Extract coding conventions per scope × language from existing code → HITL document review → store centrally → auto-inject into LLM prompts.
+## Goal
 
-> **Languages**: Python (stdlib `ast`) + JS/TS (`tree-sitter`). Architecture supports adding Kotlin, Rust, Go.
-> **Inspired by**: [Agent OS v3](https://github.com/buildermethods/agent-os)
+Extract coding conventions per scope × language from existing code → HITL document review → store
+centrally → auto-inject into LLM prompts.
 
----
+- **Languages**: Python (stdlib `ast`) + JS/TS (`tree-sitter`). The architecture supports adding
+  Kotlin, Rust, Go.
+- **Inspired by**: [Agent OS v3](https://github.com/buildermethods/agent-os)
 
-## Core Concept: Scoped Standards
-
-Standards are **per-scope, per-language** — not per-project. A monorepo with 3 microservices produces 3+ sets of standards:
+**Scoped standards.** Standards are **per-scope, per-language**, not per-project. A monorepo with 3
+microservices yields 3+ sets:
 
 ```
 monorepo/
@@ -29,9 +32,7 @@ monorepo/
 └── (project root)       → scope=".",                lang=* (cross-cutting)
 ```
 
----
-
-## Design Decisions
+## Decisions
 
 | # | Decision | Choice |
 |---|---|---|
@@ -50,13 +51,11 @@ monorepo/
 | 13 | **JS/TS parsing** | `tree-sitter` (full AST, pre-built wheels). |
 | 14 | **`sw standards show`** | Rich table grouped by scope → language → category. |
 
----
+## Sub-phases
 
-## Sub-Phases
+### 3.5a-1: Foundation (DB + Python Analyzer + Basic CLI)
 
-### Phase 3.5a-1: Foundation (DB + Python Analyzer + Basic CLI)
-
-**Goal**: End-to-end flow working for a single-scope Python project. No LLM, no HITL, no JS/TS.
+**Goal**: end-to-end for a single-scope Python project. No LLM, no HITL, no JS/TS.
 
 | Component | What |
 |---|---|
@@ -69,20 +68,21 @@ monorepo/
 | `cli.py` | `sw standards scan` (separate command, single scope, auto-store, no HITL). `sw standards show`. `sw standards clear`. |
 | `flow/handlers.py` | `standards: str | None = None` on `RunContext`. |
 
-**Tests**: ~80-100 unit + integration tests.
-**Deliverable**: `sw standards scan` works on SpecWeaver itself, `sw standards show` renders a Rich table, `sw review` includes `<standards>` in the prompt.
+**Tests**: ~80-100 unit + integration. **Deliverable**: `sw standards scan` works on SpecWeaver
+itself, `sw standards show` renders a Rich table, `sw review` includes `<standards>` in the prompt.
 
----
+### 3.5a-2: Multi-Scope + HITL Document Review
 
-### Phase 3.5a-2: Multi-Scope + HITL Document Review
+**Goal**: monorepo support (2-level scopes), interactive HITL review, scoped injection with token
+cap, re-scan diff.
 
-**Goal**: Monorepo support (2-level scopes), interactive HITL review, scoped injection with token cap, re-scan diff.
+Resolved:
 
-**Resolved decisions**: 2-level scopes (not just top-level). HITL on by default (one combined
-review, not per-file). Edit = JSON dict editing. Re-scan diff mode = configurable
-(`sw config set-rescan-mode approve|inform`, default: `inform`). Token cap = 2000 chars
-(scope-specific prioritized over root). Scope inheritance: merge scope-specific + root `"."`, HITL
-for conflicts unless already resolved.
+- 2-level scopes (not just top-level).
+- HITL on by default — one combined review, not per-file. Edit = JSON dict editing.
+- Re-scan diff mode is configurable (`sw config set-rescan-mode approve|inform`, default: `inform`).
+- Token cap = 2000 chars; scope-specific prioritized over root.
+- Scope inheritance: merge scope-specific + root `"."`; HITL for conflicts unless already resolved.
 
 | Component | What |
 |---|---|
@@ -93,76 +93,79 @@ for conflicts unless already resolved.
 | `cli/config.py` | `sw config set-rescan-mode approve|inform`. |
 | `config/database.py` | `set_rescan_mode()` / `get_rescan_mode()` (follows `set_log_level` pattern). |
 
-**Backlog** (noted, not implemented now): configurable multi-stage reviews; force re-evaluation of previous HITL decisions.
+**Backlog** (not implemented): configurable multi-stage reviews; force re-evaluation of previous
+HITL decisions.
 
-**Tests**: ~40-50 tests. Synthetic monorepo fixtures, mocked Rich prompts, re-scan diff.
-**Deliverable**: `sw standards scan` on a monorepo produces per-scope standards, HITL reviews, `sw review` injects scope-specific standards with token cap.
+**Tests**: ~40-50 — synthetic monorepo fixtures, mocked Rich prompts, re-scan diff.
+**Deliverable**: `sw standards scan` on a monorepo produces per-scope standards and HITL reviews;
+`sw review` injects scope-specific standards with the token cap.
 
----
+### 3.5a-3: JS/TS (tree-sitter) + Conditional LLM
 
-### Phase 3.5a-3: JS/TS (tree-sitter) + Conditional LLM
-
-**Goal**: Multi-language support, single-pass AST execution, and Pydantic-structured LLM enrichment.
+**Goal**: multi-language support, single-pass AST execution, Pydantic-structured LLM enrichment.
 
 | Component | What |
 |---|---|
 | `pyproject.toml` | Add `tree-sitter>=0.22.0`, `tree-sitter-javascript`, `tree-sitter-typescript` dependencies. |
-| `standards/analyzer.py` | Refactor base `StandardsAnalyzer` to `extract_all(files) -> list[CategoryResult]` to enforce single-pass AST parsing. Retain independent category extractor methods for isolation. |
+| `standards/analyzer.py` | Base `StandardsAnalyzer` becomes `extract_all(files) -> list[CategoryResult]` to enforce single-pass AST parsing. Independent category extractor methods kept for isolation. |
 | `standards/languages/` | Move `python_analyzer.py` here. Add `tree_sitter_base.py` interface. Add `javascript/analyzer.py` and `typescript/analyzer.py`. |
-| `standards/scanner.py` | `StandardsScanner`: Orchestrate file discovery, auto-detect language by extension, and execute mapped analyzers. |
-| `standards/enricher.py` | `StandardsEnricher`: Async LLM comparison (`asyncio.gather`). Requests Pydantic JSON structure. Only fires for confidence < 90% or `--compare` flag. |
+| `standards/scanner.py` | `StandardsScanner`: file discovery, language by extension, run the mapped analyzers. |
+| `standards/enricher.py` | `StandardsEnricher`: async LLM comparison (`asyncio.gather`), Pydantic JSON output. Only fires for confidence < 90% or `--compare` flag. |
 | `cli/standards.py` | `--compare` flag. Color-coded UI warnings for LLM deviations in HITL report. |
 
-**Tests**: ~60-80 tests. tree-sitter fixtures, LLM component mocking.
-**Deliverable**: Scan a project with Python backend + TypeScript frontend, each gets auto-detected language-appropriate standards with LLM enrichment.
+**Tests**: ~60-80 — tree-sitter fixtures, mocked LLM. **Deliverable**: a Python backend +
+TypeScript frontend project gets language-appropriate standards per part, with LLM enrichment.
 
----
+### 3.5a-4: Constitution Bootstrap + Polish
 
-### Phase 3.5a-4: Constitution Bootstrap + Polish
-
-**Goal**: Auto-generate `CONSTITUTION.md` from confirmed standards, finalize edge cases, update documentation.
-
-**Resolved design decisions** (from discussion):
+**Goal**: generate `CONSTITUTION.md` from confirmed standards, finish edge cases, update docs.
 
 | # | Decision | Resolution |
 |---|---|---|
 | 1 | Where to implement bootstrap | Option A — `generate_constitution_from_standards()` in `project/constitution.py`. Constitution generators stay together; standards data passed as plain `list[dict]`. |
-| 2 | Auto-trigger | **Separate step**. `sw init` prints hint for existing projects: *"Existing code detected. Run `sw standards scan` to discover conventions."* After `sw standards scan`, HITL hint: *"Run `sw constitution bootstrap` to generate CONSTITUTION.md."* |
+| 2 | Auto-trigger | **Separate step** — hints below. |
 | 3 | Config values | `auto_bootstrap_constitution` column: `'off'` \| `'prompt'` (default) \| `'auto'`. |
 | 4 | Schema migration | v7: only `auto_bootstrap_constitution`. Skip `rescan_mode` until needed. |
 | 5 | CLI command | `sw constitution bootstrap` (grouped by output artifact, not input source). |
 | 6 | Overwrite behavior | Option B — detect unmodified starter template (check for TODO markers) and auto-replace. User-edited constitutions require `--force`. |
 
+Auto-trigger hints: `sw init` on an existing project prints *"Existing code detected. Run
+`sw standards scan` to discover conventions."* After `sw standards scan`, HITL hint: *"Run
+`sw constitution bootstrap` to generate CONSTITUTION.md."*
+
 | Component | What |
 |---|---|
 | `config/database.py` | Schema v7: `ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT DEFAULT 'prompt'`. Methods: `get_auto_bootstrap()`, `set_auto_bootstrap()`. |
-| `project/constitution.py` | New `generate_constitution_from_standards(project_path, project_name, standards, languages)` → pre-fills sections 1 (Identity), 2 (Tech Stack), 4 (Coding Standards) from confirmed data. New `_STANDARDS_TEMPLATE` alongside existing `_STARTER_TEMPLATE`. Idempotent. |
-| `cli/constitution.py` | New `sw constitution bootstrap` command: loads confirmed standards from DB, calls `generate_constitution_from_standards()`, supports `--force`. |
-| `cli/standards.py` | After successful scan (line ~156): print HITL hint *"Run `sw constitution bootstrap`..."* when no `CONSTITUTION.md` exists. Respect `auto_bootstrap` config: `'auto'` → bootstrap silently, `'prompt'` → Rich prompt, `'off'` → just hint. |
-| `cli/projects.py` | After `sw init` scaffold (line ~59): if existing source files detected, print hint: *"Existing code detected. Run `sw standards scan` to discover coding conventions."* |
+| `project/constitution.py` | New `generate_constitution_from_standards(project_path, project_name, standards, languages)` → pre-fills sections 1 (Identity), 2 (Tech Stack), 4 (Coding Standards) from confirmed data. New `_STANDARDS_TEMPLATE` beside `_STARTER_TEMPLATE`. Idempotent. |
+| `cli/constitution.py` | New `sw constitution bootstrap`: loads confirmed standards from DB, calls `generate_constitution_from_standards()`, supports `--force`. |
+| `cli/standards.py` | See note A. |
+| `cli/projects.py` | After `sw init` scaffold (line ~59): if source files exist, print *"Existing code detected. Run `sw standards scan` to discover coding conventions."* |
 | `cli/config.py` | New `sw config set-auto-bootstrap` / `sw config get-auto-bootstrap` commands. |
-| Edge cases (scan + bootstrap) | Empty project, single-file, all-below-threshold, project with no git, mixed languages in one scope — test both scan path and bootstrap path. |
+| Edge cases (scan + bootstrap) | Empty project, single-file, all-below-threshold, project with no git, mixed languages in one scope — test both the scan and the bootstrap path. |
 | Documentation | `README.md` (constitution bootstrap bullet + CLI table), `docs/quickstart.md` (scan→bootstrap flow), `docs/developer_guide.html` (if applicable), `docs/roadmap/phase_3_feature_expansion.md` (mark 3.5 ✅). |
 
-**Tests**: ~20-30 tests.
-- **Unit** (~12): `generate_constitution_from_standards()` variations (Python-only, multi-lang, empty standards, idempotent, `--force`), schema v7 migration, get/set auto_bootstrap.
-- **Integration** (~8): scan→bootstrap flow, `sw init` hint for existing project, `sw constitution bootstrap` CLI, config round-trip.
+Note A — `cli/standards.py`: after a successful scan (line ~156), print *"Run
+`sw constitution bootstrap`..."* when no `CONSTITUTION.md` exists. `auto_bootstrap` config:
+`'auto'` → bootstrap silently, `'prompt'` → Rich prompt, `'off'` → just hint.
+
+**Tests**: ~20-30.
+
+- **Unit** (~12): `generate_constitution_from_standards()` variations (Python-only, multi-lang,
+  empty standards, idempotent, `--force`), schema v7 migration, get/set auto_bootstrap.
+- **Integration** (~8): scan→bootstrap flow, `sw init` hint for existing project,
+  `sw constitution bootstrap` CLI, config round-trip.
 - **Edge cases** (~8): empty project scan, single-file scan, all-below-threshold scan, no-git
   fallback, mixed-languages-in-scope scan, bootstrap with zero standards, bootstrap with existing
   `CONSTITUTION.md`, bootstrap after `--force`.
-- **Verification**: `/pre-commit-test-gap` workflow after implementation.
+- `/pre-commit-test-gap` workflow after implementation.
 
-**Deliverable**: Feature 3.5a complete. All tests passing, documentation updated, roadmap marked ✅.
+**Deliverable**: Feature 3.5a complete — tests passing, docs updated, roadmap marked ✅.
 
----
+## Changes (detailed)
 
-## Proposed Changes (detailed)
+### DB layer
 
-### DB Layer
-
-#### [MODIFY] [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/database.py)
-
-Schema v6:
+[MODIFY] [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/database.py) — schema v6:
 
 ```sql
 CREATE TABLE IF NOT EXISTS project_standards (
@@ -180,12 +183,12 @@ CREATE TABLE IF NOT EXISTS project_standards (
 
 Methods: `save_standard()`, `get_standards()`, `get_standard()`, `clear_standards()`, `list_scopes()`.
 
-### Standards Module (`standards/`)
+### Standards module (`standards/`)
 
-> **New module**: `specweaver/standards/` — self-contained orchestrator for codebase analysis.
-> Consumes `specweaver/config` (DB). Forbidden: `specweaver/loom/*`.
+New module `specweaver/standards/`: a self-contained orchestrator for codebase analysis. Consumes
+`specweaver/config` (DB). Forbidden: `specweaver/loom/*`.
 
-#### [NEW] [analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/analyzer.py)
+[NEW] [analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/analyzer.py)
 
 ```python
 @dataclass
@@ -214,41 +217,22 @@ class StandardsAnalyzer(ABC):
     def extract_all(self, files: list[Path], half_life_days: float) -> list[CategoryResult]: ...
 ```
 
-#### [NEW] [python_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/python_analyzer.py)
-
-7 categories: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns, async_patterns.
-
-#### [NEW] [tree_sitter_base.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/tree_sitter_base.py)
-
-Base class for `TreeSitterAnalyzer` to establish tree-sitter bindings.
-
-#### [NEW] [languages/javascript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/javascript/analyzer.py)
-#### [NEW] [languages/typescript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/typescript/analyzer.py)
-
-Implements language-specific AST node traversal categories (`typescript_types` for TS, `jsdoc`/`tsdoc`, etc.).
-
-#### [NEW] [scanner.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/scanner.py)
-
-Contains `StandardsScanner` which handles orchestration: detecting scopes, mapping languages, and iterating analyzers.
-
-#### [NEW] [enricher.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/enricher.py)
-
-Contains `StandardsEnricher` which handles async LLM comparison loops via Pydantic output parsing.
-
-#### [NEW] [recency.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/recency.py)
-
-#### [NEW] [reviewer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/reviewer.py)
-
-#### [NEW] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py)
-
----
+| File | Holds |
+|---|---|
+| [NEW] [python_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/python_analyzer.py) | 7 categories: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns, async_patterns |
+| [NEW] [tree_sitter_base.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/tree_sitter_base.py) | base class `TreeSitterAnalyzer` for the tree-sitter bindings |
+| [NEW] [languages/javascript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/javascript/analyzer.py), [languages/typescript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/typescript/analyzer.py) | language-specific AST traversal categories (`typescript_types` for TS, `jsdoc`/`tsdoc`, etc.) |
+| [NEW] [scanner.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/scanner.py) | `StandardsScanner`: detect scopes, map languages, iterate analyzers |
+| [NEW] [enricher.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/enricher.py) | `StandardsEnricher`: async LLM comparison loops via Pydantic output parsing |
+| [NEW] [recency.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/recency.py), [reviewer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/reviewer.py), [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py) | see sub-phases |
 
 ### PromptBuilder
 
-#### [MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/prompt_builder.py)
+[MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/prompt_builder.py)
 
-- New `add_standards(text)` method → `_ContentBlock(kind="standards", priority=1)`
-- Insert standards rendering directly in `_render()` (L462-515) between constitution (L476) and topology (L479) — 5 lines added, no existing logic refactored:
+- New `add_standards(text)` → `_ContentBlock(kind="standards", priority=1)`.
+- Standards rendered directly in `_render()` (L462-515) between constitution (L476) and topology
+  (L479) — 5 lines added, no existing logic refactored:
 
 ```python
 # Standards (after constitution, before topology)
@@ -259,33 +243,28 @@ if standards:
     parts.append(f"<standards>\n{text}{marker}\n</standards>")
 ```
 
-Minimal diff, no risk to existing tests. Data-driven `_RENDER_ORDER` refactoring deferred to a future cleanup.
-
----
+Minimal diff, no risk to existing tests. A data-driven `_RENDER_ORDER` is deferred to a later cleanup.
 
 ### CLI
 
-#### [MODIFY] [cli.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli.py)
+[MODIFY] [cli.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli.py)
 
-- `sw standards scan [--compare]` — **separate command** (not a flag on `sw scan`). Orchestrate scan → HITL → store.
+- `sw standards scan [--compare]` — **separate command** (not a flag on `sw scan`): scan → HITL → store.
 - `sw standards show [--scope X]` — Rich table grouped by scope → language → category
 - `sw standards clear [--scope X]` — scoped delete
 - `sw standards scopes` — list detected scopes
-- `_load_standards_content(project_path, target_path)` — resolves project_name from DB by matching `project_path`, resolves scope via walk-up, loads + formats for prompt
-- Auto-injection: call `_load_standards_content()` alongside `_load_constitution_content()` at all 4 call sites (L951, L1082, L1797, L1950)
-- Constitution bootstrap moved to `sw standards scan` (not `sw scan`)
+- `_load_standards_content(project_path, target_path)` — resolves project_name from DB by matching
+  `project_path`, resolves scope via walk-up, loads + formats for the prompt
+- Auto-injection: call `_load_standards_content()` beside `_load_constitution_content()` at all 4
+  call sites (L951, L1082, L1797, L1950)
+- Constitution bootstrap lives in `sw standards scan` (not `sw scan`)
 
----
+### Flow engine
 
-### Flow Engine
+[MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/handlers.py) —
+`standards: str | None = None` on `RunContext` (after L59, beside `constitution`).
 
-#### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/handlers.py)
-
-Add `standards: str | None = None` to `RunContext` (after L59, alongside `constitution`).
-
----
-
-## File Discovery Strategy
+## File discovery
 
 ```
 Priority chain:
@@ -303,9 +282,10 @@ Priority chain:
     └── Log warning: "Not a git repo — using basic file discovery."
 ```
 
-`.specweaverignore` lives in project root (user-controlled config, not SpecWeaver-generated). Uses `pathspec` library for `.gitignore`-compatible pattern matching.
+`.specweaverignore` lives in the project root (user-controlled, not SpecWeaver-generated). It uses the
+`pathspec` library for `.gitignore`-compatible matching.
 
-#### [NEW] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py)
+[NEW] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py)
 
 ```python
 def discover_files(project_path: Path) -> list[Path]:
@@ -321,11 +301,9 @@ def _apply_specweaverignore(files: list[Path], project_path: Path) -> list[Path]
     """Filter files through .specweaverignore patterns (pathspec library)."""
 ```
 
----
+## Scope resolution
 
-## Scope Resolution Algorithm
-
-DB-backed walk-up resolution for injection:
+DB-backed walk-up for injection:
 
 ```python
 def _resolve_scope(target_path: Path, project_path: Path, known_scopes: list[str]) -> str:
@@ -349,11 +327,9 @@ def _resolve_scope(target_path: Path, project_path: Path, known_scopes: list[str
 
 Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 
----
+## Concerns
 
-## Remaining Implementation Concerns
-
-### ⚠️ Open (to resolve during implementation)
+### ⚠️ Open at planning time (to resolve during implementation)
 
 | # | Issue | Details | When |
 |---|---|---|---|
@@ -368,10 +344,10 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 
 | # | Issue | Solution |
 |---|---|---|
-| 2 | **File discovery** | Priority chain: `git ls-files` → `.specweaverignore` → `os.walk` fallback. Uses `pathspec` library. See File Discovery Strategy above. |
+| 2 | **File discovery** | Priority chain: `git ls-files` → `.specweaverignore` → `os.walk` fallback. Uses `pathspec` library. See File discovery above. |
 | 3 | **Scope detection heuristic** | 2-level deep detection. L1 dirs with sub-scopes → sub-scopes only (no double-counting). Always includes root `"."`. Implemented in `scope_detector.py`. |
 | 4 | **`_render()` test breakage** | Insert standards block directly (5 lines) — no refactor of existing logic, no test breakage. Data-driven `_RENDER_ORDER` deferred. |
-| 5 | **Scope resolution** | DB-backed walk-up: query known scopes once, walk up from file path, longest-prefix match. Falls back to `.` (root). See Scope Resolution Algorithm above. |
+| 5 | **Scope resolution** | DB-backed walk-up: query known scopes once, walk up from file path, longest-prefix match. Falls back to `.` (root). See Scope resolution above. |
 | 6 | **Rich interactive prompts in tests** | Mock `rich.prompt.Prompt.ask()` via `monkeypatch`. `--no-review` flag for CI. Combined review (one table for all scopes). |
 | 9 | **Token budget impact** | 2000-char cap. Scope-specific standards prioritized over root `"."`. Implemented in `_load_standards_content()`. |
 | 13 | **`_render()` per-kind logic** | Don't refactor. Insert `<standards>` block directly between constitution and topology. Each kind keeps its own rendering logic. |
@@ -382,22 +358,20 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 
 | Item | Why it's fine |
 |---|---|
-| `RunContext.standards` field | Clean addition alongside existing `constitution` field (L59 in handlers.py). Same Pydantic pattern. |
-| `PromptBuilder.add_standards()` | Follows exact pattern of `add_constitution()`. Priority 1, new `kind="standards"`. |
-| DB schema v6 | Follows existing migration pattern (v1→v5). `_SCHEMA_V6` string + `_ensure_schema()` block. |
-| Auto-injection in CLI callers | Same pattern as `_load_constitution_content()`. Add `_load_standards_content()` and call in same places. |
-| tree-sitter Windows wheels | Pre-built wheels available for Windows, no C compiler needed. |
+| `RunContext.standards` field | Added beside the existing `constitution` field (L59 in handlers.py). Same Pydantic pattern. |
+| `PromptBuilder.add_standards()` | Same pattern as `add_constitution()`. Priority 1, new `kind="standards"`. |
+| DB schema v6 | Existing migration pattern (v1→v5). `_SCHEMA_V6` string + `_ensure_schema()` block. |
+| Auto-injection in CLI callers | Same pattern as `_load_constitution_content()`: add `_load_standards_content()`, call it in the same places. |
+| tree-sitter Windows wheels | Pre-built wheels for Windows, no C compiler needed. |
 
-### New Dependencies
+### New dependencies
 
 | Package | Why |
 |---|---|
 | `pathspec` | `.gitignore` / `.specweaverignore` pattern matching. Well-maintained, no C extensions. |
 | `tree-sitter` + language grammars | JS/TS AST parsing (Phase 3.5a-3). Pre-built wheels. |
 
----
-
-## Verification Plan
+## Tests
 
 **Total: ~180-240 tests across 4 sub-phases.**
 
@@ -413,13 +387,13 @@ uv run pytest tests/ -x -q
 uv run ruff check src/ tests/
 ```
 
----
-
 ## Phase 3.5b: Validation Override Consolidation
 
-**Goal**: Eliminate duplicated threshold definitions between `profiles.py` Python dicts and YAML pipeline files. Establish a clean, well-documented separation: YAML = structure, DB = runtime tuning.
+**Since superseded** (noted 2026-09-25): `C-VAL-03` SF-03 dropped the `validation_overrides` table
+(Schema V14) and made the CLI read-only; Layer 2 below no longer exists.
 
-### Design Decisions
+**Goal**: one place per threshold — no duplication between `profiles.py` Python dicts and YAML
+pipeline files. YAML = structure, DB = runtime tuning.
 
 | # | Decision | Choice |
 |---|----------|--------|
@@ -431,7 +405,7 @@ uv run ruff check src/ tests/
 | 6 | `_THRESHOLD_PARAMS` | Fix now: rules self-declare `PARAM_MAP` |
 | 7 | Feature-level + profiles | Independent — `--level feature` always uses `validation_spec_feature.yaml` |
 
-### Validation Override Cascade (The Contract)
+### Validation override cascade (the contract)
 
 ```
 Precedence: YAML base < extends < DB overrides < --set flags
@@ -454,7 +428,7 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 └─ Example: sw check --set S08.fail_threshold=2
 ```
 
-### Architecture Validation
+### Architecture check
 
 | Module | Archetype | Boundary Respected? |
 |--------|-----------|---------------------|
@@ -463,16 +437,16 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 | `cli/` | orchestrator | ✅ Profile→pipeline selection logic is CLI concern |
 | `pipelines/` | data | ✅ No code changes, YAML files only |
 
-### Sub-Phase B-1: Profiles Select YAML Pipelines
+### B-1: Profiles select YAML pipelines
 
 | Component | What |
 |---|---|
 | `config/profiles.py` | Remove `PROFILES` dict and `DomainProfile` class. `list_profiles()` scans YAML files. `get_profile_description(name)` loads YAML description. |
-| `config/database.py` | `set_domain_profile()` simplified: only stores name, no bulk-write to `validation_overrides`. `clear_domain_profile()` only clears name, keeps per-rule tweaks. |
+| `config/database.py` | `set_domain_profile()` only stores the name, no bulk-write to `validation_overrides`. `clear_domain_profile()` only clears the name, keeps per-rule tweaks. |
 | `cli/validation.py` | `check()`: auto-select `validation_spec_{profile_name}.yaml` when profile active. Precedence: `--pipeline` > `--level` > active profile > default. `--level feature` always uses `validation_spec_feature.yaml`. |
 | `cli/config.py` | `config_set_profile()` simplified. `config_show_profile()` sources from YAML. `config_reset_profile()` only clears profile name. |
 
-### Sub-Phase B-2: Remove Legacy + Self-Declaring Rules
+### B-2: Remove legacy + self-declaring rules
 
 | Component | What |
 |---|---|
@@ -482,7 +456,7 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 | `validation/runner.py` | Remove: `get_spec_rules()`, `get_code_rules()`, `_build_rule_kwargs()`, `_THRESHOLD_PARAMS`. Keep: `run_rules()`, `count_by_status()`, `all_passed()`. |
 | 4 test files (~45 calls) | Rewrite to use pipeline executor path instead of removed functions. |
 
-### Sub-Phase B-3: Documentation
+### B-3: Documentation
 
 | Component | What |
 |---|---|
@@ -491,14 +465,14 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 | `validation_spec_default.yaml` | Add cascade comment block |
 | `context.yaml` (validation, pipelines) | Update descriptions |
 
+### Tests (3.5b)
 
-### Tests
-
-- **Unit** (~15): Profile YAML listing, profile-to-pipeline selection, `PARAM_MAP` self-declaration, `set_domain_profile()` simplified behavior, `clear_domain_profile()` preserves overrides
+- **Unit** (~15): profile YAML listing, profile-to-pipeline selection, `PARAM_MAP` self-declaration,
+  `set_domain_profile()` simplified behavior, `clear_domain_profile()` preserves overrides
 - **Integration** (~10): `sw config set-profile` → pipeline selection, `sw check` with active
   profile, `--pipeline` overrides profile, `--level feature` ignores profile, DB override on top of
   profile pipeline
-- **Edge cases** (~5): Custom profile from `.specweaver/`, reset-profile keeps tweaks, unknown profile error, profile + `--set` combined
+- **Edge cases** (~5): custom profile from `.specweaver/`, reset-profile keeps tweaks, unknown
+  profile error, profile + `--set` combined
 
-**Verification**: `/pre-commit-test-gap` workflow (5 phases).
-
+Verification: `/pre-commit-test-gap` workflow (5 phases).

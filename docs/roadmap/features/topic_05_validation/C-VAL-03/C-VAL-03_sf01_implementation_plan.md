@@ -1,70 +1,59 @@
-# Implementation Plan: Dynamic Risk-Based Rulesets (DAL) [SF-01: DAL Schema & Pydantic Impact Matrix Merge]
-- **Feature ID**: 3.20b
-- **Sub-Feature**: SF-01 — DAL Schema & Pydantic Impact Matrix Merge
-- **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_design.md
-- **Design Section**: §Sub-Feature Decomposition → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-03/C-VAL-03_sf01_implementation_plan.md
-- **Status**: APPROVED
+# C-VAL-03 SF-01 — DAL Schema & Pydantic Impact Matrix Merge
 
-**FRs owned: FR-1, FR-4.** The DAL declaration in `context.yaml` and the project's own impact
-matrix deep-merged over the packaged profiles. Recorded 2026-08-17 under `specweaver-dev` §3.2c,
-from `INT-US-25-SF01-MIG`.
+**Status**: APPROVED · COMPLETE, all pre-commit gates passed · **FRs owned**: FR-1, FR-4 (recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`) · **Depends on**: none ·
+Design: [C-VAL-03_design.md](C-VAL-03_design.md) §Sub-features → SF-01 · Feature ID 3.20b
 
+## Goal
 
-## Goal Description
-Implement the core configuration layer for Mixed Criticality (DAL) execution. We will define the
-`DALLevel` enumeration (`DAL_A` through `DAL_E`) inside the fundamental `config/dal.py` module.
-Next, we will introduce a `DALImpactMatrix` schema inside the database or settings loader that maps
-these DAL levels to deep configuration overrides (disabling rules or tightening thresholds based on
-risk tier). The system will safely deep-merge user-defined `.specweaver/dal_definitions.yaml` over
-the standard internal profiles using `ruamel.yaml` before invoking Pydantic's strict schema
-validation.
+The configuration layer for Mixed Criticality: the DAL declaration in `context.yaml` and the
+project's own impact matrix deep-merged over the packaged profiles.
 
-## User Decisions (Phase 4 Audits Merged)
-- **Deep Merge Strategy**: Pydantic's `SettingsConfigDict` lacks a native `deep_merge=True`
-  parameter. To avoid fragile internal settings-source hacking, we rely on a custom, deterministic
-  `deep_merge_dict()` helper in `config/settings.py` paired with `ruamel.yaml` for deserialization
-  to correctly layer project-level `dal_definitions.yaml` configs on top of our system default
-  configurations, validating the final flattened dictionary via `Pydantic`
-  `ValidationSettings(**merged)`.
-- **Architectural Boundary Safety**: To prevent circular dependencies, `DALLevel` relies exclusively
-  on `config/dal.py` rather than `validation/models.py`. The `config` module natively sits strictly
-  below everything (`consumes: []`).
+- `DALLevel` enum (`DAL_A` through `DAL_E`) in `config/dal.py`.
+- `DALImpactMatrix` schema mapping each level to config overrides (disable rules, tighten
+  thresholds).
+- Deep-merge `.specweaver/dal_definitions.yaml` over the internal profiles with `ruamel.yaml`, then
+  Pydantic strict schema validation.
 
-## Proposed Changes
+## Changes
 
-### [NEW] src/specweaver/config/dal.py
-- Define `class DALLevel(enum.StrEnum):` 
-  - `DAL_A = "DAL_A"` (Highest Risk / Aerospace-grade)
-  - `DAL_B = "DAL_B"`
-  - `DAL_C = "DAL_C"`
-  - `DAL_D = "DAL_D"`
-  - `DAL_E = "DAL_E"` (Lowest Risk / Startup Scripts)
+1. **[NEW] `src/specweaver/config/dal.py`** — `class DALLevel(enum.StrEnum):`
+   - `DAL_A = "DAL_A"` (Highest Risk / Aerospace-grade)
+   - `DAL_B = "DAL_B"`
+   - `DAL_C = "DAL_C"`
+   - `DAL_D = "DAL_D"`
+   - `DAL_E = "DAL_E"` (Lowest Risk / Startup Scripts)
+2. **[MODIFY] `src/specweaver/config/settings.py`**
+   - Add `from specweaver.core.config.dal import DALLevel`.
+   - `class DALImpactMatrix(BaseModel):` — `dict[DALLevel, ValidationSettings]`.
+   - `ValidationSettings` fields support `enabled: bool = True` explicitly, so a rule can be
+     disabled (e.g. `Rule_X: {"enabled": False}`).
+   - Module-level pure function `deep_merge_dict(base: dict, overlay: dict) -> dict`: updates
+     primitive keys, recurses into nested dicts.
+   - `load_settings()`: if `.specweaver/dal_definitions.yaml` exists, load it via `ruamel.yaml`;
+     fetch the default DAL definitions (or an empty baseline); `deep_merge_dict()` the project file
+     over it; hydrate the result into Pydantic models.
 
-### [MODIFY] src/specweaver/config/settings.py
-- Add `from specweaver.core.config.dal import DALLevel`
-- Create `class DALImpactMatrix(BaseModel):`
-  - A mapping of `DALLevel` to `ValidationSettings` (`dict[DALLevel, ValidationSettings]`), allowing rules to be bypassed or made stricter based on risk.
-- Ensure `ValidationSettings` fields correctly support `enabled: bool = True` explicitly to allow disabling specific rules. (e.g. `Rule_X: {"enabled": False}`).
-- Implement a module-level pure logic string function: `deep_merge_dict(base: dict, overlay: dict) -> dict` 
-  - Standard dictionary recursor: Updates primitive keys, deep-merges nested dicts.
-- Modify `load_settings()` orchestration:
-  - If `.specweaver/dal_definitions.yaml` exists, load it via `ruamel.yaml`.
-  - Fetch default framework DAL definitions map (or construct an empty baseline).
-  - Use `deep_merge_dict()` to merge project-specific DAL rulesets over the baseline.
-  - Finalize hydration of the merged dictionary into Pydantic models to assert schema type-safety.
+## Tests
 
-## Verification Plan
+`tests/unit/config/test_dal_merge.py`:
 
-### Automated Tests
-- Create `tests/unit/config/test_dal_merge.py`.
-- Write unit tests targeting `deep_merge_dict()` to guarantee that dictionary keys present in the overlay overwrite base keys, while unmentioned base keys are preserved (deep merge).
-- Write tests injecting a mocked `.specweaver/dal_definitions.yaml` to ensure `load_settings()` effectively disables rule `S01` globally for `DAL_E`, but leaves it strictly enforced for `DAL_A`.
-- Assert Pydantic instantly fails if `dal_definitions.yaml` contains an invalid enum like `warn_threshold: "apple"`.
+| Case | Asserts |
+|---|---|
+| `deep_merge_dict()` | overlay keys overwrite base keys; unmentioned base keys are preserved |
+| mocked `.specweaver/dal_definitions.yaml` | `load_settings()` disables `S01` for `DAL_E`, keeps it enforced for `DAL_A` |
+| invalid value (`warn_threshold: "apple"`) | Pydantic fails |
 
-### Pre-Commit Gate
-- Architecture Validation runs successfully, ensuring `config/settings.py` strictly adheres to `consumes: []` (no circular imports from Validation).
-- `pytest -m unit` reports PASSED.
+Gate: architecture validation passes with `config/settings.py` at `consumes: []` (no import from
+Validation); `pytest -m unit` passes.
 
-## Session Handoff
-Currently in COMPLETE state. All pre-commit quality gates have passed.
+## Decisions (audit)
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | Deep merge by a custom `deep_merge_dict()` in `config/settings.py` + `ruamel.yaml`, then `ValidationSettings(**merged)` | Pydantic's `SettingsConfigDict` has no `deep_merge=True`; hacking internal settings sources is fragile |
+| 2 | `DALLevel` lives in `config/dal.py`, not `validation/models.py` | No circular dependency: `config` sits below everything (`consumes: []`) |
+
+## As built
+
+`DALLevel` later moved to `src/specweaver/commons/enums/dal.py` (SF-05).

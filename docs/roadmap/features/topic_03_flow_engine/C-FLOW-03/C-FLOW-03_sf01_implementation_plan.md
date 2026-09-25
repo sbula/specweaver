@@ -1,97 +1,75 @@
-# Implementation Plan: Multi-spec pipeline fan-out [SF-01: Topological DAG Wave Generation]
-- **Feature ID**: 3.27
-- **Sub-Feature**: SF-01 — Topological DAG Wave Generation
-- **Design Document**: docs/roadmap/phase_3/feature_3.27/feature_3.27_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf01_implementation_plan.md
-- **Status**: COMPLETED
+# C-FLOW-03 SF-01 — Topological DAG Wave Generation
 
-**FRs owned: FR-1, FR-6.** Wave scheduling and cascading aborts. Recorded 2026-08-17 under
-`specweaver-dev` §3.2c, from `INT-US-18-MIG`. Proof and mutants:
-`tests/unit/core/flow/handlers/test_decompose.py`,
+**Status**: COMPLETED · **FRs owned**: FR-1, FR-6 — wave scheduling and cascading aborts (recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-18-MIG`) · **Depends on**: none · Design:
+[C-FLOW-03_design.md](C-FLOW-03_design.md) §Sub-Feature Breakdown → SF-01 · Feature ID 3.27
+
+Proof and mutants: `tests/unit/core/flow/handlers/test_decompose.py`,
 `tests/integration/core/flow/engine/test_dag_orchestration_integration.py`.
 
+## Goal
 
-## 1. Goal
+A topological DAG filter in `OrchestrateComponentsHandler` sorts decomposed components into mutually
+exclusive batches. No two components run in parallel if they share topology impact or one depends on
+the other.
 
-Implement the Topological DAG filtering inside `OrchestrateComponentsHandler` to classify decomposed
-components into mutually exclusive batches. Ensure no components run in parallel if they share
-physical topology impacts or logically depend on each other.
+**Dynamic dispatch, not static waves** (HITL). `graphlib.TopologicalSorter` yields a component for
+parallel execution the moment its upstream `depends_on` tasks finish. A
+`currently_running_impacts` set blocks physical collisions: a ready component starts only if its
+`impact_of` does not overlap any running component. This removes the "straggler stalls the wave"
+problem.
 
-> [!TIP]
-> **Dynamic Dispatch vs Static Waves**: Based on HITL feedback, the engine will use a **Dynamic DAG
-> Dispatcher** rather than strict sequential waves. Using `graphlib.TopologicalSorter`, components
-> are dynamically yielded for parallel execution the exact millisecond their upstream `depends_on`
-> tasks finish. To prevent physical collisions, the dispatcher will maintain a
-> `currently_running_impacts` set. A ready component only starts if its topological `impact_of` does
-> not overlap with any currently running component. This solves the "straggler stalls the wave"
-> problem.
+## Changes
 
-## 2. Code Changes
-
-### [MODIFY] `src/specweaver/workflows/planning/decomposition.py`
-Add explicit fields to map sub-components directly to the `TopologyGraph` and enforce chronological execution sequence.
-
-#### Modifications:
-- In `ComponentChange`, add `target_modules: list[str] = Field(default_factory=list, description="Exact names of the context.yaml modules this component modifies.")`.
-- Add a Pydantic `@field_validator('target_modules')` (or handle validation in Orchestrator) to
-  strictly ensure these aren't empty, though we can't fully validate against the real graph here
-  without passing context to the model.
-
-### [MODIFY] `src/specweaver/workflows/planning/decomposer.py`
-Update the prompt to instruct the LLM on producing the required topological boundaries.
-
-#### Modifications:
-- In `_DECOMPOSE_INSTRUCTION_TEMPLATE`, explicitly command the LLM to output `dependencies` for
-  logical sequencing (e.g. "if component B uses a table created by component A, B depends on A") and
-  `target_modules` mapped accurately from the provided TopologyContext list.
-- Ensure the prompt demands exact context.yaml spelling.
-
-### [MODIFY] `src/specweaver/core/flow/_decompose.py`
-Rewrite `OrchestrateComponentsHandler` to orchestrate parallel execution via standard DAG logic instead of a bulk `asyncio.gather` list.
-
-#### Modifications:
-- **Logical Dependency Registration**: Use Python's built-in `graphlib.TopologicalSorter`. Iterate
-  over the `components` list. If Component B specifies `Component A` in its `dependencies` array
-  (meaning a strict logical/temporal requirement like B using a table created by A), register this
-  directly via `sorter.add("Component B", "Component A")`.
-- **The Engine Loop**: Create an `async` while loop running `sorter.is_active()`.
-- **DAG Yielding**: Call `sorter.get_ready()`. The Graphlib engine internally ensures a component
-  *never* yields until all of its logical dependencies have marked themselves `done()`. If Component
-  A fails, `done()` is never called, and Component B is safely skipped and marked as an aborted
-  downstream failure (satisfying FR-6).
-- **Evaluate Physical Collisions**: For each *logically ready* component yielded by the sorter,
-  query `TopologyGraph.impact_of(module)` for all its `target_modules`. Compare this against a
-  merged set of impacts for all currently running task futures.
-- If it physically collides with an active component, push it into a waiting queue to try again on
-  the next loop tick. If there is no collision, dispatch it via
-  `runner.run(pipeline, parent_run_id)` as an independent background `asyncio.create_task()` future.
-- Since `PipelineRunner.fan_out` already exists, we will transition it or parallelize standard `.run()` calls wrapped in `asyncio.Task`.
+1. **[MODIFY] `src/specweaver/workflows/planning/decomposition.py`** — map components to the
+   `TopologyGraph`:
+   - `ComponentChange` gains `target_modules: list[str] = Field(default_factory=list, description="Exact names of the context.yaml modules this component modifies.")`.
+   - A Pydantic `@field_validator('target_modules')` (or validation in the orchestrator) keeps it
+     non-empty; the model cannot check against the real graph without context.
+2. **[MODIFY] `src/specweaver/workflows/planning/decomposer.py`** — `_DECOMPOSE_INSTRUCTION_TEMPLATE`
+   tells the LLM to output `dependencies` for logical order (e.g. "if component B uses a table
+   created by component A, B depends on A") and `target_modules` from the provided TopologyContext
+   list, spelled exactly as in context.yaml.
+3. **[MODIFY] `src/specweaver/core/flow/_decompose.py`** — `OrchestrateComponentsHandler` runs a DAG
+   instead of one bulk `asyncio.gather` list:
+   1. **Register dependencies** in a `graphlib.TopologicalSorter`: if Component B lists `Component A`
+      in `dependencies`, `sorter.add("Component B", "Component A")`.
+   2. **Loop** `async` while `sorter.is_active()`.
+   3. **Yield** via `sorter.get_ready()`: a component never yields until all its dependencies are
+      `done()`. If A fails, `done()` is never called; B is skipped and marked an aborted downstream
+      failure (FR-6).
+   4. **Check collisions**: for each ready component, `TopologyGraph.impact_of(module)` over its
+      `target_modules`, against the merged impacts of all running futures.
+   5. Collision → waiting queue, retried next tick. No collision → `runner.run(pipeline, parent_run_id)`
+      as a background `asyncio.create_task()` future.
+   6. `PipelineRunner.fan_out` exists; either transition it or run standard `.run()` calls wrapped in
+      `asyncio.Task`.
 
 > [!CAUTION]
 > Integrating `runner.run` independently means we bypass `fan_out` bulk tracking, taking over the
 > responsibility inside `OrchestrateComponentsHandler`. The handler must manually gather all
 > `run_id` results and format them into `sub_runs` output array for the state database.
 
-## 3. Backlog / Deferred
-- Rate throttling (`asyncio.Semaphore()`) and generic `SW_PORT_OFFSET` configuration will be built explicitly in SF-02 and SF-03. SF-01 purely structures the chronological execution graph.
+Deferred: rate throttling (`asyncio.Semaphore()`) and `SW_PORT_OFFSET` go to SF-02 and SF-03.
+SF-01 only builds the execution graph.
 
-## 4. Developer Notes & Hitl Feedback Answers
+## Tests
 
-1. **Topology Context Phase**: Contexts are passed during *Decomposition* step (before
-   implementation begins). If the LLM analysis isn't deep enough, `TopologyGraph.impact_of`
-   mathematically protects us because it recursively resolves all downstream impacts anyway. If the
-   LLM claims a component only modifies `auth`, but `auth` ripples into `api`, the Graph
-   automatically flags `api` as impacted.
-2. **Straggler Tasks holding up waves**: The standard wave design was modified precisely to fix
-   this. We use `graphlib.TopologicalSorter.done()` notifications. If Wave A has a straggler, any
-   component in Wave B that *only* depended on the finished tasks of Wave A will immediately start
-   running, maximizing throughput.
+- `test_integration_starvation_and_dependency_bubble_up`
+- `test_integration_topological_collision_deferment`
 
-> [!IMPORTANT]
-> **End of Plan**. A new agent can take this document and immediately execute `[MODIFY] _decompose.py` against the Graphlib interface without missing any details.
+## Decisions (HITL)
 
-## 5. Execution Results
-- `[x]` DAG Dispatcher successfully implemented in `_decompose.py`.
-- `[x]` Integrated tests (`test_integration_starvation_and_dependency_bubble_up`, `test_integration_topological_collision_deferment`) implemented and passing correctly.
-- `[x]` Full Quality Gate passed autonomously.
+1. **Topology context arrives at decomposition**, before implementation. If the LLM under-reports,
+   `TopologyGraph.impact_of` still resolves every downstream impact: a component the LLM says only
+   touches `auth` also flags `api` if `auth` ripples into it.
+2. **Stragglers:** `graphlib.TopologicalSorter.done()` notifications let any component whose
+   dependencies are finished start at once, even while another task of the same "wave" still runs.
+
+## As built
+
+- `[x]` DAG Dispatcher implemented in `_decompose.py`.
+- `[x]` Integration tests (`test_integration_starvation_and_dependency_bubble_up`, `test_integration_topological_collision_deferment`) implemented and passing.
+- `[x]` Full Quality Gate passed.
+
+**Since moved** (noted 2026-09-25): the handler lives at `src/specweaver/core/flow/handlers/decompose.py`.
