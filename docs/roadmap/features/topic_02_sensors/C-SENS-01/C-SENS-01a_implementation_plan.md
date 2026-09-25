@@ -1,81 +1,106 @@
-# Feature 3.11a Implementation Plan: Architecture Cleanup
+# C-SENS-01a — Architecture Cleanup
 
-The goal of this feature is to address the accumulated architectural debt from Features 3.10 and
-3.11. This cleanup aligns the tool-execution engine with the established Atom/Tool layer boundaries
-and unlocks mid-loop injection capabilities for the LLM review/planning agents.
+**Status**: Implemented in `5e013e6a` (2026-03-25) · Legacy: Feature 3.11a · Parent:
+[C-SENS-01](C-SENS-01_implementation_plan.md)
 
-## Proposed Changes
+## Goal
 
----
-### 1. `planning/`
-Refactor the Planner to use `PromptBuilder` instead of raw string formatting. This standardizes prompt construction and allows the injection of auto-detected mentions and standards.
+Pay the architectural debt of Features 3.10 and 3.11: align the tool-execution engine with the
+Atom/Tool layer boundaries, and allow mid-loop injection for the LLM review/planning agents.
 
-#### [MODIFY] planner.py(file:///c:/development/pitbula/specweaver/src/specweaver/planning/planner.py)
+## Changes
+
+### 1. `planning/` — Planner on `PromptBuilder`
+
+Standard prompt construction, so auto-detected mentions and standards can be injected.
+
+`planner.py` (`src/specweaver/planning/planner.py`):
 - Remove `PLAN_SYSTEM_PROMPT` and `PLAN_USER_TEMPLATE` constants.
 - Instantiate `PromptBuilder` inside `Planner.plan()`.
 - Add the specification as a priority-1 file block.
-- Refactor the context insertion logic to use Builder blocks instead of formatting `{extra_context}` strings.
+- Insert context as Builder blocks instead of formatting `{extra_context}` strings.
 
----
-### 2. `llm/`
-Expose a callback hook in the agentic tool-use loop so that orchestrators can scan intermediate responses and inject new context (like file mentions) between tool rounds.
+### 2. `llm/` — callback hook in the tool-use loop
 
-#### [MODIFY] adapters/base.py(file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/base.py)
-- Update `generate_with_tools` signature to accept
-  `on_tool_round: Callable[[list[Message]], Awaitable[list[Message]]] | None = None`. (The callback
-  will return *new* `Message` blocks, which the adapter appends, rather than mutating the list in
-  place).
+Orchestrators can scan intermediate responses and inject new context (like file mentions) between
+tool rounds.
 
-#### [MODIFY] adapters/gemini.py(file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/gemini.py)
-- Inside the `for round_num in range(max_tool_rounds):` loop, after appending tool results to `messages`, add `if on_tool_round: await on_tool_round(messages)`.
+`adapters/base.py` (`src/specweaver/llm/adapters/base.py`):
+- `generate_with_tools` accepts
+  `on_tool_round: Callable[[list[Message]], Awaitable[list[Message]]] | None = None`. The callback
+  returns *new* `Message` blocks, which the adapter appends; it does not mutate the list in place.
 
----
-### 3. `loom/` (The Dispatcher & Commons Cleanup)
-Eliminate the `commons/research/` envelope, which violates upward dependency rules by importing tools. Promote the executor to a Dispatcher at the `loom` root. Decentralize tool definitions.
+`adapters/gemini.py` (`src/specweaver/llm/adapters/gemini.py`):
+- Inside `for round_num in range(max_tool_rounds):`, after appending tool results to `messages`:
+  `if on_tool_round: await on_tool_round(messages)`.
 
-#### [NEW] dispatcher.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/dispatcher.py)
+### 3. `loom/` — Dispatcher and commons cleanup
+
+`commons/research/` imported tools, violating the upward dependency rules. It is removed; the
+executor becomes a Dispatcher at the `loom` root, and tool definitions live with their tools.
+
+`dispatcher.py` (new, `src/specweaver/loom/dispatcher.py`):
 - Rename `ToolExecutor` to `ToolDispatcher`.
-- Implement a Factory Method `ToolDispatcher.create(boundary, allowed_tools: list[str])` to keep tool imports hidden from `flow/`.
-- The factory selectively instantiates *only* the requested tools (e.g., `['read_file', 'grep']`), avoiding the overhead of instantiating the entire tool suite for agents that don't need them.
-- Loop over the instantiated tools to build the registry and definition list automatically via a standard `Tool.definition()` method.
+- Factory Method `ToolDispatcher.create(boundary, allowed_tools: list[str])` keeps tool imports
+  hidden from `flow/`.
+- The factory instantiates *only* the requested tools (e.g., `['read_file', 'grep']`), not the
+  whole suite.
+- It loops over the instantiated tools to build the registry and definition list via a standard
+  `Tool.definition()` method.
 
-#### [DELETE] commons/research/executor.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/commons/research/executor.py)
-- Removed in favor of `dispatcher.py`.
+Deleted:
+- `commons/research/executor.py` (`src/specweaver/loom/commons/research/executor.py`) — replaced by
+  `dispatcher.py`.
+- `commons/research/boundaries.py` (`src/specweaver/loom/commons/research/boundaries.py`) —
+  `WorkspaceBoundary` functionality merges into `FolderGrant`.
+- `commons/research/definitions.py` (`src/specweaver/loom/commons/research/definitions.py`) —
+  definitions move into the tool implementations (e.g., `loom/tools/filesystem/search.py`,
+  `loom/tools/web/search.py`).
 
-#### [DELETE] commons/research/boundaries.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/commons/research/boundaries.py)
-- `WorkspaceBoundary` functionality will be merged into `FolderGrant`.
+`security.py` (new, `src/specweaver/loom/security.py`):
+- `FolderGrant` extracted from `filesystem/models.py` into this central module, so the Dispatcher
+  and non-filesystem tools can import it without crossing boundaries.
+- `WorkspaceBoundary` path validation merged into `FolderGrant`.
 
-#### [DELETE] commons/research/definitions.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/commons/research/definitions.py)
-- Definitions will be moved directly into individual tool implementations (e.g., `loom/tools/filesystem/search.py`, `loom/tools/web/search.py`).
+`tools/filesystem/models.py` (`src/specweaver/loom/tools/filesystem/models.py`):
+- `FolderGrant` supports secondary roots and the path verification formerly in `WorkspaceBoundary`.
 
-#### [NEW] security.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/security.py)
-- Extract `FolderGrant` from `filesystem/models.py` into this central module so that the Dispatcher and other non-filesystem tools can import it without crossing boundaries.
-- Merge the `WorkspaceBoundary` path-validation logic into `FolderGrant`.
+### 4. `flow/` — handlers on the Dispatcher and the callback
 
-#### [MODIFY] tools/filesystem/models.py(file:///c:/development/pitbula/specweaver/src/specweaver/loom/tools/filesystem/models.py)
-- Enhance `FolderGrant` to support secondary roots and path verification logic previously found in `WorkspaceBoundary`.
+`_review.py` (`src/specweaver/flow/_review.py`):
+- Imports move from `loom.commons.research.executor` to `loom.dispatcher`.
+- Pass `generate_with_tools` an `on_tool_round` callback closing over the `Reviewer` and
+  `RunContext`. It scans the latest LLM message for mentions and appends
+  `PromptBuilder.add_mentioned_files()` blocks to the message history.
 
----
-### 4. `flow/`
-Update the pipeline handlers to accommodate the ToolDispatcher changes and utilize the new adapter callback for injecting mention blocks.
-
-#### [MODIFY] _review.py(file:///c:/development/pitbula/specweaver/src/specweaver/flow/_review.py)
-- Update imports from `loom.commons.research.executor` to `loom.dispatcher`.
-- Pass a `on_tool_round` callback closing over the `Reviewer` and `RunContext` to
-  `generate_with_tools`. In the callback, perform mention scanning on the latest LLM message and
-  append `PromptBuilder.add_mentioned_files()` blocks directly to the message history.
-
-#### [MODIFY] context.yaml(file:///c:/development/pitbula/specweaver/src/specweaver/flow/context.yaml)
+`context.yaml` (`src/specweaver/flow/context.yaml`):
 - Remove `loom/commons/research` from `consumes`.
-- Add `loom/dispatcher` and `loom/tools/filesystem`, `loom/tools/web` to `consumes`. 
+- Add `loom/dispatcher` and `loom/tools/filesystem`, `loom/tools/web` to `consumes`.
 
-## Verification Plan
+## Tests
 
-### Automated Tests
-- `pytest tests/unit/planning/` to ensure Planner outputs the correct structured JSON. (Spec size violations will fail-fast per existing S03 limits).
-- `pytest tests/unit/loom/` to verify `ToolDispatcher` properly handles dynamic tool registration.
-- Explicitly update existing test mocks via sed replacement: `specweaver.core.loom.commons.research...` → `specweaver.core.loom.dispatcher...` before attempting to run tests.
-- `pytest tests/unit/flow/` and `pytest tests/unit/review/` to verify the `on_tool_round` callback operates correctly during tool loops.
+1. First update the test mocks by sed replacement:
+   `specweaver.core.loom.commons.research...` → `specweaver.core.loom.dispatcher...`.
+2. `pytest tests/unit/planning/` — the Planner outputs the correct structured JSON. (Spec size
+   violations fail fast per the existing S03 limits.)
+3. `pytest tests/unit/loom/` — `ToolDispatcher` handles dynamic tool registration.
+4. `pytest tests/unit/flow/` and `pytest tests/unit/review/` — the `on_tool_round` callback works
+   during tool loops.
 
-### Manual Verification
-- Run `sw review CODE features/login.md` where the spec references files only known post-tool search, and observe the trace logs showing mention injection between rounds.
+Manual: run `sw review CODE features/login.md` where the spec references files only found by a tool
+search, and watch the trace logs show mention injection between rounds.
+
+## As built
+
+Differs from the plan, noted 2026-09-25:
+
+- The callback is synchronous: `on_tool_round: Callable[[int, list[Message]], None]` (round number +
+  messages), applied by each adapter.
+- The factory is `ToolDispatcher.create_standard_set(boundary, role, allowed_tools, ...)`.
+- `WorkspaceBoundary` was not merged away; it sits beside `FolderGrant` in the security module.
+
+**Since moved**: `loom/dispatcher.py` → `src/specweaver/sandbox/dispatcher.py`; `loom/security.py`
+→ `src/specweaver/sandbox/security.py`; `planning/planner.py` →
+`src/specweaver/workflows/planning/planner.py`; `llm/adapters/` →
+`src/specweaver/infrastructure/llm/adapters/`; `flow/_review.py` →
+`src/specweaver/core/flow/handlers/review.py`.

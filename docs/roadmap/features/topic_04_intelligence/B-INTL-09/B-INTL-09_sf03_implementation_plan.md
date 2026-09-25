@@ -1,116 +1,62 @@
-# Implementation Plan: Agent Memory Bank [SF-03: DAG & Context Validation]
-- **Feature ID**: B-INTL-09
-- **Sub-Feature**: SF-03 — DAG & Context Validation
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf03_implementation_plan.md
-- **Status**: APPROVED
-- **Execution State**: COMPLETED (Commit Boundaries 1, 2, and 3 successfully implemented and verified).
+# B-INTL-09 SF-03 — DAG & Context Validation
 
----
+**Status**: APPROVED · COMPLETED (Commit Boundaries 1, 2, and 3 implemented and verified). ·
+**FRs owned**: FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation) · **Depends
+on**: SF-02 · Design: [B-INTL-09_design.md](B-INTL-09_design.md) §Sub-features → SF-03
 
-## Scope Summary
+## Goal
 
-SF-03 extends the `MemoryRepository` with three capabilities not present in the SF-02 CRUD foundation:
+Three capabilities on top of the SF-02 CRUD foundation:
 
-1. **DAG Cycle Detection via `WITH RECURSIVE`** — Replace the naive `add_task_dependency` with
-   `insert_dependency` that executes a `WITH RECURSIVE` CTE against the `memory_task_dependencies`
-   table to detect cycles *before* inserting an edge. This prevents infinite hallucinated cycles
-   from crashing the Flow Engine (AD-7).
+1. **DAG cycle detection via `WITH RECURSIVE`** — `insert_dependency` replaces `add_task_dependency`
+   and runs a `WITH RECURSIVE` CTE against `memory_task_dependencies` *before* inserting an edge, so
+   hallucinated cycles cannot crash the Flow Engine (AD-7).
+2. **Transactional OCC `acquire_task`** on the `version` column: SELECT + UPDATE in one transaction;
+   on version mismatch raise `StaleTaskVersionError` immediately. Retry (NFR-1) belongs to the caller
+   (`FlowEngine`), so each retry gets a fresh transaction boundary.
+3. **Pydantic `HandoverContext` validation** — `update_handover_context` takes a validated model:
+   strict JSON schema, field validation, 8KB hard limit (NFR-6), stack traces truncated to the last
+   2000 characters. Invalid payloads are rejected *before* they enter the DB.
 
-2. **Transactional OCC `acquire_task`** — Implement Optimistic Concurrency Control using the
-   `version` column. A SELECT + UPDATE executes within a single transaction. On version mismatch,
-   raise `StaleTaskVersionError` immediately. Retry logic (NFR-1) is deferred to the caller
-   (`FlowEngine`) to ensure a fresh transaction boundary is created for each retry.
+Not here (SF-04): Zombie Recovery heartbeat scanning, 3-Strike Circuit Breaker, upstream `BLOCKED` →
+`UPSTREAM_BLOCKED` DAG propagation.
 
-3. **Pydantic `HandoverContext` Validation** — Replace the raw string `update_handover_context` with
-   a Pydantic-validated version. Define a `HandoverContext` model with strict JSON schema, field
-   validation, and an 8KB hard limit (NFR-6). Stack traces are truncated to the last 2000
-   characters. Invalid payloads are rejected *before* they enter the DB.
+## Where it plugs in
 
-**FRs covered**: FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation).
+Inputs: the SF-02 `MemoryRepository` (`repository.py`) and the SF-01 models (`store.py`).
 
-**FRs explicitly NOT covered (deferred to SF-04)**:
-- Zombie Recovery heartbeat scanning → SF-04
-- 3-Strike Circuit Breaker → SF-04
-- Upstream `BLOCKED` → `UPSTREAM_BLOCKED` DAG propagation → SF-04
+| Fact | Where |
+|---|---|
+| SF-02's `add_task_dependency` checks self-dependency and duplicate edges, no cycle detection. SF-03 replaces it. | `repository.py:269-284` |
+| SF-02's `update_handover_context` is a raw `str \| None` setter. SF-03 validates through Pydantic at the application boundary; the DB's `CheckConstraint("length(handover_context) <= 8192")` (SF-01) stays as a safety net. | `repository.py:258-267` |
+| `remove_task_dependency` kept as-is: removing an edge can never create a cycle. | `repository.py:286-299` |
+| `pydantic>=2.12`, already a dependency — no new dependencies. | `pyproject.toml:15` |
+| `src.specweaver.workspace` is registered with `depends_on = []`; the new code imports only `workspace.memory.store`, `workspace.store` and `core.config.database`. | `tach.toml` |
 
-**Inputs**: The `MemoryRepository` core CRUD from SF-02 (`repository.py`), the SQLAlchemy models from SF-01 (`store.py`).
+Conventions carried over: PEP 420 (no `__init__.py`); methods return `dict[str, object]`;
+`logger = logging.getLogger(__name__)` with `%s` lazy formatting (Pattern #20); explicit
+`datetime.now(UTC)` on every mutation (Pattern #14 in `special_patterns_and_adaptations.md`);
+`session.flush()`, NOT `session.commit()` — `session_scope()` owns the transaction.
 
-**Outputs**:
-- `src/specweaver/workspace/memory/repository.py` (modified — add `insert_dependency`, `acquire_task`, upgrade `update_handover_context`)
-- `src/specweaver/workspace/memory/errors.py` (modified — add `CyclicDependencyError`, `StaleTaskVersionError`)
-- `src/specweaver/workspace/memory/models.py` (new — `HandoverContext` Pydantic model)
-- `tests/unit/workspace/test_memory_repository.py` (modified — add SF-03 tests)
-- `tests/integration/workspace/test_memory_integration.py` (modified — add SF-03 integration scenarios)
+External API:
 
----
+- **`text()` + `WITH RECURSIVE`**: `sqlalchemy.text()` with named bind parameters (`:parent_id`,
+  `:child_id`), executed via `await session.execute(text(...), {"parent_id": ..., "child_id": ...})`;
+  results via `result.scalars().all()` or `result.fetchone()`.
+- **OCC**: the native `version_id_col` mapper arg bumps version on every flush — too aggressive.
+  `acquire_task` checks `version` in a WHERE clause and increments only on successful acquisition.
+- **Pydantic v2**: `BaseModel` with `Field(max_length=...)`; `model_validate_json()` for JSON
+  strings; `@field_validator` with `mode="after"` for type-safe stack-trace truncation.
+- **Retry boundary**: the caller retries by opening a new `session_scope()`. Backoff inside
+  `MemoryRepository` would violate transaction snapshot isolation on SQLite and retry forever on
+  stale data.
+- **`StaleDataError`** (`sqlalchemy.orm.exc.StaleDataError`) is not used — no mapper-level OCC. The
+  custom `StaleTaskVersionError` mirrors `IllegalStateTransitionError`: `task_id`,
+  `expected_version`, `actual_version`.
 
-## Research Notes
+## Changes
 
-### Codebase Pattern Analysis
-
-1. **Existing `add_task_dependency`**: SF-02 implemented a basic version at `repository.py:269-284`
-   that checks for self-dependency and duplicate edges but does NOT perform `WITH RECURSIVE` cycle
-   detection. SF-03 must **replace** this method with `insert_dependency` that includes cycle
-   checks, OR rename and extend the existing one.
-
-2. **Existing `update_handover_context`**: SF-02 implemented a raw string setter at
-   `repository.py:258-267`. It accepts `str | None` and stores directly. SF-03 must **upgrade** this
-   to validate through a Pydantic model and enforce the 8KB limit at the application boundary. The
-   DB already has a `CheckConstraint("length(handover_context) <= 8192")` as a safety net (SF-01).
-
-3. **No `__init__.py`**: PEP 420 implicit namespace package. No `__init__.py` files.
-
-4. **Return pattern**: All repository methods return `dict[str, object]` per codebase convention.
-
-5. **Logging convention**: `logger = logging.getLogger(__name__)` with `%s` lazy formatting (Pattern #20).
-
-6. **Explicit timestamps**: All mutation methods must set `datetime.now(UTC)` explicitly (Pattern #14 in `special_patterns_and_adaptations.md`).
-
-7. **Session lifecycle**: Repository uses `session.flush()`, NOT `session.commit()`. Transaction boundary is managed by `session_scope()`.
-
-8. **`tach.toml`**: `src.specweaver.workspace` is registered with `depends_on = []`. The new code
-   stays within the existing boundary — it only imports from `workspace.memory.store`,
-   `workspace.store`, and `core.config.database`.
-
-### External API Research
-
-1. **SQLAlchemy `text()` + `WITH RECURSIVE`**: Use `sqlalchemy.text()` with named bind parameters
-   (`:parent_id`, `:child_id`) for the recursive CTE. Execute via
-   `await session.execute(text(...), {"parent_id": ..., "child_id": ...})`. Results via
-   `result.scalars().all()` or `result.fetchone()`.
-
-2. **OCC Pattern**: SQLAlchemy 2.0's native `version_id_col` mapper arg auto-increments version on
-   every flush, which is too aggressive. SF-03 will manually check `version` in a WHERE clause
-   during `acquire_task` and increment only on successful acquisition.
-
-3. **Pydantic v2**: Project uses `pydantic>=2.12`. Use `BaseModel` with `Field(max_length=...)` for
-   field constraints. Use `model_validate_json()` for JSON string validation. Use `@field_validator`
-   with `mode="after"` to guarantee type safety for stack trace truncation.
-
-4. **Retry & Backoff boundary**: Retry logic should be handled by the caller creating a new
-   `session_scope()`. Implementing backoff inside the `MemoryRepository` violates transaction
-   snapshot isolation on SQLite, causing infinite retries on stale data.
-
-5. **`StaleDataError`**: SQLAlchemy provides `sqlalchemy.orm.exc.StaleDataError` but we won't use
-   the mapper-level OCC. We'll define a custom `StaleTaskVersionError` that mirrors
-   `IllegalStateTransitionError` pattern — includes `task_id`, `expected_version`, `actual_version`.
-
-### Pydantic Version Compatibility
-
-- `pydantic>=2.12` is confirmed in `pyproject.toml:15`.
-- No new dependencies required. Pydantic is already a project dependency.
-
----
-
-## Proposed Changes
-
-### Component 1: Error Layer
-
-#### [MODIFY] errors.py — `src/specweaver/workspace/memory/errors.py`
-
-**Change**: Add 2 new domain exceptions for SF-03.
+1. **Errors** · `src/specweaver/workspace/memory/errors.py` — 2 new domain exceptions:
 
 ```python
 class CyclicDependencyError(Exception):
@@ -149,13 +95,8 @@ class StaleTaskVersionError(Exception):
         )
 ```
 
----
-
-### Component 2: Pydantic Validation Model
-
-#### [NEW] models.py — `src/specweaver/workspace/memory/models.py`
-
-**Purpose**: Define the `HandoverContext` Pydantic model that enforces NFR-5 (strict typed JSON) and NFR-6 (8KB limit).
+2. **`HandoverContext`** · `src/specweaver/workspace/memory/models.py` (new) — enforces NFR-5
+   (strict typed JSON) and NFR-6 (8KB limit):
 
 ```python
 """Agent Memory Bank — Pydantic validation models.
@@ -232,24 +173,13 @@ class HandoverContext(BaseModel):
         return cls.model_validate_json(json_str)
 ```
 
-> [!NOTE]
-> **Hallucination Mitigation**: The `HandoverContext` model intentionally restricts fields to
-> factual telemetry (`files_touched`, `errors_encountered`, `stack_trace`). Free-form text is
-> limited to `summary` with a 2000-char cap. The `metadata` dict accepts `str`, `int`, `float`,
-> `bool`, or flat lists of those types — enforced by the `validate_metadata_primitives` validator to
-> prevent deeply nested hallucination payloads.
+   Fields are restricted to factual telemetry (`files_touched`, `errors_encountered`,
+   `stack_trace`). Free-form text is only `summary`, capped at 2000 chars. `metadata` accepts `str`,
+   `int`, `float`, `bool` or flat lists of those — `validate_metadata_primitives` rejects deeply
+   nested hallucination payloads.
 
----
-
-### Component 3: Repository Extensions
-
-#### [MODIFY] repository.py — `src/specweaver/workspace/memory/repository.py`
-
-**Changes**:
-
-##### 3a. Replace `add_task_dependency` with `insert_dependency` (WITH RECURSIVE cycle check)
-
-The existing `add_task_dependency` at lines 269-284 will be **replaced** with `insert_dependency` that performs a `WITH RECURSIVE` CTE cycle check before inserting the edge.
+3. **`insert_dependency`** · `repository.py` — replaces `add_task_dependency` (lines 269-284) with a
+   `WITH RECURSIVE` cycle check before inserting the edge:
 
 ```python
 async def insert_dependency(self, parent_id: uuid.UUID, child_id: uuid.UUID) -> None:
@@ -314,16 +244,11 @@ async def insert_dependency(self, parent_id: uuid.UUID, child_id: uuid.UUID) -> 
     )
 ```
 
-> [!CAUTION]
-> **`remove_task_dependency`** (lines 286-299) is kept as-is from SF-02. It does not need cycle checks since removing an edge can never create a cycle.
+   Raw `uuid.UUID` objects are passed as bind parameters; SQLAlchemy converts them to the storage
+   format (`CHAR(32)` hex on SQLite). The CTE walks existing edges to check whether `child_id` is
+   already an ancestor of `parent_id`.
 
-> [!NOTE]
-> **SQLite UUID Binding**: Raw `uuid.UUID` objects are passed as bind parameters. SQLAlchemy's type
-> system handles the conversion to the storage format (`CHAR(32)` hex on SQLite). The
-> `WITH RECURSIVE` walks existing edges to check if `child_id` is already an ancestor of
-> `parent_id`.
-
-##### 3b. Add `acquire_task` with OCC + exponential backoff
+4. **`acquire_task`** · `repository.py` — OCC, one attempt:
 
 ```python
 async def acquire_task(
@@ -404,16 +329,11 @@ async def acquire_task(
     raise StaleTaskVersionError(task_id, expected_version, task.version)
 ```
 
-> [!NOTE]
-> **Caller Retry Responsibility**: The `acquire_task` method performs a single OCC attempt and
-> raises `StaleTaskVersionError` immediately on version mismatch. The caller (`FlowEngine`) is
-> responsible for retry logic with exponential backoff + jitter per NFR-1:
-> `sleep(random(0.1, 0.5) * 2^attempt)`. Each retry must create a **new** `session_scope()` to get a
-> fresh transaction snapshot.
+   The caller (`FlowEngine`) retries with exponential backoff + jitter per NFR-1:
+   `sleep(random(0.1, 0.5) * 2^attempt)`. Each retry must create a **new** `session_scope()` for a
+   fresh transaction snapshot.
 
-##### 3c. Upgrade `update_handover_context` with Pydantic validation
-
-The existing `update_handover_context` at lines 258-267 is **replaced**:
+5. **`update_handover_context`** · `repository.py` — replaces the raw setter (lines 258-267):
 
 ```python
 async def update_handover_context(
@@ -447,7 +367,7 @@ async def update_handover_context(
     return self._task_to_dict(task)
 ```
 
-##### 3d. New imports required in repository.py
+6. **Imports** · `repository.py`:
 
 ```python
 from sqlalchemy import text, update  # NEW for SF-03
@@ -462,19 +382,20 @@ from specweaver.workspace.memory.errors import (
 from specweaver.workspace.memory.models import HandoverContext  # NEW for SF-03
 ```
 
-##### 3e. Deprecation of `add_task_dependency`
+7. **`add_task_dependency` removed.** `insert_dependency` replaces it; the integration tests calling
+   `add_task_dependency` switch to `insert_dependency`.
 
-The existing `add_task_dependency` method is **replaced** by `insert_dependency`. The old name is
-removed. The integration tests calling `add_task_dependency` must be updated to use
-`insert_dependency`.
+| File | Change |
+|------|--------|
+| `src/specweaver/workspace/memory/repository.py` | modified — add `insert_dependency`, `acquire_task`, upgrade `update_handover_context` |
+| `src/specweaver/workspace/memory/errors.py` | modified — add `CyclicDependencyError`, `StaleTaskVersionError` |
+| `src/specweaver/workspace/memory/models.py` | new — `HandoverContext` Pydantic model |
+| `tests/unit/workspace/test_memory_repository.py` | modified — add SF-03 tests |
+| `tests/integration/workspace/test_memory_integration.py` | modified — add SF-03 integration scenarios |
 
----
+## Tests
 
-### Component 4: Tests
-
-#### [MODIFY] test_memory_repository.py — `tests/unit/workspace/test_memory_repository.py`
-
-**New test scenarios for SF-03:**
+Unit — `tests/unit/workspace/test_memory_repository.py`:
 
 | # | Test | What it verifies | FRs/ADs |
 |---|------|------------------|---------|
@@ -500,7 +421,7 @@ removed. The integration tests calling `add_task_dependency` must be updated to 
 | U-22 | `test_insert_dependency_long_chain_no_cycle` | 10-node linear chain with no false positive | AD-7 |
 | U-23 | `test_acquire_task_version_mismatch` | Manually bump version between GET and UPDATE; assert `StaleTaskVersionError` raised with correct `expected_version` and `actual_version` | AD-6 |
 
-**Pydantic model unit tests** (in a new test section or file):
+Pydantic model unit tests (new section or file):
 
 | # | Test | What it verifies |
 |---|------|------------------|
@@ -513,9 +434,7 @@ removed. The integration tests calling `add_task_dependency` must be updated to 
 | M-7 | `test_handover_context_metadata_primitives_only` | Dict values must be primitives (str, int, float, bool) or flat lists; nested dicts/objects rejected |
 | M-8 | `test_handover_context_exclude_none_roundtrip` | `to_json_str(exclude_none=True)` → `from_json_str()` preserves model equality |
 
-#### [MODIFY] test_memory_integration.py — `tests/integration/workspace/test_memory_integration.py`
-
-**New integration scenarios:**
+Integration — `tests/integration/workspace/test_memory_integration.py`:
 
 | # | Test | What it simulates |
 |---|------|-------------------|
@@ -525,11 +444,6 @@ removed. The integration tests calling `add_task_dependency` must be updated to 
 | I-4 | `test_int_acquire_blocked_task_rejected` | Cannot acquire a BLOCKED task |
 | I-5 | `test_int_occ_acquire_then_complete` | Full lifecycle: acquire → work → complete with version tracking |
 
----
-
-## Verification Plan
-
-### Automated Tests
 ```bash
 # Unit tests (SF-03 specific)
 pytest tests/unit/workspace/test_memory_repository.py -v -k "sf3 or insert_dependency or acquire_task or handover_context_pydantic"
@@ -546,16 +460,18 @@ mypy src/specweaver/workspace/memory/ --ignore-missing-imports
 tach check
 ```
 
-### Manual Verification
-- Inspect the `WITH RECURSIVE` query output in debug mode against a known DAG topology
-- Verify OCC collision logging includes correct `expected_version` and `actual_version`
+Manual: inspect the `WITH RECURSIVE` query output in debug mode against a known DAG topology;
+verify OCC collision logging includes the correct `expected_version` and `actual_version`.
 
----
+## Decisions (audit)
 
-## Backlog / Deferred Items
+- **OCC without a nested `session.begin()`.** The design says "execute within a single
+  `async with session.begin()` transaction"; the codebase uses `session_scope()`. The
+  `acquire_task` OCC check is a single UPDATE statement, which is transactional by itself. The retry
+  loop is deferred entirely to the `FlowEngine` caller to preserve `session_scope()` isolation.
 
-1. **OCC with `session.begin()` nested transactions**: The design says "execute within a single
-   `async with session.begin()` transaction". The current codebase uses `session_scope()`. The
-   `acquire_task` OCC check executes a single UPDATE statement, which inherently acts
-   transactionally. The retry loop has been deferred entirely to the `FlowEngine` caller to preserve
-   `session_scope()` isolation logic.
+## As built
+
+**Since moved** (`fde43dec`, 2026-05-07): `repository.py` → package `workspace/memory/repository/`
+(`insert_dependency` in `dag.py`, `acquire_task` in `core.py`). Line refs above are as of the plan's
+date.

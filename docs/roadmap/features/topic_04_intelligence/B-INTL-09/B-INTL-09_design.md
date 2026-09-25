@@ -1,62 +1,74 @@
-# Design: Agent Memory Bank
+# B-INTL-09 — Agent Memory Bank
 
-- **Feature ID**: B-INTL-09
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
-- **Absorbs**: Former `C-EXEC-05` (Issue Tracker Atoms) and `B-INTL-10` (Agentic Workflow State Ledger)
-- **SF-01 Status**: 🟢 Completed
-- **SF-02 Status**: 🟢 Completed
-- **SF-03 Status**: 🟢 Completed
-- **SF-04 Status**: 🟢 Completed
+**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03, SF-04 committed (🟢 Completed). ·
+**Phase**: 3 · **Feature ID**: B-INTL-09
 
-## Feature Overview
+| | |
+|---|---|
+| Story | `US-28` (Agent-Native Issue & State Tracker) |
+| Absorbs | former `C-EXEC-05` (Issue Tracker Atoms) and `B-INTL-10` (Agentic Workflow State Ledger) |
+| Used by | `D-INTL-06` (Context Hydration & Handover) — reads what this feature writes |
+| Integrates with | the existing CQRS SQLite engine |
 
-Feature B-INTL-09 is the persistent SQLite backend for the Agent Memory Bank (US-28). It defines
-`Task`, `Epic`, `TaskDependency` (DAG), `StateTransition`, and `Defect` entities in the `workspace`
-module, paired with a resilient `MemoryRepository` providing CRUD operations, a formal state
-machine, Optimistic Concurrency Control, circuit breakers, zombie recovery, and upstream DAG
-propagation. It solves context degradation and enables seamless task handover between AI Agents by
-storing session state, active tasks, and blockers in a persistent local SQLite Database with
-built-in reboot resilience (heartbeats). It integrates directly with the existing CQRS SQLite
-Engine.
+## What it does
 
-## Research Findings
+The persistent SQLite backend of the Agent Memory Bank. It stores tasks, epics, a task-dependency
+DAG, an audit trail of state changes and defects in the `workspace` module, behind one
+`MemoryRepository`. The repository gives CRUD, a formal state machine, Optimistic Concurrency
+Control (OCC), a circuit breaker, zombie recovery (heartbeats) and upstream DAG propagation.
 
-### Codebase Patterns
-- **Database Engine**: SpecWeaver utilizes `sqlalchemy[asyncio]` and `aiosqlite` via a robust CQRS queue in `specweaver.core.config.database`.
-- **Domain Boundaries**: According to `architecture_reference.md`, physical project state must reside in the `workspace/` module. The schema must not be placed in `intelligence/` or `graph/`.
-- **NetworkX Bottleneck**: The existing Knowledge Graph (`graph` module) was investigated for reuse.
-  It loads the entire dataset into a `networkx.DiGraph` in RAM, which is an architectural
-  anti-pattern for dynamic task tracking and was explicitly rejected.
-- **ActiveState Deprecation**: The existing `ActiveState` singleton table is mathematically
-  incapable of supporting a multi-agent fan-out and must be refactored to use the new `worker_id`
-  locking approach.
-- **DeclarativeBase Pattern**: The codebase uses **separate `Base(DeclarativeBase)` classes per
-  domain** (`workspace/store.py`, `core/flow/store.py`, `infrastructure/llm/store.py`). New memory
-  models MUST reuse `workspace.store.Base` to share the MetaData registry required for cross-table
-  ForeignKey constraints (e.g., `Task → Project`).
-- **PRAGMA Gap**: The existing `create_async_engine()` factory (`database.py:160-172`) does NOT
-  attach a `PRAGMA foreign_keys=ON` event listener. Synchronous `Database.connect()` does
-  (`database.py:265`), but async connections silently ignore FK constraints. This must be fixed for
-  cascade rules to work.
+It stops context loss between AI agents: session state, active tasks and blockers survive a reboot,
+so one agent can hand a task to the next.
 
-### External Tools
+## Why this way
+
+- **Not the Knowledge Graph** (`graph` module). It loads the whole dataset into a
+  `networkx.DiGraph` in RAM — wrong for dynamic task tracking, and built for code, not issues (AD-3).
+- **Not `ActiveState`.** That singleton table cannot support a multi-agent fan-out; it must be
+  refactored to the new `worker_id` locking approach. (It still exists in `workspace/store.py`.)
+- **In `workspace/`,** not `intelligence/` or `graph/`: per `architecture_reference.md`, physical
+  project state lives in `workspace/` (AD-1).
+- **One shared `Base`.** The codebase has a separate `Base(DeclarativeBase)` per domain
+  (`workspace/store.py`, `core/flow/store.py`, `infrastructure/llm/store.py`). Memory models reuse
+  `workspace.store.Base` so cross-table ForeignKeys work (e.g., `Task → Project`) (AD-12).
+- **FK pragma on async connections.** The sync `Database.connect()` sets `PRAGMA foreign_keys=ON`;
+  the async `create_async_engine()` factory did not, so async connections ignored FK constraints and
+  every CASCADE. A `connect` event listener now sets it (AD-13, NFR-7).
+
+## Architecture
+
+```mermaid
+graph LR
+    C["Callers<br/>flow orchestrator · D-INTL-06"] --> R["MemoryRepository<br/>workspace.memory.repository"]
+    R --> H["HandoverContext<br/>workspace.memory.models<br/>8KB, typed telemetry"]
+    R --> S["Models + enums + ALLOWED_TRANSITIONS<br/>workspace.memory.store"]
+    S --> B["workspace.store.Base<br/>shared with Project"]
+    S --> P["register_fk_pragma_listener<br/>core.config.database"]
+    A["alembic/env.py<br/>explicit model imports"] --> S
+```
+
+| Part | Lives in |
+|---|---|
+| Models `Task`, `Epic`, `TaskDependency` (DAG), `StateTransition`, `Defect`; enums; transition matrix | `src/specweaver/workspace/memory/store.py` |
+| `MemoryRepository` | `workspace/memory/repository` |
+| `HandoverContext` (Pydantic) | `workspace/memory/models.py` |
+| Domain errors | `workspace/memory/errors.py` |
+| FK pragma listener | `core.config.database` |
+| Model registration for autogeneration | `alembic/env.py` |
+
+Database engine: `sqlalchemy[asyncio]` + `aiosqlite` via the CQRS queue in
+`specweaver.core.config.database`.
+
 | Tool | Version | Key API Surface | Source |
 |------|---------|----------------|--------|
-| SQLAlchemy | >=2.0.0 | AsyncSession, DeclarativeBase, event | pyproject.toml |
+| SQLAlchemy | >=2.0.0 | `AsyncSession`, `DeclarativeBase`, `event` — compat confirmed | pyproject.toml |
 | aiosqlite | >=0.20.0 | Async connection | pyproject.toml |
 | Alembic | * | Migration generation | pyproject.toml |
 | Pydantic | * | BaseModel, Field | pyproject.toml |
 
-### Blueprint References
-- `US-28` Roadmap definition for Agent-Native Issue & State Tracker.
+## Handoff boundary: B-INTL-09 ↔ D-INTL-06
 
-## Handoff Boundary: B-INTL-09 ↔ D-INTL-06
-
-B-INTL-09 (this feature) and `D-INTL-06` (Context Hydration & Handover) are the two MVS features of
-US-28. They share the `handover_context` JSON field as their integration surface. The boundary is
-strictly defined as follows:
+The two MVS features of US-28. Their integration surface is the `handover_context` JSON field.
 
 | Concern | Owner | Responsibility |
 |---------|-------|---------------|
@@ -71,11 +83,52 @@ strictly defined as follows:
 > data is correctly retrieved, formatted, and injected into the agent's prompt. Neither feature
 > crosses the other's boundary.
 
-> **Architectural Import Note:** D-INTL-06 must import `MemoryRepository` from
-> `workspace.memory.store`. The `workspace/context.yaml` does not forbid imports from
-> `intelligence/`, and `workspace` is a foundation layer designed to be consumed by higher layers.
-> However, the implementing agent MUST verify this path is allowed by `tach.toml` before writing
-> code.
+**Import path (AD-21):** D-INTL-06 imports `MemoryRepository` from `workspace.memory.store`.
+`workspace/context.yaml` does not forbid imports from `intelligence/`, and `workspace` is a
+foundation layer for higher layers to consume. The implementing agent MUST still verify the path
+against `tach.toml` before writing code.
+
+## State Transition Matrix
+
+`MemoryRepository` MUST enforce this matrix. Any transition not marked ✅ raises
+`IllegalStateTransitionError`.
+
+| From ↓ \ To → | PENDING | IN_PROGRESS | DONE | BLOCKED | UPSTREAM_BLOCKED | ARCHIVED |
+|----------------|---------|-------------|------|---------|-----------------|----------|
+| **PENDING** | — | ✅ acquire | ❌ | ✅ circuit breaker | ✅ propagation | ❌ |
+| **IN_PROGRESS** | ✅ release/zombie | — | ✅ complete | ✅ agent fails | ❌ | ❌ |
+| **DONE** | ❌ | ✅ PR rejection | — | ❌ | ❌ | ✅ cleanup |
+| **BLOCKED** | ✅ manual unblock | ❌ | ❌ | — | ❌ | ✅ abandon |
+| **UPSTREAM_BLOCKED** | ✅ downstream resolved | ❌ | ❌ | ❌ | — | ✅ abandon |
+| **ARCHIVED** | ❌ | ❌ | ❌ | ❌ | ❌ | — |
+
+## Decisions
+
+All marked architectural switches were approved by User on 2026-05-05.
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Place schema in `workspace/memory/store.py` | Physical project state belongs in `workspace/` according to DDD rules. Option 2 selected. | No |
+| AD-2 | Use DAG Junction Table instead of Tree | Allows multiple parent Epics to depend on a single shared Sub-Task, deduplicating LLM agent work. | Yes — approved by User on 2026-05-05 |
+| AD-3 | Do not reuse Knowledge Graph | Graph uses `networkx` RAM loading and is semantically designed for code, not issues. | Yes — approved by User on 2026-05-05 |
+| AD-4 | Heartbeat Lock Resilience | Essential to prevent zombie tasks when agents reboot and lose UUIDs. | Yes — approved by User on 2026-05-05 |
+| AD-5 | Terminal Context Truncation | Set `handover_context = NULL` on `ARCHIVED` (not `DONE`) to prevent endless JSON string bloat without risking data loss on PR rejection. | Yes — approved by User on 2026-05-05 |
+| AD-6 | Optimistic Concurrency (OCC) | `version` column on `Task` prevents dual-acquisition when 2 agents poll a dead lock simultaneously. | Yes — approved by User on 2026-05-05 |
+| AD-7 | Recursive DAG Protection | `MemoryRepository` runs a `WITH RECURSIVE` query before edge insertion to prevent hallucinated cycles crashing the Flow Engine. | Yes — approved by User on 2026-05-05 |
+| AD-8 | Defect State Invariants | Blocks transition to `DONE` if `OPEN` defects exist, preventing orphaned blockers and impossible states. | Yes — approved by User on 2026-05-05 |
+| AD-9 | 3-Strike Circuit Breaker | `attempt_count` column limits automated retries to 3 before forcing `BLOCKED`. Protects against burning thousands of dollars of API credits on impossible tasks. | Yes — approved by User on 2026-05-05 |
+| AD-10 | Strict FK Cascades | `ON UPDATE CASCADE` ensures tasks survive CLI project renaming instead of leaving thousands of orphans. | Yes — approved by User on 2026-05-05 |
+| AD-11 | Upstream State Propagation | Bubbles `BLOCKED` states to upstream parents as `UPSTREAM_BLOCKED` to prevent silent queue deadlocks. | Yes — approved by User on 2026-05-05 |
+| AD-12 | Shared DeclarativeBase | Memory models MUST import `Base` from `workspace.store` — NOT define a new `DeclarativeBase`. Required for FK cross-references and Alembic discovery. | Yes — approved by User on 2026-05-05 |
+| AD-13 | Async PRAGMA Enforcement | Register `@event.listens_for(engine.sync_engine, "connect")` to execute `PRAGMA foreign_keys=ON`. Without this, all CASCADE rules are silently ignored by async connections. | Yes — approved by User on 2026-05-05 |
+| AD-14 | Transactional OCC with Backoff | OCC SELECT+UPDATE must execute within a single `session.begin()` to prevent NullPool connection split. Retries use exponential backoff with jitter to prevent thundering herd livelock. | Yes — approved by User on 2026-05-05 |
+| AD-15 | Formal State Machine | Exhaustive State Transition Matrix enforced at application layer. Illegal transitions raise `IllegalStateTransitionError`. | Yes — approved by User on 2026-05-05 |
+| AD-16 | Observability & Audit Trail | `StateTransition.reason` column for queryable audit. Structured logging on all critical paths (OCC retries, circuit breakers, propagation). | Yes — approved by User on 2026-05-05 |
+| AD-17 | Explicit Composite Indexes | 5 indexes on hot-path columns prevent full table scans at scale (50K+ tasks). Without them, zombie recovery and task acquisition degrade quadratically. | Yes — approved by User on 2026-05-05 |
+| AD-18 | Epic as Grouping Container | Epic has a simple OPEN/CLOSED status, no state machine or heartbeat. Task.epic_id is nullable — tasks can exist independently. Keeps the Epic model lean. | Yes — approved by User on 2026-05-05 |
+| AD-19 | Bounded TransitionReason Enum | `StateTransition.reason` is restricted to a 12-value enum, not free-text. Prevents unsearchable audit trails from inconsistent agent-written strings. | Yes — approved by User on 2026-05-05 |
+| AD-20 | Explicit Alembic Model Import | `alembic/env.py` must explicitly import all memory models so they register to `WorkspaceBase.metadata`. Without this, autogeneration produces empty migrations. | Yes — approved by User on 2026-05-05 |
+| AD-21 | D-INTL-06 Import Path Verification | D-INTL-06 must import from `workspace.memory.store`. Implementing agent must verify against `tach.toml` that `intelligence → workspace` is an allowed dependency direction. | Yes — approved by User on 2026-05-05 |
 
 ## Functional Requirements
 
@@ -105,107 +158,22 @@ strictly defined as follows:
 | NFR-8 | Observability | Every critical `MemoryRepository` operation must emit structured logs: `WARNING` on OCC retry, `ERROR` on circuit breaker activation, `INFO` on upstream propagation, `DEBUG` on heartbeat pulses. |
 | NFR-9 | Query Performance | All hot-path queries (zombie scan, task acquisition, dependency traversal) must use explicit composite indexes. Zero full table scans at 50K+ rows per project. |
 
-## State Transition Matrix
-
-The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly marked ✅ raises `IllegalStateTransitionError`.
-
-| From ↓ \ To → | PENDING | IN_PROGRESS | DONE | BLOCKED | UPSTREAM_BLOCKED | ARCHIVED |
-|----------------|---------|-------------|------|---------|-----------------|----------|
-| **PENDING** | — | ✅ acquire | ❌ | ✅ circuit breaker | ✅ propagation | ❌ |
-| **IN_PROGRESS** | ✅ release/zombie | — | ✅ complete | ✅ agent fails | ❌ | ❌ |
-| **DONE** | ❌ | ✅ PR rejection | — | ❌ | ❌ | ✅ cleanup |
-| **BLOCKED** | ✅ manual unblock | ❌ | ❌ | — | ❌ | ✅ abandon |
-| **UPSTREAM_BLOCKED** | ✅ downstream resolved | ❌ | ❌ | ❌ | — | ✅ abandon |
-| **ARCHIVED** | ❌ | ❌ | ❌ | ❌ | ❌ | — |
-
-## External Dependencies
-
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| SQLAlchemy | >=2.0.0 | `AsyncSession`, `event` | Yes | Natively supported. |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Place schema in `workspace/memory/store.py` | Physical project state belongs in `workspace/` according to DDD rules. Option 2 selected. | No |
-| AD-2 | Use DAG Junction Table instead of Tree | Allows multiple parent Epics to depend on a single shared Sub-Task, deduplicating LLM agent work. | Yes — approved by User on 2026-05-05 |
-| AD-3 | Do not reuse Knowledge Graph | Graph uses `networkx` RAM loading and is semantically designed for code, not issues. | Yes — approved by User on 2026-05-05 |
-| AD-4 | Heartbeat Lock Resilience | Essential to prevent zombie tasks when agents reboot and lose UUIDs. | Yes — approved by User on 2026-05-05 |
-| AD-5 | Terminal Context Truncation | Set `handover_context = NULL` on `ARCHIVED` (not `DONE`) to prevent endless JSON string bloat without risking data loss on PR rejection. | Yes — approved by User on 2026-05-05 |
-| AD-6 | Optimistic Concurrency (OCC) | Added `version` column to `Task` to mathematically prevent dual-acquisition race conditions when 2 agents poll a dead lock simultaneously. | Yes — approved by User on 2026-05-05 |
-| AD-7 | Recursive DAG Protection | `MemoryRepository` enforces `WITH RECURSIVE` queries before edge insertion to prevent infinite hallucinated cycles crashing the Flow Engine. | Yes — approved by User on 2026-05-05 |
-| AD-8 | Defect State Invariants | Blocks transition to `DONE` if `OPEN` defects exist, preventing orphaned blockers and impossible mathematical states. | Yes — approved by User on 2026-05-05 |
-| AD-9 | 3-Strike Circuit Breaker | `attempt_count` column limits automated retries to 3 before forcing `BLOCKED`. Protects against burning thousands of dollars of API credits on impossible tasks. | Yes — approved by User on 2026-05-05 |
-| AD-10 | Strict FK Cascades | `ON UPDATE CASCADE` ensures tasks survive CLI project renaming instead of leaving thousands of orphans. | Yes — approved by User on 2026-05-05 |
-| AD-11 | Upstream State Propagation | Automatically bubbles `BLOCKED` states to upstream parents as `UPSTREAM_BLOCKED` to prevent silent queue deadlocks. | Yes — approved by User on 2026-05-05 |
-| AD-12 | Shared DeclarativeBase | Memory models MUST import `Base` from `workspace.store` — NOT define a new `DeclarativeBase`. Required for FK cross-references and Alembic discovery. | Yes — approved by User on 2026-05-05 |
-| AD-13 | Async PRAGMA Enforcement | Register `@event.listens_for(engine.sync_engine, "connect")` to execute `PRAGMA foreign_keys=ON`. Without this, all CASCADE rules are silently ignored by async connections. | Yes — approved by User on 2026-05-05 |
-| AD-14 | Transactional OCC with Backoff | OCC SELECT+UPDATE must execute within a single `session.begin()` to prevent NullPool connection split. Retries use exponential backoff with jitter to prevent thundering herd livelock. | Yes — approved by User on 2026-05-05 |
-| AD-15 | Formal State Machine | Exhaustive State Transition Matrix enforced at application layer. Illegal transitions raise `IllegalStateTransitionError`. | Yes — approved by User on 2026-05-05 |
-| AD-16 | Observability & Audit Trail | `StateTransition.reason` column for queryable audit. Structured logging on all critical paths (OCC retries, circuit breakers, propagation). | Yes — approved by User on 2026-05-05 |
-| AD-17 | Explicit Composite Indexes | 5 indexes on hot-path columns prevent full table scans at scale (50K+ tasks). Without them, zombie recovery and task acquisition degrade quadratically. | Yes — approved by User on 2026-05-05 |
-| AD-18 | Epic as Grouping Container | Epic has a simple OPEN/CLOSED status, no state machine or heartbeat. Task.epic_id is nullable — tasks can exist independently. Keeps the Epic model lean. | Yes — approved by User on 2026-05-05 |
-| AD-19 | Bounded TransitionReason Enum | `StateTransition.reason` is restricted to a 12-value enum, not free-text. Prevents unsearchable audit trails from inconsistent agent-written strings. | Yes — approved by User on 2026-05-05 |
-| AD-20 | Explicit Alembic Model Import | `alembic/env.py` must explicitly import all memory models so they register to `WorkspaceBase.metadata`. Without this, autogeneration produces empty migrations. | Yes — approved by User on 2026-05-05 |
-| AD-21 | D-INTL-06 Import Path Verification | D-INTL-06 must import from `workspace.memory.store`. Implementing agent must verify against `tach.toml` that `intelligence → workspace` is an allowed dependency direction. | Yes — approved by User on 2026-05-05 |
-
-## Developer Guides Required
+## Developer guide
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Agent Memory State Tracking | How to use `MemoryRepository` to acquire tasks, pulse heartbeats, and handle OCC retries. | ⬜ To be written during Pre-commit |
+| Agent Memory State Tracking | How to use `MemoryRepository` to acquire tasks, pulse heartbeats, and handle OCC retries. | Written: `docs/dev_guides/agent_memory_state_tracking.md` |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: SQLAlchemy Schema & Alembic Definitions
-- **Scope**: Define the strict OCC/Cascade SQLAlchemy entity classes (Task with all columns/indexes,
-  Epic with OPEN/CLOSED status, TaskDependency with indexed FKs, StateTransition with bounded
-  `TransitionReason` enum, Defect) reusing `Base` from `workspace.store`. Register PRAGMA event
-  listener. Add explicit model imports to `alembic/env.py`. Generate the DB migration.
-- **FRs**: [FR-1, FR-2, FR-3, FR-6]
-- **Inputs**: `specweaver/workspace/store.py` Base class (import, do not redefine).
-- **Outputs**: `src/specweaver/workspace/memory/store.py` (Models + PRAGMA listener + indexes + TransitionReason enum) + updated `alembic/env.py` + `alembic/versions/` migration script.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf01_implementation_plan.md
+SF-03 and SF-04 depend only on SF-02 and could run in parallel.
 
-### SF-02: Core CRUD & State Machine
-- **Scope**: Implement the foundational `MemoryRepository` with basic CRUD operations, the formal
-  State Transition Matrix enforcement, defect invariants (no `DONE` with `OPEN` defects), and
-  context cleanup on `ARCHIVED`.
-- **FRs**: [FR-4 (core CRUD + state matrix + defect invariants), FR-7]
-- **Inputs**: The SQLAlchemy models defined in SF-01.
-- **Outputs**: `MemoryRepository` class with `create_task`, `get_task`, `list_tasks`,
-  `transition_state` (matrix enforcement + defect invariants), `update_handover_context` (basic),
-  `mark_archived` (context truncation). Structured logging on state transitions.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md
-
-### SF-03: DAG & Context Validation
-- **Scope**: Implement dependency graph management with `WITH RECURSIVE` cycle detection,
-  transactional OCC `acquire_task` with exponential backoff + jitter, and Pydantic `HandoverContext`
-  validation with 8KB truncation.
-- **FRs**: [FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation)]
-- **Inputs**: The `MemoryRepository` core CRUD from SF-02.
-- **Outputs**: `insert_dependency` (WITH RECURSIVE cycle check), `acquire_task` (transactional OCC + backoff), `update_handover_context` (Pydantic 8KB validation + truncation).
-- **Depends on**: SF-02
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf03_implementation_plan.md
-
-### SF-04: Resilience & Recovery
-- **Scope**: Implement Zombie Recovery with heartbeat scanning, 3-Strike Circuit Breaker, and upstream `BLOCKED` → `UPSTREAM_BLOCKED` DAG propagation with reverse-clear on unblock.
-- **FRs**: [FR-5, FR-8, FR-9]
-- **Inputs**: The `MemoryRepository` core CRUD and state machine from SF-02.
-- **Outputs**: `recycle_zombies` (heartbeat scan + attempt_count increment), `circuit_breaker`
-  (auto-BLOCKED + Defect creation), `propagate_blocked` (upstream cascade), `clear_upstream_blocked`
-  (reverse cascade). Structured logging on all resilience events.
-- **Depends on**: SF-02
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf04_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (Schema & DB Migration) — start immediately.
-2. SF-02 (Core CRUD & State Machine) — depends on SF-01.
-3. SF-03 and SF-04 **in parallel** — both depend only on SF-02.
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Strict OCC/Cascade entity classes reusing `Base` from `workspace.store`: Task (all columns/indexes), Epic (OPEN/CLOSED), TaskDependency (indexed FKs), StateTransition (bounded `TransitionReason`), Defect. PRAGMA listener, explicit model imports in `alembic/env.py`, the migration in `alembic/versions/`. | FR-1, FR-2, FR-3, FR-6 | — | [sf01](B-INTL-09_sf01_implementation_plan.md) |
+| SF-02 | `MemoryRepository` core: `create_task`, `get_task`, `list_tasks`, `transition_state` (matrix + defect invariants: no `DONE` with `OPEN` defects), basic `update_handover_context`, context cleanup on `ARCHIVED` (`mark_archived`). Structured logging on state transitions. | FR-4 (core CRUD + state matrix + defect invariants), FR-7 | SF-01 | [sf02](B-INTL-09_sf02_implementation_plan.md) |
+| SF-03 | `insert_dependency` (`WITH RECURSIVE` cycle check), `acquire_task` (transactional OCC + exponential backoff + jitter), `update_handover_context` (Pydantic `HandoverContext`, 8KB truncation). | FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation) | SF-02 | [sf03](B-INTL-09_sf03_implementation_plan.md) |
+| SF-04 | `recycle_zombies` (heartbeat scan + attempt_count increment), 3-Strike `circuit_breaker` (auto-BLOCKED + Defect creation), `propagate_blocked` (`BLOCKED` → `UPSTREAM_BLOCKED` upstream cascade), `clear_upstream_blocked` (reverse cascade on unblock). Structured logging on all resilience events. | FR-5, FR-8, FR-9 | SF-02 | [sf04](B-INTL-09_sf04_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -216,22 +184,16 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 | SF-03 | DAG & Context Validation | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Resilience & Recovery | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-## Session Handoff
+## Proof
 
-**Current status**: SF-02 Implementation Plan is APPROVED.
-**Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md` to begin TDD development.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+Tests were written under `INT-US-28`, the integration contract that consumed this feature, and
+credited only there, so `check_fr_coverage.py B-INTL-09` read 9 requirements with zero cited tests.
+The attribution moved here on 2026-08-13 (`TECH-017` SF-01); no requirement was re-worded and no test
+changed. Full finding: `docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
 
-## Test attribution repaired, 2026-08-13 (`TECH-017` SF-01)
+Each test was read against each requirement before it was cited. The `Proves:` citations:
 
-`B-INTL-09` read as **9 requirements with zero cited tests** — `check_fr_coverage.py B-INTL-09` reported
-`BLOCKED` — and it was never untested. Its tests were written under `INT-US-28`, the integration
-contract that consumed it, and credited only there. `tests/integration/workspace/test_memory_integration.py` (26 tests) proved this capability all along
-without naming it.
-
-The per-requirement mapping, read test by test before anything was cited:
-
-| Requirement | Proving tests in `tests/integration/workspace/test_memory_integration.py` |
+| Requirement | Proving tests in `tests/integration/workspace/test_memory_integration.py` (26 tests) |
 |---|---|
 | FR-2 DAG topology | `test_int_4_dag_resolution`, `test_int_10_deep_dag_cycle_protection`, `test_int_20_diamond_dependency_propagation` |
 | FR-3 heartbeat resilience | `test_e2e_7_heartbeat_survival`, `test_e2e_8_pulse_heartbeat_storm` |
@@ -240,22 +202,10 @@ The per-requirement mapping, read test by test before anything was cited:
 | FR-8 circuit breaker | `test_int_6_circuit_breaker`, `test_int_12_circuit_breaker_three_strikes` |
 | FR-9 deadlock propagation | `test_int_8_upstream_cascading_failure`, `test_int_17_upstream_propagation_cascade`, `test_int_18_reverse_propagation_partial`, `test_int_19_reverse_propagation_full_clear` |
 
-Each test was read against each requirement before anything was cited. FR-2, FR-3, FR-4, FR-5, FR-8 and FR-9 now carry a
-`Proves:` citation naming the specific test functions. **FR-1 (schema definition), FR-6 (alembic
-integration) and FR-7 (ARCHIVED cleanup) remain uncited** and are left visible rather than papered
-over.
-
-**Corrected 2026-08-13, same day: "uncited" is not "untested", and the first wording said the wrong
-one.** `FR-7` *is* tested — `tests/unit/workspace/test_memory_repository_core.py:700` is docstringed
-`"""FR-7: Transition to ARCHIVED sets handover_context = None."""`, a deliberate attribution
-written by whoever built it. `check_fr_coverage.py` cannot see it: the gate skips any file that does
-not **name the story**, and that file never says `B-INTL-09`. The proof exists and the ledger is
-blind to it.
-
-That is a third failure mode, distinct from the two already recorded. A missing citation makes a
-requirement look unproven; a citation in a file that names no story makes proof **invisible** — and
-the fix is not to cite harder here but to name the capability in the file that already proves it.
-`FR-1` and `FR-6` are not yet assessed either way.
-
-No requirement was re-worded and no test was changed; only the attribution moved. Full finding:
-`docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
+- **FR-7** is proven in `tests/unit/workspace/test_memory_repository_core.py:700`, docstringed
+  `"""FR-7: Transition to ARCHIVED sets handover_context = None."""`. The gate skips any file that
+  does not **name the story**, so the file now carries `Proves: B-INTL-09 FR-7, NFR-8`. Rule: an
+  uncited proof is fixed by naming the capability in the file that already proves it, not by
+  citing harder here. "Uncited" is not "untested".
+- **FR-1 (schema definition) and FR-6 (alembic integration) remain uncited**, not yet assessed
+  either way, and are left visible: `check_fr_coverage.py B-INTL-09` reports `BLOCKED`.
