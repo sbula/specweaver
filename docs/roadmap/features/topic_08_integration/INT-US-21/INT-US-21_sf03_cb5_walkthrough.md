@@ -1,13 +1,11 @@
-# Walkthrough: INT-US-21 SF-03 CB-5 — Docs Currency & Registry Closure
+# INT-US-21 SF-03 CB-5 — Walkthrough: Docs Currency & Registry Closure
 
-- **Feature**: INT-US-21 — Autonomous Feature Decomposition (base integration contract)
-- **Sub-feature**: SF-03 — CLI Journey, Verifiable Proof & Registry Closure
-- **Commit boundary**: 5 of 5 — **closes the US-21 epic**
-- **Date**: 2026-07-28
+**Commit boundary:** 5 of 5 — **closes the US-21 epic** · **Date:** 2026-07-28 · Plan:
+[sf03](INT-US-21_sf03_implementation_plan.md) §Changes → CB-5
 
-## What changed
+## Delivered
 
-Documentation and registries only. **Zero source files.**
+Documentation and registries only — **zero source files**.
 
 | Change | Where |
 |---|---|
@@ -18,60 +16,41 @@ Documentation and registries only. **Zero source files.**
 | US-21 → 🟢, add-on listed, routing queue refreshed | `master_story_roadmap.md` |
 | `Status: COMPLETE`, tracker all ✅ | `INT-US-21_design.md` |
 
-**Guide-2 needed nothing.** `4_interactive_hitl_gates.md` already documents approve-on-resume, all
-four park flavours, the exit-code-0 caveat and "each park costs one resume" — written during SF-01
-CB-4, earlier than the design anticipated. Checked rather than assumed; nothing written.
+- **Guide-2 needed nothing.** `4_interactive_hitl_gates.md` already documents approve-on-resume, all
+  four park flavours, the exit-code-0 caveat and "each park costs one resume" (SF-01 CB-4). Checked.
+- **Guide-1 distinguishes AUTO from HITL coverage failure.** `pipeline_engine_guide.md` §5 CAUTION
+  says a coverage failure pushes the engine into "a rigid 3-Strike Loop `FAILED` status" — that is
+  the **auto-gate** behaviour. The bundled decompose gate is **HITL**, which parks unconditionally,
+  so a low-coverage plan parks for a human. Measured in CB-3. §13 names the distinction.
+- US-21 → 🟢 while `INT-US-21-SF02` is Pending: epic-green means Core Required (MVS) complete —
+  US-24 is 🟢 with a 🔴 add-on Pending Design.
 
-## What the gate found
+## Proof
 
-This boundary was initially committed-bound **without a gate** — the user stopped it. Running the
-gate properly then found four defects, all in documentation about to become permanent record:
+Every numeric claim machine-verified: 22 e2e scenarios, 33 integration, 4 seam pins, all 12 cited
+commit hashes exist.
+
+Claim verification (the docs analogue of test-gap) found four defects, all fixed:
 
 | # | Defect |
 |---|---|
-| D1 | **"28" integration tests stated; there are 33.** The one number asserted from memory rather than measured was the one that was wrong |
-| D2 | Renumbering the routing queue left `2, 2, 3, 4` — one replacement silently matched nothing |
-| D3 | Renumbering also made an entry **self-referential**: item 2 read "may preempt 1–2", i.e. itself |
-| D4 | The add-on used an invented `⬜`/`🔜` marker; every add-on group in the roadmap is `🔴`/`🟡`/`🟢` with `` `[ ]` `` items |
+| D1 | "28" integration tests stated; there are 33 |
+| D2 | Renumbering the routing queue left `2, 2, 3, 4` — one replacement matched nothing |
+| D3 | An entry became **self-referential**: item 2 read "may preempt 1–2" |
+| D4 | The add-on used an invented `⬜`/`🔜` marker; add-on groups use `🔴`/`🟡`/`🟢` with `` `[ ]` `` items |
 
-All four fixed. Every remaining numeric claim is machine-verified: 22 e2e scenarios, 33 integration,
-4 seam pins, and all 12 cited commit hashes confirmed to exist.
-
-## Red/Blue (Phase 7.5)
+Red/Blue (Phase 7.5):
 
 | # | Attack | Verdict |
 |---|---|---|
-| 1 | Is US-21 → 🟢 justified while `INT-US-21-SF02` is Pending? | **Defended by precedent** — US-24 is 🟢 with a 🔴 add-on Pending Design. Epic-green means Core Required (MVS) complete |
+| 1 | Is US-21 → 🟢 justified while `INT-US-21-SF02` is Pending? | **Defended by precedent** (US-24) |
 | 2 | House-style conformance of the new add-on entry | **HIT** → D4 |
 | 3 | Stale queue-position cross-references | Clean after D2/D3 |
 | 4 | Does the `TECH-018` note breach finished-stories-immutability? | Clean — it sits *below* the entries; the delivered `INT-US-21-SUB` block is byte-untouched |
 | 5 | Guide-1's "five disjoint buckets" claim | Verified against source: `collided, created, failed, rejected, skipped` |
 
-> The immutability point was not caught by review — the **`guard_finished_stories` hook blocked a
-> full-file write** that would have inserted a note *inside* the delivered add-on entry. The guard
-> worked exactly as designed.
-
-## One correction folded into Guide-1
-
-The guide's existing §5 CAUTION states that a coverage failure pushes the engine into "a rigid
-3-Strike Loop `FAILED` status". That is the **auto-gate** behaviour. The bundled journey's decompose
-gate is **HITL**, and a HITL gate parks unconditionally whatever the step returned — so a
-low-coverage plan parks for a human instead of looping to FAILED. Measured in CB-3, not inferred.
-§13 names the distinction rather than contradicting §5.
-
-## Process note
-
-SF-01 produced 4 walkthroughs for 4 boundaries; SF-02 produced 3 for 3; **SF-03 produced 0 for its
-first four**, and `task.md` was never given an SF-03 section at all — its last marker still read
-"SF-02 CB-1 ← CURRENT". The phases that emit chat output (1–2) survived; the phases that emit files
-(6, 7, 7.5) stopped silently, because a file that was never written is indistinguishable from one
-that was never required.
-
-Recorded here because it is the reason this boundary nearly shipped ungated, and because the
-remedy — a check that a commit claiming `CB-N` must carry its walkthrough — is mechanical, not a
-matter of remembering.
-
-## US-21 is closed
+The `guard_finished_stories` hook blocked a full-file write that would have put a note *inside* the
+delivered add-on entry.
 
 | SF | Boundaries | Commits |
 |----|---|---|
@@ -79,5 +58,12 @@ matter of remembering.
 | SF-02 | 3 | `4a42b87a` `ce00be20` `5aa20ffa` |
 | SF-03 | 5 | `8fff2470` `d0c020f4` `ccdda8f8` `39aa3860` + this |
 
-Autonomous DAG execution is `C-FLOW-12` / `INT-US-21-SF02`, sequenced behind `C-EXEC-07` and
-`TECH-014`. Re-validating the delivered `INT-US-21-SUB` add-on is `TECH-018`, audit-only.
+## Findings still open
+
+- Autonomous DAG execution is `C-FLOW-12` / `INT-US-21-SF02`, behind `C-EXEC-07` and `TECH-014`.
+  Re-validating the delivered `INT-US-21-SUB` add-on is `TECH-018`, audit-only.
+- **Walkthroughs stop silently.** SF-01 wrote 4 for 4 boundaries, SF-02 3 for 3, SF-03 **0 for its
+  first four**; `task.md` never got an SF-03 section (its last marker read "SF-02 CB-1 ← CURRENT").
+  Phases that emit chat output (1–2) survived; phases that emit files (6, 7, 7.5) stopped, and CB-5
+  nearly shipped ungated until the user stopped it. Remedy: a check that a commit claiming `CB-N`
+  carries its walkthrough.
