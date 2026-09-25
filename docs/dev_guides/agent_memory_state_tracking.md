@@ -1,22 +1,24 @@
 # Agent Memory State Tracking
 
-This guide details how to correctly interact with the `MemoryRepository` for task execution,
-handling state transitions, and managing Optimistic Concurrency Control (OCC) when building
-SpecWeaver agents.
+Use when: a SpecWeaver agent reads or writes tasks in the Agent Memory Bank (US-28) through `MemoryRepository`.
 
-## Core Concepts
+The memory bank is a local SQLite ledger of agent tasks behind a state machine. Agents coordinate
+through it, not through RAM arrays or raw `networkx` graphs.
 
-The **Agent Memory Bank** (US-28) provides a resilient, local SQLite-backed ledger for agent tasks.
-Instead of relying on volatile RAM arrays or raw `networkx` graphs, agents coordinate work through a
-strictly controlled state machine.
+## Rules
 
-### 1. Task Acquisition (Optimistic Concurrency Control)
+1. Never write the tables directly (`session.execute("UPDATE...")`). Call `acquire_task`.
+2. Always catch `StaleTaskVersionError`. An OCC collision must not crash the pipeline;
+   `MemoryRepository` already emits a `logger.warning()`.
+3. Change state only through `repo.transition_state()` with a `TransitionReason`. The State
+   Transition Matrix rejects invalid paths (e.g. `DONE` straight back to `PENDING`).
+4. `DONE` is blocked while the task has any `OPEN` defect: `DefectBlocksCompletionError`.
+5. Handlers do not call `save_handover_context`. The `PipelineRunner` saves it (see Handover save).
 
-Agents do not directly update the database with `session.execute("UPDATE...")`. Instead, they must call `acquire_task`. 
+## 1. Acquire a task (Optimistic Concurrency Control)
 
-Because multiple agents (or Orchestrator background scripts) might try to acquire the same pending
-task simultaneously, SpecWeaver uses **Optimistic Concurrency Control (OCC)** based on a `version`
-column.
+Several agents or Orchestrator background scripts may race for the same pending task. OCC on a
+`version` column decides the winner.
 
 ```python
 from specweaver.workspace.memory.store import MemoryRepository
@@ -34,13 +36,7 @@ async def worker_loop(repo: MemoryRepository, worker_id: str, task_id: uuid.UUID
         print(f"OCC Collision: {e}")
 ```
 
-**Rule:** Always catch `StaleTaskVersionError`. Do not crash the agent pipeline on OCC collisions. The `MemoryRepository` will emit a `logger.warning()` automatically.
-
-### 2. State Transitions & The Matrix
-
-The memory bank enforces a strict State Transition Matrix. You cannot jump directly from `DONE` back to `PENDING` without a valid path. 
-
-To transition a task, use `repo.transition_state()` with the corresponding `TransitionReason` enum.
+## 2. Transition state
 
 ```python
 from specweaver.workspace.memory.store import TaskStatus, TransitionReason
@@ -60,11 +56,10 @@ await repo.transition_state(
 )
 ```
 
-**Defect Invariants:** The system will physically block the transition to `DONE` if there are any `OPEN` defects associated with the task, throwing a `DefectBlocksCompletionError`.
+## 3. Hand over context
 
-### 3. Context Handover Limits
-
-When an agent needs to hand over work or store intermediate context, they update the `handover_context`. This is strictly limited to prevent LLM prompt token overflow.
+`handover_context` carries work or intermediate context to the next agent. It is capped so it
+cannot overflow the prompt.
 
 ```python
 from specweaver.workspace.memory.models import HandoverContext
@@ -78,14 +73,16 @@ context = HandoverContext(
 await repo.update_handover_context(task_id, context)
 ```
 
-**Rules:**
-1. Pydantic enforces an absolute **8KB** physical size limit on the serialized JSON payload.
-2. The `stack_trace` string is automatically truncated to the last 2000 characters.
-3. The `metadata` dictionary only accepts primitive types (`str`, `int`, `float`, `bool`) or lists of primitives. No deeply nested, hallucinated JSON structures are allowed.
+| Limit | Value |
+|---|---|
+| Serialized JSON payload | **8KB**, enforced by Pydantic |
+| `stack_trace` | truncated to the last 2000 characters |
+| `metadata` values | primitives (`str`, `int`, `float`, `bool`) or lists of primitives; no nesting |
 
-### 4. DAG Cycle Protection
+## 4. Add dependencies (cycle protection)
 
-When building topologies dynamically, use `insert_dependency`. The repository runs a `WITH RECURSIVE` SQLite CTE to protect the Flow Engine from infinite loop hallucinations.
+`insert_dependency` runs a `WITH RECURSIVE` SQLite CTE and rejects cycles, so the Flow Engine never
+gets an infinite loop.
 
 ```python
 from specweaver.workspace.memory.errors import CyclicDependencyError
@@ -96,20 +93,20 @@ except CyclicDependencyError:
     print("Agent attempted to create an infinite dependency loop!")
 ```
 
-### 5. Heartbeat Pulsing
+## 5. Pulse the heartbeat
 
-To prevent "zombie" tasks from permanently holding locks, the agent must periodically ping the repository. Only tasks in the `IN_PROGRESS` state can be pulsed, and only by the assigned worker.
+A long-running agent pulses so its task is not treated as a zombie. Only `IN_PROGRESS` tasks can be
+pulsed, and only by the assigned worker.
 
 ```python
 # The worker loop must periodically await this while executing long-running tasks
 updated_task = await repo.pulse_heartbeat(task_id, worker_id="agent-uuid")
 ```
 
-### 6. Zombie Recovery & Circuit Breaker
+## 6. Zombie recovery and circuit breaker
 
-The system relies on an Orchestrator-level script to periodically clean up zombies. If a task fails
-repeatedly (e.g., due to an unrecoverable LLM hallucination or crash), a Circuit Breaker activates
-to prevent infinite loops.
+An Orchestrator-level script recycles zombies. A task that keeps failing trips the circuit breaker
+instead of looping forever.
 
 ```python
 # Typically runs every 5 minutes in a background task
@@ -122,15 +119,13 @@ for action in recycled:
         print(f"Task {action['id']} died. Reset to PENDING for re-acquisition.")
 ```
 
-**Note on Circuit Breakers**: When a circuit breaker triggers, the system automatically creates a
-`Defect` on the task. The task cannot transition to `DONE` until this defect is manually marked as
-`RESOLVED` by a developer.
+A tripped breaker creates a `Defect` on the task. The task cannot reach `DONE` until a developer
+marks the defect `RESOLVED`.
 
-### 7. DAG Propagation
+## 7. Propagate blocks through the DAG
 
-When a task becomes `BLOCKED` (e.g. by a circuit breaker or manual agent failure), the orchestrator
-must flag all tasks that depend on it so they don't start executing. SpecWeaver does this
-automatically via Breadth-First Search (BFS) DAG traversal.
+When a task becomes `BLOCKED` (circuit breaker or agent failure), its dependents must not start.
+A Breadth-First Search (BFS) over the DAG flags them.
 
 ```python
 # When a task blocks, cascade UPSTREAM_BLOCKED to all PENDING ancestors
@@ -141,30 +136,25 @@ affected_ancestors = await repo.propagate_blocked(task_id=task.id)
 cleared_ancestors = await repo.clear_upstream_blocked(task_id=task.id)
 ```
 
-**Precondition Requirements**: `propagate_blocked` expects the source task to be `BLOCKED`.
-`clear_upstream_blocked` expects the source task to be unblocked (e.g., `PENDING` or `IN_PROGRESS`).
-If called incorrectly, they will raise an error or log a warning and return an empty list.
+Preconditions: `propagate_blocked` needs the source task `BLOCKED`; `clear_upstream_blocked` needs
+it unblocked (e.g. `PENDING` or `IN_PROGRESS`). Called wrongly, they raise, or log a warning and
+return an empty list.
 
-### 8. Context Hydration & Handover Formatting
+## 8. Read side: hydration
 
-While `MemoryRepository` handles the write-side state machine, the read-side context injection is fully autonomous and managed by the `MemoryHydrator`.
+`MemoryRepository` is the write side. `MemoryHydrator` injects memory into prompts; agents do not
+query the bank themselves.
 
-Agents do not need to manually query the memory bank when starting work. Instead:
-1. The `_build_base_prompt()` function automatically calls `MemoryHydrator.hydrate()` for the active project.
-2. The Hydrator fetches `IN_PROGRESS` and `BLOCKED` tasks, plus recently `DONE` tasks that contain a `handover_context`.
-3. The context is automatically strictly formatted as JSON, wrapped in an
-   `<agent_memory trust="low">` XML block to prevent prompt injection, and injected into the LLM
-   context window with a hard limit of **2048 tokens**.
+1. `_build_base_prompt()` calls `MemoryHydrator.hydrate()` for the active project.
+2. The Hydrator fetches `IN_PROGRESS` and `BLOCKED` tasks, plus recently `DONE` tasks that have a
+   `handover_context`.
+3. It formats them as JSON inside an `<agent_memory trust="low">` XML block (prompt-injection guard),
+   capped at **2048 tokens**. Over budget, priority truncation applies.
 
-If an agent needs to pass knowledge to the next agent, they simply update the `handover_context`
-before transitioning the task. The Hydrator will automatically ensure the next agent sees it
-(subject to priority truncation rules if the token budget is exhausted).
+To pass knowledge on, update `handover_context` before transitioning the task.
 
-### Example: Handler-Based Prompt Assembly (IoC)
-
-SpecWeaver utilizes Inversion of Control to build the prompt. The base prompt, including the memory
-block, is constructed in the Application layer, completely isolating the domain workflows from
-`MemoryHydrator`.
+The base prompt, memory block included, is built in the Application layer (Inversion of Control, IoC),
+so domain workflows never see `MemoryHydrator`:
 
 ```python
 # In src/specweaver/core/flow/handlers/your_handler.py
@@ -191,15 +181,17 @@ async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
     )
 ```
 
-### 9. Handover Save Protocol (Pipeline Interception)
+## 9. Handover save (pipeline interception)
 
-The persistence of handover context is managed automatically by the Flow Engine (`PipelineRunner`). Agent handlers DO NOT explicitly call `save_handover_context`.
+When a pipeline completes, fails, or is interrupted, `PipelineRunner` runs a fail-safe telemetry
+sweep:
 
-When a pipeline completes, fails, or is interrupted, the runner executes a fail-safe telemetry sweep:
-1. **Scrapes Step Records**: Extracts `files_touched` from successful outputs and `error_message` strings from failures.
-2. **Sanitizes Telemetry**: Deduplicates errors, enforcing a mathematical boundary of up to 10
-   errors (truncated to 500 chars) and 30 files, ensuring the final JSON strictly fits within the
-   8KB payload budget.
-3. **Persists to DB**: Locates the active `IN_PROGRESS` task for the current project and commits the sanitized `HandoverContext` to SQLite.
+1. **Scrape step records**: `files_touched` from successful outputs, `error_message` strings from
+   failures.
+2. **Sanitize**: deduplicate errors; keep at most 10 errors (each truncated to 500 chars) and 30
+   files, so the JSON fits the 8KB budget.
+3. **Persist**: find the project's active `IN_PROGRESS` task and commit the `HandoverContext` to
+   SQLite.
 
-This mechanism ensures telemetry is permanently persisted for the *next* agent, even if the current agent crashed due to a `KeyboardInterrupt` or unhandled LLM exception.
+The next agent gets the telemetry even if this one died on a `KeyboardInterrupt` or an unhandled LLM
+exception.

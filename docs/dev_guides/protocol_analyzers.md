@@ -1,54 +1,56 @@
-# Protocol & Schema Analyzers
+# Protocol and Schema Analyzers
 
-SpecWeaver utilizes a purely native, zero-compilation protocol parsing layer located at
-`specweaver/sandbox/commons/protocol`. This module is designed to structurally map external API
-definitions (like OpenAPI `paths`, AsyncAPI `channels`, and gRPC `rpc` methods) into standard
-`ProtocolEndpoint` and `ProtocolMessage` Pydantic models.
+Use when: you add or change parsing of API contracts (OpenAPI, AsyncAPI, gRPC, or a new format).
 
-Currently supported out of the box:
-- **OpenAPI 3.x**: Extracts `paths` and `components.schemas`.
-- **AsyncAPI 3.x**: Extracts `channels` and `components.messages`.
-- **gRPC (.proto)**: Extracts `service`/`rpc` into equivalent paths, and `message` payloads natively via `proto-schema-parser`.
+SpecWeaver's zero-compilation protocol layer maps external API definitions (OpenAPI `paths`,
+AsyncAPI `channels`, gRPC `rpc` methods) into `ProtocolEndpoint` and `ProtocolMessage` Pydantic
+models. Documented location: `specweaver/sandbox/commons/protocol`; since moved (2026-09-25) to
+`src/specweaver/sandbox/protocol/core/` (parsers, factory, atom) and
+`src/specweaver/sandbox/protocol/interfaces/tool.py`.
 
-## Architectural Constraints
+| Format | Extracts |
+|---|---|
+| **OpenAPI 3.x** | `paths` and `components.schemas` |
+| **AsyncAPI 3.x** | `channels` and `components.messages` |
+| **gRPC (.proto)** | `service`/`rpc` as paths, `message` payloads, via `proto-schema-parser` |
 
-The Protocol module operates inside the Execution layer (Loom) but acts as an **adapter**.
-1. **Zero I/O Logic**: The interface only accepts standard python `str` payloads. The logic to read files from disk is managed by `ProtocolTool` and passed downward.
-2. **Strict Typings**: Due to the heavily nested and chaotic nature of YAML dictionaries inside
-   `components.schemas`, standard dictionaries are banned from passing the Loom boundary. Everything
-   must be mapped to `ProtocolMessage` cleanly before extraction completes.
-3. **Speed over Validity**: We explicitly skip robust library-level semantic validation (e.g.,
-   `jsonschema` library validation) to maintain the strict < 50ms per-file parsing speed budget. If
-   an API contract violates basic topological expectations, exceptions like `ProtocolSchemaError`
-   are raised immediately natively.
+## Rules
 
-## Integrating a New Protocol
+The module sits in the execution layer (Loom) but is an **adapter**.
 
-If you need to add support for GraphQL, Avro, or Thrift, follow these steps:
+1. **Zero I/O.** Parsers accept python `str` payloads only. `ProtocolTool` reads files and passes
+   the text down.
+2. **Strict types.** YAML under `components.schemas` is deeply nested and irregular, so raw
+   dictionaries may not cross the Loom boundary. Map everything to `ProtocolMessage` before
+   extraction completes.
+3. **Speed over validity.** No library-level semantic validation (e.g. `jsonschema` library
+   validation), to hold the < 50ms per-file parsing budget. A contract that breaks basic topological
+   expectations raises `ProtocolSchemaError` immediately.
 
-1. **Implement `ProtocolSchemaInterface`**:
-    Define a new class inside `commons/protocol/<format>_parser.py` implementing `extract_endpoints` and `extract_messages`.
-2. **Adhere closely to Pydantic**: 
-    If a schema concept doesn't cleanly map to an endpoint or message, map the raw dictionary values into the generic `.properties` dictionary of the Model.
-3. **Register the Parser**:
-    Update the `ProtocolParserFactory.create_parser(payload)` regex routing layer in `src/specweaver/sandbox/protocol/factory.py` to sniff and detect your format.
+## Steps: add a protocol (e.g. GraphQL, Avro, Thrift)
 
-## Atom and Tool Connectors
+1. **Implement `ProtocolSchemaInterface`** in `commons/protocol/<format>_parser.py` (today
+   `sandbox/protocol/core/<format>_parser.py`) with `extract_endpoints` and `extract_messages`.
+2. **Stay in the Pydantic models.** A concept that fits neither endpoint nor message goes, as raw
+   values, into the model's generic `.properties` dictionary.
+3. **Register the parser** in the `ProtocolParserFactory.create_parser(payload)` regex routing in
+   `src/specweaver/sandbox/protocol/factory.py` (today `sandbox/protocol/core/factory.py`) so it
+   detects your format.
 
-The lower-level parsers are strictly encapsulated by the Orchestrator via native connectors:
-- **`ProtocolAtom`**: Accepts an intent (`extract_schema_endpoints` or `extract_schema_messages`)
-  and the standard `file_path`, handling raw disk reads and returning mathematically bounded
-  `AtomResult` representations of the payloads. Exception faults (OS or Runtime) are natively mapped
-  to a `FAILED` result.
-- **`ProtocolTool`**: Wraps the Atom securely, returning standard `ToolDefinition` schemas directly
-  usable by provider LLMs. Enables Agents to dynamically extract protocol intents securely inside
-  the boundaries of the execution harness.
+## Atom and Tool
 
-## Validation Execution Integration
+| Connector | Does |
+|---|---|
+| **`ProtocolAtom`** | Takes an intent (`extract_schema_endpoints` or `extract_schema_messages`) and a `file_path`; reads the disk; returns bounded `AtomResult` payloads. OS or Runtime exceptions become a `FAILED` result. |
+| **`ProtocolTool`** | Wraps the Atom and returns `ToolDefinition` schemas that provider LLMs use directly, so agents extract protocol intents inside the execution harness. |
 
-The `ProtocolAtom` directly supports the Architectural Check Pipeline dynamically bridging logic to **C13 Contract Drift Rule**.
-During a standard feature execution loop:
-1. The orchestrator invokes the `ProtocolAtom` retrieving a `List[ProtocolEndpoint]`.
-2. A separate syntax lookup pulls framework routes into `ast_payload` string mappings.
-3. Both sets are injected into `rule.context["protocol_schema"]` and `rule.context["ast_payload"]` seamlessly before rule execution.
-4. If an endpoint from the Spec is mysteriously missing from the Python logic routes, `C13ContractDriftRule` flags a hard halt and fails the generation cycle!
+## Validation: C13 Contract Drift
+
+`ProtocolAtom` feeds **C13 Contract Drift Rule** in the architectural check pipeline:
+
+1. The orchestrator calls `ProtocolAtom` and gets a `List[ProtocolEndpoint]`.
+2. A separate syntax lookup puts framework routes into `ast_payload` string mappings.
+3. Both go into `rule.context["protocol_schema"]` and `rule.context["ast_payload"]` before the rule
+   runs.
+4. An endpoint from the Spec missing from the Python routes makes `C13ContractDriftRule` halt and
+   fail the generation cycle.

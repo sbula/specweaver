@@ -1,18 +1,19 @@
-# Developer Guide: Adding New Prompt Slots
+# Adding Prompt Slots
 
-This guide explains how to add new context elements (slots) to the `PromptBuilder` using the `RenderProfile` system.
+Use when: you add a context element (slot) to what SpecWeaver's `PromptBuilder` sends the LLM.
 
-## Overview
+**Prompt Render Profiles** (`RenderProfile`) decide which context blocks (instructions, topology,
+memory, etc.) reach which agent and in what order. XML rendering stays infrastructure; the choice of
+context per agent is workflow policy.
 
-In SpecWeaver, the rendering sequence of context blocks (instructions, topology, memory, etc.) sent
-to the LLM is controlled by **Prompt Render Profiles**. This strictly isolates infrastructure
-mechanisms (XML rendering) from workflow policy (which context goes to which agent).
+Since moved (2026-09-25): `PromptSlot` and `RenderProfile` live in
+`infrastructure/llm/prompt/profiles.py`, rendering in `infrastructure/llm/prompt/render.py`.
+`_prompt_profiles.py` and `_prompt_render.py` are backward-compatibility facades.
 
-## Step 1: Define the `PromptSlot`
+## Steps
 
-First, register your new slot in `specweaver/infrastructure/llm/_prompt_profiles.py`.
-
-The `PromptSlot` enum maps logical context boundaries to physical XML tags.
+1. **Define the `PromptSlot`** in `specweaver/infrastructure/llm/_prompt_profiles.py`. The enum maps
+   logical context boundaries to XML tags.
 
 ```python
 from enum import Enum
@@ -26,11 +27,9 @@ class PromptSlot(str, Enum):
     CONSOLIDATED_MEMORY = "consolidated_memory"
 ```
 
-## Step 2: Register the Slot in `RenderProfiles`
-
-Open `specweaver/core/flow/handlers/_profiles.py`. This is where orchestration policy lives.
-
-Decide which profiles should include your new slot. For example, if it should only go to the `FULL` and `INTERACTIVE` profiles, add it to their `order` tuples:
+2. **Register it in `RenderProfiles`** in `specweaver/core/flow/handlers/_profiles.py`, where orchestration policy
+   lives. Add the slot to `active_slots` and to the `order` tuple of each profile that should get it
+   (e.g. only `FULL` and `INTERACTIVE`):
 
 ```python
 from specweaver.infrastructure.llm._prompt_profiles import RenderProfile, PromptSlot
@@ -50,14 +49,9 @@ FULL = RenderProfile(
 )
 ```
 
-## Step 3: Implement the Rendering Logic (If Custom)
-
-If your slot represents simple tagged text or standard XML attributes, **you do not need to write
-any rendering code**. The `render_blocks` function in `_prompt_render.py` will automatically render
-it using `_render_tagged_blocks`.
-
-### When to write a Custom Renderer:
-If your slot requires complex formatting (e.g., iterating over specific object structures, building a tree, grouping files), you must add a custom dispatch handler in `_prompt_render.py`:
+3. **Rendering, only if custom.** Simple tagged text or standard XML attributes need no code:
+   `render_blocks` in `_prompt_render.py` falls back to `_render_tagged_blocks`. Complex formatting
+   (iterating object structures, building a tree, grouping files) needs a dispatch handler:
 
 ```python
 # specweaver/infrastructure/llm/_prompt_render.py
@@ -78,9 +72,9 @@ dispatch: dict[PromptSlot, Callable[[Sequence[_ContentBlock]], str]] = {
 }
 ```
 
-## Step 4: Inject the Context
+   Today the dispatch table is `_SLOT_RENDERERS` in `prompt/render.py`, keyed by tag string.
 
-Now you can inject content into this slot from anywhere that has a `PromptBuilder` instance.
+4. **Inject content** from anywhere with a `PromptBuilder`:
 
 ```python
 builder.add_context(
@@ -91,16 +85,15 @@ builder.add_context(
 )
 ```
 
-If the active `RenderProfile` does not contain `PromptSlot.CONSOLIDATED_MEMORY` in its
-`active_slots`, the `add_context` call will safely ignore it, saving token budgets and eliminating
-unnecessary downstream I/O.
+   If the active `RenderProfile` lacks `PromptSlot.CONSOLIDATED_MEMORY` in its `active_slots`,
+   `add_context` ignores the call: no tokens spent, no downstream I/O.
 
-## Registering New Profiles
+## New profiles
 
-If you need a completely new profile for a specific orchestration flow, you must register it in the `PROFILE_REGISTRY` to make it resolvable dynamically from YAML configs.
+A profile selectable from YAML must be in `PROFILE_REGISTRY`.
 
-1. **Define the Profile:** Create your `RenderProfile` instance in `specweaver/core/flow/handlers/_profiles.py`.
-2. **Add to Registry:** Append your new profile to the `PROFILE_REGISTRY` tuple at the bottom of the file.
+1. Create the `RenderProfile` in `specweaver/core/flow/handlers/_profiles.py`.
+2. Add it to the `PROFILE_REGISTRY` tuple at the bottom of the file.
 
 ```python
 # specweaver/core/flow/handlers/_profiles.py
@@ -122,7 +115,7 @@ PROFILE_REGISTRY = MappingProxyType(
 )
 ```
 
-By registering it here, users can seamlessly select it in their YAML steps:
+Select it in a YAML step:
 ```yaml
 - action: "generate"
   target: "code"

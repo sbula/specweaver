@@ -1,54 +1,37 @@
-# Developer Guide: Integrating a New LLM Provider
+# Adding an LLM Provider
 
-SpecWeaver natively adopts a multi-provider adapter approach for routing Large Language Model
-interactions. Because the LLM landscape mutates rapidly, we built an auto-discovery registry that
-eliminates internal hardcoding and decouples business logic from cost-tracking algorithms.
+Use when: you add a new LLM provider (e.g. Cohere, AI21) to SpecWeaver.
 
-This guide explains how to add zero-friction support for a new provider (e.g., Cohere, AI21).
+Each provider is an adapter found by an auto-discovery registry: no hardcoded provider list, and no
+cost tracking inside business logic.
 
----
+Since moved (2026-09-25): `llm/` is now `src/specweaver/infrastructure/llm/`; discovery lives in
+`adapters/registry.py`; the dispatcher is `sandbox/dispatcher.py` (formerly `loom/dispatcher.py`).
 
-## 1. The Adapter ABC
+## Steps
 
-Every provider interface must inherit from the core `LLMAdapter` abstract class located natively in `llm/adapters/base.py`. 
+1. **Write the adapter** at `src/specweaver/llm/adapters/<provider_name>.py`, inheriting the
+   `LLMAdapter` abstract class from `llm/adapters/base.py`. It owns its SDK endpoints,
+   request/response models, and context-window chunking.
+2. **Implement the overrides:**
+   1. `generate(prompt: str) -> str`: plain chat completions, no system injection, no tools.
+   2. `generate_with_tools(messages, config, dispatcher)`: map the provider's native function-calling
+      format (e.g. a JSON schema into Cohere's tool schema) and pipe native payload callbacks to the
+      `loom/dispatcher.py`.
+   3. `provider_name`: a unique static string identifying the class.
+3. **Nothing to register.** The package scans its modules and subclasses at start-up
+   (`src/specweaver/llm/adapters/__init__.py`). An adapter with `provider_name = "cohere"` inside
+   `adapters/` is supported. _Do not append it to a master array._
 
-Your adapter defines its own internal SDK endpoints, request/response models, and context-window chunking. 
+## Rules
 
-**Location:** `src/specweaver/llm/adapters/<provider_name>.py`
+- **No telemetry in the adapter.** Cost routing, token counting and database lineage are not its
+  job; do not intercept payload counts inside generation.
 
-### Required Concrete Overrides:
-1. `generate(prompt: str) -> str`: Standard chat completions without system injection or tools.
-2. `generate_with_tools(messages, config, dispatcher)`: Must map the provider's native
-   function-calling formats (e.g., translating a JSON schema into Cohere's tool schema) and
-   correctly pipe native payload callbacks to the `loom/dispatcher.py`.
-3. `provider_name`: A unique static string strictly identifying this class.
+How telemetry is added:
 
----
-
-## 2. The Auto-Discovery Registry
-
-To prevent central routing swamps, SpecWeaver heavily utilizes module dynamic scanning. 
-
-Within `src/specweaver/llm/adapters/__init__.py`, the module actively scans all internal subclass
-structures the moment it spins up. As long as your adapter declares `provider_name = "cohere"` and
-is placed within the `adapters/` folder, the environment will dynamically support it.
-
-_You do not need to manually append your adapter to a master array._
-
----
-
-## 3. Telemetry Transparency 
-
-Cost routing, token counting, and database lineage tracking are **not** the responsibility of your
-Adapter. A frequent mistake when expanding LLMs is trying to intercept payload counts inside the
-generation execution.
-
-**How it works seamlessly:**
-1. The `LLMFactory` (`llm/factory.py`) receives a request to spin up an LLM (e.g., "cohere").
-2. It instantiates your native `CohereAdapter`.
-3. It securely proxies your entire class wrapped inside the `TelemetryCollector` decorator.
-4. Your adapter operates flawlessly while the Proxy transparently records payload sizes, computes
-   standard model costs against the `llm_cost_overrides` database, and intercepts streaming chunks
-   contextually.
-
-**Summary:** Write the pure adapter pipeline. The factory will provide the telemetry metrics for free.
+1. The `LLMFactory` (`llm/factory.py`) is asked for an LLM (e.g. "cohere").
+2. It instantiates your `CohereAdapter`.
+3. It wraps the instance in the `TelemetryCollector` proxy.
+4. The proxy records payload sizes, computes model costs against the `llm_cost_overrides` database,
+   and intercepts streaming chunks.

@@ -1,20 +1,26 @@
-# Developer Guide: MCP Infrastructure Architecture
+# MCP Implementation Patterns
 
-SpecWeaver utilizes a robust implementation of Anthropic's **Model Context Protocol (MCP)** to
-natively integrate external workspace contexts (like remote PostgreSQL database schemas, Jira
-tickets, and external repositories) precisely into the Agent logic bounds without succumbing to
-System Prompt token saturation.
+Use when: you change how SpecWeaver pulls external context (remote PostgreSQL schemas, Jira tickets,
+external repositories) through Anthropic's **Model Context Protocol (MCP)**, or add an MCP intent.
 
-## 1. Architectural Strategy
+## Pre-Fetched Context Envelope (AD-1)
 
-SpecWeaver adheres to the **Pre-Fetched Context Envelope** pattern (AD-1). We strictly forbid standard "conversational tool use" for MCP injection. Instead:
-- External dependencies are formally defined in a project's `context.yaml`.
-- The `ContextAssembler` pre-fetches the string states asynchronously during the L3 bootstrap using the `MCPAtom`.
-- The string payloads are deeply serialized as an immutable `<environment_context>` block and injected into the target LLM generation frame.
+MCP context is never injected through conversational tool use; that would saturate the system
+prompt. Instead:
 
-## 2. Loom Orchestration Bounds (The MCP Atom)
+1. External dependencies are declared in the project's `context.yaml`.
+2. The `ContextAssembler` pre-fetches them asynchronously during the L3 bootstrap via `MCPAtom`.
+3. The payloads are serialized into an immutable `<environment_context>` block in the LLM generation
+   frame.
 
-The engine bridges connection streams into standard JSON-RPC packets.
+Exception: the **MCP Explorer Tool**. Implementation and code-generation handlers only get the
+pre-fetched context from explicit URIs; the L2 Architect can explore `resources/list` during
+planning via `ArchitectMCPInterface`.
+
+## The MCP Atom (Loom)
+
+The engine turns connection streams into JSON-RPC packets. `MCPExecutor` talks to the server over
+standard I/O so the pipeline does not block.
 
 ```yaml
 # src/specweaver/sandbox/mcp/context.yaml
@@ -24,24 +30,17 @@ forbids:
   - "specweaver.sandbox.*" # Agents cannot directly hit the raw Atom.
 ```
 
-The underlying `MCPExecutor` binds the target string dynamically over standard I/O byte transmission channels to prevent asynchronous pipeline blocking.
+Since moved (2026-09-25): the module is split into `sandbox/mcp/core/` (`archetype: adapter`) and
+`sandbox/mcp/interfaces/`.
 
-### Isolation Mandates (NFR-2)
-To completely mitigate Agent RCE (Remote Code Execution) exposure during server bootstrapping,
-`MCPAtom` **strictly** dictates execution inside isolated Docker/Podman engines. Passing
-`["node", "index.js"]` dynamically will structurally panic the initialization string. Native Python
-execution paths (`sys.executable`) are whitelisted uniquely for internal CI mapping frameworks.
+### Isolation (NFR-2)
 
-## 3. Extending the MCP Client
+To close Agent RCE (Remote Code Execution) exposure at server bootstrap, `MCPAtom` runs servers only
+inside Docker/Podman. A bare command like `["node", "index.js"]` is refused at initialization.
+`sys.executable` is allowed only for internal tests (they patch `_ALLOW_INTERPRETER`).
 
-Adding a new intent natively to the MCP bridging pipe requires extending `MCPAtom.run()`.
-1. Append your expected target vector to `MCPAtom._intent_<your_method>`.
-2. Map the payload securely into the internal `_executor.call_rpc` buffer constraint.
-3. Establish appropriate integration tests tracking your raw JSON string formatting logic inside `test_atom_ipc.py`.
+## Steps: add an MCP intent
 
-
-### MCP Explorer Tool
-The **MCP Explorer Tool** serves as the dynamic discovery endpoint for L2 Architects. While
-implementations and code generation handlers simply receive injected pre-fetched context from
-explicit URIs, the Architect role can actively explore 
-esources/list natively during the planning phase via ArchitectMCPInterface.
+1. Add `MCPAtom._intent_<your_method>`; `MCPAtom.run()` dispatches to it.
+2. Send the payload through `_executor.call_rpc`.
+3. Add integration tests for the raw JSON string formatting in `test_atom_ipc.py`.

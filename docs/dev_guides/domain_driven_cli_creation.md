@@ -1,13 +1,14 @@
-# Domain-Driven CLI Creation Guide
+# Domain-Driven CLI Creation
 
-With the completion of **TECH-001 (Domain-Driven Design Unification)**, SpecWeaver has moved away
-from a monolithic `interfaces/cli/` layer. All CLI commands are now strictly bound to their
-respective domains using Hexagonal Architecture principles.
+Use when: you add a CLI command to SpecWeaver.
 
-This guide explains how to properly create, register, and test a new CLI command.
+Since **TECH-001 (Domain-Driven Design Unification)** there is no monolithic `interfaces/cli/`
+layer. Each command belongs to its domain (Hexagonal Architecture); `interfaces/cli/main.py` only
+mounts the domain apps.
 
-## 1. Directory Structure
-CLI interfaces should live at the boundary of a domain package, specifically in the `interfaces` module.
+## Steps
+
+1. **Place it** at the domain boundary, in the domain's `interfaces` module:
 
 ```text
 src/specweaver/
@@ -18,8 +19,8 @@ src/specweaver/
 │       └── cli.py             # Your CLI entrypoint
 ```
 
-## 2. Creating the Domain App
-In your `cli.py`, define a dedicated `typer.Typer` instance. Do **not** import the global `app` from `main.py` to add commands. This ensures your domain remains decoupled and testable in isolation.
+2. **Create the domain app** in `cli.py`: a dedicated `typer.Typer` instance. Do **not** import the
+   global `app` from `main.py`; the domain stays decoupled and testable alone.
 
 ```python
 # src/specweaver/your_domain/interfaces/cli.py
@@ -58,19 +59,8 @@ def run_task(
     console.print("[green]Task complete.[/green]")
 ```
 
-### Critical Rules for `cli.py`:
-- **No Heavy Global Imports:** Defer importing your core services, SQLAlchemy, or Heavy ML libraries
-  until *inside* the command function. Typer parses all CLI scripts at boot; heavy global imports
-  will slow down every single `sw` command.
-- **Use `_core.py` for shared CLI state:** If you need the `db` or the `active_project`, import
-  `get_db` and `_require_active_project` from `specweaver.interfaces.cli._core`. This prevents
-  circular imports back to `main.py`.
-- **Pure Adapters:** The CLI is an Adapter. It should parse arguments, call an Orchestrator/Service
-  in your `core/` layer, and print the results. It should **never** contain business logic or SQL
-  queries.
-
-## 3. Registering the Domain App
-Once your domain CLI is ready, mount it to the root application in `src/specweaver/interfaces/cli/main.py`.
+3. **Register it** on the root app in `src/specweaver/interfaces/cli/main.py`, wrapped in
+   `try/except ImportError`:
 
 ```python
 # src/specweaver/interfaces/cli/main.py
@@ -85,14 +75,27 @@ except ImportError as e:
     logger.error(f"Failed to load your_domain plugin: {e}")
     console.print(f"[yellow]Warning:[/yellow] your_domain plugin disabled due to error.")
 ```
-*Note: Always wrap plugin registration in a `try/except ImportError`. This enforces **NFR-4 (Native
-Healer Isolation)**. If your plugin crashes due to a bad dependency, the rest of the CLI (like
-`sw edit`) must still boot so the agent can fix the error.*
 
-## 4. Testing the CLI
-When writing integration tests for your CLI, **always import the root `app` locally** inside the
-test function to prevent state leakage and module reloading issues from other tests. Use the
-`_mock_db` fixture if you need database isolation.
+4. **Test it** (below).
+
+## Rules for `cli.py`
+
+- **No heavy global imports.** Import core services, SQLAlchemy or heavy ML libraries *inside* the
+  command function. Typer parses all CLI scripts at boot; a heavy global import slows every `sw`
+  command and invites cyclic imports.
+- **Shared CLI state comes from `_core.py`.** Import `get_db` and `_require_active_project` from
+  `specweaver.interfaces.cli._core`, never from `main.py` (circular imports).
+- **Pure adapter.** Parse arguments, call an Orchestrator/Service in `core/`, print the result.
+  **Never** business logic or SQL queries.
+- **Registration is isolated.** The `try/except ImportError` enforces **NFR-4 (Native Healer
+  Isolation)**: if your plugin breaks on a bad dependency, the rest of the CLI (like `sw edit`) still
+  boots so the agent can fix it.
+
+## Testing
+
+- **Import the root `app` locally** inside the test function, to avoid state leakage and module
+  reloading issues from other tests.
+- Use the `_mock_db` fixture for database isolation.
 
 ```python
 # tests/integration/your_domain/interfaces/cli/test_cli.py

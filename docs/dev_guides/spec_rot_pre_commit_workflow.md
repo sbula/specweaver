@@ -1,36 +1,26 @@
 # Spec Rot Pre-Commit Workflow
 
-## Overview
+Use when: you install the Spec Rot hook in a project, or a commit was blocked by it.
 
-SpecWeaver implements a **Bi-Directional Spec Rot Interceptor** (Feature 3.23) using standard Git Hooks. 
+The **Bi-Directional Spec Rot Interceptor** (Feature 3.23) is a Git pre-commit hook. It targets the
+"2nd-Day Problem": a developer hot-fixes code in the IDE and forgets to update the markdown spec
+(e.g. `Spec.md`). On every `git commit` it compares the AST signatures of staged code files with the
+structural contracts in the Spec. On mismatch the commit is blocked.
 
-The goal of this interceptor is to solve the "2nd-Day Problem" where developers hot-fix code in
-their IDE but forget to update the associated markdown specification (e.g., `Spec.md`) to reflect
-the new realities of the implementation.
-
-SpecWeaver intercepts every `git commit` to mathematically compare the AST signatures of the staged
-code files against the structural contracts defined in the Spec. If the structures don't match, the
-commit is blocked!
-
-## Installation
-
-You must install the SpecWeaver pre-commit hook in your local `.git` repository for this to work
-natively. Once installed, the Interceptor will automatically trigger its
-`sw drift check-rot --staged` hook phase on commits. If it breaks, it deterministically raises a
-fatal **Exit Code 42** to the underlying OS.
+## Install
 
 ```bash
 # From the root of your project
 sw hooks install --pre-commit
 ```
 
-*Note: This command will attempt to determine the path of your active Python/UV executable
-(`sys.executable`) to ensure that native bash execution triggers the correct environment when you
-use traditional git CLI clients or IDE integrated source controls.*
+- Installs into your local `.git` repository. The hook runs `sw drift check-rot --staged`. Drift raises a fatal **Exit Code 42**.
+- The installer records your active Python/UV executable (`sys.executable`), so the hook uses the
+  right environment from the git CLI and from IDE source control.
 
-## Workflow during a blocked commit
+## A blocked commit
 
-When you execute `git commit -m "update"` and structural drift is detected, you will see output like this:
+`git commit -m "update"` with structural drift prints:
 
 ```
 >>> SpecWeaver: Running Bi-Directional Spec Rot Interceptor (Feature 3.23) <<<
@@ -44,28 +34,17 @@ Fix the mismatch to proceed with this commit.
 ================================================================
 ```
 
-### Resolution Paths
+Two ways out:
 
-When blocked, you have two options:
+| Situation | Fix |
+|---|---|
+| **The Code is Wrong (Hallucination/Bug):** an LLM or developer made an unauthorized signature change that violates the design | Revert or update the code to match the Spec |
+| **The Code is Right (Intentional Hot-Fix/Evolution):** the structure changed on purpose, the doc did not | Update the `## Contract` or `## Scenarios` section of `Spec.md` to the new signature, `git add Spec.md`, commit again |
 
-1. **The Code is Wrong (Hallucination/Bug):**
-   - The LLM or human developer made an unauthorized structural change to the signature that violates the design.
-   - **Fix:** Revert or update your code changes to match the Spec. 
+## Traps
 
-2. **The Code is Right (Intentional Hot-Fix/Evolution):**
-   - You intentionally changed the required structure, but you forgot to update the documentation.
-   - **Fix:** Open the `Spec.md` file and update the `## Contract` or `## Scenarios` section to match the new code signature. Then `git add Spec.md` to your staging area and attempt the commit again!
-
----
-
-## Troubleshooting
-
-### "The SpecWeaver pipeline crashed"
-If the hook script emits `ERROR: The SpecWeaver pipeline crashed`, it indicates an environment error
-rather than spec drift. Check that your Python virtual environment still has SpecWeaver installed.
-You may need to run `sw hooks install --pre-commit` again if you moved the project directory.
-
-### Bypassing the Hook
-SpecWeaver strongly discourages bypassing the interceptor (it violates the Constitution). However,
-for emergency operational rollbacks, you can use standard Git bypass mechanisms:
-`git commit --no-verify`.  This action will be flagged by the CI pipeline anyway!
+- **"The SpecWeaver pipeline crashed"**: `ERROR: The SpecWeaver pipeline crashed` is an environment
+  error, not drift. Check SpecWeaver is still installed in your virtual environment. After moving the
+  project directory, run `sw hooks install --pre-commit` again.
+- **Bypassing**: `git commit --no-verify` works for emergency operational rollbacks, but it violates
+  the Constitution and the CI pipeline flags it anyway.

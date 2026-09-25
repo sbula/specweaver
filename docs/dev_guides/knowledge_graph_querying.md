@@ -1,12 +1,19 @@
 # Knowledge Graph Querying
 
-The graph boundary is strictly governed by the `GraphEngineProtocol`. Whether you are backed by the
-`InMemoryGraphEngine` (NetworkX) or the future `RustGraphEngine` (petgraph via PyO3), all operations
-use **semantic hash strings** as native Node IDs. Integer IDs are strictly prohibited outside the
-repository storage layer.
+Use when: code reads or writes the knowledge graph through an engine.
 
-## GraphEngineProtocol
-Any engine powering the platform must adhere to this standard contract:
+`GraphEngineProtocol` is the only graph boundary. Every engine, today `InMemoryGraphEngine`
+(NetworkX), later `RustGraphEngine` (petgraph via PyO3), uses **semantic hash strings** as Node IDs.
+Integer IDs are prohibited outside the repository storage layer.
+
+## Rules
+
+1. `engine` ALWAYS means an implementation of `GraphEngineProtocol`.
+2. A variable holding a NetworkX graph with semantic hash keys MUST be named `semantic_digraph`
+   (never `graph`, `nx_graph`, or `db_digraph`).
+3. Read an edge's kind through `EDGE_KIND_ATTR`, never by literal name (see Edge kinds).
+
+## The protocol
 
 ```python
 from typing import Protocol
@@ -26,11 +33,11 @@ class GraphEngineProtocol(Protocol):
     def clear_cache(self) -> None: ...
 ```
 
-## Every Edge Carries Its Kind
+## Edge kinds
 
-An edge's kind lives on the networkx edge attribute named by `EDGE_KIND_ATTR`, which the engine, the
-store and the loader all import rather than spell. It is one of the nine `EdgeKind` members; the
-store **refuses** an edge that carries no kind rather than supplying one.
+The kind is on the networkx edge attribute named by `EDGE_KIND_ATTR`, imported (never spelled) by
+engine, store and loader. It is one of the nine `EdgeKind` members. The store **refuses** an edge
+without a kind; it never supplies one.
 
 ```python
 from specweaver.graph.core.engine.models import EDGE_KIND_ATTR
@@ -43,26 +50,29 @@ calls = [
 ]
 ```
 
-Never read the attribute by literal name. The `graph_edges` **column** is called `type` because it
-is part of the primary key, and reading the column's name off a graph is what caused the two
-`TECH-068` defects the anti-patterns list records.
+Trap: the `graph_edges` **column** is called `type` (it is part of the primary key). Reading the
+column's name off a graph caused the two `TECH-068` defects in the anti-patterns list.
 
-A build of `src/specweaver` (358 files) produces roughly **9,100 `CALLS`, 2,700 `CONTAINS`, 2,270
-`IMPORTS` and 340 `EXTENDS`** edges, plus about 990 ghosts.
+Scale: a build of `src/specweaver` (358 files) yields roughly **9,100 `CALLS`, 2,700 `CONTAINS`,
+2,270 `IMPORTS` and 340 `EXTENDS`** edges, plus about 990 ghosts.
 
-## Ghost Targets Are Answers, Not Failures
+## Ghost targets are answers
 
-An edge whose target is not something the build parsed still exists, pointing at a `GHOST` node. So
-a traversal returning nothing means *nothing depends on this*, and never *what depends on it was
-outside what we parsed*. Ambiguity ghosts too: a name declared in two files is not one thing, and a
-reader following an invented dependency is worse served than one seeing a visible unknown.
+An edge to something the build did not parse still exists and points at a `GHOST` node. An empty
+traversal therefore means *nothing depends on this*, never *what depends on it was outside what we
+parsed*.
 
-Ghost namespaces are separate per kind — a module, a type and a procedure sharing a name are three
-different unknowns. See `docs/dev_guides/ontology_mapping.md` for the resolution rules and for the
-one known gap: the unresolved raw name does not yet reach the edge's metadata.
+- Ambiguous names ghost too: a name declared in two files is not one thing, and a visible unknown
+  serves a reader better than an invented dependency.
+- One ghost namespace per kind: a module, a type and a procedure sharing a name are three unknowns.
 
-## Basic Subgraph Querying
-The most common operation is extracting a localized subgraph around a specific node (e.g., a modified file or a newly discovered function) using its semantic hash.
+Resolution rules and the one known gap (the unresolved raw name does not yet reach the edge's
+metadata): `docs/dev_guides/ontology_mapping.md`.
+
+## Subgraph query
+
+The common case: a localized subgraph around one node (e.g. a modified file or a newly discovered
+function), by semantic hash.
 
 ```python
 from specweaver.graph.core.engine.protocol import GraphEngineProtocol
@@ -72,13 +82,9 @@ from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 semantic_digraph = engine.extract_subgraph(start_hash="default:a3f8c1e2...", depth=3)
 ```
 
-## Naming Conventions
-To maintain type safety and avoid ID confusion, strict naming rules apply:
-1. `engine` ALWAYS means an implementation of `GraphEngineProtocol`.
-2. Any variable holding a NetworkX graph with semantic hash keys MUST be named `semantic_digraph` (never `graph`, `nx_graph`, or `db_digraph`).
+## GraphML export
 
-## GraphML Serialization
-To pass graph data to LLM agents or external tools, serialize the subgraph to GraphML format.
+To hand graph data to LLM agents or external tools, serialize to GraphML.
 
 ```python
 from specweaver.graph.core.builder.orchestrator import GraphBuilder

@@ -1,16 +1,10 @@
-# Developer Guide: Adding a New Tool & Atom
+# Adding a Tool and Atom
 
-This guide details the process of expanding SpecWeaver’s autonomous agent capabilities securely.
-Because we firmly enforce a zero-trust model for LLMs, capabilities are never directly exposed.
-Instead, they are routed through our 4-layer execution boundary.
+Use when: you add an agent or engine capability (e.g. File I/O, Git, Web Search) to SpecWeaver.
 
----
-
-## 1. The Component Execution Layers
-
-When a capability (e.g., File I/O, Git, Web Search) is added, it must securely serve two completely different consumers: the **Untrusted LLM Agent**, and the **Trusted Flow Engine**.
-
-Because of this dual-trust model, capabilities are built as decoupled, parallel components acting on a shared executor:
+LLMs are untrusted (zero-trust), so no capability is exposed directly. Each capability serves two
+consumers, the **Untrusted LLM Agent** and the **Trusted Flow Engine**, through parallel components
+on a shared executor:
 
 ```text
 For the Agent (Untrusted):
@@ -21,82 +15,65 @@ For the Engine (Trusted):
 Flow Engine ──▶ Atom ──▶ Executor (Raw I/O)
 ```
 
-### Component: Executor (`commons/`)
-The **Executor** is the raw I/O controller (e.g., `FileSystemExecutor`, `GitExecutor`).
-- **Location:** `src/specweaver/sandbox/<domain>/`
-- **Role:** Handles subprocess execution, transport-level security (symlink blocking, binary parsing, path traversal protection).
-- **Rule:** Never imports from `tools/` or `atoms/`.
+## Components
 
-### Component: Tool (`tools/`)
-The **Tool** wraps the intent and strictly evaluates the Agent's credentials.
-- **Location:** `src/specweaver/sandbox/<domain>/tool.py`
-- **Role:** Defines operations based on Intent. Enforces `ROLE_INTENTS` mapping (e.g., stopping a Reviewer from running compilations). Handles contextual `FolderGrant` boundaries.
+Layout: `src/specweaver/sandbox/<domain>/core/` (executor, atom) and
+`src/specweaver/sandbox/<domain>/interfaces/` (tool, definitions, facades).
 
-### Component: Interface (`tools/interfaces.py` & `dispatcher.py`)
-The **Interface** strips unauthorized commands out entirely prior to exposure.
-- **Role:** If a role shouldn’t use a command, it is physically absent from the dispatch table or dynamically removed from the configuration payload before the LLM can perceive it.
-- **Dynamic Masking (Feature 3.30a):** Orthogonal `plugins` (e.g., `spring-security`) defined in
-  `context.yaml` can utilize `intents.hide` natively to instruct `ToolDispatcher` to mathematically
-  erase tool methods (like `edit_file`) globally from the LLM without hard-coding Python changes.
-- **Dynamic System Exclusions (Feature 3.32b):** The `ToolDispatcher` orchestrates polyglot
-  filesystem boundary exclusions on behalf of tools like `FileSystemTool`. It reads the injected
-  `analyzer_factory.get_all_analyzers()` at runtime (provided via Flow Context DI) to deeply inject
-  language-specific exclusions (e.g., `node_modules`, `target`) universally downward into the raw
-  executors, bypassing the agent and adhering to strict architectural bounds.
+| Component | File | Job | Rule |
+|---|---|---|---|
+| Executor | `core/executor.py` (e.g. `FileSystemExecutor`, `GitExecutor`) | Raw I/O: subprocess execution, transport security (symlink blocking, binary parsing, path traversal protection) | Never imports the tool or atom |
+| Tool | `interfaces/tool.py` | Operations by Intent. Enforces `ROLE_INTENTS` (e.g. no compilations for a role that lacks the intent) and `FolderGrant` boundaries | |
+| Interface | `interfaces/facades.py`, `sandbox/dispatcher.py` | Removes unauthorized commands before the LLM sees them: absent from the dispatch table or dropped from the payload | |
+| Atom | `core/atom.py` | Unrestricted operations for the flow engine only. Bypasses `ROLE_INTENTS` and `FolderGrant`, calls the Executor | NEVER imports the Tool |
 
-### Component: Atom (`atoms/`)
-The **Atom** provides unrestricted operations reserved solely for the SpecWeaver flow engine.
-- **Location:** `src/specweaver/sandbox/<domain>/`
-- **Role:** The engine is trusted, so atoms bypass `ROLE_INTENTS` and `FolderGrant` checking to directly hit the `Executor`.
+A Tool *may* instantiate an Atom to reuse its operations, after validating role constraints.
 
----
+### Dynamic masking and exclusions
 
-## 2. Step-by-Step Implementation
+- **Dynamic Masking (Feature 3.30a):** orthogonal `plugins` (e.g. `spring-security`) in
+  `context.yaml` use `intents.hide` to make `ToolDispatcher` remove tool methods (like `edit_file`)
+  from the LLM globally, without Python changes.
+- **Dynamic System Exclusions (Feature 3.32b):** `ToolDispatcher` applies polyglot filesystem
+  exclusions for tools like `FileSystemTool`. It reads the injected
+  `analyzer_factory.get_all_analyzers()` (Flow Context DI) and pushes language-specific exclusions
+  (e.g. `node_modules`, `target`) down into the raw executors, bypassing the agent.
 
-To add a new capability string (like `SearchWeb`):
+## Steps
 
-### A. Construct the Base Executor
-1. Build `src/specweaver/sandbox/web/executor.py`.
-2. Implement your native logic via API boundaries or strictly controlled subprocess wrappers. 
+Example: `SearchWeb`.
 
-### B. Define the Tool & Its Interfaces
-1. Build `src/specweaver/sandbox/web/tool.py`.
-2. Encapsulate your capabilities behind Intents. 
-3. Inject the `ToolDefinition` payload that will be sent to the LLM (OpenAI/Anthropic compatible schema) within `definitions.py`.
-4. In `interfaces.py`, define Role facades (e.g., `ReviewerWebInterface` vs `ImplementerWebInterface`).
+1. **Executor**: `src/specweaver/sandbox/web/core/executor.py`. Native logic via API boundaries or
+   `SubprocessExecutor`.
+2. **Tool**: `src/specweaver/sandbox/web/interfaces/tool.py`. Put capabilities behind Intents.
+3. **Definitions**: the `ToolDefinition` payload sent to the LLM (OpenAI/Anthropic compatible
+   schema) in `definitions.py`.
+4. **Facades**: role facades (e.g. `ReviewerWebInterface` vs `ImplementerWebInterface`) in
+   `facades.py`.
+5. **Atom**: `src/specweaver/sandbox/web/core/atom.py` with a `run(context)` method for autonomous,
+   non-LLM use by the Flow Engine.
+6. **Single-op or multi-op**: decide per domain. "Atom" only means *engine-internal, not
+   agent-facing*; it says nothing about how many operations `run()` covers.
+   - One operation: read the expected keys straight off `context` (see `RuleAtom`).
+   - Several related operations: read an `intent`/`action` key and dispatch internally (see
+     `QARunnerAtom`'s `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`,
+     or `LanguageAtom`'s `detect_language`/`convert_scenario`).
+   - Do not copy the shape of another Atom without checking how many operations your domain has.
+7. **Wire up**: the Tool facade inherits `BaseTool` (`specweaver.sandbox.base`) and implements the
+   `role` property and `definitions()`.
+8. **Register**: add a lazy-loaded closure to `specweaver.sandbox.registry.get_standard_registry()`
+   that cherry-picks only the `kwargs` it needs (e.g. `role`, `cwd`). The Flow Engine resolves and
+   injects the tool through `ToolRegistry`; no manual binding in `dispatcher.py`.
 
-### C. Construct the Atom (For the Engine)
-1. Build `src/specweaver/sandbox/web/atom.py`.
-2. Provide a clean `run(context)` method for the internal Flow Engine to use if it needs autonomous, non-LLM invocation of the capability.
-3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool
-   *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role
-   constraints first).
-4. **Decide single-op vs. multi-op independently of "Atom" itself** — "Atom" only means
-   *engine-internal, not agent-facing*; it says nothing about how many operations `run()` covers. If
-   the domain has one operation, read your expected keys straight off `context` (see `RuleAtom`). If
-   it has several closely-related operations, read an `intent`/`action` key from `context` and
-   dispatch internally (see `QARunnerAtom`'s
-   `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`, or
-   `LanguageAtom`'s `detect_language`/`convert_scenario`). Don't infer the shape from other Atoms in
-   the codebase without checking whether your domain actually has one operation or several.
+## Rules
 
-### D. Wire It Up
-1. Your Tool facade must inherit from `BaseTool` (located in `specweaver.sandbox.base`) and implement the `role` property and `definitions()` method.
-2. Register the tool factory inside `specweaver.sandbox.registry.get_standard_registry()` using a lazy-loaded closure that cherry-picks only the necessary `kwargs` (e.g., `role`, `cwd`).
-3. The Flow Engine will automatically resolve and inject the tool during pipeline execution via the `ToolRegistry` without any manual binding in `dispatcher.py`.
+- **Never** put a Tool in `commons/`. Tools need the Executor layer.
+- **Never** add parallel security checks. Use `FolderGrant` and the path-traversal hooks.
+- Keep trusted/untrusted apart in `context.yaml`: `interfaces/` consumes `core/`, never the
+  reverse. (Older docs: `manifest.yaml` / `forbids: atoms/*`.)
 
----
+## Exception: architect-only tools (MCP)
 
-## 3. Security Requirements
-
-- **Never** place a Tool inside `commons/`. Tools strictly require the Executor layer.
-- **Never** inject parallel security checks. Use the native `FolderGrant` and path-traversal hooks.
-- **`manifest.yaml` checks**: Ensure that the `context.yaml` inside your tools layer correctly `forbids: atoms/*` to prevent circular leakage between trusted/untrusted realms.
-
-
-### Exception: Dynamic Architect Injection (MCP)
-Certain tools, such as the MCPExplorerTool, are NOT permitted in standard pipelines due to
-zero-trust architecture rules. These tools implement specialized interfaces like
-ArchitectMCPInterface, mapped exclusively for L2 Architect intelligence roles.
-When designing tools with strict intent limitations, see mcp/tool.py as a reference for validating 
-ole_intents during ToolDispatcher binding routines within Flow Orchestration.
+Some tools, like `MCPExplorerTool`, are NOT allowed in standard pipelines. They use dedicated
+facades such as `ArchitectMCPInterface`, mapped only to the L2 Architect role. Reference for
+validating role intents at `ToolDispatcher` binding: `sandbox/mcp/interfaces/tool.py`.

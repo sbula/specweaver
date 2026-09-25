@@ -1,19 +1,16 @@
-# Developer Guide: Adding Framework-Specific Validation Rules (Archetypes)
+# Adding Framework-Specific Validation Rules (Archetypes)
 
-SpecWeaver leverages "Archetype-Based Rule Sets" to enforce framework-specific constraints (e.g.,
-verifying a Spring Boot controller has the `@RestController` annotation, or ensuring React Router
-`loader` functions are separated).
+Use when: you add framework-specific checks, e.g. a Spring Boot controller must carry
+`@RestController`, or React Router `loader` functions must be separated.
 
-Because SpecWeaver supports multi-language monorepos, and because its `assurance/validation` layer
-operates purely mathematically (no C-bindings or I/O allowed), adding a new Framework Rule follows a
-strict pattern using **CodeStructure Atoms** and **Dependency Injected Payloads**.
+SpecWeaver uses "Archetype-Based Rule Sets". The `assurance/validation` layer only compares
+dictionaries (no C-bindings, no I/O), so a framework rule gets its data from **CodeStructure Atoms**
+through **Dependency Injected Payloads**, never by parsing itself.
 
----
+## 1. Declare the archetype
 
-## 1. Defining the Archetype
-
-An Archetype defines a specific structural footprint (e.g., `spring-boot`, `fastapi`, `react-router`).
-When building a new component, users define the archetype in their `context.yaml`:
+An archetype is a structural footprint (e.g. `spring-boot`, `fastapi`, `react-router`). Users set it
+in `context.yaml`:
 
 ```yaml
 version: "1.0"
@@ -21,18 +18,17 @@ archetype: "spring-boot"
 consumes: ["database/"]
 ```
 
-The Orchestrator (`flow/`) parses this string via `ArchetypeResolver` and automatically triggers the correct Validation Pipeline extension (e.g., `validation_code_spring-boot.yaml`).
+The Orchestrator (`flow/`) resolves it via `ArchetypeResolver` and runs the matching validation
+pipeline extension (e.g. `validation_code_spring-boot.yaml`).
 
-## 1b. Defining Framework Schema Evaluators (Macro Unrolling)
+## 2. Add a schema evaluator (macro unrolling)
 
-When relying on polyglot agents, AI LLMs struggle to understand abstract macros or annotations like
-`@RestController`. Instead of starting heavy compilers to evaluate these decorators, SpecWeaver
-features a **LSP-Bypass Engine** which mathematically "unrolls" decorators structurally using YAML
-abstractions. 
+LLMs misread abstract macros and annotations like `@RestController`. The **LSP-Bypass Engine**
+unrolls them from YAML instead of starting a compiler.
 
-Whenever you add a new Framework Archetype, you **must** supply a matching flat YAML configuration in `src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`.
-
-For example, to unroll `spring-boot`, create `src/specweaver/workflows/evaluators/frameworks/spring-boot.yaml`:
+Every new archetype **must** ship a flat YAML in
+`src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`. Example,
+`src/specweaver/workflows/evaluators/frameworks/spring-boot.yaml`:
 
 ```yaml
 metadata:
@@ -49,16 +45,17 @@ evaluate:
       unroll: "HTTP GET Request Boundary endpoint bound to >>{0}<<"
 ```
 
-The system recursively evaluates these YAML files with a rigid depth protection (Max Depth 5),
-enabling agents querying the `CodeStructureTool.read_unrolled_symbol` to understand exact runtime
-behaviors deterministically within 5 milliseconds instead of 5,000 milliseconds.
+Note (2026-09-25): the shipped `spring-boot.yaml` uses a flat `decorators:` map
+(e.g. `RestController: "@Controller\n@ResponseBody"`). Copy the shipped file's shape.
 
-## 1c. Composing Framework Plugins (Feature 3.30a)
+Evaluation is recursive with depth protection (Max Depth 5). Agents calling
+`CodeStructureTool.read_unrolled_symbol` get the runtime behavior deterministically in about 5
+milliseconds instead of 5,000 milliseconds.
 
-Often, a component uses an orchestration framework (like `spring-boot`) alongside orthogonal
-capability plugins (like `spring-security` or `flyway`). Instead of resolving a monolithic archetype
-representing a cross-product of all versions, users can declare a `plugins` array alongside their
-`archetype` in `context.yaml`:
+## 3. Compose plugins (Feature 3.30a)
+
+A component often combines a framework (`spring-boot`) with orthogonal plugins (`spring-security`,
+`flyway`). Declare them as a `plugins` array instead of one archetype per combination:
 
 ```yaml
 version: "1.0"
@@ -67,34 +64,34 @@ plugins: ["spring-security"]
 consumes: ["database/"]
 ```
 
-The plugin schemas dynamically aggregate via mathematical supersets into the primary evaluator
-schema. Additionally, plugins can dynamically strip explicit behaviors from agent tool JSON
-boundaries without executing code:
+Plugin schemas merge into the primary evaluator schema as supersets. A plugin can also hide tool
+intents from agents, with no code change:
 
 ```yaml
 # frameworks/spring-security.yaml
 intents:
   hide: ["list_symbols", "edit_file"]
 ```
-This forces agents to interact via safer read-only structural queries without hardcoding tool limitations in core orchestrator Python classes, dramatically improving cross-platform security routing.
 
-## 2. Rule Execution & Dependency Injection
+Agents are then limited to read-only structural queries, without tool limits hardcoded in the
+orchestrator's Python classes.
 
-You **must not** attempt to parse the framework AST inside the custom validation rule. The Engine will do it for you mathematically.
+## 4. Write the rule
 
-When a pipeline executes, the `ValidateCodeHandler`:
-1. Discovers the `archetype` (`spring-boot`).
-2. Calls the **CodeStructureAtom** securely inside the Loom sandbox to extract the OS string syntax tree into an agnostic Dictionary (`dict[str, Any]`).
-3. Takes that dictionary and injects it into `step.params["ast_payload"]` for the current pipeline.
+**Do not** parse the framework AST inside the rule. `ValidateCodeHandler`:
 
-### Step 3a: Bind the Native Rule in the YAML Pipeline Extender
-Because SpecWeaver natively bundles `C12ArchetypeCodeBoundsRule`
-(`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`), you do NOT need to
-write Python code to check simple structural metadata requirements!
+1. discovers the `archetype` (`spring-boot`);
+2. calls **CodeStructureAtom** inside the sandbox to turn the syntax tree into a plain dictionary
+   (`dict[str, Any]`);
+3. injects it into `step.params["ast_payload"]` for the current pipeline.
 
-The `C12ArchetypeCodeBoundsRule` natively evaluates `self.context.get("framework_markers")` looking for arrays of symbols.
+### 4a. Simple markers: use C12, no Python
 
-Inside `.specweaver/pipelines/frameworks/java/validation_code_spring-boot.yaml` (or your project-local pipelines config):
+`C12ArchetypeCodeBoundsRule`
+(`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`) reads
+`self.context.get("framework_markers")` for arrays of symbols. Bind it in the pipeline extender,
+`.specweaver/pipelines/frameworks/java/validation_code_spring-boot.yaml` (or your project-local
+pipelines config):
 
 ```yaml
 version: "1.0"
@@ -108,12 +105,16 @@ steps:
       forbidden_markers: ["Entity"]
 ```
 
-When the orchestrator triggers this pipeline, it automatically calculates the Native AST and binds
-the `ast_payload` markers dictionary explicitly into `C12ArchetypeCodeBoundsRule.context` for purely
-mathematical dictionary evaluation!
+Note (2026-09-25): the shipped extender
+`src/specweaver/workflows/pipelines/frameworks/java/validation_code_spring-boot.yaml` uses an `add:`
+list with `rule: C12` and `position: end`. Copy the shipped file's shape.
 
-### Step 3b: Creating Proprietary/Advanced Rules
-If `C12`'s simple inclusion/exclusion `PARAM_MAP` logic isn't complex enough for your proprietary framework, you can subclass `Rule` and read directly from `self.context`:
+The orchestrator computes the AST and binds the `ast_payload` markers into
+`C12ArchetypeCodeBoundsRule.context`.
+
+### 4b. Proprietary/Advanced rules: subclass `Rule`
+
+When `C12`'s inclusion/exclusion `PARAM_MAP` is not enough, subclass `Rule` and read `self.context`:
 
 ```python
 from specweaver.assurance.validation.models import Rule, RuleResult, Finding, Severity
@@ -137,12 +138,8 @@ class MyEnterpriseRule(Rule):
         return self._pass("Valid enterprise bounds.")
 ```
 
----
+## Why this split
 
-## 4. Why this matters? (Domain Driven Design)
-
-By isolating the **extraction of syntax trees** in the `Loom` layer, and keeping the `assurance`
-layer **purely mathematical dictionary comparisons**, SpecWeaver completely prevents native
-C-bindings (like TreeSitter compiling Node.js/Rust) from crashing the static Python validation
-processes. It enforces absolute security and scalability, maintaining SpecWeaver's core
-architectural `forbid` boundaries natively.
+Syntax-tree extraction lives in the sandbox (`Loom` in older docs); `assurance` only compares
+dictionaries. Native C-bindings (like TreeSitter compiling Node.js/Rust) therefore cannot crash the
+Python validation processes, and the architectural `forbid` boundaries hold.

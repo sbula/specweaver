@@ -1,36 +1,31 @@
-# Developer Guide: Layer Isolation & Dependency Injection
+# Layer Isolation and Dependency Injection
 
-This guide explains how SpecWeaver maintains strict separation between **Pure Logic** (mathematical,
-deterministic rules) and **Side-Effects** (I/O, Subprocesses, C-bindings) without creating circular
-dependencies.
+Use when: a pure-logic layer (like `validation/` or `standards/`) seems to need a file read, an AST
+parse, or a subprocess.
 
-A common misunderstanding when building new features is assuming that if a Pure Logic layer (like
-`validation/` or `standards/`) needs to read a file or parse an AST, it should import an OS or
-`tree-sitter` module directly. **This is an architectural violation.**
+SpecWeaver separates **Pure Logic** (deterministic rules) from **Side-Effects** (I/O, Subprocesses,
+C-bindings) without circular dependencies. A pure-logic layer importing an OS or `tree-sitter`
+module directly **is an architectural violation**.
 
----
+## The sandbox serves the engine too
 
-## 1. The Loom Sandbox is for the Engine, Not Just the Agent
+The sandbox (`Loom` in older docs) is not only the "LLM DMZ" where agents are confined through
+`Tools`. It is also **the Side-Effect Sandbox for the whole SpecWeaver Engine.**
 
-`Loom` is often thought of as the "LLM DMZ"—the place where we lock the agent in a sandbox using `Tools`. 
+| Layer | Archetype | May |
+|---|---|---|
+| Pure logic (`validation`; `graph` in older docs, whose `context.yaml` now allows `specweaver.sandbox`) | `archetype: pure-logic`, `forbid: sandbox/*` | Nothing that touches disk, network or external C-bindings |
+| Loom Atoms (`sandbox/`) | trusted I/O executors | Read files, run `pytest`, execute `tree-sitter` |
 
-But `Loom` has a second, equally important purpose: **It is the centralized Side-Effect Sandbox for the entire SpecWeaver Engine.**
+## Inversion of Control
 
-- **Pure Logic Layers** (`validation`, `graph`): Are explicitly classified as
-  `archetype: pure-logic`. They are mathematically forbidden from importing anything that touches
-  the disk, network, or external C-bindings. They `forbid: sandbox/*`.
-- **Loom Atoms** (`sandbox/`): Are unrestricted, trusted I/O executors. They are allowed to read files, run `pytest`, and execute `tree-sitter`.
+`validation/drift_detector.py` compares an AST against a Plan but cannot parse the AST (I/O and
+C-binaries). The `flow` engine, which connects the sandbox and validation, injects it:
 
-## 2. Inversion of Control (Dependency Injection)
-
-If `validation/drift_detector.py` needs to mathematically compare an AST against a Plan, but it cannot parse the AST itself (because parsing requires I/O and C-binaries), how does it get the AST?
-
-**Through Dependency Injection coordinated by the Flow Engine.**
-
-The `flow` module acts as the orchestrator connecting `Loom` and `Validation`:
-1. The `flow` engine calls `FileSystemAtom` (in Loom) to read the raw file string.
-2. The `flow` engine passes that string to the `AstAtom` (in Loom) to execute the `tree-sitter` parser and return an `ASTNode` object.
-3. The `flow` engine passes the memory-safe `ASTNode` object down into `drift_detector` (in Validation).
+1. `flow` calls `FileSystemAtom` (sandbox) to read the raw file string.
+2. `flow` passes the string to the `AstAtom` (sandbox), which runs the `tree-sitter` parser and
+   returns an `ASTNode` object.
+3. `flow` passes the memory-safe `ASTNode` into `drift_detector` (`Validation`).
 
 ```text
 Flow Engine (Orchestrator)
@@ -38,32 +33,29 @@ Flow Engine (Orchestrator)
   └── 2. Calls drift_detector.detect(ASTNode) ─▶ Returns DriftReport
 ```
 
-**Rule:** Pure logic layers must NEVER parse their own data. They must define Protocols or accept `Any` typed payloads, expecting upstream Orchestrators to inject the parsed context.
+Note (2026-09-25): today the parsing atom is `CodeStructureAtom` and the entry point is
+`detect_drift`.
 
-## 3. Polyglot Runtimes vs. Structural Parsers
+**Rule:** pure-logic layers NEVER parse their own data. They define Protocols or accept `Any` typed
+payloads and expect upstream Orchestrators to inject the parsed context.
 
-Because Language mechanics are functionally split into execution tasks and structural analysis tasks, they are housed in strictly distinct boundary layers.
+## Where language code goes
 
-If you are adding a new language (e.g., Go, C++):
+Execution and structural analysis live in separate layers. For a new language (e.g. Go, C++):
+
 - Do NOT put it in `standards/languages/` just because `standards` uses it later.
-- Do NOT create a top-level `src/specweaver/languages/` because it would mix Pure Logic with I/O.
+- Do NOT create a top-level `src/specweaver/languages/`: it would mix Pure Logic with I/O.
 
-### A. The Language Commons (`sandbox/language/`)
-Houses external, stateless sub-process executions since execution implies side-effects.
-* `runner.py`: Handles subprocess test I/O (e.g., `cargo test`, `pytest`).
+| Layer | Holds | Why there |
+|---|---|---|
+| Language Commons (`sandbox/language/`) | `runner.py`: subprocess test I/O (e.g. `cargo test`, `pytest`) | execution is a side-effect |
+| Workspace Parsers (`workspace/ast/parsers/`) | `codestructure.py`: framework syntax parsing (e.g. `.scm` queries fed into tree-sitter C-binaries) | pure-logic rules and Context Engines consume ASTs but cannot parse safely |
 
-### B. The Workspace Parsers (`workspace/ast/parsers/`)
-Houses the physical polyglot syntactic parsers because AST interfaces are heavily consumed by Pure Logic rules and Context Engines, but cannot be parsed by them safely.
-* `codestructure.py`: Handles external framework syntax parsing (e.g., `.scm` queries fed into tree-sitter C-binaries).
+`Loom Atoms` and validation controllers reach these layers through Dependency Injection factories.
 
-The `Loom Atoms` and validation controllers depend explicitly on Dependency Injection factories mapped to these layers, ensuring the core of SpecWeaver remains mathematically decoupled.
+## PromptBuilder context injection
 
-
-### PromptBuilder Context Injection Pattern
-
-The PromptBuilder (src/specweaver/infrastructure/llm/prompt_builder.py) strictly adheres to
-dependency isolation. It is expressly restricted from resolving file system hierarchies or invoking
-Atoms directly.
-Features requiring parsed context (e.g., target mentions or skeletonization) must be injected
-directly into the PromptBuilder instance by the Engine layer. For instance, the **ContextAssembler**
-pre-condenses CodeStructureAtom skeletons and maps them into PromptBuilder(skeleton_files=...).
+`PromptBuilder` (src/specweaver/infrastructure/llm/prompt_builder.py) may not resolve file system
+hierarchies or invoke Atoms. The Engine layer injects parsed context (e.g. target mentions,
+skeletonization). Example: the **ContextAssembler** pre-condenses CodeStructureAtom skeletons and
+passes them as `PromptBuilder(skeleton_files=...)`.

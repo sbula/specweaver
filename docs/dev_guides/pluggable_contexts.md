@@ -1,20 +1,14 @@
-# Developer Guide: Pluggable Contexts
+# Pluggable Contexts
 
-This guide explains how to use and extend the **Pluggable Context** system in SpecWeaver.
+Use when: a domain object must appear in an LLM prompt, or you add a new kind of prompt context.
 
-## Overview
+SpecWeaver's duck-typed protocol `PromptContentSource` lets domain modules (like `assurance/graph`)
+supply prompt content without importing any LLM/infrastructure module. No compile-time coupling, and
+the boundaries pass `tach check`.
 
-To prevent compile-time coupling between domain modules (like `assurance/graph`) and the LLM infrastructure, SpecWeaver uses a duck-typed protocol `PromptContentSource`. 
+## The protocol
 
-Domain classes can conform to this protocol natively without importing any LLM/infrastructure
-modules. This ensures clean boundary isolation and compliance with strict architectural validation
-(`tach check`).
-
----
-
-## The `PromptContentSource` Protocol
-
-The core interface is defined in `specweaver.infrastructure.llm.prompt.interfaces.PromptContentSource`:
+Defined in `specweaver.infrastructure.llm.prompt.interfaces.PromptContentSource`:
 
 ```python
 from typing import Protocol, runtime_checkable
@@ -35,9 +29,10 @@ class PromptContentSource(Protocol):
         ...
 ```
 
-### Implementing Native Conformance in the Domain
+## Conforming from the domain
 
-Because Python protocols are structurally resolved, any class that implements `get_prompt_content` and `get_prompt_label` satisfies the protocol *without* any LLM package imports:
+Protocols resolve structurally: any class with `get_prompt_content` and `get_prompt_label`
+conforms, with no LLM package imports.
 
 ```python
 # specweaver/assurance/graph/topology.py
@@ -58,24 +53,20 @@ class TopologyContext:
         return self.name
 ```
 
----
+## Built-in adapters
 
-## Out-of-the-Box Adapters
+For types that do not conform themselves, `specweaver.infrastructure.llm.prompt.adapter` provides:
 
-For types that do not implement the protocol natively, SpecWeaver provides explicit adapters in `specweaver.infrastructure.llm.prompt.adapter`:
+| Adapter | Wraps | Output |
+|---|---|---|
+| **`StringPromptAdapter(content, label, escaping)`** | a raw string; validates the label | `<context label="...">` |
+| **`FilePromptAdapter(path, label, role, escaping, skeleton, skeleton_files)`** | file paths; validates sizes, optionally extracts AST skeletons | `<file path="..." language="...">` |
+| **`ProjectMetadataPromptAdapter(metadata)`** | `ProjectMetadata` models; the safe config parameters as JSON | `<project_metadata>` tags |
 
-1. **`StringPromptAdapter(content, label, escaping)`**: Wraps a raw string, validates the label, and formats it as `<context label="...">`.
-2. **`FilePromptAdapter(path, label, role, escaping, skeleton, skeleton_files)`**: Wraps file paths,
-   validates sizes, optionally extracts AST skeletons, and formats as
-   `<file path="..." language="...">`.
-3. **`ProjectMetadataPromptAdapter(metadata)`**: Wraps `ProjectMetadata` models, serializing the safe config parameters as JSON inside `<project_metadata>` tags.
+## Rules for custom sources
 
----
-
-## Truncation Safety & CDATA Escaping
-
-When designing custom context sources:
-* **Pre-Escaping Truncation**: Truncate raw content inside `get_prompt_content()` *before* wrapping
-  it in XML tags. Slicing raw text guarantees that tag boundaries (e.g. `</context>`, `</file>`, and
-  CDATA blocks `]]>`) remain intact.
-* **Escaping**: Always sanitize raw inputs against XML injection using `apply_escaping` and `escape_xml_attribute`.
+- **Truncate before escaping.** Cut the raw content inside `get_prompt_content()` *before* wrapping
+  it in XML tags, so tag boundaries (e.g. `</context>`, `</file>`, and CDATA blocks `]]>`) stay
+  intact.
+- **Escape.** Sanitize raw inputs against XML injection with `apply_escaping` and
+  `escape_xml_attribute`.

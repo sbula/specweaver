@@ -1,146 +1,102 @@
-# Developer Guide: Adding Language Support to SpecWeaver
+# Adding Language Support
 
-Welcome to SpecWeaver's polyglot architecture guide! If you are a senior engineer looking to add or
-update language support (e.g., adding Go or Ruby, or updating the Java runner), this document
-explains how SpecWeaver interfaces with external languages, compilers, and linters. 
+Use when: you add a language to SpecWeaver (e.g. Go or Ruby) or change an existing runner (e.g. Java).
 
-SpecWeaver relies on a highly decoupled "QARunner" architecture to execute language-specific commands securely, predictably, and autonomously on behalf of LLM agents.
+SpecWeaver runs compilers, tests and linters for LLM agents through the QARunner architecture: small,
+separate components under the `language` umbrella instead of one class per language.
 
----
+## Architecture
 
-## 1. Architectural Foundation & Decisions
+| Component | Layer | Job |
+|---|---|---|
+| Output parsers (e.g. `pytest_output.py`, `cargo_output.py`) | pure logic | Extract structural errors from tool output. Prefer structured output (JSON, SARIF) over Regex: if the tool supports `--format=json`, use it. |
+| `runner.py` | execution | Runs the native tools through `SubprocessExecutor` (timeouts, termination of hanging processes). |
+| `QARunnerAtom` | engine | Internal SpecWeaver wrapper; unrestricted, for internal verification. Calls the runner directly. |
+| `QARunnerTool` | agent DMZ | What the LLM sees. Role-based access control (RBAC) via `ROLE_INTENTS`; also calls the runner directly. |
 
-In earlier iterations of SpecWeaver, we used a single "God Class" (`PythonQARunner`, `JavaRunner`,
-etc.) to execute everything from compiling to linting to parsing errors using volatile Regex. This
-brittle approach scaled poorly. 
+RBAC example: a `planner` may run tests, linters, complexity and architecture checks, not the
+compiler; a `drafter` has no access.
 
-We redesigned the language support system into distinct, parallel components, physically separated by folder paths to enforce isolation underneath the unified `language` umbrella:
+Replaced: one "God Class" per language (`PythonQARunner`, `JavaRunner`, etc.) that compiled, linted
+and Regex-parsed everything. It scaled poorly.
 
-- **`parsers.py` (Commons)** ─ *Pure Logic:* Responsible strictly for extracting structural errors
-  from output logs. **Key Decision:** We heavily favor structured outputs (e.g., JSON, SARIF) over
-  Regex parsing. If a language native tool supports `--format=json`, use it.
-- **`runner.py` (Commons)** ─ *Execution Component:* Raw OS-level execution (`subprocess`) wrapped behind strict timeout boundaries, ensuring robust termination of hanging processes.
-- **`QARunnerAtom` (Atoms)** ─ *Engine Sandbox:* The internal SpecWeaver engine wrapper. It is permitted unrestricted execution rights for internal verifications. It calls `runner.py` directly.
-- **`QARunnerTool` & `interfaces.py` (Tools)** ─ *Agent DMZ:* The layer exposed to the LLM. It
-  dictates Role-Based Access Control (RBAC) and also calls `runner.py` directly. For example, a
-  `Reviewer` agent cannot execute compilers, only linters.
+Why `QARunner`, not `TestRunner`: the old name `TestRunnerTool` collided with Pytest's test discovery.
 
-> **Why `QARunner` instead of `TestRunner`?**
-> In legacy architecture versions, components were named `TestRunnerTool` which caused collision
-> issues with Pytest's standard test discovery algorithm. While we have since migrated the physical
-> layer into `commons/language/`, the internal `QARunner` naming conventions remain deliberately
-> scoped.
+## Selection
 
----
+`resolve_runner(cwd)` in `src/specweaver/sandbox/qa_runner/core/factory.py` picks the runner by
+manifest file: `package.json` (TypeScript), `Cargo.toml` (Rust), `build.gradle` / `build.gradle.kts`
+(Kotlin), `pom.xml` (Java), default Python. `create_scenario_converter` and
+`create_stack_trace_filter` use `detect_language` from `sandbox/language/core/_detect.py`
+(`SUPPORTED_LANGUAGES`).
 
-## 2. The Selection Mechanism
+A new language registers its manifest trigger in all three.
 
-When an LLM agent executes a command (e.g., `run_linter(target="src/main.rs")`), SpecWeaver must dynamically route to the correct underlying language runner. 
+## Steps
 
-The `QARunnerTool` and `QARunnerAtom` handle dynamic dispatch by sniffing the execution context and
-requested targets file extensions (e.g., `.rs`, `.py`, `.java` or build artifacts like `pom.xml`,
-`Cargo.toml`). 
+Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 
-If you add a new language, you must simply register the structural trigger inside the factory mapping found natively within the `QARunnerTool` and `QARunnerAtom` selection layers. 
+1. **`runner.py`**: `GoQARunner`, implementing `QARunnerInterface`, bound to `go build`, `go test`,
+   etc. Implement or stub every method:
+   - `run_compiler()`
+   - `run_tests()`
+   - `run_linter()`
+   - `run_complexity()`
+   - `run_debugger()`
+   - `run_architecture_check(target: str) -> ArchitectureRunResult` (Feature 3.20a: maps native
+     boundary violations into SpecWeaver)
 
----
+   No native complexity checker? Map `run_complexity` to a static no-op violation array or an open
+   equivalent (like `gocyclo`).
+2. **Output parser**: pure-logic functions like `extract_go_test_results(stdout: str) -> TestRunResult`.
+3. **`scenario_converter.py`**: implements `ScenarioConverterInterface`; turns JSON/YAML abstract
+   scenarios into `_test.<ext>` parameterized blocks.
+4. **`stack_trace_filter.py`**: implements `StackTraceFilterInterface`; strips system frames and keeps
+   the domain payload of native test failures.
+5. **Tree-Sitter parser**: inherit `BaseTreeSitterParser` in
+   `src/specweaver/workspace/ast/parsers/<lang>/codestructure.py` and register it in
+   `get_default_parsers()`. Implement `get_binary_ignore_patterns()` and
+   `get_default_directory_ignores()` (language-specific topological exclusions). Traceability needs
+   `extract_test_mapped_requirements()` on the language analyzer. Find a grammar in the
+   [official Tree-Sitter List of Parsers](https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers).
+6. **Framework evaluator schemas**: flat YAML files (e.g. `gin.yaml` for Gin/Fiber) in
+   `specweaver.workflows.evaluators.frameworks`. Bind each to the language with
+   `metadata: supported_languages: ["go"]` so it cannot leak into another language. Users override
+   with their own `<framework>.yaml` in `<project_dir>/.specweaver/evaluators/`.
 
-## 3. Creating a New Language Submodule
+Why static YAML for frameworks: mapping meta-annotations or macros to their expansion (e.g.
+`@RestController` to `@Controller + @ResponseBody`) gives the LLM deterministic compiler vision
+without the 5-10 second cost of a Language Server (LSP) or compiler plugin (like `cargo expand` or
+`KSP`) in the agent feedback loop.
 
-To add a language, say **Go**, you will create a highly isolated submodule inside `sandbox`:
+## Rules
 
-**Location**: `src/specweaver/sandbox/language/go/`
+- Tree-Sitter extraction is separate from the QARunner lifecycle (Feature 3.32 SF-1: Deep Semantic
+  Hashing, pure-logic analysis). Do NOT add `ast_parser.py` to a runner submodule.
+- No Regex where the tool emits JSON/SARIF.
+- Test filenames are unique repo-wide. Name the file for language and subject
+  (`test_go_atom.py`, not `test_atom.py`). Duplicate basenames (nine each of `test_atom.py` /
+  `test_tool.py` until 2026-07-26) made reference searches unreliable and failure output ambiguous.
 
-### A. Submodule Files
+## Tests
 
-1. **`__init__.py`**
-   - Keeps the namespace clean. Expose only the `GoQARunner`.
-2. **`parsers.py`**
-   - The pure-logic extractor. Implement functions like `extract_go_test_results(stdout: str) -> TestRunResult`. Ensure you only import from `language.interface`.
-3. **`runner.py`**
-   - Implements the `GoQARunner` subclass inheriting from a base `QARunnerInterface`.
-   - Native bindings to `go build`, `go test`, etc.
-4. **`scenario_converter.py`**
-   - Implements `ScenarioConverterInterface` to translate JSON/YAML abstract scenarios into `_test.<ext>` parameterized execution blocks.
-5. **`stack_trace_filter.py`**
-   - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from native test failures.
-6. **Framework Evaluator Schemas**
-   - Provide fallback declarative YAML maps for popular frameworks in the target language (e.g.,
-     Gin/Fiber for Go) within `specweaver.workflows.evaluators.frameworks` as flat files (e.g.
-     `gin.yaml`). To bind the framework strictly to the Go language and prevent cross-framework
-     hallucinations, include `metadata: supported_languages: ["go"]` natively. Note that users can
-     natively override these defaults by placing their own `<framework>.yaml` inside their isolated
-     project directory at `<project_dir>/.specweaver/evaluators/`.
-   - **Architectural Rationale**: By explicitly mapping meta-annotations or procedural macros to
-     their expanded equivalents in static YAML (e.g., mapping `@RestController` to
-     `@Controller + @ResponseBody`), we provide the LLM with deterministic compiler vision. This
-     novel dictionary-bypass avoids the 5-10 second latency tax of firing up a heavy runtime
-     Language Server (LSP) or compiler plugin (like `cargo expand` or `KSP`) during critical agentic
-     feedback loops, without sacrificing architectural accuracy.
+| Kind | Location | Rules |
+|---|---|---|
+| Unit | `tests/unit/sandbox/language/core/language/go/` | Mock `subprocess.run` / the executor entirely. Feed parsers raw output fixtures captured from real Go runs. Goal: parser extraction limits. |
+| Integration, atom | `tests/integration/sandbox/atoms/qa_runner/go/test_go_atom.py` | Do not mock `subprocess`. Run the real toolchain against dummy projects in `fixtures/`. |
+| Integration, tool | `tests/integration/sandbox/tools/qa_runner/go/test_go_tool.py` | Same. Goal: the Tool's RBAC and the Atom's unrestricted path both reach the real OS terminal. |
+| AST edge cases | `tests/integration/sandbox/test_polyglot_ast_edge_cases.py` | Append your language's Tree-Sitter boundaries. |
 
-### B. Workspace Parsers Addendum
-*(Note: As of Feature 3.32 SF-1, Tree-Sitter code structural extraction has been strictly decoupled
-from the QARunner lifecycle to support Deep Semantic Hashing and pure-logic analysis. Do NOT add
-`ast_parser.py` into the QARunner submodules! Instead, implement the polyglot Tree-Sitter grammar by
-inheriting from `BaseTreeSitterParser` inside
-`src/specweaver/workspace/ast/parsers/<lang>/codestructure.py`. You MUST also implement
-`get_binary_ignore_patterns()`, `get_default_directory_ignores()`, and
-`extract_test_mapped_requirements()` to configure language-specific topological exclusion rules and
-enable polyglot traceability. To find the correct community parser for your target language, consult
-the
-[official Tree-Sitter List of Parsers](https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers).)*
+Keep mocks out of live test files.
 
-### C. The Interface Contract
+## Checklist
 
-Your `runner.py` must fully implement or securely stub the `QARunnerInterface`:
-- `run_compiler()`
-- `run_tests()`
-- `run_linter()`
-- `run_complexity()`
-- `run_debugger()`
-- `run_architecture_check(target: str) -> ArchitectureRunResult` (Added in Feature 3.20a: Maps native boundary violations into SpecWeaver)
-- **`enforce_boundaries()`** (New in Feature 3.20b: You MUST provide an adapter that translates
-  `context.yaml` boundaries into the language's native Mixed-Criticality FFI enforcement tool, e.g.,
-  `ArchUnit` for Java or `eslint` for TS).
-
-*If Go does not support a dedicated complexity checker out-of-the-box, map `run_complexity` to a static no-op violation array or an accepted open-source equivalent (like `gocyclo`).*
-
----
-
-## 4. Testing Requirements (The Boundaries)
-
-We rigorously separate test boundaries. Do not mix Mock constraints into Live files.
-
-### Unit Tests (Mocked Boundaries)
-**Location:** `tests/unit/sandbox/language/go/`
-- Mock `subprocess.run` entirely.
-- Validate the logic inside `parsers.py` by passing it raw string output fixtures gathered from real Go executions.
-- *Goal:* Verify parser extraction limits.
-
-### Integration Tests (True OS Integrity)
-**Location:** 
-1. `tests/integration/sandbox/atoms/qa_runner/go/test_go_atom.py`
-2. `tests/integration/sandbox/tools/qa_runner/go/test_go_tool.py`
-
-> **Test filenames must be unique repo-wide.** `test_atom.py` / `test_tool.py` existed nine times
-> each until 2026-07-26; duplicate basenames make "find every reference" searches unreliable and
-> make failure output ambiguous. Name the file for its language and subject.
-3. `tests/integration/loom/test_polyglot_ast_edge_cases.py` (Must append your target language Tree-Sitter boundaries!)
-
-- **Absolute Rule:** Do not mock `subprocess`.
-- The integration tests must actively execute the real language constraints against dummy project fixtures stored in the `fixtures/` directory.
-- *Goal:* Ensure the Tool's RBAC interfaces and the Atom's uninhibited limits actually hook accurately into the OS terminal.
-
----
-
-## 5. Checklist for Submitting Support
-
-- [ ] Created submodule at `commons/language/<lang>/` with `runner.py`, `parsers.py`, `ast_parser.py`, `scenario_converter.py`, and `stack_trace_filter.py`.
-- [ ] No Regex usage where JSON/SARIF is natively supported.
-- [ ] Language dispatcher mapped appropriately inside `QARunnerAtom` and `QARunnerTool`.
-- [ ] Tree-sitter binaries registered inside `CodeStructureAtom`.
-- [ ] Added default YAML schema for macro/annotation unrolling in `workflows/evaluators/frameworks/<archetype>.yaml` mapping specifically to `"supported_languages": ["<lang>"]`.
-- [ ] Unit tests constructed with static parsing fixtures.
-- [ ] Live integration tests built against a dummy project fixture folder.
-
-By following this architecture, SpecWeaver safely remains polyglot while enforcing rigid agent boundaries. Happy coding!
+- [ ] Submodule at `sandbox/language/core/<lang>/` with `runner.py`, output parser,
+  `scenario_converter.py`, `stack_trace_filter.py`.
+- [ ] No Regex where JSON/SARIF is supported.
+- [ ] Manifest trigger in `resolve_runner`, `_detect.py` and both factories.
+- [ ] Tree-Sitter parser registered in `get_default_parsers()` (used by `CodeStructureAtom`).
+- [ ] Default YAML schema for macro/annotation unrolling in
+  `workflows/evaluators/frameworks/<archetype>.yaml` with `"supported_languages": ["<lang>"]`.
+- [ ] Unit tests with static parsing fixtures.
+- [ ] Live integration tests against a dummy project fixture folder.
