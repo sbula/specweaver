@@ -218,5 +218,5 @@ marimo/_lsp/
 __marimo__/
 
 # Local working files (written by alembic and by the dev skills each session)
-alembic_test.db
-task.md
+/alembic_test.db
+/task.md
