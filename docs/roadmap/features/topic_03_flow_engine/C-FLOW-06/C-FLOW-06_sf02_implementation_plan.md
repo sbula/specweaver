@@ -1,42 +1,41 @@
-# Implementation Plan: Refactoring Phase 3 Optimizations [SF-02: Impact-Aware Testing & DAL Enforcements]
-- **Feature ID**: 3.32d
-- **Sub-Feature**: SF-02 — Impact-Aware Testing & DAL Enforcements
-- **Design Document**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md
-- **Status**: FINAL
-- **Approvals**: HITL Phase 4 Approved
+# C-FLOW-06 SF-02 — Impact-Aware Testing & DAL Enforcements
 
-## Proposed Changes
+**Status**: FINAL — HITL Phase 4 Approved · **Feature ID**: 3.32d · **FRs owned**: FR-3 (this
+plan); FR-2 is missing here — see [README_BEFORE_CONTINUE.md](README_BEFORE_CONTINUE.md) ·
+**Depends on**: SF-01 · Design: [C-FLOW-06_design.md](C-FLOW-06_design.md)
 
-### src/specweaver/commons/enums/dal.py
-- Add mapping to translate `DALLevel` into `strictness_level` or confidence thresholds (e.g. `DAL_A` implies absolute strictness, `DAL_E` implies high tolerance).
-- Implement `is_strictly_enforced(dal_level: DALLevel) -> bool` or similar threshold helpers.
+## Changes
 
-### src/specweaver/core/flow/engine/runner.py
-- Update `PipelineRunner` to intrinsically load the `DALLevel` of the execution target by calling `DALResolver`.
-- Inject the resolved `DALLevel` into the execution context so that handlers can adapt their strictness natively based on the safety boundary of the file being processed.
+1. `src/specweaver/commons/enums/dal.py` — map `DALLevel` to a `strictness_level` or confidence
+   threshold (`DAL_A` = absolute strictness, `DAL_E` = high tolerance). Add threshold helpers such
+   as `is_strictly_enforced(dal_level: DALLevel) -> bool`.
+2. `src/specweaver/core/flow/engine/runner.py` — `PipelineRunner` loads the target's `DALLevel` via
+   `DALResolver` and puts it in the execution context, so handlers adapt strictness to the file's
+   safety boundary.
+3. `src/specweaver/interfaces/cli/validation.py` — `sw check` becomes **Fail-at-end**:
+   - run the whole validation pipeline across all targeted files, not stop at the first failure;
+   - aggregate warnings and errors into one final console report;
+   - if any violation breaches the target's `DALLevel` strictness, exit non-zero
+     (`typer.Exit(code=1)`) at the very end.
+4. `tests/unit/interfaces/cli/test_cli_standards.py` — remove `TestScanCiMode`; the `--ci` flag was
+   rejected in the architectural audit.
 
-### src/specweaver/interfaces/cli/validation.py
-- Refactor the `sw check` command to implement a **Fail-at-end** UX pattern.
-- Rather than exiting immediately upon the first failure, execute the complete validation pipeline across all targeted files.
-- Aggregate all warnings and errors into a final console report.
-- If the aggregated results contain any violations that breach the target's `DALLevel` strictness, emit a non-zero exit code (`typer.Exit(code=1)`) at the absolute end of the command.
+## Tests
 
-### tests/unit/interfaces/cli/test_cli_standards.py
-- Remove the `TestScanCiMode` test class, as the `--ci` flag concept was rejected during the architectural audit.
+`tests/unit/interfaces/cli/test_cli_validation.py`:
 
-### tests/unit/interfaces/cli/test_cli_validation.py
-- Add tests to verify the Fail-at-end behavior in `sw check`.
-- Add tests to ensure that a `DAL_A` target correctly converts warnings to hard failures resulting in `exit_code == 1`.
-- Add tests to ensure that a `DAL_E` target correctly exits with `0` despite minor warnings.
+| Case | Expect |
+|---|---|
+| Fail-at-end | `sw check` reports all failures before exiting |
+| `DAL_A` target with warnings | warnings become hard failures, `exit_code == 1` |
+| `DAL_E` target with minor warnings | exits `0` |
 
-## Research & Audit Notes
-- **DAL Native Enforcement**: The Phase 4 architectural audit determined that hiding safety
-  constraints behind a CLI `--ci` flag is an anti-pattern. Instead, `DALResolver` bounds will be
-  injected deeply into `PipelineRunner` so that strictness is enforced natively on the developer's
-  machine and the CI server equally.
-- **Fail-at-end**: To prevent poor developer UX (having to fix errors one-by-one), pipelines will
-  complete their full run, aggregate all violations, print a comprehensive summary, and then
-  evaluate the final exit code.
-- **CLI Architecture Debt**: The confusion over `sw scan` vs `sw check` revealed significant
-  technical debt in the CLI verb architecture. A new backlog item has been added to isolate
-  Discovery commands from Validation commands in a future refactor.
+## Decisions (audit)
+
+- **DAL enforced in the runner, not behind `--ci`.** Hiding safety constraints behind a CLI flag is
+  an anti-pattern. `DALResolver` bounds live in `PipelineRunner`, so strictness is the same on the
+  developer's machine and the CI server.
+- **Fail-at-end.** Developers should not fix errors one by one: complete the run, aggregate all
+  violations, print one summary, then decide the exit code.
+- **CLI verb debt.** The `sw scan` vs `sw check` confusion exposed debt in the CLI verbs. A backlog
+  item isolates Discovery commands from Validation commands in a future refactor.

@@ -1,16 +1,23 @@
-# Feature 3.1: Feature Spec Layer (L2 Decomposition) — Implementation Plan
+# D-INTL-02 — Feature Spec Layer (L2 Decomposition) (implementation plan)
 
-> **Date**: 2026-03-17 (v4 — with confidence scoring)
-> **Status**: Awaiting final approval
-> **Scope**: 2A (Feature Spec authoring + validation) + 2B (Decomposition agent)
-> **Out of scope**: 2C (Multi-spec pipeline fan-out) — moved to Feature 3.14
-> **Roadmap**: 3.14 (fan-out) ✅ written, 3.9 ✅ renamed to "Automated iterative decomposition (multi-level)"
+**Status**: Awaiting final approval · **Feature**: 3.1 · **Date**: 2026-03-17 (v4 — with confidence
+scoring)
 
----
+| | |
+|---|---|
+| Scope | 2A (Feature Spec authoring + validation) + 2B (Decomposition agent) |
+| Out of scope | 2C (Multi-spec pipeline fan-out) — moved to Feature 3.14 |
+| Roadmap | 3.14 (fan-out) ✅ written, 3.9 ✅ renamed to "Automated iterative decomposition (multi-level)" |
 
-## 1. Design Principles
+## Goal
 
-### 1.1 Two Orthogonal Axes
+Add a Feature Spec layer above Component Specs and a decomposition step that turns one Feature Spec
+into component changes. The decomposition step is the **bridge** where features cross into
+architecture.
+
+## Principles
+
+**Two orthogonal axes.**
 
 | Feature axis (value) | Architecture axis (structure) |
 |---|---|
@@ -19,50 +26,45 @@
 | Decomposed by business concern | Defined by `context.yaml` boundaries |
 | `SpecKind.FEATURE` | `SpecKind.COMPONENT` |
 
-The decomposition step is the **bridge** where features cross into architecture.
+**Three forces drive decomposition.**
 
-### 1.2 Three Forces Drive Decomposition
-
-1. **Business features** — user value ("Sell My Shares"). The primary decomposition driver.
-2. **Technical features** — NFRs ("Add mTLS", "Parallelize pipeline"). Same Feature Spec template, different stakeholders (security team, ops team).
+1. **Business features** — user value ("Sell My Shares"). The primary driver.
+2. **Technical features** — NFRs ("Add mTLS", "Parallelize pipeline"). Same Feature Spec template,
+   different stakeholders (security team, ops team).
 3. **Architectural gravity** — existing structure pulls new features into established boundaries.
-   Once an architecture is established, follow it. Exceptions are acceptable (1–2 deviations), but
-   beyond that consider refactoring.
+   Once an architecture is established, follow it. 1–2 deviations are acceptable; beyond that,
+   consider refactoring.
 
-### 1.3 Rules Are Advisory
-
-The 10-test battery provides **signals**, not verdicts. They flag "you might need to split" or "this looks too detailed for this level". The decision gate (currently HITL) makes the call.
+**Rules are advisory.** The 10-test battery gives **signals**, not verdicts — "you might need to
+split", "too detailed for this level". The decision gate (currently HITL) makes the call.
 
 > [!IMPORTANT]
 > All HITL gates are designed with **structured decision criteria** so they can be replaced by
 > automated gates in the future. Each gate produces a machine-readable score/recommendation, not
 > just "please review".
 
-### 1.4 Sweet Spot: Business-Driven Stopping Point
+**Stop at business outcomes.** Decompose until each piece describes a **business outcome**, not a
+technical step:
 
-Decompose until each piece describes a **business outcome**, not a technical step:
 - ✅ "Validate order limits" (business-meaningful)
 - ❌ "Parse the order JSON" (technical step — too far)
 - Feature Specs never decompose to class/function level
 
-If following the business view consistently, the decomposition naturally lands at services (in
-SOA/microservice architectures) and modules (within services). This is expected — the architecture
-should emerge from business needs. Only when business decomposition is exhausted does technical
-decomposition apply.
+Followed consistently, the business view lands at services (in SOA/microservice architectures) and
+modules (within services) — the architecture emerges from business needs. Technical decomposition
+applies only once business decomposition is exhausted.
 
-### 1.5 Confidence-Based Scoring
+**Confidence scoring.** Every LLM-generated finding (review, decomposition) carries
+`confidence: int` (0–100). This gives:
 
-All LLM-generated findings (review, decomposition) carry a `confidence: int` score (0–100). This enables:
+- **Noise reduction**: surface only findings ≥ a configurable threshold (default: 80)
+- **Auto-gate path**: a gate can "proceed if no findings ≥ threshold" without HITL
+- **Structured decisions**: each gate gets numbers, not prose
 
-- **Noise reduction**: Only surface findings ≥ configurable threshold (default: 80)
-- **Auto-gate path**: Gate can decide "proceed if no findings ≥ threshold" without HITL
-- **Structured decisions**: Each gate gets quantified data, not prose
+Applies to `ReviewFinding` (existing reviewer), `ComponentChange` and `IntegrationSeam` (3.1
+decomposition), and future arbiter findings (3.13).
 
-Applies to: `ReviewFinding` (existing reviewer), `ComponentChange` (3.1 decomposition), `IntegrationSeam` (3.1 decomposition), and future arbiter findings (3.13).
-
----
-
-## 2. Key Decisions (from discussion)
+## Decisions
 
 | # | Decision |
 |---|---|
@@ -77,9 +79,7 @@ Applies to: `ReviewFinding` (existing reviewer), `ComponentChange` (3.1 decompos
 | 9 | Architecture granularity (service/module/sub-module) comes from `context.yaml`, not from the spec |
 | 10 | Confidence-based scoring on all LLM review findings — threshold-filterable, enables future auto-gates |
 
----
-
-## 3. Boundary Clarification: 3.1 vs 3.9
+**3.1 vs 3.9.**
 
 | Aspect | **3.1** (this feature) | **3.9** (later) |
 |---|---|---|
@@ -90,9 +90,7 @@ Applies to: `ReviewFinding` (existing reviewer), `ComponentChange` (3.1 decompos
 | **Greenfield** | Basic: outputs stub specs | Smart: proposes directory structure + `context.yaml` + dependency graph |
 | **What 3.1 builds that 3.9 needs** | `SpecKind`, Feature Spec template, `DecomposeHandler`, pipeline, structured output format |
 
----
-
-## 4. `SpecKind` Enum
+## `SpecKind`
 
 ```python
 class SpecKind(enum.StrEnum):
@@ -102,11 +100,7 @@ class SpecKind(enum.StrEnum):
 
 Two values. Architecture granularity (service/module/sub-module) comes from `context.yaml`.
 
----
-
-## 5. Rule Adjustments by SpecKind
-
-### Rules that change behavior
+### Rule thresholds by kind
 
 | Rule | `feature` | `component` (default) |
 |---|---|---|
@@ -116,13 +110,11 @@ Two values. Architecture granularity (service/module/sub-module) comes from `con
 | **S05** (Day Test) | warn=60, fail=100 — Feature Specs are larger | warn=25, fail=40 — unchanged |
 | **S08** (Ambiguity) | warn=2, fail=5 — slightly more tolerance for process language | warn=1, fail=3 — unchanged |
 
-### Rules that stay the same
+Unchanged: S02 (Single Setup), S06 (Concrete Example), S07 (Test-First), S09 (Error Path), S10 (Done
+Definition), S11 (Terminology) — spec-quality signals independent of SpecKind.
 
-S02 (Single Setup), S06 (Concrete Example), S07 (Test-First), S09 (Error Path), S10 (Done Definition), S11 (Terminology) — their signals are spec-quality concerns independent of SpecKind.
-
-### S03 "Abstraction Leak" Mode (Feature Specs)
-
-When `kind=FEATURE`, S03 switches from counting external references to detecting implementation-level detail in a business-level document:
+**S03 abstraction-leak mode.** With `kind=FEATURE`, S03 stops counting external references and flags
+implementation detail in a business-level document:
 
 ```
 VALID in Feature Spec:
@@ -135,71 +127,50 @@ FLAGGED as abstraction leak:
   "imports from `specweaver.assurance.validation.runner`"   ← import path
 ```
 
-Implementation: regex scan for path-like patterns (`/`, `.py`, `::`, dotted import paths with 3+ segments) outside code blocks.
+Implementation: regex scan for path-like patterns (`/`, `.py`, `::`, dotted import paths with 3+
+segments) outside code blocks.
 
----
+## Changes
 
-## 6. Proposed Changes
+### 2A — Feature Spec authoring & validation
 
-### 6.1 Sub-Feature 2A: Feature Spec Authoring & Validation
+1. `src/specweaver/validation/spec_kind.py` [NEW] — `SpecKind` enum + `get_presets(rule_id, kind)`
+   returning threshold overrides per rule.
+2. `src/specweaver/validation/rules/spec/s01_one_sentence.py` — constructor gains
+   `kind: SpecKind | None = None`; when set, kind-specific thresholds. **Header matching is
+   configurable**: `## Intent` for `FEATURE`, `## 1. Purpose` for `COMPONENT` (default), via
+   `_HEADER_MAP[SpecKind] → regex`.
+3. `src/specweaver/validation/rules/spec/s03_stranger.py` — `kind: SpecKind | None = None`;
+   `kind=FEATURE` switches to abstraction-leak mode (flag file paths, class names, function
+   signatures instead of counting external file references).
+4. `src/specweaver/validation/rules/spec/s04_dependency_dir.py` — `kind: SpecKind | None = None`;
+   `kind=FEATURE` returns SKIP immediately.
+5. `src/specweaver/validation/rules/spec/s05_day_test.py` — `kind: SpecKind | None = None`;
+   kind-specific thresholds.
+6. `src/specweaver/validation/rules/spec/s08_ambiguity.py` — `kind: SpecKind | None = None`;
+   kind-specific thresholds.
+7. `src/specweaver/validation/runner.py` — `get_spec_rules()` gains `kind: SpecKind | None = None`,
+   passed to rule constructors.
+8. `src/specweaver/cli.py` — `sw check --level` goes from 2 to 3 values: `feature` | `component` |
+   `code`. `feature` and `component` run spec rules (different `SpecKind` thresholds); `code` runs
+   code rules (unchanged).
+9. `src/specweaver/drafting/feature_drafter.py` [NEW] — `FeatureDrafter`, 5-section template (Intent,
+   Blast Radius, Change Map, Integration Seams, Sequence). Works for greenfield; business and
+   technical features.
+10. `src/specweaver/review/reviewer.py`:
+    - `confidence: int = 0` field on `ReviewFinding`
+    - LLM prompt asks for a confidence score (0-100) per finding
+    - `confidence_threshold: int = 80` param on `Reviewer.__init__()`
+    - `_parse_response()` extracts confidence and filters by threshold
+    - findings below threshold stay in `ReviewResult`, marked `below_threshold=True`
+11. `src/specweaver/flow/handlers.py`:
+    - new `DraftFeatureHandler` (draft+feature)
+    - `ValidateSpecHandler` reads `kind` from `step.params`
+    - `ReviewSpecHandler` / `ReviewCodeHandler` can read `confidence_threshold` from `step.params`
 
-#### [NEW] `src/specweaver/validation/spec_kind.py`
+### 2B — Decomposition agent
 
-`SpecKind` enum + `get_presets(rule_id, kind)` function returning threshold overrides per rule.
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/s01_one_sentence.py`
-
-Add `kind: SpecKind | None = None` to constructor. When set, use kind-specific thresholds. **Header
-matching is configurable**: S01 uses `## Intent` for `FEATURE`, `## 1. Purpose` for `COMPONENT`
-(default). Implemented via `_HEADER_MAP[SpecKind] → regex`.
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/s03_stranger.py`
-
-Add `kind: SpecKind | None = None`. When `kind=FEATURE`, switch to abstraction leak detection mode (flag file paths, class names, function signatures instead of counting external file references).
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/s04_dependency_dir.py`
-
-Add `kind: SpecKind | None = None`. When `kind=FEATURE`, return SKIP immediately.
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/s05_day_test.py`
-
-Add `kind: SpecKind | None = None`. Use kind-specific thresholds.
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/s08_ambiguity.py`
-
-Add `kind: SpecKind | None = None`. Use kind-specific thresholds.
-
-#### [MODIFY] `src/specweaver/validation/runner.py`
-
-`get_spec_rules()` gains `kind: SpecKind | None = None`. Passed to rule constructors.
-
-#### [MODIFY] `src/specweaver/cli.py`
-
-`sw check --level` extended from 2 to 3 values: `feature` | `component` | `code`. `feature` and `component` run spec rules (with different `SpecKind` thresholds); `code` runs code rules (unchanged).
-
-#### [NEW] `src/specweaver/drafting/feature_drafter.py`
-
-`FeatureDrafter` — 5-section template (Intent, Blast Radius, Change Map, Integration Seams, Sequence). Works for greenfield. Supports both business and technical features.
-
-#### [MODIFY] `src/specweaver/review/reviewer.py`
-
-- Add `confidence: int = 0` field to `ReviewFinding` model
-- Update LLM prompt to request confidence scoring (0-100) for each finding
-- Add `confidence_threshold: int = 80` param to `Reviewer.__init__()`
-- `_parse_response()` extracts confidence from LLM output and filters by threshold
-- Findings below threshold are kept in `ReviewResult` but marked `below_threshold=True`
-
-#### [MODIFY] `src/specweaver/flow/handlers.py`
-
-- New `DraftFeatureHandler` (draft+feature)
-- `ValidateSpecHandler` reads `kind` from `step.params`
-- `ReviewSpecHandler` / `ReviewCodeHandler` can read `confidence_threshold` from `step.params`
-
----
-
-### 6.2 Sub-Feature 2B: Decomposition Agent
-
-#### [NEW] `src/specweaver/drafting/decomposition.py`
+1. `src/specweaver/drafting/decomposition.py` [NEW]:
 
 ```python
 class ComponentChange(BaseModel):
@@ -227,28 +198,23 @@ class DecompositionPlan(BaseModel):
     timestamp: str
 ```
 
-`coverage_score` = (ComponentChange entries matching Blast Radius entries) / (total Blast Radius
-entries). LLM-assisted matching since Blast Radius may be free-form. `alignment_notes` and per-item
-`confidence` scores exist so a future auto-gate can replace HITL.
+   `coverage_score` = (ComponentChange entries matching Blast Radius entries) / (total Blast Radius
+   entries), LLM-assisted because Blast Radius may be free-form. `alignment_notes` and per-item
+   `confidence` exist so a future auto-gate can replace HITL.
+2. `src/specweaver/flow/models.py`:
+   - `StepAction.DECOMPOSE = "decompose"`
+   - `StepTarget.FEATURE = "feature"`
+   - new valid combinations: `(DRAFT, FEATURE)`, `(VALIDATE, FEATURE)`, `(DECOMPOSE, FEATURE)`
+3. `DecomposeHandler` in `src/specweaver/flow/handlers.py` [NEW]:
+   1. Read the Feature Spec
+   2. Load topology as **guidance** (optional — greenfield works without it)
+   3. LLM prompt: Feature Spec + topology → `DecompositionPlan` JSON
+   4. With topology: new components are **signals** (not errors) in `alignment_notes`
+   5. Write `features/<name>_decomposition.yaml` + stub Component Specs
+   6. Gate: HITL reviews (structured data supports a future auto-gate)
 
-#### [MODIFY] `src/specweaver/flow/models.py`
-
-- `StepAction.DECOMPOSE = "decompose"`
-- `StepTarget.FEATURE = "feature"`
-- New valid combinations: `(DRAFT, FEATURE)`, `(VALIDATE, FEATURE)`, `(DECOMPOSE, FEATURE)`
-
-#### [NEW] `DecomposeHandler` in `src/specweaver/flow/handlers.py`
-
-1. Read Feature Spec
-2. Load topology as **guidance** (optional — greenfield works without it)
-3. LLM prompt: Feature Spec + topology → `DecompositionPlan` JSON
-4. When topology exists: new components = **signals** (not errors) in `alignment_notes`
-5. Write `features/<name>_decomposition.yaml` + stub Component Specs
-6. Gate: HITL reviews (structured data supports future auto-gate)
-
-The decompose step can produce **sub-Feature Specs** (recursive) OR Component Specs — the gate decides.
-
-#### [NEW] `src/specweaver/pipelines/feature_decomposition.yaml`
+   The step can produce **sub-Feature Specs** (recursive) OR Component Specs — the gate decides.
+4. `src/specweaver/pipelines/feature_decomposition.yaml` [NEW]:
 
 ```yaml
 name: feature_decomposition
@@ -288,19 +254,13 @@ steps:
       condition: completed
 ```
 
----
+## Tests
 
-## 7. Verification Plan
-
-### Regression
+Regression — all ~1696 tests must pass, zero regressions:
 
 ```bash
 uv run pytest tests/ -x -q
 ```
-
-All ~1696 tests must pass with zero regressions.
-
-### New Tests
 
 | Test File | Covers |
 |---|---|
@@ -313,7 +273,7 @@ All ~1696 tests must pass with zero regressions.
 | `tests/unit/flow/test_models.py` (extend) | New enum values, valid combinations, pipeline loads |
 | `tests/unit/review/test_reviewer.py` (extend) | Confidence parsing, threshold filtering, below_threshold marking |
 
-### Manual Verification
+Manual:
 
 1. `sw check --kind feature <feature_spec.md>` → applies feature-level thresholds
 2. `sw check <module_spec.md>` → identical to today (default = component)

@@ -1,25 +1,28 @@
-# Feature 3.12 Implementation Plan: Token & Cost Telemetry
+# C-FLOW-01 — Token & Cost Telemetry (implementation plan)
 
-> **Analysis**: [LLM Routing & Cost Optimization](../../analysis/llm_routing_and_cost_analysis.md)
-> **Audit**: Completed 2026-03-27 — all questions resolved across 2 audit passes
+**Feature**: 3.12 · **Audit**: completed 2026-03-27 — all questions resolved across 2 audit passes ·
+Analysis: [LLM Routing & Cost Optimization](../../analysis/llm_routing_and_cost_analysis.md)
 
-The goal of this feature is to log token usage and estimated cost for **every** LLM call (pipeline,
-CLI, API), persist the data in the project database, and expose it via CLI. This is the foundation
-for all downstream cost optimization features (3.12a multi-provider, 3.12b static routing, 4.5a cost
-analytics).
+## Goal
 
-## Key Design Decision: TelemetryCollector (Decorator Pattern)
+Log token usage and estimated cost for **every** LLM call (pipeline, CLI, API), persist it in the
+project database, and show it in the CLI. Foundation for the cost features downstream: 3.12a
+multi-provider, 3.12b static routing, 4.5a cost analytics.
 
-All telemetry is captured at the adapter level via a **decorator** that wraps any `LLMAdapter`. This
-guarantees a single collection point for ALL LLM calls regardless of caller (pipeline, direct CLI,
-REST API). The collector is **not** a subclass of `LLMAdapter` — it uses the decorator pattern and
-delegates all calls to the wrapped adapter. This works because `RunContext.llm` is typed `Any` (duck
-typing).
+**Since moved** (checked 2026-09-25): `llm/` now lives at `src/specweaver/infrastructure/llm/`
+(`collector.py`, `telemetry.py`, `factory.py`; the usage table in `store.py`), `flow/` at
+`src/specweaver/core/flow/`; usage commands are registered in `interfaces/cli/main.py`. Paths below
+are as of the plan's date.
 
-Each call to `generate()`, `generate_with_tools()`, or `generate_stream()` produces one
-`UsageRecord` — stored as an individual row in the DB. A pipeline that runs draft → review →
-implement produces 3 separate records, each with the correct `task_type` read from
-`config.task_type`.
+## Design: `TelemetryCollector` is a decorator
+
+A **decorator** wraps any `LLMAdapter`, so every LLM call — pipeline, direct CLI, REST API — passes
+one collection point. It is **not** a subclass of `LLMAdapter`; it delegates every call to the
+wrapped adapter. This works because `RunContext.llm` is typed `Any` (duck typing).
+
+Each `generate()`, `generate_with_tools()` or `generate_stream()` call produces one `UsageRecord`,
+one DB row. A draft → review → implement pipeline produces 3 records, each with its `task_type`
+read from `config.task_type`.
 
 ```
                   ┌─────────────────────────┐
@@ -36,15 +39,13 @@ caller ──────────►│  │  LLMAdapter impl   │   │─
                          SQLite (one row per record)
 ```
 
-## Proposed Changes
+## Changes
 
----
+### 1. `llm/` — models, telemetry, collector
 
-### 1. `llm/` — Models, Telemetry, and Collector
-
-#### [MODIFY] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/models.py)
-
-Add `TaskType` enum and a `task_type` field to `GenerationConfig`:
+1. **`src/specweaver/llm/models.py`** [MODIFY] — `TaskType` enum and a `task_type` field on
+   `GenerationConfig`. Metadata only; does not affect generation. Each handler's config helper sets
+   it (§1a).
 
 ```python
 class TaskType(enum.StrEnum):
@@ -61,27 +62,18 @@ class GenerationConfig(BaseModel):
     task_type: TaskType = TaskType.UNKNOWN
 ```
 
-Purely metadata — does not affect generation. Each handler's config helper function sets the correct task type (see Section 1a).
-
-#### [NEW] [telemetry.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/telemetry.py)
-
-Pure-logic module (no I/O, no DB access) providing:
-
-- `CostEntry` — `NamedTuple(input_cost_per_1k: float, output_cost_per_1k: float)`
-- `DEFAULT_COST_TABLE: dict[str, CostEntry]` — built-in fallback prices, shipped with sensible defaults.
-- `estimate_cost(model: str, usage: TokenUsage, overrides: dict[str, CostEntry] | None = None) -> float`
-  — looks up model in `overrides` first, then `DEFAULT_COST_TABLE`. Returns `0.0` for unknown
-  models. The `overrides` parameter is loaded from DB by the caller, keeping this module pure.
-- `UsageRecord` Pydantic model: `timestamp`, `project_name`, `task_type`, `model`, `provider`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost_usd`, `duration_ms`
-- `create_usage_record(config: GenerationConfig, response: LLMResponse, provider: str, project: str, duration_ms: int, cost_overrides: dict | None = None) -> UsageRecord`
-
-#### [MODIFY] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/llm/context.yaml)
-
-Add `TelemetryCollector`, `UsageRecord`, and `TaskType` to `exposes` list — they are consumed by `flow/` and `cli/`.
-
-#### [NEW] [collector.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/collector.py)
-
-**TelemetryCollector** — decorator (not a subclass) that wraps any `LLMAdapter`:
+2. **`src/specweaver/llm/telemetry.py`** [NEW] — pure logic, no I/O, no DB access:
+   - `CostEntry` — `NamedTuple(input_cost_per_1k: float, output_cost_per_1k: float)`
+   - `DEFAULT_COST_TABLE: dict[str, CostEntry]` — built-in fallback prices.
+   - `estimate_cost(model: str, usage: TokenUsage, overrides: dict[str, CostEntry] | None = None) -> float`
+     — looks in `overrides` first, then `DEFAULT_COST_TABLE`; `0.0` for unknown models. The caller
+     loads `overrides` from the DB, which keeps this module pure.
+   - `UsageRecord` Pydantic model: `timestamp`, `project_name`, `task_type`, `model`, `provider`,
+     `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost_usd`, `duration_ms`
+   - `create_usage_record(config: GenerationConfig, response: LLMResponse, provider: str, project: str, duration_ms: int, cost_overrides: dict | None = None) -> UsageRecord`
+3. **`src/specweaver/llm/context.yaml`** [MODIFY] — add `TelemetryCollector`, `UsageRecord` and
+   `TaskType` to `exposes`; `flow/` and `cli/` consume them.
+4. **`src/specweaver/llm/collector.py`** [NEW] — `TelemetryCollector`:
 
 ```python
 class TelemetryCollector:
@@ -182,28 +174,23 @@ class TelemetryCollector:
         return self._adapter.estimate_tokens(text)
 ```
 
-> [!NOTE]
-> **task_type**: Read from `config.task_type` per call, not from the constructor. Each handler sets
-> `config.task_type` when creating its `GenerationConfig`, so multi-step pipelines produce correctly
-> labeled records.
+Rules:
 
-> [!NOTE]
-> **Streaming telemetry**: `generate_stream` captures timing and estimates output tokens from
-> concatenated text. Exact token counts require adapter-level support (deferred to backlog).
-> `prompt_tokens` is `0` for streaming — this is a known gap.
+- **task_type** comes from `config.task_type` per call, not from the constructor. Each handler sets
+  `config.task_type` when it builds its `GenerationConfig`, so multi-step pipelines label records
+  correctly.
+- **Streaming**: `generate_stream` captures timing and estimates output tokens from the concatenated
+  text. `prompt_tokens` is `0` for streaming — a known gap; exact counts need adapter support
+  (backlog).
+- **Duration** is wall-clock, including tool execution for `generate_with_tools`. API-only timing is
+  backlog.
 
-> [!NOTE]
-> **Duration**: Measures wall-clock time (includes tool execution for `generate_with_tools`). Adapter-level API-only timing is deferred — see backlog.
+### 1a. `flow/` — config helpers set `task_type`
 
----
+The existing helpers build `GenerationConfig` without `task_type`. One-line additions only; no
+telemetry logic in handlers — the collector captures everything.
 
-### 1a. `flow/` — Config Helpers: Set `task_type`
-
-Existing config helper functions build `GenerationConfig` without `task_type`. Each must add it:
-
-#### [MODIFY] [_review.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/_review.py)
-
-`_review_config_from_context()` → add `task_type=TaskType.REVIEW`
+- `src/specweaver/flow/_review.py` — `_review_config_from_context()` → `task_type=TaskType.REVIEW`:
 
 ```python
 def _review_config_from_context(context: RunContext) -> GenerationConfig:
@@ -215,31 +202,19 @@ def _review_config_from_context(context: RunContext) -> GenerationConfig:
     )
 ```
 
-#### [MODIFY] [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/_generation.py)
+- `src/specweaver/flow/_generation.py`:
+  - `_gen_config_from_context()` takes a `task_type` param, default `TaskType.IMPLEMENT`
+  - `GenerateCodeHandler` passes `task_type=TaskType.IMPLEMENT`
+  - `GenerateTestsHandler` passes `task_type=TaskType.IMPLEMENT`
+  - `PlanSpecHandler._build_config()` → `task_type=TaskType.PLAN`
+- `src/specweaver/flow/_draft.py` — if a config helper exists, `task_type=TaskType.DRAFT`.
+- `src/specweaver/cli/standards.py` (line 91) — the direct `GenerationConfig()` → add
+  `task_type=TaskType.CHECK`.
 
-- `_gen_config_from_context()` → accepts `task_type` param, defaults to `TaskType.IMPLEMENT`
-- `GenerateCodeHandler` passes `task_type=TaskType.IMPLEMENT`
-- `GenerateTestsHandler` passes `task_type=TaskType.IMPLEMENT`
-- `PlanSpecHandler._build_config()` → add `task_type=TaskType.PLAN`
+### 2. `config/` — DB schema and persistence
 
-#### [MODIFY] [_draft.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/_draft.py)
-
-If a config helper exists here, add `task_type=TaskType.DRAFT`.
-
-#### [MODIFY] [standards.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/standards.py) (line 91)
-
-Direct `GenerationConfig()` creation → add `task_type=TaskType.CHECK`.
-
-> [!IMPORTANT]
-> These are one-liner additions to existing config factory functions. No telemetry logic in handlers — the collector captures everything transparently.
-
----
-
-### 2. `config/` — DB Schema & Persistence
-
-#### [MODIFY] [_schema.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_schema.py)
-
-Add `SCHEMA_V9` — new `llm_usage_log` table + `llm_cost_overrides` table:
+1. **`src/specweaver/config/_schema.py`** [MODIFY] — `SCHEMA_V9`: tables `llm_usage_log` and
+   `llm_cost_overrides`.
 
 ```sql
 -- Usage telemetry log (one row per LLM call)
@@ -268,30 +243,23 @@ CREATE TABLE IF NOT EXISTS llm_cost_overrides (
 );
 ```
 
-No foreign key to `projects` — usage records survive project deletion for historical analysis.
+   No foreign key to `projects`: usage records survive project deletion, for historical analysis.
+2. **`src/specweaver/config/database.py`** [MODIFY] — import `SCHEMA_V9`, add the v9 migration in
+   `_ensure_schema()`. New methods:
+   - `log_usage(record: dict)` — insert one row into `llm_usage_log`
+   - `get_usage_summary(project: str | None, since: str | None) -> list[dict]` — aggregation
+   - `get_usage_by_task_type(project: str) -> list[dict]` — grouping
+   - `get_cost_overrides() -> dict[str, CostEntry]` — load all overrides
+   - `set_cost_override(model_pattern, input_cost, output_cost)` — upsert
+   - `delete_cost_override(model_pattern)` — remove one override
 
-#### [MODIFY] [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/database.py)
+### 3. Where the collector is created
 
-- Import `SCHEMA_V9` and add v9 migration in `_ensure_schema()`.
-- New methods:
-  - `log_usage(record: dict)` — insert one row into `llm_usage_log`
-  - `get_usage_summary(project: str | None, since: str | None) -> list[dict]` — aggregation
-  - `get_usage_by_task_type(project: str) -> list[dict]` — grouping
-  - `get_cost_overrides() -> dict[str, CostEntry]` — load all overrides
-  - `set_cost_override(model_pattern, input_cost, output_cost)` — upsert
-  - `delete_cost_override(model_pattern)` — remove one override
+No change to `RunContext`. The only handler-side change is `task_type` (§1a). The collector wraps
+the adapter where the adapter is created.
 
----
-
-### 3. Integration Points — Where the Collector is Created
-
-No changes to `RunContext`. No telemetry-related changes to handlers (the only handler-side change
-is setting `task_type` on `GenerationConfig` — see Section 1a). The collector wraps the adapter
-where it's created:
-
-#### [MODIFY] [factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/factory.py)
-
-Change return type annotation from `GeminiAdapter` to `Any` (since `TelemetryCollector` is a decorator, not a subclass). Add telemetry wrapping:
+1. **`src/specweaver/llm/factory.py`** [MODIFY] — return type annotation `GeminiAdapter` → `Any`
+   (the collector is a decorator, not a subclass). Add the wrapping:
 
 ```python
 def create_llm_adapter(
@@ -304,20 +272,18 @@ def create_llm_adapter(
     return settings, adapter, gen_config
 ```
 
-All existing callers (CLI commands, pipeline runner, API endpoints) pass `telemetry_project` to opt in. Callers that don't pass it get the raw adapter — zero behavioral change.
-
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/runner.py)
-
-After pipeline completes (success or failure), flush telemetry:
+   Callers that pass `telemetry_project` (CLI commands, pipeline runner, API endpoints) opt in.
+   Callers that don't get the raw adapter — zero behavioral change.
+2. **`src/specweaver/flow/runner.py`** [MODIFY] — after the pipeline ends (success or failure),
+   flush:
 
 ```python
 if isinstance(context.llm, TelemetryCollector):
     context.llm.flush(db)
 ```
 
-#### [MODIFY] [_helpers.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/_helpers.py)
-
-The CLI helper `get_llm_adapter()` wraps `create_llm_adapter()` — it must pass the active project name as `telemetry_project` so all CLI-created adapters are automatically wrapped in a collector.
+3. **`src/specweaver/cli/_helpers.py`** [MODIFY] — `get_llm_adapter()` wraps `create_llm_adapter()`
+   and passes the active project as `telemetry_project`, so every CLI-created adapter is wrapped.
 
 ```python
 def get_llm_adapter(db, *, llm_role="draft"):
@@ -325,9 +291,8 @@ def get_llm_adapter(db, *, llm_role="draft"):
     return create_llm_adapter(db, llm_role=llm_role, telemetry_project=project)
 ```
 
-#### [MODIFY] CLI command files (`review_commands.py`, `draft_commands.py`, etc.)
-
-After direct (non-pipeline) LLM operations complete, flush telemetry. Each command receives the adapter from `_helpers.py` and calls `flush()` in a `finally` block:
+4. **CLI command files** (`review_commands.py`, `draft_commands.py`, etc.) [MODIFY] — after a
+   direct (non-pipeline) LLM operation, call `flush()` in a `finally` block:
 
 ```python
 try:
@@ -337,85 +302,65 @@ finally:
         adapter.flush(db)
 ```
 
----
+### 4. `cli/` — usage reporting
 
-### 4. `cli/` — Usage Reporting
+1. **`src/specweaver/cli/usage_commands.py`** [NEW]
+   - `sw usage` — summary for the current project (total tokens, cost, by task type)
+   - `sw usage --all` — across all projects
+   - `sw usage --since 7d` — time window
+   - `sw usage --by-model` — group by model instead of task type
 
-#### [NEW] [usage_commands.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/usage_commands.py)
+   Output: Rich table — Task Type | Model | Calls | Tokens (In/Out) | Est. Cost
+2. **`src/specweaver/cli/cost_commands.py`** [NEW]
+   - `sw costs` — current cost table (built-in defaults, user overrides highlighted)
+   - `sw costs set <model> <input_cost> <output_cost>` — custom cost per model
+   - `sw costs reset <model>` — remove the override, back to built-in
+3. **`src/specweaver/cli/__init__.py`** [MODIFY] — register `usage_commands` and `cost_commands` with
+   the Typer app.
 
-- `sw usage` — show usage summary for current project (total tokens, cost, by task type)
-- `sw usage --all` — show usage across all projects
-- `sw usage --since 7d` — filter by time window
-- `sw usage --by-model` — group by model instead of task type
+## Tests
 
-Output: Rich table with columns: Task Type | Model | Calls | Tokens (In/Out) | Est. Cost
+| File | Test | Checks |
+|---|---|---|
+| `tests/unit/llm/test_telemetry.py` | `test_estimate_cost_known_model` | correct cost for a known model |
+| | `test_estimate_cost_unknown_model` | returns 0.0 |
+| | `test_estimate_cost_with_override` | overrides dict beats the default |
+| | `test_create_usage_record` | all fields populated |
+| | `test_task_type_enum` | all task types are valid StrEnum members |
+| `tests/unit/llm/test_collector.py` | `test_collector_captures_generate` | one record per generate() call |
+| | `test_collector_captures_generate_with_tools` | one record, cumulative usage |
+| | `test_collector_captures_generate_stream` | one record, estimated tokens |
+| | `test_collector_task_type_from_config` | record uses config.task_type, not the constructor |
+| | `test_collector_multiple_calls_multiple_records` | 3 calls → 3 separate records |
+| | `test_collector_flush` | records persisted, list cleared |
+| | `test_collector_flush_error_handling` | DB error logged, not raised |
+| | `test_collector_proxies_all_methods` | available(), count_tokens(), etc. delegate |
+| | `test_collector_timing` | duration_ms > 0 |
+| `tests/unit/config/test_database.py` | `test_schema_v9_migration` | both tables + indices created |
+| | `test_log_usage` | insert and query back |
+| | `test_get_usage_summary` | aggregation by project |
+| | `test_get_usage_by_task_type` | grouping |
+| | `test_cost_overrides_crud` | set, get, delete |
+| `tests/integration/flow/` | `test_pipeline_flushes_telemetry` | pipeline with FakeLLM → one record per step in DB |
+| | `test_direct_cli_flushes_telemetry` | direct `sw review` → records in DB |
+| `tests/unit/cli/test_usage.py` | `test_sw_usage_default` | current project summary |
+| | `test_sw_usage_all` | all projects |
+| | `test_sw_usage_empty` | graceful output with no records |
+| | `test_sw_costs_show` | merged cost table |
+| | `test_sw_costs_set` | override persists |
+| | `test_sw_costs_reset` | override removed |
 
-#### [NEW] [cost_commands.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/cost_commands.py)
+Manual:
 
-- `sw costs` — show current cost table (built-in defaults + user overrides highlighted)
-- `sw costs set <model> <input_cost> <output_cost>` — set custom cost per model
-- `sw costs reset <model>` — remove override, revert to built-in
+- `sw draft greet_service` → `sw usage` → token count matches
+- `sw review code greet.py` → `sw usage --by-model` → model name appears
+- `sw costs set gemini-2.5-pro 0.001 0.002` → `sw costs` → override shown
 
-#### [MODIFY] [__init__.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/__init__.py)
+## Backlog (deferred at audit)
 
-Register `usage_commands` and `cost_commands` with the Typer app.
-
----
-
-## Backlog
-
-> [!NOTE]
-> Items identified during audit, deferred from this feature.
-
-- **Adapter-level API-only timing** — measure only LLM round-trip time, excluding tool execution. Requires adapter loop instrumentation. Phase 4 enhancement.
-- **Streaming prompt_tokens** — currently `0` for streaming calls. Requires adapter-level support to return `usage_metadata` from the final streaming chunk.
-- **Cost table auto-updater** — agent or web scraper to update model pricing monthly. Track in roadmap as future capability.
-
----
-
-## Verification Plan
-
-### Automated Tests
-
-**Unit tests** (`tests/unit/llm/test_telemetry.py`):
-- `test_estimate_cost_known_model` — returns correct cost for known model
-- `test_estimate_cost_unknown_model` — returns 0.0
-- `test_estimate_cost_with_override` — overrides dict takes precedence over default
-- `test_create_usage_record` — all fields populated correctly
-- `test_task_type_enum` — all task types are valid StrEnum members
-
-**Unit tests** (`tests/unit/llm/test_collector.py`):
-- `test_collector_captures_generate` — one record created per generate() call
-- `test_collector_captures_generate_with_tools` — one record, cumulative usage
-- `test_collector_captures_generate_stream` — one record, estimated tokens
-- `test_collector_task_type_from_config` — record uses config.task_type, not constructor
-- `test_collector_multiple_calls_multiple_records` — 3 calls → 3 separate records
-- `test_collector_flush` — records persisted and list cleared
-- `test_collector_flush_error_handling` — DB error logged, not raised
-- `test_collector_proxies_all_methods` — available(), count_tokens(), etc. delegate correctly
-- `test_collector_timing` — duration_ms > 0
-
-**Unit tests** (`tests/unit/config/test_database.py`):
-- `test_schema_v9_migration` — both tables + indices created
-- `test_log_usage` — insert and query back
-- `test_get_usage_summary` — aggregation by project
-- `test_get_usage_by_task_type` — grouping
-- `test_cost_overrides_crud` — set, get, delete
-
-**Integration tests** (`tests/integration/flow/`):
-- `test_pipeline_flushes_telemetry` — run pipeline with FakeLLM, verify individual records per step in DB
-- `test_direct_cli_flushes_telemetry` — invoke `sw review` directly, verify records in DB
-
-**Unit tests** (`tests/unit/cli/test_usage.py`):
-- `test_sw_usage_default` — shows current project summary
-- `test_sw_usage_all` — shows all projects
-- `test_sw_usage_empty` — graceful output when no records
-- `test_sw_costs_show` — displays merged cost table
-- `test_sw_costs_set` — override persists
-- `test_sw_costs_reset` — override removed
-
-### Manual Verification
-
-- Run `sw draft greet_service` → `sw usage` → verify token count matches
-- Run `sw review code greet.py` → `sw usage --by-model` → verify model name appears
-- Run `sw costs set gemini-2.5-pro 0.001 0.002` → `sw costs` → verify override shown
+- **API-only timing** — measure only the LLM round-trip, excluding tool execution. Needs adapter
+  loop instrumentation. Phase 4 enhancement.
+- **Streaming prompt_tokens** — `0` today. Needs adapters to return `usage_metadata` from the final
+  streaming chunk.
+- **Cost table auto-updater** — agent or web scraper that updates model pricing monthly. Track in
+  the roadmap as a future capability.

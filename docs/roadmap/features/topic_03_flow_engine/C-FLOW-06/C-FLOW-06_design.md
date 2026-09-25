@@ -1,46 +1,52 @@
-# Design: Refactoring Phase 3 Optimizations
+# C-FLOW-06 — Refactoring Phase 3 Optimizations
 
-- **Feature ID**: 3.32d
-- **Phase**: 3
-- **Status**: DRAFT
-- **Design Doc**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md
+**Status**: DRAFT · **Feature ID**: 3.32d · **Phase**: 3 · SF-01 committed; SF-02 halted — open
+items in [README_BEFORE_CONTINUE.md](README_BEFORE_CONTINUE.md).
 
-## Feature Overview
+| | |
+|---|---|
+| Uses | `PromptBuilder`, `CodeStructureAtom` / `CodeStructureTool`, `QARunnerAtom` / `PolyglotQARunner`, `DALResolver`, `TopologyGraph` |
+| Not touched | git operations, front-ends, remote LLM server configuration |
 
-Feature 3.32d adds Refactoring Phase 3 Optimizations to the core engine, flow pipeline, and
-validation architecture. It solves high latency, token over-spend, LLM "Blank Canvas" hallucination,
-and full-test suite slowness by applying Context Condensation (AST Skeletons), topology-based
-specific Pytest limiting, native DAL validation enforcement, and standard scaffolding upon
-`sw init`. It interacts with `PromptBuilder`, `PolyglotQARunner`, native DAL bounds, and project
-constraints engine, and does NOT touch git operations, front-ends, or remote LLM server
-configuration. Key constraints: Condensation preserves exact editing targets; DAL yields non-zero
-exits natively on bounds breaches; `sw init` scaffolding forbids LLM execution (`loom` boundary
-compliance).
+## What it does
 
-## Research Findings
+Four optimizations against latency, token over-spend, "Blank Canvas" hallucination and slow full-suite
+test runs:
 
-### Codebase Patterns
-- **Context Condensation**: The `PromptBuilder` already exists at
-  `src/specweaver/infrastructure/llm/prompt_builder.py`. The `CodeStructureTool` and
-  `CodeStructureAtom` already extract AST sequences per language. We can reuse these tools by
-  passing file blocks through `CodeStructureAtom` to degrade non-target contextual files.
-- **Impact-Aware Test Limiting**: `QARunnerAtom` executes pytest flows locally. We can inject limits
-  by querying `TopologyGraph.stale_nodes()` in orchestrators like `ValidationRunner` or
-  `PipelineRunner` and passing `--test-target` arguments to `QARunnerAtom.run_tests()`.
-- **Native DAL Enforcement**: We can integrate `DALResolver` deeply into `PipelineRunner` so that
-  all validation natively respects DAL strictness thresholds, dynamically exiting with
-  `typer.Exit(code=1)` upon threshold breaches without relying on CLI-specific flags.
-- **Project Standards Scaffolding**: `workspace/project/scaffold.py` handles `sw init`. It must be
-  extended to scaffold standard `context.yaml` boundaries and rule templates statically without
-  touching the `loom` (Agent) boundary to avoid cyclic LLM execution constraints.
+- **Context condensation** — non-target context files go to the LLM as AST skeletons.
+- **Impact-aware test limiting** — pytest runs only the tests of stale topology nodes.
+- **DAL enforcement** — validation respects DAL strictness and exits non-zero on a breach.
+- **Starter scaffolding** — `sw init` writes default `context.yaml` boundaries.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| Pytest | >7.0 | Targeted execution via `--pyargs` or explicit paths | Web Research (Test Impact Analysis patterns) |
+Constraints: condensation preserves the exact editing targets; DAL enforcement yields a non-zero
+exit without a CLI flag; `sw init` scaffolding runs no LLM (`loom` boundary compliance).
 
-### Blueprint References
-- None explicitly mapped for 3.32d; references CI patterns from PasteMax and Testmon.
+## Where it plugs in
+
+- **Condensation**: `PromptBuilder` (`src/specweaver/infrastructure/llm/prompt_builder.py`).
+  `CodeStructureTool` and `CodeStructureAtom` already extract AST per language; non-target context
+  files pass through `CodeStructureAtom` and are degraded to skeletons.
+- **Test limiting**: `QARunnerAtom` runs pytest locally. An orchestrator (`ValidationRunner` /
+  `PipelineRunner`, per AD-1 `ValidateTestsHandler`) queries `TopologyGraph.stale_nodes()` and
+  passes `--test-target` paths to `QARunnerAtom.run_tests()`.
+- **DAL**: `DALResolver` sits inside `PipelineRunner`, so all validation respects DAL strictness
+  thresholds and exits with `typer.Exit(code=1)` on a breach — no CLI-specific flag.
+- **Scaffolding**: `workspace/project/scaffold.py` handles `sw init`. It writes `context.yaml`
+  boundaries and rule templates statically, never touching the `loom` (Agent) boundary — that would
+  create cyclic LLM execution.
+
+External: Pytest >7.0 (targeted runs via `--pyargs` or explicit paths; Test Impact Analysis
+patterns); tree-sitter 0.21.0 (language parsers, compat confirmed, shipped with Feature 3.22
+Polyglot Extractors). Prior art: CI patterns from PasteMax and Testmon; no blueprint.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Query TopologyGraph dynamically in ValidateTestsHandler (REJECTED QARunnerTool static query) | `loom/` (Execution Layer) must not import `graph/` (Pure Logic). `ValidateTestsHandler` may consume `graph/` and passes resolved paths into `QARunnerAtom`. | Yes |
+| AD-2 | Hardcode AST Skeleton truncation within PromptBuilder. | Token-saving logic in one place, instead of each Handler parsing file sizes. | No |
+
+AD-1 replaced "Query TopologyGraph statically in QARunnerTool": that made `loom` import `graph`.
 
 ## Functional Requirements
 
@@ -48,7 +54,7 @@ compliance).
 |---|-----|-------|--------|---------|
 | FR-1 | Context Condensation | PromptBuilder | Process `context_files` | De-duplicate and condense contextual non-target files into strictly typed AST Skeletons via `CodeStructureAtom`, halving token usage. |
 | FR-2 | Test Limiting | QARunnerAtom | Limit Pytest scope | Execute tests explicitly scoped to `TopologyGraph.stale_nodes` and their direct dependents instead of the global `tests/` directory. |
-| FR-3 | Validation DAL Gates | Core Framework | DAL Enforcement | Integrate `DALResolver` deeply into `PipelineRunner` and CLI commands so all validation natively respects DAL strictness thresholds, exiting 1 dynamically when breached (Fail-at-end). |
+| FR-3 | Validation DAL Gates | Core Framework | DAL Enforcement | Integrate `DALResolver` into `PipelineRunner` and CLI commands so all validation respects DAL strictness thresholds, exiting 1 when breached (Fail-at-end). |
 | FR-4 | Starter Scaffolding | Project Scaffold | Initialize Project | Emit default standard topologies into `context.yaml` without importing `.loom` tools or querying an LLM in the initialization chain. |
 
 ## Non-Functional Requirements
@@ -59,49 +65,18 @@ compliance).
 | NFR-2 | Architecture Compliance | Validation pipelines must execute cleanly under stateless execution mode (`operational.async_ready = false`). |
 | NFR-3 | Compatibility | Pytest targeting must not conflict with parameterized `[ ]` paths on Windows CMD consoles. |
 
-## External Dependencies
-
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| tree-sitter | 0.21.0 | Language parsers | Y | Included natively via Feature 3.22 Polyglot Extractors |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Query TopologyGraph dynamically in ValidateTestsHandler (REJECTED QARunnerTool static query) | Resolves the architectural violation where `loom/` (Execution Layer) incorrectly imported `graph/` (Pure Logic). `ValidateTestsHandler` legally consumes `graph/` and passes resolved paths natively into `QARunnerAtom`. | Yes |
-| AD-2 | Hardcode AST Skeleton truncation within PromptBuilder natively. | Centralizes token preservation logic rather than asking Handlers to manually parse file sizes. | No |
-
-## Developer Guides Required
-
-Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
+## Guides owed
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Test Impact Testing | Using stale tracking to bypass full suite testing natively | ⬜ To be written during Pre-commit |
+| Test Impact Testing | Using stale tracking to bypass full suite testing | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Context Condensation & Scaffolding
-- **Scope**: Implements AST Skeleton logic in `PromptBuilder` and scaffolds native `context.yaml` profiles on `sw init`.
-- **FRs**: [FR-1, FR-4]
-- **Inputs**: Polyglot parsers, `PromptBuilder` context lists, CLI initialization paths.
-- **Outputs**: Truncated XML payloads and initialized `.specweaver/` structures.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf01_implementation_plan.md
-
-### SF-02: Impact-Aware Testing & DAL Enforcements
-- **Scope**: Re-wires `QARunnerTool` to filter targets via the Topology Graph and implements native DAL boundaries to enforce validation failures.
-- **FRs**: [FR-2, FR-3]
-- **Inputs**: DAG nodes, Pytest targets, `DALResolver` thresholds.
-- **Outputs**: Truncated Pytest stdout logs, and non-zero OS level exit boundaries.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf02_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | AST skeletons in `PromptBuilder`; `context.yaml` profiles on `sw init` | FR-1, FR-4 | polyglot parsers, `PromptBuilder` context lists, CLI init paths → truncated XML payloads, initialized `.specweaver/` | — | [sf01](C-FLOW-06_sf01_implementation_plan.md) |
+| SF-02 | Test targets filtered via the Topology Graph; DAL boundaries fail validation | FR-2, FR-3 | DAG nodes, pytest targets, `DALResolver` thresholds → truncated pytest stdout, non-zero exit | SF-01 | [sf02](C-FLOW-06_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -110,9 +85,4 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-01 | Context Condensation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Impact-Aware Testing & DAL | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
-## Session Handoff
-
-**Current status**: SF-02 Development was halted due to missed FR-2 and an AD-1 architectural violation. See `README_BEFORE_CONTINUE.md`.
-**Next step**: Fix design and resume Dev workflow for SF-02.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
+**Next**: SF-02 Dev — see [README_BEFORE_CONTINUE.md](README_BEFORE_CONTINUE.md).

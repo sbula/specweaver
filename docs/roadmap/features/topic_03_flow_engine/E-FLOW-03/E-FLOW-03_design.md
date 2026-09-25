@@ -1,32 +1,26 @@
-# Design: Multi-Provider Adapter Registry
+# E-FLOW-03 — Multi-Provider Adapter Registry
 
-- **Feature ID**: E-FLOW-03
-- **DAL**: E (Prototyping)
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_03_flow_engine/E-FLOW-03/E-FLOW-03_design.md
+**Status**: APPROVED · **COMPLETE** — SF-01 committed · **DAL**: E (Prototyping)
 
-## Feature Overview
+| | |
+|---|---|
+| Touches | `infrastructure/llm/adapters/`, `infrastructure/llm/factory.py`, `core/config/settings_loader.py`, `core/config/profiles.py` |
+| Deferred | automatic fallback → D-FLOW-03 Static Routing |
+| Not touched | flow engine, validation, sandbox, workspace layers |
 
-Feature E-FLOW-03 extends SpecWeaver's LLM layer from a single hardcoded Gemini provider to a
-**multi-provider adapter registry** supporting OpenAI, Anthropic, Mistral, and Qwen — all selectable
-via DB-stored configuration. Adding a new provider = implementing one adapter file with
-`provider_name`, `api_key_env_var`, and `default_costs` as class attributes. Zero manual
-registration needed.
+## What it does
 
-It solves provider lock-in by abstracting all LLM interactions behind the `LLMAdapter` ABC. It
-interacts with `infrastructure/llm/adapters/`, `infrastructure/llm/factory.py`,
-`core/config/settings_loader.py`, and `core/config/profiles.py`. It does NOT touch the flow engine,
-validation, sandbox, or workspace layers.
+Replaces the single hardcoded Gemini provider with a **multi-provider adapter registry**: Gemini,
+OpenAI, Anthropic, Mistral and Qwen, selected by DB-stored configuration. All LLM calls go through
+the `LLMAdapter` ABC, which ends provider lock-in.
 
-Key constraints: Optional SDKs (only Gemini is required), backward compatibility (existing
-Gemini-only users unaffected), and cost layering (adapter code defaults → DB overrides — never
-overwrites user data).
+Adding a provider = one adapter file with `provider_name`, `api_key_env_var` and `default_costs` as
+class attributes. Zero manual registration.
 
-## Research Findings
+Constraints: SDKs are optional (only Gemini is required); existing Gemini-only users are unaffected;
+costs layer adapter code defaults → DB overrides, never overwriting user data.
 
-### Codebase Audit (2026-05-03)
-
-The feature is **architecturally complete**. The following components are fully implemented and tested:
+## Architecture
 
 | Component | File | Size | Tests |
 |:---|:---|:---|:---|
@@ -44,37 +38,30 @@ The feature is **architecturally complete**. The following components are fully 
 | Context.yaml boundaries | `infrastructure/llm/adapters/context.yaml` | — | `tach check` |
 | Integration tests | `tests/integration/sandbox/test_multi_provider_integration.py` | 6.1KB | 4 tests (OpenAI, Anthropic, Mistral, Qwen + ToolDispatcher) |
 
-**Verified capabilities per adapter:**
+Sizes and files as of the codebase audit, 2026-05-03.
+
+Capabilities per adapter:
+
 - `generate()` ✅ all 5
 - `generate_stream()` ✅ all 5 (Qwen inherits from OpenAI)
-- `generate_with_tools()` ✅ OpenAI, Anthropic, Mistral (Qwen inherits OpenAI); base fallback for others
-- `_handle_error()` ✅ all 5
-- `available()` ✅ all 5
-- `count_tokens()` ✅ all 5
+- `generate_with_tools()` ✅ OpenAI, Anthropic, Mistral (Qwen inherits OpenAI); base fallback for
+  others
+- `_handle_error()`, `available()`, `count_tokens()` ✅ all 5
 
-### What Remains (Polish Items)
+Patterns (checked against 2024-2026 industry practice): ABC provider contracts · auto-discovery
+registry (no manual registration) · self-describing adapters with cost metadata · DB-stored
+provider selection · cost layering (code defaults → DB overrides) · telemetry proxy
+(`TelemetryCollector`) · per-provider rate limiting (`AsyncRateLimiterAdapter`). Not done: automatic
+fallback (deferred to D-FLOW-03 Static Routing).
 
-| Item | Status | Evidence |
-|:---|:---|:---|
-| Optional deps in `pyproject.toml` | ❌ Missing | No `[project.optional-dependencies]` section for `openai`, `anthropic`, `mistralai` |
-| `llm/context.yaml` description | ❌ Stale | Says "currently Google Gemini" — multi-provider is live |
-| `llm/context.yaml` exposes | ❌ Incomplete | Only lists `GeminiAdapter` — should list all adapters |
-| `llm/context.yaml` `async_ready` | ❌ Wrong | Says `false` but all adapter methods are `async` |
-| `llm/adapters/context.yaml` `async_ready` | ❌ Wrong | Says `false` |
-| E2E user journey test | ❌ Missing | No test exercises `provider=openai → sw draft → telemetry shows openai` |
-| Documentation updates | ❌ Pending | README, quickstart, architecture_reference not yet updated |
+## Decisions
 
-### Industry Patterns Verification
-
-SpecWeaver's implementation aligns with 2024-2026 industry best practices:
-- ✅ Abstract Base Class provider contracts
-- ✅ Auto-discovery registry (no manual registration)
-- ✅ Self-describing adapters with cost metadata
-- ✅ Configuration-driven provider selection (DB-stored)
-- ✅ Cost layering (code defaults → DB overrides)
-- ✅ Telemetry proxy pattern (`TelemetryCollector`)
-- ✅ Per-provider rate limiting (`AsyncRateLimiterAdapter`)
-- ❌ Automatic fallback (deferred to D-FLOW-03 Static Routing)
+| # | Decision | Rationale | Arch Switch? |
+|---|----------|-----------|:---:|
+| AD-1 | Auto-discovery via `pkgutil` + subclass scan | Simpler than entry points for in-tree adapters. No third-party loader needed. | No |
+| AD-2 | `QwenAdapter` extends `OpenAIAdapter` | Qwen uses OpenAI-compatible API. Only `base_url` + metadata differ. Zero code duplication. | No |
+| AD-3 | Telemetry wrapping in factory, not adapter | Adapters stay pure. `TelemetryCollector` is applied by `factory.py`. | No |
+| AD-4 | Cost defaults as class attributes | Each adapter owns its cost data. No central cost table. `get_merged_default_costs()` aggregates at runtime. | No |
 
 ## Functional Requirements
 
@@ -88,6 +75,8 @@ SpecWeaver's implementation aligns with 2024-2026 industry best practices:
 | FR-6 | Optional SDK dependencies | `pyproject.toml` declares `openai`, `anthropic`, `mistralai` as extras. ❌ Pending. |
 | FR-7 | Comprehensive error mapping | Each adapter maps provider-specific errors → `LLMError` hierarchy. ✅ Done. |
 
+FR-6's "❌ Pending" predates SF-01; `pyproject.toml` declares the extras today (checked 2026-09-25).
+
 ## Non-Functional Requirements
 
 | # | NFR | Threshold |
@@ -96,32 +85,25 @@ SpecWeaver's implementation aligns with 2024-2026 industry best practices:
 | NFR-2 | Graceful SDK absence | If `openai` not installed, registry skips it with debug log. No crash. ✅ Verified. |
 | NFR-3 | Zero-registration pattern | No central map/array to maintain. Auto-discovery + class attributes only. ✅ Verified. |
 
-## Architectural Decisions
+## Sub-features
 
-| # | Decision | Rationale | Arch Switch? |
-|---|----------|-----------|:---:|
-| AD-1 | Auto-discovery via `pkgutil` + subclass scan | Simpler than entry points for in-tree adapters. No third-party loader needed. | No |
-| AD-2 | `QwenAdapter` extends `OpenAIAdapter` | Qwen uses OpenAI-compatible API. Only `base_url` + metadata differ. Zero code duplication. | No |
-| AD-3 | Telemetry wrapping in factory, not adapter | Adapters stay pure. `TelemetryCollector` is applied transparently by `factory.py`. | No |
-| AD-4 | Cost defaults as class attributes | Each adapter owns its cost data. No central cost table. `get_merged_default_costs()` aggregates at runtime. | No |
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Polish & Close — the gaps the 2026-05-03 audit found (below) | FR-6 | — | [sf01](E-FLOW-03_sf01_implementation_plan.md) |
 
-## Sub-Feature Breakdown
+Gaps SF-01 closed (single commit boundary):
 
-### SF-01: Polish & Close
-- **Scope**: Complete the remaining polish items to make E-FLOW-03 shippable.
-- **FRs**: FR-6 (optional deps)
-- **Work**:
-  1. Add `[project.optional-dependencies]` to `pyproject.toml`
-  2. Fix `infrastructure/llm/context.yaml` (description, exposes, async_ready)
-  3. Fix `infrastructure/llm/adapters/context.yaml` (async_ready)
-  4. Add E2E test (mocked HTTP layer, not mocked adapter layer)
-  5. Update documentation (README, quickstart, architecture_reference)
-- **Depends on**: Nothing.
-- **Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/E-FLOW-03/E-FLOW-03_sf01_implementation_plan.md`
+| Item | State at audit | Evidence |
+|:---|:---|:---|
+| Optional deps in `pyproject.toml` | ❌ Missing | No `[project.optional-dependencies]` section for `openai`, `anthropic`, `mistralai` |
+| `llm/context.yaml` description | ❌ Stale | Says "currently Google Gemini" — multi-provider is live |
+| `llm/context.yaml` exposes | ❌ Incomplete | Only lists `GeminiAdapter` — should list all adapters |
+| `llm/context.yaml` `async_ready` | ❌ Wrong | Says `false` but all adapter methods are `async` |
+| `llm/adapters/context.yaml` `async_ready` | ❌ Wrong | Says `false` |
+| E2E user journey test | ❌ Missing | No test exercises `provider=openai → sw draft → telemetry shows openai` |
+| Documentation updates | ❌ Pending | README, quickstart, architecture_reference not yet updated |
 
 ## Definition of Done
-
-E-FLOW-03 is complete when ALL of the following are true:
 
 | # | Criterion | Verification Method |
 |---|-----------|:---|
@@ -134,18 +116,8 @@ E-FLOW-03 is complete when ALL of the following are true:
 | 7 | `tach check` clean | `tach check` command |
 | 8 | README + quickstart updated | File inspection |
 
-## Execution Order
-
-1. SF-01 (Polish & Close) — single commit boundary.
-
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Polish & Close | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Design APPROVED. Core implementation complete (all adapters, registry, factory, config, tests). Polish items remain.
-**Next step**: Create SF-01 implementation plan, then `/dev`.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume.

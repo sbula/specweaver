@@ -1,78 +1,53 @@
-# Implementation Plan: 3.30a SF-01 (Plugin Schema Composition & Targeted AST Search)
+# B-INTL-05 SF-01 — Plugin Schema Composition & Targeted AST Search
 
-This implementation plan details the steps required to resolve Framework Plugins dynamically alongside Archetypes in SpecWeaver, and to expose `decorator_filter` routing to Black-Box Agent tools.
+**Feature ID**: 3.30a · **FRs owned**: FR-1, FR-2 · **Depends on**: none · Design:
+[B-INTL-05_design.md](B-INTL-05_design.md) §Sub-features → SF-01
 
-## User Review Required
+## Goal
 
-> [!IMPORTANT]  
-> All architectural patterns align with previous conventions. No new external dependencies are
-> required. A `resolve_plugins` isolated method will be added to `ArchetypeResolver` to retain
-> backward API compatibility for `resolve()`.
+Resolve framework plugins alongside archetypes, and expose `decorator_filter` routing to black-box
+agent tools.
 
-## Proposed Changes
+Follows existing conventions; no new external dependencies. A separate `resolve_plugins` method on
+`ArchetypeResolver` keeps `resolve()` backward compatible. Open questions: none — the filter works
+like the existing `visibility` filter, with no side effects.
 
-### `specweaver/core/config`
+## Changes
 
-#### [x] [MODIFY] [archetype_resolver.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/config/archetype_resolver.py)
-- **Concept:** Expose a secondary cache and lookup method to fetch `plugins` arrays from `context.yaml`.
-- **Implementation:**
-  - Add `_plugin_cache: dict[Path, list[str]]`.
-  - Add `def resolve_plugins(self, target_path: Path) -> list[str]:` which traces up the tree exactly like `resolve()` but parses `data.get("plugins", [])` instead of `archetype`.
+1. **[x] `src/specweaver/core/config/archetype_resolver.py`** — a second cache and lookup for
+   `plugins` arrays in `context.yaml`:
+   - `_plugin_cache: dict[Path, list[str]]`
+   - `def resolve_plugins(self, target_path: Path) -> list[str]:` walks up the tree exactly like
+     `resolve()`, but parses `data.get("plugins", [])` instead of `archetype`.
+2. **[x] `src/specweaver/core/loom/atoms/code_structure/atom.py`** — inject `plugins`, so
+   `evaluator_schemas` aggregate from several files instead of one monolith:
+   - `__init__` accepts `plugins: list[str] | None = None`.
+   - `_get_active_schemas(self)` (or the equivalent schema-resolving step) maps over
+     `[self._active_archetype] + (self._plugins or [])` when merging Evaluators.
+   - Pass `decorator_filter` from the tool context into
+     `parser.list_symbols(code, visibility=visibility, decorator_filter=decorator_filter)`.
+3. **[x] `src/specweaver/core/loom/dispatcher.py`** — connect `ArchetypeResolver` to atom
+   construction. In `_build_tool_executor` (or `from_boundary`, depending on branch), fetch
+   `resolved_plugins = resolver.resolve_plugins(...)` and pass `plugins=resolved_plugins` to
+   `CodeStructureAtom`.
+4. **`src/specweaver/core/loom/tools/code_structure/definitions.py`** — in `LIST_SYMBOLS_SCHEMA`,
+   add `decorator_filter` as an optional string. Description:
+   `"Optionally filter symbols to only return those possessing a specific framework decorator/annotation (e.g., 'PreAuthorize', 'RestController')."`
+5. **`src/specweaver/core/loom/tools/code_structure/tool.py`** — no routing change (`**kwargs`
+   passes context to the atom), but extract `decorator_filter` explicitly from
+   `payload.get("decorator_filter")` into `context["decorator_filter"]`.
+6. **`src/specweaver/core/loom/commons/language/interfaces.py`** — add
+   `decorator_filter: str | None = None` to the `CodeStructureInterface.list_symbols()` protocol
+   signature.
+7. **`java/codestructure.py`, `kotlin/codestructure.py`, `python/codestructure.py`,
+   `typescript/codestructure.py`, `rust/codestructure.py`** — in each `list_symbols()`, before
+   yielding a symbol: if `decorator_filter` is truthy, inspect `self.extract_framework_markers()` on
+   the `node`, take its `decorator` array, and drop the symbol unless `decorator_filter` is a
+   substring of one of those decorators.
 
----
-### `specweaver/core/loom/atoms/code_structure`
+## Tests
 
-#### [x] [MODIFY] [atom.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/atoms/code_structure/atom.py)
-- **Concept:** Inject `plugins` natively so `evaluator_schemas` can be logically aggregated from multiple files without a single-monolith bottleneck.
-- **Implementation:**
-  - Modify `__init__` to accept `plugins: list[str] | None = None`.
-  - Update `_get_active_schemas(self)` (or equivalent schema resolving abstraction) to map over `[self._active_archetype] + (self._plugins or [])` when calculating merged Evaluators.
-  - Plumb `decorator_filter` from the tool context into `parser.list_symbols(code, visibility=visibility, decorator_filter=decorator_filter)`.
-
----
-### `specweaver/core/loom`
-
-#### [x] [MODIFY] [dispatcher.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/dispatcher.py)
-- **Concept:** Connect the `ArchetypeResolver` directly into `atom` initialization.
-- **Implementation:**
-  - Inside `_build_tool_executor` (or `from_boundary` depending on branch), fetch `resolved_plugins = resolver.resolve_plugins(...)`.
-  - Pass `plugins=resolved_plugins` into the `CodeStructureAtom` construction block.
-
----
-### `specweaver/core/loom/tools/code_structure`
-
-#### [MODIFY] [definitions.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/tools/code_structure/definitions.py)
-- **Concept:** Expose `decorator_filter` cleanly inside the JSON Schema Tool definitions sent to the LLM agent.
-- **Implementation:**
-  - In `LIST_SYMBOLS_SCHEMA`, add `decorator_filter` as an optional string. Description:
-    `"Optionally filter symbols to only return those possessing a specific framework decorator/annotation (e.g., 'PreAuthorize', 'RestController')."`
-
-#### [MODIFY] [tool.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/tools/code_structure/tool.py)
-- **Implementation:** No direct routing structural change needed as `**kwargs` passes context
-  through to the atom cleanly, though we will explicitly ensure `decorator_filter` is extracted
-  natively from `payload.get("decorator_filter")` and mapped to `context["decorator_filter"]`.
-
----
-### `specweaver/core/loom/commons/language`
-
-#### [MODIFY] [interfaces.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/interfaces.py)
-- **Concept:** Support `decorator_filter` natively.
-- **Implementation:** Add `decorator_filter: str | None = None` to the `CodeStructureInterface.list_symbols()` protocol signature.
-
-#### [MODIFY] `java/codestructure.py`, `kotlin/codestructure.py`, `python/codestructure.py`, `typescript/codestructure.py`, `rust/codestructure.py`
-- **Concept:** Apply the filter to the physical extraction.
-- **Implementation:**
-  - Inside each `list_symbols()` implementation: Before yielding the resulting symbol payload, if
-    `decorator_filter` is truthy, inspect `self.extract_framework_markers()` on the targeted `node`.
-    Look for the array of `decorator` components. If `decorator_filter` string is not found via
-    substring match in those decorators, completely discard the symbol from the returned array.
-
-## Open Questions
-
-None. The mathematical logic mirrors exactly how `visibility` targeting is currently natively filtered, yielding zero side-effects.
-
-## Verification Plan
-
-### Automated Tests
-- Explicitly trace unit testing in `test_archetype_resolver.py` assuring `plugins: ['spring-security']` natively bubbles up from physical project hierarchies.
-- Run `tests/` specifically the integration suite targeting polyglot `list_symbols` natively enforcing matching isolation on `@PreAuthorize` style mock blocks.
+| Where | Proves |
+|---|---|
+| `test_archetype_resolver.py` | `plugins: ['spring-security']` bubbles up from project hierarchies |
+| integration suite, polyglot `list_symbols` under `tests/` | filtering isolates `@PreAuthorize`-style mock blocks |

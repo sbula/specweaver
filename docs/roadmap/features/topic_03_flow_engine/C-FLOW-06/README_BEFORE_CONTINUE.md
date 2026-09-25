@@ -1,39 +1,37 @@
-# STOP! READ BEFORE CONTINUING SF-02
+# C-FLOW-06 SF-02 — Read before continuing
 
-## Current State of SF-02 (Impact-Aware Testing & DAL Enforcements)
+SF-02 was **HALTED during Phase 2 (Test Gap Analysis)** of the `/pre-commit` gate: FR-2 was missing
+from the plan, and the original AD-1 broke a layer rule.
 
-We attempted to push SF-02 through the `/pre-commit` gate, but it was **HALTED during Phase 2 (Test
-Gap Analysis)** due to severe missed requirements and an architectural violation in the original
-design.
+## Open
 
-### 1. FR-2 (Test Limiting) was COMPLETELY MISSED
-The previous implementation plan for SF-02 (`feature_3_32d_sf02_implementation_plan.md`) completely forgot to include FR-2. 
-- Only FR-3 (DAL Enforcements) was implemented.
-- `QARunnerTool` and test impact-caching have NOT been built yet.
-- You must resume development to implement FR-2.
+1. **FR-2 (Test Limiting) is not built.** The SF-02 plan (`feature_3_32d_sf02_implementation_plan.md`,
+   now [C-FLOW-06_sf02_implementation_plan.md](C-FLOW-06_sf02_implementation_plan.md)) covers only
+   FR-3 (DAL Enforcements). `QARunnerTool` and test impact-caching are not built.
+2. **Follow AD-1 as it stands now.** Query `TopologyGraph` inside the orchestrator
+   (`flow/handlers/_validation.py` -> `ValidateTestsHandler`), which may consume `graph`. Resolve the
+   stale files there and pass them as filesystem paths to `QARunnerAtom.run_tests(targets=...)`.
+3. **Missing tests.**
+   - Unit/Integration: `ValidateTestsHandler` resolves topology correctly.
+   - E2E: a pipeline run where a DAL threshold breach (`DAL_A` warnings) stops the pipeline hard.
+   - E2E: `QARunnerAtom` executes only the targeted file subset.
 
-### 2. CRITICAL: Architectural Switch required for AD-1
-The original design document explicitly stated:
-> *AD-1: Query TopologyGraph statically in QARunnerTool*
+## Rule — do not undo
 
-**DO NOT DO THIS.**
-- `QARunnerTool` lives in the `loom` layer (the isolated executor environment).
-- `TopologyGraph` lives in the `graph` layer.
-- If `loom` imports `graph`, it violates the strict dependency isolation where execution tools are ignorant of the codebase's logical bounds. 
-- **The Fix:** Query `TopologyGraph` natively inside the Orchestrator
-  (`flow/handlers/_validation.py` -> `ValidateTestsHandler`). The orchestrator legally consumes
-  `graph`. It can resolve the targeted stale files and pass them directly as filesystem paths to
-  `QARunnerAtom.run_tests(targets=...)`.
+**DO NOT** query `TopologyGraph` from `QARunnerTool` (the old AD-1: *"Query TopologyGraph statically
+in QARunnerTool"*). `QARunnerTool` lives in the `loom` layer (the isolated executor);
+`TopologyGraph` lives in the `graph` layer. Execution tools must stay ignorant of the codebase's
+logical bounds, so `loom` must not import `graph`.
 
-### 3. Missing Tests
-Because FR-2 was missed and pre-commit was aborted, we are missing critical test coverage:
-- **Unit/Integration:** Need tests for `ValidateTestsHandler` resolving topology correctly.
-- **E2E:** Need a pipeline execution test proving that DAL threshold breaches (`DAL_A` warnings) trigger a hard pipeline stop.
-- **E2E:** Need a test proving that `QARunnerAtom` correctly executes only targeted file subsets.
+## Steps to resume
 
-## Next Steps for the Resuming Agent
-1. Read the newly generated `implementation_plan.md` artifact from the previous session (or refer to the fixes above).
-2. Fix the architectural flaw in `feature_3_32d_design.md` (Update AD-1).
-3. Implement FR-2 following the architecture rules.
+1. Take the fixes above (the prior session's `implementation_plan.md` artifact, if you have it).
+2. AD-1 in the design (`feature_3_32d_design.md`, now [C-FLOW-06_design.md](C-FLOW-06_design.md))
+   is already updated.
+3. Implement FR-2 under the architecture rules.
 4. Write the missing Integration and E2E tests.
 5. Re-run the ENTIRE `/pre-commit` gate from Phase 1.
+
+Code check (2026-09-25): `ValidateTestsHandler._resolve_targets` (`core/flow/handlers/validation.py`)
+already maps `context.graph.stale_nodes` to test directories, but `GraphContext.stale_nodes` is
+written by nothing in production, so it is always `None` and the full target runs.

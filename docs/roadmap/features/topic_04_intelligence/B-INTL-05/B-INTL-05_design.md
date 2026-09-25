@@ -1,104 +1,71 @@
-# Design: Dynamic Tool Gating via Archetypes
+# B-INTL-05 — Dynamic Tool Gating via Archetypes
 
-- **Feature ID**: 3.30a
-- **Phase**: 3
-- **Status**: DRAFT
-- **Design Doc**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_design.md
+**Status**: DRAFT · **Feature ID**: 3.30a · **Phase**: 3 · SF-01 committed; SF-02 passed Pre-Commit,
+awaiting the user's commit.
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | Feature 3.30 (Macro Unrolling) — same flat `<archetype>.yaml` parser engine, here configuring tool JSON responses |
+| Touches | `src/specweaver/core/loom/dispatcher.py`, `src/specweaver/core/loom/tools/code_structure/tool.py` |
+| External deps | None — Python only, a pure extension of existing tools |
 
-Feature 3.30a adds Framework Plugin Composition and Targeted AST Searching to the CodeStructure
-Engine, alongside Dynamic Tool Gating. It solves three critical modularity risks: First, it allows
-`context.yaml` to define a list of `plugins` (e.g., `["spring-security", "spring-ai"]`) to merge
-multiple framework schemas concurrently instead of relying on a single monolithic archetype. Second,
-it expands the `list_symbols` tool intent with a `decorator_filter` argument, empowering Agents to
-explicitly search for security boundaries like `@PreAuthorize`. Third, it aggregates `intents.hide`
-blocks across all loaded plugins to mathematically restrict LLM tool capabilities at runtime.
+## What it does
 
-## Research Findings
+Three additions to the CodeStructure engine:
 
-### Codebase Patterns
-- **Reuse opportunities**: `loader.py` already natively uses `deep_merge_dict`. Passing an array of
-  schema names dynamically concatenates them perfectly without logic rewrites.
-  `CodeStructureTool.list_symbols` delegates down to the AST Parser, which inherently extracts
-  `framework_markers` dictionaries natively. Translating a string filter parameter directly into the
-  array comprehension exposes the search natively.
-- **Touched modules**: `src/specweaver/core/loom/dispatcher.py`, `src/specweaver/core/loom/tools/code_structure/tool.py`.
-- **Architecture rules**: `ToolDispatcher` dynamically wraps tools. Adding an intercept pattern
-  where the schema YAML exposes `intents.hide` lists and forces `CodeStructureTool` to drop them
-  from `definitions()` fits perfectly within the domain boundaries. `CodeStructureAtom` executes,
-  `CodeStructureTool` routes.
-- **Constraints**: We must ensure no circular imports occur between the AST Atom execution layers and the LLM Tool wrapper interfaces.
+1. **Plugin composition** — `context.yaml` lists `plugins` (e.g., `["spring-security", "spring-ai"]`);
+   their framework schemas merge, instead of one monolithic archetype.
+2. **Targeted AST search** — the `list_symbols` intent takes a `decorator_filter`, so an agent can
+   search for security boundaries such as `@PreAuthorize`.
+3. **Dynamic tool gating** — `intents.hide` blocks from all loaded plugins are aggregated, and those
+   tools are removed from what the LLM can call at runtime.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| None | N/A     | Python Native  | N/A    |
+## How it fits
 
-### Blueprint References
-Feature 3.30 (Macro Unrolling) - Using the identical flat `<archetype>.yaml` parser engine to configure tool JSON responses.
+- `loader.py` already uses `deep_merge_dict`: passing a list of schema names merges them with no
+  logic rewrite.
+- `CodeStructureTool.list_symbols` delegates to the AST parser, which already extracts
+  `framework_markers` dictionaries. The string filter goes straight into that array comprehension.
+- `ToolDispatcher` wraps tools. The schema YAML exposes `intents.hide`, and `CodeStructureTool`
+  drops those names from `definitions()`. `CodeStructureAtom` executes; `CodeStructureTool` routes.
+- Constraint: no circular imports between the AST Atom execution layers and the LLM Tool wrapper
+  interfaces.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Gating via schema evaluator YAMLs | One flat `frameworks/<plugin>.yaml` holds both Macro unrolling AND Agent intent capabilities, keeping Domain Knowledge boundaries without fragmenting config definitions. | No |
+| AD-2 | Modular Composition over Versioning | Replacing `spring-boot@3` hardcoding with `plugins: [spring-security]` treats schemas as supersets and avoids an O(N) factorial explosion of configuration files. | Yes — approved functionally. |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Plugin Schema Composition | System | Parses `plugins` array from `context.yaml` and injects them as an active schema list into `CodeStructureAtom`. | Extracts evaluating coverage across multiple siloed repositories (e.g., Boot + Security) natively without version explosion. |
+| FR-1 | Plugin Schema Composition | System | Parses `plugins` array from `context.yaml` and injects them as an active schema list into `CodeStructureAtom`. | Evaluates coverage across multiple siloed repositories (e.g., Boot + Security) without version explosion. |
 | FR-2 | Targeted Decorator Filtering | Agent | Invokes `list_symbols(decorator_filter="PreAuthorize")` intent target. | AST parses file, checks all `framework_markers["decorator"]` arrays, and returns exclusively the matches. |
-| FR-3 | Hide Unsupported Schema Tools | System | Aggregates `intents.hide` configuration blocks across all dynamically loaded Framework YAML Plugins. | System automatically deletes the matching definitions from the JSON schema generation prompt. |
-| FR-4 | Dispatcher Injection | System | Exposes the aggregated hidden intent list into the `CodeStructureTool` securely during `ToolDispatcher` build time. | Tool retains secure encapsulation without needing IO knowledge of schemas. |
+| FR-3 | Hide Unsupported Schema Tools | System | Aggregates `intents.hide` configuration blocks across all dynamically loaded Framework YAML Plugins. | System deletes the matching definitions from the JSON schema generation prompt. |
+| FR-4 | Dispatcher Injection | System | Exposes the aggregated hidden intent list into the `CodeStructureTool` during `ToolDispatcher` build time. | Tool keeps its encapsulation without needing IO knowledge of schemas. |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Performance | Filtering tool schemas and parsing versions must complete via standard O(1) dictionary lookups with `< 5ms` latency. |
-| NFR-2 | Reliability | Hiding a tool schema mathematically guarantees the LLM adapter never sends it, invoking absolute zero-trust restriction. |
+| NFR-2 | Reliability | A hidden tool schema is never sent by the LLM adapter — zero-trust restriction. |
 
-## External Dependencies
-
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| None | N/A | N/A | Y | Pure architectural extension of existing tools. |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Native Gating via schema evaluator YAMLs | Centralizing configurations (both Macro unrolling AND Agent intent capabilities) into a single flat `frameworks/<plugin>.yaml` file enforces total Domain Knowledge boundaries without fragmenting config definitions. | No |
-| AD-2 | Modular Composition over Versioning | Replacing `spring-boot@3` hardcoding with `plugins: [spring-security]` treats schemas as pure mathematical supersets to prevent O(N) factorial explosion of physical configuration files. | Yes — approved functionally. |
-
-## Developer Guides Required
-
-Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
+## Guides owed
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
 | Dynamic Intent Hiding | Documentation on configuring `intents: hide:` in `adding_framework_guide.md`. | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Plugin Composition & AST Search
-- **Scope**: Update `ArchetypeResolver` and `dispatcher.py` to parse an expandable `plugins` array.
-  Update `list_symbols` in Tool Definitions and AST parsers to support an optional string
-  `decorator_filter` that reads from the `framework_markers` payload.
-- **FRs**: [FR-1, FR-2]
-- **Inputs**: `context.yaml` definitions and LLM Tool Calls.
-- **Outputs**: Agent can successfully retrieve target code blocks exclusively possessing specific Framework properties.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf01_implementation_plan.md
-
-### SF-02: Dynamic Tool Gating Intercept
-- **Scope**: Aggregate `intents.hide` properties from `CodeStructureAtom`'s loaded schema cluster into the `CodeStructureTool` JSON defintions via `dispatcher.py`.
-- **FRs**: [FR-3, FR-4]
-- **Inputs**: Properly composited schema dict from SF-01.
-- **Outputs**: Properly restricted list of `ToolDefinition`s sent to LLM prompt.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf02_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | `ArchetypeResolver` and `dispatcher.py` parse a `plugins` array; `list_symbols` (tool definitions + AST parsers) takes an optional string `decorator_filter` read against `framework_markers` | FR-1, FR-2 | `context.yaml` definitions, LLM tool calls → the agent retrieves only code blocks with the given framework properties | none | [sf01](B-INTL-05_sf01_implementation_plan.md) |
+| SF-02 | `intents.hide` from `CodeStructureAtom`'s loaded schema cluster reaches the `CodeStructureTool` JSON definitions via `dispatcher.py` | FR-3, FR-4 | composited schema dict from SF-01 → restricted list of `ToolDefinition`s in the LLM prompt | SF-01 | [sf02](B-INTL-05_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -107,9 +74,4 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-01 | Plugin Composition & AST Search | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Dynamic Tool Gating Intercept | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
-## Session Handoff
-
-**Current status**: SF-02 Pre-Commit Gate passed natively. Handing over to user for commit phase.
-**Next step**: User commits the changes using their VCS.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
+**Next**: the user commits SF-02.
