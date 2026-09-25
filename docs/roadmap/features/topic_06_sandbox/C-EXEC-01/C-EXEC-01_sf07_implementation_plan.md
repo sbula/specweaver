@@ -8,7 +8,7 @@ reviewer can act on — the product-facing half of the capability, as against th
 Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. Mutant: the
 no-violations branch forced true — 4 fail across three tiers.
 
-**Since moved** (2026-07-10, `f74f5844`, TECH-01b SF-4): C05 no longer builds a `PythonQARunner`;
+**Since moved** (2026-07-10, `f74f5844`, TECH-01b SF-04): C05 no longer builds a `PythonQARunner`;
 it reads `self.context["qa_architecture_result"]`, filled by the flow layer's validation hydrator.
 `loom/commons/qa_runner/` is now `sandbox/qa_runner/core/` (interface) and
 `sandbox/language/core/<lang>/runner.py`; `run_architecture_check` gained a `dal_level` argument

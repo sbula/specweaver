@@ -190,6 +190,15 @@ detect both failure modes; the scoping heuristic prevents them.
 | SF-02 | Durable, PO-visible output: `<stem>_decomposition.yaml` + lineage; stub component specs (never-overwrite, `.specweaver/templates/component_spec.md` read as a file with a local skeleton fallback — no new consumes edge); DAL summary in the step output; hook-driven plan→generate seam pin (FR-9). The orchestrate/fan-out pin was descoped 2026-07-26 — see FR-9 | FR-5, FR-6, FR-7, FR-9 | SF-01 | [sf02](INT-US-21_sf02_implementation_plan.md) |
 | SF-03 | Proof on the real CLI (INT-US-24 harness: scripted adapter, fresh CliRunner per session, persisted-run-record assertions); Guides 1–2; registry closure: US-21 🟢, `C-FLOW-12` minted in topic_03, `INT-US-21-SF02` minted in US-21_integration.md alongside the untouched `INT-US-21-SUB` (both Pending Design; OQ-1 Option B) | FR-8, FR-10 | SF-01, SF-02 | [sf03](INT-US-21_sf03_implementation_plan.md) |
 
+FR ownership (read by the ledger guard):
+
+- SF-01
+- **FRs**: [FR-1, FR-2, FR-3, FR-4]
+- SF-02
+- **FRs**: [FR-5, FR-6, FR-7, FR-9]
+- SF-03
+- **FRs**: [FR-8, FR-10]
+
 Strictly linear — no parallel sessions.
 
 **Closure gate (2026-07-26):** `python scripts/check_fr_coverage.py INT-US-21` must exit 0 — every

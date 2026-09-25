@@ -467,7 +467,7 @@ TDD cycle; each maps to 1-3 closely related files (same package, same pattern).
 
 ## As built
 
-Committed (`7029da5d`, "complete universal logging rollout (SF-3)"). `tests/unit/test_logging_rollout.py`
+Committed (`7029da5d`, "complete universal logging rollout" — SF-03). `tests/unit/test_logging_rollout.py`
 holds per-batch classes `TestBatch1LoggingRollout` … `TestBatch4LoggingRollout`.
 
 **Since moved**: flow handlers are `src/specweaver/core/flow/handlers/*.py` (no leading underscore:
