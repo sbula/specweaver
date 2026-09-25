@@ -329,7 +329,7 @@
           "old": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\n        \"class_specifier\",\n        \"struct_specifier\",\n    )",
           "new": "    TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\"class_specifier\",)",
           "breaks": "a C++ `struct S : public Base` reports nothing, so half the language's inheritance is silently absent while `class` keeps working -- partial coverage that reads as full",
-          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
+          "symbol_sha": "sha256:1db331fe78bb0227f4c95c97176a0244067be74e7579693a2b6e410039113df7"
         },
         {
           "id": "cpp-base-clause-never-read",
@@ -339,7 +339,7 @@
           "old": "        clause = next((c for c in node.children if c.type == \"base_class_clause\"), None)",
           "new": "        clause = None",
           "breaks": "every C++ type reports an empty supertype list, which is the state SF-03 left and this boundary exists to close: the graph says no C++ type inherits from anything",
-          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
+          "symbol_sha": "sha256:1db331fe78bb0227f4c95c97176a0244067be74e7579693a2b6e410039113df7"
         },
         {
           "id": "cpp-bases-become-implementations",
@@ -349,7 +349,7 @@
           "old": "        return {\"extends\": self._type_names_in(clause), \"implements\": []}",
           "new": "        return {\"extends\": [], \"implements\": self._type_names_in(clause)}",
           "breaks": "C++ has no interfaces, so an IMPLEMENTS edge there asserts a relationship the language cannot express -- and a reader asking which C++ types extend a base gets nothing",
-          "symbol_sha": "sha256:2dc928ab5847af02d669cfb55a1c31336a6f829e15f8afe72d59d93dd7b4359e"
+          "symbol_sha": "sha256:1db331fe78bb0227f4c95c97176a0244067be74e7579693a2b6e410039113df7"
         },
         {
           "id": "the-base-guesses-instead-of-refusing",
@@ -668,7 +668,7 @@
           "old": "(member_expression property: (property_identifier) @name)",
           "new": "(member_expression object: (identifier) @name)",
           "breaks": "`obj.deep()` reports a call to `obj` instead of `deep`, so every method call invents a dependency on the receiver and loses the real one",
-          "symbol_sha": "sha256:b523beed1cc182b58250e8e7230fa816940f078377e010a4fe4ee58307942d28"
+          "symbol_sha": "sha256:b6c2a25cc572a99e865d7048b72acabcb459756ac903a7465a53be3850a00872"
         },
         {
           "id": "the-declarator-descent-is-removed",
@@ -697,7 +697,7 @@
           "old": "(call_expression (navigation_expression (_) (identifier) @name)) @reference.call",
           "new": "(call_expression (navigation_expression (identifier) @name)) @reference.call",
           "breaks": "the receiver of a method call is reported as a call too, because a receiver is an identifier -- `obj.deep()` invents a dependency on `obj`. This is the naive pattern, and the reason the constrained one exists",
-          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
+          "symbol_sha": "sha256:016ab430fc3ce642ce8a443d592ee15a34c55b850ee4e82bbec5c15d3e0446c2"
         },
         {
           "id": "kotlin-plain-calls-lost",
@@ -707,7 +707,7 @@
           "old": "        (call_expression (identifier) @name) @reference.call\n",
           "new": "        (call_expression (identifier) @name) @reference_call\n",
           "breaks": "only method calls are seen, so every direct call in Kotlin -- the majority of them -- vanishes from the graph while method calls keep working, which reads as partial coverage rather than a broken query",
-          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
+          "symbol_sha": "sha256:016ab430fc3ce642ce8a443d592ee15a34c55b850ee4e82bbec5c15d3e0446c2"
         },
         {
           "id": "kotlin-callers-lose-their-class",
@@ -717,7 +717,7 @@
           "old": "        \"class_declaration\",\n        \"function_declaration\",",
           "new": "        \"function_declaration\",",
           "breaks": "a method's calls are attributed to `go` rather than `K.go`, so every CALLS edge out of a Kotlin method points from a node hash that does not exist",
-          "symbol_sha": "sha256:9117c46782e7cc893794c6ba87eaee55c0c840943054c9377ed6bc8ca699a0a6"
+          "symbol_sha": "sha256:016ab430fc3ce642ce8a443d592ee15a34c55b850ee4e82bbec5c15d3e0446c2"
         },
         {
           "id": "one-language-stops-contributing",
@@ -727,7 +727,7 @@
           "old": "    TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_go.TAGS_QUERY",
           "new": "    TAGS_QUERY: typing.ClassVar[str | None] = None",
           "breaks": "one language silently stops contributing CALLS edges while every other keeps working, so the graph looks populated and is blind to a whole language -- the composition defect no single language's tests can see",
-          "symbol_sha": "sha256:99c5fbfdae8d73f12fe34c8660b4b3980c03547fd073e18ef296f62c3c17e97b"
+          "symbol_sha": "sha256:6e9750a4f473a17f69938e1e79e127d81a86afa76d4a6f3c0f3b51c0a25b0c46"
         }
       ]
     },
@@ -898,7 +898,7 @@
           "old": "TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = (\"type_spec\",)",
           "new": "TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ()",
           "breaks": "Go reports no types at all, which is the state this closed -- and the state the old contract test passed over, because a loop across an empty result runs its body zero times and reads as coverage",
-          "symbol_sha": "sha256:99c5fbfdae8d73f12fe34c8660b4b3980c03547fd073e18ef296f62c3c17e97b"
+          "symbol_sha": "sha256:6e9750a4f473a17f69938e1e79e127d81a86afa76d4a6f3c0f3b51c0a25b0c46"
         },
         {
           "id": "a-named-field-becomes-a-supertype",
@@ -958,7 +958,7 @@
           "old": "        (trait_item name: (type_identifier) @name)\n",
           "new": "        ; (trait_item name: (type_identifier) @name)  ; MUTANT\n",
           "breaks": "a trait stops being a symbol, so it has no node and no child at the seam -- and since Rust has no struct inheritance, EVERY hierarchy edge the language can emit targets a trait. A supertrait bound then produces no edge at all, not even a ghost, because the mapper has no child to walk",
-          "symbol_sha": "sha256:11c26fb99e97b30fc3dfdaa0ef0ae40b684ad1115d7ede189f87fa293888effc"
+          "symbol_sha": "sha256:60575adbecad87365467b153c2b2bb5f72eea0cc19073e8cf0c7d67060f3a9f4"
         }
       ]
     }

@@ -16,7 +16,7 @@
           "symbol": "ContainerSubprocessExecutor._prepare_container",
           "old": "f\"UV_PROJECT_ENVIRONMENT={_PREPARED_VENV}\",",
           "new": "\"UV_HTTP_TIMEOUT=60\",",
-          "breaks": "uv falls back to `.venv` in the workdir, which is `/workspace:ro` \u2014 the phase then fails for every project on every layout before the manifest is read",
+          "breaks": "uv falls back to `.venv` in the workdir, which is `/workspace:ro` — the phase then fails for every project on every layout before the manifest is read",
           "symbol_sha": "sha256:21164ed9de8b2a36112877a88eeb3ee763d489ed7e85064ff6d15f22313a14fc"
         }
       ]
@@ -54,7 +54,7 @@
           "symbol": "ContainerSubprocessExecutor._build_container_cmd",
           "old": "f\"PATH={_CONTAINER_PATH}\"",
           "new": "f\"PATH=/usr/bin:{_CONTAINER_PATH}\"",
-          "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter \u2014 the membership check that used to pass this is why the assertion is positional",
+          "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter — the membership check that used to pass this is why the assertion is positional",
           "symbol_sha": "sha256:e582ffc16628e6f68d7bffa3a9bb5ead02266171821552ea56cc021b0872620f"
         }
       ]
@@ -74,7 +74,7 @@
           "symbol": "ContainerSubprocessExecutor._ensure_prepared",
           "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
-          "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite \u2014 both look like nothing happening",
+          "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
           "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
         }
       ]
@@ -180,7 +180,7 @@
           "symbol": "absent_module",
           "old": "match = _NO_MODULE.search(result.stderr or \"\")",
           "new": "match = None",
-          "breaks": "the reason falls back to the interpreter's own line, naming `/cache/venv/bin/python` \u2014 a path inside our container that appears nowhere in the reader's project",
+          "breaks": "the reason falls back to the interpreter's own line, naming `/cache/venv/bin/python` — a path inside our container that appears nowhere in the reader's project",
           "symbol_sha": "sha256:7c09b37f337bc19969e4e49489b17e956a34a1dd0a0e3282f12d1ea0d96c6653"
         }
       ]
@@ -200,7 +200,7 @@
           "old": "route = \"locked\" if locked else \"resolved\"",
           "new": "route = \"locked\"",
           "breaks": "the preflight reports a frozen route for a project with no lockfile, so a reader is told the run reproduces pins that do not exist",
-          "symbol_sha": "sha256:5847873ce8f93220c4753d8e2446cf110e625454cbf4d5d1b6c1a4ec0db22eba"
+          "symbol_sha": "sha256:48311248be4b3d8baa5e6e1895d6fbd5d3968d67329f0d3b9fccba0694e66eb6"
         }
       ]
     },
@@ -237,7 +237,7 @@
           "symbol": "build_failed_without_results",
           "old": "    if total or result.exit_code == 0:",
           "new": "    if True:",
-          "breaks": "a build that never compiled reports `0 passed, 0 failed` \u2014 indistinguishable from a project with no tests",
+          "breaks": "a build that never compiled reports `0 passed, 0 failed` — indistinguishable from a project with no tests",
           "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
         },
         {
@@ -371,7 +371,7 @@
           "symbol": "compile_errors",
           "old": "        if key in seen:",
           "new": "        if False:",
-          "breaks": "Maven prints every diagnostic twice \u2014 once compiling, once in the failure summary \u2014 so the caller sees double the errors that exist",
+          "breaks": "Maven prints every diagnostic twice — once compiling, once in the failure summary — so the caller sees double the errors that exist",
           "symbol_sha": "sha256:950311bf13c353a758df3db1b28e0b3f074ebdf8ea92494adb2a0cebe60b3b8b"
         },
         {

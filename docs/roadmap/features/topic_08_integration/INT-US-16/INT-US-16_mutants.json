@@ -36,8 +36,8 @@
           "symbol": "create_llm_adapter",
           "old": "if telemetry_project:",
           "new": "if False:",
-          "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded \u2014 the exact silent-no-op shape this contract exists to catch",
-          "symbol_sha": "sha256:20796656eab415b64c6179cb0fab7ec974c006cc7fa2c8688bbd78d90117f5cc"
+          "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded — the exact silent-no-op shape this contract exists to catch",
+          "symbol_sha": "sha256:7ff2b16d39e403b87808a3b370c2d49b8772f33d9dc7b2811e19c0875e537c9c"
         }
       ]
     }
