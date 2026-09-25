@@ -1,38 +1,41 @@
-# Design: Autonomous DAG Execution (Decompose → Orchestrate)
+# C-FLOW-12 — Autonomous DAG Execution (Decompose → Orchestrate)
 
-- **Feature ID**: C-FLOW-12
-- **Topic**: 03 (Flow Engine)
-- **DAL**: C
-- **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: INT-US-21 `AD-4` (user mandate, 2026-07-24) — minted at epic closure, 2026-07-28
+**Status**: STUB — not yet run through the `specweaver-design` skill · **DAL**: C · **Topic**: 03
+(Flow Engine) · **Feature ID**: C-FLOW-12
 
-## Problem Statement
+| | |
+|---|---|
+| Origin | `INT-US-21` `AD-4` (user mandate, 2026-07-24) — minted at epic closure, 2026-07-28 |
+| Extends | `INT-US-21` (the decomposition journey, delivered) |
+| Integration contract | `INT-US-21-SF02`, minted in `US-21_integration.md` as Pending Design |
+| Blocked by | `C-EXEC-07` (per-run isolation posture) · `TECH-014` (shared-context race) · `TECH-020` if it lands |
+| Not touched | the decomposition journey (`INT-US-21`); DAL escalation policy (`C-EXEC-07`); the `TECH-014` race fix |
 
-`INT-US-21` delivers the decomposition *journey*: a feature spec becomes a reviewed
-`DecompositionPlan`, a durable `<stem>_decomposition.yaml`, and one stub component spec per node.
-It deliberately stops there. **Executing** that DAG — building each component — was never built by
-anybody, and `AD-4` split it out rather than let the base contract claim capability it did not have.
+## What it does
 
-What is missing:
+Executes the DAG that `INT-US-21` produces — builds each component.
 
-- **Per-component spec synthesis.** The base writes *stubs*. Something must turn a stub into a real
-  component spec before its sub-run can do useful work.
+`INT-US-21` turns a feature spec into a reviewed `DecompositionPlan`, a durable
+`<stem>_decomposition.yaml`, and one stub component spec per node, then stops. `AD-4` split execution
+out rather than let the base contract claim a capability nobody had built.
+
+Missing pieces:
+
+- **Per-component spec synthesis.** The base writes *stubs*. A stub must become a real component
+  spec before its sub-run can do useful work.
 - **Race-hardened fan-out.** `OrchestrateComponentsHandler` hands the **same mutable `RunContext`**
   to every concurrent sub-runner. Latent today because nothing exercises it; `TECH-014` owns the
   fix and **must land first**.
-- **`proposed_dal`-driven isolation.** Each component carries a DAL rating that should drive its
-  sub-run's execution posture. The base guarantees the *data* contract only; escalation is
-  `C-EXEC-07` / `INT-US-09-SF06`.
+- **`proposed_dal`-driven isolation.** Each component's DAL rating should drive its sub-run's
+  execution posture. The base guarantees the *data* contract only; escalation is `C-EXEC-07` /
+  `INT-US-09-SF06`.
 
 ## Functional Requirements
 
-Added 2026-08-13 (`TECH-046`). `C-INTL-01`'s `FR-3` — *"Component Fan-out: automatically spawns a
-sub-pipeline iteration (generate Component Spec) for each approved component; N individual L3
-pipelines are launched"* — was descoped there because it was never built and the work belongs here.
-
-**That descope is only honest if the requirement is re-stated at its new owner.** It was not: this
-design described the work in prose and declared no requirements, so deleting the row would have
-turned a testable claim into a mention. `FR-1` below is that requirement, carried across.
+Added 2026-08-13 (`TECH-046`). `FR-1` carries over `C-INTL-01`'s `FR-3` — *"Component Fan-out:
+automatically spawns a sub-pipeline iteration (generate Component Spec) for each approved component;
+N individual L3 pipelines are launched"* — descoped there because it was never built and belongs
+here. A descope is only honest if the requirement is re-stated at its new owner.
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
@@ -43,8 +46,7 @@ turned a testable claim into a mention. `FR-1` below is that requirement, carrie
 
 ## Seams the base already froze
 
-These are defined and tested as they stand, so this capability builds on them rather than
-renegotiating them:
+Build on these; do not renegotiate them.
 
 | Seam | Where |
 |---|---|
@@ -55,9 +57,9 @@ renegotiating them:
 | Approve-on-resume, engine-wide | `engine/approval.py` |
 
 > **"Frozen" means defined and tested as it stands — NOT that the base ships a forward-compatibility
-> pin for this consumer.** INT-US-21's `FR-9(a)` attempted exactly that and was descoped on
-> 2026-07-26: a regression pin written against an undesigned consumer freezes a guess. **This
-> capability writes its own seam pin as its first commit**, against a contract it can actually see.
+> pin for this consumer.** INT-US-21's `FR-9(a)` tried that and was descoped on 2026-07-26: a
+> regression pin written against an undesigned consumer freezes a guess. **This capability writes its
+> own seam pin as its first commit**, against a contract it can see.
 
 ## Non-Goals (proposed, pending design)
 
@@ -67,11 +69,8 @@ renegotiating them:
 
 ## Sequencing
 
-Behind **`C-EXEC-07`** (per-run isolation posture) and **`TECH-014`** (the shared-context race).
-`TECH-020` should also land first if it is going to: this capability touches `runner.py`'s
-execution loop, which is at its 600-line threshold with a 360-line method.
+Behind **`C-EXEC-07`** and **`TECH-014`**. `TECH-020` should also land first if it is going to: this
+capability touches `runner.py`'s execution loop, which is at its 600-line threshold with a 360-line
+method.
 
-## Next Step
-
-Run the `specweaver-design` skill. The integration contract for this capability is
-`INT-US-21-SF02`, already minted in `US-21_integration.md` as Pending Design.
+**Next**: run the `specweaver-design` skill.

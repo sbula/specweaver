@@ -1,12 +1,17 @@
-# Implementation Plan: B-SENS-02 [SF-01: In-Memory Graph Engine & Enterprise Ontology]
-- **Feature ID**: B-SENS-02
-- **Sub-Feature**: SF-01 — In-Memory Graph Engine & Enterprise Ontology
-- **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_design.md
-- **Status**: APPROVED
+# B-SENS-02 SF-01 — In-Memory Graph Engine & Enterprise Ontology
 
-## Proposed Architectural Changes
+**Status**: APPROVED · **FRs owned**: FR-1, FR-2, FR-6, FR-7, EXP-1 (per the design) · **Depends on**:
+none · Design: [B-SENS-02_design.md](B-SENS-02_design.md) §Sub-features → SF-01
 
-### Revised Directory Structure (True DDD)
+## Goal
+
+Build the pure-logic graph domain: the ontology, the `GraphNode` / `GraphEdge` models, and the
+`InMemoryGraphEngine` NetworkX wrapper, inside one bounded context with enforced layer rules.
+
+## Changes
+
+### Directory structure (DDD)
+
 ```text
 src/specweaver/graph/
 ├── context.yaml               (Defines the Bounded Context for the whole domain)
@@ -21,33 +26,30 @@ src/specweaver/graph/
     └── context.yaml           (Allows importing engine/ and store/)
 ```
 
-### Revised Ontology (`src/specweaver/graph/core/engine/ontology.py`)
+Built under `src/specweaver/graph/core/` (`core/engine`, `core/store`, `core/builder`) — see the file
+table.
 
-#### `NodeKind` Enum
-*   **Macro Architecture:** `SYSTEM`, `MICROSERVICE`
-*   **Code Structure:** `FILE`, `MODULE`, `NAMESPACE`, `DATA_STRUCTURE`
-*   **Execution:** `PROCEDURE`, `STATE`
-*   **Boundaries & Events:** `API_CONTRACT`, `MESSAGE_QUEUE`
-*   **External:** `GHOST`
+### Ontology (`src/specweaver/graph/core/engine/ontology.py`)
 
-#### `EdgeKind` Enum
-*   **Structural:** `CONTAINS`
-*   **Code:** `IMPORTS`, `CALLS`, `IMPLEMENTS`, `EXTENDS`
-*   **Dataflow:** `CONSUMES` / `FULFILLS`, `PUBLISHES` / `SUBSCRIBES`
+| Enum | Group | Members |
+|---|---|---|
+| `NodeKind` | Macro Architecture | `SYSTEM`, `MICROSERVICE` |
+| | Code Structure | `FILE`, `MODULE`, `NAMESPACE`, `DATA_STRUCTURE` |
+| | Execution | `PROCEDURE`, `STATE` |
+| | Boundaries & Events | `API_CONTRACT`, `MESSAGE_QUEUE` |
+| | External | `GHOST` |
+| `EdgeKind` | Structural | `CONTAINS` |
+| | Code | `IMPORTS`, `CALLS`, `IMPLEMENTS`, `EXTENDS` |
+| | Dataflow | `CONSUMES` / `FULFILLS`, `PUBLISHES` / `SUBSCRIBES` |
 
----
+### Files (all done)
 
-## File Manifest for SF-01 Execution
-
-### 1. `src/specweaver/graph/` (The Bounded Context)
-*   `[x]` `src/specweaver/graph/context.yaml`
-
-### 2. `src/specweaver/graph/core/engine/` (Pure Logic Layer)
-*   `[x]` `src/specweaver/graph/core/engine/context.yaml` 
-*   `[x]` `src/specweaver/graph/core/engine/ontology.py` 
-*   `[x]` `src/specweaver/graph/core/engine/models.py` (Defines `GraphNode` with `embedding_id` and `GraphEdge`).
-*   `[x]` `src/specweaver/graph/core/engine/core.py` (The `InMemoryGraphEngine` NetworkX wrapper).
-
-### 3. `src/specweaver/graph/core/builder/` (Orchestrator Layer)
-*   `[x]` `src/specweaver/graph/core/builder/context.yaml` 
-*   `[x]` `src/specweaver/graph/core/builder/orchestrator.py` (The `GraphBuilder` class).
+| Layer | File | Holds |
+|---|---|---|
+| Bounded context | `src/specweaver/graph/context.yaml` | |
+| Pure logic | `src/specweaver/graph/core/engine/context.yaml` | |
+| | `src/specweaver/graph/core/engine/ontology.py` | the enums above |
+| | `src/specweaver/graph/core/engine/models.py` | `GraphNode` (with `embedding_id`) and `GraphEdge` |
+| | `src/specweaver/graph/core/engine/core.py` | `InMemoryGraphEngine` (NetworkX wrapper) |
+| Orchestrator | `src/specweaver/graph/core/builder/context.yaml` | |
+| | `src/specweaver/graph/core/builder/orchestrator.py` | `GraphBuilder` |

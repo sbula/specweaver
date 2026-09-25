@@ -1,128 +1,70 @@
-# [Workflow: /implementation-plan] Phase 4: HITL Gate - SF-03 (Revised)
+# B-SENS-02 SF-03 — Graph Builder Orchestration & Harmonization
 
-- **Feature ID**: B-SENS-02
-- **Sub-Feature**: SF-03 — Graph Builder Orchestration & Harmonization
-- **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_design.md
-- **Status**: DRAFT (Awaiting HITL Approval)
+**Status**: DRAFT (Awaiting HITL Approval) · **FRs owned**: FR-1, FR-6, FR-7 · **Depends on**:
+SF-01, SF-02 · Design: [B-SENS-02_design.md](B-SENS-02_design.md) §Sub-features → SF-03
 
-**FRs owned: FR-1, FR-6, FR-7.** AST-to-node mapping, bounded subgraph extraction, and GraphML
-export. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-10-MIG`. Proof and mutants:
+FR-1 is AST-to-node mapping, FR-6 bounded subgraph extraction, FR-7 GraphML export. Ownership recorded
+2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-10-MIG`. Proof and mutants:
 `tests/unit/graph/core/builder/test_mapper.py`, `.../engine/test_graph_engine_core.py`,
 `.../builder/test_orchestrator.py`.
 
-**Not covered by this plan, and now tracked elsewhere:** the composition of mapper, adapter and
-repository is proven only with mocks here. `INT-US-10` FR-1 drives the real thing, and `TECH-061`
-owns the Python-only file collection it exposed.
+**Not covered here:** this plan proves the composition of mapper, adapter and repository with mocks
+only. `INT-US-10` FR-1 drives the real thing; `TECH-061` owns the Python-only file collection it
+exposed.
 
-Based on our discussion regarding KISS, Single Point of Responsibility, strict boundary adherence, and **ID Prefixing**, please formally review and approve the following architectural proposals.
+## Goal
 
----
+Wire the AST parser, engine and store into one `sw graph build` pipeline with ID prefixing, and move
+the legacy Topology and Lineage graphs onto the same triad.
 
-### #1. Architecture: AST Parser Injection & Boundary Adherence (CRITICAL)
+## Decisions (audit)
 
-**Background:** 
-The orchestrator (`GraphBuilder`) in SF-01 expects a raw AST Dictionary to feed its
-`OntologyMapper`. If `graph.builder` directly imports the parser from the `workspace` module to get
-this dictionary, it creates a boundary violation.
+Each proposed option (2) at the HITL gate, and the build followed it. Only #4 carries a recorded
+"Approved" comment.
 
-**Options:**
-1. Update `specweaver.graph.core.builder.context.yaml` to explicitly allow importing `workspace.parsers` and hardcode the parser inside the builder.
-2. Utilize **Dependency Injection**. The top-level CLI command (`sw graph build`) imports the parser and passes it into `GraphBuilder(parser=...)`. `graph.builder` never imports the workspace layer.
+1. **AST parser injection** (CRITICAL). `GraphBuilder` (SF-01) needs a raw AST dict for its
+   `OntologyMapper`; importing the parser from `workspace` into `graph.builder` is a boundary
+   violation.
+   - Rejected (1): allow `workspace.parsers` in `specweaver.graph.core.builder.context.yaml` and
+     hardcode the parser — tightly couples the Graph Domain to the physical workspace.
+   - Chosen (2), Dependency Injection: the top-level CLI command (`sw graph build`) imports the
+     parser, instantiates the AST-to-Dictionary adapter and passes it into `GraphBuilder(parser=...)`.
+     `graph.builder` never imports the workspace layer; no `context.yaml` allowed_import changes.
+2. **Feature-specific graph sub-modules** (CRITICAL). Where do Topology and Lineage graph logic go?
+   - Rejected (1): all tree-traversal and cycle-detection math into `graph.engine.core` — bloats the
+     core engine with feature concepts like "Lineage" and "Assurance".
+   - Chosen (2): sub-modules `specweaver.graph.topology` and `specweaver.graph.lineage`. Only the raw
+     graph math and SQLite data operations move there. Operational SLA logic stays in `assurance`,
+     Typer command routing in `cli`; both delegate the graph work.
+3. **ID prefixing** (HIGH). The design mandates prefixed IDs (e.g., `monolith:billing:ast:123`);
+   SF-01 generated raw SHA-256 hashes.
+   - Rejected (1): the SQLite DB prefixes on insert — the in-memory graph would carry different IDs
+     than the database, a synchronization bug source.
+   - Chosen (2): `SemanticHasher` accepts a prefix schema (`system`, `service`, `domain`) at
+     instantiation; `GraphBuilder` feeds the prefixed hashes (e.g., `monolith:billing:ast:<hash>`)
+     into the `InMemoryGraphEngine`, so IDs match across memory, GraphML exports, and SQLite. The CLI
+     reads the project's context and injects the prefixes.
+4. **Fix the design first** (HIGH) — Approved. Before any code, `B-SENS-02_design.md` is corrected:
+   the AST parser location (it referenced `loom/commons/language/ast_parser.py`, which does not
+   exist, and vaguely said "Refactors cli/lineage.py"), the DI boundary, the `topology` and `lineage`
+   sub-modules, and ID Prefixing. The design doc is the source of truth for future agents. Rejected
+   (1): implement and ignore it.
 
-**Analysis:**
-- **Option 1**: Pros: None. Cons: Massive boundary violation. Tightly couples the Graph Domain to the physical workspace.
-- **Option 2**: Pros: Perfect decoupling. The Graph Domain remains pure and testable. The CLI (Application Root) handles the dirty work of wiring dependencies together.
+## As built
 
-**Proposal:** **Option 2.** We will strictly use Dependency Injection. The top-level CLI will
-instantiate the AST-to-Dictionary adapter and inject it into the Graph Orchestrator. No
-`context.yaml` allowed_import changes are required.
-> Comment: 
+- **CB-1 — AST Adapter & ID Prefixing** (2026-05-01). ID Prefixing in `SemanticHasher` and
+  `OntologyMapper`. The AST parser adapter uses DI and lives in `specweaver.workspace.ast.adapters`
+  (pure logic), avoiding CLI context boundary violations. `TECH-003` created to restructure all AST
+  parsers.
+- **CB-2 — Topology Harmonization.** Graph math extracted from `assurance.graph.topology` into the
+  generic `graph.topology.engine`.
+- **CB-3 — Lineage Harmonization.** Legacy `context.db.log_artifact_event` logic migrated to
+  `graph_store.lineage_repository.LineageRepository`. E2E tests re-wired to check the local
+  `.specweaver/specweaver.db` (AD-1). E2E pipeline and CI gates pass.
+- **CB-4 — CLI Wiring.** `sw graph build` Typer command in `specweaver.interfaces.cli.graph`. Wires
+  `InMemoryGraphEngine`, `SqliteGraphRepository`, the parser adapter and the `GraphBuilder`
+  orchestrator with DI, preventing Context Layer bleed.
 
----
-
-### #2. Architecture: Feature-Specific Graph Sub-Modules (CRITICAL)
-
-**Background:**
-We need to migrate the Topology Graph logic and the Lineage Graph logic into the Graph Domain.
-However, dumping feature-specific business logic directly into the generic `graph.engine` violates
-Single Point of Responsibility.
-
-**Options:**
-1. Dump all tree-traversal and cycle-detection math directly into `graph.engine.core`.
-2. Create dedicated, highly-visible feature sub-modules: `specweaver.graph.topology` and
-   `specweaver.graph.lineage`. Move the generic graph algorithms/schemas into these sub-modules.
-   Leave the operational SLA logic in `assurance` and the Typer command routing in `cli`.
-
-**Analysis:**
-- **Option 1**: Pros: Less folders. Cons: Bloats the core engine with feature-specific concepts like "Lineage" and "Assurance".
-- **Option 2**: Pros: Perfect encapsulation. Graph logic stays in the graph folder, neatly
-  compartmentalized by feature. `assurance` and `cli` modules remain pure and delegate the heavy
-  graph lifting to these dedicated sub-modules.
-
-**Proposal:** **Option 2.** We will create `specweaver.graph.topology` and
-`specweaver.graph.lineage` sub-modules. Only the raw graph math and SQLite data operations move
-here. Feature-specific UX and operational validation remain in their original modules.
-> Comment: 
-
----
-
-### #3. Architecture: Enforcing ID Prefixing Rules (HIGH)
-
-**Background:**
-The Design Document mandates that all IDs must be prefixed (e.g., `monolith:billing:ast:123`) to
-ensure global uniqueness when integrating with other microservices. Currently, SF-01 generates raw
-SHA-256 hashes without prefixes.
-
-**Options:**
-1. Let the SQLite DB handle prefixing on insert.
-2. Update `SemanticHasher` to accept a prefix schema (`system`, `service`, `domain`) upon
-   instantiation. The Graph Orchestrator will feed the prefixed hashes (e.g.,
-   `monolith:billing:ast:<hash>`) directly into the `InMemoryGraphEngine` so they are consistent
-   across memory, GraphML exports, and SQLite.
-
-**Analysis:**
-- **Option 1**: Pros: Less code in the engine. Cons: The in-memory NetworkX graph would have different IDs than the SQLite database, causing massive synchronization bugs.
-- **Option 2**: Pros: Unified IDs across memory, disk, and exports. Perfect alignment with the design spec.
-
-**Proposal:** **Option 2.** We will update `SemanticHasher` and `GraphBuilder` to enforce the ID
-prefix rule while feeding in the data. The CLI command will read the project's context and inject
-the correct prefixes.
-> Comment: 
-
----
-
-### #4. Design Document: Correcting Hallucinations & Incoherencies (HIGH)
-
-**Background:**
-The existing Design Document for B-SENS-02 contains incorrect paths and vague directives (e.g.,
-referencing `loom/commons/language/ast_parser.py` which does not exist, and vaguely stating
-"Refactors cli/lineage.py").
-
-**Options:**
-1. Proceed with implementation and ignore the incorrect design doc.
-2. Update `B-SENS-02_design.md` as the very first execution step to correct the AST parser location,
-   explicitly document the Dependency Injection boundary, define the new `topology` and `lineage`
-   sub-modules, and reaffirm the ID Prefixing implementation.
-
-**Analysis:**
-- **Option 1**: Pros: Saves 5 minutes. Cons: The Design Document (the source of truth) remains inaccurate and misleading for future agents.
-- **Option 2**: Pros: Enforces "Documentation as Code" and ensures future agents understand the exact architecture.
-
-**Proposal:** **Option 2.** Update the Design Document to reflect reality before writing any code.
-> Comment: Approved.
-
-## Execution Notes
-*   **Commit Boundary 1 (AST Adapter & ID Prefixing)**: Completed on 2026-05-01. ID Prefixing was
-    implemented in `SemanticHasher` and `OntologyMapper`. The AST Parser adapter was successfully
-    implemented using Dependency Injection and safely housed in `specweaver.workspace.ast.adapters`
-    (pure logic) to avoid CLI context boundary violations. Tech Debt issue `TECH-003` was created to
-    formally restructure all AST parsers in the future.
-*   **Commit Boundary 2 (Topology Harmonization)**: Completed. Extracted graph math from `assurance.graph.topology` into the generic `graph.topology.engine`.
-*   **Commit Boundary 3 (Lineage Harmonization)**: Completed. Migrated legacy
-    `context.db.log_artifact_event` logic to `graph_store.lineage_repository.LineageRepository`.
-    Re-wired all E2E tests to check the local `.specweaver/specweaver.db` per AD-1 boundaries. E2E
-    pipeline and CI gates are passing securely.
-*   **Commit Boundary 4 (CLI Wiring)**: Completed. Implemented the `sw graph build` Typer command
-    inside `specweaver.interfaces.cli.graph`. Instantiated and wired together `InMemoryGraphEngine`,
-    `SqliteGraphRepository`, the parser adapter, and the `GraphBuilder` orchestrator using strict
-    Dependency Injection to prevent Context Layer bleed.
+**Since moved** (noted 2026-09-25): `LineageRepository` →
+`src/specweaver/graph/lineage/store/lineage_repository.py`; the `sw graph build` command →
+`src/specweaver/graph/interfaces/cli.py`.

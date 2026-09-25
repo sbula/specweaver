@@ -1,21 +1,18 @@
-# Implementation Plan: Context-Aware Flow Orchestration Integration [SF-08: Configurable Prompt Render Profiles Integration]
-- **Feature ID**: INT-US-04
-- **Sub-Feature**: SF-08 — Configurable Prompt Render Profiles Integration
-- **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-08
-- **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf08_implementation_plan.md
-- **Status**: DELIVERED 2026-05-16 in `e2ac7e6e` (was `DRAFT (Hardened — RT/BT Rounds 1–5, 39 findings resolved)`; corrected 2026-08-14 — the plan shipped and its `Status:` was never moved)
-- **Commit Boundary**: Single atomic commit (RT-10)
-- **Dependency Note**: SF-01 dependency is inherited from the design doc's blanket structure but is
-  **functionally vacuous** — SF-08 requires zero DB interactions and can be implemented
-  independently (RT-08).
+# INT-US-04 SF-08 — Configurable Prompt Render Profiles Integration
 
-## Goal Description
+**Status**: DELIVERED 2026-05-16 in `e2ac7e6e` (was `DRAFT (Hardened — RT/BT Rounds 1–5, 39 findings
+resolved)`; corrected 2026-08-14 — the plan shipped and its `Status:` was never moved) · **FRs
+owned**: FR-1, FR-2, FR-3 (SF-08's own) · **Depends on**: SF-01 nominally — **functionally vacuous**,
+SF-08 needs zero DB interactions (RT-08) · **Commit boundary**: single atomic commit (RT-10) · Design:
+[INT-US-04_design.md](INT-US-04_design.md) §Sub-features → SF-08
 
-Integrating the C-INTL-05 `RenderProfile` capabilities into the pipeline orchestration layer via Step Parameter Injection and a `ProfileRegistry`.
-This allows pipeline authors to dynamically override the prompt slots generated for specific handlers (e.g., using `MINIMAL` instead of `FULL` to save tokens) directly from the `pipeline.yaml`.
+## Goal
 
-### Usage Example (RT-18)
+Integrate C-INTL-05 `RenderProfile` into the pipeline orchestration layer via Step Parameter
+Injection and a `ProfileRegistry`. Pipeline authors override the prompt slots for specific handlers
+(e.g., `MINIMAL` instead of `FULL` to save tokens) directly from `pipeline.yaml`.
+
+Usage (RT-18):
 
 ```yaml
 steps:
@@ -27,45 +24,21 @@ steps:
       render_profile: "MINIMAL"   # Override default profile for this step
 ```
 
-## Functional Requirements
-*   **FR-1**: Expose `render_profile` dynamically in `PipelineStep.params`.
-*   **FR-2**: Provide a `ProfileRegistry` mapping string identifiers (e.g., `"MINIMAL"`) to `RenderProfile` objects.
-*   **FR-3**: Update all handlers that call `_build_base_prompt` to resolve dynamic profiles before fallback to their handler-specific default.
+| # | Requirement |
+|---|---|
+| FR-1 | Expose `render_profile` dynamically in `PipelineStep.params`. |
+| FR-2 | Provide a `ProfileRegistry` mapping string identifiers (e.g., `"MINIMAL"`) to `RenderProfile` objects. |
+| FR-3 | Update all handlers that call `_build_base_prompt` to resolve dynamic profiles before fallback to their handler-specific default. |
+| NFR-1 (Performance) | `resolve_profile` is a pure O(1) dictionary lookup. No DB, no I/O. (RT-07) |
+| NFR-2 (Backward Compatibility) | All existing pipeline YAML files work without modification. No `render_profile` param = the handler's existing default. |
+| NFR-3 (Test Stability) | All existing tests in `test_profiles.py` and `test_build_base_prompt_profiles.py` pass without modification. |
+| NFR-4 (API Stability) | `_build_base_prompt(profile=RenderProfile)` stays backward compatible; direct `RenderProfile` passing is unaffected (RT-24). |
+| NFR-5 (Performance — Inherited) | Profiles without `AGENT_MEMORY` (MINIMAL, ARBITER) also skip the memory hydration DB query in `_build_base_prompt` (RT-36). |
 
-## Non-Functional Requirements (RT-07)
-*   **NFR-1 (Performance)**: `resolve_profile` must be a pure O(1) dictionary lookup. No DB, no I/O.
-*   **NFR-2 (Backward Compatibility)**: All existing pipeline YAML files must continue to work without modification. Zero `render_profile` param = handler's existing default behavior.
-*   **NFR-3 (Test Stability)**: All existing tests in `test_profiles.py` and `test_build_base_prompt_profiles.py` must pass without modification.
-*   **NFR-4 (API Stability)**: The `_build_base_prompt(profile=RenderProfile)` signature remains backward compatible. Direct `RenderProfile` object passing is unaffected (RT-24).
-*   **NFR-5 (Performance — Inherited)**: Profiles that exclude `AGENT_MEMORY` (MINIMAL, ARBITER)
-    also skip the memory hydration DB query in `_build_base_prompt`, providing a latency benefit
-    beyond token savings (RT-36).
+## Where it plugs in
 
-## Architectural Decisions
-*   **AD-1 (Phase 4 Resolution)**: `ProfileRegistry` Placement. The registry will be built inside
-    `core.flow.handlers._profiles.py` (where `FULL` and `MINIMAL` are already defined) to strictly
-    preserve the Mechanism vs Policy DDD boundary. `infrastructure.llm` will continue to provide the
-    domain-agnostic `RenderProfile` mechanism.
-*   **AD-2 (Phase 4 Resolution)**: `PipelineStep` YAML Schema. We will rely on dynamic
-    `step.params.get("render_profile")` rather than extending the core `PipelineStep` Pydantic model
-    with LLM-specific fields, preventing domain leakage into the generic pipeline runner.
-*   **AD-3 (Phase 4 Resolution)**: Error Handling. The `ProfileRegistry` will fail-fast with a `ValueError` if a non-existent profile string is requested via YAML, preventing silent misconfigurations.
-*   **AD-4 (RT-01 Resolution — Injection Point)**: Profile resolution happens in each **concrete
-    handler's `execute()` method**, NOT inside `_build_base_prompt()`. Each handler calls
-    `resolve_profile(step.params.get("render_profile"), default=<HANDLER_DEFAULT>)` before passing
-    the result to `_build_base_prompt(profile=resolved)`. The `_build_base_prompt` function
-    signature is unchanged.
-*   **AD-5 (RT-11 Resolution — `_profiles.py` Cohesion)**: `_profiles.py` remains a pure-policy
-    declarative module with NO engine imports. `resolve_profile()` accepts a `str | None` name, not
-    a `PipelineStep` — the `step.params.get()` extraction stays in each handler.
-*   **AD-6 (RT-34 Resolution — Error Containment)**: Each handler wraps the `resolve_profile()` call
-    in a `try/except ValueError` and returns `_error_result(str(e), started)` instead of letting the
-    exception propagate to the runner. This prevents retry loops on gated steps with invalid
-    profiles.
-
-## Handler-Specific Default Table (RT-02)
-
-Each handler retains its existing static default profile. The `resolve_profile` `default` argument MUST match the handler's current hardcoded profile:
+Each handler keeps its static default; the `resolve_profile` `default` argument MUST match the
+handler's current hardcoded profile (RT-02):
 
 | Handler | File | Current Profile | `default=` arg |
 |---------|------|----------------|---------------|
@@ -78,118 +51,63 @@ Each handler retains its existing static default profile. The `resolve_profile` 
 | `DecomposeFeatureHandler` | `decompose.py` | `MINIMAL` | `MINIMAL` |
 | `ArbitrateVerdictHandler` | `arbiter.py` | `ARBITER` | `ARBITER` |
 
-## Scope Boundary (RT-20)
+Scope boundary (RT-20): `render_profile` applies ONLY to these 8 handlers — those that call
+`_build_base_prompt`. These **silently ignore** it: `ValidateSpecHandler`, `ValidateCodeHandler`,
+`ValidateTestsHandler`, `LintFixHandler`, `EnrichStandardsHandler`, `GenerateScenarioHandler`,
+`ConvertScenarioHandler`, `ArbitrateDualPipelineHandler`, `DriftCheckHandler`.
 
-`render_profile` ONLY applies to the 8 handlers listed above — those that call `_build_base_prompt`.
-The following handlers do NOT use `_build_base_prompt` and will **silently ignore** any
-`render_profile` param:
+## Changes
 
-`ValidateSpecHandler`, `ValidateCodeHandler`, `ValidateTestsHandler`, `LintFixHandler`,
-`EnrichStandardsHandler`, `GenerateScenarioHandler`, `ConvertScenarioHandler`,
-`ArbitrateDualPipelineHandler`, `DriftCheckHandler`
+1. **`core/flow/handlers/_profiles.py`** `[MODIFY]` — stays a pure-policy declarative module with no
+   engine imports (AD-5).
+   - `from types import MappingProxyType` (immutable registry — matches `frozen=True` on
+     `RenderProfile`, RT-03).
+   - Export `PROFILE_REGISTRY: MappingProxyType[str, RenderProfile]` mapping `"FULL"`, `"MINIMAL"`,
+     `"INTERACTIVE"`, `"ARBITER"` to their `RenderProfile` objects.
+   - `resolve_profile(name: str | None, default: RenderProfile) -> RenderProfile`:
+     1. `name` is `None` or empty/whitespace-only → return `default` (RT-14).
+     2. `name` is not a `str` → raise `ValueError` with type info (RT-22 — YAML type coercion:
+        `true` → bool, `42` → int).
+     3. Normalize: `normalized = name.strip().upper()` (RT-04 — case-insensitive).
+     4. `normalized` in `PROFILE_REGISTRY` → log `logger.info("Profile override: '%s' → %s", name, ...)`
+        (RT-21) and return the mapped profile.
+     5. Not found → raise `ValueError(f"Unknown render profile '{name}'. Valid profiles: {sorted(PROFILE_REGISTRY.keys())}")`
+        (AD-3 Fail-Fast).
+   - Module docstring documents the new exports (RT-26).
+2. **`core/flow/handlers/generation.py`** `[MODIFY]` — 3 call sites (`GenerateCodeHandler`,
+   `GenerateTestsHandler`, `PlanSpecHandler`). Before each `_build_base_prompt` call, replacing the
+   existing `from specweaver.core.flow.handlers._profiles import FULL` line:
 
-## Proposed Changes
+   ```python
+   from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
 
-### `core/flow/handlers/_profiles.py`
-Summary: Add the Profile Registry and resolver function. The file remains a pure-policy declarative module with no engine imports (AD-5).
-#### [MODIFY] _profiles.py
-- Add `from types import MappingProxyType` (immutable registry — matches `frozen=True` on `RenderProfile`, RT-03).
-- Export a new `PROFILE_REGISTRY: MappingProxyType[str, RenderProfile]` dictionary mapping `"FULL"`, `"MINIMAL"`, `"INTERACTIVE"`, `"ARBITER"` to their respective `RenderProfile` objects.
-- Create a helper function `resolve_profile(name: str | None, default: RenderProfile) -> RenderProfile`:
-    1. If `name` is `None` or empty/whitespace-only → return `default` (RT-14).
-    2. If `name` is not a `str` → raise `ValueError` with type info (RT-22 — YAML type coercion: `true` → bool, `42` → int).
-    3. Normalize: `normalized = name.strip().upper()` (RT-04 — case-insensitive).
-    4. If `normalized` is in `PROFILE_REGISTRY` → log `logger.info("Profile override: '%s' → %s", name, ...)` (RT-21) and return the mapped profile.
-    5. If not found → raise `ValueError(f"Unknown render profile '{name}'. Valid profiles: {sorted(PROFILE_REGISTRY.keys())}")` (AD-3 Fail-Fast).
-- Update module docstring to document new exports (RT-26).
+   try:
+       profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+   except ValueError as e:
+       return _error_result(str(e), started)
 
-### `core/flow/handlers/generation.py`
-Summary: Update 3 call sites to resolve profile dynamically from `step.params`.
-#### [MODIFY] generation.py
-At each of the 3 call sites (`GenerateCodeHandler`, `GenerateTestsHandler`, `PlanSpecHandler`), add the following **before** the `_build_base_prompt` call:
+   base_prompt = await _build_base_prompt(context, INSTRUCTIONS, profile=profile, ...)
+   ```
 
-```python
-from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
+3. Same pattern, `[MODIFY]`: **`core/flow/handlers/review.py`** — 2 call sites (`ReviewSpecHandler`,
+   `ReviewCodeHandler`), `default=FULL`; **`core/flow/handlers/draft.py`** — `DraftSpecHandler`, `default=INTERACTIVE`;
+   **`core/flow/handlers/decompose.py`** — `DecomposeFeatureHandler`, `default=MINIMAL`; **`core/flow/handlers/arbiter.py`** — `ArbitrateVerdictHandler`, `default=ARBITER`.
+4. **`[NEW] docs/user_guides/8_prompt_render_profiles.md`** (RT-05): the concept; passing
+   `render_profile: "MINIMAL"` inside a step's `params` block; names are case-insensitive; available
+   profiles with a brief description; which handlers support it and which ignore it; no cascade to
+   child pipelines in fan-out/dual-pipeline orchestrations (RT-28); "render profiles" (prompt
+   verbosity) vs "execution profiles" (pipeline configuration) (RT-30).
+5. **`[MODIFY] docs/dev_guides/adding_prompt_slots.md`** (RT-16): "Step 2b: Register in the Profile
+   Registry" — a new profile goes into `PROFILE_REGISTRY`; a new `PromptSlot` also goes into
+   `_STANDARD_ORDER` in `_profiles.py`.
 
-try:
-    profile = resolve_profile(step.params.get("render_profile"), default=FULL)
-except ValueError as e:
-    return _error_result(str(e), started)
+6 production files. No database migrations.
 
-base_prompt = await _build_base_prompt(context, INSTRUCTIONS, profile=profile, ...)
-```
+### Profile compatibility matrix (RT-19, RT-27)
 
-Replace the existing `from specweaver.core.flow.handlers._profiles import FULL` line at each call site.
-
-### `core/flow/handlers/review.py`
-Summary: Update 2 call sites (`ReviewSpecHandler`, `ReviewCodeHandler`).
-#### [MODIFY] review.py
-Same pattern as `generation.py`, using `default=FULL`.
-
-### `core/flow/handlers/draft.py`
-Summary: Update 1 call site (`DraftSpecHandler`).
-#### [MODIFY] draft.py
-Same pattern, using `default=INTERACTIVE`.
-
-### `core/flow/handlers/decompose.py`
-Summary: Update 1 call site (`DecomposeFeatureHandler`).
-#### [MODIFY] decompose.py
-Same pattern, using `default=MINIMAL`.
-
-### `core/flow/handlers/arbiter.py`
-Summary: Update 1 call site (`ArbitrateVerdictHandler`).
-#### [MODIFY] arbiter.py
-Same pattern, using `default=ARBITER`.
-
-### Documentation
-Summary: Document YAML parameter injection for pipeline authors and developers.
-#### [NEW] docs/user_guides/8_prompt_render_profiles.md (RT-05)
-- Explain the concept of prompt render profiles.
-- Document how to pass `render_profile: "MINIMAL"` inside a step's `params` block.
-- Document that profile names are case-insensitive.
-- Include the list of available profiles with a brief description.
-- Document which handlers support `render_profile` and which ignore it (Scope Boundary).
-- Document that `render_profile` does NOT cascade to child pipelines in fan-out/dual-pipeline orchestrations (RT-28).
-- Note the distinction between "render profiles" (prompt verbosity) and "execution profiles" (pipeline configuration) (RT-30).
-
-#### [MODIFY] docs/dev_guides/adding_prompt_slots.md (RT-16)
-- Add "Step 2b: Register in the Profile Registry" — when adding a new profile, register it in `PROFILE_REGISTRY`.
-- Add note: when adding a new `PromptSlot`, also add it to `_STANDARD_ORDER` in `_profiles.py`.
-
-## Verification Plan
-
-### Automated Tests
-
-**Test location** (RT-15):
-- Registry unit tests → add to `tests/unit/core/flow/handlers/test_profiles.py`
-- Handler integration tests → add to `tests/unit/core/flow/handlers/test_build_base_prompt_profiles.py`
-
-**Test cases:**
-
-1. **Backward-compat (RT-06 — HIGHEST PRIORITY)**: `params={}` (no `render_profile` key) → each
-   handler uses its static default profile. `GenerateCodeHandler` → `FULL`,
-   `DecomposeFeatureHandler` → `MINIMAL`, `DraftSpecHandler` → `INTERACTIVE`,
-   `ArbitrateVerdictHandler` → `ARBITER`.
-2. **Happy path**: `params={"render_profile": "MINIMAL"}` → resolves to `MINIMAL` profile inside the prompt builder.
-3. **Case insensitivity (RT-04)**: `params={"render_profile": "minimal"}` → resolves to `MINIMAL`.
-4. **Fail-fast (AD-3)**: `params={"render_profile": "INVALID_TYPO"}` → handler returns `StepResult(status=ERROR)` with descriptive message. Does NOT raise.
-5. **Empty string (RT-14)**: `params={"render_profile": ""}` → falls back to handler default.
-6. **Type coercion (RT-22)**: `params={"render_profile": True}` → handler returns `StepResult(status=ERROR)` with type error message.
-7. **Registry immutability (RT-03)**: `PROFILE_REGISTRY["CUSTOM"] = ...` → raises `TypeError`.
-8. **Existing tests green (NFR-3)**: Full suite `pytest tests/unit/core/flow/handlers/ -v` passes without modification.
-
-### Manual Verification
-- Execute `sw run` on a pipeline yaml containing `render_profile` overrides and verify via
-  `--verbose` that the omitted slots (e.g. `CONSTITUTION`) do not appear in the prompt payloads sent
-  to the LLM.
-
----
-
-## Profile Compatibility Matrix (RT-19, RT-27)
-
-> **WARNING**: Profile overrides affect ALL `add_*` calls on the PromptBuilder — including those
-> made by downstream workflow modules (`Generator.generate_code()`, `Reviewer.review_spec()`, etc.).
-> A profile that excludes `FILE` will cause the reviewer to never see the spec it's reviewing.
+Profile overrides affect ALL `add_*` calls on the PromptBuilder — including downstream workflow
+modules (`Generator.generate_code()`, `Reviewer.review_spec()`, etc.). A profile that excludes `FILE`
+means the reviewer never sees the spec it reviews.
 
 | Profile | INSTRUCTIONS | FILE | CONTEXT | TOPOLOGY | PLAN | CONSTITUTION | STANDARDS | MEMORY | DICTATOR | Safe For |
 |---------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|---------|
@@ -198,48 +116,69 @@ Summary: Document YAML parameter injection for pipeline authors and developers.
 | **MINIMAL** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | Decompose, Plan ONLY |
 | **ARBITER** | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Arbitrate ONLY |
 
-> **CAUTION**: Using `MINIMAL` or `ARBITER` on `GenerateCodeHandler` or `ReviewSpecHandler` will
-> silently drop the spec file, plan, and dictator overrides from the prompt. This will produce
-> degraded or hallucinated LLM output.
+> **CAUTION**: `MINIMAL` or `ARBITER` on `GenerateCodeHandler` or `ReviewSpecHandler` silently drops
+> the spec file, plan, and dictator overrides from the prompt — degraded or hallucinated LLM output.
 
----
+## Tests
 
-## Known Limitations & Future Work (Tier 2 — RT/BT audit)
+Registry unit tests → `tests/unit/core/flow/handlers/test_profiles.py`; handler integration tests →
+`tests/unit/core/flow/handlers/test_build_base_prompt_profiles.py` (RT-15).
+
+| # | Case | Input → expected |
+|---|---|---|
+| 1 | **Backward-compat (RT-06 — HIGHEST PRIORITY)** | `params={}` → each handler's static default (below) |
+| 2 | Happy path | `params={"render_profile": "MINIMAL"}` → `MINIMAL` inside the prompt builder |
+| 3 | Case insensitivity (RT-04) | `params={"render_profile": "minimal"}` → `MINIMAL` |
+| 4 | Fail-fast (AD-3) | `params={"render_profile": "INVALID_TYPO"}` → `StepResult(status=ERROR)` with a descriptive message; does NOT raise |
+| 5 | Empty string (RT-14) | `params={"render_profile": ""}` → handler default |
+| 6 | Type coercion (RT-22) | `params={"render_profile": True}` → `StepResult(status=ERROR)` with a type error message |
+| 7 | Registry immutability (RT-03) | `PROFILE_REGISTRY["CUSTOM"] = ...` → `TypeError` |
+| 8 | Existing tests green (NFR-3) | `pytest tests/unit/core/flow/handlers/ -v` passes without modification |
+
+Case 1 defaults: `GenerateCodeHandler` → `FULL`, `DecomposeFeatureHandler` → `MINIMAL`,
+`DraftSpecHandler` → `INTERACTIVE`, `ArbitrateVerdictHandler` → `ARBITER`.
+
+Manual: `sw run` on a pipeline yaml with `render_profile` overrides; `--verbose` shows the omitted
+slots (e.g. `CONSTITUTION`) absent from the prompt payloads sent to the LLM.
+
+## Decisions (audit)
+
+- **AD-1** — `ProfileRegistry` lives in `core.flow.handlers._profiles.py`, where `FULL` and
+  `MINIMAL` are defined. `infrastructure.llm` keeps providing the domain-agnostic `RenderProfile`
+  mechanism. *Why:* Mechanism vs Policy DDD boundary.
+- **AD-2** — Read `step.params.get("render_profile")`; do not add LLM-specific fields to the
+  `PipelineStep` Pydantic model. *Why:* No domain leakage into the generic pipeline runner.
+- **AD-3** — The registry fails fast with `ValueError` on an unknown profile string. *Why:* No
+  silent misconfiguration.
+- **AD-4 (RT-01)** — Resolution happens in each **concrete handler's `execute()`**, NOT inside
+  `_build_base_prompt()`: `resolve_profile(step.params.get("render_profile"),
+  default=<HANDLER_DEFAULT>)`, then `_build_base_prompt(profile=resolved)`. *Why:*
+  `_build_base_prompt`'s signature is unchanged.
+- **AD-5 (RT-11)** — `_profiles.py` stays pure-policy with NO engine imports; `resolve_profile()`
+  takes a `str | None`, not a `PipelineStep`. *Why:* The `step.params.get()` extraction stays in
+  each handler.
+- **AD-6 (RT-34)** — Each handler wraps `resolve_profile()` in `try/except ValueError` and returns
+  `_error_result(str(e), started)`. *Why:* Prevents retry loops on gated steps with invalid
+  profiles.
+
+AD-1..AD-3 were Phase 4 resolutions. The 5-round RT/BT audit raised 39 findings: 16 Tier-1 merged
+into this plan, 23 Tier-2 documented; the open ones:
 
 | ID | Category | Description |
 |----|----------|-------------|
 | RT-09 | Error type | `ValueError` is generic; a custom `ProfileResolutionError` subclass would improve programmatic handling. |
-| RT-13 | Security | Profile overrides can remove safety-critical slots (`CONSTITUTION`, `DICTATOR_OVERRIDES`). A future allow-list mechanism per handler could mitigate this. |
+| RT-13 | Security | Profile overrides can remove safety-critical slots (`CONSTITUTION`, `DICTATOR_OVERRIDES`). A per-handler allow-list could mitigate this. |
 | RT-17 | Testing | No integration/E2E test is specified. A PipelineRunner-level test with mock handlers would catch wiring issues. |
-| RT-28 | Propagation | `render_profile` does NOT cascade to child pipelines in fan-out/dual-pipeline orchestrations. Each child step must declare it individually. |
-| RT-29 | SF-09 compat | The static `MappingProxyType` registry may need a `ProfileResolver` protocol for DSPy-style dynamic profile generation. The `resolve_profile()` function signature is already compatible. |
+| RT-28 | Propagation | `render_profile` does NOT cascade to child pipelines in fan-out/dual-pipeline orchestrations. Each child step must declare it. |
+| RT-29 | SF-09 compat | The static `MappingProxyType` registry may need a `ProfileResolver` protocol for DSPy-style dynamic profiles; `resolve_profile()`'s signature fits. |
 | RT-31 | Telemetry | The telemetry schema does not track which profile was used. Relevant for SF-09 performance analysis. |
 | RT-32 | Serialization | `RenderProfile` is a frozen dataclass, not JSON-serializable. External interfaces should use the profile name string. |
-| RT-37 | Pattern | `_build_base_prompt` uses pre-flight profile checks only for expensive operations (DB) while relying on PromptBuilder gating for cheap operations (string formatting). This is correct but undocumented. |
+| RT-37 | Pattern | `_build_base_prompt` pre-checks the profile only for expensive operations (DB); cheap ones (string formatting) rely on PromptBuilder gating. Correct but undocumented. |
 
----
+Architecture: respects all `context.yaml` boundaries; `core.flow.handlers` may define workflow policy
+matrices; no circular dependencies (RT-33 consistency check).
 
-## Post-Approval Housekeeping (RT-25)
+## As built
 
-- Update `INT-US-04_design.md` Progress Tracker: SF-08 row, "Impl Plan" column → ✅
-- Update `INT-US-04_design.md` Session Handoff to: "Run `/dev` for SF-08 implementation"
-
----
-
-## Final Consistency Check (Phase 5 — Revised per RT-33)
-
-**5.1. Open questions:**
-All decisions are resolved and documented inline in the plan based on the Phase 4 resolutions and the 5-round RT/BT audit (39 findings, 16 Tier-1 merged, 23 Tier-2 documented).
-*Agent Handoff Risk*: Low — mitigated by explicit handler-default table, complete file inventory (6
-production files), scope boundary documentation, profile compatibility matrix, and concrete code
-patterns for each handler.
-
-**5.2. Architecture and future compatibility:**
-The plan respects all `context.yaml` boundaries. `_profiles.py` remains a pure-policy module with no
-engine imports (AD-5). `core.flow.handlers` is safely allowed to define workflow policy matrices. No
-circular dependencies are introduced. Forward compatibility with SF-09 is acknowledged (RT-29).
-
-**5.3. Internal consistency:**
-The plan is internally consistent. All `[MODIFY]` tags map to existing files. `[NEW]` tags create
-files following existing conventions. The fallback strategy (Fail-fast) matches the described
-exception (`ValueError`) caught at the handler level (AD-6). No database migrations are required.
+Shipped in `e2ac7e6e` (2026-05-16). Evidence and the 50 passing tests are in the design, §Sub-features
+→ SF-08. SF-09, which RT-29/RT-31 anticipated, is RETIRED → `B-INTL-10`.
