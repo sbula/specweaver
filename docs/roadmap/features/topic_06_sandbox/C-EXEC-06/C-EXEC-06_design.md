@@ -1,73 +1,87 @@
-# Design: Per-Run (Session) Worktree Isolation (C-EXEC-06)
+# C-EXEC-06 — Per-Run (Session) Worktree Isolation
 
-- **Feature ID**: C-EXEC-06
-- **Phase**: 6
-- **Status**: APPROVED — approved by Steve Bula on 2026-07-19 (AD-1..5 confirmed, incl. the AD-5 architectural switch).
-- **DAL**: C (Enterprise Standard)
-- **Design Doc**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_design.md
+**Status**: APPROVED — approved by Steve Bula on 2026-07-19 (AD-1..5 confirmed, incl. the AD-5
+architectural switch). **COMPLETE** — SF-01, SF-02, SF-03 committed to `main` (SF-03: `bd5cedd2`,
+2026-07-21). · **DAL**: C (Enterprise Standard) · **Phase**: 6 · **Feature ID**: C-EXEC-06
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | `D-EXEC-02` (Git Worktree Bouncer, per-step isolation) |
+| Resolves | `TECH-012` |
+| Used by | `INT-US-09-SF05` (US-9 policy) · `INT-US-03 SF-03` (runs `sw implement` sandboxed), which unblocks US-3 and, through it, US-17/19/22/24 |
+| Deferred | API composition-root wiring → `TECH-013` |
+| Not touched | container isolation (`B-EXEC-01` / `D-EXEC-01`); per-step single-step isolation |
 
-`C-EXEC-06` adds a **per-run (session) worktree isolation mode** to the Flow Engine: a whole untrusted
-*span* of pipeline steps runs inside **one** ephemeral git worktree with a **single** end-of-run
-reconcile, replacing `D-EXEC-02`'s per-step create/reconcile/teardown for that span. It solves the
-`TECH-012` defect — the per-step model is non-functional for multi-step untrusted loops (the 2nd isolated
-step crashes on a branch-name collision, the reconcile never commits generated files, and `allowed_paths`
-doesn't exist) — so autonomous multi-step untrusted execution (`sw implement`'s generate → lint-fix →
-run-tests → validate loop) can finally run worktree-bounded. It touches `core.flow.engine` (a run-level
-isolation lifecycle), `sandbox.git.core` (a new `worktree_commit` primitive + reconcile orchestration),
-`core.flow.handlers.base` (a new `RunContext.allowed_paths` field), and the composition root (policy +
-allow-list population). It does **NOT** touch container isolation (`B-EXEC-01`/`D-EXEC-01`) and does **NOT**
-change the existing per-step single-step isolation behavior. **DAL-C** because the single end-of-run
-strip-merge is the *sole authorization gate* deciding what generated code lands in the user's real repo.
+## What it does
 
-**Relationships:** this is the **capability build**. `INT-US-09-SF05` integrates it into the US-9 policy;
-`INT-US-03 SF-03` consumes it to run `sw implement` sandboxed; it **resolves `TECH-012`**.
+Runs a whole span of untrusted pipeline steps inside **one** ephemeral git worktree, with **one**
+reconcile at the end. Only files in `allowed_paths` come back to the real repo.
 
-## Research Findings
+Why DAL-C: the end-of-run strip-merge is the *sole authorization gate* for what generated code
+lands in the user's repo.
 
-### Codebase Patterns
+## Why it was needed — the three `TECH-012` gaps
 
-**The current per-step isolation (`D-EXEC-02` / INT-US-09).** Dispatch is per-step:
-`runner.py:321-327` — `if resolve_should_isolate(step_def, context): result = execute_in_sandbox(...)`.
+Per-step isolation (`D-EXEC-02`) could not run a multi-step loop such as `sw implement`'s
+generate → lint-fix → run-tests → validate:
+
+| Gap | What broke | Where |
+|---|---|---|
+| 1 — no commit | Handlers never commit. `worktree_sync` runs `git rebase main`, which refuses on the dirty tree and returns FAILED — a result **discarded**. `strip_merge`'s `git merge sf-*` is then a no-op and the generated file is lost at teardown. | `git/core/atom.py:427-475`, `runner_utils.py:195` |
+| 2 — no allow-list | `execute_in_sandbox` reads `getattr(context, "allowed_paths", [])`; `RunContext` has **no such field** → always `[]` → `strip_merge` strips every file. | `runner_utils.py:202`, `handlers/base.py`, `git/core/worktree_ops.py:107` |
+| 3 — branch collision | Branch/path come from the constant run id (`sf-{pipeline}-{task_id}`, `.worktrees/{task_id}`). Teardown removes the worktree but **not** the branch, so the 2nd isolated step's `git worktree add -b <existing-branch>` fails closed. | `runner_utils.py:163-166` |
+
+## Architecture
+
+```mermaid
+graph LR
+    CR["Composition root<br/>policy + allowed_paths"] --> R["Runner<br/>core.flow.engine"]
+    R -->|"span start"| WA["worktree_add<br/>unique branch/path"]
+    WA --> S["All span steps<br/>workspace rebound to worktree"]
+    S -->|"span end"| C["worktree_commit<br/>(new primitive)"]
+    C --> M["strip_merge<br/>only allowed_paths<br/>README.md / docs/ hard-blocked"]
+    M --> T["teardown in finally<br/>worktree + branch"]
+    M -->|"failure"| F["run fails loudly"]
+```
+
+| Change | Lives in |
+|---|---|
+| Run-level isolation lifecycle | `core.flow.engine` |
+| `worktree_commit` primitive + reconcile orchestration | `sandbox.git.core` |
+| `RunContext.allowed_paths` field | `core.flow.handlers.base` |
+| Policy + allow-list population | composition root |
+
+**Reused primitives** (GitAtom, `git/core/atom.py`):
+
+| Primitive | Does |
+|---|---|
+| `worktree_add` (`:385-415`) | `git worktree add -b <branch> <path> HEAD` |
+| `worktree_sync` (`:427-475`) | fetch + rebase — *not* a commit |
+| `strip_merge` (`:477-491` → `worktree_ops.handle_strip_merge`) | `git merge -X ours`, strip non-`allowed_paths` + hard-block `README.md`/`docs/`, commit surviving hunks |
+| `worktree_teardown` (`worktree_ops.py:20-64`) | resilient remove, Windows `shutil.rmtree` backoff — **does not delete the branch** |
+| `setup_sandbox_caches` (`runner_utils.py`) | symlinks `.specweaver`/caches into the worktree |
+
+Already present: `RunContext.enforce_isolation` (`base.py:56`, default False) and `execution_root`
+(`base.py:57`). The flow CLI sets the policy from settings (`flow/interfaces/cli.py:270-272`,
+`sandbox.enforce_worktree_isolation`). Per-step dispatch today: `runner.py:321-327`
+(`if resolve_should_isolate(step_def, context): result = execute_in_sandbox(...)`);
 `execute_in_sandbox` (`runner_utils.py:151-221`) wraps ONE step: `worktree_add` → rebind
-`output_dir`/`execution_root` to the worktree → `handler.execute` → `worktree_sync` → `strip_merge` →
+`output_dir`/`execution_root` → `handler.execute` → `worktree_sync` → `strip_merge` →
 `worktree_teardown` (finally).
 
-**The three `TECH-012` gaps this feature fixes** (all confirmed in code):
-- **Gap 1 (no commit):** handlers never commit; `worktree_sync` (`git/core/atom.py:427-475`) runs
-  `git rebase main`, which refuses on the dirty worktree tree, aborts, and returns FAILED — a result
-  **discarded** at `runner_utils.py:195`. So `strip_merge`'s `git merge sf-*` is a no-op and the generated
-  file is lost at teardown.
-- **Gap 2 (no allow-list):** `execute_in_sandbox` reads `getattr(context, "allowed_paths", [])`
-  (`runner_utils.py:202`); `RunContext` (`handlers/base.py`) has **no such field** → always `[]` → in
-  `strip_merge` (`git/core/worktree_ops.py:107`) every file is stripped.
-- **Gap 3 (branch collision):** branch/path are named from the constant run id
-  (`sf-{pipeline}-{task_id}`, `.worktrees/{task_id}`, `runner_utils.py:163-166`); teardown removes the
-  worktree but **not** the branch → the 2nd isolated step's `git worktree add -b <existing-branch>` fails
-  fail-closed.
+Opt-in setting: `[sandbox] enforce_session_isolation` (read from `SandboxSettings`). Only dependency:
+git, any version, already used by `D-EXEC-02` — `worktree add/remove`, `branch -D`, `add -A`,
+`commit`, `merge -X ours`. Container-free. Pattern reference: `test_step_worktree_isolation_e2e.py`.
 
-**Reusable primitives (GitAtom, `git/core/atom.py`):** `worktree_add` (`:385-415`, `git worktree add -b
-<branch> <path> HEAD`), `worktree_sync` (`:427-475`, fetch+rebase — *not* a commit), `strip_merge`
-(`:477-491` → `worktree_ops.handle_strip_merge`: `git merge -X ours`, strip non-`allowed_paths` +
-hard-block `README.md`/`docs/`, then commit surviving hunks), `worktree_teardown`
-(`worktree_ops.py:20-64`, resilient remove with a Windows `shutil.rmtree` backoff — but **does not delete
-the branch**). `setup_sandbox_caches` (`runner_utils.py`) symlinks `.specweaver`/caches into the worktree.
+## Decisions
 
-**Context + composition root:** `RunContext.enforce_isolation` (`base.py:56`, default False) +
-`execution_root` (`base.py:57`) already exist; the flow CLI sets the policy from settings
-(`flow/interfaces/cli.py:270-272`, `sandbox.enforce_worktree_isolation`). No `allowed_paths` anywhere.
-
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| git | any | `worktree add/remove`, `branch -D`, `add -A`, `commit`, `merge -X ours` | host |
-
-No new external dependency; per-run isolation is git-worktree only (container-free).
-
-### Blueprint References
-Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolation pattern
-(`test_step_worktree_isolation_e2e.py`). No external blueprint.
+| # | Decision | Why | Architectural Switch? |
+|---|----------|-----|----------------------|
+| AD-1 | **Whole-run span** — the entire pipeline runs in one worktree. | One unit of untrusted work (implement's 5 steps). A marked span waits until a pipeline mixes trusted and untrusted spans. | No |
+| AD-2 | **`allowed_paths` = the pipeline's generation targets** (`src/<stem>.py`, `tests/test_<stem>.py`), with a config override. | Tightest safe default. Never "whole diff minus blocklist" — that is the unauthorized-write-back failure. | No |
+| AD-3 | **Rebind the session workspace root** to the worktree for all steps, not just `execution_root`. | The worktree *is* the workspace; static QA lints the code about to be reconciled. Care: `.specweaver`/DB/cache symlinks. | No |
+| AD-4 | **v1 = non-parking spans.** A park (HITL gate) inside an isolated session errors clearly. | Keeping a worktree across park/resume is a large separate concern; implement has no gates. | No |
+| AD-5 | **New per-run isolation execution mode** in the flow engine (+ `RunContext.allowed_paths` + `worktree_commit`). | The capability itself; additive, correct layer, complements `D-EXEC-02`. | **Yes — approved by Steve Bula on 2026-07-19.** |
 
 ## Functional Requirements
 
@@ -94,104 +108,33 @@ Extends the existing Git Worktree Bouncer (`D-EXEC-02`) and the INT-US-09 isolat
 | NFR-6 | Fail-loud reconcile | A commit/sync/merge failure MUST fail the run (surfaced), never be logged-and-ignored. |
 | NFR-7 | Architecture compliance | Lifecycle in `core.flow.engine`; git primitive in `sandbox.git.core`; `allowed_paths` on `RunContext`; `tach`/`ruff`/`mypy --strict` green; ADR-002 (config frozen at composition root) respected. |
 
-## External Dependencies
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| git | any | worktree/branch/commit/merge | Y | Already used by `D-EXEC-02`. |
+## Risks
 
-## Architectural Decisions
+From the design review and the Red/Blue review:
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | **Whole-run span** (the entire pipeline runs in one worktree). | Matches "one unit of untrusted work" (implement's 5 steps); marked-span deferred until a pipeline mixes trusted/untrusted spans. | No |
-| AD-2 | **`allowed_paths` = the pipeline's generation targets** (`src/<stem>.py`, `tests/test_<stem>.py`), with a config override. | Tightest safe default; never "whole diff minus blocklist" (that's the unauthorized-write-back failure). | No |
-| AD-3 | **Rebind the session workspace root** to the worktree for all steps (not just `execution_root`). | In per-run mode the worktree *is* the workspace; one consistent tree is simpler and correct (static QA lints the code about to be reconciled). Care: `.specweaver`/DB/cache symlinks. | No |
-| AD-4 | **v1 = non-parking spans.** A park (HITL gate) inside an isolated session errors clearly; not supported in v1. | Persisting a worktree across park/resume is a large separate concern; implement has no gates. | No |
-| AD-5 | **New per-run isolation execution mode** in the flow engine (+ `RunContext.allowed_paths` + `worktree_commit` primitive). | The whole point of the capability; additive, correct layer, complements `D-EXEC-02`. | **Yes — approved by Steve Bula on 2026-07-19.** |
-
-## ROI Analysis
-### Investment Cost
-| Item | Effort | Risk |
-|------|--------|------|
-| Session lifecycle + workspace rebind (SF-01) | Medium | Medium (core runner path) |
-| Commit-before-reconcile + authorized strip-merge (SF-02) | Medium | Medium-High (the security gate) |
-| Composition-root policy + allow-list + e2e proof (SF-03) | Medium | Low-Medium |
-
-### Returns
-| Beneficiary | Benefit | Magnitude |
-|-------------|---------|-----------|
-| `INT-US-03 SF-03` / US-3 | Unblocks closing the flagship autonomous-implementation epic | High |
-| US-17/19/22/24 | All build on autonomous implementation | High (cascading) |
-| Zero-trust posture | Multi-step untrusted loops finally run sandboxed; `TECH-012` fixed | High (security) |
-
-### Risk Assessment
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
 | Reconcile authorizes an out-of-bounds write | Low | High | AD-2 tight default + NFR-4 adversarial tests + hard-block |
-| Rebinding `project_path` breaks `.specweaver`/DB/cache resolution | Medium | Medium | Reuse `setup_sandbox_caches` symlinks; SF-01 tests cover it |
+| Rebinding `project_path` breaks `.specweaver`/DB/cache resolution | Medium | Medium | Reuse `setup_sandbox_caches` symlinks; SF-01 tests cover it and verify DB access |
 | Orphaned worktrees/branches on crash | Medium | Medium | Guaranteed `finally` teardown + branch delete (FR-1/NFR-3) |
-| Silent data loss (today's swallowed failure) | — | — | FR-4/NFR-6 surface failures |
-| Crash-orphaned worktree/branch collides on a same-`run_id` retry | Low | Medium | **[impl note, SF-01]** make create idempotent — prune/delete a stale same-named worktree+branch before `worktree_add`, or add a per-attempt suffix |
-| Reconcile runs against a **dirty real working tree** → `git merge` blocks/conflicts | Medium | Medium | **[impl note, SF-02]** decide policy — fail loud (NFR-6) with a clear "commit/stash your changes first" message, or auto-stash; do NOT silently drop |
+| Silent data loss (the old swallowed failure) | — | — | FR-4/NFR-6 surface failures |
+| A hard crash (kill -9) skips `finally`; the orphan collides on a same-`run_id` retry | Low | Medium | **[impl note, SF-01]** make create idempotent — prune a stale same-named worktree+branch before `worktree_add`, or add a per-attempt suffix |
+| Reconcile runs against a **dirty real working tree** → `git merge` blocks/conflicts | Medium | Medium | **[impl note, SF-02]** fail loud (NFR-6) with a clear "commit/stash your changes first" message, or auto-stash; never silently drop |
 
-> [!NOTE]
-> **Red/Blue design-review notes carried to the impl plans (not design-blocking):** (1) under AD-3
-> `project_path` rebind, `.specweaver`/DB/cache must still resolve to the **real** ones — reuse
-> `setup_sandbox_caches` symlinks and verify DB access in SF-01; (2) idempotent worktree/branch create to
-> survive a hard crash (kill -9) that skips the `finally` teardown; (3) `run_tests` **loop-back** re-runs
-> steps *within* the same session worktree (it is in-session iteration, not a park/resume) — confirmed
-> compatible with AD-4's non-parking scope.
+`run_tests` **loop-back** re-runs steps *inside* the same session worktree. That is in-session
+iteration, not a park/resume, so it is compatible with AD-4.
 
-### Refactoring Opportunities
-| Existing Feature | Current Issue | Benefit from This Feature | Effort |
-|-----------------|---------------|---------------------------|--------|
-| Per-step `execute_in_sandbox` | Broken for multi-step (`TECH-012`) | Could be deprecated for multi-step in favor of per-run; keep for single-step | Low (follow-up) |
+Follow-up: per-step `execute_in_sandbox` could be deprecated for multi-step runs; keep it for
+single-step. Guide owed: `pipeline_engine_guide.md §7` documents only per-step isolation — add the
+session model and `allowed_paths`.
 
-## Developer Guides Required
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Per-Run Worktree Isolation | Update `pipeline_engine_guide.md §7` (currently documents only per-step isolation) with the session model + `allowed_paths` | ⬜ To be written during Pre-commit |
+## Sub-features
 
-## Sub-Feature Breakdown
-
-### SF-01: Session Worktree Lifecycle + Context Rebind
-- **Scope**: The new run-level isolation mode — create ONE worktree (unique branch/path) at span
-  start, rebind the session workspace root to it for all steps, tear down once (worktree + branch)
-  in a guaranteed `finally`; fail-closed on creation failure; add the `RunContext.allowed_paths`
-  field (unpopulated). No reconcile yet.
-- **FRs**: [FR-1, FR-2, FR-5 (field), FR-6, FR-7 (park-guard)]
-- **Inputs**: A run flagged for per-run isolation; git repo.
-- **Outputs**: All span steps execute in one worktree; generated code persists across steps in-tree; guaranteed cleanup.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf01_implementation_plan.md
-
-### SF-02: Commit-Before-Reconcile + Authorized Strip-Merge
-- **Scope**: New `worktree_commit` GitAtom primitive; orchestrate commit → single `strip_merge`
-  (respecting `allowed_paths` + the README/docs hard-block) at span end; **surface** any failure as
-  a run failure (fixes Gap 1, Gap 2 mechanics, and the swallowed failure).
-- **FRs**: [FR-3, FR-4]
-- **Inputs**: The session worktree from SF-01 with accumulated changes; `allowed_paths`.
-- **Outputs**: Only authorized generated paths committed back to the real repo; loud failure on a broken reconcile.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf02_implementation_plan.md
-
-### SF-03: Composition-Root Policy + Allow-List Population + Verifiable Proof
-- **Scope**: Select per-run isolation via policy (default-off, opt-in); populate `allowed_paths` at
-  the composition root from the pipeline's generation targets (AD-2, with config override); keep
-  per-step single-step isolation unchanged; deliver the multi-step generated-file e2e (FR-8) + NFR-4
-  adversarial reconcile-authorization tests.
-- **FRs**: [FR-5 (populate), FR-7 (policy/default-off), FR-8]
-- **Inputs**: SF-01 + SF-02; `SandboxSettings`; pipeline generation targets.
-- **Outputs**: Opt-in per-run isolation wired end-to-end; verifiable-proof e2e green.
-- **Depends on**: SF-01, SF-02
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf03_implementation_plan.md
-
-## Execution Order
-1. **SF-01** — lifecycle + rebind (no deps)
-2. **SF-02** — commit-before-reconcile + authorized strip-merge (depends on SF-01)
-3. **SF-03** — policy + allow-list + verifiable proof (depends on SF-01, SF-02)
-
-Linear DAG (SF-01 → SF-02 → SF-03); acyclic.
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Session lifecycle + context rebind: one worktree per span, workspace rebound, teardown (worktree + branch) in `finally`, fail-closed, `allowed_paths` field added unpopulated. No reconcile yet. | FR-1, FR-2, FR-5 (field), FR-6, FR-7 (park-guard) | — | [sf01](C-EXEC-06_sf01_implementation_plan.md) |
+| SF-02 | `worktree_commit` + one `strip_merge` at span end, respecting `allowed_paths` and the README/docs hard-block; any failure fails the run. | FR-3, FR-4 | SF-01 | [sf02](C-EXEC-06_sf02_implementation_plan.md) |
+| SF-03 | Opt-in policy (default-off); `allowed_paths` populated from generation targets (AD-2, config override, via `SandboxSettings`); per-step path unchanged; FR-8 e2e + NFR-4 adversarial tests. | FR-5 (populate), FR-7 (policy/default-off), FR-8 | SF-01, SF-02 | [sf03](C-EXEC-06_sf03_implementation_plan.md) |
 
 ## Progress Tracker
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
@@ -200,11 +143,4 @@ Linear DAG (SF-01 → SF-02 → SF-03); acyclic.
 | SF-02 | Commit-Before-Reconcile + Authorized Strip-Merge | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-## Session Handoff
-**Current status**: **C-EXEC-06 COMPLETE — SF-01 + SF-02 + SF-03 all committed to `main`** (SF-03:
-`bd5cedd2`, 2026-07-21). Per-run session isolation is fully live: composition-root opt-in policy
-(`[sandbox] enforce_session_isolation`), `allowed_paths` population, one-worktree lifecycle, authorized
-end-of-run reconcile, and the FR-8 multi-step verifiable-proof e2e. `TECH-012` resolved. API composition-root
-wiring deferred to **TECH-013**.
-**Next step**: `INT-US-09-SF05` (wire C-EXEC-06 into the US-9 policy) → `INT-US-03 SF-03` → US-3 closes.
-**If resuming mid-feature**: Read the Progress Tracker; resume at the first ⬜.
+**Next**: `INT-US-09-SF05` (wire C-EXEC-06 into the US-9 policy) → `INT-US-03 SF-03` → US-3 closes.
