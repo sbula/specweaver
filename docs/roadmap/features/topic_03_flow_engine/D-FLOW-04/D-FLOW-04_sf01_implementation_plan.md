@@ -1,76 +1,47 @@
-# Implementation Plan: Universal Logging Reform [SF-01: Universal Logging Reform]
-- **Feature ID**: 3.13a
-- **Sub-Feature**: SF-01 — Universal Logging Reform
-- **Design Document**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf01_implementation_plan.md
-- **Status**: APPROVED
+# D-FLOW-04 SF-01 — Universal Logging Reform
 
-## Goal Description
+**Status**: APPROVED · **FRs owned**: FR-2, FR-3 · **Depends on**: none · **Feature ID**: 3.13a ·
+Design: [D-FLOW-04_design.md](D-FLOW-04_design.md) §Sub-features → SF-01
 
-Execute a project-wide logging reform by retrofitting `src/specweaver/logging.py`. The console
-output will use `rich.logging.RichHandler` for colorized terminal outputs (WARNING+ only, unless
-`--debug` is used). Alongside it, a robust standard-library-based `JSONFormatter` will be
-implemented to write full DEBUG-level logs to a local `specweaver.log` file in a machine-parseable
-format.
+## Goal
 
-> [!NOTE]
-> **Research Notes Synthesis**
-> - The Typer CLI heavily relies on `Rich`, so standardizing on `RichHandler` requires no external libraries and guarantees UI cohesion.
-> - A standard library `logging.Formatter` subclass can easily execute `json.dumps()` on `record.__dict__` to satisfy the JSON requirement without depending on `python-json-logger`.
+Retrofit `src/specweaver/logging.py`: console via `rich.logging.RichHandler` (colorized, WARNING+
+only unless `--debug`), plus a stdlib-based `JSONFormatter` writing full DEBUG logs to a local
+`specweaver.log` in machine-parseable form.
 
-## User Review Required (HITL Phase 4 & 5)
+**Since moved**: the module is `src/specweaver/telemetry_logger.py`; the log file is
+`~/.specweaver/logs/<project>/specweaver.log`.
 
-> [!WARNING]
-> Please review the architectural alignments and provide final **Consistency Check** approval to proceed with SF-01.
-> 
-> **Phase 5 Consistency Check (Evidence-Backed):**
-> 1. **Any unresolved decisions?** No. The user explicitely confirmed using a Custom JSON `logging.Formatter` over a 3rd party dependency.
-> 2. **Architecture and future compatibility:** This is fully backwards compatible and aligned. It
->    simply changes the internal formatting behavior and standardizes the handlers inside
->    `src/specweaver/logging.py`, which all modules already use safely.
-> 3. **Internal consistency check:** No contradictions exist. The tests for `JSONFormatter` will cleanly match the new `logging.py` implementation.
-> 
-> **Agent Handoff Risk Evaluation:** Zero risk. A fresh agent jumping into `/dev` will clearly see
-> the scope limited *only* to logging inside `logging.py` and its tests, avoiding any intersection
-> with `PipelineRunner` refactoring (which is isolated to SF-02).
+## Decisions
 
-## Proposed Changes
+- **Custom JSON `logging.Formatter`, not a 3rd-party dependency** (user-confirmed). A
+  `logging.Formatter` subclass running `json.dumps()` on `record.__dict__` needs no
+  `python-json-logger`.
+- `RichHandler`: the Typer CLI already relies on `Rich`, so no new library.
+- Scope: logging inside `logging.py` and its tests only; no overlap with the `PipelineRunner` work
+  (SF-02).
 
----
+## Changes
 
-### Universal Logging
+`logging.py`:
 
-Reform the current `logging.py` infrastructure to unify terminal output via `Rich` and disk output via simple JSON representation.
+1. `logging.StreamHandler()` → `rich.logging.RichHandler(level=logging.WARNING, rich_tracebacks=True)`,
+   with `logging.Formatter("%(message)s", datefmt="[%X]")` so it does not duplicate Rich's own
+   timestamp and level columns.
+2. New `JSONFormatter(logging.Formatter)`. `format(self, record)` builds a dict:
+   `timestamp=self.formatTime(record, self.datefmt)`, `levelname=record.levelname`,
+   `name=record.name`, `message=record.getMessage()`, plus the exception trace via
+   `self.formatException(record.exc_info)` when `record.exc_info` is set; returns `json.dumps(dict)`.
+3. Apply `JSONFormatter` to the `RotatingFileHandler`.
 
-#### [MODIFY] [logging.py](file:///c:/development/pitbula/specweaver/src/specweaver/logging.py)
-- **Action**: 
-  - [x] Change `logging.StreamHandler()` to
-    `rich.logging.RichHandler(level=logging.WARNING, rich_tracebacks=True)`. Explicitly assign it
-    `logging.Formatter("%(message)s", datefmt="[%X]")` so it does not duplicate Rich's native
-    timestamp and level columns.
-  - [x] Add a lightweight `JSONFormatter` class inheriting from `logging.Formatter`. Override
-    `format(self, record)` to construct a dictionary containing
-    `timestamp=self.formatTime(record, self.datefmt)`, `levelname=record.levelname`,
-    `name=record.name`, `message=record.getMessage()`, and stringify any exception traces using
-    `self.formatException(record.exc_info)` if `record.exc_info` exists. Finally, return
-    `json.dumps(dict)`.
-  - [x] Apply the `JSONFormatter` to the `RotatingFileHandler`.
-- **Purpose**: Colorized CLI UX with robust machine-readable log lines underneath.
+## Tests
 
----
+- Unit tests for `JSONFormatter` in `tests/`: `logger.debug()` yields valid JSON with all mandatory
+  fields.
+- Manual: `sw review <existing_spec_path>` — Rich formats logged warnings on standard out; the log
+  file (planned as `<project_dir>/logs/specweaver.log`) is valid NDJSON (Newline Delimited JSON).
 
-## Open Questions
+## As built
 
-None. 
-
-## Verification Plan
-
-### Automated Tests
-1. **Unit tests for `JSONFormatter`**: Create or update tests in `tests/` directory ensuring
-   `logging.py`'s JSON output strictly outputs valid JSON strings with all mandatory fields on
-   `logger.debug()`.
-
-### Manual Verification
-1. Run `sw review <existing_spec_path>` to ensure that Rich formats any logged warnings gracefully on standard out.
-2. Inspect the generated `<project_dir>/logs/specweaver.log` file manually to assert it's valid NDJSON (Newline Delimited JSON).
+In `telemetry_logger.py` the `RichHandler` is built on a stderr `Console` (a bare `RichHandler()`
+writes to stdout).

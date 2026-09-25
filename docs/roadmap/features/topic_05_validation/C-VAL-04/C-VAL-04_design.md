@@ -1,51 +1,54 @@
-# Design: Automated Traceability Matrix
+# C-VAL-04 — Automated Traceability Matrix
 
-- **Feature ID**: 3.21
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_design.md
+**Status**: APPROVED · **COMPLETE** — SF-01 committed. · **Feature ID**: 3.21 · **Phase**: 3
 
-## Feature Overview
+| | |
+|---|---|
+| Adds | code rule `C09: Traceability` (after `c01`–`c08`) |
+| Uses | the Markdown spec parser, `tree-sitter` AST extraction, the validation pipelines |
+| Not touched | execution logic, runtime behavior; test *quality* (`A-VAL-03`, mutation) |
 
-Feature 3.21 adds an Automated Traceability Matrix (`@traces`) to the validation layer. It
-detects **omissions** — requirements no test claims at all — by counting Functional and
-Non-Functional Requirements in the L3 Spec and asserting exact matching `@traces(req_id)` tags in
-the AST of generated test files. *(Corrected 2026-08-20: this design originally claimed to solve
-"Correlated Hallucinations". It cannot — the tag is written by the same LLM as the test, so a
-hallucinated test carries a well-formed tag. Test quality is `A-VAL-03`'s (mutation) territory; see
-`docs/analysis/benefit_chain_analysis_2026-08-20.md`.)* It interacts natively with
-the Markdown spec parser, AST extraction tools, and validation pipelines, and does NOT touch
-execution logic or runtime behavior.
-Key constraints: Hard-fails the validation pipeline if coverage is incomplete. Must use structural AST parsing instead of naive text search.
+## What it does
 
-## Research Findings
+Detects **omissions**: requirements no test claims at all. It counts the Functional and
+Non-Functional Requirements in the L3 Spec and asserts a matching `@traces(req_id)` tag for each one
+in the AST of the generated test files. Missing coverage hard-fails the validation pipeline.
 
-### Codebase Patterns
-- **AST Parsing**: The codebase already leverages `tree-sitter` for `standards/tree_sitter_base.py`
-  and AST drift detection (`validation/drift_detector.py`). The existing architecture can be cleanly
-  reused to extract decorators/tags from Python test files.
-- **Validation Engine**: SpecWeaver's 10-test battery resides in `validation/rules/`. There are
-  currently 8 code rules (`c01`–`c08`). This feature perfectly aligns with creating
-  `C09: Traceability`, checking test coverage against spec requirements via AST extraction.
-- **Pipelines**: The new rule will be integrated directly into `pipelines/validation_code_default.yaml` and appropriate domain profiles.
-- **Boundaries**: Must reside within `validation` (pure-logic archetype) without importing from `loom/*`. The feature acts purely as a static post-generation verification step.
+It does **not** catch correlated hallucinations: the tag is written by the same LLM as the test, so a
+hallucinated test carries a well-formed tag. *(Corrected 2026-08-20 — the design first claimed it
+did.)* Test quality is `A-VAL-03`'s territory; see `docs/analysis/benefit_chain_analysis_2026-08-20.md`.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| `tree-sitter` | As in `pyproject.toml` | Parsing Python test files for `@traces` tags | Already used natively within `validation/` |
+## Why this way
 
-### Blueprint References
-- See `ORIGINS.md` section on HEPH and agent-system verification (Spec-Traceable Scenario Testing, Requirement Traceability).
+- **Structural AST parsing, not text search** — reuses the `tree-sitter` stack already behind
+  `standards/tree_sitter_base.py` and AST drift detection (`validation/drift_detector.py`).
+- **A code rule** in `validation/rules/` (SpecWeaver's 10-test battery, 8 code rules at design time),
+  wired into `pipelines/validation_code_default.yaml` and the domain profiles.
+- **Boundaries**: lives in `validation` (pure-logic archetype), imports nothing from `loom/*`; a static
+  post-generation check only.
+
+Blueprint: `ORIGINS.md`, the HEPH / agent-system verification section (Spec-Traceable Scenario
+Testing, Requirement Traceability).
+
+**Since moved:** the rule lives in `src/specweaver/assurance/validation/rules/code/`; the pipeline in
+`src/specweaver/workflows/pipelines/`.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Create `c09_traceability.py` rule | Best fit for static code-quality assertions post-generation. | No |
+| AD-2 | Extend `ValidationRunner` context with parsed FRs | The FRs must be parsed and passed down to code validation tasks to keep validation stateless. | No |
+| AD-3 | Option 1: Zero-Dependency Meta-Comments for Tracing | Traces are code comments (e.g., `# @trace(FR-x)`) parsed via `tree-sitter`. No external or language-side dependency; honors the polyglot Black Box constraint. | Yes - Approved by user on 2026-04-06 |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | System | Count Spec Req. | Parse and enumerate all identifiable Functional Requirements (FRs) and Non-Functional Requirements (NFRs) documented in the target L3 spec. | Returns a definitive list of required `req_id`s. |
-| FR-2 | System | Extract Test Tags | Parse the AST of all generated test files using native tools to locate all `@traces(req_id)` annotations/decorators attached to test functions. | Returns a set of `req_id`s actually covered by the tests. |
-| FR-3 | System | Verify Coverage | Match the extracted `req_id` tags from the AST against the full list of parsed FRs/NFRs from the spec. | Computation of coverage metrics indicating completeness or missing reqs. |
-| FR-4 | System | Enforce Validation | Hard-fail the pipeline execution if any identified FR/NFR from the spec lacks a corresponding `@traces` tag in the test AST. | Pipeline emits ERROR findings and halts. |
+| FR-1 | System | Count Spec Req. | Parse and enumerate all Functional Requirements (FRs) and Non-Functional Requirements (NFRs) in the target L3 spec. | Returns a definitive list of required `req_id`s. |
+| FR-2 | System | Extract Test Tags | Parse the AST of all generated test files to locate all `@traces(req_id)` annotations/decorators attached to test functions. | Returns a set of `req_id`s actually covered by the tests. |
+| FR-3 | System | Verify Coverage | Match the extracted `req_id` tags from the AST against the full list of parsed FRs/NFRs from the spec. | Coverage metrics showing completeness or missing reqs. |
+| FR-4 | System | Enforce Validation | Hard-fail the pipeline if any FR/NFR from the spec lacks a corresponding `@traces` tag in the test AST. | Pipeline emits ERROR findings and halts. |
 
 ## Non-Functional Requirements
 
@@ -54,52 +57,28 @@ Key constraints: Hard-fails the validation pipeline if coverage is incomplete. M
 | NFR-1 | Accuracy | 100% exact string match required between spec requirement IDs and AST extracted IDs. |
 | NFR-2 | AST Enforcement | Must use structural AST traversal (`tree-sitter`) targeting comments, avoiding regex on raw text. |
 
-## External Dependencies
+## Dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
 |------|------------|----------------|-----------------|-------|
-| `tree-sitter` | Current | `Language`, `Parser`, `Query` | Yes | Existing dependency |
+| `tree-sitter` | Current (as in `pyproject.toml`) | `Language`, `Parser`, `Query` | Yes | Existing dependency |
 
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Create `c09_traceability.py` rule | Best fit for static code quality assertions post-generation. | No |
-| AD-2 | Extend `ValidationRunner` context with parsed FRs | The FRs must be parsed and passed down to code validation tasks to maintain statelessness of validation. | No |
-| AD-3 | Option 1: Zero-Dependency Meta-Comments for Tracing | Traces will be placed in code comments (e.g., `# @trace(FR-x)`) parsed natively via `tree-sitter`. Requires no external or language-side dependencies and strictly honors the polyglot Black Box constraint. | Yes - Approved by user on 2026-04-06 |
-
-## Developer Guides Required
+## Guides owed
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Developer Traceability | Document how TDD tasks must include zero-dependency `# @trace("FR-X")` comments directly above tests for successful commit. | ⬜ To be written during Pre-commit |
+| Developer Traceability | How TDD tasks must include zero-dependency `# @trace("FR-X")` comments directly above tests for a successful commit. | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
 Single feature — no decomposition.
 
-### SF-01: Traceability Validation Engine
-- **Scope**: Implements spec parsing for FR/NFRs, AST extraction of `@traces` from test files, and the code rule pipeline hook to enforce coverage.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4]
-- **Inputs**: The L3 Spec text/file path, and generated test files.
-- **Outputs**: Validation RuleResult (Pass/Fail) with `DriftFinding` metrics.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | Traceability Validation Engine: spec parsing for FR/NFRs, AST extraction of `@traces` from test files, the code-rule pipeline hook that enforces coverage. | FR-1, FR-2, FR-3, FR-4 | L3 Spec text/file path + generated test files → Validation RuleResult (Pass/Fail) with `DriftFinding` metrics | none | [plan](C-VAL-04_implementation_plan.md) |
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Traceability Validation Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Implementation Plan APPROVED.
-**Next step**: Run:
-`/dev docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md SF-01`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
