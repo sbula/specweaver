@@ -1,8 +1,15 @@
-# E-INTL-01 — LLM Adapter (Implementation Plan)
+# E-INTL-01 SF-01 — LLM Adapter & Rules
 
-### Step 3: LLM Adapter + Remaining Rules (2-3 sessions)
+**Phase**: 1, build step 3 · Design: [E-INTL-01_design.md](E-INTL-01_design.md)
 
-**Copy from FM:**
+## Goal
+
+LLM adapter + the remaining spec rules. **Runnable:** all 11 spec validation rules operational.
+
+## Changes
+
+**Copied from FM:**
+
 - `llm/provider.py` → `llm/adapter.py` (simplified)
 - `llm/errors.py` (trimmed)
 - `llm/adapters/gemini_adapter.py` → `llm/gemini_adapter.py` (simplified)
@@ -10,10 +17,11 @@
 - `engine/security.py` → `project/safepath.py`
 - LLM test files (adapted)
 
-**Create:**
+**Created:**
+
 - 3 remaining spec rules: S03, S04, S07
 - Adapter integration with validation runner
 
-**Runnable:** All 11 spec validation rules operational
-
----
+**Since moved** (noted 2026-09-25): the Gemini adapter lives at
+`src/specweaver/infrastructure/llm/adapters/gemini.py`; the validation runner at
+`src/specweaver/assurance/validation/runner.py`.

@@ -1,15 +1,12 @@
-# Design: Spec Drafting & Review
+# E-INTL-02 — Spec Drafting & Review
 
-- **Feature ID**: E-INTL-02
-- **Phase**: 1
-- **Status**: COMPLETED
-- **Design Doc**: docs/roadmap/features/topic_04_intelligence/E-INTL-02/E-INTL-02_design.md
+**Status**: COMPLETED · **Phase**: 1 · **Feature ID**: E-INTL-02
 
-## Feature Overview
+## What it does
 
-Feature E-INTL-02 introduces the interactive Human-In-The-Loop Spec Drafting orchestrator, enabling
-collaborative component specification authoring. It also implements the semantic LLM evaluation
-engine required for the `sw review` commands.
+- `sw draft` — the interactive Human-In-The-Loop spec drafting orchestrator: collaborative
+  component spec authoring.
+- `sw review` — the semantic LLM evaluation engine behind it.
 
 ## Functional Requirements
 
@@ -24,7 +21,3 @@ engine required for the `sw review` commands.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Spec Drafting & Spec Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature E-INTL-02 is **COMPLETED**.
