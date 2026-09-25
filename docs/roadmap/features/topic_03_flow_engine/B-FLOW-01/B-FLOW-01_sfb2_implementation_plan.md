@@ -1,55 +1,49 @@
-# Implementation Plan: Scenario Testing — Independent Verification [SF-B2: Polyglot Scenario Pipeline]
+# B-FLOW-01 SF-B2 — Polyglot Scenario Pipeline
 
-- **Feature ID**: 3.28
-- **Sub-Feature**: SF-B2 — Polyglot Scenario Pipeline (remediation of SF-B Python-only assumptions)
-- **Design Document**: docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md
-- **Design Section**: NFR-1, NFR-2, FR-4 (mechanical conversion); implicit polyglot requirement
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfb2_implementation_plan.md
-- **Status**: DRAFT
-- **Depends on**: SF-B (COMMITTED `d79da22`)
-- **Required by**: SF-C (must be committed before SF-C dev begins)
+**Status**: DRAFT (implemented — code present, see As built) · **FRs**: FR-4 (mechanical
+conversion), NFR-1, NFR-2; implicit polyglot requirement · **Depends on**: SF-B (COMMITTED
+`d79da22`) · **Required by**: SF-C (must be committed before SF-C dev begins) · **Feature ID**: 3.28
+· Design: [B-FLOW-01_design.md](B-FLOW-01_design.md)
 
-> [!IMPORTANT]
-> This plan remediation for SF-B. When SF-B was committed, the scenario converter and
-> contract generator were Python-only. This sub-feature adds full polyglot support
-> across Java, Kotlin, TypeScript, Rust, and Python using the same language plugin
-> pattern as the rest of the codebase (following `language_support_guide.md`).
+## Goal
 
----
+SF-B shipped the scenario converter and contract generator for Python only. SF-B2 makes them
+polyglot — Java, Kotlin, TypeScript, Rust, Python — using the language plugin pattern of
+`commons/language/` (per `language_support_guide.md`).
 
-## Background
+Python-hardcoded in SF-B (`d79da22`):
+1. `ScenarioConverter` (`workflows/scenarios/scenario_converter.py`) — generates `import pytest`,
+   `@pytest.mark.parametrize`, `def test_...`.
+2. `GenerateContractHandler._render_protocol()` (`flow/_generation.py:530-562`) — generates a Python
+   `Protocol` class.
+3. `ConvertScenarioHandler` (`flow/_scenario.py`) — calls `ScenarioConverter.convert()` directly.
+   Not dispatched.
+4. SF-C also needs a `StackTraceFilterInterface` per language to strip scenario file path frames
+   from stack traces before writing to `context.feedback["generate_code"]`.
 
-SF-B committed (`d79da22`) these Python-hardcoded components:
-1. `ScenarioConverter` (`workflows/scenarios/scenario_converter.py`) — generates `import pytest`, `@pytest.mark.parametrize`, `def test_...`. Python only.
-2. `GenerateContractHandler._render_protocol()` (`flow/_generation.py:530-562`) — generates a Python `Protocol` class. Python only.
-3. `ConvertScenarioHandler` (`flow/_scenario.py`) — calls `ScenarioConverter.convert()` directly. Not dispatched.
-
-Additionally, SF-C will need a `StackTraceFilterInterface` per language to strip scenario file path frames from stack traces before writing to `context.feedback["generate_code"]`.
-
-This plan makes all four components fully polyglot using the existing `commons/language/` plugin architecture.
-
----
-
-## Scope
-
-1. **`language_name` property** on `QARunnerInterface` — abstract property returning canonical language string. Implemented in all 5 runners.
-2. **`ScenarioConverterInterface` ABC** — `convert(scenario_set) -> tuple[str, str]` returning `(file_content, file_extension)`.
+Scope:
+1. **`language_name` property** on `QARunnerInterface` — abstract property returning canonical
+   language string. Implemented in all 5 runners.
+2. **`ScenarioConverterInterface` ABC** — `convert(scenario_set) -> tuple[str, str]` returning
+   `(file_content, file_extension)`.
 3. **Language-specific `scenario_converter.py`** in each of the 5 language subfolders.
 4. **`ScenarioConverterFactory`** — `create(cwd: Path) -> ScenarioConverterInterface`.
-5. **`ConvertScenarioHandler` update** — uses `ScenarioConverterFactory` instead of calling `ScenarioConverter` directly.
-6. **`GenerateContractHandler` update** — detect language, pass to LLM prompt, write correct file extension and directory.
-7. **`StackTraceFilterInterface` ABC** — `filter(stack_trace: str) -> str` stripping scenario file frames by language.
+5. **`ConvertScenarioHandler` update** — uses `ScenarioConverterFactory` instead of calling
+   `ScenarioConverter` directly.
+6. **`GenerateContractHandler` update** — detect language, pass to LLM prompt, write correct file
+   extension and directory.
+7. **`StackTraceFilterInterface` ABC** — `filter(stack_trace: str) -> str` stripping scenario file
+   frames by language.
 8. **Language-specific `stack_trace_filter.py`** in each of the 5 language subfolders.
 9. **`StackTraceFilterFactory`** — `create(cwd: Path) -> StackTraceFilterInterface`.
-10. **`detect_scenario_extension(cwd: Path) -> str`** helper — used by SF-C's `ValidateTestsHandler` template substitution.
+10. **`detect_scenario_extension(cwd: Path) -> str`** helper — used by SF-C's `ValidateTestsHandler`
+    template substitution.
 
----
+## Where it plugs in
 
-## Research Notes
-
-### RN-1: Language detection — reuse factory sniffing logic
-
-`commons/qa_runner/factory.py` already defines the manifest-sniffing logic. Extract it into a shared helper in `commons/language/`:
+- **Language detection.** `commons/qa_runner/factory.py` already sniffs manifests. Extract that
+  into a shared pure helper in `commons/language/`; the factory's `resolve_runner()` is unchanged.
+  Converters and filters call `detect_language()` without constructing a runner.
 
 ```python
 # commons/language/_detect.py
@@ -66,15 +60,10 @@ def detect_language(cwd: Path) -> str:
     return "python"
 ```
 
-The factory's `resolve_runner()` is not changed — it continues to work as before.
-`detect_language()` is a separate pure helper that can be called by converters and filters without
-constructing a full runner.
-
-### RN-2: `language_name` property on `QARunnerInterface`
-
-Adding an abstract `language_name: str` property to `QARunnerInterface` is the cleanest design but
-requires updating all 5 runner classes. This is safe — the existing runners don't have
-`language_name` defined and won't conflict.
+- **`language_name` on `QARunnerInterface`.** An abstract `language_name: str` property; all 5
+  runners implement it. No
+  runner defines `language_name` today, so nothing conflicts. It becomes the single source of truth
+  for language identity when a runner instance exists.
 
 ```python
 # In QARunnerInterface:
@@ -84,12 +73,10 @@ def language_name(self) -> str:
     """Canonical language identifier: 'python', 'java', 'kotlin', 'typescript', 'rust'."""
 ```
 
-Each runner returns its canonical string. This becomes the single source of truth for language identity when a runner instance is already available.
-
-### RN-3: Scenario converter output per language
-
-Each language has a build-tool-enforced convention for where test files must live.
-**Every convention is encoded entirely inside the language's `ScenarioConverterInterface` implementation via `output_path()`. The handler is convention-agnostic.**
+- **Test-file conventions per language.** Each convention lives only in that language's
+  `ScenarioConverterInterface` implementation, via `output_path()`. `ConvertScenarioHandler` calls
+  `converter.output_path(stem, project_root)` and writes there — zero language-specific branching in
+  the handler.
 
 | Language | Test framework | Annotation pattern | Output directory | File name |
 |----------|---------------|--------------------|-----------------|-----------|
@@ -99,27 +86,18 @@ Each language has a build-tool-enforced convention for where test files must liv
 | TypeScript | Jest | `test.each([...])` | `scenarios/generated/` | `{stem}.scenarios.test.ts` |
 | Rust | `#[cfg(test)]` mod | `#[test]` per scenario | `tests/` | `{stem}_scenarios.rs` |
 
-**Why Java and Kotlin use `src/test/java/` / `src/test/kotlin/`:** Maven and Gradle only compile
-files under the declared test source roots. A `.java` or `.kt` file placed in `scenarios/generated/`
-would never be compiled — the build tool would silently ignore it. The package declaration inside
-the file (`package scenarios.generated;`) keeps the scenario namespace visible.
+  - Java/Kotlin use `src/test/java/` / `src/test/kotlin/`: Maven and Gradle only compile files under
+    the declared test source roots; a `.java` or `.kt` file in `scenarios/generated/` would be
+    silently ignored. The package declaration (`package scenarios.generated;`) keeps the scenario
+    namespace visible.
+  - Python/TypeScript use `scenarios/generated/`: pytest discovers tests in any directory; Jest's
+    default `testMatch: ["**/*.test.ts"]` covers it while `rootDir` is the project root (the
+    default).
+  - Rust uses `tests/`: the compiler treats files there as independent integration test crates — no
+    configuration. Unit tests could live in `src/` under `#[cfg(test)]`, but scenario tests are
+    integration tests.
 
-**Why Python and TypeScript use `scenarios/generated/`:** pytest discovers tests in any directory.
-Jest's default `testMatch: ["**/*.test.ts"]` covers `scenarios/generated/` as long as `rootDir` is
-the project root (the default).
-
-**Why Rust uses `tests/`:** Rust's compiler treats files in `tests/` as independent integration test
-crates. There is no configuration — it is enforced at the compiler level. Unit tests could live in
-`src/` under `#[cfg(test)]`, but integration tests (which scenario tests are) belong in `tests/`.
-
-**Key principle:** All conventions are an implementation detail of each
-`ScenarioConverterInterface`. `ConvertScenarioHandler` calls
-`converter.output_path(stem, project_root)` and writes there — zero language-specific branching in
-the handler itself.
-
-### RN-4: Java contract format
-
-Current Python output:
+- **Contract format per language.** Current Python output, then Java:
 ```python
 @runtime_checkable
 class PaymentProtocol(Protocol):
@@ -134,25 +112,20 @@ public interface PaymentContract {
 }
 ```
 
-The `GenerateContractHandler` must:
-1. Detect language
-2. Pass `target_language: <language>` to the LLM prompt for `generate+contract` steps
-3. Write to `contracts/{stem}_contract.{ext}` where `ext` = `py/java/kt/ts/rs`
-4. Wire the contract path into `context.api_contract_paths` (unchanged)
+  `GenerateContractHandler` must: 1. detect language; 2. pass `target_language: <language>` to the
+  LLM prompt for `generate+contract` steps; 3. write to `contracts/{stem}_contract.{ext}` where
+  `ext` = `py/java/kt/ts/rs`; 4. wire the contract path into `context.api_contract_paths`
+  (unchanged).
 
-> [!NOTE]
-> `GenerateContractHandler` is already mechanical (non-LLM) for Python — it parses
-> `## Contract` code blocks and generates a Protocol class. For non-Python languages,
-> the contract section in the spec may use different code block languages (` ```java`).
-> The handler must detect the code block language tag, not the project language, since
-> specs are language-neutral by convention.
->
-> **Resolution**: The handler detects the project language, then looks for code blocks
-> tagged with that language. Falls back to Python-style parsing if none found.
+  > [!NOTE]
+  > `GenerateContractHandler` is mechanical (non-LLM) for Python — it parses `## Contract` code
+  > blocks into a Protocol class. For other languages the spec's contract section may use other code
+  > block tags (` ```java`). Specs are language-neutral, so the handler detects the project
+  > language, looks for code blocks tagged with it, and falls back to Python-style parsing if none
+  > are found.
 
-### RN-5: Stack trace filter per language
-
-The scenario frame marker in each language's stack trace is derived directly from the output path convention in `output_path()`. If the output path changes, the filter pattern must change with it.
+- **Stack-trace markers.** Each language's scenario frame marker follows from its `output_path()`
+  convention; if the path changes, the filter pattern must change with it.
 
 | Language | Frame format | Scenario frame marker | Why that marker |
 |----------|-------------|----------------------|----------------|
@@ -162,25 +135,15 @@ The scenario frame marker in each language's stack trace is derived directly fro
 | TypeScript | `at Object.<anonymous> (scenarios/generated/payment.scenarios.test.ts:N:M)` | `scenarios/generated/` in path | V8 uses file paths in stack frames |
 | Rust | `payment_scenarios::test_charge_happy` | `_scenarios::` in frame | Rust integration test crate name is the file stem |
 
-### RN-6: `ScenarioConverter` refactoring impact on existing tests
+- **Existing tests.** `tests/unit/workflows/scenarios/test_scenario_converter.py` tests
+  `ScenarioConverter.convert()` directly. `ScenarioConverter` becomes `PythonScenarioConverter`;
+  only the import changes.
 
-`tests/unit/workflows/scenarios/test_scenario_converter.py` tests `ScenarioConverter.convert()`
-directly. After refactoring, `ScenarioConverter` becomes `PythonScenarioConverter`. The test file
-must be updated to import from the new location. The test logic itself doesn't change.
+## Changes
 
----
+### 1. Language detection helper · [_detect.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/_detect.py)
 
-## Component Breakdown
-
----
-
-### Component 1: Language detection helper
-
-#### [NEW] [_detect.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/_detect.py)
-
-~25 lines. `detect_language(cwd: Path) -> str`.
-
-Also add `detect_scenario_extension(cwd: Path) -> str` helper:
+~25 lines. `detect_language(cwd: Path) -> str`, plus `detect_scenario_extension(cwd: Path) -> str`:
 ```python
 _EXTENSIONS = {
     "python": "py",
@@ -195,13 +158,9 @@ def detect_scenario_extension(cwd: Path) -> str:
     return _EXTENSIONS.get(detect_language(cwd), "py")
 ```
 
----
+### 2. `language_name` on `QARunnerInterface` and all runners
 
-### Component 2: `language_name` property on `QARunnerInterface` and all runners
-
-#### [MODIFY] [interface.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/qa_runner/interface.py)
-
-Add abstract property to `QARunnerInterface`:
+[interface.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/qa_runner/interface.py):
 ```python
 @property
 @abstractmethod
@@ -209,7 +168,7 @@ def language_name(self) -> str:
     """Canonical language identifier."""
 ```
 
-#### [MODIFY] each runner (5 files, 1 property each):
+Each runner (5 files, one `@property` returning the constant, ~3 lines each):
 
 - `commons/language/python/runner.py` → `PythonQARunner.language_name = "python"`
 - `commons/language/java/runner.py` → `JavaRunner.language_name = "java"`
@@ -217,15 +176,9 @@ def language_name(self) -> str:
 - `commons/language/typescript/runner.py` → `TypeScriptRunner.language_name = "typescript"`
 - `commons/language/rust/runner.py` → `RustRunner.language_name = "rust"`
 
-Each is a `@property` returning the string constant. ~3 lines each.
+### 3. `ScenarioConverterInterface` ABC · [interfaces.py (language)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/interfaces.py)
 
----
-
-### Component 3: `ScenarioConverterInterface` ABC
-
-#### [MODIFY] [interfaces.py (language)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/interfaces.py)
-
-Add `ScenarioConverterInterface` ABC after `CodeStructureInterface`:
+After `CodeStructureInterface` (~50 lines):
 
 ```python
 class ScenarioConverterInterface(ABC):
@@ -270,44 +223,30 @@ class ScenarioConverterInterface(ABC):
         """
 ```
 
-~50 lines total.
-
 > [!IMPORTANT]
-> `output_path()` replaces the former `test_file_name()` method. It returns an absolute
-> `Path`, not a filename string. This is the single place where each language's test
-> directory convention is enforced — the handler has zero language awareness.
+> `output_path()` replaces `test_file_name()`. It returns an absolute `Path`, not a filename string,
+> and is the single place each language's test directory convention is enforced.
 
----
+### 4. Language-specific scenario converters
 
-### Component 4: Language-specific scenario converters
+Each implements **both** `convert()` (content) and `output_path()` (location).
 
-Each converter implements **both** `convert()` (content) and `output_path()` (location). No language branching anywhere else.
-
-#### [MODIFY] [scenario_converter.py (Python)](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_converter.py)
-
-Rename `ScenarioConverter` → `PythonScenarioConverter`. Implement `ScenarioConverterInterface`.
+[scenario_converter.py
+(Python)](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_converter.py)
+— rename `ScenarioConverter` → `PythonScenarioConverter`, implement `ScenarioConverterInterface`:
 - `convert()` returns the pytest file content string (unchanged logic)
-- `output_path(stem, project_root)` returns `project_root / "scenarios" / "generated" / f"test_{stem}_scenarios.py"`
+- `output_path(stem, project_root)` returns `project_root / "scenarios" / "generated" /
+  f"test_{stem}_scenarios.py"`
+- keep `ScenarioConverter = PythonScenarioConverter` alias for backward compatibility.
+- `scenarios/generated/` keeps generated files out of `tests/` (hand-written tests).
 
-Keep `ScenarioConverter = PythonScenarioConverter` alias for backward compatibility.
-
-**Rationale for `scenarios/generated/`:** pytest is directory-agnostic. Convention: keep generated files out of `tests/` (which contains hand-written tests) to avoid confusion.
-
----
-
-#### [NEW] [scenario_converter.py (Java)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/java/scenario_converter.py)
-
-~130 lines. `JavaScenarioConverter(ScenarioConverterInterface)`.
-
-`output_path(stem, project_root)` returns:
-`project_root / "src" / "test" / "java" / "scenarios" / "generated" / f"{class_name}ScenariosTest.java"`
-
-**Why `src/test/java/`:** Maven and Gradle only compile test sources from declared test source
-roots. Files outside this directory are not compiled — Maven/Gradle ignores them entirely. Package
-declaration in the generated file is `package scenarios.generated;` to match the directory
-structure.
-
-Output format (JUnit 5, package-declared, parametrized):
+[scenario_converter.py
+(Java)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/java/scenario_converter.py)
+— ~130 lines, `JavaScenarioConverter(ScenarioConverterInterface)`. `output_path(stem, project_root)`
+returns `project_root / "src" / "test" / "java" / "scenarios" / "generated" /
+f"{class_name}ScenariosTest.java"`.
+Package declaration `package scenarios.generated;` matches the directory. Output (JUnit 5,
+package-declared, parametrized):
 ```java
 // Auto-generated scenario tests from spec scenarios.
 package scenarios.generated;
@@ -336,18 +275,14 @@ public class PaymentScenariosTest {
 }
 ```
 
----
-
-#### [NEW] [scenario_converter.py (Kotlin)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/kotlin/scenario_converter.py)
-
-~110 lines. `KotlinScenarioConverter(ScenarioConverterInterface)`.
-
-`output_path(stem, project_root)` returns:
-`project_root / "src" / "test" / "kotlin" / "scenarios" / "generated" / f"{class_name}ScenariosTest.kt"`
-
-**Why `src/test/kotlin/`:** Same as Java — Kotlin/JVM uses Gradle's `sourceSets.test.kotlin.srcDirs` which defaults to `src/test/kotlin/`. Files outside are not compiled into the test classpath.
-
-Output format (JUnit 5 Kotlin, package-declared):
+[scenario_converter.py
+(Kotlin)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/kotlin/scenario_converter.py)
+— ~110 lines, `KotlinScenarioConverter(ScenarioConverterInterface)`. `output_path(stem,
+project_root)`
+returns `project_root / "src" / "test" / "kotlin" / "scenarios" / "generated" /
+f"{class_name}ScenariosTest.kt"`.
+Gradle's `sourceSets.test.kotlin.srcDirs` defaults to `src/test/kotlin/`; files outside are not on
+the test classpath. Output (JUnit 5 Kotlin, package-declared):
 ```kotlin
 // Auto-generated scenario tests from spec scenarios.
 package scenarios.generated
@@ -376,18 +311,13 @@ class PaymentScenariosTest {
 }
 ```
 
----
-
-#### [NEW] [scenario_converter.py (TypeScript)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/typescript/scenario_converter.py)
-
-~110 lines. `TypeScriptScenarioConverter(ScenarioConverterInterface)`.
-
-`output_path(stem, project_root)` returns:
-`project_root / "scenarios" / "generated" / f"{stem}.scenarios.test.ts"`
-
-**Why `scenarios/generated/`:** Jest's default `testMatch: ["**/*.test.ts", "**/*.spec.ts"]` covers any directory under `rootDir` (project root by default). No Jest config changes needed.
-
-Output format (Jest):
+[scenario_converter.py
+(TypeScript)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/typescript/scenario_converter.py)
+— ~110 lines, `TypeScriptScenarioConverter(ScenarioConverterInterface)`. `output_path(stem,
+project_root)`
+returns `project_root / "scenarios" / "generated" / f"{stem}.scenarios.test.ts"`. Jest's default
+`testMatch: ["**/*.test.ts", "**/*.spec.ts"]` covers any directory under `rootDir`; no Jest config
+changes. Output (Jest):
 ```typescript
 // Auto-generated scenario tests from spec scenarios.
 // @trace(FR-1)
@@ -404,20 +334,11 @@ describe('payment scenarios', () => {
 });
 ```
 
----
-
-#### [NEW] [scenario_converter.py (Rust)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/rust/scenario_converter.py)
-
-~100 lines. `RustScenarioConverter(ScenarioConverterInterface)`.
-
-`output_path(stem, project_root)` returns:
-`project_root / "tests" / f"{stem}_scenarios.rs"`
-
-**Why `tests/`:** Rust's compiler treats files in `tests/` as independent integration test crates —
-this is a compiler-level convention, not a configurable convention. Rust does not support
-parametrized tests natively, so one `#[test]` function is generated per scenario.
-
-Output format (Rust integration tests):
+[scenario_converter.py
+(Rust)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/rust/scenario_converter.py)
+— ~100 lines, `RustScenarioConverter(ScenarioConverterInterface)`. `output_path(stem, project_root)`
+returns `project_root / "tests" / f"{stem}_scenarios.rs"`. Rust has no native parametrized tests,
+so one `#[test]` function per scenario. Output (Rust integration tests):
 ```rust
 // Auto-generated scenario tests from spec scenarios.
 // @trace(FR-1)
@@ -441,12 +362,9 @@ mod payment_scenarios {
         todo!()
     }
 }
+```
 
----
-
-### Component 5: `ScenarioConverterFactory`
-
-#### [NEW] [scenario_converter_factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/scenario_converter_factory.py)
+### 5. `ScenarioConverterFactory` · [scenario_converter_factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/scenario_converter_factory.py)
 
 ~60 lines:
 
@@ -476,15 +394,14 @@ def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
     return PythonScenarioConverter()
 ```
 
-Also expose `detect_scenario_extension` from here (re-export from `_detect.py`) so SF-C's `ValidateTestsHandler` has a single import point.
+Also re-exports `detect_scenario_extension` from `_detect.py`, so SF-C's `ValidateTestsHandler` has
+one import point.
 
----
+### 6. `StackTraceFilterInterface` ABC + language implementations
 
-### Component 6: `StackTraceFilterInterface` ABC + language implementations
-
-#### [MODIFY] [interfaces.py (language)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/interfaces.py)
-
-Add `StackTraceFilterInterface` ABC:
+[interfaces.py
+(language)](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/interfaces.py)
+— ~35 lines:
 
 ```python
 class StackTraceFilterInterface(ABC):
@@ -510,11 +427,9 @@ class StackTraceFilterInterface(ABC):
         """Return True if this line is a scenario test file frame."""
 ```
 
-~35 lines.
+`stack_trace_filter.py` in each language subfolder (~35 lines each):
 
-#### [NEW] stack_trace_filter.py in each language subfolder
-
-**Python** (`commons/language/python/stack_trace_filter.py`, ~35 lines):
+**Python** (`commons/language/python/stack_trace_filter.py`):
 ```python
 class PythonStackTraceFilter(StackTraceFilterInterface):
     def is_scenario_frame(self, line: str) -> bool:
@@ -527,7 +442,7 @@ class PythonStackTraceFilter(StackTraceFilterInterface):
         )
 ```
 
-**Java** (`commons/language/java/stack_trace_filter.py`, ~35 lines):
+**Java** (`commons/language/java/stack_trace_filter.py`):
 ```python
 class JavaStackTraceFilter(StackTraceFilterInterface):
     def is_scenario_frame(self, line: str) -> bool:
@@ -540,11 +455,13 @@ class JavaStackTraceFilter(StackTraceFilterInterface):
         )
 ```
 
-**Kotlin** (`commons/language/kotlin/stack_trace_filter.py`, ~35 lines) — same as Java. `"scenarios.generated."` pattern.
+**Kotlin** (`commons/language/kotlin/stack_trace_filter.py`) — same as Java,
+`"scenarios.generated."`.
 
-**TypeScript** (`commons/language/typescript/stack_trace_filter.py`, ~35 lines) — path-based, same as Python. `"scenarios/generated/"`.
+**TypeScript** (`commons/language/typescript/stack_trace_filter.py`) — path-based like Python,
+`"scenarios/generated/"`.
 
-**Rust** (`commons/language/rust/stack_trace_filter.py`, ~35 lines):
+**Rust** (`commons/language/rust/stack_trace_filter.py`):
 ```python
 class RustStackTraceFilter(StackTraceFilterInterface):
     def is_scenario_frame(self, line: str) -> bool:
@@ -557,17 +474,14 @@ class RustStackTraceFilter(StackTraceFilterInterface):
         )
 ```
 
-#### [NEW] [stack_trace_filter_factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/stack_trace_filter_factory.py)
+[stack_trace_filter_factory.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/language/stack_trace_filter_factory.py)
+— ~50 lines, same dispatch as `scenario_converter_factory.py`.
 
-~50 lines. Same dispatch pattern as `scenario_converter_factory.py`.
+### 7. `ConvertScenarioHandler` · [_scenario.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_scenario.py)
 
----
-
-### Component 7: `ConvertScenarioHandler` update
-
-#### [MODIFY] [_scenario.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_scenario.py)
-
-Replace direct `ScenarioConverter` call with factory dispatch. The handler has **zero language awareness** — `output_path()` encodes all conventions:
+Factory dispatch replaces the direct `ScenarioConverter` call. **Zero language awareness** —
+`output_path()` encodes every convention and creates the right directory. ~10 lines changed; no
+`if language == "rust"` or other branching:
 
 ```python
 # Before (Python-only):
@@ -585,20 +499,14 @@ output_path.parent.mkdir(parents=True, exist_ok=True)
 output_path.write_text(file_content, encoding="utf-8")
 ```
 
-~10 lines changed. No `if language == "rust"` or any other language branching. Each converter's `output_path()` creates the correct directory for its language.
-
-Also store the resolved path in `context.feedback` for SF-C consumption:
+Also stores the resolved path for SF-C:
 ```python
 context.feedback["scenario_test_path"] = str(output_path)
 ```
 
----
+### 8. `GenerateContractHandler` · [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
 
-### Component 8: `GenerateContractHandler` update
-
-#### [MODIFY] [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
-
-In `GenerateContractHandler.execute()`, add language detection before rendering:
+Language detection before rendering in `GenerateContractHandler.execute()`:
 
 ```python
 from specweaver.core.loom.commons.language._detect import detect_language
@@ -622,9 +530,9 @@ else:
     contract_content = self._render_protocol(class_name, signatures, docstrings)
 ```
 
-Add `_render_java_interface()`, `_render_kotlin_interface()`, `_render_typescript_interface()`, `_render_rust_trait()` static methods (~40 lines each, following `_render_protocol()` pattern).
-
-Also update `_extract_signatures()` to detect code block language tag and match against project language:
+New static methods `_render_java_interface()`, `_render_kotlin_interface()`,
+`_render_typescript_interface()`, `_render_rust_trait()` (~40 lines each, `_render_protocol()`
+pattern). `_extract_signatures()` matches code blocks tagged with the project language first:
 ```python
 # Look for code blocks matching the project language first
 code_blocks = re.findall(rf"```{language}\s*\n(.*?)```", contract_text, re.DOTALL)
@@ -633,23 +541,56 @@ if not code_blocks:
     code_blocks = re.findall(r"```\w*\s*\n(.*?)```", contract_text, re.DOTALL)
 ```
 
-Total additions to `_generation.py`: ~170 lines. This may push `_generation.py` over the 450-line soft limit (currently 564 lines). Move the new `_render_*` methods to a new module `flow/_contract_renderers.py` (~160 lines) and import from it. This maintains compliance.
-
 > [!CAUTION]
-> `_generation.py` is already 564 lines. All new `_render_*` methods MUST go into
-> `flow/_contract_renderers.py` to avoid file size regression.
+> `_generation.py` is already 564 lines, over the 450-line soft limit; ~170 more would regress it.
+> All new `_render_*` methods MUST go into `flow/_contract_renderers.py` (~160 lines), imported
+> from `_generation.py`.
 
----
+### Files
 
-## Test Plan
+| File | Change |
+|---|---|
+| `src/specweaver/core/loom/commons/language/_detect.py` | new, ~25 lines |
+| `src/specweaver/core/loom/commons/language/scenario_converter_factory.py` | new, ~60 lines |
+| `src/specweaver/core/loom/commons/language/stack_trace_filter_factory.py` | new, ~50 lines |
+| `src/specweaver/core/flow/_contract_renderers.py` | new, ~160 lines |
+| `src/specweaver/core/loom/commons/language/python/scenario_converter.py` | new, ~80 lines |
+| `src/specweaver/core/loom/commons/language/java/scenario_converter.py` | new, ~120 lines |
+| `src/specweaver/core/loom/commons/language/kotlin/scenario_converter.py` | new, ~100 lines |
+| `src/specweaver/core/loom/commons/language/typescript/scenario_converter.py` | new, ~110 lines |
+| `src/specweaver/core/loom/commons/language/rust/scenario_converter.py` | new, ~100 lines |
+| `src/specweaver/core/loom/commons/language/python/stack_trace_filter.py` | new, ~35 lines |
+| `src/specweaver/core/loom/commons/language/java/stack_trace_filter.py` | new, ~35 lines |
+| `src/specweaver/core/loom/commons/language/kotlin/stack_trace_filter.py` | new, ~35 lines |
+| `src/specweaver/core/loom/commons/language/typescript/stack_trace_filter.py` | new, ~35 lines |
+| `src/specweaver/core/loom/commons/language/rust/stack_trace_filter.py` | new, ~35 lines |
+| `tests/unit/core/loom/commons/language/test_detect.py` | new, ~40 lines |
+| `tests/unit/core/loom/commons/language/test_scenario_converters.py` | new, ~160 lines |
+| `tests/unit/core/loom/commons/language/test_stack_trace_filters.py` | new, ~120 lines |
+| `tests/unit/core/loom/commons/language/test_factories.py` | new, ~50 lines |
+| `tests/unit/core/loom/commons/language/test_contract_renderers.py` | new, ~60 lines |
+| `src/specweaver/core/loom/commons/language/interfaces.py` | +75 lines — 2 new ABCs |
+| `src/specweaver/core/loom/commons/qa_runner/interface.py` | +5 lines — abstract property |
+| `src/specweaver/core/loom/commons/language/python/runner.py` | +3 lines |
+| `src/specweaver/core/loom/commons/language/java/runner.py` | +3 lines |
+| `src/specweaver/core/loom/commons/language/kotlin/runner.py` | +3 lines |
+| `src/specweaver/core/loom/commons/language/typescript/runner.py` | +3 lines |
+| `src/specweaver/core/loom/commons/language/rust/runner.py` | +3 lines |
+| `src/specweaver/core/flow/_scenario.py` | +15 lines |
+| `src/specweaver/core/flow/_generation.py` | +20 lines — dispatch only; renderers in new file |
+| `src/specweaver/workflows/scenarios/scenario_converter.py` | +5 lines — rename + alias |
+| `tests/unit/workflows/scenarios/test_scenario_converter.py` | +3 lines — import update |
+| `tests/unit/core/flow/test_scenario_handlers.py` | +10 lines — mock factory |
 
-### Unit Tests
+Commit: `feat(3.28-polyglot): add polyglot scenario converters, contract renderers, and stack trace
+filters for Java, Kotlin, TypeScript, Rust, Python`
 
-#### [MODIFY] tests/unit/workflows/scenarios/test_scenario_converter.py
+## Tests
 
-Update `ScenarioConverter` → `PythonScenarioConverter`. All test logic unchanged.
+`tests/unit/workflows/scenarios/test_scenario_converter.py` — `ScenarioConverter` →
+`PythonScenarioConverter`; test logic unchanged.
 
-#### [NEW] tests/unit/core/loom/commons/language/test_detect.py
+`tests/unit/core/loom/commons/language/test_detect.py`
 - `test_detect_python_by_default`
 - `test_detect_java_by_pom_xml`
 - `test_detect_kotlin_by_build_gradle`
@@ -657,42 +598,46 @@ Update `ScenarioConverter` → `PythonScenarioConverter`. All test logic unchang
 - `test_detect_rust_by_cargo_toml`
 - `test_detect_scenario_extension_all_languages`
 
-#### [NEW] tests/unit/core/loom/commons/language/test_scenario_converters.py
-
-One class per language converter. Each class tests **both** content and output path:
+`tests/unit/core/loom/commons/language/test_scenario_converters.py` — one class per converter,
+testing **both** content and output path:
 - `TestPythonScenarioConverter`:
   - `test_convert_returns_pytest_content`
   - `test_trace_tags_present`
-  - `test_output_path_is_in_scenarios_generated` — asserts `scenarios/generated/test_{stem}_scenarios.py`
+  - `test_output_path_is_in_scenarios_generated` — asserts
+    `scenarios/generated/test_{stem}_scenarios.py`
   - `test_output_path_parent_created`
 - `TestJavaScenarioConverter`:
   - `test_convert_returns_junit5_content`
   - `test_package_declaration_present` — `package scenarios.generated;`
   - `test_parametrized_test_annotation_present`
-  - `test_output_path_is_in_src_test_java` — asserts `src/test/java/scenarios/generated/{Stem}ScenariosTest.java`
+  - `test_output_path_is_in_src_test_java` — asserts
+    `src/test/java/scenarios/generated/{Stem}ScenariosTest.java`
 - `TestKotlinScenarioConverter`:
   - `test_convert_returns_kotlin_content`
   - `test_package_declaration_present` — `package scenarios.generated`
   - `test_companion_object_present`
-  - `test_output_path_is_in_src_test_kotlin` — asserts `src/test/kotlin/scenarios/generated/{Stem}ScenariosTest.kt`
+  - `test_output_path_is_in_src_test_kotlin` — asserts
+    `src/test/kotlin/scenarios/generated/{Stem}ScenariosTest.kt`
 - `TestTypeScriptScenarioConverter`:
   - `test_convert_returns_jest_content`
   - `test_test_each_present`
-  - `test_output_path_is_in_scenarios_generated` — asserts `scenarios/generated/{stem}.scenarios.test.ts`
+  - `test_output_path_is_in_scenarios_generated` — asserts
+    `scenarios/generated/{stem}.scenarios.test.ts`
 - `TestRustScenarioConverter`:
   - `test_convert_returns_rust_content`
   - `test_cfg_test_present`
-  - `test_output_path_is_in_tests_dir` — asserts `tests/{stem}_scenarios.rs` (NOT `scenarios/generated/`)
+  - `test_output_path_is_in_tests_dir` — asserts `tests/{stem}_scenarios.rs` (NOT
+    `scenarios/generated/`)
 
-#### [NEW] tests/unit/core/loom/commons/language/test_stack_trace_filters.py
-
-One class per filter. Each tests with a realistic multi-frame stack trace string:
+`tests/unit/core/loom/commons/language/test_stack_trace_filters.py` — one class per filter, each
+with a realistic multi-frame stack trace:
 - `TestPythonStackTraceFilter`:
   - `test_strips_scenarios_generated_frame` — frame with `scenarios/generated/` is removed
   - `test_preserves_src_frame` — frame with `src/` is kept
   - `test_empty_trace_returns_empty`
 - `TestJavaStackTraceFilter`:
-  - `test_strips_scenarios_generated_package_frame` — `at scenarios.generated.PaymentScenariosTest...` removed
+  - `test_strips_scenarios_generated_package_frame` — `at
+    scenarios.generated.PaymentScenariosTest...` removed
   - `test_preserves_user_package_frame` — `at com.example.Payment...` kept
 - `TestKotlinStackTraceFilter`: same as Java (identical JVM frame format)
 - `TestTypeScriptStackTraceFilter`: same as Python (path-based V8 frames)
@@ -700,82 +645,34 @@ One class per filter. Each tests with a realistic multi-frame stack trace string
   - `test_strips_scenarios_module_frame` — `payment_scenarios::test_charge_happy` removed
   - `test_preserves_src_crate_frame` — `crate::payment::charge` kept
 
-#### [NEW] tests/unit/core/loom/commons/language/test_factories.py
+`tests/unit/core/loom/commons/language/test_factories.py`
 - `test_scenario_converter_factory_python` — mock `package.json` absent → `PythonScenarioConverter`
 - `test_scenario_converter_factory_java` — mock `pom.xml` present → `JavaScenarioConverter`
 - `test_scenario_converter_factory_kotlin` — mock `build.gradle` present → `KotlinScenarioConverter`
-- `test_scenario_converter_factory_typescript` — mock `package.json` present → `TypeScriptScenarioConverter`
+- `test_scenario_converter_factory_typescript` — mock `package.json` present →
+  `TypeScriptScenarioConverter`
 - `test_scenario_converter_factory_rust` — mock `Cargo.toml` present → `RustScenarioConverter`
 - `test_stack_trace_filter_factory_all_languages`
 
-#### [MODIFY] tests/unit/core/flow/test_scenario_handlers.py
-
-Update `ConvertScenarioHandler` tests to mock `create_scenario_converter`. Verify:
+`tests/unit/core/flow/test_scenario_handlers.py` — mock `create_scenario_converter` and verify:
 - Factory is called with `context.project_path`
 - `converter.convert(scenario_set)` is called
 - `converter.output_path(stem, context.project_path)` is called
 - The returned path's parent is `mkdir`'d
 - `context.feedback["scenario_test_path"]` is set to the string path
 
-#### [NEW] tests/unit/core/loom/commons/language/test_contract_renderers.py
+`tests/unit/core/loom/commons/language/test_contract_renderers.py`
 - `test_render_java_interface`
 - `test_render_kotlin_interface`
 - `test_render_typescript_interface`
 - `test_render_rust_trait`
 - `test_render_protocol_python` (existing, moved)
 
-#### [MODIFY] tests/unit/core/flow/test_scenario_pipeline_integration.py
+`tests/unit/core/flow/test_scenario_pipeline_integration.py` — pass a language-aware mock runner /
+project path fixture.
 
-Update to pass a language-aware mock runner / project path fixture.
-
-#### [MODIFY] tests/unit/core/loom/commons/qa_runner/ (each runner test file)
-
-Add `test_language_name_property` asserting the correct string is returned.
-
----
-
-## Commit Boundary
-
-**Commit**: `feat(3.28-polyglot): add polyglot scenario converters, contract renderers, and stack trace filters for Java, Kotlin, TypeScript, Rust, Python`
-
-**Files created** (~900 lines new):
-- `src/specweaver/core/loom/commons/language/_detect.py` (~25 lines)
-- `src/specweaver/core/loom/commons/language/scenario_converter_factory.py` (~60 lines)
-- `src/specweaver/core/loom/commons/language/stack_trace_filter_factory.py` (~50 lines)
-- `src/specweaver/core/flow/_contract_renderers.py` (~160 lines)
-- `src/specweaver/core/loom/commons/language/python/scenario_converter.py` (~80 lines)
-- `src/specweaver/core/loom/commons/language/java/scenario_converter.py` (~120 lines)
-- `src/specweaver/core/loom/commons/language/kotlin/scenario_converter.py` (~100 lines)
-- `src/specweaver/core/loom/commons/language/typescript/scenario_converter.py` (~110 lines)
-- `src/specweaver/core/loom/commons/language/rust/scenario_converter.py` (~100 lines)
-- `src/specweaver/core/loom/commons/language/python/stack_trace_filter.py` (~35 lines)
-- `src/specweaver/core/loom/commons/language/java/stack_trace_filter.py` (~35 lines)
-- `src/specweaver/core/loom/commons/language/kotlin/stack_trace_filter.py` (~35 lines)
-- `src/specweaver/core/loom/commons/language/typescript/stack_trace_filter.py` (~35 lines)
-- `src/specweaver/core/loom/commons/language/rust/stack_trace_filter.py` (~35 lines)
-- `tests/unit/core/loom/commons/language/test_detect.py` (~40 lines)
-- `tests/unit/core/loom/commons/language/test_scenario_converters.py` (~160 lines)
-- `tests/unit/core/loom/commons/language/test_stack_trace_filters.py` (~120 lines)
-- `tests/unit/core/loom/commons/language/test_factories.py` (~50 lines)
-- `tests/unit/core/loom/commons/language/test_contract_renderers.py` (~60 lines)
-
-**Files modified** (~90 lines):
-- `src/specweaver/core/loom/commons/language/interfaces.py` (+75 lines — 2 new ABCs)
-- `src/specweaver/core/loom/commons/qa_runner/interface.py` (+5 lines — abstract property)
-- `src/specweaver/core/loom/commons/language/python/runner.py` (+3 lines)
-- `src/specweaver/core/loom/commons/language/java/runner.py` (+3 lines)
-- `src/specweaver/core/loom/commons/language/kotlin/runner.py` (+3 lines)
-- `src/specweaver/core/loom/commons/language/typescript/runner.py` (+3 lines)
-- `src/specweaver/core/loom/commons/language/rust/runner.py` (+3 lines)
-- `src/specweaver/core/flow/_scenario.py` (+15 lines)
-- `src/specweaver/core/flow/_generation.py` (+20 lines — dispatch only; renderers in new file)
-- `src/specweaver/workflows/scenarios/scenario_converter.py` (+5 lines — rename + alias)
-- `tests/unit/workflows/scenarios/test_scenario_converter.py` (+3 lines — import update)
-- `tests/unit/core/flow/test_scenario_handlers.py` (+10 lines — mock factory)
-
----
-
-## Verification Plan
+`tests/unit/core/loom/commons/qa_runner/` (each runner test file) — `test_language_name_property`
+asserts the right string.
 
 ```
 pytest tests/unit/core/loom/commons/language/ -v
@@ -787,15 +684,25 @@ mypy src/ tests/
 pytest tests/ -v --tb=short   # full regression
 ```
 
-### Key assertions:
+Key assertions:
 - All 5 runners expose `language_name` string property
 - All 5 scenario converters return `str` from `convert()` and `Path` from `output_path()`
 - Java output path is under `src/test/java/scenarios/generated/`
 - Kotlin output path is under `src/test/kotlin/scenarios/generated/`
 - Python and TypeScript output paths are under `scenarios/generated/`
 - Rust output path is under `tests/`
-- Java and Kotlin generated files contain `package scenarios.generated;` / `package scenarios.generated`
+- Java and Kotlin generated files contain `package scenarios.generated;` / `package
+  scenarios.generated`
 - All 5 stack trace filters strip scenario frames and preserve source frames
 - `ConvertScenarioHandler` has ZERO language branching — calls `output_path()` only
 - `context.feedback["scenario_test_path"]` is set by `ConvertScenarioHandler`
 - `GenerateContractHandler` writes correct file extension and content per language
+
+## As built
+
+**Since moved** (noted 2026-09-25): `loom/commons/language/` is now `sandbox/language/core/`
+(`_detect.py`, `scenario_converter_factory.py` with `create_scenario_converter`, per-language
+`python/`, `java/`, … subfolders, including `PythonScenarioConverter`); `QARunnerInterface` is in
+`sandbox/qa_runner/core/interface.py`; `ScenarioConverterInterface` and
+`StackTraceFilterInterface` are in `workspace/ast/parsers/interfaces.py`; the renderers are public
+functions (`render_java_interface`, …) in `core/flow/handlers/contract_renderers.py`.

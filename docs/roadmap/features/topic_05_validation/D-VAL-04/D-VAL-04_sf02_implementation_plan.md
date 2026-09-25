@@ -1,66 +1,57 @@
-# Implementation Plan: Context Condensation Skeletons (SF-02)
+# D-VAL-04 SF-02 — Context Condensation Skeletons
 
-**FRs owned: FR-3, FR-4.** AST-skeleton condensation before injection, and answering the
-dependency neighbourhood from the in-memory graph instead of re-reading files. Recorded
-2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
+**Status**: ✅ Completed · **FRs owned**: FR-3, FR-4 · **Depends on**: SF-01 · Design:
+[D-VAL-04_design.md](D-VAL-04_design.md) §Sub-features → SF-02
 
+## Goal
 
-> **Status:** ✅ Completed
+AST-skeleton condensation before injection, and answering the dependency neighbourhood from the
+in-memory graph instead of re-reading files. FRs recorded 2026-08-17 under `specweaver-dev` §3.2c,
+from `INT-US-25-SF01-MIG`.
 
-## Goal Description
+`PromptBuilder` injects context dependencies as AST skeletons to cut token cost without losing
+structural context. The `workspace.parsers` AST extractors plug into `PromptBuilder`; a
+`skeleton: bool` option on `add_file` and `add_mentioned_files` turns it on. Mentioned files default
+to `True` — they are context boundaries, not editing targets.
 
-Implement AST Skeletons for `PromptBuilder` to vastly reduce token costs when injecting context
-dependencies into the context window. This achieves maximum performance optimization without
-sacrificing accuracy or structural context.
+## Where it plugs in
 
-This will be accomplished by integrating the `workspace.parsers` AST extractors directly into
-`PromptBuilder` as a fallback mechanism. We will add a `skeleton: bool` option to both `add_file`
-and `add_mentioned_files` (which will default to `True` for mentioned files, as they act purely as
-contextual boundaries rather than direct editing targets).
+| Fact | Where |
+|---|---|
+| `add_file()`, `add_mentioned_files()`, file reads | [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/infrastructure/llm/prompt_builder.py) |
+| AST extractors (`pure-logic`, so `tach` allows the import) | `workspace.parsers` |
 
-## User Review Required
+## Changes
+
+1. **Signatures** — `skeleton: bool = False` on `add_file()`; `skeleton: bool = True` on
+   `add_mentioned_files()`.
+2. **`_extract_skeleton(path: Path, content: str) -> str`** — a pure-logic resolver. Maps the file
+   extension to `PythonCodeStructure`, `TypeScriptCodeStructure`, `JavaCodeStructure`,
+   `KotlinCodeStructure` or `RustCodeStructure` and runs `.extract_skeleton(content)`.
+3. **Integration** — on read, apply `self._extract_skeleton(path, content)` when `skeleton` is
+   `True`.
 
 > [!NOTE]
-> The design leverages lazy imports within `PromptBuilder` to dynamically resolve language-specific
-> AST tools (`workspace.parsers`). If any file has invalid syntax or tree-sitter failures, it safely
-> catches `CodeStructureError` or `Exception` and gracefully falls back to appending the raw
-> contiguous file contents, guaranteeing no data loss during generation.
+> Parsers are lazy imports inside `PromptBuilder`. On invalid syntax or a tree-sitter failure it
+> catches `CodeStructureError` or `Exception` and appends the raw file contents instead, so no data
+> is lost.
 
-## Proposed Changes
+## Tests
 
-### Tooling & Extractors
+| Where | Case |
+|---|---|
+| [test_prompt_builder.py](file:///c:/development/pitbula/specweaver/tests/unit/infrastructure/llm/test_prompt_builder.py) | `PromptBuilder.add_file(..., skeleton=True)` calls the parser and returns condensed output with `" ... "` bounds instead of full implementations |
+| same | `add_mentioned_files()` defaults to AST compression for external files without affecting priority truncation |
 
-#### [MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/infrastructure/llm/prompt_builder.py)
-- **Signature Updates**:
-  - Add `skeleton: bool = False` to `add_file()`.
-  - Add `skeleton: bool = True` to `add_mentioned_files()`.
-- **Skeleton Condensation**: Add a private `_extract_skeleton(path: Path, content: str) -> str` method which acts as a pure logic boundary resolver.
-  - Matches extensions to instantiating `PythonCodeStructure`, `TypeScriptCodeStructure`, `JavaCodeStructure`, `KotlinCodeStructure`, and `RustCodeStructure`.
-  - Executes `.extract_skeleton(content)` and safely catches any exceptions to fallback to full text.
-- **Integration**: Apply `self._extract_skeleton(path, content)` during read processes if `skeleton` is evaluated as `True`.
+Commands: `pytest tests/unit/infrastructure/llm/ -v`; a full `/pre-commit` (no broken API signatures
+or boundaries); `tach check` (no `loom` boundary leak when the LLM builder references AST parsers).
 
-### Verification & Testing
+## As built
 
-#### [MODIFY] [test_prompt_builder.py](file:///c:/development/pitbula/specweaver/tests/unit/infrastructure/llm/test_prompt_builder.py)
-- **Skeleton Truncation Support**: Add unit tests verifying
-  `PromptBuilder.add_file(..., skeleton=True)` successfully calls the underlying parser and returns
-  condensed output containing `" ... "` bounds instead of full implementations.
-- **Mentioned File Defaulting**: Verify that `add_mentioned_files()` properly defaults to AST compression for external files without affecting priority truncation models.
+`_extract_skeleton` lives in its own `_skeleton.py` module, not in `prompt_builder.py`: Ruff caps
+a class at 600 lines. Its tests moved to separate modules too.
 
-## Open Questions
-
-None at this time. The plan provides the exact performance ROI mapped out in the feature description while strictly complying with `tach` architectural bounds (as `workspace.parsers` is `pure-logic`).
-
-> **Implementation Deviation (Refactoring)**: During the final code quality phase of `/pre-commit`,
-> `_extract_skeleton` was migrated out of `prompt_builder.py` and into the isolated `_skeleton.py`
-> module to physically comply with Ruff bounds restricting Class size > 600 lines. The equivalent
-> testing chunks were similarly relocated to independent modules.
-
-## Verification Plan
-
-### Automated Tests
-- Run `pytest tests/unit/infrastructure/llm/ -v` to ensure skeleton logic respects `PromptBuilder` state.
-- Will execute a full `/pre-commit` to guarantee no downstream models or CLI implementations break due to missing API signatures or broken boundaries.
-
-### Architectural Validation
-- Validate using `tach check` to ensure no `loom` boundary leaks when the LLM builder references AST parsers directly.
+**Since moved** (noted 2026-09-25): the function is `extract_ast_skeleton` in
+`infrastructure/llm/_skeleton.py`; the `skeleton` flags sit in
+`infrastructure/llm/prompt/adders.py`;
+tests are `test__skeleton.py` and `test_prompt_builder_skeleton.py`.

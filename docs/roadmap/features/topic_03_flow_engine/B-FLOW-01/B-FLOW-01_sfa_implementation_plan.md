@@ -1,81 +1,51 @@
-# Implementation Plan: Scenario Testing — Independent Verification [SF-A: Foundation — Spec Enforcement + Contract Generation]
+# B-FLOW-01 SF-A — Foundation: Spec Enforcement + Contract Generation
 
-- **Feature ID**: 3.28
-- **Sub-Feature**: SF-A — Foundation: Spec Enforcement + Contract Generation
-- **Design Document**: docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-A
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfa_implementation_plan.md
-- **Status**: COMPLETED
+**Status**: COMPLETED · **FRs owned**: FR-1, FR-2 · **Depends on**: none · **Feature ID**: 3.28
+(3.28a + 3.28b) · Design: [B-FLOW-01_design.md](B-FLOW-01_design.md) §Sub-features → SF-A
 
-## Scope
+## Goal
 
-SF-A establishes the two foundational inputs for the scenario pipeline:
+The two inputs the scenario pipeline needs:
 
-1. **FR-1 (Spec Template Enforcement)**: Enhance S07 `TestFirstRule` to also validate that the spec contains a `## Scenarios` section with structured YAML content.
-2. **FR-2 (API Contract Generation)**: New `GenerateContractHandler` that extracts a Python `Protocol` class from a spec's `## Contract` section and writes it to `contracts/api_contract.py`.
+1. **FR-1 (Spec Template Enforcement)**: S07 `TestFirstRule` also checks that the spec has a
+   `## Scenarios` section with structured YAML.
+2. **FR-2 (API Contract Generation)**: new `GenerateContractHandler` extracts a Python `Protocol`
+   class from the spec's `## Contract` section and writes it to `contracts/api_contract.py`.
 
-### What's In Scope
-- S07 enhancement (new `_extract_scenarios()` + `_validate_scenario_yaml()`)
-- `GenerateContractHandler` in `flow/_generation.py`
-- New `StepTarget.CONTRACT` enum value
-- New `VALID_STEP_COMBINATIONS` entry: `(GENERATE, CONTRACT)`
-- Handler registration in `StepHandlerRegistry.__init__()`
-- Re-export in `handlers.py` + `__all__`
-- Tests for all of the above
+In scope: S07 enhancement (`_extract_scenarios()` + `_validate_scenario_yaml()`);
+`GenerateContractHandler` in `flow/_generation.py`; `StepTarget.CONTRACT`; `VALID_STEP_COMBINATIONS`
+entry `(GENERATE, CONTRACT)`; registration in `StepHandlerRegistry.__init__()`; re-export in
+`handlers.py` + `__all__`; tests. Out of scope: scenario generation, pipeline YAML wiring and agent
+isolation (SF-B); arbiter (SF-C). Binding decisions: AD-2 (handler lives in `flow/`), AD-6
+(`StepAction.GENERATE` + `StepTarget.CONTRACT`).
 
-### What's Out of Scope (deferred to SF-B/SF-C)
-- Scenario generation (SF-B)
-- Pipeline YAML wiring (SF-B)
-- Agent isolation (SF-B)
-- Arbiter (SF-C)
+## Where it plugs in
 
-## Research Notes
+- The project uses `ruamel.yaml>=0.18` (not `pyyaml`) everywhere, e.g. `PlanSpecHandler` at
+  `_generation.py:299`. S07 YAML validation uses `ruamel.yaml.YAML(typ="safe")`, NOT
+  `yaml.safe_load()`.
+- S07 has its own `_extract_contract()` at line 203-219; its regex differs from S06's.
+  `_extract_scenarios()` follows S07's pattern (returns `str | None`, `re.MULTILINE |
+  re.IGNORECASE`), not S06's (returns `str`, `re.DOTALL`).
+- `GenerateCodeHandler` uses `Generator` from `implementation/`. Contract generation does NOT: it is
+  **pure-logic** extraction (read spec → extract `## Contract` → parse code blocks for Python
+  signatures → template a Protocol class). No LLM, adapter or config.
+- `StepHandler` at `_base.py:135-138` is a `@runtime_checkable Protocol` with one method, `async def
+  execute(self, step: PipelineStep, context: RunContext) -> StepResult`. The new handler MUST match
+  it exactly.
+- `RunContext.api_contract_paths` already exists: `_base.py:57` has `api_contract_paths: list[str] |
+  None = None` (for neighbouring API surfaces). The handler MUST append the generated contract path
+  so SF-B's `ScenarioGenerator` can consume it.
+- `validation/context.yaml` declares `archetype: pure-logic`. `ruamel.yaml.YAML(typ="safe").load()`
+  parses an in-memory string (no file I/O), and `validation/` already consumes `config/` (pydantic),
+  so it is allowed.
+- `tests/unit/assurance/validation/rules/test_s07_test_first.py`: 192 lines, 5 test classes
+  (`TestExtractContract`, `TestAnalyseContract`, `TestTestabilityScore`, `TestTestFirstRuleCheck`),
+  string fixtures (`_GOOD_CONTRACT`, `_NO_CONTRACT_SPEC`, …). New tests follow this pattern.
 
-### RN-1: Project uses `ruamel.yaml`, NOT `pyyaml`
-The design doc mentions `pyyaml` in External Dependencies, but `pyproject.toml` declares
-`ruamel.yaml>=0.18`. The codebase uses `ruamel.yaml` everywhere (e.g., `PlanSpecHandler` at
-`_generation.py:299`). The S07 scenario YAML validation MUST use `ruamel.yaml.YAML(typ="safe")`, NOT
-`yaml.safe_load()`.
-
-### RN-2: S07 already has `_extract_contract()` (different from S06's)
-S07 has its own `_extract_contract()` at line 203-219 with a slightly different regex than S06's
-version. The new `_extract_scenarios()` should follow S07's pattern (returns `str | None`, uses
-`re.MULTILINE | re.IGNORECASE`), not S06's (returns `str`, uses `re.DOTALL`).
-
-### RN-3: `GenerateCodeHandler` uses `Generator` from `implementation/`
-The contract handler needs a different approach — it's NOT LLM-based code generation. It's mechanical extraction from spec markdown. It should NOT use the `Generator` class. Instead, it should:
-1. Read spec text
-2. Extract `## Contract` section (reuse `_extract_contract()` pattern)
-3. Parse code blocks for Python signatures
-4. Template a Protocol class file
-This is a **pure-logic** operation, not an LLM call. No adapter/config needed.
-
-### RN-4: `StepHandler` is a `Protocol` (structural typing)
-`StepHandler` at `_base.py:135-138` is a `@runtime_checkable Protocol` with a single method:
-`async def execute(self, step: PipelineStep, context: RunContext) -> StepResult`. The new handler
-MUST match this signature exactly.
-
-### RN-5: Existing S07 test patterns
-`tests/unit/assurance/validation/rules/test_s07_test_first.py` has 192 lines with 5 test classes:
-`TestExtractContract`, `TestAnalyseContract`, `TestTestabilityScore`, `TestTestFirstRuleCheck`. Each
-uses string fixtures (`_GOOD_CONTRACT`, `_NO_CONTRACT_SPEC`, etc.). New tests follow this exact
-pattern.
-
-### RN-6: `RunContext.api_contract_paths` already exists
-`_base.py:57` has `api_contract_paths: list[str] | None = None`. This field was designed for
-neighboring API surfaces. The contract handler MUST append the generated contract path to this list
-so SF-B's `ScenarioGenerator` can consume it downstream.
-
-### RN-7: Validation module is `pure-logic` archetype
-`validation/context.yaml` declares `archetype: pure-logic`. This means S07 MUST NOT import
-`ruamel.yaml` at module level if it's considered I/O. However, `ruamel.yaml.YAML(typ="safe").load()`
-is a pure parsing operation (no I/O), and `validation/` already consumes `config/` which uses
-pydantic. The YAML parsing is acceptable as in-memory string parsing, not file I/O.
-
-### RN-8: Scenario YAML schema (contract between SF-A and SF-B)
-The `## Scenarios` YAML must follow the `TestExpectation` model from
-`workflows/planning/models.py:133-152`. SF-B will extend this with `req_id`. SF-A's validator MUST
-check for required keys to prevent garbage YAML from reaching SF-B's generator. Expected schema:
+**Scenario YAML schema** — the contract between SF-A and SF-B. Follows the `TestExpectation` model
+(`workflows/planning/models.py:133-152`); SF-B adds `req_id`. SF-A checks required keys so garbage
+YAML never reaches SF-B's generator:
 ```yaml
 - name: "happy_path_login"          # required, str
   function_under_test: "login"      # required, str
@@ -84,33 +54,53 @@ check for required keys to prevent garbage YAML from reaching SF-B's generator. 
   category: "happy"                  # optional, one of: happy|error|boundary
 ```
 
-### RN-9: FR-2 requires docstrings in generated Protocol
-FR-2's Outcome column says: "Produces `contracts/api_contract.py` with typed method signatures **and
-docstrings**." The `_render_protocol()` method must extract docstrings from Contract code blocks and
-include them in the generated Protocol stubs.
+FR-2 asks for typed signatures **and docstrings**, so `_render_protocol()` extracts docstrings from
+Contract code blocks into the Protocol stubs.
 
-### RN-10: AD-2 and AD-6 govern SF-A directly
-- AD-2: "Contract generation handler lives in `flow/` (new handler)"
-- AD-6: "New `StepAction.GENERATE` + `StepTarget.CONTRACT` for contract generation"
-These are binding architectural decisions — the implementation MUST follow them.
+### Reused infrastructure (all SFs; line refs as of the design)
 
-### RN-11: External Dependencies table error
-The design doc's External Dependencies table lists `pyyaml 6.0+` but the project uses `ruamel.yaml>=0.18`. This should be corrected in the design doc.
+| Component | Location | Feature | Status |
+|-----------|----------|---------|--------|
+| `GateType.JOIN` | `flow/models.py:60` | 3.27 | ✅ Complete |
+| JOIN step stripping + Wave N deferred execution | `flow/_decompose.py:190-278` | 3.27 | ✅ Complete |
+| `AsyncRateLimiterAdapter` global semaphore pool | `llm/adapters/_rate_limit.py` | 3.27 | ✅ Complete |
+| `OrchestrateComponentsHandler` DAG scheduling | `flow/_decompose.py:77-291` | 3.27 | ✅ Complete |
+| `FolderGrant(path, mode, recursive)` | `loom/security.py:38-49` | 3.26 | ✅ Complete |
+| `AccessMode` enum (READ/WRITE/FULL) | `loom/security.py:20-26` | 3.26 | ✅ Complete |
+| `WorkspaceBoundary` with `api_paths` read-only support | `loom/security.py:56-127` | 3.26 | ✅ Complete |
+| `ToolDispatcher.create_standard_set(boundary, role)` | `loom/dispatcher.py:98-161` | 3.11a | ✅ Complete |
+| Role-gated `FileSystemTool` with grants | `loom/tools/filesystem/tool.py` | Phase 2 | ✅ Complete |
+| S07 Test-First rule (Contract section validation) | `validation/rules/spec/s07_test_first.py` | Phase 1 | ✅ Complete |
+| C09 Traceability Matrix (scans `@trace` tags) | `validation/rules/code/c09_traceability.py` | 3.8 | ✅ Complete |
+| `TestExpectation` model (precursor to scenarios) | `workflows/planning/models.py:133-152` | 3.6 | ✅ Complete |
+| `StepHandlerRegistry` with `register()` | `flow/handlers.py:103-110` | Phase 2 | ✅ Complete |
+| Pipeline runner `fan_out()` | `flow/runner.py:162-188` | 3.24 | ✅ Complete |
+| `PipelineRunner` worktree sandbox execution | `flow/runner.py:287-353` | 3.26 | ✅ Complete |
+| Pipeline YAML definitions (data-only) | `workflows/pipelines/*.yaml` | Phase 2 | ✅ Complete |
 
-## Proposed Changes
+### SF-A reuse
 
-### Component 1: Validation — S07 Enhancement (FR-1)
+| Component | Status | Source | Method |
+|-----------|--------|--------|--------|
+| `_extract_contract()` regex (S06) | 🟡 Adapt | `validation/rules/spec/s06_concrete_example.py:17-24` | Clone as `_extract_section(spec_text, heading)` — change regex from `Contract` to `Scenarios`. Same module, no boundary issues |
+| S07 scoring system (`warn_score`/`fail_score`) | 🟢 Reuse | `validation/rules/spec/s07_test_first.py:55-66` | Add new check to existing `check()` method. Scoring + Finding infrastructure 100% reusable |
+| Protocol/Contract section regex | 🟢 Reuse | `workflows/planning/ui_extractor.py:18-21` | `_SECTION_RE` already extracts `## Protocol` / `## Contract` sections. Production-tested regex |
+| `GenerateCodeHandler` pattern | 🟢 Reuse | `flow/_generation.py:93-164` | Clone: same `_resolve_generation_routing()`, same `_extract_prompt_feedback()`, same `StepResult` with `generated_path`, same artifact UUID tracking |
+| `CodeStructureAtom` (tree-sitter) | 🟡 Adapt | `loom/atoms/code_structure/atom.py` | Can extract function signatures from Contract code blocks. `flow/` consumes `loom/atoms/*` ✅ |
+| YAML structure validation | 🔴 New | — | ~30 lines: parse `## Scenarios` section content, validate it's valid YAML with expected keys |
+| Contract file generator | 🔴 New | — | ~60 lines: template that produces `contracts/api_contract.py` with typed Protocol class |
 
-#### [MODIFY] [s07_test_first.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/spec/s07_test_first.py)
+## Changes
 
-**Changes:**
+### 1. S07 enhancement (FR-1) · [s07_test_first.py](file:///c:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/spec/s07_test_first.py)
 
 0. Add `Any` to existing imports (line 15):
    ```python
    from typing import TYPE_CHECKING, Any, ClassVar
    ```
 
-1. Add `_extract_scenarios(text: str) -> str | None` function (follows `_extract_contract` pattern at line 203-219):
+1. Add `_extract_scenarios(text: str) -> str | None` function (follows `_extract_contract` pattern
+   at line 203-219):
    ```python
    def _extract_scenarios(text: str) -> str | None:
        """Extract the Scenarios section content from a spec."""
@@ -128,7 +118,8 @@ The design doc's External Dependencies table lists `pyyaml 6.0+` but the project
        return text[start:]
    ```
 
-2. Add `_SCENARIO_REQUIRED_KEYS` constant and `_validate_scenario_yaml(scenarios_text: str) -> list[Finding]` function:
+2. Add `_SCENARIO_REQUIRED_KEYS` constant and `_validate_scenario_yaml(scenarios_text: str) ->
+   list[Finding]` function:
    ```python
    _SCENARIO_REQUIRED_KEYS = frozenset({"name", "function_under_test", "input_summary", "expected_behavior"})
    _SCENARIO_VALID_CATEGORIES = frozenset({"happy", "error", "boundary"})
@@ -207,7 +198,8 @@ The design doc's External Dependencies table lists `pyyaml 6.0+` but the project
        return findings
    ```
 
-3. Modify `TestFirstRule.check()` to add scenario validation after the existing contract scoring logic (line 81-120). Insert after the final `return self._pass(...)`:
+3. Modify `TestFirstRule.check()` to add scenario validation after the existing contract scoring
+   logic (line 81-120). Insert after the final `return self._pass(...)`:
 
    > [!CAUTION]
    > The scenario check is **additive** — it runs AFTER the existing contract scoring. A spec can
@@ -238,29 +230,25 @@ The design doc's External Dependencies table lists `pyyaml 6.0+` but the project
    ```
 
 > [!NOTE]
-> The missing `## Scenarios` section produces a WARNING, not FAIL. This ensures backward
-> compatibility — existing specs without scenarios continue to pass S07 (they already have no
-> scenario section today). Only malformed YAML in an existing section produces ERROR-level findings.
+> A missing `## Scenarios` section is a WARNING, not FAIL, for backward compatibility: existing
+> specs without scenarios still pass S07. Only malformed YAML in an existing section produces
+> ERROR-level findings.
 
----
+### 2. Contract generation handler (FR-2)
 
-### Component 2: Flow — Contract Generation Handler (FR-2)
-
-#### [MODIFY] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/models.py)
-
-Add new `StepTarget` enum value (after line 51):
+[models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/models.py) — new
+`StepTarget` value (after line 51):
 ```python
 CONTRACT = "contract"
 ```
 
-Add to `VALID_STEP_COMBINATIONS` (after line 106):
+`VALID_STEP_COMBINATIONS` (after line 106):
 ```python
 (StepAction.GENERATE, StepTarget.CONTRACT),
 ```
 
-#### [MODIFY] [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
-
-Add `GenerateContractHandler` class after `GenerateTestsHandler` (after line 238):
+[_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
+— `GenerateContractHandler` after `GenerateTestsHandler` (after line 238):
 
 ```python
 class GenerateContractHandler:
@@ -416,14 +404,13 @@ class GenerateContractHandler:
 ```
 
 > [!WARNING]
-> The `_extract_signatures` regex handles single-line signatures. Multi-line signatures (with
-> parentheses spanning multiple lines) are NOT supported in this first cut. This is acceptable
-> because spec Contract sections typically use compact single-line signatures. If multi-line support
-> is needed, tree-sitter parsing (already available) can be added in a follow-up.
+> `_extract_signatures` handles single-line signatures only. Multi-line signatures are NOT
+> supported:
+> spec Contract sections use compact single-line signatures. tree-sitter parsing (already available)
+> can add multi-line support later.
 
-#### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers.py)
-
-Add import (after line 36):
+[handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers.py) —
+import (after line 36):
 ```python
 from specweaver.core.flow._generation import (
     GenerateCodeHandler,
@@ -433,23 +420,32 @@ from specweaver.core.flow._generation import (
 )
 ```
 
-Add to `__all__` (after line 54):
+`__all__` (after line 54):
 ```python
 "GenerateContractHandler",
 ```
 
-Add to `StepHandlerRegistry.__init__()` (after line 86):
+`StepHandlerRegistry.__init__()` (after line 86):
 ```python
 (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler(),
 ```
 
----
+### Files
 
-### Component 3: Tests
+| File | Change |
+|---|---|
+| `src/specweaver/assurance/validation/rules/spec/s07_test_first.py` | scenario extraction + YAML validation |
+| `src/specweaver/core/flow/models.py` | 2-line additive |
+| `src/specweaver/core/flow/_generation.py` | ~60 lines added |
+| `src/specweaver/core/flow/handlers.py` | 3 lines: import, __all__, registration |
+| `tests/unit/assurance/validation/rules/test_s07_test_first.py` | ~80 lines added |
+| `tests/unit/core/flow/test_contract_handler.py` | ~100 lines, new file |
 
-#### [NEW] Tests for S07 Scenario Enhancement
+Commit: `feat(3.28a,3.28b): add scenario template enforcement and contract generation handler`
 
-**File**: `tests/unit/assurance/validation/rules/test_s07_test_first.py` (extend existing)
+## Tests
+
+`tests/unit/assurance/validation/rules/test_s07_test_first.py` (extend existing):
 
 New test class `TestScenarioExtraction`:
 - `test_extracts_numbered_header` — `## 3. Scenarios` is found
@@ -473,39 +469,25 @@ New test class `TestScenarioIntegration`:
 - `test_good_spec_with_scenarios_passes` — full spec with scenarios passes
 - `test_good_spec_without_scenarios_warns` — full spec without scenarios warns (backward compat)
 - `test_good_spec_with_malformed_scenarios_warns` — full spec with bad YAML warns
-- `test_existing_spec_fixture_backward_compat` — existing `_GOOD_CONTRACT` fixture still PASS (NFR-7)
+- `test_existing_spec_fixture_backward_compat` — existing `_GOOD_CONTRACT` fixture still PASS
+  (NFR-7)
 
-#### [NEW] Tests for GenerateContractHandler
-
-**File**: `tests/unit/core/flow/test_contract_handler.py` (new file)
+`tests/unit/core/flow/test_contract_handler.py` (new):
 
 Test class `TestGenerateContractHandler`:
 - `test_extracts_signatures_from_contract` — verifies `_extract_signatures()` finds defs
 - `test_extracts_docstrings_from_contract` — verifies `_extract_docstrings()` finds docstrings
-- `test_renders_protocol_class_with_docstrings` — verifies `_render_protocol()` includes docstrings (FR-2)
-- `test_renders_protocol_class_without_docstrings` — verifies `_render_protocol()` uses `...` fallback
+- `test_renders_protocol_class_with_docstrings` — verifies `_render_protocol()` includes docstrings
+  (FR-2)
+- `test_renders_protocol_class_without_docstrings` — verifies `_render_protocol()` uses `...`
+  fallback
 - `test_execute_creates_contract_file` — full handler execute with tmp dir
-- `test_execute_wires_api_contract_paths` — verifies `context.api_contract_paths` is populated (RN-6)
+- `test_execute_wires_api_contract_paths` — verifies `context.api_contract_paths` is populated
 - `test_execute_no_contract_section_errors` — spec without Contract → ERROR
 - `test_execute_no_signatures_errors` — Contract without code blocks → ERROR
 - `test_handler_registered_in_registry` — verify `(GENERATE, CONTRACT)` is in registry
 - `test_valid_step_combination` — verify `(GENERATE, CONTRACT)` is in `VALID_STEP_COMBINATIONS`
 
-## Commit Boundary
-
-**Single commit**: `feat(3.28a,3.28b): add scenario template enforcement and contract generation handler`
-
-Files modified:
-- `src/specweaver/assurance/validation/rules/spec/s07_test_first.py`
-- `src/specweaver/core/flow/models.py` (2-line additive)
-- `src/specweaver/core/flow/_generation.py` (~60 lines added)
-- `src/specweaver/core/flow/handlers.py` (3 lines: import, __all__, registration)
-- `tests/unit/assurance/validation/rules/test_s07_test_first.py` (~80 lines added)
-- `tests/unit/core/flow/test_contract_handler.py` (~100 lines, new file)
-
-## Verification Plan
-
-### Automated Tests
 ```bash
 pytest tests/unit/assurance/validation/rules/test_s07_test_first.py -v
 pytest tests/unit/core/flow/test_contract_handler.py -v
@@ -513,6 +495,11 @@ pytest tests/ -v --tb=short  # Full test suite regression
 python -m tach check          # Boundary compliance
 ```
 
-### Manual Verification
-- Verify existing specs still pass S07 (backward compatibility)
-- Verify `(GENERATE, CONTRACT)` appears in `StepHandlerRegistry().get(...)` output
+Manual: existing specs still pass S07 (backward compatibility); `(GENERATE, CONTRACT)` appears in
+`StepHandlerRegistry().get(...)` output.
+
+## As built
+
+**Since moved** (noted 2026-09-25): `GenerateContractHandler` is in
+`core/flow/handlers/generation.py`; contract extraction and renderers are in
+`core/flow/handlers/contract_renderers.py`. Line refs above are as of the plan's date.

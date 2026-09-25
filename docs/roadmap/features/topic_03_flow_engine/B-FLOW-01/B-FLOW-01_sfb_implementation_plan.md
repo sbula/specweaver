@@ -1,195 +1,111 @@
-# Implementation Plan: Scenario Testing — Independent Verification [SF-B: Scenario Pipeline — Generate + Convert + Wire]
+# B-FLOW-01 SF-B — Scenario Pipeline: Generate + Convert + Wire
 
-- **Feature ID**: 3.28
-- **Sub-Feature**: SF-B — Scenario Pipeline: Generate + Convert + Wire
-- **Design Document**: docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-B
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfb_implementation_plan.md
-- **Status**: COMPLETED_AND_VERIFIED (Phase 1-5 executed successfully. SF-B pipeline wired and functional. 4012 tests passing.)
+**Status**: COMPLETED_AND_VERIFIED — SF-B pipeline wired and functional; 4012 tests passing. ·
+**FRs owned**: FR-3, FR-4, FR-5a, FR-5b, FR-6, FR-7 · **Depends on**: SF-A · **Feature ID**: 3.28
+(3.28c–h) · Design: [B-FLOW-01_design.md](B-FLOW-01_design.md) §Sub-features → SF-B
 
-## Deviations from Original Plan
-- During Phase 5 code complexity checks, `_generation.py` exceeded the 600 line threshold limit due
-  to the addition of scenario handlers. To maintain clean architecture, `GenerateScenarioHandler`
-  and `ConvertScenarioHandler` were refactored into a dedicated `_scenario.py` file, which was then
-  exported via `handlers.py`.
-- We extracted `test_integration_physical_io_join_locks` from `test_planning_integration.py` to
-  `test_orchestration_integration.py` to keep integration testing limits below the mandatory 900
-  line warning threshold.
-- `runner.py`'s `fan_out()` logic was relocated to `runner_utils.py` to drop the runner line count below the 600 line limit safely.
+## Goal
 
-## Scope
+The scenario pipeline on top of SF-A (S07 enforcement + contract generation):
 
-SF-B builds the complete scenario pipeline atop SF-A's foundation (S07 enforcement + contract generation):
+1. **FR-3 (Scenario generation)**: LLM-driven atom: spec + API contract → structured YAML scenarios,
+   each mapped to a `req_id` from the spec.
+2. **FR-4 (Scenario → pytest)**: mechanical (non-LLM) converter to parametrized pytest files with
+   `# @trace(FR-X)` tags for C09 compatibility.
+3. **FR-5a (Scenario agent isolation)**: `scenario_agent` role in `ROLE_INTENTS`; grants `specs/`
+   (read), `contracts/` (read), `scenarios/` (read-write).
+4. **FR-5b (Coding agent opacity)**: the coding agent MUST NOT know the scenario pipeline exists —
+   zero `scenarios/` grants, zero scenario vocabulary in prompts/feedback.
+5. **FR-6 (Scenario validation pipeline)**: `scenario_validation.yaml`:
+   `generate_contract → generate_scenarios → convert_to_pytest`.
+6. **FR-7 (Dual-pipeline parallel execution)**: both pipelines run in parallel via
+   `OrchestrateComponentsHandler` + `GateType.JOIN`; the JOIN gate already exists (3.27).
 
-1. **FR-3 (Scenario generation)**: LLM-driven atom that takes spec + API contract → structured YAML scenarios. Each scenario maps to a `req_id` from the spec.
-2. **FR-4 (Scenario → pytest)**: Mechanical (non-LLM) converter that transforms YAML scenarios into parametrized pytest files with `# @trace(FR-X)` tags for C09 compatibility.
-3. **FR-5a (Scenario agent isolation)**: New `scenario_agent` role in `ROLE_INTENTS` with constrained filesystem grants: `specs/` (read), `contracts/` (read), `scenarios/` (read-write).
-4. **FR-5b (Coding agent opacity)**: Total information opacity — the coding agent MUST NOT know the scenario pipeline exists. Zero `scenarios/` grants, zero scenario vocabulary in prompts/feedback.
-5. **FR-6 (Scenario validation pipeline)**: New `scenario_validation.yaml` pipeline: `generate_contract → generate_scenarios → convert_to_pytest`.
-6. **FR-7 (Dual-pipeline parallel execution)**: Wire both pipelines for parallel execution via
-   `OrchestrateComponentsHandler` + `GateType.JOIN`. **Note**: The JOIN gate mechanism is already
-   100% implemented from Feature 3.27.
+NFR coverage:
+- NFR-1 (YAML not Gherkin): ScenarioSet Pydantic model + YAML serialization
+- NFR-2 (non-LLM conversion): ScenarioConverter is pure-logic, zero LLM
+- NFR-3 (logging): all handlers `logger.info` every key event
+- NFR-4 (no test collision): FolderGrant — the scenario agent writes to `scenarios/` only
+- NFR-6 (zero @trace dependency): tags are comments, not imports
+- NFR-7 (backward compatibility): all changes additive; enum count assertions updated
+- NFR-8 (total opacity): the coding agent's WorkspaceBoundary excludes `scenarios/`; no scenario
+  vocabulary in any prompt or feedback; FR-5b is enforced by architecture (no change to the coding
+  pipeline)
 
-> [!IMPORTANT]
-> **NFR Coverage:**
-> - NFR-1 (YAML not Gherkin): Enforced by ScenarioSet Pydantic model + YAML serialization
-> - NFR-2 (non-LLM conversion): ScenarioConverter is pure-logic, zero LLM
-> - NFR-3 (logging): All handlers log via `logger.info` for every key event
-> - NFR-4 (no test collision): FolderGrant enforcement — scenario agent writes to `scenarios/` only
-> - NFR-6 (zero @trace dependency): Tags are comments, not imports
-> - NFR-7 (backward compatibility): All changes are additive; enum count assertions updated
-> - NFR-8 (total opacity): Coding agent's WorkspaceBoundary excludes `scenarios/`; no scenario
->   vocabulary in any prompt or feedback; FR-5b enforcement is architectural (no code change needed
->   in existing coding pipeline)
+Out of scope (SF-C): arbiter and error attribution (FR-8); post-JOIN scenario test execution
+against coding output (AD-10); filtered feedback loop (FR-9); HITL escalation on spec ambiguity
+(FR-10); NFR-5 (bounded arbiter retries).
 
-### What's In Scope
-- `ScenarioGenerator` class (LLM-based, in `workflows/scenarios/`)
-- `ScenarioDefinition` Pydantic model (standalone, in `workflows/scenarios/`)
-- `GenerateScenarioHandler` in `flow/_generation.py`
-- `ScenarioConverter` pure-logic class (YAML → pytest, in `workflows/scenarios/`)
-- `ConvertScenarioHandler` in `flow/_generation.py`
-- New `StepTarget.SCENARIO` enum value + `StepAction.CONVERT` enum value
-- New `VALID_STEP_COMBINATIONS` entries
-- Handler registrations in `StepHandlerRegistry`
-- `scenario_agent` role in `ROLE_INTENTS`
-- `scenario_validation.yaml` pipeline definition
-- New `workflows/scenarios/` package with `context.yaml`
-- `tach.toml` registration for new `workflows.scenarios` module
-- `flow/context.yaml` updated to consume `specweaver/scenarios`
-- Tests for all of the above
+## Where it plugs in
 
-### What's Out of Scope (deferred to SF-C)
-- Arbiter agent and error attribution (FR-8)
-- Post-JOIN scenario test execution against coding output (AD-10)
-- Filtered feedback loop (FR-9)
-- HITL escalation on spec ambiguity (FR-10)
-- NFR-5 (bounded arbiter retries)
-
-## Research Notes
-
-### RN-1: `StepAction.CONVERT` — new enum, HITL-approved
-The design doc AD-7 defines `GENERATE + SCENARIO` for scenario generation. The YAML→pytest
-conversion is a distinct action (mechanical, not LLM). HITL approved adding `StepAction.CONVERT` for
-clear semantics: `(GENERATE, SCENARIO)` = LLM generation, `(CONVERT, SCENARIO)` = mechanical
-conversion.
-
-### RN-2: `ScenarioGenerator` follows `Planner` pattern exactly
-The `Planner` class at `workflows/planning/planner.py` is the canonical pattern:
-- Constructor: `__init__(self, llm, *, config, max_retries, tool_dispatcher)`
-- Main method: `async def generate_plan(...)` → structured Pydantic model
-- Retry loop: JSON parse → Pydantic validate → retry with error message on failure
-- Static helper: `_clean_json()` for markdown fence stripping
-
-`ScenarioGenerator` will clone this exact structure, producing `ScenarioSet` instead of `PlanArtifact`.
-
-### RN-3: `ScenarioDefinition` — standalone model, HITL-approved
-`ScenarioDefinition` is a standalone Pydantic model in `workflows/scenarios/scenario_models.py`. It
-does NOT subclass `TestExpectation` from `planning/models.py`. This avoids coupling the scenario
-pipeline to the planning module. The 5 shared fields (`name`, `description`, `function_under_test`,
-`input_summary`, `expected_behavior`) are duplicated intentionally.
-
-### RN-4: `ScenarioConverter` output format — C09 compatible
-C09 at `c09_traceability.py:132-147` extracts `@trace` tags from AST comment nodes using:
+- **`Planner`** (`workflows/planning/planner.py`) is the pattern `ScenarioGenerator` clones,
+  producing `ScenarioSet` instead of `PlanArtifact`: constructor
+  `__init__(self, llm, *, config, max_retries, tool_dispatcher)`; main method
+  `async def generate_plan(...)` → structured Pydantic model; retry loop JSON parse → Pydantic
+  validate → retry with the error message; static `_clean_json()` strips markdown fences.
+- **C09** at `c09_traceability.py:132-147` extracts `@trace` tags from AST comment nodes:
 ```python
 re.findall(r"@trace\((?:N)?FR-\d+\)", text)
 ```
-Generated pytest files MUST use the exact format: `# @trace(FR-1)` as a comment on the test function line.
+  Generated pytest files MUST use exactly `# @trace(FR-1)` as a comment on the test function line.
+- **`flow/context.yaml`** consumes `specweaver/planning`, `specweaver/loom/dispatcher`,
+  `specweaver/loom/security`; this SF adds `specweaver/scenarios`. Then `ScenarioGenerator`,
+  `ScenarioConverter`, `ScenarioDefinition` from `workflows/scenarios/` ✅; `WorkspaceBoundary`,
+  `FolderGrant` from `loom/security` ✅; `ToolDispatcher.create_standard_set()` from
+  `loom/dispatcher` ✅.
+- **FR-5b needs no code.** The coding pipeline uses `new_feature.yaml` (NO scenario steps); its
+  `RunContext` has no `scenarios/` in `workspace_roots` or `api_contract_paths`; its
+  `WorkspaceBoundary` has only `src/`, `tests/` roots + `specs/`, `contracts/` api_paths. This holds
+  because `OrchestrateComponentsHandler` creates an isolated `RunContext` per sub-pipeline.
 
-### RN-5: `ROLE_INTENTS` — `scenario_agent` entry
-Design doc §New ROLE_INTENTS Entry defines:
-```python
-"scenario_agent": frozenset({
-    "read_file", "write_file", "create_file",
-    "list_directory", "grep", "find_files",
-})
-```
-This is additive — no existing roles are modified.
+### SF-B reuse (line refs as of the design)
 
-### RN-6: Package location — `workflows/scenarios/`, HITL-approved
-HITL decided that scenario generation is NOT planning — it's a separate domain. New `workflows/scenarios/` package created with:
-- Own `context.yaml` declaring `consumes` and `forbids`
-- `tach.toml` registration as `src.specweaver.workflows.scenarios`
-- `flow/context.yaml` updated to consume `specweaver/scenarios`
+| Component | Status | Source | Method |
+|-----------|--------|--------|--------|
+| `TestExpectation` model | 🟢 Reuse | `workflows/planning/models.py:133-152` | Already has `function_under_test`, `input_summary`, `expected_behavior`, `category: happy\|error\|boundary`. Extend with `req_id` for C09 traceability. `flow/` consumes `planning/` ✅ |
+| `PlanSpecHandler` + `Planner` pattern | 🟡 Adapt | `flow/_generation.py:241-418` + `workflows/planning/planner.py` | `ScenarioGenerator` follows same pattern: structured prompt → LLM → parse structured response → validate with Pydantic → save as YAML. ~70% boilerplate reusable |
+| `_extract_prompt_feedback()` | 🟢 Reuse | `flow/_generation.py:72-90` | Scenario generation handler uses identical feedback extraction for loop-back |
+| C09 `@trace` tag format | 🟢 Reuse | `validation/rules/code/c09_traceability.py` | Use same `# @trace(FR-X)` comment format. C09 automatically picks up scenario-generated tags. Zero changes to C09 |
+| `WorkspaceBoundary` | 🟢 Reuse | `loom/security.py:56-127` | Direct use — pass different constructor args per agent. `flow/` consumes `loom/security` ✅ |
+| `FolderGrant` + `AccessMode` | 🟢 Reuse | `loom/security.py:20-49` | Direct use — different grants per agent. Same import ✅ |
+| `ROLE_INTENTS` dict | 🟢 Reuse | `loom/tools/filesystem/models.py:48-78` | Add 1 entry: `"scenario_agent"`. Same module, additive only |
+| `ToolDispatcher.create_standard_set()` | 🟢 Reuse | `loom/dispatcher.py:98-161` | Direct call with different args. `flow/` consumes `loom/dispatcher` ✅ |
+| `OrchestrateComponentsHandler` + Wave N | 🟢 Reuse | `flow/_decompose.py:77-291` | Unchanged. Post-JOIN steps use existing deferred-joins mechanism |
+| `GateType.JOIN` | 🟢 Reuse | `flow/models.py:60` | Unchanged. Already exists from 3.27 |
+| Pipeline YAML | 🟢 Reuse | `workflows/pipelines/new_feature.yaml` | Clone format for `scenario_validation.yaml` |
+| `ScenarioGenerator` class | 🔴 New | — | ~100 lines: LLM prompt + response parsing (but follows `Planner` pattern) |
+| YAML → pytest mechanical converter | 🔴 New | — | ~150 lines: template-based conversion, parametrized pytest with `@trace` tags |
+| `scenario_validation.yaml` | 🔴 New | — | ~20 lines: declarative YAML, data-only |
 
-### RN-7: `flow/context.yaml` import legality
-`flow/` currently consumes: `specweaver/planning`, `specweaver/loom/dispatcher`, `specweaver/loom/security`.
-After this change, `flow/` will also consume `specweaver/scenarios` (new entry).
-- `ScenarioGenerator`, `ScenarioConverter`, `ScenarioDefinition` from `workflows/scenarios/` ✅
-- `WorkspaceBoundary`, `FolderGrant` from `loom/security` ✅
-- `ToolDispatcher.create_standard_set()` from `loom/dispatcher` ✅
+## Changes
 
-### RN-8: FR-5b coding agent opacity — NO code changes needed
-FR-5b says the coding agent must have zero awareness of the scenario pipeline. This is achieved architecturally:
-- The coding pipeline uses `new_feature.yaml` which has NO scenario steps
-- `RunContext` for the coding agent has no `scenarios/` in `workspace_roots` or `api_contract_paths`
-- The coding agent's `WorkspaceBoundary` only has `src/`, `tests/` roots + `specs/`, `contracts/` api_paths
-- No code change required — this is enforced by how `OrchestrateComponentsHandler` creates isolated `RunContext` per sub-pipeline
+### 1. Enum values · [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/models.py)
 
-### RN-9: FR-7 dual-pipeline — standalone scenario pipeline, HITL-approved
-SF-B delivers `scenario_validation.yaml` as a standalone pipeline that runs independently
-(generate_contract → generate_scenarios → convert_to_pytest). The dual-pipeline wiring (parent
-pipeline that spawns both coding + scenario sub-pipelines with JOIN gate) is deferred to SF-C, which
-owns the post-JOIN flow.
-
-### RN-10: LLM prompt injection — HITL-approved: include FRs/NFRs
-The ScenarioGenerator prompt MUST inject:
-1. `## Contract` section from spec (API surface)
-2. `## Scenarios` section from spec (scenario hints)
-3. `## Functional Requirements` section from spec (FR definitions)
-4. `## Non-Functional Requirements` section from spec (NFR definitions)
-5. `req_id` list extracted from spec (for explicit mapping)
-6. Contract file content (Protocol class from SF-A)
-
-> [!IMPORTANT]
-> FRs and NFRs are NOT part of the contract file. They must be extracted from the spec separately.
-> The contract file only contains typed method signatures (Protocol class). The LLM needs both the
-> behavioral requirements (FRs/NFRs) AND the API surface (contract) to generate meaningful
-> scenarios.
-
-### RN-11: Scenario tests do NOT import contracts at runtime
-HITL-approved: generated pytest files do NOT import from `contracts/`. The contract is a
-*generation-time* artifact used by the ScenarioGenerator to understand the API surface. Generated
-tests use concrete inputs/outputs. The `# @trace` tag provides the traceability link. This keeps
-scenario tests zero-dependency.
-
-### RN-12: `context.yaml` for `workflows/scenarios/`
-A new `context.yaml` is required for the `workflows/scenarios/` package because it's a new module with its own boundary:
-- `consumes`: `specweaver/llm`, `specweaver/config`
-- `forbids`: `specweaver/loom/*`, `specweaver/implementation`, `specweaver/review`
-- `archetype`: `orchestrator`
-
-## Proposed Changes
-
-### Component 1: Data Model — New Enum Values
-
-#### [MODIFY] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/models.py)
-
-Add new `StepAction` enum value (after line 39):
+`StepAction` (after line 39):
 ```python
 CONVERT = "convert"
 ```
 
-Add new `StepTarget` enum value (after line 52):
+`StepTarget` (after line 52):
 ```python
 SCENARIO = "scenario"
 ```
 
-Add to `VALID_STEP_COMBINATIONS` (after line 122):
+`VALID_STEP_COMBINATIONS` (after line 122):
 ```python
 # Scenario pipeline combos (Feature 3.28 SF-B)
 (StepAction.GENERATE, StepTarget.SCENARIO),
 (StepAction.CONVERT, StepTarget.SCENARIO),
 ```
 
----
+### 2. New `workflows/scenarios/` package
 
-### Component 2: New `workflows/scenarios/` Package
+[__init__.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/__init__.py)
+— empty.
 
-#### [NEW] [__init__.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/__init__.py)
-
-Empty `__init__.py` for package initialization.
-
-#### [NEW] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/context.yaml)
+[context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/context.yaml)
+— own boundary: `consumes` `specweaver/llm`, `specweaver/config`; `forbids` `specweaver/loom/*`,
+`specweaver/implementation`, `specweaver/review`; `archetype`: `orchestrator`.
 
 ```yaml
 name: scenarios
@@ -220,7 +136,7 @@ operational:
   concurrency_model: none
 ```
 
-#### [NEW] [scenario_models.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_models.py)
+[scenario_models.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_models.py)
 
 ```python
 """Scenario models — structured scenario definitions for independent verification.
@@ -286,16 +202,14 @@ class ScenarioSet(BaseModel):
     reasoning: str = ""
 ```
 
----
+### 3. ScenarioGenerator — LLM-driven (FR-3) · [scenario_generator.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_generator.py)
 
-### Component 3: ScenarioGenerator — LLM-driven (FR-3)
-
-#### [NEW] [scenario_generator.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_generator.py)
-
-Follows the `Planner` pattern. Key differences from Planner:
-- Input: spec `## Contract` + `## Scenarios` + `## Functional Requirements` + `## Non-Functional Requirements` sections + contract file content + req_id list
+Follows the `Planner` pattern. Differs in:
+- Input: spec `## Contract` + `## Scenarios` + `## Functional Requirements` + `## Non-Functional
+  Requirements` sections + contract file content + req_id list
 - Output: `ScenarioSet` (Pydantic model)
-- Prompt: "Generate ≥1 scenario per public method covering happy, error, and boundary paths. Each scenario MUST reference a `req_id` from the spec. Map each FR/NFR to at least one scenario."
+- Prompt: "Generate ≥1 scenario per public method covering happy, error, and boundary paths. Each
+  scenario MUST reference a `req_id` from the spec. Map each FR/NFR to at least one scenario."
 
 ```python
 """ScenarioGenerator — LLM-driven scenario generation from spec + contract.
@@ -340,22 +254,13 @@ class ScenarioGenerator:
         ...
 ```
 
-> [!IMPORTANT]
-> **Prompt injection includes FRs and NFRs** (HITL decision):
-> The `_extract_section()` helper extracts `## Functional Requirements` and `## Non-Functional Requirements`
-> in addition to `## Contract` and `## Scenarios`. All four sections are injected into the LLM prompt.
-> FRs/NFRs are NOT part of the contract file — they must be extracted from the spec separately.
-
 > [!CAUTION]
-> The `_extract_req_ids` method uses the same regex as C09: `r"\b(?:N)?FR-\d+\b"`. This ensures the scenario generator's req_id list is identical to what C09 will validate against.
+> `_extract_req_ids` uses the same regex as C09: `r"\b(?:N)?FR-\d+\b"`, so the generator's req_id
+> list is identical to what C09 validates against.
 
----
+### 4. ScenarioConverter — mechanical YAML → pytest (FR-4) · [scenario_converter.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_converter.py)
 
-### Component 4: ScenarioConverter — Mechanical YAML → pytest (FR-4)
-
-#### [NEW] [scenario_converter.py](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/scenarios/scenario_converter.py)
-
-Pure-logic module (no LLM, no I/O operations on its own). Takes a `ScenarioSet` and produces a pytest file string.
+Pure-logic (no LLM, no I/O of its own). Takes a `ScenarioSet`, returns a pytest file string.
 
 ```python
 """ScenarioConverter — mechanical YAML scenarios to parametrized pytest.
@@ -398,21 +303,13 @@ def test_login_scenarios(input_data, expected):  # @trace(FR-1)
 ```
 
 > [!WARNING]
-> The `# @trace(FR-X)` tag MUST appear as an inline comment on the `def test_...` line or as a
-> standalone comment directly above it. C09's tree-sitter AST parser extracts trace tags from
-> `comment` nodes. The tag MUST be a Python comment (`#`), not a docstring.
+> The `# @trace(FR-X)` tag MUST be an inline comment on the `def test_...` line or a standalone
+> comment directly above it. C09's tree-sitter AST parser extracts trace tags from `comment` nodes,
+> so the tag MUST be a Python comment (`#`), not a docstring.
 
-> [!NOTE]
-> Generated pytest files do NOT import from `contracts/` at runtime (HITL decision). The contract
-> is a generation-time artifact. Scenario tests use concrete inputs/outputs only.
+### 5. Flow handlers (FR-3, FR-4) · [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
 
----
-
-### Component 5: Flow Handlers (FR-3, FR-4)
-
-#### [MODIFY] [_generation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_generation.py)
-
-Add two new handler classes after `GenerateContractHandler`:
+After `GenerateContractHandler`:
 
 **`GenerateScenarioHandler`** — LLM-driven scenario generation:
 ```python
@@ -483,7 +380,7 @@ class GenerateScenarioHandler:
             return _error_result(str(exc), started)
 ```
 
-**`ConvertScenarioHandler`** — Mechanical YAML → pytest conversion:
+**`ConvertScenarioHandler`** — mechanical YAML → pytest conversion:
 ```python
 class ConvertScenarioHandler:
     """Handler for convert+scenario — mechanical YAML to pytest conversion."""
@@ -535,9 +432,8 @@ class ConvertScenarioHandler:
             return _error_result(str(exc), started)
 ```
 
-#### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers.py)
-
-Add imports (update existing `_generation` import block):
+[handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers.py) —
+update the `_generation` import block:
 ```python
 from specweaver.core.flow._generation import (
     ConvertScenarioHandler,   # NEW
@@ -549,25 +445,21 @@ from specweaver.core.flow._generation import (
 )
 ```
 
-Add to `__all__`:
+`__all__`:
 ```python
 "ConvertScenarioHandler",
 "GenerateScenarioHandler",
 ```
 
-Add to `StepHandlerRegistry.__init__()`:
+`StepHandlerRegistry.__init__()`:
 ```python
 (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler(),
 (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler(),
 ```
 
----
+### 6. Scenario agent role (FR-5a) · [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/tools/filesystem/models.py)
 
-### Component 6: Security — Scenario Agent Role (FR-5a)
-
-#### [MODIFY] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/tools/filesystem/models.py)
-
-Add `scenario_agent` role to `ROLE_INTENTS` dict (after line 77):
+`scenario_agent` in `ROLE_INTENTS` (after line 77). Additive — no existing role changes:
 ```python
 "scenario_agent": frozenset({
     "read_file",
@@ -580,18 +472,14 @@ Add `scenario_agent` role to `ROLE_INTENTS` dict (after line 77):
 ```
 
 > [!NOTE]
-> The `scenario_agent` role grants write access to `scenarios/` only. The actual path restriction
-> is enforced by the `FolderGrant` configuration in the handler when constructing `WorkspaceBoundary`,
-> not by `ROLE_INTENTS` alone. `ROLE_INTENTS` controls *which tool intents* are available,
-> while `FolderGrant` controls *which paths* those intents can access.
+> `ROLE_INTENTS` controls *which tool intents* are available; `FolderGrant` controls *which paths*
+> they reach. Writes are limited to `scenarios/` by the `FolderGrant` configuration the handler
+> builds into `WorkspaceBoundary`, not by `ROLE_INTENTS` alone.
 
----
+### 7. Boundary configuration
 
-### Component 7: Boundary Configuration
-
-#### [MODIFY] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/context.yaml)
-
-Add `specweaver/scenarios` to the `consumes` list:
+[context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/context.yaml) —
+add `specweaver/scenarios` to `consumes`:
 ```yaml
 consumes:
   - specweaver/config
@@ -607,18 +495,13 @@ consumes:
   - specweaver/loom/security
 ```
 
-#### [MODIFY] [tach.toml](file:///c:/development/pitbula/specweaver/tach.toml)
-
-Add new module registration (after line 20):
+[tach.toml](file:///c:/development/pitbula/specweaver/tach.toml) — register the module as
+`src.specweaver.workflows.scenarios` (after line 20):
 ```toml
 { path = "src.specweaver.workflows.scenarios", depends_on = [] },
 ```
 
----
-
-### Component 8: Pipeline YAML (FR-6)
-
-#### [NEW] [scenario_validation.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/pipelines/scenario_validation.yaml)
+### 8. Pipeline YAML (FR-6) · [scenario_validation.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/workflows/pipelines/scenario_validation.yaml)
 
 ```yaml
 # Scenario Validation Pipeline — Feature 3.28
@@ -657,11 +540,35 @@ steps:
       on_fail: abort
 ```
 
----
+### Files
 
-### Component 9: Tests
+| File | Change |
+|---|---|
+| `src/specweaver/workflows/scenarios/__init__.py` | new, empty |
+| `src/specweaver/workflows/scenarios/context.yaml` | new, ~25 lines |
+| `src/specweaver/workflows/scenarios/scenario_models.py` | new, ~60 lines |
+| `src/specweaver/workflows/scenarios/scenario_generator.py` | new, ~130 lines |
+| `src/specweaver/workflows/scenarios/scenario_converter.py` | new, ~120 lines |
+| `src/specweaver/workflows/pipelines/scenario_validation.yaml` | new, ~25 lines |
+| `tests/unit/workflows/scenarios/__init__.py` | new, empty |
+| `tests/unit/workflows/scenarios/test_scenario_models.py` | new, ~40 lines |
+| `tests/unit/workflows/scenarios/test_scenario_generator.py` | new, ~100 lines |
+| `tests/unit/workflows/scenarios/test_scenario_converter.py` | new, ~80 lines |
+| `tests/unit/core/flow/test_scenario_handlers.py` | new, ~80 lines |
+| `tests/unit/core/flow/test_scenario_pipeline_yaml.py` | new, ~40 lines |
+| `src/specweaver/core/flow/models.py` | ~4 lines |
+| `src/specweaver/core/flow/_generation.py` | ~100 lines added |
+| `src/specweaver/core/flow/handlers.py` | ~6 lines |
+| `src/specweaver/core/flow/context.yaml` | ~1 line added |
+| `src/specweaver/core/loom/tools/filesystem/models.py` | ~7 lines |
+| `tach.toml` | ~1 line added |
+| `tests/unit/core/flow/test_models.py` | ~4 lines |
 
-#### [NEW] [test_scenario_models.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_models.py)
+Commit: `feat(3.28c-f): add scenario generator, converter, agent role, and pipeline YAML`
+
+## Tests
+
+[test_scenario_models.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_models.py)
 
 Test class `TestScenarioDefinition`:
 - `test_required_fields` — name, description, function_under_test, req_id are required
@@ -673,7 +580,7 @@ Test class `TestScenarioSet`:
 - `test_required_fields` — spec_path, contract_path, scenarios are required
 - `test_empty_scenarios_valid` — empty list is valid
 
-#### [NEW] [test_scenario_generator.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_generator.py)
+[test_scenario_generator.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_generator.py)
 
 Test class `TestScenarioGenerator`:
 - `test_extract_req_ids` — extracts FR-1, FR-2, NFR-1 from spec text
@@ -687,7 +594,7 @@ Test class `TestScenarioGenerator`:
 - `test_generate_scenarios_retry_on_invalid_json` — invalid JSON triggers retry
 - `test_generate_scenarios_exhausts_retries` — raises ValueError after max retries
 
-#### [NEW] [test_scenario_converter.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_converter.py)
+[test_scenario_converter.py](file:///c:/development/pitbula/specweaver/tests/unit/workflows/scenarios/test_scenario_converter.py)
 
 Test class `TestScenarioConverter`:
 - `test_convert_single_scenario` — produces valid pytest file string
@@ -697,7 +604,7 @@ Test class `TestScenarioConverter`:
 - `test_empty_scenarios` — produces valid but empty test file
 - `test_no_contract_import` — output does NOT import from `contracts/` (HITL decision)
 
-#### [NEW] [test_scenario_handlers.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_scenario_handlers.py)
+[test_scenario_handlers.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_scenario_handlers.py)
 
 Test class `TestGenerateScenarioHandler`:
 - `test_execute_creates_scenario_yaml` — handler writes YAML to scenarios/definitions/
@@ -710,14 +617,13 @@ Test class `TestConvertScenarioHandler`:
 - `test_execute_scenario_yaml_not_found` — returns error if YAML missing
 - `test_handler_registered` — `(CONVERT, SCENARIO)` in registry
 
-#### [MODIFY] [test_models.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_models.py)
-
-Update enum count assertions:
+[test_models.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_models.py) —
+enum count assertions:
 - `StepTarget` count: 8 → 9 (add SCENARIO)
 - `StepAction` count: 10 → 11 (add CONVERT)
 - `VALID_STEP_COMBINATIONS` count: current → +2
 
-#### [NEW] [test_scenario_pipeline_yaml.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_scenario_pipeline_yaml.py)
+[test_scenario_pipeline_yaml.py](file:///c:/development/pitbula/specweaver/tests/unit/core/flow/test_scenario_pipeline_yaml.py)
 
 Test class `TestScenarioValidationPipeline`:
 - `test_pipeline_loads` — YAML parses to `PipelineDefinition`
@@ -725,43 +631,8 @@ Test class `TestScenarioValidationPipeline`:
 - `test_step_count` — exactly 3 steps
 - `test_step_actions` — correct action+target pairs
 
-#### [MODIFY] Existing test files for ROLE_INTENTS
+Existing `ROLE_INTENTS` tests: `scenario_agent` is in the dict; its intent set matches the design.
 
-- Verify `scenario_agent` is in `ROLE_INTENTS` dict
-- Verify intent set matches design doc
-
----
-
-## Commit Boundary
-
-**Single commit**: `feat(3.28c-f): add scenario generator, converter, agent role, and pipeline YAML`
-
-Files created:
-- `src/specweaver/workflows/scenarios/__init__.py` (empty)
-- `src/specweaver/workflows/scenarios/context.yaml` (~25 lines)
-- `src/specweaver/workflows/scenarios/scenario_models.py` (~60 lines)
-- `src/specweaver/workflows/scenarios/scenario_generator.py` (~130 lines)
-- `src/specweaver/workflows/scenarios/scenario_converter.py` (~120 lines)
-- `src/specweaver/workflows/pipelines/scenario_validation.yaml` (~25 lines)
-- `tests/unit/workflows/scenarios/__init__.py` (empty)
-- `tests/unit/workflows/scenarios/test_scenario_models.py` (~40 lines)
-- `tests/unit/workflows/scenarios/test_scenario_generator.py` (~100 lines)
-- `tests/unit/workflows/scenarios/test_scenario_converter.py` (~80 lines)
-- `tests/unit/core/flow/test_scenario_handlers.py` (~80 lines)
-- `tests/unit/core/flow/test_scenario_pipeline_yaml.py` (~40 lines)
-
-Files modified:
-- `src/specweaver/core/flow/models.py` (~4 lines)
-- `src/specweaver/core/flow/_generation.py` (~100 lines added)
-- `src/specweaver/core/flow/handlers.py` (~6 lines)
-- `src/specweaver/core/flow/context.yaml` (~1 line added)
-- `src/specweaver/core/loom/tools/filesystem/models.py` (~7 lines)
-- `tach.toml` (~1 line added)
-- `tests/unit/core/flow/test_models.py` (~4 lines)
-
-## Verification Plan
-
-### Automated Tests
 ```bash
 pytest tests/unit/workflows/scenarios/ -v
 pytest tests/unit/core/flow/test_scenario_handlers.py -v
@@ -772,8 +643,29 @@ python -m tach check          # Boundary compliance
 ruff check src/ tests/        # Lint check
 ```
 
-### Manual Verification
-- Verify `scenario_validation.yaml` round-trips through `PipelineDefinition`
-- Verify `(GENERATE, SCENARIO)` and `(CONVERT, SCENARIO)` appear in registry
-- Verify `scenario_agent` in `ROLE_INTENTS`
-- Verify `tach check` passes with new module
+Manual: `scenario_validation.yaml` round-trips through `PipelineDefinition`; `(GENERATE, SCENARIO)`
+and `(CONVERT, SCENARIO)` in the registry; `scenario_agent` in `ROLE_INTENTS`; `tach check` passes
+with the new module.
+
+## Decisions (audit, HITL-approved)
+
+| # | Question | Chosen | Why |
+|---|---|---|---|
+| RN-1 | Action for YAML→pytest? | new `StepAction.CONVERT` | AD-7 defines `GENERATE + SCENARIO` for generation; conversion is distinct (mechanical). `(GENERATE, SCENARIO)` = LLM generation, `(CONVERT, SCENARIO)` = mechanical conversion |
+| RN-3 | Scenario model? | standalone `ScenarioDefinition` in `workflows/scenarios/scenario_models.py`; does NOT subclass `TestExpectation` from `planning/models.py` | no coupling to the planning module. The 5 shared fields (`name`, `description`, `function_under_test`, `input_summary`, `expected_behavior`) are duplicated on purpose |
+| RN-6 | Package location? | new `workflows/scenarios/` with its own `context.yaml`, registered in `tach.toml`, consumed by `flow/context.yaml` | scenario generation is NOT planning — a separate domain |
+| RN-9 | FR-7 wiring? | `scenario_validation.yaml` ships as a standalone pipeline (generate_contract → generate_scenarios → convert_to_pytest); the parent pipeline that spawns both sub-pipelines with the JOIN gate goes to SF-C | SF-C owns the post-JOIN flow |
+| RN-10 | What goes into the generator prompt? | 1. `## Contract` (API surface) 2. `## Scenarios` (hints) 3. `## Functional Requirements` 4. `## Non-Functional Requirements` 5. `req_id` list 6. contract file content (Protocol class from SF-A); `_extract_section()` pulls all four sections | FRs/NFRs are NOT in the contract file, which holds only typed signatures. The LLM needs both behaviour (FRs/NFRs) and API surface |
+| RN-11 | Do scenario tests import `contracts/`? | No | the contract is a *generation-time* artifact; tests use concrete inputs/outputs; `# @trace` gives the traceability link; tests stay zero-dependency |
+
+## As built
+
+- `GenerateScenarioHandler` and `ConvertScenarioHandler` live in `_scenario.py` (exported via
+  `handlers.py`), not `_generation.py`, which would have passed the 600 line threshold.
+- `test_integration_physical_io_join_locks` moved from `test_planning_integration.py` to
+  `test_orchestration_integration.py` to stay under the 900 line warning threshold.
+- `runner.py`'s `fan_out()` moved to `runner_utils.py` to keep the runner under 600 lines.
+
+**Since moved** (noted 2026-09-25): handlers are in `core/flow/handlers/scenario.py`; the Python
+converter is `sandbox/language/core/python/scenario_converter.py` (SF-B2). Line refs above are as
+of the plan's date.
