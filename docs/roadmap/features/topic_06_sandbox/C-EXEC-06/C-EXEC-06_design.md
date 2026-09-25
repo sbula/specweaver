@@ -25,11 +25,13 @@ lands in the user's repo.
 Per-step isolation (`D-EXEC-02`) could not run a multi-step loop such as `sw implement`'s
 generate → lint-fix → run-tests → validate:
 
-| Gap | What broke | Where |
-|---|---|---|
-| 1 — no commit | Handlers never commit. `worktree_sync` runs `git rebase main`, which refuses on the dirty tree and returns FAILED — a result **discarded**. `strip_merge`'s `git merge sf-*` is then a no-op and the generated file is lost at teardown. | `git/core/atom.py:427-475`, `runner_utils.py:195` |
-| 2 — no allow-list | `execute_in_sandbox` reads `getattr(context, "allowed_paths", [])`; `RunContext` has **no such field** → always `[]` → `strip_merge` strips every file. | `runner_utils.py:202`, `handlers/base.py`, `git/core/worktree_ops.py:107` |
-| 3 — branch collision | Branch/path come from the constant run id (`sf-{pipeline}-{task_id}`, `.worktrees/{task_id}`). Teardown removes the worktree but **not** the branch, so the 2nd isolated step's `git worktree add -b <existing-branch>` fails closed. | `runner_utils.py:163-166` |
+| Gap | What broke |
+|---|---|
+| 1 — no commit | Handlers never commit. `worktree_sync` runs `git rebase main`, which refuses on the dirty tree and returns FAILED — a result **discarded**. `strip_merge`'s `git merge sf-*` is then a no-op and the generated file is lost at teardown. |
+| 2 — no allow-list | `execute_in_sandbox` reads `getattr(context, "allowed_paths", [])`; `RunContext` has **no such field** → always `[]` → `strip_merge` strips every file. |
+| 3 — branch collision | Branch/path come from the constant run id (`sf-{pipeline}-{task_id}`, `.worktrees/{task_id}`). Teardown removes the worktree but **not** the branch, so the 2nd isolated step's `git worktree add -b <existing-branch>` fails closed. |
+
+Code locations: SF-01 plan (Gap 3), SF-02 plan (Gaps 1–2).
 
 ## Architecture
 
@@ -51,23 +53,15 @@ graph LR
 | `RunContext.allowed_paths` field | `core.flow.handlers.base` |
 | Policy + allow-list population | composition root |
 
-**Reused primitives** (GitAtom, `git/core/atom.py`):
+**Reused GitAtom primitives** — line numbers in the SF-01 plan:
 
 | Primitive | Does |
 |---|---|
-| `worktree_add` (`:385-415`) | `git worktree add -b <branch> <path> HEAD` |
-| `worktree_sync` (`:427-475`) | fetch + rebase — *not* a commit |
-| `strip_merge` (`:477-491` → `worktree_ops.handle_strip_merge`) | `git merge -X ours`, strip non-`allowed_paths` + hard-block `README.md`/`docs/`, commit surviving hunks |
-| `worktree_teardown` (`worktree_ops.py:20-64`) | resilient remove, Windows `shutil.rmtree` backoff — **does not delete the branch** |
-| `setup_sandbox_caches` (`runner_utils.py`) | symlinks `.specweaver`/caches into the worktree |
-
-Already present: `RunContext.enforce_isolation` (`base.py:56`, default False) and `execution_root`
-(`base.py:57`). The flow CLI sets the policy from settings (`flow/interfaces/cli.py:270-272`,
-`sandbox.enforce_worktree_isolation`). Per-step dispatch today: `runner.py:321-327`
-(`if resolve_should_isolate(step_def, context): result = execute_in_sandbox(...)`);
-`execute_in_sandbox` (`runner_utils.py:151-221`) wraps ONE step: `worktree_add` → rebind
-`output_dir`/`execution_root` → `handler.execute` → `worktree_sync` → `strip_merge` →
-`worktree_teardown` (finally).
+| `worktree_add` | `git worktree add -b <branch> <path> HEAD` |
+| `worktree_sync` | fetch + rebase — *not* a commit; per-run does not use it |
+| `strip_merge` (→ `worktree_ops.handle_strip_merge`) | `git merge -X ours`, strip non-`allowed_paths` + hard-block `README.md`/`docs/`, commit surviving hunks |
+| `worktree_teardown` | resilient remove, Windows `shutil.rmtree` backoff — **does not delete the branch** |
+| `setup_sandbox_caches` | symlinks `.specweaver`/caches into the worktree |
 
 Opt-in setting: `[sandbox] enforce_session_isolation` (read from `SandboxSettings`). Only dependency:
 git, any version, already used by `D-EXEC-02` — `worktree add/remove`, `branch -D`, `add -A`,
