@@ -1,10 +1,29 @@
 # Pipeline Engine
 
-## Step Model
+A pipeline is a YAML list of **steps**. The runner executes them in order, a **gate** after a step
+decides what happens next, and state is saved to SQLite after every step so a run can resume.
 
-A pipeline is a sequence of **steps**. Each step combines:
-- **Action** (verb): `draft`, `validate`, `review`, `generate`, `lint_fix`, `plan`, `decompose`, `arbitrate`
-- **Target** (noun): `spec`, `code`, `tests`, `feature`, `verdict`
+```mermaid
+graph LR
+    Y["Pipeline YAML"] --> R["PipelineRunner"]
+    R -->|"(action, target)"| H["StepHandlerRegistry<br/>→ handler"]
+    H --> SR["StepResult"]
+    SR --> G["Gate<br/>(optional)"]
+    G --> HY["hydrate_plan_context"]
+    HY --> S["StateStore<br/>(SQLite)"]
+    S --> R
+```
+
+## Step model
+
+Each step is an **action** (verb) on a **target** (noun):
+
+- Actions: `draft`, `validate`, `review`, `generate`, `lint_fix`, `plan`, `decompose`, `arbitrate`,
+  `enrich`, `detect`, `orchestrate`, `convert`, `bash`
+- Targets: `spec`, `code`, `tests`, `feature`, `verdict`, `standards`, `drift`, `components`,
+  `contract`, `scenario`, `script`
+
+Source: `StepAction` / `StepTarget` in `engine/models.py`.
 
 ```yaml
 # Example: new_feature.yaml
@@ -18,14 +37,15 @@ steps:
       on_fail: abort
 ```
 
-## Gate Model
+## Gate model
 
-Gates sit after steps and control flow. Each gate has:
-- **type**: `auto` (machine-evaluated) or `hitl` (human approves)
-- **condition**: `all_passed`, `accepted`, `completed`
-- **on_fail**: `abort`, `retry`, `loop_back`, `continue`
-- **loop_target**: step name to jump back to (for `loop_back`)
-- **max_retries**: bounded retry/loop count
+| Field | Values |
+|---|---|
+| **type** | `auto` (machine-evaluated), `hitl` (human approves); also `reserve`, `join` |
+| **condition** | `all_passed`, `accepted`, `completed` |
+| **on_fail** | `abort`, `retry`, `loop_back`, `continue` |
+| **loop_target** | step name to jump back to (for `loop_back`) |
+| **max_retries** | bounded retry/loop count |
 
 ```text
                ┌─────────┐
@@ -39,9 +59,9 @@ Gates sit after steps and control flow. Each gate has:
                  step    earlier step
 ```
 
-## Handler Registry
+## Handler registry
 
-The `StepHandlerRegistry` maps `(action, target)` pairs to handler classes:
+`StepHandlerRegistry` maps `(action, target)` pairs to handler classes:
 
 | Action + Target | Handler | Module |
 |----------------|---------|--------|
@@ -67,31 +87,29 @@ The `StepHandlerRegistry` maps `(action, target)` pairs to handler classes:
 | `arbitrate+verdict` | `ArbitrateVerdictHandler` | `core/flow/handlers/arbiter.py` |
 | `bash+script` | `BashActionHandler` | `core/flow/handlers/bash_action.py` |
 
-> Source of truth: `StepHandlerRegistry.__init__` in `core/flow/handlers/registry.py`. A pair
-> present in `VALID_STEP_COMBINATIONS` (`engine/models.py`) but absent here makes the pipeline
-> unrunnable — the runner errors with "No handler registered for `<action>`+`<target>`" at that
-> step. That was exactly the `feature_decomposition` defect INT-US-21 FR-1 closed.
+Source of truth: `StepHandlerRegistry.__init__` in `core/flow/handlers/registry.py`.
+
+**Rule:** every pair in `VALID_STEP_COMBINATIONS` (`engine/models.py`) needs a handler here. A
+missing one makes the pipeline unrunnable: the runner errors with "No handler registered for
+`<action>`+`<target>`" at that step (the `feature_decomposition` gap INT-US-21 FR-1 closed).
 
 ## Runner
 
-The `PipelineRunner` walks through steps sequentially:
-1. Look up handler in registry
-2. Execute handler → get `StepResult`
-3. If step has a gate → evaluate it (advance/stop/retry/loop_back/park)
-4. **Hydrate plan context** from the step's output (see below)
-5. Persist state to SQLite after each step (supports resume)
-6. Emit events for UI progress display
+`PipelineRunner` loop, per step:
 
-State is persisted so interrupted runs can `resume(run_id)`.
+1. Look up the handler in the registry.
+2. Execute it → `StepResult`.
+3. If the step has a gate, evaluate it (advance/stop/retry/loop_back/park).
+4. **Hydrate plan context** from the step's output (below).
+5. Persist state to SQLite (enables `resume(run_id)`).
+6. Emit events for UI progress display.
 
-### HITL Approve-on-Resume (`engine/approval.py`)
+### HITL approve-on-resume (`engine/approval.py`)
 
-`GateEvaluator` parks HITL gates unconditionally and `resume()` only flipped the status back to
-RUNNING — so the loop re-executed the step, the gate re-parked, and the run could never advance.
-Resuming a reviewed gate-park now *is* the approval.
+`GateEvaluator` parks HITL gates unconditionally. **Resuming a reviewed gate-park is the approval.**
+(Replaced: `resume()` used to only flip the status back to RUNNING, so the gate re-parked forever.)
 
-The discriminator is entirely in already-persisted state, so there is no schema change and no
-approval store:
+The decision reads only already-persisted state: no schema change, no approval store.
 
 | park flavour | `record.status` | `result.status` | verdict |
 |---|---|---|---|
@@ -100,10 +118,15 @@ approval store:
 | handler-park | `WAITING_FOR_INPUT` | `WAITING_FOR_INPUT` | re-execute |
 | RESERVE-park | `WAITING_FOR_INPUT` | `PENDING` | re-execute |
 
-Requiring `PASSED` explicitly makes misclassification structurally impossible — every other
-flavour re-executes, which is the safe direction, since a step that never produced a verdict must
-never be skipped. Approval additionally requires the record's `step_name` to match the pipeline
-step at that index, so a YAML edited between sessions cannot let one step's result approve another.
+Rules:
+
+- **Only `PASSED` approves.** Every other flavour re-executes — the safe direction: a step that
+  never produced a verdict must never be skipped.
+- **`step_name` must match** the pipeline step at that index, so a YAML edited between sessions
+  cannot let one step's result approve another.
+- **One-shot signal.** An explicit `approve_parked` keyword is threaded `resume() → execute_run →
+_execute_loop` and consumed on the first iteration whether or not it approves. `run()` never
+  sets it: a fresh run cannot auto-approve, and one resume approves at most one gate.
 
 > [!CAUTION]
 > The check sits at the **very top of the loop body**, ahead of both the staleness-bypass block
@@ -112,14 +135,10 @@ step at that index, so a YAML edited between sessions cannot let one step's resu
 > It also bypasses **gate evaluation**, not just handler execution — the HITL gate parks
 > unconditionally, so re-evaluating it would simply re-park.
 
-The signal is an explicit `approve_parked` keyword threaded `resume() → execute_run →
-_execute_loop`, consumed on the first iteration whether or not it approves. `run()` never sets it,
-so a fresh run can never auto-approve, and one resume approves at most one gate.
+### Plan context hydration (`engine/hydration.py`)
 
-### Plan Context Hydration (`engine/hydration.py`)
-
-Two distinct plan concepts flow between steps, on **two distinct `RunContext` fields**
-(INT-US-21 AD-1 — they previously shared one field that nothing ever wrote):
+Two plan concepts flow between steps, on **two separate `RunContext` fields** (INT-US-21 AD-1;
+replaced one shared field that nothing wrote):
 
 | Producing step | Field | Content | Consumed by |
 |---|---|---|---|
@@ -129,14 +148,12 @@ Two distinct plan concepts flow between steps, on **two distinct `RunContext` fi
 `hydrate_plan_context()` is the single writer for both. Contract:
 
 - **Only `PASSED` results hydrate.** A non-`PASSED` result *clears* the field that step owns, so a
-  superseded plan can never survive a failed re-run and be silently consumed downstream.
-- **Never raises.** A missing key, deleted file, unreadable path or non-serializable output
-  degrades to a WARNING and leaves the field untouched, so the consuming step fails with its own
-  specific message.
-- **Serializes with `default=str`, matching `StateStore` exactly** (`engine/store.py`). This is
-  load-bearing: without it an output carrying a `Path`/`set` would fail to hydrate on the live path
-  but succeed after a resume, making the same run behave differently depending on whether it was
-  interrupted.
+  superseded plan never survives a failed re-run.
+- **Never raises.** A missing key, deleted file, unreadable path or non-serializable output logs a
+  WARNING and leaves the field untouched; the consuming step then fails with its own message.
+- **Serializes with `default=str`, matching `StateStore` exactly** (`engine/store.py`). Without
+  it an output carrying a `Path`/`set` fails to hydrate live but succeeds after a resume — the same
+  run would behave differently depending on whether it was interrupted.
 
 > [!IMPORTANT]
 > The hook is called from the **join point both advance paths reach** — after the gate's `advance`
@@ -150,21 +167,20 @@ Two distinct plan concepts flow between steps, on **two distinct `RunContext` fi
 
 #### Cross-session rehydration
 
-The plan fields live in memory and die with the process. `resume()` calls
-`rehydrate_from_records()` **before the loop starts**, replaying `hydrate_plan_context` over the
-persisted step records so a resumed handler sees exactly what a same-session handler would.
+Plan fields live in memory and die with the process. `resume()` calls `rehydrate_from_records()`
+**before the loop starts**, replaying `hydrate_plan_context` over the persisted step records, so a
+resumed handler sees what a same-session handler would.
 
 - **Keys on the stored RESULT status, never the record status.** A gate-parked step's *record*
   is `WAITING_FOR_INPUT` while its stored *result* is `PASSED` — keying on the record would skip
-  precisely the step a resumed run needs.
-- **Pairs records to step definitions by index AND name.** A pipeline YAML edited between sessions
-  keeps its length when steps are merely reordered or renamed, so index alone would pair a stored
-  result with the wrong action/target and hydrate the wrong field. Mismatches are skipped with a
-  warning; a whole-run warning fires up front when `run.pipeline_name` disagrees with the
-  definition being resumed.
-- Records whose `result is None` (a loop-back resets its target that way) are skipped.
+  exactly the step a resumed run needs.
+- **Pairs records to step definitions by index AND name.** A YAML edited between sessions keeps
+  its length when steps are only reordered or renamed, so index alone would pair a stored result
+  with the wrong action/target and hydrate the wrong field. Mismatches are skipped with a warning; a whole-run warning fires up front when
+  `run.pipeline_name` disagrees with the definition being resumed.
+- Records with `result is None` (a loop-back resets its target that way) are skipped.
 
-> The store round-trip is the seam this all rests on — `StateStore.save_run` serializes step
-> records to JSON with `default=str` and `load_run` rebuilds them. It is pinned by
-> `tests/integration/core/flow/engine/test_rehydration_integration.py`, because in-memory unit
-> tests cannot catch a regression in the persistence layer.
+The store round-trip is the seam this rests on: `StateStore.save_run` serializes step records to
+JSON with `default=str`, `load_run` rebuilds them. Pinned by
+`tests/integration/core/flow/engine/test_rehydration_integration.py` — in-memory unit tests cannot
+catch a regression in the persistence layer.

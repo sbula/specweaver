@@ -1,38 +1,51 @@
 # User Handbook 4: Interactive HITL Gates & Dictator Overrides
 
-SpecWeaver assumes LLMs are intelligent but unpredictable. Every sequence of changes executed by
-generation agents must route formally through a **Human-In-The-Loop (HITL)** interception gate prior
-to executing Git operations.
+Use when: a run is parked at a Human-In-The-Loop (HITL) gate, or you need to override an agent's
+decision.
+
+Changes made by generation agents pass a **HITL** gate before any Git operation runs.
 
 ## 1. The Dual-Agent Pipeline Wait (`GateType.HITL`)
-When `sw implement` or `sw review` hits an evaluation dead-end (the Agent encounters a bug it cannot systematically fix via the linter outputs), it immediately pauses execution and yields to the CLI.
+
+When `sw implement` or `sw review` hits a problem the agent cannot fix from the linter output, the
+run pauses and hands control to the CLI:
+
 ```bash
 Execution Halted - GateType: HITL
 Path: src/controller.py >> Reason: Lacking domain schema boundaries
 ```
-You can leave the terminal running safely. The workflow is formally **Parked**.
+
+The run is now **Parked**. You can leave the terminal running.
 
 **Interactive vs. headless drafting (INT-US-02):** when a pipeline reaches a `draft_spec` step and the
-spec doesn't exist yet, the behavior depends on where you run it. In an **interactive terminal**,
-`sw run new_feature <name>` (and `sw resume`) now co-author the spec with you directly — the interactive
-provider is attached automatically. **Headless** (CI, scripts, piped input), the run **parks** exactly as
-before and tells you how to continue; a parked run exits with code `0` (parking is a normal outcome, not
-an error).
+spec does not exist yet:
 
-## 2. Using `<dictator-overrides>` 
-If a SpecWeaver Agent insists on altering an architectural decision incorrectly during a feedback loop, you have the authority to bypass its logical deduction context entirely.
+| Where you run it | What happens |
+|---|---|
+| **Interactive terminal** | `sw run new_feature <name>` (and `sw resume`) co-author the spec with you; the interactive provider is attached automatically |
+| **Headless** (CI, scripts, piped input) | The run **parks** and tells you how to continue |
 
-Within your review interface, wrap explicit commands inside an XML boundary. This physically weighs higher mathematically inside the `PromptBuilder` engine above standard execution logic:
+A parked run exits with code `0`: parking is a normal outcome, not an error.
+
+## 2. Using `<dictator-overrides>`
+
+Use this when an agent keeps changing an architectural decision the wrong way during a feedback
+loop. In your review feedback, wrap the commands in an XML block. The `PromptBuilder` gives it
+priority over the standard instructions:
+
 ```xml
 <dictator-overrides>
 DO NOT IMPORT FROM `commons/*`. You must mock the payload locally instead.
 IGNORE PyTest Warning C04 coverage for this explicit module.
 </dictator-overrides>
 ```
-The agent receives these overrides as un-arguable commands injected precisely at the top of its generation execution contexts.
+
+The agent receives these overrides as non-negotiable commands at the top of its generation context.
 
 ## 3. Resuming the System
-If you exited your execution loop forcefully, SpecWeaver saves your process states to database rows. You can boot it back up logically where it failed:
+
+SpecWeaver saves run state in the database. After an interrupted run, continue where it stopped:
+
 ```bash
 sw resume
 # OR explicit resume bounds:
@@ -42,8 +55,8 @@ sw resume <run_id>
 ### Resuming a review gate **is** approving it
 
 When a run is parked at a HITL gate on a step that **passed**, `sw resume` means *"I looked at
-this and I approve it."* The step is completed from its stored result and the pipeline advances —
-it is **not** re-run, so no LLM tokens are spent re-doing work you already reviewed.
+this and I approve it."* The step completes from its stored result and the pipeline advances. It
+is **not** re-run, so no LLM tokens are spent re-doing reviewed work.
 
 Everything else re-executes on resume, which is the safe direction:
 
@@ -54,12 +67,13 @@ Everything else re-executes on resume, which is the safe direction:
 | The step itself asked for input (e.g. a spec doesn't exist yet) | Re-runs the step, now that you've done what it asked |
 | A resource was locked by another run | Re-tries the reservation |
 
-**Practical consequence:** each distinct park costs you exactly one `sw resume`. A journey that
-parks twice — say, once to review a draft and once to review a decomposition — takes two resumes.
-If a reviewer rejects and the pipeline loops back, that adds another park to acknowledge. Parked
-runs always exit with code `0`; check the reported status, not the exit code, to tell "waiting for
-you" apart from "finished".
+Rules:
 
-> To inspect what you are approving before you approve it, the park message names the step and the
-> artifact involved. Nothing is auto-approved: a fresh `sw run` never consumes an approval, and one
-> `sw resume` approves at most one gate.
+- Each distinct park costs exactly one `sw resume`. A journey that parks twice (e.g. review a draft,
+  then review a decomposition) takes two resumes. A reviewer rejection that loops back adds another
+  park.
+- Parked runs always exit with code `0`. Check the reported status, not the exit code, to tell
+  "waiting for you" from "finished".
+- The park message names the step and the artifact, so you can inspect what you approve.
+- Nothing is auto-approved: a fresh `sw run` never consumes an approval, and one `sw resume`
+  approves at most one gate.

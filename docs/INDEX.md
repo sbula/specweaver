@@ -1,6 +1,7 @@
 # SpecWeaver Documentation
 
-Guide to the documentation structure. Start with the [README](../README.md) for an overview of features and CLI usage.
+Use when: you need to find a document. For an overview of features and CLI usage, start with the
+[README](../README.md).
 
 **Status legend**: ✅ Current | 📋 Proposal | 📜 Historical | ❓ Draft (needs discussion)
 
@@ -11,37 +12,52 @@ Guide to the documentation structure. Start with the [README](../README.md) for 
 | [What the project is](../.agents/PROJECT.md) | ✅ | **Start here if you are an agent** — scope, layout, testing, expected documentation |
 | [How we work](../.agents/PRINCIPLES.md) | ✅ | The non-negotiables, and why each one exists |
 | [Where the project is](../.agents/STATE.md) | ✅ | Delivered, set back, missing. Updated at commit boundaries |
-| [Quick-Start Guide](quickstart.md) | ✅ | From `sw init` to a completed pipeline run in 5 minutes |
-| [Developer Guide](developer_guide.html) | ✅ | Architecture overview, diagrams, onboarding (open in browser) |
-| [Working in This Repo](dev_guides/working_in_this_repo.md) | ✅ | **Read before your first change** — the operational traps that have actually cost sessions |
+| [Installation & Setup](user_guides/1_installation_and_setup.md) | ✅ | Install from source, credentials, `sw init` |
+| [Developer Guide](dev_guides/developer_guide.html) | ✅ | Architecture overview, diagrams, onboarding (open in browser) |
+| [Working in This Repo](dev_guides/working_in_this_repo.md) | ✅ | **Read before your first change** — the operational traps that have cost sessions |
 | [The Development Framework](dev_guides/development_framework.md) | ✅ | **What checks you, and when** — the four gate runners, the ratchet pattern, where the rules live |
+
+## User Guides
+
+| Document | Description |
+|----------|-------------|
+| [1 Installation & Setup](user_guides/1_installation_and_setup.md) | Install from source, credentials, `sw init` |
+| [2 Drafting Effective Specs](user_guides/2_drafting_effective_specs.md) | Spec structure, `sw draft`, `sw check` |
+| [3 Managing Constitutions](user_guides/3_managing_constitutions.md) | Constitutions and coding standards |
+| [4 Interactive HITL Gates](user_guides/4_interactive_hitl_gates.md) | HITL gates, dictator overrides, resuming |
+| [5 Framework Archetypes](user_guides/5_framework_archetypes.md) | Archetypes, plugins, tool hiding, contract drift |
+| [6 AST Surgical Editing](user_guides/6_ast_surgical_editing.md) | Symbol-level reads and edits |
+| [7 Model Context Protocol](user_guides/7_model_context_protocol.md) | Pre-fetching MCP resources |
+| [8 Prompt Render Profiles](user_guides/8_prompt_render_profiles.md) | Choosing what context a step sends |
 
 ## Architecture & Methodology
 
-| Document | Status | Description |
-|----------|:------:|-------------|
-| [Methodology Index](architecture/methodology_index.md) | ✅ | **Start here** — entry point to all methodology docs |
-| [Spec Methodology](architecture/spec_methodology.md) | ❓ | Core framework: 5-section template, fractal decomposition |
-| [Completeness Tests](architecture/completeness_tests.md) | ❓ | 10-test battery (5 structure + 5 completeness) |
-| [Context YAML Spec](architecture/context_yaml_spec.md) | ✅ | `context.yaml` boundary manifest specification |
-| [Spec Review Pipeline](architecture/spec_review_pipeline.md) | ❓ | Multi-stage LLM review process |
-| [Lifecycle Layers](architecture/lifecycle_layers.md) | ❓ | Layer-specific implementation guides (L1–L6) |
-| [Constitution Template](architecture/constitution_template.md) | ❓ | Project constitution template |
-| [Review Checklists](architecture/review_checklists.md) | ❓ | Configurable review checklist template |
-
-## Proposals & Roadmap
+Hub: [architecture/README.md](architecture/README.md).
 
 | Document | Status | Description |
 |----------|:------:|-------------|
-| [Roadmap](proposals/specweaver_roadmap.md) | 📋 | Step-by-step plan from current state to full product |
-| [E-UI-01: CLI Scaffold](roadmap/features/topic_01_ui_glass/E-UI-01/E-UI-01_feature_definition.md) | 📜 | Legacy Step 1 MVP |
-| [E-VAL-01: Validation Engine](roadmap/features/topic_05_validation/E-VAL-01/E-VAL-01_feature_definition.md) | 📜 | Legacy Step 2 MVP |
-| [E-INTL-01: LLM Adapter](roadmap/features/topic_04_intelligence/E-INTL-01/E-INTL-01_feature_definition.md) | 📜 | Legacy Step 3 MVP |
-| [E-INTL-02: Spec Drafting](roadmap/features/topic_04_intelligence/E-INTL-02/E-INTL-02_feature_definition.md) | 📜 | Legacy Step 4 MVP |
-| [D-INTL-01: Code Gen](roadmap/features/topic_04_intelligence/D-INTL-01/D-INTL-01_feature_definition.md) | 📜 | Legacy Step 5 MVP |
-| [D-VAL-01: QA Runner](roadmap/features/topic_05_validation/D-VAL-01/D-VAL-01_feature_definition.md) | 📜 | Legacy Step 5 MVP |
+| [Methodology Index](architecture/04_pipelines_and_methodology/methodology_index.md) | ✅ | **Start here** — entry point to all methodology docs |
+| [Spec Methodology](architecture/04_pipelines_and_methodology/spec_methodology.md) | ❓ | Core framework: 5-section template, fractal decomposition |
+| [Completeness Tests](architecture/04_pipelines_and_methodology/completeness_tests.md) | ❓ | 10-test battery (5 structure + 5 completeness) |
+| [Context YAML Spec](architecture/03_system_topology/context_yaml_spec.md) | ✅ | `context.yaml` boundary manifest specification |
+| [Spec Review Pipeline](architecture/04_pipelines_and_methodology/spec_review_pipeline.md) | ❓ | Multi-stage LLM review process |
+| [Lifecycle Layers](architecture/01_foundational_principles/lifecycle_layers.md) | ❓ | Layer-specific implementation guides (L1–L6) |
+| [Constitution Template](architecture/04_pipelines_and_methodology/constitution_template.md) | ❓ | Project constitution template |
+| [Review Checklists](architecture/04_pipelines_and_methodology/review_checklists.md) | ❓ | Configurable review checklist template |
+
+## Roadmap
+
+| Document | Status | Description |
+|----------|:------:|-------------|
+| [Master Story Roadmap](roadmap/master_story_roadmap.md) | 📋 | User stories from current state to full product |
+| [E-UI-01: CLI Scaffold](roadmap/features/topic_01_ui_glass/E-UI-01/E-UI-01_design.md) | 📜 | Legacy Step 1 MVP |
+| [E-VAL-01: Validation Engine](roadmap/features/topic_05_validation/E-VAL-01/E-VAL-01_design.md) | 📜 | Legacy Step 2 MVP |
+| [E-INTL-01: LLM Adapter](roadmap/features/topic_04_intelligence/E-INTL-01/E-INTL-01_design.md) | 📜 | Legacy Step 3 MVP |
+| [E-INTL-02: Spec Drafting](roadmap/features/topic_04_intelligence/E-INTL-02/E-INTL-02_design.md) | 📜 | Legacy Step 4 MVP |
+| [D-INTL-01: Code Gen](roadmap/features/topic_04_intelligence/D-INTL-01/D-INTL-01_design.md) | 📜 | Legacy Step 5 MVP |
+| [D-VAL-01: QA Runner](roadmap/features/topic_05_validation/D-VAL-01/D-VAL-01_design.md) | 📜 | Legacy Step 5 MVP |
 | [E-SENS-01: Loom FS Tools](roadmap/features/topic_02_sensors/E-SENS-01/E-SENS-01_implementation_plan.md) | 📜 | Legacy Step 1b MVP |
-| [Domain Brain / Hybrid RAG](proposals/domain_brain_hybrid_rag.md) | 📋 | Future: domain knowledge + RAG integration |
+| [Domain Brain / Hybrid RAG](analysis/domain_brain_hybrid_rag.md) | 📋 | Future: domain knowledge + RAG integration |
 
 ## Analysis & Research
 
@@ -57,4 +73,5 @@ Guide to the documentation structure. Start with the [README](../README.md) for 
 
 ## Project History
 
-See [ORIGINS.md](ORIGINS.md) for the project's evolution from FlowManager, acknowledgements, and key design influences (DMZ, CCS, PasteMax, Aider).
+[ORIGINS.md](ORIGINS.md): evolution from FlowManager, acknowledgements, and design influences (DMZ,
+CCS, PasteMax, Aider).

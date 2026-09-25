@@ -1,25 +1,31 @@
 # LLM Adapter Registry & Dispatch
 
-## LLM Adapter Registry
+The LLM layer (`src/specweaver/infrastructure/llm/`) has three parts: an adapter registry that finds
+provider backends, a tool dispatcher for native function calling, and a `PromptBuilder` that
+assembles escaped, XML-tagged prompts.
 
-The system employs a multi-provider auto-discovery registry for its underlying LLM backends (introduced in Feature 3.12a).
+## LLM adapter registry
 
-- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an
-  `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the
-  `registry.py` module. No hardcoded imports or central dictionary registrations are needed, and the
-  folder functions as a PEP 420 Implicit Namespace Package.
-- **Supported Providers**: Natively supports `gemini`, `openai`, `anthropic`, `mistral`, and `qwen`.
-- **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database
-  profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the
-  factory cleanly falls back to `gemini`.
-- **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a
-  `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry,
-  totally invisible to the underlying adapter logic.
-- **Cost Aggregation**: The registry dynamically aggregates `default_costs` mappings from all
-  discovered adapters into a unified tier-sheet, ensuring new providers automatically inject their
-  pricing rules without central hardcoding.
+Multi-provider, auto-discovered (introduced in Feature 3.12a).
 
-## LLM Function-Calling Dispatch
+| Part | What it does |
+|---|---|
+| **Auto-discovery** | `adapters/registry.py` imports every module in `src/specweaver/infrastructure/llm/adapters/` and registers each `LLMAdapter` subclass with a `provider_name`. |
+| **Providers** | `gemini`, `openai`, `anthropic`, `mistral`, `qwen` |
+| **Factory** | `infrastructure/llm/factory.py` builds the configured adapter from the project's settings (its linked database profile). Default provider: `gemini`. |
+| **Telemetry** | The factory wraps the adapter in a `TelemetryCollector` proxy: token usage, cost, streaming telemetry. The adapter does not know. |
+| **Cost table** | The registry merges every adapter's `default_costs` into one tier-sheet. |
+
+Rules:
+
+- Adding a provider = adding one file under `adapters/`. No hardcoded imports, no central
+  dictionary. The folder is a PEP 420 implicit namespace package (no `__init__.py`).
+- New providers bring their own pricing via `default_costs`; nothing central changes.
+
+(Since moved: this package was `src/specweaver/llm/` (adapters in `src/specweaver/llm/adapters/`); `registry.py` and `src/specweaver/llm/factory.py`
+now live under `src/specweaver/infrastructure/llm/`.)
+
+## LLM function-calling dispatch
 
 When the LLM uses native function calling (e.g., Gemini `FunctionDeclaration`), a
 **dispatcher** maps `(name, args)` pairs from the LLM response to tool implementations.
@@ -31,58 +37,52 @@ GeminiAdapter.generate_with_tools(messages, config, dispatcher)
         → FileSystemTool.grep(...)
 ```
 
-### Where the dispatcher lives
+| Question | Answer |
+|---|---|
+| Where it lives | `ToolDispatcher` in `sandbox/dispatcher.py` — at the **`sandbox/` root**, the only layer that can consume all its sub-layers. |
+| Why not `commons/` | The dispatcher consumes tools; `commons/` forbids that (its `context.yaml` forbids all `specweaver/*`, which includes `tools/*`). |
+| Who builds it | `_build_tool_dispatcher()` in `core/flow/handlers/review.py` (flow layer). |
+| How `review/` and `planning/` use it | Through `ToolDispatcherProtocol` in `infrastructure/llm/models.py` — no `sandbox` import. |
 
-The dispatcher consumes tools — so it CANNOT live in `commons/` (which forbids
-`tools/*`). It belongs at the **`sandbox/` root level** (e.g., `sandbox/dispatch.py`)
-because `sandbox/` is the only layer that can consume all three sub-layers.
+Both `review/` and `planning/` `forbid: sandbox/*` in their `context.yaml`, and that now holds.
+Replaced: the `ToolExecutor` god-object (`sandbox/research/executor.py`, built by
+`_build_tool_executor()` in `flow/_review.py`), which `review/` and `planning/` imported in
+violation of that rule.
 
-### Who calls the dispatcher
+**Rule:** tool definitions (`ToolDefinition` from `llm/models.py`) live with their tools in
+`sandbox/{domain}/`, not in a central module.
 
-The dispatcher is consumed by `review/`, `planning/`, and `flow/` through the
-`_build_tool_executor()` factory in `flow/_review.py`.
+## Pluggable context & injection-safe PromptBuilder
 
-> [!WARNING]
-> **Current violation:** `review/` and `planning/` both `forbid: sandbox/*` in
-> their `context.yaml`, yet they import `ToolExecutor` from
-> `sandbox/research/executor.py`. This is a boundary violation that
-> needs to be resolved.
+`PromptBuilder` assembles system prompts, instructions, files and module boundaries into
+token-aware, XML-tagged blocks. Two mechanisms:
 
-### Each tool owns its own definitions
+- **Pluggable Context Protocol** — domain layers (e.g. graph topology) feed the prompt without a
+  compile-time dependency on the LLM layer.
+- **Injection-Safe Escaping Engine** — content is escaped so it cannot break out of its XML block (XML/HTML injection).
 
-Tool definitions (`ToolDefinition` from `llm/models.py`) should live with their
-respective tools in `sandbox/{domain}/`, NOT centralized in a separate module.
+### Package layout
 
-## Pluggable Context & Injection-Safe PromptBuilder
+Domain modules (such as `assurance/graph`) must not depend on `infrastructure/llm`. The prompt
+engine lives in its own sub-package, `src/specweaver/infrastructure/llm/prompt/`:
 
-The system leverages a structured, token-aware `PromptBuilder` to assemble LLM system prompts, instructions, files, and modular boundaries into XML-tagged blocks. 
+| File | Holds |
+|---|---|
+| `interfaces.py` | `PromptContentSource` protocol |
+| `builder.py` | `PromptBuilder` |
+| `render.py`, `constants.py`, `profiles.py` | rendering logic and profiles |
+| `adapter.py` | input prompt adapters: `StringPromptAdapter`, `FilePromptAdapter`, `ProjectMetadataPromptAdapter` |
 
-To resolve the vulnerability to XML/HTML injection and the tight compile-time coupling between
-domain layers (like graph topology) and LLM infrastructure layers, the architecture implements a
-**Pluggable Context Protocol** and an **Injection-Safe Escaping Engine**.
+### `PromptContentSource` protocol
 
-### Modularity & Dependency Inversion (Duck-Typing Protocol)
+- **`get_prompt_content(char_limit: int | None = None)`** — the text to inject. `char_limit` slices
+  the raw content *before* formatting/escaping, so budget truncation cannot cause an XML/CDATA
+  breakout.
+- **`get_prompt_label()`** — the identifier/name of the context block.
 
-Domain modules (such as `assurance/graph`) must remain independent of the `infrastructure/llm` package. To achieve this, the prompt building engine is encapsulated inside a dedicated sub-package:
-`src/specweaver/infrastructure/llm/prompt/`
-
-This directory isolates:
-* `interfaces.py`: Houses the `PromptContentSource` protocol.
-* `builder.py`: Implements the `PromptBuilder`.
-* `render.py`, `constants.py`, `profiles.py`: House rendering logic and profiles.
-* `adapter.py`: Consolidates all input prompt adapters (`StringPromptAdapter`, `FilePromptAdapter`, `ProjectMetadataPromptAdapter`).
-
-The core interface is the `PromptContentSource` protocol:
-* **`get_prompt_content(char_limit: int | None = None)`**: Returns the text content to inject into
-  the prompt, with optional raw content slicing before formatting/escaping to prevent XML/CDATA
-  breakout on dynamic budget truncation.
-* **`get_prompt_label()`**: Returns the identifier/name of the context block.
-
-Domain models (like `TopologyContext` in `assurance/graph`) implement these two methods natively.
-Because Python protocols are structurally resolved (duck-typed), the domain models satisfy the
-prompt injection contract without importing any LLM classes or modules.
-
-Below is the package layout and boundary graph showing this clean layer separation:
+Domain models (like `TopologyContext` in `assurance/graph`) implement these two methods. Python
+protocols are structural (duck-typed), so they satisfy the contract without importing any LLM
+module.
 
 ```mermaid
 classDiagram
@@ -114,17 +114,17 @@ classDiagram
     TopologyContext ..|> PromptContentSource : satisfies structurally
 ```
 
-### Strongly-Typed Context Injection
+### Typed context injection
 
-The prompt builder exposes explicit, strongly-typed methods for different raw context types, delegating formatting and escaping directly to their respective adapters:
-1. **String Context (`add_string_context`):** Wraps raw strings into `StringPromptAdapter`.
-2. **File Context (`add_file_context`):** Wraps paths into `FilePromptAdapter`.
-3. **Project Metadata (`add_project_metadata_context`):** Wraps project config models into `ProjectMetadataPromptAdapter`.
-4. **Conforming Sources (`add_context`):** A polymorphic entry point for objects already implementing the `PromptContentSource` protocol natively (e.g., `TopologyContext`).
+One explicit method per raw context type; formatting and escaping are delegated to the adapter:
 
-This preserves separation of concerns, keeps the builder API self-documenting, and prevents dynamic runtime type guessing.
+1. **String context (`add_string_context`)** → `StringPromptAdapter`.
+2. **File context (`add_file_context`)** → `FilePromptAdapter`.
+3. **Project metadata (`add_project_metadata_context`)** → `ProjectMetadataPromptAdapter`.
+4. **Conforming sources (`add_context`)** — any object already implementing `PromptContentSource`
+   (e.g. `TopologyContext`).
 
-The diagram below details the data flow and prompt assembly pipeline:
+Why: the API documents itself and there is no runtime type guessing.
 
 ```mermaid
 flowchart TD
@@ -135,5 +135,3 @@ flowchart TD
     Queue -->|rendered by| Render[render.py]
     Render --> Output[final assembled prompt string]
 ```
-
-

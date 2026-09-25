@@ -1,11 +1,20 @@
 # CQRS & SQLite WAL (Database Concurrency)
 
-This document visualizes how we safely write to SQLite from heavily concurrent tasks without locking, using our internal CQRS (Command Query Responsibility Segregation) engine.
+Parallel SpecWeaver tasks read and write one SQLite file. Two mechanisms keep them from hitting
+`database is locked`: WAL mode for reads, and a single write worker for queued writes. Both live in
+`core/config/database.py`.
 
 ## The Async Write Queue
-Because SpecWeaver agents operate in parallel and emit high-volume telemetry and state changes, we
-avoid `database is locked` deadlocks by isolating all write operations to a single worker queue,
-while allowing infinite concurrent reads via WAL.
+
+- **Reads** run in parallel through `session_scope` (WAL mode). An `asyncio.Semaphore` caps them at
+  500 concurrent sessions by default, to avoid file-descriptor exhaustion.
+- **Writes** go onto one `asyncio` queue (`CQRSQueueManager`, max 1000 items). One background worker
+  runs them in order.
+- **Failed writes** go to a dead-letter log (`.dead_letter.log`, rotating) and do not stop the worker.
+- **Lifecycle**: `cqrs_context()` starts the worker, and on exit flushes the queue and stops it.
+  `PipelineRunner` opens it for every run and every resume.
+- **Current state**: nothing in `src/` calls `enqueue` yet; the queue runs empty. The flow state
+  store (`core/flow/engine/store.py`) writes through its own WAL connection.
 
 ```mermaid
 sequenceDiagram
@@ -25,3 +34,11 @@ sequenceDiagram
     SQ->>DB: Execute Write (Telemetry)
     SQ->>DB: Execute Write (FlowState)
 ```
+
+The diagram shows the intended flow. In code, a "WriteCommand" is any callable passed to
+`enqueue` / `enqueue_nowait`, and reads are capped by the semaphore, not unlimited.
+
+## Rules
+
+- Async engines use `NullPool` by default (`create_async_engine`), to avoid SQLite lock contention.
+- Stores that open their own `sqlite3` connections set `PRAGMA journal_mode=WAL` themselves.

@@ -1,9 +1,9 @@
-# Design & Architecture: Synthetic Commons and Interactive Questionnaire
+# Synthetic Commons and Interactive Questionnaire
 
-This document outlines the architectural feasibility, prerequisites, and implementation logic for
-**Feature 3.51 (Synthetic Commons Extraction)** and **Feature 3.52 (Interactive Design
-Questionnaire)**, both adapted to resolve issues associated with autonomous LLM generation ("Blank
-Canvas Syndrome" and "Parallel Duplication").
+Architecture notes for two features that stop autonomous generation from going wrong:
+**Feature 3.51 (Synthetic Commons Extraction)** against "Parallel Duplication" and **Feature 3.52
+(Interactive Design Questionnaire)** against "Blank Canvas Syndrome". Each covers feasibility,
+prerequisites and logic.
 
 ---
 
@@ -53,27 +53,41 @@ This bounds the LLM's infinite solution space into an explicit corridor using Sp
 
 ## Feature 3.51: Synthetic Commons Extraction (Synergies)
 
-**Goal**: Prevent parallelized execution pipelines from hallucinating conflicting implementations of the exact same utility feature (the "Holy Grail of Pre-Emptive De-duplication").
+Roadmap capability: `B-INTL-03` (planned), in
+[topic_04_intelligence.md](../../roadmap/topics/topic_04_intelligence.md).
 
-**Mechanic**: An architectural extraction pass inside the `DecomposeHandler` identifies structural overlaps across planned subcomponents, extracting them into a shared Topographic Dependency root.
+**Goal**: stop parallel pipelines from generating conflicting implementations of the same utility
+(pre-emptive de-duplication).
+
+**Mechanic**: an extraction pass inside the `DecomposeHandler` finds structural overlaps across
+planned subcomponents and moves them into a shared dependency root.
 
 ### Architecture
-1. **Pass 1 (Draft)**: The LLM drafts 5 subfeature specs blindly into memory.
-2. **Pass 2 (Extract)**: An automated extraction model (Claude 3.5/o3) scans the 5 specs for
-   cross-cutting requirements (e.g., all 5 need an explicit Authentication Token DTO). The agent
-   creates a "Synthetic Core Subfeature 0" encompassing the token interfaces.
-3. **Pass 3 (Reweave)**: The 5 original specs are rewritten, explicitly stripping their original boilerplate and replacing it with a hard dependency constraint (`Depends On: Core Commons`).
-4. **Execution**: Because SpecWeaver schedules dynamically using the `TopologyGraph`, the DAG
-   orchestrator naturally prioritizes "Tier 0" (Core Commons). The 5 dependent subfeatures are
-   automatically blocked until Tier 0 validates successfully. 
 
-### Prerequisites & Risk Bounds
-- **The "Spaghetti Dump" Edge Case**: The LLM gets lazy and groups entirely disparate functions into a massive `utils.py` anti-pattern.
-  - *Mitigation*: Implementation of **Feature 3.20a (Tach internal Layer Enforcement)** prevents
-    domain logic from leaking into infrastructure. Additionally, a strict `GateType.HITL` prompts
-    the user: *"Agent recognized 3 synergies. Extracting a unified Auth DTO. [Y/n]"*. The developer
-    verifies extraction mappings prior to any code generation.
-- **Diverging Semantic Lifecycles**: Combining two similarly named classes that must evolve differently (False Equivalence).
-  - *Mitigation*: Prompt boundaries will force the Agent to strictly limit Extractions to Data
-    Transfer Objects (DTOs), Interface Definitions, and Infrastructure Configs. Business rules and
-    mutable schemas are banned from extraction.
+```mermaid
+graph LR
+    D["Pass 1: Draft<br/>5 subfeature specs"] --> E["Pass 2: Extract<br/>Synthetic Core Subfeature 0"]
+    E --> R["Pass 3: Reweave<br/>Depends On: Core Commons"]
+    R --> X["Execution<br/>TopologyGraph runs Tier 0 first"]
+```
+
+1. **Pass 1 (Draft)**: the LLM drafts 5 subfeature specs blindly into memory.
+2. **Pass 2 (Extract)**: an extraction model (Claude 3.5/o3) scans the 5 specs for cross-cutting
+   requirements (e.g. all 5 need an Authentication Token DTO) and creates a "Synthetic Core
+   Subfeature 0" holding the token interfaces.
+3. **Pass 3 (Reweave)**: the 5 original specs are rewritten: their duplicated boilerplate is
+   removed and replaced by a hard dependency (`Depends On: Core Commons`).
+4. **Execution**: SpecWeaver schedules from the `TopologyGraph`, so the DAG orchestrator runs
+   "Tier 0" (Core Commons) first. The 5 dependent subfeatures are blocked until Tier 0 validates.
+
+### Risks and mitigations
+
+- **"Spaghetti Dump"**: the LLM groups unrelated functions into one large `utils.py`.
+  - *Mitigation*: **Feature 3.20a (Tach internal Layer Enforcement)** keeps domain logic out of
+    infrastructure. A `GateType.HITL` prompt asks the user: *"Agent recognized 3 synergies.
+    Extracting a unified Auth DTO. [Y/n]"*. The developer checks the extraction mapping before any
+    code is generated.
+- **Diverging Semantic Lifecycles**: merging two similarly named classes that must evolve
+  differently (False Equivalence).
+  - *Mitigation*: prompt boundaries limit extraction to Data Transfer Objects (DTOs), Interface
+    Definitions and Infrastructure Configs. Business rules and mutable schemas are never extracted.

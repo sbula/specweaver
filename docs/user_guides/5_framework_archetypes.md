@@ -1,11 +1,14 @@
 # User Handbook 5: Framework Archetypes & Context Injection
 
-SpecWeaver relies on strict Architectural Bounds checks. By default, agents are completely blinded
-from large external frameworks resulting in hallucinations. **Archetypes** natively inform agents
-regarding structural realities of external tool chains.
+Use when: your code uses a framework (Spring Boot, FastAPI, Rust macros ...) whose generated
+behavior the agent cannot see in the source.
 
-## 1. The `context.yaml`
-Every domain module in SpecWeaver is encapsulated mathematically within a `context.yaml` boundaries file located at the folder boundary.
+An **archetype** plus **plugins** tell SpecWeaver which framework rules apply to a module. Without
+them, agents see only raw source and guess at what the framework generates.
+
+## 1. Declare them in `context.yaml`
+
+Each module has a `context.yaml` at its folder boundary. Declare the archetype and plugins there:
 
 ```yaml
 context:
@@ -16,18 +19,23 @@ context:
     - jpa-hibernate
 ```
 
-## 2. Injecting Compiler Reality (Macro Evaluator)
-Because LLMs evaluate raw tokens directly, they frequently fail to comprehend hidden runtime logic generated behind Java Annotations or Rust Procedural Macros `#[derive(Debug)]`.
-By declaring `spring-boot`, the internal Tree-sitter AST Extractor recursively unrolls Annotations
-physically delivering expanded source definitions inside the LLM Generation execution payload
-solving massive logical omissions.
+The nearest `archetype` and `plugins` at or above a file apply to it.
 
-## 3. The `intents.hide` Shield
-Sometimes you want Agents isolated from specific internal configurations (e.g. banning an LLM from editing a Kubernetes manifest or rewriting `.gitignore` natively).
+## 2. Expand annotations and macros (Macro Evaluator)
 
-By routing `plugins` natively, SpecWeaver utilizes **Dynamic Tool Gating**, securely intercepting
-JSON schema declarations prior to LLM exposure natively, removing tools directly corresponding to
-explicit strings array `intents.hide`!
+LLMs read raw tokens. They miss logic that Java annotations or Rust procedural macros
+(`#[derive(Debug)]`) generate at compile time.
+
+Declaring `spring-boot` makes the Tree-sitter AST extractor unroll those annotations. The expanded
+definitions go into the generation prompt.
+
+## 3. Hide tools with `intents.hide`
+
+Use it to keep agents away from a tool, e.g. running shell commands or editing a Kubernetes manifest
+or `.gitignore`.
+
+Your archetype and plugins select the evaluator config. Any tool named in its `intents.hide` list
+is removed from the tool schemas before the LLM sees them (**Dynamic Tool Gating**).
 
 ```yaml
 # Inside your plugin config dynamically:
@@ -36,11 +44,14 @@ intents:
     - run_shell_command
     - configure_aws
 ```
-The SpecWeaver LLM physically is blocked from executing shell logic cleanly without brittle `python` wrappers.
 
-## 4. Validating Contract Drift (Features 3.31+)
-Because LLMs often hallucinate endpoints, SpecWeaver features **Contract Drift Analysis (Rule C13)** natively in its validation pipeline Engine.
-If you inject an OpenAPI or gRPC definition (`protocol_schema`), the Architecture framework
-statically queries your source code's Abstract Syntax Tree (`ast_payload`) post-generation to
-guarantee mathematically every `ProtocolEndpoint` mapped has a corresponding backend router (e.g.
-`@app.post("/users")`). Any unresolved endpoints force an automatic rollback!
+The LLM cannot call a hidden tool. No `python` wrapper is needed.
+
+## 4. Contract drift check (Features 3.31+)
+
+**Rule C13 — Contract Drift Analysis** runs in the validation pipeline.
+
+- Input: an OpenAPI or gRPC definition (`protocol_schema`) and the code's AST (`ast_payload`),
+  read after generation.
+- Check: every `ProtocolEndpoint` needs a matching backend route (e.g. `@app.post("/users")`).
+- Any endpoint without a route: the rule fails and forces an automatic rollback.

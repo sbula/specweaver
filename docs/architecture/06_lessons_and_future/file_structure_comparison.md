@@ -1,18 +1,18 @@
 # File Structure Impact: Before vs. After (TECH-001)
 
-To make the Domain-Driven Design (DDD) refactoring concrete, here is exactly what the file structure looks like **before** and **after** TECH-001.
+TECH-001 moved the source tree from **package by layer** to **package by feature** (DDD bounded
+contexts).
 
 > [!IMPORTANT]
-> **Timeline & Validity Context:** 
-> - **Before (Outdated):** The "Package by Layer" architecture (Monolith) represents the system state prior to May 2026. This architecture is now **deprecated and invalid**.
-> - **After (Current & Valid):** The "Package by Feature" architecture (Bounded Contexts) represents
->   the system state from May 2026 onwards. This is the **current, valid source of truth** for all
->   new development.
+> - **Before (Outdated):** "Package by Layer" (Monolith) — the system prior to May 2026.
+>   **Deprecated and invalid.**
+> - **After (Current & Valid):** "Package by Feature" (Bounded Contexts) — the system from May 2026
+>   onwards. The **source of truth** for all new development.
 
-## The Problem: "Package by Layer" (BEFORE)
-Currently, code that belongs to the *same feature* is scattered across 4 different root folders
-based on its *technical layer*. If you want to understand the "LLM" feature, you have to hunt
-through `infrastructure/llm`, `core/config`, and `interfaces/cli`.
+## Before: package by layer
+
+Code for one feature was spread over 4 root folders by *technical layer*. To understand the "LLM"
+feature you had to search `infrastructure/llm`, `core/config`, and `interfaces/cli`.
 
 ```text
 src/specweaver/
@@ -40,10 +40,9 @@ src/specweaver/
         └── usage_commands.py       ← (LLM feature)
 ```
 
----
+## After: package by feature
 
-## The Solution: "Package by Feature" (AFTER)
-After TECH-001, everything related to a specific feature is housed in **one single folder** (the Bounded Context). The monoliths are destroyed.
+Everything for one feature lives in **one folder** (the bounded context). The monoliths are gone.
 
 ```text
 src/specweaver/
@@ -73,13 +72,17 @@ src/specweaver/
     └── atoms/                      ← AST atoms (moved from sandbox)
 ```
 
-## Why this matters (The Impact):
-1. **Developer Sanity:** If you are assigned to fix a bug in the Git Sandbox, you open
-   `src/specweaver/sandbox_git/`. You don't need to look anywhere else. The Tools, Atoms, and
-   configurations are all colocated.
-2. **Microservices:** Notice how the `llm/` folder now contains its own `cli.py` and its own
-   database `store.py`. You could literally cut the `src/specweaver/llm` folder out of the project,
-   drop it onto a new server, and run it as an independent microservice tomorrow.
-3. **Security:** The `sandbox_git` domain is strictly isolated. A bug in the core `graph` engine
-   cannot accidentally import a dangerous `GitTool` because it's physically segregated into a
-   distinct domain package.
+**Since moved (checked 2026-09-25):** the tree above is the TECH-001 shape, not today's paths. LLM
+lives in `src/specweaver/infrastructure/llm/` (with its own `store.py` and `interfaces/`), Git in
+`src/specweaver/sandbox/git/` (`core/`, `interfaces/`), the graph CLI in
+`src/specweaver/graph/interfaces/cli.py`. Current map:
+[module_dependency_graph.md](../03_system_topology/module_dependency_graph.md).
+
+## Why
+
+1. **One place to look.** A bug in the Git sandbox means opening `src/specweaver/sandbox_git/`
+   and nothing else. Tools, atoms and configuration sit together.
+2. **Separable domains.** `llm/` holds its own `cli.py` and its own database `store.py`. The
+   `src/specweaver/llm` folder could be cut out and run as an independent service.
+3. **Isolation.** The `sandbox_git` domain is a separate package. The core `graph` engine cannot
+   accidentally import a dangerous `GitTool`.

@@ -1,55 +1,61 @@
 # Tool Architecture (4-Layer Stack)
 
-Each tool domain (filesystem, git, qa_runner, web) follows the same layered pattern:
+Each tool domain (filesystem, git, qa_runner, web, mcp) follows one layered pattern. Agents reach
+I/O only through Interface → Tool → Executor. The flow engine reaches it through an Atom.
 
 ```text
 Flow Engine ──▶ Atom ──▶ Interface ──▶ Tool ──▶ Executor
 (Lifecycle)    (Step)    (Role RBAC)   (Intent)  (Raw I/O)
 ```
 
-## Layer Responsibilities
+## Layers
 
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
-| **Executor** | `sandbox/{domain}/` | Raw I/O with transport-level security (whitelists, path validation, symlink blocking) |
-| **Tool** | `sandbox/{domain}/tool.py` | Intent-based operations with role gating (`ROLE_INTENTS`) + grant enforcement (`FolderGrant`) |
-| **Interface** | `sandbox/{domain}/interfaces.py` | Role-specific facades — unauthorized methods physically absent |
-| **Atom** | `sandbox/{domain}/` | Engine-internal workflow operations (unrestricted, not agent-facing) |
+| **Executor** | `sandbox/{domain}/core/executor.py` | Raw I/O with transport-level security (whitelists, path validation, symlink blocking) |
+| **Tool** | `sandbox/{domain}/interfaces/tool.py` | Intent-based operations with role gating (`ROLE_INTENTS`) + grant enforcement (`FolderGrant`) |
+| **Interface** | `sandbox/{domain}/interfaces/facades.py` | Role-specific facades — unauthorized methods are absent, not blocked |
+| **Atom** | `sandbox/{domain}/core/atom.py` | Engine-internal workflow operations (unrestricted, not agent-facing) |
 
-## Security Stack
+Since moved (noted 2026-09-25): tools and facades were `sandbox/{domain}/tool.py` and
+`sandbox/{domain}/interfaces.py`. The `web` domain has only `interfaces/`.
+
+## Security stack
 
 1. **Executor** — transport-level blocking (whitelists, path validation, symlink blocking)
 2. **Tool** — intent-level gating (`ROLE_INTENTS`) + grant enforcement (`FolderGrant`)
-3. **Interface** — method-level RBAC (unauthorized methods physically absent)
+3. **Interface** — method-level RBAC (unauthorized methods absent)
 
-Do NOT create parallel security mechanisms. Use the existing stack.
+Rule: do NOT create parallel security mechanisms. Use this stack.
 
 ---
 
 # Atom vs Tool
 
-Both atoms and tools use executors from `commons/` — but they serve fundamentally
-different consumers and have different trust models:
+Both wrap the same executors. They differ in consumer and trust:
 
 | | Tool | Atom |
 |---|------|------|
 | **Consumer** | AI agent (LLM) | Flow engine (SpecWeaver internal) |
-| **Access control** | Role-restricted interfaces — methods physically absent | Unrestricted — full access to executor |
+| **Access control** | Role-restricted interfaces — methods absent | Unrestricted — full access to executor |
 | **Trust model** | Agent is untrusted — security enforced at every layer | Engine is trusted — no role gating needed |
-| **Location** | `sandbox/{domain}/` | `sandbox/{domain}/` |
-| **Forbids** | `atoms/*` | `tools/*` |
+| **Location** | `sandbox/{domain}/interfaces/` | `sandbox/{domain}/core/` |
+| **Dependency rule** | `interfaces/` consumes `core/` | `core/` does not import `interfaces/` |
 | **Example** | `GitTool.commit()` checks conventional commits, role gating | `EngineGitExecutor.run()` — raw `git` with full whitelist |
 
-## Key Distinction
+The dependency rule replaced the old `forbids` pair (tools forbade `atoms/*`, atoms forbade
+`tools/*`) when the domains split into `core/` and `interfaces/`.
 
-Tools exist because **agents cannot be trusted**. Every tool method:
-1. Checks if the agent's role allows this intent
-2. Checks if the agent's folder grants cover this path
-3. Delegates to the executor with validated parameters
+## Why two paths
 
-Atoms exist because **the engine needs unrestricted access** to perform
-workflow operations (e.g., running tests, linting, committing after review).
-They bypass the role/grant checking because the engine itself is trusted code.
+**Tools exist because agents cannot be trusted.** Every tool method:
+
+1. Checks if the agent's role allows this intent.
+2. Checks if the agent's folder grants cover this path.
+3. Delegates to the executor with validated parameters.
+
+**Atoms exist because the engine needs unrestricted access** for workflow operations (running tests,
+linting, committing after review). They skip role/grant checks because the engine is trusted code.
 
 ```text
 Agent (LLM)                          Engine (SpecWeaver)
@@ -59,7 +65,9 @@ Role Interface ──▶ Tool ──▶ Executor  Atom ──▶ Executor
   (RBAC)         (Intent)  (Raw I/O)        (Raw I/O)
 ```
 
-## Atom Base Class
+## Atom base class
+
+Defined in `sandbox/base.py`.
 
 ```python
 class Atom(ABC):
@@ -71,27 +79,18 @@ class Atom(ABC):
         """Graceful teardown hook (SIGINT/SIGTERM)."""
 ```
 
-Returns `AtomResult(status=SUCCESS|FAILED|RETRY, message, exports)`.
-The engine reads `exports` and writes them to the flow context for
-downstream atoms.
+Returns `AtomResult(status=SUCCESS|FAILED|RETRY, message, exports)`. The engine writes `exports` to
+the flow context for downstream atoms.
 
 ### Atom ≠ single operation
 
-"Atom" describes an indivisible **unit of the flow** — one `run()` call the
-engine invokes and gets one `AtomResult` back from. It does NOT mean the
-Atom only implements one operation. Whether `run()` handles one thing or
-many is an independent implementation choice, not part of what makes
-something an Atom:
+An Atom is one indivisible **unit of the flow**: one `run()` call, one `AtomResult`. How much
+`run()` does inside is an ordinary design choice:
 
-- **Single-operation** (`RuleAtom`): reads its expected keys straight off
-  `context` and does the one thing it exists to do.
-- **Multi-operation** (`QARunnerAtom`, `LanguageAtom`, `ProtocolAtom`):
-  reads an `intent`/`action` key from `context` and dispatches internally
-  (e.g. `QARunnerAtom` alone handles `run_tests`, `run_linter`,
-  `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`).
+- **Single-operation** (`RuleAtom`): reads its expected keys straight off `context` and does one thing.
+- **Multi-operation** (`QARunnerAtom`, `LanguageAtom`, `ProtocolAtom`): reads an `intent`/`action`
+  key from `context` and dispatches internally (e.g. `QARunnerAtom` alone handles `run_tests`,
+  `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`).
 
-Pick single vs. multi-operation the same way you'd pick it for any class —
-by how many closely-related operations the domain naturally has — not by
-any rule about what "Atom" is allowed to mean. A Tool serving the same
-domain often mirrors whichever shape its Atom counterpart uses, since both
-usually wrap the same underlying Executor operations.
+Pick the shape by how many closely related operations the domain has. A Tool for the same domain
+usually mirrors its Atom's shape, since both wrap the same Executor operations.

@@ -2,11 +2,13 @@
 
 > **Consult this documentation before planning, writing specs, or implementing anything in the SpecWeaver codebase.**
 
-This is the central hub for the SpecWeaver Domain-Driven Design (DDD) architecture.
+Use when: you need the structure of SpecWeaver's Domain-Driven Design (DDD) architecture, or the
+doc that explains one part of it.
 
-## System Overview
+## System overview
 
-SpecWeaver is a specification-driven development lifecycle tool. It enforces spec quality through a 12-test battery and manages AI agents via role-restricted tool interfaces.
+SpecWeaver is a specification-driven development lifecycle tool. It enforces spec quality through
+a 12-test battery and runs AI agents behind role-restricted tool interfaces.
 
 ```text
 specweaver/                       ← level: system, archetype: orchestrator
@@ -52,3 +54,20 @@ specweaver/                       ← level: system, archetype: orchestrator
 └── validation/                   ← 12-test spec quality battery
     └── rules/                    ← Rule implementations (spec + code)
 ```
+
+**Since moved (2026-09-25):** the tree above predates the domain restructure. The top-level
+packages of `src/specweaver/` are now `assurance/`, `commons/`, `core/`, `graph/`,
+`infrastructure/`, `interfaces/`, `sandbox/`, `workflows/`, `workspace/`. Module boundaries:
+[Context YAML Spec](03_system_topology/context_yaml_spec.md).
+
+## Where the detail lives
+
+| Folder | Holds |
+|---|---|
+| `01_foundational_principles/` | Lifecycle layers, security guardrails, atoms vs tools, CQRS and database, archetypes |
+| `02_bounded_contexts/` | Flow engine, LLM and telemetry, legacy feature map |
+| `03_system_topology/` | `context.yaml` spec, dependency rules and graph, migrations, topology evolution |
+| `04_pipelines_and_methodology/` | Spec methodology, completeness tests, review pipeline, templates |
+| `05_delivery_mechanisms/` | CLI and MCP delivery |
+| `06_lessons_and_future/` | Anti-patterns, known boundary violations, future adaptations |
+| `07_architectural_decision_records/` | ADRs |

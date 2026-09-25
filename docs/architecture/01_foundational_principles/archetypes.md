@@ -1,5 +1,8 @@
 # Archetypes
 
+Every module declares one archetype in its `context.yaml`. The archetype says what code may live
+there. Rules S12 (specs) and C12 (code) check it.
+
 | Archetype | Allowed | Forbidden |
 |-----------|---------|-----------|
 | `pure-logic` | Business logic, calculations, value objects | DB, HTTP, I/O, framework imports |

@@ -1,23 +1,24 @@
 # User Guide: Configuring The Model Context Protocol (MCP)
 
-SpecWeaver allows your autonomous AI architecture to statically read from external systems (like
-PostgreSQL schemas, Jira tickets, and Github graphs) via the **Model Context Protocol (MCP)**
-seamlessly.
+Use when: the agent needs data from an external system (a PostgreSQL schema, Jira tickets, GitHub
+graphs) through the **Model Context Protocol (MCP)**.
 
-## How It Works
+## How it works
 
-Instead of the LLM wandering off into external APIs autonomously (which causes token saturation and huge latency loops), SpecWeaver uses the **Pre-Fetched Context Envelope** pattern. 
+The LLM does not browse external APIs itself; that costs tokens and time. SpecWeaver uses the
+**Pre-Fetched Context Envelope** pattern instead:
 
-In your project's `.specweaver/context.yaml`, you declare exactly which MCP servers your project
-relies on, and what specific URIs it should read. SpecWeaver will securely boot these resources
-inside isolated Docker containers, map the text natively into your Agent's context buffer, and run
-the generations in a zero-latency bubble!
+1. In `.specweaver/context.yaml` you declare the MCP servers and the URIs to read.
+2. Before generation, SpecWeaver starts each server in a container, reads the resources, and puts
+   the text into the agent's context.
+3. Generation runs on that text. The LLM does not call the servers itself.
 
-## 1. Defining Servers
+## Steps
 
-In your Target Project's `context.yaml`, define your external systems in the `mcp_servers`
-dictionary layer. Alternatively, run `sw init my-app --mcp postgres` which will seamlessly deploy
-the container bindings for you:
+### 1. Define servers
+
+List them in the `mcp_servers` dictionary of your target project's `context.yaml`. Or run
+`sw init my-app --mcp postgres` to scaffold the container binding:
 
 ```yaml
 mcp_servers:
@@ -27,11 +28,13 @@ mcp_servers:
       DB_CONNECTION_STRING: "${vault:PROD_DB_URL}"
 ```
 
-*(Note: SpecWeaver securely intercepts `${vault:<key>}` tokens and injects them safely from your local `.specweaver/vault.env` ledger.)*
+Secrets live in `.specweaver/vault.env`. The `--mcp postgres` scaffold passes it to the container
+with `--env-file`, and adds it to `.gitignore`. A run aborts if `vault.env` is tracked by Git.
+Secret values of 8+ characters are replaced with `***RESTRICTED***` in what the server returns.
 
-## 2. Binding Resource Consumption
+### 2. Bind the resources to read
 
-To actually inject the text returned by the MCP endpoint into your current Workspace context, map the target `resources/read` URIs into the `consumes_resources` array natively in `context.yaml`:
+List the `resources/read` URIs in the `consumes_resources` array of `context.yaml`:
 
 ```yaml
 consumes_resources:
@@ -39,16 +42,17 @@ consumes_resources:
   - "postgres://public/orders"
 ```
 
-## 3. Strict Execution Limits (Docker Required)
+The fetcher accepts only URIs of the form `mcp://<server>/<resource>`, where `<server>` is a key
+of `mcp_servers`. Any other URI is inserted as an error line instead of content.
 
-By architectural mandate, SpecWeaver refuses to boot native `node` processes blindly on your local
-OS to protect you from remote execution attacks. All target MCP servers must physically be packaged
-via `docker run -i --rm` or `podman`. SpecWeaver will rigidly trigger a validation halt if you
-attempt to bypass this isolation limit.
+## Rules
 
-
-## Architecture Design Limitations
-The MCPExplorerTool exposes the JSON-RPC endpoints for MCP. Due to zero-trust execution models
-within the system, only the **L2 Architect Role** is permitted by the ToolDispatcher to utilize the
-ArchitectMCPInterface. Standard implementation and validation loops cannot dynamically navigate MCP
-endpoint mappings.
+- **Container only (Docker or Podman).** The command must start with `docker` or `podman`, e.g.
+  `docker run -i --rm`. SpecWeaver will not start a bare `node` process on your machine. Any other
+  executable stops the run with an `NFR-2 Boundary Violation`.
+- **No escape flags.** `--privileged`, host networking/PID/IPC/UTS/user namespaces, `--cap-add`,
+  `--security-opt`, `--device`, and mounts of `/`, `/etc`, `/root` or the Docker socket are refused.
+- **Only the L2 Architect browses MCP.** The `MCPExplorerTool` exposes the MCP JSON-RPC endpoints.
+  The ToolDispatcher grants its `ArchitectMCPInterface` (list servers, list resources, read
+  resource) only to the **L2 Architect Role**. Implementation and validation loops get the
+  pre-fetched text only.

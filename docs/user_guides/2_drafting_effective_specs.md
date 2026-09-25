@@ -1,11 +1,14 @@
 # User Handbook 2: Drafting Effective Specs
 
-Traditional Natural Language prompts result in flaky LLM reasoning. SpecWeaver enforces a strict
-**Specification-Driven Development** loop. If the spec logic is flawed, your generated source code
-will break predictably.
+Use when: writing or checking a component spec before code generation.
+
+SpecWeaver follows **Specification-Driven Development**: code is generated from the spec, so a flawed
+spec gives broken code.
 
 ## 1. The 6-Section L3 Component Spec Structure
-SpecWeaver is bound to a strict 6-section template layout that the `sw check` mathematically assesses utilizing static regex thresholds and contextual semantic NLP.
+
+`sw check` assesses every component spec against a 6-section template, using static regex
+thresholds and LLM-based semantic checks.
 
 1. **Purpose:** The objective of the file. (Must pass S01 One-Sentence Test)
 2. **Contract:** External interactions and class shapes. (Must pass S06 Concrete Example)
@@ -15,37 +18,47 @@ SpecWeaver is bound to a strict 6-section template layout that the `sw check` ma
 6. **Safety/DAL:** Risk assignment determining validation thresholds.
 
 ## 2. Interactive LLM Co-Authoring (`sw draft`)
-Do not draft complex protocols by hand. Let SpecWeaver iteratively prompt you.
+
+Let SpecWeaver ask the questions instead of writing the spec by hand.
+
 ```bash
 sw draft greet_service --project ./my-app
 ```
-The agent will recursively ask you contextualizing questions about inputs to fill out the 6-sections safely.
 
-**One command, whole loop (INT-US-02):** after co-authoring, `sw draft` now runs the full quality chain
-in the same command — the S-rule validation battery and the LLM semantic review — with zero manual
-handoff. If the reviewer rejects the draft, SpecWeaver **re-drafts with the reviewer's findings injected**
-(bounded at 2 retries) before surfacing the findings and exiting non-zero. The outcome report shows the
-spec path, rules passed, and the review verdict inline. Running `sw check` manually afterwards is no
-longer needed for freshly drafted specs (it remains available for re-validating edited specs, below).
+The agent asks about inputs and context until all 6 sections are filled.
 
-## 3. Strict Quality Control Pipeline (`sw check`)
-Before an Implementation pipeline can run, SpecWeaver will execute rigorous tests against your `.md` file.
+**One command, whole loop (INT-US-02):** after co-authoring, `sw draft` runs the S-rule validation
+battery and the LLM semantic review in the same command.
 
-**Component Level Validation (Strict)** - Used for implementation specs:
+- Reviewer rejects → SpecWeaver re-drafts with the reviewer's findings injected (at most 2 retries),
+  then shows the findings and exits non-zero.
+- The outcome report shows the spec path, rules passed and the review verdict.
+- A freshly drafted spec needs no manual `sw check`. Use `sw check` to re-validate specs you edit.
+
+## 3. Quality Check (`sw check`)
+
+An implementation pipeline runs only on a spec that passes these checks.
+
+**Component level (strict)** — for implementation specs:
+
 ```bash
 sw check specs/greet_service_spec.md --level component
 ```
-- Will **FAIL** if you use "weasel words" like *maybe, should, potentially* (Rules S08, S11).
-- Will **FAIL** if abstraction boundaries leak (Rule S03).
-- Will **FAIL** if complexity suggests more than 1 day of physical labor (Rule S05).
 
-**Feature Level Validation (Lenient)** - Used for high-level L2 architectural planning:
+| Fails when | Rule |
+|---|---|
+| Weasel words like *maybe, should, potentially* | S08, S11 |
+| Abstraction boundaries leak | S03 |
+| The work looks bigger than 1 day | S05 |
+
+**Feature level (lenient)** — for high-level L2 architecture planning:
+
 ```bash
 sw check specs/onboarding-feature.md --level feature
 ```
 
 ## 4. Lineage Tracking via `%traces`
-When code is finally generated via `sw implement`, SpecWeaver physically assigns semantic tags across all tests asserting what capability trace it belongs to.
-If you manually delete an implementation file without updating its `.md` parent trace, the Ast Drift
-component will block repository commits automatically indicating the project architecture is out of
-phase!
+
+When `sw implement` generates code, it tags the tests with the capability they trace to.
+If you delete an implementation file without updating its `.md` parent trace, the AST drift check
+blocks repository commits and reports the project architecture as out of phase.

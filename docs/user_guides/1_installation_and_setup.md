@@ -1,14 +1,18 @@
 # User Handbook 1: Installation & Setup
 
-SpecWeaver requires Python 3.11+ and the fast package manager `uv`. It interacts directly with LLMs (Gemini, OpenAI, Anthropic, Mistral, Qwen) via API keys provided in your environment.
+Use when: installing SpecWeaver and registering your first project.
 
 ## 1. Prerequisites
+
 - [uv](https://docs.astral.sh/uv/) installed globally.
 - Python 3.11+.
-- An LLM API key (e.g., Gemini AI Studio).
+- An LLM API key (e.g., Gemini AI Studio). Supported providers: Gemini, OpenAI, Anthropic, Mistral,
+  Qwen.
 
 ## 2. Installation
-To install SpecWeaver from source:
+
+SpecWeaver is not published on PyPI. Install from source.
+
 ```bash
 git clone https://github.com/sbula/specweaver.git
 cd specweaver
@@ -16,10 +20,11 @@ uv sync
 # Optional: install specific providers
 # uv sync --extra openai --extra anthropic --extra mistral --extra qwen
 ```
-SpecWeaver is not published on PyPI. Install from source.
 
 ## 3. Providing Credentials
-SpecWeaver seamlessly routes tasks out to external LLMs. Ensure your CLI has access to the appropriate credentials.
+
+SpecWeaver reads provider keys from the environment.
+
 ```powershell
 # Windows PowerShell
 $env:GEMINI_API_KEY = "your-gemini-key"
@@ -29,10 +34,13 @@ $env:MISTRAL_API_KEY = "your-mistral-key"
 $env:QWEN_API_KEY = "your-qwen-key"
 ```
 
-You can change the active provider dynamically by passing the `--provider` flag or setting `llm.provider` in your `specweaver.toml` configuration file.
+The default provider is `gemini`. Change it per project role with
+`sw config set-provider <provider>` (`--role`, default `draft`; optional `--model`).
 
 ## 4. Initializing your First Project
-SpecWeaver relies on an embedded SQLite database to mathematically track your artifact lineages, configurations, and contexts. When you start working on a project, you must register it.
+
+SpecWeaver keeps projects, configuration and artifact lineage in an embedded SQLite database.
+Register each project before working on it.
 
 ```bash
 # Register a project locally 
@@ -41,41 +49,48 @@ sw init my-app --path ./my-project
 # Or scaffold alongside an external Model Context Protocol integration
 sw init my-app --path ./my-project --mcp postgres
 ```
-This command physically scaffolds `.specweaver/` directories inside the target path, sets up the
-active connection, and automatically seeds starter templates for `CONSTITUTION.md` and
-`.specweaverignore`. It also creates `.specweaver/scripts/` (with a placeholder `README.md`) — the
-directory where scripts referenced by `action: bash` pipeline steps live. Furthermore, it
-dynamically scaffolds native topological bounds (`src/context.yaml` targeting `pure-logic` and
-`tests/context.yaml` targeting `adapter`) to permanently isolate your project's architectural core
-from unauthorized Engine access.
 
-If you have multiple projects, you can hot-swap the active context mapping:
+`sw init` creates, inside the target path:
+
+| Created | Purpose |
+|---|---|
+| `.specweaver/` | Project directory; `sw init` also sets it as the active project |
+| `CONSTITUTION.md`, `.specweaverignore` | Starter templates |
+| `.specweaver/scripts/` (with a placeholder `README.md`) | Scripts referenced by `action: bash` pipeline steps |
+| `src/context.yaml` (archetype `pure-logic`) | Boundary for your project's core code |
+| `tests/context.yaml` (archetype `adapter`) | Boundary for your tests |
+
+The two `context.yaml` files keep the project's core isolated from unauthorized engine access.
+
+Switch between registered projects:
+
 ```bash
 sw projects    # View all tracked projects (active has an asterisk)
 sw use web-api # Switch active project bounds
 ```
 
 ## 5. Container Deployment (Zero-Install)
-If you prefer not to install Python or packages natively, SpecWeaver is fully containerized.
 
-Using Podman or Docker:
+Run SpecWeaver without a local Python install, with Podman or Docker:
+
 ```bash
 podman run --env-file .env \
   -v ./my-project:/projects \
   -p 8000:8000 \
   ghcr.io/sbula/specweaver
 ```
-*Note: SQLite requires standard disk boundaries. You cannot map network-attached volumes (like CIFS) over strict WAL modes without configuring exceptions.*
 
-## 6. Smart Scan Exclusions (`.specweaverignore`)
-SpecWeaver's pipeline engines utilize deep polyglot AST traversal to map your project topology. To
-prevent SpecWeaver from unnecessarily scanning generated binaries, dependency files, or proprietary
-logic, it inherently restricts scope via an intelligent fallback sequence:
+Trap: SQLite needs a local disk. Network-attached volumes (like CIFS) do not work with WAL mode
+unless you configure exceptions.
 
-1. **Native Polyglot Exclusions:** The parser implicitly avoids known compiler artifacts mathematically mapd by Language type (e.g. `*.pyc`, `*.jar`, `node_modules/`, `target/`).
-2. **User Override:** You can strictly override these settings mathematically by creating a
-   `.specweaverignore` physically within your project's root directory, matching the classic
-   `.gitignore` syntax logic precisely.
+## 6. Scan Exclusions (`.specweaverignore`)
+
+SpecWeaver parses your source files (all supported languages) to map the project. Two layers keep it
+out of files it should not scan:
+
+1. **Built-in exclusions per language:** known compiler and dependency artifacts (e.g. `*.pyc`,
+   `*.jar`, `node_modules/`, `target/`).
+2. **Your override:** a `.specweaverignore` in the project root, in `.gitignore` syntax.
 
 ```bash
 # Example .specweaverignore implementation:
@@ -85,24 +100,27 @@ docs/legacy_drafts/
 ```
 
 ## 7. Model Context Protocol (MCP) & Vault Configuration
-Starting with Feature 3.32c, SpecWeaver supports context pre-fetching against live external tools (e.g. Postgres databases or Atlassian APIs) utilizing the Model Context Protocol.
+
+SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)
+over the Model Context Protocol (Feature 3.32c).
 
 ### Setting Up Vault Credentials
-If your pipelines declare `mcp_servers` mappings inside `.specweaver/pipelines`, they will require
-physical runtime credentials. **It is incredibly dangerous to store database proxies natively inside
-codebases**. SpecWeaver protects you using the isolated Vault map. 
 
-To inject credentials without causing a pipeline abortion:
-1. Use `sw init <name> --mcp postgres`. This automatically spins up `.specweaver/vault.env` and implicitly appends it to your root `.gitignore`.
-2. Alternatively, create `.specweaver/vault.env` yourself and ensure you immediately add it to your global `.gitignore` scope. 
+Pipelines that declare `mcp_servers` mappings inside `.specweaver/pipelines` need runtime
+credentials. Keep them in `.specweaver/vault.env`, never in the codebase.
 
-**The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file
-is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate
-interpreter crash to prevent accidental credentials leakage.**
+1. `sw init <name> --mcp postgres` creates `.specweaver/vault.env` and appends it to your root
+   `.gitignore`.
+2. Or create `.specweaver/vault.env` yourself and add it to `.gitignore` immediately.
+
+Rule: if `.specweaver/vault.env` is tracked by Git, the pipeline aborts before running, to prevent
+credential leakage.
 
 ## 8. Telemetry & Logs
 
-SpecWeaver enforces zero-trust execution by automatically collecting comprehensive background telemetry and structured logs.
-All CLI operations automatically stream visual `WARNING` level alerts and formatted stack traces natively to your console using Rich.
-For post-mortem auditing or agent debugging, SpecWeaver persists verbose `DEBUG` logs in machine-parseable JSON lines format physically within your user's home directory.
-You can find these rotation logs at: `~/.specweaver/logs/<project_name>/specweaver.log`
+| Output | Where |
+|---|---|
+| `WARNING` level alerts and formatted stack traces | Console, rendered with Rich |
+| Verbose `DEBUG` logs, JSON lines, rotated | `~/.specweaver/logs/<project_name>/specweaver.log` |
+
+Use the log file for post-mortem auditing and agent debugging.

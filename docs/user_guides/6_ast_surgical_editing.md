@@ -1,41 +1,45 @@
 # User Handbook 6: AST Surgical Editing & Context Management
 
-Traditional AI coding assistants struggle with large enterprise codebases. Attempting to repair a
-single function in a 2,000-line `.java` or `.ts` file using basic tools like `cat` or string
-replacement results in two massive failures:
-1. **Context Window Bloat:** Passing millions of unnecessary tokens costs massive amounts of compute.
-2. **Hallucination & Prompt Forgetting:** Forcing the LLM to process thousands of lines before a tiny fix makes it lose track of the original architecture.
+Use when: you want to know how agents read and edit large files without loading them whole.
 
-To solve this, **SpecWeaver uses polyglot AST (Abstract Syntax Tree) manipulation.**
+Fixing one function in a 2,000-line `.java` or `.ts` file with `cat` or string replacement costs
+two things:
+
+1. **Context window bloat:** the whole file is sent as tokens.
+2. **Forgetting:** thousands of lines before a small fix make the LLM lose track of the design.
+
+SpecWeaver edits code through its AST (Abstract Syntax Tree) instead of as text.
 
 ## The CodeStructureTool
 
-Instead of viewing files as raw text, SpecWeaver mounts Native Tree-Sitter boundaries across Python,
-Java, Kotlin, Javascript, Typescript, Rust, C/C++, Go, SQL, and Markdown. Let's look at how agents
-surgically interact with your codebase.
+Tree-sitter parsers cover Python, Java, Kotlin, TypeScript (`.ts`, `.tsx`), Rust, C/C++, Go, SQL,
+and Markdown. Plain JavaScript (`.js`) has no parser yet.
 
-### 1. Minimal Reads (Skeletal Mapping)
-Instead of executing a full `read_file`, SpecWeaver agents prefer using `read_file_structure`. 
-This mechanically slices the file:
-- It returns the imports, class topologies, and function signatures.
-- It completely hides the internal `{...}` execution paths.
+### 1. Minimal reads — `read_file_structure`
 
-You get a perfectly accurate blueprint of what the file does without paying token costs for details you aren't currently editing.
+Agents use `read_file_structure` before a full `read_file`. It returns:
 
-### 2. Deep Focus (`read_symbol_body`)
-If an agent only needs to fix the `calculateHash()` method, it uses `list_symbols` to find its exact
-Dot-Notation scope (e.g., `CryptoUtils.calculateHash`), and then calls `read_symbol`. That extracts
-just the target method.
-Better yet, using `read_symbol_body` extracts only the inside iteration loops, hiding external
-framework decorators (like Spring Boot annotations) from the agent entirely so it won't get them
-wrong during reproduction.
+- imports, class structure and function signatures;
+- no internal `{...}` bodies.
 
-### 3. Surgical Splicing (`replace_symbol_body`)
-This is SpecWeaver's primary coding advantage. 
+You see what the file does without paying for the parts you are not editing.
 
-When replacing code, the Agent cannot destroy your file with bad spacing or forgotten imports. `replace_symbol_body` locks the outer boundaries of the requested method. 
-- The method signature is **frozen**.
-- The decorators and macros are **frozen**.
-- Only the inner body logic is replaced, mapping the bytes precisely against the AST offsets.
+### 2. One symbol — `read_symbol`, `read_symbol_body`
 
-This ensures that the final merged logic is always syntactically clean without the typical "search-and-replace failed" loop that plagues legacy workflows.
+To fix `calculateHash()`:
+
+1. `list_symbols` finds its dot-notation scope, e.g. `CryptoUtils.calculateHash`.
+2. `read_symbol` returns just that method.
+3. `read_symbol_body` returns only the body. Signature and decorators (e.g. Spring Boot annotations)
+   are left out, so the agent cannot reproduce them wrong.
+
+### 3. Splicing — `replace_symbol_body`
+
+`replace_symbol_body` replaces only the inside of a method:
+
+- the method signature is **frozen**;
+- decorators and macros are **frozen**;
+- the new body is written at the AST byte offsets of the old one.
+
+Spacing and imports outside the body cannot be broken, and there is no "search-and-replace failed"
+retry loop.

@@ -1,76 +1,87 @@
-# MCP Architecture Blueprint: Features 3.32c and 3.32c-1 (Red-Team Approved)
+# MCP Architecture: Features 3.32c and 3.32c-1
 
-This document maps out the final, securely vetted design for implementing the **Model Context
-Protocol (MCP)** in SpecWeaver, effectively eliminating "Blank Canvas Syndrome" and target
-environment hallucinations.
+How SpecWeaver uses the **Model Context Protocol (MCP)** to give the LLM real facts about the target
+environment (e.g. a live database schema) instead of letting it guess ("Blank Canvas Syndrome",
+hallucinated environments). Red-team approved.
 
----
+```mermaid
+graph LR
+    CY["context.yaml<br/>consumes_resources + mcp_servers"] --> CA["ContextAssembler<br/>core/flow/handlers/mcp_assembler.py"]
+    CA --> AT["MCPAtom<br/>sandbox/mcp/core/atom.py"]
+    AT -->|"docker/podman run -i --rm"| SRV["MCP server container"]
+    SRV --> DB[("Target DB")]
+    CA -->|"environment_context"| P["System prompt"]
+```
 
-## 1. Feature 3.32c: Common MCP Client Architecture
+## 1. Feature 3.32c: common MCP client
 
-**Goal:** Implement the JSON-RPC protocol natively into SpecWeaver while guaranteeing Zero-Trust security and solving LLM latency.
+**Goal:** a native JSON-RPC MCP client, zero-trust, without LLM round-trip latency.
 
-### The "Pre-Fetched Context Envelope" Pattern (Solving Token Bloat)
-Instead of exposing massive MCP Tool Arrays directly to the LLM (which consumes 3000+ tokens) or
-forcing the LLM to waste API rounds executing MCP tools to find data (Latency Death Spiral),
-SpecWeaver adopts a **Pre-Fetch Architecture**.
+### Pre-fetched context envelope
 
-1. **The Target Bound**: The local `context.yaml` defines its exact data needs.
+Not chosen: exposing MCP tool arrays to the LLM (3000+ tokens), or letting the LLM spend API rounds
+calling MCP tools to find data (latency spiral). Instead SpecWeaver **pre-fetches**:
+
+1. **Target bound** — the local `context.yaml` declares exactly which resources it needs.
    ```yaml
    consumes_resources:
      - "mcp://database/schema/users"
      - "mcp://database/schema/billing"
    ```
-2. **The Assembler Hook**: Before any prompt is sent to the LLM, SpecWeaver's `ContextAssembler`
-   mechanically connects to the MCP Server, runs the queries for those specific resources, and
-   serializes the exact schema strings.
-3. **The Yield**: The exact data is injected into an `<environment_context>` XML block inside the System Prompt.
-   **Result:** The LLM gets immediate, latency-free reality checks. Token bloat is mathematically limited to only the resources explicitly permitted by the architecture boundary.
+2. **Assembler hook** — before the prompt is sent, `ContextAssembler` connects to the MCP server,
+   reads those resources, and serializes the schema strings.
+3. **Injection** — the data goes into an `<environment_context>` XML block in the system prompt.
 
----
+**Result:** no tool round-trips, and token cost is bounded by the resources the boundary declares.
 
-## 2. Feature 3.32c-1: External DB Context Harness
+## 2. Feature 3.32c-1: external DB context harness
 
-**Goal:** Securely allow SpecWeaver to introspect target databases without allowing RCE (Remote Code Execution), supply-chain vulnerabilities, or orphaned connections.
+**Goal:** introspect target databases without RCE (Remote Code Execution), supply-chain exposure,
+or orphaned connections.
 
-### The "Ephemeral Docker MCP Pod" Pattern
-We strictly ban `npx` or `uvx` wrapper execution. Native execution introduces supply-chain RCE vulnerabilities and "zombie" processes that cripple database connection pools.
+### Ephemeral Docker MCP pod
 
-1. **Pinned Docker Execution:**
-   SpecWeaver mandates that MCP DB servers run inside ephemeral, strictly version-pinned Docker containers using `docker run -i --rm`.
+**Rule:** no `npx` or `uvx` wrapper execution. Native execution opens supply-chain RCE and leaves
+"zombie" processes that exhaust database connection pools.
+
+1. **Pinned container execution.** MCP DB servers run in ephemeral, version-pinned containers via
+   `docker run -i --rm`. `MCPAtom` refuses any runtime other than `docker`/`podman` (NFR-2).
    ```yaml
    mcp_servers:
      postgres:
        command: "docker"
        args: ["run", "-i", "--rm", "mcp/postgres@sha256:abcd...", "${VAULT:DB_URL}"]
    ```
-   **Security Benefit:** When SpecWeaver shuts down the pipe, Docker instantaneously kills the container. Zero zombie processes. Zero lingering TCP socket connections to the database.
+   **Why:** when SpecWeaver closes the pipe, the container dies. No zombie processes, no lingering
+   TCP connections to the database.
 
-2. **The `vault.env` Credential Shield:**
-   Database connection strings cannot be stored in `context.yaml` (which is tracked by Git).
-   SpecWeaver introduces a local `.specweaver/vault.env` (which is strictly `.gitignore`d). The
-   execution harness securely injects these secrets dynamically at runtime into the Docker
-   container, eliminating credential leaks.
+2. **`vault.env` credential shield.** Connection strings never go in `context.yaml` (tracked by
+   Git). They go in `.specweaver/vault.env`, which is `.gitignore`d and injected into the container
+   at runtime.
+   - `sw init` scaffolding creates `.specweaver/vault.env` and adds it to `.gitignore`.
+   - The runner aborts if `vault.env` is tracked by Git (`verify_vault_security`,
+     `core/flow/engine/security.py`).
+   - `MCPAtom` scrubs env values of 8+ characters from server responses (`***RESTRICTED***`).
 
----
+## 3. Known limitations & mitigations
 
-## 3. Known Limitations & Mitigations
+### Temporal disconnect & topology cycle deadlock
 
-### 1. The "Temporal Disconnect" & Topology Cycle Deadlock
-**The Danger:** The MCP Server pulls the live schema *from the physical database*. If SpecWeaver is
-running an 8-minute pipeline to **build a brand new database table** (Tier 1), and then Tier 2 boots
-up and attempts to query the MCP server to read that new schema, the MCP Server will return an empty
-result (because the code hasn't been physically deployed to the DB yet).
-**The Mitigation:** Proper Topology DAG routing (Feature 3.49 and Tiered Dependencies). The
-`ContextAssembler` must execute **lazily** per-tier, not at global `Wave 0`. Furthermore, agents
-must treat `Spec.md` as the ultimate source of truth for the *delta* (the future), while the MCP
-context represents the *baseline past*.
+**Risk:** the MCP server reads the live schema from the real database. If an 8-minute pipeline is
+**building a new table** (Tier 1) and Tier 2 then queries the MCP server for that schema, it gets
+an empty result — the code is not deployed to the DB yet.
 
-### 2. The Docker Friction Barrier
-**The Danger:** Mandating `docker run -i --rm` completely solves supply chain security and zombie
-process problems, but forces a massive physical prerequisite onto the developer: **They must have
-Docker / Podman installed and running locally.**
-**The Mitigation:** SpecWeaver already establishes strong dependencies on Podman/Docker across its
-broader ecosystem (e.g., Feature 3.45 Ephemeral Execution Containers). Integrating MCP explicitly
-standardizes container-runtimes as a core SpecWeaver prerequisite, consolidating infrastructure
-requirements rather than fracturing them.
+**Mitigation:** topology DAG routing (Feature 3.49 and Tiered Dependencies).
+
+- `ContextAssembler` must run **lazily** per tier, not at global `Wave 0`.
+- Agents treat `Spec.md` as the source of truth for the *delta* (the future); MCP context is the
+  *baseline past*.
+
+### Docker friction
+
+**Risk:** `docker run -i --rm` solves supply-chain and zombie-process problems but requires
+**Docker / Podman installed and running locally**.
+
+**Mitigation:** SpecWeaver already depends on Podman/Docker elsewhere (e.g., Feature 3.45 Ephemeral
+Execution Containers). MCP makes a container runtime a core prerequisite: one infrastructure
+requirement, not two.
