@@ -13,13 +13,10 @@ To install SpecWeaver from source:
 git clone https://github.com/sbula/specweaver.git
 cd specweaver
 uv sync
-```
-Or via pip:
-```bash
-pip install specweaver
 # Optional: install specific providers
-# pip install specweaver[openai,anthropic,mistral,qwen]
+# uv sync --extra openai --extra anthropic --extra mistral --extra qwen
 ```
+SpecWeaver is not published on PyPI. Install from source.
 
 ## 3. Providing Credentials
 SpecWeaver seamlessly routes tasks out to external LLMs. Ensure your CLI has access to the appropriate credentials.
