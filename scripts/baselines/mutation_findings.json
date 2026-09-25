@@ -755,6 +755,11 @@
           "state": "open",
           "verdict": "UNMEASURED",
           "reason": "symbol-drifted"
+        },
+        {
+          "at": 1787886296.935963,
+          "state": "closed",
+          "reason": "withdrawn"
         }
       ],
       "first_seen": 1787281386.0787365,
