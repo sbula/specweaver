@@ -1,24 +1,31 @@
-# Design: Podman/Docker Integration
+# D-EXEC-01 — Podman/Docker Integration
 
-- **Feature ID**: D-EXEC-01
-- **Epic**: Topic 06 (Sandbox)
-- **Status**: DELIVERED — design written 2026-08-19, after the fact
+**Status**: DELIVERED — design written 2026-08-19, after the fact · **Epic**: Topic 06 (Sandbox) ·
+**Feature ID**: D-EXEC-01
+
+| | |
+|---|---|
+| Not the same as | `B-EXEC-01` (ephemeral QA container) — shares the runtime only |
+| Relies on | `E-EXEC-01` (`WorkspaceBoundary`, the volume boundary) |
+| Plan | [D-EXEC-01_implementation_plan.md](D-EXEC-01_implementation_plan.md) |
+
+## What it does
+
+The *deployment* image: SpecWeaver itself, packaged, serving a dashboard, with a host project
+volume-mounted in.
+
+**It is not `B-EXEC-01`**, which sandboxes a QA run in an *ephemeral* container, mounting the project
+read-only. Conflating the two is why `INT-US-09-SF01`'s hold named both for months.
 
 ## Why this document exists
 
-`D-EXEC-01` shipped with **no design document at all**. It was recorded in four lines of a topic
-entry and nowhere else, which makes it invisible to `check_fr_sweep.py` by construction: the sweep
-counts uncited FRs in designs that exist, and a design that does not exist has none. So a delivered
-capability scored perfectly by having nothing to score.
+`D-EXEC-01` shipped with **no design document**, recorded only in four lines of a topic entry. That
+made it invisible to `check_fr_sweep.py` by construction: the sweep counts uncited FRs in designs that
+exist, so a delivered capability scored perfectly by having nothing to score.
 
-This is the same backfill `D-SENS-01` and `E-UI-02` received on contact (`specweaver-dev` §3.2c).
-The requirements below are written from **why the capability exists and what ships today**, not
-invented — each names the artefact that implements it.
-
-**It is not `B-EXEC-01`.** That capability sandboxes a QA run in an *ephemeral* container, mounting
-the project read-only. This one is the *deployment* image: SpecWeaver itself, packaged, serving a
-dashboard, with a host project volume-mounted in. They share a runtime and nothing else, and
-conflating them is why `INT-US-09-SF01`'s hold named both for months.
+Same backfill as `D-SENS-01` and `E-UI-02` received on contact (`specweaver-dev` §3.2c). The
+requirements are written from **why the capability exists and what ships today** — each names the
+artefact that implements it.
 
 ## Functional Requirements
 
@@ -40,12 +47,11 @@ conflating them is why `INT-US-09-SF01`'s hold named both for months.
 | FR-4 | the same file — a `HEALTHCHECK` that queries the served endpoint rather than the process |
 | FR-5 | the same file — the workflow triggers on `v*` tags and pushes to `ghcr.io` |
 
-## What is knowingly not covered
+## Limits
 
-**No test builds the image.** A real build pulls a base image, installs apt packages and resolves the
-full dependency set; that is a CI job, not a suite that runs on every commit. What is asserted is the
-**contract the image declares** — the directives an operator depends on — so a change that silently
-drops the non-root user or the healthcheck fails here rather than in production.
-
-**The volume boundary is `E-EXEC-01`'s.** `WorkspaceBoundary` enforces that a mounted project cannot
-be escaped; this capability mounts it, and does not re-implement the check.
+- **No test builds the image.** A real build pulls a base image, installs apt packages and resolves
+  the full dependency set — a CI job, not a per-commit suite. Asserted instead: the **contract the
+  image declares**, so a change that silently drops the non-root user or the healthcheck fails here,
+  not in production.
+- **The volume boundary is `E-EXEC-01`'s.** `WorkspaceBoundary` enforces that a mounted project cannot
+  be escaped; this capability mounts it and does not re-implement the check.

@@ -1,40 +1,58 @@
-# Design: Rubrics-as-Content Validation (Rules as Code, Rubrics as Content)
+# C-VAL-05 — Rubrics-as-Content Validation (Rules as Code, Rubrics as Content)
 
-- **Feature ID**: C-VAL-05
-- **Epic**: Topic 05 (Validation Engine)
-- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
-  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
-  review and any corrections it produces.
-- **DAL**: C (Enterprise Standard)
+**Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design` Phase 6 gate was
+never run for this capability. Status returns to ✅ only after that review and any corrections it
+produces. · **DAL**: C (Enterprise Standard) · **Epic**: Topic 05 (Validation Engine) ·
+**Feature ID**: C-VAL-05
 
-## What shipped
+| | |
+|---|---|
+| Uses | `E-FLOW-02` (project-override precedence) · `C-VAL-03` (run DAL) · `E-INTL-03` (`REVIEW_OUTPUT_CONTRACT`) |
+| Substrate for | `B-VAL-03`, `E-VAL-04`, `B-INTL-08` |
+| Not touched | mechanical rules; `S03`/`S07`; user-defined rule IDs (`D-VAL-02`) |
+
+## What it does
 
 Semantic judgment criteria are markdown files under `src/specweaver/assurance/validation/rubrics/`.
-A project overrides any of them from `.specweaver/rubrics/`, the run's DAL selects a stricter
-variant where one is shipped, and every load carries the id, version, checksum and source path of
-the file that judged it.
+A project overrides any of them from `.specweaver/rubrics/`, the run's DAL selects a stricter variant
+where one is shipped, and every load carries the id, version, checksum and source path of the file
+that judged it.
 
-The line the feature draws: **what counts as good is content, how the verdict is read is code.**
-`REVIEW_OUTPUT_CONTRACT` in `workflows/review/reviewer.py` stays in Python because `_parse` depends
-on it, and `resolve_review_instructions` in the review handler joins the two halves.
+The line it draws: **what counts as good is content, how the verdict is read is code.**
+`REVIEW_OUTPUT_CONTRACT` in `workflows/review/reviewer.py` stays in Python because `_parse` depends on
+it; `resolve_review_instructions` in the review handler joins the two halves.
 
-## The stub's premise was half stale
+## Why not S03/S07
 
-The stub named three targets: `S03` stranger-test, `S07` test-first, and the review criteria. Two of
-the three no longer hold, measured against the code on delivery:
+The stub named three targets: `S03` stranger-test, `S07` test-first, and the review criteria. Measured
+on delivery, two of the three did not hold:
 
 - `s03_stranger.py` and `s07_test_first.py` both return `requires_llm = False`. They are regexes and
-  thresholds — `_EXT_LINK_RE`, `_WARN_THRESHOLD`, an abstraction-leak scan. There is no judgment
-  criterion in either, so there is nothing to externalize.
+  thresholds — `_EXT_LINK_RE`, `_WARN_THRESHOLD`, an abstraction-leak scan. No judgment criterion to
+  externalize.
 - **No rule in the battery requires an LLM.** All 23 are mechanical, not 21 of 23.
 
-The real frozen judgment was `SPEC_REVIEW_INSTRUCTIONS` and `CODE_REVIEW_INSTRUCTIONS`, defined in
-`reviewer.py` and consumed by the review handler. Each already contained the two halves as separate
-markdown sections — `## Review Criteria` and `## Output Format` — which is why the cut is clean.
+The frozen judgment was `SPEC_REVIEW_INSTRUCTIONS` and `CODE_REVIEW_INSTRUCTIONS` in `reviewer.py`,
+consumed by the review handler. Each already split into `## Review Criteria` and `## Output Format`,
+so the cut is clean.
 
-So this capability externalizes the review criteria and builds the substrate. It does **not** convert
-`S03`/`S07`, because converting a regex to a rubric would replace a cheap deterministic check with an
-LLM call and call it progress.
+So this capability externalizes the review criteria and builds the substrate. Converting a regex to a
+rubric would replace a cheap deterministic check with an LLM call.
+
+## Architecture
+
+| Piece | Lives in | Does |
+|---|---|---|
+| `load_rubric` loader + shipped `.md` defaults | `assurance.validation` (`rubrics/`) | resolves id → criteria + provenance |
+| `REVIEW_OUTPUT_CONTRACT`, `review_instructions` | `workflows/review/reviewer.py` | the fixed response format |
+| `resolve_review_instructions` | review handler (`core.flow`) | loads the rubric, appends the contract |
+
+`workflows.review` may depend only on `infrastructure.llm` (`tach.toml`), so it cannot load a rubric
+itself. The handler composes — which is why `FR-5` is proven at the handler, and end to end at e2e,
+not inside the reviewer.
+
+A missing rubric raises `RubricNotFound` rather than resolving to empty criteria: empty criteria send
+the model no standard, and it would still return a verdict.
 
 ## Functional Requirements
 
@@ -52,14 +70,10 @@ empty criteria instead of raising, and dropping the output contract each fail th
 them.
 
 `FR-2` and `FR-5` are also proven at full distance by
-`tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py`, which runs
-`ReviewSpecHandler` against a recording adapter and reads what the model was actually sent. The
-unit tests cannot see the wiring being dropped — a correct `resolve_review_instructions` whose
-result is never passed to the prompt leaves them green, and hardcoding the criteria back into the
-handler fails all three of these.
-
-A missing rubric raises `RubricNotFound` rather than resolving to empty criteria. Empty criteria
-would send the model no standard, and it would still return a verdict.
+`tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py`: it runs
+`ReviewSpecHandler` against a recording adapter and reads what the model was sent. Unit tests cannot
+see the wiring dropped — a correct `resolve_review_instructions` whose result never reaches the
+prompt leaves them green; hardcoding the criteria back into the handler fails all three e2e tests.
 
 ## Requirement–Surface Bindings
 
@@ -68,10 +82,6 @@ would send the model no standard, and it would still return a verdict.
 | FR-2 | Project-override precedence, as already established for pipelines | `E-FLOW-02` · `profiles._custom_pipelines_dir(project_dir)` | read `src/specweaver/core/config/profiles.py:74` — `.specweaver/<kind>/` over the packaged directory |
 | FR-3 | The run's resolved criticality | `C-VAL-03` · `context.isolation.dal_level` | read `src/specweaver/core/flow/engine/isolation.py` — `seed_dal_level` resolves it once per run |
 | FR-5 | The response format the verdict parser depends on | `E-INTL-03` · `reviewer.REVIEW_OUTPUT_CONTRACT` | read `src/specweaver/workflows/review/reviewer.py` — `_parse` reads `VERDICT:` and `[confidence: N]` |
-
-`workflows.review` may depend only on `infrastructure.llm` (`tach.toml`), so it cannot load a
-rubric itself. The handler composes — which is why `FR-5` is proven at the handler, and end to end
-at e2e, not inside the reviewer.
 
 ## Non-Functional Requirements
 
@@ -86,10 +96,10 @@ at e2e, not inside the reviewer.
 - Softening mechanical rules. C01–C13 and the spec rules stay code.
 - Changing the battery, report or gate contracts.
 - User-defined rule IDs — that remains `D-VAL-02`.
-- Converting `S03`/`S07`. See the premise section: there is no judgment content in either.
+- Converting `S03`/`S07` — no judgment content in either (see above).
 
-## What this is the substrate for
+## Substrate for
 
 `B-VAL-03`, `E-VAL-04` and `B-INTL-08` should be designed rubric-first on this loader rather than
-freezing new prompts in Python. The extension point is a markdown file plus a `load_rubric` call,
-not a rule class.
+freezing new prompts in Python. The extension point is a markdown file plus a `load_rubric` call, not
+a rule class.

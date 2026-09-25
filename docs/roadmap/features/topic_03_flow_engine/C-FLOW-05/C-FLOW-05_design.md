@@ -1,43 +1,47 @@
-# Design: Interactive Gate Variables (HITL)
+# C-FLOW-05 — Interactive Gate Variables (HITL)
 
-- **Feature ID**: 3.26c
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/phase_3/feature_3.26c/feature_3.26c_design.md
+**Status**: APPROVED · **Phase**: 3 · **Legacy ID**: 3.26c · **Feature ID**: C-FLOW-05
 
-## Feature Overview
+| | |
+|---|---|
+| Touches | `PromptBuilder`; Flow Engine pipeline handlers (`_generation.py`, `_draft.py`, etc.) |
+| Not touched | the LLM structural adapters |
 
-Feature 3.26c adds support for strictly isolated human `GateType.HITL` rejections into the generation sequence prompts.
-It solves the issue where human feedback is sometimes ignored or outweighed by linter errors in
-loop-back generation sequences by placing that feedback into a `<dictator-overrides>` XML section
-with the highest priority weighting ("never truncated").
-It interacts with `PromptBuilder` and the Flow Engine's pipeline handlers (`_generation.py`, `_draft.py`, etc.), and does NOT touch the underlying LLM structural adapters themselves.
-Key constraints: Must use `<dictator-overrides>` XML section, must grant strict promotional weight above standard linter error findings, and must fit seamlessly within the existing adapter archetype.
+## What it does
 
-## Research Findings
+Puts human `GateType.HITL` rejection remarks into loop-back generation prompts, in a
+`<dictator-overrides>` XML section at the highest priority ("never truncated").
 
-### Codebase Patterns
-- `src/specweaver/infrastructure/llm/prompt_builder.py` provides an `add_instructions` and similar
-  methods with token-aware truncation logic based on integer priority levels. Priority 0 is "never
-  truncated".
-- `context.feedback` is used by the Flow Engine (`src/specweaver/core/flow/runner.py` and
-  `gates.py`) to pipe output from `loop_back` actions to target steps. By modifying handlers (e.g.
-  `GenerateCodeHandler`), this feedback can be unpacked and directed into the prompt.
-- The `RunContext` cleanly isolates feedback state, making the implementation natively compatible with the existing `Flow` routing mechanisms without an architectural switch.
+Without it, human feedback in loop-back sequences can be ignored or outweighed by linter errors.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| standard XML | N/A | Format tags | N/A |
+Constraints: must use the `<dictator-overrides>` section; human feedback ranks strictly above
+standard linter findings; must fit the existing adapter archetype.
 
-### Blueprint References
-None specified in ORIGINS.md directly corresponding to `3.26c` beside the top-level roadmap instruction.
+## Architecture
+
+- `src/specweaver/infrastructure/llm/prompt_builder.py` has `add_instructions` and similar methods with
+  token-aware truncation by integer priority. Priority 0 is "never truncated".
+- `context.feedback` carries `loop_back` output to target steps in the Flow Engine
+  (`src/specweaver/core/flow/runner.py` and `gates.py`). Handlers (e.g. `GenerateCodeHandler`) unpack
+  it and route it into the prompt.
+- `RunContext` isolates feedback state, so this fits the existing `Flow` routing with no architectural
+  switch.
+
+External dependencies: none — standard XML tags, pure text manipulation. No `ORIGINS.md` blueprint
+for `3.26c` beyond the top-level roadmap instruction.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Put `add_dictator_overrides` on `PromptBuilder` | Keeps prompt token management strictly within the `llm/` archetype. | No |
+| AD-2 | Extract feedback inside `GenerateCodeHandler`, not at the LLM root. | Flow Engine orchestrators bridge cross-domain context, per the context-passing rules. | No |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | PromptBuilder dictatorial overrides | System | Inject human feedback into `<dictator-overrides>` XML section at priority 0 | The LLM receives the human feedback mathematically bound to ignore context limits. |
+| FR-1 | PromptBuilder overrides section | System | Inject human feedback into `<dictator-overrides>` XML section at priority 0 | The LLM receives the human feedback, never truncated by context limits. |
 | FR-2 | Feedback extraction | Flow Handlers | Extract HITL rejection remarks from `RunContext.feedback` separately from generic automated errors | Human and Linter errors are distinct streams going into the loop-back code generation. |
 
 ## Non-Functional Requirements
@@ -45,54 +49,18 @@ None specified in ORIGINS.md directly corresponding to `3.26c` beside the top-le
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Archetype Strictness | `llm/` module must remain an adapter and forbid `loom/*`. **[proof: arch — tach/lint gate, not pytest]** |
-| NFR-2 | Extensibility | `<dictator-overrides>` must be compatible with existing Gemini, OpenAI, Claude adapters implicitly. |
+| NFR-2 | Extensibility | `<dictator-overrides>` must work with the existing Gemini, OpenAI, Claude adapters without adapter changes. |
 
-## External Dependencies
+## Sub-features
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| None | N/A | N/A | Y | Pure text manipulation |
+Single feature — no decomposition. Developer guide: none needed (no new architecture).
 
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Put `add_dictator_overrides` natively on `PromptBuilder` | Keeps prompt token management strictly within `llm/` archetype. | No |
-| AD-2 | Extract feedback inside `GenerateCodeHandler` vs LLM root. | Flow Engine Orchestrators are responsible for bridging cross-domain context, making this perfectly aligned with context passing rules. | No |
-
-## Developer Guides Required
-
-Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
-
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| None | No new architecture, just minor capability | ⬜ N/A |
-
-## Sub-Feature Breakdown
-
-Single feature — no decomposition.
-
-### SF-01: Interactive Gate Variables (HITL)
-- **Scope**: Extend PromptBuilder and Generation handlers to parse and prioritize HITL remarks over linter outputs.
-- **FRs**: [FR-1, FR-2]
-- **Inputs**: `RunContext.feedback` dict containing loop-back findings and specifically parked remarks.
-- **Outputs**: Properly formatted XML prompt text block to LLM payload.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.26c/feature_3.26c_implementation_plan.md
-
-## Execution Order
-
-Single feature — no decomposition.
+| SF | Does | FRs | Inputs → Outputs | Plan |
+|----|------|-----|------------------|------|
+| SF-01 | Extend `PromptBuilder` and generation handlers to parse HITL remarks and rank them over linter output | FR-1, FR-2 | `RunContext.feedback` (loop-back findings + parked remarks) → XML prompt block in the LLM payload | [sf01](C-FLOW-05_sf01_implementation_plan.md) |
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Interactive Gate Variables | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-
-## Session Handoff
-
-**Current status**: Implementation Plan APPROVED.
-**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.26c/feature_3.26c_sf01_implementation_plan.md`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.

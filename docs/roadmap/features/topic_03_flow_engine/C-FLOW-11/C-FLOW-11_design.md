@@ -1,35 +1,52 @@
-# Design: Graduated Autonomy — DAL-Driven Execution-Mode Dial
+# C-FLOW-11 — Graduated Autonomy (DAL-Driven Execution-Mode Dial)
 
-- **Feature ID**: C-FLOW-11
-- **Epic**: Topic 03 (Flow Orchestration)
-- **Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design`
-  Phase 6 gate was never run for this capability. Status returns to ✅ only after that
-  review and any corrections it produces.
-- **DAL**: C (Enterprise Standard) — the dial is itself assurance policy.
+**Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design` Phase 6 gate was
+never run for this capability. Status returns to ✅ only after that review and any corrections it
+produces. · **DAL**: C (Enterprise Standard) — the dial is itself assurance policy. · **Epic**: Topic
+03 (Flow Orchestration) · **Feature ID**: C-FLOW-11
 
-## What shipped
+| | |
+|---|---|
+| Uses | `C-VAL-03` (DAL) · `C-EXEC-06` (composition root) · `E-INTL-01` (tool loop) · `E-SENS-01` (tool execution) · `B-FLOW-05` (spend) |
+| Not touched | the one-shot handlers; multi-agent orchestration (`B-INTL-06`) |
 
-A pipeline step declares `mode: oneshot | agentic`. The install declares a policy in
-`[autonomy]`. The run's own DAL decides whether the request is allowed. `agentic` runs a bounded
-work unit — an agent iterating with tools — behind a replaceable runtime.
+## What it does
 
-Execution rigidity used to be an architectural constant: one LLM call per generation step, a
-hand-rolled reflection loop for fixes. That is too much ceremony for a throwaway script and too
-little capability for work an agent could iterate on. The zero-trust machinery already guarantees
-the result at the step boundary — session isolation, the authorized merge, the gate battery — so
-**the gates make the middle free**. Nothing here softens a gate.
+A pipeline step declares `mode: oneshot | agentic`. The install declares a policy in `[autonomy]`. The
+run's own DAL decides whether the request is allowed. `agentic` runs a bounded work unit — an agent
+iterating with tools — behind a replaceable runtime.
 
-## The strategic decision, and how it was taken
+Replaces a fixed rigidity — one LLM call per generation step, a hand-rolled reflection loop for fixes —
+which was too much ceremony for a throwaway script and too little capability for work an agent could
+iterate on. The zero-trust machinery guarantees the result at the step boundary — session isolation,
+the authorized merge, the gate battery — so **the gates make the middle free**. Nothing here softens a
+gate.
 
-The stub left the agent-runtime binding open and asked for it to be settled at intake. It was, in
-favour of an **in-process loop behind an `AgentRuntime` protocol**, on one decisive fact:
-`_CREDENTIAL_VARS` in the sandbox executor strips every provider API key from sandboxed child
-processes, deliberately, so that generated code cannot exfiltrate one. An external agent CLI
-running inside the work unit's own worktree would therefore have no credentials, and giving it any
-means putting a hole in that control.
+## Why an in-process runtime
 
-The protocol keeps the question open rather than closing it: a subprocess runtime is a class, not
-a rewrite.
+The stub left the agent-runtime binding open, to settle at intake. It was settled in favour of an
+**in-process loop behind an `AgentRuntime` protocol**, on one fact: `_CREDENTIAL_VARS` in the sandbox
+executor strips every provider API key from sandboxed child processes, so generated code cannot
+exfiltrate one. An external agent CLI inside the work unit's worktree would have no credentials, and
+giving it any puts a hole in that control.
+
+The protocol keeps the question open: a subprocess runtime is a class, not a rewrite.
+
+## Architecture
+
+| Piece | Lives in | Does |
+|---|---|---|
+| `ExecutionMode`, `resolve_execution_mode` | `core/flow/engine/autonomy.py` | resolves step intent against the run's DAL |
+| `WorkUnit`, `WorkUnitResult`, `AgentRuntime`, `InProcessAgentRuntime` | `core/flow/engine/work_unit.py` | the bounded tool loop |
+| `AutonomySettings` | `core/config/settings.py` | the install policy |
+| `PipelineStep.mode` | `core/flow/engine/models.py` | the author's intent |
+
+**Seeding.** `apply_isolation_policy` already serves both composition roots — `sw run`/`sw resume` and
+the API's run endpoints. Seeding at only one is the defect `TECH-013` closed for isolation, so the
+autonomy policy rides along there.
+
+It is read with `getattr`, not attribute access — load-bearing: the whole block is best-effort, so a
+settings object without the attribute would otherwise take the **isolation** policy down with it.
 
 ## Functional Requirements
 
@@ -43,19 +60,8 @@ a rewrite.
 
 Proof is by citation in the test files, read by `check_fr_coverage.py`. Each FR is behind a killed
 mutant: removing the DAL override, letting an unresolved DAL go agentic, unbounding the turn loop,
-never executing a tool, never seeding the policy onto the context, shipping the policy as
-`agentic`, and raising the ceiling to DAL-A all fail the tests that claim them.
-
-## Why the policy is seeded where it is
-
-`apply_isolation_policy` already serves both composition roots — `sw run`/`sw resume` and the
-API's run endpoints — and seeding at only one of them is the exact defect `TECH-013` closed for
-isolation. The autonomy policy rides along.
-
-It is read with `getattr`, not attribute access, and that is load-bearing: the whole block is
-best-effort, so a settings object without the attribute would otherwise take the **isolation**
-policy down with it. That regression was introduced and caught by the API's own policy tests
-before it left the branch.
+never executing a tool, never seeding the policy onto the context, shipping the policy as `agentic`,
+and raising the ceiling to DAL-A all fail the tests that claim them.
 
 ## Requirement–Surface Bindings
 
@@ -67,10 +73,10 @@ before it left the branch.
 | FR-3 | Tool execution | `E-SENS-01` · `ToolDispatcherProtocol.execute(name, args)` | read `src/specweaver/infrastructure/llm/models.py:247` |
 | FR-4 | The spend half of the bound, free of extra wiring | `B-FLOW-05` · `TelemetryCollector.budget` | read `src/specweaver/infrastructure/llm/collector.py` — the factory has already wrapped the adapter |
 
-`FR-2` crosses `core.config` → `core.flow.engine.isolation` → `core.flow.engine.autonomy`, so it is
-a **seam FR** and is proven at integration tier by
-`tests/integration/core/flow/engine/test_autonomy_policy_integration.py`. The dial's unit tests
-build the policy by hand and would not notice the composition root dropping it.
+`FR-2` crosses `core.config` → `core.flow.engine.isolation` → `core.flow.engine.autonomy`, so it is a
+**seam FR**, proven at integration tier by
+`tests/integration/core/flow/engine/test_autonomy_policy_integration.py`. The dial's unit tests build
+the policy by hand and would not notice the composition root dropping it.
 
 ## Non-Functional Requirements
 
@@ -84,6 +90,6 @@ build the policy by hand and would not notice the composition root dropping it.
 
 - Removing or rewriting the one-shot handlers. They are the deterministic position of the dial.
 - Multi-agent orchestration — that is `B-INTL-06`.
-- Softening any guarantee. Sandbox, authorization, mechanical rules and gates are identical at
-  every dial position.
+- Softening any guarantee. Sandbox, authorization, mechanical rules and gates are identical at every
+  dial position.
 - Choosing SpecWeaver's long-term agent runtime. `AgentRuntime` exists so that stays open.

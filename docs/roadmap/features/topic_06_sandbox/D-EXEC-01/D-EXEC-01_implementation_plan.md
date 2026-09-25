@@ -1,14 +1,13 @@
-# Implementation Plan: D-EXEC-01
+# D-EXEC-01 — Podman/Docker Integration: Plan
 
-- **Feature ID**: D-EXEC-01
-- **Status**: DELIVERED — plan written 2026-08-19, after the fact
-- **Commit boundaries**: one, retrospective
+**Status**: DELIVERED — plan written 2026-08-19, after the fact · **Commit boundaries**: one,
+retrospective · Design: [D-EXEC-01_design.md](D-EXEC-01_design.md)
 
-## Why this plan is retrospective
+## Goal
 
-The capability shipped before it had a design, so there was no plan to schedule against. This records
-which artefact owns each requirement, which is what `check_fr_coverage.py` needs in order to judge
-the ledger at all — and what a reader needs in order to find the thing a requirement describes.
+Record which artefact owns each requirement. The capability shipped before it had a design, so there
+was no plan to schedule against; `check_fr_coverage.py` needs this to judge the ledger, and a reader
+needs it to find what a requirement describes.
 
 ## CB-1 — the deployment image, as shipped
 
@@ -20,11 +19,7 @@ the ledger at all — and what a reader needs in order to find the thing a requi
 | T4 | FR-4 | `HEALTHCHECK` querying `/healthz`, so "up" and "answering" are distinguishable |
 | T5 | FR-5 | `.github/workflows/container.yml`, triggered on `v*` tags, pushing to GHCR |
 
-**T3's ordering is the requirement, not a detail.** A `USER` after `ENTRYPOINT` reads like
-hardening and changes nothing — the entrypoint has already started as root. The test asserts the
-line order for that reason.
+**T3's ordering is the requirement, not a detail.** A `USER` after `ENTRYPOINT` reads like hardening
+and changes nothing — the entrypoint has already started as root. The test asserts the line order.
 
-**No task builds the image.** That is a CI job: a real build pulls a base image, installs apt
-packages and resolves the whole dependency set. What is owned here is the contract the image
-declares, so a change that silently drops the non-root user or the healthcheck fails on commit
-rather than in production.
+**No task builds the image** — a CI job (see design §Limits).
