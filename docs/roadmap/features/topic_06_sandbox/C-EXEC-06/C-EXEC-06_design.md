@@ -20,18 +20,16 @@ reconcile at the end. Only files in `allowed_paths` come back to the real repo.
 Why DAL-C: the end-of-run strip-merge is the *sole authorization gate* for what generated code
 lands in the user's repo.
 
-## Why it was needed — the three `TECH-012` gaps
+## Why not per-step isolation
 
-Per-step isolation (`D-EXEC-02`) could not run a multi-step loop such as `sw implement`'s
-generate → lint-fix → run-tests → validate:
+`D-EXEC-02` isolates one step at a time. That cannot run a multi-step loop such as `sw implement`'s
+generate → lint-fix → run-tests → validate (`TECH-012`):
 
-| Gap | What broke |
-|---|---|
-| 1 — no commit | Handlers never commit. `worktree_sync` runs `git rebase main`, which refuses on the dirty tree and returns FAILED — a result **discarded**. `strip_merge`'s `git merge sf-*` is then a no-op and the generated file is lost at teardown. |
-| 2 — no allow-list | `execute_in_sandbox` reads `getattr(context, "allowed_paths", [])`; `RunContext` has **no such field** → always `[]` → `strip_merge` strips every file. |
-| 3 — branch collision | Branch/path come from the constant run id (`sf-{pipeline}-{task_id}`, `.worktrees/{task_id}`). Teardown removes the worktree but **not** the branch, so the 2nd isolated step's `git worktree add -b <existing-branch>` fails closed. |
+- **Gap 1:** nothing was committed in the worktree, so the merge brought nothing back;
+- **Gap 2:** there was no allow-list, so every file was stripped;
+- **Gap 3:** the branch outlived its worktree, so the 2nd step's `git worktree add -b` collided.
 
-Code locations: SF-01 plan (Gap 3), SF-02 plan (Gaps 1–2).
+One worktree per run, one commit, one authorized merge fixes all three.
 
 ## Architecture
 

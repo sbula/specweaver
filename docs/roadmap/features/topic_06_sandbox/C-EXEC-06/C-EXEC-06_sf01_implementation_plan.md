@@ -24,7 +24,6 @@ which proves isolation: the real source root is unmutated.
 | Per-step reference: `worktree_add` → `copy.copy(context)` + rebind `output_dir`/`execution_root` to `wt_path` → `setup_sandbox_caches` → handler → sync/strip_merge → `worktree_teardown` (finally). SF-01 builds the per-run analog, once around the whole loop. | `runner_utils.py:151-221` |
 | `worktree_add` = `git worktree add -b <branch> <path> HEAD`. `worktree_teardown` (→ `worktree_ops.handle_worktree_teardown:20-64`) removes the worktree but **NOT the branch**. No branch-delete intent exists. | `git/core/atom.py:385-415`, `:417-425` |
 | `enforce_isolation` is set from `sandbox.enforce_worktree_isolation`. SF-03 populates `session_isolation` the same way; SF-01 tests set `context.session_isolation` directly. | `flow/interfaces/cli.py:270-272` |
-| Gap 3 today: branch/path from the constant run id; teardown keeps the branch | `runner_utils.py:163-166` |
 | GitAtom primitives: `worktree_add` `:385-415`, `worktree_sync` `:427-475`, `strip_merge` `:477-491`; `worktree_teardown` body | `git/core/atom.py`; `worktree_ops.py:20-64` |
 
 Naming fixes Gap 3 structurally: one worktree per run, named from `run_id`

@@ -11,15 +11,13 @@ worktree's changes onto the session branch (new `worktree_commit` primitive), th
 `strip_merge` that writes back **only** paths in `allowed_paths` (+ the existing `README.md`/`docs/`
 hard-block). **Surface** every failure; never swallow it.
 
-Fixes `TECH-012` Gap 1 (nothing committed), Gap 2 mechanics (allow-list actually applied), and the
-swallowed-failure defect.
+Replaces per-step `worktree_sync`, which rebased instead of committing and whose failure was
+ignored.
 
 ## Where it plugs in
 
 | Fact | Where |
 |---|---|
-| Gap 1 today: `worktree_sync` runs `git rebase main`, refuses on the dirty tree, returns FAILED; per-step `execute_in_sandbox` **discards** that result, and only warns on strip_merge | `git/core/atom.py:427-475`; `runner_utils.py:195`, `:205-206` |
-| Gap 2 today: `getattr(context, "allowed_paths", [])` is always `[]` because `RunContext` had no such field, so every file is stripped | `runner_utils.py:202`, `handlers/base.py`, `git/core/worktree_ops.py:107` |
 | The seam exists: `runner_utils.execute_run` (SF-01) has `# SF-02: commit-before-reconcile + authorized strip-merge go HERE (before teardown)` between the loop result and the `finally` teardown. `atom = GitAtom(cwd=original.project_path)` is in scope, bound to the REAL repo; `original.allowed_paths` is the SF-01 field. | `runner_utils.execute_run` |
 | `strip_merge` already authorizes: `git merge --no-commit --no-ff <branch> -X ours` → `git diff --name-only --cached` → strip any file that is `README.md`, under `docs/`, or **not in `allowed_paths`** (`reset HEAD <f>` + `checkout -- <f>`) → commit survivors as `chore(sandbox): ...`. It needs the branch to already carry commits — hence the new commit step. Empty cached diff → `SUCCESS "No changes to strip and merge"` (`:113-119`). Runs against the real repo via `self._executor` (cwd = `project_path`). It already `--abort`s on a diff-read error (`:106`). | `worktree_ops.handle_strip_merge:88-140` |
 | `worktree_sync` is NOT used by per-run (it is Gap 1). Its executor pattern is reused: `EngineGitExecutor(cwd=worktree_path, whitelist=set(self._ENGINE_WHITELIST))` | `atom.py:461` |
@@ -100,12 +98,9 @@ tests), NFR-6 (Q2/Q5).
 | `atom.py` | `_intent_worktree_commit`; `_intent_strip_merge` passes `self._cwd` |
 | `runner_utils.execute_run` | reconcile at the seam: COMPLETED-only, `worktree_commit` → `strip_merge`, raise on either FAILED |
 
-Two real gaps the tests exposed, both fixed:
-- **Stripped NEW files stayed on disk** (untracked): `checkout -- <file>` cannot remove a file absent
-  from HEAD. They are now deleted, so a disallowed file never reaches the real working tree — the core
-  DAL-C property.
-- **All-stripped made an empty merge commit**: `git commit` completes an in-progress merge even with no
-  changes, so the old "all stripped → abort" branch was dead. A post-strip `diff --cached --quiet` now
-  aborts cleanly. 2 existing mocked strip_merge unit tests updated for the new git call.
+- A stripped **new** file is deleted from disk, not only unstaged — `checkout -- <file>` cannot
+  remove a file absent from HEAD, and a disallowed file must never reach the real working tree.
+- If every file is stripped, a post-strip `diff --cached --quiet` aborts the merge — otherwise
+  `git commit` would still complete it as an empty commit.
 
 No new whitelist entries (SF-01 added `git branch`). Commit boundary: CB-1. Next: SF-03.
