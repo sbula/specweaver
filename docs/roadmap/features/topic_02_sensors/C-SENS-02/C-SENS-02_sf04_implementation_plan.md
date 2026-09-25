@@ -1,134 +1,92 @@
-# Implementation Plan: Smart Scan Exclusions (Tiered) [SF-04: Analyzer Dependency Injection]
-- **Feature ID**: 3.32b
-- **Sub-Feature**: SF-04 — Analyzer Dependency Injection
-- **Design Document**: docs/roadmap/features/topic_02_sensors/C-SENS-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-04
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf04_impl_plan.md
-- **Status**: APPROVED
+# C-SENS-02 SF-04 — Analyzer Dependency Injection
+
+**Status**: APPROVED · **Feature ID**: 3.32b · **Depends on**: SF-03 ·
+Design: [C-SENS-02_design.md](C-SENS-02_design.md) §Sub-features → SF-04
 
 **FRs owned: FR-4.** Scaffolding seeds language defaults when the ignore file is missing.
 Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
 `tests/unit/workspace/ast/parsers/test_exclusions.py` — neutralising the seeding branch fails 6.
 
+## Goal
 
-## Goal Description
-Implement strict architectural decoupling for the pure-logic engine. Move all concrete Tree-Sitter
-powered language analyzers out of the pure-logic `context` domain and into a new
-`workspace/analyzers` adapter module. Construct Pure-logic Protocols and leverage global Dependency
-Injection natively through the `/flow` orchestrator to pass the active Factory into
-`DependencyHasher` and others, permanently eliminating the `Path.read_text`, `open()`, and
-Tree-Sitter C-binding architecture violations.
+Move the concrete Tree-Sitter analyzers out of the pure-logic `context` domain into a new
+`workspace/analyzers` adapter module. Pure-logic protocols plus dependency injection through the
+`/flow` orchestrator pass the factory into `DependencyHasher` and the others. This removes the
+`Path.read_text`, `open()` and Tree-Sitter C-binding architecture violations.
 
-## Proposed Changes
+## Changes
 
----
+Paths under `src/specweaver/`.
 
-### `specweaver.workspace.context`
-Pure-logic protocols preventing circular imports and C-binding contamination.
+**`specweaver.workspace.context`** — pure-logic protocols; no circular imports, no C-bindings:
 
-#### [MODIFY] `context.yaml` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/context.yaml)
-- **Modifications**: 
-  - Change `exposes:` to list `analyzer_protocols` instead of `analyzers` to maintain visibility bounds.
+1. `workspace/context/context.yaml` — `exposes:` lists `analyzer_protocols` instead of `analyzers`.
+2. `[NEW]` `workspace/context/analyzer_protocols.py`:
+   - the `LanguageAnalyzer(ABC)` base moves here from `analyzers.py`, free of tree-sitter;
+   - `AnalyzerFactoryProtocol(Protocol)` with `for_directory` and `get_all_analyzers`.
+3. `workspace/context/analyzers.py` — deleted. Concrete classes (`PythonAnalyzer`, `JavaAnalyzer`,
+   `AnalyzerFactory`) move to `workspace/analyzers`.
+4. `workspace/context/inferrer.py` — `infer_and_write` requires an injected
+   `analyzer_factory: AnalyzerFactoryProtocol` instead of a global import.
 
-#### [NEW] `analyzer_protocols.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/analyzer_protocols.py)
-- **Content**: 
-  - Migrate the abstract base class `LanguageAnalyzer(ABC)` logic here from `analyzers.py` to decouple it from tree-sitter. 
-  - Define `AnalyzerFactoryProtocol(Protocol)` with `for_directory` and `get_all_analyzers` methods.
+**`specweaver.workspace.analyzers`** (new adapter layer):
 
-#### [MODIFY] `analyzers.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/analyzers.py)
-- **Modifications**:
-  - Delete file! All Concrete implementations (`PythonAnalyzer`, `JavaAnalyzer`, `AnalyzerFactory`) will be physically moved to `workspace/analyzers`. 
+5. `[NEW]` `workspace/analyzers/context.yaml` — `archetype: adapter`; binds pure-logic protocols to
+   the Tree-Sitter parser implementations.
+6. `[NEW]` `factory.py` / `implementations.py` — `TreeSitterAnalyzerBase`, all language subclasses
+   (`PythonAnalyzer`, etc) and the concrete `AnalyzerFactory`, which implements
+   `AnalyzerFactoryProtocol`.
 
-#### [MODIFY] `inferrer.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/inferrer.py)
-- **Modifications**:
-  - Update `infer_and_write` to require an injected `analyzer_factory: AnalyzerFactoryProtocol` instead of importing it globally. 
+**`specweaver.workspace.ast.parsers`**:
 
----
+7. `workspace/ast/parsers/context.yaml` — add `- exclusions` to `exposes:` (used by `scaffold.py`).
+8. `workspace/ast/parsers/exclusions.py` (Option A, see Decisions) — define a minimal
+   `IgnoreIOHandler` Protocol in `exclusions.py`: `read_text(path) -> str`, `append_lines(path, lines)`,
+   `exists(path) -> bool`. `SpecWeaverIgnoreParser.__init__` requires `io_handler: IgnoreIOHandler`;
+   its `open()`, `.read_text()` and `.exists()` calls go through it.
 
-### `specweaver.workspace.analyzers` (New Adapter Layer)
+**`specweaver.core.flow`** — `core/flow/engine/runner.py`:
 
-#### [NEW] `context.yaml` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/analyzers/context.yaml)
-- **Content**: `archetype: adapter`. Explains that this layer binds pure-logic protocols to physical Tree-Sitter parser implementations.
+9. Build `AnalyzerFactory` from the `adapters` and inject it into context inferrers,
+   `DependencyHasher` and file discovery. Build a concrete `IgnoreIOHandler` over OS operations and
+   inject it into `SpecWeaverIgnoreParser`.
 
-#### [NEW] `factory.py` / `implementations.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/analyzers/)
-- **Content**:
-  - Move `TreeSitterAnalyzerBase` and all language subclasses (`PythonAnalyzer`, etc) here.
-  - Move the concrete `AnalyzerFactory` implementation here. It will implement `AnalyzerFactoryProtocol`.
+**`specweaver.assurance.graph` & `specweaver.assurance.standards`**:
 
----
+10. `assurance/graph/hasher.py` (Option B) — `DependencyHasher.__init__` requires
+    `analyzer_factory: AnalyzerFactoryProtocol` (point-to-point injection, so the decoupling is
+    visible). `compute_hashes` and `_hash_directory` use `self.analyzer_factory`.
+11. `assurance/standards/discovery.py` — `discover_files` and its callees accept an injected
+    `analyzer_factory: AnalyzerFactoryProtocol`.
 
-### `specweaver.workspace.ast.parsers`
-Pure logic code structure and ignore parsing protocols.
+## Tests
 
-#### [MODIFY] `context.yaml` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/context.yaml)
-- **Modifications**:
-  - Add `- exclusions` to the `exposes:` list since it is utilized externally by `scaffold.py`.
-
-#### [MODIFY] `exclusions.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/exclusions.py)
-- **Modifications**:
-  - **HITL Gate Resolution (Option A)**: To clear the I/O violation inside `pure-logic` without
-    pulling in `loom`, define a minimalist `IgnoreIOHandler` Protocol exclusively inside
-    `exclusions.py` with `read_text(path) -> str`, `append_lines(path, lines)`, and
-    `exists(path) -> bool`.
-  - Update `SpecWeaverIgnoreParser.__init__` to strictly require `io_handler: IgnoreIOHandler`.
-  - Replace physical `open()`, `.read_text()`, and `.exists()` calls within `SpecWeaverIgnoreParser` with calls to the injected `io_handler`.
-
----
-
-### `specweaver.core.flow`
-The Orchestrator.
-
-#### [MODIFY] `engine/runner.py` (file:///C:/development/pitbula/specweaver/src/specweaver/core/flow/engine/runner.py)
-- **Modifications**:
-  - Instantiate `AnalyzerFactory` physically from the `adapters`.
-  - Pass the factory deeply via dependency injection into context inferrers, the `DependencyHasher`, and standard file discovery routines.
-  - Instantiate a concrete `IgnoreIOHandler` wrapping standard OS operations and inject it into `SpecWeaverIgnoreParser`.
-
----
-
-### `specweaver.assurance.graph` & `specweaver.assurance.standards`
-
-#### [MODIFY] `hasher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/graph/hasher.py)
-- **Modifications**:
-  - **HITL Gate Resolution (Option B)**: Modify `DependencyHasher.__init__` to explicitly demand
-    `analyzer_factory: AnalyzerFactoryProtocol` via Point-to-Point injection. This ensures
-    pure-logic architectural decoupling is physically visible.
-  - Update `compute_hashes` and `_hash_directory` to use `self.analyzer_factory` instead of importing globally.
-
-#### [MODIFY] `discovery.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/standards/discovery.py)
-- **Modifications**:
-  - Update `discover_files` downstream functions to accept an injected `analyzer_factory: AnalyzerFactoryProtocol` instead of physical global imports.
-
----
-
-### Test Enhancements
 - Implement the skipped tests in `test_exclusions.py`:
-  1. `test_deferred_integration_orchestrator_initializes_ignores_sf4` - Verify that `/flow` instantiates the parser globally.
-  2. `test_deferred_e2e_topological_spec_bypass_hidden_binary_sf4` - E2E verification of topological bounds bypassing binaries via the DI factory.
-- Ensure all other `test_` files update their `DependencyHasher`, `AnalyzerFactory`, and `SpecWeaverIgnoreParser` instantiation signatures with mocks or actual injections.
+  1. `test_deferred_integration_orchestrator_initializes_ignores_sf4` — `/flow` instantiates the parser.
+  2. `test_deferred_e2e_topological_spec_bypass_hidden_binary_sf4` — E2E: topological bounds skip
+     binaries via the DI factory.
+- Update every `test_` file's `DependencyHasher`, `AnalyzerFactory` and `SpecWeaverIgnoreParser`
+  construction (mocks or real injection).
+- `pytest tests/unit/workspace/context/test_exclusions.py` — the SF-04 tests pass with a mocked
+  `IgnoreIOHandler`.
+- Mock `AnalyzerFactoryProtocol` in `test_hasher.py`, `test_inferrer.py`, `test_discovery.py`.
+- `tach check` — `workspace/context` has no I/O violations or tree-sitter side-effects. `mypy`.
+- `/pre-commit`.
 
----
+## Decisions (audit)
 
-## Design Validation & Verification Plan
+| # | Question | Chosen |
+|---|---|---|
+| Option A | How to remove the I/O from `pure-logic` `exclusions.py` without pulling in `loom`? | a local `IgnoreIOHandler` Protocol, injected |
+| Option B | How does `DependencyHasher` get the factory? | explicit constructor parameter (point-to-point) |
 
-### FR/NFR Alignment Check
-- **FRs Supported:** The `pathspec` ignores, token suppression bounds, and automatic scaffolding
-  logic remaining 100% untouched algorithmically confirms zero functional regression for FR-1
-  through FR-5.
-- **NFR-1 (Extensibility):** Dependency Injecting the `AnalyzerFactoryProtocol` through the `flow` engine means new language bounds can be plugged in instantly without modifying `hasher.py`.
-- **NFR-2 (Performance):** Point-to-point DI has `< 1ms` static overhead, honoring `< 50ms` NFRs.
+Requirements check:
+- FR-1 through FR-5: `pathspec` ignores, token suppression and scaffolding are 100% unchanged
+  algorithmically — no functional regression.
+- NFR-1: new language bounds plug in through the injected `AnalyzerFactoryProtocol` without changing
+  `hasher.py`.
+- NFR-2: point-to-point DI costs `< 1ms`, within `< 50ms`.
 
-### Architecture Isolation Check
-- `workspace/context/context.yaml`: Exposed correctly (`analyzer_protocols`).
-- `workspace/analyzers/context.yaml`: Declared as `archetype: adapter`.
-- `workspace/ast/parsers/exclusions.py`: Removed physical `open()` and successfully mapped via DI `IgnoreIOHandler`.
-- Result: **Zero isolation warnings.**
-
-### Automated Tests
-- Run `pytest tests/unit/workspace/context/test_exclusions.py` to verify the SF-04 skipped tests pass successfully leveraging mocked `IgnoreIOHandler`.
-- Mock out `AnalyzerFactoryProtocol` globally across `test_hasher.py`, `test_inferrer.py`, and `test_discovery.py` to satisfy new point-to-point requirements.
-- Run `tach check` to conclusively verify that `workspace/context` no longer has I/O violations or tree-sitter side-effects.
-- Run `mypy` natively.
-
-### Manual Verification
-- Execute `/pre-commit` pipeline.
+Isolation check: `workspace/context/context.yaml` exposes `analyzer_protocols`;
+`workspace/analyzers/context.yaml` is `archetype: adapter`; `workspace/ast/parsers/exclusions.py`
+has no `open()` (DI `IgnoreIOHandler`). **Zero isolation warnings.**

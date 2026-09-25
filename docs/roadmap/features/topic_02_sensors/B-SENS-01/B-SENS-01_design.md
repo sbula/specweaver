@@ -1,37 +1,61 @@
-# Design: Spec-to-Code Traceability (Artifact Lineage)
+# B-SENS-01 — Spec-to-Code Traceability (Artifact Lineage)
 
-- **Feature ID**: 3.14
-- **Phase**: 3
-- **Status**: COMPLETE
-- **Design Doc**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_design.md
+**Status**: COMPLETE · **Phase**: 3 · **Feature ID**: 3.14
 
-## Feature Overview
+| | |
+|---|---|
+| Touches | `PipelineRunner`, DB telemetry layer, code generators |
+| Next | Feature 3.14a (AI Root-Cause Analysis) builds on the lineage table |
+| Not touched | AST-based drift detection, coverage gap detection, AI-powered root-cause analysis |
+| Blueprints | `future_capabilities_reference.md` §17 (Spec-to-Code Traceability) · `llm_routing_and_cost_analysis.md` (Artifact Lineage Graph) |
 
-Feature 3.14 adds structural Spec-to-Code Traceability (Artifact Lineage) to the pipeline runner.
-It solves the credit assignment and traceability problem by recording a directional lineage graph
-(Spec → Plan → Code) in the SQLite database, tagging each artifact with a UUID, parent UUID, and
-generating LLM model.
-It interacts with the `PipelineRunner`, DB telemetry layer, and code generators, and does NOT touch AST-based drift detection, coverage gap detection, or AI-powered root-cause analysis.
-Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per file), robust against manual file renames, and includes rapid orphan detection via CLI.
+## What it does
 
-## Research Findings
+Records a directional lineage graph (Spec → Plan → Code) in the SQLite database, so every generated
+artifact can be traced to its parent and to the LLM model that produced it (credit assignment). Each
+artifact gets a UUID, a parent UUID and a generating model.
 
-### Codebase Patterns
-- Currently, `PipelineRunner` (`flow/runner.py`) handles all executions and emits state changes.
-- Telemetry logs to `llm_usage_log` via `config/_db_telemetry_mixin.py`. The lineage graph is a natural extension of this telemetry and belongs in `specweaver.db`.
-- Code generation is orchestrated by `flow/_generation.py` using `CodeGenerator`.
-- The CLI commands live in `cli/`, which forbids raw I/O (`loom/*`). Static file reads must be done using pure `pathlib` (e.g. `graph/lineage.py`).
-- UUID injection into files should be handled deterministically by the LLM (via `PromptBuilder` instructions) to respect comment syntax, rather than post-generation text manipulation by the engine.
+Constraints: one `# sw-artifact: <uuid>` tag per file (minimal pollution); survives manual file
+renames; fast orphan detection from the CLI.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| sqlite3 | built-in | `INSERT`, `SELECT` for graph edges | standard lib |
-| uuid | built-in | `uuid.uuid4()` | standard lib |
+## Why this way
 
-### Blueprint References
-- `future_capabilities_reference.md` §17 (Spec-to-Code Traceability)
-- `llm_routing_and_cost_analysis.md` (Artifact Lineage Graph)
+- The lineage graph extends telemetry (`llm_usage_log`, via `config/_db_telemetry_mixin.py`), so it
+  lives in `specweaver.db` and cost analytics can JOIN usage and provenance.
+- `PipelineRunner` (`flow/runner.py`) runs every step and knows the lineage context; code generation
+  runs in `flow/_generation.py` via `CodeGenerator`.
+- The LLM writes the UUID tag (instructed by `PromptBuilder`), because it knows each language's
+  comment syntax. Engine post-processing of output would risk corrupting JSON/YAML/Python.
+- `cli/` forbids raw I/O (`loom/*`), so file scans use pure `pathlib` (e.g. `graph/lineage.py`).
+
+**Since moved** (noted 2026-09-25): the lineage store is `graph/lineage/store/lineage_repository.py`,
+the tag helpers `commons/lineage.py`, `check_lineage` `graph/lineage/scanner.py`, the CLI
+`graph/interfaces/cli.py`.
+
+## Architecture
+
+```mermaid
+graph LR
+    R["PipelineRunner<br/>run_id + step_records"] --> H["Generation handlers<br/>find parent, mint UUID"]
+    H --> PB["PromptBuilder<br/>add_artifact_tagging"]
+    PB --> F["file on disk<br/># sw-artifact: uuid"]
+    H --> DB["specweaver.db<br/>artifact_events"]
+    CLI["sw lineage / sw check --lineage"] --> F
+    CLI --> DB
+```
+
+External tools: `sqlite3` (built-in; `INSERT`, `SELECT` for graph edges; already used extensively),
+`uuid` (built-in; `uuid.uuid4()`).
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Lineage graph stored in `specweaver.db` | Related to telemetry; cost analytics can JOIN usage and provenance. | No |
+| AD-2 | UUID generation in `flow/` | The Runner knows the lineage context (which step is running, what the parent spec is). | No |
+| AD-3 | Rely on LLMs to write `# sw-artifact` | Safer than the engine heuristically mutating LLM output (avoids syntax corruption in JSON/YAML/Python). | No |
+| AD-4 | `sw check --lineage` uses pure `pathlib` | Required because `cli` forbids `loom/*`. Same pattern as `standards` auto-discovery. | No |
+| AD-5 | Pass UUID via PipelineRun StepRecords | State must explicitly track `artifact_uuid` per step so downstream steps can look up their parent UUID deterministically. | No |
 
 ## Functional Requirements
 
@@ -52,53 +76,20 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 | NFR-2 | DB Compatibility | Schema migration must be additive, no break of `llm_usage_log` |
 | NFR-3 | Resilience | Manual file renaming must not break the lineage graph (rely on tags in content, not paths) |
 
-## External Dependencies
+## Sub-features
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| sqlite3 | (python built-in) | DB I/O | Yes | We already use this extensively |
+| SF | Name | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Lineage Database & Flow Integration | FR-1, FR-3 | — | [sf01](B-SENS-01_sf01_implementation_plan.md) |
+| SF-02 | Artifact Tagging Engine | FR-2 | SF-01 | [sf02](B-SENS-01_sf02_implementation_plan.md) |
+| SF-03 | Verification & CLI Tools | FR-4, FR-5, FR-6 | SF-01, SF-02 | [sf03](B-SENS-01_sf03_implementation_plan.md) |
 
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Lineage graph stored in `specweaver.db` | Logically related to telemetry, ensures cost analytics can seamlessly JOIN usage and provenance. | No |
-| AD-2 | UUID generation in `flow/` | The Runner knows the lineage context (which step is running, what the parent spec is). | No |
-| AD-3 | Rely on LLMs to write `# sw-artifact` | Safer than having engine heuristically mutate LLM output (avoids syntax corruption in JSON/YAML/Python). | No |
-| AD-4 | `sw check --lineage` uses pure `pathlib` | Required because `cli` forbids `loom/*`. Same pattern as `standards` auto-discovery. | No |
-| AD-5 | Pass UUID via PipelineRun StepRecords | State must explicitly track `artifact_uuid` per step so downstream steps can look up their parent UUID deterministically. | No |
-
-## Sub-Feature Breakdown
-
-### SF-01: Lineage Database & Flow Integration
-- **Scope**: Implements the SQLite persistence and UUID context propagation within the PipelineRunner.
-- **FRs**: [FR-1, FR-3]
-- **Inputs**: Current `run_id` and pipeline definition context (parent artifact DB).
-- **Outputs**: UUIDs passed down to handlers; DB rows persisted in `lineage_graph`.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf01_implementation_plan.md
-
-### SF-02: Artifact Tagging Engine
-- **Scope**: Injects instructions into LLM prompts via `PromptBuilder` to write UUID tags and coordinates generation handlers to bind `parent_uuid` to `artifact_uuid`.
-- **FRs**: [FR-2]
-- **Inputs**: Generated UUIDs from SF-01.
-- **Outputs**: Generated code on disk containing `# sw-artifact: <uuid>`.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf02_implementation_plan.md
-
-### SF-03: Verification & CLI Tools
-- **Scope**: Implements orphan detection, manual tagging, and lineage tracing CLI commands.
-- **FRs**: [FR-4, FR-5, FR-6]
-- **Inputs**: `pathlib` scans of `src/` and SQLite SELECT queries.
-- **Outputs**: Terminal output and exit codes for CI.
-- **Depends on**: SF-01, SF-02
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf03_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
-3. SF-03 (depends on SF-02)
+- **SF-01**: SQLite persistence; UUID context propagated in the PipelineRunner. Current `run_id` and
+  pipeline context in → UUIDs passed to handlers, rows persisted in `lineage_graph`.
+- **SF-02**: `PromptBuilder` instructs the LLM to write the tag; handlers bind `parent_uuid` to
+  `artifact_uuid`. UUIDs from SF-01 in → code on disk with `# sw-artifact: <uuid>`.
+- **SF-03**: orphan detection, manual tagging, lineage tracing. `pathlib` scans of `src/` and SQLite
+  SELECT queries in → terminal output and CI exit codes.
 
 ## Progress Tracker
 
@@ -107,8 +98,3 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 | SF-01 | DB & Flow | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Tagging | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Verification CLI | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature complete. Ready for dogfood + merge.
-**Next step**: Move to Feature 3.15 (Automated iterative decomposition).

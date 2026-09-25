@@ -1,111 +1,110 @@
-# Design: Deep Semantic Hashing
+# A-SENS-01 — Deep Semantic Hashing
 
-- **Feature ID**: 3.32
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_02_sensors/A-SENS-01/A-SENS-01_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01..SF-04 committed, validated with E2E tests. · **Phase**: 3 · **Feature ID**: 3.32
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | `TopologyGraph` (`assurance/graph/topology.py`) |
+| Used by | flow engine staleness bypass (SF-04); CLI cache flush after a successful run |
+| Deferred | "Rocket Mode" sidecar graph databases (Falkor/Neo4j) → Feature 3.48 (AD-3) |
 
-Feature 3.32 introduces "Deep Semantic Hashing" via Merkle-trees to keep SpecWeaver's internal Topology Graph explicitly in sync without performing full project crawls on every initialization.
-Instead of relying strictly on full tree parsing, the topology tracks "Dependency Hashes"—meaning a
-module's hash changes mechanically if and only if its own content changes *or* any of its imported
-dependencies change. This provides massive speed improvements by isolating AST computations strictly
-to invalidated branches (incremental crawling).
+## What it does
 
-## Research Findings
+Keeps the Topology Graph in sync without a full project crawl on every start. Each module gets a
+Merkle **dependency hash**: it changes if and only if the module's own content changes *or* any of
+its imported dependencies change. Only invalidated branches are re-parsed (incremental crawling).
 
-### Codebase Patterns
-- **Current State:** `TopologyGraph.from_project()` directly executes `rglob` over all bounds recursively building the entire `DependencyGraph` into memory. 
-- **Legacy Technical Debt:** `LanguageAnalyzer.extract_imports()` exists in
-  `specweaver/workspace/context/analyzers.py`, but it is heavily tethered to legacy Python `ast` and
-  leaves Java/Kotlin/Rust commented out. To fulfill polyglot semantic hashing, we must adapt the
-  `tree-sitter` pure-logic parsing proven in `core/loom`.
-- **Architectural Rules:** Because `assurance/graph/context.yaml` explicitly consumes
-  `specweaver/context` (which represents `workspace/context`), placing hashing logic in
-  `assurance/graph/hasher.py` fully obeys `dmz` L2-L1 topology downward consumption without
-  violating `pure-logic` or `loom/*` isolation boundaries!
+## Why this way
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| hashlib | stdlib | `sha256()` | Python |
+- `TopologyGraph.from_project()` ran `rglob` over the whole project and rebuilt the entire
+  `DependencyGraph` in memory each time.
+- `LanguageAnalyzer.extract_imports()` in `specweaver/workspace/context/analyzers.py` used Python
+  `ast` only; Java/Kotlin/Rust were commented out. Polyglot hashing needs the `tree-sitter`
+  pure-logic parsers already proven in `core/loom` — so SF-01 moves them down into
+  `workspace/ast/parsers/`.
+- `assurance/graph/context.yaml` consumes `specweaver/context` (meaning `workspace/context`), so
+  hashing in `assurance/graph/hasher.py` follows `dmz` L2→L1 downward consumption without breaking
+  `pure-logic` or `loom/*` isolation.
+
+**Since moved** (noted 2026-09-25): `core/loom/*` → `sandbox/*`; the analyzer factory →
+`workspace/analyzers/factory.py`; `setup_sandbox_caches` → `core/flow/engine/sandboxed_execution.py`;
+the cache flush lives in `core/flow/interfaces/cli.py`.
+
+## Architecture
+
+```mermaid
+graph LR
+    P["workspace/ast/parsers<br/>tree-sitter, 5 languages"] --> A["workspace analyzers<br/>extract_imports"]
+    A --> H["DependencyHasher<br/>assurance/graph/hasher.py"]
+    H <--> C[".specweaver/topology.cache.json"]
+    H --> T["TopologyGraph.from_project()<br/>stale_nodes"]
+    T --> R["flow runner<br/>skip clean steps"]
+    R --> CLI["CLI: on success<br/>save_cache()"]
+```
+
+| Part | Does |
+|---|---|
+| `workspace/ast/parsers/` | pure-logic tree-sitter parsers; `extract_imports` per language (SF-01) |
+| `DependencyHasher` | `sha256` of file contents + imported modules' hashes; reads/writes the cache (SF-02) |
+| `TopologyGraph.from_project()` | diffs hashes against the cache, exposes `stale_nodes` (SF-03) |
+| Flow runner + QA runner | bypass clean nodes; the CLI flushes the cache only after a successful run (SF-04) |
+
+External tools: `hashlib` (stdlib, `sha256()`) and `json`. No other dependency required.
+SF-02 later added `orjson` (see its plan).
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Project-Local Persistence (Bicycle Mode) | Cache in `.specweaver/topology.cache.json` at the target `project_root`. Survives Docker/Podman teardown because the root is volume-mounted. Scales per microservice without touching global environments. | No |
+| AD-2 | Automated `.gitignore` Injection | AD-1 drops an artifact into existing projects, so SpecWeaver auto-injects `.specweaver/` into the Gitignore. | No |
+| AD-3 | External Semantic Backends (Feature 3.48) | Flat files only ("Bicycle Mode"). Feature 3.48, in the backlog, swaps this layer for 'Rocket Mode' sidecar databases (Falkor/Neo4j). | No |
+| AD-4 | Reuse `LanguageAnalyzers` | Reuses the AST parsing in `workspace/context` to map dependencies; no duplicated parsing. | No |
+| AD-5 | Polyglot Tree-Sitter Decoupling | Move pure-logic Tree-Sitter models out of the restricted `loom/commons/language` sandbox into `workspace/ast/parsers/`. Removes the parallel AST implementations and enables 5 languages within the L0/L3 architecture bounds. | Yes |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Merkle Root Generation | DependencyHasher | Combines `sha256` of file contents + Merkle roots of all extracted imports. | Returns a deterministic `semantic_hash` spanning the dependency tree. |
-| FR-2 | Cached Adjacency State | TopologyGraph | Reads/Writes `.specweaver/topology.cache.json` containing previously mapped hashes. | Prevents redundant parsing overhead during sequential Agent tasks. |
-| FR-3 | Incremental Crawler | TopologyGraph | Detects mismatches between disk `mtime` / semantic hashes and the Cache. | Recursively invalidates upward consumers utilizing `self._reverse` adjacencies, strictly rebuilding only stale nodes. |
+| FR-2 | Cached Adjacency State | TopologyGraph | Reads/Writes `.specweaver/topology.cache.json` containing previously mapped hashes. | Prevents redundant parsing during sequential Agent tasks. |
+| FR-3 | Incremental Crawler | TopologyGraph | Detects mismatches between disk `mtime` / semantic hashes and the Cache. | Recursively invalidates upward consumers via `self._reverse` adjacencies, rebuilding only stale nodes. |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Speed / Overhead | Graph verification from Cache must complete in under 50ms for a 1,000-module codebase natively. |
-| NFR-2 | Architectural Purity | The hashing logic MUST reside natively inside the Topology engine or Workspace layers without bleeding OS boundaries. **[proof: arch — tach/lint gate, not pytest]** |
-## External Dependencies
-None required. Uses native `hashlib` and `json`.
+| NFR-1 | Speed / Overhead | Graph verification from Cache must complete in under 50ms for a 1,000-module codebase. |
+| NFR-2 | Architectural Purity | The hashing logic MUST reside inside the Topology engine or Workspace layers without crossing OS boundaries. **[proof: arch — tach/lint gate, not pytest]** |
 
-## Architectural Decisions
+## Risks
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Project-Local Persistence (Bicycle Mode) | Store cache in `.specweaver/topology.cache.json` at the target `project_root`. Inherently survives Docker/Podman transient teardowns because the root is volume-mounted. Perfect native scaling to microservices without polluting the laptop's global environments. | No |
-| AD-2 | Automated `.gitignore` Injection | Because AD-1 drops an artifact into legacy projects, SpecWeaver must auto-inject `.specweaver/` into the Gitignore to prevent repository pollution. | No |
-| AD-3 | External Semantic Backends (Feature 3.48) | Hardcoded strictly to "Bicycle Mode" (flat-files). A newly postponed feature (3.48) has been explicitly added to the backlog to swap this layer out for 'Rocket Mode' Sidecar databases (Falkor/Neo4j). | No |
-| AD-4 | Leverage `LanguageAnalyzers` | Reuses AST parsing logic inside `workspace/context` to map semantic dependencies, preventing code duplication natively. | No |
-| AD-5 | Polyglot Tree-Sitter Decoupling | Decouple pure-logic Tree-Sitter models out of the restricted `loom/commons/language` sandbox and into `workspace/ast/parsers/`. This cures massive parallel AST dependencies, enabling 5 languages natively without breaking the rigid L0/L3 architecture bounds. | Yes |
+- **Staleness bypass is inert in production** (noted 2026-09-25): `GraphContext.stale_nodes` in
+  `core/flow/handlers/run_context.py` is read but written by nothing, so it is always `None` and no
+  step is skipped. The cache save after a COMPLETED run does happen.
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Polyglot Parser Decoupling
-- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language
-  `codestructure.py` out of `loom/commons/language` and moves them downward into
-  `workspace/ast/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these
-  Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`,
-  and `workspace`.
-- **FRs**: [NFR-2]
-- **Inputs**: Existing tree-sitter bindings.
-- **Outputs**: Centralized `workspace/ast/parsers/` domain.
-- **Depends on**: none
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | Polyglot Parser Decoupling — see below | NFR-2 | tree-sitter bindings → `workspace/ast/parsers/` | — | [sf01](A-SENS-01_sf01_implementation_plan.md) |
+| SF-02 | Semantic State Caching (`DependencyHasher`) — see below | FR-1, FR-2 | OS file chunks, dotted imports → cache map | SF-01 | [sf02](A-SENS-01_sf02_implementation_plan.md) |
+| SF-03 | Incremental Topology Crawler — see below | FR-3 | Semantic Cache map → `TopologyGraph` | SF-02 | [sf03](A-SENS-01_sf03_implementation_plan.md) |
+| SF-04 | Pipeline Execution Optimization — see below | NFR-1 | `TopologyGraph`, `stale_nodes` set → incremental pipelines, updated Cache | SF-03 | [sf04](A-SENS-01_sf04_implementation_plan.md) |
 
-### SF-02: Semantic State caching (DependencyHasher)
-- **Scope**: Implements a dedicated utility for computing and persisting shallow and structural
-  Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely
-  inject `/.specweaver/` into the `.gitignore` using a tracked comment block to prevent tracking
-  pollution!
-- **FRs**: [FR-1, FR-2]
-- **Inputs**: OS file chunks, Tree-Sitter extracted dotted imports.
-- **Outputs**: Serialized pure-data cache map (with versions and mtime signatures to support NFR-1 incremental speeds).
-- **Depends on**: [SF-01]
-
-### SF-03: Incremental Topology Crawler
-- **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the
-  Semantic Cache, applying subtree invalidations natively via Tarjan's SCC cycle-loop breaking
-  instead of global recursive parsing.
-- **FRs**: [FR-3]
-- **Inputs**: Semantic Cache map.
-- **Outputs**: Instantiated TopologyGraph.
-- **Depends on**: [SF-02]
-
-### SF-04: Pipeline Execution Optimization
-- **Scope**: Modifies the broader SpecWeaver orchestration engine (`QARunner`, `PipelineRunner`, and
-  `EngineFileExecutor`) to exclusively consume `graph.stale_nodes`. Instructs downstream testing
-  plugins to bypass `clean` nodes conditionally, and dictates explicit cache-flush persistence hooks
-  to trigger strictly post-validation. Integrates `.specweaver` into ephemeral Worktree sandboxes
-  natively.
-- **FRs**: [NFR-1]
-- **Inputs**: Instantiated `TopologyGraph`, `stale_nodes` set.
-- **Outputs**: High-speed incremental validation pipelines, updated Cache.
-- **Depends on**: [SF-03]
-
-## Execution Order
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
-3. SF-03 (depends on SF-02)
-4. SF-04 (depends on SF-03)
+- **SF-01**: extract `CodeStructureInterface` and each language's `codestructure.py` from
+  `loom/commons/language` down into `workspace/ast/parsers/`. `workspace/context/analyzers.py` uses
+  these Tree-Sitter engines instead of Python `ast`. Imports updated across `assurance`, `loom`,
+  `workspace`.
+- **SF-02**: compute and persist shallow and structural Merkle dependencies in
+  `<project_root>/.specweaver/topology.cache.json` (pure-data map with versions and mtime
+  signatures, for NFR-1). **MUST** inject `/.specweaver/` into `.gitignore` inside a tracked comment
+  block.
+- **SF-03**: `topology.py` `TopologyGraph.from_project()` diffs against the Semantic Cache and
+  invalidates subtrees via Tarjan's SCC cycle-loop breaking, instead of global recursive parsing.
+- **SF-04**: `QARunner`, `PipelineRunner` and `EngineFileExecutor` consume `graph.stale_nodes`;
+  testing plugins skip `clean` nodes; cache-flush persistence runs only after validation;
+  `.specweaver` is linked into ephemeral Worktree sandboxes.
 
 ## Progress Tracker
 
@@ -115,8 +114,3 @@ None required. Uses native `hashlib` and `json`.
 | SF-02 | Semantic State Caching | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Incremental Topology | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Pipeline Execution Optimization | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature 3.32 is fully implemented, validated with E2E tests, pre-commit checked, and completed.
-**Next step**: Proceed to the next feature in the Phase 3 or Phase 4 roadmap.

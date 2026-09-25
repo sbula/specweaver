@@ -1,119 +1,85 @@
-# Implementation Plan: Polyglot Expansion [SF-04: Go Parser Implementation]
-- **Feature ID**: 3.32e
-- **Sub-Feature**: SF-04 — Go Parser Implementation
-- **Design Document**: docs/roadmap/features/topic_02_sensors/D-SENS-03/D-SENS-03_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-04
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/D-SENS-03/D-SENS-03_sf04_implementation_plan.md
-- **Status**: COMPLETED
+# D-SENS-03 SF-04 — Go Parser Implementation
 
-## Goal Description
-Implement the Go language parser using `tree-sitter-go` (Feature 3.32e SF-04) and eliminate technical debt across all existing polyglot parsers by standardizing method resolution. 
+**Status**: COMPLETED · **Feature ID**: 3.32e · **FRs owned**: FR-3, FR-7 · **Depends on**: SF-01 ·
+Design: [D-SENS-03_design.md](D-SENS-03_design.md) §Sub-features and Progress Tracker
 
-Previously, AST parsers blindly returned method names, causing severe LLM context collision risks
-(e.g., identical `move` methods). This plan implements **Option B (Dot-Notation Resolution)** across
-Go, Python, Java, C++, TypeScript, Rust, Kotlin, and Markdown. `list_symbols` will dynamically emit
-`Class.MethodName` (or `Receiver.MethodName`, or `Header.Section` for markdown), and
-`extract_symbol` will resolve them perfectly using simple `string.split(".", 1)` logic, making the
-entire polyglot ecosystem robust, precise, and completely language-agnostic for the LLM.
+## Goal
+
+1. A Go parser on `tree-sitter-go` (Feature 3.32e SF-04).
+2. **Dot-notation symbols in every parser** (Option B) — Go, Python, Java, C++, TypeScript, Rust,
+   Kotlin, Markdown. `list_symbols` emits `Class.MethodName` (or `Receiver.MethodName`, or
+   `Header.Section` for markdown); `extract_symbol` resolves it with `string.split(".", 1)`. The LLM
+   copies whatever string it sees, in any language.
+
+   Replaces bare method names, which collided (two `move` methods in different classes).
+3. **Capability pruning** (FR-7): tools stop offering intents/parameters no active parser supports.
+
+## Where it plugs in
+
+- tree-sitter-go nodes: functions `function_declaration`; methods `method_declaration` with a
+  `receiver` node; interfaces and structs `type_declaration` -> `type_spec` -> `struct_type` /
+  `interface_type`.
+- Go has no `public`/`private` keywords: visibility is `sym_name[0].isupper()` for "public".
+
+## Changes
+
+1. `pyproject.toml` — add `"tree-sitter-go>=0.23.0"` to core dependencies under the `tree-sitter`
+   group.
+2. `src/specweaver/workspace/ast/parsers/interfaces.py` — `CodeStructureInterface` gains `@classmethod`
+   `supported_intents() -> set[str]` and `supported_parameters(intent: str) -> set[str]`, defaulting
+   to everything (backward compatible). `extract_framework_markers` and `decorator_filter` are
+   optional capabilities.
+3. `src/specweaver/core/loom/tools/code_structure/definitions.py` —
+   `get_code_structure_schema(supported_intents: set[str], supported_params: dict[str, set[str]])`
+   drops `READ_UNROLLED_SYMBOL_SCHEMA` or `extract_framework_markers` (if added) when unsupported, and
+   prunes `decorator_filter` from `LIST_SYMBOLS_SCHEMA` unless it is in
+   `supported_params["list_symbols"]`.
+4. `src/specweaver/core/loom/tools/code_structure/tool.py` — `definitions()` combines capabilities
+   across the parsers in `CodeStructureAtom._parsers`; an intent/parameter no parser supports is
+   pruned from the agent's schema.
+5. `src/specweaver/workspace/ast/parsers/factory.py` — register `(".go",)` → `GoCodeStructure`.
+6. `src/specweaver/workspace/ast/parsers/context.yaml` — `exposes` gains `factory`,
+   `go/codestructure`, `c/codestructure`, `cpp/codestructure`, `markdown/codestructure` (the list was
+   out of date).
+7. **Existing parsers** (`python`, `cpp`, `java`, `kotlin`, `typescript`, `rust`, `markdown`):
+   - `list_symbols` prepends the class/struct/receiver name (`Point.Move`, not `Move`); Markdown may
+     nest headers.
+   - `_find_symbol_node`: `if "." in symbol_name: scope, name = symbol_name.split(".", 1)`, then match
+     the class/method pair by tree-sitter parent traversal or scope checks — no regex.
+   - `CppCodeStructure`, `CCodeStructure`, `RustCodeStructure`, `MarkdownCodeStructure` override
+     `supported_intents()` / `supported_parameters()` to exclude `decorator_filter` and
+     `read_unrolled_symbol`/`extract_framework_markers` where meaningless.
+8. `docs/dev_guides/code_structure_and_ast_editing.md` — document the Option B dot-notation API.
+9. `[NEW]` `src/specweaver/workspace/ast/parsers/go/codestructure.py` — `GoCodeStructure(BaseTreeSitterParser)`:
+   - `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, `SCM_COMMENT_QUERY` target `function_declaration`,
+     `method_declaration` (captures `@receiver` and `@name`) and `type_declaration`;
+   - `list_symbols` emits `Receiver.MethodName` (`Point.Move`); `_find_symbol_node` splits with
+     `symbol_name.split(".", 1)`;
+   - `supported_intents()` / `supported_parameters()` exclude `decorator_filter` and
+     `extract_framework_markers`; a `decorator_filter` explicitly raises an error (Go has no
+     decorators);
+   - `_is_symbol_valid`: uppercase first letter = public, lowercase = private;
+   - `extract_imports` targets `(import_declaration)` blocks.
 
 > [!NOTE]
-> **Deferred Feature: AST Knowledge Tree Filtering**
-> The dynamic pruning of capabilities in `CodeStructureAtom.get_supported_capabilities()` currently
-> aggregates across *all* registered parsers globally. True area-specific filtering (e.g., hiding
-> `decorator_filter` when an agent only has access to Go files) requires the upcoming **AST
-> Knowledge Tree** to identify which languages exist in which grant areas. We will add an
-> architectural `TODO` in `CodeStructureAtom` to revisit this once the Knowledge Tree is
-> implemented.
+> **Deferred: AST Knowledge Tree filtering.** `CodeStructureAtom.get_supported_capabilities()`
+> aggregates across *all* registered parsers. Hiding `decorator_filter` when an agent's grant area
+> holds only Go files needs the upcoming **AST Knowledge Tree** (which languages live where). An
+> architectural `TODO` in `CodeStructureAtom` marks it.
 
-## Proposed Changes
+**Since moved** (noted 2026-09-25): `core/loom/tools/code_structure/` →
+`sandbox/code_structure/interfaces/`.
 
-### [MODIFY] `pyproject.toml`
-- Add `"tree-sitter-go>=0.23.0"` to the core dependencies under the `tree-sitter` group.
+## Tests
 
-### [MODIFY] `src/specweaver/workspace/ast/parsers/interfaces.py`
-- **`CodeStructureInterface`**: Add `@classmethod` `supported_intents() -> set[str]` and
-  `supported_parameters(intent: str) -> set[str]`. Default them to return all intents and parameters
-  for backward compatibility.
-- Ensure `extract_framework_markers` and `decorator_filter` are explicitly handled as optional capabilities.
+| File | Covers |
+|---|---|
+| `[NEW]` `tests/unit/workspace/ast/parsers/go/test_codestructure.py` | 100% parity with other parsers: symbols, skeleton, imports, `add_symbol`, visibility (capitalized vs lowercase) |
+| `tests/unit/workspace/ast/parsers/*/test_codestructure.py` | `test_extract_symbol_dot_notation` in Python, C++, Java, Kotlin, TypeScript, Rust, Markdown |
+| `[NEW]` `tests/integration/core/loom/test_polyglot_ast_go.py` | `GoCodeStructure` behaves like the C/C++ parsers under `BaseTreeSitterParser` |
 
-### [MODIFY] `src/specweaver/core/loom/tools/code_structure/definitions.py`
-- Modify
-  `get_code_structure_schema(supported_intents: set[str], supported_params: dict[str, set[str]])` to
-  dynamically filter out `READ_UNROLLED_SYMBOL_SCHEMA` or `extract_framework_markers` (if added)
-  when not supported.
-- Dynamically prune the `decorator_filter` parameter from `LIST_SYMBOLS_SCHEMA` if `decorator_filter` is not in `supported_params["list_symbols"]`.
+The dot-notation tests prove `Class.Method` isolates identical method names across classes.
 
-### [MODIFY] `src/specweaver/core/loom/tools/code_structure/tool.py`
-- Update `definitions()` to compute the intersection of supported capabilities across all active
-  parsers loaded in `CodeStructureAtom._parsers`. If *no* parser supports an intent/parameter, it is
-  pruned from the schema sent to the agent.
-
-### [MODIFY] `src/specweaver/workspace/ast/parsers/factory.py`
-- Register the `(".go",)` extension mapping it to the new `GoCodeStructure`.
-
-### [MODIFY] `src/specweaver/workspace/ast/parsers/context.yaml`
-- Update the `exposes` list to formally include `factory`, `go/codestructure`, `c/codestructure`,
-  `cpp/codestructure`, and `markdown/codestructure` to resolve current architectural documentation
-  violations.
-
-### [MODIFY] Existing Language Parsers (`python`, `cpp`, `java`, `kotlin`, `typescript`, `rust`, `markdown`)
-- **`list_symbols` Overrides**: Update the existing query extractions to prepend the
-  class/struct/receiver name to methods (e.g., `Point.Move` instead of `Move`). For Markdown,
-  potentially nest headers.
-- **`_find_symbol_node` Overrides**: Add a uniform
-  `if "." in symbol_name: scope, name = symbol_name.split(".", 1)` to all implementations. Use
-  tree-sitter parent traversal or scope checks to match the exact class/method pair cleanly without
-  using regex.
-- **Capability Declarations**: Override `supported_intents()` and `supported_parameters()` in
-  `CppCodeStructure`, `CCodeStructure`, `RustCodeStructure`, and `MarkdownCodeStructure` to
-  explicitly exclude `decorator_filter` and `read_unrolled_symbol`/`extract_framework_markers` where
-  they are semantically meaningless.
-
-### [MODIFY] `docs/dev_guides/code_structure_and_ast_editing.md`
-- Document the new Option B Dot-Notation API across the polyglot ecosystem so developers understand that method symbols are resolved securely using dot-notation.
-
-### [NEW] `src/specweaver/workspace/ast/parsers/go/codestructure.py`
-- Implements `GoCodeStructure(BaseTreeSitterParser)`.
-- Defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, and `SCM_COMMENT_QUERY` targeting `function_declaration`, `method_declaration`, and `type_declaration`. 
-  - *Note: `method_declaration` captures both `@receiver` and `@name`.*
-- **Overrides `list_symbols`**: Automatically formats method names as `Receiver.MethodName` (e.g.,
-  `Point.Move`). This makes it language-agnostic for the LLM; the agent just asks for whatever
-  string it sees in the list.
-- **Overrides `_find_symbol_node`**: Uses a simple `symbol_name.split(".", 1)` to cleanly match both the receiver type and the method name in the AST without complex regex.
-- **Capability Declarations**: Overrides `supported_intents()` and `supported_parameters()` to explicitly exclude `decorator_filter` and `extract_framework_markers` since Go does not use them.
-- Implements `_is_symbol_valid` to support Go visibility rules (symbols starting with an uppercase letter are public, lowercase are private).
-- Implements `extract_imports` targeting the `(import_declaration)` blocks.
-- Explicitly raises an error for `decorator_filter`, as decorators do not exist in Go syntax.
-
-### [NEW] `tests/unit/workspace/ast/parsers/go/test_codestructure.py`
-- 100% parity with existing language parser tests.
-- Covers symbol extraction, skeleton stripping, imports, `add_symbol`, and visibility filtering (capitalized vs lowercase).
-
-### [MODIFY] Existing Language Unit Tests (`tests/unit/workspace/ast/parsers/*/test_codestructure.py`)
-- Add specific unit tests for dot-notation resolution (`test_extract_symbol_dot_notation`) to
-  Python, C++, Java, Kotlin, TypeScript, Rust, and Markdown to ensure `Class.Method` correctly
-  isolates identical method names across different classes.
-
-### [NEW] `tests/integration/core/loom/test_polyglot_ast_go.py`
-- Integration tests ensuring `GoCodeStructure` behaves identically to the C/C++ parsers within the broader `BaseTreeSitterParser` abstraction.
-
-## Research Notes
-- **tree-sitter-go nodes**: Functions use `function_declaration`, methods use `method_declaration`
-  with a `receiver` node. Interfaces and Structs are wrapped in `type_declaration` -> `type_spec` ->
-  `struct_type` / `interface_type`.
-- **Visibility**: Go lacks `public`/`private` keywords. Visibility filtering must check if `sym_name[0].isupper()` for "public".
-- **Receiver Name Collisions & Polyglot Cleanup**: 
-  > [!NOTE]
-  > All languages will be treated exactly the same way. We avoid fragile regex entirely by using
-  > `symbol_name.split(".", 1)` universally in python, and checking the tree-sitter AST nodes
-  > structurally (e.g. checking if the method's parent class node matches the scope). The LLM Agent
-  > will dynamically copy the `Class.Method` strings from `list_symbols`, remaining 100% language
-  > agnostic.
-
-## Verification Plan
-
-### Automated Tests
-1. `pytest tests/unit/workspace/ast/parsers/go/test_codestructure.py`
-2. `pytest tests/integration/core/loom/test_polyglot_ast_go.py`
-3. `tach check` to ensure boundaries remain clean.
-4. `ruff check src/specweaver/workspace/ast/parsers/go`
+Run: `pytest tests/unit/workspace/ast/parsers/go/test_codestructure.py` ·
+`pytest tests/integration/core/loom/test_polyglot_ast_go.py` · `tach check` ·
+`ruff check src/specweaver/workspace/ast/parsers/go`.

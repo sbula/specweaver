@@ -1,49 +1,39 @@
-# Feature 3.32e: Polyglot Expansion
+# D-SENS-03 — Polyglot Expansion
 
-## 1. Feature Overview
+**Status**: **COMPLETED** (SF-01..SF-05 implemented; tracker below) · **Feature ID**: 3.32e
 
-**Working Definition:**
-Feature 3.32e adds Tree-sitter based AST parsers for C/C++, Go, and Standard SQL to the
-`workspace/ast/parsers` subsystem. It solves the lack of structural analysis for these high-value
-enterprise languages (Systems, Cloud-Native, and DB Context Harness) by implementing
-`CodeStructureInterface` for each using standard Tree-sitter grammars. It interacts with the
-`factory.py` registry and the `CodeStructureAtom` and explicitly avoids SQL dialect permutations by
-sticking to ANSI Standard SQL. Key constraints: Must use Tree-sitter, must adhere strictly to
-standard grammars, must avoid dialects.
+| | |
+|---|---|
+| Extends | `workspace/ast/parsers` (`CodeStructureInterface`, `factory.py` registry) |
+| Used by | `CodeStructureAtom`; Phase 3.30 (Macro Evaluator); Phase 3.32a (Context Condensation) |
+| Not touched | SQL dialects (pgSQL, T-SQL) |
 
----
+## What it does
 
-## 2. Refactoring & ROI Analysis
+Adds Tree-sitter AST parsers for C/C++, Go and Standard SQL (systems, cloud-native, DB context) to
+`workspace/ast/parsers`, each implementing `CodeStructureInterface` with a standard Tree-sitter
+grammar. Registers them in `factory.py` for `CodeStructureAtom`. Constraints: Tree-sitter only,
+standard grammars only, ANSI Standard SQL — no dialects.
 
-**Background:**
-Currently, SpecWeaver supports Python, Java, Kotlin, TypeScript, Rust, and Markdown. Each of these implements `CodeStructureInterface` independently.
-Our codebase audit revealed that the text-manipulation logic (`extract_skeleton`, `extract_symbol`,
-`replace_symbol`, `delete_symbol`, `list_symbols`) inside these classes (e.g., `PythonCodeStructure`
-which is 432 lines long) is nearly identical. The only true differences between languages are the
-Tree-sitter Language bindings and the `.scm` (Scheme) query strings used to locate nodes.
+## Why a shared base class first
 
-**Proposed Refactoring:**
-Before adding 4 new parsers (C, C++, Go, SQL), we should extract a
-`BaseTreeSitterParser(CodeStructureInterface)` class. This base class will handle all the byte-level
-encoding, `QueryCursor` matching, auto-indentation, and AST mutation logic. Concrete language
-classes will simply define `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, etc., and initialize their
-specific `Language` object.
+SpecWeaver already supported Python, Java, Kotlin, TypeScript, Rust and Markdown, each implementing
+`CodeStructureInterface` on its own. Their text manipulation (`extract_skeleton`, `extract_symbol`,
+`replace_symbol`, `delete_symbol`, `list_symbols`) was nearly identical — `PythonCodeStructure` alone
+was 432 lines. The real differences are the Tree-sitter `Language` binding and the `.scm` (Scheme)
+query strings.
 
-**ROI Analysis (Pros/Cons):**
-*   **Pros:**
-    *   **Massive Redundancy Reduction:** Eliminates ~2000 lines of duplicated AST manipulation code across existing languages.
-    *   **Future-Proofing:** Adding new languages (like C/C++, Go, SQL) becomes a trivial exercise of writing declarative `.scm` queries rather than imperative Python byte-manipulation.
-    *   **Consistency:** Fixes to tree-sitter node bounds or whitespace handling will automatically propagate to all supported languages.
-    *   **Existing Features Profit:** Phase 3.30 (Macro Evaluator) and Phase 3.32a (Context Condensation) will inherit a much more robust and unified text-mutation engine.
-*   **Cons:**
-    *   Requires touching all existing stable parsers, meaning we must run the full polyglot AST integration test suite to verify no regressions occur during the migration.
-*   **Recommendation:** This refactoring should be **SF-01**. It perfectly aligns with the
-    `pure-logic` archetype of the `workspace/ast/parsers` module and provides immense architectural
-    leverage for this feature and all future language expansions.
+So SF-01 extracts `BaseTreeSitterParser(CodeStructureInterface)` before the 4 new parsers (C, C++,
+Go, SQL). It owns byte-level encoding, `QueryCursor` matching, auto-indentation and AST mutation;
+a language class defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, etc. and its `Language` object.
 
----
+- Removes ~2000 lines of duplicated AST manipulation code.
+- A new language is declarative `.scm` queries, not imperative Python byte manipulation.
+- Fixes to node bounds or whitespace handling reach every language.
+- Cost: every existing stable parser changes, so the full polyglot AST integration suite must pass.
+- Fits the `pure-logic` archetype of `workspace/ast/parsers`.
 
-## 3. Functional Requirements (FRs)
+## Functional Requirements
 
 *   **FR-1:** The system SHALL provide a `BaseTreeSitterParser` that encapsulates all `CodeStructureInterface` generic AST mutation logic.
 *   **FR-2:** The system SHALL parse C and C++ source files using `tree-sitter-c` and `tree-sitter-cpp` to extract skeletons, symbols, imports, and traceability tags via declarative `.scm` queries.
@@ -57,9 +47,7 @@ specific `Language` object.
     `decorator_filter` or `extract_framework_markers`) if no active language parser supports them,
     ensuring agents never see useless capabilities.
 
----
-
-## 4. Non-Functional Requirements (NFRs)
+## Non-Functional Requirements
 
 *   **NFR-1 (Compatibility):** The new grammars must be fully compatible with `tree-sitter >= 0.25.2` as mandated by the current `pyproject.toml`.
 *   **NFR-2 (Architecture Boundaries):** The implementations MUST reside strictly within
@@ -69,9 +57,13 @@ specific `Language` object.
     attempt to polyfill proprietary pgSQL or T-SQL syntax unless it is natively supported by the
     standard `tree-sitter-sql` grammar.
 
----
+## Risks and limits
 
-## 5. Sub-Feature Decomposition & Progress Tracker
+- SQL `CREATE PROCEDURE` is not extracted: `tree-sitter-sql` returns an `ERROR` node for it (SF-05).
+- FR-7 pruning is global across all registered parsers, not per grant area — waits for the AST
+  Knowledge Tree (SF-04).
+
+## Sub-features and Progress Tracker
 
 | Sub-Feature | ID | Dependencies | Impl Plan | Dev | Pre-Commit | Committed |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -81,9 +73,6 @@ specific `Language` object.
 | **Go Parser Implementation** | SF-04 | SF-01 | ✅ | ✅ | ✅ | ✅ |
 | **SQL Parser Implementation** | SF-05 | SF-01 | ✅ | ✅ | ✅ | ⬜ |
 
----
-
-## 6. Session Handoff
-Status: **COMPLETED**
-The implementation plan for SF-05 (SQL Parser Implementation) is complete and approved.
-Next Step: Run `/dev docs/roadmap/features/topic_02_sensors/D-SENS-03/D-SENS-03_sf05_implementation_plan.md` to begin implementation of SF-05.
+Plans: [sf01](D-SENS-03_sf01_implementation_plan.md) · [sf02](D-SENS-03_sf02_implementation_plan.md) ·
+[sf03](D-SENS-03_sf03_implementation_plan.md) · [sf04](D-SENS-03_sf04_implementation_plan.md) ·
+[sf05](D-SENS-03_sf05_implementation_plan.md)

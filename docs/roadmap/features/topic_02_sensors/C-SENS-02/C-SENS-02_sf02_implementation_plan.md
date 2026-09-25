@@ -1,54 +1,44 @@
-# Implementation Plan: Smart Scan Exclusions (Tiered) [SF-02: Orchestration Factory & Scaffolding]
-- **Feature ID**: 3.32b
-- **Sub-Feature**: SF-02 — Orchestration Factory & Scaffolding
-- **Design Document**: docs/roadmap/features/topic_02_sensors/C-SENS-02_design.md
-- **Design Section**: §Sub-Feature Decomposition & Technical Debt Refactoring → SF-02: Orchestration Factory & Scaffolding
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf02_impl_plan.md
-- **Status**: FULLY IMPLEMENTED (Pre-commit complete)
+# C-SENS-02 SF-02 — Orchestration Factory & Scaffolding
+
+**Status**: FULLY IMPLEMENTED (Pre-commit complete) · **Feature ID**: 3.32b · **Depends on**: SF-01 ·
+Design: [C-SENS-02_design.md](C-SENS-02_design.md) §Sub-features → SF-02
 
 **FRs owned: FR-2.** Polyglot binary-file exclusions. Recorded 2026-08-17 under `specweaver-dev`
 §3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
 `tests/unit/workspace/ast/parsers/test_polyglot_exclusions.py` — emptying Java's `*.class`/`*.jar`
 list fails it, and nothing else under `tests/unit/workspace` notices.
 
+## Goal
 
-## Proposed Changes
+Expose the polyglot union of analyzers and use it to scaffold `.specweaverignore`.
 
 > [!WARNING]
-> **Strict Architectural Deferment**: `src/specweaver/workspace/context/context.yaml` maps the
-> entire `context/` module as an `archetype: contract`. However, `analyzers.py` currently executes
-> physical `.glob()` and `.read_text()` OS operations natively! This is a massive boundary violation
-> that triggers the Pre-Commit Quality gates. 
-> **CRITICAL RULE FOR EXECUTING AGENT:** Do NOT attempt to refactor the file I/O operations out of
-> `analyzers.py` during SF-02! This violation is **formally deferred to SF-04**, which physically
-> moves the module out to `workspace/analyzers/` (Adapter Layer). Leave the violation as-is and
-> strictly execute the SF-02 scope.
+> **Out of scope: the I/O violation in `analyzers.py`.** `src/specweaver/workspace/context/context.yaml`
+> declares `context/` as `archetype: contract`, yet `analyzers.py` runs `.glob()` and `.read_text()`.
+> Do NOT refactor that here — it is deferred to SF-04, which moves the module to
+> `workspace/analyzers/` (Adapter Layer).
 
----
-### 1. Abstract Interfaces & Union Scaffolding
-#### [MODIFY] `src/specweaver/workspace/context/analyzers.py`
-- **`LanguageAnalyzer` ABC:** Add `@abstractmethod def get_binary_ignore_patterns(self)` and
-  `@abstractmethod def get_default_directory_ignores(self)` to enforce exclusion guarantees across
-  all integrated languages.
-- **`TreeSitterAnalyzerBase`:** Implement both methods linearly by delegating to `self.parser.get_binary_ignore_patterns()` and `self.parser.get_default_directory_ignores()`.
-- **`AnalyzerFactory`:** Introduce a robust classmethod
-  `@classmethod def get_all_analyzers(cls) -> list[LanguageAnalyzer]` to expose the total internal
-  Polyglot union seamlessly (Python, TS, Java, Rust, Kotlin).
+## Changes
 
-#### [MODIFY] `tests/unit/workspace/context/test_analyzers.py`
-- Assert that `AnalyzerFactory.get_all_analyzers()` returns exactly 5 polyglot instances.
-- Assert that `LanguageAnalyzer.get_default_directory_ignores()` bridges successfully across a mock Analyzer down to its code structure parser.
+1. **Union** · `src/specweaver/workspace/context/analyzers.py`:
+   - `LanguageAnalyzer` ABC: `@abstractmethod def get_binary_ignore_patterns(self)` and
+     `@abstractmethod def get_default_directory_ignores(self)`, so every language provides both.
+   - `TreeSitterAnalyzerBase`: delegates to `self.parser.get_binary_ignore_patterns()` and
+     `self.parser.get_default_directory_ignores()`.
+   - `AnalyzerFactory`: `@classmethod def get_all_analyzers(cls) -> list[LanguageAnalyzer]` returns
+     the whole polyglot union (Python, TS, Java, Rust, Kotlin).
+2. **Scaffold** · `src/specweaver/workspace/project/scaffold.py` — in
+   `scaffold_project(project_path: Path)`:
+   - iterate `AnalyzerFactory.get_all_analyzers()` and build the flat `default_directories` list;
+   - `SpecWeaverIgnoreParser(project_path)` from `specweaver.workspace.ast.parsers.exclusions`, then
+     `ensure_scaffolded(default_directories)`;
+   - add `".specweaverignore"` to the tracking array if newly created.
 
----
-### 2. Scaffold `.specweaverignore` Globals
-#### [MODIFY] `src/specweaver/workspace/project/scaffold.py`
-- Within `scaffold_project(project_path: Path)`:
-  - Dynamically iterate over `AnalyzerFactory.get_all_analyzers()`.
-  - Compile the `default_directories` flat list.
-  - Instantiate `SpecWeaverIgnoreParser(project_path)` from `specweaver.workspace.ast.parsers.exclusions`.
-  - Fire `ensure_scaffolded(default_directories)`.
-  - Inject `".specweaverignore"` natively into the tracking array if newly created.
+## Tests
 
-#### [MODIFY] `tests/unit/workspace/project/test_scaffold.py`
-- Assert that calling `scaffold_project` natively generates a `.specweaverignore` containing `__pycache__/`, `target/`, and `node_modules/` implicitly.
-- Assert idempotency: subsequent scaffold runs do not erase existing custom user patterns within the ignore file.
+| File | Case |
+|---|---|
+| `tests/unit/workspace/context/test_analyzers.py` | `AnalyzerFactory.get_all_analyzers()` returns exactly 5 instances |
+| | `LanguageAnalyzer.get_default_directory_ignores()` delegates through a mock analyzer to its parser |
+| `tests/unit/workspace/project/test_scaffold.py` | `scaffold_project` writes a `.specweaverignore` containing `__pycache__/`, `target/`, `node_modules/` |
+| | idempotent: a second run keeps the user's custom patterns |

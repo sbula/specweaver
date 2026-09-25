@@ -1,4 +1,7 @@
-# Implementation Plan: Boundary Matrix Sync (SF-02)
+# C-EXEC-03 SF-02 — Boundary Matrix Sync
+
+**Status**: APPROVED · **Feature ID**: 3.26a (SF-02) · **Depends on**: SF-01 ·
+Design: [C-EXEC-03_design.md](C-EXEC-03_design.md) §Sub-features → SF-02
 
 **FRs owned: FR-7, FR-8, FR-11, FR-12.** The test-tier mirror, the e2e capability tree, and the
 documentation moves. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
@@ -15,49 +18,31 @@ tests of `workspace.project` and `core.flow.handlers` under invented top-level n
 their mirrors; two — `scripts` and `alembic` — mirror repo-root directories that genuinely exist and are
 not product code. The guard keeps them as named exceptions, so a third fails.
 
+## Goal
 
-- **Feature ID**: 3.26a (SF-02)
-- **Status**: APPROVED
-- **Design Doc**: `docs/roadmap/phase_3/feature_3.26a/feature_3.26a_design.md`
+After SF-01's moves, make `tach.toml` and the internal architecture evaluation define and enforce
+the 6 macro-domains (`workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure`).
 
-## Overview
-Repairs the broken architectural boundaries after the SF-01 physical directory migrations. Executes
-targeted sweeps across the `tach.toml` configuration matrix and internal architecture topological
-evaluation nodes to strictly define and enforce the mappings of the 6 newly generated Domain-Driven
-macro boundaries (`workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure`).
-This will lock the architecture in place.
+## Changes
 
-## Resolved Technical Audits
-> [!NOTE]
-> **Resolution 1 (Tach Modularity Boundary Level):** We will implement **Option A (Deep Mapping)**.
-> We will strictly update `tach.toml` to track boundaries at the deep component tier (e.g.,
-> `path = "src.specweaver.workflows.planning"`) in order to preserve absolute boundary protection
-> between internal components *within* the macro-domains.
+1. **`tach.toml`**:
+   - rewrite `[[modules]]` blocks for the nested domains, and `[[interfaces]]` expose blocks via the
+     macro-domain paths;
+   - deep paths, e.g. `path = "src.specweaver.interfaces.cli"`, `path = "src.specweaver.workflows.planning"`;
+   - `depends_on` arrays match the new locations (e.g. `src.specweaver.core.flow` consumes
+     `src.specweaver.workflows.drafting`);
+   - edit autonomously; enforce with `tach check`.
+2. **Graph evaluator** — `src/specweaver/assurance/graph/` (formerly `src/specweaver/graph/`) runs
+   its topological evaluations under the new tree; its unit tests pass.
 
-## Proposed Changes
+## Tests
 
-### Component: Topological `tach.toml` Enforcer Updates
-- Overhaul `tach.toml` to repair the global dependency tree. 
-- Rewrite `[[modules]]` blocks to map cleanly to the deeply nested domains. 
-- Rewrite `[[interfaces]]` expose blocks to route cleanly via the macro-domain paths. 
+- `tach check` from the command line — MUST yield exactly 0 architectural errors or dependency
+  violations.
+- `tach sync` repairs minor drift if `context.yaml` and `tach.toml` disagree.
 
-#### [MODIFY] tach.toml
-- `path = "src.specweaver.interfaces.cli"` -> `path = "src.specweaver.interfaces.cli"`
-- `path = "src.specweaver.workflows.planning"` -> `path = "src.specweaver.workflows.planning"`
-- Ascertain that internal `depends_on` arrays precisely match the re-mapped deep string locations (e.g. `src.specweaver.core.flow` consumes `src.specweaver.workflows.drafting`).
-- Enforce strict boundary isolation natively via `tach check`.
-- *Note for Agent*: Execute changes autonomously in `tach.toml`.
+## Decisions (audit)
 
-### Component: Internal Graph Evaluator Sync
-- Ensure `src/specweaver/assurance/graph/` (formerly `src/specweaver/graph/`) internal topological
-  evaluations operate normally without crashing under the new 6-domain tree. Validate this by
-  verifying that the unit tests for the graph pass successfully. 
-
-## Verification Plan
-
-### Automated Tests
-- Run `tach check` manually at the command line. This acts as our primary deterministic compiler. 
-- It MUST yield exactly 0 Architectural errors or dependency violations.
-
-### Manual Verification
-- Execute `tach sync` to auto-repair minor drift gaps natively if `context.yaml` drifts mismatch.
+1. **Tach boundary level — Option A (Deep Mapping)**: `tach.toml` tracks the deep component tier
+   (e.g. `path = "src.specweaver.workflows.planning"`), keeping boundaries between components
+   *within* a macro-domain.

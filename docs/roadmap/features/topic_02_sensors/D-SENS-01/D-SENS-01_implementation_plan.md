@@ -1,12 +1,11 @@
-# D-SENS-01 — Topology Graph
+# D-SENS-01 — Topology Graph (record)
 
 **FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7.** Recorded 2026-08-17 under
-`specweaver-dev` §3.2c, from `INT-US-08-MIG`.
+`specweaver-dev` §3.2c, from `INT-US-08-MIG`. Design: [D-SENS-01_design.md](D-SENS-01_design.md)
 
-> This file is a **record**, not a plan. The capability shipped before the FR ledger existed and had
-> no feature directory at all, so there was never a plan to state ownership on. It exists because
-> `check_fr_coverage.py` requires every FR to be carried somewhere, and inventing a retrospective
-> multi-sub-feature breakdown would be fiction. One capability, one owner.
+A **record**, not a plan. The capability shipped before the FR ledger and had no feature directory,
+so no plan ever stated ownership. `check_fr_coverage.py` requires every FR to be carried somewhere; a
+retrospective multi-sub-feature breakdown would be fiction. One capability, one owner.
 
 ## Where it lives
 

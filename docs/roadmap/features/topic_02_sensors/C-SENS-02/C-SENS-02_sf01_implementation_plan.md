@@ -1,79 +1,58 @@
-# Implementation Plan: Smart Scan Exclusions (Tiered) [SF-01: Pure Logic Definitions & Ignorance Parser]
-- **Feature ID**: 3.32b
-- **Sub-Feature**: SF-01 — Pure Logic Definitions & Ignorance Parser
-- **Design Document**: docs/roadmap/features/topic_02_sensors/C-SENS-02_design.md
-- **Status**: APPROVED
+# C-SENS-02 SF-01 — Pure Logic Definitions & Ignorance Parser
 
----
+**Status**: APPROVED · **Feature ID**: 3.32b · **Depends on**: — ·
+Design: [C-SENS-02_design.md](C-SENS-02_design.md) §Sub-features → SF-01
 
-## Proposed Changes
+## Goal
 
-### 1. External Dependencies
-#### [x] [MODIFY] `pyproject.toml`
-- Add `pathspec = "^0.12.0"` to the core dependencies.
-- Add `pytest-pathspec` to `dev` constraints if mocking paths are required.
+Pure-logic foundation only: per-language ignore patterns on `CodeStructureInterface` and a
+`pathspec` aggregator in `exclusions.py`. Refactoring `discovery.py` and the `AnalyzerFactory` DI are
+out of scope here (SF-03, SF-04).
 
-### 2. Interface Definitions (Pure Logic)
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/interfaces.py`
-- Update `CodeStructureInterface`:
-  - Add abstract method: `def get_binary_ignore_patterns(self) -> list[str]: ...`
-  - Add abstract method: `def get_default_directory_ignores(self) -> list[str]: ...`
+## Changes
 
-### 3. Polyglot Target Implementations
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/python/codestructure.py`
-- In `PythonCodeStructure`: Return `["*.pyc", "*.pyo", "*.pyd"]` and `["__pycache__/", ".pytest_cache/", ".tox/", ".venv/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/java/codestructure.py`
-- In `JavaCodeStructure`: Return `["*.class", "*.jar", "*.ear", "*.war"]` and `["target/", "build/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/kotlin/codestructure.py`
-- In `KotlinCodeStructure`: Return `["*.class", "*.jar"]` and `["target/", "build/", ".gradle/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/rust/codestructure.py`
-- In `RustCodeStructure`: Return `["*.rlib", "*.so", "*.dll", "*.pdb"]` and `["target/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/typescript/codestructure.py`
-- In `TypeScriptCodeStructure`: Return `[]` (Node runs source) and `["node_modules/", "dist/", "build/", "out/"]`.
+All `[x]` done.
 
-### 4. Mathematical Pathspec Aggregator
-#### [x] [NEW] `src/specweaver/workspace/ast/parsers/exclusions.py`
-*(Note: Because `workspace/ast/parsers` is natively `pure-logic`, it legally hosts the mathematical
-Regex Tree generation for pathspec without violating the `contract` constraints of
-`workspace/context`. The actual OS traversal reading `.specweaverignore` from disk will be safely
-injected later during SF-04).*
-- Create `SpecWeaverIgnoreParser` class:
-  - Takes `project_root: Path` solely for referencing the `.specweaverignore` physical read (Permitted lookup logic prior to cache locking).
-  - Method `ensure_scaffolded(default_directories: list[str]) -> None`: Safe append logic.
-  - Method `get_compiled_spec(runtime_patterns: list[str]) -> pathspec.PathSpec`: Combines the text in ignore files with runtime bounds.
+1. **Dependency** · `pyproject.toml` — add `pathspec = "^0.12.0"` to core dependencies;
+   `pytest-pathspec` to `dev` only if path mocking needs it.
+2. **Interface** · `src/specweaver/workspace/ast/parsers/interfaces.py` — `CodeStructureInterface`
+   gains abstract methods:
+   - `def get_binary_ignore_patterns(self) -> list[str]: ...`
+   - `def get_default_directory_ignores(self) -> list[str]: ...`
+3. **Per-language patterns** — each `codestructure.py` returns:
 
----
+| File · class | Binary patterns | Directory ignores |
+|---|---|---|
+| `src/specweaver/workspace/ast/parsers/python/codestructure.py` · `PythonCodeStructure` | `["*.pyc", "*.pyo", "*.pyd"]` | `["__pycache__/", ".pytest_cache/", ".tox/", ".venv/"]` |
+| `src/specweaver/workspace/ast/parsers/java/codestructure.py` · `JavaCodeStructure` | `["*.class", "*.jar", "*.ear", "*.war"]` | `["target/", "build/"]` |
+| `src/specweaver/workspace/ast/parsers/kotlin/codestructure.py` · `KotlinCodeStructure` | `["*.class", "*.jar"]` | `["target/", "build/", ".gradle/"]` |
+| `src/specweaver/workspace/ast/parsers/rust/codestructure.py` · `RustCodeStructure` | `["*.rlib", "*.so", "*.dll", "*.pdb"]` | `["target/"]` |
+| `src/specweaver/workspace/ast/parsers/typescript/codestructure.py` · `TypeScriptCodeStructure` | `[]` (Node runs source) | `["node_modules/", "dist/", "build/", "out/"]` |
 
-## Verification Plan
+4. **Pathspec aggregator** · `[NEW]` `src/specweaver/workspace/ast/parsers/exclusions.py` —
+   `SpecWeaverIgnoreParser`:
+   - takes `project_root: Path` only to read `.specweaverignore` (allowed lookup before cache
+     locking);
+   - `ensure_scaffolded(default_directories: list[str]) -> None` — safe append;
+   - `get_compiled_spec(runtime_patterns: list[str]) -> pathspec.PathSpec` — ignore-file text plus
+     runtime patterns.
 
-### Automated Tests
-- Run `pytest tests/workspace/context/test_exclusions.py` (to be created natively during `/dev`). 
-- Assert `get_compiled_spec` deterministic matching. 
-- Assert `CodeStructureInterface` subclass validation using abstract bounds.
+   `workspace/ast/parsers` is `pure-logic`, so it may host the pathspec regex generation without
+   breaking the `contract` constraints of `workspace/context`. The disk read of `.specweaverignore`
+   is injected later, in SF-04.
 
-> **CRITICAL DEVELOPER RULE**: 
-> @[/pre-commit]
-> You must physically invoke the pre-commit workflow explicitly before committing to branch. 
+## Tests
 
----
+- `pytest tests/workspace/context/test_exclusions.py` (new).
+- `get_compiled_spec` matches deterministically.
+- `CodeStructureInterface` subclasses fail validation if an abstract method is missing.
+- Run the pre-commit workflow (`@[/pre-commit]`) before committing.
 
-# [Workflow: /implementation-plan] Phase 5: Final Consistency Check
+## Decisions (audit)
 
-### 5.1. Open Questions & Agent Handoff Risk
-- **Unresolved Decisions:** None. All design drift (Pathspec optionally vs strictly, SF-01 vs SF-03 overlap, and Workspace/Context I/O bounds) have been definitively boxed out. 
-- **Agent Handoff Risk:** None. The next Agent dropping into `/dev` will clearly see that it ONLY
-  implements the `CodeStructureInterface` extensions and builds `exclusions.py`. The creation of
-  SF-04 explicitly signals the subsequent agent *not* to refactor `discovery.py` or the
-  `AnalyzerFactory` DI injection during SF-01.
-
-### 5.2. Architecture and Future Compatibility
-- **Tach Bounds:** No circular dependencies introduced. Adding methods to `interfaces.py` and
-  `codestructure` subclasses perfectly respects the `pure-logic` constraints. Creating
-  `exclusions.py` does not cross into `loom/` (forbidden).
-- **Roadmap Soundness:** Because we deferred the strict decoupling of `AnalyzerFactory` into the
-  discrete **SF-04**, SF-01 acts as a pure mathematical foundation for topological exclusion logic.
-  This lays down identical prerequisites required by **Feature 3.33** (PostgreSQL Graph) bounding.
-
-### 5.3. Internal Consistency
-- Every physical file proposed has concrete inputs and outputs tagged linearly in Section 3. 
-- We are exclusively introducing pure-logic abstractions and parsing engines. 
+- **Settled**: pathspec is required (not optional); SF-01 vs SF-03 overlap resolved; Workspace/Context
+  I/O bounds resolved.
+- **Architecture**: no circular dependencies. New methods in `interfaces.py` and the `codestructure`
+  subclasses stay within `pure-logic`; `exclusions.py` does not cross into `loom/` (forbidden).
+- **Roadmap**: with `AnalyzerFactory` decoupling deferred to **SF-04**, SF-01 is the pure foundation
+  for topological exclusion — also a prerequisite for **Feature 3.33** (PostgreSQL Graph).

@@ -1,28 +1,25 @@
-# Implementation Plan: Deep Semantic Hashing [SF-02: Semantic State Caching]
-- **Feature ID**: 3.32
-- **Sub-Feature**: SF-02 — Semantic State Caching
-- **Design Document**: docs/roadmap/features/topic_02_sensors/A-SENS-01/A-SENS-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/A-SENS-01/A-SENS-01_sf02_implementation_plan.md
-- **Status**: DRAFT
+# A-SENS-01 SF-02 — Semantic State Caching
 
-## 1. Sub-Feature Scope & Requirements
-Implements a dedicated utility for computing and persisting shallow and structural Merkle dependencies for cross-service topology caching.
-- **FR-1:** Combines `sha256` of file contents + Merkle roots of all extracted imports into a `semantic_hash`.
-- **FR-2:** Reads/Writes `.specweaver/topology.cache.json`.
-- **NFR-1:** Speed / Overhead (Bootstrapping must sit under 50ms total).
+**Status**: DRAFT (every change below is DONE; the design tracker records it committed) ·
+**Feature ID**: 3.32 · **FRs owned**: FR-1, FR-2, NFR-1 · **Depends on**: SF-01 ·
+Design: [A-SENS-01_design.md](A-SENS-01_design.md) §Sub-features → SF-02
 
-## 2. Technical Modifications
+## Goal
 
-### A. Dependency Hasher (`src/specweaver/assurance/graph/hasher.py`) [DONE]
-[NEW] `src/specweaver/assurance/graph/hasher.py`
+A utility that computes and persists shallow and structural Merkle dependencies for cross-service
+topology caching.
 
-**Purpose**: Responsible for generating hashes from `context.yaml` directories and maintaining the `topology.cache.json`.
-**Key Algorithm**: Must recursively map a directory's files to `hashlib.sha256()`. Then parse local
-boundary dependencies. A directory's final Merkle Hash is defined as:
-`hash(file_hashes + imported_module_hashes)`.
+- **FR-1:** `sha256` of file contents + Merkle roots of all extracted imports → `semantic_hash`.
+- **FR-2:** reads/writes `.specweaver/topology.cache.json`.
+- **NFR-1:** bootstrapping under 50ms total.
 
-**Key Signatures**:
+## Changes
+
+1. **Dependency hasher** · `[NEW]` `src/specweaver/assurance/graph/hasher.py` — hashes
+   `context.yaml` directories and maintains `topology.cache.json`. Maps a directory's files to
+   `hashlib.sha256()` recursively, then parses local boundary dependencies. A directory's Merkle hash
+   is `hash(file_hashes + imported_module_hashes)`. Key signatures:
+
 ```python
 def __init__(self, project_root: Path):
     self.project_root = project_root
@@ -32,40 +29,35 @@ def compute_hashes(self, manifests: list[Path]) -> dict[str, Any]:
     # Analyzes module boundaries via `LanguageAnalyzers` and dedupes natively.
 ```
 
-### A.2 Architecture Strictness Patch [DONE]
-[MODIFY] `src/specweaver/assurance/graph/context.yaml`
-- **Violation Found**: The current context consumes `specweaver/context`. The correct namespace is `specweaver/workspace/context`. This typo will be fixed natively.
-
-### B. Configuration / PyProject (`pyproject.toml`) [DONE]
-[MODIFY] `pyproject.toml`
-- Added `orjson>=3.9.0` to the root `dependencies = [...]` block. This fulfills the requirement for massive performance boosts across SpecWeaver's internal serialization tasks natively.
-
-### C. Global Universal Orjson Sweep [DONE]
-[MODIFY] `src/specweaver/...` (All 29 locations)
-- Because `orjson` is now a core dependency, we must not mix standards. We performed a universal codebase sweep replacing `import json` with the `specweaver.commons.json` facade everywhere.
+2. **Architecture fix** · `src/specweaver/assurance/graph/context.yaml` — `consumes` said
+   `specweaver/context`; the correct namespace is `specweaver/workspace/context`.
+3. **Dependency** · `pyproject.toml` — `orjson>=3.9.0` added to root `dependencies = [...]` for
+   faster serialization.
+4. **orjson everywhere** · `src/specweaver/...` (all 29 locations) — `import json` replaced with the
+   `specweaver.commons.json` facade, so the codebase does not mix the two.
+5. **`.gitignore` protection** · `src/specweaver/assurance/graph/hasher.py` (not
+   `src/specweaver/workspace/project/git.py`) — `_ensure_gitignore(project_root: Path)` walks up from
+   `project_root` to the first `.git/`; if found, appends `\n/.specweaver/\n` inside a tracked
+   `# SpecWeaver Auto-Generated` comment block (NFR-2). No `.git` → silently skipped.
 
 > [!WARNING]
-> **ORJSON DECODE TRAP:** Standard `json.dumps()` returns `str`. Fast `orjson.dumps()` natively
-> returns `bytes`. The implementing agent explicitly utilized the facade `commons.json` which
-> appends `.decode('utf-8')` to any payload passed into LLM prompt builders, Pydantic initializers,
-> or logging frameworks, successfully proving zero crashes.
+> **orjson decode trap:** `json.dumps()` returns `str`; `orjson.dumps()` returns `bytes`. The
+> `commons.json` facade appends `.decode('utf-8')`, so payloads passed to LLM prompt builders,
+> Pydantic initializers and logging stay `str`.
 
-### D. OS Protection (`src/specweaver/workspace/project/git.py` or `.gitignore` injection hook) [DONE]
-[MODIFY/NEW] `src/specweaver/assurance/graph/hasher.py`
-- Exposes `_ensure_gitignore(project_root: Path)`. Walk up from `project_root` until finding a
-  `.git/` directory. If found, safely append `\n/.specweaver/\n` inside a tracked
-  `# SpecWeaver Auto-Generated` comment block to ensure NFR-2 repository purity. Silently ignore if
-  no `.git` is found.
+## Tests
 
-## 3. Resolving HITL Decisions (Phase 4 Audit)
-1. **Schema Parsing via `orjson`**: We will explicitly utilize `orjson.dumps()` and `orjson.loads()` for lightning-fast graph serialization, easily achieving the `< 50ms` NFR constraint natively.
-2. **Orphan Key Pruning**: The Hasher will explicitly receive the active list of valid manifests
-   directly from `TopologyGraph.from_project()`. During cache compilation, the hasher will intersect
-   valid keys, instantly pruning orphaned/deleted OS files.
-3. **`.gitignore` Climbing**: Implemented exactly via hierarchical path-climbing.
+`tests/unit/assurance/graph/test_hasher.py`:
 
-## 4. Verification Constraints
-- **Test Matrix (`tests/unit/assurance/graph/test_hasher.py`)**:
-  - Test exact 50ms limits (via `timeit` bounds) using a synthetic 1,000-module dummy graph.
-  - Test the `.gitignore` climber natively inside `.tmp` nested dummy trees.
-  - Test orphan key pruning safely (adding/removing dummy modules).
+| Case | Proves |
+|---|---|
+| synthetic 1,000-module graph, `timeit` bound | the 50ms limit |
+| nested dummy trees under `.tmp` | the `.gitignore` climber |
+| add/remove dummy modules | orphan key pruning |
+
+## Decisions (audit)
+
+1. **Serialization via `orjson`**: `orjson.dumps()` / `orjson.loads()` to meet `< 50ms`.
+2. **Orphan key pruning**: the hasher receives the active manifest list from
+   `TopologyGraph.from_project()` and intersects keys, pruning deleted files.
+3. **`.gitignore` climbing**: hierarchical path-climbing, as in change 5.

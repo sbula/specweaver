@@ -1,68 +1,63 @@
-# Implementation Plan: Deep Semantic Hashing [SF-03: Incremental Topology Crawler]
-- **Feature ID**: 3.32
-- **Sub-Feature**: SF-03 — Incremental Topology Crawler
-- **Design Document**: docs/roadmap/features/topic_02_sensors/A-SENS-01/A-SENS-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/A-SENS-01/A-SENS-01_sf03_implementation_plan.md
-- **Status**: IMPLEMENTED
+# A-SENS-01 SF-03 — Incremental Topology Crawler
 
-## 1. Sub-Feature Scope & Requirements
-Modifies the `TopologyGraph` core engine to proactively evaluate Semantic Merkle trees. Rather than
-downstream execution plugins parsing OS boundaries repeatedly, the graph becomes contextually aware
-of mathematically "stale" components, enabling incremental loop bypassing across the ecosystem.
-- **FR-3:** Detects mismatches between disk `mtime`/semantic hashes and the cache. Recursively invalidates upward consumers using `_reverse` adjacencies, explicitly tagging only stale nodes.
+**Status**: IMPLEMENTED · **Feature ID**: 3.32 · **FRs owned**: FR-3 · **Depends on**: SF-02 ·
+Design: [A-SENS-01_design.md](A-SENS-01_design.md) §Sub-features → SF-03
 
-## 2. Resolving HITL Decisions & Implications (Phase 4 Merge)
+## Goal
 
-During the Phase 4 HITL Gate, 3 critical architectural shifts were approved regarding how staleness interacts with the rest of the SpecWeaver ecosystem:
+`TopologyGraph` evaluates the semantic Merkle tree itself and knows which components are "stale",
+so downstream plugins can skip clean ones instead of each re-parsing the tree.
 
-1. **Statefulness Injection (`stale_nodes`)**: Rather than making clients compute sub-graphs,
-   `TopologyGraph` will explicitly surface a `self.stale_nodes: set[str]` property representing the
-   temporal diff between the Merkle cache and the exact disk state. 
-2. **Auto-Inference Injection**: `TopologyGraph.from_project(auto_infer=True)` will feed virtually
-   inferred `context.yaml` boundaries directly into the `DependencyHasher` alongside static physical
-   directories, generating Merkle roots that encompass 100% of the mapped codebase.
-3. **Total Mismatch Fallback (Zero-Trust)**: If the `.specweaver/topology.cache.json` is missing or fully deleted, the crawler will safely default to a 100% stale state, flagging every node natively.
+- **FR-3:** detect mismatches between disk `mtime`/semantic hashes and the cache; invalidate upward
+  consumers via `_reverse` adjacencies; tag only stale nodes.
+
+## Where it plugs in
+
+`src/specweaver/assurance/graph/topology.py` — `from_project()` computes hashes via
+`DependencyHasher`, diffs against the previous cache, and exposes the blast radius as
+`graph.stale_nodes`.
+
+## Changes
+
+1. **Property**: `self.stale_nodes: set[str]` on `TopologyGraph` `__init__`.
+2. **Hasher hook**: `from_project()` creates `DependencyHasher(project_root)` and reads the previous
+   state via `load_cache()`.
+3. **Manifests**: all located (and auto-inferred) `context.yaml` directories.
+4. **Invalidation (FR-3)**:
+   - call `hasher.compute_hashes(manifests)`;
+   - a module whose `semantic_hash` differs from the `load_cache()` mapping, or is absent, goes into
+     `stale_seeds: set[str]`;
+   - loaded cache empty `{}` (no file) → `stale_seeds = set(nodes.keys())`;
+   - `stale_nodes` = union of `self.impact_of(seed)` for each seed (the existing recursive Tarjan
+     reverse-adjacency lookup).
 
 > [!CAUTION]
-> **IMPLICATION: THE CACHE-FLUSH DILEMMA**
-> **You MUST NOT auto-flush the cache within the Topology instantiation loop.**
-> If `TopologyGraph.from_project()` instantly overwrites the semantic cache after checking for
-> mismatches, the baseline is lost. The very next `QARunner` pipeline initializing the graph 1
-> millisecond later will see zero differences, flag everything as clean, and bypass the validation
-> pipeline entirely.
-> **Constraint:** The Topology engine ONLY calculates staleness. Writing the cache must remain
-> explicitly externalized (deferred to the downstream orchestrator/runners upon successful pipeline
-> culmination).
+> **Never flush the cache inside `TopologyGraph.from_project()`.** If it overwrote the cache after
+> diffing, the next `QARunner` building the graph 1 millisecond later would see no difference, flag
+> everything clean and skip validation. The topology engine ONLY calculates staleness; writing the
+> cache belongs to the downstream orchestrator, after a successful pipeline (SF-04).
 
-## 3. Technical Modifications
+## Tests
 
-### A. Graph Invalidation Engine (`src/specweaver/assurance/graph/topology.py`)
-[MODIFY] `src/specweaver/assurance/graph/topology.py`
+`tests/unit/assurance/graph/test_topology.py` and `test_topology_staleness.py`:
 
-**Purpose**: Augment the graph initialization sequence (`from_project()`) to internally compute
-semantic hashes via `DependencyHasher`, diff against the legacy cache, and expose the impact
-blast-radius as `graph.stale_nodes`.
+| Case | Proves |
+|---|---|
+| missing cache | all nodes flagged stale |
+| exactly 1 mutated node | exactly its 3 direct/transitive upstream consumers flagged via `impact_of` |
+| `from_project` returns | `DependencyHasher.save_cache()` is never invoked |
+| dynamic node without `yaml_path` | skipped by the crawler, no crash |
+| dependency deleted (tombstone) | missing `nodes` entry vs `context.yaml#consumes` bubbles staleness up |
 
-**Key Additions:**
-1. **Property Exposure**: Add `self.stale_nodes: set[str]` to the `TopologyGraph` `__init__`.
-2. **Hasher Hooks**: Internally initialize `DependencyHasher(project_root)` in `from_project()`. Fetch the existing topological state via `load_cache()`.
-3. **Manifest Compilation**: Gather all located (and auto-inferred) `context.yaml` directories as target manifests.
-4. **Invalidation Algorithm (FR-3)**:
-   - Call `hasher.compute_hashes(manifests)`.
-   - Iterate over the new target hashes. If a module's `semantic_hash` differs from the `load_cache()` mapping (or does not exist), add the module to an internal `stale_seeds: set[str]`.
-   - If the loaded cache was completely empty `{}` (no file exists), flag `stale_seeds = set(nodes.keys())`.
-   - Construct the final `stale_nodes` property by passing `stale_seeds` through the existing
-     recursive Tarjan reverse-adjacency lookup. For each seed module, trace `self.impact_of(seed)`
-     and union the output to `stale_nodes`.
+Staleness tests live in `tests/unit/assurance/graph/test_topology_staleness.py` to respect the
+maximum file size.
 
-## 4. Verification Constraints
-- **Test Matrix (`tests/unit/assurance/graph/test_topology.py` & `test_topology_staleness.py`)**:
-  - Test exactly 1 missing cache fallback (all nodes flag stale).
-  - Test exactly 1 mutated node cleanly flagging exactly its 3 direct/transitive upstream consumers via `impact_of` without crashing.
-  - Test validation that the `TopologyGraph` actively *returns* cleanly without attempting to invoke `DependencyHasher.save_cache()`.
-  
-### HITL Test Matrix Revisions:
-- Included **Edge Case Protection**: Tests confirming dynamic nodes injected without `yaml_path` safely skip the topology crawler checking.
-- Included **Tombstone Protection**: Added logic parsing missing `nodes` mapping compared to `context.yaml#consumes` to successfully bubble up staleness when dependencies are deleted.
-- Extracted staleness tests to `tests/unit/assurance/graph/test_topology_staleness.py` to adhere to maximum file size limits.
+## Decisions (audit)
+
+1. **`stale_nodes` on the graph**: `TopologyGraph` exposes `self.stale_nodes: set[str]` — the diff
+   between the Merkle cache and disk — instead of clients computing sub-graphs.
+2. **Auto-inference included**: `TopologyGraph.from_project(auto_infer=True)` feeds inferred
+   `context.yaml` boundaries into `DependencyHasher` alongside static directories, so the Merkle
+   roots cover 100% of the mapped codebase.
+3. **Total mismatch fallback (zero-trust)**: `.specweaver/topology.cache.json` missing or deleted →
+   100% stale; every node flagged.

@@ -1,124 +1,75 @@
-# Implementation Plan: Smart Scan Exclusions [SF-03: Technical Debt Refactoring]
-- **Feature ID**: 3.32b
-- **Sub-Feature**: SF-03 — Technical Debt Refactoring
-- **Design Document**: docs/roadmap/features/topic_02_sensors/C-SENS-02_design.md
-- **Design Section**: Sub-Feature Breakdown — SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/C-SENS-02_sf03_impl_plan.md
-- **Status**: COMPLETED
+# C-SENS-02 SF-03 — Technical Debt Refactoring
+
+**Status**: COMPLETED · **Feature ID**: 3.32b · **Depends on**: SF-02 ·
+Design: [C-SENS-02_design.md](C-SENS-02_design.md) §Sub-features → SF-03
 
 **FRs owned: FR-3.** `.specweaverignore` parsed with `.gitignore` semantics via `pathspec`.
 Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF03-MIG`. Proof and mutant:
 `tests/unit/workspace/ast/parsers/test_exclusions.py` — compiling the spec from an empty pattern
 list fails 6 tests.
 
+## Goal
 
-## Goal Description
-Perform structural technical debt sweeps across the repository to seamlessly integrate the new
-polyglot orchestrator boundaries created in SF-02. This involves removing all temporary hardcoded
-Python glob exclusions and integrating pure polyglot hooks into `validation`, file system tooling
-(`loom`), boundary discovery (`assurance.standards`), and graph hashing (`assurance.graph.hasher`).
+Remove the hard-coded Python glob exclusions and wire the polyglot boundaries from SF-02 into
+`validation`, the filesystem tooling (`loom`), boundary discovery (`assurance.standards`) and graph
+hashing (`assurance.graph.hasher`).
 
-## Proposed Changes
+## Changes
 
----
+Paths under `src/specweaver/`. `[x]` = done.
 
-### `specweaver.workspace.ast.parsers`
-Extends the tree-sitter abstraction layer to support polyglot AST traversal for traceability tags (`# @trace(FR-XX)` and `// @trace(FR-XX)`).
+**`specweaver.workspace.ast.parsers`** — polyglot traceability tags (`# @trace(FR-XX)` and
+`// @trace(FR-XX)`):
 
-#### [MODIFY] `interfaces.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/interfaces.py)
-- **Modifications**: 
-  - `[x]` Add `extract_traceability_tags(self, code: str) -> set[str]` to `CodeStructureInterface`.
+1. `[x]` `interfaces.py` — `extract_traceability_tags(self, code: str) -> set[str]` on
+   `CodeStructureInterface`.
+2. `[x]` `python/codestructure.py` — reads tree-sitter `comment` nodes for `@trace()`.
+3. `[x]` `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` /
+   `typescript/codestructure.py` — same, using each language's comment nodes.
 
-#### [MODIFY] `python/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/python/codestructure.py)
-- **Modifications**:
-  - `[x]` Implement `extract_traceability_tags` for Python by inspecting tree-sitter `comment` nodes for `@trace()` patterns.
+**`specweaver.workspace.context`** — `analyzers.py`:
 
-#### [MODIFY] `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` /
-`typescript/codestructure.py`
-(file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/.../codestructure.py)
-- **Modifications**:
-  - `[x]` Implement `extract_traceability_tags` using respective tree-sitter semantics for each language's comment nodes.
+4. `[x]` `extract_test_mapped_requirements(self, directory: Path) -> set[str]` on the
+   `LanguageAnalyzer` ABC; `TreeSitterAnalyzerBase` iterates the language's test file patterns
+   (`*Test.java` vs `test_*.py`) under `directory`, calls the parser's `extract_traceability_tags`,
+   returns the union.
 
----
+**`specweaver.core.loom`** — ripgrep timeout prevention and dispatcher DI:
 
-### `specweaver.workspace.context`
-Polyglot context analyzer wrappers for the parsers.
+5. `commons/filesystem/search.py`:
+   - `grep_content`, `find_by_glob`, `iter_text_files` accept `exclude_dirs: set[str] | None = None`;
+   - `_grep_ripgrep` passes `--ignore-file .specweaverignore` when the file exists;
+   - `find_by_glob` and `iter_text_files` replace `search_dir.rglob` with `os.walk` recursion that
+     drops directories matching `exclude_dirs`.
+6. `tools/filesystem/interfaces.py` and `tools/filesystem/tool.py` — `FileSystemTool.__init__` and
+   `create_filesystem_interface` accept `exclude_dirs` and pass it to the `search.py` methods.
+7. `dispatcher.py` — `create_standard_set` calls `AnalyzerFactory.get_all_analyzers()`, aggregates
+   `get_default_directory_ignores()` and `get_binary_ignore_patterns()`, and injects them into the
+   filesystem interface as `exclude_dirs` and `exclude_patterns`.
 
-#### [MODIFY] `analyzers.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/context/analyzers.py)
-- **Modifications**:
-  - `[x]` Add `extract_test_mapped_requirements(self, directory: Path) -> set[str]` to the `LanguageAnalyzer` ABC.
-  - `[x]` Implement it in `TreeSitterAnalyzerBase`. It will natively iterate over standard test file
-    patterns for its language (e.g. `*Test.java` vs `test_*.py`) from the `directory`, invoke the
-    parser's `extract_traceability_tags`, and return the unified mapping.
+**`specweaver.assurance.standards`** — `discovery.py`:
 
----
+8. Delete `_SKIP_DIRS`. `_walk_with_skips` gets the global exclusions (`get_default_directory_ignores`
+   and `get_binary_ignore_patterns`) from `AnalyzerFactory.get_all_analyzers()`, plus explicit
+   dotfile checks; files with binary-ignored extensions are filtered out.
 
-### `specweaver.core.loom`
-Physical execution adapters (`search.py` ripgrep timeout prevention and dispatcher DI).
+**`specweaver.assurance.graph`** — `hasher.py`:
 
-#### [MODIFY] `commons/filesystem/search.py` (file:///C:/development/pitbula/specweaver/src/specweaver/core/loom/commons/filesystem/search.py)
-- **Modifications**:
-  - Modify `grep_content` and `find_by_glob` and `iter_text_files` to accept `exclude_dirs: set[str] | None = None`.
-  - In `_grep_ripgrep`, pass `--ignore-file .specweaverignore` if the file exists structurally.
-  - In `find_by_glob` and `iter_text_files`, refactor `search_dir.rglob` logic into an `os.walk`-based recursion that actively drops directories matching `exclude_dirs`.
+9. `DependencyHasher._hash_directory`: replace unbounded `directory.rglob("*")` with `os.walk` (or
+   bounded pruning) using `AnalyzerFactory` exclusions and `pathspec` for `.specweaverignore`.
 
-#### [MODIFY] `tools/filesystem/interfaces.py` and `tools/filesystem/tool.py` (file:///C:/development/pitbula/specweaver/src/specweaver/core/loom/tools/filesystem/interfaces.py)
-- **Modifications**:
-  - `FileSystemTool.__init__` and `create_filesystem_interface` to accept `exclude_dirs`. They thread it implicitly down into the `search.py` methods during tool calls.
+**`specweaver.assurance.validation`** — `rules/code/c09_traceability.py`:
 
-#### [MODIFY] `dispatcher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/core/loom/dispatcher.py)
-- **Modifications**:
-  - Inside `create_standard_set`, instantiate `AnalyzerFactory.get_all_analyzers()` and aggregate
-    both `get_default_directory_ignores()` and `get_binary_ignore_patterns()` dynamically. Inject
-    these arrays exclusively into the filesystem interface payload context as `exclude_dirs` and
-    `exclude_patterns`.
-
----
-
-### `specweaver.assurance.standards`
-Discovery boundary implementation.
-
-#### [MODIFY] `discovery.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/standards/discovery.py)
-- **Modifications**:
-  - Delete `_SKIP_DIRS`.
-  - In `_walk_with_skips`, fetch the aggregated global Polyglot Exclusions
-    (`get_default_directory_ignores` and `get_binary_ignore_patterns`) dynamically via
-    `AnalyzerFactory.get_all_analyzers()`. Replace `_SKIP_DIRS` with this mathematically correct set
-    + explicit dotfile checks. Filter files by extensions not in binary ignores.
-
----
-
-### `specweaver.assurance.graph`
-Semantic topological hashing operations.
-
-#### [MODIFY] `hasher.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/graph/hasher.py)
-- **Modifications**:
-  - Replace the unbounded `directory.rglob("*")` inside `DependencyHasher._hash_directory` with
-    `os.walk` or a bounded directory-pruning operation using `AnalyzerFactory` exceptions and
-    `pathspec` for `.specweaverignore`.
-
----
-
-### `specweaver.assurance.validation`
-C09 validation Rule logic.
-
-#### [MODIFY] `rules/code/c09_traceability.py` (file:///C:/development/pitbula/specweaver/src/specweaver/assurance/validation/rules/code/c09_traceability.py)
-- **Modifications**:
-  - `[x]` Remove direct `tree_sitter_python` logic and hardcoded Python `test_*.py` globs.
-  - `[x]` Change `_find_and_parse_tests` to iterate across all instances from
-    `AnalyzerFactory.get_all_analyzers()` and accumulate
+10. `[x]` Remove direct `tree_sitter_python` logic and the hard-coded `test_*.py` globs.
+11. `[x]` `_find_and_parse_tests` iterates `AnalyzerFactory.get_all_analyzers()` and accumulates
     `mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))`.
-  - `[x]` The validation algorithm, comparisons, and rule constraints remain permanently untouched in `validation`.
+12. `[x]` The validation algorithm, comparisons and rule constraints stay unchanged in `validation`.
 
----
+## Tests
 
-## Verification Plan
-
-### Automated Coverage 
-- Executing `pytest tests/unit/workspace/context/test_analyzers.py -v` to ensure the extended AST parsing catches `@trace()` properly across all languages.
-- Executing `pytest tests/unit/assurance/validation/test_c09_traceability.py -v` to explicitly verify C09 remains blind to languages while keeping identical outputs.
-- Executing `pytest tests/unit/core/loom/commons/filesystem/test_search.py -v` to ensure the timeout preventions fire successfully on `os.walk`.
-
-### Manual Validation
-- Run `/pre-commit` to ensure code checks execute fast sequentially.
-- Perform an end-to-end sandbox run checking for architecture leaks via `tach check`.
+| Command | Proves |
+|---|---|
+| `pytest tests/unit/workspace/context/test_analyzers.py -v` | `@trace()` found in every language |
+| `pytest tests/unit/assurance/validation/test_c09_traceability.py -v` | C09 is language-blind with identical outputs |
+| `pytest tests/unit/core/loom/commons/filesystem/test_search.py -v` | the `os.walk` exclusions prevent timeouts |
+| `/pre-commit`; `tach check` on a sandbox run | no architecture leaks |

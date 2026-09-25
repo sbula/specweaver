@@ -1,4 +1,7 @@
-# Implementation Plan: Domain Realignment (SF-01)
+# C-EXEC-03 SF-01 — Domain Realignment
+
+**Status**: APPROVED · **Feature ID**: 3.26a (SF-01) · **Depends on**: — ·
+Design: [C-EXEC-03_design.md](C-EXEC-03_design.md) §Sub-features → SF-01
 
 **FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-9, FR-10.** The `src/` relocations, the
 import sweep, and the boundary config that describes them. Recorded 2026-08-17 under
@@ -8,35 +11,17 @@ import sweep, and the boundary config that describes them. Recorded 2026-08-17 u
 **FR-5's `loom` clause is struck** — there is no `loom` package; the Loom is the top-level
 `sandbox/`. See the design's findings section.
 
+## Goal
 
-- **Feature ID**: 3.26a (SF-01)
-- **Status**: APPROVED
-- **Design Doc**: `docs/roadmap/phase_3/feature_3.26a/feature_3.26a_design.md`
+Move the flat root source directories and tests into the 6 macro-domains (`workflows`, `assurance`,
+`workspace`, `interfaces`, `core`, `infrastructure`), patch all absolute imports, and move the
+`roadmap` and `design` directories under `docs/`.
 
-## Overview
-Physically migrates the flat root Source directories and Tests to the 6 explicit macro-domains
-(`workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure`) and systematically
-patches all Python absolute imports in parallel. Additionally executes the movement of the `roadmap`
-and `design` directories under `docs/`.
+## Changes
 
-## Resolved Technical Audits
-> [!NOTE]
-> **Resolution 1 (Implicit Namespaces):** We will strictly adhere to the Feature 3.20a architecture
-> and create exactly zero `__init__.py` files for the structural boundaries. We are physically
-> moving folders, but retaining implicit topologies.
->
-> **Resolution 2 (String Replace Scope):** We will aggressively execute the string replacements
-> across Python (`.py`), Markdown (`.md`), and Configuration (`.yaml`) files using global shell
-> scripting to ensure the legacy absolute paths (like `specweaver.workflows.drafting`) are
-> permanently erased physically and documented.
+1. **Source** — `mkdir` the 6 macro-domains under `src/specweaver/`, then move each module per the
+   design mapping:
 
-## Proposed Changes
-
-### Component: Source Directory Restructuring
-- Physically `mkdir` the 6 macro-domains: `workflows`, `assurance`, `workspace`, `interfaces`, `core`, `infrastructure` under `src/specweaver/`
-- Physically move the current modules into their domains according to the Design Doc mappings. 
-
-#### [MODIFY] Physical Folders
 ```bash
 # Group 1: Workflows
 mv src/specweaver/drafting src/specweaver/workflows/
@@ -67,11 +52,8 @@ mv src/specweaver/config src/specweaver/core/
 mv src/specweaver/llm src/specweaver/infrastructure/
 ```
 
-### Component: Unit & Integration Test Mirroring
-- Structure the `tests/unit/` and `tests/integration/` paths to exactly mirror the 6 macro-domains.
-- Move test scripts directly over into the matching folders.
+2. **Unit & integration tests** — `tests/unit/` and `tests/integration/` mirror the 6 macro-domains:
 
-#### [MODIFY] Test Folders
 ```bash
 # Example mapping
 mkdir -p tests/unit/workflows
@@ -80,35 +62,29 @@ mv tests/unit/flow tests/unit/core/
 # ... and so forth across unit and integration.
 ```
 
-### Component: E2E Restructuring
-- Restructure `tests/e2e/` from a flat tree into explicit business capability folders mapping to Jira-style epics/features.
+3. **E2E** — `tests/e2e/` from a flat tree into business capability folders (epics/features).
+4. **Import sweep and `context.yaml` topologies** — find-and-replace across `src/specweaver/`,
+   `tests/` and `docs/`: `.py` (imports), `.md` (references), `.yaml` (including `context.yaml`
+   `consumes`/`forbids`). Old paths become e.g. `specweaver.workflows.drafting`,
+   `specweaver.assurance.validation`.
+5. **NFR-3** — file counts before/after prove 0 logic or models lost in the `mv` operations.
+6. **Documentation** — relocate feature design documents and the roadmap:
 
-### Component: Broad String Import Patching & Context.yaml Topologies
-- Execute a global find-and-replace sweep across all `src/specweaver/`, `tests/`, and `docs/`.
-- `specweaver.workflows.drafting` becomes `specweaver.workflows.drafting`.
-- `specweaver.assurance.validation` becomes `specweaver.assurance.validation`.
-- This definitively targets `.py` files (imports), `.md` files (documentation references), and
-  `.yaml` files (including `context.yaml` topological `consumes`/`forbids` arrays) to ensure clean
-  system-wide handoffs.
-- Enforce NFR-3: Validate via file counts before/after that exactly 0 logic or models are lost during the raw `mv` operations.
-
-### Component: Documentation Refactoring
-- Relocate Feature Design Documents.
-- Relocate Roadmap.
-
-#### [MODIFY] Documentation
 ```bash
 mv docs/architecture/* docs/architecture/
 rm -r docs/proposals/design/
 mv docs/roadmap docs/roadmap
 ```
 
+## Tests
 
-## Verification Plan
+- `pytest` (all 3884 tests) — runs on `PYTHONPATH` without `ModuleNotFoundError`.
+- `git status` — file maps as expected.
+- No manual verification; the structure tests catch failures.
 
-### Automated Tests
-- Run `pytest` entirely natively. While 3884 tests exist, we will verify the code executes flawlessly inside the `PYTHONPATH` natively without `ModuleNotFoundError`.
-- Run `git status` to verify file maps.
+## Decisions (audit)
 
-### Manual Verification
-- None required. Matrix bound tests handle structural failures strictly.
+1. **Implicit namespaces**: per Feature 3.20a, zero `__init__.py` files for the structural
+   boundaries — folders move, topologies stay implicit.
+2. **Replace scope**: string replacements across Python (`.py`), Markdown (`.md`) and Configuration
+   (`.yaml`) with shell scripting, so legacy absolute paths are gone everywhere, docs included.

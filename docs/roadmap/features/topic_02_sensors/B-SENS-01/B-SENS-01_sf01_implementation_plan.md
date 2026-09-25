@@ -1,32 +1,34 @@
-# Implementation Plan: Spec-to-Code Traceability (Artifact Lineage Graph) [SF-01: Lineage Database & Flow Integration]
+# B-SENS-01 SF-01 — Lineage Database & Flow Integration
+
+**Status**: APPROVED · **Feature ID**: 3.14 · **FRs owned**: FR-1, FR-3 · **Depends on**: — ·
+Design: [B-SENS-01_design.md](B-SENS-01_design.md) §Sub-features → SF-01
 
 **FRs owned: FR-1, FR-3.** The lineage event store and the parent edge, plus the five fields
 every row carries. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`.
 Proof and mutants: `tests/unit/graph/lineage/store/test_lineage_repository.py`.
 
-
-- **Feature ID**: 3.14
-- **Sub-Feature**: SF-01 — Lineage Database & Flow Integration
-- **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf01_implementation_plan.md
-- **Status**: APPROVED
-
 ## Goal
-Implement SQLite persistence for the artifact lineage graph and propagate state context so that pipeline handlers can reliably look up parent artifact UUIDs.
 
-## Proposed Changes
+SQLite persistence for the artifact lineage graph, plus run state on the context so handlers can
+look up parent artifact UUIDs.
 
-### Configuration & Database (CB1 - Complete)
-#### [x] `src/specweaver/config/_db_lineage_mixin.py`
-- Add `LineageMixin` class with methods:
-  - `log_artifact_event(self, artifact_id: str, parent_id: str | None, run_id: str, event_type: str) -> None`
-  - `get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]`
-  - `get_children(self, parent_id: str) -> list[dict[str, Any]]`
-- Includes proper debug logging.
+## Where it plugs in
 
-#### [x] `src/specweaver/config/_schema.py`
-- Add `SCHEMA_V11` with proper table DDL and telemetry upgrade:
+- `Database._ensure_schema()` applies numbered schema versions from the `_MIGRATIONS` list; V11 slots
+  in. SQLite supports `ALTER TABLE ADD COLUMN`.
+- `llm` may not import `flow/state.py`. So `run_id` travels on `GenerationConfig` (`llm/models.py`):
+  the generation handlers in `flow/handlers.py` copy `context.run_id` into `config.run_id` before the
+  LLM call, and the `TelemetryCollector` reads it from there. Dependencies stay one-way.
+
+## Changes
+
+**Configuration & database** (CB1 — complete)
+
+1. `[x]` `src/specweaver/config/_db_lineage_mixin.py` — `LineageMixin`, with debug logging:
+   - `log_artifact_event(self, artifact_id: str, parent_id: str | None, run_id: str, event_type: str) -> None`
+   - `get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]`
+   - `get_children(self, parent_id: str) -> list[dict[str, Any]]`
+2. `[x]` `src/specweaver/config/_schema.py` — `SCHEMA_V11`:
   ```sql
   CREATE TABLE IF NOT EXISTS artifact_events (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,97 +44,55 @@ Implement SQLite persistence for the artifact lineage graph and propagate state 
   -- Add robust correlation to the LLM telemetry log so we can track the specific models and tasks (research, writing, fixing)
   ALTER TABLE llm_usage_log ADD COLUMN run_id TEXT DEFAULT '';
   ```
+3. `[x]` `src/specweaver/config/database.py` — import `LineageMixin` from `._db_lineage_mixin` and add
+   it to `Database`'s parents; alias `_SCHEMA_V11 = SCHEMA_V11`; append
+   `(11, SCHEMA_V11, "artifact_events & usage correlation")` to `_MIGRATIONS`.
 
-#### [x] `src/specweaver/config/database.py`
-- Import `LineageMixin` from `._db_lineage_mixin`.
-- Add `LineageMixin` to the `Database` class inheritance parent list.
-- Add `SCHEMA_V11` backward-compatible alias (`_SCHEMA_V11 = SCHEMA_V11`).
-- Update `_MIGRATIONS` table with `(11, SCHEMA_V11, "artifact_events & usage correlation")`.
+**Flow orchestration**
 
----
-
-### Flow Orchestration
-#### [MODIFY] `src/specweaver/flow/_base.py`
-- Modify `RunContext` to include state tracking required for AD-5 (passing UUID via `PipelineRun` StepRecords):
+4. `[MODIFY]` `src/specweaver/flow/_base.py` — `RunContext` gains the AD-5 state (UUID via
+   `PipelineRun` StepRecords):
   ```python
   run_id: str | None = None
   step_records: list[dict[str, Any]] | None = None
   ```
-
-#### [MODIFY] `src/specweaver/flow/runner.py`
-- Update `_execute_loop(self, run: PipelineRun)`:
-  - Right before invoking `handler.execute(step_def, self._context)`, attach current flow state to the context:
+5. `[MODIFY]` `src/specweaver/flow/runner.py` — in `_execute_loop(self, run: PipelineRun)`, right
+   before `handler.execute(step_def, self._context)`:
     ```python
     self._context.run_id = run.run_id
     self._context.step_records = [r.model_dump() for r in run.step_records]
     ```
-  - This ensures that downstream generation handlers (added in SF-02) can look inside `self._context.step_records` to deterministically find the step that outputted the parent `artifact_uuid`.
+   SF-02's generation handlers search `self._context.step_records` for the step that produced the
+   parent `artifact_uuid`. Records are `model_dump()` dicts, so handlers cannot mutate the runner's
+   models.
 
----
+**Telemetry**
 
-### Telemetry Sub-System Upgrade
-#### [MODIFY] `src/specweaver/llm/models.py`
-- In `GenerationConfig`, add `run_id: str = ""` field. This creates a clean bridge for passing the run identity down to the adapter without breaking architectural bounds.
+6. `[MODIFY]` `src/specweaver/llm/models.py` — `GenerationConfig.run_id: str = ""`.
+7. `[MODIFY]` `src/specweaver/llm/telemetry.py` — `UsageRecord.run_id: str = ""`;
+   `create_usage_record()` copies `config.run_id` into it.
+8. `[x]` `src/specweaver/config/_db_telemetry_mixin.py` — `log_usage` INSERT persists `run_id` when
+   present.
 
-#### [MODIFY] `src/specweaver/llm/telemetry.py`
-- In `UsageRecord`, add `run_id: str = ""` field.
-- In `create_usage_record()`, pull `run_id` directly from `config.run_id` and apply it to the `UsageRecord`.
+With `run_id` in `artifact_events` (this SF), `llm_usage_log` (telemetry) and `pipeline_runs` (state
+store), a `JOIN` shows which agents generated an artifact, including `task_type` (e.g. `research`,
+`review`, `implement`) — which covers committee generation.
 
-#### [x] `src/specweaver/config/_db_telemetry_mixin.py`
-- Update `log_usage` INSERT statement to correctly persist `run_id` if present in the record dict.
+## Tests
 
-## Research Notes
-- **DB Schema Handling**: The `Database._ensure_schema()` logic smoothly handles numerical schema
-  versioning via the `_MIGRATIONS` table list. V11 hooks straight in without disruption. SQLite's
-  `ALTER TABLE ADD COLUMN` is natively supported.
-- **Context Passing**: Passing `step_records` as a list of serialized dictionaries via
-  `model_dump()` guarantees handlers cannot accidentally mutate the runner's internal models,
-  maintaining tight encapsulation.
-- **Correlation Power**: By tracking `run_id` uniformly across `artifact_events` (this SF),
-  `llm_usage_log` (telemetry), and `pipeline_runs` (state store), we can perfectly execute the
-  `JOIN` queries needed to see exactly which agents generated the artifact, including the
-  `task_type` (e.g. `research`, `review`, `implement`), addressing committee-generation edge cases
-  flawlessly.
+1. **Migrations**: `pytest tests/unit/config/test_database.py` — schema migrates to 11; `artifact_events`
+   exists; `run_id` on telemetry.
+2. **Persistence**: `pytest tests/unit/config/test_lineage_mixin.py` — `log_artifact_event` with
+   standard rows and NULL `parent_id`.
+3. **Context**: `pytest tests/unit/flow/qa_runner.py` — handlers get a `RunContext` with a valid
+   `run_id` and `step_records`.
+4. **Telemetry**: `pytest tests/unit/llm/test_telemetry.py` — `UsageRecord` carries and persists
+   `run_id`.
 
----
+## Decisions (audit)
 
-## Consistency Check Responses (Phases 4 & 5)
-
-### 5.1 Open questions
-**Are there still any unresolved decisions or ambiguities?**
-All decisions are resolved and documented inline in the plan. SF-01 solely deals with establishing
-the database channel and providing the contextual wiring for SF-02 to actually inject UUIDs into
-code.
-
-### 5.1a Agent Handoff Risk
-**If a new agent in a new session were to continue starting only with this document:**
-A fresh agent will likely stumble on this critical question: *"How does the `TelemetryCollector`
-inside the `llm` module know what the current `run_id` is, since `llm` correctly forbids importing
-`flow/state.py`?"*
-**Mitigation:** The plan explicitly dictates adding `run_id` to `GenerationConfig` inside
-`llm/models.py`. The generation handlers inside `flow/handlers.py` will read `context.run_id` and
-assign it to `config.run_id` before calling the LLM. The `TelemetryCollector` simply extracts it
-from the `GenerationConfig`. Doing this preserves the strict one-way dependency rules established in
-the architecture documentation.
-
-### 5.2 Architecture and future compatibility
-**Does the plan respect all context.yaml dependency rules and support upcoming roadmap features?**
-- **Import Chains**: `config` does not import `flow` (no cycle). `flow/_base.py` does not import any forbidden modules.
-- **Archetypes**: `LineageMixin` represents persistence which fully belongs in `config` layer. We respect the `consumes/forbids` structure smoothly.
-- **Roadmap Compatibility**: Adding the lineage table prepares perfect foundation for Feature 3.14a (AI Root-Cause Analysis).
-
-### 5.3 Internal consistency
-**Does the plan contradict itself anywhere?**
-No contradictions found:
-- `[NEW]` and `[MODIFY]` tags strictly applied.
-- DB migration is simultaneously present in `_schema.py` and `database.py`.
-- No untestable magic.
-
----
-
-## Verification Plan
-### Automated Tests
-1. **Migrations**: `pytest tests/unit/config/test_database.py` (Assert schema migrates to 11 and table `artifact_events` exists, plus `run_id` on telemetry).
-2. **Persistence**: `pytest tests/unit/config/test_lineage_mixin.py` (Assert `log_artifact_event` handles standard rows and NULL `parent_id` cases).
-3. **Context Tracing**: `pytest tests/unit/flow/qa_runner.py` (Assert that handlers receive a `RunContext` seeded with valid `run_id` and list of `step_records`).
-4. **Telemetry Correlation**: `pytest tests/unit/llm/test_telemetry.py` (Assert `UsageRecord` supports and persists new `run_id` field).
+- All decisions resolved inline. SF-01 only builds the DB channel and wiring; SF-02 injects UUIDs.
+- Imports: `config` does not import `flow` (no cycle); `flow/_base.py` imports nothing forbidden.
+  `LineageMixin` is persistence and belongs in `config`; `consumes/forbids` respected.
+- The migration appears in both `_schema.py` and `database.py`; `[NEW]`/`[MODIFY]` tags applied.
+- The lineage table is the foundation for Feature 3.14a (AI Root-Cause Analysis).
