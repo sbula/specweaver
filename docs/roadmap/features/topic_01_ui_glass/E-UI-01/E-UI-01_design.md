@@ -1,15 +1,11 @@
-# Design: CLI Scaffold
+# E-UI-01 — CLI Scaffold
 
-- **Feature ID**: E-UI-01
-- **Phase**: 1
-- **Status**: COMPLETED
-- **Design Doc**: docs/roadmap/features/topic_01_ui_glass/E-UI-01/E-UI-01_design.md
+**Status**: COMPLETED · **Phase**: 1 · **Feature ID**: E-UI-01
 
-## Feature Overview
+## What it does
 
-Feature E-UI-01 establishes the foundational CLI Entry Point (`sw`) using Typer. It sets up the core
-routing for scaffolding projects, drafting specs, validating/reviewing specs, and generating
-implementations.
+The `sw` CLI entry point, built on Typer. Routes the core commands: scaffold a project, draft a
+spec, validate and review specs, generate an implementation, validate and review code.
 
 ## Functional Requirements
 
@@ -23,12 +19,11 @@ implementations.
 | FR-6 | Code QA Validation | Developer | Run `sw check code <file>` | Runs deterministic code validation rules. |
 | FR-7 | Code QA Review | Developer | Run `sw review code <file>` | Runs semantic code review via LLM. |
 
+**Since changed** (checked 2026-09-25): the commands are now `sw init <name> --path <dir>`,
+`sw check --level=component|feature|code <file>` and `sw review <file> [--spec <spec.md>]`.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Project Scaffold + CLI Shell | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature E-UI-01 is **COMPLETED**.
