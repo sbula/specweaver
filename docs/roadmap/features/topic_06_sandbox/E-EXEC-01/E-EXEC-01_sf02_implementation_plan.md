@@ -1,38 +1,14 @@
-# Implementation Plan: Standard Local Execution [SF-02: Language Runner Migration]
+# E-EXEC-01 SF-02 — Language Runner Migration
 
-- **Feature ID**: E-EXEC-01
-- **Sub-Feature**: SF-02 — Language Runner Migration
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
-- **Status**: APPROVED
+**Status**: APPROVED. Final commit `de9ffcd6` (2026-07-12). · **FRs owned**: FR-8 (and NFR-1: all
+4900+ existing tests pass unchanged) · **Depends on**: SF-01 · Design: [E-EXEC-01_design.md](E-EXEC-01_design.md) §Sub-features → SF-02
 
-## Scope
+## Goal
 
-Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct
-`subprocess.run()` calls to `SubprocessExecutor.execute()`. Ensure backward compatibility across all
-4900+ tests with zero public API changes.
+Move all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct `subprocess.run()`
+to `SubprocessExecutor.execute()`, with zero public API changes.
 
-**FRs**: FR-8
-**NFR-1**: All 4900+ existing tests MUST pass unchanged after migration.
-
-## HITL-Resolved Decisions
-
-| # | Decision | User Choice |
-|---|----------|-------------|
-| H-1 | Python `_run_tach_check` FileNotFoundError handling | Option C — `shutil.which("tach")` pre-check. **Extended to ALL runners** (RED-1.2): every runner method must pre-check its external tool via `shutil.which()` before calling executor. |
-| H-2 | TypeScript `self.cwd` vs `self._cwd` | Rename to `self._cwd` for consistency with all 4 other runners. Adapt all TS tests that reference `runner.cwd`. |
-| M-1 | Constructor executor parameter | Option A — optional with default `SubprocessExecutor(cwd=cwd)`. Zero breaking changes, DI available for testing. |
-| M-2 | Forbid `import subprocess` in runners | Option B — add ruff `flake8-tidy-imports` ban rule in `pyproject.toml`. |
-| M-3 | Timeout strategy | Option C — configurable per-method. Class-level `_DEFAULT_TIMEOUT = 120`. Methods like `run_tests` pass `timeout` param through. Build-heavy methods (`run_compiler`, `run_debugger` for Rust/Java/Kotlin) use `_BUILD_TIMEOUT = 300`. |
-| M-4 | Dev guide `command=` kwarg | Option A — fix the guide. Combined with `input_text` docs in Commit 3. |
-| L-1 | Duration tracking | Option A — use executor's `result.duration_seconds`. |
-| L-2 | Remove unused imports | Option A — remove `import time`, `import subprocess`. |
-| L-3 | Commit granularity | Option A — 4 commits (3 original + Commit 0 for executor extension). |
-
-## Research Notes
-
-### Call Site Inventory
+## Where it plugs in
 
 | Runner | File | `subprocess.run()` Calls | Has Timeout? | Piping? | Notes |
 |--------|------|--------------------------|-------------|---------|-------|
@@ -42,25 +18,20 @@ Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from dir
 | **Java** | `language/core/java/runner.py` | 6 (L90, L130, L179, L206, L225, L323) | ❌ missing! | ❌ | Uses file-based SARIF output (not stdout) for linting/complexity. |
 | **Kotlin** | `language/core/kotlin/runner.py` | 5 (L83, L129, L178, L205, L231) | ❌ missing! | ❌ | Nearly identical to Java. |
 
-**Total**: ~29 `subprocess.run()` call sites across 5 runners.
+~29 `subprocess.run()` call sites in total.
 
-### Test File Inventory
+| Runner | Test File | Mock Sites |
+|--------|-----------|------------|
+| **Python** | `tests/unit/sandbox/language/core/language/python/test_runner.py` | 9 |
+| **Python** | `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py` | — |
+| **TypeScript** | `tests/unit/sandbox/language/core/language/typescript/test_runner.py` | 8 |
+| **Rust** | `tests/unit/sandbox/language/core/language/rust/test_runner.py` | 5 |
+| **Java** | `tests/unit/sandbox/language/core/language/java/test_runner.py` | 9 |
+| **Kotlin** | `tests/unit/sandbox/language/core/language/kotlin/test_runner.py` | 5 |
 
-| Runner | Test File | Mock Sites | Mock Pattern |
-|--------|-----------|------------|-------------|
-| **Python** | `tests/unit/sandbox/language/core/language/python/test_runner.py` | 9 | `patch("subprocess.run")` |
-| **Python** | `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py` | — | `patch("subprocess.run")` |
-| **TypeScript** | `tests/unit/sandbox/language/core/language/typescript/test_runner.py` | 8 | `patch("subprocess.run")` |
-| **Rust** | `tests/unit/sandbox/language/core/language/rust/test_runner.py` | 5 | `patch("subprocess.run")` |
-| **Java** | `tests/unit/sandbox/language/core/language/java/test_runner.py` | 9 | `patch("subprocess.run")` |
-| **Kotlin** | `tests/unit/sandbox/language/core/language/kotlin/test_runner.py` | 5 | `patch("subprocess.run")` |
+All mock `patch("subprocess.run")` returning `MagicMock(returncode=..., stdout=..., stderr=...)`.
 
-**Mock target changes**: All `patch("subprocess.run")` → mock the `SubprocessExecutor.execute`
-method instead. The mock return value changes from
-`MagicMock(returncode=..., stdout=..., stderr=...)` to
-`SubprocessResult(exit_code=..., stdout=..., stderr=..., duration_seconds=..., timed_out=...)`.
-
-### SubprocessExecutor API (from SF-01, extended in Commit 0)
+Executor API (SF-01, plus `input_text` from Commit 0):
 
 ```python
 executor = SubprocessExecutor(
@@ -80,7 +51,32 @@ result: SubprocessResult = executor.execute(
 # result.exit_code, result.stdout, result.stderr, result.duration_seconds, result.timed_out, result.events
 ```
 
-### Key Migration Pattern
+## Decisions (HITL)
+
+| # | Decision | User Choice |
+|---|----------|-------------|
+| H-1 | Python `_run_tach_check` FileNotFoundError handling | Option C — `shutil.which("tach")` pre-check. **Extended to ALL runners** (RED-1.2): every runner method must pre-check its external tool via `shutil.which()` before calling executor. |
+| H-2 | TypeScript `self.cwd` vs `self._cwd` | Rename to `self._cwd` for consistency with all 4 other runners. Adapt all TS tests that reference `runner.cwd`. |
+| M-1 | Constructor executor parameter | Option A — optional with default `SubprocessExecutor(cwd=cwd)`. Zero breaking changes, DI available for testing. |
+| M-2 | Forbid `import subprocess` in runners | Option B — add ruff `flake8-tidy-imports` ban rule in `pyproject.toml`. |
+| M-3 | Timeout strategy | Option C — configurable per-method. Class-level `_DEFAULT_TIMEOUT = 120`. Methods like `run_tests` pass `timeout` param through. Build-heavy methods (`run_compiler`, `run_debugger` for Rust/Java/Kotlin) use `_BUILD_TIMEOUT = 300`. |
+| M-4 | Dev guide `command=` kwarg | Option A — fix the guide. Combined with `input_text` docs in Commit 3. |
+| L-1 | Duration tracking | Option A — use executor's `result.duration_seconds`. |
+| L-2 | Remove unused imports | Option A — remove `import time`, `import subprocess`. |
+| L-3 | Commit granularity | Option A — 4 commits (3 original + Commit 0 for executor extension). |
+
+Red/Blue: 2 cycles, 14 findings, converged. 1 CRITICAL (the `input_text` API gap — fixed), 3 HIGH (all
+fixed), 5 MEDIUM (4 fixed, 1 accepted), 2 LOW (fixed). 3 accepted risks:
+
+| # | Risk | Justification |
+|---|------|---------------|
+| 1 | Broad `except Exception` in Java/Kotlin runners | Pre-existing, out of scope for FR-8. Narrowed for Rust only (higher risk: multi-stage pipes). Java/Kotlin deferred to TECH debt (TECH-010 in this plan). |
+| 2 | Java/Kotlin stdout capture overhead for SARIF-based methods | Negligible (< 1ms). Consistency outweighs micro-optimization. |
+| 3 | TOCTOU gap between `shutil.which()` and executor call | Same accepted risk as SF-01. Probability essentially zero; the executor catches OSError as fallback. |
+
+## Changes
+
+### Migration pattern
 
 Before:
 ```python
@@ -94,15 +90,17 @@ result = self._executor.execute(cmd, timeout_seconds=60)
 # result.exit_code, result.stdout, result.stderr, result.duration_seconds
 ```
 
-**Critical differences:**
 - `.returncode` → `.exit_code`
 - `TimeoutExpired` exception → `result.timed_out` flag
 - `cwd=str(self._cwd)` → set at executor constructor
-- `input=data` → `input_text=data` (Commit 0 extension)
+- `input=data` → `input_text=data` (Commit 0)
 
-### Tool Pre-Check Pattern (H-1 + RED-1.2)
+Per runner: (1) constructor takes `executor: SubprocessExecutor | None = None` (default built from
+`cwd`); (2) `subprocess.run()` → `self._executor.execute()`; (3) `shutil.which()` pre-check before
+each external tool; (4) drop `import subprocess`, and `import time` where it only tracked duration;
+(5) timeouts from `_DEFAULT_TIMEOUT` / `_BUILD_TIMEOUT`.
 
-Every runner method that calls an external tool MUST pre-check:
+Tool pre-check (H-1 + RED-1.2):
 
 ```python
 if not shutil.which("tach"):
@@ -113,14 +111,12 @@ if not shutil.which("tach"):
 result = self._executor.execute(["tach", "check", "--output", "json"])
 ```
 
-Applied to:
-- Python: `tach` (in `_run_tach_check`)
-- TypeScript: `npx`, `tsc`, `node`, `tsx` (in `run_compiler`, `run_debugger`)
-- Rust: `cargo`, `cargo2junit`, `clippy-sarif` (in `run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`)
-- Java: `mvn`/`gradle` or wrapper scripts (in all methods)
-- Kotlin: `mvn`/`gradle` or wrapper scripts (in all methods)
+Applied to: Python `tach` (`_run_tach_check`); TypeScript `npx`, `tsc`, `node`, `tsx` (`run_compiler`,
+`run_debugger`); Rust `cargo`, `cargo2junit`, `clippy-sarif` (`run_tests`, `run_linter`,
+`run_complexity`, `run_compiler`, `run_debugger`); Java and Kotlin `mvn`/`gradle` or wrapper scripts
+(all methods).
 
-### Timeout Constants
+Timeouts:
 
 ```python
 class PythonQARunner(QARunnerInterface):
@@ -128,20 +124,14 @@ class PythonQARunner(QARunnerInterface):
     _BUILD_TIMEOUT: int = 300  # run_debugger
 ```
 
-For Rust/Java/Kotlin, `_BUILD_TIMEOUT = 300` is used for `run_tests`, `run_compiler`, `run_debugger` because cargo/maven/gradle builds can take minutes.
+Rust/Java/Kotlin use `_BUILD_TIMEOUT = 300` for `run_tests`, `run_compiler`, `run_debugger` — cargo,
+maven and gradle builds take minutes. `run_tests` passes the interface's `timeout` parameter through;
+other methods use the class constants.
 
-> [!NOTE]
-> The `run_tests` method already accepts a `timeout` parameter in the interface. The runner passes this through to the executor. Other methods use class constants.
+### Commit 0 — executor `input_text`
 
-## Proposed Changes
-
-### Component: SubprocessExecutor Extension (MODIFY — 3 files)
-
----
-
-#### [MODIFY] [executor.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/execution/executor.py)
-
-Add `input_text: str | None = None` parameter to `execute()` method. When provided, pass to `proc.communicate(input=input_text, timeout=...)`.
+`src/specweaver/sandbox/execution/executor.py`: add `input_text: str | None = None`; when set, pass it
+to `proc.communicate(input=input_text, timeout=...)`.
 
 ```python
 def execute(
@@ -155,123 +145,63 @@ def execute(
 ) -> SubprocessResult:
 ```
 
----
+`docs/dev_guides/subprocess_execution.md` (M-4): `command=` → `cmd=`; add an `input_text` example;
+`limits=` belongs on the constructor, not per call.
 
-#### [MODIFY] [test_executor.py](file:///c:/development/pitbula/specweaver/tests/unit/sandbox/execution/test_executor.py)
+### Runners
 
-Add 3 tests:
+**PythonQARunner** (`src/specweaver/sandbox/language/core/python/runner.py`) — 7 call sites. Remove
+`import subprocess`, `import time`; add `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`.
 
-| Test Method | Description |
-|------------|-------------|
-| `test_input_text_piped_to_stdin` | Pass input_text, verify child receives it on stdin |
-| `test_input_text_none_default` | Default None → no stdin piped |
-| `test_input_text_with_timeout` | input_text + timeout → correct behavior |
-
----
-
-#### [MODIFY] [subprocess_execution.md](file:///c:/development/pitbula/specweaver/docs/dev_guides/subprocess_execution.md)
-
-Fix M-4: `command=` → `cmd=`. Add `input_text` usage example. Fix `limits=` parameter placement (constructor-level, not per-call).
-
----
-
-### Component: Language Runners (MODIFY — 5 files)
-
-Each runner follows the same migration pattern:
-
-1. **Constructor**: Add `executor: SubprocessExecutor | None = None` parameter (default creates one from `cwd`)
-2. **Each method**: Replace `subprocess.run()` → `self._executor.execute()`
-3. **Pre-checks**: Add `shutil.which()` before calling external tools
-4. **Imports**: Remove `import subprocess`, `import time` (where only used for duration tracking)
-5. **Timeout**: Use class constants `_DEFAULT_TIMEOUT` / `_BUILD_TIMEOUT`
-
----
-
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/python/runner.py)
-
-**PythonQARunner** — 7 call sites migrated.
-
-Import changes:
-- Remove: `import subprocess`, `import time`
-- Add: `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`
-
-Constructor:
 ```python
 def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
     self._cwd = cwd
     self._executor = executor or SubprocessExecutor(cwd=cwd)
 ```
 
-Method-specific notes:
-- `run_tests`: Remove `time.monotonic()` duration tracking. Use `result.duration_seconds`. Remove `try/except TimeoutExpired` → check `result.timed_out`.
-- `run_linter`: 3 subprocess calls → 3 executor calls. Remove `contextlib.suppress(subprocess.TimeoutExpired)` → check `result.timed_out`.
-- `run_complexity`: 1 call.
-- `run_debugger`: 1 call. `result.events` replaces manual OutputEvent construction.
-- `_run_tach_check`: Add `shutil.which("tach")` pre-check. 1 call. `FileNotFoundError` branch replaced by pre-check.
+- `run_tests`: `result.duration_seconds` replaces `time.monotonic()`; `result.timed_out` replaces
+  `try/except TimeoutExpired`.
+- `run_linter`: 3 calls; `result.timed_out` replaces `contextlib.suppress(subprocess.TimeoutExpired)`.
+- `run_complexity`: 1 call. `run_debugger`: 1 call; `result.events` replaces manual OutputEvent
+  construction.
+- `_run_tach_check`: `shutil.which("tach")` pre-check replaces the `FileNotFoundError` branch; 1 call.
 
----
+**TypeScriptRunner** (`src/specweaver/sandbox/language/core/typescript/runner.py`) — 3 call sites.
+`self.cwd` → `self._cwd` (H-2). Remove `import subprocess`, `import time`; add
+`from specweaver.sandbox.execution import SubprocessExecutor`.
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/typescript/runner.py)
-
-**TypeScriptRunner** — 3 call sites.
-
-Rename: `self.cwd` → `self._cwd` (H-2 consistency).
-
-Import changes:
-- Remove: `import subprocess`, `import time`
-- Add: `from specweaver.sandbox.execution import SubprocessExecutor`
-
-Constructor:
 ```python
 def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
     self._cwd = cwd  # RENAMED from self.cwd
     self._executor = executor or SubprocessExecutor(cwd=cwd)
 ```
 
-Method-specific notes:
-- `run_compiler`: Already has `shutil.which("npx")`. Replace `FileNotFoundError` catch with pre-check returning the same error result.
-- `run_debugger`: Same pre-check pattern for `npx`/`node`/`tsx`.
-- `run_architecture_check`: 1 call. Already has timeout.
+- `run_compiler`: already has `shutil.which("npx")`; the pre-check returns the same error result the
+  `FileNotFoundError` catch did.
+- `run_debugger`: same pre-check for `npx`/`node`/`tsx`.
+- `run_architecture_check`: 1 call; already has a timeout.
 
----
+**RustRunner** (`src/specweaver/sandbox/language/core/rust/runner.py`) — 8 call sites, 2 with `input=`
+piping. Remove ALL inline `import subprocess` (L52, L131, L185, L233, L262) and the inline `import time`
+in `run_tests` (L53); add `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`.
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/rust/runner.py)
-
-**RustRunner** — 8 call sites. **Special: uses `input=` piping (2 sites).**
-
-Import changes:
-- Remove ALL inline `import subprocess` from method bodies (L52, L131, L185, L233, L262)
-- Remove inline `import time` from `run_tests` (L53)
-- Add: `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`
-
-Constructor:
 ```python
 def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
     self._cwd = cwd
     self._executor = executor or SubprocessExecutor(cwd=cwd)
 ```
 
-Method-specific notes:
-- `run_tests`: Two-stage pipe: `cargo test` → `cargo2junit`. Use
+- `run_tests`: `cargo test` → `cargo2junit`:
   `result = self._executor.execute(["cargo", "test", ...])`, then
   `junit_result = self._executor.execute(["cargo2junit"], input_text=result.stdout)`.
-- `run_linter`: Two-stage pipe: `cargo clippy` → `clippy-sarif`. Same `input_text` pattern.
-- `run_complexity`: Two-stage pipe: `cargo clippy` → `clippy-sarif`. Same pattern.
-- `run_compiler`: Single call. Add `shutil.which("cargo")` pre-check.
-- `run_debugger`: Single call. Add pre-check.
-- **Narrow `except Exception`** (RED-2.3): Replace with `except (OSError, json.JSONDecodeError, AttributeError, junitparser.JUnitXmlError)` where applicable.
+- `run_linter` and `run_complexity`: `cargo clippy` → `clippy-sarif`, same `input_text` pattern.
+- `run_compiler`: single call, `shutil.which("cargo")` pre-check. `run_debugger`: single call, pre-check.
+- RED-2.3: narrow `except Exception` to
+  `except (OSError, json.JSONDecodeError, AttributeError, junitparser.JUnitXmlError)` where applicable.
 
----
+**JavaRunner** (`src/specweaver/sandbox/language/core/java/runner.py`) — 6 call sites. Remove
+`import subprocess`; add `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`.
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/java/runner.py)
-
-**JavaRunner** — 6 call sites.
-
-Import changes:
-- Remove: `import subprocess`
-- Add: `import shutil`, `from specweaver.sandbox.execution import SubprocessExecutor`
-
-Constructor:
 ```python
 def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
     self._cwd = cwd
@@ -279,42 +209,58 @@ def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> Non
     self._executor = executor or SubprocessExecutor(cwd=cwd)
 ```
 
-Method-specific notes:
-- `run_tests`: Build tool pre-check (`mvn`/`gradle`/wrapper). Uses `_BUILD_TIMEOUT`.
-- `run_linter`/`run_complexity`: SARIF file-based output — executor call doesn't use stdout, but gains timeout + env isolation.
-- `run_architecture_check`: Has existing `TimeoutExpired` handling → replace with `result.timed_out`.
+- `run_tests`: build tool pre-check (`mvn`/`gradle`/wrapper); `_BUILD_TIMEOUT`.
+- `run_linter`/`run_complexity`: SARIF goes to a file, so stdout is unused, but the call gains timeout
+  and env isolation.
+- `run_architecture_check`: `result.timed_out` replaces the `TimeoutExpired` handling.
 
----
+**KotlinRunner** (`src/specweaver/sandbox/language/core/kotlin/runner.py`) — 5 call sites; same
+imports, constructor and pattern as Java.
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/sandbox/language/core/kotlin/runner.py)
+### Config — `pyproject.toml` (M-2)
 
-**KotlinRunner** — 5 call sites. Nearly identical to Java.
+```toml
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution instead. See docs/dev_guides/subprocess_execution.md."
+```
 
-Same import, constructor, and migration pattern as Java.
+The ban is GLOBAL, so the executor itself and tests that need raw subprocess are exempted:
+> ```toml
+> [tool.ruff.lint.per-file-ignores]
+> "src/specweaver/sandbox/execution/*.py" = ["TID251"]
+> "tests/**" = ["TID251"]
+> ```
 
----
+### Commits
 
-### Component: Test Migration (MODIFY — 7 files)
+| Commit | Files | Message |
+|---|---|---|
+| 0 | [MODIFY] `src/specweaver/sandbox/execution/executor.py`, `tests/unit/sandbox/execution/test_executor.py` | `feat(sandbox): add input_text support to SubprocessExecutor [E-EXEC-01 SF-02]` |
+| 1 | [MODIFY] `src/specweaver/sandbox/language/core/python/runner.py`, Python `test_runner.py` + `test_runner_architecture.py`; [NEW] `tests/unit/sandbox/language/core/test_runner_migration.py` (Python entries only) | `refactor(sandbox): migrate PythonQARunner to SubprocessExecutor [E-EXEC-01 SF-02]` |
+| 2 | [MODIFY] `src/specweaver/sandbox/language/core/typescript/runner.py`, `src/specweaver/sandbox/language/core/rust/runner.py`, their `test_runner.py`, `test_runner_migration.py` (add TS + Rust entries) | `refactor(sandbox): migrate TS and Rust runners to SubprocessExecutor [E-EXEC-01 SF-02]` |
+| 3 | [MODIFY] `src/specweaver/sandbox/language/core/java/runner.py`, `src/specweaver/sandbox/language/core/kotlin/runner.py`, their `test_runner.py`, `test_runner_migration.py` (add Java + Kotlin entries), `pyproject.toml` (subprocess ban rule), `docs/dev_guides/subprocess_execution.md` (fix cmd=, add input_text) | `refactor(sandbox): migrate Java and Kotlin runners, ban subprocess import [E-EXEC-01 SF-02]` |
 
----
+Per-commit checks: Commit 0 — SF-01 tests plus 3 new pass. Commit 1 — Python runner tests, full suite.
+Commit 2 — TS rename `self.cwd` → `self._cwd` verified, Rust inline imports removed, all green.
+Commit 3 — full 4900+ regression; ruff + mypy + C90 + tach clean.
 
-#### [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner.py` (9 mock sites)
-#### [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py`
-#### [MODIFY] `tests/unit/sandbox/language/core/language/typescript/test_runner.py` (8 mock sites)
-#### [MODIFY] `tests/unit/sandbox/language/core/language/rust/test_runner.py` (5 mock sites)
-#### [MODIFY] `tests/unit/sandbox/language/core/language/java/test_runner.py` (9 mock sites)
-#### [MODIFY] `tests/unit/sandbox/language/core/language/kotlin/test_runner.py` (5 mock sites)
+## Tests
 
-For ALL test files:
-- Change mock target: `patch("subprocess.run")` → `patch.object(SubprocessExecutor, "execute")`
-- Change mock return value: `MagicMock(returncode=0, stdout="...", stderr="")` → `SubprocessResult(exit_code=0, stdout="...", stderr="", duration_seconds=0.1)`
-- For TS tests: update any `runner.cwd` references → `runner._cwd`
+`tests/unit/sandbox/execution/test_executor.py` — 3 added:
 
----
+| Test Method | Description |
+|------------|-------------|
+| `test_input_text_piped_to_stdin` | Pass input_text, verify child receives it on stdin |
+| `test_input_text_none_default` | Default None → no stdin piped |
+| `test_input_text_with_timeout` | input_text + timeout → correct behavior |
 
-#### [NEW] `tests/unit/sandbox/language/core/test_runner_migration.py`
+All six runner test files above: `patch("subprocess.run")` → `patch.object(SubprocessExecutor, "execute")`;
+return value `MagicMock(returncode=0, stdout="...", stderr="")` →
+`SubprocessResult(exit_code=0, stdout="...", stderr="", duration_seconds=0.1)` (fields
+`SubprocessResult(exit_code=..., stdout=..., stderr=..., duration_seconds=..., timed_out=...)`); TS tests
+`runner.cwd` → `runner._cwd`.
 
-Central migration verification tests:
+[NEW] `tests/unit/sandbox/language/core/test_runner_migration.py`:
 
 | Test Method | Description |
 |------------|-------------|
@@ -325,91 +271,14 @@ Central migration verification tests:
 | `test_java_runner_accepts_executor` | Same as Python |
 | `test_kotlin_runner_accepts_executor` | Same as Python |
 
----
-
-### Component: Configuration (MODIFY — 1 file)
-
----
-
-#### [MODIFY] `pyproject.toml`
-
-Add ruff `flake8-tidy-imports` ban rule for `subprocess` module in language runners (M-2):
-
-```toml
-[tool.ruff.lint.flake8-tidy-imports.banned-api]
-"subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution instead. See docs/dev_guides/subprocess_execution.md."
-```
-
-> [!WARNING]
-> This ban is GLOBAL. The `SubprocessExecutor` itself and test files that need raw subprocess must be exempted via per-file-ignores:
-> ```toml
-> [tool.ruff.lint.per-file-ignores]
-> "src/specweaver/sandbox/execution/*.py" = ["TID251"]
-> "tests/**" = ["TID251"]
-> ```
-
----
-
-## Red Team / Blue Team Cycles
-
-See: [sf2_red_blue_analysis.md](file:///C:/Users/steve/.gemini/antigravity-ide/brain/abc3f44d-e757-4263-b061-0ee36932bb3a/sf2_red_blue_analysis.md)
-
-Summary: 2 cycles, 14 findings, converged. 1 CRITICAL (fixed: input_text API gap), 3 HIGH (all fixed), 5 MEDIUM (4 fixed, 1 accepted risk), 2 LOW (fixed). 3 accepted risks documented.
-
----
-
-## Commit Boundaries
-
-### Commit 0: SubprocessExecutor input_text Extension
-- **Files**:
-  - [MODIFY] `src/specweaver/sandbox/execution/executor.py`
-  - [MODIFY] `tests/unit/sandbox/execution/test_executor.py`
-- **Message**: `feat(sandbox): add input_text support to SubprocessExecutor [E-EXEC-01 SF-02]`
-- **Verification**: All SF-01 existing tests pass. 3 new tests pass.
-
-### Commit 1: Python Runner Migration
-- **Files**:
-  - [MODIFY] `src/specweaver/sandbox/language/core/python/runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/python/test_runner_architecture.py`
-  - [NEW] `tests/unit/sandbox/language/core/test_runner_migration.py` (Python entries only)
-- **Message**: `refactor(sandbox): migrate PythonQARunner to SubprocessExecutor [E-EXEC-01 SF-02]`
-- **Verification**: All Python runner tests pass. Full suite regression.
-
-### Commit 2: TypeScript + Rust Runner Migration
-- **Files**:
-  - [MODIFY] `src/specweaver/sandbox/language/core/typescript/runner.py`
-  - [MODIFY] `src/specweaver/sandbox/language/core/rust/runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/typescript/test_runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/rust/test_runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/test_runner_migration.py` (add TS + Rust entries)
-- **Message**: `refactor(sandbox): migrate TS and Rust runners to SubprocessExecutor [E-EXEC-01 SF-02]`
-- **Verification**: TS rename `self.cwd` → `self._cwd` verified. Rust inline imports removed. All tests green.
-
-### Commit 3: Java + Kotlin + Config + Docs + Final Regression
-- **Files**:
-  - [MODIFY] `src/specweaver/sandbox/language/core/java/runner.py`
-  - [MODIFY] `src/specweaver/sandbox/language/core/kotlin/runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/java/test_runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/language/kotlin/test_runner.py`
-  - [MODIFY] `tests/unit/sandbox/language/core/test_runner_migration.py` (add Java + Kotlin entries)
-  - [MODIFY] `pyproject.toml` (subprocess ban rule)
-  - [MODIFY] `docs/dev_guides/subprocess_execution.md` (fix cmd=, add input_text)
-- **Message**: `refactor(sandbox): migrate Java and Kotlin runners, ban subprocess import [E-EXEC-01 SF-02]`
-- **Verification**: Full 4900+ test suite regression. ruff + mypy + C90 + tach clean.
-
----
-
-## Verification Plan
-
-### Automated Tests (per commit)
 ```bash
 pytest tests/unit/sandbox/execution/ -v
 pytest tests/unit/sandbox/language/ -v
 pytest tests/ -x -q
 ```
 
-### Full Quality Gate (Commit 3 — final)
+Final gate (Commit 3):
+
 ```bash
 ruff check src/specweaver/sandbox/language/
 ruff check --select C90 src/specweaver/sandbox/language/
@@ -417,24 +286,15 @@ mypy src/specweaver/sandbox/language/
 tach check
 ```
 
-### Manual Verification
-- Verify no `import subprocess` remains in any runner.py (grep check)
-- Run `sw test` on a real Python project to verify end-to-end
-- Verify timeout behavior on a deliberately slow test
+Manual: no `import subprocess` left in any runner.py (grep); `sw test` on a real Python project;
+timeout behavior on a deliberately slow test.
 
----
+## As built
 
-## Accepted Risks
+Backlog raised: **TECH-010** — narrow `except Exception` in Java/Kotlin runners. **TECH-009**
+(existing) — migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`;
+since done.
 
-| # | Risk | Justification |
-|---|------|---------------|
-| 1 | Broad `except Exception` in Java/Kotlin runners | Pre-existing issue. Out of scope for FR-8. Narrowed for Rust only (higher risk due to multi-stage pipes). Java/Kotlin deferred to TECH debt. |
-| 2 | Java/Kotlin stdout capture overhead for SARIF-based methods | Negligible overhead (< 1ms). Consistency outweighs micro-optimization. |
-| 3 | TOCTOU gap between `shutil.which()` and executor call | Same accepted risk as SF-01. Probability essentially zero. Executor catches OSError as fallback. |
-
----
-
-## Backlog (generated by this plan)
-
-- **TECH-010**: Narrow `except Exception` in Java/Kotlin runners to specific exception types.
-- **TECH-009**: (existing) Migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`.
+**Since changed** (noted 2026-09-25): the ruff ban message now reads "Use SubprocessExecutor from
+specweaver.sandbox.execution.executor instead." (`pyproject.toml`). In the roadmap, TECH-010 is "MCP
+Persistent-Process Executor Migration", not the narrowing above.

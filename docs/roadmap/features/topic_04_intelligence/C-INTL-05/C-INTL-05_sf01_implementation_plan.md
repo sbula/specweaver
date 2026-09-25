@@ -1,37 +1,31 @@
-# Implementation Plan: Configurable Prompt Render Profiles [SF-01: Slot Registry & Profile Mechanism]
+# C-INTL-05 SF-01 — Slot Registry & Profile Mechanism
 
-- **Feature ID**: C-INTL-05
-- **Sub-Feature**: SF-01 — Slot Registry & Profile Mechanism
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf01_implementation_plan.md
-- **Status**: COMPLETE
+**Status**: COMPLETE (`5b2565b0`, 2026-05-12) · **FRs owned**: FR-1, FR-2, FR-3, FR-9 (anonymous
+default profile) · **Depends on**: none · Design: [C-INTL-05_design.md](C-INTL-05_design.md) §Sub-features → SF-01
 
 ## Goal
 
-Define the `PromptSlot` str Enum and `RenderProfile` frozen dataclass as domain-agnostic
-mechanism types in `infrastructure/llm/_prompt_profiles.py`. Define the 4 named profile
-constants (`FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`) as orchestration policy in
-`core/flow/handlers/_profiles.py`. Update `infrastructure/llm/context.yaml` to expose the
-new types. Ensure backward compatibility via FR-9.
+Define the `PromptSlot` str Enum and the `RenderProfile` frozen dataclass — domain-agnostic mechanism
+types — in `infrastructure/llm/_prompt_profiles.py`. Define the 4 named profiles (`FULL`, `MINIMAL`,
+`INTERACTIVE`, `ARBITER`) as orchestration policy in `core/flow/handlers/_profiles.py`. Expose the
+new types in `infrastructure/llm/context.yaml`. Define the FR-9 default that SF-02 wires in.
 
-## FRs Covered
+## Where it plugs in
 
-- **FR-1**: PromptSlot str Enum Registry
-- **FR-2**: RenderProfile frozen dataclass mechanism
-- **FR-3**: Named profile constants (policy)
-- **FR-9**: Backward compatibility (anonymous default profile)
+| Fact | Where |
+|---|---|
+| `_ContentBlock` uses 11 string `kind` values: `instructions`, `dictator-overrides`, `project_metadata`, `constitution`, `standards`, `plan`, `topology`, `file`, `mentioned`, `context`, `reminder`. Each maps 1:1 to a `PromptSlot` member. | `prompt_builder.py` |
+| The hardcoded render order the profiles must reproduce | `_prompt_render.py:73-116` |
+| Existing private-module naming the new file follows: `_prompt_constants.py`, `_prompt_render.py` | `infrastructure/llm/` |
+| `flow` already `consumes: specweaver/llm`, so `_profiles.py` → `_prompt_profiles` is legal | flow's `context.yaml` |
+| `tach.toml` enforces at `src.specweaver.infrastructure.llm` level; both new modules sit inside their own zones; import direction `flow → llm` | `tach.toml` |
+| `llm/` is a PEP-420 implicit namespace package — no `__init__.py` update | `infrastructure/llm/` |
 
-## Proposed Changes
+## Changes
 
-### Component 1: Infrastructure Mechanism Types
-
-#### [NEW] [_prompt_profiles.py](file:///c:/development/pitbula/specweaver/src/specweaver/infrastructure/llm/_prompt_profiles.py)
-
-New private module in `infrastructure/llm/`. Follows the naming convention of existing
-private modules in this package (`_prompt_constants.py`, `_prompt_render.py`).
-
-**`PromptSlot` — str Enum (AD-2)**
+1. **Mechanism types** · [NEW] `src/specweaver/infrastructure/llm/_prompt_profiles.py` — `PromptSlot`
+   (AD-2) and `RenderProfile` (AD-3). Python 3.13 (per `pyproject.toml`), so stdlib `StrEnum` (since
+   3.11; `from enum import StrEnum`) — no `str, Enum` inheritance hack.
 
 ```python
 """Prompt slot registry and render profile mechanism types.
@@ -73,14 +67,9 @@ class PromptSlot(StrEnum):
     REMINDER = "reminder"
 ```
 
-> [!NOTE]
-> `AGENT_MEMORY` is a forward-looking slot for B-INTL-09 Agent Memory Bank hydration.
-> It is not used in SF-01 but is declared here so that profile definitions can reference
-> it without requiring an enum extension later. Current `_build_base_prompt` memory
-> hydration uses `kind="context"` with `label="agent_memory"` — SF-02 will migrate this
-> to the dedicated slot.
-
-**`RenderProfile` — Frozen Dataclass (AD-3)**
+   `AGENT_MEMORY` is a forward-looking slot for B-INTL-09 Agent Memory Bank hydration, declared now
+   so profiles can reference it without a later enum extension. `_build_base_prompt` memory hydration
+   still used `kind="context"` with `label="agent_memory"`; SF-02 migrates it to the dedicated slot.
 
 ```python
 @dataclass(frozen=True)
@@ -128,16 +117,11 @@ class RenderProfile:
             )
 ```
 
-> [!CAUTION]
-> **Validation uses `ValueError`, not `assert`** — per Python best practices,
-> `assert` can be disabled with `-O`. Runtime invariant violations must be
-> hard errors.
+   Validation raises `ValueError`, not `assert` — `assert` is disabled under `-O`. The dataclass only
+   validates, so a plain `__post_init__` suffices (no `object.__setattr__` normalization).
 
----
-
-#### [MODIFY] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/infrastructure/llm/context.yaml)
-
-Add `PromptSlot` and `RenderProfile` to the `exposes` list (NFR-2 / RT-27):
+2. **Expose the types** · [MODIFY] `src/specweaver/infrastructure/llm/context.yaml` (NFR-2 / RT-27).
+   Without this, imports from `core/flow/` are an undeclared boundary crossing.
 
 ```diff
  exposes:
@@ -148,15 +132,8 @@ Add `PromptSlot` and `RenderProfile` to the `exposes` list (NFR-2 / RT-27):
 +  - RenderProfile
 ```
 
----
-
-### Component 2: Orchestration Policy Constants
-
-#### [NEW] [_profiles.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/handlers/_profiles.py)
-
-New private module in `core/flow/handlers/`. This module imports `PromptSlot` and
-`RenderProfile` from `infrastructure/llm/_prompt_profiles` — a legal dependency since
-`flow` already `consumes: specweaver/llm` in its `context.yaml`.
+3. **Policy constants** · [NEW] `src/specweaver/core/flow/handlers/_profiles.py` — imports `PromptSlot`
+   and `RenderProfile` from `infrastructure/llm/_prompt_profiles`.
 
 ```python
 """Named prompt render profile constants.
@@ -253,24 +230,13 @@ ARBITER = RenderProfile(
 Used by the ArbitrateVerdictHandler for minimal, focused arbitration."""
 ```
 
-> [!IMPORTANT]
-> **`_STANDARD_ORDER` defines the backward-compatible rendering sequence.**
-> This tuple mirrors the exact order from `_prompt_render.py:73-116`:
-> instructions → dictator-overrides → project_metadata → constitution → standards →
-> plan → topology → file → mentioned → context → agent_memory → reminder.
-> SF-02 will use this to replace the hardcoded `ordered_tags` list.
+   `_STANDARD_ORDER` is the backward-compatible sequence, mirroring `_prompt_render.py:73-116`:
+   instructions → dictator-overrides → project_metadata → constitution → standards → plan → topology
+   → file → mentioned → context → agent_memory → reminder. SF-02 uses it to replace the hardcoded
+   `ordered_tags` list.
 
----
-
-### Component 3: Backward Compatibility Shim (FR-9)
-
-This is a design-only component for SF-01. The actual implementation of the deprecation
-warning and anonymous default profile is deferred to **SF-02** when `PromptBuilder.__init__`
-is modified to accept the `profile` parameter.
-
-For SF-01, we define the `_DEFAULT_PROFILE` constant that SF-02 will use:
-
-In `_prompt_profiles.py`, add at the bottom:
+4. **FR-9 default** · bottom of `_prompt_profiles.py`. SF-01 only defines it; SF-02 wires the
+   deprecation warning and uses it when `PromptBuilder.__init__` gets no `profile`.
 
 ```python
 # ---------------------------------------------------------------------------
@@ -286,123 +252,65 @@ _DEFAULT_PROFILE = RenderProfile(
 )
 ```
 
-> [!NOTE]
-> The anonymous default has ALL slots active with the enum definition order.
-> This guarantees `PromptBuilder()` without a profile produces identical output
-> to the current behavior (NFR-4). The `order` uses enum definition order which
-> matches the current hardcoded tag sequence in `_prompt_render.py`.
+   ALL slots active, enum definition order — so `PromptBuilder()` without a profile renders exactly
+   as before (NFR-4). **`tuple(PromptSlot)` must equal `_STANDARD_ORDER`**: the `PromptSlot` member
+   order is load-bearing and must not be reordered casually. Both orderings are tested for equality.
 
-> [!WARNING]
-> `_DEFAULT_PROFILE` uses `tuple(PromptSlot)` for its order, which is the enum
-> member definition order. **This must match `_STANDARD_ORDER` exactly.** The
-> enum member order in `PromptSlot` is therefore load-bearing and must not be
-> reordered casually. Both orderings are tested for equality in the test suite.
+| File | Change | FR |
+|---|---|---|
+| `src/specweaver/infrastructure/llm/_prompt_profiles.py` | NEW — `PromptSlot`, `RenderProfile`, `_DEFAULT_PROFILE` | FR-1, FR-2, FR-9 |
+| `src/specweaver/core/flow/handlers/_profiles.py` | NEW — `FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER` | FR-3 |
+| `src/specweaver/infrastructure/llm/context.yaml` | add `PromptSlot`, `RenderProfile` to `exposes` | NFR-2 |
+| `tests/unit/infrastructure/llm/test_prompt_profiles.py` | NEW | — |
+| `tests/unit/core/flow/handlers/test_profiles.py` | NEW | — |
 
----
+Commit boundary CB-1: `feat(C-INTL-05/SF-01): add PromptSlot enum and RenderProfile dataclass`
 
-## Commit Boundaries
+## Tests
 
-### CB-1: Mechanism Types + Policy Constants + Tests
+Conventions: `pytest`, `@pytest.mark.parametrize`, class-based grouping, `tmp_path`; placement mirrors
+source (`tests/unit/infrastructure/llm/`, `tests/unit/core/flow/handlers/`).
 
-**Files created:**
-- `src/specweaver/infrastructure/llm/_prompt_profiles.py`
-- `src/specweaver/core/flow/handlers/_profiles.py`
-- `tests/unit/infrastructure/llm/test_prompt_profiles.py`
-- `tests/unit/core/flow/handlers/test_profiles.py`
-
-**Files modified:**
-- `src/specweaver/infrastructure/llm/context.yaml` (add `PromptSlot`, `RenderProfile` to `exposes`)
-
-**Commit message:**
-`feat(C-INTL-05/SF-01): add PromptSlot enum and RenderProfile dataclass`
-
----
-
-## TDD Test Matrix
-
-### Test File 1: `tests/unit/infrastructure/llm/test_prompt_profiles.py`
-
-Tests for the mechanism types (`PromptSlot`, `RenderProfile`, `_DEFAULT_PROFILE`).
+`tests/unit/infrastructure/llm/test_prompt_profiles.py` — mechanism types (`PromptSlot`,
+`RenderProfile`, `_DEFAULT_PROFILE`):
 
 | # | Test | Story | Asserts |
 |---|------|-------|---------|
 | T1 | `test_prompt_slot_is_str_enum` | `PromptSlot` members are string values | `isinstance(PromptSlot.INSTRUCTIONS, str)` and `PromptSlot.INSTRUCTIONS == "instructions"` |
-| T2 | `test_prompt_slot_all_11_base_kinds_present` | Enum covers all 11 existing `_ContentBlock.kind` values | Each of `instructions`, `dictator-overrides`, `project_metadata`, `constitution`, `standards`, `plan`, `topology`, `file`, `mentioned`, `context`, `reminder` has a corresponding `PromptSlot` member |
+| T2 | `test_prompt_slot_all_11_base_kinds_present` | Enum covers all 11 existing `_ContentBlock.kind` values | Each of the 11 kinds has a `PromptSlot` member |
 | T3 | `test_prompt_slot_agent_memory_present` | Forward-looking slot exists | `PromptSlot.AGENT_MEMORY == "agent_memory"` |
 | T4 | `test_prompt_slot_total_count` | Exactly 12 members | `len(PromptSlot) == 12` |
-| T5 | `test_render_profile_creation_valid` | Happy path: valid profile with order exactly matching active_slots | No exception raised |
-| T6 | `test_render_profile_order_mismatch_violation` | `order` contains slot NOT in `active_slots` OR misses active slots | Raises `ValueError` with descriptive message including `active but not ordered` or `ordered but not active` |
+| T5 | `test_render_profile_creation_valid` | Valid profile, order exactly matching active_slots | No exception raised |
+| T6 | `test_render_profile_order_mismatch_violation` | `order` contains a slot NOT in `active_slots` OR misses active slots | Raises `ValueError` with `active but not ordered` or `ordered but not active` |
 | T7 | `test_render_profile_duplicate_order_violation` | `order` contains duplicate slots | Raises `ValueError` |
-| T8 | `test_render_profile_frozen` | Profile attributes are immutable | `FrozenInstanceError` on attribute assignment |
-| T9 | `test_render_profile_equality_by_value` | Two profiles with same fields are equal | `profile_a == profile_b` |
+| T8 | `test_render_profile_frozen` | Attributes are immutable | `FrozenInstanceError` on attribute assignment |
+| T9 | `test_render_profile_equality_by_value` | Same fields → equal | `profile_a == profile_b` |
 | T10 | `test_render_profile_empty_active_slots` | Empty active_slots + empty order is valid | No exception raised |
-| T11 | `test_render_profile_name_in_repr` | Name appears in repr for debugging | `"test_profile" in repr(profile)` |
+| T11 | `test_render_profile_name_in_repr` | Name in repr for debugging | `"test_profile" in repr(profile)` |
 | T12 | `test_default_profile_all_slots_active` | `_DEFAULT_PROFILE` has all 12 slots active | `_DEFAULT_PROFILE.active_slots == frozenset(PromptSlot)` |
-| T13 | `test_default_profile_order_matches_standard` | `_DEFAULT_PROFILE.order` matches the enum definition order | `_DEFAULT_PROFILE.order == tuple(PromptSlot)` |
-| T14 | `test_prompt_slot_values_unique` | No two enum members share the same string value | `len(set(s.value for s in PromptSlot)) == len(PromptSlot)` |
+| T13 | `test_default_profile_order_matches_standard` | `_DEFAULT_PROFILE.order` is the enum definition order | `_DEFAULT_PROFILE.order == tuple(PromptSlot)` |
+| T14 | `test_prompt_slot_values_unique` | No two members share a value | `len(set(s.value for s in PromptSlot)) == len(PromptSlot)` |
 | T15 | `test_render_profile_single_slot` | Profile with exactly 1 slot is valid | `RenderProfile(name="single", active_slots=frozenset({PromptSlot.INSTRUCTIONS}), order=(PromptSlot.INSTRUCTIONS,))` — no exception |
 
-### Test File 2: `tests/unit/core/flow/handlers/test_profiles.py`
-
-Tests for the policy constants (`FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`).
+`tests/unit/core/flow/handlers/test_profiles.py` — policy constants:
 
 | # | Test | Story | Asserts |
 |---|------|-------|---------|
 | P1 | `test_full_profile_all_slots_active` | FULL includes every slot | `FULL.active_slots == frozenset(PromptSlot)` |
-| P2 | `test_full_profile_order_is_standard` | FULL ordering matches the standard sequence | `FULL.order == _STANDARD_ORDER` |
+| P2 | `test_full_profile_order_is_standard` | FULL order is the standard sequence | `FULL.order == _STANDARD_ORDER` |
 | P3 | `test_minimal_profile_exact_slots` | MINIMAL has exactly 3 slots | `MINIMAL.active_slots == {INSTRUCTIONS, METADATA, TOPOLOGY}` |
 | P4 | `test_minimal_profile_order` | MINIMAL order matches its active_slots | All order slots are in active_slots |
 | P5 | `test_interactive_excludes_constitution_standards` | INTERACTIVE has all slots EXCEPT CONSTITUTION and STANDARDS | `PromptSlot.CONSTITUTION not in INTERACTIVE.active_slots` and `PromptSlot.STANDARDS not in INTERACTIVE.active_slots` |
-| P6 | `test_interactive_includes_agent_memory` | INTERACTIVE includes AGENT_MEMORY (RT-28 fix) | `PromptSlot.AGENT_MEMORY in INTERACTIVE.active_slots` |
+| P6 | `test_interactive_includes_agent_memory` | INTERACTIVE includes AGENT_MEMORY (RT-28) | `PromptSlot.AGENT_MEMORY in INTERACTIVE.active_slots` |
 | P7 | `test_interactive_slot_count` | INTERACTIVE has exactly 10 slots (12 - 2) | `len(INTERACTIVE.active_slots) == 10` |
 | P8 | `test_arbiter_exact_slots` | ARBITER has exactly 2 slots | `ARBITER.active_slots == {INSTRUCTIONS, CONTEXT}` |
-| P9 | `test_all_profiles_pass_validation` | All 4 profiles satisfy the order == active_slots invariant | No `ValueError` on construction |
+| P9 | `test_all_profiles_pass_validation` | All 4 profiles satisfy order == active_slots | No `ValueError` on construction |
 | P10 | `test_profiles_are_distinct` | No two profiles are equal | Pairwise inequality |
-| P11 | `test_profiles_are_frozen` | All profiles reject attribute mutation | `FrozenInstanceError` on assignment |
+| P11 | `test_profiles_are_frozen` | All profiles reject mutation | `FrozenInstanceError` on assignment |
 | P12 | `test_standard_order_matches_enum_definition` | `_STANDARD_ORDER` matches `tuple(PromptSlot)` | Proves equality to `_DEFAULT_PROFILE` via transitivity without cross-module private imports |
 | P13 | `test_full_profile_name` | Profile names are correct for logging | `FULL.name == "FULL"` |
 
----
-
-## Research Notes
-
-### Phase 0 Synthesis
-
-1. **`StrEnum` (Python 3.11+)**: Python 3.13 is used (confirmed in `pyproject.toml`).
-   `StrEnum` is stdlib since 3.11 — no need for `str, Enum` inheritance hack.
-   Import: `from enum import StrEnum`.
-
-2. **Frozen dataclass `__post_init__`**: Use `ValueError` (not `assert`) for validation.
-   Use `object.__setattr__` if normalization is needed. Our `RenderProfile` only validates
-   (no normalization), so standard `__post_init__` is sufficient.
-
-3. **Existing `kind` values**: The current `_ContentBlock` uses 11 string values for `kind`:
-   `instructions`, `dictator-overrides`, `project_metadata`, `constitution`, `standards`,
-   `plan`, `topology`, `file`, `mentioned`, `context`, `reminder`. Each maps 1:1 to a
-   `PromptSlot` member.
-
-4. **`context.yaml` exports**: `infrastructure/llm/context.yaml` must add `PromptSlot`
-   and `RenderProfile` to `exposes`. Without this, imports from `core/flow/` would be
-   an undeclared boundary crossing (RT-27).
-
-5. **No `__init__.py`**: The `llm/` module uses PEP-420 implicit namespace packaging.
-   The new `_prompt_profiles.py` is consumed directly by path — no `__init__.py` updates.
-
-6. **`tach.toml`**: Boundary enforcement operates at `src.specweaver.infrastructure.llm`
-   level. Both `_prompt_profiles.py` (infra) and `_profiles.py` (flow/handlers) are within
-   their respective boundary zones. The import direction is: `flow → llm` (legal, declared
-   in flow's `context.yaml` `consumes: specweaver/llm`).
-
-7. **Test patterns**: Existing tests use `pytest` with `@pytest.mark.parametrize`, class-based
-   grouping, and `tmp_path` fixtures. New tests follow the same conventions. Test file
-   placement mirrors source structure: `tests/unit/infrastructure/llm/` and
-   `tests/unit/core/flow/handlers/`.
-
----
-
-## Verification Plan
-
-### Automated Tests
+Verification:
 
 ```bash
 # Run SF-01 unit tests
@@ -424,6 +332,9 @@ ruff check src/specweaver/infrastructure/llm/_prompt_profiles.py
 ruff check src/specweaver/core/flow/handlers/_profiles.py
 ```
 
-### Manual Verification
-- Confirm `tach check` passes (no new boundary violations introduced)
-- Confirm all existing tests still pass (zero regressions from SF-01)
+`tach check` passes (no new boundary violations); all existing tests pass (zero regressions).
+
+## As built
+
+**Since moved** (noted 2026-09-25): `_prompt_profiles.py` is now a backward-compatibility facade over
+`infrastructure/llm/prompt/profiles.py` (`0cd1ed2f`). Line refs above are as of the plan's date.

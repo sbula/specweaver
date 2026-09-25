@@ -1,27 +1,29 @@
-# Design: Standard Local Execution
+# E-EXEC-01 — Standard Local Execution
 
-- **Feature ID**: E-EXEC-01
-- **Phase**: Design
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
+**Status**: APPROVED. **COMPLETE** (2026-07-12) — SF-01 and SF-02 implemented, tested, reviewed
+(Red/Blue) and committed. Regression at close: Unit 4482 / Integration 424 / E2e 139 passed. ·
+**Feature ID**: E-EXEC-01
 
-## Feature Overview
+| | |
+|---|---|
+| Used by | US-9 (Zero-Trust Sandbox, foundational prerequisite) · `C-EXEC-02` (Native CLI Action Nodes — `action: bash`) · `B-EXEC-01` (Ephemeral Podman Sub-Containers — the swap point) |
+| Follow-up | **TECH-009** — `sandbox/git/core/executor.py` and `sandbox/filesystem/core/search.py` onto `SubprocessExecutor` (out of scope here; since done) |
+| Superseded by (planned) | `B-EXEC-04` — cgroups v2 `pids.max` should **replace** the FR-10 process ceiling |
 
-Feature E-EXEC-01 introduces a **unified, standardized subprocess execution layer**
-(`SubprocessExecutor`) into the `specweaver.sandbox` bounded context. It solves the critical problem
-that each of the 5 language runners (Python, TypeScript, Rust, Java, Kotlin) independently
-reimplements raw `subprocess.run()` calls with inconsistent timeout handling, signal propagation,
-environment isolation, and output capture patterns. By extracting a single, battle-tested executor
-that enforces uniform resource limits, structured output capture, DAP-compatible event streaming,
-and security boundaries, all language runners gain hardened execution semantics automatically. This
-is the foundational prerequisite for US-9 (Zero-Trust Sandbox) and directly enables `C-EXEC-02`
-(Native CLI Action Nodes) and `B-EXEC-01` (Ephemeral Podman Sub-Containers).
+## What it does
 
-## Research Findings
+One subprocess layer, `SubprocessExecutor`, in the `specweaver.sandbox` bounded context. All 5
+language runners (Python, TypeScript, Rust, Java, Kotlin) delegate to it and get the same timeout
+enforcement, resource limits, environment isolation, path validation, structured output with
+DAP-compatible events, and telemetry. It moves SpecWeaver from "raw subprocess" to "controlled
+subprocess" on the defense-in-depth ladder (MicroVMs > gVisor > Standard Containers > Raw subprocess).
+Other industry practice (2025-2026; no `ORIGINS.md` blueprint): every execution disposable (the
+`git worktree` isolation of D-EXEC-02), and stdout/stderr captured as structured events.
 
-### Codebase Patterns
+## Why
 
-**Existing subprocess.run() call sites in `sandbox/`:**
+Each runner called `subprocess.run()` itself, with its own timeout, capture, encoding and error
+handling:
 
 | File | Methods | Lines | Timeout? | Resource Limits? | Output Structured? |
 |------|---------|-------|----------|------------------|--------------------|
@@ -33,59 +35,65 @@ is the foundational prerequisite for US-9 (Zero-Trust Sandbox) and directly enab
 | `git/core/executor.py` | `_run_git()` | ~200 | ❌ | ❌ | Text |
 | `filesystem/core/search.py` | `_grep_search()` | ~60 | ❌ | ❌ | Text |
 
-**Key observations:**
-1. **DRY Violation**: 7 files independently call `subprocess.run()`. Each reimplements timeout, capture, text encoding, and error handling differently.
-2. **Inconsistent timeouts**: Python uses per-method timeout values (120s for tests, 300s for
-   debugger, 60s for linting). Rust/Java/Kotlin have **no timeout at all** — a hanging `cargo test`
-   or `mvn test` will block the pipeline indefinitely.
-3. **No resource limits**: None of the runners enforce CPU/memory/process-count limits. A fork bomb in LLM-generated test code can crash the host.
-4. **No execution telemetry**: Start/stop times, peak memory, exit signals are not systematically captured.
-5. **Path traversal**: Only `QARunnerAtom._intent_run_tests` checks path traversal (`is_relative_to`). The individual runners blindly execute whatever target is passed.
+- **7 files** duplicated subprocess handling (~400 lines).
+- **Timeouts**: Python used per-method values (120s tests, 300s debugger, 60s linting); Rust/Java/Kotlin
+  had **none** — a hanging `cargo test` or `mvn test` blocked the pipeline indefinitely.
+- **No CPU/memory/process-count limits**: a fork bomb in LLM-generated test code could crash the host.
+- **No telemetry**: Start/stop times, peak memory, exit signals were not captured.
+- **Path traversal**: only `QARunnerAtom._intent_run_tests` checked (`is_relative_to`); runners ran
+  whatever target they got. The check moves into the executor, where nothing can bypass it.
 
-**What can be reused:**
-- `QARunnerInterface` ABC (6 methods) — stable, well-tested with 4900+ tests
-- `QARunnerAtom` intent dispatch pattern — clean, proven
-- `BaseTool`/`ToolRegistry` from TECH-002 — solid
-- The structured result types (`TestRunResult`, `LintRunResult`, etc.) in `commons/qa.py`
-- The DAP `OutputEvent` pattern already in `run_debugger` methods
+Reused as is: the `QARunnerInterface` ABC (6 methods, covered by 4900+ tests), the `QARunnerAtom` intent
+dispatch, `BaseTool`/`ToolRegistry` from TECH-002, the result types (`TestRunResult`, `LintRunResult`,
+etc.) in `commons/qa.py`, the DAP `OutputEvent` pattern from `run_debugger`.
 
-**What should be refactored to benefit multiple features:**
-1. **Extract `SubprocessExecutor`**: A centralized subprocess wrapper in `sandbox/` that all
-   language runners delegate to. This instantly provides uniform timeout, resource limits, signal
-   handling, and telemetry to ALL languages.
-2. **Centralize path validation**: Move the `is_relative_to` check from `QARunnerAtom` into `SubprocessExecutor`, making it impossible to bypass for any subprocess.
-3. **Unify timeout configuration**: Replace hardcoded per-method timeouts with a DAL-aware configuration structure (e.g., DAL-E = 300s max, DAL-B = 60s max).
+Benefit per consumer: Rust/Java/Kotlin QARunners (D-VAL-03) gain timeouts and resource limits — a
+critical fix; the Git Worktree Bouncer (D-EXEC-02) could delegate its custom handling in executor.py
+for consistency; C-EXEC-02 uses the executor directly for `bash` from YAML; B-EXEC-01 swaps the
+subprocess target to a container at this one point.
 
-**Existing features that profit from refactoring:**
-| Feature | Current Issue | Benefit from E-EXEC-01 |
-|---------|---------------|------------------------|
-| Rust QARunner (D-VAL-03) | No timeouts, no resource limits | Auto-gains both via executor |
-| Java QARunner (D-VAL-03) | No timeouts, no resource limits | Auto-gains both via executor |
-| Kotlin QARunner (D-VAL-03) | No timeouts, no resource limits | Auto-gains both via executor |
-| Git Worktree Bouncer (D-EXEC-02) | Custom subprocess handling in executor.py | Could delegate for consistency |
-| C-EXEC-02 Native CLI Nodes | Needs safe `bash` execution from YAML | Directly uses SubprocessExecutor |
-| B-EXEC-01 Podman Sub-Containers | Needs to swap subprocess target to container | SubprocessExecutor swap point |
+## Architecture
 
-### External Tools
+```mermaid
+graph LR
+    R["5 language runners<br/>Python · TS · Rust · Java · Kotlin"] -->|"self._executor.execute(cmd)"| E["SubprocessExecutor<br/>sandbox/execution/executor.py"]
+    E --> V["validate cwd<br/>stay inside boundary"]
+    E --> ENV["build env<br/>allowlist, strip credentials"]
+    E --> L["PlatformLimiter<br/>chosen by sys.platform"]
+    L --> U["UnixLimiter<br/>setrlimit via preexec_fn"]
+    L --> W["WindowsLimiter<br/>Job Objects via ctypes"]
+    L --> N["NoOpLimiter<br/>warn only"]
+    E --> P["Popen + communicate(timeout)<br/>SIGTERM, 2s, SIGKILL"]
+    P --> S["SubprocessResult<br/>+ OutputEvent list"]
+```
 
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| Python `subprocess` | stdlib 3.11+ | `subprocess.run()`, `Popen`, `TimeoutExpired` | Python docs |
-| Python `resource` | stdlib (Unix) | `setrlimit(RLIMIT_AS)`, `setrlimit(RLIMIT_NPROC)` | Python docs |
-| Python `psutil` | 6.x+ (optional) | `Process.memory_info()`, `Process.cpu_times()` | PyPI |
-| Windows Job Objects | Win32 API | `win32job` via `pywin32` or ctypes | MSDN |
+| Piece | Lives in |
+|---|---|
+| `SubprocessExecutor`, `SubprocessResult`, `ResourceLimits` | `sandbox/execution/executor.py` (the two dataclasses since moved to `models.py`) |
+| `PlatformLimiter` strategy | `sandbox/execution/platform_limiter.py` |
+| Runner migration | `sandbox/language/core/<lang>/runner.py` |
 
-> [!NOTE]
-> Resource limiting via `resource` module is Unix-only. For Windows, we use a best-effort `psutil`
-> poll-and-kill pattern (already standard practice in CI). We MUST NOT add `pywin32` as a hard
-> dependency — optional graceful degradation.
+Dependencies — stdlib only (Python 3.11+): `subprocess` (`subprocess.run()`, `Popen`, `TimeoutExpired`;
+already in use), `resource` (`setrlimit(RLIMIT_AS)`, `setrlimit(RLIMIT_NPROC)` in `preexec_fn`,
+Unix/macOS), `ctypes` (`ctypes.windll`, Win32 Job Objects — no `pywin32` via `win32job`; it MUST NOT
+become a hard dependency), `sys` (`sys.platform` picks the limiter). `psutil` 6.x+
+(`Process.memory_info()`, `Process.cpu_times()`) was considered for a Windows poll-and-kill fallback;
+Job Objects via `ctypes` replaced it — no third-party package.
 
-### Blueprint References
+## Decisions
 
-No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) strongly recommends:
-- **Defense in Depth**: MicroVMs > gVisor > Standard Containers > Raw subprocess (we are at "raw subprocess" — this feature moves us to "controlled subprocess")
-- **Ephemeral execution**: Every execution should be disposable (achieved by `git worktree` isolation, D-EXEC-02)
-- **Structured capture**: Always capture stdout/stderr as structured events, not raw strings
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Place `SubprocessExecutor` in `sandbox/execution/executor.py` (new module) | Subprocess execution is an L4 Side-Effect. It belongs inside the sandbox boundary, alongside git/filesystem executors. A new `execution/` subdomain keeps it distinct from language-specific runners. | No |
+| AD-2 | All language runners import `SubprocessExecutor` — no inheritance change | Runners remain concrete `QARunnerInterface` subclasses and replace internal `subprocess.run()` calls with `self._executor.execute()`. A pure DRY refactor with no public API change. | No |
+| AD-3 | Return `SubprocessResult` dataclass, not raw `CompletedProcess` | Domain-specific result that adds telemetry (duration, peak_memory) and strips OS-specific fields. Language parsers convert it to `TestRunResult`/`LintRunResult`. | No |
+| AD-4 | Environment stripping via allowlist | Start from a **clean base env** and add known-safe variables (PATH, HOME, LANG, PYTHONPATH, NODE_PATH, CARGO_HOME, etc.). More secure than blocklisting. | No |
+| AD-5 | Timeout uses SIGTERM→SIGKILL escalation (2s grace) | On timeout: SIGTERM, wait 2s, then SIGKILL — lets processes clean up temp files. On Windows 11: `proc.terminate()` (TerminateProcess — immediate, no grace period; HITL-resolved H-1). | No |
+| AD-6 | Cross-platform resource limits via `PlatformLimiter` strategy | `sys.platform` selects: **Unix/macOS** → `resource.setrlimit()` via `preexec_fn`; **Windows** → Win32 Job Objects via `ctypes.windll.kernel32` (AssignProcessToJobObject + SetInformationJobObject). All stdlib. B-EXEC-01 (Podman) adds hard container-level limits as another layer. | No |
+| AD-7 | `context.yaml` for new `execution/` module | New module gets its own context.yaml with `archetype: executor`, `consumes: [sandbox/security]`, `forbids: [sandbox/qa_runner/*, core/flow/*]`. Prevents circular dependency. | No |
+
+AD-7 as built: `archetype: adapter` with explicit `forbids` of `sandbox.qa_runner.*` and
+`core.flow.*` (SF-01 H-4); it consumes `commons.qa`.
 
 ## Functional Requirements
 
@@ -102,43 +110,34 @@ No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) st
 | FR-9 | Execution telemetry | SubprocessExecutor | Emits structured log entries (start, stop, exit_code, duration, command) at DEBUG level | Auditable execution trail for all subprocess calls |
 | FR-10 | Cross-platform resource limit enforcement | SubprocessExecutor | Detects OS at runtime. Unix/macOS: `resource.setrlimit()` via `preexec_fn`. Windows: Win32 Job Objects via `ctypes` (no third-party deps). All platforms: stdlib-only, zero user configuration | Memory/process-count bombs are caught and killed on all platforms |
 
-### FR-10's process ceiling, re-derived from measurement (2026-08-17)
+FR-2's per-DAL defaults: a DAL-aware structure replaces hardcoded per-method timeouts (e.g., DAL-E =
+300s max, DAL-B = 60s max).
 
-FR-10 holds — bombs are still caught — but the number it caps at changed, and the reason is worth
-keeping because two plausible fixes were tried and measured to fail before the third worked.
+### FR-10's process ceiling (2026-08-17)
 
-**The defect.** `RLIMIT_NPROC` is per-real-**UID**. The ceiling is therefore spent by everything the
-user runs, not only by the sandbox, and it is fixed for the child's whole lifetime the moment it
-spawns. `baseline + budget` — the ceiling `TECH-029` introduced — asks a single sample to predict the
-machine's *future* peak.
+**Rule.** `RLIMIT_NPROC` headroom = the configured budget **or a fixed share (1%) of the system's own
+hard `RLIMIT_NPROC`, whichever is larger**, clamped to that hard limit. The system limit is the only
+scale on the host that is not a guess — what this machine already lets one user reach. Ambient load
+sits far below it; a fork bomb is unbounded and crosses it in milliseconds, so FR-10's outcome holds.
 
-**The evidence.** Sampling this repo's own suite at `-n auto` while it ran: the UID's task count swung
-between **313 and 960** in one run, p50 419, p95 484 — a 647-task spread against a 128-task budget, and
-a ceiling of roughly 453. Sandboxed bash steps died on their own `fork` with `Resource temporarily
-unavailable`, exit 254, roughly one full run in six, and the failure was reported against the innocent
-script. Turning the cap off entirely: **0 failures in 12 runs.**
+**Replaced:** `baseline + budget` (from `TECH-029`). `RLIMIT_NPROC` is per-real-**UID** — spent by
+everything the user runs — and fixed for the child's lifetime at spawn, so one sample had to predict
+the machine's future peak. On this repo's suite at `-n auto` the UID's task count swung **313 to 960**
+(p50 419, p95 484; a 647-task spread against a 128-task budget, ceiling ~453). Sandboxed bash steps
+died on their own `fork` with `Resource temporarily unavailable`, exit 254, about one run in six,
+blamed on the innocent script. A high-water mark, and high-water mark plus observed spread, were both
+measured and still failed: a child spawned before the peak carries the lower ceiling, so any
+sampling-derived ceiling loses the race by construction. Cap off: **0 failures in 12 runs**. New rule:
+**0 failures in 12 runs**, cap still enforced (3538 against a 325-task baseline, where the old ceiling
+was 453).
 
-**Two fixes that did not work, both measured rather than reasoned about.** A process-lifetime
-high-water mark: still failed, because a child spawned before the peak arrives carries the lower
-ceiling. High-water mark plus observed spread: still failed, for the same reason — early children have
-seen no spread. Any ceiling derived from sampling loses the race by construction.
+**Limit.** A looser bound, and not a per-sandbox quota — a per-UID limit cannot be one. The
+kernel-enforced per-subtree bound is cgroups v2 `pids.max` (`B-EXEC-04`), which should **replace** this,
+not layer on it.
 
-**What shipped.** The headroom is the configured budget **or a fixed share (1%) of the system's own
-hard `RLIMIT_NPROC`, whichever is larger**, clamped to that hard limit. The system's limit is the only
-scale on the host that is not a guess: it is what this machine has already declared it will let one
-user reach. Ambient load lives far below it, so the ceiling stops being spent by unrelated work; a fork
-bomb is unbounded and crosses it in milliseconds, so the FR's outcome is unchanged. Measured: **0
-failures in 12 runs**, cap still enforced (3538 against a 325-task baseline, where the old ceiling was
-453).
-
-**This is a looser bound, and it is not a per-sandbox quota.** It never was one — a per-UID limit
-cannot be. The kernel-enforced per-subtree bound is cgroups v2 `pids.max`, which `B-EXEC-04` owns and
-which should **replace** this rather than layer on top of it.
-
-**One reporting defect fixed alongside it.** `BashActionAtom` put only the exit code in its failure
-message — stderr went to `exports`, which nothing surfaces — so an environmental death read as an
-ordinary script failure. The message now carries the first line of stderr, and it named the cause on
-the first reproduction after eight runs of guessing without it.
+**Reporting.** `BashActionAtom`'s failure message carries the first line of stderr (before: only the
+exit code, with stderr in `exports`, which nothing surfaces — an environmental death read as a script
+failure).
 
 ## Non-Functional Requirements
 
@@ -154,93 +153,25 @@ the first reproduction after eight runs of guessing without it.
 | NFR-8 | Path traversal | MUST validate execution targets before spawning any process |
 | NFR-9 | Credential leakage prevention | MUST strip known LLM API key env vars from child environment |
 
-## External Dependencies
+## Risks
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| Python stdlib `subprocess` | 3.11 | `subprocess.run()`, `Popen`, `TimeoutExpired` | ✅ | Already in use |
-| Python stdlib `resource` | 3.11 | `setrlimit` (Unix/macOS only) | ✅ | Used in `preexec_fn` on Unix/macOS |
-| Python stdlib `ctypes` | 3.11 | `ctypes.windll` (Windows only) | ✅ | Used to create Win32 Job Objects for Windows resource limits |
-| Python stdlib `sys` | 3.11 | `sys.platform` | ✅ | OS detection for `PlatformLimiter` strategy selection |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Place `SubprocessExecutor` in `sandbox/execution/executor.py` (new module) | Subprocess execution is an L4 Side-Effect. It belongs inside the sandbox boundary, alongside git/filesystem executors. Using a new `execution/` subdomain keeps it distinct from language-specific runners. | No |
-| AD-2 | All language runners import `SubprocessExecutor` — no inheritance change | Runners remain concrete `QARunnerInterface` subclasses. They simply replace internal `subprocess.run()` calls with `self._executor.execute()`. This is a pure DRY refactor with no public API change. | No |
-| AD-3 | Return `SubprocessResult` dataclass, not raw `CompletedProcess` | The executor returns a domain-specific result type that adds telemetry (duration, peak_memory) and strips OS-specific fields. Language parsers then convert this to `TestRunResult`/`LintRunResult`. | No |
-| AD-4 | Environment stripping via allowlist | Rather than trying to blocklist specific dangerous env vars, the executor starts from a **clean base env** and selectively adds known-safe variables (PATH, HOME, LANG, PYTHONPATH, NODE_PATH, CARGO_HOME, etc.). This is more secure than blocklisting. | No |
-| AD-5 | Timeout uses SIGTERM→SIGKILL escalation (2s grace) | On timeout: send SIGTERM, wait 2s, then SIGKILL. This gives processes a chance to clean up temp files. On Windows 11: `proc.terminate()` (TerminateProcess — immediate, no grace period; HITL-resolved H-1). | No |
-| AD-6 | Cross-platform resource limits via `PlatformLimiter` strategy | The executor detects the OS at runtime via `sys.platform` and selects the appropriate limiter: **Unix/macOS** → `resource.setrlimit()` via `preexec_fn`; **Windows** → Win32 Job Objects via `ctypes.windll.kernel32` (AssignProcessToJobObject + SetInformationJobObject). All stdlib, zero third-party deps. A future B-EXEC-01 (Podman) will provide hard container-level limits as an additional layer. | No |
-| AD-7 | `context.yaml` for new `execution/` module | New module gets its own context.yaml with `archetype: executor`, `consumes: [sandbox/security]`, `forbids: [sandbox/qa_runner/*, core/flow/*]`. Prevents circular dependency. | No |
-
-## ROI Analysis
-
-### Investment Cost
-| Item | Effort | Risk |
-|------|--------|------|
-| SubprocessExecutor core module | ~200 lines | Low (well-understood domain) |
-| Migrate Python runner | ~50 lines changed | Low (best understood runner) |
-| Migrate TypeScript runner | ~30 lines changed | Low |
-| Migrate Rust/Java/Kotlin runners | ~30 lines each | Low |
-| Unit tests for SubprocessExecutor | ~200 lines | Low |
-| Integration tests | ~100 lines | Medium (real subprocess calls) |
-| **Total** | **~700 lines new + ~200 lines changed** | **Low overall** |
-
-### Returns
-| Beneficiary | Benefit | Magnitude |
-|-------------|---------|-----------|
-| All 5 language runners | Gain timeouts, resource limits, env isolation | **Critical fix** for Rust/Java/Kotlin |
-| C-EXEC-02 (Native CLI Nodes) | Directly uses SubprocessExecutor for `action: bash` steps | **Unblocks next feature** |
-| B-EXEC-01 (Podman) | SubprocessExecutor becomes the swap point for container execution | **Architecture enabler** |
-| Security posture | API key stripping, path traversal, resource limits | **Immediate hardening** |
-| Pipeline reliability | No more indefinite hangs from untimeout-ed Rust/Java builds | **Production stability** |
-| Codebase quality | ~400 lines of duplicated subprocess code eliminated | **DRY improvement** |
-
-### Risk Assessment
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
 | Subtle behavior change in Python runner migration | Low | Medium | Full 4900+ test suite regression |
 | Platform-specific resource limiter edge cases | Low | Low | PlatformLimiter tested on all 3 OS targets; graceful degradation if unsupported |
 | Performance regression from extra abstraction layer | Very Low | Low | Benchmarked at < 5ms overhead |
 
-### Follow-Up: TECH-009
-Git executor (`sandbox/git/core/executor.py`) and filesystem search
-(`sandbox/filesystem/core/search.py`) subprocess migration is out of scope for E-EXEC-01. A separate
-ticket **TECH-009** will be created to consolidate these subprocess users under
-`SubprocessExecutor`.
+TOCTOU between cwd validation and `Popen` is a known limit; B-EXEC-01 closes it (SF-01 plan).
 
-## Developer Guides Required
+Guide: `docs/dev_guides/subprocess_execution.md` — how to add subprocess calls via
+`SubprocessExecutor` (Guide-1, done).
 
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Guide-1 | How to add subprocess execution calls via `SubprocessExecutor` | ✅ Done in `docs/dev_guides/subprocess_execution.md` |
+## Sub-features
 
-## Sub-Feature Breakdown
-
-### SF-01: SubprocessExecutor Core
-- **Scope**: Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult` dataclass, timeout escalation, env stripping, path validation, and telemetry logging.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10]
-- **Inputs**: Command list, cwd path, timeout, env allowlist, resource limits
-- **Outputs**: `SubprocessResult` dataclass with structured output
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
-
-### SF-02: Language Runner Migration
-- **Scope**: Migrate all 5 language runners (Python, TypeScript, Rust, Java, Kotlin) from direct
-  `subprocess.run()` to `SubprocessExecutor.execute()`. Ensure backward compatibility across all
-  4900+ tests.
-- **FRs**: [FR-8]
-- **Inputs**: `SubprocessExecutor` from SF-01, existing runner.py files
-- **Outputs**: All runners using unified executor, all tests green
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf02_implementation_plan.md
-
-## Execution Order
-
-1. **SF-01** (no deps — start immediately): Build and fully test `SubprocessExecutor` in isolation.
-2. **SF-02** (depends on SF-01): Migrate all language runners. Run full regression.
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | `SubprocessExecutor.execute()`, `SubprocessResult`, timeout escalation, env stripping, path validation, telemetry. In: command list, cwd, timeout, env allowlist, resource limits. Built and tested in isolation. | FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10 | — | [sf01](E-EXEC-01_sf01_implementation_plan.md) |
+| SF-02 | All 5 runners from `subprocess.run()` to `SubprocessExecutor.execute()`; all 4900+ tests green. | FR-8 | SF-01 | [sf02](E-EXEC-01_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -248,10 +179,3 @@ ticket **TECH-009** will be created to consolidate these subprocess users under
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Language Runner Migration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: E-EXEC-01 COMPLETE (2026-07-12). Both SF-01 and SF-02 fully implemented, tested, reviewed (Red/Blue), and committed.
-**Regression**: Unit 4482 passed / Integration 424 passed / E2e 139 passed. All clean.
-**Follow-up**: TECH-009 (git/filesystem subprocess migration) remains open.
-

@@ -1,53 +1,41 @@
-# Implementation Plan: Standard Local Execution [SF-01: SubprocessExecutor Core]
+# E-EXEC-01 SF-01 — SubprocessExecutor Core
 
-- **Feature ID**: E-EXEC-01
-- **Sub-Feature**: SF-01 — SubprocessExecutor Core
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf01_implementation_plan.md
-- **Status**: APPROVED
+**Status**: APPROVED. Implemented `40934fa3` (2026-07-11). · **FRs owned**: FR-1, FR-2, FR-3, FR-4,
+FR-5, FR-6, FR-7, FR-9, FR-10 · **Depends on**: none · Design: [E-EXEC-01_design.md](E-EXEC-01_design.md) §Sub-features → SF-01
 
-## Scope
+## Goal
 
-Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult` dataclass,
-cross-platform `PlatformLimiter`, timeout escalation, environment allowlisting, path validation, and
-structured telemetry logging.
+Build `SubprocessExecutor` (`execute()`), the `SubprocessResult` dataclass, the cross-platform
+`PlatformLimiter`, timeout escalation, environment allowlisting, path validation and structured
+telemetry logging — tested in isolation, ready for SF-02's 5 runners:
 
-**FRs**: FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-9, FR-10
-
-**Runners in scope** (all 5 existing language runners that will consume this in SF-02):
 - `PythonQARunner` (`sandbox/language/core/python/runner.py`)
 - `TypeScriptRunner` (`sandbox/language/core/typescript/runner.py`)
 - `RustRunner` (`sandbox/language/core/rust/runner.py`)
 - `JavaRunner` (`sandbox/language/core/java/runner.py`)
 - `KotlinRunner` (`sandbox/language/core/kotlin/runner.py`)
 
-**Platforms**: Windows 11 (26H2+), Linux (kernel 7.1+, all distros with Python 3.11+), macOS Tahoe (26+)
+Platforms: Windows 11 (26H2+), Linux (kernel 7.1+, all distros with Python 3.11+), macOS Tahoe (26+).
 
-## Research Notes
+## Where it plugs in
 
-### Codebase Patterns Found
-- All 5 language runners call `subprocess.run()` with `capture_output=True, text=True, check=False`
-- Python runner is the only one using `time.monotonic()` for duration tracking
-- Python runner uses `subprocess.TimeoutExpired` exception for timeout handling
-- `OutputEvent` dataclass in `commons/qa.py` (L117-126) has: `category: str`, `output: str`, `file: str = ""`, `line: int = 0`
-- `WorkspaceBoundary.validate_path()` in `sandbox/security.py` (L76-99) provides the path validation pattern
-- Sandbox modules use `archetype: adapter` in their `context.yaml`
-- `SUPPORTED_LANGUAGES = frozenset({"python", "java", "kotlin", "typescript", "rust"})` in `_detect.py`
+| Fact | Where |
+|---|---|
+| All 5 runners call `subprocess.run()` with `capture_output=True, text=True, check=False`. Only Python tracks duration (`time.monotonic()`) and catches `subprocess.TimeoutExpired` | runners |
+| `OutputEvent`: `category: str`, `output: str`, `file: str = ""`, `line: int = 0` | `commons/qa.py` (L117-126) |
+| `WorkspaceBoundary.validate_path()` — the path validation pattern | `sandbox/security.py` (L76-99) |
+| Sandbox modules use `archetype: adapter` in `context.yaml` | `sandbox/*` |
+| `SUPPORTED_LANGUAGES = frozenset({"python", "java", "kotlin", "typescript", "rust"})` | `_detect.py` |
 
-### Win32 Job Objects (ctypes)
-- Use `CreateJobObjectW`, `SetInformationJobObject`, `AssignProcessToJobObject`
-- Define `JOBOBJECT_EXTENDED_LIMIT_INFORMATION` via `ctypes.Structure`
-- Set `LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY` (0x00000100)
-- On modern Windows (8+), nested jobs are supported, safe in CI environments
-- Use `OpenProcess(PROCESS_ALL_ACCESS, False, proc.pid)` to get handle (NOT private `proc._handle`)
+Win32 Job Objects (ctypes): `CreateJobObjectW`, `SetInformationJobObject`, `AssignProcessToJobObject`;
+`JOBOBJECT_EXTENDED_LIMIT_INFORMATION` as a `ctypes.Structure`; `LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY`
+(0x00000100). Nested jobs work on Windows 8+, so CI is safe.
 
-### Unix/macOS resource module
-- `resource.setrlimit(resource.RLIMIT_AS, (soft, hard))` — limits virtual memory (works on Linux AND macOS)
-- `resource.setrlimit(resource.RLIMIT_NPROC, (soft, hard))` — limits process count (Linux AND macOS)
-- Applied via `preexec_fn` parameter of `subprocess.Popen`
+Unix/macOS `resource`: `resource.setrlimit(resource.RLIMIT_AS, (soft, hard))` limits virtual memory and
+`resource.setrlimit(resource.RLIMIT_NPROC, (soft, hard))` process count, on Linux AND macOS, applied via
+the `preexec_fn` parameter of `subprocess.Popen`.
 
-## HITL-Resolved Decisions
+## Decisions (HITL)
 
 | # | Decision | User Choice |
 |---|----------|-------------|
@@ -57,22 +45,11 @@ structured telemetry logging.
 | H-4 | `context.yaml` forbids | Add explicit `forbids: [sandbox/qa_runner, core/flow]` entries to `sandbox/execution/context.yaml`. |
 | H-5 | Signal propagation | Use `os.setpgrp()` on Unix/macOS. Executor manages child lifecycle explicitly. |
 
-## Proposed Changes
+## Changes
 
-### Component: Execution Module (NEW)
-
----
-
-#### [NEW] `src/specweaver/sandbox/execution/__init__.py`
-
-Empty `__init__.py` — implicit namespace package.
-
----
-
-#### [NEW] `src/specweaver/sandbox/execution/context.yaml`
-
-> [!IMPORTANT]
-> Per H-4, includes explicit forbids to prevent circular dependencies.
+1. [NEW] `src/specweaver/sandbox/execution/__init__.py` — empty; implicit namespace package.
+2. [NEW] `src/specweaver/sandbox/execution/context.yaml` — explicit forbids against circular
+   dependencies (H-4):
 
 ```yaml
 archetype: adapter
@@ -81,11 +58,7 @@ forbids:
   - core/flow
 ```
 
----
-
-#### [NEW] `src/specweaver/sandbox/execution/executor.py`
-
-Core module. ≤ 300 lines.
+3. [NEW] `src/specweaver/sandbox/execution/executor.py` — ≤ 300 lines.
 
 ```python
 @dataclass(frozen=True)
@@ -139,45 +112,27 @@ class SubprocessExecutor:
         ...
 ```
 
-**Key implementation details:**
+   1. **`_build_env()`** — child env = allowlist + `extra_env`. Default allowlist:
+      `PATH, HOME, USERPROFILE, LANG, LC_ALL, TERM, PYTHONPATH, PYTHONHASHSEED, NODE_PATH, CARGO_HOME,
+      JAVA_HOME, GRADLE_HOME, GOPATH, GOROOT, VIRTUAL_ENV, CONDA_PREFIX, TMPDIR, TEMP, TMP, SystemRoot,
+      COMSPEC, GIT_EXEC_PATH, GIT_DIR` (the git pair per H-3). With `strip_credentials=True` it removes
+      `GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY, QWEN_API_KEY,
+      AWS_SECRET_ACCESS_KEY, AZURE_*` — **also from `extra_env`**, so a caller cannot inject a key back.
+   2. **`_validate_cwd()`** — `cwd` resolves (`Path.resolve()`, following symlinks) to an existing
+      directory that does not escape a parent boundary (if provided). `Popen` gets the resolved path,
+      not the symlink.
+   3. **Timeout escalation** (H-1) — `subprocess.Popen` (not `subprocess.run`), then
+      `proc.communicate(timeout=timeout_seconds)`. On `TimeoutExpired`: **Unix/macOS** send `SIGTERM`
+      to the process group, wait 2s grace, then `SIGKILL` if still alive; **Windows** `proc.terminate()`
+      (TerminateProcess — immediate). Windows is asymmetric: `proc.terminate()` IS the kill; Win32
+      console processes have no graceful shutdown.
+   4. **Signal propagation** (H-5) — `os.setpgrp()` via `preexec_fn` on Unix/macOS creates a process
+      group; the executor manages the child lifecycle, so Ctrl+C won't independently kill a test
+      subprocess.
+   5. **Output events** — stdout/stderr lines become `commons/qa.OutputEvent` objects.
+   6. **Telemetry** — DEBUG: `{"action": "subprocess_execute", "cmd": cmd, "cwd": str, "timeout": int, "exit_code": int, "duration_seconds": float, "timed_out": bool}`
 
-1. **`_build_env()`**: Builds child environment from allowlist + extra_env. Default allowlist:
-   `PATH, HOME, USERPROFILE, LANG, LC_ALL, TERM, PYTHONPATH, PYTHONHASHSEED,
-    NODE_PATH, CARGO_HOME, JAVA_HOME, GRADLE_HOME, GOPATH, GOROOT,
-    VIRTUAL_ENV, CONDA_PREFIX, TMPDIR, TEMP, TMP, SystemRoot, COMSPEC,
-    GIT_EXEC_PATH, GIT_DIR`
-   If `strip_credentials=True`, explicitly removes:
-   `GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY,
-    QWEN_API_KEY, AWS_SECRET_ACCESS_KEY, AZURE_*`
-
-> [!NOTE]
-> Per H-3: `GIT_EXEC_PATH` and `GIT_DIR` are included in the default allowlist now for forward-compatibility with TECH-009 git executor migration.
-
-2. **`_validate_cwd()`**: Ensures `cwd` resolves to an existing directory and does not escape a parent boundary (if provided).
-
-3. **Timeout escalation** (H-1): Uses `subprocess.Popen` (not `subprocess.run`) for fine-grained control:
-   - Start process
-   - `proc.communicate(timeout=timeout_seconds)`
-   - On `TimeoutExpired`:
-     - **Unix/macOS**: send `SIGTERM` to process group, wait 2s grace, then `SIGKILL` if still alive
-     - **Windows**: `proc.terminate()` (TerminateProcess — immediate, no grace period)
-
-> [!WARNING]
-> Windows timeout is asymmetric: `proc.terminate()` IS the kill. There is no graceful shutdown for Win32 console processes. The 2s SIGTERM→SIGKILL grace period applies only on Unix/macOS.
-
-4. **Signal propagation** (H-5): Uses `os.setpgrp()` via `preexec_fn` on Unix/macOS to create a
-   process group. The executor explicitly manages the child lifecycle — Ctrl+C won't independently
-   kill a test subprocess.
-
-5. **Output events**: Converts stdout/stderr lines to `OutputEvent` objects (reusing `commons/qa.OutputEvent`).
-
-6. **Telemetry logging**: Logs at DEBUG level: `{"action": "subprocess_execute", "cmd": cmd, "cwd": str, "timeout": int, "exit_code": int, "duration_seconds": float, "timed_out": bool}`
-
----
-
-#### [NEW] `src/specweaver/sandbox/execution/platform_limiter.py`
-
-Cross-platform resource limiting strategy. ≤ 150 lines.
+4. [NEW] `src/specweaver/sandbox/execution/platform_limiter.py` — ≤ 150 lines.
 
 ```python
 class PlatformLimiter(ABC):
@@ -236,26 +191,25 @@ def get_platform_limiter() -> PlatformLimiter:
         return NoOpLimiter()
 ```
 
-> [!NOTE]
-> **Cross-platform guarantee**: `UnixLimiter` works identically on Linux and macOS since both
-> support `resource.setrlimit()`. `WindowsLimiter` uses only `ctypes` (stdlib). `NoOpLimiter` is the
-> safe fallback for exotic platforms — logs a warning but does not block execution.
+   `UnixLimiter` behaves the same on Linux and macOS (both have `resource.setrlimit()`);
+   `WindowsLimiter` uses only `ctypes` (stdlib); `NoOpLimiter` logs a warning and does not block.
 
----
+| File | Change |
+|---|---|
+| `src/specweaver/sandbox/execution/__init__.py` | NEW |
+| `src/specweaver/sandbox/execution/context.yaml` | NEW |
+| `src/specweaver/sandbox/execution/executor.py` | NEW |
+| `src/specweaver/sandbox/execution/platform_limiter.py` | NEW |
+| `tests/unit/sandbox/execution/__init__.py` | NEW, empty |
+| `tests/unit/sandbox/execution/test_executor.py` | NEW, ~250 lines |
+| `tests/unit/sandbox/execution/test_platform_limiter.py` | NEW, ~150 lines |
 
-### Component: Tests (NEW)
+Commit 1: `feat(sandbox): add SubprocessExecutor with cross-platform resource limits [E-EXEC-01 SF-01]`
+— all new tests pass, full 4900+ suite regression, lint clean, complexity clean.
 
----
+## Tests
 
-#### [NEW] `tests/unit/sandbox/execution/__init__.py`
-
-Empty init.
-
----
-
-#### [NEW] `tests/unit/sandbox/execution/test_executor.py`
-
-~250 lines. Tests:
+`tests/unit/sandbox/execution/test_executor.py`:
 
 | Test Class | Test Method | FR | Description |
 |-----------|-------------|-----|-------------|
@@ -283,11 +237,7 @@ Empty init.
 | `TestSubprocessExecutor` | `test_debug_logging` | FR-9 | Logger called with expected structured fields |
 | `TestSubprocessExecutor` | `test_debug_logging_contains_cmd` | FR-9 | Log entry contains the command that was run |
 
----
-
-#### [NEW] `tests/unit/sandbox/execution/test_platform_limiter.py`
-
-~150 lines. Tests:
+`tests/unit/sandbox/execution/test_platform_limiter.py`:
 
 | Test Class | Test Method | FR | Description |
 |-----------|-------------|-----|-------------|
@@ -309,97 +259,39 @@ Empty init.
 | `TestWindowsLimiter` | `test_close_handle_called` | FR-10 | Verifies CloseHandle called after assignment |
 | `TestWindowsLimiter` | `test_make_preexec_fn_returns_none` | FR-10 | Windows preexec_fn is always None |
 
-> [!WARNING]
-> Unix-specific tests (`TestUnixLimiter`) will be skipped on Windows via
-> `@pytest.mark.skipif(sys.platform == "win32")`. Windows-specific tests (`TestWindowsLimiter`) will
-> be skipped on Unix/macOS via `@pytest.mark.skipif(sys.platform != "win32")`. Platform detection
-> tests (`TestGetPlatformLimiter`) mock `sys.platform` to run on all platforms.
+Platform skips: `TestUnixLimiter` via `@pytest.mark.skipif(sys.platform == "win32")`; `TestWindowsLimiter`
+via `@pytest.mark.skipif(sys.platform != "win32")`. `TestGetPlatformLimiter` mocks `sys.platform` and
+runs everywhere.
 
-## Red Team / Blue Team Cycles
-
-### Cycle 1: Credential Exfiltration
-
-**Red Team Attack**: LLM-generated test code calls `os.environ["GEMINI_API_KEY"]` and sends it to an external URL.
-
-**Blue Team Defense**: SubprocessExecutor builds a clean env from allowlist. Even if the child code
-calls `os.environ`, `GEMINI_API_KEY` does not exist in the child's environment. The credential is
-invisible.
-
-**Counter-attack**: Attacker uses `extra_env={"GEMINI_API_KEY": "..."}` to inject the key back.
-
-**Defense Enhancement**: `_build_env()` MUST enforce that `strip_credentials=True` blocks keys from
-`extra_env` too. Test `test_extra_env_does_not_override_stripped` verifies this. Even if a caller
-explicitly passes `GEMINI_API_KEY` in `extra_env`, the executor strips it.
-
-**Result**: ✅ Covered by FR-6 + test `test_extra_env_does_not_override_stripped`.
-
----
-
-### Cycle 2: Path Traversal via Symlink
-
-**Red Team Attack**: LLM-generated code creates a symlink inside the workspace that points to `/etc/passwd` or `C:\Windows\System32`, then passes that symlink as `cwd_override`.
-
-**Blue Team Defense**: `_validate_cwd()` calls `Path.resolve()` to follow symlinks, then checks if the resolved absolute path is still within the allowed boundary.
-
-**Counter-attack**: Attacker creates the symlink AFTER validation but BEFORE the subprocess starts (TOCTOU race).
-
-**Defense Enhancement**: The executor resolves the path at the moment of `Popen` creation (inside
-the same synchronous call). Additionally, the working directory for `Popen` is set to the resolved
-path, not the symlink. For full TOCTOU protection, B-EXEC-01 (container isolation) is the definitive
-solution. Document this as a known limitation.
-
-**Result**: ✅ Covered by FR-3 + test `test_path_traversal_symlink_blocked`. TOCTOU risk documented as out-of-scope (mitigated by B-EXEC-01).
-
-> [!NOTE]
-> **Known limitation (TOCTOU)**: Between `_validate_cwd()` and `Popen()`, a race condition is
-> theoretically possible. This is fully mitigated by B-EXEC-01 (Podman container isolation). For
-> DAL-E prototyping assurance level, the current defense is sufficient.
-
----
-
-### Cycle 3: Fork Bomb / Resource Exhaustion
-
-**Red Team Attack**: LLM-generated test code runs `while True: os.fork()` (Unix) or spawns infinite subprocesses (Windows), consuming all system resources.
-
-**Blue Team Defense**:
-- **Unix/macOS**: `UnixLimiter` sets `RLIMIT_NPROC` via `preexec_fn`, limiting the number of child processes.
-- **Windows**: `WindowsLimiter` sets `JOB_OBJECT_LIMIT_PROCESS_MEMORY` and `JOB_OBJECT_LIMIT_ACTIVE_PROCESS` via Job Objects, preventing memory exhaustion and process proliferation.
-
-**Counter-attack**: Attacker spawns processes that each consume max memory within the per-process limit.
-
-**Defense Enhancement**: Both `max_memory_bytes` (per-process) AND timeout work together. Even if
-each child stays under memory limits, the timeout kills the entire tree after the deadline. The
-`os.setpgrp()` (H-5) ensures the entire process group is killed, not just the parent.
-
-**Result**: ✅ Covered by FR-10 + FR-2 + FR-7. UnixLimiter tests verify RLIMIT_NPROC. WindowsLimiter tests verify Job Object creation. Timeout tests verify kill-on-deadline.
-
-## Commit Boundaries
-
-### Commit 1: SubprocessExecutor Core + Tests
-- **Files**:
-  - [NEW] `src/specweaver/sandbox/execution/__init__.py`
-  - [NEW] `src/specweaver/sandbox/execution/context.yaml`
-  - [NEW] `src/specweaver/sandbox/execution/executor.py`
-  - [NEW] `src/specweaver/sandbox/execution/platform_limiter.py`
-  - [NEW] `tests/unit/sandbox/execution/__init__.py`
-  - [NEW] `tests/unit/sandbox/execution/test_executor.py`
-  - [NEW] `tests/unit/sandbox/execution/test_platform_limiter.py`
-- **Message**: `feat(sandbox): add SubprocessExecutor with cross-platform resource limits [E-EXEC-01 SF-01]`
-- **Verification**: All new tests pass. Full 4900+ suite regression. Lint clean. Complexity clean.
-
-## Verification Plan
-
-### Automated Tests
 ```bash
 pytest tests/unit/sandbox/execution/ -v
 pytest tests/ -x -q
 ruff check src/specweaver/sandbox/execution/
 ```
 
-### Manual Verification
-- Verify on Windows that `WindowsLimiter` creates a job object (manual test script in `.tmp/`)
-- Verify on Linux that `UnixLimiter` applies resource limits (manual test script in `.tmp/`)
-- Verify on macOS that `UnixLimiter` applies resource limits identically to Linux
+Manual: `WindowsLimiter` creates a job object on Windows; `UnixLimiter` applies limits on Linux and
+identically on macOS (manual scripts in `.tmp/`).
 
-## Backlog
-- TECH-009: Migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`
+## Red/Blue review
+
+| Attack | Defense | Covered by |
+|---|---|---|
+| LLM test code reads `os.environ["GEMINI_API_KEY"]` and sends it out | Clean env from the allowlist — the key does not exist in the child | FR-6 |
+| Counter: re-inject via `extra_env={"GEMINI_API_KEY": "..."}` | `_build_env()` enforces `strip_credentials=True` on `extra_env` too | `test_extra_env_does_not_override_stripped` |
+| Symlink in the workspace to `/etc/passwd` or `C:\Windows\System32`, passed as `cwd_override` | `_validate_cwd()` resolves symlinks, checks the absolute path is inside the boundary | FR-3, `test_path_traversal_symlink_blocked` |
+| Counter: create the symlink after validation, before spawn (TOCTOU) | Resolve at `Popen` creation in the same synchronous call; `Popen` gets the resolved path | Known limit — see below |
+| Fork bomb: `while True: os.fork()` (Unix) or endless subprocesses (Windows) | `UnixLimiter` sets `RLIMIT_NPROC` via `preexec_fn`; `WindowsLimiter` sets `JOB_OBJECT_LIMIT_PROCESS_MEMORY` and `JOB_OBJECT_LIMIT_ACTIVE_PROCESS` | FR-10 |
+| Counter: many processes, each under the per-process memory cap | `max_memory_bytes` (per-process) plus the timeout kill the whole tree at the deadline; `os.setpgrp()` (H-5) kills the group, not just the parent | FR-10 + FR-2 + FR-7; limiter + timeout tests |
+
+**Known limitation (TOCTOU)**: a race between `_validate_cwd()` and `Popen()` is theoretically
+possible. B-EXEC-01 (Podman container isolation) closes it; the current defense suffices for DAL-E
+prototyping assurance.
+
+Backlog: TECH-009 — migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`.
+
+## As built
+
+**Since moved** (noted 2026-09-25): `SubprocessResult` and `ResourceLimits` now live in
+`sandbox/execution/models.py`; `executor.py` is 338 lines (over the ≤ 300 target); `context.yaml`
+forbids `sandbox.qa_runner.*` and `core.flow.*` and consumes `commons.qa`. The `RLIMIT_NPROC` ceiling
+was re-derived on 2026-08-17 — see the design, FR-10.

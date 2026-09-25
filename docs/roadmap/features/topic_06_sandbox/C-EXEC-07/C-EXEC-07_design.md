@@ -1,52 +1,41 @@
-# Design: DAL-Escalated Isolation for Pipeline Runs
+# C-EXEC-07 — DAL-Escalated Isolation for Pipeline Runs
 
-- **Feature ID**: C-EXEC-07
-- **Epic**: Topic 06 (Sandbox)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
-- **Origin**: Minted 2026-07-24 from `INT-US-24` SF-03 intake — *"would a PO be happy we don't use
-  DAL here?"*
-- **Created**: 2026-08-13 under `TECH-044`. The capability had no design document, so its topic
-  entry was the only record and there was nowhere to redistribute its detail to. Everything below
-  is moved verbatim from that entry, not newly authored.
+**Status**: STUB — not yet run through the `specweaver-design` skill. Run it before any
+implementation. · **DAL**: C · **Epic**: Topic 06 (Sandbox) · **Feature ID**: C-EXEC-07
 
-## Problem Statement
+| | |
+|---|---|
+| Extends | `INT-US-03` `AD-8` escalation (`dal_auto_escalate` in `apply_session_policy`) to the `sw run` / `sw resume` roots |
+| Escalates to | `C-EXEC-06` session isolation, at or above `auto_isolate_min_dal` |
+| Integrated by | `INT-US-09-SF06` |
+| Supersedes | `AD-8`'s per-caller opt-out, via a **new recorded decision**. `INT-US-03`'s finished documents stay untouched — finished-stories-immutable |
 
-The shipped `INT-US-03` `AD-8` escalation (`dal_auto_escalate` in `apply_session_policy`) is wired
-on the `sw implement` composition root only. The `sw run` / `sw resume` roots resolve neither, so
-any journey that executes generated code — `scenario_integration`, `new_feature` — runs with the
-weakest default.
+Origin: minted 2026-07-24 from `INT-US-24` SF-03 intake — *"would a PO be happy we don't use DAL
+here?"*. File created 2026-08-13 under `TECH-044`: the capability had no design document, so its
+topic entry was the only record; everything here is moved verbatim from that entry.
 
-That is an asymmetry in the wrong direction: **the tool's most untrusted execution surface is
-LLM-derived scenario tests running over LLM-generated code**, and it is the one with no escalation.
+## What it does
 
-The escalation target is `C-EXEC-06` session isolation, entered at or above the configured
-`auto_isolate_min_dal` threshold — so this extends *where* that existing rule is evaluated, not
-what it decides.
+Evaluates the existing DAL escalation rule on `sw run` / `sw resume` too, not only on `sw implement`.
+Same rule, same target (`C-EXEC-06` session isolation at or above `auto_isolate_min_dal`) — it
+extends *where* the rule is evaluated, not what it decides.
 
-## Why this is capability work, not a one-line flip
+## Why
+
+Today only the `sw implement` composition root resolves the escalation. Journeys that execute
+generated code under `sw run` — `scenario_integration`, `new_feature` — run with the weakest default.
+That is backwards: **LLM-derived scenario tests running over LLM-generated code** are the most
+untrusted execution surface, and the only one with no escalation.
+
+DAL-C, as for `C-EXEC-06`: it widens what the single reconcile gate authorizes.
+
+## Why this is not a one-line flip
 
 `_derive_allowed_paths` is implement-shaped — `[src/{stem}.py, tests/test_{stem}.py]`. Under session
 isolation the scenario chain's artifacts (`contracts/`, `scenarios/definitions/`,
-`scenarios/generated/`) fall outside that list and would be **silently dropped by the reconcile
-authorization gate**. So the capability owns three things:
+`scenarios/generated/`) fall outside it and would be **silently dropped by the reconcile
+authorization gate**. The capability owns:
 
 - **pipeline-aware allow-list derivation** — the hard part;
 - **dual-fan-out-in-one-worktree semantics**;
 - a proof that includes a real `scenario_integration` run.
-
-## DAL
-
-DAL-C, for the same reason as `C-EXEC-06`: it widens what the single reconcile gate authorizes.
-
-## Decision record
-
-Supersedes `AD-8`'s per-caller opt-out via a **new recorded decision**. `INT-US-03`'s finished
-documents remain untouched — finished-stories-immutable.
-
-## Integration
-
-Integrated by `INT-US-09-SF06`.
-
-## Next Step
-
-Run the `specweaver-design` skill against this stub before any implementation.
