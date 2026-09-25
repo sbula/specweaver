@@ -105,6 +105,8 @@ per-step `execute_in_sandbox` (AD-5), not a duplicate. Coverage: FR-1/2/5-field/
 
 ## As built (2026-07-19)
 
+**Since moved** (`c3f36d54`, `runner_utils` retired): `execute_run` → `core/flow/engine/session.py`; `execute_in_sandbox`, `setup_sandbox_caches` → `core/flow/engine/sandboxed_execution.py`. Line refs above are as of the plan's date.
+
 | Where | What |
 |---|---|
 | `handlers/base.py` | `session_isolation` + `allowed_paths` fields |

@@ -92,6 +92,8 @@ tests), NFR-6 (Q2/Q5).
 
 ## As built (2026-07-19)
 
+**Since moved** (`c3f36d54`, `runner_utils` retired): `execute_run` → `core/flow/engine/session.py`; `execute_in_sandbox`, `setup_sandbox_caches` → `core/flow/engine/sandboxed_execution.py`. Line refs above are as of the plan's date.
+
 | Where | What |
 |---|---|
 | `worktree_ops.py` | new `handle_worktree_commit`; extracted `_strip_forbidden_files`; `handle_strip_merge` gained a `cwd` param, a **merge-failure guard** (dirty real tree → `--abort` + FAILED, Q2/Q5) and a **post-strip empty check** |
