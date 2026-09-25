@@ -1,119 +1,161 @@
-# Design: Ephemeral Podman Sub-Containers (B-EXEC-01)
+# B-EXEC-01 — Ephemeral Podman Sub-Containers
 
-- **Feature ID**: B-EXEC-01
-- **Phase**: Design
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01..SF-04 committed (`68c34359`, `7e31ea9b`, `8046f12c`,
+`a2143124`). · **Phase**: Design · **Feature ID**: B-EXEC-01
 
-## Feature Overview
+| | |
+|---|---|
+| Delivers | US-9 Zero-Trust Sandbox Sub-Story Add-On: Containerized Isolation |
+| Routes | `QARunnerAtom` (US-3 Core / `D-VAL-01`, `D-VAL-03`) |
+| Touches | `sandbox.qa_runner` (atom/factory/interface + language runners), `sandbox.execution` (new executor beside `SubprocessExecutor`), `core.config` (new `[sandbox]` section) |
+| Reuses | `SubprocessExecutor`, `WorkspaceBoundary`, `D-EXEC-01` Podman/Docker CLI conventions |
+| Used by (future) | `E-EXEC-02` (Air-Gapped Network Egress Control), `A-EXEC-01` (Extreme Execution Paranoia / Black Box Ledgers) — may attach to the `ContainerSubprocessExecutor`/mount contract; not sub-features, no work exists |
+| Not touched | `C-EXEC-02`'s `BashActionAtom` (host-side `.specweaver/scripts/`), the `sw serve` deployment container, the filesystem/git/code_structure/mcp tool families |
 
-Feature B-EXEC-01 routes all QA Runner execution (`QARunnerAtom`, US-3 Core / `D-VAL-01`,
-`D-VAL-03`) into an ephemeral Podman/Docker sub-container instead of running directly against
-the host filesystem, with the host source tree mounted read-only and a separate scratch volume
-mounted for temporary test artifacts only.
+Standalone capability, not an integration contract. `INT-US-09` (the Base Integration Contract for
+US-9, integrating `US-5 Core` + `E-EXEC-01` + `C-EXEC-02` per `master_story_roadmap.md`'s Core
+Required list) is separate and not designed. This work was first built under a mis-scoped
+`INT-US-09 SF-01` label and re-homed here with no code changes.
 
-It solves the Remote Code Execution exposure created by LLM-generated test/lint code: without
-this feature, `QARunnerAtom` resolves a language runner (currently `PythonQARunner`) that shells
-out via `SubprocessExecutor` directly against the host `cwd` with full read/write access to the
-project tree, so untrusted, LLM-authored test code can read or corrupt anything the SpecWeaver
-process can reach. Containerizing execution and asymmetrically mounting source (RO) vs. a
-scratch directory (RW, artifacts-only) bounds that blast radius.
+## What it does
 
-It interacts with `sandbox.qa_runner` (atom/factory/interface + concrete language runners),
-`sandbox.execution` (a new container-aware executor sitting alongside `SubprocessExecutor`),
-`core.config` (a new opt-in `[sandbox]` config surface), and the `D-EXEC-01` Podman/Docker CLI
-conventions already used for `sw serve` deployment. It does NOT touch `C-EXEC-02`'s
-`BashActionAtom` (host-side `.specweaver/scripts/` execution — a separate, already-complete
-trust boundary), the `sw serve` deployment container's own runtime, or the other sandbox tool
-families (filesystem, git, code_structure, mcp).
+Runs QA Runner execution (tests, lint, complexity, compile, architecture check) inside an
+ephemeral Podman/Docker container instead of on the host. The source tree is mounted read-only; a
+separate scratch volume is the only writable place, for test artifacts.
 
-Key constraints: strict RO source mount / separate RW scratch mount for test artifacts; container
-execution is **opt-in** (default `execution_mode: host`) so existing bare-host installs and CI
-keep working unmodified until they explicitly enable it; once enabled, the run fails closed
-(actionable error) rather than silently falling back to host execution if no container engine is
-available; must respect `sandbox` layering (tools→atoms→commons, `commons` forbids `tools`/
-`atoms`) and the project's "no raw subprocess" rule — all process spawning still goes through the
-existing `SubprocessExecutor`, just with a `podman`/`docker run ...` argv instead of a bare tool
-invocation.
+Opt-in: `execution_mode` defaults to `"host"` (`execution_mode: host`), so bare-host installs and CI
+keep working unchanged. Once set to `"container"`, a missing engine fails
+the run with an actionable error — never a silent fallback to host.
 
-**Scope note**: this is a standalone capability delivering `B-EXEC-01` end-to-end. It is NOT an
-integration contract — nothing here wires `B-EXEC-01` into other, already-built capabilities on
-US-9's behalf. That wiring (the actual `INT-US-09` Base Integration Contract for US-9, which
-integrates `US-5 Core` + `E-EXEC-01` + `C-EXEC-02` per `master_story_roadmap.md`'s Core Required
-list) is separate, unrelated work and has not been designed yet.
+## Why
 
-## Research Findings
+LLM-generated test/lint code is a Remote Code Execution exposure. Without this feature
+`QARunnerAtom` resolves a language runner (`PythonQARunner`) that shells out via
+`SubprocessExecutor` against the host `cwd` with full read/write access, so untrusted code can read
+or corrupt anything the SpecWeaver process can reach. `E-EXEC-01`'s design names closing this "the
+foundational prerequisite for US-9". A container with RO source and RW scratch bounds the blast
+radius.
 
-### Codebase Patterns
+**Why not `D-EXEC-01`'s container.** The repo-root `Containerfile`/`compose.yaml` containerize the
+whole `sw serve` process (one long-lived container, project bind-mounted read-write at
+`/projects`). No podman/docker Python SDK is in `pyproject.toml` or `src/`;
+`workspace/project/scaffold.py` has no container scaffolding. B-EXEC-01 is a new, separate
+ephemeral mechanism that reuses D-EXEC-01's CLI/image conventions, not its Containerfile or
+compose flow.
 
-**QA Runner execution chain (the swap point).** `QARunnerAtom` (`src/specweaver/sandbox/qa_runner/core/atom.py:64`)
-resolves a `QARunnerInterface` via `factory.resolve_runner(cwd)` and dispatches by `intent`
-(`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`,
-`run_architecture_check`) to methods on that runner — never touches subprocess directly.
-`PythonQARunner` (`src/specweaver/sandbox/language/core/python/runner.py:131`) is the concrete
-implementation: **every one of its methods builds an argv list and calls
-`self._executor.execute(cmd, timeout_seconds=...)` exactly once**, and its constructor already
-accepts `executor: SubprocessExecutor | None = None` as a dependency-injection seam. This is the
-single, pre-existing point where container routing can be introduced without touching parsing
-logic (`TestRunResult`, `LintRunResult`, etc.) at all.
+**Why no Python SDK.** `podman-py` and `docker-py` are maintained, but a second client library
+adds nothing over the CLI: `SubprocessExecutor` invokes either engine with an identical flag set.
+An SDK means two divergent socket/auth paths, and `podman-py`'s maintainers flag incomplete
+docker-py drop-in compatibility. `pyproject.toml` is unchanged.
 
-**`SubprocessExecutor`** (`src/specweaver/sandbox/execution/executor.py:75`) is the mandated
-subprocess boundary (`.execute(cmd, *, timeout_seconds=None, extra_env=None, cwd_override=None,
-input_text=None) -> SubprocessResult`). It already owns timeout handling (SIGTERM→grace→SIGKILL),
-env-var allowlisting, hard credential stripping, and path-containment validation
-(`_validate_cwd`). It has **no container concept today** — resource limits are OS-level only
-(`rlimit`/Win32 Job Objects via `PlatformLimiter`).
+No external blueprint in `docs/ORIGINS.md` — an original SpecWeaver design. `ORIGINS.md`'s
+"Archon" entries concern git-worktree isolation (`D-EXEC-02`), a different capability.
 
-**`D-EXEC-01` (Podman/Docker Integration) is unrelated to per-run sandboxing.** The repo-root
-`Containerfile`/`compose.yaml` containerize the *whole `sw serve` process* (one container = one
-long-lived deployment), bind-mounting the user's entire project tree read-write at `/projects`.
-There is no podman/docker Python SDK dependency anywhere in `pyproject.toml` or `src/`, and
-`workspace/project/scaffold.py` has zero container scaffolding logic. **B-EXEC-01 needs a new,
-separate ephemeral-container mechanism** — reusing D-EXEC-01's CLI/image conventions where
-sensible, but not its Containerfile or compose flow.
+## Architecture
 
-**House style precedent — `C-EXEC-02`'s `BashActionAtom`** (`src/specweaver/sandbox/execution/core/atom.py`)
-is the closest prior "restricted execution" feature and is now complete. It (a) constructs its
-own `SubprocessExecutor` instance per call with hardcoded `ResourceLimits(max_memory_bytes=
-2_147_483_648, max_processes=128)`, (b) reuses `WorkspaceBoundary.validate_path()` for path
-containment rather than hand-rolling a check, and (c) lives in its own submodule
-(`execution/core/`) with its own `context.yaml`, rather than modifying the leaf `execution/executor.py`
-module in place. Its own design doc explicitly names `B-EXEC-01` as the intended future consumer
-of this same swap point. B-EXEC-01 follows the identical pattern: a new component that *wraps*
-`SubprocessExecutor`, not a rewrite of it.
+```mermaid
+graph LR
+    T["specweaver.toml [sandbox]"] --> L["_load_toml_sandbox<br/>→ SandboxSettings"]
+    L --> H["ValidateTestsHandler / LintFixHandler<br/>context.config.sandbox"]
+    H --> A["QARunnerAtom(sandbox_settings)"]
+    A --> F["factory.resolve_runner(cwd, executor)"]
+    F --> P["PythonQARunner<br/>artifacts → /scratch"]
+    P --> C["ContainerSubprocessExecutor<br/>(subclass of SubprocessExecutor)"]
+    C -->|"once per lockfile hash"| PR["prepare: uv sync<br/>network on, RW cache"]
+    C -->|"every call"| EX["execute: podman/docker run<br/>--network none, RO source, RW scratch"]
+```
 
-**Anti-patterns to avoid** (`docs/architecture/06_lessons_and_future/anti_patterns.md`): "Putting
-tool-consuming code in `commons/`" and "Creating parallel security classes (e.g.
-`WorkspaceBoundary`)" — both directly apply here: the new container component must live in an
-already-`sandbox`-internal, already-tach-exposed module (`execution`), and must reuse
-`WorkspaceBoundary`/`ResourceLimits` rather than inventing new containment or limit primitives.
+| Part | Lives in | SF |
+|---|---|---|
+| `ContainerSubprocessExecutor`, `ContainerEngineUnavailableError` | `sandbox/execution/container_executor.py` | SF-01 |
+| `ContainerMounts` | `sandbox/execution/models.py` | SF-01 |
+| DI seam: `resolve_runner(executor=)`, `QARunnerAtom(sandbox_settings=)` | `sandbox/qa_runner/core/{factory,atom}.py` | SF-02 |
+| Artifact redirection, tach pre-check skip | `sandbox/language/core/python/runner.py` | SF-02 |
+| `SandboxSettings` + `[sandbox]` loader | `core.config` | SF-02, SF-03 |
+| Handler wiring, `.gitignore` scaffold, `Containerfile.sandbox` | `core/flow/handlers`, `workspace/project/scaffold.py`, repo root | SF-04 |
 
-**Boundary rules** (`tach.toml`, `docs/architecture/03_system_topology/hard_dependency_rules.md`):
-only `core.flow` may reach into `sandbox`, and only via atoms — never `tools`/`commons` directly.
-Within `sandbox`, `commons`-tier leaf modules forbid `tools`/`atoms`. `sandbox` already
-`depends_on` `specweaver.core.config`, so a new `[sandbox]` config section is tach-legal. The
-`execution` interface is already exposed for external consumption; a new class placed there
-requires no new `[[interfaces]]` entry.
+**The swap point.** `QARunnerAtom` resolves a `QARunnerInterface` via `factory.resolve_runner(cwd)`
+and dispatches by `intent` (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`,
+`run_debugger`, `run_architecture_check`); it never touches subprocess. Every `PythonQARunner`
+method builds an argv and calls `self._executor.execute(cmd, timeout_seconds=...)` exactly once,
+and its constructor already takes `executor: SubprocessExecutor | None = None`. Routing goes in
+there without touching result parsing (`TestRunResult`, `LintRunResult`, ...).
 
-### External Tools
+**`SubprocessExecutor`** is the mandated subprocess boundary
+(`.execute(cmd, *, timeout_seconds=None, extra_env=None, cwd_override=None, input_text=None) -> SubprocessResult`).
+It owns timeout handling (SIGTERM→grace→SIGKILL), env-var allowlisting, credential stripping and
+path containment (`_validate_cwd`). It has no container concept; its limits are OS-level
+(`rlimit`/Win32 Job Objects via `PlatformLimiter`). All spawning still goes through it — with a
+`podman`/`docker run ...` argv.
 
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| Podman CLI | ≥ 4.0 | `run --rm --read-only --tmpfs --pids-limit --network none -v SRC:/workspace:ro -v SCRATCH:/scratch:rw --cap-drop ALL --security-opt no-new-privileges --user UID:GID IMAGE ...` | [Podman docs](https://docs.podman.io/en/latest/markdown/podman-run.1.html) |
-| Docker CLI | ≥ 20.10 | Same flag surface as above (`docker run` is flag-compatible with `podman run` for this use case) | [Docker run reference](https://docs.docker.com/reference/cli/docker/container/run/) |
+**House-style precedent — `C-EXEC-02`'s `BashActionAtom`**
+(`src/specweaver/sandbox/execution/core/atom.py`): builds its own `SubprocessExecutor` per call with
+`ResourceLimits(max_memory_bytes=2_147_483_648, max_processes=128)`, reuses
+`WorkspaceBoundary.validate_path()`, and lives in its own submodule (`execution/core/`) with its own
+`context.yaml` rather than modifying `execution/executor.py`. Its design names `B-EXEC-01` as the
+future consumer of this swap point. B-EXEC-01 likewise wraps `SubprocessExecutor`, not rewrites it.
 
-No new Python SDK dependency (`docker`/`podman-py`) is added — see AD-1. Both `podman-py` and
-`docker-py` are actively maintained, but external research found no functional gain from a second
-client library when the existing `SubprocessExecutor` can invoke either engine's CLI with an
-identical flag set; adding one would mean maintaining two divergent socket/auth paths for no
-benefit over the CLI, and `podman-py`'s own maintainers flag incomplete docker-py drop-in
-compatibility.
+**Boundaries.**
+- Anti-patterns (`docs/architecture/06_lessons_and_future/anti_patterns.md`): "Putting
+  tool-consuming code in `commons/`" and "Creating parallel security classes (e.g.
+  `WorkspaceBoundary`)". So the new component lives in the already-`sandbox`-internal, tach-exposed
+  `execution` module and reuses `WorkspaceBoundary`/`ResourceLimits`.
+- `tach.toml`, `docs/architecture/03_system_topology/hard_dependency_rules.md`: only `core.flow`
+  reaches into `sandbox`, only via atoms. Within `sandbox`, `commons`-tier leaves forbid
+  `tools`/`atoms`. `sandbox` already `depends_on` `specweaver.core.config`, so a `[sandbox]` config
+  section is legal. `execution` is already exposed; no new `[[interfaces]]` entry.
 
-### Blueprint References
+**External dependencies** — no new Python package:
 
-No external blueprint reference exists for D-EXEC-01/B-EXEC-01 in `docs/ORIGINS.md` — these are
-original SpecWeaver designs, not adapted from a named external tool. `ORIGINS.md`'s "Archon"
-entries concern git-worktree isolation (`D-EXEC-02`), a different capability.
+| Tool | Min Version | Key API Surface | Notes |
+|------|------------|----------------|-------|
+| Podman CLI | 4.0 | `run --rm --read-only --tmpfs --pids-limit --network none -v SRC:/workspace:ro -v SCRATCH:/scratch:rw --cap-drop ALL --security-opt no-new-privileges --user UID:GID IMAGE ...` | Preferred (AD-6): rootless, no shared root daemon, smaller default capability set. [Podman docs](https://docs.podman.io/en/latest/markdown/podman-run.1.html) |
+| Docker CLI | 20.10 | Same flag surface (`docker run` is flag-compatible with `podman run` here) | Supported fallback; `dockerd` runs as root — a weaker boundary, documented. [Docker run reference](https://docs.docker.com/reference/cli/docker/container/run/) |
+
+Compatibility confirmed for both.
+
+## Decisions
+
+| # | Decision | Architectural Switch? |
+|---|----------|----------------------|
+| AD-1 | `ContainerSubprocessExecutor` **subclasses** `SubprocessExecutor` (flat under `sandbox/execution/`); `execute()` wraps `cmd` into a `podman`/`docker run` argv and delegates to `super().execute(wrapped_cmd, ...)` for spawn, timeout, env stripping and result. | No |
+| AD-2 | `factory.resolve_runner(cwd)` and `QARunnerAtom.__init__` gain an optional sandbox-mode parameter (from `[sandbox]` config) that injects `ContainerSubprocessExecutor` instead of the host `SubprocessExecutor`. | No |
+| AD-3 | Reuse `WorkspaceBoundary` for source-root and scratch-root containment. | No |
+| AD-4 | Reuse `BashActionAtom`'s `ResourceLimits` values (2 GiB memory / 128 processes) as the container's default ceiling. | No |
+| AD-5 | Redirect pytest/coverage/lint artifacts (`.pytest_cache`, `.coverage`, `--junitxml`, `PYTHONDONTWRITEBYTECODE=1`) to the scratch mount via env/CLI flags at the `PythonQARunner` call site. | No |
+| AD-6 | Prefer rootless Podman when both engines exist; Docker is a supported fallback, documented as weaker (root daemon). | No |
+| AD-7 | Toolchain in two phases: **prepare** (network on, `uv sync` from the project lockfile into a persistent project-keyed cache volume) and **execute** (cache RO + source RO, `--network none`). | No |
+| AD-8 | Deterministic `--name` (from the run-id); idempotent `podman/docker rm -f <name>` before start and in a `finally` after — not `--rm` alone. | No |
+| AD-9 | The QA-execution container is always `--network none`, no exceptions, for every intent. Network happens only in AD-7's prepare phase, never in the container running LLM-generated code. | No |
+
+Why each:
+
+- **AD-1** — `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is typed to
+  the concrete class, not a protocol. A composition-only wrapper could not satisfy that under strict
+  mypy without widening a stable signature. Subclassing is Liskov-substitutable here (same result
+  contract, different spawn target) and delegates rather than duplicates, so it is not a "parallel
+  security class". CLI-via-`SubprocessExecutor` covers the whole flag surface with one code path for
+  both engines.
+- **AD-2** — `PythonQARunner.__init__(cwd, executor=None)` already has the DI seam; extending the
+  call sites is additive and keeps NFR-7.
+- **AD-3** — the anti-pattern list forbids parallel security classes.
+- **AD-4** — no second, divergent limits schema for the same concern.
+- **AD-5** — the source mount is read-only; research named this the top practical gotcha.
+- **AD-6** — keeps D-EXEC-01's "supports both" posture, explicit about the security delta.
+- **AD-7** — gets the target project's toolchain (pytest/ruff/tach/mypy, etc.) into the container
+  without a reinstall per call. The prepare phase runs only trusted, project-declared dependency resolution, never
+  LLM-generated code. It is gated by a hash of `uv.lock`/`pyproject.toml` against a stamp file; `uv
+  sync` re-runs only when it changes — otherwise every run pays a full reinstall, defeating NFR-1.
+  A cache volume, not the host `.venv`, because a Windows/macOS-built virtualenv is
+  binary-incompatible with a Linux container base image.
+- **AD-8** — `--rm` removes only on graceful exit. On timeout `SubprocessExecutor`'s SIGTERM→SIGKILL
+  kills the local CLI client, not the container it spawned. The pre-start `rm -f` clears a
+  same-named leftover from a crashed run. This makes FR-8/NFR-6's "guaranteed cleanup" true.
+- **AD-9** — resolves the conflict between NFR-3 (default-deny network for untrusted code) and
+  AD-7's need for `uv sync` to reach a package index.
+
+Confirmed with user: container mode is opt-in and fails closed; non-root `--user` mapping (NFR-4)
+is in scope, not deferred.
 
 ## Functional Requirements
 
@@ -144,112 +186,49 @@ entries concern git-worktree isolation (`D-EXEC-02`), a different capability.
 | NFR-9 | Error handling | Per FR-7, engine-detection failure in container mode SHALL raise a typed, actionable error (not a bare `SubprocessResult` with a nonzero exit code indistinguishable from a real test failure). |
 | NFR-10 | Test tiering | Unit tests for the container executor SHALL mock/stub at the `execute()` boundary (no real container spawn). Integration/e2e tests SHALL be marked `integration`/`e2e` per project convention and SHALL skip (not fail) when no functional container engine is detected on the test-running host; CI SHALL provision a real container engine in at least one job lane so this path is not permanently skipped in practice. **[proof: meta — rule about tests, docs or the diff]** |
 | NFR-11 | Platform scope | Native Linux (the CI runner, and the project's upcoming primary dev environment per its Ubuntu migration) is the supported target for FR-2/FR-3's mount/ownership semantics. VM-backed engines (Podman Desktop/Docker Desktop on Windows/macOS) are explicitly best-effort, not a completion blocker for B-EXEC-01, to avoid building throwaway platform-specific shims. **[proof: none — unfalsifiable as written]** |
-## External Dependencies
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| Podman CLI | 4.0 | `run --read-only --tmpfs --pids-limit --network none -v ...:ro -v ...:rw --cap-drop --security-opt --user --rm` | Y | Preferred engine (AD-6); rootless mode has no shared root daemon, smaller default capability set than Docker. |
-| Docker CLI | 20.10 | Same flag surface | Y | Supported fallback; `dockerd` runs as root, so this is a materially weaker isolation boundary than rootless Podman — documented, not hidden. |
-
-No new Python package dependency is introduced (see AD-1) — `pyproject.toml` is unchanged by this
-feature.
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | New `ContainerSubprocessExecutor` **subclasses** `SubprocessExecutor` (added flat under `sandbox/execution/`), overriding `execute()` to wrap the incoming `cmd` into a `podman`/`docker run` argv and then delegate to `super().execute(wrapped_cmd, ...)` for the actual spawn, timeout handling, env stripping, and result contract | `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is typed to the concrete class, not a protocol — a composition-only wrapper could not satisfy that type hint under strict mypy without widening a stable, existing signature. Subclassing is a legitimate Liskov-substitutable specialization here (same result contract, different physical spawn target) — it delegates to, rather than duplicates, the parent's logic, so it does not trip the "parallel security class" anti-pattern. Avoids adding `podman-py`/`docker-py` per external research — CLI-via-`SubprocessExecutor` covers the full required flag surface with one code path for both engines | No |
-| AD-2 | Extend `factory.resolve_runner(cwd)` and `QARunnerAtom.__init__` with an optional sandbox-mode parameter (sourced from the new `[sandbox]` config) that injects `ContainerSubprocessExecutor` in place of the default host `SubprocessExecutor` | `PythonQARunner.__init__(cwd, executor=None)` already has the DI seam; extending existing call sites is strictly additive and preserves NFR-7 | No |
-| AD-3 | Reuse `WorkspaceBoundary` for source-root and scratch-root path containment | Documented anti-pattern forbids parallel security classes | No |
-| AD-4 | Reuse `BashActionAtom`'s `ResourceLimits` values (2 GiB memory / 128 processes) as the container's default resource ceiling | Avoids inventing a second, divergent limits schema for the same underlying concern | No |
-| AD-5 | Redirect all pytest/coverage/lint artifact paths (`.pytest_cache`, `.coverage`, `--junitxml`, `PYTHONDONTWRITEBYTECODE=1`) to the scratch mount via explicit env/CLI flags at the `PythonQARunner` call site | Required because the source mount is read-only; identified as the top practical gotcha in external research | No |
-| AD-6 | Prefer rootless Podman when both engines are available on a host; Docker remains a supported fallback but is documented as a weaker isolation boundary (root daemon) for this specific untrusted-code path | Matches D-EXEC-01's existing "supports both" posture while being explicit, not silent, about the security delta between engines | No |
-| AD-7 | The exact mechanism for getting the target project's installed toolchain (pytest/ruff/tach/mypy, etc.) into the ephemeral container without a full reinstall on every invocation is split into two distinct phases to reconcile with NFR-3 (see AD-9): a **prepare phase** (network-enabled, runs `uv sync` from the project's own lockfile into a persistent, project-keyed cache volume — this phase executes only trusted, project-declared dependency resolution, never LLM-generated test code) and an **execute phase** (the actual QA run, mounts the pre-warmed cache read-only alongside the RO source, `--network none` per NFR-3 with zero exceptions). The prepare phase is gated by comparing a hash of `uv.lock`/`pyproject.toml` against a stamp file in the cache volume, re-running `uv sync` only when it changes — otherwise every run pays a full reinstall cost, defeating NFR-1. The cache-vs-host-venv choice (rather than mounting the host's own `.venv`) avoids the cross-OS/arch binary-incompatibility failure mode of mounting a Windows/macOS-built virtualenv into a Linux container base image | No |
-| AD-8 | `ContainerSubprocessExecutor` SHALL launch containers with a deterministic `--name` (derived from the run-id), and SHALL run an idempotent `podman/docker rm -f <name>` both immediately before start (in case a prior crashed run left a same-named container behind) and unconditionally in a `finally` block after execution — not relying on `--rm` alone, which only guarantees removal on graceful container exit, not when the outer `SubprocessExecutor` delivers `SIGKILL` to a hung client process on timeout | Closes the gap between FR-8/NFR-6's "guaranteed cleanup" claim and the actual mechanics of `SubprocessExecutor`'s existing SIGTERM→SIGKILL timeout path, which only guarantees the local CLI client process dies, not that the container it spawned is removed | No |
-| AD-9 | The QA-execution container itself is always `--network none`, without exception, for every intent covered by B-EXEC-01. Any network access required for dependency resolution happens only in AD-7's separate prepare phase, never in the same container instance that runs LLM-generated test/lint code | Prevents a direct contradiction between NFR-3 (default-deny network for untrusted code) and AD-7's need for `uv sync` to reach a package index | No |
-
-## ROI Analysis
-
-### Investment Cost
-
-| Item | Effort | Risk |
-|------|--------|------|
-| `ContainerSubprocessExecutor` + `ContainerMounts` value objects | Medium | Low–Medium (flag surface is well-trodden per external research) |
-| `factory.py` / `QARunnerAtom` DI wiring for sandbox mode | Low | Low |
-| New `[sandbox]` config schema in `core.config` | Low | Low |
-| Per-project dependency bootstrap (image/cache strategy, AD-7) | Medium–High | Medium (cross-platform correctness, first-run latency) |
-| New test coverage (unit/integration/e2e — greenfield, no existing container tests) | Medium | Low |
-
-### Returns
-
-| Beneficiary | Benefit | Magnitude |
-|-------------|---------|-----------|
-| All SpecWeaver operators | Closes the RCE exposure `E-EXEC-01`'s own design doc named as "the foundational prerequisite for US-9" | High |
-| US-9 Zero-Trust Sandbox | Delivers a Sub-Story Add-On capability (Containerized Isolation) | High |
-| Future network/paranoia-focused capabilities (e.g. `E-EXEC-02`, `A-EXEC-01`) | The `ContainerSubprocessExecutor`/mount contract becomes their attachment point for network policy and ledger hooks, if and when they are separately designed | Medium (enablement, not immediate) |
-
-### Risk Assessment
+## Risks
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| Operator enables `execution_mode: container` on a host without podman/docker installed | Medium | Medium | FR-7/NFR-9 fail closed with an actionable, engine-naming error; documented in the dev guide |
+| Operator enables `execution_mode: container` on a host without podman/docker | Medium | Medium | FR-7/NFR-9 fail closed with an engine-naming error; documented in the dev guide |
 | Cross-platform dependency bootstrap adds first-run latency or hits binary-incompatible packages | Medium | Medium | AD-7's persistent cache volume amortizes cost after the first run |
-| Host-owned scratch dir vs. container's non-root user UID/GID mismatch causes permission-denied writes | Medium | Low (fails loud, not silent data loss) | The container is `--user`-pinned to the same UID/GID that created the scratch/cache dirs on the host (native Linux) |
-| Orphaned containers from a crash mid-run | Low | Low | Deterministic `--name` plus idempotent pre-run and `finally`-block `rm -f` (AD-8) — not `--rm` alone |
-| CI never actually provisions a container engine, so the containerized path is permanently skipped and never exercised (false confidence) | Medium | High | NFR-10 requires at least one CI job lane with a real engine available; integration/e2e tests skip (not silently pass) when absent |
-| `uv sync` prepare-phase cache goes stale (dependencies changed but cache not invalidated), silently testing against outdated dependencies | Low | Medium | AD-7's lockfile-hash stamp-file check forces a re-sync whenever `uv.lock`/`pyproject.toml` changes |
+| Host-owned scratch dir vs. the container's non-root UID/GID → permission-denied writes | Medium | Low (fails loud, no silent data loss) | Container is `--user`-pinned to the UID/GID that created the scratch/cache dirs on the host (native Linux) |
+| Orphaned containers from a crash mid-run | Low | Low | Deterministic `--name` + idempotent pre-run and `finally` `rm -f` (AD-8) — not `--rm` alone |
+| CI never provisions an engine, so the containerized path is always skipped (false confidence) | Medium | High | NFR-10 requires one CI lane with a real engine; integration/e2e tests skip, not silently pass |
+| Stale `uv sync` cache: dependencies changed, cache not invalidated | Low | Medium | AD-7's lockfile-hash stamp forces a re-sync when `uv.lock`/`pyproject.toml` changes |
 
-### Refactoring Opportunities
+**Known gaps (open):**
+- No literal e2e-tier (CLI-invocation) test. Proof is real-Podman integration-tier tests, so the
+  roadmap's Proof Mandate is met at integration tier, not literal e2e tier — noted on the roadmap
+  status flip.
+- A capstone integration test (real pipeline handler → real container → real `pytest`, exercising
+  the `uv sync` prepare phase end-to-end) was proposed in SF-04 and declined; worth revisiting.
+- `validation_hydrator.py`/`facades.py` still build host-mode `QARunnerAtom` (deliberate scope cut).
+- CI provisioning of a real engine and the `Containerfile.sandbox` GHCR publish pipeline are
+  unimplemented; `execution_mode: "container"` needs an operator-built image today.
+
+**Follow-ups** (not in scope):
 
 | Existing Feature | Current Issue | Benefit from This Feature | Effort |
 |-----------------|---------------|---------------------------|--------|
-| `BashActionAtom` (`C-EXEC-02`) | Runs arbitrary `.specweaver/scripts/` bash directly on the host | Could route through the same `ContainerSubprocessExecutor` for defense-in-depth | Medium (deferred — out of this feature's scope, flagged as a future capability, not committed here) |
-| `QARunnerAtom._intent_run_debugger` | Executes an arbitrary entrypoint — arguably higher RCE risk than tests/lint | Same swap point as FR-1; a fast-follow candidate. Note: `run_debugger`'s current streaming behavior for `DebugRunResult`/`OutputEvent` must be re-verified before extending container routing to it, since `SubprocessExecutor.execute()` returns a single, fully-captured `SubprocessResult` rather than a live stream | Low |
-| `BashActionAtom`'s hardcoded `ResourceLimits` | Limits values duplicated ad hoc rather than shared | Extract a shared `ResourceLimits`/`MountSpec` value object used by both atoms, avoiding future drift | Low |
+| `BashActionAtom` (`C-EXEC-02`) | Runs arbitrary `.specweaver/scripts/` bash directly on the host | Could route through `ContainerSubprocessExecutor` for defense-in-depth | Medium (deferred, a future capability) |
+| `QARunnerAtom._intent_run_debugger` | Executes an arbitrary entrypoint — arguably higher RCE risk than tests/lint | Same swap point as FR-1; fast-follow candidate. Re-verify `DebugRunResult`/`OutputEvent` streaming first: `SubprocessExecutor.execute()` returns one fully-captured `SubprocessResult`, not a live stream | Low |
+| `BashActionAtom`'s hardcoded `ResourceLimits` | Limit values duplicated ad hoc | Extract a shared `ResourceLimits`/`MountSpec` value object for both atoms | Low |
 
-## Developer Guides Required
+Guide: `docs/dev_guides/subprocess_execution.md` — "Containerized QA Execution" section (DI pattern,
+`[sandbox]` flag, engine detection/preference, mount layout). ✅ Done.
 
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Containerized QA Execution | Extend `docs/dev_guides/subprocess_execution.md` with a new section covering the DI pattern, `[sandbox]` config flag, engine detection/preference order, and mount layout | ✅ Done |
+## Sub-features
 
-## Sub-Feature Breakdown
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | `ContainerSubprocessExecutor` (`ContainerMounts`, engine detection/liveness caching, deterministic naming + guaranteed cleanup, RO/RW mounts, `--network none`, non-root `--user`, resource limits, the AD-7/AD-9 prepare/execute split) | FR-2, FR-3, FR-5, FR-6, FR-7, FR-8 | — | [sf01](B-EXEC-01_sf01_implementation_plan.md) |
+| SF-02 | `factory.resolve_runner`/`QARunnerAtom` DI widening; `PythonQARunner`'s tach pre-check skip, `ContainerEngineUnavailableError` handling, artifact redirection (FR-4) across all 6 methods | FR-1, FR-4 | SF-01 | [sf02](B-EXEC-01_sf02_implementation_plan.md) |
+| SF-03 | `SandboxSettings` Pydantic model, `_load_toml_sandbox()` TOML loader, `context.yaml` exposure | FR-9 | SF-02 | [sf03](B-EXEC-01_sf03_implementation_plan.md) |
+| SF-04 | `ValidateTestsHandler`/`LintFixHandler` read `context.config.sandbox`; `.gitignore` scaffold for `.specweaver/.sandbox/`; `Containerfile.sandbox` image spec | FR-1, FR-9 | SF-03 | [sf04](B-EXEC-01_sf04_implementation_plan.md) |
 
-### SF-01: Core Containerized Execution Engine
-- **Scope**: `ContainerSubprocessExecutor` (`ContainerMounts`, engine detection/liveness caching,
-  deterministic naming + guaranteed cleanup, RO/RW mount flags, `--network none`, non-root `--user`,
-  resource limits, the AD-7/AD-9 prepare/execute phase split).
-- **FRs**: [FR-2, FR-3, FR-5, FR-6, FR-7, FR-8]
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf01_implementation_plan.md
-
-### SF-02: QA-Runner DI Wiring
-- **Scope**: `factory.resolve_runner`/`QARunnerAtom` DI widening to inject
-  `ContainerSubprocessExecutor`; `PythonQARunner`'s tach pre-check skip,
-  `ContainerEngineUnavailableError` handling, and artifact-path redirection (FR-4) across all 6
-  QA-runner methods.
-- **FRs**: [FR-1, FR-4]
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf02_implementation_plan.md
-
-### SF-03: Sandbox Config Plumbing
-- **Scope**: `SandboxSettings` Pydantic model, `_load_toml_sandbox()` TOML loader, `context.yaml` exposure.
-- **FRs**: [FR-9]
-- **Depends on**: SF-02
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf03_implementation_plan.md
-
-### SF-04: Pipeline Handler Wiring & Scaffolding
-- **Scope**: `ValidateTestsHandler`/`LintFixHandler` reading `context.config.sandbox`; `.gitignore` scaffolding for `.specweaver/.sandbox/`; `Containerfile.sandbox` declarative image spec.
-- **FRs**: [FR-1, FR-9]
-- **Depends on**: SF-03
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf04_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
-3. SF-03 (depends on SF-02)
-4. SF-04 (depends on SF-03)
+Order: SF-01 → SF-02 → SF-03 → SF-04, linear.
 
 ## Progress Tracker
 
@@ -259,34 +238,3 @@ feature.
 | SF-02 | QA-Runner DI Wiring | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Sandbox Config Plumbing | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Pipeline Handler Wiring & Scaffolding | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: `B-EXEC-01` (Ephemeral Podman Sub-Containers) is COMPLETE — all 4 sub-features
-built, tested, and committed across commits `68c34359`, `7e31ea9b`, `8046f12c`, `a2143124`. This
-design doc and its implementation plan are a **re-homing** of that work: it was originally built
-under a mis-scoped `INT-US-09 SF-01` label (an "integration contract" folder is not the correct
-home for a from-scratch capability build) and has been extracted here, into its own standalone
-capability location, with no functional code changes — only correct documentation homing.
-**Decisions confirmed with user**: Container execution is opt-in (`execution_mode` defaults to
-`"host"`); once explicitly enabled, missing engines fail closed rather than silently falling back
-to host execution. Non-root `--user` mapping (NFR-4) is in scope, not deferred.
-**Known gaps carried forward** (see the implementation plan's Backlog and SF-04 progress notes):
-no literal e2e-tier (CLI-invocation) test exists yet — verification is via real-Podman
-integration-tier tests instead, so the roadmap's Proof Mandate is satisfied at integration-tier,
-not literal e2e-tier; this is noted transparently on the roadmap status flip, not silently
-resolved. A capstone integration test (real pipeline handler → real container → real `pytest`,
-exercising the `uv sync` prepare phase end-to-end) was proposed during SF-04 and declined;
-worth revisiting. `validation_hydrator.py`/`facades.py` remain on host-mode `QARunnerAtom`
-construction (deliberate scope cut). CI provisioning of a real engine and the
-`Containerfile.sandbox` GHCR publish pipeline are both unimplemented Backlog items —
-`execution_mode: "container"` requires an operator to build the image locally today.
-**Not part of this feature**: `INT-US-09` (the actual Base Integration Contract for US-9,
-integrating `US-5 Core` + `E-EXEC-01` + `C-EXEC-02`) has not been designed. `E-EXEC-02` (Air-
-Gapped Network Egress Control) and `A-EXEC-01` (Extreme Execution Paranoia / Black Box Ledgers)
-are separate, future capabilities that may build on top of `B-EXEC-01`'s
-`ContainerSubprocessExecutor`/mount contract if and when they are designed — they are not
-sub-features of `B-EXEC-01` and no work toward them exists yet. *(Corrected 2026-08-20: this list
-also named `A-EXEC-03`, Rust `libgit2` bindings, since descoped by the benefit review.)*
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
-resume from there using the appropriate skill. (Currently: none — all rows are ✅.)

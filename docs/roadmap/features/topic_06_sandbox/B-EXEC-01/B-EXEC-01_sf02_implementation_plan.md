@@ -1,102 +1,81 @@
-# Implementation Plan: Ephemeral Podman Sub-Containers [SF-02: QA-Runner DI Wiring]
+# B-EXEC-01 SF-02 — QA-Runner DI Wiring
 
-- **Feature ID**: B-EXEC-01
-- **Sub-Feature**: SF-02 — QA-Runner DI Wiring
-- **Design Document**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf02_implementation_plan.md
-- **Status**: APPROVED
+**Status**: APPROVED. Committed as `7e31ea9b`. · **FRs owned**: FR-1, FR-4 · **Depends on**: SF-01
+(committed) · Design: [B-EXEC-01_design.md](B-EXEC-01_design.md) §Sub-features → SF-02
 
-## Scope
+## Goal
 
-Wire SF-01's `ContainerSubprocessExecutor` into `QARunnerAtom`/`PythonQARunner` via a widened DI
-seam: `factory.resolve_runner` gains an `executor` parameter, `QARunnerAtom.__init__` gains a
-`sandbox_settings` parameter that builds a `ContainerSubprocessExecutor` when container mode is
-requested, and `PythonQARunner` gains the container-mode-specific behavior it structurally cannot
-avoid owning itself (tach pre-check skip, `ContainerEngineUnavailableError` handling, artifact-path
-redirection to the scratch mount).
+Wire SF-01's `ContainerSubprocessExecutor` into `QARunnerAtom`/`PythonQARunner` through a widened
+DI seam:
+- `factory.resolve_runner` gains an `executor` parameter;
+- `QARunnerAtom.__init__` gains `sandbox_settings` and builds a `ContainerSubprocessExecutor` when
+  container mode is requested;
+- `PythonQARunner` gets the container-mode behavior only it can own: tach pre-check skip,
+  `ContainerEngineUnavailableError` handling, artifact redirection to the scratch mount.
 
-**FRs covered**: FR-1, FR-4.
-**Inputs**: SF-01's `ContainerSubprocessExecutor`/`ContainerMounts`; `PythonQARunner`'s existing
-argv-building logic (unchanged in shape, extended for redirection).
-**Outputs**: `QARunnerAtom` produces containerized QA results when a `ContainerSubprocessExecutor`
-is injected; unchanged host-mode behavior otherwise.
-**Depends on**: SF-01 (committed).
+Output: containerized QA results when a `ContainerSubprocessExecutor` is injected; unchanged
+host-mode behavior otherwise.
 
-## Research Notes
+## Where it plugs in
 
 - **The swap point**: every `PythonQARunner` method (`run_tests`, `run_linter`, `run_complexity`,
-  `run_compiler`, `run_debugger`, `run_architecture_check` — `sandbox/language/core/python/runner.py`)
-  calls `self._executor.execute(cmd, ...)` **exactly once**. `PythonQARunner.__init__(cwd,
-  executor: SubprocessExecutor | None = None)` already has the DI seam (`runner.py:131`). All 5
-  language runners (Python/TS/Rust/Kotlin/Java) share this exact constructor shape.
-- **No `input_text` usage exists today**: none of `PythonQARunner`'s 6 methods pass `input_text`
-  to `execute()`. Confirmed not applicable — no `-i`/`--interactive` flag handling needed for this
-  SF's actual call sites.
+  `run_compiler`, `run_debugger`, `run_architecture_check` —
+  `sandbox/language/core/python/runner.py`) calls `self._executor.execute(cmd, ...)` **exactly
+  once**. `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is the DI seam
+  (`runner.py:131`). All 5 language runners (Python/TS/Rust/Kotlin/Java) share this constructor.
+- **No `input_text` usage**: none of the 6 methods passes `input_text` to `execute()`, so no
+  `-i`/`--interactive` handling is needed.
 - **`RunContext.config`** (`core/flow/handlers/base.py:53`): `Any = None  #
-  SpecWeaverSettings | None` — already present on every handler's context; not this SF's concern
-  directly (that's SF-04), but establishes that `QARunnerAtom.__init__` gaining a
-  `sandbox_settings` parameter is all that's needed for callers to eventually pass it through.
-- **Factory/atom call sites for `QARunnerAtom`** (4 total, `grep -rn "QARunnerAtom("` across
-  `src/`): `core/flow/handlers/validation.py:407`, `core/flow/handlers/lint_fix.py:215`,
+  SpecWeaverSettings | None` — on every handler's context. So `QARunnerAtom.__init__` gaining
+  `sandbox_settings` is all callers need (they pass it in SF-04).
+- **`QARunnerAtom(` call sites** (4, `grep -rn "QARunnerAtom("` across `src/`):
+  `core/flow/handlers/validation.py:407`, `core/flow/handlers/lint_fix.py:215`,
   `core/flow/handlers/validation_hydrator.py:80`, `sandbox/qa_runner/interfaces/facades.py:180`.
-  Only the first two are wired for container mode (SF-04); the other two are left unwired for
-  scope discipline (Backlog).
-- **No existing `test_factory.py`** for `qa_runner/core/factory.py` — a new one is added (direct
-  unit coverage for the widened DI signature, since none existed before).
+  Only the first two get container mode (SF-04).
+- No `test_factory.py` existed for `qa_runner/core/factory.py`; one is added.
+- `qa_runner/core/{atom,factory}.py` importing `sandbox.execution.container_executor` is an existing,
+  legal sandbox-internal direction. No `tach.toml` change.
 
-## Resolved Audit Findings
+## Changes
 
-1. **(#1, HIGH)** `run_architecture_check`'s host-side `shutil.which("tach")` pre-check is made
-   conditional on `not isinstance(self._executor, ContainerSubprocessExecutor)` — skipped in
-   container mode, letting the containerized `tach check` invocation's own exit/stderr signal
-   absence (existing `OSError`→stderr path already handles it).
-7. **(#7, MEDIUM)** Engine-unavailable failures raise SF-01's `ContainerEngineUnavailableError`,
-   caught once per `PythonQARunner` method (all 6), converted into the same kind of
-   synthetic-failure result each method already builds for its `<timeout>` case (e.g.
-   `TestFailure(nodeid="<sandbox>", message=...)`, matching the existing pattern at
-   `runner.py:188`).
-9. **(#9, MEDIUM)** `factory.resolve_runner`'s DI seam is widened generically for all 5
-   languages, but the "is this runner class Python?" check and its accompanying WARNING log for
-   non-Python + container-mode combinations live **once, centrally, in `factory.py`** — not
-   duplicated across 4 language-runner files.
-
-## Proposed Changes
+1. `factory.resolve_runner(cwd: Path, executor: SubprocessExecutor | None = None) -> QARunnerInterface`:
+   thread `executor` into the selected language-runner constructor (all 5 accept it). If `executor`
+   is a `ContainerSubprocessExecutor` and the class is not `PythonQARunner`:
+   `logger.warning("container sandboxing is validated for Python projects only; %s may not have its toolchain available in the sandbox image", runner.language_name)`.
+2. `QARunnerAtom.__init__(self, cwd: Path, language: str = "python", sandbox_settings: SandboxSettings | None = None) -> None`:
+   - `sandbox_settings is None or sandbox_settings.execution_mode == "host"` → byte-for-byte
+     today's behavior (`executor=None` to `resolve_runner`, NFR-7);
+   - else build
+     `mounts = ContainerMounts(source_root=cwd, scratch_root=cwd/".specweaver"/".sandbox"/"scratch", cache_root=cwd/".specweaver"/".sandbox"/"cache")`,
+     construct `ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)`, pass it as `executor=`.
+3. `PythonQARunner`:
+   - `_run_tach_check()` skips the host `shutil.which("tach")` pre-check when
+     `isinstance(self._executor, ContainerSubprocessExecutor)`;
+   - all 6 methods catch `ContainerEngineUnavailableError` → the synthetic-failure shape each
+     already builds for `<timeout>`;
+   - `COVERAGE_FILE`, `--junitxml`, `--cache-dir`/`PYTHONDONTWRITEBYTECODE` redirect into `/scratch`
+     when containerized (FR-4/AD-5);
+   - `PythonQARunner.run_debugger()` uses the bare string `"python"` in container mode (same `isinstance` check),
+     like `run_tests`/`run_linter`/`run_complexity`. `sys.executable` is the *host's* interpreter
+     path (a Windows `.exe` on the implementing machine), meaningless in a Linux container
+     (`exec: ...: executable file not found in $PATH`).
+4. `SandboxSettings(BaseModel)` (`execution_mode: Literal["host","container"] = "host"`) lands here,
+   pulled forward from SF-03: the `sandbox_settings: SandboxSettings | None` type hint needs it,
+   and `Any` is too loose. The TOML loading (`_load_toml_sandbox`, `load_settings_async()`) stays in
+   SF-03.
 
 | File | Change | Purpose |
 |------|--------|---------|
 | `src/specweaver/sandbox/qa_runner/core/factory.py` | `[MODIFY]` | Widen `resolve_runner(cwd, executor=None)`; central non-Python + container-mode WARNING log |
 | `src/specweaver/sandbox/qa_runner/core/atom.py` | `[MODIFY]` | `QARunnerAtom.__init__` gains `sandbox_settings: SandboxSettings \| None = None`; builds `ContainerSubprocessExecutor` when `execution_mode == "container"` |
 | `src/specweaver/sandbox/language/core/python/runner.py` | `[MODIFY]` | Conditional `tach` pre-check skip; catch `ContainerEngineUnavailableError` in all 6 methods; artifact-path redirection to `/scratch` when containerized |
-| `src/specweaver/core/config/settings.py` | `[MODIFY]` | Add bare `SandboxSettings(BaseModel)` model (`execution_mode: Literal["host","container"] = "host"`) — pulled forward from SF-03 due to a type-hint dependency (see Post-Implementation Notes) |
+| `src/specweaver/core/config/settings.py` | `[MODIFY]` | Add bare `SandboxSettings(BaseModel)` model (`execution_mode: Literal["host","container"] = "host"`) — pulled forward from SF-03 |
 | `tests/unit/sandbox/qa_runner/core/qa_runner/test_factory.py` | `[NEW]` | DI-passthrough tests for the widened `resolve_runner` signature |
 | `tests/unit/sandbox/qa_runner/core/qa_runner/test_atom.py` | `[MODIFY]` | `sandbox_settings` → executor selection tests |
 | `tests/unit/sandbox/language/core/language/python/test_runner.py` | `[MODIFY]` | Conditional tach-precheck-skip test; `ContainerEngineUnavailableError` → synthetic-failure test |
 | `tests/integration/sandbox/atoms/qa_runner/python/test_container_atom_integration.py` | `[NEW]` | Real `podman`/`docker` run, full assembled chain: `factory.resolve_runner()` → `PythonQARunner` → `ContainerSubprocessExecutor` |
 
-## Implementation Sequence (pseudocode)
-
-1. `factory.resolve_runner(cwd: Path, executor: SubprocessExecutor | None = None) -> QARunnerInterface`:
-   thread `executor` through to whichever language-runner constructor is selected (all 5 already
-   accept it). After selection, if `executor` is a `ContainerSubprocessExecutor` and the selected
-   class is not `PythonQARunner`,
-   `logger.warning("container sandboxing is validated for Python projects only; %s may not have its toolchain available in the sandbox image", runner.language_name)`
-   — centralizes Finding #9's warning in one place.
-2. `QARunnerAtom.__init__(self, cwd: Path, language: str = "python", sandbox_settings: SandboxSettings | None = None) -> None`:
-   if `sandbox_settings is None or sandbox_settings.execution_mode == "host"`, behavior is
-   byte-for-byte identical to today (`executor=None` passed to `resolve_runner`, preserving NFR-7).
-   Else, build
-   `mounts = ContainerMounts(source_root=cwd, scratch_root=cwd/".specweaver"/".sandbox"/"scratch", cache_root=cwd/".specweaver"/".sandbox"/"cache")`,
-   construct `ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)`, pass it as `executor=` to
-   `resolve_runner`.
-3. `PythonQARunner`: `_run_tach_check()` skips the host-side `shutil.which("tach")` pre-check when
-   `isinstance(self._executor, ContainerSubprocessExecutor)`. All 6 methods catch
-   `ContainerEngineUnavailableError` and convert it to the same synthetic-failure shape each already
-   builds for its `<timeout>` case. Artifact-writing paths (`COVERAGE_FILE`, `--junitxml`,
-   `--cache-dir`/`PYTHONDONTWRITEBYTECODE`) redirect into `/scratch` when the executor is a
-   `ContainerSubprocessExecutor` (FR-4/AD-5).
-
-## Test Plan
+## Tests
 
 | Test | FR/NFR | Asserts |
 |------|--------|---------|
@@ -109,90 +88,34 @@ is injected; unchanged host-mode behavior otherwise.
 | `test_qa_runner_atom_container_mode_builds_container_executor` | FR-1, AD-2 | `QARunnerAtom(cwd=..., sandbox_settings=SandboxSettings(execution_mode="container"))` → `ContainerSubprocessExecutor` constructed with mounts derived from `cwd` |
 | **Integration** `test_container_atom_integration` (real Podman, full chain) | FR-1..FR-4 | `factory.resolve_runner()` → `PythonQARunner` → `ContainerSubprocessExecutor` → real engine |
 
-## FR / NFR / AD Coverage
+FR-4 is proven by the integration round trip — a host-level mock cannot show real writes landing
+under `/scratch`. AD-2: DI widening, tested throughout; AD-5: redirection (FR-4).
 
-| ID | Covered by |
-|----|-----------|
-| FR-1 | `ContainerSubprocessExecutor` construction gated on `execution_mode`; tests: `test_qa_runner_atom_container_mode_builds_container_executor`, `test_resolve_runner_threads_executor_to_python` |
-| FR-4 | Artifact-path redirection in `runner.py` — covered by the integration round-trip test (host-level unit mocking can't meaningfully assert real file writes land under `/scratch`) |
-| AD-2 | `factory.resolve_runner`/`QARunnerAtom.__init__` DI widening; tests throughout |
-| AD-5 | Artifact-path redirection (FR-4) |
+## Decisions (audit)
 
-## Backlog (deferred, out of scope for SF-02)
+| # | Question | Chosen | Severity |
+|---|----------|--------|----------|
+| #1 | How does `run_architecture_check` detect a missing `tach` in container mode? | The host `shutil.which("tach")` pre-check runs only when `not isinstance(self._executor, ContainerSubprocessExecutor)`; in container mode the containerized `tach check`'s exit/stderr signals absence (existing `OSError`→stderr path) | HIGH |
+| #7 | How does an unavailable engine surface? | SF-01's `ContainerEngineUnavailableError`, caught once per method (all 6), converted to the synthetic failure each builds for `<timeout>` (e.g. `TestFailure(nodeid="<sandbox>", message=...)`, as at `runner.py:188`) | MEDIUM |
+| #9 | Where does the "non-Python + container mode" warning live? | Once, centrally, in `factory.py` — the seam is widened for all 5 languages, but the check is not duplicated across 4 runner files | MEDIUM |
 
-- **`validation_hydrator.py` / `facades.py` container wiring**: the other 2 of 4 `QARunnerAtom`
-  call sites; deferred for scope discipline — SF-04 only wires `validation.py`/`lint_fix.py`.
-- **`run_debugger` containerization fast-follow**: already flagged in the design doc's Refactoring
-  Opportunities.
+Out of scope: container wiring for `validation_hydrator.py`/`facades.py` (the other 2 of 4 call
+sites); `run_debugger` containerization fast-follow (design §Risks, follow-ups).
 
-## Phase 5: Final Consistency Check
+## As built
 
-**5.1 Open questions**: None remaining.
-
-**5.2 Architecture**: `qa_runner/core/{atom,factory}.py` import `sandbox.execution.container_executor`
-— an existing, already-legal sandbox-internal direction. No `tach.toml` change required.
-
-### Red/Blue Team Review (1 cycle — no findings beyond what implementation caught, see below)
-
-No pre-approval Red/Blue findings beyond the design-level ones already resolved. The real bug this
-sub-feature exposed (`sys.executable` vs. bare `"python"`) was caught by the real-engine
-integration test during implementation, not by this plan's own review — see Post-Implementation
-Notes.
-
----
-
-## HITL Gate — Approval Required
-
-This plan is ready for review. Summary: 4 modified source files, 4 new/modified test files,
-widens an existing DI seam rather than inventing a new one, zero `tach.toml` changes.
-
-Reply with approval to mark this plan `APPROVED` and proceed to the `dev` skill for SF-02's TDD
-implementation.
-
----
-
-## Post-Implementation Notes
-
-**Landed as planned**: `factory.resolve_runner(cwd, executor=None)` widened, centralized
-non-Python + container-mode warning; `QARunnerAtom.__init__` gains `sandbox_settings`;
-`PythonQARunner`'s tach pre-check skip + `ContainerEngineUnavailableError` handling across all 6
-methods.
-
-**Sequencing correction found mid-implementation**: this sub-feature's `sandbox_settings:
-SandboxSettings | None` type hint needs `SandboxSettings` to exist, but the model was originally
-slotted entirely in SF-03. Rather than loosely type it `Any`, pulled just the `SandboxSettings`
-**model definition** (in `core/config/settings.py`) forward into this sub-feature — the
-TOML-loading wiring (`_load_toml_sandbox`, threading into `load_settings_async()`) stays in SF-03
-as planned. 4 new tests for the bare model, counted in SF-03's own test count.
-
-**Test coverage exceeded the plan**: per the user's standing "don't forget e2e/integration tests"
-preference, added a real-engine integration test
-(`tests/integration/sandbox/atoms/qa_runner/python/test_container_atom_integration.py`)
-exercising the full assembled chain — `factory.resolve_runner()` → `PythonQARunner` →
-`ContainerSubprocessExecutor` → a real, live Podman engine. This test's first run failed for
-real, catching a genuine bug no mocked unit test could: `PythonQARunner.run_debugger()` built its
-command with `sys.executable` (the *host's* interpreter path — a Windows `.exe` path on the
-implementing machine), which is meaningless inside a Linux container (`exec: ...: executable file
-not found in $PATH`). Fixed: `run_debugger` now uses the bare string `"python"` in container mode
-(matching how `run_tests`/`run_linter`/`run_complexity` already worked), selected via the same
-`isinstance(self._executor, ContainerSubprocessExecutor)` check already used for the tach
-pre-check skip. 2 new unit tests lock in both branches; the integration test now passes for real.
-Documented as a general lesson in `special_patterns_and_adaptations.md` §23's addendum:
-physical-execution-target swaps need auditing for host-specific path assumptions, and unit-test
-mocks alone can't catch this class of bug.
-
-**Quality note**: 3 files crossed the file-size YELLOW soft-threshold (450 lines for source) as a
-direct result of this sub-feature's additions — `qa_runner/core/atom.py` (452),
-`language/core/python/runner.py` (592), `test_atom.py` (689, tests threshold is 675). All still
-`0 errors` on the size gate; not refactored, since splitting a cohesive class to dodge a soft
-line-count metric isn't warranted (several pre-existing sandbox files already sit further into
-this band, e.g. `sandbox/filesystem/interfaces/tool.py` at 521).
-
-**Test counts**: 27 new tests, all green (173 language-runner tests + 439 qa_runner/language/config
-tests overall, zero regressions). Full suite: unit 4605 passed/15 skipped, integration 434
-passed/5 skipped/15 deselected, e2e 139 passed/1 skipped.
-
-**Documentation updated**: `subprocess_execution.md` (new "Opt-In via QARunnerAtom" section + the
-`sys.executable` gotcha note), `special_patterns_and_adaptations.md` (§23 addendum).
-
-**Committed as**: `7e31ea9b`.
+- Landed as planned (`factory.resolve_runner(cwd, executor=None)`, central warning,
+  `sandbox_settings`, tach skip, engine-error handling), plus the `SandboxSettings` model (Changes §4; its 4 tests count in SF-03) and
+  the `run_debugger` `"python"` fix (Changes §3), which the real-engine integration test caught on
+  its first run. 2 unit tests lock both branches. Lesson recorded in
+  `special_patterns_and_adaptations.md` §23's addendum: swapping the physical execution target needs
+  an audit for host-specific path assumptions; unit-test mocks cannot catch this class of bug.
+- Size gate: 3 files crossed the YELLOW soft threshold (450 lines for source; 675 for tests) —
+  `qa_runner/core/atom.py` (452), `language/core/python/runner.py` (592), `test_atom.py` (689). Still
+  `0 errors`; not split — splitting a cohesive class for a soft metric is not warranted (e.g.
+  `sandbox/filesystem/interfaces/tool.py` already sits at 521).
+- Tests: 27 new (173 language-runner + 439 qa_runner/language/config tests overall). Suite at
+  commit: unit 4605 passed/15 skipped, integration 434 passed/5 skipped/15 deselected, e2e 139
+  passed/1 skipped.
+- Docs: `subprocess_execution.md` ("Opt-In via QARunnerAtom" + the `sys.executable` note),
+  `special_patterns_and_adaptations.md` (§23 addendum).

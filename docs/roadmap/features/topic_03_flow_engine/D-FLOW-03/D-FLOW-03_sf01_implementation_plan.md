@@ -1,72 +1,72 @@
-# Implementation Plan: Static Model Routing — SF-01: ModelRouter + DB + Handler Integration
+# D-FLOW-03 SF-01 — ModelRouter + DB + Handler Integration
 
-- **Feature ID**: feature_3_14
-- **Sub-Feature**: SF-01 — ModelRouter + DB + Handler Integration
-- **Design Document**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf01_implementation_plan.md
-- **Status**: COMPLETE
+**Status**: COMPLETE · **FRs owned**: FR-1 (DB write), FR-2, FR-3, FR-5, FR-6, FR-7 · **Depends
+on**: none · Design: [D-FLOW-03_design.md](D-FLOW-03_design.md) §Sub-features → SF-01 · Feature ID
+feature_3_14
 
----
+## Goal
 
-## Overview
+The routing engine (Feature 3.12b). Every pipeline LLM call resolves its adapter **and model** from
+the per-task-type DB config instead of the single project default. Callers with no routing work
+identically (FR-3: transparent fallback). SF-02 (CLI) needs the two new DB methods added here.
 
-This plan implements the routing engine for Feature 3.12b. When complete, every
-pipeline LLM call resolves its adapter **and model** from the per-task-type DB
-config rather than the single project default. All callers that don't configure
-routing continue working identically (FR-3: transparent fallback).
+## Where it plugs in
 
-SF-02 (CLI commands) depends on two new DB methods added here. SF-01 must be
-committed before SF-02 planning begins.
+Since moved (2026-09-25): `llm/` → `infrastructure/llm/`; `flow/_base.py`, `_generation.py`,
+`_review.py`, `_lint_fix.py` → `core/flow/handlers/` (`run_context.py`, `generation.py`,
+`review.py`, `lint_fix.py`); `cli/pipelines.py` → `core/flow/interfaces/cli.py`;
+`_db_llm_mixin.py` → `infrastructure/llm/store.py`. Line refs below are as of the plan.
 
----
+- **R1 — two `RunContext` assembly points:**
+  - `cli/pipelines.py:229` — `_execute_run()`, for a fresh `sw run`. LLM wired at lines 241–250;
+    create `ModelRouter` there, next to the adapter.
+  - `cli/pipelines.py:379` — `resume()`, for `sw resume`. It wired no LLM adapter at all; add the
+    LLM and `ModelRouter`, in a try/except like `run`.
+- **R2 — `DraftSpecHandler` makes zero LLM calls** — skipped.
+- **R3 — `_build_tool_dispatcher` in `_review.py:58`** checks
+  `hasattr(context.llm, 'generate_with_tools')`. `context.llm` stays the default fallback adapter,
+  so routing does not affect it.
+- **R4 — `load_settings` raises `ValueError` (not `KeyError`)** when the role has no profile link
+  (settings.py:104). The router reads that as "no entry — return None".
+- **R5 — no `unlink_project_profile`** in `_db_llm_mixin.py`; added. `link_project_profile` uses
+  `INSERT OR REPLACE`, so set is already idempotent.
+- **R6 — `_review_config_from_context` and `_gen_config_from_context`** are per-file private
+  helpers; each gains a keyword-only optional `RouterResult` and prefers it over `context.config`.
+- **R7 — `TelemetryCollector` wrapping** happens in `ModelRouter.get_for_task()` at cache-fill
+  time; the cache holds the wrapped adapter. No double wrapping.
+- **R9 — `LintFixHandler._llm_fix()` called `llm.generate(prompt)` with a raw string**, so model,
+  temperature and `task_type` were never set, and with telemetry on it failed with
+  `TypeError: generate() missing 1 required positional argument: 'config'`. Change 7 moves it to
+  `generate(messages: list[Message], config: GenerationConfig)`.
+- **R10 — `TaskType` docstring** said `"Does not affect generation behavior"`; `TaskType` is now
+  also the routing key. Updated (change 8).
 
-## Research Notes (Phase 0 Findings)
+Dependencies — no cycles; `llm/router.py` does not import `flow/`; handlers import `RouterResult`
+under `TYPE_CHECKING` only:
 
-**R1 — `RunContext` assembly points (two locations):**
-- `cli/pipelines.py:229` — `_execute_run()`: assembles context for a fresh `sw run`.
-  LLM is wired at lines 241–250. `ModelRouter` must be created here alongside the adapter.
-- `cli/pipelines.py:379` — `resume()`: assembles context for `sw resume`. Note: the
-  `resume` command does NOT wire up the LLM adapter at all (pre-existing gap).
-  Add `ModelRouter` injection here too, inside a try/except to match the `run` pattern.
+```
+llm/router.py
+  ├── consumes: config/ (load_settings, Database)  ✅ allowed
+  ├── consumes: llm/adapters/ (get_adapter_class)  ✅ same module group
+  ├── consumes: llm/collector.py (TelemetryCollector) ✅ same module
+  └── forbids: loom/*  ✅ not imported
 
-**R2 — `DraftSpecHandler` makes zero LLM calls** — no routing needed. Skip this handler.
+flow/_base.py (RunContext + llm_router field)
+  └── no new imports — `Any` type annotation
 
-**R3 — `_build_tool_dispatcher` in `_review.py:58`** checks
-`hasattr(context.llm, 'generate_with_tools')`. Since `context.llm` remains the
-default fallback adapter, this check is unaffected by routing. No change needed here.
+flow/_generation.py, flow/_review.py
+  ├── consumes: llm/router.py (RouterResult) — TYPE_CHECKING only ✅
+  └── no new runtime imports
 
-**R4 — `load_settings` raises `ValueError` (not `KeyError`)** when the role has no
-profile link (settings.py:104). The router catches this as "no entry — return None".
+cli/pipelines.py
+  └── consumes: llm/router.py (ModelRouter) — lazy import ✅
+```
 
-**R5 — No `unlink_project_profile` exists in `_db_llm_mixin.py`.** Must add it.
-Existing `link_project_profile` uses `INSERT OR REPLACE` — so set is already idempotent.
-
-**R6 — `_review_config_from_context` and `_gen_config_from_context`** are shared
-private helpers per-file. Update each to accept an optional `RouterResult` argument
-(keyword-only) and prefer it over `context.config` when provided.
-
-**R7 — `TelemetryCollector` wrapping** is done inside `ModelRouter.get_for_task()`
-at cache-fill time. The cache stores the already-wrapped adapter. No double-wrapping.
-
-**R9 — `LintFixHandler._llm_fix()` calls `llm.generate(prompt)` with a raw string** — a pre-existing
-bug. This bypasses `GenerationConfig` entirely, so model, temperature, and `task_type`
-are never set. When `context.llm` is a `TelemetryCollector` (i.e., telemetry enabled),
-this call **fails at runtime** with `TypeError: generate() missing 1 required positional
-argument: 'config'`. SF-01 fixes this by refactoring `_llm_fix()` to use the standard
-`generate(messages: list[Message], config: GenerationConfig)` interface.
-After SF-01, every handler in the codebase uses the unified call — no raw string paths remain.
-
-**R10 — `TaskType` docstring is stale**: `"Does not affect generation behavior"` is no longer
-true after 3.12b — `TaskType` is now also the routing key. Docstring must be updated.
-
----
-
-## Proposed Changes
+## Changes
 
 ### 1. `llm/router.py` [NEW]
 
-New file in `llm/` (adapter archetype). Contains `RouterResult` and `ModelRouter`.
+`RouterResult` and `ModelRouter`, adapter archetype.
 
 ```python
 # src/specweaver/llm/router.py
@@ -186,30 +186,22 @@ class ModelRouter:
         )
 ```
 
-> [!NOTE]
-> `llm/router.py` follows the `adapter` archetype: it wraps external services
-> (adapter creation) and consumes only `config/` and `llm/adapters/` — both
-> allowed by `llm/context.yaml`. No `loom/*` imports.
-
----
+`llm/router.py` wraps external services (adapter creation) and consumes only `config/` and
+`llm/adapters/`, both allowed by `llm/context.yaml`. No `loom/*` imports.
 
 ### 2. `flow/_base.py` [MODIFY]
-
-Add `llm_router: Any = None` field to `RunContext`:
 
 ```python
 # In RunContext — after the existing `db: Any = None` field:
 llm_router: Any = None  # ModelRouter | None — per-task-type adapter resolution (3.12b)
 ```
 
-This is a backward-compatible additive change. All existing `RunContext(...)` calls
-continue to work unchanged. Handlers check `context.llm_router is not None`.
-
----
+Additive; existing `RunContext(...)` calls are unchanged. Handlers check
+`context.llm_router is not None`.
 
 ### 3. `flow/_generation.py` [MODIFY]
 
-Update `_gen_config_from_context()` to accept and prefer `RouterResult`:
+`_gen_config_from_context()` accepts and prefers `RouterResult`:
 
 ```python
 def _gen_config_from_context(
@@ -246,16 +238,12 @@ def _gen_config_from_context(
     )
 ```
 
-> [!NOTE]
-> **Temperature resolution — profile-wins:** When a routing entry is active,
-> `routed.temperature` is used verbatim from the profile. This allows the same
-> model (e.g. `gemini-3.1-pro`) to be used at `temperature=0.5` for spec writing
-> and `temperature=0.2` for review within the same pipeline run, simply by
-> configuring two routing entries with matched profiles.
-> Handler-default temperatures (e.g., 0.2, 0.3) apply **only** in the fallback
-> path (no routing entry configured for that task type).
+**Temperature — profile-wins.** With a routing entry, `routed.temperature` is used verbatim. The
+same model (e.g. `gemini-3.1-pro`) can run at `temperature=0.5` for spec writing and
+`temperature=0.2` for review in one pipeline run, via two routing entries. Handler defaults (e.g.,
+0.2, 0.3) apply **only** in the fallback path.
 
-**`GenerateCodeHandler.execute`** — add routing resolution:
+`GenerateCodeHandler.execute`:
 
 ```python
 async def execute(self, step, context):
@@ -276,9 +264,9 @@ async def execute(self, step, context):
         # ... rest unchanged
 ```
 
-**`GenerateTestsHandler.execute`** — same pattern, `TaskType.IMPLEMENT`.
+`GenerateTestsHandler.execute` — same pattern, `TaskType.IMPLEMENT`.
 
-**`PlanSpecHandler._build_config`** — update signature and prefer routed:
+`PlanSpecHandler._build_config`:
 
 ```python
 def _build_config(self, context: RunContext, routed: "RouterResult | None" = None):
@@ -298,7 +286,7 @@ def _build_config(self, context: RunContext, routed: "RouterResult | None" = Non
                             max_output_tokens=4096, task_type=TaskType.PLAN)
 ```
 
-**`PlanSpecHandler.execute`** — resolve routing and pass to `_build_config`:
+`PlanSpecHandler.execute` passes routing to `_build_config`:
 
 ```python
 routed = (
@@ -310,11 +298,9 @@ config = self._build_config(context, routed=routed)
 planner = Planner(llm=adapter, config=config, ...)
 ```
 
----
-
 ### 4. `flow/_review.py` [MODIFY]
 
-Update `_review_config_from_context()`:
+`_review_config_from_context()`:
 
 ```python
 def _review_config_from_context(
@@ -338,7 +324,7 @@ def _review_config_from_context(
                             max_output_tokens=4096, task_type=TaskType.REVIEW)
 ```
 
-**`ReviewSpecHandler.execute`** — add routing and pass routed adapter + config:
+`ReviewSpecHandler.execute`:
 
 ```python
 from specweaver.infrastructure.llm.models import TaskType
@@ -354,18 +340,12 @@ reviewer = Reviewer(
 )
 ```
 
-**`ReviewCodeHandler.execute`** — same pattern.
-
-> [!NOTE]
-> `_build_tool_dispatcher(context, ...)` still checks `hasattr(context.llm, ...)`.
-> `context.llm` remains the default fallback adapter and is always set when the
-> pipeline is LLM-enabled — this check is unaffected by routing.
-
----
+`ReviewCodeHandler.execute` — same pattern. `_build_tool_dispatcher(context, ...)` still checks
+`hasattr(context.llm, ...)`; `context.llm` is always set when the pipeline is LLM-enabled (R3).
 
 ### 5. `config/_db_llm_mixin.py` [MODIFY]
 
-Add two methods to `LlmProfilesMixin`:
+Two methods on `LlmProfilesMixin`:
 
 ```python
 def unlink_project_profile(self, project_name: str, role: str) -> bool:
@@ -403,11 +383,9 @@ def get_project_routing_entries(
         return [dict(r) for r in rows]
 ```
 
----
-
 ### 6. `cli/pipelines.py` [MODIFY]
 
-**In `_execute_run()` — after the LLM wiring block (lines 241–250), add routing:**
+`_execute_run()`, after the LLM wiring block (lines 241–250):
 
 ```python
 # Wire up ModelRouter if LLM was successfully configured
@@ -424,7 +402,8 @@ if context.llm is not None:
         pass  # Routing is optional — never block pipeline startup
 ```
 
-**In `resume()` — after the `RunContext(...)` block (line 379), add the same pattern:**
+`resume()`, after the `RunContext(...)` block (line 379) — wires the LLM too, since routing without
+an LLM is meaningless in resumed runs:
 
 ```python
 # Wire up LLM + router for resume (mirrors _execute_run)
@@ -442,22 +421,12 @@ except Exception:
     )
 ```
 
-> [!NOTE]
-> The `resume` command currently doesn't wire up the LLM at all (pre-existing gap).
-> We fix this as part of SF-01 because adding routing without the LLM would be
-> meaningless in resumed runs.
-
----
-
 ### 7. `flow/_lint_fix.py` [MODIFY]
 
-**Architectural outcome: after this change, every handler in the codebase uses the
-unified `generate(messages: list[Message], config: GenerationConfig)` interface.
-No raw string paths remain.**
+After this, every handler uses `generate(messages: list[Message], config: GenerationConfig)`; no
+raw-string path remains.
 
-Two changes:
-
-**A — Add `context: RunContext` parameter to `_llm_fix()`** (propagated from `execute()`):
+**A — `_llm_fix()` gains `context: RunContext`** (from `execute()`):
 
 ```python
 # In execute(), change call site:
@@ -469,7 +438,7 @@ await self._llm_fix(
 )
 ```
 
-**B — Rewrite `_llm_fix()` to use the standard interface + routing:**
+**B — `_llm_fix()` uses the standard interface + routing:**
 
 ```python
 async def _llm_fix(
@@ -535,21 +504,13 @@ async def _llm_fix(
     code_path.write_text(fixed_code + "\n", encoding="utf-8")
 ```
 
-> [!NOTE]
-> `temperature=0.1` is the handler default for lint fixing (**profile-wins** applies:
-> if a routing entry for `TaskType.CHECK` is configured, `routed.temperature` is
-> used instead). This is the same profile-wins rule as all other handlers.
-
-> [!CAUTION]
-> The existing `LintFixHandler` tests that mock `context.llm.generate()` will need
-> updating: they must pass `(messages, config)` not a raw string. Check
-> `tests/unit/flow/` for existing `LintFixHandler` tests before writing new ones.
-
----
+`temperature=0.1` is the lint-fix default; profile-wins applies — a `TaskType.CHECK` routing entry
+uses `routed.temperature`. Existing `LintFixHandler` tests that mock `context.llm.generate()` must
+pass `(messages, config)`, not a raw string; check `tests/unit/flow/` first.
 
 ### 8. `llm/models.py` [MODIFY]
 
-Update `TaskType` docstring — it is now both a telemetry label **and** a routing key:
+`TaskType` is now a telemetry label **and** a routing key:
 
 ```python
 class TaskType(enum.StrEnum):
@@ -566,11 +527,7 @@ class TaskType(enum.StrEnum):
     """
 ```
 
----
-
-## `llm/context.yaml` [MODIFY]
-
-Add `ModelRouter` and `RouterResult` to the `exposes` list:
+### `llm/context.yaml` [MODIFY]
 
 ```yaml
 exposes:
@@ -586,13 +543,9 @@ exposes:
   - RouterResult     # NEW (3.12b)
 ```
 
----
-
 ## Tests
 
-New test file: `tests/unit/llm/test_router.py`
-
-### Test scenarios:
+New file: `tests/unit/llm/test_router.py`.
 
 ```
 TestRouterResult
@@ -641,16 +594,10 @@ TestDbLlmMixin (existing file — add cases)
   test_get_project_routing_entries_excludes_non_task — "review" row not included
 ```
 
-> [!CAUTION]
-> Do NOT use real LLM calls in any test. All adapters must be mocked via
-> `unittest.mock.MagicMock` or `AsyncMock`. The router tests use a real
-> in-memory SQLite DB (following the pattern in `test_factory.py`).
+No real LLM calls: adapters are `unittest.mock.MagicMock` or `AsyncMock`. Router tests use a real
+in-memory SQLite DB (pattern: `test_factory.py`).
 
----
-
-## Verification Plan
-
-All commands run from `c:\development\pitbula\specweaver`.
+Verify (the plan ran from `c:\development\pitbula\specweaver`):
 
 ```bash
 # Run new router tests
@@ -666,37 +613,10 @@ ruff check src/ tests/
 python -m mypy src/specweaver/llm/router.py src/specweaver/flow/_base.py
 ```
 
-Expected outcome: all tests pass, no new lint errors, no circular imports introduced.
+Expected: all tests pass, no new lint errors, no circular imports.
 
----
+## Out of scope
 
-## Dependency Graph
-
-```
-llm/router.py
-  ├── consumes: config/ (load_settings, Database)  ✅ allowed
-  ├── consumes: llm/adapters/ (get_adapter_class)  ✅ same module group
-  ├── consumes: llm/collector.py (TelemetryCollector) ✅ same module
-  └── forbids: loom/*  ✅ not imported
-
-flow/_base.py (RunContext + llm_router field)
-  └── no new imports — `Any` type annotation
-
-flow/_generation.py, flow/_review.py
-  ├── consumes: llm/router.py (RouterResult) — TYPE_CHECKING only ✅
-  └── no new runtime imports
-
-cli/pipelines.py
-  └── consumes: llm/router.py (ModelRouter) — lazy import ✅
-```
-
-**No circular imports.** `llm/router.py` does not import from `flow/`.
-Handlers import `RouterResult` under `TYPE_CHECKING` only (no runtime cost).
-
----
-
-## Backlog (not in this SF)
-
-- `profile_name` field of `RouterResult` is always `""` — populate it from the DB
-  profile name for richer logging (low priority, SF-02 can add it)
-- `sw resume` LLM wiring was missing before this SF — document the fix in release notes
+- `RouterResult.profile_name` is always `""` — populate from the DB profile name for richer logging
+  (low priority).
+- `sw resume` had no LLM wiring before this SF — note the fix in release notes.

@@ -1,13 +1,11 @@
-# Design: QA Runner Tool
+# D-VAL-01 — QA Runner Tool
 
-- **Feature ID**: D-VAL-01
-- **Phase**: 1
-- **Status**: COMPLETED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/D-VAL-01/D-VAL-01_design.md
+**Status**: COMPLETED · **Phase**: 1 · **Feature ID**: D-VAL-01
 
-## Feature Overview
+## What it does
 
-Feature D-VAL-01 defines the Code Validation engine, capable of running deterministic code rules against the generated source code. It implements `sw check code` via the unified rules interface.
+The Code Validation engine: runs deterministic code rules against generated source code. It
+implements `sw check code` via the unified rules interface.
 
 ## Functional Requirements
 
@@ -20,7 +18,3 @@ Feature D-VAL-01 defines the Code Validation engine, capable of running determin
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | QA Runner Implementation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature D-VAL-01 is **COMPLETED**.

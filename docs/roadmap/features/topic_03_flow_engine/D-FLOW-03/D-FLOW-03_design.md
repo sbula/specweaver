@@ -1,143 +1,93 @@
-# Design: Static Model Routing (Config-Driven)
+# D-FLOW-03 — Static Model Routing (Config-Driven)
 
-- **Feature ID**: feature_3_14
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01 and SF-02 committed (SF-02: `27b03522`). · **Phase**: 3
+· **Feature ID**: feature_3_14 (legacy numbering; the code comments call it 3.12b)
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | the LLM layer: `create_llm_adapter`, `load_settings`, `project_llm_links` |
+| Used by | every LLM-calling pipeline handler (generate, plan, review, lint-fix) |
+| Not touched | adapters, telemetry logic, validation, pipeline YAML |
 
-Feature 3.12b adds config-driven static model routing to the SpecWeaver LLM layer.
-It solves the problem that every pipeline step today uses the same single adapter
-and model, preventing users from manually assigning better-suited or cheaper models
-per task type (e.g., `review → claude-3-5-sonnet`, `draft → gemini-3-flash`,
-`implement → gemini-3-1-pro`).
+## What it does
 
-The system maps `TaskType` values to named DB LLM profiles. At generation time, each
-handler resolves a `RouterResult` (adapter + model + temperature + max_tokens) for
-its task type and builds `GenerationConfig` from that — not from the project default.
-The default profile remains the fallback when no routing entry exists.
+Lets a user assign a model per task type — e.g. `review → claude-3-5-sonnet`,
+`draft → gemini-3-flash`, `implement → gemini-3-1-pro` — instead of every pipeline step using the
+one project adapter and model.
 
-**Explicit**: It does NOT touch adapters, telemetry logic, validation, or pipeline YAML.
-**Key constraint**: No AI, no dynamic learning — pure user configuration in SQLite.
+`TaskType` values map to named DB LLM profiles. At generation time each handler resolves a
+`RouterResult` (adapter + model + temperature + max_tokens) for its task type and builds
+`GenerationConfig` from it. No routing entry → the default profile, as before.
 
-### Multi-instance Provider Support
+No AI, no dynamic learning — pure user configuration in SQLite.
 
-Multiple task types MAY map to the same provider with different models
-(e.g., `draft → gemini-3-flash-preview`, `implement → gemini-3-1-pro`).
-The `ModelRouter` handles this by caching the **adapter instance** at the
-`(provider, api_key_hash)` level — one `GeminiAdapter` instance serves both tasks
-because the model name is carried in `GenerationConfig.model`, not the adapter.
-Different providers get separate adapter instances (e.g., one `GeminiAdapter`,
-one `AnthropicAdapter`).
+**Same provider, several models.** Two task types may use one provider with different models
+(e.g. `draft → gemini-3-flash-preview`, `implement → gemini-3-1-pro`). `ModelRouter` caches the
+**adapter instance** per `(provider, api_key_hash)`, so one `GeminiAdapter` serves both: the model
+name travels in `GenerationConfig.model`, not the adapter. Different providers get separate
+instances (one `GeminiAdapter`, one `AnthropicAdapter`).
 
----
+## Architecture
 
-## Research Findings
+```mermaid
+graph LR
+    CLI["sw config routing<br/>set / show / clear"] --> DB[("project_llm_links<br/>role = task:TYPE")]
+    RUN["sw run / sw resume<br/>builds RunContext"] --> MR["ModelRouter<br/>RunContext.llm_router"]
+    H["Handler<br/>generate / plan / review / lint-fix"] -->|"get_for_task(task_type)"| MR
+    MR -->|"load_settings(llm_role=task:…)"| DB
+    MR -->|"RouterResult or None"| H
+    H -->|"None"| DEF["context.llm +<br/>context.config.llm.model"]
+```
 
-### Codebase Patterns
+| Part | Role |
+|---|---|
+| `llm/router.py` | `RouterResult` + `ModelRouter` (adapter archetype) |
+| `RunContext.llm_router` | the router, injected per run; `None` = no routing |
+| handlers | resolve per task type, fall back to `context.llm`: `flow/_generation.py` (`_gen_config_from_context()`, `GenerateCodeHandler`, `GenerateTestsHandler`, `PlanSpecHandler._build_config()`), `flow/_review.py` (`ReviewSpecHandler`, `ReviewCodeHandler`), `flow/_lint_fix.py`. `flow/_draft.py`'s `DraftSpecHandler` was listed but makes no LLM calls |
+| `_db_llm_mixin.py` | routing rows in `project_llm_links` |
+| `sw config routing` | user surface (SF-02) |
 
-- **`TaskType` enum** (`llm/models.py`): `DRAFT`, `REVIEW`, `PLAN`, `IMPLEMENT`,
-  `VALIDATE`, `CHECK`, `UNKNOWN`. These string values are the routing keys.
-  `TaskType.DRAFT.value == "draft"`, `TaskType.REVIEW.value == "review"`, etc.
+Since moved (2026-09-25): `llm/router.py` → `infrastructure/llm/router.py`; `RunContext` →
+`core/flow/handlers/run_context.py` (read as `context.model.llm_router`); the DB methods →
+`infrastructure/llm/store.py` (async); the CLI group → `core/config/interfaces/cli.py`. Code blocks
+below are as designed.
 
-- **`GenerationConfig.task_type`** (`llm/models.py`): every handler already stamps
-  `task_type` on the config before calling `generate()`. The routing key is present.
-  Currently the `model` field is always taken from `context.config.llm.model`
-  (the project's default profile). 3.12b changes this so the handler uses
-  the model from the routed profile instead.
+**Building blocks it reuses:**
+- **`TaskType`** (`llm/models.py`): `DRAFT`, `REVIEW`, `PLAN`, `IMPLEMENT`, `VALIDATE`, `CHECK`,
+  `UNKNOWN`. The string values are the routing keys (`TaskType.DRAFT.value == "draft"`,
+  `TaskType.REVIEW.value == "review"`). Every handler already stamps `GenerationConfig.task_type`
+  before `generate()`.
+- **`create_llm_adapter(db, llm_role=...)`** (`llm/factory.py`): loads the profile for a role from
+  `project_llm_links`, returns `(SpecWeaverSettings, adapter, GenerationConfig)`. Its
+  telemetry-wrapped creation pattern (3.12) is reused.
+- **`load_settings(db, project_name, llm_role=...)`** (`config/settings.py`): resolves a profile for
+  `(project_name, llm_role)`, returning `SpecWeaverSettings` with its model, temperature,
+  max_tokens, provider; falls back to `system-default` when no project link exists. The router calls
+  `load_settings(db, project, llm_role=f"task:{task_type}")`; no `"task:review"` row → `ValueError`,
+  which the router treats as "no routing → return None".
+- **`project_llm_links`** (DB schema V10): `(project_name TEXT, role TEXT, profile_id INT)`. Routing
+  rows use role `"task:<TaskType.value>"`, read through `load_settings()` with
+  `llm_role="task:<task_type>"` — the same path `create_llm_adapter` uses.
+- **`TelemetryCollector`** (`llm/collector.py`): `ModelRouter` wraps each new adapter at cache-fill
+  time when `telemetry_project` is set; cached instances are already wrapped — no re-wrapping.
+- **`RunContext`** (`flow/_base.py`): carries `llm: Any` and `config: Any`; `llm_router: Any = None`
+  is additive. Handlers check `context.llm_router is not None` and prefer it.
 
-- **`create_llm_adapter(db, llm_role=...)`** (`llm/factory.py`): accepts a role string,
-  loads the matching profile from `project_llm_links`, returns
-  `(SpecWeaverSettings, adapter, GenerationConfig)`.
-  The routing DB lookup uses this same function with `llm_role="task:<task_type>"`.
+Blueprint: `llm_routing_and_cost_analysis.md` §4.3.12b ("Config schema + router lookup in
+handlers"). External tools: none — pure internal. DB schema unchanged, no migration.
 
-- **`load_settings(db, project_name, llm_role=...)`** (`config/settings.py`): resolves
-  a profile from `project_llm_links` for `(project_name, llm_role)`. Returns
-  `SpecWeaverSettings` with the profile's model, temperature, max_tokens, provider.
-  Falls back to `system-default` if no project-specific link exists.
-  **3.12b lookup pattern**: `load_settings(db, project, llm_role=f"task:{task_type}")`
-  If no row exists for `"task:review"` → `ValueError` is raised by `load_settings`,
-  which the router catches and treats as "no routing configured → return None".
-
-- **`project_llm_links`** (DB schema V10): `(project_name TEXT, role TEXT, profile_id INT)`.
-  Routing entries use role key `"task:<TaskType.value>"` (e.g., `"task:review"`,
-  `"task:implement"`). These are distinct from existing entries `"review"`, `"draft"`,
-  `"search"` — no collision.
-
-- **`RunContext`** (`flow/_base.py`): carries `llm: Any` and `config: Any`.
-  Adding `llm_router: Any = None` is additive and backward-compatible.
-  Handlers check `context.llm_router is not None` and prefer it.
-
-- **Handlers that need updating** (3 files):
-  - `flow/_generation.py` — `_gen_config_from_context()`, `GenerateCodeHandler`,
-    `GenerateTestsHandler`, `PlanSpecHandler._build_config()`
-  - `flow/_review.py` — `ReviewSpecHandler`, `ReviewCodeHandler`
-  - `flow/_draft.py` — `DraftSpecHandler`
-
-- **`TelemetryCollector`** (`llm/collector.py`): wraps an adapter to capture usage.
-  The `ModelRouter` wraps each newly-created adapter in a `TelemetryCollector`
-  at cache-fill time if `telemetry_project` is set. Cached adapter instances are
-  already wrapped — no re-wrapping on subsequent calls.
-
-- **DB schema unchanged** — No migration needed. Routing uses existing
-  `project_llm_links` table with namespaced role keys.
-
-### External Tools
-
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| None — pure internal | — | — | — |
-
-### Blueprint References
-
-- `llm_routing_and_cost_analysis.md` §4.3.12b: "Config schema + router lookup in handlers"
-- `llm/factory.py` (3.12): telemetry-wrapped adapter creation pattern to reuse
-- `project_llm_links` + `load_settings()` pattern (settings.py)
-
----
-
-## Functional Requirements
-
-| # | FR | Actor | Action | Outcome |
-|---|-----|-------|--------|---------|
-| FR-1 | Config mapping | User | Links a named LLM profile to a `TaskType` via CLI or API | Row inserted in `project_llm_links` with `role = "task:<task_type>"` |
-| FR-2 | Per-step resolution | System | At LLM call time, resolves adapter **and model** using the step's `task_type` | Returns `RouterResult(adapter, model, temperature, max_tokens)` matching the linked profile; handler builds `GenerationConfig` from this |
-| FR-3 | Transparent fallback | System | `task_type` has no routing entry in DB | `ModelRouter` returns `None`; handler falls back to `context.llm` + `context.config.llm.model` (pre-3.12b behavior) |
-| FR-4 | CLI surface | User | `sw config routing set <task_type> <profile_name>` / `show` / `clear [task_type]` | DB updated; table displayed; confirmation printed |
-| FR-5 | DB persistence | System | Routing config survives restarts | `project_llm_links` rows with `"task:"` prefix survive; readable on next `ModelRouter` call |
-| FR-6 | Telemetry preserved | System | Routed adapter is wrapped in `TelemetryCollector` when telemetry is active | `UsageRecord.task_type` correctly set; `flush()` called at pipeline end |
-| FR-7 | Same-provider multi-model | System | Two task types use same provider, different models (e.g. gemini-flash + gemini-pro) | One shared adapter instance per `(provider, api_key)` used for both; `GenerationConfig.model` differs between calls |
-
----
-
-## Non-Functional Requirements
-
-| # | NFR | Threshold / Constraint |
-|---|-----|----------------------|
-| NFR-1 | Backward compatibility | Zero behavior change for projects with no routing config in DB |
-| NFR-2 | Adapter caching | `ModelRouter` caches adapter instances by `f"{provider}:{hash(api_key)}"`. No new adapter creation on second call for same provider+key |
-| NFR-2b | Temperature resolution | **Profile-wins**: when a routing entry is active, `RouterResult.temperature` is used verbatim. Same model at different temperatures per task type (e.g. `gemini-3.1-pro` at `0.5` for spec writing, `0.2` for review) is explicitly supported. Handler-default temperatures apply only in the no-routing fallback path. |
-| NFR-3 | Error handling | Profile not found in DB → log `WARNING "[routing] no entry for task_type=review, using default"` → return `None`. No exception propagated. |
-| NFR-4 | Observability | Routing resolution logged at `DEBUG`: `"[routing] task_type=review → profile=claude-profile (provider=anthropic, model=claude-3-5-sonnet)"` |
-| NFR-5 | DB compatibility | No schema migration required |
-
----
-
-## Architectural Decisions
+## Decisions
 
 ### AD-1: New `llm/router.py` (adapter archetype)
 
-Place the `ModelRouter` class in `llm/`. The `llm/` module's archetype is `adapter`
-(wraps external services). `ModelRouter` wraps the factory + adapter creation logic.
-It consumes `config/` (DB + settings) which `llm/` is already allowed to do.
-It forbids `loom/*` — the router never touches tools or atoms.
+`ModelRouter` lives in `llm/`, whose archetype is `adapter` (wraps external services); it wraps
+factory + adapter creation. It consumes `config/` (DB + settings), which `llm/` may already do. It
+forbids `loom/*` — the router never touches tools or atoms.
 
 ### AD-2: `RouterResult` NamedTuple
 
-The handler needs adapter **and** model/temperature/max_tokens to build the correct
-`GenerationConfig`. Returning just the adapter is insufficient because `GenerationConfig.model`
-would still be the default project model.
+The handler needs the adapter **and** model/temperature/max_tokens. Returning only the adapter would
+leave `GenerationConfig.model` at the project default.
 
 ```python
 # llm/router.py
@@ -184,7 +134,7 @@ class ModelRouter:
         ...
 ```
 
-**Internal logic of `get_for_task`:**
+**`get_for_task` internals:**
 
 ```python
 role_key = f"task:{task_type.value}"  # e.g. "task:review"
@@ -224,7 +174,7 @@ return RouterResult(
 
 ### AD-4: Handler integration pattern
 
-Each handler that calls `context.llm` for generation is updated to:
+Every handler that calls `context.llm` for generation:
 
 ```python
 # Resolve routing (new pattern, same for all 3 handler files)
@@ -238,15 +188,13 @@ config = GenerationConfig(
 )
 ```
 
-The existing helpers `_gen_config_from_context()` (in `_generation.py`) and
-`_build_config()` (in `PlanSpecHandler`) are updated to accept an optional
-`RouterResult` and prefer it over `context.config`.
+The helpers `_gen_config_from_context()` (in `_generation.py`) and `_build_config()` (in
+`PlanSpecHandler`) take an optional `RouterResult` and prefer it over `context.config`.
 
 ### AD-5: `ModelRouter` creation in CLI layer
 
-`ModelRouter` is created in the CLI where `RunContext` is assembled, alongside
-`create_llm_adapter()`. It receives the same `db`, `project_name`, and
-`telemetry_project` parameters. It is injected into `RunContext.llm_router`.
+Created in the CLI where `RunContext` is assembled, next to `create_llm_adapter()`, with the same
+`db`, `project_name`, `telemetry_project`; injected into `RunContext.llm_router`.
 
 ```python
 # cli/_helpers.py (or equivalent, wherever RunContext is built)
@@ -260,13 +208,12 @@ context = RunContext(
 
 ### AD-6: Reuse `project_llm_links` with `"task:"` namespace
 
-Role key format: `f"task:{task_type_value}"` where `task_type_value` is
-the `.value` of `TaskType` enum (lowercase string: `"draft"`, `"review"`, etc.).
-Examples: `"task:review"`, `"task:implement"`, `"task:plan"`.
-These are lexicographically distinct from existing roles `"draft"`, `"review"`,
-`"search"` — no collision. No DB migration needed.
+Role key: `f"task:{task_type_value}"`, where `task_type_value` is the lowercase `.value` of
+`TaskType` (`"draft"`, `"review"`, ...). Examples: `"task:review"`, `"task:implement"`,
+`"task:plan"`. Distinct from the existing roles `"draft"`, `"review"`, `"search"` — no collision,
+no migration.
 
-**DB query agent must write** (in `_db_llm_mixin.py` or by calling `load_settings`):
+DB access (in `_db_llm_mixin.py` or via `load_settings`):
 ```python
 # To store a routing entry:
 db.link_project_profile(project_name, f"task:{task_type}", profile_id)
@@ -278,31 +225,26 @@ db.unlink_project_profile(project_name, f"task:{task_type}")  # NEW method neede
 db.get_project_routing_entries(project_name)  # NEW method needed — SELECT WHERE role LIKE "task:%"
 ```
 
-Note: `unlink_project_profile` and `get_project_routing_entries` are new DB methods
-to be added to `_db_llm_mixin.py` as part of SF-01.
+`unlink_project_profile` and `get_project_routing_entries` are new, added to `_db_llm_mixin.py` in
+SF-01.
 
 ### AD-7: Unified LLM call interface — `generate(messages, config)` everywhere
 
-Prior to 3.12b, `LintFixHandler._llm_fix()` called `llm.generate(prompt)` with a raw
-string — bypassing `GenerationConfig` entirely. This is a **latent bug**: it fails at
-runtime when telemetry is active (`TelemetryCollector.generate()` requires both
-`messages: list[Message]` and `config: GenerationConfig`).
-
-SF-01 refactors `_llm_fix()` to use the standard interface:
+Every handler calls:
 ```
 generate(messages: list[Message], config: GenerationConfig) → LLMResponse
 ```
-
-**After SF-01, this is the single unified LLM call interface for all handlers.**
-No handler passes a raw string to `generate()`. The interface is defined in
-`LLMAdapter` (abstract base) and respected by all adapters and `TelemetryCollector`.
-This unification is a pre-condition for routing to work uniformly across all task types.
-
----
+No handler passes a raw string to `generate()`. The interface is defined in `LLMAdapter`
+(abstract base) and respected by all adapters and `TelemetryCollector`; routing needs it to work
+uniformly across task types. Replaced: `LintFixHandler._llm_fix()` called `llm.generate(prompt)`
+with a raw string, bypassing `GenerationConfig` and failing when telemetry was active
+(`TelemetryCollector.generate()` requires both `messages: list[Message]` and
+`config: GenerationConfig`).
 
 ## CLI Command Specification (SF-02)
 
-All commands operate on the **active project**.
+All commands operate on the **active project**. Command group `sw config routing <subcommand>` — a
+Typer sub-application added to `cli/config_commands.py`, following the existing command groups.
 
 ```
 sw config routing set <task_type> <profile_name>
@@ -310,105 +252,68 @@ sw config routing set <task_type> <profile_name>
 - `<task_type>`: one of `draft`, `review`, `plan`, `implement`, `validate`, `check`
 - `<profile_name>`: name of an existing LLM profile in DB
 - Effect: insert/replace `project_llm_links` row `(active_project, "task:<task_type>", profile_id)`
-- Error if profile name not found: print error, exit non-zero
+- Profile name not found: print error, exit non-zero
 
 ```
 sw config routing show
 ```
-- Print table of all routing entries for active project
+- Table of all routing entries for the active project
 - Columns: `Task Type | Profile | Provider | Model | Temperature`
-- If no routing configured: print "No routing configured. All tasks use the default profile."
+- None configured: print "No routing configured. All tasks use the default profile."
 
 ```
 sw config routing clear [<task_type>]
 ```
-- Without `<task_type>`: clears all `"task:*"` routing entries for active project
+- Without `<task_type>`: clears all `"task:*"` routing entries for the active project
 - With `<task_type>`: clears only that one entry
 - Confirmation: "Cleared routing for review." / "Cleared all routing entries."
 
-Command group: `sw config routing <subcommand>` — implement as a Typer sub-application
-added to `cli/config_commands.py`, following the pattern of existing command groups.
+## Functional Requirements
 
----
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-1 | Config mapping | User | Links a named LLM profile to a `TaskType` via CLI or API | Row inserted in `project_llm_links` with `role = "task:<task_type>"` |
+| FR-2 | Per-step resolution | System | At LLM call time, resolves adapter **and model** using the step's `task_type` | Returns `RouterResult(adapter, model, temperature, max_tokens)` matching the linked profile; handler builds `GenerationConfig` from this |
+| FR-3 | Transparent fallback | System | `task_type` has no routing entry in DB | `ModelRouter` returns `None`; handler falls back to `context.llm` + `context.config.llm.model` (pre-3.12b behavior) |
+| FR-4 | CLI surface | User | `sw config routing set <task_type> <profile_name>` / `show` / `clear [task_type]` | DB updated; table displayed; confirmation printed |
+| FR-5 | DB persistence | System | Routing config survives restarts | `project_llm_links` rows with `"task:"` prefix survive; readable on next `ModelRouter` call |
+| FR-6 | Telemetry preserved | System | Routed adapter is wrapped in `TelemetryCollector` when telemetry is active | `UsageRecord.task_type` correctly set; `flush()` called at pipeline end |
+| FR-7 | Same-provider multi-model | System | Two task types use same provider, different models (e.g. gemini-flash + gemini-pro) | One shared adapter instance per `(provider, api_key)` used for both; `GenerationConfig.model` differs between calls |
 
-## Sub-Feature Breakdown
+## Non-Functional Requirements
 
-### SF-01: ModelRouter + DB + Handler Integration
+| # | NFR | Threshold / Constraint |
+|---|-----|----------------------|
+| NFR-1 | Backward compatibility | Zero behavior change for projects with no routing config in DB |
+| NFR-2 | Adapter caching | `ModelRouter` caches adapter instances by `f"{provider}:{hash(api_key)}"`. No new adapter creation on second call for same provider+key |
+| NFR-2b | Temperature resolution | **Profile-wins**: when a routing entry is active, `RouterResult.temperature` is used verbatim. Same model at different temperatures per task type (e.g. `gemini-3.1-pro` at `0.5` for spec writing, `0.2` for review) is explicitly supported. Handler-default temperatures apply only in the no-routing fallback path. |
+| NFR-3 | Error handling | Profile not found in DB → log `WARNING "[routing] no entry for task_type=review, using default"` → return `None`. No exception propagated. |
+| NFR-4 | Observability | Routing resolution logged at `DEBUG`: `"[routing] task_type=review → profile=claude-profile (provider=anthropic, model=claude-3-5-sonnet)"` |
+| NFR-5 | DB compatibility | No schema migration required |
 
-**Scope**: The data model and routing engine.
-- New file: `llm/router.py` — `RouterResult` NamedTuple + `ModelRouter` class
-- Modified: `flow/_base.py` — add `llm_router: Any = None` to `RunContext`
-- Modified: `flow/_generation.py` — update `_gen_config_from_context()` +
-  `PlanSpecHandler._build_config()` to accept and prefer `RouterResult`
-- Modified: `flow/_review.py` — update `ReviewSpecHandler`, `ReviewCodeHandler`
-- Modified: `flow/_draft.py` — update `DraftSpecHandler`
-- Modified: `config/_db_llm_mixin.py` — add `unlink_project_profile()` and
-  `get_project_routing_entries()` methods
-- Modified: CLI entry point (wherever `RunContext` is assembled) — create
-  `ModelRouter` and inject into `RunContext.llm_router`
+## Sub-features
 
-**FRs**: FR-1 (DB write), FR-2 (resolution + RouterResult), FR-3 (fallback),
-FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | `llm/router.py` (`RouterResult` + `ModelRouter`); `RunContext.llm_router`; handlers prefer `RouterResult`; `unlink_project_profile()` + `get_project_routing_entries()`; CLI injects `ModelRouter` | FR-1 (DB write), FR-2, FR-3, FR-5, FR-6, FR-7 | — | [sf01](D-FLOW-03_sf01_implementation_plan.md) |
+| SF-02 | `sw config routing` Typer sub-app: `set`, `show`, `clear` | FR-4 | SF-01 (the two new DB methods) | [sf02](D-FLOW-03_sf02_implementation_plan.md) |
 
-**Inputs**:
-- `Database` instance with `project_llm_links` rows (written by CLI or test fixtures)
-- Active project name
-- `RunContext` (standard pipeline context)
-- `task_type: TaskType` passed by each handler
+SF-01 outputs: `RouterResult | None` per `get_for_task()` call; all existing tests pass unchanged
+(fallback path when `llm_router=None`); new unit tests in `tests/unit/llm/test_router.py`. SF-02
+outputs: `sw config routing set implement claude-profile` inserts the row and confirms; `show`
+prints the table; `sw config routing clear [task_type]` removes row(s) and confirms; tests in
+`tests/unit/cli/test_config_routing_commands.py`.
 
-**Outputs**:
-- `RouterResult | None` per `get_for_task()` call
-- All existing tests pass unchanged (fallback path exercised when `llm_router=None`)
-- New unit tests: `tests/unit/llm/test_router.py`
-
-**Depends on**: none
-**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf01_implementation_plan.md`
-
----
-
-### SF-02: CLI Routing Commands
-
-**Scope**: The user-facing `sw config routing` command group.
-- Modified: `cli/config_commands.py` — add `routing_app` Typer sub-application with
-  `set`, `show`, `clear` subcommands
-
-**FRs**: FR-4
-
-**Inputs**: SF-01's `unlink_project_profile()` and `get_project_routing_entries()` DB methods
-
-**Outputs**:
-- `sw config routing set implement claude-profile` → inserts DB row, prints confirmation
-- `sw config routing show` → prints routing table for active project
-- `sw config routing clear [task_type]` → removes row(s), prints confirmation
-- New unit tests: `tests/unit/cli/test_config_routing_commands.py`
-
-**Depends on**: SF-01 (needs the two new DB methods)
-**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf02_implementation_plan.md`
-
----
-
-## Dependency Graph
+Order: SF-01 → SF-02, linear.
 
 ```
 SF-01 (ModelRouter + DB + handlers)
   └──▶ SF-02 (CLI commands)
 ```
 
-Topological execution order: SF-01, then SF-02. Linear — no parallelism.
-
----
-
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | ModelRouter + DB + handler integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | CLI routing commands | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
-
----
-
-## Session Handoff
-
-**Current status**: SF-02 Pre-Commit complete. Ready for Commit Boundary.
-**Next step**: Run `/dev docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf02_implementation_plan.md`
-**If resuming mid-feature**: Read Progress Tracker. Find first ⬜ in the Dev/Pre-Commit/Committed columns.
+| SF-02 | CLI routing commands | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |

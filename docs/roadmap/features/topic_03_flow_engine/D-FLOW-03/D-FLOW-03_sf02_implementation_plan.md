@@ -1,44 +1,47 @@
-# Implementation Plan: Feature 3.12b [SF-02: CLI Routing Commands]
-- **Feature ID**: feature_3_14
-- **Sub-Feature**: SF-02 — CLI Routing Commands
-- **Design Document**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf02_implementation_plan.md
-- **Status**: COMPLETE
+# D-FLOW-03 SF-02 — CLI Routing Commands
 
----
+**Status**: COMPLETE · Committed as `27b03522`. · **FRs owned**: FR-4 · **Depends on**: SF-01
+(complete) — `link_project_profile()`, `unlink_project_profile()`,
+`get_project_routing_entries()`, `get_llm_profile_by_name()` · Design: [D-FLOW-03_design.md](D-FLOW-03_design.md) §Sub-features → SF-02 · Feature
+ID feature_3_14
 
-## Overview
+## Goal
 
-SF-02 adds three CLI subcommands under `sw config routing` that allow users to
-manage per-task-type LLM routing entries for the active project. This is the
-user-facing surface for the routing engine built in SF-01.
-
-The commands are:
+Three subcommands under `sw config routing` to manage per-task-type routing entries for the active
+project — the user surface of SF-01's routing engine (Feature 3.12b):
 - `sw config routing set <task_type> <profile_name>` — link a task type to a profile
 - `sw config routing show` — display routing table
 - `sw config routing clear [<task_type>]` — remove routing entries
 
-**FR covered**: FR-4 (CLI surface).
+**Non-interactive.** No `typer.confirm()` prompts, no "Are you sure?" gates — the commands run in
+CI/CD pipelines and autonomous agent workflows.
 
-**Dependencies**: SF-01 (complete) — provides `link_project_profile()`,
-`unlink_project_profile()`, `get_project_routing_entries()`,
-`get_llm_profile_by_name()` DB methods.
+## Where it plugs in
 
-> [!IMPORTANT]
-> **Non-interactive mandate**: All three commands are fully non-interactive. No
-> `typer.confirm()` prompts, no "Are you sure?" gates. This is critical for
-> CI/CD pipelines and autonomous agent workflows.
+Since moved (2026-09-25): the command group lives in `core/config/interfaces/cli.py`; the DB methods
+in `infrastructure/llm/store.py` (async). Paths below are as of the plan.
 
----
+1. **Typer sub-app nesting**: Typer 0.24.1 nests via `parent_app.add_typer(child_app, name="routing")`
+   — the same pattern that mounts `config_app` on `_core.app` (line 23:
+   `_core.app.add_typer(config_app, name="config")`). Result: `sw config routing set|show|clear`.
+2. **DB methods from SF-01**, in `_db_llm_mixin.py`:
+   - `link_project_profile(project, "task:<type>", profile_id)` — upserts
+   - `unlink_project_profile(project, "task:<type>")` → bool
+   - `get_project_routing_entries(project)` → list of dicts with `task_type`, `profile_id`,
+     `profile_name`
+   - `get_llm_profile_by_name(name)` → dict or None
+3. **CLI pattern**: `_core._require_active_project()` → `_core.get_db()` → DB operation →
+   Rich-formatted output. Tests use `CliRunner` with `monkeypatch.setattr` on `get_db`.
+4. **No `context.yaml` change**: `cli/context.yaml` already `consumes: specweaver/config` (DB) and
+   `consumes: specweaver/llm` (`TaskType`). Importing `TaskType` from `llm/models.py` at module level keeps
+   one source of truth for valid task types.
+5. **No schema migration**: existing `project_llm_links` with `"task:"` role keys.
 
-## Proposed Changes
+## Changes
 
-### DB Layer
+### DB layer — [_db_llm_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_llm_mixin.py) [MODIFY]
 
-#### [MODIFY] [_db_llm_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_llm_mixin.py)
-
-Add one new method for orphan-safe bulk clearing:
+One method for orphan-safe bulk clearing:
 
 ```python
 def clear_all_project_routing(self, project_name: str) -> int:
@@ -59,25 +62,16 @@ def clear_all_project_routing(self, project_name: str) -> int:
         return cursor.rowcount
 ```
 
-> [!NOTE]
-> This method exists because `get_project_routing_entries()` uses a JOIN
-> on `llm_profiles`. If a profile is deleted while a `task:` link still exists,
-> the JOIN misses the orphan. This method guarantees all `task:*` rows are
-> cleared regardless of profile existence.
+`get_project_routing_entries()` JOINs on `llm_profiles`, so a `task:` link whose profile was
+deleted is invisible to it. This method clears every `task:*` row regardless.
 
----
+### CLI layer — [config.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/config.py) [MODIFY]
 
-### CLI Layer
+A `routing_app` Typer sub-app with three subcommands, registered as
+`config_app.add_typer(routing_app, name="routing")`.
 
-#### [MODIFY] [config.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/config.py)
-
-Add a `routing_app` Typer sub-application with three subcommands. Register it
-on the existing `config_app` as `config_app.add_typer(routing_app, name="routing")`.
-
-This follows the established pattern where `config_app` is itself a sub-app of
-the root `app` (line 23: `_core.app.add_typer(config_app, name="config")`).
-
-##### Shared: task type validation via `TaskType` enum
+**Valid task types come from the `TaskType` enum** at import time, not a hardcoded list; a new
+`TaskType` member is accepted automatically. `UNKNOWN` is excluded — not user-configurable.
 
 ```python
 from specweaver.infrastructure.llm.models import TaskType
@@ -89,14 +83,7 @@ _ROUTABLE_TASK_TYPES: frozenset[str] = frozenset(
 )
 ```
 
-> [!NOTE]
-> **Single source of truth** — valid task types are derived from the `TaskType`
-> enum at import time, not hardcoded. If a new `TaskType` member is added,
-> routing commands automatically accept it. The `cli/` module's `context.yaml`
-> already declares `consumes: specweaver/llm`, so this import is
-> architecturally valid.
-
-##### Command: `routing set`
+**`routing set`:**
 
 ```python
 routing_app = typer.Typer(
@@ -147,12 +134,11 @@ def routing_set(
     )
 ```
 
-> [!WARNING]
-> The `try/except ValueError` around `link_project_profile` handles the TOCTOU
-> race between `_require_active_project()` and the actual DB write. Without it,
-> a project deleted between the two calls would crash with an unhandled traceback.
+The `try/except ValueError` around `link_project_profile` covers the TOCTOU race between
+`_require_active_project()` and the write: a project deleted in between would otherwise crash with
+a traceback.
 
-##### Command: `routing show`
+**`routing show`:**
 
 ```python
 @routing_app.command("show")
@@ -197,12 +183,10 @@ def routing_show() -> None:
     _core.console.print(table)
 ```
 
-> [!NOTE]
-> When a linked profile no longer exists, the row is displayed with `[deleted]`
-> markers instead of being silently dropped. This lets users discover stale
-> entries and clean them up with `routing clear`.
+An orphaned link (profile deleted) shows `[deleted]` markers instead of vanishing, so users can
+find and `routing clear` it.
 
-##### Command: `routing clear`
+**`routing clear`:**
 
 ```python
 @routing_app.command("clear")
@@ -245,13 +229,9 @@ def routing_clear(
             _core.console.print("[dim]No routing entries to clear.[/dim]")
 ```
 
----
+### Documentation — [README.md](file:///c:/development/pitbula/specweaver/README.md)
 
-### Documentation
-
-#### [MODIFY] [README.md](file:///c:/development/pitbula/specweaver/README.md)
-
-Add a new "Model Routing" section after "LLM Telemetry" in the CLI Commands area:
+A "Model Routing" section after "LLM Telemetry" in the CLI Commands area:
 
 ```markdown
 ### Model Routing
@@ -263,25 +243,18 @@ Add a new "Model Routing" section after "LLM Telemetry" in the CLI Commands area
 | `sw config routing clear [<task_type>]` | Clear routing entries (one or all) |
 ```
 
-Also add a bullet to the Features section:
+And a Features bullet:
 ```markdown
 - **Config-driven model routing** — Map task types (`implement`, `review`, etc.) to specific LLM profiles for per-task model/temperature control
 ```
 
----
+## Tests
 
-### Test Plan
-
-#### [NEW] [test_config_routing.py](file:///c:/development/pitbula/specweaver/tests/unit/cli/test_config_routing.py)
-
-New test file following the established `test_cli_config.py` pattern:
-`CliRunner` + mocked DB via `monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", ...)`.
-
-#### [NEW] [test_db_clear_routing.py](file:///c:/development/pitbula/specweaver/tests/unit/config/test_db_clear_routing.py)
-
-Unit test for the new `clear_all_project_routing()` DB method.
-
-##### Test Cases
+- [test_config_routing.py](file:///c:/development/pitbula/specweaver/tests/unit/cli/test_config_routing.py)
+  [NEW] — `test_cli_config.py` pattern: `CliRunner` + mocked DB via
+  `monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", ...)`.
+- [test_db_clear_routing.py](file:///c:/development/pitbula/specweaver/tests/unit/config/test_db_clear_routing.py)
+  [NEW] — `clear_all_project_routing()`.
 
 ```python
 # --- tests/unit/config/test_db_clear_routing.py ---
@@ -378,24 +351,17 @@ class TestRoutingClear:
         # Assert: exit 1, "Invalid task type" in output
 ```
 
-**Total: 17 test cases** (4 DB + 13 CLI) covering all commands with happy paths,
-error paths, edge cases, orphan handling, and boundary conditions.
+**17 test cases** (4 DB + 13 CLI): happy paths, error paths, edge cases, orphan handling,
+boundaries.
 
----
-
-## Commit Boundaries
-
-**Single commit boundary** — all CLI commands + DB method + tests + README:
+Commit boundary — one commit (CLI commands + DB method + tests + README):
 
 ```
 feat(cli): add `sw config routing` commands (set/show/clear)
 ```
 
----
+Verify:
 
-## Verification Plan
-
-### Automated Tests
 ```bash
 # Run only new test files
 python -m pytest tests/unit/config/test_db_clear_routing.py tests/unit/cli/test_config_routing.py -q
@@ -409,58 +375,20 @@ python -m pytest tests/integration -q
 python -m pytest tests/e2e -q
 ```
 
-### Manual Verification
+Manual:
 - `sw config routing --help` → shows set/show/clear subcommands
 - `sw config routing set implement <profile>` → prints confirmation
 - `sw config routing show` → displays table
 - `sw config routing clear implement` → prints cleared message
 
-### Linting
+Lint:
 ```bash
 ruff check src/specweaver/cli/config.py src/specweaver/config/_db_llm_mixin.py
 ruff check tests/unit/cli/test_config_routing.py tests/unit/config/test_db_clear_routing.py
 ruff format --check src/ tests/
 ```
 
----
+## Out of scope
 
-## Backlog
-
-- **N+1 query in `routing show`**: Each entry calls `get_llm_profile(id)` separately.
-  Acceptable for ≤7 task types on SQLite. If this ever becomes a bottleneck,
-  replace with a single JOIN query that returns all columns directly.
-
----
-
-## Research Notes
-
-### Phase 0 Findings
-
-1. **Typer sub-app nesting**: Typer 0.24.1 supports nested sub-applications
-   via `parent_app.add_typer(child_app, name="routing")`. This is the same
-   pattern used for `config_app` itself on `_core.app`. The resulting CLI
-   structure is: `sw config routing set|show|clear`.
-
-2. **DB methods available from SF-01**: All three DB methods needed are
-   implemented and tested in `_db_llm_mixin.py`:
-   - `link_project_profile(project, "task:<type>", profile_id)` — upserts
-   - `unlink_project_profile(project, "task:<type>")` → bool
-   - `get_project_routing_entries(project)` → list of dicts with `task_type`,
-     `profile_id`, `profile_name`
-   - `get_llm_profile_by_name(name)` → dict or None
-
-3. **Existing CLI pattern**: All config commands follow the same structure:
-   `_core._require_active_project()` → `_core.get_db()` → DB operation →
-   Rich-formatted output. Tests use `CliRunner` with `monkeypatch.setattr`
-   on `get_db`.
-
-4. **No `context.yaml` update needed**: The `cli/` module's `consumes` list
-   already includes `specweaver/config` (for DB calls) and `specweaver/llm`
-   (for `TaskType` import). No new dependency is introduced.
-
-5. **No schema migration**: SF-02 uses existing `project_llm_links` table
-   with `"task:"` prefixed role keys. No DB changes needed.
-
-6. **`TaskType` import is architecturally valid**: `cli/context.yaml` declares
-   `consumes: specweaver/llm`. Importing `TaskType` from `llm/models.py`
-   at module level preserves single source of truth for valid task types.
+- **N+1 query in `routing show`**: one `get_llm_profile(id)` per entry. Fine for ≤7 task types on
+  SQLite; if it ever bottlenecks, use one JOIN returning all columns.
