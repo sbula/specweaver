@@ -1,9 +1,8 @@
 # The development framework — what checks you, and when
 
-One page. What the machinery is, what each part answers, and which parts are yours to change.
+Use when: you need to know which gate runs what, and which parts of the machinery are yours to change.
 
-Written 2026-08-23, because nothing described this and an agent working here could only learn it by
-reading `scripts/`.
+Written 2026-08-23; before it, the only description was `scripts/` itself.
 
 ---
 
@@ -33,7 +32,7 @@ graph LR
         M["mutation.py<br/>are the tests strong?"]
     end
 
-    D["quality.py doc<br/>13 checks · registries"]
+    D["quality.py doc<br/>14 checks · registries"]
 
     Q1 --> Q2 --> Q3
     T1 --> T2
@@ -55,7 +54,7 @@ inside it, because **a check that must be invoked to fire reports success by not
 
 ---
 
-## `quality.py` — 29 checks, 5 gates
+## `quality.py` — 30 checks, 5 gates
 
 One table decides everything: check name → which gate → how wide. It lives in `MATRIX` at the top of
 `scripts/quality.py`.
@@ -65,7 +64,7 @@ python scripts/quality.py quick     #  9 checks — inner loop, run it constantl
 python scripts/quality.py cb        # 15 checks — every commit boundary
 python scripts/quality.py sf        # 16 checks — a sub-feature is done
 python scripts/quality.py feature   # 16 checks — a story is closing
-python scripts/quality.py doc       # 13 checks — registries, a SEPARATE track
+python scripts/quality.py doc       # 14 checks — registries, a SEPARATE track
 ```
 
 **The code gates are cumulative.** `feature` ⊇ `sf` ⊇ `cb` ⊇ `quick` — a later point runs more
@@ -77,8 +76,8 @@ not be excused by a tidy roadmap. Run both; neither substitutes for the other.
 
 ### Adding or removing a check
 
-One row in `MATRIX`, one entry in `scripts/_quality_checks.py`. That is the whole surface — removing
-`decision_citations` on 2026-08-23 was two deleted entries.
+One row in `MATRIX`, one entry in `scripts/_quality_checks.py`. That is the whole surface (removing
+`decision_citations` on 2026-08-23 was two deleted entries).
 
 Two guards keep it honest, and both have fired: every checker on disk must be wired into some gate,
 and every gate row must have a registered command. You cannot leave an orphan either way.

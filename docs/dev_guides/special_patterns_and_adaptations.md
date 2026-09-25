@@ -1,23 +1,18 @@
-# Developer Guide: Special Patterns & Adaptations
+# Special Patterns & Adaptations
 
-SpecWeaver is designed to orchestrate zero-trust, autonomous AI agents at scale. Because traditional
-software architecture patterns often fail to contain LLM hallucinations or drift, we have introduced
-several proprietary adaptations and unique patterns into the codebase. 
+Use when: you meet something in the codebase that breaks a common convention and want to know why,
+or you are about to solve a problem one of these patterns already solves.
 
-This guide outlines our "special inventions" so you aren't surprised when you stumble across them.
+Each pattern: what it is, then why. Numbers are cited from other docs (§11, §23, pattern 26) — keep
+them stable.
 
 ---
 
-## 1. `context.yaml` Architectural Boundaries
+## 1. `context.yaml` boundaries
 
-In languages like Java or C#, you can enforce module visibility (e.g., `package-private` or
-`internal`). Python lacks this native visibility enforcement, meaning any file can technically
-import any other file anywhere in the repository.
-
-To prevent an LLM (or a junior developer) from accidentally wiring a core engine component directly into an external web router, we invented `context.yaml` boundary files.
-
-### How it works:
-You will see `context.yaml` files dropped directly into source directories (e.g., `src/specweaver/sandbox/context.yaml`).
+Python has no module visibility (`package-private`, `internal`); any file can import any other. So
+every source directory carries a `context.yaml` that declares what it may consume and what it
+forbids, e.g. `src/specweaver/sandbox/execution/context.yaml`. Shape:
 
 ```yaml
 module: "sandbox"
@@ -27,42 +22,31 @@ forbids:
   - "cli.*"
 ```
 
-### Why we do it:
-During our pre-commit pipeline, an internal architecture scanner crawls these YAML files and
-cross-references them against the Python AST imports. If a developer accidentally writes
-`from specweaver.sandbox import EngineAtom` from within a `tools/` file, the `context.yaml`
-configuration triggers an immediate linting failure halting the commit.
+**Why:** stops an LLM or a developer wiring a core engine component into an outer layer. `tach_sync`
+generates `tach.toml` from these files, and `tach check` fails the commit gate on a forbidden import
+(e.g. `from specweaver.sandbox import EngineAtom` inside a `tools/` file).
 
 ---
 
-## 2. Decoupled Interface Definitions (`definitions.py`)
+## 2. Hand-written tool schemas (`definitions.py`)
 
-Most modern LLM application frameworks (like LangChain or LlamaIndex) dynamically build the LLM's
-function-calling tool schema by scraping standard Python `"""docstrings"""` and function type-hints
-natively at runtime.
+LangChain, LlamaIndex and similar build the LLM's tool schema from `"""docstrings"""` and type
+hints at runtime. **SpecWeaver forbids this.** Each tool's JSON schema is written by hand in its own
+`definitions.py`.
 
-**SpecWeaver strictly forbids this.** 
+**Why:**
 
-We do not trust the physical implementation code to dynamically dictate what the LLM sees. Instead, we manually design the JSON schema payload within standalone `definitions.py` files.
-
-### Why we do it:
-1. **Security Hiding:** We can inject internal parameters (like `run_context` or `project_id`) into
-   the actual Python function signature, but deliberately omit them from the `definitions.py`
-   schema. The LLM won't even know the parameters exist.
-2. **Prompt Optimization:** We can hyper-optimize the descriptions specifically for LLM tokenizer
-   comprehension, rather than trying to make a Python docstring readable for humans *and* AIs
-   simultaneously.
+1. **Hidden parameters**: internal parameters (`run_context`, `project_id`) can sit in the Python
+   signature and be left out of the schema. The LLM never sees them.
+2. **Prompt wording**: descriptions are written for the LLM, not as docstrings that must serve humans
+   and models at once.
 
 ---
 
-## 3. Friction-Gated Execution Pipelines (The HITL Gate)
+## 3. HITL gates
 
-In standard software CI/CD pipelines, a flow either passes completely or fails entirely in a black box. 
-
-Because we are dealing with non-deterministic LLMs, an agent might accurately generate code, but fundamentally misunderstand the original business goal, leading to "architectural drift."
-
-To combat this, the Flow Engine utilizes **Friction-Gated Pipelines**.
-Inside our `pipelines/*.yaml` configurations, you will see gates marked as `type: hitl` (Human-In-The-Loop).
+An LLM can generate working code that misses the business goal. So pipelines (`pipelines/*.yaml`)
+carry human gates, `type: hitl`:
 
 ```yaml
 gate:
@@ -71,708 +55,508 @@ gate:
   loop_target: rewrite_spec
 ```
 
-### Why we do it:
-Instead of crashing or deploying blind, the engine natively pauses its thread, serializes its exact
-OS state, and pings the user. If the user rejects the work, the `loop_target` seamlessly rewinds the
-state back to a previous workflow phase and tells the agent to try again with the user's specific
-feedback.
+**Why:** instead of failing or shipping blind, the engine parks the run, persists its state and waits
+for the user. On rejection, `loop_target` rewinds to an earlier step and re-runs it with the user's
+feedback. Details: `pipeline_engine_guide.md` §13.
 
 ---
 
-## 4. The 10-Test Battery (Multi-Modal Validation)
+## 4. The test battery
 
-A normal Python project might rely solely on Pytest. SpecWeaver runs an orchestrated **10-Test Battery** that mixes standard runtime tests with heuristic hallucination bounds.
-
-We physically separate "Code Rules" from "Spec Rules." While standard tools test whether code
-*compiles*, our bespoke Static Validation Engine uses AST tree-sitter logic and structural checks to
-verify that the generated code exactly matches the constraints of the Markdown Design Document
-before tests are even allowed to run.
+Beyond pytest, SpecWeaver runs a battery of validation rules (10 at the time of writing; the product
+now describes a 12-test battery). "Spec rules" and "code rules" are separate. The static validation
+engine uses tree-sitter AST checks and structural checks to confirm generated code matches the
+Markdown design's constraints **before** tests run.
 
 ---
 
-## 5. Domain-Driven Boundary Relaxations (Tach Integration)
+## 5. Validation stays pure logic (C05 import direction)
 
-SpecWeaver relies on `tach` to strictly enforce domain boundaries between L1, L2, L3, and L4 layers.
-However, there are explicit cases where we gracefully relax these boundaries for architectural
-efficiency.
+`assurance/validation` is `archetype: pure-logic` and `forbids: specweaver/sandbox/*` (the executor
+layer, `Loom Commons`). The C05 rule
+(`c05_import_direction.py`) still needs the polyglot architecture check that `sandbox.qa_runner`
+provides. It gets it without importing it: the flow layer's validation hydrator
+(`core/flow/handlers/validation_hydrator.py`) runs the check and puts the result in
+`rule.context["qa_architecture_result"]`; C05 only reads it.
 
-### Example: The Validation Layer (L2) and QARunner (L4)
-The Validation Engine (`src/specweaver/validation/`) is designed as internal "pure logic", separated
-entirely from the raw file-system Executor limits within `Loom Commons` (`src/specweaver/sandbox/`).
-However, the legacy AST module inside `c05_import_direction.py` has been explicitly replaced by a
-subprocess invocation utilizing `PythonQARunner.run_architecture_check()`.
-
-### Why we do it:
-To prevent writing custom AST parsers across Go, Python, and TS, the Validation layer is permitted
-explicit boundary relaxation (`forbids: "!sandbox.qa_runner"`) to natively reuse the same dynamic
-polyglot architecture parser the CLI tool consumes. This prevents massive code duplication despite
-technically bridging pure logic and executor boundaries.
+Replaced: C05 used to call `PythonQARunner.run_architecture_check()` itself under a boundary
+relaxation (`forbids: "!sandbox.qa_runner"`). Hydration keeps one polyglot parser (Go, Python, TS)
+without letting validation import the sandbox. See §12 for the hydration mechanism.
 
 ---
 
-## 6. Deep-Merged Polyglot Configurations (DAL Matrices)
+## 6. Deep-merged DAL matrices
 
-SpecWeaver uses a strict risk-based matrix (DO-178C style "DAL") to bypass or tighten rules based on
-mixed-criticality execution environments. We explicitly decouple `pydantic-settings` from
-environment variable mapping when parsing structural rule matrices.
+A DO-178C-style DAL matrix tightens or relaxes rules per module criticality. `pydantic-settings` is
+not used for it.
 
-### How it works:
-Instead of internal Pydantic hacks, we rely on a pure-Python, mathematically deterministic recursive
-dictionary walker (`deep_merge_dict`) combined with direct YAML (`ruamel.yaml`) hydration to layer
-`.specweaver/dal_definitions.yaml` over base presets, before funneling the explicitly merged
-dictionary structurally into `DALImpactMatrix(**merged)`.
+**How:** `.specweaver/dal_definitions.yaml` is read with `ruamel.yaml` and layered over the base
+presets by `deep_merge_dict` (a recursive dict walker, `core/config/settings.py`). The merged dict
+goes into `DALImpactMatrix(**merged)`.
 
-### Why we do it:
-Configuration overriding frameworks notoriously clobber massive hierarchies if user configurations
-omit single child branches. `deep_merge_dict` guarantees safety matrices explicitly retain all
-default safety toggles unconditionally, while merging exclusively targeted overrides for
-domain-specific risk levels (DAL).
+**Why:** override frameworks drop whole sub-trees when a user config omits one child key.
+`deep_merge_dict` keeps every default safety toggle and changes only the keys the user set.
 
 ---
 
-## 7. Generative HARA Governance (Enum-Driven Prompts)
+## 7. Enums for LLM-proposed classifications (HARA)
 
-When AI Agents generate structured JSON proposals for complex engineering operations (like Hazard
-Analysis and Risk Assessment - HARA), we completely ban standard string bindings for critical data
-classifications.
+When an LLM proposes structured data for engineering decisions (e.g. Hazard Analysis and Risk
+Assessment — HARA), critical classifications are never plain strings.
 
----
+**How:** in decomposition (`ComponentChange`), `proposed_dal` is typed as `DALLevel` (a `StrEnum`,
+`commons/enums/dal.py`), not `str`.
 
-## 8. Mathematical Schema Overlays (Plugin Composition)
-
-SpecWeaver leverages "plugins" defined in `context.yaml` inside of boundary resolutions to combine
-multiple isolated framework paradigms concurrently (e.g. `spring-boot` serving as the base
-archetype, overlaid with `spring-security`).
-
-### How it works:
-Instead of treating plugins as monolithic executables, SpecWeaver merges flat YAML definitions
-mathematically within `CodeStructureAtom._aggregate_merge`. Deep dictionaries merge safely, and
-crucially, lists (like `["read_unrolled_symbol"]`) mathematically perform Set Union aggregation.
-
-### Why we do it:
-To prevent agent hallucinations natively without forcing C-bindings. If the Security plugin dictates
-`intents: hide: ["list_symbols"]`, the dynamic merge strictly enforces those safety boundaries
-globally in the `dispatcher.available_tools()` layer without writing a single line of explicit
-Python interception logic. It forces cross-concern security into pure mathematics.
-
-### How it works:
-Inside our decomposition workflows (`ComponentChange`), the target DO-178C data tier (`proposed_dal`) is typed structurally as `DALLevel(str, Enum)` rather than `str`.
-
-### Why we do it:
-Even with aggressive system prompts detailing "DAL_A through DAL_E", Agents hallucinate or append
-invalid remarks like "DAL_Z" or "Critical". By explicitly binding the parsing layer to a Pydantic
-Enum, we offload architectural safety to the underlying Rust JSON schema parser. If the LLM
-hallucinates, Pydantic throws a `ValidationError`, instantly triggering our `loop_back` native HITL
-engine to auto-retry the LLM without crashing SpecWeaver's internal state.
+**Why:** even with a prompt listing "DAL_A through DAL_E", models answer "DAL_Z" or "Critical". With
+an enum, Pydantic's schema parser rejects that with a `ValidationError`, which triggers the
+`loop_back` retry instead of corrupting SpecWeaver's state.
 
 ---
 
-## 8. Polyglot Abstract Syntax Tree (AST) Traceability (C09 Engine)
+## 8. Plugin schema overlays
 
-When SpecWeaver enforces that every feature spec is rigorously bound to an automated test (Feature
-3.21 - Automated Traceability Matrix), we explicitly bypass standard coverage tools or complex code
-instrumentation in favor of Polyglot AST tokenization via `tree-sitter`.
+`context.yaml` can declare plugins that stack framework archetypes (e.g. `spring-boot` as the base,
+`spring-security` on top).
 
-### How it works:
-Instead of requiring Python developers to use `@pytest.mark.trace("FR-1")`, they simply utilize
-identical syntactical layout regardless of the language: `# @trace(FR-1)` in Python, or
-`// @trace(FR-1)` in Java. SpecWeaver fires up an internal AST decoder, dynamically shifts
-structural parsers based on the file extension, traverses exclusively into `comment` root node
-types, and maps the matrix entirely in memory.
+**How:** `CodeStructureAtom._aggregate_merge` merges the plugins' flat YAML definitions: dicts merge
+deeply, lists (like `["read_unrolled_symbol"]`) are unioned.
 
-### Why we do it:
-1. **No Application Dependencies**: The engine operates purely statistically and leaves zero import overhead in the user application.
-2. **Infinite Language Support**: Since `tree-sitter` bindings natively abstract comment scraping,
-   our single codebase natively provides requirement traceability into Python, Rust, Go, JavaScript,
-   TypeScript, C++, and SQL indiscriminately, completely insulating SpecWeaver rules from
-   framework-specific lock-in.
+**Why:** if the security plugin says `intents: hide: ["list_symbols"]`, the merged config removes
+that tool in `dispatcher.available_tools()` — no Python interception code.
 
 ---
 
-By understanding these core adaptations, you will be able to navigate SpecWeaver's unique safety systems and extend the architecture without accidentally violating our zero-trust boundaries!
+## 9. AST skeleton extraction by parent-walking
+
+Feature 3.22. A `.scm` `function_definition` query alone loses prefixes such as `@classmethod` or
+TypeScript's `export default class`, so rewrites silently dropped them.
+
+**How:** query only for the symbol's name node (`node_name`), then walk up the parents (e.g.
+`name_node.parent.parent.type == 'decorated_definition'`) to include every wrapper around it.
+
+**Why:** one upward walker covers all 9 supported languages (C/C++, Rust, Python, Java, Kotlin, TS,
+SQL, Markdown) and keeps `@app.route` or `export async` without per-grammar query strings.
 
 ---
 
-## 9. Structural Reverse Graph-Climbing (AST Skeleton Extraction)
+## 10. `CodeStructureAtom` writes to disk itself, with auto-indent
 
-When building our polyglot CodeStructure AST extraction layer (Feature 3.22), we found that standard
-`.scm` `function_definition` queries natively orphaned critical code-block prefixes (like Python
-annotations `@classmethod` or TypeScript wrappers `export default class`), causing silent data
-corruption during agent rewrites.
+Feature 3.22, SF-2 (Polyglot AST Symbol Writer). An approved exception to the atom rule.
 
-### How it works:
-Instead of trying to architect convoluted SCM query strings to capture every possible decorator, we
-inverted the parsing model. We perform a precise "inner target" SCM query to find the raw symbol
-name (`node_name`), and then execute a mathematical parent-walking algorithm (e.g., checking if
-`name_node.parent.parent.type == 'decorated_definition'`) to organically swallow all external
-prefixes surrounding the target.
+**How:** atoms normally return data (`AtomResult`) and leave side effects to `impl` tool facades.
+`CodeStructureAtom` instead takes the mutated bytes from its tree-sitter parser and calls
+`self._executor.write(path, mutated_code)` directly. Every multi-line string it inserts first goes
+through `_auto_indent` (`workspace/ast/parsers/_editing.py`), which pads it to the AST node's margin.
 
-### Why we do it:
-This abstraction anomaly completely removes the need for infinite grammar mappings. Since the
-parent-tree strictly cascades mathematically in all 9 supported languages (C/C++, Rust, Python,
-Java, Kotlin, TS, SQL, Markdown), a single logical upward-walker uniformly preserves `@app.route` or
-`export async` wrappers indiscriminately.
+**Why:**
+
+1. **Context size**: returning a mutated 2,000-line file to the agent, only for it to pipe that into a
+   separate `FileWriter` call, would blow the context window.
+2. **Indentation**: padding against tree-sitter node boundaries, not by regex, prevents LLM
+   `IndentationErrors` and brace errors across languages.
 
 ---
 
-## 10. The Dual-Consumer Atom Bypass & AST Auto-Indentation
+## 11. Git worktree sandboxing
 
-When implementing the **Polyglot AST Symbol Writer (Feature 3.22, SF-2)** to allow agents to
-seamlessly edit deeply nested code structures, we explicitly authorized a massive architectural
-exception known as the Dual-Consumer Atom Bypass, paired with an AST auto-indenter proxy.
+Feature 3.26. An LLM generating a multi-file change could delete large parts of a dirty host `src/`.
 
-### How it works:
-Standard design dictates atoms only return localized data formats (e.g. `AtomResult`) and rely
-entirely on `impl` tool mapping facades to execute actual side effects (like writing strings safely
-to disk). `CodeStructureAtom` violates this rule explicitly. It intercepts the mutated byte-strings
-calculated by internal tree-sitter parsers and executes a direct
-`self._executor.write(path, mutated_code)` side effect completely hidden from the encompassing tool
-router.
-Furthermore, any multi-line string injected into this write is pre-processed by an `_auto_indent`
-proxy that intercepts the AST's exact integer-based integer margin layout and flawlessly prepends
-recursively calculated padding.
+**How:** the engine creates an isolated `.worktrees/` checkout with `git worktree add`; the agent
+writes there. On reconcile, `_intent_strip_merge` merges the branch (`git merge -X ours`), then
+restores or deletes every changed file not in `RunContext.isolation.allowed_paths`. `README.md` and
+`docs/` are always stripped; `doc_updates.md` always survives. `_intent_worktree_teardown` removes the
+worktree and, on failure, retries `shutil.rmtree` with a 5-step backoff (`0.05, 0.1, 0.2, ...`)
+followed by `git worktree prune`. Modes and policy: `pipeline_engine_guide.md` §7.
 
-### Why we do it:
-1. **Double Handling Loop Hallucination:** If the Atom simply surfaced the newly mutated 2,000-line
-   Python struct payload back to the Agent facade, the AI context window would instantly blow out
-   trying to pipe that return sequence sequentially into an independent `FileWriter` tool call.
-   Atomic persistence within the CodeStructureAtom eliminates context-bloat definitively.
-2. **Strict Indentation Immunity:** By forcing the engine to intercept LLM-generated string blocks
-   and perform padding against Tree-Sitter boundaries natively rather than within regex bounds, we
-   effectively inoculate SpecWeaver against LLM `IndentationErrors` and trailing brace failures
-   across languages.
+**Why:**
+
+1. **Strip, don't fail**: an agent cannot rewrite central config (`Pipfile`, `pom.xml`, `README.md`).
+   Those files are dropped and the valid changes still land.
+2. **Windows locks**: indexing and anti-virus lock freshly written directories under `.worktrees/`; an
+   immediate delete fails and halts the pipeline. The backoff waits for the locks and finishes under
+   2 seconds.
+
+Replaced: the allow-list used to come from `context.yaml` boundaries and was applied with a filtered
+`git apply`. It now comes from the run's `allowed_paths`, which the composition root sets.
 
 ---
 
-## 11. Git Worktree Sandboxing (Mathematical Diff Striping & OS Lock Resilience)
+## 12. Rule context hydration (the `**kwargs` bypass)
 
-When allowing LLM agents inside a Pipeline Orchestrator (Feature 3.26) to generate multi-file
-refactoring steps, we face catastrophic risk if an AI hallucinates massive deletions across a dirty
-host `src/` directory. 
+Validation rules get system-injected data (e.g. `CodeStructureAtom` AST payloads) through the
+`Rule.context` property, not constructor arguments.
 
-### How it works:
-Instead of restricting agents purely via prompt rules or abstract AST overlays, the execution engine
-dynamically builds an isolated `.worktrees/` directory directly linked to the current Git repository
-using `git worktree add`. The agent writes code here. At completion, `_intent_strip_merge` parses
-the generated `.diff` hunk by hunk. Any path that isn't explicitly green-lit by the module's
-`context.yaml` boundaries is **mathematically erased from the patch** before executing a
-`git apply --strategy-option=ours`. 
+**How:** a rule never declares `def __init__(self, required_markers: list = None, ast_payload: dict = None):`.
+The validation executor (`assurance/validation/executor.py`) pops system payloads out of the step
+params (`step_params.pop("ast_payload", {})`) and sets `rule.context = payload` after construction.
+`**kwargs` stays reserved for YAML params.
 
-Simultaneously, `_intent_worktree_teardown` utilizes a progressive 5-iteration timing backoff loop
-(`0.05, 0.1, 0.2, ...`) directly wrapping physical `shutil.rmtree` combined with
-`git worktree prune`.
-
-### Why we do it:
-1. **The mathematical stripe:** Completely and definitively blocks Agents from bypassing API limits
-   to rewrite central configurations (`Pipfile`, `pom.xml`, `README.md`). We physically drop those
-   hunks rather than failing the run, letting the valid logic merge cleanly. Documentation claims
-   (`doc_updates.md`) are explicitly whitelisted as isolated channels.
-2. **The OS locking backoff:** Windows systems aggressively index and run Anti-Virus locks on
-   freshly modified physical directories (`.worktrees/`). Attempting a standard 0ms deletion results
-   in fatal access crashes, halting the entire pipeline. The progressive micro-backoff elegantly
-   yields exactly long enough for OS locks to release, tearing down the sandbox securely under 2
-   seconds.
+**Why:** unpacking `**step.params` into a rule would crash every rule with
+`TypeError: unexpected keyword argument` as soon as the engine adds a system parameter. With
+post-init hydration, `C12ArchetypeCodeBoundsRule` reads `.context` while `PARAM_MAP` stays intact.
 
 ---
 
-## 12. Rule Context Hydration (The **kwargs Bypass)
+## 13. Flat archetype evaluators (no LSP)
 
-When injecting polyglot AST models generated by `CodeStructureAtom` directly into Python validation
-rules, we bypass standard explicit constructor typing via the runtime `Rule.context` property
-mechanism.
+The validation engine checks framework annotations (Kotlin's `@RestController`, Rust's
+`#[derive(Clone)]`) without language servers or compiler plugins.
 
-### How it works:
-Instead of requiring `def __init__(self, required_markers: list = None, ast_payload: dict = None):`,
-the `PipelineRunner` traps system-injected structs (`step.params.pop("ast_payload")`) precisely
-during rule initialization, shifting them strictly into a dynamic `rule.context = payload` property
-post-instantiation, natively freeing `**kwargs` bindings exclusively for YAML param mapping.
+**How:** `SchemaEvaluator` reads flat YAML files (`fastapi.yaml`, `actix-web.yaml`) in
+`workflows/evaluators/frameworks/` that map decorators/macros to what they do. Files are per
+**archetype**, not per language: no `java.yaml`, but a `spring-boot.yaml` with
+`metadata.supported_languages: ["java", "kotlin"]`.
 
-### Why we do it:
-If system parameters collided dynamically against pure logic rules during strictly typed `**kwargs`
-unwrapping via `**step.params`, new rules would permanently crash against
-`TypeError: unexpected keyword argument` the second the Engine scaled up its contextual system
-variables. By forcefully splitting payload injection into a post-init hydration wrapper, Validation
-Rules are mathematically unbound from Executor constraints, allowing `C12ArchetypeCodeBoundsRule` to
-read directly from `.context` while maintaining `PARAM_MAP` integrity.
+**Why:**
 
----
-
-## 13. Flat Archetype Evaluators (The LSP Bypass)
-
-When configuring the Core Validation Engine to parse structural AST constraints natively against
-framework-specific annotations (e.g. Kotlin's `@RestController` or Rust's `#[derive(Clone)]`), we
-deliberately bypassed the standard industry approach of booting up heavy runtime Language Servers
-(LSPs) or compiler plugins.
-
-### How it works:
-Instead of trying to parse raw source code through heavy background processes, `SchemaEvaluator`
-parses flat YAML declarative files (e.g., `fastapi.yaml`, `actix-web.yaml`) stored directly in
-`workflows/evaluators/frameworks/`. These YAML files define strict mathematical unrollings mapping
-raw decorators/macros directly to their underlying abstract logic. 
-Furthermore, the mappings are isolated by **Archetype** rather than **Language**. There is no
-`java.yaml` containing Spring Boot and Quarkus. Instead, there is a distinct `spring-boot.yaml`
-securely guarded by `metadata.supported_languages: ["java", "kotlin"]`.
-
-### Why we do it:
-1. **Speed & Stability**: Firing up a background LSP or rust-analyzer instance during critical AI
-   Generation loops adds a devastating 5–10 second latency tax per check, crippling iterative loop
-   speeds. Unrolling YAML abstractions in-memory dynamically reduces structural mapping times to
-   `0.01` seconds.
-2. **Preventing Cross-Framework Hallucinations**: By enforcing flat archetype models bound natively
-   by `supported_languages`, if an LLM hallucinates a `FastAPI` construct into a `Node.js`
-   Typescript worker, the validation explicitly drops the archetype matching organically rather than
-   tearing down the parser natively.
-3. **Targeted AST Filtering (`decorator_filter`)**: Because we extract these framework markers
-   explicitly through internal polyglot tree-sitter mappings (e.g., `extract_framework_markers`), we
-   natively power the Agent's `list_symbols(decorator_filter="PreAuthorize")` tool. This bypasses
-   the need for the LLM to read massive source files line-by-line; instead, the physical AST
-   extractor actively filters and drops any symbol that lacks the declared framework annotation
-   text, guaranteeing pristine targeted visibility.
+1. **Speed**: an LSP or rust-analyzer adds 5–10 seconds per check inside generation loops. The YAML
+   lookup takes about `0.01` seconds.
+2. **No cross-framework matches**: `supported_languages` means a `FastAPI` construct in a `Node.js`
+   TypeScript worker simply does not match, instead of breaking the parser.
+3. **`decorator_filter`**: the same markers (via `extract_framework_markers`) power
+   `list_symbols(decorator_filter="PreAuthorize")`, so an agent finds annotated symbols without
+   reading whole files.
 
 ---
 
-## 14. Deep Serialization Facade (The Orjson Override)
+## 14. JSON facade (`orjson`)
 
-When scaling SpecWeaver's internal logging, payload serialization, and topology caching to meet
-extreme `< 50ms` NFR targets (Feature 3.32), we systematically replaced all native Python
-`import json` usage with the Rust-backed `orjson` library.
-Instead of forcing developers to use `orjson.dumps().decode('utf-8')` perfectly every time across
-29+ modules, we built a single unified facade module `specweaver.commons.json`. The entire codebase
-points to this one entrypoint (`from specweaver.commons import json`). 
+Feature 3.32 (`< 50ms` NFR targets). All `import json` usage was replaced by the Rust-backed
+`orjson`, behind one facade: `specweaver.commons.json`. Every module imports
+`from specweaver.commons import json` (29+ modules), never `orjson.dumps().decode('utf-8')` by hand.
 
-### Why we do it:
-1. **The Pydantic Poison Pill**: Standard `json.dumps()` returns standard `str` UTF-8 primitives.
-   Fast `orjson.dumps()` natively returns raw `bytes`. Passing raw bytes into downstream Pydantic
-   instantiators, logging frameworks layer formatters, or LLM System Prompts notoriously crashes
-   them with `TypeError: input must be a string, not bytes`. The facade explicitly wraps `orjson`
-   and intercepts the `.decode('utf-8')` transformation strictly to preserve zero-friction string
-   parity across the engine.
-2. **Deterministic Sort Consistency**: LLM caching thrives on exact token string-matching. The
-   facade actively captures mapping flags (like `sort_keys=True`) and strictly routes them into
-   `orjson.OPT_SORT_KEYS`, mathematically ensuring JSON structure guarantees natively at the lowest
-   engine level.
+**Why:**
 
-### 3. State Management & Storage
-- **Agent Memory Bank Explicit Timestamps:** `SQLAlchemy` `default=datetime.now` triggers inside the
-  Python process rather than natively inside SQLite. When generating multiple rows rapidly inside
-  async loops, this occasionally causes identical timestamp collisions or timezone drops. In the
-  `specweaver.workspace.memory.repository`, we mandate that **all mutation methods explicitly
-  instantiate `datetime.now(UTC)` and pass it directly to the model instances** to guarantee
-  millisecond precision and UTC enforcement, bypassing SQLAlchemy's `default=` parameter entirely.
+1. **`bytes` vs `str`**: `orjson.dumps()` returns `bytes`. Passing bytes to Pydantic, log formatters or
+   prompts fails with `TypeError: input must be a string, not bytes`. The facade does the
+   `.decode('utf-8')`, so callers always get a UTF-8 `str`.
+2. **Stable key order**: LLM caching needs identical strings. The facade maps `sort_keys=True` to
+   `orjson.OPT_SORT_KEYS`.
 
 ---
 
-## 15. Semantic State Caching (The Persistent `.specweaver` Cache)
+## 15. Topology cache (`.specweaver/topology.cache.json`)
 
-When evaluating architecture boundaries and computing execution dependencies (Feature 3.32),
-SpecWeaver generates a global structural map known as the `TopologyGraph`. Building this graph
-relies on polyglot TreeSitter parsing for every `context.yaml` source boundary globally.
+Feature 3.32. The `TopologyGraph` (the project's structural map) needs tree-sitter parsing of every
+`context.yaml` boundary.
 
-### How it works:
-Instead of recursively parsing the AST mappings globally on every run, SpecWeaver leverages
-`DependencyHasher`. It dynamically digests the nested source files into Merkle Root signatures,
-mapping them deterministically to physical OS structures. It persists this signature matrix in
-`<project_root>/.specweaver/topology.cache.json`. Crucially, this caching block explicitly injects
-itself securely into the repo's root `.gitignore` to prevent source pollution.
+**How:** `DependencyHasher` hashes source files into Merkle roots and stores them in
+`<project_root>/.specweaver/topology.cache.json`. It adds `/.specweaver/` to the repo's root
+`.gitignore`.
 
-### Why we do it:
-1. **The `< 50ms` NFR Guarantee:** An engine scanning thousands of files per `Flow` command loop
-   incurs agonizing I/O drag. By isolating recursive reads behind mathematical semantic
-   fingerprints, SpecWeaver resolves subsequent global boundaries physically in milliseconds.
-2. **The Symlink Sandbox Extension:** As part of the Worktree Bouncer context (Pattern 11), ensuring
-   `.specweaver` is symlinked natively into temporary ephemeral sandboxes means the inner loop
-   instantly tracks against the main trunk's caching speeds without having to manually reconstruct
-   gigabytes of dependencies or AST tree paths.
+**Why:**
+
+1. **`< 50ms` NFR**: later runs compare fingerprints instead of re-reading thousands of files.
+2. **Worktrees (§11)**: `.specweaver` is symlinked into each worktree, so the sandbox uses the trunk's
+   cache.
 
 > [!CAUTION]
-> **The Cache-Flush Dilemma (Topological Stale Nodes)**
-> Because `TopologyGraph` reads the `.specweaver` cache to compute a set of `graph.stale_nodes`, it
-> has effectively morphed into a **temporal snapshot** representing the codebase's mathematical diff
-> at exact instantiation.
-> **DO NOT AUTO-FLUSH THE CACHE DURING GRAPH BOOTSTRAP!** 
-> If `TopologyGraph.from_project()` evaluates the tree and immediately overwrites
-> `topology.cache.json`, you explicitly destroy the baseline. The very next pipeline operation that
-> boots the Graph will see zero changes and flag everything as clean, letting corrupted test suites
-> bypass the Validation Engine. 
-> The Semantic Cache must ONLY be explicitly saved (`DependencyHasher.save_cache()`) by the **CLI
-> Orchestrator** (`pipelines.py`) strictly after the `PipelineRunner` yields a successful
-> `RunStatus.COMPLETED` state. Coupling the flush inside the `flow` engine violates DMZ boundaries
-> between `flow` and `graph`.
+> **Never flush the cache while building the graph.**
+> `TopologyGraph` computes `graph.stale_nodes` from the cache, so the cache is the baseline the diff
+> is measured against. If `TopologyGraph.from_project()` rewrote `topology.cache.json`, the next run
+> would see no changes and let broken code skip validation. Only the CLI orchestrator (`pipelines.py`; since moved (2026-09-25):
+> `core/flow/interfaces/cli.py`) saves it (`DependencyHasher.save_cache()`), and only after `PipelineRunner` returns
+> `RunStatus.COMPLETED`. Saving from inside `flow` would break the `flow`/`graph` boundary.
 
 > [!CAUTION]
-> **Tombstone Discovery (Ghost Dependencies)**
-> When computing staleness (`_calculate_stale_seeds`), if a dependent module is completely deleted
-> from the disk, it vanishes from the physical directory scan mapping. However, historical consumers
-> of that module will still explicitly declare an overarching `consumes: [deleted_module]`
-> relationship inside their `context.yaml`. 
-> The crawler explicitly flags any consumer possessing a dangling dependency reference natively as a `stale_seed` to guarantee upstream consumers fail their test suites predictably.
+> **Tombstones (deleted dependencies)**
+> A deleted module disappears from the directory scan, but its consumers still declare
+> `consumes: [deleted_module]` in their `context.yaml`. `_calculate_stale_seeds` flags any consumer
+> with a dangling reference as a `stale_seed`, so its tests run and fail.
 
 ---
 
-## 16. The Vault Binding Shield (Option D)
+## 16. Vault Binding Shield (Option D)
 
-When upgrading the core pipeline to support external credentials for Model Context Protocol (MCP)
-integrations (Feature 3.32c), we faced a severe credential leakage risk: how do we prevent users or
-LLMs from accidentally `git commit`ting `.specweaver/vault.env` to the remote repository?
+Feature 3.32c (MCP credentials). Risk: a user or LLM runs `git commit` with `.specweaver/vault.env`.
 
-### How it works:
-Instead of trying to manipulate or parse `Pydantic` settings during YAML loading, we fundamentally
-bypass the configuration layer. `PipelineRunner.run()` and `PipelineRunner.resume()` autonomously
-invoke a pre-flight filesystem check early in the boot sequence. If `.specweaver/vault.env` exists,
-the `PipelineRunner` natively dispatches pure `GitAtom` intents (`_intent_is_tracked`) to check
-`git ls-files --error-unmatch .specweaver/vault.env`. 
+**How:** `PipelineRunner.run()` and `PipelineRunner.resume()` run a pre-flight check. If
+`.specweaver/vault.env` exists, `GitAtom` (`_intent_is_tracked`) runs
+`git ls-files --error-unmatch .specweaver/vault.env`.
 
-### Why we do it:
-1. **Architectural Pure-Logic Boundaries**: Configuration models (`context.yaml`) are located in L2
-   `config` and `assurance` layers. Running arbitrary `subprocess.run(["git", "ls-files"])` from
-   inside configuration violates our Tach domain bounds cleanly, cross-contaminating physical
-   executables into pure domain logic. By injecting the check exclusively into the orchestrator
-   layer (L3 Flow), we natively utilize valid `Loom Atom` paths to execute Git binaries securely.
-2. **Dictatorial Execution Integrity**: If `GitAtom` returns that the vault file is tracked, the
-   Runner actively shuts down the interpreter via a violent `RuntimeError`. It assumes the
-   repository is inherently compromised. There is no fallback, no auto-rollback, and noHITL
-   mitigation—it kills the pipeline immediately to prevent pushing credentials upstream.
+**Why:**
+
+1. **Layering**: configuration (`context.yaml` models) lives in the L2 `config` and `assurance`
+   layers. Calling `subprocess.run(["git", "ls-files"])` there would break the Tach bounds. The check
+   sits in the orchestrator (L3 Flow), which may use `Loom Atom`s.
+2. **No fallback**: a tracked vault means the repo is compromised. The runner raises `RuntimeError`
+   and stops — no rollback, no HITL — before credentials can be pushed.
 
 ---
 
-## 17. The Thread-Pumped JSON-RPC Executor (Loom Commons)
+## 17. Thread-pumped JSON-RPC executor (`MCPExecutor`)
 
-When integrating Model Context Protocol (MCP) servers locally via standard I/O (stdio) in feature
-3.32c SF-2, we entirely rejected external integration SDKs (like `mcp` PyPI packages). Existing
-libraries force heavy asynchronous event loop requirements which explicitly violate the
-`async_ready: false` bounding configurations within our core execution layers (`commons`).
+Feature 3.32c SF-2. Local MCP servers speak JSON-RPC over stdio. External SDKs (the `mcp` PyPI
+package) were rejected: they need an async event loop, which the `async_ready: false` core layers
+(`commons`) forbid.
 
-### How it works:
-Instead of `asyncio.create_subprocess_exec`, the `MCPExecutor` boots standard `subprocess.Popen`
-pipelines attached to native `subprocess.PIPE` buffers. To perform timeout-aware stream isolation
-natively on Windows without `select` or `fcntl` crashes:
-1. It sparks a daemon `threading.Thread` loop executing purely `iter(process.stdout.readline, "")`.
-2. This loop pipes directly into an unbounded `queue.Queue`.
-3. The foreground `call_rpc` process utilizes explicit sequence increment correlation (`self._request_id += 1`) and parses the queue stream blocks via `_queue.get(timeout=...)`.
+**How:** not `asyncio.create_subprocess_exec`. `MCPExecutor` starts `subprocess.Popen` with
+`subprocess.PIPE` buffers (a declared TID251 exemption: `SubprocessExecutor` is one-shot and cannot
+hold a long-lived pipe). For timeouts without `select`/`fcntl` (which fail on Windows):
 
-### Why we do it:
-This architectural separation isolates arbitrary Docker blockages cleanly. `call_rpc` successfully
-idles and traps delays, rejecting stale queue loops natively without cross-contaminating the main
-thread execution path. It completely negates the requirement for complex `AsyncIO` integration
-downline in the engine stack, ensuring validation layers remain functionally pure synchronous
-generators.
+1. A daemon `threading.Thread` runs `iter(process.stdout.readline, "")`.
+2. It feeds an unbounded `queue.Queue`.
+3. `call_rpc` correlates replies by request id (`self._request_id += 1`) and reads with
+   `_queue.get(timeout=...)`.
 
-
-## Pre-Fetched Context Envelope (MCP Integration)
-
-**Feature**: 3.32c (Pre-Fetch Assembler)
-
-### The Problem
-Injecting global tools into LLM pipelines for MCP integration causes severe System Prompt token saturation, and allows LLMs to rapidly exhaust tool invocation limits, leading to latency overheads.
-
-### The Solution
-The Flow Engine mathematically analyzes the `context.yaml` `consumes_resources` block to extract
-standard MCP URIs ahead of time. Before any LLM step is dispatched, the `MCPAtom` fetches remote
-resources sequentially over `stdio` and formats them into a serialized text block.
-This physical payload is explicitly injected into the `<environment_context>` block of the agent prompt as a static snapshot.
-
-### Architectural Mandates
-1. **No LLM Tool Definitions:** No dynamic tool calling is allowed for Context Schemas.
-2. **Docker Containment:** The `MCPAtom` strictly mandates `docker run -i --rm` for executing
-   node/python servers, explicitly forbidding local `npx` zombie processes and unauthorized shell
-   escalations.
+**Why:** a hung container stalls only the reader thread; `call_rpc` times out cleanly. No `AsyncIO`
+is needed further down, so validation stays synchronous.
 
 ---
 
-## 18. Idempotent Graph Tombstoning (The UPSERT Bypass)
+## 18. Idempotent graph tombstoning (UPSERT)
 
-When flushing the in-memory NetworkX `TopologyGraph` to SQLite for the Persistent Storage Adapter,
-we faced massive `UNIQUE constraint` deadlocks whenever an LLM agent requested to save an updated
-code file without deleting the previous version of the graph structure.
+Flushing the in-memory NetworkX `TopologyGraph` to SQLite hit `UNIQUE constraint` deadlocks when an
+agent saved a file whose old graph nodes were still stored.
 
-### How it works:
-Instead of `SELECT`ing every node and deciding whether to `UPDATE` or `INSERT` in Python, we
-strictly enforce `sqlite3`'s mathematical `ON CONFLICT(semantic_hash) DO UPDATE SET is_active=1`
-within a single batch `executemany` chunk. Furthermore, nodes belonging to stale files are never
-`DELETE`d; instead they are explicitly "Tombstoned" (`is_active=0`).
+**How:** in `sqlite3`, one batched `executemany` with `ON CONFLICT(semantic_hash) DO UPDATE SET is_active=1` — no
+`SELECT` then `UPDATE`/`INSERT` in Python. Nodes of stale files are never `DELETE`d; they are
+tombstoned (`is_active=0`).
 
-### Why we do it:
-1. **The Resurrection Rule (RT-13):** If an agent accidentally deletes a file or function, the graph
-   tombstones it. If the agent hits a HITL barrier, the pipeline rolls back the git branch. The next
-   orchestrator scan instantly "resurrects" the tombstoned node back to `is_active=1` simply by
-   hitting the identical `semantic_hash` during the `UPSERT`. No data or LLM `metadata` context is
-   ever lost during agent hallucinations.
-2. **Batch Deadlock Immunity (RT-4):** Executing 5,000 Python conditional inserts locks the database. Offloading the logic entirely to native SQL C-bindings bypasses GIL lock starvation entirely.
+**Why:**
+
+1. **Resurrection (RT-13)**: if an agent deletes a file or function, its node is tombstoned. If a HITL
+   gate then rolls the branch back, the next scan hits the same `semantic_hash` and sets
+   `is_active=1` again. No node or LLM `metadata` is lost.
+2. **No deadlocks (RT-4)**: 5,000 conditional inserts from Python lock the database; one SQL batch
+   does not hold the GIL.
 
 ---
 
-## 19. Elimination of Integer Mapping (TECH-004 De-optimization)
+## 19. `semantic_hash` is the node ID (no integer mapping)
 
-Initially, when reconstituting the Persistent SQLite backup back into an in-memory `NetworkX` graph,
-an integer remapping layer (`_hash_to_int`, `_int_to_hash`, `_next_int_id`) was introduced to map
-string-based `semantic_hash` keys to internal autoincrement `int` IDs. This was intended as a
-performance optimization for NetworkX centrality analysis.
+`TECH-004` deleted an integer remapping layer (`_hash_to_int`, `_int_to_hash`, `_next_int_id`) that
+mapped `semantic_hash` strings to autoincrement `int` IDs for NetworkX. It was a premature
+optimisation (no centrality math at scale exists) and the root cause of three bugs: **AP-4** (type
+mismatch on flush), **AP-10** (ID-map corruption when loading a loaded graph), **AP-11**
+(non-roundtrippable load/flush).
 
-However, feature refactoring TECH-004 revealed that this integer mapping layer was a premature
-optimization (no actual matrix math or centrality calculations at scale exist in the codebase) and
-served as the sole root cause of three major data integrity bugs:
-1. **AP-4**: Type mismatch during db flushes.
-2. **AP-10**: Internal ID map corruption when loading a loaded graph directly into the engine.
-3. **AP-11**: Non-roundtrippable load/flush loops.
-
-### Decoupled ID Design:
-As part of TECH-004, this entire integer remapping layer was deleted. The system now enforces a clean separation of concerns:
-- **Canonical ID**: All public APIs and the in-memory `InMemoryGraphEngine` natively use the
-  `semantic_hash` string as the `NetworkX` node key. This makes roundtrips trivial and eliminates
-  translation bugs.
-- **Storage ID**: Autoincrement integers (`ROWID`) are used strictly as internal foreign keys inside
-  `SqliteGraphRepository` for edge-table efficiency, and never leak outside the storage
-  implementation.
+- **Canonical ID**: public APIs and `InMemoryGraphEngine` use the `semantic_hash` string as the
+  `NetworkX` node key. Round trips need no translation.
+- **Storage ID**: autoincrement integers (`ROWID`) are internal foreign keys inside
+  `SqliteGraphRepository` (edge-table efficiency) and never leave it.
 
 ---
 
-## 20. Lazy Structured Logging (The `%` Format Override)
+## 20. Lazy `%s` logging
 
-When rolling out telemetry across SpecWeaver (Feature 3.33), we explicitly enforce the usage of the
-standard library `logging` module paired exclusively with legacy `%s` string interpolation formats.
-We fundamentally ban the usage of Python `f-strings` or `.format()` inside `logger.debug()` or
-`logger.info()` payload boundaries.
+Feature 3.33. Use the standard `logging` module with `%s` interpolation. No `f-strings` or `.format()`
+in `logger.debug()` / `logger.info()` calls.
 
-### How it works:
-Every active module strictly initializes an isolated `logger = logging.getLogger(__name__)`. 
-Developers must write: `logger.debug("Parsing spec: %s", spec_path)` 
-Developers are explicitly forbidden from writing: `logger.debug(f"Parsing spec: {spec_path}")`
+Every module has `logger = logging.getLogger(__name__)`.
+Write: `logger.debug("Parsing spec: %s", spec_path)`
+Never: `logger.debug(f"Parsing spec: {spec_path}")`
 
-### Why we do it:
-1. **The Performance Tax:** `logger.debug` lines are evaluated universally, even if the user is
-   running the CLI at the `INFO` or `WARNING` level. If developers use `f-strings`, the Python
-   interpreter is forced to immediately evaluate, stringify, and concatenate massive payload objects
-   *before* calling the `logger` method, only for the logger to instantly discard the string because
-   `DEBUG` is disabled. By passing `%s` and trailing arguments, the standard library defers payload
-   evaluation strictly until *after* the level gate is passed, resulting in a 0ms execution cost for
-   disabled telemetry.
-2. **Deterministic Aggregation:** External log aggregation tools (like Datadog or ELK) index
-   standard library `logging` records by grouping identical static message strings. `f-strings`
-   permanently mutate the message string on every run, destroying telemetry aggregation graphs. The
-   `%s` pattern guarantees the message structure remains perfectly uniform natively.
+**Why:**
+
+1. **Cost**: an f-string is built before the call, even when the CLI runs at `INFO` or `WARNING`
+   and the `DEBUG` record is thrown away. With `%s`, formatting happens only after the level check — no cost for disabled levels.
+2. **Aggregation**: tools like Datadog or ELK group records by the static message string. f-strings
+   make every message unique.
 
 ---
 
-## 21. Async SQLite PRAGMA Enforcement & Lifecycle Workarounds
+## 21. Async SQLite: FK PRAGMA and `expire_on_commit`
 
-When integrating the Agent Memory Bank (Feature B-INTL-09) with SQLite and `sqlalchemy[asyncio]`, we
-encountered two catastrophic failures that standard synchronous applications never see: 1)
-`MissingGreenlet` errors during test suite lifecycle rollbacks, and 2) Foreign Key CASCADE rules
-silently failing to execute.
+Feature B-INTL-09 (Agent Memory Bank), SQLite with `sqlalchemy[asyncio]`.
 
-### How it works:
-1. **The PRAGMA Bypass**: We explicitly register a
-   `@event.listens_for(engine.sync_engine, "connect")` hook within
-   `register_fk_pragma_listener(engine)` to physically execute `PRAGMA foreign_keys=ON`. Every time
-   an async session is created or tests boot up, the connection must pass through this hook.
-2. **The `expire_on_commit` Hack**: When testing Async models with relationships or accessing
-   properties after a `commit()`, SQLAlchemy attempts to lazily load expired attributes. Because the
-   async context does not have a running greenlet during synchronous test teardowns or assertions,
-   it crashes with `MissingGreenlet`. We explicitly configure test fixtures and our CQRS
-   `AsyncSession` factories with `expire_on_commit=False` to force SQLAlchemy to retain data
-   locally.
+**How:**
 
-### Why we do it:
-Unlike PostgreSQL or MySQL, SQLite explicitly defaults `foreign_keys=OFF` on every single new
-connection. `aiosqlite` creates new pooled connections asynchronously, completely bypassing any
-connection string parameters like `?foreign_keys=1`. If the PRAGMA is not hooked at the engine
-connection pool layer, deleting an `Epic` will leave thousands of orphaned `Task` records polluting
-the database forever instead of executing the `ON DELETE CASCADE`. The greenlet fix mathematically
-eliminates ORM synchronization race conditions without dropping to raw SQL.
+1. **PRAGMA hook**: `register_fk_pragma_listener(engine)` (`core/config/database.py`) registers
+   `@event.listens_for(engine.sync_engine, "connect")` and runs `PRAGMA foreign_keys=ON` on every new
+   connection, in production and in tests.
+2. **`expire_on_commit=False`** on test fixtures and the CQRS `AsyncSession` factories. Otherwise
+   SQLAlchemy lazily reloads expired attributes after `commit()`, and with no running greenlet (sync
+   teardown, assertions) that fails with `MissingGreenlet`.
+
+**Why:** unlike PostgreSQL or MySQL, SQLite starts every connection with `foreign_keys=OFF`, and `aiosqlite` opens pooled
+connections without honouring `?foreign_keys=1` in the URL. Without the hook, deleting an `Epic`
+leaves its `Task` rows orphaned instead of running `ON DELETE CASCADE`.
+
+**Timestamps**: `SQLAlchemy` `default=datetime.now` runs in Python, and rapid inserts in async loops
+collided or lost the timezone. In `specweaver.workspace.memory.repository`, **every mutation method
+creates `datetime.now(UTC)` itself and passes it to the model** — `default=` is not used.
 
 ---
 
-## 22. Resolved-Path Interpreter Invocation (The Windows `System32` Shadowing Bug)
+## 22. Invoke interpreters by resolved path (Windows `System32` shadowing)
 
-When building `BashActionAtom` (C-EXEC-02 SF-01) to run `.specweaver/scripts/` shell scripts via
-`SubprocessExecutor`, TDD surfaced a genuine Windows-only bug: invoking `bash` by its bare command
-name silently ran the wrong interpreter.
+Found in `BashActionAtom` (C-EXEC-02 SF-01), which runs `.specweaver/scripts/` through
+`SubprocessExecutor`.
 
-### How it works:
-On a Windows machine with both Git for Windows and WSL installed, `shutil.which("bash")` correctly
-resolves Git's `bash.exe` (it searches `%PATH%` in listed order). But
-`subprocess.Popen(["bash", ...])` (a list argv, `shell=False`) does **not** go through the same
-resolution — Windows' `CreateProcess` API, when given a bare command name with no directory, applies
-its own fixed search order that checks `C:\Windows\System32` (which contains a WSL launcher stub, if
-the "Windows Subsystem for Linux" feature is enabled) **before** it ever consults `%PATH%`. This
-silently invokes WSL's `bash` instead of Git's, regardless of `PATH` order, and regardless of an
-earlier `shutil.which("bash")` check having already found the right one — unless that resolved path
-is actually *used* as `argv[0]`.
+**How:** with Git for Windows and WSL both installed, `shutil.which("bash")` finds Git's `bash.exe`
+(it follows `%PATH%`). But `subprocess.Popen(["bash", ...])` (list argv, `shell=False`) uses
+Windows `CreateProcess`, which searches `C:\Windows\System32` — home of the WSL launcher stub —
+**before** `%PATH%`. So WSL's `bash` runs, whatever the `PATH` order.
 
-The fix: resolve `shutil.which("bash")` once, and pass the **returned absolute path** as `argv[0]` —
-never the bare string `"bash"`. Once resolved, path *format* (`C:\...` vs `C:/...`) doesn't matter;
-both work identically once the correct binary is targeted.
+Rule: call `shutil.which("bash")` once and pass the **returned absolute path** as `argv[0]`, never
+the bare string `"bash"`. Path format (`C:\...` vs `C:/...`) does not matter once the binary is
+right.
 
-### Why we do it:
-This is a general lesson for any code that spawns a named interpreter/tool via
-`subprocess`/`SubprocessExecutor` on Windows with `shell=False`: a `shutil.which()` check that
-discards its own resolved path and re-passes the bare command name to `Popen` is not actually
-verifying what will run — it's two independent, potentially-divergent resolutions. Any future
-Atom/Tool invoking an external interpreter by name should resolve once and reuse that resolved path,
-not just check-then-trust.
+**Why:** a `shutil.which()` check followed by `Popen` with the bare name is two independent lookups
+that can disagree. Any Atom or Tool that runs a named interpreter must resolve once and reuse that
+path.
 
 ---
 
-## 23. Executor Subclassing for Physical-Target Swaps (The Container Injection Pattern)
+## 23. Swap the execution target by subclassing the executor
 
-When building `ContainerSubprocessExecutor` (B-EXEC-01) to route QA-runner execution into an
-ephemeral Podman/Docker container instead of the host, we needed to change *where* a command
-physically runs without changing *anything* about the result contract every existing caller already
-depends on.
+`ContainerSubprocessExecutor` (B-EXEC-01) runs QA-runner commands in an ephemeral Podman/Docker
+container instead of the host, without changing the result contract callers rely on.
 
-### How it works:
-`PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` — and every other
-language runner's constructor — is typed to the concrete `SubprocessExecutor` class, not a protocol
-or ABC. A composition-only wrapper (a new class that merely *holds* a `SubprocessExecutor` instance
-internally) cannot satisfy that type hint under strict mypy without widening a stable, existing
-signature across 5 language runners. Instead, `ContainerSubprocessExecutor(SubprocessExecutor)`
-**subclasses** the parent and overrides only `execute()`: it transforms the incoming `cmd` into a
-`<podman|docker> run ...` argv wrapping the original command, then calls
-`super().execute(wrapped_cmd, ...)` — reusing the parent's timeout escalation, credential stripping,
-and `SubprocessResult` construction verbatim, rather than reimplementing any of it.
+**How:** `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` — and the other
+language runners — are typed to the concrete `SubprocessExecutor`, not a protocol. A wrapper that
+merely holds a `SubprocessExecutor` would fail strict mypy unless that signature were widened across
+5 language runners. So `ContainerSubprocessExecutor(SubprocessExecutor)` **subclasses** it and
+overrides only `execute()`: it wraps `cmd` into a `<podman|docker> run ...` argv and calls
+`super().execute(wrapped_cmd, ...)`, reusing the parent's timeout escalation, credential stripping
+and `SubprocessResult` construction.
 
-### Why we do it:
-1. **Zero call-site changes**: Any code already holding a `SubprocessExecutor | None` type hint
-   accepts a `ContainerSubprocessExecutor` instance transparently — Liskov substitution, not a
-   parallel interface.
-2. **Not the "parallel security class" anti-pattern**: because the subclass *delegates to* the
-   parent's execution machinery instead of duplicating it, it doesn't trip the same anti-pattern
-   that forbids reimplementing `WorkspaceBoundary`-style primitives.
-3. **General applicability**: any future feature needing to swap a component's physical execution
-   target (a different sandbox tier, a remote executor, a dry-run recorder) while preserving an
-   existing, stable, concretely-typed constructor signature should reach for this pattern before
-   reaching for a new abstraction layer.
+**Why:**
+
+1. **No call-site changes**: anything typed `SubprocessExecutor | None` accepts the subclass (Liskov
+   substitution, not a parallel interface).
+2. **Not a parallel security class**: the subclass delegates to the parent's machinery rather than
+   duplicating it, so it does not hit the anti-pattern that forbids re-implementing
+   `WorkspaceBoundary`-style primitives.
+3. **Reuse it**: to swap a component's execution target (another sandbox tier, a remote executor, a
+   dry-run recorder) behind a stable, concretely typed constructor, reach for this before a new
+   abstraction.
 
 > [!CAUTION]
-> **Corollary bug this pattern surfaces: host-specific paths don't survive the swap.** Wiring
-> `ContainerSubprocessExecutor` into `PythonQARunner` (Commit Boundary 2) initially left
-> `run_debugger()` building its command with `sys.executable` — the *host's* interpreter path (a
-> Windows `.exe` path on the implementing machine). Every other method (`run_tests`, `run_linter`,
-> `run_complexity`) already used the bare string `"python"`, resolved fresh inside whatever
-> environment actually runs it. Only `run_debugger` was different, and only a **real-engine
-> integration test** caught it — a mocked unit test can't, since the mock happily accepts whatever
-> argv it's handed. General lesson: when a component's physical execution target becomes swappable,
-> audit every call site for host-environment assumptions (interpreter paths, absolute tool paths,
-> host-specific env vars) that silently stop being valid once the "physical location" changes — and
-> don't trust unit tests alone to catch it; pair this pattern with at least one real, unmocked
-> execution against the new target.
+> **Host-specific paths do not survive the swap.** After wiring it into `PythonQARunner` (Commit
+> Boundary 2), `run_debugger()` still built its command from `sys.executable` — the host
+> interpreter's path. `run_tests`, `run_linter` and `run_complexity` already used the bare string
+> `"python"`, resolved inside whatever environment runs it. Only a **real-engine integration test**
+> caught it; a mock accepts any argv. When an execution target becomes swappable, audit every call
+> site for host assumptions (interpreter paths, absolute tool paths, host env vars), and pair the
+> pattern with at least one real, unmocked run against the new target.
 
 ---
 
-## 24. Round-Trip Name Derivation for Self-Naming Writers (The Path Reconciliation Guard)
+## 24. Self-naming writers: derive the name, assert the round trip
 
-`FeatureDrafter.draft(name, output_dir)` does not accept a target file path — it **derives its own**
-output as `output_dir / f"{name}_feature_spec.md"` and returns it. But every downstream pipeline step
-(`validate+feature`, `decompose+feature`) reads `context.spec_path`. Wrapping such a writer naively
-means the drafter happily writes a file that nothing downstream ever opens, and nothing fails: the
-step returns PASSED, the next step reports "spec not found", and the real cause is two directories
-away from the error message.
+`FeatureDrafter.draft(name, output_dir)` takes no target path; it **derives** its output as
+`output_dir / f"{name}_feature_spec.md"` and returns it. Downstream steps (`validate+feature`,
+`decompose+feature`) read `context.spec_path`. Wrapped naively, the drafter writes a file nobody
+opens: the step PASSES, the next one says "spec not found".
 
-### How it works:
-`DraftFeatureHandler` (`core/flow/handlers/draft.py`) inverts the derivation instead of fighting it.
-It computes the `name` that will *make the writer produce the path we already want*:
+**How:** `DraftFeatureHandler` (`core/flow/handlers/draft.py`) computes the `name` that makes the
+writer produce the path already wanted:
 
-1. **Guard the shape first** — reject any `spec_path` not matching `<non-empty>_feature_spec.md`
-   with a loud ERROR, before any prompt building or LLM setup, so a bad name costs zero tokens.
-2. **Derive by slicing, never `removesuffix`** — `str.removesuffix` is a silent no-op when the
-   suffix is absent, so `foo.md` would yield `name="foo"` and write `foo_feature_spec.md`. The
-   guard plus an explicit slice makes the mismatch impossible rather than merely unlikely.
-3. **Reject the empty stem** — `_feature_spec.md` passes a naive suffix check and yields `name=""`,
-   which round-trips *perfectly* and would silently draft an unnamed spec. Only an explicit
-   non-empty check catches this one.
-4. **Assert the round trip after the call** — compare the writer's returned path against
-   `context.spec_path` and ERROR on mismatch. Steps 1–3 make it correct today; step 4 is what
-   fails loudly if the third-party writer's naming ever changes underneath us.
+1. **Guard the shape first**: reject any `spec_path` not matching `<non-empty>_feature_spec.md` with
+   an ERROR before prompt building or LLM setup — a bad name costs zero tokens.
+2. **Slice, never `removesuffix`**: `str.removesuffix` silently does nothing when the suffix is
+   missing, so `foo.md` would give `name="foo"` and write `foo_feature_spec.md`.
+3. **Reject the empty stem**: `_feature_spec.md` passes a suffix check, gives `name=""`, and round
+   trips perfectly. Only an explicit non-empty check catches it.
+4. **Assert the round trip**: compare the returned path with `context.spec_path`; ERROR on mismatch.
+   Steps 1–3 make it correct today; step 4 fails loudly if the writer's naming ever changes.
 
-### Why we do it:
-1. **The failure it prevents is silent and misattributed.** Without the post-call assertion, a
-   future change to `FeatureDrafter`'s filename convention produces an orphaned spec and an error
-   surfacing at a completely different pipeline step.
-2. **Cheaper than the alternatives.** Widening `FeatureDrafter.draft()` to accept a full path
-   changes a shipped signature and its callers; renaming the file after the fact is a hack that
-   leaves a window where the wrong file exists.
-3. **General applicability**: any time you wrap a component that *names its own output* — report
-   writers, exporters, scaffolders, code generators — derive the input that yields the path you
-   need, guard the shape before doing expensive work, and assert the round trip afterwards. Do not
-   assume the convention holds; pin it with an assertion that fails at the wrapper, not three
-   steps downstream.
+**Why:**
+
+1. **The failure is silent and misattributed** — an orphaned spec, reported at another step.
+2. **Cheaper than the alternatives**: widening `FeatureDrafter.draft()` changes a shipped signature;
+   renaming after the fact leaves a window where the wrong file exists.
+3. **Reuse it** for any component that names its own output (report writers, exporters, scaffolders,
+   code generators): derive the input, guard the shape before expensive work, assert the round trip
+   at the wrapper, not three steps downstream.
 
 ---
 
-## 25. Consistent-Rename Fixpoint Inference (The Refactor-Safety Gate)
+## 25. Consistent-rename fixpoint (refactor-safety gate)
 
-`scripts/tests.py`'s `--kind refactor` gate exists to catch a real failure mode: a "refactor" whose
-tests were quietly bent to hide a still-present bug rather than genuinely proving behaviour didn't
-change. `scripts/_refactor_diff_safety.py` (`_is_safe_file_diff`) implements the actual rule, and it
-has grown in deliberate, TDD-pinned stages rather than as one design: pure additions and dotted-path
-relocations (TECH-001 SF-04) are safe by construction; a *literal identifier rename* consistent
-across a whole file — the exact shape TECH-005 SF-03's database table renames produced across dozens
-of test-file SQL strings — needed a further extension (`_infer_token_rename_map`).
+`scripts/tests.py --kind refactor` catches "refactors" whose tests were bent to hide a bug. The rule
+is `_is_safe_file_diff` in `scripts/_refactor_diff_safety.py`, grown in TDD-pinned stages: pure
+additions and dotted-path moves (TECH-001 SF-04) are safe by construction; a *literal identifier
+rename* consistent across a file — the shape of TECH-005 SF-03's table renames in test SQL strings —
+is recognized by `_infer_token_rename_map`.
 
-### How it works:
-A single left-to-right pass over "which added line matches which removed line" cannot handle a file
-with **multiple simultaneous renames** (`nodes` -> `graph_nodes` on most lines, `edges` ->
-`graph_edges` on one line): a structurally similar line from the *wrong* rename can look like an
-equally valid candidate purely by coincidence of matching length and a single differing token. The
-gate instead resolves candidates as a **fixpoint**: each round locks in only the removed lines whose
-candidate set — after filtering out anything that conflicts with pairs *already* established —
-reduces to exactly one distinct `(old_token, new_token)` pair; repeat until no more progress. A line
-still ambiguous when the fixpoint settles, or one whose only viable match gets consumed by another
-line first, is genuinely unexplained and the file is **not** classified safe. Bare numeric tokens
-are excluded from candidacy entirely (`[A-Za-z_]\w*`, never a lone digit run) — without that, `assert
-result == 5` -> `assert result == 3` sitting next to an unrelated real rename was once inferred as
-"the" rename and silently laundered a weakened assertion.
+**How:** one greedy pass cannot handle **several simultaneous renames** (`nodes` -> `graph_nodes` on
+most lines, `edges` -> `graph_edges` on one): a line from the wrong rename can match by coincidence.
+The gate resolves a **fixpoint**: each round locks in only removed lines whose candidates — after
+dropping those conflicting with pairs already fixed — reduce to exactly one `(old_token, new_token)`
+pair; repeat until nothing changes. A line still ambiguous at the end, or whose only match was taken,
+is unexplained, and the file is **not** safe. Bare numbers are never candidates (`[A-Za-z_]\w*`):
+otherwise `assert result == 5` -> `assert result == 3` next to a real rename was once taken as "the"
+rename and let a weakened assertion through.
 
-### Why we do it:
-1. **Extending tests must stay easy; hiding a bug behind a "refactor" must stay hard.** A blunt
-   any-diff-to-a-test-file check blocks legitimate mechanical maintenance (a renamed table, a moved
-   module) exactly as hard as it blocks a bug-hiding edit, which trains developers to route around
-   the gate rather than trust it. Each extension only recognizes one more *provably* safe pattern —
-   it never adds an escape hatch.
-2. **General applicability**: any diff-classification heuristic that must tell "mechanical, provably
-   safe change" from "the same textual shape, but actually a behaviour change" should prefer a
-   fixpoint/constraint-propagation resolution over a single greedy pass once more than one
-   independent substitution can coexist in the same file — and should always pair a new "safe"
-   pattern with an adversarial test proving the specific bug-hiding shape it must still reject.
+**Why:**
+
+1. **Extending tests stays easy; hiding a bug stays hard.** A blanket "no test diffs" check blocks a
+   renamed table as hard as a bug-hiding edit, and people learn to route around it. Each extension
+   admits one more *provably* safe pattern — never an escape hatch.
+2. **Reuse it**: a diff classifier separating "mechanical, provably safe" from "same shape, different
+   behaviour" should use fixpoint/constraint propagation once several substitutions can coexist in a
+   file, and pair each new safe pattern with an adversarial test of the bug-hiding shape it must still
+   reject.
 
 ---
 
-## 26. Union-Only Contribution in Change-Driven Selection (The Tests-Are-Source-Too Model)
+## 26. Union-only contribution in change-driven test selection
 
-`scripts/tests.py` picks which tests to run from what a diff touched. It was written on the
-assumption that a change is a `src/` change, and that assumption failed twice in a row: a
-`scripts/`-only change resolved to zero paths (nothing mapped `scripts/` to its `tests/unit/scripts/`
-mirror), and then a tests-and-docs-only change did the same. Both were reported as *"you changed
-source that nothing mirrors"* — missing coverage — when in the second case no source had changed at
-all.
+`scripts/tests.py` picks tests from what a diff touched. It assumed every change was a `src/` change.
+A `scripts/`-only change (nothing mapped `scripts/` to its `tests/unit/scripts/` mirror) and then a
+tests-and-docs-only change both resolved to zero paths and were
+reported as *"you changed source that nothing mirrors"*, though in the second case no source had
+changed.
 
-### How it works:
-A changed **test** file now contributes its own module to the scope exactly as a source file does
-(`_tier_relative` maps `tests/unit/core/flow/test_x.py` → `core/flow/test_x.py`), and the two sets
-are combined with a **union**. The direction matters more than the mapping:
+**How:** a changed **test** file now contributes its own module, as a source file does (`_tier_relative`
+maps `tests/unit/core/flow/test_x.py` → `core/flow/test_x.py`), and the two sets are **unioned**.
 
 - A changed test can **add** a module to the run. It can never redirect or remove one.
-- That preserves the intent of the guard it replaced — *"editing a test must not be what decides
-  which tests run"* — because under a union a test **contributes**, it does not **decide**.
-- The mapping is **tier-specific**: a test's tier is baked into its own path, whereas a source file
-  serves every tier. Without that, editing an e2e test would pull in unit paths.
-- At `touched` scope a changed test resolves to **itself**; the `test_{stem}*.py` glob cannot serve
-  it, since it would look for `test_test_x*.py`.
+- So *"editing a test must not be what decides which tests run"* still holds: under a union a test
+  **contributes**, it does not **decide**.
+- The mapping is **tier-specific**: a test's tier is in its own path, while a source file serves every
+  tier. Otherwise editing an e2e test would pull in unit paths.
+- At `touched` scope a changed test resolves to **itself** — the `test_{stem}*.py` glob would look for
+  `test_test_x*.py`.
 
-The mapping is by **directory**, which is an admitted proxy: an integration test genuinely spanning
-three modules maps to whichever directory it sits in. That is the same proxy the source side already
-uses, so it is consistent — and the code says so rather than implying precision it does not have.
+Mapping is by **directory**, an admitted proxy: an integration test spanning three modules maps to the
+directory it sits in. The source side uses the same proxy, and the code says so.
 
-### Why we do it:
-1. **A blocked gate must name the cause it can prove, not the most likely one.** The original
-   message asserted the source cause unconditionally. Rewriting the prose to mention both causes was
-   not enough — it still left the operator to work out which applied. `_blocked_reason()` now
-   *computes* it: source-with-no-mirror, tests-with-no-mirror, or nothing-in-this-tier-at-all.
-2. **General applicability**: whenever a selector derives scope from a change set, ask what happens
-   when the change is not the shape you had in mind. Prefer union-only contribution so a new input
-   class can widen the selection but never narrow it — a selector that can *narrow* on unfamiliar
-   input fails silently green, which is strictly worse than failing loudly red. And any gate that
-   refuses work must distinguish its refusal reasons in code, because a hard-coded reason is a
-   claim, and an untested claim about *why* something failed will eventually be false.
-3. **Untested operator prose rots.** The false message survived because nothing read it. Messages
-   that a human acts on deserve assertions like any other output.
+**Why:**
+
+1. **A blocked gate names the cause it can prove.** `_blocked_reason()` *computes* which applies:
+   source-with-no-mirror, tests-with-no-mirror, or nothing-in-this-tier-at-all.
+2. **Reuse it**: when a selector derives scope from a change set, prefer union-only contribution, so a
+   new input class can widen the selection but never narrow it. A selector that narrows on unfamiliar
+   input fails silently green. A gate that refuses must tell its reasons apart in code — a hard-coded
+   reason is an untested claim.
+3. **Operator messages need tests.** The false message survived because nothing read it.
+
+---
+
+## 27. Polyglot traceability via comment tags (C09)
+
+Feature 3.21 (Automated Traceability Matrix): every spec requirement must map to a test. No coverage
+tools, no instrumentation, no `@pytest.mark.trace("FR-1")`.
+
+**How:** the same tag in every language — `# @trace(FR-1)` in Python, `// @trace(FR-1)` in Java.
+The engine picks a tree-sitter parser by file extension, visits only `comment` nodes, and builds the
+matrix in memory.
+
+**Why:**
+
+1. **No application dependency**: static analysis only; nothing is imported into the user's code.
+2. **Any language**: tree-sitter handles comment extraction, so one codebase traces Python, Rust, Go,
+   JavaScript, TypeScript, C++ and SQL with no framework lock-in.
+
+---
+
+## 28. Pre-fetched MCP context envelope
+
+Feature 3.32c (Pre-Fetch Assembler). Giving the LLM MCP tools floods the system prompt and burns tool
+calls.
+
+**How:** the flow engine reads the `consumes_resources` block of `context.yaml`
+(`core/flow/handlers/mcp_assembler.py`) to get MCP URIs ahead of time. Before an LLM step, `MCPAtom`
+fetches those resources sequentially over `stdio` and formats them as text, injected into the
+prompt's `<environment_context>` block as a static snapshot.
+
+Rules:
+
+1. **No LLM tool definitions** for context schemas — no dynamic tool calls.
+2. **Container only**: `MCPAtom` runs servers only under `docker` or `podman`, and rejects host-escape
+   arguments (`--privileged`, `--network=host`, `--cap-add`, …) and host mounts (`/`, the docker
+   socket, `/etc`, `/root`). No local `npx` processes or shell escalation.

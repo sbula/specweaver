@@ -1,9 +1,11 @@
 # Writing a Mutation Campaign
 
+Use when: you prove a requirement at a commit boundary, or `mutation.py --gate` blocks your morning.
+
 A campaign asks one question: **if this requirement stopped working, would any test notice?**
 
-You write the mutants by hand. That is deliberate — generating them from an AST is `A-VAL-03`, and
-a hand-written mutant carries the intent a generated one cannot.
+You write the mutants by hand: a hand-written mutant carries intent a generated one cannot.
+Generating them from an AST is `A-VAL-03`.
 
 A nightly timer runs the whole corpus at 03:00; in the morning a gate tells you whether anything
 needs reading. Nothing is blocked until a finding goes unread.
@@ -54,7 +56,7 @@ one would let generated mutants claim a person wrote them.
 
 **One campaign, one (N)FR.** A mutant should break *that* requirement and preferably nothing else.
 
-- `breaks` states the bug you are planting, in plain words. A survival is unreadable without it.
+- `breaks` states the bug you are planting, in plain words.
 - `old` must appear **exactly once inside `symbol`** — not in the file. `return None` occurs 191
   times across 77 files, so file-uniqueness would force unreadable anchors.
 - `old` and `new` must differ. An identical pair mutates nothing and reports a survival meaning the
@@ -105,9 +107,8 @@ ten e2e-scoped mutants took 111s while the other fourteen took 18s between them.
 the corpus: an e2e test spawns real subprocesses, and the mutant pays for all of them, twice, once
 to measure and once to confirm.
 
-So **scope at the lowest tier that can still falsify the claim.** That is not a cost-saving
-instruction dressed as a principle — it is the same rule `scope` already states, with a price on it.
-Where a claim genuinely lives in a journey (`TECH-054` FR-1's resume discovery could not be seen
+So **scope at the lowest tier that can still falsify the claim** — the rule `scope` already states,
+with a price on it. Where a claim genuinely lives in a journey (`TECH-054` FR-1's resume discovery could not be seen
 below e2e), pay it deliberately and say so in `breaks`.
 
 **The arithmetic that makes this matter.** Measured 2026-08-16: **402 FRs and 177 behavioural NFRs

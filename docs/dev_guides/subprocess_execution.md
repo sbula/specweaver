@@ -1,20 +1,27 @@
 # Using SubprocessExecutor
 
-This guide explains how to safely execute external processes using SpecWeaver's unified `SubprocessExecutor`.
+Use when: your code needs to run an external process — a tool, a test runner, a script, a container.
 
-**WARNING:** Direct usage of `subprocess.run()` is **banned** via ruff rule TID251. All runner
-modules MUST use `SubprocessExecutor`. The only exemption is `src/specweaver/sandbox/execution/`
-(the executor itself) and test files.
+## Rules
 
-## Core Features
+- **`subprocess` is banned**, `subprocess.run()` included, by ruff rule TID251 (`pyproject.toml`:
+  *"Use SubprocessExecutor from specweaver.sandbox.execution.executor instead."*). All runner modules
+  MUST use `SubprocessExecutor`.
+- Exempt: `src/specweaver/sandbox/execution/` (the executor itself), test files, `scripts/**`
+  (quality gates must not import the product they check), and `MCPExecutor`'s declared inline
+  `noqa` (a long-lived JSON-RPC pipe; see `special_patterns_and_adaptations.md` §17).
 
-- **Timeout Enforcement:** Kills runaway processes using a SIGTERM → SIGKILL escalation.
-- **Resource Limits:** Automatically caps memory usage and process count (OS dependent). Configured at constructor time via `ResourceLimits`.
-- **Environment Stripping:** Automatically removes sensitive credentials (e.g. `GEMINI_API_KEY`) from the child process.
-- **Path Validation:** Prevents directory traversal attacks by ensuring the target directory is inside the workspace boundary.
-- **Structured Results:** Returns `SubprocessResult` with `.exit_code`, `.stdout`, `.stderr`, `.timed_out`, `.duration_seconds`.
+## What it gives you
 
-## Basic Usage
+- **Timeout**: kills runaway processes with SIGTERM → SIGKILL escalation.
+- **Resource limits**: memory and process caps (OS dependent), set at construction via
+  `ResourceLimits`.
+- **Environment stripping**: removes credentials (e.g. `GEMINI_API_KEY`) from the child.
+- **Path validation**: a per-call `cwd_override` must resolve inside the constructor `cwd`.
+- **Structured result**: `SubprocessResult` with `.exit_code`, `.stdout`, `.stderr`, `.timed_out`,
+  `.duration_seconds`, `.events`.
+
+## Basic usage
 
 ```python
 from pathlib import Path
@@ -49,9 +56,9 @@ if result.timed_out:
     print("Process exceeded the 120s timeout and was killed.")
 ```
 
-## Piping Input to a Process
+### Piping stdin
 
-Use `input_text` to send data to a process via stdin (e.g., piping cargo test output through a formatter):
+`input_text` sends data to the child's stdin (e.g. cargo test output into a formatter):
 
 ```python
 # Run cargo test, capture its output
@@ -64,9 +71,9 @@ junit_result = executor.execute(
 )
 ```
 
-## Dependency Injection in Language Runners
+### Injecting an executor into language runners
 
-All language runners accept an optional `executor` parameter for testability:
+Every language runner takes an optional `executor`:
 
 ```python
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
@@ -79,53 +86,54 @@ mock_executor = MagicMock(spec=SubprocessExecutor)
 runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 ```
 
-## Engine-Internal Script Execution (BashActionAtom)
+## Running a script from the engine (`BashActionAtom`)
 
-`sandbox/execution/core/atom.py`'s `BashActionAtom` is the sanctioned way for the flow engine to run
-a script from `.specweaver/scripts/` (C-EXEC-02's "Native CLI Action Node" primitive). It wraps
-`SubprocessExecutor` with the additional constraints a script-running Atom needs: canonical-path
-containment (the script must resolve inside `.specweaver/scripts/`, checked immediately before every
-execution — see `WorkspaceBoundary`), default `ResourceLimits`, explicit-opt-in `env` (never an
-implicit passthrough), and a resolved absolute `bash` path (never the bare string `"bash"` — see the
-note below). It never raises; every failure mode returns a `FAILED` `AtomResult`.
+`BashActionAtom` (`sandbox/execution/core/atom.py`) is the sanctioned way for the flow engine to run a
+script from `.specweaver/scripts/` (C-EXEC-02's "Native CLI Action Node"). On top of
+`SubprocessExecutor` it adds:
 
-> [!NOTE]
-> **`bash` must be resolved to an absolute path, never invoked as the bare string `"bash"`.** On
-> Windows, `Popen(["bash", ...])` goes through `CreateProcess`'s default search order, which checks
-> `C:\Windows\System32` (containing the WSL launcher stub, if WSL is installed) *before* consulting
-> `%PATH%` — regardless of where Git Bash appears in `PATH`. This silently invokes the wrong
-> interpreter. Always resolve via `shutil.which("bash")` first and use the returned path as
-> `argv[0]`.
+- canonical-path containment — the script must resolve inside `.specweaver/scripts/`, checked right
+  before every execution (`WorkspaceBoundary`);
+- default `ResourceLimits`;
+- `env` only by explicit opt-in, never passed through;
+- a resolved absolute `bash` path, never the bare string `"bash"`.
 
-Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-02) invoke `BashActionAtom` via
-`BashActionHandler` — see `docs/dev_guides/pipeline_engine_guide.md` §12 for the YAML shape and the
-`params:`-nesting requirement.
-
-`.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-03)
-with a placeholder `README.md` explaining the containment rule above — you don't need to create it
-by hand.
+It never raises; every failure is a `FAILED` `AtomResult`.
 
 > [!NOTE]
-> **Execution-root convention under worktree isolation (INT-US-09).** The `SubprocessExecutor`
-> boundary is its constructor `cwd`, fixed at construction. When a step runs under the US-9 worktree
-> sandbox, the runner sets `RunContext.isolation.execution_root` to the worktree source tree, and the
-> untrusted-execution handlers (`BashActionHandler`, `ValidateTestsHandler`/`run_tests`) construct
-> their atom `cwd` as `context.isolation.execution_root or context.project_path`. So the executor binds inside
-> the worktree, and `.specweaver/scripts/` containment resolves relative to that worktree cwd. When
-> `execution_root` is `None` (no isolation), `cwd` falls back to `project_path` — byte-identical to
-> pre-INT-US-09 behavior. This is container-free host execution; see `pipeline_engine_guide.md` §7.
+> **Resolve `bash` to an absolute path.** On Windows, `Popen(["bash", ...])` goes through
+> `CreateProcess`'s search order, which checks `C:\Windows\System32` (the WSL launcher stub, if WSL
+> is installed) *before* `%PATH%` — wherever Git Bash is in `PATH`. Call `shutil.which("bash")` and
+> use the returned path as `argv[0]`. Details: `special_patterns_and_adaptations.md` §22.
+
+Pipeline `action: bash` / `target: script` steps (C-EXEC-02 SF-02) reach it through
+`BashActionHandler` — YAML shape and the `params:`-nesting trap: `docs/dev_guides/pipeline_engine_guide.md` §12.
+
+`sw init` creates `.specweaver/scripts/` (C-EXEC-02 SF-03) with a placeholder `README.md` explaining
+the containment rule.
+
+> [!NOTE]
+> **`cwd` under worktree isolation (INT-US-09).** The executor's boundary is its constructor `cwd`.
+> Under worktree isolation the runner sets `RunContext.isolation.execution_root` to the worktree, and
+> the untrusted-execution handlers (`BashActionHandler`, `ValidateTestsHandler`/`run_tests`) build
+> their atom `cwd` as `context.isolation.execution_root or context.project_path`. So the executor —
+> and `.specweaver/scripts/` containment — binds inside the worktree. With `execution_root` `None`
+> (no isolation), `cwd` is `project_path`, byte-identical to pre-INT-US-09 behavior. Container-free
+> host execution; see `pipeline_engine_guide.md` §7.
 
 ## Containerized QA Execution (`ContainerSubprocessExecutor`)
 
-`sandbox/execution/container_executor.py`'s `ContainerSubprocessExecutor` is a `SubprocessExecutor`
-**subclass** (not a composition wrapper — see the note below) that routes `execute()` through an
-ephemeral Podman/Docker container instead of the host — this is `B-EXEC-01` (Ephemeral Podman
-Sub-Containers), part of US-9's Zero-Trust Sandbox. It overrides only `execute()`: wraps the
-incoming `cmd` into a `<podman|docker> run` invocation (RO source mount at `/workspace`, RW scratch
-mount at `/scratch`, `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS, resource
-limits matching `BashActionAtom`'s), then delegates the actual spawn, timeout handling, env
-stripping, and `SubprocessResult` construction to `super().execute()` — the parent's contract is
-untouched, only the physical execution target changes.
+`ContainerSubprocessExecutor` (`sandbox/execution/container_executor.py`, `B-EXEC-01` Ephemeral Podman
+Sub-Containers, part of US-9's Zero-Trust Sandbox) is a `SubprocessExecutor` **subclass** that runs
+`execute()` in an ephemeral Podman/Docker container. It overrides only `execute()`: wraps `cmd` into
+a `<podman|docker> run` with
+
+- read-only source mount at `/workspace`, read-write scratch at `/scratch`;
+- `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS;
+- resource limits matching `BashActionAtom`'s;
+
+then calls `super().execute()` for spawn, timeout, env stripping and `SubprocessResult`. The result
+contract is unchanged; only where the process runs changes.
 
 ```python
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
@@ -142,25 +150,19 @@ executor = ContainerSubprocessExecutor(
 result = executor.execute(["python", "-m", "pytest", "tests/"])  # same SubprocessResult shape as host mode
 ```
 
-Engine detection (`podman` preferred, `docker` fallback) is lazy and memoized per instance — the
-first `execute()` call resolves and liveness-probes (`<engine> info`) whichever engine is live,
-raising `ContainerEngineUnavailableError` if neither is. A network-enabled "prepare phase"
-(`uv sync` into a persistent, lockfile-hash-gated cache) runs before the actual (always
-`--network none`) execution — untrusted code never shares a container invocation with network
-access.
+- **Engine detection**: lazy, memoized per instance. The first `execute()` finds and liveness-probes
+  (`<engine> info`) `podman`, else `docker`; neither → `ContainerEngineUnavailableError`.
+- **Prepare phase**: a network-enabled `uv sync` into a persistent, lockfile-hash-gated cache runs
+  first. The real execution is always `--network none`, so untrusted code never shares an invocation
+  with network access.
+- **Why a subclass**: `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is
+  typed to the concrete class. A wrapper would fail strict mypy unless that stable signature were
+  widened. The subclass is Liskov-substitutable and delegates to, not duplicates, the parent. General
+  pattern: `docs/dev_guides/special_patterns_and_adaptations.md` §23.
 
-> [!NOTE]
-> **Why a subclass, not composition.**
-> `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is typed to the
-> concrete class, not a protocol. A composition-only wrapper couldn't satisfy that type hint under
-> strict mypy without widening a stable, existing signature. Subclassing is a legitimate
-> Liskov-substitutable specialization here — same result contract, different physical spawn target —
-> and delegates to, rather than duplicates, the parent's logic. See
-> `docs/dev_guides/special_patterns_and_adaptations.md` §23 for the general pattern.
+### Opt in via `QARunnerAtom`
 
-### Opt-In via `QARunnerAtom`
-
-`QARunnerAtom` builds a `ContainerSubprocessExecutor` for you when given a `SandboxSettings` with `execution_mode="container"` — you don't construct one by hand for QA-runner use:
+Give `QARunnerAtom` a `SandboxSettings` with `execution_mode="container"` and it builds the executor:
 
 ```python
 from specweaver.core.config.settings import SandboxSettings
@@ -170,18 +172,17 @@ atom = QARunnerAtom(cwd=project_root, sandbox_settings=SandboxSettings(execution
 result = atom.run({"intent": "run_tests", "target": "tests/"})  # runs inside a container
 ```
 
-Mounts are derived automatically from `cwd` (`.specweaver/.sandbox/{scratch,cache}`). Passing no
-`sandbox_settings` (or `execution_mode="host"`) preserves today's unsandboxed behavior byte-for-byte
-(NFR-7) — this is still opt-in, not a default. `factory.resolve_runner()`'s DI seam is widened
-generically to all 5 language runners, but only `PythonQARunner` has real container behavior
-validated end-to-end (mounts, artifact redirection, the `sys.executable`→bare-`"python"` fix below);
-a non-Python project passed a container executor gets a logged warning, not a silent no-op.
+- Mounts derive from `cwd` (`.specweaver/.sandbox/{scratch,cache}`).
+- No `sandbox_settings`, or `execution_mode="host"`, keeps host behavior byte-for-byte (NFR-7). Opt-in,
+  not a default.
+- `factory.resolve_runner()` accepts a container executor for all 5 language runners, but only
+  `PythonQARunner` is validated end-to-end (mounts, artifact redirection, the bare-`"python"` rule
+  below). A non-Python project given a container executor logs a warning, not a silent no-op.
 
-### Enabling It From `specweaver.toml`
+### Enable from `specweaver.toml`
 
-`SandboxSettings` doesn't have to be constructed by hand — `load_settings()`/`load_settings_async()`
-(`core/config/settings_loader.py`) read an opt-in `[sandbox]` table from the target project's
-`specweaver.toml`, mirroring the existing `[standards]` section exactly:
+`load_settings()`/`load_settings_async()` (`core/config/settings_loader.py`) read an opt-in
+`[sandbox]` table, the same way as `[standards]`:
 
 ```toml
 # specweaver.toml
@@ -189,58 +190,56 @@ a non-Python project passed a container executor gets a logged warning, not a si
 execution_mode = "container"
 ```
 
-Absent, empty, or malformed `[sandbox]` sections all fall back to `SandboxSettings()`
-(`execution_mode="host"`) — the same fail-safe-to-default behavior `[standards]` already has. This
-is how an operator opts in without touching Python: `ValidateTestsHandler`/`LintFixHandler` (the
-`validate+test`/lint-fix-reflection pipeline steps) read `context.config.sandbox` and pass it
-straight to `QARunnerAtom`, so setting this one line in a project's `specweaver.toml` is enough — no
-code changes needed anywhere in the calling pipeline.
+An absent, empty or malformed `[sandbox]` falls back to `SandboxSettings()` (`execution_mode="host"`),
+like `[standards]`. `ValidateTestsHandler`/`LintFixHandler` (the `validate+test` and lint-fix-reflection
+steps) pass `context.config.sandbox` to `QARunnerAtom`, so this one line is enough — no pipeline code
+changes.
 
-> [!NOTE]
-> **`PythonQARunner.run_debugger()` uses a bare `"python"` in container mode, not
-> `sys.executable`.** `sys.executable` is the *host's* interpreter path (e.g. a Windows `.exe` path)
-> — meaningless inside a Linux container, where it fails with
-> `exec: ...: executable file not found in $PATH`. This was caught by a real-engine integration
-> test, not a mock — `run_tests`/`run_linter`/`run_complexity` were already using the bare string
-> `"python"` and were unaffected; only `run_debugger` needed the fix
-> (`isinstance(self._executor, ContainerSubprocessExecutor)` selects between the two, same pattern
-> as the tach pre-check skip below).
+### Container-mode rules in `PythonQARunner`
 
-Once inside a container, `PythonQARunner._run_tach_check()` also skips its host-side
-`shutil.which("tach")` pre-check (it would otherwise check the *host's* tooling, not the container
-image's) — the containerized `tach` invocation's own exit code/stderr signals absence instead, same
-as every other intent already behaves. And every QA-runner method catches
-`ContainerEngineUnavailableError` and returns the same kind of synthetic-failure result each already
-builds for its `<timeout>` case, rather than letting the exception propagate raw.
+- **`PythonQARunner.run_debugger()` uses bare `"python"`, not `sys.executable`.** `sys.executable` is the *host*
+  interpreter path (e.g. a Windows `.exe`); in a Linux container it fails with
+  `exec: ...: executable file not found in $PATH`. `run_tests`/`run_linter`/`run_complexity` already
+  used `"python"`. `isinstance(self._executor, ContainerSubprocessExecutor)` picks between the two.
+  A real-engine integration test caught this; a mock would not.
+- **`PythonQARunner._run_tach_check()` skips its `shutil.which("tach")` pre-check** in a container — it would check
+  the host, not the image. The containerized `tach`'s exit code/stderr reports absence instead.
+- **Every QA-runner method catches `ContainerEngineUnavailableError`** and returns the same synthetic
+  failure it builds for a `<timeout>`.
 
-See `docs/roadmap/features/topic_06_sandbox/B-EXEC-01/` for the full per-sub-feature plans
-(`B-EXEC-01_sf01_implementation_plan.md` through `_sf04_`) and their progress notes. As of
-`B-EXEC-01`'s completion, `validation_hydrator.py` (C03/C04 rule hydration) and the agent-facing
-`facades.py` tool interface remain on host-mode `QARunnerAtom` construction — a deliberate scope cut
-(see SF-02/SF-04's Backlog sections), not an oversight.
+Deliberate scope cut (SF-02/SF-04 Backlog): `validation_hydrator.py` (C03/C04 rule hydration) and the
+agent-facing `facades.py` still build host-mode `QARunnerAtom`s. Per-SF plans:
+`docs/roadmap/features/topic_06_sandbox/B-EXEC-01/` (`B-EXEC-01_sf01_implementation_plan.md` through
+`_sf04_`).
 
-## Security Boundaries
+## Security boundaries
 
-### Environment Stripping
-The executor forwards a clean baseline of environment variables (like `PATH` and `HOME`) and **strips all known LLM credentials** (e.g., `OPENAI_API_KEY`, `GEMINI_API_KEY`).
-If you need to inject custom environment variables safely, use `extra_env`:
+### Environment stripping
+
+The child gets a clean baseline (`PATH`, `HOME`, …) with **all known LLM credentials stripped**
+(`OPENAI_API_KEY`, `GEMINI_API_KEY`, …). Add variables with `extra_env`:
+
 ```python
 executor.execute(cmd=["echo", "hello"], extra_env={"MY_CUSTOM_VAR": "value"})
 ```
-*Note: You cannot use `extra_env` to re-inject stripped credentials. The stripping happens after injection.*
 
-### Sandbox Escapes
-The executor verifies that the `cwd` provided during initialization actually exists and does not
-resolve outside the workspace (e.g. `../` or symlinks). A `WorkspaceBoundaryError` is raised if it
-detects an escape attempt.
+`extra_env` cannot re-inject a credential: stripping runs after injection.
 
-## Emitting Output Events (DAP)
+### Working-directory escapes
 
-`SubprocessResult` automatically captures stdout and stderr as `OutputEvent` streams if `capture_events=True` (which is the default).
-This makes it easy to integrate with Debug Adapter Protocol (DAP) pipelines:
+The constructor `cwd` is resolved once and is the boundary. A per-call `cwd_override` is resolved
+(following `../` and symlinks) and must stay inside it: outside → `ValueError` ("Path traversal
+blocked"), missing → `FileNotFoundError`.
+
+## Output events (DAP)
+
+`SubprocessResult.events` always holds stdout and stderr as `OutputEvent`s (`commons/qa.py`), for
+Debug Adapter Protocol (DAP) pipelines:
 
 ```python
 for event in result.events:
     if event.category == "stdout":
         logger.debug(f"Process wrote: {event.output}")
 ```
+
+(Real code logs with `%s`, not f-strings — `special_patterns_and_adaptations.md` §20.)

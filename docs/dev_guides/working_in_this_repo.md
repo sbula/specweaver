@@ -1,8 +1,9 @@
 # Working in this repo — the traps that cost real time
 
-Read this before your first change. Everything here is an incident, not advice: each item names what
-went wrong, what it cost, and the one line that prevents it. Nothing generic — if it did not actually
-burn a session, it is not in this file.
+Use when: before your first change here.
+
+Every item is an incident, not advice: what went wrong, what it cost, and the one line that prevents
+it. If it did not burn a session, it is not here.
 
 `.agents/AGENTS.md` holds the **design** standards (DDD, hexagonal, KISS). This holds the
 **operational** ones. They do not overlap.
