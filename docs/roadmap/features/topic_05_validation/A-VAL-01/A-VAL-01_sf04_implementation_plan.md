@@ -1,55 +1,42 @@
-# Implementation Plan: Protocol & Schema Analyzers [SF-04: Contract Drift Validation Rules]
-- **Feature ID**: 3.31
-- **Sub-Feature**: SF-04 — Contract Drift Validation Rules
-- **Design Document**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-04
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md
-- **Status**: APPROVED
+# A-VAL-01 SF-04 — Contract Drift Validation Rules
 
-**FRs owned: FR-5.**
+**Status**: APPROVED · **FRs owned**: FR-5 · **Depends on**: SF-03 · **Legacy Feature ID**: 3.31 ·
+Design: [A-VAL-01_design.md](A-VAL-01_design.md) §Sub-features → SF-04
 
-> **Attribution added 2026-08-16 by `TECH-051` CB-2.** The plan predates the FR ledger
-> and named no requirement, so `check_fr_coverage.py A-VAL-01` reported all five as
-> *carried by no implementation plan* on a delivered DAL-A capability. Mapped from this
-> sub-feature's own scope — the C13 contract-drift rule — not assigned to make a number fall. The work is
-> unchanged; only the record of which requirement it discharged is new.
+FR attribution added 2026-08-16 by `TECH-051` CB-2: the plan predates the FR ledger, so
+`check_fr_coverage.py A-VAL-01` reported all five as *carried by no implementation plan* on a delivered
+DAL-A capability. Mapped from this sub-feature's own scope — the C13 contract-drift rule — not assigned
+to make a number fall. The work is unchanged.
 
+## Goal
 
-## Goal Description
-Implement `c13_contract_drift.py` inside the Validation Engine framework. This rule programmatically
-compares codebase CodeStructure paths (extracted from backend Python/TS) with the expected
-`ProtocolEndpoint` topologies injected dynamically via context from the previous Schema tools.
+`c13_contract_drift.py` compares code structure paths (extracted from backend Python/TS) with the
+expected `ProtocolEndpoint` set passed in through context from the schema tools.
 
-## Proposed Changes
+## Changes
 
-### `assurance/validation/rules/code/`
-#### [NEW] `src/specweaver/assurance/validation/rules/code/c13_contract_drift.py`
-- **What it does**: Maps the schema schemas populated dynamically in `self.context.get("protocol_schema")` natively against detected framework routers.
-- **Rule Constraints**:
-  - Requires context: If `self.context` does not map `ast_payload` properly, returns `Status.SKIP` instructing Orchestrator constraints.
-  - Generates `DriftFinding` results for any `ProtocolEndpoint` mapped in the YAML or Proto that does not natively reflect an active tree-sitter node routing.
+1. **[NEW] `src/specweaver/assurance/validation/rules/code/c13_contract_drift.py`** — matches the
+   schemas in `self.context.get("protocol_schema")` against detected framework routers.
+   - Needs context: if `self.context` does not carry `ast_payload`, returns `Status.SKIP`.
+   - Emits a `DriftFinding` for every `ProtocolEndpoint` in the YAML or Proto with no matching
+     tree-sitter routing node.
+2. **[MODIFY] `src/specweaver/assurance/validation/rules/code/context.yaml`** — declare
+   `C13ContractDriftRule` in `exposes:` so registry lookup does not fail.
+3. **[MODIFY] `src/specweaver/assurance/validation/rules/code/register.py`** — import and register
+   `C13ContractDriftRule`.
 
-#### [MODIFY] `src/specweaver/assurance/validation/rules/code/context.yaml`
-- **What it does**: Small update declaring `C13ContractDriftRule` in the `exposes:` array preventing registry lookup failures.
+**Dependency constraint:** L2 pure-logic validation `forbids: specweaver/loom/*`, so C13 never
+instantiates parsers; it relies only on the `rule.context` `ast_payload` dictionary.
 
-### `assurance/validation/rules/code/register.py`
-#### [MODIFY] `src/specweaver/assurance/validation/rules/code/register.py`
-- **What it does**: Imports `C13ContractDriftRule` and cleanly loads it structurally.
+## Tests
 
-## Verification Plan
+| Test | Checks |
+|---|---|
+| `test_c13_contract_drift.py` | dummy `ProtocolEndpoint` contexts; matching router stubs → `Status.PASS`; missing paths → `Status.FAIL` |
+| Manual | dummy pipeline tests cascade the SF-03 Atom payloads down to validation `step.params` |
 
-### Automated Tests
-- Unit Test `test_c13_contract_drift.py`: Generates dummy `ProtocolEndpoint` contexts, tests rule
-  `check` matching identical router stubs in test-bound file targets, asserting `Status.PASS` and
-  identifying `Status.FAIL` drops correctly over missing path maps.
+## As built
 
-### Manual Verification
-Ensure dummy Pipeline tests properly cascade Flow Engine Atoms (SF-03) payload assignments downward to Validation `step.params`.
-
-## Research Notes
-- **Critical Dependency Alignment**: Because standard L2 Pure-Logic validation explicitly
-  `forbids: specweaver/loom/*` dependencies, C13 avoids manual parser instantiations by strictly
-  relying on `rule.context` `ast_payload` dictionary bridging.
-
-## Session Handoff
-- Run `/dev docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md` seamlessly.
+Committed `b3037104` (2026-04-18). C13 is registered as `"C13"` in `register.py`. It skips when
+`protocol_schema` or `ast_payload` is missing. `core/flow/handlers/validation_hydrator.py` fills
+`protocol_schema` through `ProtocolAtom`.

@@ -1,51 +1,56 @@
-# Feature 3.10 — Agentic Research Tools for Planning & Review
+# E-SENS-02 — Agentic Research Tools for Planning & Review
 
-Give the Planner and Reviewer agents the ability to **research** during their work — search the
-project's file system and the web — so they can make better-informed decisions, verify architecture
-fit, and discover best practices.
+**Status**: ✅ complete (topic file) · **Legacy**: Feature 3.10 · **Depends on**: Feature 3.6 (Plan
+phase) · **Sub-phases**: 3.10a boundaries, 3.10b tools + loop
 
-> **Core mechanism**: LLM function calling via provider-agnostic abstraction. The LLM decides what
-> to search, calls tools, reads results, and uses them in its output. No new CLI commands. No
-> user-facing configuration.
-> **Depends on**: Feature 3.6 (Plan phase)
+## What it does
 
----
+The Planner and Reviewer can research while they work: search the project's file system and the
+web, read results, and use them in their output. Before this they saw only the pre-assembled spec,
+constitution, standards and topology summary.
 
-## Motivation
+What they can now do: look up existing patterns ("Is there already a handler for this?"), check a
+module structure against project conventions, read reference implementations or blueprints named in
+ORIGINS.md, search the web for best practices or library docs, verify a solution fits the
+architecture.
 
-Today, the Planner and Reviewer operate blind — they see only the spec, constitution, standards, and topology summary that are pre-assembled into the prompt. They cannot:
+Mechanism: LLM function calling through a provider-agnostic abstraction. The LLM decides what to
+search, calls tools, reads results. No new CLI commands. No user-facing configuration.
 
-- Look up existing patterns in the codebase ("Is there already a handler for this?")
-- Check if a module structure follows the project's conventions
-- Read reference implementations or blueprints mentioned in ORIGINS.md
-- Search the web for best practices or library documentation
-- Verify that a proposed solution fits the existing architecture
-
-Real architects and reviewers constantly research while working. SpecWeaver's agents should too.
-
----
-
-## Design Decisions
+## Decisions
 
 | # | Decision | Choice | Rationale |
 |---|----------|--------|-----------|
-| 1 | **Tool mechanism** | LLM function calling via provider-agnostic abstraction | LLM decides what to search and when. No pre-collection guesswork. Multi-turn agentic loop. SpecWeaver defines tools as `ToolDefinition` models; each adapter converts to its provider's format (Gemini `FunctionDeclaration`, OpenAI `tools`, etc.). |
-| 2 | **LLM adapter change** | Add `ToolDefinition` + `ToolCall` models to `models.py`. Default `generate_with_tools()` on base adapter (falls back to `generate()` for adapters that don't support tools). Each adapter overrides with provider-specific implementation. | Strict abstraction — zero provider-specific types in shared models. Adapters that don't support tools yet still work (tools silently disabled). |
-| 3 | **Tool boundary enforcement** | Hard boundary = `RunContext.project_path` at feature level. At component level: boundary = service/module root (from decomposition context) + read-only access to neighboring API contracts. | Dynamic, follows the decomposition lifecycle. |
+| 1 | **Tool mechanism** | LLM function calling, provider-agnostic | LLM decides what to search and when; no pre-collection guesswork; multi-turn loop. See note 1. |
+| 2 | **LLM adapter change** | `ToolDefinition` + `ToolCall` in `models.py`; default `generate_with_tools()` on the base adapter (note 2) | No provider types in shared models; tool-less adapters still work |
+| 3 | **Tool boundary enforcement** | Feature level: `RunContext.project_path`. Component level: service/module root + read-only neighbour API contracts | Dynamic; follows decomposition |
 | 4 | **No new CLI** | Tools are internal to agent loops. Users don't configure or invoke them. | User asked for zero CLI additions. Configuration is implicit from project registration. |
 | 5 | **Tool count** | 6 tools: 4 filesystem + 2 web | Minimal set that covers real research needs. |
-| 6 | **Web search API** | Google Custom Search initially. Interface allows swapping. | Same Google ecosystem as Gemini. Alternative: DuckDuckGo, Brave Search, SerpAPI. |
-| 7 | **Max tool iterations** | Configurable, default 5 rounds of tool calls per agent invocation | Prevents runaway loops. After N rounds, agent must produce output with what it has. |
-| 8 | **Agentic loop location** | New method on adapter: `generate_with_tools()`. Callers (Planner, Reviewer) opt-in by passing tools. | Keeps the loop in one place. Non-tool callers continue using `generate()` unchanged. |
-| 9 | **Loop nesting** | Tool loop (inside adapter) runs to completion first, producing final text. Planner's JSON retry loop is *outside* — it validates the text and retries if needed. Loops don't mix. | Clear separation. Worst case 3 × 5 = 15 LLM calls, but in practice tool use resolves in 1–2 rounds and retries are rare. Log warning when total calls exceed 5. |
+| 6 | **Web search API** | Google Custom Search first; the interface allows swapping. | Same Google ecosystem as Gemini. Alternatives: DuckDuckGo, Brave Search, SerpAPI. |
+| 7 | **Max tool iterations** | Configurable, default 5 rounds of tool calls per agent invocation | Prevents runaway loops. After N rounds the agent must answer with what it has. |
+| 8 | **Agentic loop location** | New adapter method `generate_with_tools()`. Callers (Planner, Reviewer) opt in by passing tools. | One place for the loop. Non-tool callers keep using `generate()`. |
+| 9 | **Loop nesting** | Tool loop (in the adapter) finishes first, yields text; the Planner's JSON retry loop is *outside* it | Loops don't mix. Worst case 3 × 5 = 15 LLM calls (note 9) |
 
----
+- Note 1: SpecWeaver defines tools as `ToolDefinition` models; each adapter converts them to its provider's
+  format (Gemini `FunctionDeclaration`, OpenAI `tools`, etc.).
+- Note 2: the base default falls back to `generate()` for adapters that don't support tools (tools
+  silently disabled). Each adapter overrides with a provider-specific implementation.
+- Note 9: in practice tool use resolves in 1–2 rounds and retries are rare. Log a warning when total calls
+  exceed 5.
 
-## Sub-phase 3.10a: Dynamic Workspace Boundaries
+## Scope
 
-**Goal**: SpecWeaver knows where an agent works and enforces file access boundaries that change based on pipeline phase.
+- **In:** 6 research tools (4 filesystem + 2 web) · `WorkspaceBoundary` with dynamic boundary
+  resolution · agentic loop via `generate_with_tools()` on the LLM adapter · Planner and Reviewer
+  gain tool use · web tools gated by env var (no API key = no web tools).
+- **Out:** new CLI commands · user-facing tool configuration · file writing/modification tools
+  (agents are read-only researchers) · Git history search (future tool) · code AST analysis (the
+  standards module covers it) · API contract generation for greenfield (Feature 3.20b).
 
-### Boundary Model
+## 3.10a — Dynamic workspace boundaries
+
+SpecWeaver knows where an agent works and enforces file access boundaries that change with the
+pipeline phase.
 
 ```
 Feature-level agent (planning/review of the feature spec)
@@ -57,9 +62,7 @@ Component-level agent (planning/review of a microservice component)
 └── Hard boundary: microservice root + published API surfaces
 ```
 
-### What Needs to Exist
-
-#### [NEW] `src/specweaver/research/boundaries.py`
+**[NEW] `src/specweaver/research/boundaries.py`**
 
 ```python
 class WorkspaceBoundary:
@@ -97,24 +100,18 @@ class WorkspaceBoundary:
         """
 ```
 
-> [!NOTE]
-> **How does the component-level boundary get determined?**
-> When Feature 3.1 (decomposition) decomposes a feature into sub-features per microservice, it
-> stores the assignment in the DB: "sub-feature X belongs to microservice Y, hard boundaries =
-> `services/auth/`". The `RunContext` is populated from this DB entry when spawning component
-> pipelines. `WorkspaceBoundary.from_run_context()` reads `workspace_roots` (set by decomposition)
-> and `api_contract_paths` (neighboring APIs).
->
-> API contract discovery uses `context.yaml` `exposes` sections from neighboring modules. For
-> brownfield projects without `context.yaml`, convention-based discovery (`openapi.yaml`,
-> `*_api.py`, `*_pb2.py`) is used as fallback. This will be refactored once hybrid RAG is
-> implemented.
->
-> If neither `workspace_roots` nor a nearby `context.yaml` exist, the boundary defaults to `project_path` (feature-level).
+How the component-level boundary is determined: when Feature 3.1 (decomposition) splits a feature
+into sub-features per microservice, it stores the assignment in the DB ("sub-feature X belongs to
+microservice Y, hard boundaries = `services/auth/`"). The `RunContext` for component pipelines is
+populated from that entry. `WorkspaceBoundary.from_run_context()` reads `workspace_roots` (set by
+decomposition) and `api_contract_paths` (neighbouring APIs).
 
-#### [MODIFY] `src/specweaver/flow/_base.py` — RunContext
+- API contract discovery uses the `context.yaml` `exposes` sections of neighbouring modules.
+- Brownfield fallback without `context.yaml`: convention-based discovery (`openapi.yaml`,
+  `*_api.py`, `*_pb2.py`). To be refactored once hybrid RAG exists.
+- Neither `workspace_roots` nor a nearby `context.yaml` → boundary = `project_path` (feature-level).
 
-Add optional field for module-level boundary context:
+**[MODIFY] `src/specweaver/flow/_base.py` — RunContext** — optional module-level boundary fields:
 
 ```diff
  class RunContext(BaseModel):
@@ -124,29 +121,29 @@ Add optional field for module-level boundary context:
 +    api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
 ```
 
----
+## 3.10b — Research tools + agentic loop
 
-## Sub-phase 3.10b: Research Tools + Agentic Loop
+Planner and Reviewer get 6 research tools via LLM function calling. Their single-shot LLM calls
+become tool-assisted calls. The tools are **not** agents — they are utility functions the agent
+invokes through the LLM's function calling.
 
-**Goal**: Give Planner and Reviewer 6 research tools via LLM function calling (provider-agnostic).
-Convert their single-shot LLM calls into tool-assisted calls. The tools are **not** agents — they
-are simple utility functions that the agent (Planner/Reviewer) invokes via the LLM's function
-calling mechanism.
+### Tools
 
-### Tool Definitions
-
-#### File System Tools (boundary-enforced)
+File system tools (boundary-enforced):
 
 | Tool | Parameters | Returns |
 |------|-----------|---------|
 | `grep` | `pattern: str`, `path: str` (relative, default: `.`), `context_lines: int` (default: 3), `case_sensitive: bool` (default: false), `max_results: int` (default: 20) | Match list: `{file, line_number, content, context_before, context_after}` |
 | `find_files` | `pattern: str` (glob), `path: str` (relative, default: `.`), `type: str` (`file`\|`directory`\|`any`), `max_results: int` (default: 30) | File list: `{path, type, size_bytes}` |
-| `read_file` | `path: str` (relative), `start_line: int` (optional), `end_line: int` (optional) | `{path, content, total_lines}` — capped at 200 lines per call. Tool description instructs LLM: "To read more, call again with different `start_line`/`end_line`." |
+| `read_file` | `path: str` (relative), `start_line: int` (optional), `end_line: int` (optional) | `{path, content, total_lines}` — capped at 200 lines per call (see below) |
 | `list_directory` | `path: str` (relative, default: `.`), `depth: int` (default: 2), `max_entries: int` (default: 50) | Tree: `{path, type, children}` |
 
-All paths are **relative to the workspace root**. The tool implementation resolves them via `WorkspaceBoundary.validate_path()` before any filesystem access.
+- All paths are **relative to the workspace root**, resolved through
+  `WorkspaceBoundary.validate_path()` before any filesystem access.
+- `read_file`'s tool description tells the LLM: "To read more, call again with different
+  `start_line`/`end_line`."
 
-#### Web Tools
+Web tools:
 
 | Tool | Parameters | Returns |
 |------|-----------|---------|
@@ -154,14 +151,12 @@ All paths are **relative to the workspace root**. The tool implementation resolv
 | `read_url` | `url: str`, `max_chars: int` (default: 10000) | `{url, content}` — HTML stripped, truncated to max_chars |
 
 > [!IMPORTANT]
-> Web tools are **optional**. They only activate when search credentials are configured
-> (`SEARCH_API_KEY` + `SEARCH_ENGINE_ID` env vars for Google Custom Search). When missing, the LLM
-> simply doesn't have web tools available — no error, just fewer capabilities. Alternative backends
-> (Brave Search, SerpAPI) can be swapped via the same interface.
+> Web tools are **optional**. They activate only when search credentials are configured
+> (`SEARCH_API_KEY` + `SEARCH_ENGINE_ID` env vars for Google Custom Search). Missing → the LLM
+> doesn't get web tools; no error. Alternative backends (Brave Search, SerpAPI) swap in via the
+> same interface.
 
-### Architecture
-
-#### [NEW] `src/specweaver/research/` module
+### Module — [NEW] `src/specweaver/research/`
 
 ```
 research/
@@ -173,9 +168,7 @@ research/
 └── executor.py           # Tool dispatch: (name, args) → result
 ```
 
-#### [NEW] `src/specweaver/research/tools.py`
-
-6 standalone functions, each taking validated inputs and returning dicts:
+**[NEW] `src/specweaver/research/tools.py`** — 6 standalone functions; validated inputs in, dicts out:
 
 ```python
 def grep(root: Path, pattern: str, path: str = ".", ...) -> list[dict]: ...
@@ -186,17 +179,16 @@ def web_search(query: str, max_results: int = 5, ...) -> list[dict]: ...
 def read_url(url: str, max_chars: int = 10000) -> dict: ...
 ```
 
-File tools use `subprocess` to call `rg` (ripgrep) for grep and `fd` for find when available,
-falling back to Python stdlib (`pathlib.glob`, line-by-line read). All tool calls enforce a **10s
-timeout**. On timeout or file-count limits (1000 files for Python fallback), results include
-`"truncated": true` and `"warning": "..."` explaining the limitation. First fallback logs a
-recommendation to install ripgrep.
+- File tools call `rg` (ripgrep) for grep and `fd` for find via `subprocess` when available, else
+  Python stdlib (`pathlib.glob`, line-by-line read). The first fallback logs a recommendation to
+  install ripgrep.
+- Every tool call has a **10s timeout**. On timeout or file-count limit (1000 files for the Python
+  fallback) results carry `"truncated": true` and a `"warning": "..."` explaining the limit.
 
-#### [NEW] `src/specweaver/research/definitions.py`
+**[NEW] `src/specweaver/research/definitions.py`** — SpecWeaver `ToolDefinition` instances for all 6 tools. Provider-agnostic;
+each adapter converts them (e.g. Gemini `FunctionDeclaration`, OpenAI tool schema).
 
-SpecWeaver `ToolDefinition` instances for all 6 tools. Provider-agnostic — each adapter converts these to its own format (e.g., Gemini `FunctionDeclaration`, OpenAI tool schema).
-
-#### [NEW] `src/specweaver/research/executor.py`
+**[NEW] `src/specweaver/research/executor.py`** — tool dispatch for Planner/Reviewer calls:
 
 ```python
 class ToolExecutor:
@@ -220,11 +212,9 @@ class ToolExecutor:
         """
 ```
 
-### LLM Layer Changes (Provider-Agnostic Abstraction)
+### LLM layer (provider-agnostic)
 
-#### [MODIFY] `src/specweaver/llm/models.py`
-
-Add provider-agnostic tool models:
+**[MODIFY] `src/specweaver/llm/models.py`** — tool models:
 
 ```python
 class ToolParameter(BaseModel):
@@ -259,7 +249,7 @@ class ToolCall(BaseModel):
     call_id: str = ""  # Provider-specific correlation ID
 ```
 
-Update `GenerationConfig`:
+`GenerationConfig`:
 
 ```diff
  class GenerationConfig(BaseModel):
@@ -274,7 +264,7 @@ Update `GenerationConfig`:
 +    # Future: top_p, stop_sequences, seed
 ```
 
-Update `LLMResponse`:
+`LLMResponse`:
 
 ```diff
  class LLMResponse(BaseModel):
@@ -285,9 +275,8 @@ Update `LLMResponse`:
 +    tool_calls: list[ToolCall] = Field(default_factory=list)  # Non-empty if LLM wants to call tools
 ```
 
-#### [MODIFY] `src/specweaver/llm/adapters/base.py`
-
-**Non-abstract** default implementation — adapters that don't support tools yet fall back gracefully:
+**[MODIFY] `src/specweaver/llm/adapters/base.py`** — a **non-abstract** default, so adapters without
+tool support fall back:
 
 ```python
 class LLMAdapter(ABC):
@@ -315,9 +304,8 @@ class LLMAdapter(ABC):
         return await self.generate(messages, config)
 ```
 
-#### [MODIFY] `src/specweaver/llm/adapters/gemini.py`
-
-Override `generate_with_tools()` — converts SpecWeaver models to Gemini types **inside the adapter only**:
+**[MODIFY] `src/specweaver/llm/adapters/gemini.py`** — overrides `generate_with_tools()`; converts
+SpecWeaver models to Gemini types **inside the adapter only**:
 
 ```python
 def _to_gemini_tools(self, tools: list[ToolDefinition]) -> list[types.Tool]:
@@ -381,15 +369,15 @@ async def generate_with_tools(
 ```
 
 > [!IMPORTANT]
-> **Abstraction boundary**: All Gemini-specific types (`types.FunctionDeclaration`,
-> `types.Part.from_function_response`, `response.function_calls`) are confined to `gemini.py`. The
-> `research/` module, `Planner`, `Reviewer`, and all shared models use only SpecWeaver's
-> `ToolDefinition`, `ToolCall`, and `ToolExecutor`. Future adapters (OpenAI, Anthropic, etc.)
-> implement the same conversion pattern inside their own adapter file.
+> **Abstraction boundary**: all Gemini-specific types (`types.FunctionDeclaration`,
+> `types.Part.from_function_response`, `response.function_calls`) stay in `gemini.py`. The
+> `research/` module, `Planner`, `Reviewer` and all shared models use only SpecWeaver's
+> `ToolDefinition`, `ToolCall` and `ToolExecutor`. Other adapters (OpenAI, Anthropic, etc.)
+> implement the same conversion inside their own adapter file.
 
-### Planner & Reviewer Changes
+### Planner & Reviewer
 
-#### [MODIFY] `src/specweaver/planning/planner.py`
+**[MODIFY] `src/specweaver/planning/planner.py`**:
 
 ```diff
  class Planner:
@@ -405,17 +393,13 @@ async def generate_with_tools(
      ) -> PlanArtifact:
 ```
 
-When `tool_executor` is provided:
-- Add research tools to `GenerationConfig.tools`
-- Update system prompt to explain available tools and when to use them
-- Call `generate_with_tools()` instead of `generate()`
-- The LLM's final text output is still JSON → same validation/retry logic
+With a `tool_executor`: add the research tools to `GenerationConfig.tools`, tell the system prompt
+which tools exist and when to use them, and call `generate_with_tools()` instead of `generate()`.
+The final text is still JSON → same validation/retry logic. With `tool_executor` None: unchanged
+(backward compatible).
 
-When `tool_executor` is None: behavior is unchanged (backward compatible).
-
-#### [MODIFY] `src/specweaver/review/reviewer.py`
-
-Same pattern — when `tool_executor` is available, the reviewer can research before making its verdict:
+**[MODIFY] `src/specweaver/review/reviewer.py`** — same pattern; the reviewer can research before
+its verdict:
 
 ```diff
  class Reviewer:
@@ -430,9 +414,8 @@ Same pattern — when `tool_executor` is available, the reviewer can research be
      ) -> ReviewResult:
 ```
 
-#### [MODIFY] `src/specweaver/flow/_generation.py` (PlanSpecHandler)
-
-Thread the `ToolExecutor` from `RunContext` through to `Planner`:
+**[MODIFY] `src/specweaver/flow/_generation.py` (PlanSpecHandler)** — threads the `ToolExecutor`
+from `RunContext` to the `Planner`:
 
 ```python
 # Build workspace boundary from RunContext
@@ -446,68 +429,30 @@ plan = await planner.generate_plan(
 )
 ```
 
-#### [MODIFY] `src/specweaver/flow/_review.py` (ReviewSpecHandler, ReviewCodeHandler)
+**[MODIFY] `src/specweaver/flow/_review.py` (ReviewSpecHandler, ReviewCodeHandler)** — same pattern:
+build a `ToolExecutor` from `RunContext`, pass it to the `Reviewer`. Both handlers also pass
+`standards=context.standards` to the Reviewer (a one-line fix per handler; they did not before).
 
-Same pattern — build `ToolExecutor` from `RunContext`, pass to `Reviewer`.
+## Tests
 
-> [!NOTE]
-> **Bug fix (existing)**: Both `ReviewSpecHandler` and `ReviewCodeHandler` currently do not pass
-> `standards=context.standards` to the Reviewer. This will be fixed as part of 3.10 while modifying
-> these handlers (one-line addition per handler).
+| Where | Covers |
+|---|---|
+| `tests/unit/research/` | `WorkspaceBoundary` path validation (within boundary, escape attempt, relative resolution, api_paths) |
+| | `WorkspaceBoundary.from_run_context()` at feature level and component level |
+| | each tool function alone (grep, find_files, read_file, list_directory against fixtures) |
+| | `web_search` and `read_url` with mocked HTTP |
+| | `ToolExecutor` dispatch: valid name, invalid name, boundary violation |
+| | `grep` with ripgrep and the Python fallback; `find_files` with fd and the pathlib.glob fallback |
+| | result size limits (max_results, max_chars, line caps); timeout enforcement |
+| `tests/unit/llm/` | `GenerationConfig` with the tools field |
+| | `generate_with_tools()` with mocked responses: no tool calls, single call, multiple rounds, max rounds reached |
+| | tool call → response → tool call → response chain |
+| `tests/unit/planning/`, `tests/unit/review/` | Planner / Reviewer with tool_executor=None (backward compat, no behaviour change) |
+| | Planner / Reviewer with tool_executor (verify `generate_with_tools` is called) |
+| | updated system prompts include tool usage instructions |
+| `tests/integration/research/` | Planner with a real tool executor + mocked LLM making tool calls → tools execute → plan produced |
+| | boundary enforcement in pipeline context: feature-level vs component-level |
 
----
-
-## Scope Boundaries
-
-**IN scope:**
-- 6 research tools (4 filesystem + 2 web)
-- `WorkspaceBoundary` with dynamic boundary resolution
-- Agentic loop via `generate_with_tools()` on the LLM adapter
-- Planner and Reviewer gain tool-use capability
-- Web tools gated by env var (no API key = no web tools)
-
-**OUT of scope:**
-- New CLI commands
-- User-facing configuration of tools
-- File writing/modification tools (agents are read-only researchers)
-- Git history search (future tool addition)
-- Code AST analysis (already covered by standards module)
-- API contract generation for greenfield (covered by Feature 3.20b)
-
----
-
-## Verification Plan
-
-### Automated Tests
-
-**Unit tests (`tests/unit/research/`):**
-- `WorkspaceBoundary` path validation (within boundary, escape attempt, relative resolution, api_paths)
-- `WorkspaceBoundary.from_run_context()` at feature-level and component-level
-- Each tool function in isolation (grep, find_files, read_file, list_directory against test fixtures)
-- `web_search` and `read_url` with mocked HTTP
-- `ToolExecutor` dispatch (valid tool name, invalid tool name, boundary violation)
-- `grep` with ripgrep available and fallback to Python
-- `find_files` with fd available and fallback to pathlib.glob
-- Tool result size limits (max_results, max_chars, line caps)
-- Timeout enforcement on tool execution
-
-**Unit tests (`tests/unit/llm/`):**
-- `GenerationConfig` with tools field
-- `generate_with_tools()` with mocked LLM responses (no tool calls, single tool call, multiple rounds, max rounds reached)
-- Tool call → response → tool call → response chain
-
-**Unit tests (`tests/unit/planning/`, `tests/unit/review/`):**
-- Planner with tool_executor=None (backward compat, no behavior change)
-- Planner with tool_executor (verify `generate_with_tools` is called)
-- Reviewer with tool_executor=None (backward compat)
-- Reviewer with tool_executor (verify `generate_with_tools` is called)
-- Updated system prompts include tool usage instructions
-
-**Integration tests (`tests/integration/research/`):**
-- End-to-end: Planner with real tool executor + mocked LLM that makes tool calls → verify tools are executed → final plan produced
-- Boundary enforcement in pipeline context: feature-level vs component-level boundaries
-
-**Commands:**
 ```bash
 uv run pytest tests/unit/research/ -x -q
 uv run pytest tests/unit/llm/ -x -q
@@ -519,19 +464,23 @@ uv run ruff check src/ tests/
 uv run mypy src/
 ```
 
-### Manual Verification
+Manual:
 
-1. Run `sw plan` on a spec in a project with multiple modules → verify the Planner searches the codebase during planning (visible in debug logs)
-2. Verify file tool calls are bounded to project root (debug logs show resolved paths)
-3. Without `SEARCH_API_KEY` → verify web tools are not offered to the LLM
-4. With `SEARCH_API_KEY` → verify web search results appear in debug logs
+1. `sw plan` on a spec in a multi-module project → the Planner searches the codebase (debug logs).
+2. File tool calls stay inside the project root (debug logs show resolved paths).
+3. Without `SEARCH_API_KEY` → web tools are not offered to the LLM.
+4. With `SEARCH_API_KEY` → web search results appear in debug logs.
 
----
-
-## Documentation Updates
+## Docs to update
 
 | Doc | What to add |
 |-----|-------------|
 | `README.md` | Features bullet: "Agentic research — Planner and Reviewer search your codebase and the web" |
 | `docs/roadmap/phase_3_feature_expansion.md` | Update Feature 3.10 row: new description, mark sub-phases |
 
+## Since moved (2026-09-25)
+
+The `research/` module no longer exists. `WorkspaceBoundary` → `src/specweaver/sandbox/security.py`;
+web tools → `src/specweaver/sandbox/web/`; `ToolDefinition` → `src/specweaver/infrastructure/llm/models.py`;
+`workspace_roots` / `api_contract_paths` → `GraphContext` in `core/flow/handlers/run_context.py`.
+Paths above are as of the plan.

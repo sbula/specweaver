@@ -1,60 +1,49 @@
-# Implementation Plan: Protocol & Schema Analyzers [SF-02: gRPC Protobuf Parser]
-- **Feature ID**: 3.31
-- **Sub-Feature**: SF-02 — gRPC Protobuf Parser
-- **Design Document**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf02_implementation_plan.md
-- **Status**: APPROVED
+# A-VAL-01 SF-02 — gRPC Protobuf Parser
 
-**FRs owned: FR-2.**
+**Status**: APPROVED · **FRs owned**: FR-2 · **Depends on**: SF-01 · **Legacy Feature ID**: 3.31 ·
+Design: [A-VAL-01_design.md](A-VAL-01_design.md) §Sub-features → SF-02
 
-> **Attribution added 2026-08-16 by `TECH-051` CB-2.** The plan predates the FR ledger
-> and named no requirement, so `check_fr_coverage.py A-VAL-01` reported all five as
-> *carried by no implementation plan* on a delivered DAL-A capability. Mapped from this
-> sub-feature's own scope — the gRPC/proto parser — not assigned to make a number fall. The work is
-> unchanged; only the record of which requirement it discharged is new.
+FR attribution added 2026-08-16 by `TECH-051` CB-2: the plan predates the FR ledger, so
+`check_fr_coverage.py A-VAL-01` reported all five as *carried by no implementation plan* on a delivered
+DAL-A capability. Mapped from this sub-feature's own scope — the gRPC/proto parser — not assigned to
+make a number fall. The work is unchanged.
 
+## Goal
 
-## Goal Description
-Implement the gRPC Protocol parser relying on `proto-schema-parser` to extract AST schemas from
-`.proto` logic, mapping services directly into the normalized `ProtocolSchemaInterface` Pydantic
-bounds drafted in SF-01.
+A gRPC parser on `proto-schema-parser` that extracts `.proto` schemas and maps services into the
+normalized `ProtocolSchemaInterface` Pydantic models from SF-01.
 
-## Proposed Changes
+## Changes
 
-### `pyproject.toml`
-#### [MODIFY] pyproject.toml
-- **What it does**: Adds `proto-schema-parser>=0.5.0` to the `dependencies` array.
+1. **[MODIFY] `pyproject.toml`** — add `proto-schema-parser>=0.5.0` to `dependencies`.
+2. **[MODIFY] `src/specweaver/core/loom/commons/protocol/models.py`** — small addition only if needed;
+   gRPC semantics mostly fit a generic `payload: dict` or custom properties on existing models, still
+   resolving into standard `ProtocolEndpoint`.
+3. **[NEW] `src/specweaver/core/loom/commons/protocol/grpc_parser.py`** — `ProtocolSchemaInterface` on
+   `proto_schema_parser.parser.Parser`:
+   - Top-level `service` nodes iterate their nested `rpc` methods.
+   - Each `rpc` → `ProtocolEndpoint` (`method` ="RPC", `path`="{service_name}/{rpc_name}").
+   - `message` items → `ProtocolMessage`.
 
-### `core/loom/commons/protocol`
-#### [MODIFY] `src/specweaver/core/loom/commons/protocol/models.py`
-- **What it does**: Small addition if necessary (handled mostly dynamically via generic
-  `payload: dict` or custom properties in existing models) to capture gRPC-specific semantics while
-  resolving into standard `ProtocolEndpoint`.
+RPC parameters map to Request types and return payloads to Response types.
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/grpc_parser.py`
-- **What it does**: Implements `ProtocolSchemaInterface` using `proto_schema_parser.parser.Parser`.
-- **Parsing Rules**:
-  - Top-level `service` nodes iterate their nested `rpc` methods.
-  - Each `rpc` method maps out to `ProtocolEndpoint` (`method` ="RPC", `path`="{service_name}/{rpc_name}").
-  - `message` items are directly captured into `ProtocolMessage` models.
-> [!NOTE] 
-> Based on HITL approval, gRPC abstractions are forcibly mapped inside standard `ProtocolEndpoint`
-> boundaries to maintain polymorphism for downstream Flow pipelines natively checking missing
-> endpoints. 
+## Decisions (HITL)
 
-## Verification Plan
+| Decision | Why |
+|---|---|
+| gRPC is mapped into standard `ProtocolEndpoint` | Keeps one type for downstream Flow pipelines that check for missing endpoints |
+| `tree-sitter-proto` omitted | Its native `.so` compilation crashes CI/CD sandboxes that lock GCC builds |
 
-### Automated Tests
-- Unit Test `test_grpc_parser.py` extracting nodes from complex layered `.proto` definitions successfully capturing RPC request/response data types. 
-- Validation confirming NFR-2 bounds (zero build extensions invoked, native execution relies exclusively on standard Python `ast`-style visiting).
+## Tests
 
-### Manual Verification
-N/A (Covered entirely by pure logic unit tests)
+| Test | Checks |
+|---|---|
+| `test_grpc_parser.py` | complex layered `.proto` definitions; RPC request/response types captured |
+| NFR-2 | zero build extensions invoked; pure Python `ast`-style visiting |
 
-## Research Notes
-- `tree-sitter-proto` omitted specifically to prevent native `.so` library compilation crashing CI/CD sandboxes locking GCC builds.
-- Mapping gRPC Services seamlessly correlates RPC parameters matching Request types and Returns payload typing to Response Types, satisfying generic schemas.
+Manual verification: N/A.
 
-## Session Handoff
-- Wait until full `/feature` plans are constructed, then run `/dev docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf02_implementation_plan.md`.
+## As built
+
+**Since moved** (2026-05-03, `7b35a900`, TECH-01): `grpc_parser.py` →
+`src/specweaver/sandbox/protocol/core/grpc_parser.py`.

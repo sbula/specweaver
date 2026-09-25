@@ -1,68 +1,53 @@
-# Implementation Plan: Bi-Directional Spec Rot Interceptor [SF-02: Dynamic Flow Handler]
-- **Feature ID**: 3.23
-- **Sub-Feature**: SF-02 — Dynamic Flow Handler (Detect Rot)
-- **Design Document**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf02_implementation_plan.md
-- **Status**: APPROVED
+# B-VAL-02 SF-02 — Dynamic Flow Handler (Detect Rot)
 
-**FRs owned: FR-1, FR-2, FR-4, FR-8.** Installing the hook, what the hook invokes, the one-step
-`DETECT`/`DRIFT` pipeline, and aborting the commit. Recorded 2026-08-17 under `specweaver-dev`
-§3.2c, from `INT-US-01-SF03-MIG`.
+**Status**: APPROVED · **FRs owned**: FR-1, FR-2, FR-4, FR-8 (recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`) · **Depends on**: SF-01 · Design:
+[B-VAL-02_design.md](B-VAL-02_design.md) §Sub-features → SF-02
 
-**The exit code is 42, not the `1` FR-8 declares**, and the hook script matches on 42. The two
-have to agree, and that agreement is the actual requirement.
+Owned FRs: installing the hook, what the hook invokes, the one-step `DETECT`/`DRIFT` pipeline, and
+aborting the commit. **The exit code is 42, not the `1` FR-8 declares**, and the hook script matches
+on 42. The two have to agree, and that agreement is the actual requirement.
 
+## Goal
 
-## 1. Goal
+Replace the SF-01 `check-rot` stub with the real check: take the staged code files, resolve each
+one's parent `PlanArtifacts` (**Option A: Trace-to-Plan**, approved by the human engineer), and run
+the deterministic AST drift engine. On structural drift, abort with exit code `42`.
 
-Finalize the "Bi-Directional Spec Rot Interceptor" by implementing the logic inside the Git
-pre-commit hook handler (`sw drift check-rot --staged`). This sub-feature will dynamically extract
-staged code files, resolve their parent `PlanArtifacts` (enforcing **Option A: Trace-to-Plan**), and
-execute the deterministic AST Drift Engine. If structural drift is detected, the command must abort
-the shell with a deterministic non-zero exit code (`42`), forcing the human developer to resolve the
-code-to-spec inconsistency. 
+## Where it plugs in
 
-## 2. Context & Handoff (For New Agents Resuming)
+- SF-01 is complete: git hooks run `sw drift check-rot --staged`; `drift.py`'s `check-rot` is a stub
+  that prints text.
+- NFR-1 caps the hook at `<500ms`, so no LLM. The existing `detect_drift` in
+  `src/specweaver/validation/drift_detector.py` is fast enough, and needs a structured
+  `PlanArtifact`, not raw Markdown.
 
-> [!NOTE]
-> **To any Agent resuming this task:**
-> You do NOT need to recall previous sessions or missing knowledge to execute this!
-> 
-> 1. CLI Hook Mechanism: SF-01 is complete. Standard git hooks now execute `sw drift check-rot --staged`. 
-> 2. `drift.py`: The `check-rot` command currently acts as a passive stub (printing text). You must replace this stub with the logic defined below.
-> 3. Execution Standard: NFR-1 strictly limits execution to `<500ms` preventing any LLM usage for
->    the pre-commit hook itself. The existing `detect_drift` logic inside
->    `src/specweaver/validation/drift_detector.py` is lightning-fast and requires a structured
->    `PlanArtifact`, not raw Markdown.
+## Changes
 
-## 3. Proposed Changes
+`src/specweaver/cli/drift.py` — `drift_check_rot` (the `sw drift check-rot` sub-command):
 
-### [x] `src/specweaver/cli/drift.py`
+1. **Locate target files** — the staged files from Git.
+2. **Resolve plans** — Option A (Trace-to-Plan).
+3. **Delegate** — one dynamic single step per staged file matched to a plan.
+4. **Enforce** — on drift, compile an aggregate report.
+5. **Terminate** — print a `Rich` console table to stderr showing the drift, then
+   `raise typer.Exit(code=42)`.
 
-Update the `drift_check_rot` function (the sub-command for `sw drift check-rot`).
+## Tests
 
-**Logic Flow:**
-- [x] **Locate Target Files**: Extract the staged files from Git.
-- [x] **Resolve Plans**: The interceptor uses Option A (Trace-to-Plan).
-- [x] **Delegation**: For every staged file matched to a Plan, dynamically create a single step.
-- [x] **Enforcement**: If drift is detected, compile an aggregate report.
-- [x] **Termination**: Print a clean `Rich` console table to stderr highlighting the drift, and strictly `raise typer.Exit(code=42)`.
+`tests/integration/cli/test_drift_rot_handler.py`:
 
-### [x] `tests/integration/cli/test_drift_rot_handler.py`
+| Case |
+|---|
+| mocked `subprocess.run` simulates `git diff --cached` returning sample paths, in a temporary workspace |
+| drift → `sw drift check-rot --staged` exits `42` and prints the drift table |
+| healthy file → exits `0` |
+| single staged file; multiple staged files across different plans; un-planned files ignored |
 
-- [x] Use mocked `subprocess.run` to simulate `git diff --cached` returning sample file paths.
-- [x] Setup a temporary workspace.
-- [x] Assert `sw drift check-rot --staged` exits with `42` and emits the Drift Table.
-- [x] Assert a healthy file exits with `0`.
+No second E2E layer: the SF-01 `test_hooks_e2e.py` asserts the OS-level `exit 1` block.
 
-## 4. Open Questions
-**None.** The human engineer explicitly approved Option A (Trace-to-Plan), and standard codebase pathing natively handles pipeline inputs. No further blockers exist.
+## As built
 
-## 5. Verification Plan
-- **Automated Verification:** The newly defined `tests/integration/cli/test_drift_rot_handler.py`
-  module will explicitly verify execution edge-cases (single staged file, multiple staged files
-  across different plans, un-planned files ignored).
-- **End-to-End Environment**: We will rely on existing E2E infrastructure (`test_hooks_e2e.py`)
-  created in SF-01 to assert OS-level `exit 1` blockades, eliminating the need for a secondary E2E
-  layer for SF-02.
+All five changes and the test file done. **Since moved** (noted 2026-09-25): `drift_check_rot` →
+`assurance/validation/interfaces/cli_drift.py` (exit via `sys.exit(42)`); the test →
+`tests/integration/interfaces/cli/test_drift_rot_handler.py`.

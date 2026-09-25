@@ -1,86 +1,63 @@
-# Implementation Plan: Common MCP Client Architecture [SF-01: Context YAML & Vault Bindings]
+# C-INTL-02 SF-01 — Context YAML & Vault Bindings
 
-**FRs owned: FR-1, FR-2, FR-3, FR-4.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
-`INT-US-23-MIG`. Proof and mutants: `tests/unit/core/flow/handlers/test_mcp_assembler.py` (FR-1, FR-3,
-FR-4) and `tests/unit/sandbox/mcp/core/mcp/test_mcp_atom.py` (FR-2).
+**Status**: COMPLETED · **Feature ID**: 3.32c · **FRs owned**: FR-1, FR-2, FR-3, FR-4 (proof
+recorded here, see As built) · **Depends on**: none · Design:
+[C-INTL-02_design.md](C-INTL-02_design.md) §Sub-features → SF-01
+
+## Goal
+
+Put MCP server definitions into the DAG-based `context.yaml` boundaries. Guarantee that the
+environment binding (`.specweaver/vault.env`) never leaks credentials to the repository or to logs.
+
+## Where it plugs in
+
+| Fact | Where |
+|---|---|
+| `context.yaml` is NOT validated via Pydantic. It maps to `TopologyNode` via `ruamel.yaml`. The schema expansion bypasses Pydantic, so the L2 graph does not regress. Pydantic validation migrations: deferred to `Feature 3.32d`. | `src/specweaver/assurance/graph/topology.py` |
+| The configuration layer is `pure-logic`: it may not run `subprocess-git` checks from `core/config/`. The Git tracking check runs from the `flow` PipelineRunner through `GitAtom` (Option D Vault Shield). | `src/specweaver/core/flow/engine/runner.py` |
+
+## Changes
+
+1. **Topology fields** (FR-1) · `topology.py` — `TopologyNode` dataclass gains
+   `mcp_servers: dict[str, dict] = field(default_factory=dict)` and
+   `consumes_resources: list[str] = field(default_factory=list)`. `TopologyGraph.from_project()`
+   reads both from the `ruamel.yaml` mapping.
+2. **Option D vault verification** · `runner.py` (`PipelineRunner.start()` or the init sequence):
+   1. `FileSystemAtom` checks `Path(".specweaver/vault.env").exists()`.
+   2. If it exists, run `GitAtom.run(command="ls-files .specweaver/vault.env")`.
+   3. A stdout hit means the file is tracked → raise
+      `RuntimeError("FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage.")`.
+
+   The `.exists()` early exit costs ~0ms for projects without MCP: no boot-time regression.
+
+## Tests
+
+| Command | Proves |
+|---|---|
+| `pytest tests/unit/assurance/graph/test_topology.py` | legacy context files (without `mcp_servers`) raise no `KeyErrors` |
+| `pytest tests/unit/core/flow/engine/test_runner.py` with mock `.specweaver/vault.env` files | `GitAtom` aborts the pipeline when the mock reports the file tracked |
+| Manual: `sw plan` on a test repo whose `.specweaver/vault.env` is `git add`ed | the pipeline exits immediately |
+
+## Decisions (audit)
+
+- No open questions: Pydantic deferred; Option D fixed; every bound explicit.
+- Architecture: no `subprocess` logic inside configuration, so `tach` keeps the DAG compliant.
+  Side-effects need `Atoms`; `PipelineRunner` may orchestrate them.
+- Files named (`TopologyNode`, `GitAtom`, `PipelineRunner`); no implicit imports. All changes stay
+  within Phase 3 scope paths.
+
+## As built
+
+**Since moved** (2026-09-25 check): the vault audit is `verify_vault_security` in
+`core/flow/engine/security.py`, called from the runner on run and resume. It uses the `GitAtom`
+`is_tracked` intent (`ls-files`) rather than a raw command.
+
+FR proof recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-23-MIG`. Proof and mutants:
+
+| Test | FRs |
+|---|---|
+| `tests/unit/core/flow/handlers/test_mcp_assembler.py` | FR-1, FR-3, FR-4 |
+| `tests/unit/sandbox/mcp/core/mcp/test_mcp_atom.py` | FR-2 |
 
 FR-2 needed a new test: the container-runtime allow-list could be widened to include `bash` with the
 whole suite green, because the guard was only ever asserted to reject *something*.
-
-- **Feature ID**: 3.32c
-- **Sub-Feature**: SF-01 — Context YAML & Vault Bindings
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf01_implementation_plan.md
-- **Status**: COMPLETED
-
-## 1. Goal Description
-
-This sub-feature integrates the Model Context Protocol (MCP) server definitions directly into the
-DAG-based `context.yaml` boundaries and guarantees that environment bindings (.specweaver/vault.env)
-never leak credentials to the repository or internal logging. It adapts the `TopologyNode` model for
-parsing and natively integrates the security Git tracking check Option D.
-
-> [!IMPORTANT]
-> **Architectural Fix Applied**: `context.yaml` is NOT validated via Pydantic; it maps to
-> `TopologyNode` via `ruamel.yaml`. The schema expansion bypasses Pydantic entirely to prevent L2
-> Graph regression. Pydantic validation migrations have been deferred to `Feature 3.32d`.
-
-> [!CAUTION]
-> **Architectural Safety (The Option D Vault Shield):** To prevent breaking the `pure-logic`
-> isolation rule of the configuration layer, we cannot run arbitrary `subprocess-git` checks from
-> `core/config/`. The Git tracking check MUST be orchestrated securely through the `flow`
-> PipelineRunner invoking `GitAtom` natively. 
-
----
-
-## 2. Proposed Changes
-
-### specweaver/assurance/graph/
-#### [MODIFY] `src/specweaver/assurance/graph/topology.py`
-- Modify the `TopologyNode` dataclass to explicitly accept:
-  - `mcp_servers: dict[str, dict] = field(default_factory=dict)`
-  - `consumes_resources: list[str] = field(default_factory=list)`
-- Update `TopologyGraph.from_project()` loader block to pull these directly from the `ruamel.yaml` dictionary mapping.
-
-### specweaver/core/flow/
-#### [MODIFY] `src/specweaver/core/flow/engine/runner.py`
-- Modify `PipelineRunner.start()` or initialization sequence.
-- **Implement Option D Vault Verification**:
-  1. Instantiate the `FileSystemAtom` to check if `Path(".specweaver/vault.env").exists()`.
-  2. If it exists, instantly execute `GitAtom.run(command="ls-files .specweaver/vault.env")`.
-  3. If the GitAtom returns a stdout hit (indicating the file is currently tracked), violently throw
-     a fatal
-     `RuntimeError("FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage.")`.
-- By using `.exists()` early-exit, the performance overhead is ~0ms for projects that don't utilize MCP, effectively eliminating any boot-time regressions while maximizing enterprise-grade security.
-
----
-
-## 3. Phase 5 Consistency Verification Answers
-
-5.1. **Open questions:** Are there still any unresolved decisions or ambiguities?
-- **No**. The Pydantic discrepancy is resolved (deferred). The Option D credential vulnerability is locked. The LLM won't be guessing about parsing. All bounds are explicitly defined.
-
-5.1a. **Agent Handoff Risk**: A fresh agent will NOT struggle. The exact files to modify and the
-exact APIs (`TopologyNode`, `GitAtom`, `PipelineRunner`) are explicitly listed. There are zero
-implicit imports assumed.
-
-5.2. **Architecture and future compatibility:** 
-- The plan perfectly complies with `context.yaml` isolation. By refusing to write `subprocess` logic
-  inside configuration, we prevent `tach` from failing the topological DAG compliance check. Running
-  side-effects requires `Atoms`, and `PipelineRunner` natively possesses the clearance to
-  orchestrate them.
-
-5.3. **Internal consistency:** 
-- `[MODIFY]` tags reflect exact correct file paths. All changes stay firmly within Phase 3 scope paths.
-
----
-
-## 4. Verification Plan
-
-### Automated Tests
-- Run `pytest tests/unit/assurance/graph/test_topology.py` to ensure legacy context files (without `mcp_servers`) do not throw `KeyErrors`.
-- Run `pytest tests/unit/core/flow/engine/test_runner.py` with mock `.specweaver/vault.env` files to confirm the `GitAtom` forcibly aborts the pipeline when the mock returns a tracked file status.
-
-### Manual Verification
-- Execute `sw plan` across a test repo containing `.specweaver/vault.env` that has been explicitly `git add`ed. Pipeline must exit immediately.

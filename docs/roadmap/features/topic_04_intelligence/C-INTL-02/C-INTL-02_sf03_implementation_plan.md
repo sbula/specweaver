@@ -1,83 +1,61 @@
-# Implementation Plan: Common MCP Client Architecture [SF-03: The Pre-Fetch Assembler]
-- **Feature ID**: 3.32c
-- **Sub-Feature**: SF-03 — The Pre-Fetch Assembler (Flow Engine)
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf03_implementation_plan.md
-- **Status**: APPROVED
+# C-INTL-02 SF-03 — The Pre-Fetch Assembler (Flow Engine)
 
-## Feature Summary
-SF-03 implements a lazy-loading "Pre-Fetch Assembler" inside the SpecWeaver Flow engine. It
-statically maps architectural dependencies (MCP resources), securely triggers the `MCPAtom` to fetch
-external strings via standard IPC channels, and parses the output natively into the `PromptBuilder`
-for zero-latency LLM context tracking.
+**Status**: APPROVED · **Feature ID**: 3.32c · **FRs owned**: FR-3, FR-4 · **Depends on**: SF-02 ·
+Design: [C-INTL-02_design.md](C-INTL-02_design.md) §Sub-features → SF-03
 
----
+## Goal
 
-## 1. Topologcial Bound Modifications
+A lazy-loading Pre-Fetch Assembler in the Flow engine. It reads the MCP resources a boundary
+declares, runs `MCPAtom` to fetch them over IPC, and passes the text to the `PromptBuilder`, so the
+LLM gets the context with no tool-call latency.
 
-### [MODIFY] `src/specweaver/core/flow/context.yaml`
-**Rationale**: `flow` is mathematically restricted from invoking `MCPAtom` currently.
-- Add `- specweaver/loom/atoms/mcp` to the `consumes` array.
-- *Caution*: `flow` is `async_ready: true`, but `MCPAtom` is `async_ready: false`. This SLA friction demands asynchronous non-blocking thread execution inside the handler bounds.
+## Where it plugs in
 
-### [MODIFY] `src/specweaver/assurance/graph/topology.py`
-**Rationale**: `RunContext.topology` is a read-only `TopologyContext` record that currently drops all knowledge of `mcp_servers` originally defined in the `TopologyNode`.
-- Update the frozen `TopologyContext` dataclass constructor to accept
-  `mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)` and
-  `consumes_resources: list[str] = field(default_factory=list)`.
-- Update `format_context_summary()` in `TopologyGraph` to properly serialize this state into the context payload when `TopologyContext` maps are generated.
+| Fact | Where |
+|---|---|
+| `flow` may not invoke `MCPAtom` yet. `flow` is `async_ready: true`; `MCPAtom` is `async_ready: false` → the handler must run it off the event loop. | `src/specweaver/core/flow/context.yaml` |
+| `RunContext.topology` is a read-only `TopologyContext` record; it drops the `mcp_servers` defined on `TopologyNode`. | `src/specweaver/assurance/graph/topology.py` |
 
----
+## Changes
 
-## 2. The Context Assembler Utility
+1. **Topology bounds**
+   - `core/flow/context.yaml`: add `- specweaver/loom/atoms/mcp` to `consumes`.
+   - `topology.py`: the frozen `TopologyContext` dataclass gains
+     `mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)` and
+     `consumes_resources: list[str] = field(default_factory=list)`. `format_context_summary()` in
+     `TopologyGraph` serializes them when `TopologyContext` maps are built.
+2. **Assembler** · [NEW] `src/specweaver/core/flow/handlers/mcp_assembler.py` — called by handlers
+   before `PromptBuilder`.
+   - `async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:`
+   - Reads `context.topology.mcp_servers` and `consumes_resources`; for each server runs
+     `MCPAtom.run()` on the URIs.
+   - Wraps `MCPAtom.run()` in `asyncio.to_thread(_sync_fetch, ...)`: its stdio blocks the event loop
+     (NFR-2).
+   - Unpacks `AtomResult.contents`, keeps only `result.contents.text`, strips the raw JSON protocol
+     payload (`jsonrpc="2.0"`). Returns a YAML dict of `{URI: block}`.
+3. **Handler injection**
+   - `src/specweaver/core/flow/handlers/generation.py`: import `evaluate_and_fetch_mcp_context`. In
+     `GenerateCodeHandler.execute()` and `GenerateTestsHandler.execute()`:
+     `mcp_env = await evaluate_and_fetch_mcp_context(context)`, passed to `Generator.generate_code`
+     and `generate_tests` as the new kwarg `environment_context=mcp_env`.
+   - `src/specweaver/core/flow/handlers/review.py`: same sequence, `mcp_env` to `Reviewer`.
+   - `src/specweaver/workflows/implementation/generator.py`: `generate_code`, `generate_tests`
+     accept `environment_context: str | None = None` and append
+     `.add_context(environment_context, "environment_context")` to the `PromptBuilder` chain.
+   - `src/specweaver/workflows/review/reviewer.py`: same for `review_code` and `review_spec`.
 
-### [NEW] `src/specweaver/core/flow/handlers/mcp_assembler.py`
-**Rationale**: Lazy-loading utility function that Handlers invoke before hitting `PromptBuilder`.
-- Create `async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:`
-- Retrieve `context.topology.mcp_servers` and `consumes_resources`.
-- Iterate through each active server, physically invoking `MCPAtom.run()` targeting the string URIs.
-- **Critical SLA Guard**: Wrap `MCPAtom.run()` execution explicitly in
-  `asyncio.to_thread(_sync_fetch, ...)` because `MCPAtom`'s internal standard I/O byte transmission
-  blocks standard Unix thread event loops (NFR-2).
-- **JSON-RPC Shredding**: Iteratively unpack `AtomResult.contents`, extracting only
-  `result.contents.text`. Fully strip out raw JSON protocol payloads (`jsonrpc="2.0"`) prior to
-  returning. Format string as YAML dict of `{URI: block}` to natively assist LLM Markdown context
-  formatting.
+## Tests
 
----
+| File | Change |
+|---|---|
+| [MODIFY] `tests/unit/core/flow/handlers/test_generation.py` | mocks cover `MCPAtom` interactions |
+| [MODIFY] `tests/unit/core/flow/handlers/test_review.py` | mirrors the generation tests |
+| [MODIFY] `tests/integration/core/flow/engine/test_generation_loopback_integration.py` | mock `TopologyContext` mappings; MCP context reaches the prompt via `environment_context` without failures |
 
-## 3. Handler Context Injections
+Checks: `tach check` (`core/flow` imports the atom), `ruff check .`, `mypy .`.
 
-### [MODIFY] `src/specweaver/core/flow/handlers/generation.py`
-- Import `evaluate_and_fetch_mcp_context` globally.
-- In `GenerateCodeHandler.execute()` and `GenerateTestsHandler.execute()`:
-  - Add `mcp_env = await evaluate_and_fetch_mcp_context(context)`.
-  - Pass `mcp_env` string downward natively into the nested `Generator.generate_code` and `generate_tests` call via a new parameter kwarg `environment_context=mcp_env`.
+## As built
 
-### [MODIFY] `src/specweaver/core/flow/handlers/review.py`
-- Follow exact sequence mapped in `generation.py` to pipe `mcp_env` string downwards to `Reviewer`.
-
-### [MODIFY] `src/specweaver/workflows/implementation/generator.py`
-- Modify `generate_code` and `generate_tests` to securely accept `environment_context: str | None = None`.
-- Inside `PromptBuilder` chain, natively append `.add_context(environment_context, "environment_context")`.
-
-### [MODIFY] `src/specweaver/workflows/review/reviewer.py`
-- Modify `review_code` and `review_spec` to securely accept `environment_context: str | None = None`.
-- Inside `PromptBuilder` chain, natively append `.add_context(environment_context, "environment_context")`.
-
----
-
-## 4. Verification Plan
-
-### Test Modifications
-- **[MODIFY]** `tests/unit/core/flow/handlers/test_generation.py`: Update mocks ensuring `MCPAtom` interactions behave properly.
-- **[MODIFY]** `tests/unit/core/flow/handlers/test_review.py`: Mirror generation tests.
-- **[MODIFY]** `tests/integration/core/flow/engine/test_generation_loopback_integration.py`:
-  Integrate mock `TopologyContext` mappings verifying MCP contexts physically traverse via
-  `environment_context` natively without system panic limit failures.
-
-### Automated Checks
-- `tach check`: Confirm `core/flow` correctly imports the atom.
-- `ruff check .`
-- `mypy .`
+**Since moved** (2026-09-25 check): the assembler imports `MCPAtom` from
+`specweaver.sandbox.mcp.core.atom` and reads the topology from `context.graph.topology`. Unit proof:
+`tests/unit/core/flow/handlers/test_mcp_assembler.py`.

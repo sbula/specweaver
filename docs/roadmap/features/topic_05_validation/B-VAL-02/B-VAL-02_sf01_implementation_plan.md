@@ -1,61 +1,58 @@
-# Implementation Plan: Bi-Directional Spec Rot Interceptor [SF-01: CLI Command + Git Hook Deployment]
-- **Feature ID**: 3.23
-- **Sub-Feature**: SF-01 — CLI Command + Git Hook Deployment
-- **Design Document**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf01_implementation_plan.md
-- **Status**: APPROVED
+# B-VAL-02 SF-01 — CLI Command + Git Hook Deployment
 
-**FRs owned: FR-3, FR-5, FR-6, FR-7.** Reading the git index, extracting signatures from each
-staged file, locating its plan, and judging the two against each other. Recorded 2026-08-17
-under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`.
+**Status**: APPROVED · **FRs owned**: FR-3, FR-5, FR-6, FR-7 (recorded 2026-08-17 under
+`specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`) · **Depends on**: none · Design:
+[B-VAL-02_design.md](B-VAL-02_design.md) §Sub-features → SF-01
 
-**FR-5's `AstAtom` and `@trace` clauses are struck** — no such class exists, and no trace
-extraction happens on this path. **FR-6 reads `specs/*_plan.yaml`**, by path match and then by
-lineage uuid, not `Spec.md` traceability tags. See the design's corrections section.
+Owned FRs: reading the git index, extracting signatures from each staged file, locating its plan,
+and judging the two against each other. **FR-5's `AstAtom` and `@trace` clauses are struck** — no
+such class exists, and no trace extraction happens on this path. **FR-6 reads
+`specs/*_plan.yaml`**, by path match and then by lineage uuid, not `Spec.md` traceability tags. See
+the design's "How it matches today".
 
+## Goal
 
-## 1. Goal
-Implement the core CLI entry points (`sw hooks install` and `sw drift check-rot --staged`) and the
-logic to deploy a robust, strict git `pre-commit` hook that intercepts commits for spec alignment
-checks.
+Add the CLI entry points `sw hooks install` and `sw drift check-rot --staged`, and deploy a strict
+git `pre-commit` hook that intercepts commits for spec-alignment checks.
 
-## 2. Research Notes & HITL Decisions
-- **Execution Consistency:** The `pre-commit` hook MUST use Python's `sys.executable` (determined
-  dynamically during `sw hooks install`) to construct the hook command (e.g.,
-  `/absolute/path/to/venv/bin/python -m specweaver.interfaces.cli.main drift check-rot --staged`).
-  This ensures the hook fires correctly regardless of virtual environment activation states.
-- **Strict Adherence:** The bash hook MUST `exit 1` if it cannot resolve the python binary, strictly blocking the commit.
-- **CLI Namespace & Scope:** The hook deployment belongs in `cli/hooks.py` while the actual check
-  command belongs in `cli/drift.py` (`check-rot --staged`). Because SF-02 implements the `AST`
-  checking atom, the `check-rot` command in SF-01 simply validates CLI arguments and gracefully
-  finishes, acting as a stable interface for SF-02 to wire the `PipelineRunner`.
+## Decisions
 
-## 3. Proposed Changes
+- **Interpreter:** the hook uses `sys.executable`, captured at `sw hooks install` time, e.g.
+  `/absolute/path/to/venv/bin/python -m specweaver.interfaces.cli.main drift check-rot --staged`.
+  The hook fires regardless of virtualenv activation.
+- **Fail closed:** the bash hook MUST `exit 1` if it cannot resolve the python binary.
+- **Namespace:** hook deployment in `cli/hooks.py`; the check in `cli/drift.py`
+  (`check-rot --staged`). In SF-01 `check-rot` only validates arguments and exits — a stable
+  interface for SF-02 to wire the `PipelineRunner` into.
 
-### [NEW] `src/specweaver/cli/hooks.py`
-- Defines the `sw hooks` typer application namespace.
-- Implements `install()` command (`sw hooks install --pre-commit`).
-- Uses `sys.executable` to map the explicit interpreter path.
-- Generates the `.git/hooks/pre-commit` bash script and applies executable (`chmod +x`) permissions.
-> [!IMPORTANT]
-> The generated bash script must hard-fail (`exit 1`) if the mapped python interpreter cannot be found or fails execution.
-> The generated bash script must execute: `"$PYTHON_EXEC" -m specweaver.interfaces.cli.main drift check-rot --staged`.
+## Changes
 
-### [MODIFY] `src/specweaver/cli/main.py`
-- Imports `hooks` to auto-register the new `sw hooks` command group alongside existing modules.
+1. **[NEW] `src/specweaver/cli/hooks.py`** — the `sw hooks` typer app; `install()`
+   (`sw hooks install --pre-commit`) maps the interpreter via `sys.executable`, writes the
+   `.git/hooks/pre-commit` bash script, and sets it executable (`chmod +x`).
 
-### [MODIFY] `src/specweaver/cli/drift.py`
-- Adds the `check_rot(staged: bool = typer.Option(False, "--staged"))` sub-command command onto the existing `drift` Typer app.
-- For SF-01, this will act as a standalone entry point that succeeds `exit 0`. It provides the stable command boundaries that SF-02 will hook the `PipelineRunner` into.
+   > [!IMPORTANT]
+   > The generated bash script must hard-fail (`exit 1`) if the mapped python interpreter cannot be found or fails execution.
+   > The generated bash script must execute: `"$PYTHON_EXEC" -m specweaver.interfaces.cli.main drift check-rot --staged`.
 
-### [NEW] `tests/cli/test_hooks.py`
-- Mocks `.git/hooks/` to test that `sw hooks install` writes exactly into the target path.
-- Asserts that the output script contains the `sys.executable` path execution instruction.
+2. **[MODIFY] `src/specweaver/cli/main.py`** — imports `hooks` to register the `sw hooks` group.
+3. **[MODIFY] `src/specweaver/cli/drift.py`** — adds
+   `check_rot(staged: bool = typer.Option(False, "--staged"))` to the `drift` Typer app. In SF-01 it
+   exits `exit 0`.
 
-### [NEW] `tests/cli/test_rot_cmd.py`
-- Tests the bare CLI execution logic of `sw drift check-rot --staged`.
+## Tests
 
-## 4. Verification Plan
-- **Automated Tests:** Execute `pytest` targeting the two new CLI test files. We will assert no regression in `drift.py`.
-- **Manual Verification:** Execute `poetry run sw hooks install` (or `uv run`), physically inspect the generated file in `.git/hooks/pre-commit`, validating python path string mapping.
+| File | Case |
+|---|---|
+| `tests/cli/test_hooks.py` (new) | mocks `.git/hooks/`; `sw hooks install` writes exactly to the target path; the script contains the `sys.executable` path |
+| `tests/cli/test_rot_cmd.py` (new) | bare CLI execution of `sw drift check-rot --staged` |
+
+Run `pytest` on both; no regression in `drift.py`. Manual: `poetry run sw hooks install` (or
+`uv run`), inspect `.git/hooks/pre-commit` for the python path.
+
+## As built
+
+**Since moved** (noted 2026-09-25): `cli/hooks.py` → `workspace/project/interfaces/cli_hooks.py`;
+`cli/drift.py` → `assurance/validation/interfaces/cli_drift.py`; the tests →
+`tests/unit/workspace/project/interfaces/test_cli_hooks.py` and
+`tests/unit/interfaces/cli/test_rot_cmd.py`; the hook e2e is `tests/e2e/capabilities/core/test_hooks_e2e.py`.

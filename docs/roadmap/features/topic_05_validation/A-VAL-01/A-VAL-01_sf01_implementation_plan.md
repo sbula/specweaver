@@ -1,79 +1,64 @@
-# Implementation Plan: Protocol & Schema Analyzers [SF-01: ProtocolSchemaInterface & YAML Parsers]
-- **Feature ID**: 3.31
-- **Sub-Feature**: SF-01 — ProtocolSchemaInterface & YAML Parsers
-- **Design Document**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf01_implementation_plan.md
-- **Status**: APPROVED
+# A-VAL-01 SF-01 — ProtocolSchemaInterface & YAML Parsers
 
-**FRs owned: FR-1, FR-3.**
+**Status**: APPROVED · **FRs owned**: FR-1, FR-3 · **Depends on**: none · **Legacy Feature ID**: 3.31 ·
+Design: [A-VAL-01_design.md](A-VAL-01_design.md) §Sub-features → SF-01
 
-> **Attribution added 2026-08-16 by `TECH-051` CB-2.** The plan predates the FR ledger
-> and named no requirement, so `check_fr_coverage.py A-VAL-01` reported all five as
-> *carried by no implementation plan* on a delivered DAL-A capability. Mapped from this
-> sub-feature's own scope — YAML parsing (OpenAPI + AsyncAPI) and the `ProtocolSchemaInterface` both fall out of this sub-feature's own title — not assigned to make a number fall. The work is
-> unchanged; only the record of which requirement it discharged is new.
+FR attribution added 2026-08-16 by `TECH-051` CB-2: the plan predates the FR ledger, so
+`check_fr_coverage.py A-VAL-01` reported all five as *carried by no implementation plan* on a delivered
+DAL-A capability. Mapped from this sub-feature's own scope — YAML parsing (OpenAPI + AsyncAPI) and the
+`ProtocolSchemaInterface` — not assigned to make a number fall. The work is unchanged.
 
+## Goal
 
-## Goal Description
-Implement the core boundaries and YAML-based extractions for `ProtocolSchemaInterface`. This
-securely introduces OpenAPI and AsyncAPI schema parsing via `ruamel.yaml` into the system
-architecture without breaking programming Code Structure workflows.
+Core boundaries and YAML extraction for `ProtocolSchemaInterface`: OpenAPI and AsyncAPI parsing via
+`ruamel.yaml`, without breaking the programming-language Code Structure workflows.
 
-## Proposed Changes
+## Changes
 
-### `core/loom/commons/protocol`
-This module defines the boundaries, data models, and the YAML-based parsers.
+Module `core/loom/commons/protocol` — boundaries, data models, YAML parsers.
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/context.yaml`
-- **What it does**: Establishes the `adapter` archetype for the new protocol package allowing
-  external format ingestion, declares strict `consumes`/`forbids` boundaries preventing downward
-  leaks into the flow Engine or Atom structures.
-- **Constraints**: 
-  - `archetype: adapter`
-  - `consumes: [specweaver/commons]`
-  - `forbids: [specweaver/loom/tools/*, specweaver/loom/atoms/*]`
+1. **[NEW] `src/specweaver/core/loom/commons/protocol/context.yaml`**
+   — `adapter` archetype for external format ingestion; strict
+   `consumes`/`forbids` so nothing leaks down into the flow engine or Atom structures.
+   - `archetype: adapter`
+   - `consumes: [specweaver/commons]`
+   - `forbids: [specweaver/loom/tools/*, specweaver/loom/atoms/*]`
+2. **[NEW] `src/specweaver/core/loom/commons/protocol/models.py`**
+   — Pydantic models for API endpoints and schemas:
+   - `ProtocolEndpoint`: HTTP methods, paths, or gRPC RPCs.
+   - `ProtocolMessage`: payload structures/schemas.
+   - `ProtocolSchemaSet`: a collection of the parsed outputs.
+3. **[NEW] `src/specweaver/core/loom/commons/protocol/interfaces.py`**
+   — `ProtocolSchemaError` and the ABC `ProtocolSchemaInterface`:
+   - `extract_endpoints(raw_schema: str) -> list[ProtocolEndpoint]`
+   - `extract_messages(raw_schema: str) -> list[ProtocolMessage]`
+4. **[NEW] `src/specweaver/core/loom/commons/protocol/openapi_parser.py`**
+   — `ProtocolSchemaInterface` for OpenAPI `3.x`, `ruamel.yaml` safe load.
+5. **[NEW] `src/specweaver/core/loom/commons/protocol/asyncapi_parser.py`**
+   — `ProtocolSchemaInterface` for AsyncAPI `3.x`, `ruamel.yaml` safe
+   load. Reads `channels` and `messages`.
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/models.py`
-- **What it does**: Defines the Pydantic models for explicit AST representation of API endpoints and schemas.
-- **Models**:
-  - `ProtocolEndpoint`: represents HTTP methods, paths, or gRPC RPCs.
-  - `ProtocolMessage`: represents payload structures/schemas.
-  - `ProtocolSchemaSet`: a collection encompassing the parsed outputs.
-> [!NOTE]
-> Based on HITL approval, we are explicitly enforcing strict Pydantic structures right out of the
-> parser (rather than raw dictionaries) to prevent type hallucination later inside the Engine's AST
-> difference checkers.
+`ruamel.yaml` `YAML(typ='safe')` gives fast IO. Separate `OpenAPIParser` and `AsyncAPIParser` avoid
+branching on format inside one parser.
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/interfaces.py`
-- **What it does**: Defines the `ProtocolSchemaError` and the ABC `ProtocolSchemaInterface`.
-- **Methods**:
-  - `extract_endpoints(raw_schema: str) -> list[ProtocolEndpoint]`
-  - `extract_messages(raw_schema: str) -> list[ProtocolMessage]`
+## Decisions (HITL)
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/openapi_parser.py`
-- **What it does**: Adheres to `ProtocolSchemaInterface` specifically for OpenAPI `3.x`. Uses `ruamel.yaml` safely.
-> [!CAUTION]
-> Based on HITL approval, embedded generic validation via `jsonschema` is avoided to honor NFR-1
-> speed budgets. Instead, if `openapi.yaml` structural keys like `paths` are completely malformed,
-> failure relies natively on `ProtocolSchemaError` raised via key misses.
+| Decision | Why |
+|---|---|
+| Parsers return strict Pydantic structures, not raw dictionaries | Prevents type hallucination later inside the engine's AST difference checkers |
+| No embedded generic validation via `jsonschema` | NFR-1 speed budget. If `openapi.yaml` structural keys like `paths` are malformed, failure is a `ProtocolSchemaError` raised on the key miss |
 
-#### [NEW] `src/specweaver/core/loom/commons/protocol/asyncapi_parser.py`
-- **What it does**: Adheres to `ProtocolSchemaInterface` specifically for AsyncAPI `3.x`. Uses `ruamel.yaml` safely. Focuses structurally on `channels` and `messages`.
+## Tests
 
-## Verification Plan
+| Test | Checks |
+|---|---|
+| `test_openapi_parser.py` | valid and malformed YAML; < 5ms token generation per payload |
+| `test_asyncapi_parser.py` | the returned Pydantic properties are correct |
+| Tach | the `context.yaml` `forbids` bounds hold |
 
-### Automated Tests
-- Unit Test `test_openapi_parser.py` providing valid and malformed YAML files, asserting < 5ms token generation per payload.
-- Unit Test `test_asyncapi_parser.py` validating that correct explicit Pydantic properties are structurally returned.
-- Tach validation to verify the `context.yaml` `forbids` bounds are respected.
+Manual verification: N/A.
 
-### Manual Verification
-N/A (covered by extensive automated testing)
+## As built
 
-## Research Notes
-- `ruamel.yaml` supports `YAML(typ='safe')` natively enforcing fast IO.
-- Separation of `OpenAPIParser` and `AsyncAPIParser` removes unnecessary cyclical branching logic resulting in perfectly decoupled components.
-
-## Session Handoff
-- Run `/dev docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf01_implementation_plan.md` to begin TDD code implementation.
+**Since moved** (2026-05-03, `7b35a900`, TECH-01): `core/loom/commons/protocol/` →
+`src/specweaver/sandbox/protocol/core/`; `interfaces.py` → `protocol_interfaces.py`.

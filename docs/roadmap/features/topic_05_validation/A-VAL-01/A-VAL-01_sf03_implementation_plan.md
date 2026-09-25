@@ -1,71 +1,61 @@
-# Implementation Plan: Protocol & Schema Analyzers [SF-03: Core Flow Engine Alignment (Atom/Tool)]
-- **Feature ID**: 3.31
-- **Sub-Feature**: SF-03 — Core Flow Engine Alignment (Atom/Tool)
-- **Design Document**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf03_implementation_plan.md
-- **Status**: APPROVED
+# A-VAL-01 SF-03 — Core Flow Engine Alignment (Atom/Tool)
 
-**FRs owned: FR-4.**
+**Status**: APPROVED · **FRs owned**: FR-4 · **Depends on**: SF-01, SF-02 · **Legacy Feature ID**:
+3.31 · Design: [A-VAL-01_design.md](A-VAL-01_design.md) §Sub-features → SF-03
 
-> **Attribution added 2026-08-16 by `TECH-051` CB-2.** The plan predates the FR ledger
-> and named no requirement, so `check_fr_coverage.py A-VAL-01` reported all five as
-> *carried by no implementation plan* on a delivered DAL-A capability. Mapped from this
-> sub-feature's own scope — the Atom and Tool connectors into the flow engine — not assigned to make a number fall. The work is
-> unchanged; only the record of which requirement it discharged is new.
+FR attribution added 2026-08-16 by `TECH-051` CB-2: the plan predates the FR ledger, so
+`check_fr_coverage.py A-VAL-01` reported all five as *carried by no implementation plan* on a delivered
+DAL-A capability. Mapped from this sub-feature's own scope — the Atom and Tool connectors into the flow
+engine — not assigned to make a number fall. The work is unchanged.
 
+## Goal
 
-## Goal Description
-Implement the `ProtocolAtom` and `ProtocolTool` components inside the Flow Orchestrator layers. This
-feature safely exposes the `ProtocolSchemaInterface` mapping capabilities established in SF-01/SF-02
-upward to automated pipelines and agent-LLM contexts.
+`ProtocolAtom` and `ProtocolTool` expose the SF-01/SF-02 `ProtocolSchemaInterface` parsers to
+automated pipelines and to agents.
 
-## Proposed Changes
+## Changes
 
-### `core/loom/atoms/protocol/`
-This boundary controls raw programmatic execution bounds, interacting purely with execution dictionaries without LLM strings.
+**Atom** — `core/loom/atoms/protocol/`: programmatic execution on dictionaries, no LLM strings.
 
-#### [NEW] `src/specweaver/core/loom/atoms/protocol/context.yaml`
-- **What it does**: Declares `archetype: atom`. Consumes `commons/protocol` allowing mapping. Forbids `tools/*` avoiding down-leaks.
+1. **[NEW] `src/specweaver/core/loom/atoms/protocol/context.yaml`** — `archetype: atom`. Consumes
+   `commons/protocol`. Forbids `tools/*`.
+2. **[NEW] `src/specweaver/core/loom/atoms/protocol/atom.py`** — `ProtocolAtom(Atom)`, intents:
+   - `extract_schema_endpoints`: opens the file, picks the parser from `ProtocolParserFactory`,
+     parses, returns `.model_dump()` dictionaries of `ProtocolEndpoint`.
+   - `extract_schema_messages`: returns `.model_dump()` dictionaries of `ProtocolMessage`.
 
-#### [NEW] `src/specweaver/core/loom/atoms/protocol/atom.py`
-- **What it does**: Implements `ProtocolAtom(Atom)`.
-- **Intents Handled**:
-  - `extract_schema_endpoints`: Opens the file, dynamically loads the correct Schema Parser from the
-    `ProtocolParserFactory`, parses it, and safely returns `.model_dump()` dictionaries of
-    `ProtocolEndpoint`.
-  - `extract_schema_messages`: Returns `.model_dump()` dictionaries of `ProtocolMessage`.
-> [!NOTE] 
-> Based on HITL approval, Atom results rigidly supply structural JSON/Dictionary shapes to support mathematical array intersections inside downstream Validators.
+**Factory** — `core/loom/commons/protocol/`:
 
-### `core/loom/commons/protocol/`
-#### [NEW] `src/specweaver/core/loom/commons/protocol/factory.py`
-- **What it does**: Isolates the AST protocol identification logic entirely inside the adapter layer.
-> [!TIP]
-> Based on HITL approval, rather than polluting the Atom with file-reading logic, this factory
-> parses `Code` content (`ruamel.yaml` loads) looking for root keys like `openapi: "3.0"` or
-> `asyncapi: "3.0"`, mapping them seamlessly to the underlying split parsers.
+3. **[NEW] `src/specweaver/core/loom/commons/protocol/factory.py`** — protocol identification stays in
+   the adapter layer. Parses `Code` content (`ruamel.yaml` loads), looks for root keys like
+   `openapi: "3.0"` or `asyncapi: "3.0"`, and maps them to the split parsers.
 
-### `core/loom/tools/protocol/`
-This boundary wraps the Atom securely exposing it to LLMs inside `core/agents/`.
+**Tool** — `core/loom/tools/protocol/`: exposes the Atom to LLMs inside `core/agents/`.
 
-#### [NEW] `src/specweaver/core/loom/tools/protocol/context.yaml`
-- **What it does**: Declares `archetype: tool`. Consumes `atoms/protocol`.
+4. **[NEW] `src/specweaver/core/loom/tools/protocol/context.yaml`** — `archetype: tool`. Consumes
+   `atoms/protocol`.
+5. **[NEW] `src/specweaver/core/loom/tools/protocol/tool.py`** — `ProtocolTool(StructuredLLMTool)`
+   wraps `ProtocolAtom` with strict object schemas; an agent issues intents with a file path.
 
-#### [NEW] `src/specweaver/core/loom/tools/protocol/tool.py`
-- **What it does**: Generates `ProtocolTool(StructuredLLMTool)` securely wrapping the `ProtocolAtom`
-  using Strict Object schemas. Allows an Agent to issue intent actions mapping inputs dynamically
-  via string reasoning to physical File execution bounds.
+## Decisions (HITL)
 
-## Verification Plan
+| Decision | Why |
+|---|---|
+| Atom results are structural JSON/dictionary shapes | Downstream validators intersect them as arrays |
+| File-format detection lives in the factory, not the Atom | Keeps file-reading logic out of the Atom |
 
-### Automated Tests
-- Unit Test `test_protocol_atom.py`: Proves `ProtocolAtom` calls correctly map multiple file extensions (`.proto`/`.yaml`) seamlessly via `ProtocolParserFactory` abstraction.
-- Unit Test `test_protocol_factory.py`: Provides minimal mock contents mapping correctly to OpenAPI vs AsyncAPI.
-- Tach checks ensuring `context.yaml` boundaries across all 3 modules correctly obey acyclic rules.
+## Tests
 
-### Manual Verification
-N/A
+| Test | Checks |
+|---|---|
+| `test_protocol_atom.py` | `ProtocolAtom` maps `.proto`/`.yaml` via `ProtocolParserFactory` |
+| `test_protocol_factory.py` | minimal mock contents map to OpenAPI vs AsyncAPI |
+| Tach | the `context.yaml` boundaries of all 3 modules stay acyclic |
 
-## Session Handoff
-- Wait until full `/feature` plans are constructed, then run `/dev docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf03_implementation_plan.md`.
+Manual verification: N/A.
+
+## As built
+
+**Since moved** (2026-05-03, `7b35a900`, TECH-01): atom and factory →
+`src/specweaver/sandbox/protocol/core/{atom,factory}.py`; tool →
+`src/specweaver/sandbox/protocol/interfaces/tool.py`, served from `sandbox/registry.py`.

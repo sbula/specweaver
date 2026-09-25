@@ -1,38 +1,74 @@
-# Design: Protocol & Schema Analyzers
+# A-VAL-01 — Protocol & Schema Analyzers
 
-- **Feature ID**: 3.31
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_design.md
+**Status**: APPROVED · **Legacy Feature ID**: 3.31 · **Phase**: 3 · **Feature ID**: A-VAL-01
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | the CodeStructure framework; the `assurance/validation` engine |
+| Used by | rule C13 (contract drift); `validation_hydrator` fills `protocol_schema` through `ProtocolAtom` |
+| Not touched | `protoc` / C++ build extensions; programming-language AST extractors |
 
-Feature 3.31 adds Protocol & Schema Analyzers to the CodeStructure framework via a new
-Architecture-aligned `commons/protocol` module. It solves the problem of contract drift across
-microservices by parsing OpenAPI, AsyncAPI, and gRPC `.proto` files structurally without building
-heavy toolchains (using native Python `ruamel.yaml` and `tree-sitter-proto` respectively). It
-interacts with the existing validation engine and pipeline components to mathematically assert that
-backend API implementations match the externally facing contracts, without invoking `protoc` or C++
-build extensions.
-Key constraints: pure python/tree-sitter approach to avoid compilation errors; lightweight integration into existing `assurance/validation` engine.
+## What it does
 
-## Research Findings
+Parses OpenAPI, AsyncAPI and gRPC `.proto` contracts structurally and checks that backend API code
+matches them. Target: contract drift across microservices.
 
-### Codebase Patterns
-Existing AST extraction uses `tree-sitter` in `core/loom/commons/language/` to enforce CodeStructure
-Interface for programming languages. To avoid forcing YAML or `.proto` into code interfaces, we will
-introduce `commons/protocol` designed specifically for APIs. We will reuse `ruamel.yaml` already
-defined in `pyproject.toml`.
+Parsing uses pure Python: `ruamel.yaml` for YAML, `proto-schema-parser` for `.proto`. No `protoc`, no
+C++ build extensions, no compile step. Integration into the existing `assurance/validation` engine stays
+lightweight.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| ruamel.yaml | >=0.18 | Schema deserialization | PyPI (already in project) |
-| tree-sitter-proto | >=latest | AST parsing | PyPI |
-| proto-schema-parser | >=latest | AST parsing | PyPI (Alternative) |
+## Why this way
 
-### Blueprint References
-None specific from ORIGINS.md beyond general drift-prevention alignment.
+- **Own module, not the code extractors.** AST extraction for programming languages uses `tree-sitter`
+  in `core/loom/commons/language/` behind the CodeStructure interface. YAML and `.proto` do not fit a
+  code interface, so they get `commons/protocol`, designed for APIs.
+- **Not official `protobuf`.** It cannot parse `.proto` at runtime without the external `protoc`
+  generation binary.
+- **Not `tree-sitter-proto`.** It needs a native `.so` build, which crashes CI/CD sandboxes that lock
+  GCC builds. `proto-schema-parser` is the pure-Python fallback, and the one used.
+- **Reuse `ruamel.yaml`** — already in `pyproject.toml`.
+
+## Architecture
+
+```mermaid
+graph LR
+    F["Contract file<br/>OpenAPI / AsyncAPI / .proto"] --> FA["ProtocolParserFactory"]
+    FA --> OP["OpenAPIParser"]
+    FA --> AP["AsyncAPIParser"]
+    FA --> GP["GRPCParser"]
+    OP & AP & GP --> M["ProtocolEndpoint / ProtocolMessage"]
+    M --> A["ProtocolAtom"]
+    A --> T["ProtocolTool<br/>(agents)"]
+    A --> H["validation_hydrator<br/>context: protocol_schema"]
+    H --> C13["C13ContractDriftRule"]
+```
+
+| Part | Lives in (now) |
+|---|---|
+| Models, `ProtocolSchemaInterface`, the three parsers, the factory | `src/specweaver/sandbox/protocol/core/` (archetype `adapter`) |
+| `ProtocolAtom` | `src/specweaver/sandbox/protocol/core/atom.py` |
+| `ProtocolTool` | `src/specweaver/sandbox/protocol/interfaces/tool.py` |
+| C13 rule | `src/specweaver/assurance/validation/rules/code/c13_contract_drift.py` |
+
+**Since moved** (2026-05-03, `7b35a900`, TECH-01 sandbox consolidation): the plans name
+`core/loom/commons|atoms|tools/protocol`; all now live under `sandbox/protocol/`.
+
+## Dependencies
+
+| Tool | Version | Key API Surface | Notes |
+|------|---------|----------------|-------|
+| ruamel.yaml | >=0.18 | Schema deserialization | Already in project |
+| proto-schema-parser | >=0.5.0 (research: >=latest) | `Parser().parse(txt)` | Pure Python parser; compat confirmed. In `pyproject.toml`. |
+| tree-sitter-proto | >=2.0 (research: >=latest) | tree-sitter grammar | Compat confirmed; not used (see Why) |
+
+Blueprint references: none specific from ORIGINS.md beyond general drift-prevention alignment.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Create `core/loom/commons/protocol` | Splits interface schemas (OpenAPI/proto) out of programming code (Python/Rust) AST Extractors. | Yes — approved by steve on 2026-04-18 |
+| AD-2 | Avoid official `protobuf` | Official library does not parse `.proto` at runtime without external `protoc` generation binary overhead. | No |
 
 ## Functional Requirements
 
@@ -52,69 +88,20 @@ None specific from ORIGINS.md beyond general drift-prevention alignment.
 | NFR-2 | Build Toolchains | Must operate fully natively without requiring `protoc` or C++ binary extensions. |
 | NFR-3 | Compatibility | Output models must natively match/compare against `core/loom/commons/language` AST nodes. |
 
-## External Dependencies
-
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| tree-sitter-proto | >=2.0 | tree-sitter grammar | Y | Pure tree-sitter extension |
-| proto-schema-parser | >=0.5.0 | Parser().parse(txt) | Y | Fallback pure python parser |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Create `core/loom/commons/protocol` | Splits interface schemas (OpenAPI/proto) out of programming code (Python/Rust) AST Extractors. | Yes — approved by steve on 2026-04-18 |
-| AD-2 | Avoid official `protobuf` | Official library does not parse `.proto` at runtime without external `protoc` generation binary overhead. | No |
-
-## Developer Guides Required
-
-Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
+## Developer guides
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
 | Protocol Analyzers | Integrating new schemas/protocols into `commons/protocol` | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: ProtocolSchemaInterface & YAML Parsers
-- **Scope**: Creates the `commons/protocol` core boundaries and implements YAML-based extractors.
-- **FRs**: [FR-1, FR-3]
-- **Inputs**: OpenAPI / AsyncAPI raw file content 
-- **Outputs**: Normalized Protocol Schema DTOs (Endpoints, Messages)
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf01_implementation_plan.md
-
-### SF-02: gRPC Protobuf Parser
-- **Scope**: Adds `.proto` parsing capabilities extending the `ProtocolSchemaInterface`.
-- **FRs**: [FR-2]
-- **Inputs**: raw `.proto` definitions
-- **Outputs**: Normalized Protocol Schema DTOs mapped from RPC services
-- **Depends on**: [SF-01]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf02_implementation_plan.md
-
-### SF-03: Core Flow Engine Alignment (Atom/Tool)
-- **Scope**: Exposes the schema extractors securely to the Validation and Review layer via Engine Atoms.
-- **FRs**: [FR-4]
-- **Inputs**: File intents from LLM adapters
-- **Outputs**: Extracted Schema Nodes returned to orchestrator context
-- **Depends on**: [SF-01, SF-02]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf03_implementation_plan.md
-
-### SF-04: Contract Drift Validation Rules
-- **Scope**: Connects `ValidationEngine` Rules (e.g. `C13_Contract_Drift.py`) to mathematically assert backend code matches Protocol payloads.
-- **FRs**: [FR-5]
-- **Inputs**: AST Code nodes and Protocol Schema nodes
-- **Outputs**: Validation Findings (PASS or ERROR)
-- **Depends on**: [SF-03]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md
-
-## Execution Order
-
-Topological sort.
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends only on SF-01)
-3. SF-03 (depends on SF-01 and SF-02)
-4. SF-04 (depends on SF-03)
+| SF | Does | FRs | In → Out | Depends on | Plan |
+|----|------|-----|----------|-----------|------|
+| SF-01 | `commons/protocol` core boundaries + YAML extractors | FR-1, FR-3 | OpenAPI / AsyncAPI raw file content → normalized Protocol Schema DTOs (Endpoints, Messages) | — | [sf01](A-VAL-01_sf01_implementation_plan.md) |
+| SF-02 | `.proto` parsing behind `ProtocolSchemaInterface` | FR-2 | raw `.proto` definitions → DTOs mapped from RPC services | SF-01 | [sf02](A-VAL-01_sf02_implementation_plan.md) |
+| SF-03 | Exposes the extractors to the Validation and Review layer via engine Atoms | FR-4 | file intents from LLM adapters → extracted schema nodes returned to orchestrator context | SF-01, SF-02 | [sf03](A-VAL-01_sf03_implementation_plan.md) |
+| SF-04 | `ValidationEngine` rule (e.g. `C13_Contract_Drift.py`) asserts backend code matches Protocol payloads | FR-5 | AST code nodes + Protocol Schema nodes → findings (PASS or ERROR) | SF-03 | [sf04](A-VAL-01_sf04_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -125,8 +112,4 @@ Topological sort.
 | SF-03 | Core Flow Engine Alignment (Atom/Tool) | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Contract Drift Validation Rules | SF-03 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
-## Session Handoff
-
-**Current status**: SF-04 Completed ✅. Feature 3.31 has been perfectly integrated and validated mathematically by the AST Engine!
-**Next step**: Run `git commit` and trigger Phase 4 roadmap.
-in any row and resume from there using the appropriate workflow.
+SF-04's Committed cell lags: C13 landed in `b3037104` (2026-04-18). The topic file marks A-VAL-01 ✅.

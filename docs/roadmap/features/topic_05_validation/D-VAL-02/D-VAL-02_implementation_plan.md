@@ -1,40 +1,28 @@
-# Feature 3.4: Custom Rule Paths — Implementation Plan
+# D-VAL-02 — Custom Rule Paths: Implementation Plan (Legacy 3.4)
 
-**FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5.** Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
-`INT-US-25-SF01-MIG`. The plan predates the FR ledger and the capability had no design document, so
-there was no ownership to state. One capability, one owner — a retrospective sub-feature split would be
-fiction.
+**Status**: ✅ Delivered. Proposed 2026-03-19. · **FRs owned**: FR-1, FR-2, FR-3, FR-4, FR-5 ·
+**Depends on**: none · Design: [D-VAL-02_design.md](D-VAL-02_design.md) · Source doc:
+[phase_3_feature_expansion.md](../phase_3_feature_expansion.md)
 
-Proof and mutants are tabulated in `D-VAL-02_design.md`. FR-1's mutant fails **71 files**, the widest in
-the whole migration; FR-2's fails 3. The topic entry lists ten components as equals, and they are not.
+FR ownership recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`: the plan
+predates the FR ledger. One capability, one owner — a retrospective sub-feature split would be fiction.
+Proof and mutants (FR-1 fails **71 files**, FR-2 fails 3) are tabulated in the design.
 
+## Goal
 
-> **Date**: 2026-03-19
-> **Status**: Proposal — awaiting approval
-> **Scope**: Refactor rules into registry-based composable architecture (Phase A), then add custom rules + validation pipeline YAMLs (Phase B)
-> **Source doc**: [phase_3_feature_expansion.md](../phase_3_feature_expansion.md)
+Replace the hardcoded rule list with a registry (Phase A, 3.4a), then add custom rules and validation
+pipeline YAMLs (Phase B, 3.4b).
 
----
+Before: all 19 validation rules (S01-S11, C01-C08) were **hardcoded** via direct imports in
+`validation/runner.py` (L94-L118). Users could not add domain-specific rules without modifying
+SpecWeaver source, choose rules per project, configure thresholds at the pipeline level, or share rule
+sets across teams. Domain profiles (Feature 3.3) calibrated thresholds per project but stored them in a
+separate DB layer. Target: a **single source of truth** — validation pipeline YAMLs that define both
+which rules run and their configuration.
 
-## 1. Problem Statement
+## Where it plugs in
 
-Today, all 19 validation rules (S01-S11, C01-C08) are **hardcoded** via direct imports in
-[runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/runner.py#L94-L118).
-Users cannot:
-- Add domain-specific custom rules without modifying SpecWeaver source
-- Choose which rules to run per project
-- Configure rule thresholds at the pipeline level
-- Share validation rule sets across teams
-
-Domain profiles (Feature 3.3) introduced per-project threshold calibration, but thresholds are
-stored in a separate DB layer. The long-term model is a **single source of truth**: validation
-pipeline YAMLs that define both which rules run and their configuration.
-
----
-
-## 2. Analysis
-
-### Current rule loading
+Rule loading before the change:
 
 ```
 get_spec_rules() → hardcoded imports → [S01, S02, ..., S11]
@@ -45,9 +33,7 @@ ValidateSpecHandler / ValidateCodeHandler calls these functions
 run_rules(rules, text, path) → [RuleResult, ...]
 ```
 
-### Two pipeline levels
-
-The existing pipeline system operates at two levels:
+Two pipeline levels:
 
 ```
 Orchestration pipeline (PipelineDefinition / PipelineStep)
@@ -59,32 +45,24 @@ Validation sub-pipeline (NEW — ValidationPipeline / ValidationStep)
   S01 → S02 → S06 → S05 → S08 → D01 → ...
 ```
 
-- **Orchestration level**: `PipelineStep` requires `action: StepAction` + `target: StepTarget`, dispatched via `StepHandlerRegistry`. This level stays unchanged.
-- **Validation level**: A sub-pipeline **internal to the handler**. Each step is a rule-atom: its
-  action is always "check", its target is the spec/code being validated. This level gets a new,
-  simpler model.
+- **Orchestration level**: `PipelineStep` requires `action: StepAction` + `target: StepTarget`,
+  dispatched via `StepHandlerRegistry`. Unchanged.
+- **Validation level**: a sub-pipeline **internal to the handler**. Each step is a rule-atom: action
+  always "check", target the spec/code being validated (file/folder). Gets a new, simpler model.
 
-### Rule as atom
-
-Rules ARE validation atoms — their action is always "check" on a target (file/folder). The `Rule`
-ABC is already the right interface. A `RuleAtom` adapter bridges `Rule.check()` to `Atom.run()` so
-rule-atoms are composable like any other atom.
+**Rule as atom.** The `Rule` ABC is already the right interface. A `RuleAtom` adapter bridges
+`Rule.check()` to `Atom.run()` so rule-atoms compose like any other atom.
 
 | | Rule ABC | Atom ABC |
 |-|----------|----------|
-| **File** | [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/models.py#L58-L128) | [base.py](file:///c:/development/pitbula/specweaver/src/specweaver/loom/atoms/base.py#L41-L65) |
+| **File** | `validation/models.py` (L58-L128) | `loom/atoms/base.py` (L41-L65) |
 | **Method** | `check(text, path) → RuleResult` | `run(context) → AtomResult` |
 | **Config** | Constructor kwargs (thresholds) | `context` dict |
 
-### Existing `step.params` infrastructure
+**`step.params`.** `PipelineStep.params` (`flow/models.py` L138) already carries `dict[str, Any]` and
+handlers read it. Each validation rule step carries its own `params` the same way.
 
-[PipelineStep.params](file:///c:/development/pitbula/specweaver/src/specweaver/flow/models.py#L138)
-already carries `dict[str, Any]`. Handlers read it today. The validation sub-pipeline uses the same
-pattern — each rule step carries its own `params`.
-
----
-
-## 3. Key Decisions
+## Decisions
 
 | # | Decision | Rationale |
 |---|----------|-----------|
@@ -96,20 +74,14 @@ pattern — each rule step carries its own `params`.
 | 6 | **`D\d{2,3}` prefix** for custom rule IDs | Prevents collision with built-in `S*`/`C*` rules. |
 | 7 | **`try/except` per rule load** | Broken custom rule ≠ broken validation run. Log, skip, continue. |
 | 8 | **Common + local pipelines** | SpecWeaver ships defaults; projects override in `.specweaver/pipelines/`. |
-| 9 | **Pass `step.params` to atoms** | Generic improvement: all atoms get step-level config, not just rules. |
+| 9 | **Pass `step.params` to atoms** | All atoms get step-level config, not just rules. |
 | 10 | **Sub-pipeline, not orchestration steps** | Validation pipeline is internal to `ValidateSpecHandler`. Own model (`ValidationStep` / `ValidationPipeline`), not `PipelineStep`. Keeps orchestration layer unchanged. |
 
----
+## Changes — Phase A (3.4a): registry
 
-## 4. Proposed Changes — Phase A (3.4a)
+Same public API; all tests keep working. Paths are as planned — current homes under As built.
 
-> **Goal**: Registry-based rule loading. Same public API, all tests keep working.
-
----
-
-### 4.1 Rule Registry
-
-#### [NEW] `src/specweaver/validation/registry.py`
+1. **Rule registry** · [NEW] `src/specweaver/validation/registry.py`
 
 ```python
 """Rule registry — maps rule IDs to Rule classes.
@@ -147,13 +119,8 @@ def get_registry() -> RuleRegistry:
     return _registry
 ```
 
----
-
-### 4.2 Runner Refactoring
-
-#### [MODIFY] `src/specweaver/validation/runner.py`
-
-Replace hardcoded imports with registry queries:
+2. **Runner** · [MODIFY] `src/specweaver/validation/runner.py` — registry queries replace hardcoded
+   imports. Same change for `get_code_rules()`.
 
 ```diff
  def get_spec_rules(*, include_llm=False, settings=None,
@@ -170,15 +137,9 @@ Replace hardcoded imports with registry queries:
      # kind presets, etc. all work the same way.
 ```
 
-Same change for `get_code_rules()`.
-
----
-
-### 4.3 Built-In Rule Registration
-
-#### [MODIFY] `src/specweaver/validation/rules/spec/__init__.py` and `code/__init__.py`
-
-Register built-in rules at import time:
+3. **Built-in registration** · [MODIFY] `src/specweaver/validation/rules/spec/__init__.py` and
+   `rules/code/__init__.py` — rules register at import time. `get_spec_rules()` imports this `__init__.py`
+   so rules are registered before the query.
 
 ```python
 # validation/rules/spec/__init__.py
@@ -194,21 +155,10 @@ _reg.register("S02", SingleSetupRule, "spec")
 # ... all 11
 ```
 
-Runner's `get_spec_rules()` triggers the import of this `__init__.py` to ensure rules are registered before querying.
+## Changes — Phase B (3.4b): custom rules + pipelines
 
----
-
-## 5. Proposed Changes — Phase B (3.4b)
-
-> **Goal**: Custom rules, validation sub-pipeline YAMLs, inheritance, per-project selection.
-
----
-
-### 5.1 Validation Sub-Pipeline Model
-
-#### [NEW] `src/specweaver/validation/pipeline.py`
-
-A simpler model than `PipelineStep` — specific to validation rule composition:
+4. **Sub-pipeline model** · [NEW] `src/specweaver/validation/pipeline.py` — simpler than
+   `PipelineStep`, specific to rule composition.
 
 ```python
 """Validation pipeline models — defines which rules run and their config.
@@ -239,11 +189,7 @@ class ValidationPipeline(BaseModel):
     add: list[dict] | None = None            # new steps with optional after/before
 ```
 
----
-
-### 5.2 Custom Rule Loader
-
-#### [NEW] `src/specweaver/validation/loader.py`
+5. **Custom rule loader** · [NEW] `src/specweaver/validation/loader.py`
 
 ```python
 """Dynamic rule loader — discovers custom Rule subclasses from external paths.
@@ -264,11 +210,7 @@ def load_rules_from_paths(paths: list[Path]) -> list[str]:
     """Load from multiple directories."""
 ```
 
----
-
-### 5.3 RuleAtom Adapter
-
-#### [NEW] `src/specweaver/loom/atoms/rule_atom.py`
+6. **`RuleAtom` adapter** · [NEW] `src/specweaver/loom/atoms/rule_atom.py`
 
 ```python
 """RuleAtom — adapts a validation Rule to the Atom interface.
@@ -293,13 +235,8 @@ class RuleAtom(Atom):
         )
 ```
 
----
-
-### 5.4 Validation Sub-Pipeline Executor
-
-#### [NEW] `src/specweaver/validation/executor.py`
-
-Runs the sub-pipeline: loads YAML, resolves inheritance, instantiates rules from registry, executes in order:
+7. **Sub-pipeline executor** · [NEW] `src/specweaver/validation/executor.py` — loads YAML, resolves
+   inheritance, instantiates rules from the registry, runs them in order.
 
 ```python
 """Validation sub-pipeline executor.
@@ -336,11 +273,7 @@ def execute_validation_pipeline(
     """
 ```
 
----
-
-### 5.5 Validation Pipeline YAMLs
-
-#### [NEW] `src/specweaver/pipelines/validation_spec_default.yaml`
+8. **Pipeline YAMLs** · [NEW] `src/specweaver/pipelines/validation_spec_default.yaml`:
 
 ```yaml
 name: validation_spec_default
@@ -378,11 +311,8 @@ steps:
     rule: S07
 ```
 
-#### [NEW] `src/specweaver/pipelines/validation_code_default.yaml`
-
-Same pattern for C01-C08.
-
-#### [NEW] Profile pipelines — one per domain
+   `src/specweaver/pipelines/validation_code_default.yaml`: same pattern for C01-C08. Profile
+   pipelines, one per domain — 5: `library`, `web-app`, `data-pipeline`, `microservice`, `ml-model`:
 
 ```yaml
 # pipelines/validation_spec_library.yaml
@@ -396,9 +326,7 @@ override:
     params: { warn_threshold: 2, fail_threshold: 4 }
 ```
 
-5 profile pipelines: `library`, `web-app`, `data-pipeline`, `microservice`, `ml-model`.
-
-#### Inheritance example with `add` and `after`/`before`:
+   Inheritance with `add` and `after`/`before`:
 
 ```yaml
 extends: validation_spec_default
@@ -414,13 +342,9 @@ add:
     params: { strict_mode: true }
 ```
 
----
-
-### 5.6 Handler Integration
-
-#### [MODIFY] `src/specweaver/flow/handlers.py` — `ValidateSpecHandler`
-
-The orchestration handler delegates to the validation sub-pipeline executor:
+9. **Handler integration** · [MODIFY] `src/specweaver/flow/handlers.py` — `ValidateSpecHandler`
+   delegates to the executor and still returns `StepResult` with aggregated results. **Orchestration
+   pipeline model unchanged.**
 
 ```diff
  class ValidateSpecHandler:
@@ -438,13 +362,7 @@ The orchestration handler delegates to the validation sub-pipeline executor:
 +        return execute_validation_pipeline(pipeline, content, spec_path, settings)
 ```
 
-The handler continues to return `StepResult` with aggregated results to the orchestration pipeline. **Orchestration pipeline model unchanged.**
-
----
-
-### 5.6 CLI Additions
-
-#### [MODIFY] `src/specweaver/cli.py`
+10. **CLI** · [MODIFY] `src/specweaver/cli.py`
 
 ```
 sw config add-rule-path <path>       # Register a custom rule directory
@@ -454,7 +372,8 @@ sw check --list-rules                # Show all registered rules + config source
 sw check --pipeline <name>           # Override validation pipeline
 ```
 
-**`--list-rules` output:**
+    `--list-rules` output:
+
 ```
 Spec rules (pipeline: validation_spec_default):
   S01  One-Sentence Test       built-in  warn=1   fail=2
@@ -468,32 +387,23 @@ Code rules (pipeline: validation_code_default):
   ...
 ```
 
----
+11. **Project pipeline discovery** · [MODIFY] `src/specweaver/config/settings.py` or new module.
+    Resolution order:
+    1. CLI `--pipeline <name>` flag (highest priority)
+    2. Project-local `.specweaver/pipelines/validation_spec.yaml`
+    3. Common default `src/specweaver/pipelines/validation_spec_default.yaml`
 
-### 5.7 Project Pipeline Discovery
+## Tests
 
-#### [MODIFY] `src/specweaver/config/settings.py` or new module
-
-Pipeline resolution order:
-1. CLI `--pipeline <name>` flag (highest priority)
-2. Project-local `.specweaver/pipelines/validation_spec.yaml`
-3. Common default `src/specweaver/pipelines/validation_spec_default.yaml`
-
----
-
-## 6. Verification Plan
-
-### Phase A Tests
+Phase A — ~25 new tests:
 
 | Test File | Tests | Covers |
 |-----------|-------|--------|
 | `tests/unit/validation/test_registry.py` [NEW] | ~15 | `register()`, `get()`, `list_spec()`, `list_code()`, `list_all()`, duplicate ID rejection, D-prefix enforcement, S/C rejection for custom rules |
-| `tests/unit/validation/qa_runner.py` [EXTEND] | ~5 | Verify `get_spec_rules()` / `get_code_rules()` still return same rules via registry |
+| `tests/unit/validation/qa_runner.py` [EXTEND] | ~5 | `get_spec_rules()` / `get_code_rules()` still return same rules via registry |
 | `tests/integration/test_registry_integration.py` [NEW] | ~5 | All 19 built-in rules registered, categories correct, can instantiate each |
 
-**Phase A expected: ~25 new tests**
-
-### Phase B Tests
+Phase B — ~75 new tests:
 
 | Test File | Tests | Covers |
 |-----------|-------|--------|
@@ -505,47 +415,27 @@ Pipeline resolution order:
 | `tests/integration/test_validation_pipeline.py` [NEW] | ~10 | Default pipeline loads all rules, profile pipeline matches thresholds, custom pipeline with D-rule |
 | `tests/e2e/test_lifecycle.py` [EXTEND] | ~8 | `sw config add-rule-path`, `--list-rules`, `--pipeline`, custom rule in E2E flow |
 
-**Phase B expected: ~75 new tests**
-
-### Regression
+Regression:
 
 ```bash
 uv run pytest tests/ -x -q          # All existing tests must pass
 uv run ruff check src/ tests/       # Zero new lint issues
 ```
 
----
+Docs to update: `README.md` (Custom Rules + Validation Pipelines in Features), `docs/quickstart.md`
+("Custom validation rules", "Pipeline configuration"), `docs/developer_guide.html` (§8 Validation
+Pipelines, architecture diagram, test counts), `docs/roadmap/specweaver_roadmap.md` (mark 3.4 ✅),
+`docs/roadmap/phase_3_feature_expansion.md` (3.4 entry). 7 pipeline YAML files planned.
 
-## 7. Documentation Updates
+## As built (checked against the code 2026-09-25)
 
-| Document | Update |
-|----------|--------|
-| `README.md` | Add Custom Rules + Validation Pipelines to Features list |
-| `docs/quickstart.md` | Add "Custom validation rules" and "Pipeline configuration" sections |
-| `docs/developer_guide.html` | Add §8 Validation Pipelines, update architecture diagram, test counts |
-| `docs/roadmap/specweaver_roadmap.md` | Mark 3.4 as ✅ when complete |
-| `docs/roadmap/phase_3_feature_expansion.md` | Update 3.4 entry |
-
----
-
-## 8. Scope Estimate
-
-| Component | Phase | Effort |
-|-----------|-------|--------|
-| `validation/registry.py` (new) | A | Small |
-| `validation/runner.py` (refactor) | A | Small |
-| `rules/spec/__init__.py` + `rules/code/__init__.py` | A | Small |
-| Tests Phase A (~25) | A | Medium |
-| `validation/pipeline.py` — sub-pipeline model (new) | B | Small |
-| `validation/executor.py` — sub-pipeline executor (new) | B | Medium |
-| `validation/loader.py` — custom rule loader (new) | B | Medium |
-| `loom/atoms/rule_atom.py` — adapter (new) | B | Small |
-| Validation pipeline YAMLs (7 files) | B | Small |
-| Inheritance resolution (in executor) | B | Medium |
-| Handler integration | B | Small |
-| CLI additions | B | Small |
-| Tests Phase B (~75) | B | Medium-Large |
-| Documentation | B | Small |
-
-**Phase A total: ~1 session** (registry + runner refactoring + tests)
-**Phase B total: ~2-3 sessions** (sub-pipeline model + executor + loader + pipelines + CLI + tests + docs)
+| Planned | Now |
+|---|---|
+| `validation/registry.py` | split: `assurance/validation/rule_registry.py` holds `RuleRegistry` + `get_registry()` and imports nothing; `assurance/validation/registry.py` imports the built-in rule modules so they self-register. One module doing both is a cycle by construction. |
+| `validation/pipeline.py`, `loader.py`, `executor.py` | `src/specweaver/assurance/validation/` |
+| `load_validation_pipeline` in the executor | `pipeline_loader.load_pipeline_yaml(name, project_dir=)` — project-local → packaged → `workflows.pipelines.frameworks`; inheritance in `inheritance.resolve_pipeline` |
+| `loom/atoms/rule_atom.py` | `src/specweaver/sandbox/rule_atom.py` |
+| `src/specweaver/pipelines/*.yaml` | `src/specweaver/workflows/pipelines/` — profiles `library`, `web_app`, `data_pipeline`, `microservice`, `ml_model`, `feature`; `frameworks/java/` adds `spring-boot` spec + code pipelines |
+| `sw check --list-rules` | `sw list-rules` (own command); `sw check --pipeline <name>` as planned |
+| `sw config add-rule-path` / `remove-rule-path` / `rule-paths` | not present |
+| settings bridge (not planned) | `executor.apply_settings_to_pipeline()` — disabled rules drop their step; threshold overrides merge into `step.params` via the rule's `PARAM_MAP` (FR-4) |

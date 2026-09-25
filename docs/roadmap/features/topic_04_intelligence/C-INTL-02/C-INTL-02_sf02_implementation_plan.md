@@ -1,78 +1,50 @@
-# Implementation Plan: Common MCP Client Architecture [SF-02: MCP Execution Atom (Loom Layer)]
-- **Feature ID**: 3.32c
-- **Sub-Feature**: SF-02 — MCP Execution Atom (Loom Layer)
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf02_implementation_plan.md
-- **Status**: APPROVED
+# C-INTL-02 SF-02 — MCP Execution Atom (Loom Layer)
 
-## Background and Scope
+**Status**: APPROVED · **Feature ID**: 3.32c · **FRs owned**: FR-2 · **Depends on**: SF-01 ·
+Design: [C-INTL-02_design.md](C-INTL-02_design.md) §Sub-features → SF-02
 
-This sub-feature implements the execution and atomic orchestration components responsible for
-interacting with the Model Context Protocol (MCP) server endpoints via standard I/O (JSON-RPC). It
-bridges external infrastructure (e.g., PostgreSQL schema parsing configurations) natively down to
-the internal Flow Engine.
+## Goal
 
-It explicitly isolates `subprocess.run` calls away from the pure-logic layers (`src/specweaver/flow`) using Loom bounding rules. 
+Talk to MCP server endpoints over standard I/O (JSON-RPC), e.g. PostgreSQL schema parsing
+configurations, and hand the results to the Flow Engine. Keep `subprocess.run` calls out of the
+pure-logic layers (`src/specweaver/flow`) under Loom bounding rules.
 
-> [!IMPORTANT]
-> Because external SDKs (`mcp` PyPI packet) enforce asynchronous thread-pooling, we actively avoid them to obey our explicit `async_ready: false` bounding rules in `Loom Commons`.
+The external SDK (`mcp` PyPI packet) forces async thread-pooling, so it is not used: `Loom Commons`
+is `async_ready: false`.
 
-## Proposed Changes
+## Changes
 
----
+1. **`MCPExecutor`** · [NEW] `src/specweaver/core/loom/commons/mcp/executor.py` [✅ COMPLETED]
+   - Inputs: a `command` array and an `env` dict (injected by L3 execution variables).
+   - `subprocess.Popen` with `stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True`.
+   - `call_rpc(method: str, params: dict)` builds a `jsonrpc=2.0` string, encoded via
+     `from specweaver.commons import json` (Anti-pattern 14 override).
+   - A `10000ms` stream-level timeout on `stdout.readline()`, so a `docker run` image cannot hold
+     the caller (zombie holds).
+   - `.close()` or `__del__` terminates the subprocess once the Atom is done.
+2. **Executor boundary** · [NEW] `src/specweaver/core/loom/commons/mcp/context.yaml`
+   [✅ COMPLETED] — archetype `adapter`; exposes `mcp`; forbids `specweaver/loom/tools/*`,
+   `specweaver/loom/atoms/*`.
+3. **`MCPAtom(Atom)`** · [NEW] `src/specweaver/core/loom/atoms/mcp/atom.py` [✅ COMPLETED]
+   - Input: a `context` dict with the `intent`, the subprocess `command`, and payload params.
+   - `MCPAtom.run(context)` dispatches like `GitAtom`, to `_intent_initialize` and
+     `_intent_read_resource`.
+   - Wraps `MCPExecutor`; returns `AtomResult(status=AtomStatus.SUCCESS)`.
+   - Forbids `specweaver/loom/tools/*`.
 
-### Loom Commons (Executor Layer) [✅ IMPLEMENTED]
+## Tests
 
-#### [NEW] `src/specweaver/core/loom/commons/mcp/executor.py` [✅ COMPLETED]
-Creates the `MCPExecutor` class.
-- **Inputs**: A target `command` array strings and `env` dictionary mappings (Injected cleanly by L3 execution variables).
-- **Functionality**:
-  - Initializes `subprocess.Popen` precisely configured with `stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True`.
-  - Defines an atomic `call_rpc(method: str, params: dict)` which internally formats a `jsonrpc=2.0` string and encodes it via `from specweaver.commons import json` (Anti-pattern 14 override).
-  - Implements a rigid `10000ms` stream-level timeout block waiting for `stdout.readline()` resolution to prevent recursive zombie holds against `docker run` images.
-  - Implements an explicit `.close()` or `__del__` destructor to ensure subprocesses are reliably terminated upon Atom consumption completion.
+| File | Case |
+|---|---|
+| [NEW] `tests/unit/core/loom/commons/mcp/test_executor.py` [✅ COMPLETED - Including Integration] | `JSON-RPC` encoding is correct · the 10s stream timeout breaks a hung execution · cleanup calls `terminate()` on orphaned processes |
+| [NEW] `tests/unit/core/loom/atoms/mcp/test_atom.py` | `_intent_initialize` returns status markers from mocked executor responses · context params bind without referencing internal model paths |
 
-#### [NEW] `src/specweaver/core/loom/commons/mcp/context.yaml` [✅ COMPLETED]
-Establishes execution safety boundaries.
-- **Archetype**: `adapter`
-- **Exposes**: `mcp`
-- **Forbids**: `specweaver/loom/tools/*`, `specweaver/loom/atoms/*`
+Commands: `pytest tests/unit/core/loom/commons/mcp/`, `pytest tests/unit/core/loom/atoms/mcp/`.
+`tach check`: the 4 new directories must not leak across boundaries.
 
----
+## As built
 
-### Loom Atoms (Workflow Orchestration)
-
-#### [NEW] `src/specweaver/core/loom/atoms/mcp/atom.py` [✅ COMPLETED]
-Creates the `MCPAtom(Atom)` class.
-- **Inputs**: `context` dictionary mapping the `intent`, the explicit subprocess `command`, and payload params.
-- **Functionality**:
-  - Implements `MCPAtom.run(context)` following the exact design dispatch bindings shown in `GitAtom`.
-  - Configures sequential sub-handlers: `_intent_initialize` and `_intent_read_resource`.
-  - Safely wraps the `MCPExecutor` and ensures standardized `AtomResult(status=AtomStatus.SUCCESS)` returns.
-
-- **Forbids**: `specweaver/loom/tools/*`
-
----
-
-### Test Parity
-
-#### [NEW] `tests/unit/core/loom/commons/mcp/test_executor.py` [✅ COMPLETED - Including Integration]
-- Test `JSON-RPC` encoding structures are accurate.
-- Test 10s stream fallback timeouts reliably break isolated execution holds.
-- Test cleanup ensures orphaned processes throw `terminate()`.
-
-#### [NEW] `tests/unit/core/loom/atoms/mcp/test_atom.py`
-- Test `_intent_initialize` accurately returns status markers based on mocked executor responses.
-- Test context map parameters bind effectively without referencing internal model paths.
-
-## Verification Plan
-
-### Automated Tests
-Execute Pytest modules ensuring isolation bounds hold across both unit implementations.
-`pytest tests/unit/core/loom/commons/mcp/`
-`pytest tests/unit/core/loom/atoms/mcp/`
-
-### Architectural Bounds
-Verify via Tach validation sweeps that creating the 4 new directories does not trigger external boundary leakage constraints.
-`tach check`
+**Since moved** (2026-09-25 check): executor and atom now live in `sandbox/mcp/core/`
+(`executor.py`, `atom.py`); tests in `tests/unit/sandbox/mcp/core/mcp/`. `call_rpc` takes a
+per-call `timeout` (default 10.0s). The runtime guard allows `docker` and `podman` and rejects
+host-escaping arguments (`TECH-063`).

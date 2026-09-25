@@ -1,37 +1,84 @@
-# Design: Bi-Directional Spec Rot Interceptor
+# B-VAL-02 — Bi-Directional Spec Rot Interceptor
 
-- **Feature ID**: 3.23
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_design.md
+**Status**: APPROVED · **Phase**: 3 · **Feature ID**: B-VAL-02 (legacy 3.23)
 
-## Feature Overview
+| | |
+|---|---|
+| Reuses | the drift engine (`DriftCheckHandler`, `drift_detector`) — shared with `B-VAL-01` |
+| Pattern | `cli/drift.py` single-step pipeline (`PipelineDefinition.create_single_step` + `PipelineRunner`) |
+| Guide | [`docs/dev_guides/spec_rot_pre_commit_workflow.md`](../../../../dev_guides/spec_rot_pre_commit_workflow.md) — install the hook, what its errors mean, resolving a block by updating Spec/Code |
+| Not touched | existing pipelines, internal LLM flows, validation state, out-of-scope system modules |
 
-Feature 3.23 solves the "2nd-Day Problem" by blocking builds/commits if the implementation AST
-diverges from `Spec.md`, forcing developers to reconcile documentation with hot-fixes. It is
-implemented as a git pre-commit hook mapping to a standalone `sw check-rot --staged` CLI command. It
-does NOT touch out-of-scope system modules or mutate existing pipelines, remaining orthogonal to
-internal LLM flows and validation state. Key constraints include no LLM/AI calls for checks (purely
-deterministic) and operating strictly within `tach` layer boundaries via Single-Step `flow`
-delegation.
+## What it does
 
-## Research Findings
+Solves the "2nd-Day Problem": a git pre-commit hook blocks builds/commits when a staged file's code
+structure has drifted from its spec, so hot-fixes cannot leave the documentation behind.
 
-### Codebase Patterns
-- `cli` forbids importing from `loom/*`. The CLI command `sw check-rot` cannot directly instantiate the `CodeStructureTool` or AST language extraction utilities.
-- `cli/drift.py` shows how to bypass this restrictions gracefully: the CLI defines a dynamic one-step pipeline (`PipelineDefinition.create_single_step`) and runs it with `PipelineRunner`.
-- Feature 3.22 implemented Polyglot AST extraction via `AstAtom`, which we will reuse.
-- Traceability extraction logic in `c09_traceability.py` confirms that structural detection of `@trace` nodes from `tree-sitter` parsed source bytes works correctly.
+- `sw hooks install --pre-commit` writes `.git/hooks/pre-commit`.
+- The hook runs `sw drift check-rot --staged`.
+- Each staged file with a matching plan runs through a one-step `DETECT`/`DRIFT` pipeline.
+- Drift → exit `42` → the hook aborts the commit.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| `tree-sitter` | Latest | `Parser`, AST Parsing | `pyproject.toml` |
-| Git | Standard | `.git/hooks/pre-commit` | Subprocess / script |
+Deterministic: no LLM/AI calls in the check.
 
-### Blueprint References
-- Extends the core BDD architecture patterns and BDD Traceability concepts discussed in `ORIGINS.md`.
-- Adheres to the Architecture Reference strict bounds for CLI/Loom boundaries.
+## Architecture
+
+```mermaid
+graph LR
+    G["git commit"] --> H[".git/hooks/pre-commit<br/>(bash, sys.executable baked in)"]
+    H --> C["sw drift check-rot --staged<br/>cli_drift.py"]
+    C -->|"git diff --cached"| S["staged files"]
+    S --> P["plan lookup<br/>specs/*_plan.yaml<br/>path match, then lineage uuid"]
+    P --> R["PipelineRunner<br/>one step: DETECT / DRIFT"]
+    R --> D["DriftCheckHandler<br/>tree_sitter signatures vs plan"]
+    D -->|"FAILED"| X["exit 42 → hook exits 1<br/>commit blocked"]
+```
+
+| Part | Lives in |
+|---|---|
+| `sw hooks install`, `HOOK_TEMPLATE` | `workspace/project/interfaces/cli_hooks.py` |
+| `sw drift check-rot` | `assurance/validation/interfaces/cli_drift.py` |
+| Drift step | `core/flow/handlers/drift.py` → `drift_detector` |
+
+`cli` may not import from `loom/*`, so the CLI cannot call `CodeStructureTool` or the AST
+extraction utilities directly. It builds a one-step pipeline and runs it with `PipelineRunner`, as
+`cli/drift.py` already did. `c09_traceability.py` showed that tree-sitter-parsed source bytes support
+structural detection of `@trace` nodes; the rot path does not use it (see FR-5 below).
+
+**How it matches today** (corrected 2026-08-17, `INT-US-01-SF03-MIG`; all eight FRs are cited and
+each is behind a killed mutant — `check_fr_coverage.py B-VAL-02` exits 0):
+
+- **FR-5** — signatures come from `DriftCheckHandler`, which parses with `tree_sitter` directly and
+  extracts them in `drift_detector._extract_signatures` — Python only. **There is no `AstAtom` class
+  anywhere in `src/`** (the Polyglot AST Extractor of Feature 3.22 was the plan). No `@trace`
+  metadata reaches the check: `extract_traceability_tags` is real and reached from
+  `workspace/analyzers/factory.py`, but nothing on the `check-rot` path calls it. Both clauses
+  struck; the signature clause stands and is cited. FR-5's mutant is **shared with `B-VAL-01`
+  FR-1** — both die when the tree-sitter parse gets empty bytes, since both go through the same
+  handler. One mutant, two capabilities; the second citation is not independent evidence (also
+  disclosed in the test file).
+- **FR-6** — reads plans, not `Spec.md`. It globs `specs/*_plan.yaml` and matches a plan to a file
+  by an `expected_signatures` key naming the path (three spellings), else by lineage:
+  `_resolve_plan_by_lineage` reads the file's `# sw-artifact` uuid, finds its `parent_id` in
+  `flow_artifact_events`, and matches it against each plan's own uuid. Same intent, a more precise
+  mechanism than "traceability tags" — and the lineage resolver `B-VAL-01` FR-2 described and
+  never got.
+- **FR-8** — the exit code is **42, not 1**. The interceptor calls `sys.exit(42)`; the hook matches
+  `if [ $exit_code -eq 42 ]`. 42 separates "drift detected" from "the command itself failed", which
+  `1` cannot. The table keeps the declared behaviour (non-zero, deterministic, blocks the commit):
+  hook and command have to agree, and that agreement is the requirement.
+- Commands as built: `sw hooks install` (FR-1's `sw githook install`) and `sw drift check-rot`
+  (FR-2's `sw check-rot`). Staged files are read with `--diff-filter=ACM`.
+
+Debug output of `_target_has_drifted` goes through `logger.debug`. Three stray `DEBUG …` console prints on the pre-commit
+path (`DEBUG TARGET STR`, `DEBUG SKIP`, `DEBUG PIPELINE`) were replaced; no test asserted on them.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Native pre-commit hook | Stops the developer at the local commit, the exact entry point. | No |
+| AD-2 | CLI flow delegation | Standard SpecWeaver pattern; keeps loom usage out of the CLI boundary. | No |
 
 ## Functional Requirements
 
@@ -46,45 +93,6 @@ delegation.
 | FR-7 | Correlate Drift | Rot Handler | matches AST against Spec | The system SHALL emit a FAILED `StepResult` with severity ERROR if divergence between the Code AST structure and the Spec.md contract is detected. |
 | FR-8 | Block Commit | Interceptor Command | reads the pipeline result | The system SHALL exit with a non-zero deterministic code (`1`) to explicitly abort the git commit process if `StepResult` is FAILED. |
 
-### Three wordings corrected on contact (2026-08-17, `INT-US-01-SF03-MIG`)
-
-All eight FRs are cited and each is behind a killed mutant — `check_fr_coverage.py B-VAL-02` exits 0.
-Three rows described something other than what runs, and none of the three is a missing capability.
-
-**FR-5 lost two clauses.** It named `AstAtom` (Polyglot AST Extractor) as the source of signatures:
-**there is no `AstAtom` class anywhere in `src/`.** The rot path delegates to `DriftCheckHandler`, which
-parses with `tree_sitter` directly and extracts signatures in `drift_detector._extract_signatures` —
-Python only. It also claimed `@trace` metadata is extracted from staged files.
-`extract_traceability_tags` is real and is reached from `workspace/analyzers/factory.py`, but **nothing
-on the `check-rot` path calls it**, so no trace metadata reaches the rot check. Both clauses struck; the
-signature clause stands and is cited.
-
-FR-5's mutant is **shared with `B-VAL-01` FR-1** — both die when the tree-sitter parse is handed empty
-bytes, because both go through the same handler. Disclosed in the test file too: one mutant, two
-capabilities, and the second citation is not independent evidence.
-
-**FR-8's exit code is 42, not 1.** The FR says "a non-zero deterministic code (`1`)"; the interceptor
-calls `sys.exit(42)` and the installed hook matches on `if [ $exit_code -eq 42 ]`. **42 is the better
-contract** — it distinguishes "drift detected" from "the command itself failed", which a bare `1`
-cannot — so the wording is what is stale. Row left as the declared behaviour (non-zero, deterministic,
-blocks the commit); the specific number is recorded here rather than silently changed in the table,
-because the hook script and the command have to agree and that agreement is the real requirement.
-
-**FR-6 reads plans, not `Spec.md`.** It says the handler locates "the associated `Spec.md` requirements
-tied to the AST objects via traceability tags". What runs globs `specs/*_plan.yaml` and matches a plan
-to a file two ways: by an `expected_signatures` key naming the path (three spellings), and failing that
-by lineage — `_resolve_plan_by_lineage` reads the file's `# sw-artifact` uuid, finds its `parent_id` in
-`flow_artifact_events`, and matches that against each plan's own uuid. Same intent, a different and
-more precise mechanism than "traceability tags", and worth recording because that lineage resolver is
-also the mechanism `B-VAL-01` FR-2 described and never got.
-
-### One defect fixed, not ticketed
-
-`_target_has_drifted` printed three `DEBUG …` lines to the console on every staged file — `DEBUG TARGET
-STR`, `DEBUG SKIP`, `DEBUG PIPELINE` — on the **pre-commit path**, so every commit in a SpecWeaver
-project showed them. Leftover debugging, not diagnostics anyone chose. Replaced with `logger.debug`
-where the information is worth keeping. No test asserted on them.
-
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
@@ -97,46 +105,21 @@ where the information is worth keeping. No test asserted on them.
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
 |------|------------|----------------|-----------------|-------|
-| `tree-sitter` | Current | `Parser`, AST nodes | Yes | Pre-existing in `loom/commons` |
-| `git` | Standard | hooks/pre-commit | Yes | Standard CLI usage |
+| `tree-sitter` | Current | `Parser`, AST nodes | Yes | Pre-existing in `loom/commons`; declared in `pyproject.toml` |
+| `git` | Standard | `.git/hooks/pre-commit` | Yes | Standard CLI usage |
 
-## Architectural Decisions
+Blueprint: extends the BDD and BDD-traceability concepts in `ORIGINS.md`; respects the Architecture
+Reference bounds for CLI/Loom.
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Native Pre-Commit Hook | Aligns with the core vision. Stops developers at the exact local ledger entry point. | No |
-| AD-2 | CLI Flow Delegation | Standard SpecWeaver pattern. Isolates loom usage from the CLI command boundaries. | No |
+## Sub-features
 
-## Developer Guides Required
+| SF | Does | FRs owned | Depends on | Plan |
+|----|------|-----------|-----------|------|
+| SF-01 | `sw hooks install` + the `sw drift check-rot --staged` entry point | FR-3, FR-5, FR-6, FR-7 | — | [sf01](B-VAL-02_sf01_implementation_plan.md) |
+| SF-02 | The check itself: staged files → plan → one-step drift pipeline → exit 42 | FR-1, FR-2, FR-4, FR-8 | SF-01 | [sf02](B-VAL-02_sf02_implementation_plan.md) |
 
-Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
-
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Spec Rot Pre-Commit Workflow | Explains how to install the rot interceptor hook locally, what errors signify, and how developers resolve blocks by updating Spec/Code. | ✅ Completed (`docs/dev_guides/spec_rot_pre_commit_workflow.md`) |
-
-## Sub-Feature Breakdown
-
-### SF-01: CLI Command + Git Hook Deployment
-- **Scope**: Expose the git hook installation logic and the bare entry point for the `sw check-rot --staged` command.
-- **FRs**: [FR-1, FR-2, FR-3]
-- **Inputs**: CLI trigger (`sw githook install --pre-commit`) and the git execution environment calling `sw check-rot --staged`.
-- **Outputs**: The generated bash script artifact in `.git/hooks/pre-commit` and the isolated CLI interface passing target files downstream.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf01_implementation_plan.md
-
-### SF-02: Dynamic Flow Handler (Detect Rot)
-- **Scope**: Construct the engine logic to dynamically pull AST structures via atoms, compare signatures to `Spec.md`, and report step conclusions.
-- **FRs**: [FR-4, FR-5, FR-6, FR-7, FR-8]
-- **Inputs**: Staged file paths from SF-01.
-- **Outputs**: Output `StepResult` defining if the commit should fail, complete with deterministic findings arrays to halt the execution shell.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf02_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
+FR ownership was recorded 2026-08-17 under `specweaver-dev` §3.2c (`INT-US-01-SF03-MIG`). The
+original scope split was SF-01 = [FR-1, FR-2, FR-3], SF-02 = [FR-4, FR-5, FR-6, FR-7, FR-8].
 
 ## Progress Tracker
 
@@ -144,11 +127,3 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | CLI Command + Git Hook Deployment | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Dynamic Flow Handler (Detect Rot) | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-
-## Session Handoff
-
-**Current status**: Impl Plan SF-02 APPROVED.
-**Next step**: Run:
-`/dev docs/roadmap/features/topic_05_validation/B-VAL-02/B-VAL-02_sf02_implementation_plan.md`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
