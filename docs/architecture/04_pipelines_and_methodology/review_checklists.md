@@ -1,30 +1,27 @@
 # Project-Specific Review Checklists
 
-> **Status**: DRAFT — First draft, requires discussion and refinement.
-> **Date**: 2026-03-08
-> **Scope**: Universal pattern. Each project creates its own checklist from this guide.
-> **Related**:
-> - [Lifecycle Layers — L5 Review](../01_foundational_principles/lifecycle_layers.md) — where checklists are used
-> - [Completeness Tests — T10 Done Definition](../04_pipelines_and_methodology/completeness_tests.md) — the generic completeness test that checklists extend
-> - [DMZ Repository — reviewer.md](https://github.com/TheMorpheus407/the-dmz) — reference implementation (15-point checklist)
+**Status**: DRAFT, 2026-03-08. **Scope**: universal pattern — each project builds its own
+checklist from this guide.
 
----
+| | |
+|---|---|
+| Used in | [Lifecycle Layers — L5 Review](../01_foundational_principles/lifecycle_layers.md) |
+| Extends | [Completeness Tests — T10 Done Definition](../04_pipelines_and_methodology/completeness_tests.md) |
+| Reference | [DMZ Repository — reviewer.md](https://github.com/TheMorpheus407/the-dmz) (15-point checklist) |
 
 ## Purpose
 
-The 10-test battery (see [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md)) is
-**universal** — it works for any project. But every project also has **domain-specific** quality
-concerns that the universal tests don't cover.
+The 10-test battery ([Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md)) is
+**universal**. Every project also has **domain-specific** quality concerns it doesn't cover.
 
-A Review Checklist is a **project-specific extension** of Test 10 (Done Definition). It turns "is completion verifiable?" into "does this code meet OUR project's specific quality bar?"
-
----
+A Review Checklist is a **project-specific extension** of Test 10 (Done Definition): "is completion
+verifiable?" becomes "does this code meet OUR project's quality bar?"
 
 ## Anatomy of a Review Checklist
 
 ### Structure
 
-A checklist is a numbered list of review items. Each item has:
+A numbered list of review items. Each item has:
 
 | Field | Purpose | Example |
 |-------|---------|---------|
@@ -37,8 +34,6 @@ A checklist is a numbered list of review items. Each item has:
 
 - **BLOCK items**: Code CANNOT be merged if these fail. These are non-negotiable.
 - **WARN items**: Code CAN be merged, but the finding is reported to the HITL for awareness.
-
----
 
 ## Template
 
@@ -85,13 +80,10 @@ A checklist is a numbered list of review items. Each item has:
 - [ ] **[BLOCK/WARN]** [Project-specific checks go here]
 ```
 
----
-
 ## Reference: DMZ's 15-Point Checklist
 
 The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz))
-uses a 15-point reviewer checklist in `reviewer.md`. This is the most comprehensive working example
-found:
+has a 15-point reviewer checklist in `reviewer.md` — the most complete working example found:
 
 | # | DMZ Check | Universal Category | Our Equivalent |
 |---|-----------|-------------------|---------------|
@@ -111,26 +103,21 @@ found:
 | 14 | Environment config | Security | §4 — no .env committed, Zod validation |
 | 15 | Prohibited actions | Architecture | §6 — cross-reference AGENTS.md prohibitions |
 
-**Key insight**: Items 1-4, 7-8, 10-12, 14-15 are **universal** (every project needs them). Items
-5-6, 9, 13 are **domain-specific** (only relevant to DMZ's cybersecurity game). This validates our
-template structure: universal categories (§1-§6) + a domain-specific extension slot (§7).
-
----
+Items 1-4, 7-8, 10-12, 14-15 are **universal**. Items 5-6, 9, 13 are **domain-specific** (DMZ's
+cybersecurity game). Hence the template: universal categories (§1-§6) + a domain-specific slot (§7).
 
 ## Guidelines for Creating a Project Checklist
 
-1. **Start with the template** (§1-§6). These categories work for any project.
-2. **Add domain-specific items** in §7. Ask: "What quality concerns are specific to THIS project's domain?"
-3. **Mark severity honestly**: BLOCK means "will cause bugs or security issues." WARN means "code quality concern."
-4. **Keep it under 20 items total**. More than 20 and the reviewer (human or agent) starts skimming.
-5. **Each check must be binary**: yes/no. Not "code quality is good" (subjective) but "all public methods have type hints" (binary).
-6. **Update the checklist as the project evolves**: New security concern? Add an item. Obsolete framework concern? Remove it.
-
----
+1. **Start with the template** (§1-§6) — works for any project.
+2. **Add domain-specific items** in §7: "What quality concerns are specific to THIS project's domain?"
+3. **Mark severity honestly**: BLOCK = "will cause bugs or security issues." WARN = "code quality concern."
+4. **Keep it under 20 items total** — beyond 20 the reviewer (human or agent) skims.
+5. **Each check is binary** (yes/no): not "code quality is good" but "all public methods have type hints".
+6. **Update as the project evolves**: new security concern → add an item; obsolete framework concern → remove it.
 
 ## Reviewer Agent Permissions
 
-Following the DMZ pattern, the reviewer agent should be **read-only for code**:
+DMZ pattern: the reviewer agent is **read-only for code**.
 
 | Permission | Reviewer Agent | Implementation Agent |
 |------------|---------------|---------------------|
@@ -140,6 +127,5 @@ Following the DMZ pattern, the reviewer agent should be **read-only for code**:
 | Run tests | ✅ (via shell) | ✅ |
 | Search/grep | ✅ | ✅ |
 
-**Rationale**: If the reviewer can fix code, it bypasses the implement → review separation. The
-reviewer's job is to find problems and report them — not to silently fix them and hide the fact that
-the implementation was wrong.
+**Why**: a reviewer that fixes code bypasses the implement → review separation and hides that the
+implementation was wrong. It reports problems; it does not fix them.

@@ -1,9 +1,15 @@
 # Database Migrations: Alembic Branching
 
-In alignment with our Bounded Contexts architecture, SpecWeaver does not use a single monolithic metadata registry for SQLAlchemy. Each domain manages its own tables and state independently.
+**What:** each SpecWeaver domain owns its tables and its SQLAlchemy metadata. There is no single monolithic
+metadata registry.
+
+**Why:** follows the Bounded Contexts architecture — a domain changes its schema without touching
+another domain's models.
 
 ## Decentralized Metadata
-How Alembic handles isolated domain metadata without a monolithic registry:
+
+The design: `alembic/env.py` collects each domain's metadata and generates one independent migration
+branch per domain.
 
 ```mermaid
 graph TD
@@ -27,3 +33,11 @@ graph TD
     Env -->|Generates independent branch| V1
     Env -->|Generates independent branch| V2
 ```
+
+## As built (checked 2026-09-25)
+
+- Metadata is decentralized: `env.py` sets `target_metadata` to three `Base.metadata` objects —
+  `infrastructure/llm/store.py`, `workspace/store.py`, `core/flow/store.py` — and imports
+  `workspace/memory/store.py`. Models live in `store.py`, not `models.py`.
+- Migrations are **not** branched: one linear timeline in `alembic/versions/` (3 revisions, no
+  `branch_labels`, no `llm/` or `flow/` sub-folders).

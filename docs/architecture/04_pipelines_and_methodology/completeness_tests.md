@@ -1,14 +1,13 @@
 # Completeness Tests — Spec Implementability Methodology
 
-> **Status**: DRAFT
-> **Date**: 2026-03-08
-> **Scope**: Universal. Applies to any project at any decomposition level.
-> **Related**:
-> - [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — defines Structure Tests (the other axis)
-> - [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) — static automation for Structure Tests
-> - [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) — worked examples of Structure Tests
+**Status**: DRAFT, 2026-03-08. **Scope**: universal — any project, any decomposition level.
 
----
+| | |
+|---|---|
+| Other axis | [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — Structure Tests 1-5 |
+| Static automation of Structure Tests | [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) |
+| Worked examples of Structure Tests | [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) |
+| Rule code | `S06`–`S10` in `src/specweaver/assurance/validation/rules/spec/` |
 
 ## 1. The Two-Axis Model
 
@@ -39,13 +38,11 @@ TOO BIG ◄───────────────┼───────
 | Bottom-Left | ❌ Too big | ✅ Detailed | 01_06 LLM Binding (51KB, but actually very precise) | Implementable in theory, hard to review and test |
 | **Bottom-Right** | **✅ Right size** | **✅ Detailed** | A focused spec with concrete examples and tests | **Ready to implement** |
 
-**Both axes must pass.** Structure Tests (1-5) ensure the spec is small and focused enough to work with. Completeness Tests (6-10) ensure it contains enough information to actually build from.
+**Both axes must pass.** Structure Tests (1-5): small and focused enough to work with. Completeness
+Tests (6-10): enough information to build from.
 
-The axes are **independent**: fixing structure doesn't fix completeness, and vice versa. Splitting a
-vague spec into 4 smaller vague specs produces 4 specs that are still un-implementable. Adding
-detail to a monolithic spec makes it bigger without making it more focused.
-
----
+The axes are **independent**. Splitting a vague spec into 4 smaller vague specs gives 4 specs that
+are still un-implementable. Adding detail to a monolith makes it bigger, not more focused.
 
 ## 2. The Five Completeness Tests
 
@@ -53,10 +50,10 @@ detail to a monolithic spec makes it bigger without making it more focused.
 
 > **Does the spec include at least one concrete input → output example with real values — not abstract descriptions?**
 
-**Why it matters**: Concrete examples force precision. Writing
-`f("hello ${name}", {name: "Alice"}) → "hello Alice"` exposes edge cases (what about nested keys?
-missing keys? type mismatches?) that prose hides. If the author can't produce one worked example,
-they don't understand the problem well enough to specify it.
+**Why**: examples force precision. Writing
+`f("hello ${name}", {name: "Alice"}) → "hello Alice"` exposes edge cases prose hides (nested keys?
+missing keys? type mismatches?). An author who can't produce one worked example doesn't understand
+the problem well enough to specify it.
 
 **Pass**:
 ```
@@ -69,16 +66,16 @@ Output: "Hello Alice"
 "The function resolves variables from the context dictionary."
 ```
 
-The second form is a wish. It doesn't tell the implementer what the delimiter syntax is (`${}` vs `{{}}` vs `%s`), whether nesting works, or what happens with missing keys.
+The fail form is a wish: no delimiter syntax (`${}` vs `{{}}` vs `%s`), no nesting rule, no
+missing-key behavior.
 
 ### Test 7: The Test-First Test
 
 > **Can you write a failing test FROM the spec BEFORE writing any implementation code?**
 
-**Why it matters**: This is the strongest single signal of completeness. If the spec gives you
-enough information to write a test, it has defined the interface, the behavior, and the expected
-output — which is everything you need to implement. If you can't write a test, the spec is missing
-one of those three.
+**Why**: the strongest single completeness signal. A spec you can test from has defined the
+interface, the behavior and the expected output — everything needed to implement. If you can't
+write a test, one of the three is missing.
 
 **Pass**: Reading the spec, you can immediately write:
 ```python
@@ -90,17 +87,16 @@ def test_resolve_missing_key():
         resolve("${missing}", {})
 ```
 
-**Fail**: Reading the spec, you stare at it and think: "but what's the function signature? What does
-it return on error? A string? None? An exception?" If you're guessing, it's not a spec — it's a
-suggestion.
+**Fail**: you have to ask "what's the signature? What does it return on error — a string, None, an
+exception?" If you're guessing, it's a suggestion, not a spec.
 
 ### Test 8: The Ambiguity Test
 
 > **Does the spec contain weasel words that leave decisions unmade?**
 
-**Why it matters**: Every ambiguous word is a decision deferred to the implementer. Two different
-agents (or developers) will resolve the ambiguity differently, producing inconsistent code. Weasel
-words are the #1 source of "it works but not how I expected."
+**Why**: every ambiguous word defers a decision to the implementer. Two agents (or developers)
+resolve it differently and produce inconsistent code. Weasel words are the #1 source of "it works
+but not how I expected."
 
 **Weasel word taxonomy**:
 
@@ -120,10 +116,9 @@ words are the #1 source of "it works but not how I expected."
 
 > **Does the spec define what happens when the operation fails — not just the happy path?**
 
-**Why it matters**: Most agent-generated code fails on error paths. If the spec says "resolve
-variables from context" but never mentions missing keys, type mismatches, circular references, or
-malformed templates, the agent will either ignore errors (silent bugs) or invent error handling
-(hallucinated behavior). Both are wrong.
+**Why**: most agent-generated code fails on error paths. A spec that never mentions missing keys,
+type mismatches, circular references or malformed templates makes the agent either ignore errors
+(silent bugs) or invent error handling (hallucinated behavior). Both are wrong.
 
 **Minimum error coverage per level**:
 
@@ -148,9 +143,8 @@ Errors:
 
 > **Does the spec state an unambiguous condition under which the work is COMPLETE?**
 
-**Why it matters**: Without a done definition, work expands forever. An agent (or developer) will
-gold-plate, add features, or iterate endlessly because there's no stop signal. Conversely, they
-might stop too early because "it works for my one test case."
+**Why**: without a stop signal an agent (or developer) gold-plates, adds features or iterates
+endlessly — or stops too early because "it works for my one test case."
 
 **What a done definition must include**:
 1. An observable outcome (not a process — "all tests pass", not "thorough testing was performed")
@@ -160,8 +154,6 @@ might stop too early because "it works for my one test case."
 **Pass**: *"Done when: `test_resolver.py` passes (11 cases covering happy path, missing keys, nested keys, circular refs, and type coercion). Coverage ≥ 70% for `resolver.py`."*
 
 **Fail**: *"Done when the variable resolution system is complete and robust."* — What is "complete"? What is "robust"? Unmeasurable.
-
----
 
 ## 3. Fractal Application — Equalities and Differences
 
@@ -177,9 +169,12 @@ The **test questions** are identical at every level:
 | 9. Error Path | Is failure defined? |
 | 10. Done Definition | Is completion unambiguous and verifiable? |
 
-The **failure response** is also identical: if a completeness test fails, **add the missing information** — don't restructure (that's the structure tests' job), don't split, just fill in the blanks.
+Also identical at every level:
 
-The **principle** is also identical at every level: a spec is a **contract between author and implementer**. If the implementer (human or agent) must guess, the contract is incomplete.
+- **Failure response**: **add the missing information**. Don't restructure or split — that is the
+  structure tests' job.
+- **Principle**: a spec is a **contract between author and implementer**. If the implementer (human
+  or agent) must guess, the contract is incomplete.
 
 ### 3.2 What Changes (Differences)
 
@@ -216,11 +211,9 @@ The **principle** is also identical at every level: a spec is a **contract betwe
 | **L3 Class** | Developer — they're implementing it |
 | **L4 Function** | Developer — can often fill the gap themselves during implementation |
 
-At L3-L4, the implementer and the spec author are often the same person. At L1-L2, they're usually
-different people — which makes completeness testing MORE important (the gap between "what the author
-meant" and "what the implementer understood" is wider).
-
----
+At L3-L4 author and implementer are often the same person. At L1-L2 they usually differ, so
+completeness testing matters MORE — the gap between "what the author meant" and "what the
+implementer understood" is wider.
 
 ## 4. Static Analysis for Completeness Tests
 
@@ -371,13 +364,11 @@ Document saved/committed
       (semantic quality, not structure or completeness)
 ```
 
-**Why structure first**: A bloated spec will produce false positives on completeness tests — it may
-contain examples buried in 107KB that the static scanner can't contextualize. Fix structure, THEN
-check completeness.
+**Why structure first**: a bloated spec gives false positives on completeness — examples buried in
+107KB that the static scanner can't contextualize. Fix structure, THEN check completeness.
 
-**Token flow**: Static tests (Tests 1-10) cost 0 tokens. Only when ALL 10 pass does the spec proceed to LLM-based semantic review. Estimated total savings: ~85% vs. running everything through an LLM.
-
----
+**Token flow**: static Tests 1-10 cost 0 tokens. Only when ALL 10 pass does the spec go to LLM
+semantic review. Estimated savings: ~85% vs. running everything through an LLM.
 
 ## 5. Comparison: Structure vs. Completeness
 
@@ -403,7 +394,7 @@ check completeness.
 > that are too vague because the context is now scattered. Adding examples (to fix completeness) can
 > push a spec past its size budget.
 
-The correct workflow handles this iteratively:
+So the workflow iterates:
 
 ```
         ┌──── Fix structure ────┐
@@ -422,32 +413,15 @@ The correct workflow handles this iteratively:
       READY                                    loop back to top
 ```
 
-In practice, this converges within 2-3 iterations because:
+It converges within 2-3 iterations because:
 - Structure splits produce smaller specs that need less detail each
 - Completeness additions are targeted (one example, one error case) — they don't double the spec size
 
----
-
 ## 6. The Full 10-Test Battery
 
-For reference, the complete set of tests across both axes:
-
-| # | Test | Axis | Question | Static Accuracy |
-|---|------|------|----------|----------------|
-| 1 | One-Sentence | Structure | Is it one responsibility? | ~70% |
-| 2 | Single Test Setup | Structure | Is it cohesive? | ~85% |
-| 3 | Stranger | Structure | Is it self-contained? | ~60% |
-| 4 | Dependency Direction | Structure | Is it decoupled? | ~90% |
-| 5 | Day Test | Structure | Is it right-sized? | ~65% |
-| 6 | Concrete Example | Completeness | Does it show real I/O? | ~75% |
-| 7 | Test-First | Completeness | Can you write a test? | ~50% |
-| 8 | Ambiguity | Completeness | Are all decisions made? | ~95% |
-| 9 | Error Path | Completeness | Is failure defined? | ~70% |
-| 10 | Done Definition | Completeness | Is completion verifiable? | ~80% |
-
-**A spec is ready to implement ONLY when all 10 pass.**
-
----
+**A spec is ready to implement ONLY when all 10 pass.** The full table (both axes, static accuracy
+per test, plus the S11/S12 rules added since) is in
+[Methodology Index](methodology_index.md#the-10-test-battery-universal-fractal).
 
 ## 7. Open Questions
 

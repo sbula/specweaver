@@ -1,34 +1,30 @@
 # Specification Methodology
 
-> **Status**: DRAFT — Work in progress. Findings consolidated from architectural review; further discussion required.
-> **Scope**: Universal. This methodology applies to any project managed by SpecWeaver, including SpecWeaver itself.
-> **Date**: 2026-03-08
-> **Companion**: [Completeness Tests](../04_pipelines_and_methodology/completeness_tests.md) — the second axis (detail/implementability), orthogonal to the structure tests defined here.
-
----
+**Status**: DRAFT, 2026-03-08 — consolidated from architectural review; needs discussion.
+**Scope**: universal — any project managed by SpecWeaver, including SpecWeaver itself.
+**Companion**: [Completeness Tests](../04_pipelines_and_methodology/completeness_tests.md) — the
+second axis (detail/implementability), orthogonal to the structure tests here.
 
 ## 1. The Problem This Solves
 
-Specifications tend to grow into monoliths. A spec starts as "define component X" and absorbs every
-related concern: how X works, how X fails, how X interacts with Y and Z, what X might do in the
-future. The result is a document that is too large to review, too tangled to implement, and too
+Specs grow into monoliths. "Define component X" absorbs how X works, how X fails, how X talks to Y
+and Z, what X might do later. The result is too large to review, too tangled to implement, too
 coupled to test.
 
-**Root cause**: There is no organizing principle that tells the author "this concern belongs HERE, that concern belongs THERE, and when the document hits THIS threshold, split it."
-
-This methodology provides that organizing principle.
-
----
+**Root cause**: no organizing principle that says "this concern belongs HERE, that one THERE, and at
+THIS threshold, split." This methodology is that principle.
 
 ## 2. Two-Level Spec Model
 
-Specs exist at two levels, corresponding to the fractal decomposition of work.
+Two levels, matching the fractal decomposition of work.
 
 ### Level 1: Feature Spec — "What goes where?"
 
-A Feature Spec decomposes a cross-cutting feature into component-level work items. It is the **single source of truth for the decomposition decision**.
+Decomposes a cross-cutting feature into component-level work items. It is the **single source of
+truth for the decomposition decision**.
 
-When a stakeholder (customer, PO, architect) requests a feature, it typically crosses component, module, or service boundaries. Before any implementation spec is written, a Feature Spec must answer:
+A requested feature (from customer, PO, architect) usually crosses component, module or service
+boundaries. Before any implementation spec is written, the Feature Spec answers:
 
 | Section | Question |
 |---------|----------|
@@ -40,17 +36,13 @@ When a stakeholder (customer, PO, architect) requests a feature, it typically cr
 
 **Key rule**: The Feature Spec decides *what goes where*. Individual Component Specs do not make this decision — they receive it.
 
-**Analogy**: The Feature Spec is the architect's floor plan. It says "the kitchen goes here, the
-bathroom goes there, and the plumbing connects them." Individual room specs describe the fixtures
-and finishes — not where the walls go.
+**Analogy**: the Feature Spec is the floor plan ("kitchen here, bathroom there, plumbing connects
+them"). Room specs describe fixtures and finishes — not where the walls go.
 
 ### Level 2: Component Spec — "How does this piece work?"
 
-A Component Spec describes one isolated, implementable unit of the system. It is written
-**top-down**, driven by the Feature Spec's decomposition — not bottom-up by staring at the component
-in isolation.
-
-Component Specs use the **5-Section Template** (see §3).
+One isolated, implementable unit. Written **top-down** from the Feature Spec's decomposition — not
+bottom-up from the component in isolation. Uses the **5-Section Template** (§3).
 
 ### The Relationship
 
@@ -79,11 +71,9 @@ Stakeholder: "I want feature X"
    [impl]  [impl]  [impl]    ← Implementation
 ```
 
----
-
 ## 3. Component Spec Template (5 Sections)
 
-Every Component Spec follows this structure. The sections are not arbitrary — each serves a distinct purpose and prevents a specific failure mode.
+Each section prevents a specific failure mode.
 
 ### Section 1: Purpose
 *One paragraph.* What this component does and why it exists. If this paragraph contains "and" connecting two unrelated responsibilities, the component may need splitting.
@@ -127,23 +117,21 @@ Defines **rules and tunable parameters** that alter behavior without code change
 ### Section 5: Boundaries
 *"What this component does NOT do."*
 
-**This is the most important section.** It prevents scope creep by explicitly listing responsibilities that belong to neighboring components.
+**The most important section.** Prevents scope creep by listing responsibilities that belong to
+neighboring components.
 
 - What is NOT this component's job
 - Which component owns each excluded responsibility
 - Where to look for related concerns
 
-**Why this matters**: When someone (human or agent) wants to add "retry logic" to a data loader
-spec, Section 5 says *"Error recovery is NOT this component's responsibility — see the Executor
-component."* Without this section, every spec becomes a magnet for every related concern.
-
----
+**Why**: when someone (human or agent) wants to add "retry logic" to a data loader spec, Section 5
+says *"Error recovery is NOT this component's responsibility — see the Executor component."* Without
+it, every spec attracts every related concern.
 
 ## 4. Readiness Tests — "Split or Proceed?"
 
-At any fractal level, before proceeding to implementation, a spec must pass **all five** readiness tests. If any test fails, the spec requires further decomposition.
-
-These tests are **universal** — they do not reference any specific project, technology, or domain.
+At any fractal level, a spec must pass **all five** before implementation. Any failure means
+decompose further. The tests are **universal** — no project, technology or domain in them.
 
 ### Test 1: The One-Sentence Test
 > Can you describe what this spec produces in one sentence?
@@ -199,13 +187,12 @@ Spec under evaluation
                               └─ Repeat until all pass
 ```
 
-**Anti-signal** (do NOT split): If the resulting sub-specs would constantly reference each other ("see sub-spec B §3.2"), they are actually one cohesive unit. Reconsider the split boundary.
-
----
+**Anti-signal** (do NOT split): if the sub-specs would constantly reference each other ("see
+sub-spec B §3.2"), they are one cohesive unit. Reconsider the split boundary.
 
 ## 5. Size Budgets
 
-Size budgets serve as early warning signals, not hard rules. A spec exceeding its budget almost always indicates mixed concerns.
+Early warnings, not hard rules. Over budget almost always means mixed concerns.
 
 | Spec Level | Budget | Rationale |
 |------------|--------|-----------|
@@ -217,11 +204,9 @@ When a spec exceeds its budget:
 2. Apply the readiness tests to that section alone
 3. If it fails any test, extract that concern into its own component
 
----
-
 ## 6. Concern Routing Rules
 
-When writing or reviewing a spec, use these rules to determine where a concern belongs:
+Where a concern belongs:
 
 | If the paragraph... | It belongs in... |
 |---------------------|-----------------|
@@ -232,15 +217,12 @@ When writing or reviewing a spec, use these rules to determine where a concern b
 | Describes a future idea or V2 enhancement | **Separate [BLUEPRINT] document** — do not pollute active specs |
 | Describes what this component does NOT do | **Boundaries section** of this component |
 
----
-
 ## 7. Automation Potential
 
 > **Detailed analysis**: [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md)
 
-Most readiness tests can be partially or fully automated using **static code analysis** (no LLM
-tokens required). The static checks act as a gate: only borderline cases are escalated to an LLM for
-judgment.
+Most readiness tests are partly or fully automatable by **static analysis** (no LLM tokens). Static
+checks are the gate; only borderline cases go to an LLM.
 
 | Test | Static Accuracy | LLM Needed? |
 |------|----------------|-------------|
@@ -250,21 +232,19 @@ judgment.
 | **Dependency Direction** | ~90% (with component hierarchy map) | No |
 | **Day** | ~65% (composite score: size, sections, branches, states) | Only for borderline cases |
 
-**Gate model**: Static checks run on every save/commit (free, instant). LLM is invoked only when
-static analysis flags a borderline result and the author disputes the flag. Estimated token savings:
-~80%.
+**Gate model**: static checks run on every save/commit (free, instant). The LLM is invoked only when
+a result is borderline and the author disputes the flag. Estimated token savings: ~80%.
 
-**Size budget enforcement** is trivially automatable: measure byte count per spec, alert on threshold exceeding.
+**Size budgets**: measure byte count per spec, alert when over.
 
----
+Rule code: `S01`–`S05` in `src/specweaver/assurance/validation/rules/spec/`.
 
 ## 8. Fractal Application — Same Tests, Every Level
 
 > **Concrete walkthrough**: [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) — demonstrates all 5 tests at all 4 levels using real SpecWeaver examples.
 
-The 5 readiness tests are **not specific to specifications**. They are decomposition tests that
-apply at every level of software architecture. The tests are identical — only the thresholds and
-input format change.
+The 5 readiness tests are decomposition tests, not spec tests. They apply at every level of
+software architecture; only thresholds and input format change.
 
 ### 8.1 The Levels
 
@@ -285,9 +265,11 @@ The **test definitions** are identical at every level:
 4. **Dependency Direction**: Does this unit only depend on things *below* it, never on peers or above?
 5. **Day**: Can one person (or one agent session) complete work on this unit in one sitting?
 
-The **failure response** is also identical at every level: decompose the failing unit into sub-units, then re-test each.
+Also identical at every level:
 
-The **anti-signal** is also identical: if the resulting sub-units constantly cross-reference each other, they are one cohesive unit and should not be split.
+- **Failure response**: decompose the failing unit into sub-units, re-test each.
+- **Anti-signal**: sub-units that constantly cross-reference each other are one cohesive unit — do
+  not split.
 
 ### 8.3 What Changes (Differences)
 
@@ -312,7 +294,9 @@ The **anti-signal** is also identical: if the resulting sub-units constantly cro
 | **L3** | Source code (`.py`, `.ts`, etc.) | AST parser (class definitions, method count, imports) |
 | **L4** | Source code (single function) | AST parser (parameters, branches, calls, LOC) |
 
-The static checks from the [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) cover L1-L2. For L3-L4, the same tests use code-level signals:
+The static checks from the
+[Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) cover L1-L2. L3-L4
+use code-level signals:
 
 | Test | Spec Signal (L1-L2) | Code Signal (L3-L4) |
 |------|---------------------|---------------------|
@@ -324,7 +308,7 @@ The static checks from the [Static Spec Readiness Analysis](../../analysis/stati
 
 ### 8.4 Mapping to Classical Principles
 
-The 5 tests are not new ideas — they unify established software engineering principles under one fractal checklist:
+The 5 tests are established principles, unified in one fractal checklist:
 
 | Readiness Test | Classical Principle | Origin |
 |---------------|-------------------|--------|
@@ -334,13 +318,12 @@ The 5 tests are not new ideas — they unify established software engineering pr
 | Dependency Direction | **Dependency Inversion Principle** (DIP) | Robert C. Martin, SOLID / Clean Architecture |
 | Day | **Right-Sizing** / task decomposition | Agile story slicing, Goldilocks principle |
 
-The contribution of this methodology is **not** inventing these principles — it's recognizing that
-they are **the same principles at every level**, and providing a single, automatable checklist that
-applies fractally from feature down to function.
+The contribution: recognizing they are **the same principles at every level**, in one automatable
+checklist from feature down to function.
 
 ### 8.5 Tooling Implication
 
-A single tool can enforce all levels:
+One tool enforces all levels:
 
 ```
 sw check --level=feature  docs/features/user_auth.md          # spec-level
@@ -350,14 +333,10 @@ sw check --level=class    src/specweaver/engine/core.py         # code-level (fi
 sw check --level=function src/specweaver/engine/core.py::execute_step  # code-level (symbol)
 ```
 
-The `--level` parameter selects the threshold set. The input type (`.md` vs `.py`) selects the parser. The tests themselves are unchanged.
-
----
+`--level` selects the threshold set; the input type (`.md` vs `.py`) selects the parser; the tests
+stay the same. `sw check --level` exists (`assurance/validation/interfaces/cli.py`).
 
 ## 9. Open Questions (For Further Discussion)
-
-> [!NOTE]
-> The following questions were identified during the initial discussion and require further refinement.
 
 1. **Feature Spec ownership**: Who creates the Feature Spec — the PO, the architect, or the HITL during an agent-assisted session? What approval gates apply?
 

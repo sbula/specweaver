@@ -1,7 +1,7 @@
 # Idea to Production — The Default Workflow
 
-SpecWeaver spans 6 lifecycle layers. Each transition is gated by the 10-test
-battery at the appropriate fractal level:
+SpecWeaver spans 6 lifecycle layers. Each transition is gated by the 10-test battery at the
+matching fractal level (the code now runs 12 rules — see [Methodology Index](methodology_index.md)).
 
 ```text
 L1 Business       ─Feature Spec──▶  L2 Architecture  ─Decomposition──▶  L3 Specification
@@ -15,22 +15,22 @@ L6 Deploy  ◄──CI/CD──  L5 Review  ◄──Code──  L4 Implementati
 
 ## Typical Flow for a Single Feature
 
-1. **L1 — Business**: HITL describes the feature → agent structures it into
-   a Feature Spec → completeness tests run → HITL approves
-2. **L2 — Architecture**: Agent proposes component decomposition → readiness
-   tests check each split → architect approves
-3. **L3 — Specification**: Agent drafts component spec using 5-section template
-   → 10-test battery validates → LLM semantic review pipeline scores quality
-4. **L4 — Implementation**: Agent generates code from spec → generates tests →
-   runs tests → validates code → LLM reviews code against spec
-5. **L5 — Review**: Reviewer agent (read-only) checks against spec + checklist
-   → ACCEPTED or DENIED with feedback → loops back to L4 if DENIED
+1. **L1 — Business**: HITL describes the feature → agent structures it into a Feature Spec →
+   completeness tests run → HITL approves
+2. **L2 — Architecture**: agent proposes component decomposition → readiness tests check each split
+   → architect approves
+3. **L3 — Specification**: agent drafts the component spec from the 5-section template → 10-test
+   battery validates → LLM semantic review pipeline scores quality
+4. **L4 — Implementation**: agent generates code from spec → generates tests → runs tests →
+   validates code → LLM reviews code against spec
+5. **L5 — Review**: reviewer agent (read-only) checks against spec + checklist → ACCEPTED or DENIED
+   with feedback → loops back to L4 if DENIED
 6. **L6 — Deploy**: CI/CD pipeline runs (lint, type check, tests, security, build)
 
 ## SpecWeaver Pipelines Automate L3–L5
 
-The `flow/` engine automates the spec→code→review cycle through declarative
-YAML pipeline definitions:
+The `flow/` engine runs the spec→code→review cycle from declarative YAML pipelines
+(`src/specweaver/workflows/pipelines/`):
 
 | Pipeline | Steps | Purpose |
 |----------|-------|---------|

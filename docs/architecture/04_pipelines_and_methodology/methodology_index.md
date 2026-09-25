@@ -1,25 +1,21 @@
 # SpecWeaver Methodology — Consolidated Index
 
-> **Status**: DRAFT — All linked documents are drafts requiring further discussion.
-> **Date**: 2026-03-08
-> **Purpose**: Single entry point to all methodology documents produced in this session. Start here.
-
----
+**Status**: DRAFT, 2026-03-08 — all linked documents are drafts that need discussion. Start here:
+single entry point to the methodology documents.
 
 ## The Problem
 
-SpecWeaver's original specs (~350KB across 10 files) failed because they lacked an organizing
-principle. Specs grew into monoliths mixing data definitions, runtime behavior, policies, and future
-ideas. The 01_08 flows spec (107KB) was the worst case — 7 concerns in one document, un-reviewable
-and un-implementable.
+SpecWeaver's original specs (~350KB across 10 files) failed because they had no organizing
+principle. They grew into monoliths mixing data definitions, runtime behavior, policies and future
+ideas. Worst case: the 01_08 flows spec (107KB) — 7 concerns in one document, un-reviewable and
+un-implementable.
 
-This session produced a universal methodology for writing, sizing, and validating specifications that applies at every level of software architecture and across any project domain.
+The answer is one methodology for writing, sizing and validating specs, at every level of software
+architecture and in any project domain.
 
----
+## Documents
 
-## What We Produced
-
-### Framework Documents (the "how to think" layer)
+### Framework (how to think)
 
 | Document | Type | What It Defines |
 |----------|------|----------------|
@@ -29,24 +25,24 @@ This session produced a universal methodology for writing, sizing, and validatin
 | [Constitution Template](../04_pipelines_and_methodology/constitution_template.md) | Architecture | **DRAFT** — Universal template for project constitutions. References DMZ's SOUL.md. |
 | [Review Checklists](../04_pipelines_and_methodology/review_checklists.md) | Architecture | **DRAFT** — Project-specific review checklist template. Maps DMZ's 15-point checklist to universal categories. |
 
-### Analysis Documents (the "proof it works" layer)
+### Analysis (proof it works)
 
 | Document | Type | What It Proves |
 |----------|------|---------------|
 | [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) | Analysis | Per-test static automation feasibility. Tests 2 and 4 are ~85-90% automatable with zero LLM tokens. Gate model: static bouncer → LLM judge. ~80% token savings. |
-| [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) | Analysis | Concrete application of all 5 structure tests at all 4 levels (L1 Feature, L2 Module, L3 Class, L4 Function) using real SpecWeaver examples. Shows pass/fail with reasoning. |
+| [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) | Analysis | All 5 structure tests applied at all 4 levels (L1 Feature, L2 Module, L3 Class, L4 Function) on real SpecWeaver examples, with pass/fail reasoning. |
 | [Open Research Items](../../analysis/methodology_open_research.md) | Analysis | **DRAFT** — First pass on 6 remaining research questions: automated decomposition, threshold calibration, too-small problem, traceability, over-specification, cross-domain calibration. |
 
-### Context Documents (produced earlier, still relevant)
+### Context (earlier, still relevant)
 
 | Document | Type | Relevance |
 |----------|------|-----------|
-| [FlowManager Re-Evaluation](../../analysis/flowmanager_reevaluation.md) | Analysis | Project assessment that identified the vision-implementation gap and spec bloat. Root cause analysis for the methodology work. |
-| [SpecWeaver Roadmap](../../proposals/specweaver_roadmap.md) | Proposal | Step-by-step plan from current state to functional product. Steps 1-5 are concrete; 6-12 are blurry. Step 10 now references this methodology. |
+| [FlowManager Re-Evaluation](../../analysis/flowmanager_reevaluation.md) | Analysis | Identified the vision-implementation gap and spec bloat. Root cause analysis for the methodology work. |
 | [Flow Synthesis](../../analysis/flow_synthesis.md) | Analysis | Industry research: DMZ ecosystem, GitHub Spec Kit, Cline Memory Bank, PAR pattern. Contains the DMZ 5-layer analysis. |
-| [Spec Review Pipeline](spec_review_pipeline.md) | Architecture | Multi-stage LLM review process (PO → Architect → Junior Dev). Complementary to the static analysis gate — this is the LLM layer that runs AFTER static tests pass. |
+| [Spec Review Pipeline](spec_review_pipeline.md) | Architecture | Multi-stage LLM review (PO → Architect → Junior Dev). The LLM layer that runs AFTER the static tests pass. |
 
----
+Current plan: [master story roadmap](../../roadmap/master_story_roadmap.md). It replaced the old
+step-by-step SpecWeaver Roadmap (Steps 1-12, formerly proposals/specweaver_roadmap.md), which no longer exists.
 
 ## The Big Picture
 
@@ -90,7 +86,13 @@ This session produced a universal methodology for writing, sizing, and validatin
 | 9 | Error Path | Completeness | Is failure defined? | ~70% |
 | 10 | Done Definition | Completeness | Is completion verifiable? | ~80% |
 
-These tests apply at **every fractal level** (Feature → Module → Class → Function) with thresholds that tighten as you go deeper.
+The tests apply at **every fractal level** (Feature → Module → Class → Function); thresholds tighten
+as you go deeper. **A spec is ready to implement only when all pass.**
+
+**As built (2026-09-25):** the code runs 12 spec rules, `S01`–`S12` in
+`src/specweaver/assurance/validation/rules/spec/`. Added beyond this battery: `S11` Terminology
+Consistency (inconsistent casing, undefined PascalCase terms; ~70% static) and `S12` Archetype Spec
+Bounds (required headers per archetype skeleton).
 
 ### Lifecycle Integration
 
@@ -118,20 +120,18 @@ Feature Spec → Component Specs (decomposition)
 Implementation (can borrow DMZ patterns here)
 ```
 
----
-
-## What's Decided
+## Decided
 
 1. **Two-level spec model**: Feature Spec (what goes where) → Component Spec (how it works)
 2. **5-section template**: Purpose / Contract / Protocol / Policy / Boundaries
 3. **10-test battery**: 5 structure + 5 completeness, applied fractally
-4. **Static-first gate**: Run cheap checks before LLM. ~80% token savings.
-5. **Fractal application**: Same tests at L1 (Feature) through L4 (Function)
-6. **Structure and completeness are orthogonal**: Fixing one doesn't fix the other
+4. **Static-first gate**: cheap checks before the LLM. ~80% token savings.
+5. **Fractal application**: same tests at L1 (Feature) through L4 (Function)
+6. **Structure and completeness are orthogonal**: fixing one doesn't fix the other
 
-## What's Still Open (First Drafts Created — Discussion Required)
+## Still Open
 
-All 9 items now have first drafts. They are marked DRAFT and require discussion.
+All 9 items have first drafts, marked DRAFT, needing discussion.
 
 | # | Item | First Draft Location | Status |
 |---|------|---------------------|--------|
@@ -145,7 +145,7 @@ All 9 items now have first drafts. They are marked DRAFT and require discussion.
 | 8 | Completeness vs over-specification | [methodology_open_research.md §5](../../analysis/methodology_open_research.md) | DRAFT — what/how boundary rule proposed |
 | 9 | Cross-domain calibration | [methodology_open_research.md §6](../../analysis/methodology_open_research.md) | DRAFT — domain profiles approach proposed |
 
-### External References
+## External References
 
 - **DMZ Repository**: [github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz)
   — production reference for L4-L5 patterns (auto-develop.sh, reviewer.md, SOUL.md, AGENTS.md,

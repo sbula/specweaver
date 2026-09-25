@@ -1,5 +1,13 @@
 # Hard Dependency Rules
 
+Per module: what it may import (`consumes`) and what it must not (`forbids`). Picture:
+[Module Dependency Graph](module_dependency_graph.md). Field semantics:
+[Context YAML Specification](context_yaml_spec.md).
+
+**Since moved (2026-09-25):** these tables use the old flat module names and the old
+`commons/`/`tools/`/`atoms/` sandbox layout. The live, enforced rules are in `tach.toml`
+(`exact = true`), checked by the `tach` gate in `scripts/quality.py`.
+
 ## Top-Level Modules
 
 | Module | Archetype | Consumes | Forbids |
@@ -24,6 +32,8 @@
 > [!CAUTION]
 > **12 of 16 modules explicitly `forbid: sandbox/*`.** Only `flow/` is allowed to
 > touch sandbox (via atoms only, NOT tools or commons). The sandbox layer is isolated.
+
+Exception: `planning` and `review` may import `sandbox/dispatcher` for types only.
 
 ## Loom Sub-Layers
 

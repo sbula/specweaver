@@ -1,12 +1,16 @@
 # Specification Review Pipeline
 
-> **Status**: ACTIVE
-> **Owner**: Architecture Team
-> **Context**: Multi-agent iterative pipeline for writing, hardening, and validating specification documents before HITL approval and implementation.
+**Status**: ACTIVE · **Owner**: Architecture Team
+
+A 3-stage, multi-agent pipeline that writes, hardens and validates a spec before HITL approval and
+implementation. Runs after the static test battery passes.
+
+**As built (2026-09-25):** a manual prompt procedure. No code in `src/` runs these stages, the `NOPE`
+loop, the Junior-question injection or the `.review/` files; `.review/` is not in `.gitignore`.
 
 ## 1. Overview
 
-This document defines a 3-stage pipeline for producing production-grade specifications using role-specialized AI agents. Each stage targets a different class of defect:
+Each stage targets a different class of defect:
 
 | Stage | Agent Role | Catches |
 |:---:|:---|:---|
@@ -15,8 +19,6 @@ This document defines a 3-stage pipeline for producing production-grade specific
 | **Part 3** | Junior Developer | Ambiguity, missing definitions, un-implementable language |
 
 The pipeline converges when the Architect finds zero issues AND the Junior Developer has zero questions.
-
----
 
 ## 2. Pipeline Flow
 
@@ -41,34 +43,29 @@ graph TD
 ```
 
 **Break Conditions:**
-- **Part 2 loop**: Terminates when the Architect responds `NOPE` (zero issues found). All fixes are applied directly to `[SPEC_FILE]` during the loop — the document accumulates all corrections.
-- **Part 3 → Part 2 feedback**: If the Junior has questions, they feed into Part 2's next iteration.
-  The Architect receives both the questions AND the already-hardened spec (with all prior fixes
-  intact). If the Junior has zero questions after the second pass, the spec is approved.
-- **Part 3 second-pass failure**: If the Junior still has questions after a full Part 2 re-loop, the
-  problem is structural — iterative fixing cannot resolve it. Escalate to HITL triage, which decides
-  whether to restart from Part 1 or apply a targeted fix cycle.
-
----
+- **Part 2 loop**: ends when the Architect responds `NOPE` (zero issues). Fixes go straight into
+  `[SPEC_FILE]`, which accumulates all corrections.
+- **Part 3 → Part 2 feedback**: Junior questions feed Part 2's next iteration. The Architect gets the
+  questions AND the already-hardened spec. Zero Junior questions after the second pass = approved.
+- **Part 3 second-pass failure**: questions after a full Part 2 re-loop mean a structural problem
+  iteration cannot fix. Escalate to HITL triage: restart from Part 1, or a targeted fix cycle.
 
 ## 3. Session Management Rules
 
 > [!IMPORTANT]
-> Each iteration of Part 2 and Part 3 MUST run in a **fresh session** with no prior context. This prevents the AI from recycling findings or inheriting biases from previous iterations.
+> Each iteration of Part 2 and Part 3 MUST run in a **fresh session** with no prior context, so the
+> AI does not recycle findings or inherit biases from earlier iterations.
 
 **Before each new session:**
 1. Clear the knowledge item store (e.g., delete or rename the AI tool's knowledge directory).
 2. Start a new conversation — do not continue an existing one.
 3. Do not reference or paste output from previous sessions (except the Junior's questions, which are explicitly injected into Part 2).
 
-**Part 1 is the exception**: The PO stage is interactive and conversational. It runs in a single session with the HITL until the draft is approved.
+**Exception — Part 1**: interactive, one session with the HITL until the draft is approved.
 
-**HITL Checkpoint Rule**: After every 3 iterations of Part 2 within a single loop, the pipeline MUST
-pause for HITL review of the accumulated changes before continuing. This prevents excessive spec
-drift from unchecked automated fixes (up to 5 fixes × 10 iterations = 50 changes without human
-oversight).
-
----
+**HITL Checkpoint Rule**: after every 3 Part 2 iterations in one loop, the pipeline MUST pause for
+HITL review of the accumulated changes. Without it, up to 5 fixes × 10 iterations = 50 changes would
+land without human oversight.
 
 ## 4. Prompt Templates
 
@@ -81,8 +78,6 @@ All prompts use these placeholders:
 | `[SPEC_NAME]` | Human-readable name of the specification | `Flows Specification` |
 | `[SPEC_FILE]` | File path relative to project root | `docs/specs/01_08_flows_spec.md` |
 | `[ONE_LINE_GOAL]` | Single sentence describing the spec's purpose | `Definition of the orchestration logic that binds the system together` |
-
----
 
 ### 4.2 Part 1 — Product Owner / Business Process Engineer
 
@@ -139,8 +134,6 @@ Rules:
 Write the spec to this file: [SPEC_FILE]
 ```
 
----
-
 ### 4.3 Part 2 — Senior Architect (Verification Loop)
 
 **Mode**: Automated loop, clean session per iteration.
@@ -180,11 +173,9 @@ find zero, respond NOPE.
 For each issue found, apply the fix directly to the spec document.
 ```
 
-**Conditional Block**: The `<insert_if_junior_questions_available>` section is only included when
-Part 3 has produced questions. On the first pass (before any Junior review), this block is omitted
-entirely. This injection is handled automatically by the SpecWeaver orchestration engine at runtime.
-
----
+**Conditional Block**: `<insert_if_junior_questions_available>` is included only when Part 3 has
+produced questions; on the first pass it is omitted. Intended to be injected by the SpecWeaver
+orchestration engine at runtime (not built — see As built above).
 
 ### 4.4 Part 3 — Junior Developer (Ambiguity Gate)
 
@@ -206,15 +197,13 @@ Do NOT ask questions that are answered in other, referenced documents (you may
 read them to check!)
 ```
 
----
-
 ## 5. Iteration Tracking Strategy
 
-The pipeline runs multiple iterations that modify the same spec file. To avoid polluting version control with dozens of intermediate commits, the following strategy applies.
+Many iterations modify the same spec file. Goal: no dozens of intermediate commits.
 
 ### 5.1 Flow-Internal State
 
-Since this pipeline is orchestrated by SpecWeaver, iteration metadata lives in the **flow execution state**, not in git. The flow context tracks:
+Iteration metadata lives in the **flow execution state**, not in git. The flow context tracks:
 - Iteration count per stage
 - The Junior's question list (when applicable)
 - Convergence status (last Architect response)
@@ -223,9 +212,8 @@ Only the **final approved spec** is committed to git.
 
 ### 5.2 Review Artifacts Directory
 
-All review artifacts are stored in a top-level `.review/` directory, **outside of `docs/`**. This is
-critical to prevent context pollution — Part 2's prompt instructs the agent to "scan the folder
-docs/", so any review artifacts inside `docs/` would bias successive iterations and break the
+All review artifacts go in a top-level `.review/` directory, **outside `docs/`**. Part 2's prompt says
+"scan the folder docs/", so artifacts inside `docs/` would bias later iterations and break the
 fresh-session guarantee.
 
 ```
@@ -239,7 +227,7 @@ docs/specs/01_08_flows_spec.md                       ← the real spec (agent re
 
 ### 5.3 Baseline Snapshots
 
-The baseline file enables visual diffing at HITL checkpoints:
+The baseline file is the left side of the diff at HITL checkpoints:
 
 | Event | Action |
 |:---|:---|
@@ -257,9 +245,8 @@ The baseline file enables visual diffing at HITL checkpoints:
 
 ### 5.4 Review Notes (Change Reasoning)
 
-Each Architect iteration appends its reasoning to `.review/[SPEC_BASENAME].review_notes.md`. This
-file is **never read by the agent** (it lives outside `docs/` and is not referenced in any prompt).
-It exists only for the HITL to understand *why* changes were made.
+Each Architect iteration appends its reasoning to `.review/[SPEC_BASENAME].review_notes.md`. The
+agent **never reads it** (outside `docs/`, in no prompt). It tells the HITL *why* changes were made.
 
 Format (appended per iteration):
 
@@ -284,26 +271,23 @@ Format (appended per iteration):
 > agent's prompt never mentions `.review/` or the review notes file — it remains completely unaware
 > of their existence.
 
-At the HITL checkpoint, the human has two complementary views:
+At the HITL checkpoint the human has two views:
 1. **Diff tool**: `.review/[SPEC_BASENAME].baseline.md` vs `[SPEC_FILE]` → the visual **"what changed"**
 2. **Review notes**: `.review/[SPEC_BASENAME].review_notes.md` → the textual **"why it changed"**
 
-After HITL approval, the review notes are **cleared** (not appended further) so the next checkpoint window starts fresh.
+After HITL approval the review notes are **cleared** (not appended further); the next checkpoint
+window starts fresh.
 
 > [!WARNING]
 > The review notes file must NOT be placed inside `docs/` or referenced in any agent prompt. The Architect and Junior agents must never read this file. Its sole audience is the human reviewer.
 
----
-
 ## 6. Convergence Properties
 
-The pipeline is designed to converge:
-
-- **Part 2 (Architect)** produces diminishing returns: each iteration fixes issues, leaving fewer
-  for the next pass. The severity gate ("implementation failure, data corruption, or security
-  bypass") filters out nitpicks.
-- **Part 3 (Junior)** acts as a binary gate: questions exist or they don't. After the Architect addresses the questions and re-loops to NOPE, the Junior's second pass is a confirmation check.
-- **Worst case**: If the Junior's second pass still produces questions, the spec has a structural problem that iterative fixing cannot solve. Escalate to HITL triage.
+- **Part 2 (Architect)**: diminishing returns — each iteration leaves fewer issues. The severity gate
+  ("implementation failure, data corruption, or security bypass") filters out nitpicks.
+- **Part 3 (Junior)**: a binary gate — questions exist or not. After the Architect re-loops to NOPE,
+  the second pass is a confirmation check.
+- **Worst case**: questions on the second pass = structural problem. Escalate to HITL triage.
 
 **Expected iteration counts** (based on observed usage):
 
@@ -313,12 +297,11 @@ The pipeline is designed to converge:
 | Part 2 (Architect) | 3–6 clean sessions | 10 (if not converging, escalate) |
 | Part 3 (Junior) | 1–2 passes | 2 (second failure → escalate) |
 
----
-
 ## 7. Future Enhancements
 
-> [!NOTE]
-> The following are potential improvements, not current requirements.
+Potential improvements, not requirements:
 
-- **Cross-model shadow review**: Run Part 2 with different LLM providers in parallel for independent verification (see `external_strategy_review.md` T1.2).
-- **Diff-based re-review**: Instead of re-reading the entire spec each iteration, feed the Architect only the diffs from the last iteration to reduce context window usage and focus attention.
+- **Cross-model shadow review**: run Part 2 with different LLM providers in parallel for independent
+  verification (see `external_strategy_review.md` T1.2 — file no longer in the repo).
+- **Diff-based re-review**: feed the Architect only the last iteration's diffs, not the whole spec —
+  less context, sharper focus.

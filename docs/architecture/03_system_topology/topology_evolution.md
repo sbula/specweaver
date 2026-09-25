@@ -1,63 +1,55 @@
 # Architecture Concept: Hybrid GraphRAG and Topological Evolution
 
-> **Date**: April 2026
-> **Context**: Evolution of Feature 3.33 inspired by structural analysis models (e.g., Graphify).
-> **Objective**: Definitively establish the SpecWeaver methodology for capturing codebase
-> relationships, proving that explicit Graph Topology surpasses Vector Embeddings for code
-> structures, and outline the multi-modal integration patterns.
+**Status:** concept, April 2026. Evolution of Feature 3.33, inspired by structural analysis models
+(e.g., Graphify). As of 2026-09-25 only the NetworkX graph engine exists in code
+(`graph/core/engine/`); centrality, God Nodes, Leiden, Rocket Mode and inferred edges are not built.
 
-## Concept Overview
-Traditional Code-RAG relies heavily on Vector Embeddings stored in databases (Chroma, pgvector).
-This approach fundamentally breaks on large codebases because chunking destroys exact logical
-boundaries (e.g., AST bounds). 
+## The idea
 
-By leaning into rigorous Graph Theory methodologies, SpecWeaver shifts the anchor from
-Nearest-Neighbor search to Breadth-First-Search (BFS) structural traversals, only leveraging vectors
-as a secondary semantic fallback.
+SpecWeaver captures code structure as an explicit graph, not as vector embeddings. Graph traversal (BFS) is
+the primary lookup; vectors are a secondary semantic fallback.
+
+**Why not vector-only Code-RAG** (Chroma, pgvector): chunking destroys exact logical boundaries
+(e.g., AST bounds), so retrieval breaks on large codebases.
 
 ## 1. Feature 3.32f: Knowledge Graph Builder & Persistence
-Before we can abstract database providers, we must actually build and store the Graph. We extract
-the deep AST logic (classes/functions) and construct the graph. Crucially, the graph is
-**persisted** directly to local specweaver.db (SQLite) upon extraction. When SpecWeaver boots, it
-deserializes the edges into a NetworkX memory object for fast traversal, completely eliminating the
-need to rebuild from source code constantly on every startup.
+
+- Extract AST logic (classes/functions) and build the graph.
+- **Persist** the graph to local specweaver.db (SQLite) at extraction.
+- On boot, deserialize the edges into a NetworkX in-memory object for traversal — no rebuild from
+  source on every startup.
+
+This must exist before database providers can be abstracted.
 
 ## 2. Feature 3.33 Framework: Topology Provider Abstraction (Bicycle vs Rocket Mode)
-To ensure SpecWeaver's topology operations remain scalable, the backend abstraction is split:
 
-### Bicycle Mode (SQLite/BM25 Local Persistence)
-- **Mechanism:** Augments the persistent `SQLite/BM25` baseline with an **In-Memory Graph object** (`NetworkX` or `rustworkx`) populated locally per query bounds.
-- **Why it matters:** Local ASTs are parsed and piped into RAM, allowing instantaneous BFS traversal, community clustering, and network flow math without hitting disk I/O.
-- **Limitation:** Fails when spanning massive, polyglot microservice boundaries distributed across separated repositories. 
-
-### Rocket Mode (PostgreSQL + Apache AGE + pgvector)
-- **Mechanism:** Persistent, enterprise-grade architecture.
-- **Why it matters:** Utilizes `Apache AGE` (Cypher queries on Postgres) to perform cross-service
-  cluster analysis and edge walking. Uses `pgvector` purely as a supplemental lookup for fuzzy logic
-  unmapped by native AST trees.
+| Mode | Mechanism | Strength | Limit |
+|---|---|---|---|
+| **Bicycle** (SQLite/BM25 local persistence) | Persistent `SQLite/BM25` baseline plus an **in-memory graph** (`NetworkX` or `rustworkx`) populated per query bounds | Local ASTs in RAM: instant BFS, community clustering, network-flow math, no disk I/O | Fails across large polyglot microservice boundaries spread over separate repositories |
+| **Rocket** (PostgreSQL + Apache AGE + pgvector) | Persistent server database | `Apache AGE` (Cypher on Postgres) for cross-service cluster analysis and edge walking; `pgvector` only as supplemental lookup for fuzzy logic the AST does not map | — |
 
 ## 3. Degree Centrality and "God Nodes" (Feature 3.38)
-Instead of forcing AI to guess which context files map highest weight, SpecWeaver will introduce local centrality math against AST graphs.
 
-- **The Metric:** By calculating the **Degree Centrality** of a node (counting incoming call edges and outgoing dependency edges), the system can mathematically classify architectural pillars.
-- **"God Nodes":** The top-ranked centralized nodes are flagged explicitly as "God Nodes". These signify dangerous classes where changes yield massive ripple effects.
-- **Visualization:** `sw graph` will render a completely standalone `.html` web graph (using
-  PyVis/D3.js). Engineers can drag, zoom, and visually identify community clusters and "God Nodes"
-  locally, eliminating the need to wait for the Heavy Dashboard API.
+- **Metric:** Degree Centrality of a node = incoming call edges + outgoing dependency edges. Replaces
+  the AI guessing which context files weigh most.
+- **"God Nodes":** the top-ranked nodes, flagged explicitly. Changing them causes large ripple effects.
+- **Visualization:** `sw graph` renders a standalone `.html` graph (PyVis/D3.js). Engineers drag,
+  zoom and spot community clusters and God Nodes locally, without the Heavy Dashboard API.
 
 ## 4. Leiden Community Clustering
-When constructing Prompt boundaries, finding optimal combinations of `context_files` is difficult. BFS expansion allows us to use clustering algorithms (like Leiden detection). 
 
-- **Execution:** Applying these math bounds on topological dependencies allows SpecWeaver to feed
-  LLMs dense, logically intertwined `context_files` that share a "neighborhood" rather than just
-  similar naming schemas.
+Picking the right set of `context_files` for a prompt is hard. BFS expansion enables clustering
+(e.g., Leiden detection) on topological dependencies, so the LLM gets `context_files` that share a
+"neighborhood" of real dependencies, not just similar names.
 
 ## 5. Multi-Modal Edges & Reverse-Weaving (Feature 3.43)
-While Tree-sitter enforces precise Extracted Edges between code files, we must map arbitrary architecture knowledge.
 
-- **Expanding Inputs:** Pipelining Whiteboard diagrams, PDFs, and Markdown documentation through Vision/LLM extractors.
-- **Inferred Edges:** The system will dynamically inject these unstructured concepts into the
-  Postgres/NetworkX graph using specialized LLM evaluations, explicitly tagging the relationship
-  edges as `[semantically_similar]` or `[inferred]`. This allows humans or agents to confidently
-  distinguish between strict AST realities and AI-inferred logic. 
-- **Application:** Powering Feature 3.43 (Reverse-Weaving), allowing developers to drop legacy diagrams into the CLI to bootstrap raw implementations dynamically.
+Tree-sitter gives precise extracted edges between code files. Architecture knowledge outside code
+needs a second edge kind.
+
+- **Inputs:** whiteboard diagrams, PDFs and Markdown docs, through Vision/LLM extractors.
+- **Inferred edges:** LLM evaluations inject these concepts into the Postgres/NetworkX graph, with
+  edges tagged `[semantically_similar]` or `[inferred]`. Humans and agents can tell AST fact from
+  AI inference.
+- **Application:** Feature 3.43 (Reverse-Weaving) — drop legacy diagrams into the CLI to bootstrap
+  raw implementations.

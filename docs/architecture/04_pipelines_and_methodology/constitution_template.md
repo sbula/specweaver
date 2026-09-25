@@ -1,48 +1,42 @@
 # Project Constitution Template
 
-> **Status**: DRAFT — First draft, requires discussion and refinement.
-> **Date**: 2026-03-08
-> **Scope**: Universal template. Each project using SpecWeaver creates its own constitution from this template.
-> **Related**:
-> - [Methodology Index](../04_pipelines_and_methodology/methodology_index.md) — consolidated overview
-> - [DMZ Repository — SOUL.md](https://github.com/TheMorpheus407/the-dmz) — reference implementation (the DMZ project's `SOUL.md` serves as its constitution)
+**Status**: DRAFT, 2026-03-08. **Scope**: universal template — each project using SpecWeaver creates
+its own constitution from it.
 
----
+| | |
+|---|---|
+| Overview | [Methodology Index](../04_pipelines_and_methodology/methodology_index.md) |
+| Reference | [DMZ Repository — SOUL.md](https://github.com/TheMorpheus407/the-dmz) (the DMZ project's `SOUL.md` is its constitution) |
 
 ## Purpose
 
-A Constitution is a **read-only, human-authored document** that defines the non-negotiable rules for
-a project. Every agent, every persona, every flow reads this document first. It cannot be modified
-by agents — only by the HITL through explicit, deliberate action.
+A Constitution is a **read-only, human-authored document** with a project's non-negotiable rules.
+Every agent, persona and flow reads it first. Agents cannot modify it — only the HITL, by explicit,
+deliberate action.
 
-The Constitution answers: *"What is always true about this project, regardless of which feature we're building?"*
+It answers: *"What is always true about this project, regardless of which feature we're building?"*
 
 ### Why a Constitution Exists
 
-Without a Constitution:
+Without one:
 - Agents invent architecture decisions that contradict the project's intent
 - Different sessions produce inconsistent code (one uses SQLite, another uses PostgreSQL)
 - Security invariants get silently violated when an agent "optimizes"
 - Technical standards drift as agents pick whatever works at the moment
 
-With a Constitution:
+With one:
 - Every agent starts from the same non-negotiable constraints
 - Architectural consistency is enforced by document, not by memory
 - Security invariants are explicitly stated and checkable
 
 ### Reference: DMZ's SOUL.md
 The DMZ repository ([github.com/TheMorpheus407/the-dmz](https://github.com/TheMorpheus407/the-dmz))
-uses `SOUL.md` as its constitution. It covers: project identity, tech stack table, 7 architecture
-principles, coding standards, security principles, and a key documents index. Every agent in the DMZ
-ecosystem is instructed to read `SOUL.md` first.
-
----
+uses `SOUL.md`: project identity, tech stack table, 7 architecture principles, coding standards,
+security principles, key documents index. Every DMZ agent reads `SOUL.md` first.
 
 ## Template
 
-Below is the universal template. Each section is annotated with guidance on what to include.
-
----
+Each section carries guidance on what to include. Replace every `[...]` placeholder.
 
 ```markdown
 # [Project Name] — Constitution
@@ -152,8 +146,6 @@ Explicit list of things agents must NEVER do.
 **If an agent encounters a conflict between a spec and this Constitution, the Constitution wins.**
 ```
 
----
-
 ## Guidance Notes
 
 ### What Belongs in a Constitution vs. a Spec
@@ -167,15 +159,17 @@ Explicit list of things agents must NEVER do.
 | Our minimum test coverage threshold | Constitution §3 |
 | The JSON schema for a flow definition | Component Spec (Contract section) |
 
-**Rule of thumb**: If it applies to the WHOLE project regardless of feature, it's Constitution. If it applies to ONE component, it's a Spec.
+**Rule of thumb**: applies to the WHOLE project regardless of feature → Constitution. Applies to ONE
+component → Spec.
 
 ### Size Budget
 
-A Constitution should be **≤ 5KB**. If it's larger, you're including component-level detail that belongs in specs. The DMZ's `SOUL.md` is ~3KB — a good target.
+**≤ 5KB**. Larger means component-level detail that belongs in specs. DMZ's `SOUL.md` is ~3KB — a
+good target.
 
 ### Maintenance
 
-- The Constitution is modified RARELY — only when a fundamental project decision changes
-- Every modification requires HITL review and explicit approval
-- Changes should be logged (date + rationale) for audit trail
-- Agents should flag when they detect a potential Constitution violation rather than silently working around it
+- Modified RARELY — only when a fundamental project decision changes
+- Every change needs HITL review and explicit approval
+- Log changes (date + rationale) for the audit trail
+- Agents flag a potential Constitution violation instead of silently working around it

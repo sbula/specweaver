@@ -1,29 +1,28 @@
 # Context YAML Specification
 
-> **Status**: DRAFT — First draft, requires discussion and refinement.
-> **Date**: 2026-03-10
-> **Scope**: Universal. Defines a fractal boundary manifest that works at any hierarchy level (system through sub-module) for all SpecWeaver-managed projects.
-> **Related**:
-> - [Lifecycle Layers](../01_foundational_principles/lifecycle_layers.md) — the layer system these boundaries protect
-> - [Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec) — the community standard we extend
-> - [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — the 10-test battery that gates layer transitions
+**Status**: DRAFT, 2026-03-10. **Scope**: universal — a fractal boundary manifest for any
+hierarchy level (system through sub-module) in every SpecWeaver-managed project.
 
----
+| | |
+|---|---|
+| Protects | [Lifecycle Layers](../01_foundational_principles/lifecycle_layers.md) |
+| Extends | [Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec) |
+| Gated by | [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — the 10-test battery that gates layer transitions |
 
 ## Overview
 
-Every directory in a SpecWeaver-managed project can contain a `context.yaml` file that declares:
+Any directory may hold a `context.yaml`. It declares:
 
-1. **What** this boundary is (identity)
-2. **What** it exposes to the outside (public surface)
-3. **What** it is allowed to depend on (whitelist)
-4. **What** pattern it follows (archetype)
+1. identity — what this boundary is
+2. public surface — what it exposes
+3. whitelist — what it may depend on
+4. archetype — what pattern it follows
 
-These files serve three purposes:
+Used for:
 
-- **Semantic search** — Agents find the right place for new code by scanning `purpose` fields.
-- **Pre-code validation** — Before writing code, SpecWeaver checks proposed imports against `consumes` and `forbids` rules.
-- **Post-code validation** — After code generation, SpecWeaver verifies the implementation matches the archetype's structural constraints.
+- **Semantic search** — agents find where new code goes by scanning `purpose` fields.
+- **Pre-code validation** — proposed imports are checked against `consumes` and `forbids`.
+- **Post-code validation** — generated code is checked against the archetype's structural constraints.
 
 ```
 project/
@@ -41,15 +40,10 @@ project/
 
 **Key principle**: One `context.yaml` per boundary. One archetype per boundary. If a directory needs two archetypes, split it into sub-directories.
 
----
-
 ## Relationship to CCS
 
-The
-[Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec)
-v1.1.0-RFC is an emerging community standard for embedding AI-readable metadata in codebases.
-SpecWeaver's `context.yaml` is designed to be CCS-compatible while extending it with enforcement
-capabilities.
+CCS v1.1.0-RFC is a community standard for AI-readable metadata in codebases. `context.yaml` is
+CCS-compatible and adds enforcement.
 
 ### CCS recap
 
@@ -62,7 +56,7 @@ CCS supports three hierarchy levels (root → module → feature) with context i
 
 ### What CCS lacks
 
-CCS is **documentation-only**. It describes what exists but provides no mechanism for enforcement:
+CCS is **documentation-only** — no enforcement:
 - No dependency whitelisting (`consumes`)
 - No forbidden import declarations (`forbids`)
 - No structural pattern validation (`archetype`)
@@ -88,8 +82,6 @@ CCS is **documentation-only**. It describes what exists but provides no mechanis
 | *(not in CCS)* | `owner` | SpecWeaver extension |
 
 A SpecWeaver `context.yaml` can be losslessly converted into CCS `index.md` frontmatter. The reverse conversion loses enforcement fields.
-
----
 
 ## Schema
 
@@ -186,11 +178,9 @@ consumes_resources:                   # OPTIONAL — Pre-fetch URIs before gener
 | `mcp_servers` | `object` | Definitions for external Model Context Protocol processes |
 | `consumes_resources` | `list[string]` | MCP URIs strictly injected as pre-fetched schemas before Agent execution |
 
----
-
 ## Operational Metadata
 
-The `operational` section captures runtime and SLA characteristics of a boundary. These fields are **not enforced at code level** — they are metadata consumed by:
+Runtime and SLA characteristics of a boundary. **Not enforced at code level** — metadata read by:
 
 - **Spec drafting agents** — to understand latency budgets and tenant requirements when writing specs
 - **Topology analysis** — to detect SLA mismatches (e.g., a latency-critical service consuming a batch-only data source)
@@ -221,8 +211,6 @@ The `operational` section captures runtime and SLA characteristics of a boundary
 - `async_ready` — **not inherited**. Each module explicitly declares async support. A parent being async-ready does not imply children are.
 - `concurrency_model` — **not inherited**. Each module declares its own concurrency strategy.
 
----
-
 ## Level Enum
 
 The `level` field is always explicit. SpecWeaver does not infer it from nesting depth.
@@ -237,7 +225,7 @@ The `level` field is always explicit. SpecWeaver does not infer it from nesting 
 
 ### Context inheritance
 
-Each boundary inherits its parent's context. Specifically:
+Each boundary inherits its parent's context:
 
 - **`consumes`** — a child can narrow but not widen its parent's whitelist. If the parent allows `shared/*`, a child can restrict to `shared/currency` but cannot add `infra/*`.
 - **`forbids`** — a child can add to the deny list but not remove from it. Forbidden items are cumulative going down the tree.
@@ -245,13 +233,10 @@ Each boundary inherits its parent's context. Specifically:
 - **`constraints`** — cumulative. A child inherits parent constraints and can add new ones.
 - **`operational`** — per-field rules (see Operational Metadata above).
 
----
-
 ## Archetype Enum
 
-An archetype defines what a boundary is structurally allowed to contain. Each boundary has **exactly
-one** archetype. If a directory naturally contains two patterns, it should be split into
-sub-directories.
+What a boundary may structurally contain. **Exactly one** per boundary; a directory with two
+patterns is split into sub-directories.
 
 ### Built-in archetypes
 
@@ -291,7 +276,7 @@ Children can then use `archetype: report-generator`.
 
 ### The single-archetype rule
 
-Every `context.yaml` declares exactly one archetype. This is enforced because:
+Every `context.yaml` declares exactly one archetype, because:
 
 1. **Validation clarity** — multiple archetypes make it ambiguous which rules apply to which file.
 2. **Fractal decomposition** — needing two archetypes signals a boundary that should be split:
@@ -315,11 +300,9 @@ tools/git/
 
 3. **The `mixed` escape** — for existing code that hasn't been split yet, `archetype: mixed` disables validation without lying about the structure.
 
----
-
 ## Semantic Search for Code Placement
 
-The `purpose` field is the primary key for semantic search. When an agent needs to find where to place new code, SpecWeaver:
+`purpose` is the search key. To place new code, SpecWeaver:
 
 1. Scans all `context.yaml` files in the project
 2. Embeds each `purpose` field (cheap — one sentence each)
@@ -348,13 +331,12 @@ Search results:
 └───────────────────────────────────────────────────────────┘
 ```
 
-The agent picks the top match, checks the archetype constraints, and proceeds if both the location and the code pattern are valid.
-
----
+The agent takes the top match, checks the archetype constraints, and proceeds only if location and
+code pattern are both valid.
 
 ## Pre-Code Validation Flow
 
-Before an agent writes a single line of code, SpecWeaver validates the proposal against the boundary rules:
+Before any code is written, the proposal is checked against the boundary rules:
 
 ```
 Agent proposes: "I will create VatCalculator.py in src/domain/billing/taxes/"
@@ -378,11 +360,9 @@ Result: PROCEED / REJECT with specific reason
 
 Token savings: a rejected proposal costs ~100 tokens. A full implementation followed by rejection costs ~5,000+ tokens.
 
----
-
 ## Post-Code Validation
 
-After code generation, SpecWeaver validates the result mechanically (no LLM needed):
+After generation, mechanical checks (no LLM):
 
 | Check | Method | Cost |
 |---|---|---|
@@ -392,13 +372,10 @@ After code generation, SpecWeaver validates the result mechanically (no LLM need
 | Archetype structure | Apply archetype-specific rules (see Archetype Enum table) | Free (AST analysis) |
 | Constraint violations | Feed `constraints` to Veto Agent for semantic check | ~200 tokens per constraint |
 
----
-
 ## Ownership & Responsibility
 
-Who writes `context.yaml` depends on the lifecycle layer. The rule is simple: **no directory with
-source code should exist without a `context.yaml`.** Who creates it is gated by the next layer's
-review.
+**Rule: no directory with source code exists without a `context.yaml`.** Who writes it depends on
+the lifecycle layer; the next layer's review gates it.
 
 | Layer | Who writes `context.yaml`? | Gate |
 |---|---|---|
@@ -410,21 +387,16 @@ review.
 
 ### Creation scenarios
 
-**New projects scaffolded by SpecWeaver** — SpecWeaver generates `context.yaml` files automatically as part of `sw init`, based on the architecture defined in the project spec.
-
-**Existing projects adopting SpecWeaver** — An agent crawls the codebase, analyzes imports and folder structure, and proposes initial `context.yaml` files. The architect reviews and approves.
-
-**Ongoing evolution** — When an agent creates a new directory at L4, it must include a
-`context.yaml` in its proposal. If it attempts to create a directory without one, pre-code
-validation rejects the change.
-
----
+| Scenario | Who creates `context.yaml` |
+|---|---|
+| New project scaffolded by SpecWeaver | `sw init` generates them from the architecture in the project spec |
+| Existing project adopting SpecWeaver | An agent crawls imports and folder structure and proposes them; the architect approves |
+| Ongoing evolution | A new directory at L4 must come with a `context.yaml` in the proposal; pre-code validation rejects a directory without one |
 
 ## Protection Model
 
-`context.yaml` files are architectural boundaries — if an agent can modify them, it can grant itself
-permissions. The protection model prevents this using the same interface-level invisibility pattern
-proven in the git tool layer.
+An agent that can edit `context.yaml` can grant itself permissions. Protection reuses the git tool
+layer's interface-level invisibility pattern.
 
 ### The filesystem tool parallel
 
@@ -439,7 +411,8 @@ The filesystem tool follows the same 4-tier architecture as the git tool:
 
 ### Agent permissions
 
-Filesystem tool interfaces follow the same role-based visibility principle: non-permitted operations are **invisible** (method does not exist on the interface), not merely blocked at runtime.
+Non-permitted operations are **invisible** (the method does not exist on the interface), not merely
+blocked at runtime.
 
 ```
 ImplementerFileInterface:
@@ -464,24 +437,20 @@ BoundaryArchitectInterface:
 | **Role separation** | Only `BoundaryArchitectInterface` has write access to `context.yaml` | Free (architectural) |
 | **Hash verification** *(optional)* | `context.lock` stores SHA-256 hashes; validate before any run | Free (mechanical) |
 
-The key insight: `context.yaml` is simultaneously the **rule definition** and the **enforcement
-input**. Each file both declares what's allowed in its boundary and is itself protected by the
-system it defines.
-
----
+`context.yaml` is both the **rule definition** and the **enforcement input**: it declares what its
+boundary allows and is itself protected by the system it defines.
 
 ## Implementation in SpecWeaver
 
-This specification will be implemented through the following SpecWeaver components:
+| Component | Responsibility | Built (2026-09-25) |
+|---|---|---|
+| **Filesystem Tool** (`sandbox/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements | yes — `interfaces/tool.py` |
+| **Filesystem Atom** (`sandbox/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation | yes — `scaffold` / `validate_boundaries` intents in `core/atom.py` |
+| **Validation Rules** (`specweaver/validation/`) | `context_yaml_lint(path)` — structural validation of the YAML file itself | no |
+| **CLI** | `sw context validate` — check all `context.yaml` files in a project for consistency | no |
 
-| Component | Responsibility |
-|---|---|
-| **Filesystem Tool** (`sandbox/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements |
-| **Filesystem Atom** (`sandbox/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation |
-| **Validation Rules** (`specweaver/validation/`) | `context_yaml_lint(path)` — structural validation of the YAML file itself |
-| **CLI** | `sw context validate` — check all `context.yaml` files in a project for consistency |
-
----
+Also not built: `BoundaryArchitectInterface` and `context.lock`. `_PROTECTED_PATTERNS` and
+`EngineFileExecutor` exist in `sandbox/filesystem/core/executor.py`.
 
 ## Open Questions
 
