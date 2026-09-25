@@ -1,78 +1,63 @@
-# Implementation Plan: Macro & Annotation Evaluator [SF-01: Core Schema Evaluator Engine]
-- **Feature ID**: 3.30
-- **Sub-Feature**: SF-01 — Core Schema Evaluator Engine
-- **Design Document**: docs/roadmap/phase_3/feature_3.30/feature_3.30_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf01_implementation_plan.md
-- **Status**: APPROVED
+# B-INTL-02 SF-01 — Core Schema Evaluator Engine
 
-**FRs owned: FR-1, FR-2.** Macro evaluation against declarative YAML schemas, and the
-multi-language gate. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from
-`INT-US-05-SF04-MIG`. Proof and mutants: `tests/integration/sandbox/test_code_structure_tool_evaluator.py`.
+**Status**: APPROVED · **FRs owned**: FR-1, FR-2 (macro evaluation against declarative YAML schemas;
+the multi-language gate — recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-05-SF04-MIG`) · **Depends on**: none · Design: [B-INTL-02_design.md](B-INTL-02_design.md)
+§Sub-features → SF-01
 
+## Goal
 
-## 1. Goal
-Implement the `evaluator.py` engine to parse declarative YAML framework schemas and translate raw
-AST framework markers into LLM-readable runtime explanations. Implement Dependency Injection through
-the Orchestrator to satisfy architectural limits, and ensure recursive schema security boundaries.
+`evaluator.py` parses declarative YAML framework schemas and turns raw AST framework markers into
+runtime explanations an LLM can read. The orchestrator injects the schemas (layer limits), and
+cascading lookups are bounded (security).
 
-## 2. Research Notes
-- **Context.yaml Architecture Restrictions**: As decided in Phase 4, the `evaluator.py` engine
-  residing in `commons/language` cannot dynamically load YAMLs from `workflows/evaluators/`. The
-  top-level Pipeline flow must be responsible for injecting `evaluator_schemas: dict` into the
-  `CodeStructureAtom` runtime.
-- **LLM Context Optimization**: Output payloads will not be nested JSON. Evaluator strings MUST be
-  natively prepended as standard line-comments inside the raw source code payload before it is
-  returned by the `read_unrolled_symbol` tool intent.
-- **Security**: The parser must be natively pure. `ruamel.yaml` must be executed safely, and no string formatting or `eval()` bindings are allowed against the mappings (NFR-4).
-- **Recursion Limits**: The mathematical evaluation dictionary lookup must contain an explicit integer throttle (e.g. `MAX_EVALUATOR_DEPTH = 5`) to prevent Cyclic Mapping OOMs (NFR-5).
+## Where it plugs in
 
-## 3. Proposed Changes
+- **`context.yaml` restriction** (decided in Phase 4): `evaluator.py` in `commons/language` may not
+  load YAMLs from `workflows/evaluators/`. The pipeline flow injects `evaluator_schemas: dict` into
+  the `CodeStructureAtom` runtime.
+- **Output shape:** no nested JSON. The evaluator's strings are prepended as line comments inside
+  the raw source returned by the `read_unrolled_symbol` intent.
+- **Security (NFR-4):** the parser is pure; `ruamel.yaml` runs in safe mode; no string formatting or
+  `eval()` bindings on the mappings.
+- **Recursion (NFR-5):** an integer cap, `MAX_EVALUATOR_DEPTH = 5`, stops cyclic-mapping OOMs.
 
-### `src/specweaver/core/loom/commons/language/evaluator.py`
-#### [NEW]
-- Define `class SchemaEvaluator`.
-- Constructor accepts `schemas: dict[str, Any]` (which is completely loaded from memory mapping).
-- Method `evaluate_markers(language: str, markers: dict) -> str` returns a unified, human-readable
-  paragraph formatted appropriately per language comment style (e.g., `//` for Java/TS, `#` for
-  Python).
-- Implements strict `MAX_EVALUATOR_DEPTH = 5` and cyclic tracking `visited = set()` across cascading definitions.
+## Changes
 
-### `src/specweaver/core/loom/atoms/code_structure/atom.py`
-#### [MODIFY]
-- Update `CodeStructureAtom.__init__` to accept an optional `evaluator_schemas: dict = None`.
-- Add internal logic to handle the new `read_unrolled_symbol` intent.
-  - 1. Execute `extract_framework_markers()`.
-  - 2. Parse against `SchemaEvaluator`.
-  - 3. Concatenate the returned explanation block directly above the original output of `extract_symbol()`.
+1. **[NEW] `src/specweaver/core/loom/commons/language/evaluator.py`** — `class SchemaEvaluator`:
+   - constructor takes `schemas: dict[str, Any]` (already loaded in memory);
+   - `evaluate_markers(language: str, markers: dict) -> str` returns one readable paragraph in the
+     language's comment style (e.g. `//` for Java/TS, `#` for Python);
+   - `MAX_EVALUATOR_DEPTH = 5` plus cycle tracking `visited = set()` across cascading definitions.
+2. **`src/specweaver/core/loom/atoms/code_structure/atom.py`** — `CodeStructureAtom.__init__` takes an
+   optional `evaluator_schemas: dict = None`. New intent `read_unrolled_symbol`:
+   1. run `extract_framework_markers()`;
+   2. evaluate with `SchemaEvaluator`;
+   3. put the explanation block directly above the output of `extract_symbol()`.
+3. **`src/specweaver/core/loom/tools/code_structure/tool.py`** — `read_unrolled_symbol` method,
+   delegating to the atom; standard file-read access bounds. `ROLE_INTENTS` whitelists it for
+   `implementer` and `reviewer`.
+4. **`src/specweaver/core/loom/tools/code_structure/definitions.py`** — `READ_UNROLLED_SYMBOL_SCHEMA`,
+   saying why it beats a plain read.
+5. **`src/specweaver/core/flow/_validation.py`** (orchestrator, FR-4) — load the ecosystem YAML
+   evaluators via `importlib.resources.files` before entering Executor isolation; pass them down as
+   dict kwargs to the tool.
 
-### `src/specweaver/core/loom/tools/code_structure/tool.py`
-#### [MODIFY]
-- Add the `read_unrolled_symbol` method delegating to the atom's intent. Requires standard file read access bounds.
-- Update `ROLE_INTENTS` to whitelist `read_unrolled_symbol` for `implementer` and `reviewer`.
+SF-02 writes the framework libraries (Spring Boot, NestJS, …); here the DI loader only loads, it does
+not validate definitions.
 
-### `src/specweaver/core/loom/tools/code_structure/definitions.py`
-#### [MODIFY]
-- Define `READ_UNROLLED_SYMBOL_SCHEMA` outlining its semantic advantage over standard reads.
+## Tests
 
-### `src/specweaver/core/flow/_validation.py` (Orchestrator)
-#### [MODIFY]
-- To resolve FR-4 boundary injection: Load the ecosystem YAML evaluators (via
-  `importlib.resources.files`) natively before dropping down into Executor isolation, directly
-  passing them down as dict kwargs into the underlying tool initialization bounds.
-- **[Deviations / Additions in Boundary 2]**: Implemented `load_evaluator_schemas(project_dir)` to
-  natively deep-merge project-local schemas (`.specweaver/evaluators/`) overriding the default
-  ecosystem payloads to fully satisfy FR-4 and NFR-3. Tested thoroughly in integration flow.
+| # | File | Case |
+|---|------|------|
+| 1 | [NEW] `tests/unit/core/loom/commons/language/test_schema_evaluator.py` | `MAX_EVALUATOR_DEPTH` stops cascading loops; marker dicts → language-aware comment blocks |
+| 2 | [NEW] `tests/integration/core/loom/test_code_structure_tool_evaluator.py` | mocked schema injection; `read_unrolled_symbol` adds comment headers without breaking tree-sitter semantics |
 
-## 4. Backlog / Tech Debt
-- SF-02 will implement the specific Framework Libraries (Spring Boot, NestJS, etc.), so for now the
-  DI loader should just handle base loading structure without attempting to validate exact
-  definitions.
+Current proof and mutants: `tests/integration/sandbox/test_code_structure_tool_evaluator.py`.
 
-## 5. Verification Plan
-### Automated Tests
-1. **`tests/unit/core/loom/commons/language/test_schema_evaluator.py`** [NEW]
-   - Verify `MAX_EVALUATOR_DEPTH` halts cascading OOM loops.
-   - Verify successful translation of raw marker dicts into language-aware comment blocks.
-2. **`tests/integration/core/loom/test_code_structure_tool_evaluator.py`** [NEW]
-   - Mock a loaded schema injection and verify `read_unrolled_symbol` cleanly injects comment headers into output blocks without corrupting tree-sitter semantics.
+## As built
+
+- `load_evaluator_schemas(project_dir)` deep-merges project-local schemas (`.specweaver/evaluators/`)
+  over the default ecosystem payloads (FR-4, NFR-3); covered by an integration flow test.
+- **Since moved** (checked 2026-09-25): `SchemaEvaluator` lives in
+  `src/specweaver/sandbox/language/core/evaluator.py`.

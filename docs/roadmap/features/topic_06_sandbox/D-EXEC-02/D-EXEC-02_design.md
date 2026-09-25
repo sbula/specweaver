@@ -1,58 +1,65 @@
-# Design: Git Worktree Bouncer (Sandbox)
+# D-EXEC-02 — Git Worktree Bouncer (Sandbox)
 
-- **Feature ID**: 3.26
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/phase_3/feature_3.26/feature_3.26_design.md
+**Status**: APPROVED. SF-01 committed; SF-02 plan COMPLETED. · **Feature ID**: 3.26 · **Phase**: 3
 
-## Feature Overview
+| | |
+|---|---|
+| Touches | flow engine (`flow/`) · Loom git atom (`loom/atoms/git/`) |
+| Extended by | `C-EXEC-06` — one worktree per multi-step run (per-step isolation cannot run a multi-step loop, `TECH-012`) |
+| Blueprints | `flowmanager_legacy_reference.md` · Codebase Context Specification (CCS) v1.1.0-RFC |
 
-Feature 3.26 adds a Git Worktree Bouncer capability to the pipeline orchestrator. It solves the
-problem of LLM hallucinations modifying untouchable/forbidden files by cloning the active task to an
-isolated ephemeral git worktree, and using strict diff striping to block/delete out-of-bounds
-changes before merging back into the trunk. Based on Trunk-Based Development workflows, it minimizes
-branch juggling overhead via proactive TDD isolation, continuous micro-rebasing to keep the worktree
-strictly synced with the master branch, and enforcing a reactive "Main Branch Wins" auto-resolution
-strategy. It touches the Workflow flow engine (`flow/`) and the Loom git execution atom
-(`loom/atoms/git/`). Key constraints: must aggressively block out-of-bounds file edits, must handle
-Windows file-locking cleanly to prevent zombie trees, and must prevent heavy cache duplication.
+## What it does
 
-## Research Findings
+Runs a task in an isolated, ephemeral git worktree, so an LLM hallucination cannot edit
+untouchable or forbidden files. Before merging back to trunk, diff stripping deletes out-of-bounds
+hunks.
 
-### Codebase Patterns
-- **Atoms vs. Tools**: As established in the architecture reference, the Flow engine
-  (`specweaver/flow`) forbids consuming `loom/tools/*` because agents interact with tools. Instead,
-  it must directly consume `loom/atoms/git/` to execute powerful, engine-internal git operations
-  like `worktree add`, diffing, and merging.
-- **Context Boundaries**: The allowed files for any implementation task are formally declared via
-  `context.yaml` and the `Spec.md` artifact. These existing manifests act as the dictionary
-  parameter for the mathematical diff striping algorithm without requiring a new security protocol.
-- **Workflow Pipeline Runner**: Feature 3.26 logically integrates into
-  `src/specweaver/flow/runner.py` or as a distinct Step Handler wrapper (`GitBouncerHandler`) so
-  that `generate+code` actions run wrapped inside the worktree setup/teardown sequence.
+Trunk-based: little branch juggling. The worktree stays synced with main through continuous
+micro-rebases, and conflicts resolve "Main Branch Wins".
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| git.exe | >= 2.24 | `git worktree add`, `git worktree remove`, `git parse`, `git diff` | Git SCM manual |
-| mklink (OS) | Windows 10+ | Directory symlinking /D for caches | Windows OS |
+Constraints: block out-of-bounds edits; handle Windows file locking so no zombie trees remain; no
+heavy cache duplication.
 
-### Blueprint References
-- `flowmanager_legacy_reference.md`
-- Codebase Context Specification (CCS) v1.1.0-RFC
+## Why this way
+
+- **Atoms, not tools:** the flow engine (`specweaver/flow`) may not consume `loom/tools/*` — those are
+  for agents. It consumes `loom/atoms/git/` for engine-internal git operations (`worktree add`,
+  diff, merge).
+- **No new security protocol:** a task's allowed files are already declared in `context.yaml` and the
+  `Spec.md` artifact. Those manifests are the input to diff stripping.
+- **Seam:** the runner (`src/specweaver/flow/runner.py`) wraps `generate+code` steps in worktree
+  setup/teardown (alternative considered: a `GitBouncerHandler` step wrapper; see SF-02 Q1).
+
+## Architecture
+
+```mermaid
+graph LR
+    R["PipelineRunner<br/>step with use_worktree"] -->|"worktree_add"| W[".worktrees/TASK_ID<br/>+ symlinked cache_dirs"]
+    W --> H["handler runs<br/>output_dir = worktree"]
+    H -->|"worktree_sync<br/>git rebase main"| S["strip_merge<br/>only context.yaml paths<br/>README.md / docs/ blocked"]
+    S -->|"merge -X ours"| M["main"]
+    S --> T["teardown in finally<br/>retries + rmtree + prune"]
+```
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Engine utilizes `loom/atoms/git` | The Flow engine cannot bypass atoms to touch Git raw. Consuming atoms conforms to the `consumes` rule stack. | No |
+| AD-2 | Overriding MCP vs CLI ADR | Overrides the earlier decision that vetoed worktrees. Isolated worktrees are the only secure way to enforce diff stripping. | Yes — approved by User on 2026-04-11 |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Create worktree | Orchestrator | create a dedicated git worktree in `.worktrees/<task_id>` | The agent executes inside parallel files physically separate from the main workspace. |
+| FR-1 | Create worktree | Orchestrator | create a dedicated git worktree in `.worktrees/<task_id>` | The agent executes inside parallel files separate from the main workspace. |
 | FR-2 | Cache symlinking | Orchestrator | symlink heavy workspace cache folders (like `node_modules`, `.gradle`) into the new worktree | The new worktree compiles without downloading gigabytes of cache dependencies. |
-| FR-3 | Commit bounding | Agent | write code and commit changes strictly within the active worktree index | Hallucinations physically never touch the human's main branch files. |
-| FR-4 | Diff Striping | Orchestrator | compute a structural diff patch of the worktree against main, stripping any hunks that target paths not listed in `context.yaml` | The final merge pipeline mathematically blocks hallucinated edits to forbidden dependencies. |
+| FR-3 | Commit bounding | Agent | write code and commit changes strictly within the active worktree index | Hallucinations never touch the human's main branch files. |
+| FR-4 | Diff Striping | Orchestrator | compute a structural diff patch of the worktree against main, stripping any hunks that target paths not listed in `context.yaml` | The final merge pipeline blocks hallucinated edits to forbidden dependencies. |
 | FR-5 | Conflict Auto-Resolution| Orchestrator | apply a "Main-Branch Wins" (`--strategy-option=ours`) merge conflict logic during syncing | Human changes on main immediately override conflicting hallucinated agent changes. |
 | FR-6 | Cleanup / Zombie prevention | Orchestrator | execute `git worktree remove --force` upon phase success/failure with strict OS unlock retries | The system is purged of temporary structures without leaving orphaned locked files on Windows. |
 | FR-7 | Continuous Micro-Sync | Orchestrator | execute a proactive `git rebase main` on the sub-feature worktree when human edits occur on main | The worktree avoids deep drift over long implementation phases. |
-| FR-8 | Isolated Documentation Claims | Agent / Orchestrator | output a localized `doc_updates.md` explicitly bounded within the isolated Component directory before completing its task | Agents can systematically flag required changes to global architecture documents without modifying them concurrently, delegating compilation to a sequential post-merge step. |
+| FR-8 | Isolated Documentation Claims | Agent / Orchestrator | output a localized `doc_updates.md` explicitly bounded within the isolated Component directory before completing its task | Agents flag required changes to global architecture documents without modifying them concurrently, delegating compilation to a sequential post-merge step. |
 
 ## Non-Functional Requirements
 
@@ -61,49 +68,27 @@ Windows file-locking cleanly to prevent zombie trees, and must prevent heavy cac
 | NFR-1 | Windows File Locking | The teardown hook MUST capture `Access Denied` IO errors and execute at least 3 retry loops with progressive backoff to mitigate Windows Defender or IDE background locks before fully failing. |
 | NFR-2 | Disk Footprint | The footprint of spinning up an agent MUST NOT exceed 50 MB independently of the main repository size via strict directory symlinking strategies. |
 | NFR-3 | Speed | Worktree setup and cleanup MUST occur in under 2 seconds. |
-| NFR-4 | Shared Documentation Protection | Shared global documentation (e.g. `docs/`, `README.md`) MUST be treated as implicitly forbidden during the mathematical diff striping phase. Agents operating in parallel worktrees must be blocked from updating shared architecture docs to prevent overlapping documentation merge conflicts. |
+| NFR-4 | Shared Documentation Protection | Shared global documentation (e.g. `docs/`, `README.md`) MUST be treated as implicitly forbidden during the diff striping phase. Agents operating in parallel worktrees must be blocked from updating shared architecture docs to prevent overlapping documentation merge conflicts. |
 
-## External Dependencies
+## External dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
 |------|------------|----------------|-----------------|-------|
-| Git | 2.24 | `git worktree` | Y | Standard local feature. |
+| Git (git.exe) | 2.24 | `git worktree add`, `git worktree remove`, `git parse`, `git diff` (Git SCM manual) | Y | Standard local feature. |
+| mklink (OS) | Windows 10+ | Directory symlinking /D for caches | — | Windows OS |
 
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Engine utilizes `loom/atoms/git` | The Flow engine cannot bypass atoms to touch Git raw. Consuming atoms conforms to the `consumes` rule stack. | No |
-| AD-2 | Overriding MCP vs CLI ADR | Overriding the previous architecture decision that vetoed the worktree approach. Utilizing isolated worktrees is deemed the only way to dictate math-based diff stripping securely. | Yes — approved by User on 2026-04-11 |
-
-## Developer Guides Required
+## Guides owed
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Worktree Lifecycle Troubleshooting | Details on manually pruning zombied worktrees and `.git/worktrees` hooks when Windows locks fail permanently. | ⬜ To be written during Pre-commit |
+| Worktree Lifecycle Troubleshooting | Manually pruning zombied worktrees and `.git/worktrees` hooks when Windows locks fail permanently. | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Worktree Sandbox Lifecycle (Atoms)
-- **Scope**: Safe operational setup, cache symlinking, and robust OS-level teardown of physical worktrees.
-- **FRs**: [FR-1, FR-2, FR-6]
-- **Inputs**: Task ID, target Component Path, Project Root Path.
-- **Outputs**: Unique, validated `git worktree` branch mapped to an active physical directory.
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.26/feature_3.26_sf01_implementation_plan.md
-
-### SF-02: Worktree Sync & Conflict Handling (Orchestrator)
-- **Scope**: Mathematical diff striping (rejecting forbidden paths), isolated documentation claiming, and strict main-branch-wins sync resolution logic.
-- **FRs**: [FR-3, FR-4, FR-5, FR-7, FR-8]
-- **Inputs**: Generated code in Worktree Branch, `context.yaml` boundaries manifest, Main Branch HEAD, `doc_updates.md` claims.
-- **Outputs**: Purified diff patch applied cleanly to the main branch.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.26/feature_3.26_sf02_implementation_plan.md
-
-## Execution Order
-
-1. SF-01: Worktree Sandbox Lifecycle (no deps — start immediately)
-2. SF-02: Worktree Sync & Conflict Handling (depends on SF-01)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | Worktree Sandbox Lifecycle (Atoms): setup, cache symlinking, OS-level teardown. | FR-1, FR-2, FR-6 | Task ID, target Component Path, Project Root Path → a unique `git worktree` branch mapped to a directory | none | [sf01](D-EXEC-02_sf01_implementation_plan.md) |
+| SF-02 | Worktree Sync & Conflict Handling (Orchestrator): diff stripping of forbidden paths, isolated doc claims, main-branch-wins sync. | FR-3, FR-4, FR-5, FR-7, FR-8 | worktree branch code, `context.yaml` boundaries, main HEAD, `doc_updates.md` claims → purified diff applied to main | SF-01 | [sf02](D-EXEC-02_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -111,10 +96,3 @@ Windows file-locking cleanly to prevent zombie trees, and must prevent heavy cac
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Worktree Sandbox Lifecycle | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Worktree Sync & Conflict Handling | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-
-## Session Handoff
-
-**Current status**: SF-02 Implementation Plan APPROVED.
-**Next step**: Run:
-`/dev docs/roadmap/phase_3/feature_3.26/feature_3.26_sf02_implementation_plan.md`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

@@ -1,55 +1,56 @@
-# Design: Polyglot AST Skeleton Extractor & Context Ledger
+# D-SENS-02 — Polyglot AST Skeleton Extractor & Context Ledger
 
-- **Feature ID**: 3.22
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_02_sensors/D-SENS-02/D-SENS-02_design.md
+**Status**: APPROVED. SF-01 committed; SF-02 plan approved. · **Feature ID**: 3.22 · **Phase**: 3
 
-## Feature Overview
+| | |
+|---|---|
+| Lives in | `loom/commons/language/` registry · `AstAtom` · `CodeStructureTool` |
+| Used by | Reviewer and Implementer agents; `flow` handlers that inject ASTs into pure logic (e.g. `drift_detector`) |
+| Replaces | the "Context Ledger" `[304 Not Modified]` idea (see below) |
 
-Feature 3.22 solves the critical problem of LLM "Context Window Bloat" and API cost-explosion during
-long multi-turn agent sessions. Instead of returning a dangerous `[304 Not Modified]` that degrades
-the agent's attention span, the system provides an advanced, polyglot **CodeStructureTool**:
-providing `read_file_structure(file)` and `read_symbol(file, symbol)`. 
+## What it does
 
-These intents utilize `tree-sitter` and a consolidated `loom/commons/language/` registry to extract
-just the signatures/docstrings of a file, or the specific implementation of a requested
-class/function. It completely offloads syntax parsing to language-specific `.scm` node queries
-running in the isolated `Loom` Engine Sandbox via Atoms. Furthermore, a follow-up feature (SF-02)
-introduces `write_symbol` to allow surgical AST body patching.
+Cuts LLM context-window bloat and API cost in long multi-turn agent sessions. The agent-facing
+**CodeStructureTool** offers `read_file_structure(file)` (imports, signatures, docstrings only) and
+`read_symbol(file, symbol)` (one class/function in full). SF-02 adds surgical AST body patching
+(`write_symbol`, split into four intents).
 
-## Discarded Concepts (The "304" Problem)
+Parsing uses `tree-sitter` with language-specific `.scm` node queries in the consolidated
+`loom/commons/language/` registry, run by Atoms in the isolated `Loom` Engine Sandbox.
 
-**Original Idea:** The feature was initially proposed as a SQLite-backed "Context Ledger" that would
-track files an agent had already read during a session. If the agent requested the file again, it
-would intercept the read and return `[304 Not Modified]` to save API tokens and prevent bloated
-prompts.
+## Why not a 304 Context Ledger
 
-**The Problem:** LLM transformers suffer from extreme attention degradation ("Lost in the Middle")
-in long contexts. Even though a file is technically loaded in the message history from 20 turns ago,
-the LLM physically "forgets" or loses attention to those weights. When an agent loop asks to reread
-a file, it is actually successfully attempting to **refresh its attention mechanism**. 
+The first idea: a SQLite-backed "Context Ledger" tracks what the agent has read in a session and
+answers a repeat read with `[304 Not Modified]` to save tokens.
 
-**Why it was discarded:** By returning `[304 Not Modified]` and blocking the reread, the system
-would maliciously force the agent to rely on fading memory, triggering catastrophic syntax
-hallucinations when generating code. The AST Skeleton pivot was chosen because sending only the
-interface safely refreshes the attention weights while permanently solving the token cost bloat
-problem.
+Discarded, because LLMs lose attention to content deep in a long context ("Lost in the Middle"): a
+file loaded 20 turns ago is effectively forgotten. A reread refreshes attention. Blocking it forces
+the agent onto fading memory and causes hallucinated syntax in generated code. A skeleton refreshes
+attention with just the interface, at a fraction of the tokens.
 
-## Research Findings
+## Architecture
 
-### Codebase Patterns
-SpecWeaver's domain-driven architecture demands a strict separation between Pure Logic and I/O.
-1. **Loom Commons Language Registry:** `src/specweaver/loom/commons/language/<lang>/` is the single source of truth for both QA testing binaries and AST C-binary parsing.
-2. **Dependency Injection:** Pure logic layers (like `drift_detector`) must not run tree-sitter
-   themselves. The `flow` orchestrator must use `AstAtom` to generate AST structures and pass them
-   via Dependency Injection to pure logic nodes.
+- **Language registry:** `src/specweaver/loom/commons/language/<lang>/` is the single source of truth
+  for QA test runners and AST C-binary parsing.
+- **Dependency injection:** pure-logic layers (e.g. `drift_detector`) never run tree-sitter. The
+  `flow` orchestrator uses `AstAtom` to build ASTs and injects them.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| `tree-sitter` | Latest | `Parser`, `Language`, `.scm` queries | Already in `pyproject.toml` |
-| `tree-sitter-<lang>` | Latest | Pre-compiled language grammars | Already in `pyproject.toml` |
+```mermaid
+graph LR
+    A["Agent (LLM)"] -->|"read_file_structure / read_symbol"| T["CodeStructureTool<br/>role + FolderGrant check"]
+    T --> AT["AstAtom<br/>FileExecutor I/O"]
+    F["flow orchestrator"] --> AT
+    AT --> L["loom/commons/language/LANG<br/>.scm queries + parser"]
+    F -->|"injected AST"| P["pure logic<br/>e.g. drift_detector"]
+```
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Dedicated CodeStructureTool | Keeps raw filesystem operations and code investigation apart in the LLM's tool choice. | No |
+| AD-2 | Deprecate `[304 Not Modified]` | Resolves "Lost in the Middle" context bloat via skeleton structure instead of caching. | No |
+| AD-3 | Loom Commons Dependency Injection | Tree-sitter C-binding execution must live in `loom/commons/` and be Dependency-Injected into pure logic layers to satisfy Tach layer boundary constraints. | No |
 
 ## Functional Requirements
 
@@ -59,9 +60,9 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 | FR-2 | Symbol Extraction | CodeStructureTool | reads a specific symbol | The system SHALL return the entire implementation payload of exclusively the requested symbol (class/function) from the target file. |
 | FR-3 | Polyglot Registry | Flow Engine | centralizes language I/O | The system SHALL unify test-running (`runner.py`) and AST execution (`ast_parser.py`) exclusively within `loom/commons/language/<name>`. |
 | FR-4 | Query Fallback | CodeStructureTool | encounters unsupported language | If the file's language has no registered extractor plugin, the system SHALL throw an explicit error reminding the LLM to use `read_file` instead. |
-| FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | *(SF-02)* The system SHALL safely replace the body of a specific AST symbol with new code logic without relying on regex or fragile byte matching. |
+| FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | *(SF-02)* The system SHALL replace the body of a specific AST symbol with new code logic without relying on regex or fragile byte matching. |
 | FR-6 | Symbol Listing | CodeStructureTool | lists available symbols | The system SHALL return a flat array mapping of all targetable symbols within a file, filterable by a designated visibility constraint (e.g. `['public']`). |
-| FR-7 | Symbol Body Extraction | CodeStructureTool | reads only the inner block | The system SHALL selectively return only the internal execution logic block (`{...}`) of a symbol without extracting its decorators or external class wrappers. |
+| FR-7 | Symbol Body Extraction | CodeStructureTool | reads only the inner block | The system SHALL return only the internal execution logic block (`{...}`) of a symbol without extracting its decorators or external class wrappers. |
 
 ## Non-Functional Requirements
 
@@ -70,30 +71,19 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 | NFR-1 | Latency | AST Extraction must occur locally via `tree-sitter` with a P95 latency of `<50ms` per file to prevent agent blocking. |
 | NFR-2 | Reliability | The Tree-sitter abstraction MUST NOT fail the pipeline if a file contains minor syntax errors (Tree-sitter error-recovery must remain enabled). |
 
-## Architectural Decisions
+## External dependencies
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Dedicated CodeStructureTool | Prevents semantic overlap in the LLM's brain between raw filesystem operations and contextual code investigation. | No |
-| AD-2 | Deprecate `[304 Not Modified]` | Resolves "Lost in the Middle" contextual bloat via Astro-Skeleton structure instead of dangerous caching. | No |
-| AD-3 | Loom Commons Dependency Injection | Tree-sitter C-binding execution must live in `loom/commons/` and be Dependency-Injected into pure logic layers to satisfy Tach layer boundary constraints. | No |
+| Tool | Version | Key API Surface | Source |
+|------|---------|----------------|--------|
+| `tree-sitter` | Latest | `Parser`, `Language`, `.scm` queries | Already in `pyproject.toml` |
+| `tree-sitter-<lang>` | Latest | Pre-compiled language grammars | Already in `pyproject.toml` |
 
-## Sub-Feature Breakdown
+## Sub-features
 
-### SF-01: Polyglot AST Extractor (CodeStructureTool: Read Side)
-- **Scope**: Create the `loom/commons/language/` registry. Build the `AstAtom` component and provide `read_file_structure` and `read_symbol` intents via the agent-facing `CodeStructureTool`.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4]
-- **Depends on**: none
-
-### SF-02: AST Symbol Writer (CodeStructureTool: Write Side)
-- **Scope**: Extend the AST integration to support surgically replacing symbol bodies (`write_symbol`) leveraging the parser established in SF-01.
-- **FRs**: [FR-5]
-- **Depends on**: SF-01
-
-## Execution Order
-
-1. SF-01
-2. SF-02
+| SF | Does | FRs | Depends on | Plan |
+|----|------|-----|-----------|------|
+| SF-01 | Read side: the `loom/commons/language/` registry, `AstAtom`, and the `read_file_structure` / `read_symbol` intents on `CodeStructureTool`. | FR-1, FR-2, FR-3, FR-4 | none | [sf01](D-SENS-02_sf01_implementation_plan.md) |
+| SF-02 | Write side: surgical replacement of symbol bodies (`write_symbol`) on the SF-01 parser. | FR-5 | SF-01 | [sf02](D-SENS-02_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -101,8 +91,3 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Polyglot AST Extractor (Read Side) | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | AST Symbol Writer (Write Side) | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-
-## Session Handoff
-
-**Current status**: Implementation Plan for SF-02 COMPLETE and APPROVED.
-**Next step**: Run `/dev` to build SF-02 according to `feature_3_22_sf02_implementation_plan.md`.

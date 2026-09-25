@@ -1,55 +1,46 @@
-# Implementation Plan: Git Worktree Bouncer (Sandbox) [SF-01: Worktree Sandbox Lifecycle (Atoms)]
-- **Feature ID**: 3.26
-- **Sub-Feature**: SF-01 — Worktree Sandbox Lifecycle (Atoms)
-- **Design Document**: docs/roadmap/phase_3/feature_3.26/feature_3.26_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.26/feature_3.26_sf01_implementation_plan.md
-- **Status**: COMPLETED
-- **Completed On**: 2026-04-11
+# D-EXEC-02 SF-01 — Worktree Sandbox Lifecycle (Atoms)
 
-## Scope & Dependencies
-This implementation plan covers the core Atom and Executor mechanics to safely create, symlink, and forcefully tear down parallel git worktrees. This handles FR-1, FR-2, FR-6, NFR-1, NFR-2, and NFR-3.
+**Status**: COMPLETED (2026-04-11) · **FRs owned**: FR-1, FR-2, FR-6 (+ NFR-1, NFR-2, NFR-3) ·
+**Depends on**: none · Design: [D-EXEC-02_design.md](D-EXEC-02_design.md) §Sub-features → SF-01
 
-## Architectural Approvals & Constraints
-1. **Cache Symlinking Discovery (Q1):** Approved to add `cache_dirs` configuration array to pipeline YAML.
-2. **File System Bounds (Q2):** Approved strictly adhering to Archetypes. Domain purity will be
-   protected: `os.symlink` will be executed by `EngineFileExecutor`, heavily orchestrating
-   `FileSystemAtom`.
-3. **Windows Safety Hook (Q3):** Approved aggressive teardown to prevent Windows locks. We will use
-   a mixed `git worktree remove --force` fallback pipeline combining `shutil.rmtree` and
+## Goal
+
+Atom and executor mechanics to create, symlink and force-tear-down parallel git worktrees.
+
+## Changes
+
+1. **`src/specweaver/flow/models.py`** (FR-2) — add `cache_dirs: list[str] = Field(default_factory=list)`
+   to `PipelineDefinition` or `RunContext`, parsed from YAML like `cache_dirs: ["node_modules", ".gradle"]`.
+2. **`src/specweaver/loom/commons/filesystem/executor.py`** — `symlink(self, target: str, link_name: str) -> ExecutorResult:`
+   on `EngineFileExecutor` only (the flow engine can use it, agents cannot). Uses
+   `Path.symlink_to(target, target_is_directory=True)`; both `target` and `link_name` must resolve
+   inside the trusted bounds, so path-traversal blocks still hold.
+3. **`src/specweaver/loom/atoms/filesystem/atom.py`** — `_intent_symlink(self, context: dict[str, Any]) -> AtomResult`.
+   Inputs: `target` (absolute workspace dependency to link from), `link_name` (relative worktree hook
+   inside cwd). Calls `self._executor.symlink(target, link_name)`.
+4. **`src/specweaver/loom/atoms/git/atom.py`** (FR-1, FR-6, NFR-1) — add `"worktree"` to
+   `_ENGINE_WHITELIST`; `_intent_worktree_add(self, context)` runs
+   `git worktree add -b <branch> <path> <main>`; `_intent_worktree_remove(self, context)` retries 5
+   times on non-zero exit, then falls back to `shutil.rmtree(path, ignore_errors=True)` followed by
    `git worktree prune`.
 
-## File Modifications
+## Tests
 
-### 1. `src/specweaver/flow/models.py`
-- **Objective:** Support declarative caching (FR-2).
-- **Changes:**
-  - Add `cache_dirs: list[str] = Field(default_factory=list)` to `PipelineDefinition` or `RunContext` so it natively parses YAML definitions like `cache_dirs: ["node_modules", ".gradle"]`.
+| File | Case |
+|---|---|
+| `tests/loom/atoms/test_git_atom.py` | `_intent_worktree_remove` survives mocked OS Access Denied failures by falling through to `shutil.rmtree` + prune |
+| `test_engine_file_executor_symlink` | path-traversal bounds hold for cache symlinks |
 
-### 2. `src/specweaver/loom/commons/filesystem/executor.py`
-- **Objective:** Enable symlinking logic without compromising path traversal blocks.
-- **Changes:**
-  - Introduce `symlink(self, target: str, link_name: str) -> ExecutorResult:` strictly bounded inside `EngineFileExecutor` (agents cannot use this, only the Flow Engine).
-  - Use `Path.symlink_to(target, target_is_directory=True)` ensuring both the `target` and the `link_name` are fully resolved within the trusted context bounds.
+## Decisions (audit)
 
-### 3. `src/specweaver/loom/atoms/filesystem/atom.py`
-- **Objective:** Export symlink functionality to the flow orchestrator.
-- **Changes:**
-  - Create `_intent_symlink(self, context: dict[str, Any]) -> AtomResult`. Expected inputs: `target` (absolute workspace dependency to link from) and `link_name` (relative worktree hook inside cwd). 
-  - Call `self._executor.symlink(target, link_name)`.
+| # | Question | Chosen |
+|---|----------|--------|
+| Q1 | How are cache dirs discovered? | A `cache_dirs` array in the pipeline YAML |
+| Q2 | Who creates symlinks, keeping domains pure? | Per the Archetypes: `EngineFileExecutor` runs `os.symlink`, orchestrated through `FileSystemAtom` |
+| Q3 | Windows locks at teardown? | Aggressive teardown: `git worktree remove --force`, falling back to `shutil.rmtree` and `git worktree prune` |
 
-### 4. `src/specweaver/loom/atoms/git/atom.py`
-- **Objective:** Setup and safely teardown the physical worktrees (FR-1, FR-6, NFR-1).
-- **Changes:**
-  - Define `_ENGINE_WHITELIST` additions to include `"worktree"`.
-  - Add `_intent_worktree_add(self, context)` executing `git worktree add -b <branch> <path> <main>`.
-  - Add `_intent_worktree_remove(self, context)`.
-  - **[NFR-1 / Q3 Teardown Logic]:** Wrap in a 5-iteration retry loop checking for non-zero exit
-    codes. Under failure, implement explicit `shutil.rmtree(path, ignore_errors=True)` followed by
-    `git worktree prune`.
+## As built
 
-## Verification & Testing Strategy
-- **Unit Testing**: Add explicit test cases in `tests/loom/atoms/test_git_atom.py` asserting
-  `_intent_worktree_remove` successfully survives mock simulated OS Access Denied failures by
-  routing successfully into the `shutil.rmtree` + prune hook.
-- **Unit Testing**: Add `test_engine_file_executor_symlink` to verify path traversal bounding logic is correctly enforced on cache symlinks.
+**Since moved** (checked 2026-09-25): git atom → `src/specweaver/sandbox/git/core/atom.py`
+(`_intent_worktree_teardown`, body in `worktree_ops.py`); symlink →
+`src/specweaver/sandbox/filesystem/core/executor.py`; `cache_dirs` → `core/flow/engine/models.py`.

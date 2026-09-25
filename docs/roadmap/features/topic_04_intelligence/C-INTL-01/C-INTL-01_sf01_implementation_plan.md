@@ -1,65 +1,56 @@
-# Implementation Plan: Automated iterative decomposition (multi-level) [SF-01: Hierarchical Orchestration Engine Support]
+# C-INTL-01 SF-01 — Hierarchical Orchestration Engine Support
 
-**FR-1 ownership recorded 2026-08-17** under `specweaver-dev` §3.2c, from `INT-US-21-SUB-MIG`. FR-2,
-FR-4 and FR-5 were already carried; FR-1 was not, so `check_fr_coverage.py` read it as unplanned.
-
-Proof and mutants: `tests/unit/core/flow/handlers/test_decompose.py` (FR-1 — emptying
-`plan.component_changes` fails 28 tests; FR-4 — stripping `validate_spec` from the per-component
-template) and `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py` (FR-2 — the decompose
-gate flipped from `hitl` to `auto`, which only an e2e notices).
-
-FR-4 needed a test written: the per-component battery exists only because the fan-out spawns
-`new_feature.yaml`, and nothing asserted that template still carries `validate_spec`.
-
-- **Feature ID**: 3.24
-- **Sub-Feature**: SF-01 — Hierarchical Orchestration Engine Support
-- **Design Document**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_sf01_implementation_plan.md
-- **Status**: APPROVED
+**Status**: APPROVED · **FRs owned**: FR-1 (recorded 2026-08-17 under `specweaver-dev` §3.2c, from
+`INT-US-21-SUB-MIG`; before that `check_fr_coverage.py` read it as unplanned) · **Depends on**: none ·
+Design: [C-INTL-01_design.md](C-INTL-01_design.md) §Sub-features → SF-01
 
 ## Goal
-Implement a hierarchical architecture that allows Steps (like `DecomposeHandler`) to dynamically
-trigger parallel sub-pipelines using a `fan_out` execution strategy. Add `parent_run_id` to pipeline
-records in `pipeline_state.db` to ensure safe, deeply nested telemetry.
 
-## Pre-conditions & Scope
-- Pipeline Execution layer relies on synchronous `asyncio.gather` (Option A).
-- SQLite Schema versioning must be handled cleanly via existing `state_schema_version` mechanisms (Option A: Explicit migration V1 -> V2).
+Steps such as `DecomposeHandler` can start parallel sub-pipelines with a `fan_out` strategy.
+`parent_run_id` on pipeline records in `pipeline_state.db` keeps nested telemetry traceable.
 
-## Proposed Changes
+Preconditions (both Option A): execution uses synchronous `asyncio.gather`; the SQLite schema moves
+through the existing `state_schema_version` mechanism (explicit migration V1 -> V2).
 
-### `src/specweaver/flow/state.py`
-#### [MODIFY] [DONE]
-- Add `parent_run_id: str | None = None` to the `PipelineRun` Pydantic model. 
-> [!NOTE]
-> Per architectural review, `child_run_ids` array is embedded into the generic `StepResult.output`
-> dictionary instead of creating native model pollution. We will natively trace telemetry on this
-> element to inform a future shift to Option B if statistical usage necessitates it.
+## Changes
 
-### `src/specweaver/flow/store.py`
-#### [MODIFY] [DONE]
-- Add logic inside `_ensure_schema()`: Query `state_schema_version`; if `version == 1`, execute
-  `ALTER TABLE pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES pipeline_runs(run_id);`, then
-  `UPDATE state_schema_version SET version=2`. 
-- Upgrade the primary `CREATE TABLE` injection script (`_STATE_SCHEMA_V2`) to include `parent_run_id` for fresh databases.
-- Update `save_run()` SQLite parameters inside the `INSERT OR REPLACE` string.
-- Update `_row_to_run()` to safely unmap `parent_run_id`.
+1. **`src/specweaver/flow/state.py`** [DONE] — `parent_run_id: str | None = None` on the `PipelineRun`
+   Pydantic model. `child_run_ids` goes into the generic `StepResult.output` dict, not the model (per
+   architectural review); telemetry on it decides a later move to Option B.
+2. **`src/specweaver/flow/store.py`** [DONE]:
+   - `_ensure_schema()`: read `state_schema_version`; if `version == 1`, run
+     `ALTER TABLE pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES pipeline_runs(run_id);`, then
+     `UPDATE state_schema_version SET version=2`.
+   - The fresh-DB `CREATE TABLE` script (`_STATE_SCHEMA_V2`) includes `parent_run_id`.
+   - `save_run()`: add it to the `INSERT OR REPLACE` parameters. `_row_to_run()`: read it back.
+3. **`src/specweaver/flow/runner.py`** [x] — `fan_out()` runs `asyncio.gather` over N spawned
+   `PipelineRunner` executors.
 
-#### [MODIFY] `src/specweaver/flow/runner.py`
-- [x] Establish a mechanism (`fan_out()`) to orchestrate `asyncio.gather` across N spawned `PipelineRunner` executors.
 > [!CAUTION]
-> The architectural design isolates this parallel execution directly in the action handler flow
-> (Blocking). Be structurally prepared for a future where `sw status` requires switching this out
-> for `StepStatus.YIELD_TO_CHILDREN` non-blocking architecture.
+> The parallel run blocks inside the action handler. If `sw status` needs live child status, this
+> must switch to a non-blocking `StepStatus.YIELD_TO_CHILDREN`.
 
-## Verification Plan
+## Tests
 
-### Automated Tests
-- [x] Spawn an ephemeral `StateStore`. Simulate a V1 `pipeline_runs` table, then pass it to
-  `StateStore(db_path)` and assert that the `ALTER TABLE` successfully elevates the schema and
-  allows `parent_run_id` saves without throwing integrity crashes.
-- [ ] Mock an `asyncio.sleep` atomic pipeline. Fan out 3 pipelines and verify `asyncio.gather` returns 3 `RunStatus.COMPLETED` nodes.
+| Status | Case |
+|---|---|
+| [x] | ephemeral `StateStore` on a simulated V1 `pipeline_runs` table: `StateStore(db_path)` runs the `ALTER TABLE`, and `parent_run_id` saves without integrity errors |
+| [ ] | mocked `asyncio.sleep` pipeline: fan out 3, `asyncio.gather` returns 3 `RunStatus.COMPLETED` |
+| manual | `sw pipeline run feature_decomposition` — flat pipeline definitions still work |
 
-### Manual Verification
-- Execute `sw pipeline run feature_decomposition` to verify no breaking backward compatibility issues occur across normal flat pipeline definitions.
+Proof and mutants:
+
+| Test | FR | Kills |
+|---|---|---|
+| `tests/unit/core/flow/handlers/test_decompose.py` | FR-1 | emptying `plan.component_changes` fails 28 tests |
+| same | FR-4 | stripping `validate_spec` from the per-component template |
+| `tests/e2e/capabilities/workflows/test_feature_decomposition_e2e.py` | FR-2 | the decompose gate flipped from `hitl` to `auto` (only an e2e notices) |
+
+The FR-4 test was new: the per-component battery exists only because fan-out spawns
+`new_feature.yaml`, and nothing asserted that template still carries `validate_spec`.
+
+## As built
+
+**Since moved** (checked 2026-09-25): fan-out is `run_fan_out` in
+`src/specweaver/core/flow/engine/fan_out.py`; the table is `flow_pipeline_runs` in
+`core/flow/engine/store.py`.

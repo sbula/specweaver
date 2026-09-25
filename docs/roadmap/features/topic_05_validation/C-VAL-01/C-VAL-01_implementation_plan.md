@@ -1,43 +1,41 @@
-# Feature 3.2: Constitution as First-Class Artifact — Implementation Plan
+# C-VAL-01 — Constitution as First-Class Artifact
 
-> **Date**: 2026-03-18 (v3 — all open questions resolved)
-> **Status**: Proposal — awaiting final approval
-> **Scope**: Constitution loading, injection into all LLM prompts, scaffold generation, CLI support
-> **Out of scope**: Constitution enforcement (automated compliance checking — deferred to later)
-> **Blueprint references**: [ORIGINS.md](../../../ORIGINS.md) § Spec Kit, § DMZ — study
-> [`SOUL.md`](https://github.com/TheMorpheus407/the-dmz/blob/main/SOUL.md) and
-> [`templates/constitution.md`](https://github.com/github/spec-kit/tree/main/templates)
+**Status**: Proposal — awaiting final approval (v3, 2026-03-18 — all open questions resolved) ·
+**Feature ID**: 3.2 · Plan only, no separate design
 
----
+| | |
+|---|---|
+| Scope | constitution loading, injection into all LLM prompts, scaffold generation, CLI support |
+| Out of scope | constitution enforcement (automated compliance checking — deferred to later) |
+| Blueprints | [ORIGINS.md](../../../ORIGINS.md) § Spec Kit, § DMZ — study [`SOUL.md`](https://github.com/TheMorpheus407/the-dmz/blob/main/SOUL.md) and [`templates/constitution.md`](https://github.com/github/spec-kit/tree/main/templates) |
 
-## 1. Problem Statement
+## Goal
 
-Currently, SpecWeaver's LLM prompts have no project-level context injection. When drafting, reviewing, or implementing:
-- The LLM doesn't know the project's tech stack, architecture principles, or security invariants
-- Different sessions may produce inconsistent code (one uses SQLite, another PostgreSQL)
-- Non-negotiable constraints (deployment isolation, test coverage ≥ 70%) must be re-stated manually
+SpecWeaver's LLM prompts carry no project-level context. When drafting, reviewing or implementing:
 
-`constitution_template.md` already exists in `docs/architecture/` with an 8-section template, but it's only documentation — nothing in the codebase reads or uses it.
+- the LLM does not know the project's tech stack, architecture principles or security invariants;
+- sessions produce inconsistent code (one uses SQLite, another PostgreSQL);
+- non-negotiable constraints (deployment isolation, test coverage ≥ 70%) must be re-stated by hand.
 
-## 2. Design Principles
+`docs/architecture/constitution_template.md` has an 8-section template, but nothing in the code reads it.
 
-### 2.1 Simple Layer Cake
+## Design rules
 
-Constitution is a **passive document** — a markdown file that gets loaded and injected into prompts. This feature does NOT:
-- Parse the constitution into structured data
-- Enforce constitution constraints algorithmically
-- Validate that generated code complies with the constitution
+**Plumbing, not enforcement.** The constitution is a **passive document**: a markdown file loaded and
+injected into prompts.
 
-It DOES:
-- Load the constitution from a well-known path
-- Inject it into every LLM prompt via `PromptBuilder`
-- Scaffold a starter constitution during `sw init`
-- Provide a CLI command to view/validate the constitution
+| It does | It does not |
+|---|---|
+| load the constitution from a well-known path | parse it into structured data |
+| inject it into every LLM prompt via `PromptBuilder` | enforce its constraints algorithmically |
+| scaffold a starter constitution during `sw init` | validate that generated code complies |
+| offer a CLI command to view/validate it | |
 
 > [!IMPORTANT]
-> Enforcement (automatically checking that generated code follows the constitution) is a separate, future feature. This feature establishes the **plumbing** — get it in front of the LLM first.
+> Enforcement (checking that generated code follows the constitution) is a separate, future feature.
+> This one puts the constitution in front of the LLM first.
 
-### 2.2 Constitution Contract
+**Contract**
 
 | Property | Value |
 |---|---|
@@ -48,7 +46,8 @@ It DOES:
 | **Prompt priority** | 0 (never truncated — same as instructions and reminders) |
 | **Resolution** | Walk up from spec path → nearest `CONSTITUTION.md` wins (like `.gitignore`) |
 
-### 2.3 Rendering Position in Prompt
+**Position in the prompt** — after instructions (*what to do*), before topology (*the
+architecture*), so the LLM has the constraints before it sees the code structure:
 
 ```
 <instructions>         ← existing (priority 0)
@@ -67,11 +66,7 @@ If any instruction conflicts with the constitution, the constitution wins.
 ...
 ```
 
-Constitution goes after instructions (which say *what to do*) and before topology (which describes *the architecture*). This gives the LLM the project constraints before it sees the code structure.
-
----
-
-## 3. Key Decisions
+## Decisions
 
 | # | Decision | Rationale |
 |---|---|---|
@@ -87,13 +82,12 @@ Constitution goes after instructions (which say *what to do*) and before topolog
 | 10 | **Nearest constitution wins** (walk-up resolution) | In monorepos, service-level `CONSTITUTION.md` overrides root. No merging — child overrides parent entirely. Same pattern as `.gitignore`. |
 | 11 | **`sw constitution show` lists all** | Without `--path`: shows all constitutions found in the project tree. With `--path`: shows specific one. |
 
----
+## Changes
 
-## 4. Proposed Changes
+### 1. Loader — [NEW] `src/specweaver/project/constitution.py`
 
-### 4.1 Constitution Loader
-
-#### [NEW] `src/specweaver/project/constitution.py`
+Walk-up resolution (nearest `CONSTITUTION.md` wins); size validation (warning on load, error on
+check); listing every constitution in a project tree; template generation for `sw init`.
 
 ```python
 """Constitution loader — find and read CONSTITUTION.md."""
@@ -152,19 +146,9 @@ def generate_constitution(project_path: Path, project_name: str) -> Path:
     """
 ```
 
-Responsibility:
-- Walk-up file resolution (nearest `CONSTITUTION.md` wins)
-- Size validation (warning on load, error on check)
-- Listing all constitutions in a project tree
-- Template generation for `sw init`
+### 2. PromptBuilder — [MODIFY] `src/specweaver/llm/prompt_builder.py`
 
----
-
-### 4.2 PromptBuilder Extension
-
-#### [MODIFY] `src/specweaver/llm/prompt_builder.py`
-
-Add a new `add_constitution()` method and `<constitution>` rendering:
+New `add_constitution()` method and `<constitution>` rendering:
 
 ```python
 _CONSTITUTION_PREAMBLE = (
@@ -192,7 +176,7 @@ def add_constitution(self, text: str) -> PromptBuilder:
     return self
 ```
 
-In `_render()`, add between instructions and topology:
+In `_render()`, between instructions and topology:
 
 ```python
 # Constitution (after instructions, before topology)
@@ -202,14 +186,15 @@ if constitutions:
     parts.append(f"<constitution>\n{text}\n</constitution>")
 ```
 
----
+### 3. Handlers — direct injection
 
-### 4.3 Handler Integration (Direct Injection)
-
-All handlers that build LLM prompts load and inject the constitution **directly** — no centralized helper. This matches the existing pattern for topology injection.
+Every handler that builds an LLM prompt loads and injects the constitution itself, like topology
+injection today.
 
 > [!NOTE]
-> **Why no centralized `enrich_builder()` helper?** It would create hidden coupling — every caller would implicitly depend on constitution + topology loading. Instead, each handler explicitly decides what to inject, keeping the pattern consistent with how `add_topology()` is already used. See Tension 1 in the [architectural fit analysis](../../../../.gemini/antigravity/brain/5cf13f72-6d15-443a-b9c0-0a686e1d6a90/constitution_architectural_fit.md).
+> **Why no centralized `enrich_builder()` helper?** It would hide coupling: every caller would depend
+> on constitution + topology loading implicitly. Each handler decides what to inject, as with
+> `add_topology()`. See Tension 1 in the [architectural fit analysis](../../../../.gemini/antigravity/brain/5cf13f72-6d15-443a-b9c0-0a686e1d6a90/constitution_architectural_fit.md).
 
 Pattern for each handler:
 
@@ -228,36 +213,22 @@ result = await reviewer.review_spec(
 )
 ```
 
-#### [MODIFY] `src/specweaver/drafting/drafter.py`
+- `src/specweaver/drafting/drafter.py` — `_generate_section()` gains `constitution: str | None = None`;
+  calls `builder.add_constitution(constitution)` when provided.
+- `src/specweaver/drafting/feature_drafter.py` — same pattern: `constitution: str | None` param,
+  injected into the builder.
+- `src/specweaver/review/reviewer.py` — `review_spec()` and `review_code()` gain
+  `constitution: str | None = None`; injected when provided.
+- `src/specweaver/implementation/generator.py` — `generate_code()` and `generate_tests()` gain
+  `constitution: str | None = None`; injected when provided.
+- `src/specweaver/flow/handlers.py` — `DraftHandler`, `DraftFeatureHandler`, `ReviewSpecHandler`,
+  `ReviewCodeHandler`, `ImplementHandler` load via
+  `find_constitution(context.project_path, context.spec_path)` (both already on `RunContext`) and pass
+  `constitution.content` to the module.
 
-Add `constitution: str | None = None` param to `_generate_section()`. Calls `builder.add_constitution(constitution)` when provided.
+### 4. Scaffold — [MODIFY] `src/specweaver/project/scaffold.py`
 
-#### [MODIFY] `src/specweaver/drafting/feature_drafter.py`
-
-Same pattern — `constitution: str | None` param, inject into builder.
-
-#### [MODIFY] `src/specweaver/review/reviewer.py`
-
-Both `review_spec()` and `review_code()` gain `constitution: str | None = None` param. Inject into builder when provided.
-
-#### [MODIFY] `src/specweaver/implementation/generator.py`
-
-Both `generate_code()` and `generate_tests()` gain `constitution: str | None = None` param. Inject into builder when provided.
-
-#### [MODIFY] `src/specweaver/flow/handlers.py`
-
-All handlers that build prompts (`DraftHandler`, `DraftFeatureHandler`, `ReviewSpecHandler`,
-`ReviewCodeHandler`, `ImplementHandler`) load constitution via
-`find_constitution(context.project_path, context.spec_path)` and pass `constitution.content` to the
-module. Project path and spec path are already available in `RunContext`.
-
----
-
-### 4.4 Scaffold Integration
-
-#### [MODIFY] `src/specweaver/project/scaffold.py`
-
-Add constitution generation to `scaffold_project()`:
+In `scaffold_project()`:
 
 ```python
 # 5. CONSTITUTION.md (starter template, only if not present)
@@ -269,13 +240,9 @@ if not constitution_file.exists():
 
 Add `constitution_file: Path` to `ScaffoldResult`.
 
----
+### 5. CLI — [MODIFY] `src/specweaver/cli.py`
 
-### 4.5 CLI Integration
-
-#### [MODIFY] `src/specweaver/cli.py`
-
-Add `sw constitution` command group:
+`sw constitution` command group:
 
 ```
 sw constitution show              # List ALL constitutions in project tree
@@ -287,7 +254,7 @@ sw constitution init              # Generate starter at project root
 sw constitution init --path svc/   # Generate starter at service level
 ```
 
-Example output for `sw constitution show`:
+Example output of `sw constitution show`:
 ```
 Constitutions found in trading-platform/:
 
@@ -298,13 +265,9 @@ Constitutions found in trading-platform/:
   analytics-svc/                (none — inherits root)
 ```
 
----
+### 6. Per-project config (DB migration)
 
-### 4.6 Per-Project Config (DB Migration)
-
-#### [MODIFY] `src/specweaver/config/database.py`
-
-Add schema v4 migration — same pattern as v3 (`log_level`):
+[MODIFY] `src/specweaver/config/database.py` — schema v4 migration, same pattern as v3 (`log_level`):
 
 ```python
 _SCHEMA_V4 = """\
@@ -312,21 +275,15 @@ ALTER TABLE projects ADD COLUMN constitution_max_size INTEGER NOT NULL DEFAULT 5
 """
 ```
 
-Add `get_constitution_max_size()` / `set_constitution_max_size()` methods (same pattern as `get_log_level()` / `set_log_level()`).
+Add `get_constitution_max_size()` / `set_constitution_max_size()` (like `get_log_level()` /
+`set_log_level()`). [MODIFY] `src/specweaver/cli.py` — `sw update --constitution-max-size <bytes>` on
+the existing `sw update` command.
 
-#### [MODIFY] `src/specweaver/cli.py`
+## Template content
 
-Add `sw update --constitution-max-size <bytes>` option to existing `sw update` command.
+The starter `CONSTITUTION.md` from `sw init`: section headings + TODO placeholders (~1.5 KB). Full
+guidance stays in `docs/architecture/constitution_template.md`. Sections:
 
----
-
-## 5. Template Content
-
-The starter `CONSTITUTION.md` generated by `sw init` uses **section headings + TODO placeholders**
-(~1.5 KB). The full guidance notes remain in `docs/architecture/constitution_template.md` as a
-reference.
-
-The template includes:
 1. **Identity** — project name, purpose, domain
 2. **Tech Stack** — technologies table
 3. **Architecture Principles** — non-negotiable rules
@@ -336,19 +293,13 @@ The template includes:
 7. **Key Documents Index** — navigation table
 8. **Agent Instructions** — read order, conflict resolution
 
----
+## Tests
 
-## 6. Verification Plan
-
-### Regression
+Regression — all 1886+ tests pass, zero regressions:
 
 ```bash
 uv run pytest tests/ -x -q
 ```
-
-All 1886+ tests must pass with zero regressions.
-
-### New Tests
 
 | Test File | Covers |
 |---|---|
@@ -363,22 +314,18 @@ All 1886+ tests must pass with zero regressions.
 | `tests/unit/config/test_database.py` (extend) | Schema v4 migration, `get/set_constitution_max_size()`. |
 | `tests/integration/test_constitution_integration.py` | End-to-end: `sw init` creates constitution → `sw constitution show` lists it → prompts include `<constitution>` tag with preamble. |
 
-### Expected test count increase: ~40-60 new tests.
+Expected: ~40-60 new tests.
 
-### Manual Verification
+Manual:
 
-1. `sw init my-app --path .` → now also creates `CONSTITUTION.md`
-2. `sw constitution show` → lists all constitutions in project tree
+1. `sw init my-app --path .` → also creates `CONSTITUTION.md`
+2. `sw constitution show` → lists all constitutions in the project tree
 3. `sw constitution check` → validates size and format
-4. `sw draft greet_service` → prompt includes `<constitution>` section with preamble
-5. `sw review spec some_spec.md` → prompt includes `<constitution>` section
+4. `sw draft greet_service` → prompt includes `<constitution>` with preamble
+5. `sw review spec some_spec.md` → prompt includes `<constitution>`
 6. `sw update --constitution-max-size 8192` → persists in DB
 
----
-
-## 7. Documentation Updates
-
-After implementation, update the following docs:
+## Docs to update
 
 | Document | Update |
 |---|---|
@@ -388,3 +335,9 @@ After implementation, update the following docs:
 | `docs/architecture/lifecycle_layers.md` | Update L1 input to reference `CONSTITUTION.md` (currently says "SOUL.md / Constitution equivalent") |
 | `CONTRIBUTING.md` | Mention constitution in "Getting Started" section |
 | `docs/developer_guide.html` | Add constitution section if applicable |
+
+## As built
+
+Shipped (✅ in `docs/roadmap/capability_matrix.md`). **Since moved** (checked 2026-09-25): the loader
+is `src/specweaver/workspace/project/constitution.py` (+ `constitution_loading.py`);
+`constitution_max_size` (default 5120) is a column in `src/specweaver/workspace/store.py`.

@@ -1,38 +1,50 @@
-# Design: AST Drift Detection & AI Root-Cause Analysis
+# B-VAL-01 — AST Drift Detection & AI Root-Cause Analysis
 
-- **Feature ID**: 3.14a
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01, SF-02 committed. · **Feature ID**: 3.14a · **Phase**: 3
 
-## Feature Overview
+| | |
+|---|---|
+| Builds on | Feature 3.14 (Artifact Lineage UUIDs, `# sw-artifact`) · Phase 3.6 structured Plan JSON |
+| Touches | validation pipeline · flow engine |
+| Not touched | real-time background file watching |
+| Blueprints | none in ORIGINS.md beyond the high-level roadmap |
 
-Feature 3.14a adds deep, parser-backed drift detection to SpecWeaver. It leverages the Artifact
-Lineage UUIDs established in Feature 3.14 to traverse the graph to the structured Plan JSON
-generated during Phase 3.6. By extracting the AST of the running code and comparing it structurally
-to this pure JSON representation of the spec's intent, it autonomously identifies human-introduced
-implementation drift and coverage gaps. Additionally, it offers an opt-in mode to use LLMs to
-pinpoint the root cause of any detected violations. It interacts with the existing validation
-pipeline and the flow engine, and does NOT touch real-time background file watching. Key
-constraints: The AST gap analysis must be fast (no LLM required for the core AST check) to keep the
-feedback loop tight.
+## What it does
 
-## Research Findings
+Parses the code's AST and compares it with the structured Plan — the spec's intent as JSON. Reports
+where humans made the code drift from the plan, and which planned parts are missing (coverage gaps).
+With `--analyze`, an LLM explains the root cause of each violation.
 
-### Codebase Patterns
-- We already have AST parsing capabilities (`standards/tree_sitter_base.py`) which we can inherit/leverage.
-- Artifact tracking via `# sw-artifact` UUIDs is fully implemented in DB by 3.14.
-- `validation/` pure-logic layer is where we evaluate spec/code rules. A new pure-logic component `validation/drift_detector.py` perfectly fits here.
-- `flow/` engine manages dispatching commands and logging LLM operations. LLM pinpointing belongs in an orchestration handler (`flow/_drift.py`).
-- No boundary rules are violated by orchestrating `validation` + `llm` from `flow/`. 
+The core AST check uses no LLM, so it stays fast and the feedback loop stays tight.
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| tree-sitter | 0.22+ | `.parse()`, node queries | Python Package |
+## Why this way
 
-### Blueprint References
-None specified in ORIGINS.md beyond the high-level roadmap.
+- AST parsing already exists (`standards/tree_sitter_base.py`); the detector reuses it.
+- `validation/` is the pure-logic layer for spec/code rules, so the detector lives there as
+  `validation/drift_detector.py`.
+- `flow/` dispatches commands and logs LLM calls, so LLM pinpointing is an orchestration handler
+  (`flow/_drift.py`). Orchestrating `validation` + `llm` from `flow/` breaks no boundary rule.
+
+## Architecture
+
+```mermaid
+graph LR
+    CLI["sw drift check FILE --plan PLAN"] --> H["DriftCheckHandler<br/>flow/_drift.py"]
+    H -->|"tree-sitter parse"| D["detect_drift<br/>validation/drift_detector.py"]
+    P["PlanArtifact<br/>expected_signatures"] --> H
+    D -->|"DriftReport"| H
+    H -->|"only with --analyze"| L["LLM root-cause"]
+```
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Put detector logic in `validation/` | Pure-logic component that compares AST to an expected criteria. Matches existing `validation/rules` pattern. | No |
+| AD-2 | Put LLM integration in `flow/_drift.py` | `validation` layer forbids `llm` imports. Orchestration happens in the `flow/` runner. | No |
+| AD-3 | Explicit `--analyze` flag | LLM analysis can be expensive. Fast structural static checking must be the default. | No |
+| AD-4 | Structural Baseline via Phase 3.6 Plan | Extracts the structured JSON Plan instead of markdown parsing or AST caching. Ensures "Spec is truth" architecture. | No |
+| AD-5 | `--plan` is a **required** option; `sw drift check` does no lineage lookup | Chosen in the SF-02 plan: *"This keeps it 100% fast, avoids globbing, and is explicit."* | No |
 
 ## Functional Requirements
 
@@ -44,40 +56,20 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 | FR-5 | Root-Cause Analysis | System | SHALL trigger LLM root-cause analysis on detected drift ONLY when `--analyze` is passed | Explains why the drift happened |
 | FR-6 | Drift CLI | Developer | SHALL run `sw drift check <file> [--analyze]` | Initiates structural inspection pipeline |
 
-**FR-2 (Baseline Fetch) is deleted, not lost.** It claimed the plan would be fetched "via the file's
-lineage UUID". That never happens on this command: `--plan` is a **required** option on
-`sw drift check`, the handler reads `step.params["plan_path"]`, and neither the handler nor the
-detector touches lineage or a UUID. (It *is* implemented elsewhere — see the correction below.)
+**FR-2 (Baseline Fetch) is deleted** (2026-08-17, from `INT-US-10-SF01-MIG`, per the `TECH-046`
+precedent). It promised to fetch the plan "via the file's lineage UUID"; `sw drift check` never does
+that — `--plan` is required (AD-5) and the handler reads `step.params["plan_path"]`. FR-1, FR-3..FR-6
+keep their numbers so existing citations stay valid.
 
-The descope was a decision already taken and recorded — `B-VAL-01_sf02_implementation_plan.md`
-§Open Questions weighs `Code UUID -> Spec UUID -> Plan UUID` plus a `specs/*_plan.yaml` glob against
-an explicit flag and recommends the flag: *"This keeps it 100% fast, avoids globbing, and is
-explicit."* That is what shipped. **The decision simply never reached this table**, so the design
-went on advertising a resolution path the CLI cannot take.
+The lineage mechanism exists on another command: `_resolve_plan_by_lineage` in
+`assurance/validation/interfaces/cli_drift.py` reads the file's `# sw-artifact` uuid, looks up its
+`parent_id` in `flow_artifact_events`, and matches it against each candidate plan's uuid.
+`_plan_declaring` backs it up by matching `expected_signatures` path text in three spellings. Both
+serve only **`sw drift check-rot`** (`B-VAL-02`'s pre-commit interceptor) via `_target_has_drifted`.
+Wiring them into `sw drift check` is a small change, not a build.
 
-Row deleted per `TECH-046`'s precedent, and the same shape as `TECH-062`, with one difference worth
-naming: there the mechanism was absent and undecided, here it was consciously traded away in the plan
-and the design was left stale. A descope recorded in one document and not the other is invisible to
+Lesson (same shape as `TECH-062`): a descope recorded in the plan but not the FR table is invisible to
 every gate — `check_fr_sweep.py` sees an uncited FR, never a contradicted one.
-
-**FR-2's mechanism does exist in the repo — on another capability's command.** Corrected 2026-08-17,
-same day, on reaching `B-VAL-02`: `assurance/validation/interfaces/cli_drift.py` holds
-**`_resolve_plan_by_lineage`**, which reads the file's `# sw-artifact` uuid, looks up its `parent_id`
-in `flow_artifact_events`, and matches that parent against each candidate plan's own uuid. That is
-FR-2 as written, almost clause for clause.
-
-It is wired to **`sw drift check-rot`**, which is `B-VAL-02`'s pre-commit interceptor, and to nothing
-else — `_target_has_drifted` is its only caller. A second resolver, `_plan_declaring`, backs it up by
-matching `expected_signatures` path text in three spellings.
-
-So the accurate statement is narrower than "never built": **`sw drift check` cannot resolve a plan and
-never tries**, because `--plan` is required and the handler reads `step.params["plan_path"]`. The row
-is still correctly deleted from *this* capability — the behaviour it promised is not on this command —
-but a reader should know the mechanism is fifty lines away in the same file, owned by `B-VAL-02`, and
-that wiring it in is a small change rather than a build.
-
-Recorded 2026-08-17 from `INT-US-10-SF01-MIG`. Remaining FRs renumbered nowhere: FR-1, FR-3..FR-6
-keep their identifiers so existing citations and plans stay valid.
 
 ## Non-Functional Requirements
 
@@ -86,43 +78,18 @@ keep their identifiers so existing citations and plans stay valid.
 | NFR-1 | Performance | AST drift check execution (without `--analyze`) MUST take < 500ms |
 | NFR-2 | Safety | Must be strictly read-only; never mutate source files or specification files |
 
-## External Dependencies
+## External dependencies
 
 | Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
 |------|------------|----------------|-----------------|-------|
-| tree-sitter | 0.22 | AST node traversal | Yes | Pre-installed for `standards/` feature |
+| tree-sitter | 0.22 (0.22+) | `.parse()`, node queries, AST node traversal | Yes | Python package; pre-installed for the `standards/` feature |
 
-## Architectural Decisions
+## Sub-features
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Put detector logic in `validation/` | Pure-logic component that compares AST to an expected criteria. Matches existing `validation/rules` pattern. | No |
-| AD-2 | Put LLM integration in `flow/_drift.py` | `validation` layer forbids `llm` imports. Orchestration happens in the `flow/` runner. | No |
-| AD-3 | Explicit `--analyze` flag | LLM analysis can be expensive. Fast structural static checking must be the default. | No |
-| AD-4 | Structural Baseline via Phase 3.6 Plan | Extracts the structured JSON Plan instead of markdown parsing or AST caching. Ensures "Spec is truth" architecture. | No |
-
-## Sub-Feature Breakdown
-
-### SF-01: AST Drift & Coverage Engine
-- **Scope**: Core pure-logic component combining AST parser with Spec rule comparative matching.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4]
-- **Inputs**: Source code file path and its parent Spec constraints (via `models`).
-- **Outputs**: Structured drift and coverage findings (no LLM involved).
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf01_implementation_plan.md
-
-### SF-02: Flow Integration & CLI (`sw drift`)
-- **Scope**: Expose the detector to pipelines and the CLI, providing opt-in LLM root-cause pinpointing.
-- **FRs**: [FR-5, FR-6]
-- **Inputs**: User CLI arguments, findings from SF-01, and UUIDs from DB context.
-- **Outputs**: Pipeline step execution, terminal rendering, and an LLM root-cause response if requested.
-- **Depends on**: [SF-01]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf02_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends on SF-01)
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | AST Drift & Coverage Engine: pure-logic AST parse + comparison with the plan. No LLM. | FR-3, FR-4 | source file path + its parent Spec constraints (via `models`) → structured drift and coverage findings | none | [sf01](B-VAL-01_sf01_implementation_plan.md) |
+| SF-02 | Flow Integration & CLI (`sw drift`): expose the detector to pipelines and the CLI; opt-in LLM root cause. | FR-1, FR-5, FR-6 | CLI args, SF-01 findings → pipeline step, terminal output, LLM root cause on request | SF-01 | [sf02](B-VAL-01_sf02_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -130,8 +97,3 @@ keep their identifiers so existing citations and plans stay valid.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Flow Integration & CLI | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Implementation Plan APPROVED for SF-02. Ready for Flow Validation & CLI development.
-**Next step**: Run TDD workflow: `/dev docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf02_implementation_plan.md`

@@ -1,19 +1,19 @@
-# Feature 3.3: Domain Profiles for Threshold Calibration — Implementation Plan
+# C-VAL-02 — Domain Profiles for Threshold Calibration
 
-> **Date**: 2026-03-19
-> **Status**: Proposal — awaiting approval
-> **Scope**: Named preset bundles for validation rule overrides, CLI commands, DB storage
-> **Out of scope**: User-extensible YAML profiles (deferred to 3.3b), non-validation config (LLM model, temperature)
-> **Source doc**: `future_capabilities_reference.md` §19, [phase_3_feature_expansion.md](../phase_3_feature_expansion.md)
+**Status**: Proposal — awaiting approval (2026-03-19) · **Feature ID**: 3.3 · Plan only, no separate
+design
 
----
+| | |
+|---|---|
+| Scope | named preset bundles for validation rule overrides, CLI commands, DB storage |
+| Out of scope | user-extensible YAML profiles (deferred to 3.3b); non-validation config (LLM model, temperature) |
+| Source | `future_capabilities_reference.md` §19, [phase_3_feature_expansion.md](../phase_3_feature_expansion.md) |
 
-## 1. Problem Statement
+## Goal
 
-Different project domains have fundamentally different validation needs. A web-app needs strict
-ambiguity checking and high code coverage, while an ML model training pipeline tolerates more
-complexity and can't easily achieve 90% coverage. Currently, users must manually set each override
-one by one:
+Domains need different validation: a web-app wants strict ambiguity checks and high coverage; an ML
+training pipeline tolerates more complexity and can't easily reach 90% coverage. Today users set each
+override by hand:
 
 ```bash
 sw config set S05 --warn 50 --fail 80      # Day Test
@@ -23,21 +23,20 @@ sw config set S03 --warn 8 --fail 12        # Stranger Test
 # ... 6 more commands
 ```
 
-This is tedious, error-prone, and undiscoverable. Users don't know which rules have domain-specific sweet spots, and there's no way to share a calibrated configuration across projects.
+That is tedious, error-prone and undiscoverable: users don't know which rules have domain-specific
+sweet spots, and can't share a calibrated configuration across projects.
 
----
+A profile is one name for a complete set of `RuleOverride` values.
 
-## 2. Analysis: Current Override Cascade
+## Where it plugs in
 
-The validation system has a well-defined override cascade (from [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/runner.py#L127-L136)):
+The override cascade (from [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/validation/runner.py#L127-L136)):
 
 ```
 Code defaults → SpecKind presets → DB overrides → CLI --set flags
      ↑                ↑                 ↑              ↑
   Rule.__init__    get_presets()   _build_rule_kwargs()  --set S08.fail=5
 ```
-
-### Key existing components
 
 | Component | File | Role |
 |-----------|------|------|
@@ -49,11 +48,7 @@ Code defaults → SpecKind presets → DB overrides → CLI --set flags
 | `set_validation_override()` | [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/database.py) | Per-project per-rule DB persistence |
 | `sw config set/get/list/reset` | [cli.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli.py#L1055-L1094) | Individual override management |
 
-### Where profiles fit
-
-Domain profiles are a **named preset bundle** — a single name that maps to a complete set of
-`RuleOverride` values. Applying a profile writes those overrides to the DB using the existing
-`set_validation_override()` mechanism.
+Applying a profile writes its overrides into the DB layer through `set_validation_override()`:
 
 ```
 Code defaults → SpecKind presets → DB overrides (incl. profile values) → CLI --set flags
@@ -63,45 +58,21 @@ Code defaults → SpecKind presets → DB overrides (incl. profile values) → C
 ```
 
 > [!IMPORTANT]
-> Profiles don't add a new layer to the cascade — they're a **convenience mechanism** that
-> bulk-writes to the existing DB override layer. After applying a profile, individual
-> `sw config set` commands can still fine-tune specific rules on top.
+> Profiles add **no new cascade layer**. They bulk-write the existing DB override layer. After a
+> profile, `sw config set` can still fine-tune single rules on top.
 
----
+## Design rules
 
-## 3. Design Principles
+- **Bundled overrides.** Applying a profile: (1) clears all rule overrides of the project, (2) writes
+  the profile's overrides to the DB, (3) stores the profile name in the DB. A clean, predictable
+  baseline; single overrides on top always work.
+- **Hardcoded (phase 1).** Profiles are Python dicts in `config/profiles.py`, like `_PRESETS` in
+  `spec_kind.py`: no new file format, no discovery, versioned with the code, easy to test.
+  User-extensible profiles (`.specweaver/profiles/custom.yaml`) can come in 3.3b.
+- **Validation only.** Profiles set rule thresholds only — not LLM model or temperature, constitution
+  max-size, or log level. Cross-cutting profiles can come later.
 
-### 3.1 Profiles Are Bundled Overrides
-
-A profile is a named mapping from rule IDs to `RuleOverride` values. Applying a profile:
-1. Clears all existing rule overrides for the project
-2. Writes the profile's overrides to the DB
-3. Stores the profile name in DB for reference
-
-This provides a clean, predictable baseline. Individual overrides on top are always possible.
-
-### 3.2 Hardcoded Profiles (Phase 1)
-
-Profiles are defined as Python dicts in `config/profiles.py` — similar to `_PRESETS` in `spec_kind.py`. This is the simplest possible approach:
-- No new file formats
-- No file discovery logic
-- Profiles are versioned with the code
-- Easy to test
-
-User-extensible profiles (`.specweaver/profiles/custom.yaml`) can be added in a future 3.3b.
-
-### 3.3 Validation-Only
-
-Profiles only set validation rule thresholds. They do not set:
-- LLM model or temperature
-- Constitution max-size
-- Log level
-
-This keeps the feature focused and simple. Cross-cutting profiles can be added later.
-
----
-
-## 4. Key Decisions
+## Decisions
 
 | # | Decision | Rationale |
 |---|---|---|
@@ -112,11 +83,7 @@ This keeps the feature focused and simple. Cross-cutting profiles can be added l
 | 5 | **`reset-profile` clears overrides + profile name** | Clean "back to defaults" mechanism. |
 | 6 | **Individual overrides survive profile application** | After `set-profile`, `config set S08 --fail 3` adds/overwrites on top. User can always fine-tune. |
 
----
-
-## 5. Proposed Profiles
-
-### 5.1 Profile Definitions
+## Profiles
 
 | Rule | `web-app` | `data-pipeline` | `library` | `microservice` | `ml-model` |
 |------|-----------|-----------------|-----------|----------------|------------|
@@ -128,10 +95,8 @@ This keeps the feature focused and simple. Cross-cutting profiles can be added l
 | **S11** (Terminology) | default | default | w=2, f=4 (strict) | default | w=5, f=8 (lenient) |
 | **C04** (Coverage) | f=70 | f=60 | f=85 | f=75 | f=50 |
 
-> [!NOTE]
-> **"default" means the profile does not override that rule** — code defaults apply. Profiles only set rules where domain-specific calibration adds value.
-
-### 5.2 Profile Descriptions
+"default" = the profile does not override that rule; code defaults apply. Profiles set only rules
+where domain calibration adds value.
 
 | Profile | Description |
 |---------|-------------|
@@ -141,13 +106,9 @@ This keeps the feature focused and simple. Cross-cutting profiles can be added l
 | `microservice` | Similar to web-app but tuned for service boundaries. Focus on contract clarity. |
 | `ml-model` | Very lenient thresholds for ML/AI projects. High complexity tolerance, low coverage bar, lenient ambiguity (research-style specs). |
 
----
+## Changes
 
-## 6. Proposed Changes
-
-### 6.1 Profile Definitions
-
-#### [NEW] `src/specweaver/config/profiles.py`
+### 1. Profiles — [NEW] `src/specweaver/config/profiles.py`
 
 ```python
 """Domain profiles — named preset bundles for validation threshold calibration.
@@ -187,36 +148,24 @@ def list_profiles() -> list[DomainProfile]:
     """Return all available profiles, sorted by name."""
 ```
 
----
+### 2. DB: active profile — [MODIFY] `src/specweaver/config/database.py`
 
-### 6.2 DB: Store Active Profile
-
-#### [MODIFY] `src/specweaver/config/database.py`
-
-Schema v5 migration — add `domain_profile` column to `project_settings`:
+Schema v5 migration — `domain_profile` column on `project_settings`:
 
 ```sql
 ALTER TABLE project_settings ADD COLUMN domain_profile TEXT DEFAULT NULL;
 ```
 
-New methods:
-- `set_domain_profile(project_name: str, profile_name: str | None) -> None`
-- `get_domain_profile(project_name: str) -> str | None`
+New methods: `set_domain_profile(project_name: str, profile_name: str | None) -> None` and
+`get_domain_profile(project_name: str) -> str | None`.
 
-When `set_domain_profile()` is called:
-1. Clear all existing rule overrides for the project
-2. Write each override from the profile via `set_validation_override()`
-3. Store the profile name in `project_settings.domain_profile`
+`set_domain_profile()`: (1) clear all rule overrides of the project, (2) write each profile override
+via `set_validation_override()`, (3) store the name in `project_settings.domain_profile`. With
+`None`: clear all overrides and the profile name.
 
-When `None` is passed, clear all overrides and reset the profile name.
+### 3. CLI — [MODIFY] `src/specweaver/cli.py`
 
----
-
-### 6.3 CLI Commands
-
-#### [MODIFY] `src/specweaver/cli.py`
-
-Add to the existing `config_app` sub-app:
+On the existing `config_app` sub-app:
 
 ```
 sw config set-profile <name>      # Apply a domain profile
@@ -226,12 +175,8 @@ sw config show-profile <name>     # Show what a profile would set
 sw config reset-profile           # Clear profile and all overrides
 ```
 
-**`set-profile` flow:**
-1. Validate profile name exists
-2. Clear all existing rule overrides
-3. Write profile overrides to DB
-4. Store profile name
-5. Print summary: "✓ Profile 'web-app' applied (4 rule overrides set)"
+**`set-profile` flow:** validate the name → clear all rule overrides → write the profile's overrides →
+store the name → print "✓ Profile 'web-app' applied (4 rule overrides set)".
 
 **`profiles` output:**
 ```
@@ -255,20 +200,13 @@ Profile: web-app — Balanced thresholds for web applications
 Rules not listed use code defaults.
 ```
 
----
-
-### 6.4 Runner Integration (None Required)
+### 4. Runner — no change
 
 > [!TIP]
-> **No changes to `runner.py`.** Since profiles write to the existing DB override layer, the
-> runner's `_build_rule_kwargs()` and `get_spec_rules()` already pick them up automatically. This is
-> the key insight that makes this feature a quick win.
+> **`runner.py` is untouched.** Profiles write the existing DB override layer, so `_build_rule_kwargs()`
+> and `get_spec_rules()` pick them up as is. That is what makes this a quick win.
 
----
-
-## 7. Verification Plan
-
-### Automated Tests
+## Tests
 
 | Test File | Tests | Covers |
 |-----------|-------|--------|
@@ -277,16 +215,14 @@ Rules not listed use code defaults.
 | `tests/e2e/test_lifecycle.py` [EXTEND] | ~10 | `sw config set-profile`, `get-profile`, `profiles`, `show-profile`, `reset-profile`, invalid profile name, profile + individual override on top |
 | `tests/integration/test_profile_cascade.py` [NEW] | ~8 | Profile overrides are picked up by `get_spec_rules()` and `get_code_rules()`, cascade order correct (profile < individual override), reset returns to defaults |
 
-**Expected: ~40 new tests**
-
-### Regression
+Expected: ~40 new tests. Regression:
 
 ```bash
 uv run pytest tests/ -x -q          # All 1974+ tests must pass
 uv run ruff check src/ tests/       # Zero new lint issues
 ```
 
-### Manual Verification
+Manual:
 
 1. `sw config profiles` → lists 5 profiles with descriptions
 2. `sw config show-profile web-app` → shows 4 rule overrides
@@ -298,9 +234,7 @@ uv run ruff check src/ tests/       # Zero new lint issues
 8. `sw config reset-profile` → clears all overrides + profile name
 9. `sw check spec.md` → uses code defaults again
 
----
-
-## 8. Documentation Updates
+## Docs to update
 
 | Document | Update |
 |----------|--------|
@@ -310,16 +244,7 @@ uv run ruff check src/ tests/       # Zero new lint issues
 | `docs/roadmap/specweaver_roadmap.md` | Mark 3.3 as ✅ when complete |
 | `docs/roadmap/phase_3_feature_expansion.md` | Update 3.3 entry |
 
----
+## As built
 
-## 9. Scope Estimate
-
-| Component | Effort |
-|-----------|--------|
-| `config/profiles.py` (new) | Small — data definitions |
-| `database.py` (v5 migration) | Small — 1 column + 2 methods |
-| `cli.py` (5 commands) | Medium — follows existing patterns |
-| Tests (~40 new) | Medium |
-| Documentation | Small |
-
-**Total: ~1 session** (comparable to constitution CLI work)
+Shipped (✅ in `docs/roadmap/capability_matrix.md`). **Since moved** (checked 2026-09-25): profiles
+live in `src/specweaver/core/config/profiles.py`.

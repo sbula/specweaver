@@ -1,70 +1,64 @@
-# Implementation Plan: Git Worktree Bouncer (Sandbox) [SF-02: Worktree Sync & Conflict Handling]
-- **Feature ID**: 3.26
-- **Sub-Feature**: SF-02 — Worktree Sync & Conflict Handling (Orchestrator)
-- **Design Document**: docs/roadmap/phase_3/feature_3.26/feature_3.26_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.26/feature_3.26_sf02_implementation_plan.md
-- **Status**: COMPLETED
+# D-EXEC-02 SF-02 — Worktree Sync & Conflict Handling (Orchestrator)
 
-## Scope
-Implements mathematical diff striping against `context.yaml`, dictatorial "Main Branch Wins" sync
-resolution, proactive micro-syncs (`git rebase main`), and isolated documentation claims for the
-orchestrator layer.
+**Status**: COMPLETED · **FRs owned**: FR-3, FR-4, FR-5, FR-7, FR-8 · **Depends on**: SF-01 ·
+Design: [D-EXEC-02_design.md](D-EXEC-02_design.md) §Sub-features → SF-02
 
-## Research Notes
-- `PipelineRunner` (`src/specweaver/flow/runner.py`) uses a `StepHandlerRegistry` (in `src/specweaver/flow/handlers.py`) to execute pipeline steps.
-- We must wrap `generate+code` internally, either by injecting logic into
-  `PipelineRunner._execute_loop`, creating a new `GitBouncerHandler` decorator in the registry, or
-  updating `GenerateCodeHandler` to spin up its operations inside the `GitAtom` using
-  `_intent_worktree_add` and `_intent_worktree_teardown`.
+## Goal
 
-## Architectural Decisions & HITL Approvals
+In the orchestrator: diff stripping against `context.yaml`, "Main Branch Wins" sync resolution,
+proactive micro-syncs (`git rebase main`), and isolated documentation claims.
 
-1. **Orchestrator Integration Seam**: We will use **Option B**. `PipelineRunner._execute_loop` will
-   dynamically detect if a step requires isolated worktrees (e.g. `StepTarget.CODE` under
-   Generation/Tests if a pipeline flag `use_worktree` is present). It will spin up the Worktree
-   using `GitAtom._intent_worktree_add`, wrap the inner runner execution (by pushing context down),
-   apply the patch mathematically, and tear down strictly using `GitAtom._intent_worktree_teardown`.
-2. **Diff Striping Strategy**: We will use **Option B**. The pipeline mathematical striping will
-   discard any hunks targeting paths not present in `context.yaml`, merge the *allowed* hunks
-   cleanly to the trunk, and emit a warning log. This natively rejects hallucinations without
-   destroying valid work.
-3. **Ephemeral Sandbox Context Passing**: We will use **Option A**. The Flow Runner will temporarily
-   override `RunContext.output_dir` dynamically, injecting the absolute path of the ephemeral
-   worktree so that downstream tools cleanly limit operations to the cloned space naturally.
+## Where it plugs in
 
-## Sub-Feature Implementation Details
+- `PipelineRunner` (`src/specweaver/flow/runner.py`) runs steps through a `StepHandlerRegistry`
+  (`src/specweaver/flow/handlers.py`).
+- `generate+code` must be wrapped: in `PipelineRunner._execute_loop`, in a new `GitBouncerHandler`
+  decorator in the registry, or in `GenerateCodeHandler` via `GitAtom`'s `_intent_worktree_add` and
+  `_intent_worktree_teardown`. Q1 picks the first.
 
-### 1. Model Updates (`src/specweaver/flow/models.py`)
-- **[MODIFY]**: Add `use_worktree: bool = False` to `PipelineStep`. By explicitly providing this
-  flag in the Pipeline Definition yaml parsing layer, we enable the orchestrator to decide exactly
-  when to use the Git Bouncer per step.
+## Changes
 
-### 2. Sandbox Integration (`src/specweaver/flow/runner.py`)
-- **[MODIFY]**: In `PipelineRunner._execute_loop`, intercept steps that have `step_def.use_worktree = True`.
-- **Implementation Logic**:
-  1. Generate unique worktree branch name (`sf-<task_id>-temp`).
-  2. Call `GitAtom._intent_worktree_add` to instantiate the physical Sandbox directory.
-  3. Symlink `cache_dirs` utilizing `EngineFileExecutor.symlink` via mapping paths on `FileSystemAtom`.
-  4. Create a cloned `RunContext` setting `output_dir = worktree_path`.
-  5. `await handler.execute(step_def, isolated_context)`.
-     *(FR-8: If handler generates documentation claims, capture them purely in a localized `doc_updates.md` to prevent shared architecture mutation).*
-  6. **(FR-7)**: Execute `GitAtom._intent_worktree_sync` (`git rebase main`) on the active worktree to proactively absorb any human changes on trunk.
-  7. Perform mathematical Diff Striping on the worktree index utilizing `loom/atoms/git/atom.py` diffing boundaries.
-  8. Commit and merge back using `--strategy-option=ours` **(FR-5)**.
-  9. Enforce teardown unconditionally (`finally:` block) utilizing `GitAtom._intent_worktree_teardown`.
+1. **`src/specweaver/flow/models.py`** [MODIFY] — `use_worktree: bool = False` on `PipelineStep`. Set
+   in the pipeline YAML, it tells the orchestrator which steps use the Git Bouncer.
+2. **`src/specweaver/flow/runner.py`** [MODIFY] — `PipelineRunner._execute_loop` intercepts steps with
+   `step_def.use_worktree = True`:
+   1. Unique branch name `sf-<task_id>-temp`.
+   2. `GitAtom._intent_worktree_add` creates the sandbox directory.
+   3. Symlink `cache_dirs` via `EngineFileExecutor.symlink`, mapped through `FileSystemAtom`.
+   4. Clone `RunContext` with `output_dir = worktree_path`.
+   5. `await handler.execute(step_def, isolated_context)`. **FR-8:** documentation claims go only to a
+      local `doc_updates.md`, never into shared architecture docs.
+   6. **FR-7:** `GitAtom._intent_worktree_sync` (`git rebase main`) absorbs human changes on trunk.
+   7. Diff stripping on the worktree index, using the diff support in `loom/atoms/git/atom.py`.
+   8. Commit and merge back with `--strategy-option=ours` (**FR-5**).
+   9. Teardown always, in `finally:`, via `GitAtom._intent_worktree_teardown`.
+3. **`src/specweaver/loom/atoms/git/atom.py` or `EngineGitExecutor`** [MODIFY] — `_intent_strip_merge`
+   (or similar): uses git's `.diff` and the `context.yaml` allowed paths. **NFR-4:** remove disallowed
+   hunks before the internal commit; shared docs (`README.md`, `docs/*`) are always excluded, whatever
+   the agent does.
 
 > [!CAUTION]
-> Ensure any `RunContext` mutations are cloned tightly within the inner loop scope to prevent bleeding the ephemeral directory path into the next sequential pipeline iterations!
+> Clone `RunContext` inside the loop scope, so the ephemeral worktree path never leaks into the next
+> pipeline iteration.
 
-### 3. Diff Striping Math (`src/specweaver/loom/atoms/git/atom.py` or `EngineGitExecutor`)
-- **[MODIFY]**: Expose `_intent_strip_merge` or similar diff-patching utility leveraging native core `.diff` features and string analysis of the `context.yaml` allowed boundaries.
-- **[NFR-4 constraint]**: Actively rip out disallowed file hunks before finalizing the internal git
-  commit. Hardcode absolute exclusion paths for shared docs (`README.md`, `docs/*`) regardless of
-  agent attempts to manipulate them.
+## Tests
 
-## Verification Plan
-1. **Automated Tests**: Write tests in `tests/integration/flow/test_runner_sandbox.py` that trigger
-   a mocked handler which hallucinates edits to a `README.md` and authorized edit to `src/foo.py`,
-   verifying that the striping correctly discards `README.md`.
-2. **Unit Tests**: Ensure `PipelineStep.use_worktree` correctly initializes.
+| Tier | File | Case |
+|---|---|---|
+| Integration | `tests/integration/flow/test_runner_sandbox.py` | mocked handler edits `README.md` (hallucinated) and `src/foo.py` (authorized) → `README.md` discarded |
+| Unit | — | `PipelineStep.use_worktree` initializes correctly |
+
+## Decisions (audit)
+
+| # | Question | Chosen |
+|---|----------|--------|
+| Q1 | Integration seam | **Option B** — `PipelineRunner._execute_loop` detects steps needing a worktree (e.g. `StepTarget.CODE` under Generation/Tests when the pipeline flag `use_worktree` is set), sets it up via `GitAtom._intent_worktree_add`, runs the step with the context pushed down, applies the patch, tears down via `GitAtom._intent_worktree_teardown` |
+| Q2 | Diff stripping | **Option B** — drop hunks for paths not in `context.yaml`, merge the *allowed* hunks to trunk, log a warning. Rejects hallucinations without destroying valid work |
+| Q3 | Sandbox context passing | **Option A** — the runner temporarily overrides `RunContext.output_dir` with the worktree's absolute path, so downstream tools stay in the clone |
+
+## As built
+
+**Since changed** (checked 2026-09-25): `use_worktree` is `bool | None` in
+`core/flow/engine/models.py`, resolved with the `[sandbox] enforce_worktree_isolation` policy in
+`core/flow/engine/isolation.py`; the git intents live in `src/specweaver/sandbox/git/core/atom.py`.
+Multi-step runs use `C-EXEC-06`'s per-run worktree instead.

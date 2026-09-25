@@ -1,109 +1,87 @@
-# Design: Macro & Annotation Evaluator
+# B-INTL-02 — Macro & Annotation Evaluator
 
-- **Feature ID**: 3.30
-- **Phase**: 3
-- **Status**: APPROVED
-- **Design Doc**: docs/roadmap/phase_3/feature_3.30/feature_3.30_design.md
+**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03 committed. · **Feature ID**: 3.30 · **Phase**: 3
 
-## Feature Overview
+| | |
+|---|---|
+| Extends | Polyglot AST Extractor (`CodeStructureTool` / `CodeStructureAtom`, `extract_framework_markers`) |
+| Blueprint | Feature 3.29 (Archetype-Based Rule Sets) — declarative YAML loaded from `workflows/pipelines/frameworks/` |
+| Next | Feature 3.30a (framework plugin composition) |
 
-Feature 3.30 adds a specialized indexer capability to the Polyglot AST Extractor. It solves the
-problem of the LLM receiving only raw signatures (e.g., `#[derive(Clone)]` or `@RestController`) by
-unrolling Rust Procedural Macros, Kotlin Compiler Plugins, and backend annotations so the LLM
-understands the true runtime reality. 
-Instead of relying on slow, OS-level compiler invocations (like KSP or `cargo expand`), it adopts
-the highly successful Architecture pattern from Feature 3.29 (Archetype Rule Sets). It evaluates the
-AST markers (already natively extracted by `extract_framework_markers`) against modular, declarative
-YAML framework schemas (e.g., Spring Boot, Quarkus, NestJS) to translate raw annotations into
-concrete, unrolled runtime behaviors.
+## What it does
 
-## Research Findings
+The LLM sees raw markers such as `#[derive(Clone)]` or `@RestController`, not what they do at
+runtime. This feature unrolls them — Rust procedural macros, Kotlin compiler plugins, backend
+annotations — into what they mean.
 
-### Codebase Patterns
-- **AST Marker Extraction**: The existing `CodeStructureTool` and `CodeStructureAtom` already
-  possess a highly robust `extract_framework_markers` function across Java, Kotlin, Typescript,
-  Rust, and Python. It correctly strips `@RestController`, `@PostMapping`, `impl Trait`, etc.
-- **Archetype Parallels**: Feature 3.29 loads framework rules dynamically from
-  `workflows/pipelines/frameworks/`. We can use the exact same declarative pattern to define "unroll
-  maps" (e.g., "If `@GetMapping(X)` is found, output `HTTP GET X`").
+It evaluates the markers that `extract_framework_markers` already extracts (Java, Kotlin, Typescript,
+Rust, Python — e.g. `@RestController`, `@PostMapping`, `impl Trait`) against modular, declarative
+YAML framework schemas (e.g. Spring Boot, Quarkus, NestJS). An "unroll map" says, for example: "If
+`@GetMapping(X)` is found, output `HTTP GET X`".
 
-### External Tools
-| Tool | Version | Key API Surface | Source |
-|------|---------|----------------|--------|
-| tree-sitter | latest | Core CST extraction (already implemented). | N/A |
+## Why not the compiler
 
-### Blueprint References
-Feature 3.29 (Archetype-Based Rule Sets) - Loading declarative YAML bounds from the ecosystem plugins.
+Compiler calls (KSP, `cargo expand`) are OS-level and slow — too slow for quick agent loops (NFR-1).
+A static YAML map is fast and isolated, the same pattern Feature 3.29 used for archetype rules.
+
+## Architecture
+
+```mermaid
+graph LR
+    Y["YAML schemas<br/>workflows/evaluators/frameworks/<br/>+ .specweaver/evaluators/"] -->|"load_evaluator_schemas"| O["flow orchestrator"]
+    O -->|"evaluator_schemas dict"| A["CodeStructureAtom"]
+    A -->|"extract_framework_markers"| E["SchemaEvaluator<br/>depth cap 5"]
+    E -->|"comment block above symbol"| T["CodeStructureTool<br/>read_unrolled_symbol"]
+```
+
+The evaluator is pure: `commons/language` may not load YAML itself, so `flow` injects the schemas.
+
+## Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | Declarative YAML Unrolling vs Compiler API | Compiler interactions (KSP, `cargo expand`) violate NFR-1 (Performance) inside quick agent loops. Static mapping through YAML is how Feature 3.29 built isolated, fast Archetype rules. | No |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Evaluate Framework Macros | System | Evaluates AST markers against declarative YAML framework schemas. | Translates raw decorators/bases into unrolled text representations mathematically. |
-| FR-2 | Multi-Language Support | System | Natively supports major framework libraries across Java, Kotlin, TS, Python, and Rust. | Schemas for Spring Boot, Quarkus, NestJS, FastAPI, and Actix are evaluated correctly. |
+| FR-1 | Evaluate Framework Macros | System | Evaluates AST markers against declarative YAML framework schemas. | Translates raw decorators/bases into unrolled text representations. |
+| FR-2 | Multi-Language Support | System | Supports major framework libraries across Java, Kotlin, TS, Python, and Rust. | Schemas for Spring Boot, Quarkus, NestJS, FastAPI, and Actix are evaluated correctly. |
 | FR-3 | CodeStructureTool Integration | Agent | Calls `read_unrolled_symbol` intent | The tool delegates to the schema evaluator, appending the unrolled logic to the symbol. |
-| FR-4 | Directory Hot-Loading | System | Discovers custom `.yaml` schema overrides residing in arbitrary ecosystem directories. | Natively evaluates against user-supplied definitions without recompilation. |
+| FR-4 | Directory Hot-Loading | System | Discovers custom `.yaml` schema overrides residing in arbitrary ecosystem directories. | Evaluates against user-supplied definitions without recompilation. |
 | FR-5 | Cascading Unrolling | System | Resolves compounded schema definitions iteratively. | Prevents LLMs from missing nested meaning during recursive framework behaviors. |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Performance | Evaluation runs via purely in-memory dictionary lookups off the tree-sitter AST, executing in < 10ms. No OS shell-outs. |
-| NFR-2 | Graceful Degradation | If an annotation is not mapped in the schema, it smoothly falls back to just exposing the raw signature. |
+| NFR-1 | Performance | Evaluation runs via in-memory dictionary lookups off the tree-sitter AST, executing in < 10ms. No OS shell-outs. |
+| NFR-2 | Graceful Degradation | If an annotation is not mapped in the schema, it falls back to exposing the raw signature. |
 | NFR-3 | Extensibility | Framework schemas MUST be modular YAML files so engineers can add custom internal frameworks easily. |
-| NFR-4 | Schema Security Boundaries | The YAML evaluation engine MUST remain tightly data-declarative. | It MUST NOT parse or `eval()` any dynamic execution bindings from untrusted definitions. |
-| NFR-5 | Recursion Protection | The engine MUST enforce algorithmic bounds against cyclic parsing (e.g. `A` unrolls to `B`, `B` unrolls to `A`). | Implements a strict hard-cap (max depth 5) preventing zero-day OOM Infinite loop vulnerabilities. |
+| NFR-4 | Schema Security Boundaries | The YAML evaluation engine MUST remain data-declarative. It MUST NOT parse or `eval()` any dynamic execution bindings from untrusted definitions. |
+| NFR-5 | Recursion Protection | The engine MUST bound cyclic parsing (e.g. `A` unrolls to `B`, `B` unrolls to `A`) with a hard cap (max depth 5), preventing OOM infinite loops. |
 
-## External Dependencies
+External dependencies: none new — tree-sitter (latest) already does the CST extraction.
 
-| Tool | Min Version | Key API Surface | Compat Confirmed | Notes |
-|------|------------|----------------|-----------------|-------|
-| None | N/A | N/A | Y | Pure architectural extension of existing tools. |
-
-## Architectural Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Declarative YAML Unrolling vs Compiler API | Native Compiler interactions (KSP, `cargo expand`) violate NFR-1 (Performance) inside quick agent loops. Static mapping through YAML is exactly how Feature 3.29 built isolated, fast Archetype rules. | No |
-
-## Developer Guides Required
+## Guides owed
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Adding Custom Frameworks | Instructions for developers to map their own proprietary ORM or APIs into YAML Unroll Schemas. | ⬜ To be written during Pre-commit |
+| Adding Custom Frameworks | How developers map their own proprietary ORM or APIs into YAML Unroll Schemas. | ⬜ To be written during Pre-commit |
 
-## Sub-Feature Breakdown
+Written in SF-03 as `docs/dev_guides/adding_framework_guide.md` §1b.
 
-### SF-01: Core Schema Evaluator Engine
-- **Scope**: Implement the parser logic inside `commons/language/evaluator.py` to ingest YAML maps and transform AST `extract_framework_markers()` output into readable runtime strings.
-- **FRs**: [FR-1]
-- **Inputs**: AST Framework dict, YAML mapping.
-- **Outputs**: Evaluated text (e.g., `Endpoint: GET /api`).
-- **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf01_implementation_plan.md
+## Sub-features
 
-### SF-02: Native Core Framework Libraries
-- **Scope**: Write the default YAML Evaluation schemas for major ecosystem lifecycles explicitly covering Java/Kotlin (Spring Boot, Quarkus), TS (NestJS), Python (FastAPI, Django), and Rust (Actix).
-- **FRs**: [FR-2]
-- **Inputs**: Framework API Docs.
-- **Outputs**: Declarative YAML Maps.
-- **Depends on**: SF-01
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf02_implementation_plan.md
+| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
+|----|------|-----|------------------|-----------|------|
+| SF-01 | Core Schema Evaluator Engine: `commons/language/evaluator.py` turns `extract_framework_markers()` output + YAML maps into readable runtime strings. | FR-1, FR-2 | AST framework dict, YAML mapping → text (e.g. `Endpoint: GET /api`) | none | [sf01](B-INTL-02_sf01_implementation_plan.md) |
+| SF-02 | Native Core Framework Libraries: default schemas for Java/Kotlin (Spring Boot, Quarkus), TS (NestJS), Python (FastAPI, Django), Rust (Actix). | FR-3, FR-5 | framework API docs → declarative YAML maps | SF-01 | [sf02](B-INTL-02_sf02_implementation_plan.md) |
+| SF-03 | Tool Intent & Guide Publishing: `read_unrolled_symbol` on `CodeStructureTool`; developer guide for onboarding new frameworks. | — | evaluator engine → agent JSON schema, published guide | SF-02 | [sf03](B-INTL-02_sf03_implementation_plan.md) |
 
-### SF-03: Tool Intent & Guide Publishing
-- **Scope**: Extend `CodeStructureTool` with the `read_unrolled_symbol` integration. Write the comprehensive Developer Guide ensuring the platform can easily onboard new frameworks.
-- **FRs**: [FR-3]
-- **Inputs**: Evaluator Engine, Documentation.
-- **Outputs**: JSON Schema update to agents, Published MD.
-- **Depends on**: SF-02
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf03_implementation_plan.md
-
-## Execution Order
-
-1. SF-01 (no deps — start immediately)
-2. SF-02 (depends only on SF-01)
-3. SF-03 (depends dynamically on SF-02 completion)
+FR ownership follows the plans (recorded 2026-08-17): SF-01 owns FR-1, FR-2; SF-02 owns FR-3, FR-5.
+FR-4 is delivered by SF-01's `load_evaluator_schemas`.
 
 ## Progress Tracker
 
@@ -112,10 +90,3 @@ Feature 3.29 (Archetype-Based Rule Sets) - Loading declarative YAML bounds from 
 | SF-01 | Core Schema Evaluator Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Native Core Framework Libraries | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Tool Intent & Guide Publishing | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature 3.30 is FULLY CLOSED.
-**Next step**: Feature 3.30a initialization.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.

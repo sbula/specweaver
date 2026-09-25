@@ -1,77 +1,59 @@
-# Implementation Plan: Archetype-Based Rule Sets [SF-02: Commons Framework Schema]
-- **Feature ID**: 3.29
-- **Sub-Feature**: SF-02 — Commons Framework Schema
-- **Design Document**: docs/roadmap/phase_3/feature_3.29/feature_3.29_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.29/feature_3.29_sf02_implementation_plan.md
-- **Status**: APPROVED
+# B-INTL-01 SF-02 — Commons Framework Schema
 
-## 1. Overview
-Feature 3.29 SF-02 requires extracting polyglot framework markers (decorators, annotations, macros,
-and inheritance) from user code safely into a JSON structure, without polluting the Pure Logic
-`assurance` layer with C-bindings. 
-This plan extends the `CodeStructureInterface` to return rich mapping payloads dynamically using generalized `.scm` Tree-Sitter queries. 
+**Status**: APPROVED. Implemented. · **FRs owned**: FR-2 · **Depends on**: SF-01 · Design:
+[B-INTL-01_design.md](B-INTL-01_design.md) §Sub-features → SF-02
 
-## 2. Proposed Changes
+## Goal
 
-All structural extraction logic relies heavily on `tree-sitter` and must therefore reside in `loom/commons/language`, strictly isolated from the pure-logic `assurance` boundaries.
+Extract framework markers — decorators, annotations, macros, inheritance — from user code into a
+JSON structure, without putting C-bindings in the pure-logic `assurance` layer. `CodeStructureInterface`
+gains a method that returns these as a mapping, built from generic `.scm` Tree-Sitter queries.
 
-### 2.1 Interface & Atom Extensions 
-We expand the core DI contract so that Validation has access to structured JSON data.
+Everything that uses `tree-sitter` lives in `loom/commons/language`.
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/interfaces.py
-- **Changes**: Add `@abstractmethod def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:` to `CodeStructureInterface`.
-- **Note**: The returned dictionary should map the symbol name (e.g., `"MyController"`) to an inner dictionary containing at least `"decorators"` and `"extends"`.
+## Changes
 
-#### [MODIFY] src/specweaver/core/loom/atoms/code_structure/atom.py
-- **Changes**: 
-  - Add `extract_framework_markers` to `valid_intents`.
-  - Add `_handle_extract_framework_markers()` which calls the parser and returns the dictionary under the `exports={"markers": ...}` key.
+1. **Interface** · `src/specweaver/core/loom/commons/language/interfaces.py` — add
+   `@abstractmethod def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:`
+   to `CodeStructureInterface`. The dict maps a symbol name (e.g. `"MyController"`) to an inner dict
+   with at least `"decorators"` and `"extends"`.
+2. **Atom** · `src/specweaver/core/loom/atoms/code_structure/atom.py` — add
+   `extract_framework_markers` to `valid_intents`; add `_handle_extract_framework_markers()`, which
+   calls the parser and returns the dict under the `exports={"markers": ...}` key.
+3. **Validation ingress** (refines SF-01) · `src/specweaver/core/flow/_validation.py` —
+   `ValidateCodeHandler._run_validation` runs **both** intents on `CodeStructureAtom`, so the
+   `ast_payload` holds the structure string and the marker dicts:
 
-### 2.2 Validation Ingress Update (SF-01 Refinement)
-#### [MODIFY] src/specweaver/core/flow/_validation.py
-- **Changes**: In `ValidateCodeHandler._run_validation`, the `ast_payload` is natively built via
-  `extract_skeleton`. We must now run **both** intents sequentially or in parallel against the
-  `CodeStructureAtom` so the `ast_payload` passed to the Rule contains both the structural string
-  and the framework dictionaries:
-  ```python
-  payload_res = atom.run({"intent": "extract_skeleton", "path": str(code_path)})
-  markers_res = atom.run({"intent": "extract_framework_markers", "path": str(code_path)})
-  ast_payload = {"structure": payload_res.exports.get("structure", "")}
-  if markers_res.status.value == "SUCCESS":
-      ast_payload["markers"] = markers_res.exports.get("markers", {})
-  ```
+   ```python
+   payload_res = atom.run({"intent": "extract_skeleton", "path": str(code_path)})
+   markers_res = atom.run({"intent": "extract_framework_markers", "path": str(code_path)})
+   ast_payload = {"structure": payload_res.exports.get("structure", "")}
+   if markers_res.status.value == "SUCCESS":
+       ast_payload["markers"] = markers_res.exports.get("markers", {})
+   ```
 
-### 2.3 Polyglot Language Parsers
-We implement `extract_framework_markers` in every supported language utilizing generic agnostic capture points to extract dynamically all meta-markers into the JSON format. 
-To do this, each module must define an `SCM_MARKERS_QUERY` string that groups identifiers.
+4. **Language parsers** — each module defines an `SCM_MARKERS_QUERY` string that groups identifiers,
+   and implements `extract_framework_markers(self, code: str)`:
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/python/codestructure.py
-- Add `SCM_MARKERS_QUERY` targeting `decorated_definition` and `class_definition` arguments (bases).
-- Implement `extract_framework_markers(self, code: str)`.
+| File | `SCM_MARKERS_QUERY` targets |
+|------|------|
+| `src/specweaver/core/loom/commons/language/python/codestructure.py` | `decorated_definition`; `class_definition` arguments (bases) |
+| `src/specweaver/core/loom/commons/language/java/codestructure.py` | `class_declaration` (modifiers, superclass, interfaces); `method_declaration` (modifiers) |
+| `src/specweaver/core/loom/commons/language/typescript/codestructure.py` | decorators; `class_heritage` clauses |
+| `src/specweaver/core/loom/commons/language/rust/codestructure.py` | `attribute_item` on functions/structs; trait implementations (`impl_item`) |
+| `src/specweaver/core/loom/commons/language/kotlin/codestructure.py` | modifiers (annotations); delegates/bases |
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/java/codestructure.py
-- Add `SCM_MARKERS_QUERY` targeting `class_declaration` (modifiers, superclass, interfaces) and `method_declaration` (modifiers).
-- Implement `extract_framework_markers(self, code: str)`.
+## Tests
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/typescript/codestructure.py
-- Add `SCM_MARKERS_QUERY` targeting decorators and `class_heritage` clauses.
-- Implement `extract_framework_markers(self, code: str)`.
+| Tier | File / Case |
+|---|---|
+| Unit | `pytest tests/unit/core/flow/test_handlers_di_payload.py` — `ast_payload` merge |
+| Integration | `tests/integration/loom/test_polyglot_ast_edge_cases.py` — Python/Java class files; the dicts hold the right `{"decorators": [...], "extends": [...]}` |
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/rust/codestructure.py
-- Add `SCM_MARKERS_QUERY` targeting `attribute_item` on functions/structs, and trait implementations (`impl_item`).
-- Implement `extract_framework_markers(self, code: str)`.
+Manual verification happens in SF-03, which builds the `C12` rule on this payload.
 
-#### [MODIFY] src/specweaver/core/loom/commons/language/kotlin/codestructure.py
-- Implement equivalent Kotlin Tree-Sitter support for modifiers (Annotations) and delegates/bases.
+## As built
 
-## 3. Verification Plan
-
-### Automated Tests
-- Run `pytest tests/unit/core/flow/test_handlers_di_payload.py` to ensure `ast_payload` merging works smoothly.
-- Create tests for Python/Java in `tests/integration/loom/test_polyglot_ast_edge_cases.py` passing
-  generic class files and asserting the dictionaries contain accurate
-  `{"decorators": [...], "extends": [...]}` captures.
-
-### Manual Verification
-- Execution of this plan fully enables SF-03, which builds the `C12` pure logic boundary rule. Successful manual verification will happen when building out SF-03 next.
+**Since moved** (checked 2026-09-25): parsers live in `src/specweaver/workspace/ast/parsers/`; the
+handler in `core/flow/handlers/validation.py` stores the markers under
+`ast_payload["framework_markers"]` (the key `C12` reads), not `"markers"`.

@@ -1,74 +1,71 @@
-# Implementation Plan: Archetype-Based Rule Sets [SF-01: Injection & Orchestrator]
-- **Feature ID**: 3.29
-- **Sub-Feature**: SF-01 — Injection & Orchestrator
-- **Design Document**: docs/roadmap/phase_3/feature_3.29/feature_3.29_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.29/feature_3.29_sf01_implementation_plan.md
-- **Status**: APPROVED
+# B-INTL-01 SF-01 — Injection & Orchestrator
 
-## 1. Summary
-This implementation plan covers SF-01: wiring the `flow` Orchestrator to natively read the target
-component's `archetype`, dynamically overlaying the validation YAML, and injecting the memory-safe
-AST payload down into the Validation DMZ without violating the strict `forbids: loom/*` boundary.
+**Status**: APPROVED. Implemented. · **FRs owned**: FR-1 · **Depends on**: none · Design:
+[B-INTL-01_design.md](B-INTL-01_design.md) §Sub-features → SF-01
 
-## 2. Dependencies
-- **Depends On**: None. This is the first Sub-Feature.
-- **Transitive Assumptions**: `tree_sitter` dependencies natively function correctly.
-  `CodeStructureAtom` cleanly returns purely serialized python `dict` outputs without leaking
-  OS/C-pointer memory locks.
+## Goal
 
-## 3. Functional Requirements Covered
-- **FR-1 Profile Orchestration:** `PipelineRunner` dynamically parses `context.yaml` archetype to resolve the correct YAML pipeline extensions.
+The `flow` handlers read the target component's `archetype`, load the matching validation YAML, and
+inject the AST payload into the validation layer without breaking its `forbids: loom/*` boundary.
 
-## 4. File Modifications
+## Where it plugs in
 
-### 4.1. [NEW] `src/specweaver/core/config/archetype_resolver.py`
-- **Purpose**: Creates an `ArchetypeResolver` (modeling the battle-tested `DALResolver`) that
-  securely parses an execution target path upward, finding the closest `context.yaml` and extracting
-  the `archetype` string (e.g., `spring-boot`, `vue`).
-- **Signatures**:
-  ```python
-  class ArchetypeResolver:
-      def __init__(self, workspace_root: Path):
-          ...
-      def resolve(self, target_path: Path) -> str | None:
-          ...
-  ```
+| Fact | Where |
+|---|---|
+| `ValidateSpecHandler`, `ValidateCodeHandler` — `_resolve_merged_settings`, `_run_validation` | `src/specweaver/core/flow/_validation.py` |
+| `DALResolver` — the model for the new resolver | `core/config` |
+| `CodeStructureAtom` returns a plain Python `dict`, no OS/C-pointer memory locks leaking | `loom/atoms` |
 
-### 4.2. [MODIFY] `src/specweaver/core/flow/_validation.py`
-- **Purpose**: Upgrade the `ValidateSpecHandler` and `ValidateCodeHandler` to dynamically load context bounds and execute the payload injection without importing native logic.
-- **Changes**:
-  1. Instantiate the new `ArchetypeResolver` during `_resolve_merged_settings` (or natively before `_run_validation`).
-  2. Modify `_run_validation` in `ValidateCodeHandler`:
-     - Run `CodeStructureAtom(cwd).run({"intent": "extract_skeleton", "path": code_path})` to fetch the AST Dictionary.
-     - Change pipeline loading logic: Try `pipeline_name = f"validation_code_{archetype}"`. Fallback to `"validation_code_default"`.
-     - Inject the payload dictionary using parameter injection (Option B approved). Loop over `pipeline.steps` and assign `step.params["ast_payload"] = payload` so the Rules instantiate correctly.
-  3. Modify `_run_validation` in `ValidateSpecHandler`:
-     - Apply exact same dynamic archetype template fallback logic (loading `validation_spec_{archetype}.yaml`).
+## Changes
 
-## 5. Architectural Consistency
-- **DMZ Integrity**: The `flow` application correctly acts as the side-effect broker. It extracts
-  the AST via Loom and sends it purely as a Dictionary to `assurance/`, permanently solving the
-  layer violation.
-- **Rule Flexibility**: By using `step.params["ast_payload"]` at runtime, we preserve the `Rule.check(spec_text)` abstraction perfectly without shattering global rules.
+1. **[NEW] `src/specweaver/core/config/archetype_resolver.py`** — `ArchetypeResolver`, modeled on
+   `DALResolver`: walks upward from the target path to the nearest `context.yaml` and returns its
+   `archetype` string (e.g. `spring-boot`, `vue`).
 
-## 6. Backlog / Deferred Maintenance
-- **Refactoring Task [Option A]**: Moving forward, SpecWeaver should unify Dependency Injection
-  across the engine. A dedicated engineering ticket must be opened to refactor `Rule.check()`
-  recursively across the 30+ validation rules to formally support an explicitly typed
-  `injected_payload: dict[str, Any] | None = None` argument. For this feature, the localized
-  `__init__` parameter manipulation successfully stabilizes the bounds.
+   ```python
+   class ArchetypeResolver:
+       def __init__(self, workspace_root: Path):
+           ...
+       def resolve(self, target_path: Path) -> str | None:
+           ...
+   ```
 
-## 7. Verification Steps
-- [x] **Unit Testing**: Created `tests/unit/core/config/test_archetype_resolver.py` proving
-  recursive path fallback finding the nearest `archetype` metadata string. Including edge cases for
-  missing and malformed YAML.
-- [x] **Integration Testing**: Created an integration test executing `ValidateCodeHandler` and
-  verifying `CodeStructureAtom` intercepts the file successfully and injects the resulting `dict`
-  into `step.params` without failing execution. All unit tests, integration tests, and E2E tests are
-  green.
+2. **[MODIFY] `src/specweaver/core/flow/_validation.py`**:
+   1. Instantiate `ArchetypeResolver` during `_resolve_merged_settings` (or before `_run_validation`).
+   2. `ValidateCodeHandler._run_validation`:
+      - Run `CodeStructureAtom(cwd).run({"intent": "extract_skeleton", "path": code_path})` to get the AST dict.
+      - Load `pipeline_name = f"validation_code_{archetype}"`; fall back to `"validation_code_default"`.
+      - Inject by parameter (Option B approved): for each of `pipeline.steps`, set
+        `step.params["ast_payload"] = payload` so the rules instantiate with it.
+   3. `ValidateSpecHandler._run_validation`: same archetype fallback, loading
+      `validation_spec_{archetype}.yaml`.
 
-## 8. Implementation Notes (Deviations)
-- `CodeStructureAtom` required passing `cwd` manually (similarly to `QARunnerAtom`). Modified the
-  Atom to construct its own `FileExecutor` avoiding a Domain Dependency architecture violation
-  inside `flow/`.
+`flow` is the side-effect broker: it extracts the AST via Loom and passes a plain dict to
+`assurance/`, which removes the layer violation. Injecting through `step.params["ast_payload"]`
+keeps the `Rule.check(spec_text)` signature for every rule.
+
+## Tests
+
+| Tier | File / Case |
+|---|---|
+| Unit | `tests/unit/core/config/test_archetype_resolver.py` — upward search finds the nearest `archetype`; missing and malformed YAML |
+| Integration | `ValidateCodeHandler` run: `CodeStructureAtom` reads the file and the resulting `dict` lands in `step.params` without failing execution |
+
+All unit, integration and E2E tests green.
+
+## Decisions (audit)
+
+| # | Question | Chosen |
+|---|----------|--------|
+| Q1 | How does the payload reach the rules? | **Option B** — parameter injection into `step.params`. Option A (typed `Rule.check()` argument) deferred, see below |
+
+Deferred (Option A): unify DI across the engine — refactor `Rule.check()` across the 30+ validation
+rules to take an explicitly typed `injected_payload: dict[str, Any] | None = None`. Needs its own
+ticket.
+
+## As built
+
+- `CodeStructureAtom` needs `cwd` passed explicitly (like `QARunnerAtom`). The atom builds its own
+  `FileExecutor`, so `flow/` takes no domain dependency.
+- **Since moved** (checked 2026-09-25): the handlers now live in
+  `src/specweaver/core/flow/handlers/validation.py`; the extract intent is `read_file_structure`.

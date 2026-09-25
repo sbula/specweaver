@@ -1,94 +1,55 @@
-# Implementation Plan: Archetype-Based Rule Sets [SF-03: Pure Logic Archetype Validators]
-- **Feature ID**: 3.29
-- **Sub-Feature**: SF-03 — Pure Logic Archetype Validators
-- **Design Document**: docs/roadmap/phase_3/feature_3.29/feature_3.29_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-03
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.29/feature_3.29_sf03_implementation_plan.md
-- **Status**: APPROVED
+# B-INTL-01 SF-03 — Pure Logic Archetype Validators
 
-## 1. Goal
-Implement the `C12` and `S12` generic Archetype validation rules. To maintain Trunk-based Layer
-bounds and pure mathematical safety, Markdown Documentation will be parsed structurally as a Native
-Language using `tree-sitter-markdown`. Support for modular baseline Plugin Yamls will be natively
-integrated into `workflows/pipelines/frameworks/`.
+**Status**: APPROVED. Implemented (every change ✓). · **FRs owned**: FR-3, FR-4 · **Depends on**:
+SF-01, SF-02 · Design: [B-INTL-01_design.md](B-INTL-01_design.md) §Sub-features → SF-03
 
-## 2. Research Notes
-- **Resolving the `S12` LLM Ban:** The `rules/spec/context.yaml` completely forbids LLM boundaries
-  for pure logic rules. To prevent violating this Architecture, `S12` will rely precisely on the
-  `CodeStructureAtom` to extract Markdown AST boundaries exactly identical to `C12` extracting
-  Python boundaries. 
-- **Rule.context Initialization:** The executor directly maps dictionary parameters via `**kwargs`.
-  We will formally append `self.context: dict` into the abstract `Rule` baseline class to seamlessly
-  intercept orchestrator engine payloads.
-- **Workflow Pipeline Modularity:** All framework archetype Yamls (e.g., `spring-boot`, `fastapi`)
-  will completely leave `loom/` (execution bounds) and formally reside directly inside
-  `workflows/pipelines/frameworks/<language>/`.
+## Goal
 
-## 3. Proposed Changes
+Add the generic archetype rules `C12` (code) and `S12` (spec). Specs are parsed as a language of
+their own with `tree-sitter-markdown`, which keeps the layer bounds. Baseline framework plugin YAMLs
+live in `workflows/pipelines/frameworks/`.
 
-### `pyproject.toml`
-#### [MODIFY] ✓
-- Append `tree-sitter-markdown>=0.23` to the base dependencies.
+## Where it plugs in
 
-### `src/specweaver/core/loom/commons/language/markdown/`
-#### [NEW] `codestructure.py` ✓
-- Initialize `MarkdownCodeStructure` extending pure `CodeStructureAtom` APIs.
-- Specifically support the `extract_skeleton` intent natively returning a JSON boundary of `Spec.md` H1/H2/H3 headers.
+- **`S12` and the LLM ban:** `rules/spec/context.yaml` forbids LLM use in pure-logic rules. So `S12`
+  gets the Markdown AST from `CodeStructureAtom`, the same way `C12` gets the Python AST.
+- **`Rule.context`:** the executor maps dictionary parameters via `**kwargs`. A `self.context: dict`
+  on the abstract `Rule` base class catches the orchestrator's payload.
+- **Pipeline YAMLs:** framework archetype YAMLs (e.g. `spring-boot`, `fastapi`) leave `loom/`
+  (execution) and live in `workflows/pipelines/frameworks/<language>/`.
 
-### `src/specweaver/core/flow/_validation.py`
-#### [MODIFY] `ValidateSpecHandler` ✓
-- Align with `ValidateCodeHandler`: Run the `CodeStructureAtom` extraction on the `spec_path`.
-- Inject the resulting DOM into the `ast_payload` parameter for `execute_validation_pipeline()`.
+## Changes
 
-### `src/specweaver/assurance/validation/models.py`
-#### [MODIFY] `Rule` ABC ✓
-- Formalize a `context: dict[str, Any]` property on the base Rule class preventing constructor parameter drops.
+| File | Change |
+|------|--------|
+| `pyproject.toml` | add `tree-sitter-markdown>=0.23` to the base dependencies |
+| `src/specweaver/core/loom/commons/language/markdown/codestructure.py` [NEW] | `MarkdownCodeStructure`, on the `CodeStructureAtom` APIs; `extract_skeleton` returns a JSON outline of the `Spec.md` H1/H2/H3 headers |
+| `src/specweaver/core/flow/_validation.py` — `ValidateSpecHandler` | as `ValidateCodeHandler`: run the `CodeStructureAtom` extraction on the `spec_path`; inject the result into the `ast_payload` parameter for `execute_validation_pipeline()` |
+| `src/specweaver/assurance/validation/models.py` — `Rule` ABC | a `context: dict[str, Any]` property, so constructor parameters are not dropped |
+| `src/specweaver/assurance/validation/executor.py` — `execute_validation_pipeline` | map `ast_payload` into `rule.context` (built with `.get`, not pop) |
+| `src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py` [NEW] + `register.py` | `C12_ArchetypeCodeBounds(Rule)`: checks the structure inside `self.context["framework_markers"]`; registered |
+| `src/specweaver/assurance/validation/rules/spec/s12_archetype_spec_bounds.py` [NEW] + `register.py` | `S12_ArchetypeSpecBounds(Rule)`: checks the Spec headings in the `self.context["structure"]` Markdown AST; registered |
+| `src/specweaver/assurance/validation/pipeline_loader.py` — `_load_raw_yaml` | search `importlib.resources.files("specweaver.workflows.pipelines.frameworks").iterdir()`, so `ArchetypeResolver` names fall back on plugin libraries |
+| `src/specweaver/workflows/pipelines/frameworks/java/validation_code_spring-boot.yaml` [NEW] | baseline: Spring `@RestController` constraints through `C12` |
+| `src/specweaver/workflows/pipelines/frameworks/java/validation_spec_spring-boot.yaml` [NEW] | baseline: required Spec.md architecture blocks |
 
-### `src/specweaver/assurance/validation/executor.py`
-#### [MODIFY] `execute_validation_pipeline` ✓
-- Add runtime logic to explicitly map `ast_payload` into `rule.context`. Deviation Note: rather than pop, explicit `.get` maps cleanly.
+## Tests
 
-### `src/specweaver/assurance/validation/rules/code/`
-#### [NEW] `c12_archetype_code_bounds.py` ✓
-- Create `C12_ArchetypeCodeBounds(Rule)`.
-- Validates structural mechanics inside `self.context["framework_markers"]`.
-#### [MODIFY] `register.py` ✓
-- Register `C12`.
+| # | File | Case |
+|---|------|------|
+| 1 | `tests/integration/core/loom/test_polyglot_ast_markdown.py` | E2E: `CodeStructureAtom` extracts Markdown headers through `extract_skeleton` |
+| 2 | `tests/unit/assurance/validation/rules/code/test_c12_archetype_code_bounds.py` | injected JSON context; failures map to the boundary requirements |
+| 3 | `tests/unit/assurance/validation/rules/spec/test_s12_archetype_spec_bounds.py` | S12 passes a valid Spec.md DOM |
+| 4 | `tests/unit/assurance/validation/test_pipeline_loader.py` | the `importlib` search loads plugin YAMLs from the frameworks directory |
 
-### `src/specweaver/assurance/validation/rules/spec/`
-#### [NEW] `s12_archetype_spec_bounds.py` ✓
-- Create `S12_ArchetypeSpecBounds(Rule)`.
-- Evaluates Spec Markdown boundaries structurally utilizing the `self.context["structure"]` Markdown AST parsed earlier via tree-sitter.
-#### [MODIFY] `register.py` ✓
-- Register `S12`.
+## Backlog
 
-### `src/specweaver/assurance/validation/pipeline_loader.py`
-#### [MODIFY] `_load_raw_yaml` ✓
-- Incorporate `importlib.resources.files("specweaver.workflows.pipelines.frameworks").iterdir()`
-  searching mechanisms cleanly extending `ArchetypeResolver` parameters to natively fall back on
-  plugin libraries.
+**Markdown AST mutators:** implement `extract_symbols()` and `rewrite_symbol_body()` on
+`MarkdownCodeStructure`. Markdown headings (e.g. `## Intent`) become symbols, so an LLM can edit one
+section of a large Spec instead of overwriting it blind — which removes the truncation risk.
 
-### `src/specweaver/workflows/pipelines/frameworks/java/`
-#### [NEW] `validation_code_spring-boot.yaml` ✓
-- Base Native configuration logic bounding Spring `@RestController` constraints across `C12`.
-#### [NEW] `validation_spec_spring-boot.yaml` ✓
-- Base Native configuration logic bounding Spec.md architectural formatting blocks.
+## As built
 
-## 4. Backlog / Tech Debt
-- **[Backlog] Markdown AST Mutators:** Formally implement `extract_symbols()` and
-  `rewrite_symbol_body()` on the newly established `MarkdownCodeStructure` module. This treats
-  Markdown headings (e.g. `## Intent`) natively as code block symbols, enabling surgical LLM
-  refactoring of documentation to completely eliminate the blind-overwrite truncation risk for large
-  Spec documents.
-
-## 5. Verification Plan
-
-### Automated Tests
-1. **`tests/integration/core/loom/test_polyglot_ast_markdown.py`**
-   - E2E assert that `CodeStructureAtom` gracefully extracts structural Markdown headers across `extract_skeleton`.
-2. **`tests/unit/assurance/validation/rules/code/test_c12_archetype_code_bounds.py`**
-   - Inject logical JSON context and map failure outcomes exactly to boundary requirements.
-3. **`tests/unit/assurance/validation/rules/spec/test_s12_archetype_spec_bounds.py`**
-   - Provide mathematical mappings confirming S12 passes valid Spec.md architecture DOM models.
-4. **`tests/unit/assurance/validation/test_pipeline_loader.py`**
-   - Verify `importlib` iterators mapping plugin parameters properly load from the underlying Language frameworks directory.
+**Since changed** (checked 2026-09-25): `MarkdownCodeStructure` lives in
+`src/specweaver/workspace/ast/parsers/markdown/codestructure.py`; `pyproject.toml` pins
+`tree-sitter-markdown>=0.3.0`; the executor now pops `ast_payload` from a copy of the step params.

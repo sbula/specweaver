@@ -1,68 +1,36 @@
-# Implementation Plan: Macro & Annotation Evaluator [SF-02: Native Core Framework Libraries]
+# B-INTL-02 SF-02 — Native Core Framework Libraries
 
-**FRs owned: FR-3, FR-5.** Tool delegation to the evaluator, and cascading template
-resolution. Recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF04-MIG`.
+**Status**: APPROVED · **FRs owned**: FR-3, FR-5 (tool delegation to the evaluator; cascading
+template resolution — recorded 2026-08-17 under `specweaver-dev` §3.2c, from `INT-US-05-SF04-MIG`) ·
+**Depends on**: SF-01 · Design: [B-INTL-02_design.md](B-INTL-02_design.md) §Sub-features → SF-02
 
-FR-3 needed a stronger assertion: the tool test checked only `status == "success"`, so the
-intent could be swapped for plain `read_symbol` with the suite green.
+## Goal
 
+Ship the native YAML evaluation schemas for Java/Kotlin (Spring Boot, Quarkus), TypeScript (NestJS),
+Python (FastAPI, Django) and Rust (Actix-Web). They do not explain in English: they **unroll**
+meta-annotations into their literal compiler equivalents (e.g. `@RestController` → `@Controller` and
+`@ResponseBody`). A static compiler dictionary, so no heavy process spawning (NFR-1).
 
-- **Feature ID**: 3.30
-- **Sub-Feature**: SF-02 — Native Core Framework Libraries
-- **Design Document**: docs/roadmap/phase_3/feature_3.30/feature_3.30_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
-- **Implementation Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf02_implementation_plan.md
-- **Status**: APPROVED
+## Changes
 
-## 1. Goal
+All files go in the evaluator package from SF-01: `src/specweaver/workflows/evaluators/frameworks`.
 
-Implement the native ecosystem YAML Evaluation schemas covering major framework lifecycles for
-Java/Kotlin (Spring Boot, Quarkus), TypeScript (NestJS), Python (FastAPI, Django), and Rust
-(Actix-Web). Instead of outputting english explanations, these declarative mapping schemas will
-**unroll** complex meta-annotations into their deterministic, literal compiler-equivalent
-counterparts (e.g., `@RestController` unrolls into `@Controller` and `@ResponseBody`). This
-effectively serves as a static compiler dictionary proxy, resolving NFR-1 limits on heavy runtime
-process spawning.
+| [NEW] File | Scope | Mapping | Example |
+|------|------|------|------|
+| `spring-boot.yaml` | Spring Boot, Spring WebMVC, JPA | meta-annotations → expanded code | `RestController`: `@Controller\n@ResponseBody`; `SpringBootApplication`: `@Configuration\n@EnableAutoConfiguration\n@ComponentScan` |
+| `nestjs.yaml` | NestJS | decorators → DI bindings + HTTP endpoints | `Controller: "@Injectable()\n// Binds Express Router Target"` |
+| `fastapi.yaml` | FastAPI | dynamic routing | `app.get: "@api_route(method='GET')"` |
+| `actix-web.yaml` | Actix-Web | procedural macros → their `impl` expansions | see below |
 
-## 2. Proposed Changes
+Actix example: `"derive(Clone)": "impl Clone for >>{Target}<< {\n    fn clone(&self) -> Self\n}"`
 
-All files will be created inside the core evaluator static package boundary established in SF-01.
+`docs/dev_guides/language_support_guide.md` [MODIFY] — add why these meta-annotation graphs are kept
+in-repo (no open-source static compiler dictionaries exist) instead of extracted at compile time:
+lower latency, static reliability.
 
-### `src/specweaver/workflows/evaluators/frameworks` (The Unroller Dictionary)
+## Tests
 
-#### [NEW] `spring-boot.yaml`
-- **Scope**: Spring Boot, Spring WebMVC, JPA.
-- **Mapping Strategy**: Converts meta-annotations to standard expanded code.
-- **Decorators Example**: 
-  - `RestController`: `@Controller\n@ResponseBody`
-  - `SpringBootApplication`: `@Configuration\n@EnableAutoConfiguration\n@ComponentScan`
-
-#### [NEW] `nestjs.yaml`
-- **Scope**: NestJS.
-- **Mapping Strategy**: Decodes NestJS decorators into expanded DI bindings and HTTP endpoints.
-- **Decorators Example**: `Controller: "@Injectable()\n// Binds Express Router Target"`
-
-#### [NEW] `fastapi.yaml`
-- **Scope**: FastAPI.
-- **Mapping Strategy**: Decodes dynamic framework routing boundaries.
-- **Decorators Example**: `app.get: "@api_route(method='GET')"`
-
-#### [NEW] `actix-web.yaml`
-- **Scope**: Actix-Web.
-- **Mapping Strategy**: Translates common procedural macros to their `impl` expansions.
-- **Decorators Example**: `"derive(Clone)": "impl Clone for >>{Target}<< {\n    fn clone(&self) -> Self\n}"`
-
-### `docs/dev_guides/language_support_guide.md`
-#### [MODIFY]
-- **Documentation Step**: As requested, append a specific design rationale explaining *why* we
-  maintain these meta-annotation graphs natively (lack of open-source static compiler dictionaries)
-  rather than extracting them dynamically at compile time, explicitly referencing latency reduction
-  and static reliability.
-
-## 3. Verification Plan
-
-### Automated Tests
-1. **Unit Tests in `test_framework_schemas.py`**:
-   - Programmatically invoke `load_evaluator_schemas()` to parse all the new files.
-   - Assert that no YAML parsing errors occur and that deep dictionary loading executes flawlessly.
-   - Verify specific recursive lookups (e.g., `spring-boot` successfully resolves `RestController` to `@Controller` and `@ResponseBody`).
+| File | Case |
+|---|---|
+| `test_framework_schemas.py` (unit) | `load_evaluator_schemas()` parses every new file with no YAML errors; deep loading works; recursive lookup: `spring-boot` resolves `RestController` to `@Controller` and `@ResponseBody` |
+| tool test (FR-3) | asserts the unrolled output, not only `status == "success"` — otherwise the intent could be swapped for plain `read_symbol` with the suite green |
