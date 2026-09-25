@@ -1,15 +1,11 @@
-# Design: Implementation Generator
+# D-INTL-01 — Implementation Generator
 
-- **Feature ID**: D-INTL-01
-- **Phase**: 1
-- **Status**: COMPLETED
-- **Design Doc**: docs/roadmap/features/topic_04_intelligence/D-INTL-01/D-INTL-01_design.md
+**Status**: COMPLETED · **Phase**: 1 · **Feature ID**: D-INTL-01
 
-## Feature Overview
+## What it does
 
-Feature D-INTL-01 provides the core generation routines for writing application code and unit tests
-based entirely on previously validated design specifications. It integrates directly into the
-pipeline orchestration and includes the corresponding LLM Code Review loops.
+Generates application code and unit tests from a validated spec, inside the pipeline, and reviews
+the generated code with an LLM against the spec.
 
 ## Functional Requirements
 
@@ -19,12 +15,14 @@ pipeline orchestration and includes the corresponding LLM Code Review loops.
 | FR-2 | Test Generation | Developer | Execute test generation phase | LLM generates `test_<name>.py` mapping to spec scenarios. |
 | FR-3 | Code Review | Developer | Execute `sw review code` | LLM evaluates the target implementation strictly against the Spec constraints, returning `ACCEPTED` or `DENIED`. |
 
+## Sub-features
+
+| SF | Does | FRs | Plan |
+|----|------|-----|------|
+| SF-01 | Generation engine + code review | FR-1, FR-2, FR-3 | [sf01](D-INTL-01_sf01_implementation_plan.md) |
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Generation Engine & Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-## Session Handoff
-
-**Current status**: Feature D-INTL-01 is **COMPLETED**.

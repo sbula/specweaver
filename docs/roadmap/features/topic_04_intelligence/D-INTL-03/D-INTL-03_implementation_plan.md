@@ -1,38 +1,38 @@
-# Feature 3.6 — Explicit Plan Phase (Spec → Plan → Tasks)
+# D-INTL-03 — Explicit Plan Phase (Spec → Plan → Tasks)
 
-Insert a structured **Plan** artifact between spec validation/review and code generation. The Plan
-captures architecture decisions, tech stack choices, file layout, constraint reasoning, and
-(optionally) UI mockups — before code generation begins.
+**Status**: COMPLETED (✅ in the master story roadmap) · **Feature ID**: D-INTL-03 · Roadmap item 3.6
 
-> **Inspired by**: [Spec Kit](https://github.com/github/spec-kit) (`/specify → /plan → /tasks` workflow)
-> **Optional enrichment**: [Google Stitch](https://stitch.withgoogle.com/) for web/UI mockup generation
-> **Lifecycle position**: bridges L2 (Architecture) → L4 (Implementation) in [lifecycle_layers.md](../../architecture/lifecycle_layers.md)
+| | |
+|---|---|
+| Inspired by | [Spec Kit](https://github.com/github/spec-kit) (`/specify → /plan → /tasks` workflow) |
+| Optional enrichment | [Google Stitch](https://stitch.withgoogle.com/) for web/UI mockup generation |
+| Lifecycle position | bridges L2 (Architecture) → L4 (Implementation) in [lifecycle_layers.md](../../../../architecture/01_foundational_principles/lifecycle_layers.md) |
+| Used by | `INT-US-21` (plan hydration hook makes the plan step usable from any pipeline YAML) |
 
 > [!IMPORTANT]
-> **Prerequisite**: Before starting 3.6, complete a separate cleanup task to extract hardcoded model
-> defaults (`gemini-2.5-flash`) from 6 locations into the hierarchical LLM config system. See
-> [Decision #13](#13-llm-model-selection).
+> **Prerequisite**: a separate cleanup task first extracts the hardcoded model default
+> (`gemini-2.5-flash`) from 6 locations into the hierarchical LLM config system (Decision 13).
 
----
+## What it does
 
-## Motivation
+Inserts a structured, reviewable **Plan** artifact between spec validation/review and code
+generation. The Plan holds architecture decisions, tech stack choices, file layout, constraint
+reasoning and, optionally, UI mockups. Code generation then uses it as its blueprint.
 
-Today, `generate_code` receives only the spec + constitution + standards. Architecture decisions
-(folder structure, which libraries to use, how to split modules) are implicit — the LLM guesses.
-This leads to:
+## Why
 
-- Inconsistent file layouts across generated modules
-- Tech stack choices that conflict with project conventions
-- No reviewable record of *why* the LLM chose a particular approach
-- No opportunity for human review of architecture before code is written
+Without it, `generate_code` receives only the spec + constitution + standards, and the LLM guesses
+the architecture (folder structure, libraries, module split). Result:
 
-The Plan phase inserts an explicit, reviewable artifact that becomes the blueprint for code generation — the LLM's "architectural thinking" becomes a first-class, auditable document.
+- inconsistent file layouts across generated modules;
+- tech stack choices that conflict with project conventions;
+- no reviewable record of *why* the LLM chose an approach;
+- no human review of the architecture before code is written.
 
----
+## The Plan artifact
 
-## Core Concept: Plan Artifact
-
-A **Plan** is a structured YAML document attached to a spec, capturing:
+A **YAML** document attached to a spec (machine-first, agent-consumable). Markdown is rendered only
+on explicit HITL request: `sw plan render <spec>`.
 
 | Section | Purpose | Source |
 |---------|---------|--------|
@@ -43,11 +43,9 @@ A **Plan** is a structured YAML document attached to a spec, capturing:
 | **Test Expectations** | Lightweight scenario hints (precursor to 3.17) | LLM from spec Contract/Policy |
 | **UI Mockups** _(optional, 3.6b)_ | Stitch-generated interactive prototypes | Google Stitch MCP |
 
-The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rendering is **optional** — generated only on explicit HITL request via `sw plan render <spec>`.
+## Decisions
 
----
-
-## Design Decisions
+All 32 audit questions resolved; the Audit # column maps each decision to its question.
 
 | # | Decision | Choice | Audit # |
 |---|----------|--------|---------|
@@ -62,7 +60,7 @@ The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rende
 | 9 | **HITL gate** | Confidence-gated: `confidence ≥ threshold` → auto-approve. `confidence < threshold` → force HITL review. Threshold configurable per project via DB. | Q7, Q19 |
 | 10 | **Plan naming** | `{spec_stem}_plan.yaml` (not `_spec` stripping — plan is its own artifact type). | Q10 |
 | 11 | **Staleness detection** | SHA-256 hash of spec content stored in plan's `spec_hash` field. On pipeline run: compare hash → mismatch triggers regeneration. | Q8 |
-| 12 | **Plan-to-code injection** | Selective section injection: only `file_layout` + `architecture` + `tasks` + `test_expectations`. Skip `reasoning`, `constraints`, `tech_stack`, `mockups`. Both at priority 1 with standards — plan is kept compact. | Q12, Q31 |
+| 12 | **Plan-to-code injection** | Selective section injection: only `file_layout` + `architecture` + `tasks` + `test_expectations`. Skip `reasoning`, `constraints`, `tech_stack`, `mockups`. Plan and standards both at priority 1 — plan is kept compact. | Q12, Q31 |
 | 13 | **LLM model selection** | Hierarchical config: CLI flag → project-role → global-role → system default. New `"plan"` role in `_DEFAULT_PROFILES`. **No hardcoded model names.** Prerequisite cleanup task removes all 6 hardcoded `gemini-2.5-flash` references. | Q13 |
 | 14 | **Plan prompt context** | Spec (role=target) + constitution + standards + topology + project tree (2-level). No existing plans, no decomposition results. | Q14 |
 | 15 | **Gate loop behavior** | On HITL rejection: re-prompt LLM with rejection reason + existing plan as feedback. Max 3 iterations. | Q27 |
@@ -73,13 +71,37 @@ The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rende
 | 20 | **Divergence handling** | Hash check: plan YAML stores spec_hash. On load, compare against current spec. Mismatch → warning. | Q25 |
 | 21 | **Test fixtures** | Factory pattern (`make_plan(**overrides)`) + hand-crafted YAML edge cases. | Q32 |
 
----
+Also resolved:
 
-## Sub-Phases
+- **HITL UX**: V1 = generate → display → accept/reject with feedback loop. V2 (future): interactive editing.
+- **Stitch**: MCP server, preview URL links, env var for the API key.
+- **3.6c removed** — DECOMPOSE action doesn't exist. Task decomposition deferred to roadmap (3.13/3.18).
 
-### Phase 3.6a: Core Planning Module + Pipeline Integration
+## Architecture
 
-**Goal**: End-to-end plan generation working in the `new_feature` pipeline. LLM generates a structured Plan artifact from spec + constitution + standards + topology.
+| Module | Archetype | Boundary Respected? |
+|--------|-----------|---------------------|
+| `planning/` | orchestrator, consumes llm + config + context | ✅ Same pattern as `drafting/` (which also consumes `context`) |
+| `flow/` | orchestrator | ✅ New handler follows existing protocol. Runner change is minimal (post-step hook). |
+| `implementation/` | adapter, consumes llm + config | ✅ New `plan` kwarg follows `constitution`/`standards` pattern |
+| `llm/` | adapter | ✅ New `add_plan()` follows `add_constitution()`/`add_standards()` pattern |
+| `cli/` | orchestrator | ✅ New `plan_app` Typer group follows `standards_app` pattern |
+| `pipelines/` | data | ✅ YAML-only change, new step uses new action+target |
+
+New dependencies: none for 3.6a — all existing deps sufficient.
+
+**Since moved** (noticed 2026-09-25): the module is `src/specweaver/workflows/planning/`;
+`StepAction` is in `src/specweaver/core/flow/engine/models.py`; `add_plan` is in
+`src/specweaver/infrastructure/llm/prompt/adders.py`. `INT-US-21` replaced the `plan_path` post-step
+hook with a shared hydration function that sets `context.plan` (see its design, FR-2). Paths below
+are as of the plan's date.
+
+## Sub-phases
+
+### 3.6a — Core planning module + pipeline integration
+
+**Goal**: end-to-end plan generation in the `new_feature` pipeline — the LLM generates a Plan
+artifact from spec + constitution + standards + topology.
 
 | Component | Module | What |
 |-----------|--------|------|
@@ -98,14 +120,14 @@ The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rende
 | `cli/_helpers.py` | `cli/` | `_load_plan_content(project_path, spec_path)` — reads YAML, extracts `file_layout` + `architecture` + `tasks` + `test_expectations` only. |
 | `context.yaml` (root) | root | Add `planning` to exposes list. |
 
-**Tests**: ~80-100 unit + integration tests.
-**Deliverable**: `sw plan my_spec.md` generates a structured Plan YAML, `sw run new_feature` includes plan step with confidence-gated HITL, code generation uses Plan as context.
+**Deliverable**: `sw plan my_spec.md` writes a Plan YAML; `sw run new_feature` includes the plan
+step with confidence-gated HITL; code generation uses the Plan as context. New test dirs:
+`tests/unit/planning/`, `tests/integration/planning/`.
 
----
+### 3.6b — Google Stitch integration _(optional)_
 
-### Phase 3.6b: Google Stitch Integration _(optional)_
-
-**Goal**: For specs describing web/UI components, auto-generate interactive mockups via Google Stitch MCP server and attach preview URLs to the Plan artifact.
+**Goal**: for specs describing web/UI components, generate interactive mockups via the Google
+Stitch MCP server and attach preview URLs to the Plan.
 
 | Component | Module | What |
 |-----------|--------|------|
@@ -115,23 +137,18 @@ The Plan is stored as **YAML** (machine-first, agent-consumable). Markdown rende
 | Stitch config | `config/` | `STITCH_API_KEY` environment variable. `stitch_mode` DB setting: `auto\|prompt\|off` (default: `off`). |
 
 > [!IMPORTANT]
-> Stitch integration is **conditional**: only fires when spec has UI sections AND `STITCH_API_KEY`
-> env var is set AND `stitch_mode != off`. Non-UI specs skip entirely. Missing SDK = graceful skip
-> with log warning. **No new package dependencies** — MCP communication uses existing
-> infrastructure.
+> Stitch fires only when the spec has UI sections AND `STITCH_API_KEY` is set AND
+> `stitch_mode != off`. Non-UI specs skip entirely. Missing SDK = graceful skip with log warning.
+> **No new package dependencies** — MCP communication uses existing infrastructure.
 
-**Tests**: ~20-30 tests (mocked MCP calls, UI extraction from spec samples).
+## Changes
 
----
+### `planning/` — new module
 
-## Proposed Changes (Detailed)
+`specweaver/planning/`: self-contained orchestrator for plan generation. Consumes
+`specweaver/llm`, `specweaver/config`, `specweaver/context`. Forbidden: `specweaver/loom/*`.
 
-### New Module: `planning/`
-
-> **New module**: `specweaver/planning/` — self-contained orchestrator for plan generation.
-> Consumes `specweaver/llm`, `specweaver/config`, `specweaver/context`. Forbidden: `specweaver/loom/*`.
-
-#### [NEW] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/planning/context.yaml)
+`planning/context.yaml`:
 
 ```yaml
 name: planning
@@ -161,7 +178,7 @@ operational:
   concurrency_model: none
 ```
 
-#### [NEW] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/planning/models.py)
+`planning/models.py`:
 
 ```python
 KNOWN_ARCHETYPES = {"adapter", "orchestrator", "pure-logic", "leaf", "data"}
@@ -235,7 +252,7 @@ class PlanArtifact(BaseModel):
     confidence: int = 0          # 0-100
 ```
 
-#### [NEW] [planner.py](file:///c:/development/pitbula/specweaver/src/specweaver/planning/planner.py)
+`planning/planner.py`:
 
 ```python
 class Planner:
@@ -284,7 +301,7 @@ Prompt structure:
 </context>
 ```
 
-#### [NEW] [renderer.py](file:///c:/development/pitbula/specweaver/src/specweaver/planning/renderer.py)
+`planning/renderer.py`:
 
 ```python
 def render_plan_markdown(plan: PlanArtifact) -> str:
@@ -296,11 +313,9 @@ def render_plan_markdown(plan: PlanArtifact) -> str:
     """
 ```
 
----
+### Flow engine
 
-### Flow Engine Changes
-
-#### [MODIFY] [models.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/models.py)
+`flow/models.py`:
 
 ```diff
  class StepAction(enum.StrEnum):
@@ -322,9 +337,7 @@ def render_plan_markdown(plan: PlanArtifact) -> str:
  )
 ```
 
-#### [MODIFY] [handlers.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/handlers.py)
-
-Add `plan_path` to `RunContext`:
+`flow/handlers.py` — `plan_path` on `RunContext`:
 
 ```diff
  class RunContext(BaseModel):
@@ -353,15 +366,13 @@ class PlanSpecHandler:
         # 6. Return StepResult with plan_path + confidence
 ```
 
-Register in `StepHandlerRegistry`:
+Registered in `StepHandlerRegistry`:
 
 ```diff
 +    (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler(),
 ```
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/runner.py)
-
-Post-step hook — propagate plan_path to RunContext:
+`flow/runner.py` — post-step hook propagates `plan_path` to `RunContext`:
 
 ```python
 # After step execution, update context for downstream steps
@@ -371,11 +382,7 @@ if step.action == StepAction.PLAN and result.status == StepStatus.PASSED:
         context.plan_path = Path(plan_path)
 ```
 
----
-
-### Pipeline Changes
-
-#### [MODIFY] [new_feature.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/pipelines/new_feature.yaml)
+### Pipeline — `pipelines/new_feature.yaml`
 
 ```diff
    - name: review_spec
@@ -400,18 +407,14 @@ if step.action == StepAction.PLAN and result.status == StepStatus.PASSED:
      ...
 ```
 
-The gate fires after plan generation. Behavior depends on confidence:
+The gate fires after plan generation:
 - `confidence ≥ threshold` → auto-approve (skip HITL)
 - `confidence < threshold` → HITL reviews plan
 - On rejection: re-prompt LLM with rejection reason + existing plan (Option C loop)
 
----
+### Generator — `implementation/generator.py`
 
-### Implementation Module Changes
-
-#### [MODIFY] [generator.py](file:///c:/development/pitbula/specweaver/src/specweaver/implementation/generator.py)
-
-Add `plan` kwarg to both methods:
+`plan` kwarg on both methods:
 
 ```diff
  async def generate_code(
@@ -435,13 +438,7 @@ if plan:
 
 Same change for `generate_tests()`.
 
----
-
-### PromptBuilder Enhancement
-
-#### [MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/prompt_builder.py)
-
-New `add_plan()` method:
+### PromptBuilder — `llm/prompt_builder.py`
 
 ```python
 def add_plan(self, text: str) -> PromptBuilder:
@@ -461,13 +458,10 @@ def add_plan(self, text: str) -> PromptBuilder:
     return self
 ```
 
-Rendering order in `_render()`: instructions → constitution → standards → **plan** → topology → files → context → reminders.
+Rendering order in `_render()`: instructions → constitution → standards → **plan** → topology →
+files → context → reminders.
 
----
-
-### CLI
-
-#### [NEW] [plan.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/plan.py)
+### CLI — `cli/plan.py` (new)
 
 ```python
 plan_app = typer.Typer(name="plan", help="Generate and manage implementation plans.")
@@ -500,7 +494,7 @@ File count warning in Rich output:
 
 Thresholds configurable via DB: `plan_file_warning_yellow` (default: 6), `plan_file_warning_red` (default: 16).
 
-#### [MODIFY] [_helpers.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli/_helpers.py)
+`cli/_helpers.py`:
 
 ```python
 def _load_plan_content(project_path: Path, spec_path: Path) -> str | None:
@@ -515,11 +509,7 @@ def _load_plan_content(project_path: Path, spec_path: Path) -> str | None:
     # Parse YAML, extract relevant sections, serialize as compact YAML
 ```
 
----
-
-### System-Level Context
-
-#### [MODIFY] [context.yaml](file:///c:/development/pitbula/specweaver/src/specweaver/context.yaml)
+### Root `context.yaml`
 
 ```diff
  exposes:
@@ -529,58 +519,19 @@ def _load_plan_content(project_path: Path, spec_path: Path) -> str | None:
 +  - planning
 ```
 
----
+## Tests
 
-## Architecture Validation
-
-| Module | Archetype | Boundary Respected? |
-|--------|-----------|---------------------|
-| `planning/` | orchestrator, consumes llm + config + context | ✅ Same pattern as `drafting/` (which also consumes `context`) |
-| `flow/` | orchestrator | ✅ New handler follows existing protocol. Runner change is minimal (post-step hook). |
-| `implementation/` | adapter, consumes llm + config | ✅ New `plan` kwarg follows `constitution`/`standards` pattern |
-| `llm/` | adapter | ✅ New `add_plan()` follows `add_constitution()`/`add_standards()` pattern |
-| `cli/` | orchestrator | ✅ New `plan_app` Typer group follows `standards_app` pattern |
-| `pipelines/` | data | ✅ YAML-only change, new step uses new action+target |
-
----
-
-## Resolved Decisions (from audit)
-
-All 32 audit questions have been resolved. Key resolutions:
-
-| Category | Resolution |
-|----------|------------|
-| **Storage** | YAML primary, Markdown on demand. No DB in 3.6a. File location configurable (default: next to spec). |
-| **Pipeline** | Plan always runs. HITL confidence-gated. On rejection: re-prompt with feedback (max 3 iterations). |
-| **LLM** | Hierarchical model config. New `"plan"` role. No hardcoded defaults. Reflection retry for JSON validation. |
-| **Token budget** | Selective section injection (file_layout + architecture + tasks + test_expectations). Both plan and standards at priority 1. |
-| **Staleness** | SHA-256 spec hash stored in plan. Mismatch → regeneration. |
-| **HITL UX** | V1: generate → display → accept/reject with feedback loop. V2 (future): interactive editing. |
-| **Stitch** | MCP server, preview URL links, env var for API key. |
-| **3.6c** | Removed — DECOMPOSE action doesn't exist. Task decomposition deferred to roadmap (3.13/3.18). |
-
----
-
-## New Dependencies
-
-| Package | Phase | Why |
-|---------|-------|-----|
-| _(none for 3.6a)_ | 3.6a | All existing deps sufficient |
-
----
-
-## Verification Plan
-
-**Total: ~100-130 tests across 2 sub-phases.**
+Target: ~100-130 tests across 2 sub-phases.
 
 | Sub-phase | Unit | Integration | Edge |
 |-----------|------|-------------|------|
 | 3.6a | ~50 | ~20 | ~10 |
 | 3.6b | ~15 | ~10 | ~5 |
 
-### Automated Tests
+3.6a: ~80-100 unit + integration tests. 3.6b: ~20-30 tests (mocked MCP calls, UI extraction from
+spec samples).
 
-**Unit tests (`tests/unit/planning/`):**
+**Unit (`tests/unit/planning/`):**
 - `PlanArtifact` model validation (mandatory fields, optional fields, defaults)
 - `FileChange`, `ArchitectureSection`, `TestExpectation` model validation
 - Archetype warning for unknown values (not error)
@@ -598,11 +549,11 @@ All 32 audit questions have been resolved. Key resolutions:
 - File count warning thresholds
 - Spec hash computation and comparison
 
-**Fixture strategy:**
+**Fixtures:**
 - `tests/fixtures/planning.py`: `make_plan(**overrides)` factory returning valid `PlanArtifact`
 - `tests/fixtures/plans/`: 3-4 hand-crafted YAML plan files for integration tests
 
-**Integration tests (`tests/integration/`):**
+**Integration (`tests/integration/`):**
 - `sw plan my_spec.md` CLI command (end-to-end with mocked LLM)
 - `sw plan show` / `sw plan clear` / `sw plan render` CLI round-trip
 - Pipeline execution: `new_feature.yaml` with plan step (mocked LLM, verify step order)
@@ -620,7 +571,7 @@ uv run ruff check src/ tests/
 uv run mypy src/
 ```
 
-### Manual Verification
+**Manual:**
 
 1. `sw plan specs/example_spec.md` → verify YAML saved, Rich summary with color-coded file count
 2. `sw plan show specs/example_spec.md` → verify plan display
@@ -629,51 +580,14 @@ uv run mypy src/
 5. Edit spec after plan → re-run → verify staleness detection triggers regeneration
 6. Reject plan in HITL → verify re-prompt with feedback
 
----
-
-## Documentation Updates
+## Documentation updates
 
 | Doc | What to add |
 |-----|-------------|
 | `README.md` | Features bullet for "Implementation Planning", CLI table for `sw plan`, project structure for `planning/` |
 | `docs/quickstart.md` | New section: "Generate an Implementation Plan" |
-
 | `docs/roadmap/phase_3_feature_expansion.md` | Mark 3.6a done when complete |
 | `docs/architecture/lifecycle_layers.md` | Annotate Plan as L2→L4 bridge artifact |
 | `docs/architecture/context_yaml_spec.md` | Add `planning/` module |
 | `docs/architecture/methodology_index.md` | Reference planning phase |
 | `developer_guide.html` | Planning section |
-
----
-
-## File Map Summary
-
-### New Files
-
-| File | Module | Purpose |
-|------|--------|---------|
-| `planning/__init__.py` | planning | Module init |
-| `planning/context.yaml` | planning | Module manifest |
-| `planning/models.py` | planning | PlanArtifact + supporting models |
-| `planning/planner.py` | planning | Planner service (LLM plan generation + validation retry) |
-| `planning/renderer.py` | planning | On-demand Markdown rendering |
-| `planning/stitch.py` _(3.6b)_ | planning | Stitch MCP client |
-| `planning/ui_extractor.py` _(3.6b)_ | planning | UI requirement extraction |
-| `cli/plan.py` | cli | CLI commands |
-| `tests/unit/planning/` | tests | Unit tests |
-| `tests/integration/planning/` | tests | Integration tests |
-| `tests/fixtures/planning.py` | tests | Plan factory fixture |
-| `tests/fixtures/plans/` | tests | Hand-crafted YAML plan fixtures |
-
-### Modified Files
-
-| File | Change |
-|------|--------|
-| `flow/models.py` | Add `PLAN` to `StepAction`, add valid combination |
-| `flow/handlers.py` | Add `PlanSpecHandler`, `plan_path` on `RunContext`, update registry |
-| `flow/runner.py` | Post-step hook: propagate `plan_path` to `RunContext` |
-| `pipelines/new_feature.yaml` | Insert `plan_spec` step with confidence-gated HITL |
-| `implementation/generator.py` | Add `plan: str \| None` to `generate_code()` and `generate_tests()` |
-| `llm/prompt_builder.py` | Add `add_plan()` method + `<plan>` rendering block |
-| `cli/_helpers.py` | `_load_plan_content()` with selective section extraction |
-| `context.yaml` (root) | Add `planning` to exposes list |
