@@ -1,35 +1,25 @@
-# Walkthrough: `B-SENS-03` SF-02 CB-2 — a symbol yields its signature
+# B-SENS-03 SF-02 CB-2 — Walkthrough
 
-- **Story**: `B-SENS-03` SF-02, commit boundary 2 of 2 · **DAL-B** · 2026-08-26
-- **Proves**: `FR-6`. Closes SF-02.
+**Commit boundary:** CB-2 of 2 · **DAL-B** · 2026-08-26 · **Proves**: `FR-6`. Closes SF-02 · Plan:
+[sf02](B-SENS-03_sf02_implementation_plan.md)
 
-## What shipped
+## Delivered
 
 `extract_symbol_signature(code, symbol_name) -> str`: the description, then the declaration with the
-body removed. The per-symbol form of `extract_skeleton`, which produces this shape for a whole file —
-a poor retrieval unit, because a 27,000-character file's skeleton is large and vague, so it matches
-everything and discriminates nothing.
+body removed — the per-symbol form of `extract_skeleton`. A whole file's skeleton is a poor retrieval
+unit: a 27,000-character file's skeleton is large and vague, so it matches everything.
 
-Two shape decisions, recorded rather than assumed:
+- **No `{ ... }` placeholder** — it would be the same three characters in every skeleton chunk.
+- **The description is stripped**, per `[agreed 2026-08-26]` Q40.
+- **Composes `FR-5` for real**: `test_the_description_is_the_one_fr5_returns` asserts the pair.
 
-- **No `{ ... }` placeholder**, unlike `extract_skeleton`. `FR-12` labels the chunk as a skeleton, so
-  a placeholder would be the same three characters in every skeleton chunk in the corpus.
-- **The description is stripped**, per `[agreed 2026-08-26]` Q40, for the same reason it is in `FR-5`.
+Nothing consumes it yet; the skeleton layer is **SF-06** — the shape SF-01 shipped under and the
+user approved.
 
-## It composes `FR-5` for real
+## Proof
 
-`FR-6` is `FR-5` plus an elision. The tests do not hand-build the description — the gap check, the
-marker stripping and the wrapper climb all live in that half, and a test that assembled the doc
-itself would prove the easy part and mock the hard one. `test_the_description_is_the_one_fr5_returns`
-asserts the pair.
-
-## The absent-and-present pair
-
-`test_the_body_is_gone` asserts a body token is **absent**; `test_the_signature_itself_is_present`
-asserts the signature is **there**. Neither is a test alone: absence passes for free when the
-accessor returns `""`, and presence passes for free when nothing was elided.
-
-## Mutants — three, all killed
+`test_the_body_is_gone` (body token **absent**) and `test_the_signature_itself_is_present` are a
+pair: absence passes for free on `""`, presence passes for free when nothing was elided.
 
 | # | Neutralised | Objections |
 |---|---|---|
@@ -37,26 +27,12 @@ accessor returns `""`, and presence passes for free when nothing was elided.
 | S2 | the description is not prepended | 7 |
 | S3 | a language with no body raises instead of coping | **1** |
 
-S3 is SQL, whose declarative tier has no target block, so `extract_symbol_body` raises there. Single
-point of protection, and it matters: this is called once per symbol during a whole-repository scan,
-where one raise takes the scan down.
+S3 is SQL (`extract_symbol_body` raises there); one raise would take a whole-repository scan down.
 
-## The corpus caught the design's CRITICAL finding a second time
-
-The design predicted `FR-1`/`FR-3` would be conflated by renumbering, and they were retired in
-SF-01 CB-3. `FR-4` and `FR-5` were planned to be re-keyed later, *"when SF-05 changes the code they
-pin"*.
-
-That was wrong, and running the corpus is what said so. The moment SF-02's `FR-5` campaign landed,
-the runner reported **seven mutants under one requirement** — six about descriptions and one about
-chunking, sharing a key and nothing else. **A number is conflated when two claims hold it, not when
-the code beneath one of them changes.** Both were re-keyed on the spot, each carrying the reason and
-the date.
-
-The ledger now reads: `FR-1` 4 · `FR-2` 3 · `FR-5` 6 · `FR-6` 3 · `FR-16` 1 · `FR-17` 1.
-**18 judged, 18 protected, 0 unprotected, 0 stale.**
-
-## Results
+Old `FR-4` and `FR-5` mutants re-keyed to `FR-16`/`FR-17` here, each with reason and date — the
+corpus showed seven mutants under one `FR-5` once this campaign landed (design §Old FR numbers).
+Ledger: `FR-1` 4 · `FR-2` 3 · `FR-5` 6 · `FR-6` 3 · `FR-16` 1 · `FR-17` 1 — **18 judged, 18
+protected, 0 unprotected, 0 stale.**
 
 | Check | Result |
 |---|---|
@@ -65,7 +41,6 @@ The ledger now reads: `FR-1` 4 · `FR-2` 3 · `FR-5` 6 · `FR-6` 3 · `FR-16` 1 
 | `quality.py cb` | 15/15 · `doc` 13/13 · `mypy` clean · duplication: **none new** |
 | New tests | 39 |
 
-## SF-02 is delivered
+## Findings still open
 
-`FR-5` and `FR-6` are green and pinned. What they exist for — the skeleton layer — is **SF-06**, and
-nothing consumes them yet, which is the shape SF-01 shipped under and the user approved.
+- **S3 has a single point of protection.**

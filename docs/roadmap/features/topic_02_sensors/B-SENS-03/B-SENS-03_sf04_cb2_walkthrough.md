@@ -1,56 +1,31 @@
-# Walkthrough: `B-SENS-03` SF-04 CB-2 — indentation stops deciding where code is cut
+# B-SENS-03 SF-04 CB-2 — Walkthrough
 
-- **Story**: `B-SENS-03` SF-04, commit boundary 2 of 4 · **DAL-B** · 2026-08-26
-- **Proves**: `FR-11`
+**Commit boundary:** CB-2 of 4 · **DAL-B** · 2026-08-26 · **Proves**: `FR-11` · Plan:
+[sf04](B-SENS-03_sf04_implementation_plan.md)
 
-## What changed, and why it is not cosmetic
+## Delivered
 
-The budget counted **every** character. So the same amount of code, indented differently, was judged
-differently — deeply nested Java against flat Python — and **reformatting a file moved its chunk
-boundaries without a line of it changing**. Once anything is embedded, that costs a re-index of the
-whole repository.
+The budget counts **non-whitespace** characters, as cAST does. Replaces a count of every character,
+under which the same code indented differently was judged differently and **reformatting a file
+moved its chunk boundaries** — a whole-repository re-index once anything is embedded.
 
-Now: non-whitespace characters only, which is how cAST measures and for the same stated reason.
-**`FR-11` changes the unit, not the number.** `4000` stays a guess agreed to stay one, and there is
-a test asserting the default did not quietly move while the counting did.
+**`FR-11` changes the unit, not the number.** `4000` stays a guess agreed to stay one; a test asserts
+the default did not move. Limit (`NFR-3`): raw chunk length is unbounded — deeply indented source
+gives physically larger chunks; clamping for a hard input cap is `A-SENS-02`'s.
 
-## The one assertion that can tell the two measures apart
+## Proof
 
-Every other test here passes under both. This is the boundary's whole proof:
+The one assertion that tells the measures apart: **the same code at two indentation depths yields
+the same number of chunks**. The mutant — `_weight` reverting to `len(text)` — is objected to by
+that test and one other, and nothing else in a suite of 8,868.
 
-> the same code at **two indentation depths** must yield the **same number of chunks**
-
-Under a raw count the indented version is far larger and cuts into more pieces. The mutant —
-`_weight` reverting to `len(text)` — is objected to by that test and one other, and by nothing else
-in a suite of 8,868.
-
-## The fixture's own guard caught a bad fixture
-
-`test_non_whitespace_over_the_budget_does_split` carries
-`assert len("".join(code.split())) > 2000` before its real assertion, and that guard **failed
-first**. `x = 0` is three non-whitespace characters, so 400 lines of it reach 1,900 — the fixture
-could not cross the budget in the unit being measured, and the test would have "passed" by never
-splitting for the wrong reason.
-
-Widened to a realistic statement. **A test about a measure needs a fixture that can cross the
-threshold in that measure**, and saying so in the fixture is cheaper than rediscovering it.
-
-## The honest limit, written down rather than found later
-
-A non-whitespace budget leaves **raw** chunk length unbounded: deeply indented source produces
-physically larger chunks. cAST accepts the same trade, `NFR-3` states it, and a model with a hard
-input cap is `A-SENS-02`'s problem to clamp.
-
-## Results
+`test_non_whitespace_over_the_budget_does_split` guards its own fixture with
+`assert len("".join(code.split())) > 2000` — a fixture about a measure must cross the threshold in
+that measure (`x = 0` is three non-whitespace characters; 400 lines reach only 1,900).
 
 | Check | Result |
 |---|---|
 | Full suite | **8,868 passed, 11 skipped** |
 | `quality.py cb` | 15/15 · duplication none new |
-| Ledger | `FR-11` now carries one test file. `FR-8` still reads `NO TEST`, which is true |
+| Ledger | `FR-11` carries one test file |
 | Corpus | `FR-11` campaign added |
-
-## Not done here
-
-- Splitting on structure — **CB-3**, and the reason line-cutting is about to become rare
-- Merging — **CB-4**
