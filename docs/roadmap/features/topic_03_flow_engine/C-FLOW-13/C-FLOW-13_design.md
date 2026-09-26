@@ -137,7 +137,7 @@ a cloned repo must not be able to send code to its own server.
 ## Progress Tracker
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Settings and layering | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Settings and layering | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Consumers switched over | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Migration and writers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
