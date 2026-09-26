@@ -54,6 +54,7 @@ retryable.
 **Ruled 2026-08-19.** Every LLM access, payment, pricing, token-consumption and limit parameter is
 to live in **one central place**. Whether that place is a file or the database is **still
 undecided**, and this capability must not settle it by default.
+The decision belongs to `C-FLOW-13`, widened to own it `[agreed 2026-09-26]`.
 
 `max_spend_usd` and `max_tokens_per_run` sit on `LLMSettings`, beside the model and the API key —
 one more scattered home for a number that belongs in the central one. The ceilings stand; their

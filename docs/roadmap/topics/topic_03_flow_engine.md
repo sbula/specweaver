@@ -196,15 +196,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Note:** writes its own seam pin as its first commit; the base ships none, `FR-9(a)` having been descoped
 
 * **`C-FLOW-13` 🔜: Model Catalogue**
-  > - **Purpose:** One versioned file holding every model's price, adapter and capabilities — so a new model is a data change, not a source change and a release
+  > - **Purpose:** One central place for every LLM setting — model facts, access, limits, routing, addresses. File or DB: its design decides `[agreed 2026-09-26]`
   > - **Trigger:** When a model fact is looked up
   > - **Precondition:** —
   > - **Reads:** the catalogue file
   > - **Produces:** pricing · serving adapter · capabilities · how stale each answer is
   > - **Enables:** `D-FLOW-05` → the consumers that switch over
   > - **Done when:** an unknown model does not silently price at `$0.00`
-  > - **Note:** 19 rates live in five adapter classes · `qwen.py` untouched since 2026-05-04 · three entries are retired preview builds · `*-latest` aliases price a moving target with a
-  >   fixed number
+  > - **Note:** 19 rates in five adapters · `qwen.py` untouched since 2026-05-04 · three retired preview builds · `*-latest` aliases price a moving target
 
 ## DAL-B: High-Assurance
 
