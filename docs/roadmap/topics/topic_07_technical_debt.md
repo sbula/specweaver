@@ -276,6 +276,11 @@ critical for long-term project viability.
   > Record: [design](../features/topic_07_technical_debt/TECH-069/TECH-069_design.md). ID is dead — do NOT reuse.)*
 
 ## Documentation & Knowledge Architecture
+* **`TECH-071` 🔴: Docs and Code Disagree in 60 Places**
+  > [Description](../features/topic_07_technical_debt/TECH-071/TECH-071_design.md) | _Status: STUB. Origin: 2026-09-25, the docs rewrite checked doc claims against `src/`._ |
+  > About 60 disagreements, and which side is wrong is not yet known. 14 are features marked delivered whose path never runs (e.g. `GraphContext.stale_nodes` is
+  > never written). Investigate each, put code-or-doc to the user, fix. [Census](../../analysis/doc_code_discrepancies_2026-09-25.md).
+
 * **`TECH-060` 🟢: Integration Migration to (Sub)Story Path Inventories**
   > [Description](../features/topic_07_technical_debt/TECH-060/TECH-060_design.md) | _(2026-08-17 — `ADR-004` defines the target structure and builds none of the machinery.)_ |
   > **27 (sub)stories hold a closed capability they cannot prove**: 14 base contracts are ten-line `[Pending definition...]` stubs, 10 add-on groups have no entry or an unproven one, 3 are `✅` citing

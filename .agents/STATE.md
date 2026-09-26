@@ -76,6 +76,8 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 
 ## Still missing
 
+- **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose
+  path never runs in production. Which side is wrong is decided per finding, with the user.
 - **The `C-FLOW-11` pilot is unwired.** The dial exists; `sw implement` still runs one-shot, so no
   user path reaches `agentic` mode.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when
