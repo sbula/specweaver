@@ -142,6 +142,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-072` 🔴: Two Agent Tools Skip the Sandbox's Own Guards**
+  > [Description](../features/topic_07_technical_debt/TECH-072/TECH-072_design.md) | _Status: DRAFT. Origin: 2026-09-26, the subject-scatter audit._ |
+  > The agent AST tool writes through `EngineFileExecutor`, which protects nothing, so it can rewrite `context.yaml`. `MCPExplorerTool` starts the project's MCP
+  > command without `MCPAtom`'s runtime guard. Fix: reuse the existing guards, one copy each.
+
 * **`TECH-067` 🟢: The Pipeline Resolves a Module's DAL and Never Applies It**
   > [Description](../features/topic_07_technical_debt/TECH-067/TECH-067_design.md) | _Status: STUB. Origin: found 2026-08-19 closing `TECH-041`._
   > `seed_dal_level` resolves a module's DAL onto `context.isolation`, and `ValidateCodeHandler` then calls
