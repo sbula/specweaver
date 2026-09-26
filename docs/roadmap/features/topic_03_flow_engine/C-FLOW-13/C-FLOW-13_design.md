@@ -1,6 +1,6 @@
 # C-FLOW-13 — Model Catalogue: One Central Place for LLM Settings
 
-**Status**: DRAFT — awaiting approval · **DAL**: C · **Story**: US-16 add-on "Centralized Model Table"
+**Status**: APPROVED — approved by Steve Bula `[agreed 2026-09-26]` · **DAL**: C · **Story**: US-16 add-on "Centralized Model Table"
 ([paths](../../../stories/US-16.md)) · Decisions: [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md)
 
 | | |
@@ -78,7 +78,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-8 | Parallel limit per server | Adapter path | SHALL limit concurrent requests per **server** to its `max_parallel` | the GB10 and a cloud provider do not share one semaphore |
 | FR-9 | Privacy rule | Resolver | SHALL refuse, before any call, a role that points at a server with `private = false` when the project sets `private_only = true`, naming the rule and the role | no silent fallback to the cloud |
 | FR-10 | One adapter path | Factory, `ModelRouter` | SHALL obtain every adapter through the same resolver and wrapper, for direct and routed calls alike | routed calls stop skipping the brake, the limit and the usage flush |
-| FR-11 | No hard-coded models | Handlers, workflows | SHALL take the model from the resolver — the step's role, else `[roles] default`; with neither set the command SHALL refuse, naming the role and the `sw config` command that sets it; the 11 hard-coded fallback model names are removed | no step silently asks for a model the user never chose |
+| FR-11 | No hard-coded models | Handlers, workflows | SHALL take the model from the resolver — the step's role, else `[roles] default`; with neither set the command SHALL refuse, naming the role and the `sw config` command that sets it — there is no built-in default model `[agreed 2026-09-26]`; the 11 hard-coded fallback model names are removed | no step silently asks for a model the user never chose |
 | FR-12 | One price source | Telemetry, `sw costs` | SHALL price every call from the catalogue plus machine overrides; no `default_costs` dict remains in any adapter; an unknown price SHALL be reported as unknown, not as 0 | the recorded number is right, or visibly unknown |
 | FR-13 | Money in CHF | `sw costs` | SHALL show prices and month-to-date spend in CHF at `usd_to_chf`, with `rate_date`; without a rate it SHALL show USD and say the rate is unset | the user reads francs, and knows how old the rate is |
 | FR-14 | One-time migration | Loader | SHALL, on first load, write today's `llm_profiles` and `llm_cost_overrides` into the machine file and each project's `llm_project_links` into that project's `specweaver.toml`, once, list every file it changed, then read the files only | nothing the user configured is lost; no second source remains; the user sees which files changed |
@@ -91,7 +91,7 @@ a cloned repo must not be able to send code to its own server.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Load cost | Settings resolved once per command, under 50 ms for files under 20 KB |
+| NFR-1 | Load cost | Settings resolved once per command, under 50 ms for files under 20 KB `[agreed 2026-09-26]` |
 | NFR-2 | No secrets written | No API key value appears in any settings file, log line or error message |
 | NFR-3 | Offline | No network access to read settings or the catalogue |
 | NFR-4 | One reader | Only `core.config.bootstrap` reads or writes the settings files; `tach` enforces it |
@@ -137,8 +137,8 @@ a cloned repo must not be able to send code to its own server.
 ## Progress Tracker
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Settings and layering | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-02 | Catalogue, servers, privacy | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-03 | Consumers switched over | SF-02 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | Migration and writers | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-05 | Run override, brake values | SF-03 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Settings and layering | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Consumers switched over | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Migration and writers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Run override, brake values | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
