@@ -84,6 +84,11 @@ class CodeStructureAtom(Atom):
             self._parsers = get_default_parsers()
 
     @property
+    def cwd(self) -> Path:
+        """The project root every path this atom reads or writes is relative to."""
+        return self._executor.cwd
+
+    @property
     def active_evaluator(self) -> dict[str, Any]:
         """A single evaluator dict composed from the base archetype plus every plugin."""
         merged: dict[str, Any] = {}
@@ -310,27 +315,23 @@ class CodeStructureAtom(Atom):
             )
 
         if intent == "replace_symbol":
-            new_code = context.get("new_code", "")
-            mutated = parser.replace_symbol(code, symbol_name, new_code)  # type: ignore
-            self._executor.write(path, mutated)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Replaced symbol '{symbol_name}'")
+            mutated = parser.replace_symbol(code, symbol_name, context.get("new_code", ""))  # type: ignore
+            done = f"Replaced symbol '{symbol_name}'"
         elif intent == "replace_symbol_body":
-            new_code = context.get("new_code", "")
-            mutated = parser.replace_symbol_body(code, symbol_name, new_code)  # type: ignore
-            self._executor.write(path, mutated)
-            return AtomResult(
-                status=AtomStatus.SUCCESS, message=f"Replaced body of symbol '{symbol_name}'"
-            )
+            mutated = parser.replace_symbol_body(code, symbol_name, context.get("new_code", ""))  # type: ignore
+            done = f"Replaced body of symbol '{symbol_name}'"
         elif intent == "delete_symbol":
             mutated = parser.delete_symbol(code, symbol_name)  # type: ignore
-            self._executor.write(path, mutated)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Deleted symbol '{symbol_name}'")
+            done = f"Deleted symbol '{symbol_name}'"
         elif intent == "add_symbol":
-            new_code = context.get("new_code", "")
             target_parent = context.get("target_parent")
-            mutated = parser.add_symbol(code, target_parent, new_code)
-            self._executor.write(path, mutated)
-            return AtomResult(
-                status=AtomStatus.SUCCESS, message=f"Added new symbol inside '{target_parent}'"
-            )
-        return AtomResult(status=AtomStatus.FAILED, message="Invalid write intent")
+            mutated = parser.add_symbol(code, target_parent, context.get("new_code", ""))
+            done = f"Added new symbol inside '{target_parent}'"
+        else:
+            return AtomResult(status=AtomStatus.FAILED, message="Invalid write intent")
+
+        # The executor refuses protected paths; that refusal is the result, not a detail.
+        written = self._executor.write(path, mutated)
+        if written.status != "success":
+            return AtomResult(status=AtomStatus.FAILED, message=f"Write refused: {written.error}")
+        return AtomResult(status=AtomStatus.SUCCESS, message=done)

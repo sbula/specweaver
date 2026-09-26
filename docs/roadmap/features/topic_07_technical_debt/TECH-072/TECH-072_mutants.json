@@ -1,0 +1,141 @@
+{
+  "schema": 2,
+  "feature": "TECH-072",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The agent AST tool refuses protected paths",
+      "scope": [
+        "tests/integration/sandbox/test_agent_ast_tool_protected_paths.py"
+      ],
+      "mutants": [
+        {
+          "id": "agent-ast-uses-engine-executor",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._build_ast_kwargs",
+          "old": "        executor = FileExecutor(cwd_path)\n",
+          "new": "        from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor as _E\n        executor = _E(cwd_path)\n",
+          "breaks": "the agent's AST tool writes through the engine executor, which protects nothing: an agent can rewrite context.yaml, .env, .git or .specweaver",
+          "symbol_sha": "sha256:3f301540bfbe0e78df19ac293b2594248c21bcd45524a86e0ff46f758a3f9911"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "A refused write is reported as a failure",
+      "scope": [
+        "tests/unit/sandbox/code_structure/core/code_structure/test_code_structure_atom_write_result.py"
+      ],
+      "mutants": [
+        {
+          "id": "refused-write-reads-as-done",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "CodeStructureAtom._handle_write_symbol",
+          "old": "        if written.status != \"success\":\n",
+          "new": "        if False:\n",
+          "breaks": "the executor refuses a protected write and the agent is told the symbol was replaced",
+          "symbol_sha": "sha256:feb31b95f16a70800a4e6d71a92a10625140b7257cc2d80b2c1daa3e09628723"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The agent AST tool resolves relative paths against the project root",
+      "scope": [
+        "tests/integration/sandbox/test_agent_ast_tool_protected_paths.py",
+        "tests/unit/sandbox/test_grant_matching_agreement.py"
+      ],
+      "mutants": [
+        {
+          "id": "relative-path-not-resolved",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "grant_mode_for",
+          "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
+          "new": "        check_path = posixpath.normpath(f\"/{normalized_path}\")\n",
+          "breaks": "a relative path never matches a dispatcher grant, so the agent AST tool can neither read nor write any file",
+          "symbol_sha": "sha256:1d0f9014a49e6fd8b158b3ee32c4cc92710cacd9393534a0e0a7949511435732"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The MCP explorer runs only guarded commands",
+      "scope": [
+        "tests/unit/sandbox/mcp/interfaces/mcp/test_mcp_explorer_guard.py"
+      ],
+      "mutants": [
+        {
+          "id": "explorer-skips-runtime-guard",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/interfaces/tool.py",
+          "symbol": "MCPExplorerTool._execute_mcp_query",
+          "old": "            full_command = resolved_runtime_command(declared)\n",
+          "new": "            full_command = declared\n",
+          "breaks": "a project's MCP config makes the explorer start any program, host-escape flags and host mounts included",
+          "symbol_sha": "sha256:f7323f1a72aad8d4b5727e4a138280fb5beec9fc4f04c7fdbb7279c455bac12f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The MCP explorer scrubs secrets",
+      "scope": [
+        "tests/unit/sandbox/mcp/interfaces/mcp/test_mcp_explorer_guard.py"
+      ],
+      "mutants": [
+        {
+          "id": "explorer-leaks-secrets",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/interfaces/tool.py",
+          "symbol": "MCPExplorerTool._execute_mcp_query",
+          "old": "            result_data = scrub_secrets(response.get(\"result\", {}), env)\n",
+          "new": "            result_data = response.get(\"result\", {})\n",
+          "breaks": "a secret passed to the MCP server comes back to the agent in plain text",
+          "symbol_sha": "sha256:f7323f1a72aad8d4b5727e4a138280fb5beec9fc4f04c7fdbb7279c455bac12f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Short values are not treated as secrets",
+      "scope": [
+        "tests/unit/sandbox/mcp/interfaces/mcp/test_mcp_explorer_guard.py",
+        "tests/unit/sandbox/mcp/core/mcp/test_mcp_atom.py"
+      ],
+      "mutants": [
+        {
+          "id": "short-values-scrubbed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/core/atom.py",
+          "symbol": "scrub_secrets",
+          "old": "    secrets = {v for v in env.values() if isinstance(v, str) and len(v.strip()) >= 8}\n",
+          "new": "    secrets = {v for v in env.values() if isinstance(v, str)}\n",
+          "breaks": "a port or a flag like 'true' is redacted everywhere it appears, destroying ordinary replies",
+          "symbol_sha": "sha256:b74b6d9b7950e419ccb0886cb7a28264e9d243ed4e5bd9bf1108613a0b76877f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "No path outside the root is covered",
+      "scope": [
+        "tests/integration/sandbox/test_file_tool_stays_inside_root.py"
+      ],
+      "mutants": [
+        {
+          "id": "dotdot-judged-as-text",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "grant_mode_for",
+          "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
+          "new": "        check_path = f\"{cwd_str}/{normalized_path}\"\n",
+          "breaks": "grep and find_files with path='..' read and list files above the project root",
+          "symbol_sha": "sha256:1d0f9014a49e6fd8b158b3ee32c4cc92710cacd9393534a0e0a7949511435732"
+        }
+      ]
+    }
+  ]
+}

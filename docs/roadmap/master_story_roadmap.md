@@ -684,3 +684,5 @@ These stories do not add new user-facing features, but are critical epics requir
         Record: [design](features/topic_07_technical_debt/TECH-069/TECH-069_design.md).
         ID is dead — do NOT reuse.)*
     *   `🔴` **TECH-070:** [Every Graph Build Re-Ingests Every File](features/topic_07_technical_debt/TECH-070/TECH-070_design.md)
+    *   `🔴` **TECH-071:** [Docs and Code Disagree in 60 Places](features/topic_07_technical_debt/TECH-071/TECH-071_design.md)
+    *   `🔴` **TECH-072:** [Two Agent Tools Skip the Sandbox's Own Guards](features/topic_07_technical_debt/TECH-072/TECH-072_design.md)

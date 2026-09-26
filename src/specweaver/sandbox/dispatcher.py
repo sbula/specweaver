@@ -193,7 +193,7 @@ class ToolDispatcher:
             return None, []
 
         from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
-        from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
+        from specweaver.sandbox.filesystem.core.executor import FileExecutor
         from specweaver.workflows.evaluators.loader import load_evaluator_schemas
 
         project_dir = boundary.roots[0] if boundary.roots else None
@@ -212,7 +212,8 @@ class ToolDispatcher:
             except Exception:
                 pass
 
-        executor = EngineFileExecutor(cwd_path)
+        # The agent-facing executor: it refuses protected paths. `EngineFileExecutor` is for the engine.
+        executor = FileExecutor(cwd_path)
         atom = CodeStructureAtom(
             executor,
             evaluator_schemas=schemas,

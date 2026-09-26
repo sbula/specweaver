@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import os
-import posixpath
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -32,6 +31,8 @@ from specweaver.sandbox.security import (
     MODE_ALLOWS_WRITE,
     AccessMode,
     FolderGrant,
+    grant_mode_for,
+    normalize_grant_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -420,20 +421,8 @@ class FileSystemTool(BaseTool):
 
     @staticmethod
     def _normalize_path(path: str) -> str:
-        """Normalize a path for grant matching.
-
-        Resolves .., strips trailing slashes, normalizes backslashes.
-        This is CRITICAL for security — without it, agents can bypass
-        grants using paths like 'src/domain/billing/../../shared/secret.py'.
-        """
-        # Normalize separators
-        forward = path.replace("\\", "/")
-        # Resolve .. and . segments
-        normalized = posixpath.normpath(forward)
-        # normpath returns '.' for empty string, keep it consistent
-        if normalized == ".":
-            return ""
-        return normalized
+        """Normalise a path for grant matching (see `normalize_grant_path`)."""
+        return normalize_grant_path(path)
 
     def _check_grant(
         self,
@@ -463,72 +452,8 @@ class FileSystemTool(BaseTool):
         return None
 
     def _resolve_mode(self, normalized_path: str) -> AccessMode | None:
-        """Find the most permissive mode that covers this path.
-
-        Returns None if no grant covers the path.
-        Handles mixed relative/absolute paths: if grants use absolute paths
-        (from the factory) and the input is relative, resolves against cwd.
-        """
-        # Mode priority for "most permissive"
-        mode_priority = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}
-        best: AccessMode | None = None
-
-        # Resolve relative path to absolute if grants use absolute paths
-        check_path = normalized_path
-        if normalized_path and not os.path.isabs(normalized_path):
-            cwd_str = str(self._executor.cwd).replace("\\", "/")
-            check_path = f"{cwd_str}/{normalized_path}"
-        elif not normalized_path:
-            check_path = str(self._executor.cwd).replace("\\", "/")
-
-        for grant in self._grants:
-            grant_path = grant.path.replace("\\", "/").rstrip("/")
-
-            # Try both original normalized_path and resolved absolute path
-            if (
-                self._path_matches_grant(normalized_path, grant_path, grant.recursive)
-                or self._path_matches_grant(check_path, grant_path, grant.recursive)
-            ) and (best is None or mode_priority[grant.mode] > mode_priority[best]):
-                best = grant.mode
-
-        return best
-
-    def _path_matches_grant(
-        self,
-        target: str,
-        grant_path: str,
-        recursive: bool,
-    ) -> bool:
-        """Check if target path falls under a grant.
-
-        For a file path like "src/domain/billing/calc.py":
-        - Grant "src/domain/billing" (recursive=True) → matches
-        - Grant "src/domain/billing" (recursive=False) → matches (direct child)
-        - Grant "src/domain" (recursive=True) → matches
-        - Grant "src/domain" (recursive=False) → does NOT match (calc.py is in billing/)
-        """
-        target_parts = target.replace("\\", "/").split("/")
-        grant_parts = grant_path.split("/")
-
-        # Target must start with grant path
-        if len(target_parts) < len(grant_parts):
-            return False
-
-        # Check the grant path is a prefix
-        for i, part in enumerate(grant_parts):
-            if i >= len(target_parts) or target_parts[i] != part:
-                return False
-
-        if recursive:
-            # Recursive: all descendants match
-            return True
-
-        # Exclusive: only direct children (one level deeper = direct child of grant dir)
-        depth = len(target_parts) - len(grant_parts)
-        if depth == 0:
-            # Target IS the grant directory itself — match for list operations
-            return True
-        return depth == 1
+        """The most permissive grant covering this path (see `grant_mode_for`)."""
+        return grant_mode_for(normalized_path, self._grants, self._executor.cwd)
 
     @staticmethod
     def _wrap(result: ExecutorResult) -> ToolResult:

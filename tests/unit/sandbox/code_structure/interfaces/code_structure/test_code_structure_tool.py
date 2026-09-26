@@ -2,6 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -16,14 +17,21 @@ from specweaver.sandbox.code_structure.interfaces.tool import (
 from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
 
 
-def test_tool_init_invalid_role() -> None:
+def _atom() -> MagicMock:
+    """A doubled atom with a project root, which grant matching resolves relative paths against."""
     atom = MagicMock()
+    atom.cwd = Path("/project")
+    return atom
+
+
+def test_tool_init_invalid_role() -> None:
+    atom = _atom()
     with pytest.raises(ValueError, match="Unknown role"):
         CodeStructureTool(atom=atom, role="invalid_role", grants=[])
 
 
 def test_tool_read_file_structure_requires_intent() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # Planner doesn't naturally have "read_symbol_body"
     tool = CodeStructureTool(
         atom=atom,
@@ -36,7 +44,7 @@ def test_tool_read_file_structure_requires_intent() -> None:
 
 
 def test_tool_read_file_structure_blocked_by_grant() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # Grant ONLY to 'src/other'
     grants = [FolderGrant(path="src/other", mode=AccessMode.READ, recursive=True)]
     tool = CodeStructureTool(atom=atom, role="reviewer", grants=grants)
@@ -47,7 +55,7 @@ def test_tool_read_file_structure_blocked_by_grant() -> None:
 
 
 def test_tool_read_file_structure_success() -> None:
-    atom = MagicMock()
+    atom = _atom()
     atom.run.return_value = AtomResult(
         status=AtomStatus.SUCCESS, message="Success", exports={"structure": "def main():"}
     )
@@ -67,7 +75,7 @@ def test_tool_read_file_structure_success() -> None:
 
 
 def test_tool_definitions_filters_by_role() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # Mock the capabilities
     atom.get_supported_capabilities.return_value = ({"skeleton", "symbol", "symbol_body"}, set())
 
@@ -80,7 +88,7 @@ def test_tool_definitions_filters_by_role() -> None:
 
 
 def test_tool_definitions_dynamically_queries_atom() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # Provide a pruned set of capabilities
     atom.get_supported_capabilities.return_value = ({"skeleton"}, set())
 
@@ -94,7 +102,7 @@ def test_tool_definitions_dynamically_queries_atom() -> None:
 
 
 def test_tool_intents_propagate_to_atom() -> None:
-    atom = MagicMock()
+    atom = _atom()
     atom.run.return_value = AtomResult(
         status=AtomStatus.SUCCESS, message="OK", exports={"symbols": ["A"]}
     )
@@ -140,7 +148,7 @@ def test_tool_intents_propagate_to_atom() -> None:
 
 
 def test_tool_normalize_windows_paths() -> None:
-    atom = MagicMock()
+    atom = _atom()
     tool = CodeStructureTool(atom=atom, role="implementer", grants=[])
 
     assert tool._normalize_path("C:\\test\\dir") == "C:/test/dir"
@@ -149,7 +157,7 @@ def test_tool_normalize_windows_paths() -> None:
 
 
 def test_tool_resolve_mode_priority_and_recursive() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # Path logic prioritizes FULL over READ exactly
     grants = [
         FolderGrant(path="src", mode=AccessMode.READ, recursive=True),
@@ -172,7 +180,7 @@ def test_tool_resolve_mode_priority_and_recursive() -> None:
 
 def test_tool_execution_serialization() -> None:
     """ToolResult gracefully packages nested structures and wraps errors."""
-    atom = MagicMock()
+    atom = _atom()
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
@@ -193,7 +201,7 @@ def test_tool_execution_serialization() -> None:
 
 
 def test_tool_mutation_intents_blocked_by_read_grant() -> None:
-    atom = MagicMock()
+    atom = _atom()
     # implementer is allowed the intent, but if we only give AccessMode.READ, it should block
     tool = CodeStructureTool(
         atom=atom,
@@ -209,7 +217,7 @@ def test_tool_mutation_intents_blocked_by_read_grant() -> None:
 
 
 def test_tool_mutation_intents_success_with_write_grant() -> None:
-    atom = MagicMock()
+    atom = _atom()
     atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="Replaced", exports={})
     tool = CodeStructureTool(
         atom=atom,

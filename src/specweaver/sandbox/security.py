@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import posixpath
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -165,3 +167,62 @@ class ReadOnlyWorkspaceBoundary(WorkspaceBoundary):
     def is_read_only(self) -> bool:
         """Always True — this boundary has no write roots."""
         return True
+
+
+# ---------------------------------------------------------------------------
+# Grant matching — the one copy every agent tool uses
+# ---------------------------------------------------------------------------
+
+_MODE_PRIORITY = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}
+
+
+def normalize_grant_path(path: str) -> str:
+    """Normalise a path for grant matching: forward slashes, `..` resolved, `.` as empty.
+
+    Resolving `..` is the security half: without it `src/billing/../../shared/secret.py` would be
+    judged by its first segments.
+    """
+    normalized = posixpath.normpath(path.replace("\\", "/"))
+    return "" if normalized == "." else normalized
+
+
+def grant_mode_for(normalized_path: str, grants: list[FolderGrant], cwd: Path) -> AccessMode | None:
+    """The most permissive grant covering `normalized_path`, or None when no grant covers it.
+
+    Grants from the dispatcher are absolute, while tools are told to send paths relative to the
+    project root, so a relative path is also tried resolved against `cwd`. A tool that skipped
+    that step matched nothing at all.
+    """
+    cwd_str = str(cwd).replace("\\", "/")
+    check_path = normalized_path
+    if normalized_path and not os.path.isabs(normalized_path):
+        # Normalised AFTER joining: `root/../x` must be judged as `parent/x`, not as text that
+        # starts with `root/`. Otherwise a grant on the root covers every path beside it.
+        check_path = posixpath.normpath(f"{cwd_str}/{normalized_path}")
+    elif not normalized_path:
+        check_path = cwd_str
+
+    best: AccessMode | None = None
+    for grant in grants:
+        grant_path = grant.path.replace("\\", "/").rstrip("/")
+        covered = _path_under_grant(normalized_path, grant_path, grant.recursive) or (
+            _path_under_grant(check_path, grant_path, grant.recursive)
+        )
+        if covered and (best is None or _MODE_PRIORITY[grant.mode] > _MODE_PRIORITY[best]):
+            best = grant.mode
+    return best
+
+
+def _path_under_grant(target: str, grant_path: str, recursive: bool) -> bool:
+    """Whether `target` falls under a grant: the folder itself, a direct child, or any descendant.
+
+    For `src/domain/billing/calc.py`: grant `src/domain/billing` matches either way; grant
+    `src/domain` matches only when recursive.
+    """
+    target_parts = target.replace("\\", "/").split("/")
+    grant_parts = grant_path.split("/")
+    if len(target_parts) < len(grant_parts):
+        return False
+    if any(target_parts[i] != part for i, part in enumerate(grant_parts)):
+        return False
+    return recursive or len(target_parts) - len(grant_parts) <= 1

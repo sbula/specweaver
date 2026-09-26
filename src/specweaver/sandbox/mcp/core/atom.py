@@ -19,6 +19,18 @@ from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 logger = logging.getLogger(__name__)
 
 
+def scrub_secrets(payload: Any, env: dict[str, str] | None) -> Any:
+    """`payload` with every secret from `env` redacted — the one rule both MCP paths apply.
+
+    Only values of 8+ characters are treated as secrets: a short vault entry (a port, a flag
+    like "true") would otherwise match everywhere and redact ordinary telemetry.
+    """
+    if not env:
+        return payload
+    secrets = {v for v in env.values() if isinstance(v, str) and len(v.strip()) >= 8}
+    return _scrub(payload, secrets) if secrets else payload
+
+
 def _scrub(payload: Any, secrets: set[str]) -> Any:
     """`payload` with every secret replaced, walking dicts and lists."""
     if isinstance(payload, dict):
@@ -91,7 +103,7 @@ def _reject_escaping_arguments(arguments: list[str]) -> None:
                 _refuse(f"Mount '{value}' exposes host path '{source}' to the container.")
 
 
-def _resolved_runtime_command(command: list[str]) -> list[str]:
+def resolved_runtime_command(command: list[str]) -> list[str]:
     """The command to execute, with the runtime resolved from the TRUSTED environment.
 
     `Popen` resolves `argv[0]` through the PATH of the `env` it is handed, and that `env` comes from
@@ -136,7 +148,7 @@ class MCPAtom(Atom):
                 "Configuration Error: MCP Atom boundary dictates a valid executable string must be provided."
             )
 
-        self._command = _resolved_runtime_command(command)
+        self._command = resolved_runtime_command(command)
         self._env = env
         self._executor: MCPExecutor | None = None
 
@@ -191,15 +203,8 @@ class MCPAtom(Atom):
             self._executor = None
 
     def _scrub_telemetry(self, payload: Any) -> Any:
-        """Recursively scrub vault secrets from RPC payloads.
-
-        Only values of 8+ characters are treated as secrets: a short vault entry (a port, a flag
-        like "true") would otherwise match everywhere and redact ordinary telemetry.
-        """
-        if not self._env:
-            return payload
-        secrets = {v for v in self._env.values() if isinstance(v, str) and len(v.strip()) >= 8}
-        return _scrub(payload, secrets) if secrets else payload
+        """Recursively scrub vault secrets from RPC payloads."""
+        return scrub_secrets(payload, self._env)
 
     # -- Intent implementations ----------------------------------------
 

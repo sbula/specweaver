@@ -76,6 +76,9 @@ Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails 
 
 ## Still missing
 
+- **`TECH-072` is built and committed, not closed.** It fixed a live escape (`grep`/`find_files` with
+  `path=".."` read above the project) and two latent tool holes. Two `T-BOUNDARY` questions remain in its
+  design; closing it is the user's call.
 - **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose
   path never runs in production. Which side is wrong is decided per finding, with the user.
 - **The `C-FLOW-11` pilot is unwired.** The dial exists; `sw implement` still runs one-shot, so no

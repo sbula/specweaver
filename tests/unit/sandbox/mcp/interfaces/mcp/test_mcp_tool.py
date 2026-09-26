@@ -10,6 +10,11 @@ from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
 
 class TestMCPExplorerTool:
+    @pytest.fixture(autouse=True)
+    def _docker_is_installed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The explorer resolves the runtime from this machine's PATH; CI may have no docker."""
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
     @pytest.fixture
     def mock_topology(self) -> MagicMock:
         topo = MagicMock()

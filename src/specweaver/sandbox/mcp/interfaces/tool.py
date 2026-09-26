@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons import json
 from specweaver.sandbox.base import BaseTool
+from specweaver.sandbox.mcp.core.atom import resolved_runtime_command, scrub_secrets
 from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 from specweaver.sandbox.mcp.interfaces.models import ToolResult
 
@@ -63,7 +64,13 @@ class MCPExplorerTool(BaseTool):
                 message=f"MCP server '{server_name}' missing target executable command bounds.",
             )
 
-        full_command = [*command, *args] if isinstance(command, list) else [command, *args]
+        declared = [*command, *args] if isinstance(command, list) else [command, *args]
+        # The command comes from the analysed project's own configuration: untrusted. It passes
+        # the same guard `MCPAtom` applies before any process starts.
+        try:
+            full_command = resolved_runtime_command(declared)
+        except ValueError as e:
+            return ToolResult(status="error", message=str(e))
 
         executor = None
         try:
@@ -79,7 +86,7 @@ class MCPExplorerTool(BaseTool):
             executor.call_rpc(method="notifications/initialized", params={}, timeout=2.0)
 
             response = executor.call_rpc(method=method, params=params, timeout=10.0)
-            result_data = response.get("result", {})
+            result_data = scrub_secrets(response.get("result", {}), env)
             return ToolResult(status="success", data=json.dumps(result_data))
         except MCPExecutorError as e:
             logger.warning("MCPExplorerTool execution failed for %s: %s", server_name, e)

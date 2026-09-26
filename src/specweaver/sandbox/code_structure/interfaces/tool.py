@@ -6,13 +6,16 @@
 from __future__ import annotations
 
 import logging
-import os
-import posixpath
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import BaseTool
-from specweaver.sandbox.security import AccessMode, FolderGrant
+from specweaver.sandbox.security import (
+    AccessMode,
+    FolderGrant,
+    grant_mode_for,
+    normalize_grant_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -285,16 +288,12 @@ class CodeStructureTool(BaseTool):
             raise CodeStructureToolError(msg)
 
     # -------------------------------------------------------------------
-    # Internal: boundary enforcement (identical to FileSystemTool logic)
+    # Internal: boundary enforcement — the shared matcher in `sandbox.security`
     # -------------------------------------------------------------------
 
     @staticmethod
     def _normalize_path(path: str) -> str:
-        forward = path.replace("\\", "/")
-        normalized = posixpath.normpath(forward)
-        if normalized == ".":
-            return ""
-        return normalized
+        return normalize_grant_path(path)
 
     def _check_grant(self, path: str, required_modes: frozenset[AccessMode]) -> ToolResult | None:
         normalized = self._normalize_path(path)
@@ -311,42 +310,4 @@ class CodeStructureTool(BaseTool):
         return None
 
     def _resolve_mode(self, normalized_path: str) -> AccessMode | None:
-        mode_priority = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}
-        best: AccessMode | None = None
-
-        check_path = normalized_path
-        if normalized_path and not os.path.isabs(normalized_path):
-            check_path = f"/{normalized_path}"
-        elif not normalized_path:
-            check_path = "/"
-
-        for grant in self._grants:
-            grant_path = grant.path.replace("\\", "/").rstrip("/")
-            if grant_path and not os.path.isabs(grant_path):
-                grant_path = f"/{grant_path}"
-            if not grant_path:
-                grant_path = "/"
-
-            if (
-                self._path_matches_grant(
-                    normalized_path, grant.path.replace("\\", "/").rstrip("/"), grant.recursive
-                )
-                or self._path_matches_grant(check_path, grant_path, grant.recursive)
-            ) and (best is None or mode_priority[grant.mode] > mode_priority[best]):
-                best = grant.mode
-
-        return best
-
-    def _path_matches_grant(self, target: str, grant_path: str, recursive: bool) -> bool:
-        if not target and not grant_path:
-            return True
-        if target == grant_path:
-            return True
-        if not grant_path:
-            return recursive
-        if target.startswith(f"{grant_path}/"):
-            if recursive:
-                return True
-            remainder = target[len(grant_path) + 1 :]
-            return "/" not in remainder
-        return False
+        return grant_mode_for(normalized_path, self._grants, self._atom.cwd)
