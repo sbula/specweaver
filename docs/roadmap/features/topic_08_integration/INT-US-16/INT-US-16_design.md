@@ -9,7 +9,7 @@ into FR-1/FR-4 during CB-2 per `A.1c`. CB-1 `c8be134c`, CB-2 `f7a98a4c`. · **Ph
 | Joins | `C-FLOW-01` (Telemetry DB) · `D-FLOW-03` (Static Routing) · token tracking · the Config DB |
 | Touches | the implement CLI's adapter construction · `TelemetryCollector` · `PipelineRunner._flush_telemetry` · `LlmRepository.get_usage_summary` · the `sw usage` renderer |
 | Not touched | the unbuilt US-16 add-ons: dynamic routing, friction analytics, OpenTelemetry tracing, REST telemetry API |
-| Minted from this work | `C-FLOW-13` / `D-FLOW-05` — whether the recorded number is *right* |
+| Minted from this work | `C-FLOW-13` (absorbed `D-FLOW-05`) — whether the recorded number is *right* |
 
 ## What it does
 
@@ -150,7 +150,7 @@ No new dependency; these are the versions the paths already run on.
 | `test_usage_e2e_happy_path` | Hand-writes a `llm_usage_log` row with ten literal column names, so schema drift cannot fail it | No longer the only join between writer and reader; keep as a pure read-path test or narrow it |
 | `sw run`, `sw resume`, `sw review`, drift | Same `get_active_project()` → `telemetry_project` shape | FR-2's guard could lift into one shared helper once a second surface needs it. The `tach` boundaries refused three homes — see the plan's duplication baseline |
 | Roadmap `✅ Step 9a: Token Tracking` | A legacy prose label with no capability ID, so no gate can resolve or verify it | Out of scope; recorded so it is not lost |
-| Is the number *right*? | The contract proves the number reaches the screen | `C-FLOW-13` / `D-FLOW-05`. Next: dogfood |
+| Is the number *right*? | The contract proves the number reaches the screen | `C-FLOW-13` (absorbed `D-FLOW-05`). Next: dogfood |
 
 ## Sub-features
 

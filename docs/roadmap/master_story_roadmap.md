@@ -442,8 +442,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   `✅` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   🔴 **Centralized Model Table:**
-        *   `[ ]` **C-FLOW-13:** Model Catalogue — per-model pricing, serving adapter and capabilities as data, not source
-        *   `[ ]` **D-FLOW-05:** Model Catalogue Adoption — move every consumer onto `C-FLOW-13`, delete the per-adapter cost dicts
+        *   `[ ]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations — needs `C-FLOW-13`
         *   `[ ]` **B-INTL-04:** Dynamic AI Arbiter — needs `C-FLOW-13`

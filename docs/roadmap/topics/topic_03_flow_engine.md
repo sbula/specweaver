@@ -73,14 +73,9 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `sw review` · `sw draft` and every other single-shot command
   > - **Done when:** a single-shot command is telemetered and state-tracked like a pipeline
 
-* **`D-FLOW-05` 🔜: Model Catalogue Adoption**
-  > - **Purpose:** Move every consumer of model facts onto one catalogue and delete the per-adapter cost tables, so pricing has a single source
-  > - **Trigger:** When a model's price or capability is looked up
-  > - **Precondition:** `C-FLOW-13` → the catalogue. **Blocked on it**
-  > - **Reads:** the model catalogue
-  > - **Produces:** consumers reading one source · `sw costs` showing built-in rates, not only overrides
-  > - **Enables:** honest cost reporting — today `sw costs` cannot show the 19 default rates runs are actually priced with
-  > - **Done when:** no `default_costs` dict remains in any adapter
+* **`D-FLOW-05` ⚰️ RETIRED:** *(Model Catalogue Adoption — absorbed into `C-FLOW-13`, 2026-09-26.
+  Moving every consumer onto the catalogue is the other half of the one central place; two
+  capabilities described one change. ID is dead — do NOT reuse.)*
 
 ## DAL-C: Enterprise Standard
 
@@ -196,14 +191,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Note:** writes its own seam pin as its first commit; the base ships none, `FR-9(a)` having been descoped
 
 * **`C-FLOW-13` 🔜: Model Catalogue**
-  > - **Purpose:** One central place for every LLM setting — model facts, access, limits, routing, addresses. File or DB: its design decides `[agreed 2026-09-26]`
-  > - **Trigger:** When a model fact is looked up
+  > - **Purpose:** One central place for every LLM setting — machine `settings.toml` + project `[llm]` `[agreed 2026-09-26]`
+  > - **Trigger:** When an LLM call needs its model, server, sampling or price
   > - **Precondition:** —
-  > - **Reads:** the catalogue file
-  > - **Produces:** pricing · serving adapter · capabilities · how stale each answer is
-  > - **Enables:** `D-FLOW-05` → the consumers that switch over
-  > - **Done when:** an unknown model does not silently price at `$0.00`
-  > - **Note:** 19 rates in five adapters · `qwen.py` untouched since 2026-05-04 · three retired preview builds · `*-latest` aliases price a moving target
+  > - **Reads:** the machine and project settings files · the shipped model catalogue
+  > - **Produces:** one resolved setting per call · prices in CHF · server addresses · the privacy rule
+  > - **Enables:** `B-FLOW-05` brake values · `A-FLOW-01` model choice
+  > - **Done when:** every LLM call's settings come from one place and no `default_costs` dict remains in any adapter
+  > - **Note:** absorbs `D-FLOW-05` (2026-09-26) · decisions: [record](../../analysis/llm_settings_grilling_2026-09-26.md)
 
 ## DAL-B: High-Assurance
 

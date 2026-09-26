@@ -24,6 +24,8 @@ recommendation ("your recommendations for all"). Each names the feature that own
 | Q18 | Each server entry states whether data leaves the machine; a project may require "private only" — no silent fallback to the cloud |
 | Q22 | Money in CHF; the USD→CHF rate is a manual, dated value in the machine file; never fetched |
 | Q35 | A project file cannot set server addresses or key names — it only chooses among what the machine file registers |
+| Q43 | `D-FLOW-05` (Model Catalogue Adoption) is folded into `C-FLOW-13`; its ID is retired |
+| Q44 | The file shape: `[servers.<name>]` (kind, base_url, api_key_env, private, max_parallel), `[roles]` as `model@server`, `[brake]` values, `[models."<id>"]` for facts the catalogue lacks, `[currency]`; the project `[llm]` may set `private_only` and `[llm.roles]` only |
 | Q37 | The catalogue is seeded from models.dev (MIT, credited), shipped with its version stamped, never fetched at runtime; updating it is a deliberate, reviewable command |
 | — | The brake *values* live here: check-in intervals CHF 20 (hosted) and 2 h GPU time (local) per run, parallel 3 hosted / 4 GB10, 10 agent turns — all marked unverified until the user has seen real costs (Q11) |
 
