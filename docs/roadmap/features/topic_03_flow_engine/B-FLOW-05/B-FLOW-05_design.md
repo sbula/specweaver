@@ -56,6 +56,11 @@ to live in **one central place**. Whether that place is a file or the database i
 undecided**, and this capability must not settle it by default.
 The decision belongs to `C-FLOW-13`, widened to own it `[agreed 2026-09-26]`.
 
+**Brake behaviour redecided with the user `[agreed 2026-09-26]`:** two totals per run (CHF hosted,
+GPU time local), a check-in that pauses and asks instead of refusing, a worst-case check before each
+call, park when nobody can answer, no token limit, no monthly limit. This design is rewritten against
+those decisions after `C-FLOW-13`. Record: [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md).
+
 `max_spend_usd` and `max_tokens_per_run` sit on `LLMSettings`, beside the model and the API key —
 one more scattered home for a number that belongs in the central one. The ceilings stand; their
 location does not.

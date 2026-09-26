@@ -264,6 +264,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Produces:** 🟡 model-swap suggestions
   > - **Enables:** the human choosing a model on evidence
   > - **Done when:** 🟡 it suggests and never auto-applies
+  > - **Note:** inherits the selection decisions of 2026-09-26 — [record](../../analysis/llm_settings_grilling_2026-09-26.md); its auto-escalation (Q24) contradicts "never auto-applies"
 
 * **`A-FLOW-02` 🔜: Hash GC** (Legacy: 5.3)
   > - **Purpose:** 🟡 Remove graph nodes whose code is gone, so the store does not grow forever
