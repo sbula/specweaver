@@ -128,7 +128,7 @@ a cloned repo must not be able to send code to its own server.
 
 | SF | Does | FRs | Depends on | Plan |
 |----|------|-----|-----------|------|
-| SF-01 | Settings models, loader, validator, layering, `sw config show` | FR-1, FR-2, FR-3, FR-4, FR-5 | — | ⬜ |
+| SF-01 | Settings models, loader, validator, layering, `sw config show` | FR-1, FR-2, FR-3, FR-4, FR-5 | — | [sf01](C-FLOW-13_sf01_implementation_plan.md) |
 | SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | ⬜ |
 | SF-03 | One adapter path, hard-coded models removed, one price source, CHF | FR-10, FR-11, FR-12, FR-13 | SF-02 | ⬜ |
 | SF-04 | Migration and commands writing the files | FR-14, FR-15 | SF-01 | ⬜ |
