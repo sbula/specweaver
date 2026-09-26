@@ -36,7 +36,8 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 | `find_placement` | Suggest where to place new code (uses `context.yaml`) |
 
 **Security:** paths are normalized via `posixpath.normpath`; absolute paths are rejected; `..`
-traversal beyond grant boundaries returns an error.
+traversal beyond the project root returns an error, for `search_content` and file search too.
+Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
 ## GitTool (agents)
 

@@ -51,7 +51,8 @@ The dependency rule replaced the old `forbids` pair (tools forbade `atoms/*`, at
 **Tools exist because agents cannot be trusted.** Every tool method:
 
 1. Checks if the agent's role allows this intent.
-2. Checks if the agent's folder grants cover this path.
+2. Checks if the agent's folder grants cover this path — with the one shared matcher,
+   `sandbox.security.grant_mode_for`, never a copy of its own.
 3. Delegates to the executor with validated parameters.
 
 **Atoms exist because the engine needs unrestricted access** for workflow operations (running tests,

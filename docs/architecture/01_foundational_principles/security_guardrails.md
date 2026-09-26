@@ -66,8 +66,12 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
 - **Read-only for agents** — agents MUST read it before any work
 - **Overrides specs** — if a spec conflicts with the constitution, the constitution wins
 - **Injected into prompts** via `PromptBuilder.add_constitution()`
-- **Protected by the filesystem tool** — `_PROTECTED_PATTERNS` blocks agent writes to
-  `context.yaml`, `.env`, `.git` and `.specweaver`
+- **Protected from agent writes** — `FileExecutor._PROTECTED_PATTERNS` blocks writes to
+  `context.yaml`, `.env`, `.git` and `.specweaver`. The file tool and the AST tool both write
+  through it; `EngineFileExecutor`, which protects nothing, is for engine code only.
+- **One grant matcher** — every agent tool judges paths with `sandbox.security.grant_mode_for`,
+  which resolves `..` after joining a relative path to the project root. `grep` and `find_files`
+  walk the disk themselves, so this check is the only thing keeping them inside the root.
 
 ## Layer 7: Standards Auto-Discovery
 

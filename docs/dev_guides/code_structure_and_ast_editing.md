@@ -73,7 +73,10 @@ sees — it cannot call what the parser cannot do.
 1. **LLM output (untrusted)**: a JSON intent, e.g.
    `replace_symbol_body("src/Backend.ts", "calculateHash", "...")`.
 2. **`CodeStructureTool` check**: the request is checked against the role's `FolderGrant` — the
-   **path**, and only the path (`interfaces/tool.py`, `_check_grant`). `visibility` is a relevance
+   **path**, and only the path (`interfaces/tool.py`, `_check_grant`, which calls the shared
+   `sandbox.security.grant_mode_for`). Paths are relative to the project root. Writes go through
+   `FileExecutor`, so `context.yaml`, `.env`, `.git` and `.specweaver` are refused, and a refused
+   write comes back as a failure. `visibility` is a relevance
    filter chosen by the caller and passed straight to the parser. Anyone who can read the file can
    read its private symbols; the index is not a permission system (corrected 2026-08-26).
 3. **Parsers by injection**: `CodeStructureAtom` never instantiates tree-sitter bindings itself.

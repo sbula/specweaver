@@ -55,4 +55,5 @@ of `mcp_servers`. Any other URI is inserted as an error line instead of content.
 - **Only the L2 Architect browses MCP.** The `MCPExplorerTool` exposes the MCP JSON-RPC endpoints.
   The ToolDispatcher grants its `ArchitectMCPInterface` (list servers, list resources, read
   resource) only to the **L2 Architect Role**. Implementation and validation loops get the
-  pre-fetched text only.
+  pre-fetched text only. The explorer applies the same container rules as above before it starts
+  anything, and redacts configured secrets (8+ characters) from what it returns.

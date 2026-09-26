@@ -143,7 +143,7 @@ critical for long-term project viability.
 
 ## Security & Validation
 * **`TECH-072` 🔴: Two Agent Tools Skip the Sandbox's Own Guards**
-  > [Description](../features/topic_07_technical_debt/TECH-072/TECH-072_design.md) | _Status: DRAFT. Origin: 2026-09-26, the subject-scatter audit._ |
+  > [Description](../features/topic_07_technical_debt/TECH-072/TECH-072_design.md) | _Status: built and committed (`9492dcb1`), open until the user closes it. Origin: 2026-09-26._ |
   > The agent AST tool writes through `EngineFileExecutor`, which protects nothing, so it can rewrite `context.yaml`. `MCPExplorerTool` starts the project's MCP
   > command without `MCPAtom`'s runtime guard. Fix: reuse the existing guards, one copy each.
 
