@@ -73,6 +73,7 @@ _CREDENTIAL_VARS: frozenset[str] = frozenset(
         "ANTHROPIC_API_KEY",
         "MISTRAL_API_KEY",
         "QWEN_API_KEY",
+        "DASHSCOPE_API_KEY",
         "AWS_SECRET_ACCESS_KEY",
     }
 )

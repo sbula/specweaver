@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import openai
@@ -68,15 +67,16 @@ class OpenAIAdapter(LLMAdapter):
         "gpt-4o": CostEntry(0.00250, 0.01000),
     }
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize the OpenAI adapter."""
-        super().__init__()
-        self._api_key = api_key or os.environ.get(self.api_key_env_var, "")
-        self._client: Any = None
+    default_base_url: ClassVar[str | None] = "https://api.openai.com/v1"
+    #: The request field that caps output. OpenAI's also caps reasoning tokens; `max_tokens` is
+    #: deprecated there and refused by reasoning models.
+    output_limit_field: ClassVar[str] = "max_completion_tokens"
+    #: OpenAI's current models (GPT-5 and later) refuse a non-default temperature with a 400.
+    sends_sampling: ClassVar[bool] = False
 
     def _get_client(self) -> Any:
         if self._client is None:
-            self._client = openai.AsyncOpenAI(api_key=self._api_key)
+            self._client = openai.AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
         return self._client
 
     def _handle_error(self, e: Exception) -> None:
@@ -130,9 +130,10 @@ class OpenAIAdapter(LLMAdapter):
         kwargs: dict[str, Any] = {
             "model": config.model,
             "messages": oai_messages,
-            "temperature": config.temperature,
-            "max_tokens": config.max_output_tokens,
+            self.output_limit_field: config.max_output_tokens,
         }
+        if self.sends_sampling:
+            kwargs["temperature"] = config.temperature
 
         if config.response_format == "json":
             kwargs["response_format"] = {"type": "json_object"}
@@ -227,10 +228,11 @@ class OpenAIAdapter(LLMAdapter):
         kwargs: dict[str, Any] = {
             "model": config.model,
             "messages": oai_messages,
-            "temperature": config.temperature,
-            "max_tokens": config.max_output_tokens,
+            self.output_limit_field: config.max_output_tokens,
             "tools": self._to_openai_tools(config.tools),
         }
+        if self.sends_sampling:
+            kwargs["temperature"] = config.temperature
 
         cumulative_usage = TokenUsage()
 
@@ -272,3 +274,27 @@ class OpenAIAdapter(LLMAdapter):
 
     async def count_tokens(self, text: str, model: str) -> int:
         return len(text) // 4
+
+
+class OpenAICompatibleAdapter(OpenAIAdapter):
+    """A local or self-hosted server speaking the OpenAI API (vLLM, Ollama, ...).
+
+    It sends `max_completion_tokens` like OpenAI: vLLM deprecates `max_tokens`.
+
+    It has no official address, so one must be given. A key is optional: `None` means the server
+    needs none and gets a fixed placeholder — never the user's `OPENAI_API_KEY`; `""` means a key
+    was expected and is missing, so the adapter is unavailable.
+    """
+
+    provider_name = "openai-compatible"
+    api_key_env_var = ""
+    default_costs: ClassVar[dict[str, CostEntry]] = {}
+    default_base_url: ClassVar[str | None] = None
+    sends_sampling: ClassVar[bool] = True
+
+    def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
+        super().__init__(api_key=_NO_KEY if api_key is None else api_key, base_url=base_url)
+
+
+#: Sent to a server that needs no key; the OpenAI client refuses to start without one.
+_NO_KEY = "no-key"

@@ -14,7 +14,7 @@ from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
 from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
 from specweaver.infrastructure.llm.collector import TelemetryCollector
-from specweaver.infrastructure.llm.factory import create_llm_adapter
+from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 from specweaver.infrastructure.llm.telemetry import CostEntry
 
 
@@ -90,7 +90,6 @@ class TestFactoryProviderCapabilities:
             ("openai", "OpenAIAdapter", "OPENAI_API_KEY"),
             ("anthropic", "AnthropicAdapter", "ANTHROPIC_API_KEY"),
             ("mistral", "MistralAdapter", "MISTRAL_API_KEY"),
-            ("qwen", "QwenAdapter", "QWEN_API_KEY"),
         ],
     )
     def test_factory_loads_specific_provider(
@@ -111,3 +110,12 @@ class TestFactoryProviderCapabilities:
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, expected_cls)
         assert type(adapter._wrapped).__name__ == adapter_cls_name
+
+    @pytest.mark.parametrize("provider", ["qwen", "openai-compatible"])
+    def test_a_provider_without_an_official_address_points_to_the_settings_file(
+        self, provider: str
+    ) -> None:
+        settings = SpecWeaverSettings(llm=LLMSettings(provider=provider, model="m", api_key="k"))
+
+        with pytest.raises(LLMAdapterError, match=r"settings\.toml"):
+            create_llm_adapter(settings, telemetry_project=None)

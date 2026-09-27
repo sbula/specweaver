@@ -141,7 +141,9 @@ async def test_mistral_dispatcher_integration() -> None:
 @pytest.mark.asyncio
 async def test_qwen_dispatcher_integration() -> None:
     dispatcher = ToolDispatcher([DummyInterface()])
-    adapter = QwenAdapter(api_key="test")
+    adapter = QwenAdapter(
+        api_key="test", base_url="https://dashscope-us.aliyuncs.com/compatible-mode/v1"
+    )
 
     mock_tc = MagicMock()
     mock_tc.id = "call_1"

@@ -4,10 +4,7 @@
 from __future__ import annotations
 
 import logging
-import os
-from typing import Any, ClassVar
-
-import openai
+from typing import ClassVar
 
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.telemetry import CostEntry
@@ -19,7 +16,7 @@ class QwenAdapter(OpenAIAdapter):
     """Adapter for Alibaba Qwen models using OpenAI compatible API."""
 
     provider_name = "qwen"
-    api_key_env_var = "QWEN_API_KEY"
+    api_key_env_var = "DASHSCOPE_API_KEY"
     default_costs: ClassVar[dict[str, CostEntry]] = {
         "qwen3-max": CostEntry(0.00200, 0.00600),
         "qwen3.5-plus": CostEntry(0.00080, 0.00240),
@@ -27,14 +24,9 @@ class QwenAdapter(OpenAIAdapter):
         "qwen-plus-latest": CostEntry(0.00040, 0.00120),
     }
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize the Qwen adapter."""
-        super().__init__(api_key=api_key or os.environ.get(self.api_key_env_var, ""))
-
-    def _get_client(self) -> Any:
-        if self._client is None:
-            self._client = openai.AsyncOpenAI(
-                api_key=self._api_key,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            )
-        return self._client
+    # No default address: DashScope's current addresses carry the account's workspace, and the
+    # one address without it is the legacy domain.
+    default_base_url: ClassVar[str | None] = None
+    #: DashScope documents only `max_tokens`.
+    output_limit_field: ClassVar[str] = "max_tokens"
+    sends_sampling: ClassVar[bool] = True

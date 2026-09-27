@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import anthropic
@@ -61,15 +60,11 @@ class AnthropicAdapter(LLMAdapter):
         "claude-3-7-sonnet-20250219": CostEntry(0.00300, 0.01500),
     }
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize the Anthropic adapter."""
-        super().__init__()
-        self._api_key = api_key or os.environ.get(self.api_key_env_var, "")
-        self._client: Any = None
+    default_base_url: ClassVar[str | None] = "https://api.anthropic.com"
 
     def _get_client(self) -> Any:
         if self._client is None:
-            self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
+            self._client = anthropic.AsyncAnthropic(api_key=self._api_key, base_url=self._base_url)
         return self._client
 
     def _handle_error(self, e: Exception) -> None:

@@ -13,11 +13,11 @@ from tests.fixtures.db_utils import register_test_project, set_test_active_proje
 @pytest.fixture(autouse=True)
 def reset_global_semaphores():
     """Clear global tracking between tests."""
-    from specweaver.infrastructure.llm.adapters._rate_limit import _PROVIDER_SEMAPHORES
+    from specweaver.infrastructure.llm.adapters._rate_limit import _SEMAPHORES
 
-    _PROVIDER_SEMAPHORES.clear()
+    _SEMAPHORES.clear()
     yield
-    _PROVIDER_SEMAPHORES.clear()
+    _SEMAPHORES.clear()
 
 
 @pytest.fixture()
@@ -36,7 +36,6 @@ async def test_factory_allocates_shared_semaphore_pool(db):
     Proves that N simultaneous factory invocations (like fan_out)
     all bind to the exact same globally addressed asyncio.Semaphore pool.
     """
-    from specweaver.infrastructure.llm.adapters._rate_limit import _PROVIDER_SEMAPHORES
     from specweaver.infrastructure.llm.factory import create_llm_adapter
 
     register_test_project(db, "test-proj", "/tmp/test")
@@ -70,10 +69,8 @@ async def test_factory_allocates_shared_semaphore_pool(db):
     latch_a = await adapter_a._wait_for_lock()
     latch_b = await adapter_b._wait_for_lock()
 
-    assert len(_PROVIDER_SEMAPHORES) == 1
-
-    # 2 are held. 1 remaining globally.
-    pool = _PROVIDER_SEMAPHORES["gemini"]
+    # 2 are held. 1 remaining for the provider.
+    pool = adapter_a._get_semaphore()
     assert pool._value == 1  # 3 - 2 = 1 left
 
     # Prove they point to the exact same address

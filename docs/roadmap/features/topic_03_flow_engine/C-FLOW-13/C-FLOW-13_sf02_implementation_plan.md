@@ -65,9 +65,9 @@ which now also reports the privacy rule.
     `database.py`; the factory keeps passing the provider name until SF-03. No slot timeout (Q-4),
     so a slot must be released on every exit — error, cancel, and a stream closed early.
 11. Q-5 fixes, if agreed: Mistral imports `mistralai.client.Mistral` and `mistralai.client.errors`,
-    `pyproject.toml` pins `mistralai>=2.1`; the `openai` kind sends `max_completion_tokens`;
-    `qwen` and `openai-compatible` keep `max_tokens` (DashScope, vLLM and Ollama all accept it).
-    Qwen keeps today's address and `QWEN_API_KEY` as its defaults.
+    `openai` and `openai-compatible` send `max_completion_tokens` (Q-7); `qwen` keeps
+    `max_tokens`, the only field DashScope documents. A `qwen` server names its address and reads
+    `DASHSCOPE_API_KEY` (Q-9). SDKs upgraded first, in their own commit (Q-8).
 
 | File | Change | FR |
 |------|--------|-----|
@@ -117,3 +117,10 @@ the two xfail e2e).
 | Q-3 | A model on the GB10 with the same name as a hosted one | (a) no match: facts only from `[models."<id>"]` and `local.toml`; price unknown; (b) borrow the hosted entry | **(a)** — the hosted price is wrong for your own box; local cost is the brake's GPU hours `[agreed 2026-09-27]` |
 | Q-4 | Waiting for a free slot: today 30 s, then error; a GB10 answer can take minutes | (a) no slot timeout — the SDK's request timeout still ends a hung call; (b) new server key `queue_timeout` with a default | **(a)** — no new key; a queued call no longer fails only because the box is busy `[agreed 2026-09-27]` |
 | Q-5 | Two live defects in the adapters CB-3 rewrites: Mistral cannot import with the installed SDK; OpenAI sends deprecated `max_tokens` (o-series refuse it; it does not cap thinking) | (a) fix both in CB-3; (b) leave them, file a TECH ticket | **(a)** — same lines, small change, no ticket `[agreed 2026-09-27]` |
+| Q-6 | Found at the CB-3 gate, checked against the providers' docs on 2026-09-27: current Claude models (Opus 4.7 and later) refuse `temperature`, `top_p`, `top_k` with a 400 | (a) the Anthropic adapter sends no sampling values; (b) leave to SF-03 | **(a)** `[agreed 2026-09-27]`. Same rule applied to the `openai` kind at the gate: GPT-5 and later refuse a non-default `temperature` too (the default 0.7 made every call fail); `qwen` and `openai-compatible` still send it |
+| Q-7 | vLLM deprecates `max_tokens` for `max_completion_tokens`; Q-5's plan kept `max_tokens` for local servers | (a) local servers send `max_completion_tokens`; Qwen (DashScope documents only `max_tokens`) keeps `max_tokens`; (b) keep | **(a)** `[agreed 2026-09-27]` |
+| Q-8 | Installed SDKs are majors behind: openai 2.30 (3.19), anthropic 0.86 (1.8), google-genai 1.66 (2.25), mistralai 2.1 (2.10) | (a) upgrade in their own commit before CB-3; raise the minimum pins; (b) stay | **(a)** `[agreed 2026-09-27]` — no support for older SDKs or older models |
+| Q-9 | DashScope calls `dashscope.aliyuncs.com` legacy; current addresses carry the workspace ID; its key variable is `DASHSCOPE_API_KEY` | (a) a `qwen` server must name its address; key variable `DASHSCOPE_API_KEY`; (b) keep | **(a)** `[agreed 2026-09-27]` |
+
+**Rule `[agreed 2026-09-27]`:** SpecWeaver supports current models and current SDK majors only. No
+compatibility code for older ones.

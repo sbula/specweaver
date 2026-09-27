@@ -10,7 +10,6 @@ from pydantic import BaseModel
 
 from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-from specweaver.infrastructure.llm.factory import LLMAdapterError
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
 
 
@@ -68,11 +67,11 @@ class StubAdapter(LLMAdapter):
 @pytest.fixture(autouse=True)
 def reset_rate_limit_state():
     """Clear global semaphores between tests."""
-    from specweaver.infrastructure.llm.adapters._rate_limit import _PROVIDER_SEMAPHORES
+    from specweaver.infrastructure.llm.adapters._rate_limit import _SEMAPHORES
 
-    _PROVIDER_SEMAPHORES.clear()
+    _SEMAPHORES.clear()
     yield
-    _PROVIDER_SEMAPHORES.clear()
+    _SEMAPHORES.clear()
 
 
 @pytest.mark.asyncio
@@ -86,32 +85,105 @@ async def test_rate_limiter_translates_metadata():
     assert await adapter.count_tokens("hi", "test") == 42
 
 
+class CountingAdapter(StubAdapter):
+    """Records the most calls it ever had in flight at once."""
+
+    def __init__(self, delay: float = 0.05) -> None:
+        super().__init__(MockAdapterConfig(delay=delay))
+        self.active = 0
+        self.peak = 0
+
+    async def generate(self, messages, config):
+        self.active += 1
+        self.peak = max(self.peak, self.active)
+        try:
+            return await super().generate(messages, config)
+        finally:
+            self.active -= 1
+
+    async def generate_with_tools(self, messages, config, tool_executor, on_tool_round=None):
+        return await self.generate(messages, config)
+
+
 @pytest.mark.asyncio
-async def test_rate_limiter_concurrency_bounds():
-    stub = StubAdapter(MockAdapterConfig(delay=0.1))
-    adapter = AsyncRateLimiterAdapter(stub, limit=2, timeout=0.05)
+async def test_a_busy_server_makes_calls_wait_not_fail():
+    stub = CountingAdapter()
+    adapter = AsyncRateLimiterAdapter(stub, limit=2, key="gb10")
 
-    # We fire 3 requests. Limit is 2. The 3rd should timeout because the delay is 0.1s,
-    # but the timeout wait is only 0.05s.
+    results = await asyncio.gather(
+        *(adapter.generate([], GenerationConfig(model="m")) for _ in range(4))
+    )
 
-    config = GenerationConfig(model="stub")
+    assert [r.text for r in results] == ["success"] * 4
+    assert stub.peak == 2
 
-    tasks = [
-        asyncio.create_task(adapter.generate([], config)),
-        asyncio.create_task(adapter.generate([], config)),
-        asyncio.create_task(adapter.generate([], config)),
-    ]
 
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+@pytest.mark.asyncio
+async def test_two_servers_of_the_same_kind_do_not_share_slots():
+    stub = CountingAdapter()
+    first = AsyncRateLimiterAdapter(stub, limit=1, key="gb10")
+    second = AsyncRateLimiterAdapter(stub, limit=1, key="gb10-backup")
 
-    successes = [r for r in results if isinstance(r, LLMResponse)]
-    errors = [r for r in results if isinstance(r, Exception)]
+    await asyncio.gather(
+        first.generate([], GenerationConfig(model="m")),
+        second.generate([], GenerationConfig(model="m")),
+    )
 
-    assert len(successes) == 2
-    assert len(errors) == 1
+    assert stub.peak == 2
 
-    assert isinstance(errors[0], LLMAdapterError)
-    assert "concurrency" in str(errors[0]).lower()
+
+@pytest.mark.asyncio
+async def test_adapters_for_one_server_share_its_slots():
+    stub = CountingAdapter()
+    first = AsyncRateLimiterAdapter(stub, limit=1, key="gb10")
+    second = AsyncRateLimiterAdapter(stub, limit=1, key="gb10")
+
+    await asyncio.gather(
+        first.generate([], GenerationConfig(model="m")),
+        second.generate([], GenerationConfig(model="m")),
+    )
+
+    assert stub.peak == 1
+
+
+def test_each_event_loop_gets_its_own_semaphore():
+    adapter = AsyncRateLimiterAdapter(CountingAdapter(delay=0.01), limit=1, key="gb10")
+
+    async def contended() -> None:
+        await asyncio.gather(*(adapter.generate([], GenerationConfig(model="m")) for _ in range(2)))
+
+    asyncio.run(contended())
+    asyncio.run(contended())  # a semaphore bound to the first loop would raise here
+
+
+@pytest.mark.asyncio
+async def test_a_cancelled_call_frees_its_slot():
+    adapter = AsyncRateLimiterAdapter(CountingAdapter(delay=10), limit=1, key="gb10")
+    stuck = asyncio.create_task(adapter.generate([], GenerationConfig(model="m")))
+    await asyncio.sleep(0.01)
+    stuck.cancel()
+    adapter._wrapped._config.delay = 0
+
+    result = await asyncio.wait_for(adapter.generate([], GenerationConfig(model="m")), timeout=1)
+
+    assert result.text == "success"
+
+
+@pytest.mark.asyncio
+async def test_a_stream_closed_early_frees_its_slot():
+    class TwoChunks(StubAdapter):
+        async def generate_stream(self, messages, config):
+            yield "one"
+            yield "two"
+
+    adapter = AsyncRateLimiterAdapter(TwoChunks(MockAdapterConfig(delay=0)), limit=1, key="gb10")
+    stream = adapter.generate_stream([], GenerationConfig(model="m"))
+    assert await anext(stream) == "one"
+    await stream.aclose()
+
+    result = await asyncio.wait_for(adapter.generate([], GenerationConfig(model="m")), timeout=1)
+
+    assert result.text == "success"
 
 
 @pytest.mark.asyncio
@@ -135,28 +207,18 @@ async def test_rate_limiter_releases_lock_on_exception():
 
 @pytest.mark.asyncio
 async def test_rate_limiter_wraps_generate_with_tools():
-    stub = StubAdapter(MockAdapterConfig(delay=0.1))
-    adapter = AsyncRateLimiterAdapter(stub, limit=1, timeout=0.05)
+    stub = CountingAdapter()
+    adapter = AsyncRateLimiterAdapter(stub, limit=1, key="gb10")
 
-    config = GenerationConfig(model="stub")
+    results = await asyncio.gather(
+        *(
+            adapter.generate_with_tools([], GenerationConfig(model="m"), tool_executor=None)
+            for _ in range(2)
+        )
+    )
 
-    # Prove successful delegation
-    res = await adapter.generate_with_tools([], config, tool_executor=None)
-    assert res.text == "tools"
-
-    # Prove it obeys the concurrency limits
-    tasks = [
-        asyncio.create_task(adapter.generate_with_tools([], config, tool_executor=None)),
-        asyncio.create_task(adapter.generate_with_tools([], config, tool_executor=None)),
-    ]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    successes = [r for r in results if isinstance(r, LLMResponse)]
-    errors = [r for r in results if isinstance(r, Exception)]
-
-    assert len(successes) == 1
-    assert len(errors) == 1
-    assert isinstance(errors[0], LLMAdapterError)
-    assert "concurrency" in str(errors[0]).lower()
+    assert [r.text for r in results] == ["success"] * 2
+    assert stub.peak == 1
 
 
 @pytest.mark.asyncio

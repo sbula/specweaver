@@ -174,3 +174,17 @@ class TestMistralAdapter:
 
         mock_exec.execute.assert_called_once_with("my_tool", {})
         assert result.text == "Success"
+
+
+def test_a_rejected_key_becomes_an_authentication_error() -> None:
+    """The adapter reads the error class from the SDK it runs on (mistralai 2.x)."""
+    import httpx
+    from mistralai.client.errors import SDKError
+
+    from specweaver.infrastructure.llm.errors import AuthenticationError
+
+    request = httpx.Request("POST", "https://api.mistral.ai/v1/chat/completions")
+    refused = SDKError("unauthorized", httpx.Response(401, request=request))
+
+    with pytest.raises(AuthenticationError):
+        MistralAdapter(api_key="k")._handle_error(refused)

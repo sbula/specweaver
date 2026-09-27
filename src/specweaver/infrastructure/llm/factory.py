@@ -109,7 +109,11 @@ def create_llm_adapter(
     from specweaver.infrastructure.llm.models import GenerationConfig
 
     adapter_cls = _get_adapter_class(settings.llm.provider)
-    adapter: Any = adapter_cls(api_key=settings.llm.api_key or None)
+    try:
+        adapter: Any = adapter_cls(api_key=settings.llm.api_key or None)
+    except ValueError as e:
+        msg = f"{e}. Set it up as a server in the machine settings file (settings.toml)."
+        raise LLMAdapterError(msg) from e
 
     if not adapter.available():
         env_key = getattr(
@@ -124,7 +128,7 @@ def create_llm_adapter(
 
     # We use a default concurrency limit of 3.
     # Note: Global Semaphore guarantees limits horizontally across parallel running adapters.
-    adapter = AsyncRateLimiterAdapter(adapter, limit=3, timeout=30.0)
+    adapter = AsyncRateLimiterAdapter(adapter, limit=3)
 
     # Wrap in telemetry collector if project is specified
     if telemetry_project:

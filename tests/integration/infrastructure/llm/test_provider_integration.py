@@ -34,7 +34,6 @@ def mock_telemetry() -> None:
         ("openai", "OPENAI_API_KEY"),
         ("anthropic", "ANTHROPIC_API_KEY"),
         ("mistral", "MISTRAL_API_KEY"),
-        ("qwen", "QWEN_API_KEY"),
     ],
 )
 async def test_provider_e2e_flow(

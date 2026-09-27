@@ -31,11 +31,15 @@ $env:GEMINI_API_KEY = "your-gemini-key"
 $env:OPENAI_API_KEY = "your-openai-key"
 $env:ANTHROPIC_API_KEY = "your-anthropic-key"
 $env:MISTRAL_API_KEY = "your-mistral-key"
-$env:QWEN_API_KEY = "your-qwen-key"
+$env:DASHSCOPE_API_KEY = "your-qwen-key"
 ```
 
 The default provider is `gemini`. Change it per project role with
 `sw config set-provider <provider>` (`--role`, default `draft`; optional `--model`).
+
+Qwen (DashScope) and local servers (vLLM, Ollama) have no single official address, so
+`set-provider` refuses them. They are set up as servers in the settings file below, which model
+calls read from C-FLOW-13 SF-03 on.
 
 **Coming: one settings file.** LLM settings are moving into `~/.specweaver/settings.toml` (servers,
 roles, brake values, currency) and an `[llm]` section in each project's `specweaver.toml`

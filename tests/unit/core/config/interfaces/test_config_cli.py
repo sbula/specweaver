@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from tests.rendering import shows
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -273,6 +274,20 @@ class TestConfigSetProvider:
         assert result.exit_code == 1
         assert "Unknown provider" in result.output
         assert "Available:" in result.output
+
+    @pytest.mark.parametrize("provider", ["openai-compatible", "qwen"])
+    def test_set_provider_refuses_a_kind_without_an_official_address(
+        self, _mock_db, provider: str
+    ) -> None:
+        """A local server or DashScope needs an address, which only the settings file holds."""
+        _create_project(_mock_db)
+
+        result = runner.invoke(app, ["config", "set-provider", provider])
+
+        assert result.exit_code == 1
+        assert shows(result.output, "settings.toml")
+        assert shows(result.output, "[servers.<name>]")
+        assert self._get_profile(_mock_db, "testproj", "draft") is None
 
 
 def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):

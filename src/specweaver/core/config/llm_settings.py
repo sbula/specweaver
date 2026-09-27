@@ -37,8 +37,12 @@ _DEFAULT_KEY_ENV: dict[str, str] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
     "mistral": "MISTRAL_API_KEY",
-    "qwen": "QWEN_API_KEY",
+    "qwen": "DASHSCOPE_API_KEY",
 }
+
+#: Kinds with no single official address: a local server, and DashScope, whose current addresses
+#: carry the account's workspace.
+_NEEDS_ADDRESS = frozenset({"openai-compatible", "qwen"})
 
 #: Keys that decide where code is sent. Only the machine file may set them.
 _MACHINE_ONLY_KEYS = frozenset({"servers", "base_url", "api_key_env"})
@@ -72,8 +76,8 @@ class ServerEntry(_Strict):
     def _key_variable_and_address(self) -> ServerEntry:
         if self.api_key_env is None:
             self.api_key_env = _DEFAULT_KEY_ENV.get(self.kind)
-        if self.kind == "openai-compatible" and not self.base_url:
-            msg = "an openai-compatible server needs a base_url"
+        if self.kind in _NEEDS_ADDRESS and not self.base_url:
+            msg = f"a {self.kind} server needs a base_url"
             raise ValueError(msg)
         return self
 

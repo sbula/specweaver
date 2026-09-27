@@ -9,7 +9,6 @@ Uses the `google-genai` SDK (GA since May 2025).
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from google import genai
@@ -85,14 +84,7 @@ class GeminiAdapter(LLMAdapter):
         "gemini-2.0-flash-lite": CostEntry(0.00005, 0.00020),
     }
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize the Gemini adapter.
-
-        Args:
-            api_key: Gemini API key. If None, reads from GEMINI_API_KEY env var.
-        """
-        self._api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
-        self._client: genai.Client | None = None
+    default_base_url: ClassVar[str | None] = "https://generativelanguage.googleapis.com/"
 
     def _get_client(self) -> genai.Client:
         """Lazy-initialize the Gemini client."""
@@ -100,8 +92,14 @@ class GeminiAdapter(LLMAdapter):
             if not self._api_key:
                 msg = "GEMINI_API_KEY is not set"
                 raise AuthenticationError(msg, provider="gemini")
-            self._client = genai.Client(api_key=self._api_key)
-        return self._client
+            # `vertexai=False` explicitly: `GOOGLE_GENAI_USE_VERTEXAI` must not reroute the call.
+            self._client = genai.Client(
+                api_key=self._api_key,
+                vertexai=False,
+                http_options=types.HttpOptions(base_url=self._base_url),
+            )
+        client: genai.Client = self._client
+        return client
 
     async def generate(
         self,

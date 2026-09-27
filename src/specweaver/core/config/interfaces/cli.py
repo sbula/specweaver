@@ -315,6 +315,12 @@ def config_set_provider(
             f"Available: {', '.join(sorted(adapters.keys()))}",
         )
         raise typer.Exit(code=1)
+    if adapters[provider].default_base_url is None:
+        _core.console.print(
+            f"[red]Error:[/red] '{provider}' needs a server address. Add it under "
+            "\\[servers.<name>] in the machine settings file (settings.toml).",
+        )
+        raise typer.Exit(code=1)
 
     async def _update_provider() -> None:
         async with db.async_session_scope() as session:

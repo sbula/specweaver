@@ -107,7 +107,7 @@ class ModelRouter:
                     ),
                     "",
                 )
-                adapter: Any = adapter_cls(api_key=api_key or None)  # type: ignore[call-arg]
+                adapter: Any = adapter_cls(api_key=api_key or None)
                 if self._telemetry_project:
                     from specweaver.infrastructure.llm.collector import TelemetryCollector
                     from specweaver.infrastructure.llm.telemetry import CostEntry

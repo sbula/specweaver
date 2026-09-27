@@ -18,16 +18,18 @@ from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.adapters.qwen import QwenAdapter
 
 ADAPTERS = [AnthropicAdapter, GeminiAdapter, MistralAdapter, OpenAIAdapter, QwenAdapter]
+#: Qwen has no default address; the others accept one too.
+_ADDRESS = "https://proxy.local/v1"
 
 
 @pytest.mark.parametrize("adapter_cls", ADAPTERS, ids=lambda c: c.__name__)
 class TestAvailable:
     def test_a_configured_adapter_is_available(self, adapter_cls: type) -> None:
-        assert adapter_cls(api_key="sk-test").available() is True
+        assert adapter_cls(api_key="sk-test", base_url=_ADDRESS).available() is True
 
     def test_an_unconfigured_adapter_is_not(self, adapter_cls: type) -> None:
         """An empty key is not a key. The factory uses this to decide whether to offer the model."""
-        assert adapter_cls(api_key="").available() is False
+        assert adapter_cls(api_key="", base_url=_ADDRESS).available() is False
 
     def test_it_is_not_redeclared_on_the_adapter(self, adapter_cls: type) -> None:
         """Four identical copies became one default; a regression would restore a per-adapter one."""

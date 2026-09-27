@@ -30,7 +30,8 @@ Trigger: "run the live tests", "test against real Gemini",
 ## The credential
 
 One environment variable per provider. `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
-`MISTRAL_API_KEY`, `QWEN_API_KEY`.
+`MISTRAL_API_KEY`, `DASHSCOPE_API_KEY` (Qwen; the live test also needs `DASHSCOPE_BASE_URL`,
+your workspace address).
 
 **The environment is the only place it can live.** `specweaver.toml` cannot hold it and the
 database never stores it — `src/specweaver/core/config/bootstrap/settings_loader.py` reads

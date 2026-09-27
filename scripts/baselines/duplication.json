@@ -151,53 +151,48 @@
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @0f8303520d85": {
     "lines": 29,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:12",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:10"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:11",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:9"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:205",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:150"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:201",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:145"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @b19139f1e54a": {
     "lines": 16,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:214",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:210"
-  },
-  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @c0d7ad913778": {
-    "lines": 7,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:66",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:73"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:210",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:211"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @faa84cb2b92f": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:271",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:261"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:266",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:263"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @89d15624929b": {
     "lines": 13,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:213",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:106"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:208",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:101"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @4cef14c28087": {
     "lines": 26,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:12",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:15"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:11",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:14"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @aabfcc2d4963": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:162",
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:157",
     "second": "src/specweaver/infrastructure/llm/adapters/openai.py:110"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @e04fcd68e926": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:198",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:210"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:193",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:211"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @faa84cb2b92f": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:254",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:261"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:249",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:263"
   },
   "src/specweaver/infrastructure/llm/prompt/adders.py <-> src/specweaver/infrastructure/llm/prompt/adders.py @1cf4d76d07d0": {
     "lines": 12,
@@ -249,15 +244,10 @@
     "first": "src/specweaver/interfaces/api/v1/projects.py:143",
     "second": "src/specweaver/interfaces/api/v1/projects.py:92"
   },
-  "src/specweaver/sandbox/code_structure/interfaces/tool.py <-> src/specweaver/sandbox/filesystem/interfaces/tool.py @4186ed14f093": {
-    "lines": 9,
-    "first": "src/specweaver/sandbox/code_structure/interfaces/tool.py:332",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/tool.py:489"
-  },
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
     "first": "src/specweaver/sandbox/execution/container_executor.py:566",
-    "second": "src/specweaver/sandbox/execution/executor.py:162"
+    "second": "src/specweaver/sandbox/execution/executor.py:163"
   },
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @a91f7b2f86aa": {
     "lines": 23,
@@ -291,8 +281,8 @@
   },
   "src/specweaver/sandbox/filesystem/interfaces/tool.py <-> src/specweaver/sandbox/filesystem/interfaces/tool.py @f31f304d9f44": {
     "lines": 8,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/tool.py:222",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/tool.py:187"
+    "first": "src/specweaver/sandbox/filesystem/interfaces/tool.py:223",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/tool.py:188"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
@@ -482,7 +472,7 @@
   "src/specweaver/workspace/ast/parsers/cpp/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @55e8efd920f7": {
     "lines": 18,
     "first": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:152",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:133"
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:137"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/python/codestructure.py @572a363ef837": {
     "lines": 9,
@@ -492,12 +482,12 @@
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @382e2bfaae2f": {
     "lines": 18,
     "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:259",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:133"
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:137"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @8d10417d784a": {
     "lines": 9,
     "first": "src/specweaver/workspace/ast/parsers/go/codestructure.py:237",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:256"
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:284"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/kotlin/codestructure.py @91136ce31b89": {
     "lines": 21,
@@ -512,7 +502,7 @@
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/rust/codestructure.py @ce69bddf3fcb": {
     "lines": 23,
     "first": "src/specweaver/workspace/ast/parsers/java/codestructure.py:189",
-    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:329"
+    "second": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:357"
   },
   "src/specweaver/workspace/ast/parsers/java/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @17b13829ede8": {
     "lines": 16,
@@ -576,17 +566,17 @@
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @0ef179445101": {
     "lines": 14,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:314",
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:342",
     "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:279"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @7d66bfa89f19": {
     "lines": 19,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:333",
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:361",
     "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:294"
   },
   "src/specweaver/workspace/ast/parsers/rust/codestructure.py <-> src/specweaver/workspace/ast/parsers/typescript/codestructure.py @a0a7175c6043": {
     "lines": 7,
-    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:258",
+    "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:286",
     "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:210"
   },
   "src/specweaver/workspace/memory/repository/resilience.py <-> src/specweaver/workspace/memory/repository/resilience.py @e205271391ca": {

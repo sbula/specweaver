@@ -162,6 +162,24 @@ class TestABrokenMachineFileRefuses:
         assert "servers.gb10" in err.key
         assert "base_url" in err.message
 
+    def test_a_qwen_server_without_an_address_refuses(self) -> None:
+        text = '[servers.dashscope]\nkind = "qwen"\nprivate = false\nmax_parallel = 2\n'
+
+        err = _refusal(text)
+
+        assert "servers.dashscope" in err.key
+        assert "base_url" in err.message
+
+    def test_a_qwen_server_reads_the_dashscope_key_by_default(self) -> None:
+        text = (
+            '[servers.dashscope]\nkind = "qwen"\nprivate = false\nmax_parallel = 2\n'
+            'base_url = "https://dashscope-us.aliyuncs.com/compatible-mode/v1"\n'
+        )
+
+        server = parse_machine_file(text, "settings.toml").servers["dashscope"]
+
+        assert server.api_key_env == "DASHSCOPE_API_KEY"
+
     def test_a_zero_exchange_rate_refuses(self) -> None:
         text = _MACHINE.replace("usd_to_chf = 0.80", "usd_to_chf = 0")
 

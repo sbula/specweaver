@@ -239,6 +239,18 @@ class TestSubprocessExecutorEnv:
         )
         assert result.stdout.strip() == "STRIPPED"
 
+    def test_extra_env_cannot_inject_the_dashscope_key(self, tmp_path: Path) -> None:
+        """DASHSCOPE_API_KEY is the Qwen key variable; it is a credential like the others."""
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        executor = SubprocessExecutor(cwd=tmp_path)
+        py = "python" if sys.platform == "win32" else "python3"
+        result = executor.execute(
+            [py, "-c", "import os; print(os.environ.get('DASHSCOPE_API_KEY', 'STRIPPED'))"],
+            extra_env={"DASHSCOPE_API_KEY": "injected_secret"},
+        )
+        assert result.stdout.strip() == "STRIPPED"
+
     def test_env_stripping_azure(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.executor import SubprocessExecutor
 

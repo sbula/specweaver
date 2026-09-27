@@ -214,6 +214,119 @@
           "symbol_sha": "sha256:a55aa263cf4f2a74e0b99a0c184ccd62bfb4070f922f2bd8e107934464622ea8"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Every client is built from its server entry, and nothing else redirects it",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_adapter_addresses.py",
+        "tests/unit/infrastructure/llm/test_servers.py",
+        "tests/unit/infrastructure/llm/test_adapter_output_limit.py",
+        "tests/integration/infrastructure/llm/test_server_settings_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "openai-address-from-environment",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter._get_client",
+          "old": "            self._client = openai.AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)\n",
+          "new": "            self._client = openai.AsyncOpenAI(api_key=self._api_key)\n",
+          "breaks": "OPENAI_BASE_URL decides where calls go, and a local server's address is ignored",
+          "symbol_sha": "sha256:37b14a99355f2dcb9194c9363439b60792a2ee700d60b737a2f5337af9b9fcc1"
+        },
+        {
+          "id": "empty-key-reads-environment",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/base.py",
+          "symbol": "LLMAdapter._resolve_key",
+          "old": "        return api_key if api_key is not None else os.environ.get(self.api_key_env_var, \"\")\n",
+          "new": "        return api_key or os.environ.get(self.api_key_env_var, \"\")\n",
+          "breaks": "a server whose named key is unset silently uses another key from the environment",
+          "symbol_sha": "sha256:074f27b68cb849832abf9a004cbb1fe5dc8229872f95cccf7df1c8e55cfc1c96"
+        },
+        {
+          "id": "keyless-server-unavailable",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAICompatibleAdapter.__init__",
+          "old": "        super().__init__(api_key=_NO_KEY if api_key is None else api_key, base_url=base_url)\n",
+          "new": "        super().__init__(api_key=api_key, base_url=base_url)\n",
+          "breaks": "a local server without a key can never be used",
+          "symbol_sha": "sha256:95db47d9b3421bc3d6211bacde236c68e31b8fcdf427eaec371c50b2e7e702e3"
+        },
+        {
+          "id": "openai-deprecated-output-field",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter",
+          "old": "    output_limit_field: ClassVar[str] = \"max_completion_tokens\"\n",
+          "new": "    output_limit_field: ClassVar[str] = \"max_tokens\"\n",
+          "breaks": "OpenAI reasoning models refuse the call, and the limit does not cap reasoning tokens",
+          "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
+        },
+        {
+          "id": "qwen-legacy-default-address",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/qwen.py",
+          "symbol": "QwenAdapter",
+          "old": "    default_base_url: ClassVar[str | None] = None\n",
+          "new": "    default_base_url: ClassVar[str | None] = \"https://dashscope.aliyuncs.com/compatible-mode/v1\"\n",
+          "breaks": "a Qwen server without an address silently goes to DashScope's legacy domain",
+          "symbol_sha": "sha256:e194d3d5eac4ddbb0d797a8f157ecfce0a53a2e0122f26102ef7b6dffd0d8cb1"
+        },
+        {
+          "id": "openai-sends-temperature",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter",
+          "old": "    sends_sampling: ClassVar[bool] = False\n",
+          "new": "    sends_sampling: ClassVar[bool] = True\n",
+          "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
+          "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Parallel calls are limited per server, per event loop",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_rate_limit.py",
+        "tests/unit/infrastructure/llm/test_servers.py",
+        "tests/integration/infrastructure/llm/test_server_settings_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "limit-keyed-by-kind",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py",
+          "symbol": "AsyncRateLimiterAdapter.__init__",
+          "old": "        self._key = key or wrapped.provider_name\n",
+          "new": "        self._key = wrapped.provider_name\n",
+          "breaks": "the GB10 and every other server of its kind share one set of slots",
+          "symbol_sha": "sha256:562c02771a098e29a34ff7bc3222e109d6b41d43177afeeb9bd5e876aaa6e1f4"
+        },
+        {
+          "id": "semaphore-shared-across-loops",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py",
+          "symbol": "AsyncRateLimiterAdapter._get_semaphore",
+          "old": "        per_loop = _SEMAPHORES.setdefault(asyncio.get_running_loop(), {})\n",
+          "new": "        per_loop = _SEMAPHORES.setdefault(asyncio.get_event_loop_policy(), {})\n",
+          "breaks": "a second event loop under contention fails with 'bound to a different event loop'",
+          "symbol_sha": "sha256:703ed74bc93c985c9a1059d78fb7caf4c03481b1f08eda6a88ee6b3329a2e83a"
+        },
+        {
+          "id": "server-limit-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/servers.py",
+          "symbol": "adapter_for_server",
+          "old": "    return AsyncRateLimiterAdapter(adapter, limit=server.max_parallel, key=name)\n",
+          "new": "    return AsyncRateLimiterAdapter(adapter, key=name)\n",
+          "breaks": "max_parallel in the settings file has no effect",
+          "symbol_sha": "sha256:afd19986e4f84bfb8f922d7bbd34743a75aabf1de3835aef278a8be73faa6693"
+        }
+      ]
     }
   ]
 }

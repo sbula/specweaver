@@ -11,8 +11,9 @@ provider_name, api_key_env_var, and default_costs as class attributes.
 from __future__ import annotations
 
 import logging
+import os
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,31 @@ class LLMAdapter(ABC):
     provider_name: str = ""
     api_key_env_var: str = ""
     default_costs: ClassVar[dict[str, CostEntry]] = {}
+    #: The provider's official address, used when none is given. Written out so that no SDK
+    #: environment variable (`OPENAI_BASE_URL`, ...) can redirect a call.
+    default_base_url: ClassVar[str | None] = None
+
+    def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
+        """Every adapter is built from a key and an address.
+
+        `api_key=None` reads the adapter's own variable; `""` means no key. `base_url=None` means the
+        provider's official address, and an adapter without one refuses. The client itself is
+        created on first use, so building an adapter never touches the network.
+        """
+        self._api_key = self._resolve_key(api_key)
+        self._base_url = self._resolve_base_url(base_url)
+        self._client: Any = None
+
+    def _resolve_key(self, api_key: str | None) -> str:
+        """The key given; `None` reads this adapter's variable; `""` means no key and reads nothing."""
+        return api_key if api_key is not None else os.environ.get(self.api_key_env_var, "")
+
+    def _resolve_base_url(self, base_url: str | None) -> str:
+        address = base_url or self.default_base_url
+        if not address:
+            msg = f"a {self.provider_name} server needs an address (base_url)"
+            raise ValueError(msg)
+        return address
 
     @abstractmethod
     async def generate(

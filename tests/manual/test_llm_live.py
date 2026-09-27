@@ -98,12 +98,13 @@ async def test_llm_live_mistral_connection() -> None:
 @pytest.mark.live
 @pytest.mark.asyncio
 async def test_llm_live_qwen_connection() -> None:
-    api_key = os.environ.get("QWEN_API_KEY")
-    if not api_key:
-        pytest.skip("QWEN_API_KEY not set.")
+    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    base_url = os.environ.get("DASHSCOPE_BASE_URL")
+    if not api_key or not base_url:
+        pytest.skip("DASHSCOPE_API_KEY and DASHSCOPE_BASE_URL (your workspace address) not set.")
     from specweaver.infrastructure.llm.adapters.qwen import QwenAdapter
 
-    adapter = QwenAdapter(api_key=api_key)
+    adapter = QwenAdapter(api_key=api_key, base_url=base_url)
     messages = [
         Message(
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."

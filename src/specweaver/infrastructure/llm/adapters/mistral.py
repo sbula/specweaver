@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
@@ -70,21 +69,17 @@ class MistralAdapter(LLMAdapter):
         "mistral-small-latest": CostEntry(0.00020, 0.00060),
     }
 
-    def __init__(self, api_key: str | None = None) -> None:
-        """Initialize the Mistral adapter."""
-        super().__init__()
-        self._api_key = api_key or os.environ.get(self.api_key_env_var, "")
-        self._client: Any = None
+    default_base_url: ClassVar[str | None] = "https://api.mistral.ai"
 
     def _get_client(self) -> Any:
         if self._client is None:
-            from mistralai import Mistral  # type: ignore
+            from mistralai.client import Mistral
 
-            self._client = Mistral(api_key=self._api_key)
+            self._client = Mistral(api_key=self._api_key, server_url=self._base_url)
         return self._client
 
     def _handle_error(self, e: Exception) -> None:
-        from mistralai.models import SDKError  # type: ignore
+        from mistralai.client.errors import SDKError
 
         if isinstance(e, SDKError):
             if e.status_code == 401:
