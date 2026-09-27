@@ -7,34 +7,22 @@ Provides data models and cost estimation for LLM usage tracking.
 The ``TelemetryCollector`` (in ``collector.py``) uses these to build
 ``UsageRecord`` instances; callers persist them via ``Database.log_usage()``.
 
-Cost defaults last updated: 2026-03-27.
 """
 
 from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import NamedTuple
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
 
+if TYPE_CHECKING:
+    from specweaver.core.config.llm_settings import ModelFacts
+
 logger = logging.getLogger(__name__)
-
-
-class CostEntry(NamedTuple):
-    """Per-model pricing: cost per 1,000 tokens (USD)."""
-
-    input_cost_per_1k: float
-    output_cost_per_1k: float
-
-
-def get_default_cost_table() -> dict[str, CostEntry]:
-    """Get the merged default pricing from all registered LLM adapters."""
-    from specweaver.infrastructure.llm.adapters.registry import get_merged_default_costs
-
-    return get_merged_default_costs()
 
 
 class UsageRecord(BaseModel):
@@ -53,41 +41,24 @@ class UsageRecord(BaseModel):
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
-    estimated_cost_usd: float = 0.0
+    estimated_cost_usd: float | None = None
     duration_ms: int = 0
     run_id: str = ""
 
 
-def estimate_cost(
-    model: str,
-    usage: TokenUsage,
-    overrides: dict[str, CostEntry] | None = None,
-) -> float:
-    """Estimate cost in USD for the given token usage.
+def estimate_cost(usage: TokenUsage, facts: ModelFacts | None) -> float | None:
+    """The call's cost in USD, or `None` when the model's price is not fully known.
 
-    Looks up ``model`` in *overrides* first (user-configured), then falls
-    back to ``DEFAULT_COST_TABLE``.  Returns ``0.0`` for unknown models.
-
-    Args:
-        model: Model identifier (e.g. ``"gemini-3-flash-preview"``).
-        usage: Token counts from the LLM response.
-        overrides: Optional user-configured cost table (loaded from DB).
-
-    Returns:
-        Estimated cost in USD.
+    Prices are USD per 1M tokens, from the catalogue (and the machine file's corrections). Unknown is
+    never reported as 0: a free model and an unpriced one are different facts.
     """
-    entry: CostEntry | None = None
-    if overrides:
-        entry = overrides.get(model)
-    if entry is None:
-        entry = get_default_cost_table().get(model)
-    if entry is None:
-        logger.warning("Unknown model %r; estimating 0.0 cost", model)
-        return 0.0
-
-    input_cost = (usage.prompt_tokens / 1000) * entry.input_cost_per_1k
-    output_cost = (usage.completion_tokens / 1000) * entry.output_cost_per_1k
-    return round(input_cost + output_cost, 8)
+    if facts is None:
+        return None
+    price_in, price_out = facts.usd_per_million_input, facts.usd_per_million_output
+    if price_in is None or price_out is None:
+        return None
+    cost = usage.prompt_tokens * price_in + usage.completion_tokens * price_out
+    return round(cost / 1_000_000, 8)
 
 
 def create_usage_record(
@@ -96,7 +67,7 @@ def create_usage_record(
     provider: str,
     project: str,
     duration_ms: int,
-    cost_overrides: dict[str, CostEntry] | None = None,
+    facts: ModelFacts | None = None,
 ) -> UsageRecord:
     """Build a ``UsageRecord`` from generation config and response.
 
@@ -106,7 +77,7 @@ def create_usage_record(
         provider: Provider name (e.g. ``"gemini"``).
         project: Project name for grouping.
         duration_ms: Wall-clock time of the call in milliseconds.
-        cost_overrides: Optional user-configured cost overrides.
+        facts: The requested model's catalogue facts, for its price; `None` if unknown.
 
     Returns:
         A fully populated ``UsageRecord``.
@@ -118,7 +89,7 @@ def create_usage_record(
         response.model,
         project,
     )
-    cost = estimate_cost(response.model, response.usage, cost_overrides)
+    cost = estimate_cost(response.usage, facts)
 
     return UsageRecord(
         timestamp=datetime.now(UTC).isoformat(),

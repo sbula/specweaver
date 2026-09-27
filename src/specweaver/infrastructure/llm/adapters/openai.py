@@ -16,7 +16,6 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +60,6 @@ class OpenAIAdapter(LLMAdapter):
 
     provider_name = "openai"
     api_key_env_var = "OPENAI_API_KEY"
-    default_costs: ClassVar[dict[str, CostEntry]] = {
-        "gpt-5.4": CostEntry(0.00250, 0.01000),
-        "gpt-5.4-mini": CostEntry(0.00015, 0.00060),
-        "gpt-4o": CostEntry(0.00250, 0.01000),
-    }
 
     default_base_url: ClassVar[str | None] = "https://api.openai.com/v1"
     #: The request field that caps output. OpenAI's also caps reasoning tokens; `max_tokens` is
@@ -301,7 +295,6 @@ class OpenAICompatibleAdapter(OpenAIAdapter):
 
     provider_name = "openai-compatible"
     api_key_env_var = ""
-    default_costs: ClassVar[dict[str, CostEntry]] = {}
     default_base_url: ClassVar[str | None] = None
     sends_sampling: ClassVar[bool] = True
 

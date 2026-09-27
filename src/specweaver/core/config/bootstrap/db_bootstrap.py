@@ -3,7 +3,7 @@
 
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import Connection, select
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import specweaver.workspace.memory.store  # noqa: F401
@@ -16,6 +16,27 @@ from specweaver.infrastructure.llm.store import LlmProfile
 from specweaver.workspace.store import Base as WorkspaceBase
 
 logger = logging.getLogger(__name__)
+
+
+def _allow_unknown_cost(conn: Connection) -> None:
+    """Rebuild `llm_usage_log` if its cost column still refuses NULL. Keeps every row. Idempotent.
+
+    A call to a model without a known price records its cost as unknown. Tables made before that
+    declared the column NOT NULL, and SQLite cannot change a column, so the table is rebuilt. Alembic
+    does not run at start-up, so this is where an existing database is brought up to date.
+    """
+    columns = conn.exec_driver_sql("PRAGMA table_info(llm_usage_log)").fetchall()
+    if not any(col[1] == "estimated_cost" and col[3] == 1 for col in columns):
+        return
+    names = ", ".join(col[1] for col in columns)
+    old = "_llm_usage_log_before_unknown_cost"
+    conn.exec_driver_sql(f"ALTER TABLE llm_usage_log RENAME TO {old}")
+    for index in conn.exec_driver_sql(f"PRAGMA index_list({old})").fetchall():
+        if not index[1].startswith("sqlite_autoindex"):
+            conn.exec_driver_sql(f"DROP INDEX {index[1]}")
+    LlmBase.metadata.tables["llm_usage_log"].create(conn)
+    conn.exec_driver_sql(f"INSERT INTO llm_usage_log ({names}) SELECT {names} FROM {old}")
+    conn.exec_driver_sql(f"DROP TABLE {old}")
 
 
 def bootstrap_database(db_path: str) -> None:
@@ -37,6 +58,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(WorkspaceBase.metadata.create_all)
             await conn.run_sync(LlmBase.metadata.create_all)
             await conn.run_sync(FlowBase.metadata.create_all)
+            await conn.run_sync(_allow_unknown_cost)
 
         # Seed default LLM profiles if empty
         async with session_scope(engine) as session:

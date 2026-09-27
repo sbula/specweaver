@@ -36,6 +36,7 @@ A test that genuinely wants colour sets it back for its own duration — see
 from __future__ import annotations
 
 import os
+import tempfile
 from typing import TYPE_CHECKING
 
 import pytest
@@ -45,6 +46,12 @@ from tests.fake_http import block_real_httpx2
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+# The suite never touches the user's real `~/.specweaver/`: its settings file, its database and its
+# pipeline state. Measured 2026-09-27: without this, a test that did not isolate itself wrote a price
+# into the real `settings.toml` and rebuilt a table of the real `specweaver.db`. Set at import time,
+# before anything resolves the data root; a test that sets its own directory still overrides it.
+os.environ["SPECWEAVER_DATA_DIR"] = tempfile.mkdtemp(prefix="specweaver-tests-")
 
 os.environ["NO_COLOR"] = "1"  # Rich: the CLI's own output
 os.environ["PY_COLORS"] = "0"  # pytest: its terminal writer, and anything parsing it

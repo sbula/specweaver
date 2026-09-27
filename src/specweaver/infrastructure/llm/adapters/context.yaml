@@ -8,7 +8,7 @@ purpose: >
 
 description: |
   Concrete LLM provider adapters with auto-discovery registry.
-  Each adapter is self-describing (provider_name, api_key_env_var, default_costs).
+  Each adapter is self-describing (provider_name, api_key_env_var).
   Adding a new provider = one file, zero other changes.
 
 archetype: adapter
@@ -30,7 +30,6 @@ exposes:
   - QwenAdapter
   - get_all_adapters
   - get_adapter_class
-  - get_merged_default_costs
 
 # -- Operational Metadata --------------------------------------------------
 operational:

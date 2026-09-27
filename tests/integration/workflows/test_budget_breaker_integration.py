@@ -24,16 +24,16 @@ from typing import Any
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.budget import BudgetExceededError, SpendBudget
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
-from specweaver.infrastructure.llm.telemetry import CostEntry
 from specweaver.workflows.review.reviewer import Reviewer, ReviewVerdict
 
 pytestmark = pytest.mark.integration
 
 #: One call costs $2 at these rates, so a $1 ceiling is spent by the first one.
-PRICED = {"stub-model": CostEntry(1.0, 1.0)}
+PRICED = {"stub-model": ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)}
 
 
 class _Adapter:
@@ -60,7 +60,7 @@ class _Adapter:
 
 def _reviewer(adapter: _Adapter, limit: float) -> Reviewer:
     collector = TelemetryCollector(
-        adapter, "proj", cost_overrides=PRICED, budget=SpendBudget(limit_usd=limit)
+        adapter, "proj", prices=PRICED.get, budget=SpendBudget(limit_usd=limit)
     )
     return Reviewer(llm=collector, config=GenerationConfig(model="stub-model"))
 

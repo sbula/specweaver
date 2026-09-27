@@ -198,7 +198,8 @@ def draft(
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project, llm_role="draft")
-        settings, adapter = build_adapter_for_project(db, settings, project)
+        machine_models = _core.load_active_llm_settings(project).machine.models
+        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -301,7 +302,8 @@ def review(
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project)
-        settings, adapter = build_adapter_for_project(db, settings, project)
+        machine_models = _core.load_active_llm_settings(project).machine.models
+        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

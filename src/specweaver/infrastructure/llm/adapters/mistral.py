@@ -13,7 +13,6 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 logger = logging.getLogger(__name__)
 
@@ -86,12 +85,6 @@ class MistralAdapter(LLMAdapter):
 
     provider_name = "mistral"
     api_key_env_var = "MISTRAL_API_KEY"
-    default_costs: ClassVar[dict[str, CostEntry]] = {
-        "mistral-small-4": CostEntry(0.00020, 0.00060),
-        "mistral-large-3": CostEntry(0.00200, 0.00600),
-        "mistral-large-latest": CostEntry(0.00200, 0.00600),
-        "mistral-small-latest": CostEntry(0.00020, 0.00060),
-    }
 
     default_base_url: ClassVar[str | None] = "https://api.mistral.ai"
 

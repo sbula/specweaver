@@ -20,10 +20,10 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.budget import BudgetExceededError, SpendBudget
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -59,14 +59,14 @@ class _StubAdapter:
         yield "ok"
 
 
-#: The stub model is absent from the shipped cost table, which prices it at $0.00. Naming a
-#: rate here keeps these tests about the breaker rather than about what is in the table.
-PRICED = {"stub-model": CostEntry(1.0, 1.0)}
+#: The stub model is absent from the catalogue, so its cost would be unknown. Naming a rate
+#: here keeps these tests about the breaker rather than about what the catalogue holds.
+PRICED = {"stub-model": ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)}
 
 
 def _collector(adapter: _StubAdapter, limit: float | None) -> TelemetryCollector:
     return TelemetryCollector(
-        adapter, "proj", cost_overrides=PRICED, budget=SpendBudget(limit_usd=limit)
+        adapter, "proj", prices=PRICED.get, budget=SpendBudget(limit_usd=limit)
     )
 
 

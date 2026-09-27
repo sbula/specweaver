@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,
     LLMResponse,
@@ -134,30 +135,6 @@ def _get_estimated_cost_sync(db, project: str) -> float:
     return _sync_or_async(_do())
 
 
-def _set_cost_override_sync(db, model: str, prompt: float, completion: float):
-    from specweaver.infrastructure.llm.store import LlmRepository
-    from tests.fixtures.db_utils import _sync_or_async
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, prompt, completion)
-
-    _sync_or_async(_do())
-
-
-def _get_cost_overrides_sync(db):
-    from specweaver.infrastructure.llm.store import LlmRepository
-    from tests.fixtures.db_utils import _sync_or_async
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.get_cost_overrides()
-
-    return _sync_or_async(_do())
-
-
 class TestFullPipelineE2E:
     """Factory → wrapped adapter → generate → flush → query."""
 
@@ -174,11 +151,8 @@ class TestFullPipelineE2E:
             return_value=FakeGeminiAdapter,
         ):
             settings = load_settings(db, "e2e-proj", llm_role="default")
-            overrides = _get_cost_overrides_sync(db)
             _settings, adapter, gen_config = create_llm_adapter(
-                settings,
-                telemetry_project="e2e-proj",
-                cost_overrides=overrides,
+                settings, telemetry_project="e2e-proj"
             )
 
         assert isinstance(adapter, TelemetryCollector)
@@ -215,31 +189,30 @@ class TestFullPipelineE2E:
 # ---------------------------------------------------------------------------
 
 
+_PRICE = ModelFacts(usd_per_million_input=100_000.0, usd_per_million_output=200_000.0)
+
+
 class TestCostOverrideLifecycleE2E:
-    """Set override → factory loads → generate → flush → verify cost."""
+    """A machine-file price → factory → generate → flush → the stored cost uses it."""
 
     @pytest.mark.asyncio
     @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_cost_override_affects_persisted_cost(self, db):
-        """Story 30: override pricing flows through entire pipeline to DB."""
+        """Story 30: the machine file's price flows through the whole pipeline to the DB."""
+        # A very high price in the machine file, so it is plainly the one used
+        from specweaver.core.config.bootstrap.settings_loader import load_settings
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        # Set a very high cost override so we can verify it's used
-        _set_cost_override_sync(db, "gemini-2.5-pro", 100.0, 200.0)
-
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
 
         with patch(
             "specweaver.infrastructure.llm.factory._get_adapter_class",
             return_value=FakeGeminiAdapter,
         ):
             settings = load_settings(db, "e2e-proj", llm_role="default")
-            overrides = _get_cost_overrides_sync(db)
             _settings, adapter, gen_config = create_llm_adapter(
                 settings,
                 telemetry_project="e2e-proj",
-                cost_overrides=overrides,
+                machine_models={"gemini-2.5-pro": _PRICE},
             )
 
         assert isinstance(adapter, TelemetryCollector)
@@ -255,5 +228,5 @@ class TestCostOverrideLifecycleE2E:
         # Flush → DB
         adapter.flush(db)
 
-        # Verify cost: (500/1000)*100 + (200/1000)*200 = 50 + 40 = 90
+        # Verify cost: 500 * 100_000/1M + 200 * 200_000/1M = 50 + 40 = 90
         assert _get_estimated_cost_sync(db, "e2e-proj") == pytest.approx(90.0)

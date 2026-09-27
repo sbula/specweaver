@@ -18,6 +18,9 @@ from typing import TYPE_CHECKING, Any
 from specweaver.infrastructure.llm.errors import LLMAdapterError as LLMAdapterError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from specweaver.core.config.llm_settings import ModelFacts
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import GenerationConfig
 
@@ -36,56 +39,25 @@ def _get_adapter_class(provider: str) -> Any:
         ) from e
 
 
-def build_adapter_for_project(db: Any, settings: Any, project: str) -> tuple[Any, Any]:
-    """A telemetry-attributed adapter for `project`, priced from the user's own rates.
+def build_adapter_for_project(
+    db: Any, settings: Any, project: str, machine_models: Mapping[str, ModelFacts] | None = None
+) -> tuple[Any, Any]:
+    """A telemetry-attributed adapter for `project`, priced from the catalogue and the user's own
+    corrections in the machine settings file.
 
-    One call site for `sw implement` and both `sw review` paths. As copies they each have to
-    remember `cost_overrides`, and a copy that forgets prices the run from the built-in table — or
-    at `0.0` for a model absent from it — while `sw costs` still echoes back the rate the user set.
-
-    Deliberately narrow. Two things that looked shareable are not, and `tach` said so rather than
-    a reviewer: loading settings would drag `core.config.bootstrap` into `llm`, and turning
-    `LLMAdapterError` / `ValueError` into a message and an exit code is presentation. Both stay at
-    the call site. What is left is the part that was actually wrong everywhere.
+    `db` stays in the signature for the callers until they move to the one resolver.
     """
-    return create_llm_adapter(
-        settings,
-        telemetry_project=project,
-        cost_overrides=load_cost_overrides(db),
-    )[:2]
-
-
-def load_cost_overrides(db: Any) -> dict[str, tuple[float, float]]:
-    """User-configured model rates from `llm_cost_overrides`, or `{}` if unreadable.
-
-    `create_llm_adapter` accepts `cost_overrides`, and this is what supplies it. Without it a rate
-    set with `sw costs set` is echoed back by `sw costs` and then ignored by every run, which prices
-    from the built-in table instead, or at `0.0` for a model absent from it.
-
-    Never raises: a pricing table that fails to load must not stop a run, for the same reason
-    `TelemetryCollector.flush` swallows its own failures. Telemetry observes the work; it is never
-    a precondition for it.
-    """
-    import anyio
-
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _read() -> dict[str, tuple[float, float]]:
-        async with db.async_session_scope() as session:
-            return await LlmRepository(session).get_cost_overrides()
-
-    try:
-        return anyio.run(_read)
-    except Exception:
-        logger.warning("Could not load cost overrides; falling back to default pricing")
-        return {}
+    del db
+    return create_llm_adapter(settings, telemetry_project=project, machine_models=machine_models)[
+        :2
+    ]
 
 
 def create_llm_adapter(
     settings: SpecWeaverSettings,
     *,
     telemetry_project: str | None = None,
-    cost_overrides: dict[str, tuple[float, float]] | None = None,
+    machine_models: Mapping[str, ModelFacts] | None = None,
 ) -> tuple[SpecWeaverSettings, Any, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
@@ -97,7 +69,6 @@ def create_llm_adapter(
         settings: Pre-loaded SpecWeaverSettings.
         telemetry_project: If set, wraps the adapter in a
             ``TelemetryCollector`` for this project.
-        cost_overrides: Optional cost overrides for telemetry.
 
     Returns:
         Tuple of (settings, adapter_or_collector, generation_config).
@@ -132,18 +103,16 @@ def create_llm_adapter(
 
     # Wrap in telemetry collector if project is specified
     if telemetry_project:
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.telemetry import CostEntry
-
-        overrides = (
-            {k: CostEntry(*v) for k, v in cost_overrides.items()} if cost_overrides else None
-        )
         from specweaver.infrastructure.llm.budget import SpendBudget
+        from specweaver.infrastructure.llm.catalogue import shipped_catalogue
+        from specweaver.infrastructure.llm.collector import TelemetryCollector
 
+        provider = settings.llm.provider
+        corrections = machine_models or {}
         adapter = TelemetryCollector(
             adapter,
             telemetry_project,
-            overrides,
+            lambda model: shipped_catalogue().facts(provider, model, corrections),
             budget=SpendBudget(
                 limit_usd=settings.llm.max_spend_usd,
                 token_limit=settings.llm.max_tokens_per_run,

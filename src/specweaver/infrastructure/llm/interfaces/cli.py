@@ -6,22 +6,39 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 import anyio
 import typer
 from rich.table import Table
 
+from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+from specweaver.core.config.bootstrap.llm_settings_writer import clear_model_price, set_model_price
+from specweaver.core.config.llm_settings import (
+    SettingsFileError,
+    format_money,
+    resolve_roles,
+    to_usd,
+)
+from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import get_default_cost_table
 from specweaver.interfaces.cli import _core
+
+if TYPE_CHECKING:
+    from specweaver.core.config.llm_settings import (
+        Currency,
+        LlmSettingsFiles,
+        ModelFacts,
+        ResolvedRole,
+    )
 
 logger = logging.getLogger(__name__)
 
 
 costs_app = typer.Typer(
     name="costs",
-    help="View and manage LLM cost overrides.",
+    help="Model prices and this month's spend, in your currency.",
     invoke_without_command=True,
 )
 # costs_app will be mounted by main.py
@@ -29,92 +46,125 @@ costs_app = typer.Typer(
 
 @costs_app.callback(invoke_without_command=True)
 def costs(ctx: typer.Context) -> None:
-    """Show current cost settings (defaults + overrides).
-
-    Displays built-in default pricing and any user-configured overrides.
-    """
+    """Show each model your roles use: its price per 1M tokens and this month's spend."""
     if ctx.invoked_subcommand is not None:
         return
-
-    db = _core.get_db()
-
-    async def _costs_view() -> None:
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            overrides = await repo.get_cost_overrides()
-
-            table = Table(title="LLM Cost Configuration")
-            table.add_column("Model", style="cyan")
-            table.add_column("Input $/1k tokens", justify="right")
-            table.add_column("Output $/1k tokens", justify="right")
-            table.add_column("Source", style="dim")
-
-            default_table = get_default_cost_table()
-
-            # Show defaults
-            for model, entry in sorted(default_table.items()):
-                if model in overrides:
-                    inp, out = overrides[model]
-                    source = "override"
-                else:
-                    inp, out = entry.input_cost_per_1k, entry.output_cost_per_1k
-                    source = "default"
-                table.add_row(model, f"${inp:.5f}", f"${out:.5f}", source)
-
-            # Show overrides not in defaults
-            for model, (inp, out) in sorted(overrides.items()):
-                if model not in default_table:
-                    table.add_row(model, f"${inp:.5f}", f"${out:.5f}", "override")
-
-            _core.console.print(table)
-
-    anyio.run(_costs_view)
+    project = _core._require_active_project()
+    files = _core.load_active_llm_settings(project)
+    try:
+        roles = resolve_roles(files)
+    except SettingsFileError as err:
+        _core.console.print("Error:", str(err), style="red", markup=False, highlight=False)
+        raise typer.Exit(code=1) from err
+    currency = files.machine.currency
+    _say(_currency_line(currency))
+    spend = _month_spend(project)
+    for (model, server), role_names in sorted(_models_in_use(roles).items()):
+        kind = files.machine.servers[server].kind
+        facts = shipped_catalogue().facts(kind, model, files.machine.models)
+        price_in = facts.usd_per_million_input if facts else None
+        price_out = facts.usd_per_million_output if facts else None
+        spent, unpriced = spend.get(model, (None, 0))
+        month = format_money(spent or 0.0, currency) + (
+            f" + {unpriced} unknown" if unpriced else ""
+        )
+        _say(
+            f"{model}@{server} ({', '.join(role_names)}): "
+            f"input {format_money(price_in, currency, places=4)}, "
+            f"output {format_money(price_out, currency, places=4)} per 1M tokens"
+            f" — {_price_source(model, facts, files)}; this month {month}"
+        )
 
 
 @costs_app.command("set")
 def costs_set(
-    model: str = typer.Argument(help="Model name or pattern."),
-    input_cost: float = typer.Argument(help="Cost per 1,000 input tokens (USD)."),
-    output_cost: float = typer.Argument(help="Cost per 1,000 output tokens (USD)."),
+    model: str = typer.Argument(help="Model name, as a role names it."),
+    input_price: float = typer.Argument(help="Price per 1M input tokens, in your currency."),
+    output_price: float = typer.Argument(help="Price per 1M output tokens, in your currency."),
 ) -> None:
-    """Set a cost override for a model.
+    """Set a model's price in the machine settings file.
 
-    Example: sw costs set gpt-4o 0.0025 0.01
+    Example: sw costs set qwen3-coder-next 0.8 1.6
     """
-    db = _core.get_db()
-
-    async def _costs_set() -> None:
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, input_cost, output_cost)
-
-    anyio.run(_costs_set)
-    _core.console.print(
-        f"[green]\u2713[/green] Cost override set for [bold]{model}[/bold]: "
-        f"input=${input_cost:.5f}/1k, output=${output_cost:.5f}/1k",
+    currency = _machine_currency()
+    try:
+        path = set_model_price(model, to_usd(input_price, currency), to_usd(output_price, currency))
+    except SettingsFileError as err:
+        _core.console.print("Error:", str(err), style="red", markup=False, highlight=False)
+        raise typer.Exit(code=1) from err
+    code = currency.code if currency else "USD"
+    _say(
+        f"Price for {model}: input {code} {input_price}, output {code} {output_price} per 1M tokens ({path})"
     )
 
 
 @costs_app.command("reset")
 def costs_reset(
-    model: str = typer.Argument(help="Model name or pattern to reset."),
+    model: str = typer.Argument(help="Model whose price to remove."),
 ) -> None:
-    """Remove a cost override, reverting to built-in pricing.
+    """Remove a model's price from the machine settings file; the catalogue's applies again.
 
-    Example: sw costs reset gpt-4o
+    Example: sw costs reset qwen3-coder-next
     """
+    if clear_model_price(model):
+        _say(f"Price for {model} removed; the catalogue's price applies.")
+    else:
+        _say(f"No price was set for {model}.")
+
+
+def _say(line: str) -> None:
+    _core.console.print(line, markup=False, highlight=False)
+
+
+def _currency_line(currency: Currency | None) -> str:
+    if currency is None:
+        return "Amounts in USD — no [currency] set in the machine settings file."
+    return (
+        f"Amounts in {currency.code}, {currency.per_usd:g} per USD, rate of {currency.rate_date}."
+    )
+
+
+def _machine_currency() -> Currency | None:
+    try:
+        return load_llm_settings(None).machine.currency
+    except SettingsFileError as err:
+        _core.console.print("Error:", str(err), style="red", markup=False, highlight=False)
+        raise typer.Exit(code=1) from err
+
+
+def _models_in_use(roles: dict[str, ResolvedRole]) -> dict[tuple[str, str], list[str]]:
+    used: dict[tuple[str, str], list[str]] = {}
+    for name, setting in sorted(roles.items()):
+        used.setdefault((setting.model, setting.server), []).append(name)
+    return used
+
+
+def _price_source(model: str, facts: ModelFacts | None, files: LlmSettingsFiles) -> str:
+    own = files.machine.models.get(model)
+    if own is not None and own.usd_per_million_input is not None:
+        return "your settings file"
+    if facts is not None and facts.usd_per_million_input is not None:
+        return "catalogue"
+    return "no price known"
+
+
+def _month_spend(project: str) -> dict[str, tuple[float | None, int]]:
+    """This calendar month's spend per model (UTC): USD known, and how many calls had no price."""
+    now = datetime.now(UTC)
+    since = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     db = _core.get_db()
 
-    async def _costs_reset() -> None:
+    async def _read() -> list[dict[str, Any]]:
         async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.delete_cost_override(model)
+            return await LlmRepository(session).get_usage_summary(project=project, since=since)
 
-    anyio.run(_costs_reset)
-    _core.console.print(
-        f"[green]\u2713[/green] Cost override removed for [bold]{model}[/bold] "
-        "(reverted to defaults).",
-    )
+    spend: dict[str, tuple[float | None, int]] = {}
+    for row in anyio.run(_read):
+        spent, unpriced = spend.get(row["model"], (None, 0))
+        if row["total_cost"] is not None:
+            spent = (spent or 0.0) + row["total_cost"]
+        spend[row["model"]] = (spent, unpriced + (row["unpriced_calls"] or 0))
+    return spend
 
 
 usage_app = typer.Typer(
@@ -182,6 +232,7 @@ def usage(
     by task type and model.
     """
     db = _core.get_db()
+    currency = _machine_currency()
 
     project: str | None = None
     if not all_projects:
@@ -200,13 +251,14 @@ def usage(
             repo = LlmRepository(session)
             rows = await repo.get_usage_summary(project=project, since=parsed_since)
 
+            code = currency.code if currency else "USD"
             if not rows:
                 label = f" for [bold]{project}[/bold]" if project else ""
                 _core.console.print(f"[dim]No usage data recorded{label}.[/dim]")
                 return
 
             table = Table(
-                title=f"LLM Usage — {project or 'all projects'}",
+                title=f"LLM Usage — {project or 'all projects'} ({code})",
             )
             table.add_column("Task Type", style="cyan")
             table.add_column("Model")
@@ -214,7 +266,7 @@ def usage(
             table.add_column("Prompt Tokens", justify="right")
             table.add_column("Completion Tokens", justify="right")
             table.add_column("Total Tokens", justify="right")
-            table.add_column("Cost (USD)", justify="right", style="green")
+            table.add_column(f"Cost ({code})", justify="right")
             table.add_column("Duration (s)", justify="right")
 
             for r in rows:
@@ -226,10 +278,19 @@ def usage(
                     f"{r['total_prompt_tokens'] or 0:,}",
                     f"{r['total_completion_tokens'] or 0:,}",
                     f"{r['total_tokens'] or 0:,}",
-                    f"${r['total_cost'] or 0:.6f}",
+                    _usage_cost(r, currency),
                     f"{duration_s:.1f}",
                 )
 
             _core.console.print(table)
 
     anyio.run(_get_usage)
+
+
+def _usage_cost(row: dict[str, Any], currency: Currency | None) -> str:
+    """The row's known cost, and how many of its calls had no price — never 0 for unknown."""
+    unpriced = row["unpriced_calls"] or 0
+    if row["total_cost"] is None:
+        return "unknown" if unpriced else format_money(0.0, currency, places=4)
+    known = format_money(row["total_cost"], currency, places=4)
+    return f"{known} + {unpriced} unknown" if unpriced else known

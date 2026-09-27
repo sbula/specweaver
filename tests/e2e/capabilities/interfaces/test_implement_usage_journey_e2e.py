@@ -122,18 +122,18 @@ def _total_token_cells(output: str) -> list[int]:
 
 
 def _cost_cells(output: str) -> list[str]:
-    """Every `Cost (USD)` cell in a rendered `sw usage` table, as printed.
+    """Every cost cell in a rendered `sw usage` table, as printed (`USD …` or `unknown`).
 
-    Returned raw rather than parsed: Rich truncates the column, so `$0.00000` and `$12408.0` both
-    arrive shortened. The LEADING characters survive, which is why FR-4's rate is chosen large
-    enough that a priced row and an unpriced one differ in their first two characters.
+    Returned raw rather than parsed: Rich truncates the column, so `USD 0.0000` and `USD 12408.0`
+    both arrive shortened. The LEADING characters survive, which is why FR-4's rate is chosen large
+    enough that a priced row and a zero one differ in their first five characters.
     """
     found: list[str] = []
     for line in output.splitlines():
         if not line.startswith("│"):
             continue
         cells = [c.strip() for c in line.strip("│").split("│")]
-        found.extend(c for c in cells if c.startswith("$"))
+        found.extend(c for c in cells if c.startswith(("USD", "unknown")))
     return found
 
 
@@ -223,16 +223,16 @@ class TestConfiguredRateReachesTheRun:
     or `0.0` for a model absent from it, with the fact buried in a `logger.warning`.
     """
 
-    #: Large on purpose. Rich truncates the Cost column, so `$0.00000` and a priced figure must
-    #: differ in their FIRST characters to be told apart at any terminal width.
-    _RATE_PER_1K = 1000.0
+    #: USD per 1M tokens, large on purpose. Rich truncates the Cost column, so `USD 0.0000` and a
+    #: priced figure must differ in their first characters to be told apart at any width.
+    _RATE_PER_1M = 1_000_000.0
 
     def test_the_rate_the_user_set_is_the_rate_that_is_reported(self, tmp_path: Path) -> None:
         """[Happy] `sw costs set` → `sw implement` → `sw usage` shows a priced, non-zero cost."""
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
         priced = runner.invoke(
-            app, ["costs", "set", _MODEL, str(self._RATE_PER_1K), str(self._RATE_PER_1K)]
+            app, ["costs", "set", _MODEL, str(self._RATE_PER_1M), str(self._RATE_PER_1M)]
         )
         assert priced.exit_code == 0, priced.output
 
@@ -254,6 +254,6 @@ class TestConfiguredRateReachesTheRun:
 
         costs = _cost_cells(usage.output)
         assert costs, f"no Cost cell parsed from:\n{usage.output}"
-        assert all(not c.startswith("$0") for c in costs), (
+        assert all(c.startswith("USD") and not c.startswith("USD 0") for c in costs), (
             f"the configured rate never reached the run — costs read {costs}"
         )

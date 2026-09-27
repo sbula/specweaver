@@ -18,7 +18,6 @@ class TestMistralAdapter:
         adapter = MistralAdapter(api_key="test")
         assert adapter.provider_name == "mistral"
         assert adapter.api_key_env_var == "MISTRAL_API_KEY"
-        assert "mistral-small-4" in MistralAdapter.default_costs
 
     def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("MISTRAL_API_KEY", "test")

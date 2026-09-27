@@ -8,13 +8,9 @@ from __future__ import annotations
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
-from specweaver.infrastructure.llm.telemetry import (
-    CostEntry,
-    create_usage_record,
-    estimate_cost,
-    get_default_cost_table,
-)
+from specweaver.infrastructure.llm.telemetry import create_usage_record, estimate_cost
 
 
 class TestTaskTypeEnum:
@@ -35,64 +31,26 @@ class TestTaskTypeEnum:
 
 
 class TestEstimateCost:
-    """estimate_cost() tests."""
+    """Prices are USD per 1M tokens, from the catalogue; an unknown price is unknown, never 0."""
 
-    def test_known_model_returns_nonzero(self):
+    def test_a_known_price_is_per_million_tokens(self):
+        facts = ModelFacts(usd_per_million_input=3.0, usd_per_million_output=15.0)
         usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
-        cost = estimate_cost("gemini-3-flash-preview", usage)
-        assert cost > 0
 
-    def test_known_model_correct_calculation(self):
-        """Verify math: (1000/1000)*0.0001 + (500/1000)*0.0004 = 0.0003."""
-        usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
-        cost = estimate_cost("gemini-3-flash-preview", usage)
-        assert cost == pytest.approx(0.0003, abs=1e-8)
+        assert estimate_cost(usage, facts) == pytest.approx(0.003 + 0.0075)
 
-    def test_unknown_model_returns_zero(self):
-        usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
-        cost = estimate_cost("some-unknown-model-xyz", usage)
-        assert cost == 0.0
+    def test_a_free_model_costs_zero(self):
+        facts = ModelFacts(usd_per_million_input=0.0, usd_per_million_output=0.0)
 
-    def test_zero_tokens_returns_zero(self):
-        usage = TokenUsage(prompt_tokens=0, completion_tokens=0)
-        cost = estimate_cost("gemini-3-flash-preview", usage)
-        assert cost == 0.0
+        assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), facts) == 0.0
 
-    def test_override_takes_precedence(self):
-        usage = TokenUsage(prompt_tokens=1000, completion_tokens=1000)
-        overrides = {"gemini-3-flash-preview": CostEntry(1.0, 2.0)}
-        cost = estimate_cost("gemini-3-flash-preview", usage, overrides=overrides)
-        # (1000/1000)*1.0 + (1000/1000)*2.0 = 3.0
-        assert cost == pytest.approx(3.0)
+    def test_an_unknown_model_has_an_unknown_cost(self):
+        assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), None) is None
 
-    def test_override_for_unknown_model(self):
-        """Override can add pricing for models not in DEFAULT_COST_TABLE."""
-        usage = TokenUsage(prompt_tokens=100, completion_tokens=100)
-        overrides = {"my-custom-model": CostEntry(0.5, 1.0)}
-        cost = estimate_cost("my-custom-model", usage, overrides=overrides)
-        # (100/1000)*0.5 + (100/1000)*1.0 = 0.15
-        assert cost == pytest.approx(0.15)
+    def test_half_a_price_is_an_unknown_cost(self):
+        facts = ModelFacts(usd_per_million_input=3.0)
 
-    def test_empty_overrides_falls_through(self):
-        usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
-        cost = estimate_cost("gemini-3-flash-preview", usage, overrides={})
-        assert cost > 0  # Falls through to get_default_cost_table()
-
-
-class TestCostTableStructure:
-    """get_default_cost_table() integrity."""
-
-    def test_all_entries_are_cost_entries(self):
-        for model, entry in get_default_cost_table().items():
-            assert isinstance(entry, CostEntry), f"{model} is not a CostEntry"
-
-    def test_all_entries_have_positive_costs(self):
-        for model, entry in get_default_cost_table().items():
-            assert entry.input_cost_per_1k > 0, f"{model} input cost <= 0"
-            assert entry.output_cost_per_1k > 0, f"{model} output cost <= 0"
-
-    def test_table_not_empty(self):
-        assert len(get_default_cost_table()) >= 5  # At least 5 models
+        assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), facts) is None
 
 
 class TestCreateUsageRecord:
@@ -109,7 +67,8 @@ class TestCreateUsageRecord:
             model="gemini-3-flash-preview",
             usage=TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
         )
-        record = create_usage_record(config, response, "gemini", "myproject", 1234)
+        facts = ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0)
+        record = create_usage_record(config, response, "gemini", "myproject", 1234, facts)
         assert record.timestamp  # Non-empty ISO string
         assert record.project_name == "myproject"
         assert record.task_type == "review"
@@ -118,7 +77,7 @@ class TestCreateUsageRecord:
         assert record.prompt_tokens == 100
         assert record.completion_tokens == 50
         assert record.total_tokens == 150
-        assert record.estimated_cost_usd > 0
+        assert record.estimated_cost_usd == pytest.approx(100 / 1e6 * 1.0 + 50 / 1e6 * 2.0)
         assert record.duration_ms == 1234
         assert record.run_id == "test-run-123"
 
@@ -152,24 +111,18 @@ class TestCreateUsageRecord:
         assert "estimated_cost_usd" in d
         assert d["task_type"] == "draft"
 
-    def test_cost_overrides_applied(self):
+    def test_the_price_comes_from_the_facts_given(self):
         config = GenerationConfig(model="my-model", task_type=TaskType.CHECK)
         response = LLMResponse(
             text="",
             model="my-model",
             usage=TokenUsage(prompt_tokens=1000, completion_tokens=1000, total_tokens=2000),
         )
-        overrides = {"my-model": CostEntry(10.0, 20.0)}
-        record = create_usage_record(
-            config,
-            response,
-            "custom",
-            "proj",
-            100,
-            cost_overrides=overrides,
-        )
-        # (1000/1000)*10 + (1000/1000)*20 = 30
-        assert record.estimated_cost_usd == pytest.approx(30.0)
+        facts = ModelFacts(usd_per_million_input=10.0, usd_per_million_output=20.0)
+
+        record = create_usage_record(config, response, "custom", "proj", 100, facts)
+
+        assert record.estimated_cost_usd == pytest.approx(0.03)
 
     def test_zero_token_response(self):
         """create_usage_record with zero tokens produces zero cost."""
@@ -179,9 +132,18 @@ class TestCreateUsageRecord:
             model="gemini-3-flash-preview",
             usage=TokenUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
-        record = create_usage_record(config, response, "gemini", "proj", 42)
+        facts = ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0)
+        record = create_usage_record(config, response, "gemini", "proj", 42, facts)
         assert record.prompt_tokens == 0
         assert record.completion_tokens == 0
         assert record.total_tokens == 0
         assert record.estimated_cost_usd == 0.0
         assert record.duration_ms == 42
+
+    def test_without_a_price_the_record_says_unknown(self):
+        config = GenerationConfig(model="qwen3-coder-next")
+        response = LLMResponse(text="", model="qwen3-coder-next", usage=TokenUsage(total_tokens=9))
+
+        record = create_usage_record(config, response, "openai-compatible", "proj", 0)
+
+        assert record.estimated_cost_usd is None

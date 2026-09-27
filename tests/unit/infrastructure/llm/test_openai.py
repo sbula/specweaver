@@ -19,7 +19,6 @@ class TestOpenAIAdapter:
         adapter = OpenAIAdapter(api_key="test-key")
         assert adapter.provider_name == "openai"
         assert adapter.api_key_env_var == "OPENAI_API_KEY"
-        assert "gpt-5.4" in OpenAIAdapter.default_costs
 
     def test_available_with_key(self) -> None:
         adapter = OpenAIAdapter(api_key="test")

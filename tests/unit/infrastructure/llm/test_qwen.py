@@ -17,7 +17,6 @@ class TestQwenAdapter:
         adapter = QwenAdapter(api_key="test", base_url=_ADDRESS)
         assert adapter.provider_name == "qwen"
         assert adapter.api_key_env_var == "DASHSCOPE_API_KEY"
-        assert "qwen3-max" in QwenAdapter.default_costs
 
     def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DASHSCOPE_API_KEY", "test")

@@ -17,7 +17,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import click
 import pytest
 
+from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.core.config.settings import SandboxSettings
+
+#: No settings files: the commands under test price from the catalogue alone.
+_NO_SETTINGS = LlmSettingsFiles.from_texts(
+    machine_text="", machine_source="-", project_text="", project_source="-"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -66,6 +72,10 @@ class TestReviewCommandFlush:
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch(
+                "specweaver.interfaces.cli._core.load_active_llm_settings",
+                return_value=_NO_SETTINGS,
+            ),
             patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
@@ -125,6 +135,10 @@ class TestImplementCommandFlush:
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch(
+                "specweaver.interfaces.cli._core.load_active_llm_settings",
+                return_value=_NO_SETTINGS,
+            ),
             patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
@@ -178,6 +192,10 @@ class TestDraftCommandFlush:
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch(
+                "specweaver.interfaces.cli._core.load_active_llm_settings",
+                return_value=_NO_SETTINGS,
+            ),
             patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",

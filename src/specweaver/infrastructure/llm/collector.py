@@ -22,11 +22,12 @@ from specweaver.commons.async_bridge import run_sync
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import CostEntry, UsageRecord, create_usage_record
+from specweaver.infrastructure.llm.telemetry import UsageRecord, create_usage_record
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable
 
+    from specweaver.core.config.llm_settings import ModelFacts
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
 
@@ -43,19 +44,20 @@ class TelemetryCollector:
     Args:
         adapter: The LLMAdapter instance to wrap.
         project: Project name for grouping usage records.
-        cost_overrides: Optional user-configured cost table (from DB).
+        prices: Looks up a model's facts (its price) by the model name a call asked for.
     """
 
     def __init__(
         self,
         adapter: LLMAdapter,
         project: str,
-        cost_overrides: dict[str, CostEntry] | None = None,
+        prices: Callable[[str], ModelFacts | None] | None = None,
         budget: SpendBudget | None = None,
     ) -> None:
         self._adapter = adapter
         self._project = project
-        self._cost_overrides = cost_overrides
+        self._prices = prices or (lambda _model: None)
+        self._unpriced_warned: set[str] = set()
         self._records: list[UsageRecord] = []
         self._budget = budget or SpendBudget(limit_usd=None)
 
@@ -153,10 +155,15 @@ class TelemetryCollector:
             self._adapter.provider_name,
             self._project,
             int(elapsed * 1000),
-            cost_overrides=self._cost_overrides,
+            self._prices(config.model),
         )
         self._records.append(record)
-        self._budget.record(record.estimated_cost_usd, tokens=record.total_tokens)
+        if record.estimated_cost_usd is None and config.model not in self._unpriced_warned:
+            self._unpriced_warned.add(config.model)
+            logger.warning(
+                "%s has no known price: its tokens are counted, its money is not", config.model
+            )
+        self._budget.record(record.estimated_cost_usd or 0.0, tokens=record.total_tokens)
 
     # ------------------------------------------------------------------
     # Persistence

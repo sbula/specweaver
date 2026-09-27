@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 from rich.logging import RichHandler
 
+from specweaver.core.config.paths import specweaver_root
 from specweaver.telemetry_logger import (
     BACKUP_COUNT,
     LOG_LEVELS,
@@ -101,7 +102,7 @@ class TestGetLogPath:
 
     def test_returns_path_under_specweaver_logs(self):
         path = get_log_path("myproject")
-        assert path == Path.home() / ".specweaver" / "logs" / "myproject" / "specweaver.log"
+        assert path == specweaver_root() / "logs" / "myproject" / "specweaver.log"
 
     def test_returns_path_type(self):
         path = get_log_path("test")

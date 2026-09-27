@@ -7,12 +7,8 @@ import importlib
 import logging
 import pkgutil
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-
-if TYPE_CHECKING:
-    from specweaver.infrastructure.llm.telemetry import CostEntry
 
 logger = logging.getLogger(__name__)
 
@@ -72,18 +68,3 @@ def get_adapter_class(provider_name: str) -> type[LLMAdapter]:
         logger.error("Unknown LLM provider %r requested", provider_name)
         raise ValueError(f"Unknown LLM provider: {provider_name!r}")
     return _REGISTRY[provider_name]
-
-
-def get_merged_default_costs() -> dict[str, "CostEntry"]:
-    """Merge default costs from all registered adapters.
-
-    Returns a unified dictionary mapping model names to their CostEntry.
-    """
-    _ensure_discovered()
-    merged = {}
-    for cls in _REGISTRY.values():
-        if cls.default_costs:
-            for model, cost in cls.default_costs.items():
-                if model not in merged:
-                    merged[model] = cost
-    return merged

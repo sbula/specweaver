@@ -18,7 +18,6 @@ from specweaver.infrastructure.llm.models import (
     TaskType,
     TokenUsage,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -349,23 +348,6 @@ class TestCollectorDelegation:
         assert est > 0
 
 
-class TestCollectorCostOverrides:
-    """Test that cost overrides are passed through."""
-
-    @pytest.mark.asyncio
-    async def test_overrides_affect_cost(self):
-        adapter = FakeAdapter()
-        overrides = {"fake-model": CostEntry(100.0, 200.0)}
-        collector = TelemetryCollector(adapter, project="proj", cost_overrides=overrides)
-
-        config = GenerationConfig(model="fake-model")
-        await collector.generate([], config)
-
-        record = collector.records[0]
-        # (100/1000)*100 + (50/1000)*200 = 10 + 10 = 20
-        assert record.estimated_cost_usd == pytest.approx(20.0)
-
-
 # ---------------------------------------------------------------------------
 # Corner-case tests (stories 14-19)
 # ---------------------------------------------------------------------------
@@ -502,3 +484,41 @@ async def _raise_stream_error(messages, config):
     yield "partial"
     msg = "stream exploded"
     raise RuntimeError(msg)
+
+
+class TestTelemetryCollectorPrices:
+    """Prices come from one lookup (the catalogue); an unknown price stays unknown."""
+
+    @pytest.mark.asyncio
+    async def test_a_known_price_is_recorded_and_spent(self) -> None:
+        from specweaver.core.config.llm_settings import ModelFacts
+        from specweaver.infrastructure.llm.budget import SpendBudget
+
+        budget = SpendBudget(limit_usd=None)
+        facts = ModelFacts(usd_per_million_input=2.0, usd_per_million_output=10.0)
+        collector = TelemetryCollector(FakeAdapter(), "p", prices={"m": facts}.get, budget=budget)
+
+        await collector.generate([], GenerationConfig(model="m"))
+
+        assert collector.records[0].estimated_cost_usd == pytest.approx(
+            100 / 1e6 * 2 + 50 / 1e6 * 10
+        )
+        assert budget.spent_usd == pytest.approx(collector.records[0].estimated_cost_usd)
+
+    @pytest.mark.asyncio
+    async def test_an_unknown_price_counts_tokens_and_warns_once(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from specweaver.infrastructure.llm.budget import SpendBudget
+
+        budget = SpendBudget(limit_usd=None)
+        collector = TelemetryCollector(FakeAdapter(), "p", prices=lambda model: None, budget=budget)
+
+        with caplog.at_level("WARNING"):
+            await collector.generate([], GenerationConfig(model="qwen3-coder-next"))
+            await collector.generate([], GenerationConfig(model="qwen3-coder-next"))
+
+        assert [r.estimated_cost_usd for r in collector.records] == [None, None]
+        assert (budget.tokens, budget.spent_usd) == (300, 0.0)
+        warnings = [r for r in caplog.records if "qwen3-coder-next" in r.getMessage()]
+        assert len(warnings) == 1

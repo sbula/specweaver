@@ -18,7 +18,6 @@ class TestAnthropicAdapter:
         adapter = AnthropicAdapter(api_key="test")
         assert adapter.provider_name == "anthropic"
         assert adapter.api_key_env_var == "ANTHROPIC_API_KEY"
-        assert "claude-4-6-sonnet" in AnthropicAdapter.default_costs
 
     def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test")

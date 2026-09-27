@@ -74,7 +74,7 @@ def test_without_files_the_brake_values_are_built_in(tmp_path: Path, _mock_db: D
     result = runner.invoke(app, ["config", "show"])
 
     assert result.exit_code == 0, result.output
-    assert shows(result.output, "brake.hosted_chf_per_run = 20")
+    assert shows(result.output, "brake.hosted_spend_per_run = 20")
     assert shows(result.output, "built-in default")
 
 

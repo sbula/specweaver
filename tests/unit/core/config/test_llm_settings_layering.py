@@ -151,12 +151,12 @@ class TestTheReport:
 
     def test_a_set_currency_and_a_private_project_name_their_lines(self) -> None:
         machine = _MACHINE.replace("@anthropic", "@gb10")
-        machine += "\n[currency]\nusd_to_chf = 0.8\nrate_date = 2026-09-26\n"
+        machine += '\n[currency]\ncode = "CHF"\nper_usd = 0.8\nrate_date = 2026-09-26\n'
         project = "[llm]\nprivate_only = true\n"
 
         rows = self._rows(machine, project)
 
-        assert rows["currency"][0] == "0.8 CHF per USD, dated 2026-09-26"
+        assert rows["currency"][0] == "CHF, 0.8 per USD, rate of 2026-09-26"
         assert rows["currency"][1] == f"machine.toml:{_line(machine, '[currency]')}"
         assert rows["llm.private_only"] == ("true", "project.toml:2")
 

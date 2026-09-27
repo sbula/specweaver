@@ -27,6 +27,12 @@ from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app
 
 
+@pytest.fixture(autouse=True)
+def _data_root_follows_home(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests move `Path.home()` to `tmp_path`; the data root must follow it there."""
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / ".specweaver"))
+
+
 @pytest.fixture()
 def client(tmp_path):
     """TestClient for the API."""

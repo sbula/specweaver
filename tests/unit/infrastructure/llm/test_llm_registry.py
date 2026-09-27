@@ -4,7 +4,6 @@
 
 """Tests for LLM Adapter auto-discovery registry."""
 
-from typing import ClassVar
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +13,6 @@ from specweaver.infrastructure.llm.adapters.registry import (
     _ensure_discovered,
     get_adapter_class,
     get_all_adapters,
-    get_merged_default_costs,
     register_adapter,
 )
 
@@ -24,7 +22,6 @@ class DummyAdapter(LLMAdapter):
 
     provider_name = "dummy"
     api_key_env_var = "DUMMY_KEY"
-    default_costs: ClassVar[dict] = {}
 
     async def generate(self, messages, config):
         pass
@@ -119,26 +116,7 @@ def test_ensure_discovered_implicit_namespace_package():
     )
 
 
-def test_get_merged_default_costs():
-    """Returns a unified dictionary with costs from all adapters."""
-    costs = get_merged_default_costs()
-
-    # Verify costs from all adapters are merged
-    assert "gemini-3-flash-preview" in costs
-    assert "gpt-5.4" in costs
-    assert "claude-4-6-sonnet" in costs
-    assert "mistral-small-4" in costs
-    assert "qwen3-max" in costs
-
-    # Check that a cost entry is structured right
-    gemini_cost = costs["gemini-3-flash-preview"]
-    assert hasattr(gemini_cost, "input_cost_per_1k")
-    assert hasattr(gemini_cost, "output_cost_per_1k")
-
-
-def test_merged_costs_no_duplicates():
-    """First-registered adapter wins on duplicate models (not typically expected)."""
-    # Simply check that what we get is a dict and has no dupes
-    # (dict keys are inherently unique)
-    costs = get_merged_default_costs()
-    assert isinstance(costs, dict)
+def test_no_adapter_carries_a_price_table():
+    """Prices live in the model catalogue only (C-FLOW-13 FR-12); a per-adapter table must not return."""
+    for provider, adapter_cls in get_all_adapters().items():
+        assert not hasattr(adapter_cls, "default_costs"), provider

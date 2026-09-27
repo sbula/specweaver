@@ -99,8 +99,8 @@ async def _async_create_and_link(
         return pid
 
 
-def test_cost_override_injection(tmp_db: Database) -> None:
-    """T8: ModelRouter correctly injects DB cost overrides into the TelemetryCollector."""
+def test_routed_calls_are_priced_from_the_catalogue(tmp_db: Database) -> None:
+    """T8: a routed collector prices its provider's models from the shipped catalogue."""
     _create_and_link(
         tmp_db, "gemini-fast", "gemini", "gemini-flash", 0.1, "test-proj", ["task:implement"]
     )
@@ -108,16 +108,14 @@ def test_cost_override_injection(tmp_db: Database) -> None:
     router = ModelRouter(
         lambda r: load_settings(tmp_db, "test-proj", llm_role=r),
         telemetry_project="test-proj",
-        cost_overrides={"gemini-flash": (2.0, 3.0)},
     )
     with patch.dict(os.environ, {"GEMINI_API_KEY": "dummy"}):
         res = router.get_for_task(TaskType.IMPLEMENT)
 
         assert res is not None
         assert isinstance(res.adapter, TelemetryCollector)
-        assert res.adapter._cost_overrides is not None
-        assert "gemini-flash" in res.adapter._cost_overrides
-        assert res.adapter._cost_overrides["gemini-flash"].input_cost_per_1k == 2.0
+        facts = res.adapter._prices("gemini-2.5-pro")
+        assert facts is not None and facts.usd_per_million_input > 0
 
 
 def test_memory_leak_check_caching(tmp_db: Database) -> None:

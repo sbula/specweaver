@@ -27,7 +27,8 @@ _MACHINE = """\
 schema_version = 1
 
 [currency]
-usd_to_chf = 0.80
+code = "CHF"
+per_usd = 0.80
 rate_date = 2026-09-26
 
 [servers.gb10]
@@ -46,7 +47,7 @@ draft = "claude-sonnet@anthropic"
 implement = { model = "qwen3-coder-next@gb10", temperature = 1.0 }
 
 [brake]
-hosted_chf_per_run = 20
+hosted_spend_per_run = 20
 local_gpu_hours_per_run = 2
 agent_turns = 10
 
@@ -65,11 +66,14 @@ class TestTheMachineFileParses:
     def test_every_section_arrives_typed(self) -> None:
         machine = parse_machine_file(_MACHINE, "settings.toml")
 
-        assert machine.currency is not None and machine.currency.usd_to_chf == 0.80
+        assert machine.currency is not None and (
+            machine.currency.code,
+            machine.currency.per_usd,
+        ) == ("CHF", 0.80)
         assert machine.servers["gb10"].base_url == "http://gb10:8000/v1"
         assert machine.servers["gb10"].private is True
         assert machine.servers["anthropic"].max_parallel == 3
-        assert machine.brake.hosted_chf_per_run == 20
+        assert machine.brake.hosted_spend_per_run == 20
         assert machine.models["qwen3-coder-next"].context == 262144
         assert machine.models["qwen3-coder-next"].usd_per_million_output == 0.0
         assert machine.models["qwen3-coder-next"].thinking_in_output_cap is True
@@ -100,7 +104,10 @@ class TestTheMachineFileParses:
 
         assert machine.servers == {}
         assert machine.roles == {}
-        assert (machine.brake.hosted_chf_per_run, machine.brake.local_gpu_hours_per_run) == (20, 2)
+        assert (machine.brake.hosted_spend_per_run, machine.brake.local_gpu_hours_per_run) == (
+            20,
+            2,
+        )
         assert machine.brake.agent_turns == 10
 
 
@@ -181,9 +188,9 @@ class TestABrokenMachineFileRefuses:
         assert server.api_key_env == "DASHSCOPE_API_KEY"
 
     def test_a_zero_exchange_rate_refuses(self) -> None:
-        text = _MACHINE.replace("usd_to_chf = 0.80", "usd_to_chf = 0")
+        text = _MACHINE.replace("per_usd = 0.80", "per_usd = 0")
 
-        assert _refusal(text).line == text.splitlines().index("usd_to_chf = 0") + 1
+        assert _refusal(text).line == text.splitlines().index("per_usd = 0") + 1
 
     def test_a_wrong_type_inside_an_inline_role_names_that_line(self) -> None:
         line = 'implement = { model = "qwen3-coder-next@gb10", temperature = "hot" }'
@@ -250,3 +257,12 @@ def test_a_negative_price_is_refused() -> None:
         parse_machine_file(text, "settings.toml")
 
     assert caught.value.line == 2
+
+
+def test_a_currency_code_must_be_three_capital_letters() -> None:
+    text = '[currency]\ncode = "chf!"\nper_usd = 0.8\nrate_date = 2026-09-26\n'
+
+    with pytest.raises(SettingsFileError) as caught:
+        parse_machine_file(text, "settings.toml")
+
+    assert caught.value.key == "currency.code"

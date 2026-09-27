@@ -52,7 +52,8 @@ class LlmUsageLog(Base):
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    estimated_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # `None`: the model has no known price. Never 0, which would claim the call was free.
+    estimated_cost: Mapped[float | None] = mapped_column(Float, default=None, nullable=True)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     run_id: Mapped[str | None] = mapped_column(String, default="")
 
@@ -206,7 +207,7 @@ class LlmRepository:
             prompt_tokens=record.get("prompt_tokens", 0),
             completion_tokens=record.get("completion_tokens", 0),
             total_tokens=record.get("total_tokens", 0),
-            estimated_cost=record.get("estimated_cost_usd", 0.0),
+            estimated_cost=record.get("estimated_cost_usd"),
             duration_ms=record.get("duration_ms", 0),
             run_id=record.get("run_id", ""),
         )
@@ -226,6 +227,7 @@ class LlmRepository:
                 func.sum(LlmUsageLog.completion_tokens).label("total_completion_tokens"),
                 func.sum(LlmUsageLog.total_tokens).label("total_tokens"),
                 func.sum(LlmUsageLog.estimated_cost).label("total_cost"),
+                func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
                 func.sum(LlmUsageLog.duration_ms).label("total_duration_ms"),
             )
             .group_by(LlmUsageLog.task_type, LlmUsageLog.model)
@@ -246,6 +248,7 @@ class LlmRepository:
                 "total_completion_tokens": row.total_completion_tokens,
                 "total_tokens": row.total_tokens,
                 "total_cost": row.total_cost,
+                "unpriced_calls": row.unpriced_calls,
                 "total_duration_ms": row.total_duration_ms,
             }
             for row in result.all()

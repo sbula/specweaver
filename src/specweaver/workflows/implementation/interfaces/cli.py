@@ -218,12 +218,13 @@ def implement(
     db = _core.get_db()
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
-    # failure. The adapter is built through `build_adapter_for_project`, which is where
-    # `cost_overrides` reaches a run.
+    # failure. The adapter is built through `build_adapter_for_project`, which prices every call
+    # from the model catalogue.
     project = _core._require_active_project()
     try:
         settings = load_settings(db, project)
-        settings, adapter = build_adapter_for_project(db, settings, project)
+        machine_models = _core.load_active_llm_settings(project).machine.models
+        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

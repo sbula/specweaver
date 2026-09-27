@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
+from specweaver.core.config.llm_settings import parse_machine_file
 from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:
@@ -49,35 +50,17 @@ def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
 
 
-def test_costs_e2e_happy_path(tmp_path: Path) -> None:
-    """[Happy Path] Root entrypoint correctly invokes decentralized `sw costs set` and `sw costs`."""
-    db_path = tmp_path / "specweaver.db"
-    assert not db_path.exists()
+def test_costs_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """[Happy Path] The root entrypoint reaches the decentralized `sw costs set`, which writes the file."""
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
 
-    # 1. Set a cost override
-    result = runner.invoke(app, ["costs", "set", "test-model-e2e", "0.005", "0.015"])
+    result = runner.invoke(app, ["costs", "set", "test-model-e2e", "5", "15"])
+
     assert result.exit_code == 0, f"Command failed: {result.output}"
-    assert "Cost override set for" in result.output
     assert "test-model-e2e" in result.output
-
-    # 2. View the costs to confirm it persisted
-    result_view = runner.invoke(app, ["costs"])
-    assert result_view.exit_code == 0
-    assert "test-model-e2e" in result_view.output
-    assert "override" in result_view.output
-
-    # 3. Verify in database natively
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT input_cost_per_1k, output_cost_per_1k FROM llm_cost_overrides WHERE model_pattern = 'test-model-e2e'"
-    )
-    row = cursor.fetchone()
-    conn.close()
-
-    assert row is not None
-    assert abs(row[0] - 0.005) < 1e-9
-    assert abs(row[1] - 0.015) < 1e-9
+    machine = tmp_path / "settings.toml"
+    facts = parse_machine_file(machine.read_text(encoding="utf-8"), "x").models["test-model-e2e"]
+    assert (facts.usd_per_million_input, facts.usd_per_million_output) == (5.0, 15.0)
 
 
 def test_usage_e2e_happy_path(tmp_path: Path) -> None:

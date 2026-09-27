@@ -15,7 +15,6 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +53,6 @@ class AnthropicAdapter(LLMAdapter):
 
     provider_name = "anthropic"
     api_key_env_var = "ANTHROPIC_API_KEY"
-    default_costs: ClassVar[dict[str, CostEntry]] = {
-        "claude-4-6-sonnet": CostEntry(0.00300, 0.01500),
-        "claude-4-6-opus": CostEntry(0.01500, 0.07500),
-        "claude-3-7-sonnet-20250219": CostEntry(0.00300, 0.01500),
-    }
 
     default_base_url: ClassVar[str | None] = "https://api.anthropic.com"
 

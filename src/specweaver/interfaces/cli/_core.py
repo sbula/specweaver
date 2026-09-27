@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from specweaver.core.config.llm_settings import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
 
 import anyio
@@ -86,6 +87,26 @@ def _require_active_project() -> str:
         )
         raise typer.Exit(code=1)
     return str(name_raw)
+
+
+def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFiles:
+    """The LLM settings files for a project (the active one by default), or exit naming the error.
+
+    A broken settings file stops every command that uses LLM settings, naming the file and line.
+    """
+    from pathlib import Path
+
+    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+    from specweaver.core.config.llm_settings import SettingsFileError
+
+    name = project_name or _require_active_project()
+    project = run_repo_op(lambda repo: repo.get_project(name))
+    root = project.get("root_path") if project else None
+    try:
+        return load_llm_settings(Path(str(root)) if root else None)
+    except SettingsFileError as err:
+        console.print("Error:", str(err), style="red", markup=False, highlight=False)
+        raise typer.Exit(code=1) from err
 
 
 def _version_callback(value: bool) -> None:

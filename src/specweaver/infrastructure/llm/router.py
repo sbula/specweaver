@@ -63,11 +63,9 @@ class ModelRouter:
         self,
         settings_provider: Callable[[str], SpecWeaverSettings | None],
         telemetry_project: str | None = None,
-        cost_overrides: dict[str, tuple[float, float]] | None = None,
     ) -> None:
         self._settings_provider = settings_provider
         self._telemetry_project = telemetry_project
-        self._cost_overrides = cost_overrides
         self._cache: dict[str, Any] = {}  # key: f"{provider}:{hash(api_key)}"
 
     def get_for_task(self, task_type: TaskType) -> RouterResult | None:
@@ -109,15 +107,15 @@ class ModelRouter:
                 )
                 adapter: Any = adapter_cls(api_key=api_key or None)
                 if self._telemetry_project:
+                    from specweaver.infrastructure.llm.catalogue import shipped_catalogue
                     from specweaver.infrastructure.llm.collector import TelemetryCollector
-                    from specweaver.infrastructure.llm.telemetry import CostEntry
 
-                    overrides = (
-                        {k: CostEntry(*v) for k, v in self._cost_overrides.items()}
-                        if self._cost_overrides
-                        else None
+                    provider = settings.llm.provider
+                    adapter = TelemetryCollector(
+                        adapter,
+                        self._telemetry_project,
+                        lambda model: shipped_catalogue().facts(provider, model, {}),
                     )
-                    adapter = TelemetryCollector(adapter, self._telemetry_project, overrides)
                 self._cache[cache_key] = adapter
             except Exception:
                 logger.warning(

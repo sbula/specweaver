@@ -407,6 +407,100 @@
           "symbol_sha": "sha256:20b7921ed8ec96b0515815b051526dff77e952b3d150e4967f9acb1673449d35"
         }
       ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "One price source; an unknown price stays unknown",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_telemetry.py",
+        "tests/unit/infrastructure/llm/test_collector.py",
+        "tests/integration/test_telemetry_integration.py",
+        "tests/integration/core/config/bootstrap/test_db_bootstrap_usage_cost.py",
+        "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-priced-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "estimate_cost",
+          "old": "    if facts is None:\n        return None\n",
+          "new": "    if facts is None:\n        return 0.0\n",
+          "breaks": "an unpriced call is recorded as free",
+          "symbol_sha": "sha256:4a7846fe23be78772a9a845413c4ad460bb49beb8b63833e5d47b75cae03cb5c"
+        },
+        {
+          "id": "old-db-not-rebuilt",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_allow_unknown_cost",
+          "old": "    if not any(col[1] == \"estimated_cost\" and col[3] == 1 for col in columns):\n",
+          "new": "    if True:\n",
+          "breaks": "an existing database rejects every unpriced call, and the flush drops them silently",
+          "symbol_sha": "sha256:fbd65f0076b6d4b404863dd97a66ded9dcf06bc234ebb7b90470166b36bd62ae"
+        },
+        {
+          "id": "usage-unknown-shown-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_usage_cost",
+          "old": "        return \"unknown\" if unpriced else format_money(0.0, currency, places=4)\n",
+          "new": "        return format_money(0.0, currency, places=4)\n",
+          "breaks": "sw usage shows unpriced calls as costing nothing",
+          "symbol_sha": "sha256:415a63faaff17a6dce2f071833e2dd7b4463c84d186dc715844d9c4f4691456e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "One configured currency for every amount shown or set",
+      "scope": [
+        "tests/unit/core/config/test_llm_money.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py",
+        "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py"
+      ],
+      "mutants": [
+        {
+          "id": "shown-without-conversion",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "format_money",
+          "old": "    return f\"{currency.code} {usd * currency.per_usd:.{places}f}\"\n",
+          "new": "    return f\"{currency.code} {usd:.{places}f}\"\n",
+          "breaks": "USD amounts are labelled CHF",
+          "symbol_sha": "sha256:108d0f213645bb1f6444013b6b47a19f25e059eb7f1cff26138812c231d425cd"
+        },
+        {
+          "id": "set-without-conversion",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "to_usd",
+          "old": "    return amount if currency is None else amount / currency.per_usd\n",
+          "new": "    return amount\n",
+          "breaks": "a price typed in CHF is stored as that many USD",
+          "symbol_sha": "sha256:2072433d845576d197b0ccaf3a0fa672bb4639b2b5d2b0199965a921e9753d49"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "Commands write the file, never leaving it broken",
+      "scope": [
+        "tests/integration/core/config/bootstrap/test_llm_settings_writer.py"
+      ],
+      "mutants": [
+        {
+          "id": "writer-skips-validation",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_write",
+          "old": "    parse_machine_file(text, str(path))  # refuses before anything is written\n",
+          "new": "    pass\n",
+          "breaks": "a command writes a settings file the next command refuses to read",
+          "symbol_sha": "sha256:77bde7d4dc1f6e24c447813abb7ba394a7e9c6985031cc173c7119af888be3dc"
+        }
+      ]
     }
   ]
 }

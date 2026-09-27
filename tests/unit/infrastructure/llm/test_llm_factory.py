@@ -10,12 +10,12 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
 from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 
 @pytest.fixture()
@@ -56,29 +56,32 @@ class TestFactoryTelemetryWrapping:
         assert isinstance(adapter._wrapped, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_overrides_passed_to_collector(self, base_settings: SpecWeaverSettings) -> None:
-        """Cost overrides are passed to TelemetryCollector."""
-        overrides = {"gemini-3-flash-preview": (99.0, 199.0)}
+    def test_the_machine_file_corrects_the_catalogue_price(
+        self, base_settings: SpecWeaverSettings
+    ) -> None:
+        corrected = ModelFacts(usd_per_million_input=9.0, usd_per_million_output=19.0)
 
         _settings, adapter, _config = create_llm_adapter(
             base_settings,
             telemetry_project="test-proj",
-            cost_overrides=overrides,
+            machine_models={"gemini-2.5-pro": corrected},
         )
+
         assert isinstance(adapter, TelemetryCollector)
-        assert adapter._cost_overrides is not None
-        assert "gemini-3-flash-preview" in adapter._cost_overrides
-        entry = adapter._cost_overrides["gemini-3-flash-preview"]
-        assert entry == CostEntry(99.0, 199.0)
+        facts = adapter._prices("gemini-2.5-pro")
+        assert (facts.usd_per_million_input, facts.usd_per_million_output) == (9.0, 19.0)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_override_load_failure_fallback(self, base_settings: SpecWeaverSettings) -> None:
-        """No cost overrides → collector created with None."""
+    def test_without_corrections_the_catalogue_prices(
+        self, base_settings: SpecWeaverSettings
+    ) -> None:
         _settings, adapter, _config = create_llm_adapter(
-            base_settings, telemetry_project="test-proj", cost_overrides=None
+            base_settings, telemetry_project="test-proj"
         )
-        assert isinstance(adapter, TelemetryCollector)
-        assert adapter._cost_overrides is None
+
+        facts = adapter._prices("gemini-2.5-pro")
+        assert facts is not None and facts.usd_per_million_input > 0
+        assert adapter._prices("no-such-model") is None
 
 
 class TestFactoryProviderCapabilities:

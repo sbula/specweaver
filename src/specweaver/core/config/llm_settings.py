@@ -127,14 +127,32 @@ class ModelFacts(_Strict):
 class BrakeValues(_Strict):
     """Check-in intervals per run. Values only: how the brake behaves is the spend brake's job."""
 
-    hosted_chf_per_run: float = Field(default=20, gt=0)
+    #: In the configured currency (`[currency] code`), USD when none is set.
+    hosted_spend_per_run: float = Field(default=20, gt=0)
     local_gpu_hours_per_run: float = Field(default=2, gt=0)
     agent_turns: int = Field(default=10, ge=1)
 
 
 class Currency(_Strict):
-    usd_to_chf: float = Field(gt=0)
+    """The one currency every amount is shown and taken in. Stored amounts stay USD."""
+
+    code: str = Field(pattern=r"^[A-Z]{3}$")
+    per_usd: float = Field(gt=0)
     rate_date: date
+
+
+def format_money(usd: float | None, currency: Currency | None, *, places: int = 2) -> str:
+    """A USD amount in the configured currency; `unknown` stays unknown, never 0."""
+    if usd is None:
+        return "unknown"
+    if currency is None:
+        return f"USD {usd:.{places}f}"
+    return f"{currency.code} {usd * currency.per_usd:.{places}f}"
+
+
+def to_usd(amount: float, currency: Currency | None) -> float:
+    """An amount given in the configured currency, as the USD that is stored."""
+    return amount if currency is None else amount / currency.per_usd
 
 
 class MachineLlmFile(_Strict):
@@ -359,7 +377,8 @@ def settings_report(
     if machine.currency is None:
         rows.append(("currency", "not set — costs are shown in USD", BUILT_IN))
     else:
-        rate = f"{machine.currency.usd_to_chf:g} CHF per USD, dated {machine.currency.rate_date}"
+        currency = machine.currency
+        rate = f"{currency.code}, {currency.per_usd:g} per USD, rate of {currency.rate_date}"
         rows.append(("currency", rate, at.format(_line_of(files.machine_text, ("currency",)))))
     project = files.project
     if project.private_only:

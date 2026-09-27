@@ -31,7 +31,6 @@ from specweaver.infrastructure.llm.models import (
     ToolCall,
     ToolDefinition,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -76,13 +75,6 @@ class GeminiAdapter(LLMAdapter):
 
     provider_name = "gemini"
     api_key_env_var = "GEMINI_API_KEY"
-    default_costs: ClassVar[dict[str, CostEntry]] = {
-        "gemini-3-flash-preview": CostEntry(0.00010, 0.00040),
-        "gemini-2.5-flash-preview-04-17": CostEntry(0.00015, 0.00060),
-        "gemini-2.5-pro-preview-03-25": CostEntry(0.00125, 0.01000),
-        "gemini-2.0-flash": CostEntry(0.00010, 0.00040),
-        "gemini-2.0-flash-lite": CostEntry(0.00005, 0.00020),
-    }
 
     default_base_url: ClassVar[str | None] = "https://generativelanguage.googleapis.com/"
 

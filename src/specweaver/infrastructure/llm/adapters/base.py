@@ -5,7 +5,7 @@
 
 All LLM interactions go through this interface.
 Concrete adapters are self-describing: each declares its own
-provider_name, api_key_env_var, and default_costs as class attributes.
+provider_name and api_key_env_var as class attributes.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
-    from specweaver.infrastructure.llm.telemetry import CostEntry
 
 
 class LLMAdapter(ABC):
@@ -34,13 +33,11 @@ class LLMAdapter(ABC):
     Subclasses MUST override the metadata class attributes:
     - ``provider_name``: registry key (e.g. ``"gemini"``, ``"openai"``)
     - ``api_key_env_var``: environment variable name for the API key
-    - ``default_costs``: ``{model_name: CostEntry}`` for cost estimation
     """
 
     # --- Metadata (subclasses MUST override) ---
     provider_name: str = ""
     api_key_env_var: str = ""
-    default_costs: ClassVar[dict[str, CostEntry]] = {}
     #: The provider's official address, used when none is given. Written out so that no SDK
     #: environment variable (`OPENAI_BASE_URL`, ...) can redirect a call.
     default_base_url: ClassVar[str | None] = None

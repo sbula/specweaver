@@ -23,7 +23,6 @@ from specweaver.infrastructure.llm.models import (
     Message,
     Role,
 )
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 # ---------------------------------------------------------------------------
 # LLMAdapter ABC metadata attribute tests
@@ -47,29 +46,10 @@ class TestLLMAdapterMetadata:
         assert hasattr(LLMAdapter, "api_key_env_var")
         assert LLMAdapter.api_key_env_var == ""
 
-    def test_abc_has_default_costs_default(self) -> None:
-        """ABC declares default_costs with empty dict default."""
-        from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-
-        assert hasattr(LLMAdapter, "default_costs")
-        assert LLMAdapter.default_costs == {}
-
     def test_gemini_adapter_has_api_key_env_var(self) -> None:
         """GeminiAdapter declares api_key_env_var."""
         adapter = GeminiAdapter(api_key="test")
         assert adapter.api_key_env_var == "GEMINI_API_KEY"
-
-    def test_gemini_adapter_has_default_costs(self) -> None:
-        """GeminiAdapter declares default_costs with CostEntry values."""
-        adapter = GeminiAdapter(api_key="test")
-        assert len(adapter.default_costs) > 0
-        for model, entry in adapter.default_costs.items():
-            assert isinstance(model, str)
-            assert isinstance(entry, CostEntry)
-
-    def test_gemini_adapter_default_costs_contains_flash(self) -> None:
-        """GeminiAdapter default_costs includes a known model."""
-        assert "gemini-2.0-flash" in GeminiAdapter.default_costs
 
     def test_gemini_adapter_provider_name_is_class_attr(self) -> None:
         """provider_name is a class attribute, not just a property."""

@@ -17,6 +17,12 @@ from specweaver.interfaces.api.app import create_app
 from tests.fixtures.db_utils import register_test_project
 
 
+@pytest.fixture(autouse=True)
+def _data_root_follows_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests move `Path.home()` to `tmp_path`; the data root must follow it there."""
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / ".specweaver"))
+
+
 @pytest.fixture()
 def _db(tmp_path):
     """Creates a temp database with a registered project."""

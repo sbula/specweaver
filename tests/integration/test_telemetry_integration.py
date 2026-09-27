@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import (
@@ -24,7 +25,6 @@ from specweaver.infrastructure.llm.models import (
     TokenUsage,
 )
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import CostEntry
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -150,31 +150,30 @@ class TestCollectorToDatabase:
 # ---------------------------------------------------------------------------
 
 
-class TestCostOverrideFlow:
-    """DB cost overrides flow through to collector and affect pricing."""
+class TestUnknownPriceFlow:
+    """A call without a known price reaches the database as unknown and is counted as such.
+
+    Proves: C-FLOW-13 FR-12
+    """
 
     @pytest.mark.asyncio
-    async def test_db_overrides_affect_collector_cost(self, db):
-        """Story 25: set_cost_override → get_cost_overrides → collector uses them."""
-        async with db.async_session_scope() as session:
-            await LlmRepository(session).set_cost_override("fake-model", 50.0, 100.0)
-            raw = await LlmRepository(session).get_cost_overrides()
-
-        overrides = {k: CostEntry(*v) for k, v in raw.items()}
-
+    async def test_an_unpriced_call_is_stored_and_summed_as_unknown(self, db):
+        priced = ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
         collector = TelemetryCollector(
-            FakeAdapter(),
-            project="proj",
-            cost_overrides=overrides,
+            FakeAdapter(), project="proj", prices={"priced-model": priced}.get
         )
-        await collector.generate(
-            [],
-            GenerationConfig(model="fake-model", task_type=TaskType.DRAFT),
-        )
+        for model in ("priced-model", "fake-model"):
+            await collector.generate([], GenerationConfig(model=model, task_type=TaskType.DRAFT))
 
-        record = collector.records[0]
-        # (100/1000)*50 + (50/1000)*100 = 5.0 + 5.0 = 10.0
-        assert record.estimated_cost_usd == pytest.approx(10.0)
+        await collector.flush_async(db)
+
+        async with db.async_session_scope() as session:
+            rows = await LlmRepository(session).get_usage_summary(project="proj")
+        # The fake server answers "fake-model" to both, so both rows share that name: the known
+        # cost is summed, the unpriced call is counted — never folded in as 0.
+        [row] = rows
+        assert row["total_cost"] == pytest.approx((100 + 50) * 1000.0 / 1_000_000)
+        assert row["unpriced_calls"] == 1
 
 
 # ---------------------------------------------------------------------------
