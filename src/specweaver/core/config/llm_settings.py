@@ -294,7 +294,22 @@ def resolve_roles(
                     "define",
                 )
             resolved[role] = _resolved(role, entry, origin)
+    if files.project.private_only:
+        _refuse_hosted(files, resolved)
     return resolved
+
+
+def _refuse_hosted(files: LlmSettingsFiles, resolved: dict[str, ResolvedRole]) -> None:
+    """A private-only project must not send code to a server that is not private."""
+    for role, setting in sorted(resolved.items()):
+        if not files.machine.servers[setting.server].private:
+            raise SettingsFileError(
+                files.project_source,
+                "llm.private_only",
+                _line_of(files.project_text, ("llm", "private_only")),
+                f"the project allows private servers only, but role '{role}' uses "
+                f"'{setting.server}', which is not private ({setting.origin['model']})",
+            )
 
 
 def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:

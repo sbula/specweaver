@@ -115,6 +115,36 @@
           "symbol_sha": "sha256:add7d1349425a187e59d1f95192118313c8e5534aa75d03f21b4947ec07b3b08"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A private-only project never resolves onto a hosted server",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_layering.py",
+        "tests/e2e/capabilities/core/test_llm_settings_show_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "private-only-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "resolve_roles",
+          "old": "    if files.project.private_only:\n",
+          "new": "    if False:\n",
+          "breaks": "a private-only project resolves a role onto a cloud server and sends its code there",
+          "symbol_sha": "sha256:535fc034c4db8f4c8615b531c5004ce1fa0ca262ca9403629885838f8713a5d3"
+        },
+        {
+          "id": "hosted-server-passes-as-private",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_refuse_hosted",
+          "old": "        if not files.machine.servers[setting.server].private:\n",
+          "new": "        if False:\n",
+          "breaks": "the rule is switched on but no server is ever judged hosted",
+          "symbol_sha": "sha256:2ff75458a5df068ccc62d872dacf6c0156880520901ac39915481198fc01fe67"
+        }
+      ]
     }
   ]
 }

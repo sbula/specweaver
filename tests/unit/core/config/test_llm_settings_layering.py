@@ -3,7 +3,7 @@
 
 """One resolved setting per role, and each value says where it came from.
 
-Proves: C-FLOW-13 FR-3
+Proves: C-FLOW-13 FR-3, FR-9
 
 | Bucket | Case |
 |---|---|
@@ -11,6 +11,7 @@ Proves: C-FLOW-13 FR-3
 | Boundary | a role table overrides one sampling value and inherits the rest as unset; no files at all |
 | Degradation | a role naming a server nobody defined refuses, naming the role and its line |
 | Hostile | a project choosing a server the machine file does not define is refused, not trusted |
+| Hostile | a private-only project whose role — inherited or overridden — lands on a hosted server |
 """
 
 from __future__ import annotations
@@ -149,7 +150,8 @@ class TestTheReport:
         assert origin == f"machine.toml:{_line(_MACHINE, '[servers.anthropic]')}"
 
     def test_a_set_currency_and_a_private_project_name_their_lines(self) -> None:
-        machine = _MACHINE + "\n[currency]\nusd_to_chf = 0.8\nrate_date = 2026-09-26\n"
+        machine = _MACHINE.replace("@anthropic", "@gb10")
+        machine += "\n[currency]\nusd_to_chf = 0.8\nrate_date = 2026-09-26\n"
         project = "[llm]\nprivate_only = true\n"
 
         rows = self._rows(machine, project)
@@ -157,3 +159,57 @@ class TestTheReport:
         assert rows["currency"][0] == "0.8 CHF per USD, dated 2026-09-26"
         assert rows["currency"][1] == f"machine.toml:{_line(machine, '[currency]')}"
         assert rows["llm.private_only"] == ("true", "project.toml:2")
+
+
+class TestResolveRolesPrivateOnly:
+    """FR-9: a private-only project never resolves a role onto a hosted server."""
+
+    _PRIVATE = "[llm]\nprivate_only = true\n"
+
+    def test_roles_on_private_servers_resolve(self) -> None:
+        machine = _MACHINE.replace("claude-sonnet@anthropic", "qwen3-coder-next@gb10").replace(
+            "claude-opus@anthropic", "qwen3-coder-next@gb10"
+        )
+
+        roles = resolve_roles(_files(machine=machine, project=self._PRIVATE))
+
+        assert {role.server for role in roles.values()} == {"gb10"}
+
+    def test_without_the_rule_a_hosted_server_is_allowed(self) -> None:
+        roles = resolve_roles(_files(project="[llm]\nprivate_only = false\n"))
+
+        assert roles["draft"].server == "anthropic"
+
+    def test_a_hosted_role_inherited_from_the_machine_file_is_refused(self) -> None:
+        with pytest.raises(SettingsFileError) as caught:
+            resolve_roles(_files(project=self._PRIVATE))
+
+        assert caught.value.source == "project.toml"
+        assert caught.value.key == "llm.private_only"
+        assert caught.value.line == 2
+        assert "draft" in caught.value.message
+        assert "anthropic" in caught.value.message
+
+    def test_a_run_override_cannot_send_a_private_project_to_the_cloud(self) -> None:
+        machine = _MACHINE.replace("claude-sonnet@anthropic", "qwen3-coder-next@gb10").replace(
+            "claude-opus@anthropic", "qwen3-coder-next@gb10"
+        )
+        override = {"implement": RoleEntry.model_validate("claude-opus@anthropic")}
+
+        with pytest.raises(SettingsFileError) as caught:
+            resolve_roles(_files(machine=machine, project=self._PRIVATE), run_overrides=override)
+
+        assert caught.value.key == "llm.private_only"
+        assert "implement" in caught.value.message
+
+    def test_the_refusal_names_where_the_hosted_role_was_set(self) -> None:
+        with pytest.raises(SettingsFileError) as caught:
+            resolve_roles(_files(project=self._PRIVATE))
+
+        draft_line = _line(_MACHINE, 'draft = "claude-sonnet@anthropic"')
+        assert f"machine.toml:{draft_line}" in caught.value.message
+
+    def test_a_private_project_without_roles_resolves_to_nothing(self) -> None:
+        assert (
+            resolve_roles(_files(machine=_MACHINE.split("[roles]")[0], project=self._PRIVATE)) == {}
+        )

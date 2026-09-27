@@ -3,7 +3,7 @@
 
 """`sw config show` — what each LLM setting is, and where it came from (US-16 paths P4, P7).
 
-Proves: C-FLOW-13 FR-3, FR-4, FR-5
+Proves: C-FLOW-13 FR-3, FR-4, FR-5, FR-9
 
 | Bucket | Case |
 |---|---|
@@ -11,6 +11,7 @@ Proves: C-FLOW-13 FR-3, FR-4, FR-5
 | Boundary | no settings files at all → the built-in brake values, marked as built-in |
 | Degradation | a typo in the machine file → exit 1 naming the file and the line (P4) |
 | Hostile | a project file that defines a server → exit 1, told to use the machine file (P7) |
+| Hostile | a private-only project with a role on a hosted server → exit 1, naming the rule (P3) |
 """
 
 from __future__ import annotations
@@ -125,3 +126,21 @@ def test_a_project_without_a_root_path_still_shows_the_machine_settings(
 
     assert result.exit_code == 0, result.output
     assert shows(result.output, "roles.draft = qwen3-coder-next@gb10")
+
+
+def test_a_private_project_with_a_hosted_role_is_refused(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    machine = (
+        _MACHINE + '\n[servers.anthropic]\nkind = "anthropic"\nprivate = false\nmax_parallel = 3\n'
+    )
+    (_isolate_env / "settings.toml").write_text(machine, encoding="utf-8")
+    _project(
+        tmp_path, '[llm]\nprivate_only = true\n\n[llm.roles]\nreview = "claude-opus@anthropic"\n'
+    )
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 1
+    assert shows(result.output, "specweaver.toml:2")
+    assert shows(result.output, "review")
