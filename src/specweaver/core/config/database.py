@@ -21,6 +21,7 @@ import asyncio
 import logging
 import re
 import sqlite3
+import weakref
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -153,16 +154,22 @@ class CQRSQueueManager:
                 self._queue.task_done()
 
 
-# Global semaphore to throttle concurrent database reads/writes, preventing OS file descriptor exhaustion.
-_db_semaphore: asyncio.Semaphore | None = None
+# One semaphore per event loop, throttling concurrent database access so the OS runs out of file
+# descriptors first nowhere. Per loop, not global: a semaphore binds to the first loop that waits on
+# it, and the CLI starts a fresh loop for every command.
+_db_semaphores: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def get_db_semaphore(max_connections: int = 500) -> asyncio.Semaphore:
-    """Get or create the asyncio Semaphore for the current event loop."""
-    global _db_semaphore
-    if _db_semaphore is None:
-        _db_semaphore = asyncio.Semaphore(max_connections)
-    return _db_semaphore
+    """The semaphore for the running event loop, created on first use."""
+    loop = asyncio.get_running_loop()
+    semaphore = _db_semaphores.get(loop)
+    if semaphore is None:
+        semaphore = asyncio.Semaphore(max_connections)
+        _db_semaphores[loop] = semaphore
+    return semaphore
 
 
 def create_async_engine(url: str, **kwargs: Any) -> AsyncEngine:

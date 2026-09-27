@@ -70,7 +70,7 @@ class TestDatabaseIntegration:
         """Integration Story 4: Semaphore throttles connections without OS failure."""
         import specweaver.core.config.database
 
-        specweaver.core.config.database._db_semaphore = None  # Reset global semaphore
+        specweaver.core.config.database._db_semaphores.clear()  # this test sets its own limit
 
         active_connections = 0
         max_connections = 0
