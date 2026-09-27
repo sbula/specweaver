@@ -85,7 +85,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-15 | Commands write the files | `sw config`, `sw costs` | SHALL write the machine or project file with `tomlkit`, keeping comments, instead of the DB | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
 | FR-17 | Brake values handed over | Resolver → brake | SHALL provide `[brake]` values (CHF and GPU-hour check-in intervals, agent turns) to the brake — **seam with `B-FLOW-05`**, test written as `xfail(strict=True)` until its redesign | the values live here; the behaviour lives there |
-| FR-18 | Catalogue update | `scripts/update_model_catalogue.py` | SHALL regenerate the shipped catalogue from a pinned models.dev commit, keeping local additions, and stamp source, commit and date | an update is a reviewable diff, never a runtime fetch |
+| FR-18 | Catalogue update | `scripts/update_model_catalogue.py` | SHALL regenerate the shipped catalogue from models.dev, keeping local additions, and stamp source, fetch date, ETag and repo commit; the committed file is the pin `[agreed 2026-09-27]` | an update is a reviewable diff, never a runtime fetch |
 
 ## Non-Functional Requirements
 
@@ -129,7 +129,7 @@ a cloned repo must not be able to send code to its own server.
 | SF | Does | FRs | Depends on | Plan |
 |----|------|-----|-----------|------|
 | SF-01 | Settings models, loader, validator, layering, `sw config show` | FR-1, FR-2, FR-3, FR-4, FR-5 | — | [sf01](C-FLOW-13_sf01_implementation_plan.md) |
-| SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | ⬜ |
+| SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | [sf02](C-FLOW-13_sf02_implementation_plan.md) |
 | SF-03 | One adapter path, hard-coded models removed, one price source, CHF | FR-10, FR-11, FR-12, FR-13 | SF-02 | ⬜ |
 | SF-04 | Migration and commands writing the files | FR-14, FR-15 | SF-01 | ⬜ |
 | SF-05 | `--model` for one run; brake values handed to `B-FLOW-05` | FR-16, FR-17 | SF-03 | ⬜ |
@@ -138,7 +138,7 @@ a cloned repo must not be able to send code to its own server.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Settings and layering | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Consumers switched over | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Migration and writers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Run override, brake values | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
