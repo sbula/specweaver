@@ -44,7 +44,9 @@ works in an isolated copy of the repository, and only permitted changes come bac
 - **No evidence yet for the core claim.** There is no benchmark that shows a small local model
   performs better with SpecWeaver than without it. That comparison is planned.
 - **No local-model adapter.** Supported providers today: Gemini, OpenAI, Anthropic, Mistral, Qwen
-  (hosted). Local models are the goal, not a tested path.
+  (hosted). Local models are the goal, not a tested path. Work in progress: one settings file for
+  all LLM choices (servers, models per role, limits). `sw config show` already reads it and shows
+  where each value comes from, but model calls do not use it yet.
 - **Mutation testing for your project is not built.** Mutation testing exists for SpecWeaver's own
   test suite (see below); the product gate for user projects is on the roadmap.
 
@@ -75,9 +77,9 @@ The LLM commands — `sw draft`, `sw review`, `sw implement` — need a provider
 
 ## Testing
 
-**9,100 tests** (pytest, parametrized cases counted): 7,888 unit, 940 integration, 256 e2e and
+**9,197 tests** (pytest, parametrized cases counted): 7,957 unit, 963 integration, 261 e2e and
 16 manual. 31 of them call real LLM APIs and are skipped by default, so a plain `pytest` run
-collects 9,069.
+collects 9,166.
 
 | Tier | Scope | Mocks |
 |---|---|---|
@@ -89,7 +91,7 @@ Static checks: **ruff** (lint), **mypy** in strict mode, **tach** (module-bounda
 complexity, coupling, file-size and duplication checks. `scripts/quality.py` bundles them into gates
 that run before every commit.
 
-**Mutation testing.** `scripts/mutation.py` runs every night over 13 corpora with 220 hand-written
+**Mutation testing.** `scripts/mutation.py` runs every night over 15 corpora with 233 hand-written
 mutants. Each mutant breaks one line that a requirement depends on — for example, it changes the
 API server's bind address from `127.0.0.1` to `0.0.0.0` — and at least one test must fail. Each
 mutant ends as `PROTECTED`, `UNPROTECTED` or `UNMEASURED` (a hang is never counted as a pass).
