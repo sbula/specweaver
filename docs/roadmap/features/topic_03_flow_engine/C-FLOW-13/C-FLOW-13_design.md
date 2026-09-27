@@ -62,7 +62,7 @@ a cloned repo must not be able to send code to its own server.
 | AD-5 | Read with `tomllib`, write with `tomlkit` | tomlkit keeps the user's comments; tomllib is stdlib |
 | AD-6 | Each file is validated alone, strictly (`extra="forbid"`), before layering | every error can name its own file; a typo cannot pass as a default |
 | AD-7 | Catalogue seeded from models.dev (MIT, credited), version stamped, never fetched at runtime `[agreed 2026-09-26]` | its shape matches ours; runtime fetch is the anti-pattern |
-| AD-8 | Prices stored in USD per 1M tokens; CHF only at display, with the dated manual rate `[agreed 2026-09-26]` | the providers' unit; history does not shift when the rate changes |
+| AD-8 | Prices stored in USD per 1M tokens; converted only at display, to the one configured currency, with the dated manual rate `[agreed 2026-09-26]`; the currency is configurable, not fixed to CHF `[agreed 2026-09-27]` | the providers' unit; history does not shift when the rate changes |
 
 ## Functional Requirements
 
@@ -80,7 +80,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-10 | One adapter path | Factory, `ModelRouter` | SHALL obtain every adapter through the same resolver and wrapper, for direct and routed calls alike | routed calls stop skipping the brake, the limit and the usage flush |
 | FR-11 | No hard-coded models | Handlers, workflows | SHALL take the model from the resolver — the step's role, else `[roles] default`; with neither set the command SHALL refuse, naming the role and the `sw config` command that sets it — there is no built-in default model `[agreed 2026-09-26]`; the 11 hard-coded fallback model names are removed | no step silently asks for a model the user never chose |
 | FR-12 | One price source | Telemetry, `sw costs` | SHALL price every call from the catalogue plus machine overrides; no `default_costs` dict remains in any adapter; an unknown price SHALL be reported as unknown, not as 0 | the recorded number is right, or visibly unknown |
-| FR-13 | Money in CHF | `sw costs` | SHALL show prices and month-to-date spend in CHF at `usd_to_chf`, with `rate_date`; without a rate it SHALL show USD and say the rate is unset | the user reads francs, and knows how old the rate is |
+| FR-13 | One currency | `sw costs`, `sw usage`, brake values | SHALL show and take every amount in the one currency `[currency] code` sets, at `per_usd` with `rate_date`; without `[currency]` it SHALL use USD `[agreed 2026-09-27]` | one currency everywhere, the user's own, and they know how old the rate is |
 | FR-14 | One-time migration | Loader | SHALL, on first load, write today's `llm_profiles` and `llm_cost_overrides` into the machine file and each project's `llm_project_links` into that project's `specweaver.toml`, once, list every file it changed, then read the files only | nothing the user configured is lost; no second source remains; the user sees which files changed |
 | FR-15 | Commands write the files | `sw config`, `sw costs` | SHALL write the machine or project file with `tomlkit`, keeping comments, instead of the DB | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
@@ -130,7 +130,7 @@ a cloned repo must not be able to send code to its own server.
 |----|------|-----|-----------|------|
 | SF-01 | Settings models, loader, validator, layering, `sw config show` | FR-1, FR-2, FR-3, FR-4, FR-5 | — | [sf01](C-FLOW-13_sf01_implementation_plan.md) |
 | SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | [sf02](C-FLOW-13_sf02_implementation_plan.md) |
-| SF-03 | One adapter path, hard-coded models removed, one price source, CHF | FR-10, FR-11, FR-12, FR-13 | SF-02 | ⬜ |
+| SF-03 | One adapter path, hard-coded models removed, one price source, one currency | FR-10, FR-11, FR-12, FR-13 | SF-02 | [sf03](C-FLOW-13_sf03_implementation_plan.md) — built after SF-04 `[agreed 2026-09-27]` |
 | SF-04 | Migration and commands writing the files | FR-14, FR-15 | SF-01 | ⬜ |
 | SF-05 | `--model` for one run; brake values handed to `B-FLOW-05` | FR-16, FR-17 | SF-03 | ⬜ |
 
@@ -139,6 +139,6 @@ a cloned repo must not be able to send code to its own server.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Settings and layering | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Consumers switched over | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Consumers switched over | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Migration and writers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Run override, brake values | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
