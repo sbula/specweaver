@@ -1,0 +1,120 @@
+{
+  "schema": 2,
+  "feature": "C-FLOW-13",
+  "campaigns": [
+    {
+      "requirement": "FR-4",
+      "title": "A typo refuses",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_parse.py"
+      ],
+      "mutants": [
+        {
+          "id": "typo-passes-silently",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_Strict",
+          "old": "    model_config = ConfigDict(extra=\"forbid\")\n",
+          "new": "    model_config = ConfigDict(extra=\"ignore\")\n",
+          "breaks": "a misspelt key like max_paralel is ignored and the default silently applies",
+          "symbol_sha": "sha256:7b199830381d9cee31064f3a098034d050c9f56bf7274d8cf0f2104c38993ee7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The typo is the reported error",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_parse.py"
+      ],
+      "mutants": [
+        {
+          "id": "missing-reported-before-typo",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_validate",
+          "old": "        errors = sorted(exc.errors(), key=lambda error: error[\"type\"] != \"extra_forbidden\")\n",
+          "new": "        errors = exc.errors()\n",
+          "breaks": "the user is told a correct key is missing instead of being shown the typo on its line",
+          "symbol_sha": "sha256:649ca5fb4c693414847ac9c59dd310da3539c3934eb7e1e5ce33a8ede3d4703a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A project cannot say where code is sent",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_parse.py"
+      ],
+      "mutants": [
+        {
+          "id": "project-may-redirect",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_find_machine_only_key",
+          "old": "        if key in _MACHINE_ONLY_KEYS:\n",
+          "new": "        if False:\n",
+          "breaks": "a cloned repo's specweaver.toml defines a server and sends the user's code to it",
+          "symbol_sha": "sha256:ec4bd22e63d0f5ad1cdc485b2089a97063df1a646120c3b3c4fc6407142f7031"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A run override beats both files",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_layering.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-override-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "resolve_roles",
+          "old": "        (overrides.items(), RUN_OVERRIDE, None, ()),\n",
+          "new": "        # run override dropped\n",
+          "breaks": "--model for one run is silently ignored",
+          "symbol_sha": "sha256:bfb4e02ae08d96e74887ff9c99477c450eb520d0d3761510e0afcdfeaa7e48e7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A role's server must exist",
+      "scope": [
+        "tests/unit/core/config/test_llm_settings_layering.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-server-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "resolve_roles",
+          "old": "            if entry.server not in files.machine.servers:\n",
+          "new": "            if False:\n",
+          "breaks": "a role names a server nobody defined and the failure shows up only at call time",
+          "symbol_sha": "sha256:bfb4e02ae08d96e74887ff9c99477c450eb520d0d3761510e0afcdfeaa7e48e7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A broken file stops sw config show",
+      "scope": [
+        "tests/e2e/capabilities/core/test_llm_settings_show_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "show-broken-file-exits-zero",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/interfaces/llm_show.py",
+          "symbol": "config_show",
+          "old": "        raise typer.Exit(code=1) from err\n",
+          "new": "        return\n",
+          "breaks": "a broken settings file prints an error and exits 0, so scripts treat it as success",
+          "symbol_sha": "sha256:add7d1349425a187e59d1f95192118313c8e5534aa75d03f21b4947ec07b3b08"
+        }
+      ]
+    }
+  ]
+}

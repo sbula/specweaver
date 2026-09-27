@@ -92,3 +92,18 @@ Commit boundaries: CB-1 (items 1–3, unit tests), CB-2 (items 4–6, unit + int
 | Q-1 | `sw config show` must read the files, but `core.config.interfaces` may not import `core.config.bootstrap` (`tach.toml:42`) | (a) allow `core.config.interfaces → core.config.bootstrap` in `tach.toml`; (b) the command reads the files itself (a second reader, breaking NFR-4); (c) put the command in `interfaces.cli`, which may import bootstrap **(a)** `[agreed 2026-09-26]` — a CLI depending on the bootstrap adapter is the normal direction (`interfaces.cli` already does); one reader stays one reader |
 | Q-2 | Allowed `kind` values for a server (a name other code depends on) | the five existing provider names `gemini`, `openai`, `anthropic`, `mistral`, `qwen`, plus `openai-compatible` for vLLM, Ollama and similar | **as listed** `[agreed 2026-09-26]` |
 | Q-3 | `api_key_env` omitted for a hosted kind | (a) default to the adapter's variable (`ANTHROPIC_API_KEY`, …); (b) required | **(a)** `[agreed 2026-09-26]` — the adapters already declare it (`api_key_env_var`); `openai-compatible` defaults to none (keyless) |
+
+## As built (2026-09-27)
+
+Committed in two boundaries: `b3c501bc` (models, strict parsing) and `1e615931` (reader, layering,
+`sw config show`).
+
+- `sw config show` lives in `core/config/interfaces/llm_show.py`, registered on `config_app`, so
+  `cli.py` grows by two lines; the rows come from the pure `settings_report`.
+- A typo is reported before the "missing" error it causes (both are raised by pydantic).
+- `pyproject.toml` marks `pydantic.BaseModel` subclasses runtime-evaluated for ruff; two `noqa`
+  became unused and went.
+- Mutants: [C-FLOW-13_mutants.json](C-FLOW-13_mutants.json), 6, all protected.
+- Found on the way and fixed separately (`87dd3a2e`): the database semaphore was shared across event
+  loops.
+
