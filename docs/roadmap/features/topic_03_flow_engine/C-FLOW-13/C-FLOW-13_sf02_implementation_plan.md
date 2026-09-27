@@ -124,3 +124,21 @@ the two xfail e2e).
 
 **Rule `[agreed 2026-09-27]`:** SpecWeaver supports current models and current SDK majors only. No
 compatibility code for older ones.
+
+## As built (2026-09-27)
+
+Committed in three boundaries plus one dependency commit: `a5219f3f` (privacy rule), `050e1849`
+(catalogue), `2d3b9d53` (SDKs upgraded, Q-8), `fb691556` (adapters from servers).
+
+- The catalogue data lives in `infrastructure/llm/catalogue_data/` — a folder named `catalogue/`
+  beside `catalogue.py` read as the same name. 208 models; models.dev writes `0` for limits that do
+  not apply, which the script reads as unknown.
+- The adapter constructor lives once, on `LLMAdapter`; `""` as a key means "no key", `None` means
+  "read the adapter's variable".
+- Sampling values: the `openai` and `anthropic` kinds send none (their current models refuse them);
+  `qwen` and `openai-compatible` do.
+- OpenAI streaming is not implemented (`NotImplementedError`), so it has no output limit to set.
+- A key variable a server names (e.g. `WORK_ANTHROPIC_KEY`) is not on the sandbox's strip list; the
+  sandbox passes only allowlisted parent variables, so it reaches a child only through `extra_env`.
+- Mutants: [C-FLOW-13_mutants.json](C-FLOW-13_mutants.json) FR-6, FR-7, FR-8, FR-9, FR-18, all
+  protected.

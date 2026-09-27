@@ -25,8 +25,14 @@ Read the design before touching it. It says so in its own first section.
 
 `B-FLOW-05` is blocked on that decision, which `C-FLOW-13` now owns `[agreed 2026-09-26]`. `C-FLOW-13`'s design
 is APPROVED (2026-09-26): machine `settings.toml` + project `[llm]`; B-FLOW-05 is redesigned after it.
-SF-01 is committed (2026-09-27): the files parse strictly and `sw config show` reads them; no model call
-uses them until SF-03.
+SF-01 and SF-02 are committed (2026-09-27): the files parse strictly, `sw config show` reads them, a
+model catalogue ships, and an adapter can be built from a server entry (the GB10 included). No
+command uses them until SF-03 — the US-16 P2/P3 e2e is written and xfail until then.
+
+**Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
+google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
+see — tests use `tests/fake_http.py`, and a non-`live` test cannot reach a real server. Until SF-03,
+hosted Qwen is unusable: it needs an address, which only the settings file holds.
 
 ## Live and worth knowing
 
