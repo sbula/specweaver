@@ -39,7 +39,7 @@ depends_on = [ "specweaver.core.config", "specweaver.core.flow", "specweaver.inf
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
-depends_on = [ "specweaver.interfaces.cli", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.core.config",]
+depends_on = [ "specweaver.interfaces.cli", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.core.config", "specweaver.core.config.bootstrap",]
 
 [[modules]]
 path = "specweaver.core.flow"
@@ -183,7 +183,7 @@ expose = [ "cli", "cli.config_app",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.bootstrap",]
-expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "settings_loader.load_settings_for_active", "settings_loader.migrate_legacy_config",]
+expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "settings_loader.load_settings_for_active", "settings_loader.migrate_legacy_config", "llm_settings_loader.load_llm_settings", "llm_settings_loader.machine_settings_path",]
 
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]

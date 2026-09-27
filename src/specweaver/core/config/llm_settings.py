@@ -14,10 +14,14 @@ from __future__ import annotations
 
 import re
 import tomllib
+from dataclasses import dataclass, field
 from datetime import date
-from typing import Any, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _M = TypeVar("_M", bound=BaseModel)
 
@@ -213,6 +217,137 @@ def _find_machine_only_key(value: Any, path: tuple[str, ...]) -> tuple[str, ...]
         if found:
             return found
     return None
+
+
+# ---------------------------------------------------------------------------
+# Layering: machine → project → run override
+# ---------------------------------------------------------------------------
+
+#: Origin of a value that no file set.
+BUILT_IN = "built-in default"
+#: Origin of a value given for one run on the command line.
+RUN_OVERRIDE = "run --model"
+
+_SAMPLING_FIELDS = ("temperature", "max_output_tokens", "top_p", "top_k")
+
+
+@dataclass(frozen=True)
+class LlmSettingsFiles:
+    """Both settings files, parsed, with their text kept so every value can name its line."""
+
+    machine: MachineLlmFile
+    machine_source: str
+    machine_text: str
+    project: ProjectLlmSection
+    project_source: str
+    project_text: str
+
+    @classmethod
+    def from_texts(
+        cls, *, machine_text: str, machine_source: str, project_text: str, project_source: str
+    ) -> LlmSettingsFiles:
+        return cls(
+            machine=parse_machine_file(machine_text, machine_source),
+            machine_source=machine_source,
+            machine_text=machine_text,
+            project=parse_project_llm(project_text, project_source),
+            project_source=project_source,
+            project_text=project_text,
+        )
+
+
+@dataclass(frozen=True)
+class ResolvedRole:
+    """The one setting a role's calls use, and where each part of it came from."""
+
+    role: str
+    model: str
+    server: str
+    temperature: float | None = None
+    max_output_tokens: int | None = None
+    top_p: float | None = None
+    top_k: int | None = None
+    origin: dict[str, str] = field(default_factory=dict)
+
+
+def resolve_roles(
+    files: LlmSettingsFiles, run_overrides: dict[str, RoleEntry] | None = None
+) -> dict[str, ResolvedRole]:
+    """Each role's setting. A higher layer that names a role replaces it whole — model and sampling
+    together, since sampling tuned for one model means nothing for another."""
+    overrides = run_overrides or {}
+    layers: list[tuple[Iterable[tuple[str, RoleEntry]], str, str | None, tuple[str, ...]]] = [
+        (files.machine.roles.items(), files.machine_source, files.machine_text, ("roles",)),
+        (files.project.roles.items(), files.project_source, files.project_text, ("llm", "roles")),
+        (overrides.items(), RUN_OVERRIDE, None, ()),
+    ]
+    resolved: dict[str, ResolvedRole] = {}
+    for entries, source, text, prefix in layers:
+        for role, entry in entries:
+            origin = source if text is None else f"{source}:{_line_of(text, (*prefix, role))}"
+            if entry.server not in files.machine.servers:
+                raise SettingsFileError(
+                    source,
+                    ".".join((*prefix, role)),
+                    _line_of(text, (*prefix, role)) if text is not None else 0,
+                    f"names server '{entry.server}', which the machine settings file does not "
+                    "define",
+                )
+            resolved[role] = _resolved(role, entry, origin)
+    return resolved
+
+
+def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:
+    values = {name: getattr(entry, name) for name in _SAMPLING_FIELDS}
+    origins = {"model": origin, "server": origin}
+    origins.update({name: origin for name, value in values.items() if value is not None})
+    return ResolvedRole(role=role, model=entry.model, server=entry.server, origin=origins, **values)
+
+
+def settings_report(
+    files: LlmSettingsFiles, roles: dict[str, ResolvedRole]
+) -> list[tuple[str, str, str]]:
+    """Every effective LLM setting as (key, value, origin), for `sw config show`."""
+    machine = files.machine
+    at = f"{files.machine_source}:{{}}"
+    rows: list[tuple[str, str, str]] = []
+    for name, server in sorted(machine.servers.items()):
+        value = f"{server.kind} {server.base_url or ''} private={server.private} "
+        value += f"max_parallel={server.max_parallel} key={server.api_key_env or '-'}"
+        rows.append(
+            (
+                f"servers.{name}",
+                " ".join(value.split()),
+                at.format(_line_of(files.machine_text, ("servers", name))),
+            )
+        )
+    for role, resolved in sorted(roles.items()):
+        rows.append(
+            (f"roles.{role}", f"{resolved.model}@{resolved.server}", resolved.origin["model"])
+        )
+        for name in _SAMPLING_FIELDS:
+            value = getattr(resolved, name)
+            if value is not None:
+                rows.append((f"roles.{role}.{name}", str(value), resolved.origin[name]))
+    for name in BrakeValues.model_fields:
+        set_here = name in machine.brake.model_fields_set
+        origin = at.format(_line_of(files.machine_text, ("brake", name))) if set_here else BUILT_IN
+        rows.append((f"brake.{name}", f"{getattr(machine.brake, name):g}", origin))
+    if machine.currency is None:
+        rows.append(("currency", "not set — costs are shown in USD", BUILT_IN))
+    else:
+        rate = f"{machine.currency.usd_to_chf:g} CHF per USD, dated {machine.currency.rate_date}"
+        rows.append(("currency", rate, at.format(_line_of(files.machine_text, ("currency",)))))
+    project = files.project
+    if project.private_only:
+        rows.append(
+            (
+                "llm.private_only",
+                "true",
+                f"{files.project_source}:{_line_of(files.project_text, ('llm', 'private_only'))}",
+            )
+        )
+    return rows
 
 
 # ---------------------------------------------------------------------------

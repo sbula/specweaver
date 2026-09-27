@@ -12,6 +12,7 @@ import anyio
 import typer
 from rich.table import Table
 
+from specweaver.core.config.interfaces.llm_show import config_show
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
@@ -498,4 +499,5 @@ def routing_clear(
     anyio.run(_routing_clear)
 
 
+config_app.command("show")(config_show)
 config_app.add_typer(routing_app, name="routing")
