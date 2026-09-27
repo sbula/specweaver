@@ -11,7 +11,7 @@ authors = [
 
 dependencies = [
     "typer[all]>=0.21",
-    "google-genai>=1.0.0",
+    "google-genai>=2.25",
     "pydantic>=2.12",
     "pydantic-settings>=2.0",
     "python-dotenv>=1.0",
@@ -45,11 +45,11 @@ dependencies = [
 sw = "specweaver.interfaces.cli.main:app"
 
 [project.optional-dependencies]
-openai = ["openai>=1.5"]
-anthropic = ["anthropic>=0.25"]
-mistral = ["mistralai>=1.0"]
-qwen = ["openai>=1.5"]
-all-llm = ["openai>=1.5", "anthropic>=0.25", "mistralai>=1.0"]
+openai = ["openai>=3.19"]
+anthropic = ["anthropic>=1.8"]
+mistral = ["mistralai>=2.10"]
+qwen = ["openai>=3.19"]
+all-llm = ["openai>=3.19", "anthropic>=1.8", "mistralai>=2.10"]
 serve = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",

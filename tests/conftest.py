@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.baseline_snapshot import BASELINES, rewrites, snapshot
+from tests.fake_http import block_real_httpx2
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -77,3 +78,16 @@ def _baselines_are_read_only() -> Iterator[None]:
             + "\nPoint the tool at tmp_path instead — most take a --ledger/--baseline argument.",
             pytrace=False,
         )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_network(request: pytest.FixtureRequest) -> Iterator[None]:
+    """A test not marked `live` never reaches a real server through `httpx2` (openai, anthropic).
+
+    See `tests/fake_http.py` for why `respx` alone no longer covers this.
+    """
+    if request.node.get_closest_marker("live"):
+        yield
+        return
+    with block_real_httpx2():
+        yield

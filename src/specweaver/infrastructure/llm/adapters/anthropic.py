@@ -104,10 +104,11 @@ class AnthropicAdapter(LLMAdapter):
             "AnthropicAdapter.generate: model=%s, messages=%d", config.model, len(messages)
         )
 
+        # No sampling values: current Claude models refuse them with a 400, and anthropic 1.x
+        # does not accept them at all.
         kwargs: dict[str, Any] = {
             "model": config.model,
             "messages": anthropic_messages,
-            "temperature": config.temperature,
             "max_tokens": config.max_output_tokens,
         }
 
@@ -231,7 +232,6 @@ class AnthropicAdapter(LLMAdapter):
         kwargs: dict[str, Any] = {
             "model": config.model,
             "messages": anthropic_messages,
-            "temperature": config.temperature,
             "max_tokens": config.max_output_tokens,
             "tools": self._to_anthropic_tools(config.tools),
         }

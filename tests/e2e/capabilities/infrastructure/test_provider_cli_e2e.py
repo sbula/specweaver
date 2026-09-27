@@ -17,38 +17,38 @@ from specweaver.interfaces.cli.main import app  # type: ignore[attr-defined]
 runner = CliRunner()
 
 
-@pytest.fixture
-def mock_openai_response() -> typing.Generator[Any, None, None]:
-    # Mocking at the factory layer isn't true E2E, but mocking HTTP with respx
-    # or mocking the AsyncOpenAI client is better.
-    # Since respx is already in dev dependencies, we can use it.
-    import httpx
-    import respx
+_OPENAI_REPLY = {
+    "id": "chatcmpl-123",
+    "object": "chat.completion",
+    "created": 1677652288,
+    "model": "gpt-5.4",
+    "choices": [
+        {
+            "index": 0,
+            "message": {"role": "assistant", "content": "This is a drafted spec."},
+            "finish_reason": "stop",
+        }
+    ],
+    "usage": {"prompt_tokens": 50, "completion_tokens": 100, "total_tokens": 150},
+}
 
-    with respx.mock(base_url="https://api.openai.com/v1") as respx_mock:
-        route = respx_mock.post("/chat/completions").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "id": "chatcmpl-123",
-                    "object": "chat.completion",
-                    "created": 1677652288,
-                    "model": "gpt-5.4",
-                    "choices": [
-                        {
-                            "index": 0,
-                            "message": {
-                                "role": "assistant",
-                                "content": "This is a drafted spec.",
-                            },
-                            "finish_reason": "stop",
-                        }
-                    ],
-                    "usage": {"prompt_tokens": 50, "completion_tokens": 100, "total_tokens": 150},
-                },
-            )
-        )
-        yield route
+
+@pytest.fixture
+def mock_openai_response() -> typing.Generator[list[Any], None, None]:
+    """OpenAI answers every chat call; yields the requests it received.
+
+    openai 3.x sends through httpx2, which respx cannot see — see `tests/fake_http.py`.
+    """
+    import httpx2
+
+    from tests.fake_http import fake_httpx2
+
+    def reply(request: httpx2.Request) -> httpx2.Response:
+        assert str(request.url) == "https://api.openai.com/v1/chat/completions"
+        return httpx2.Response(200, json=_OPENAI_REPLY)
+
+    with fake_httpx2(reply) as seen:
+        yield seen
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def test_openai_draft_telemetry_journey(
             print(f"draft exception: {result.exception}")
 
     # 4. Verify HTTP layer was called
-    assert mock_openai_response.called, (
+    assert mock_openai_response, (
         f"The OpenAI API was never called. Exit: {result.exit_code}, Output: {result.stdout}"
     )
 
