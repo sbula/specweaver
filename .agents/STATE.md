@@ -25,6 +25,8 @@ Read the design before touching it. It says so in its own first section.
 
 `B-FLOW-05` is blocked on that decision, which `C-FLOW-13` now owns `[agreed 2026-09-26]`. `C-FLOW-13`'s design
 is APPROVED (2026-09-26): machine `settings.toml` + project `[llm]`; B-FLOW-05 is redesigned after it.
+SF-01 is committed (2026-09-27): the files parse strictly and `sw config show` reads them; no model call
+uses them until SF-03.
 
 ## Live and worth knowing
 

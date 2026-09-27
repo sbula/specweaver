@@ -14,7 +14,7 @@ Since moved (2026-09-25): `llm/` is now `src/specweaver/infrastructure/llm/`; di
    `LLMAdapter` abstract class from `llm/adapters/base.py`. It owns its SDK endpoints,
    request/response models, and context-window chunking.
 2. **Implement the overrides:**
-   1. `generate(prompt: str) -> str`: plain chat completions, no system injection, no tools.
+   1. `async generate(messages, config) -> LLMResponse`: plain chat completion, no tools.
    2. `generate_with_tools(messages, config, dispatcher)`: map the provider's native function-calling
       format (e.g. a JSON schema into Cohere's tool schema) and pipe native payload callbacks to the
       `loom/dispatcher.py`.
@@ -33,5 +33,6 @@ How telemetry is added:
 1. The `LLMFactory` (`llm/factory.py`) is asked for an LLM (e.g. "cohere").
 2. It instantiates your `CohereAdapter`.
 3. It wraps the instance in the `TelemetryCollector` proxy.
-4. The proxy records payload sizes, computes model costs against the `llm_cost_overrides` database,
-   and intercepts streaming chunks.
+4. The proxy records payload sizes, prices each call from the adapters' `default_costs` plus the
+   `cost_overrides` its caller passes (not every caller passes them), and intercepts streaming
+   chunks. `C-FLOW-13` replaces both with one catalogue.

@@ -37,6 +37,12 @@ $env:QWEN_API_KEY = "your-qwen-key"
 The default provider is `gemini`. Change it per project role with
 `sw config set-provider <provider>` (`--role`, default `draft`; optional `--model`).
 
+**Coming: one settings file.** LLM settings are moving into `~/.specweaver/settings.toml` (servers,
+roles, brake values, currency) and an `[llm]` section in each project's `specweaver.toml`
+(`C-FLOW-13`). `sw config show` already reads both and prints every value with the file and line it
+came from, and refuses a broken file naming the line. Model calls still use `set-provider` until the
+switch-over lands.
+
 ## 4. Initializing your First Project
 
 SpecWeaver keeps projects, configuration and artifact lineage in an embedded SQLite database.
