@@ -20,7 +20,7 @@ import logging
 
 from pydantic import BaseModel, Field
 
-from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.commons.enums.dal import DALLevel
 
 logger = logging.getLogger(__name__)
 

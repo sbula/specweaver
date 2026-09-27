@@ -118,6 +118,10 @@ ignore = [
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution.executor instead."
 
+[tool.ruff.lint.flake8-type-checking]
+# Pydantic resolves annotations at runtime, so a model's annotation imports must stay real imports.
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["specweaver"]
 
