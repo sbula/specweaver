@@ -68,3 +68,9 @@ def test_the_local_model_is_not_priced_from_a_hosted_namesake() -> None:
     assert facts is not None
     assert facts.context == 262144
     assert facts.usd_per_million_input is None
+    assert facts.sampling is not None
+    assert (facts.sampling.temperature, facts.sampling.top_p, facts.sampling.top_k) == (
+        1.0,
+        0.95,
+        40,
+    )
