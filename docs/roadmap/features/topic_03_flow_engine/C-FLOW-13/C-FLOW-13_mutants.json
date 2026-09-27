@@ -145,6 +145,75 @@
           "symbol_sha": "sha256:2ff75458a5df068ccc62d872dacf6c0156880520901ac39915481198fc01fe67"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Model facts layer generated → local → machine file",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_catalogue.py",
+        "tests/integration/infrastructure/llm/test_catalogue_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "machine-correction-loses",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/catalogue.py",
+          "symbol": "Catalogue.facts",
+          "old": "        return _merge(_merge(self.kinds.get(kind), known), override)\n",
+          "new": "        return _merge(override, _merge(self.kinds.get(kind), known))\n",
+          "breaks": "a price the user corrected in the machine file is overwritten by the shipped one",
+          "symbol_sha": "sha256:ceaa2c49fab185bb9d94df3d254bc8a552bffe0d60e7174c901ba0ceb1153f4b"
+        },
+        {
+          "id": "local-loses-to-generated",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/catalogue.py",
+          "symbol": "Catalogue.from_texts",
+          "old": "            models[key] = _combine(models[key], facts) if key in models else facts\n",
+          "new": "            models[key] = _combine(facts, models[key]) if key in models else facts\n",
+          "breaks": "a hand-checked fact in local.toml is silently replaced by the generated file",
+          "symbol_sha": "sha256:02b28bd74a6463e362ef39a12520bab09fa3ae59ceae5eb11083dc04a561a94b"
+        },
+        {
+          "id": "machine-only-model-unknown",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/catalogue.py",
+          "symbol": "Catalogue.facts",
+          "old": "        if known is None and override is None:\n",
+          "new": "        if known is None:\n",
+          "breaks": "a model the user describes only in the machine file has no facts",
+          "symbol_sha": "sha256:ceaa2c49fab185bb9d94df3d254bc8a552bffe0d60e7174c901ba0ceb1153f4b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "The catalogue is regenerated from models.dev, filtered and stamped",
+      "scope": [
+        "tests/unit/scripts/test_update_model_catalogue.py"
+      ],
+      "mutants": [
+        {
+          "id": "deprecated-models-kept",
+          "origin": "authored",
+          "file": "scripts/update_model_catalogue.py",
+          "symbol": "convert",
+          "old": "            if model.get(\"status\") == \"deprecated\":\n",
+          "new": "            if False:\n",
+          "breaks": "deprecated models ship in the catalogue and can be chosen",
+          "symbol_sha": "sha256:19b0b9c671bec6c8acd498a718d0eb2b85d13ea40d9ed950c0d9ae26b50af1ee"
+        },
+        {
+          "id": "zero-limit-shipped",
+          "origin": "authored",
+          "file": "scripts/update_model_catalogue.py",
+          "symbol": "_facts",
+          "old": "        \"context\": limit.get(\"context\") or None,\n",
+          "new": "        \"context\": limit.get(\"context\"),\n",
+          "breaks": "a zero context from models.dev makes the whole shipped catalogue refuse to load",
+          "symbol_sha": "sha256:a55aa263cf4f2a74e0b99a0c184ccd62bfb4070f922f2bd8e107934464622ea8"
+        }
+      ]
     }
   ]
 }

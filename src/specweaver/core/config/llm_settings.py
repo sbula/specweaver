@@ -108,11 +108,15 @@ class Sampling(_Strict):
 
 
 class ModelFacts(_Strict):
-    """Facts about a model the shipped catalogue lacks or gets wrong."""
+    """Facts about one model. The shipped catalogue holds them; the machine file corrects them."""
 
     context: int | None = Field(default=None, ge=1)
     max_output: int | None = Field(default=None, ge=1)
     tool_calls: bool | None = None
+    usd_per_million_input: float | None = Field(default=None, ge=0)
+    usd_per_million_output: float | None = Field(default=None, ge=0)
+    #: One output limit also bounds the model's hidden thinking, so a call's cost has a ceiling.
+    thinking_in_output_cap: bool | None = None
     sampling: Sampling | None = None
 
 

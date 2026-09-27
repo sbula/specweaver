@@ -31,6 +31,8 @@ exposes:
   - QwenAdapter
   - get_adapter_class
   - get_merged_default_costs
+  - Catalogue
+  - shipped_catalogue
   - LLMResponse
   - LLMError
   - PromptBuilder

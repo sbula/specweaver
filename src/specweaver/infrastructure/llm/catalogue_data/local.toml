@@ -1,0 +1,25 @@
+# What models.dev does not say. Edited by hand; wins over models_dev.json, loses to the machine
+# settings file. models_dev.json is generated from models.dev (MIT, copyright and licence inside it)
+# by scripts/update_model_catalogue.py — never edit that one.
+#
+# A fact left out is unknown, and unknown is never read as false or 0.
+
+schema_version = 1
+
+# Whether the one output limit a call sends also bounds the model's hidden thinking.
+# Checked against each provider's documentation on 2026-09-27. Mistral and Qwen do not say, so
+# they are left unknown.
+[kinds.openai]
+thinking_in_output_cap = true   # max_completion_tokens counts reasoning tokens
+
+[kinds.anthropic]
+thinking_in_output_cap = true   # thinking tokens count toward max_tokens
+
+[kinds.gemini]
+thinking_in_output_cap = true   # max_output_tokens includes thought tokens
+
+# Models on a local server. A hosted entry of the same name is never used for these.
+[models."openai-compatible/qwen3-coder-next"]
+context = 262144
+tool_calls = true
+note = "vLLM: serve with --tool-call-parser qwen3_xml; qwen3_coder loops on long tool inputs"

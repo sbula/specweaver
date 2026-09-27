@@ -34,10 +34,10 @@ which now also reports the privacy rule.
 
 **CB-2 — catalogue** · FR-6, FR-18
 
-3. `infrastructure/llm/catalogue/models_dev.json` (generated, never hand-edited): `schema_version`,
+3. `infrastructure/llm/catalogue_data/models_dev.json` (generated, never hand-edited): `schema_version`,
    `source {url, fetched, etag, repo_commit}`, `models {"<kind>/<model>": {...}}` for the five hosted
    kinds, non-deprecated models only, fields: prices, context, max output, tool calling.
-4. `infrastructure/llm/catalogue/local.toml` (hand-written, credited, wins over the generated file):
+4. `infrastructure/llm/catalogue_data/local.toml` (hand-written, credited, wins over the generated file):
    per-kind `thinking_in_output_cap`, sampling defaults, notes (the vLLM `qwen3_xml` parser).
 5. `infrastructure/llm/catalogue.py`: `model_facts(kind, model, overrides) -> ModelFacts | None`.
    Order: generated → local → machine `[models."<id>"]`. An `openai-compatible` server is never
@@ -72,7 +72,7 @@ which now also reports the privacy rule.
 | File | Change | FR |
 |------|--------|-----|
 | `src/specweaver/core/config/llm_settings.py` | privacy check; `ModelFacts` fields | FR-9, FR-6 |
-| `src/specweaver/infrastructure/llm/catalogue.py`, `catalogue/*.json`, `catalogue/local.toml` | new | FR-6 |
+| `src/specweaver/infrastructure/llm/catalogue.py`, `catalogue_data/models_dev.json`, `catalogue_data/local.toml` | new | FR-6 |
 | `scripts/update_model_catalogue.py` | new | FR-18 |
 | `src/specweaver/infrastructure/llm/servers.py` | new | FR-7, FR-8 |
 | `src/specweaver/infrastructure/llm/adapters/*.py` | `base_url`; keyless | FR-7 |

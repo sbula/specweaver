@@ -54,6 +54,9 @@ agent_turns = 10
 context = 262144
 max_output = 32768
 tool_calls = true
+usd_per_million_input = 0.0
+usd_per_million_output = 0.0
+thinking_in_output_cap = true
 sampling = { temperature = 1.0, top_p = 0.95, top_k = 40 }
 """
 
@@ -68,6 +71,8 @@ class TestTheMachineFileParses:
         assert machine.servers["anthropic"].max_parallel == 3
         assert machine.brake.hosted_chf_per_run == 20
         assert machine.models["qwen3-coder-next"].context == 262144
+        assert machine.models["qwen3-coder-next"].usd_per_million_output == 0.0
+        assert machine.models["qwen3-coder-next"].thinking_in_output_cap is True
 
     def test_a_hosted_server_defaults_to_its_providers_key_variable(self) -> None:
         machine = parse_machine_file(_MACHINE, "settings.toml")
@@ -218,3 +223,12 @@ class TestAProjectMayChooseButNotRedirect:
 
         assert "machine" in str(err).lower()
         assert err.line > 0
+
+
+def test_a_negative_price_is_refused() -> None:
+    text = '[models."m"]\nusd_per_million_input = -1.0\n'
+
+    with pytest.raises(SettingsFileError) as caught:
+        parse_machine_file(text, "settings.toml")
+
+    assert caught.value.line == 2
