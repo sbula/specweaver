@@ -97,3 +97,26 @@ def test_gemini_is_never_rerouted_to_vertex(monkeypatch: pytest.MonkeyPatch) -> 
         str(client._api_client._http_options.base_url)
         == "https://generativelanguage.googleapis.com/"
     )
+
+
+@pytest.mark.asyncio
+async def test_gemini_sends_exactly_the_sampling_that_is_set() -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
+
+    adapter = GeminiAdapter(api_key="k")
+    client = MagicMock()
+    client.aio.models.generate_content = AsyncMock(side_effect=RuntimeError("stop here"))
+    adapter._client = client
+
+    async def sent(config: GenerationConfig):
+        with pytest.raises(Exception, match="stop here"):
+            await adapter.generate([Message(role=Role.USER, content="x")], config)
+        return client.aio.models.generate_content.call_args.kwargs["config"]
+
+    unset = await sent(GenerationConfig(model="m"))
+    full = await sent(GenerationConfig(model="m", temperature=1.0, top_p=0.95, top_k=40))
+
+    assert (unset.temperature, unset.top_p, unset.top_k) == (None, None, None)
+    assert (full.temperature, full.top_p, full.top_k) == (1.0, 0.95, 40)

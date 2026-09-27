@@ -21,6 +21,7 @@ thinking_in_output_cap = true   # max_output_tokens includes thought tokens
 # Models on a local server. A hosted entry of the same name is never used for these.
 [models."openai-compatible/qwen3-coder-next"]
 context = 262144
+max_output = 65536   # the model card's own examples use max_new_tokens=65536
 tool_calls = true
 sampling = { temperature = 1.0, top_p = 0.95, top_k = 40 }   # the model card's values
 note = "vLLM: serve with --tool-call-parser qwen3_xml; qwen3_coder loops on long tool inputs"

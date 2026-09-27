@@ -74,6 +74,21 @@ class OpenAIAdapter(LLMAdapter):
     #: OpenAI's current models (GPT-5 and later) refuse a non-default temperature with a 400.
     sends_sampling: ClassVar[bool] = False
 
+    def _sampling_kwargs(self, config: GenerationConfig) -> dict[str, Any]:
+        """The sampling values that are set, for a server that accepts them."""
+        if not self.sends_sampling:
+            return {}
+        kwargs: dict[str, Any] = {
+            name: value
+            for name in ("temperature", "top_p")
+            if (value := getattr(config, name)) is not None
+        }
+        if config.top_k is not None:
+            kwargs["extra_body"] = {
+                "top_k": config.top_k
+            }  # not an OpenAI field; vLLM and DashScope read it
+        return kwargs
+
     def _get_client(self) -> Any:
         if self._client is None:
             self._client = openai.AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
@@ -132,8 +147,7 @@ class OpenAIAdapter(LLMAdapter):
             "messages": oai_messages,
             self.output_limit_field: config.max_output_tokens,
         }
-        if self.sends_sampling:
-            kwargs["temperature"] = config.temperature
+        kwargs.update(self._sampling_kwargs(config))
 
         if config.response_format == "json":
             kwargs["response_format"] = {"type": "json_object"}
@@ -231,8 +245,7 @@ class OpenAIAdapter(LLMAdapter):
             self.output_limit_field: config.max_output_tokens,
             "tools": self._to_openai_tools(config.tools),
         }
-        if self.sends_sampling:
-            kwargs["temperature"] = config.temperature
+        kwargs.update(self._sampling_kwargs(config))
 
         cumulative_usage = TokenUsage()
 

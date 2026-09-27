@@ -327,6 +327,86 @@
           "symbol_sha": "sha256:afd19986e4f84bfb8f922d7bbd34743a75aabf1de3835aef278a8be73faa6693"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "One resolver: one adapter per server, one budget per run, the catalogue's facts",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_resolve.py",
+        "tests/integration/infrastructure/llm/test_resolve_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "budget-not-shared",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                adapter_for_server(server_name, server), self._project, budget=self._budget\n",
+          "new": "                adapter_for_server(server_name, server), self._project\n",
+          "breaks": "each server gets its own unlimited budget, so the run's spend brake never sees those calls",
+          "symbol_sha": "sha256:692e4e3fa1603755c950e1578843475faea25fcab1cd232a4f8e20fd390f6a19"
+        },
+        {
+          "id": "adapter-per-call",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "        if server_name not in self._by_server:\n",
+          "new": "        if True:\n",
+          "breaks": "every role builds its own adapter, so the server's parallel limit and the flush list split",
+          "symbol_sha": "sha256:692e4e3fa1603755c950e1578843475faea25fcab1cd232a4f8e20fd390f6a19"
+        },
+        {
+          "id": "catalogue-sampling-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "_sampling",
+          "old": "        if value is None and shipped is not None:\n",
+          "new": "        if False:\n",
+          "breaks": "the model card's sampling values never reach the local model",
+          "symbol_sha": "sha256:8c177e0a961fb4c99f9a627b94cfe830668fbd0e0ea196e5e25f92fefa4527b7"
+        },
+        {
+          "id": "missing-key-not-refused",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._check_key",
+          "old": "        if variable and not os.environ.get(variable):\n",
+          "new": "        if False:\n",
+          "breaks": "a cloud role without its key starts a run and fails only at its first call",
+          "symbol_sha": "sha256:d2723e2d239802c0a56c9c22194c69e24801c2208a4318d7af49a8eb43dc0496"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "No hard-coded model: a role, else the default role, else refused",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_resolve.py",
+        "tests/integration/infrastructure/llm/test_resolve_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "default-role-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._setting",
+          "old": "        setting = self._roles.get(role) or self._roles.get(DEFAULT_ROLE)\n",
+          "new": "        setting = self._roles.get(role)\n",
+          "breaks": "the one fallback model is never used; every unset role refuses",
+          "symbol_sha": "sha256:d08137e26c0895435ed0b0047de7cfe7f12914339ca8cff89ef26895aea9b11b"
+        },
+        {
+          "id": "role-output-limit-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._output_limit",
+          "old": "        limit = setting.max_output_tokens or (facts.max_output if facts else None)\n",
+          "new": "        limit = facts.max_output if facts else None\n",
+          "breaks": "the role's own output limit is ignored for the model's maximum",
+          "symbol_sha": "sha256:20b7921ed8ec96b0515815b051526dff77e952b3d150e4967f9acb1673449d35"
+        }
+      ]
     }
   ]
 }

@@ -59,6 +59,23 @@ class TestMistralAdapter:
         kwargs = mock_client.chat.complete_async.call_args.kwargs
         assert kwargs["model"] == "mistral-large-latest"
         assert kwargs["messages"] == [{"role": "user", "content": "Bonjour"}]
+        assert "temperature" not in kwargs  # none set, none sent
+
+    @pytest.mark.asyncio
+    async def test_a_set_temperature_is_sent(self) -> None:
+        adapter = MistralAdapter(api_key="test-key")
+        mock_client = MagicMock()
+        mock_client.chat.complete_async = AsyncMock(side_effect=RuntimeError("stop here"))
+        adapter._client = mock_client
+
+        with pytest.raises(Exception, match="stop here"):
+            await adapter.generate(
+                [Message(role=Role.USER, content="x")],
+                GenerationConfig(model="m", temperature=0.4, top_p=0.9),
+            )
+
+        kwargs = mock_client.chat.complete_async.call_args.kwargs
+        assert (kwargs["temperature"], kwargs["top_p"]) == (0.4, 0.9)
 
     @pytest.mark.asyncio
     async def test_generate_with_tools_no_calls(self) -> None:

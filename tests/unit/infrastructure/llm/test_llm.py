@@ -38,7 +38,7 @@ class TestLLMModels:
 
     def test_generation_config_defaults(self) -> None:
         config = GenerationConfig(model="gemini-2.5-flash")
-        assert config.temperature == 0.7
+        assert (config.temperature, config.top_p, config.top_k) == (None, None, None)
         assert config.max_output_tokens == 4096
         assert config.response_format == "text"
         assert config.system_instruction is None

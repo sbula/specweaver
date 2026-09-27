@@ -42,7 +42,7 @@ async def _sent_body(adapter: OpenAIAdapter, expected_url: str) -> dict:
     with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:
         await adapter.generate(
             [Message(role=Role.USER, content="hi")],
-            GenerationConfig(model="m", max_output_tokens=512),
+            GenerationConfig(model="m", max_output_tokens=512, temperature=0.7),
         )
     assert str(seen[0].url) == expected_url
     return json.loads(seen[0].content)
@@ -107,3 +107,21 @@ async def test_openai_gets_no_sampling_value_but_qwen_and_local_servers_do() -> 
 
     assert "temperature" not in openai
     assert local["temperature"] == qwen["temperature"] == 0.7
+
+
+@pytest.mark.asyncio
+async def test_a_local_server_gets_exactly_the_sampling_that_is_set() -> None:
+    adapter = OpenAICompatibleAdapter(base_url="http://gb10:8000/v1")
+
+    async def body(config: GenerationConfig) -> dict:
+        with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:
+            await adapter.generate([Message(role=Role.USER, content="hi")], config)
+        return json.loads(seen[0].content)
+
+    unset = await body(GenerationConfig(model="m", max_output_tokens=64))
+    full = await body(
+        GenerationConfig(model="m", max_output_tokens=64, temperature=1.0, top_p=0.95, top_k=40)
+    )
+
+    assert not {"temperature", "top_p", "top_k"} & set(unset)
+    assert (full["temperature"], full["top_p"], full["top_k"]) == (1.0, 0.95, 40)

@@ -57,6 +57,30 @@ def _assistant_message(msg: Any) -> dict[str, Any]:
     }
 
 
+def _request(messages: list[Message], config: GenerationConfig) -> dict[str, Any]:
+    """The chat request both generation paths send; the tool path adds its tools."""
+    mistral_messages: list[dict[str, Any]] = []
+    if config.system_instruction:
+        mistral_messages.append({"role": "system", "content": config.system_instruction})
+    for msg in messages:
+        mistral_messages.append({"role": str(msg.role.value), "content": msg.content})
+    return {
+        "model": config.model,
+        "messages": mistral_messages,
+        "max_tokens": config.max_output_tokens,
+        **_sampling(config),
+    }
+
+
+def _sampling(config: GenerationConfig) -> dict[str, float]:
+    """The sampling values that are set; Mistral has no `top_k`."""
+    return {
+        name: value
+        for name in ("temperature", "top_p")
+        if (value := getattr(config, name)) is not None
+    }
+
+
 class MistralAdapter(LLMAdapter):
     """Adapter for Mistral models."""
 
@@ -99,18 +123,7 @@ class MistralAdapter(LLMAdapter):
 
         client = self._get_client()
         logger.debug("MistralAdapter.generate: model=%s, messages=%d", config.model, len(messages))
-        mistral_messages: list[dict[str, Any]] = []
-        if config.system_instruction:
-            mistral_messages.append({"role": "system", "content": config.system_instruction})
-        for msg in messages:
-            mistral_messages.append({"role": str(msg.role.value), "content": msg.content})
-
-        kwargs: dict[str, Any] = {
-            "model": config.model,
-            "messages": mistral_messages,
-            "temperature": config.temperature,
-            "max_tokens": config.max_output_tokens,
-        }
+        kwargs = _request(messages, config)
 
         try:
             response = await client.chat.complete_async(**kwargs)
@@ -205,20 +218,10 @@ class MistralAdapter(LLMAdapter):
         if not config.tools:
             return await self.generate(messages, config)
 
+        kwargs = _request(messages, config)
+        kwargs["tools"] = self._to_mistral_tools(config.tools)
+        mistral_messages = kwargs["messages"]
         client = self._get_client()
-        mistral_messages: list[dict[str, Any]] = []
-        if config.system_instruction:
-            mistral_messages.append({"role": "system", "content": config.system_instruction})
-        for msg in messages:
-            mistral_messages.append({"role": str(msg.role.value), "content": msg.content})
-
-        kwargs: dict[str, Any] = {
-            "model": config.model,
-            "messages": mistral_messages,
-            "temperature": config.temperature,
-            "max_tokens": config.max_output_tokens,
-            "tools": self._to_mistral_tools(config.tools),
-        }
 
         cumulative_usage = TokenUsage()
 

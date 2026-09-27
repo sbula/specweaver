@@ -110,7 +110,7 @@ class GeminiAdapter(LLMAdapter):
         client = self._get_client()
         system_instruction, contents = _messages_to_gemini(messages)
         logger.debug(
-            "GeminiAdapter.generate: model=%s temp=%.2f max_tokens=%d messages=%d",
+            "GeminiAdapter.generate: model=%s temp=%s max_tokens=%d messages=%d",
             config.model,
             config.temperature,
             config.max_output_tokens,
@@ -119,6 +119,8 @@ class GeminiAdapter(LLMAdapter):
 
         gen_config = types.GenerateContentConfig(
             temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
             max_output_tokens=config.max_output_tokens,
             system_instruction=system_instruction,
             response_mime_type="application/json" if config.response_format == "json" else None,
@@ -148,6 +150,8 @@ class GeminiAdapter(LLMAdapter):
 
         gen_config = types.GenerateContentConfig(
             temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
             max_output_tokens=config.max_output_tokens,
             system_instruction=system_instruction,
         )
@@ -292,6 +296,8 @@ class GeminiAdapter(LLMAdapter):
         gen_config = types.GenerateContentConfig(
             tools=gemini_tools,  # type: ignore[arg-type]
             temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
             max_output_tokens=config.max_output_tokens,
             system_instruction=system_instruction,
         )

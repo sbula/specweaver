@@ -62,7 +62,11 @@ class GenerationConfig(BaseModel):
     """
 
     model: str
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    # Sampling: `None` is not sent, so the server's own default applies. Several current models
+    # refuse any value but their default.
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    top_p: float | None = Field(default=None, gt=0.0, le=1.0)
+    top_k: int | None = Field(default=None, ge=1)
     max_output_tokens: int = Field(default=4096, gt=0)
     response_format: Literal["text", "json"] = "text"
     system_instruction: str | None = None
@@ -70,7 +74,6 @@ class GenerationConfig(BaseModel):
     max_tool_rounds: int = 5  # Max agentic loop iterations
     task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
     run_id: str = ""  # Telemetry lineage correlation (3.14)
-    # Future: top_p, stop_sequences, seed
 
 
 class TokenUsage(BaseModel):
