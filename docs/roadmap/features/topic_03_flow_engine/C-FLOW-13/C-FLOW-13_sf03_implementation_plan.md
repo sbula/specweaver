@@ -1,6 +1,7 @@
 # C-FLOW-13 SF-03 — Consumers Switched Over
 
-**Status**: APPROVED — approved by Steve Bula `[agreed 2026-09-27]` · names `code`, `per_usd`, `hosted_spend_per_run` `[agreed 2026-09-27]` · **FRs owned**: FR-10, FR-11, FR-12, FR-13 · **Depends on**: SF-02 (committed) ·
+**Status**: APPROVED — approved by Steve Bula `[agreed 2026-09-27]` ·
+names `code`, `per_usd`, `hosted_spend_per_run` `[agreed 2026-09-27]` · **FRs owned**: FR-10, FR-11, FR-12, FR-13, FR-15 · **Depends on**: SF-02 (committed) ·
 Design: [C-FLOW-13_design.md](C-FLOW-13_design.md) §Sub-features → SF-03
 
 ## Goal
@@ -86,19 +87,38 @@ fallback model. No model name remains in code.
 | E2E P6 | Journey | `sw costs` and `sw usage` show the configured currency with the rate date; no `[currency]` → USD | FR-13 |
 | Unit | Degradation | `sw run` with an unset role → refused before the first call | FR-11 |
 | E2E | Journey | `sw run` pipeline: a routed step's usage is recorded (was never flushed) | FR-10 |
+| E2E | Journey | `sw config set-role draft m@gb10` then `sw config show` → the value, its file and line; a comment above it survives | FR-15 |
+| Unit | Hostile | `set-role` naming an unknown server → refused, file unchanged | FR-15 |
+| Integration | Happy | Alembic upgrade drops the three tables; downgrade restores them | FR-15 |
 
 Mutants to record: fall back to a hard-coded model; router bypassing the shared budget; unknown price
 recorded as 0; CHF shown without conversion; routed collector not flushed.
 
-Commit boundaries: CB-1 (items 1–3), CB-2 (4–6), CB-3 (7–10, with the e2e).
+**CB-4 — commands write the files; the old DB settings go** · FR-15
+
+11. `core/config/bootstrap/llm_settings_writer.py` (the only writer, NFR-4): set a role, set or remove
+    a model's prices, with `tomlkit`, keeping comments and key order (NFR-6); validate the result with
+    the SF-01 parser before writing, so a command never leaves a broken file.
+12. `sw config set-role <role> <model@server> [--project]` replaces `set-provider` and
+    `routing set/show/clear`. `sw costs set <model> <input> <output>` takes the price per 1M tokens
+    in the configured currency and stores USD; `sw costs reset <model>` removes it.
+13. Alembic drops `llm_profiles`, `llm_project_links`, `llm_cost_overrides`; the profile reading in
+    `settings_loader`, the DB seeds and the repository methods go. Servers, currency and brake values
+    are edited in the file by hand (Q-9).
+
+Commit boundaries: CB-1 (items 1–3), CB-2 (4–6), CB-3 (7–10, with the e2e), CB-4 (11–13).
 
 ## Decisions (audit)
 
 | # | Question | Options | Proposal |
 |---|----------|---------|----------|
-| Q-1 | After SF-03 the DB profiles, routing entries and price overrides are ignored, and `sw config set-provider`, `routing set`, `sw costs set` write to a DB nothing reads. SF-04 (migration, commands write files) depends only on SF-01 | (a) build SF-04 first, then SF-03; (b) SF-03 first; the DB commands refuse until SF-04 | **(a)** `[agreed 2026-09-27]` — no commit leaves a command that silently does nothing |
+| Q-1 | After SF-03 the DB profiles, routing entries and price overrides are ignored, and `sw config set-provider`, `routing set`, `sw costs set` write to a DB nothing reads. SF-04 (migration, commands write files) depends only on SF-01 | (a) build SF-04 first, then SF-03; (b) SF-03 first; the DB commands refuse until SF-04 | ~~(a) SF-04 first~~ — superseded by Q-7/Q-8 the same day: no migration, and the old commands go in SF-03's last commit |
 | Q-2 | Role per consumer: `sw draft`, draft handlers → `draft`; `sw review`, review handlers, arbiter, drift, REST review → `review`; `sw implement`, generation handlers, REST implement → `implement`; plan, decompose → `plan`; lint-fix → `check`; standards scan and enrich → `check` | (a) as listed; (b) change some | **(a)** `[agreed 2026-09-27]` — `default` is the one fallback, set in one place |
 | Q-3 | `sw review` forces temperature 0.3, `sw implement` and REST implement 0.2 | (a) remove: role, then catalogue, else not sent; (b) keep as defaults | **(a)** `[agreed 2026-09-27]` |
 | Q-4 | Output limit when the role sets none | (a) the model's own maximum from the catalogue; unknown → refused, naming `max_output_tokens`; (b) a fixed default | **(a)** `[agreed 2026-09-27]` |
 | Q-5 | A call with an unknown price | (a) stored as unknown; the spend brake counts its tokens, and says once that its money is unknown; (b) refuse models without a price | **(a)** `[agreed 2026-09-27]` |
 | Q-6 | `sw usage` shows spend in USD | one currency everywhere, and it is configurable | **`[currency] code`, `per_usd`, `rate_date`; unset → USD** `[agreed 2026-09-27]` |
+| Q-7 | Migrate the DB's LLM settings (FR-14)? | measured: 3 seeded profiles (Gemini 2.5), 0 links, 0 overrides | **dropped** `[agreed 2026-09-27]` (design AD-9) |
+| Q-8 | Where FR-15 lives | (a) SF-03's last commit, with the old commands and tables removed in the same step; (b) SF-04 | **(a)** `[agreed 2026-09-27]` — no commit with a command that does nothing; SF-04 retired |
+| Q-9 | Which commands | (a) `set-role`, `costs set`, `costs reset` only; (b) also `set-server`, `set-currency` | **(a)** `[agreed 2026-09-27]` |
+| Q-10 | The old tables | (a) dropped by Alembic; (b) left unused | **(a)** `[agreed 2026-09-27]` |

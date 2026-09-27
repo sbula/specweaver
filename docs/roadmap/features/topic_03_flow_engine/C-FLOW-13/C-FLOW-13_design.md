@@ -7,7 +7,7 @@
 |---|---|
 | Absorbs | `D-FLOW-05` Model Catalogue Adoption (retired 2026-09-26) |
 | Enables | `B-FLOW-05` brake values · `A-FLOW-01` model choice |
-| Consumes | `D-FLOW-03` static routing · `C-FLOW-01` telemetry · `E-FLOW-01` config DB (migration source only) |
+| Consumes | `D-FLOW-03` static routing · `C-FLOW-01` telemetry · `E-FLOW-01` config DB (its LLM tables are removed) |
 | Not touched | brake behaviour (`B-FLOW-05`) · measuring and choosing models (`A-FLOW-01`) · API keys' storage (env vars stay) |
 
 ## What it does
@@ -37,13 +37,12 @@ graph LR
     F --> A["adapters<br/>client from server entry"]
     CLI["sw config / sw costs"] -->|"tomlkit, comments kept"| M
     CLI --> P
-    DB[("old DB tables")] -.->|"once"| MIG["migration"] --> M
 ```
 
 | Piece | Lives in | Why there |
 |---|---|---|
 | `LlmSettings` models (servers, roles, brake, currency, model facts) | `core.config` | pure, importable by llm, flow, cli (`tach.toml`) |
-| Loader, validator, writer, migration | `core.config.bootstrap` | the only module allowed file + DB + env I/O for settings |
+| Loader, validator, writer | `core.config.bootstrap` | the only module allowed file + DB + env I/O for settings |
 | Catalogue data file + resolver | `infrastructure.llm` | read by adapters and telemetry without importing bootstrap |
 | Adapter client construction from a server entry | `infrastructure.llm.adapters` | one place builds every client |
 
@@ -63,6 +62,7 @@ a cloned repo must not be able to send code to its own server.
 | AD-6 | Each file is validated alone, strictly (`extra="forbid"`), before layering | every error can name its own file; a typo cannot pass as a default |
 | AD-7 | Catalogue seeded from models.dev (MIT, credited), version stamped, never fetched at runtime `[agreed 2026-09-26]` | its shape matches ours; runtime fetch is the anti-pattern |
 | AD-8 | Prices stored in USD per 1M tokens; converted only at display, to the one configured currency, with the dated manual rate `[agreed 2026-09-26]`; the currency is configurable, not fixed to CHF `[agreed 2026-09-27]` | the providers' unit; history does not shift when the rate changes |
+| AD-9 | No migration from the database `[agreed 2026-09-27]` | measured 2026-09-27: the only user's DB held 3 seeded profiles with retired Gemini 2.5 models, 0 links, 0 overrides; old models are not supported, so a migration would move nothing |
 
 ## Functional Requirements
 
@@ -81,8 +81,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-11 | No hard-coded models | Handlers, workflows | SHALL take the model from the resolver — the step's role, else `[roles] default`; with neither set the command SHALL refuse, naming the role and the `sw config` command that sets it — there is no built-in default model `[agreed 2026-09-26]`; the 11 hard-coded fallback model names are removed | no step silently asks for a model the user never chose |
 | FR-12 | One price source | Telemetry, `sw costs` | SHALL price every call from the catalogue plus machine overrides; no `default_costs` dict remains in any adapter; an unknown price SHALL be reported as unknown, not as 0 | the recorded number is right, or visibly unknown |
 | FR-13 | One currency | `sw costs`, `sw usage`, brake values | SHALL show and take every amount in the one currency `[currency] code` sets, at `per_usd` with `rate_date`; without `[currency]` it SHALL use USD `[agreed 2026-09-27]` | one currency everywhere, the user's own, and they know how old the rate is |
-| FR-14 | One-time migration | Loader | SHALL, on first load, write today's `llm_profiles` and `llm_cost_overrides` into the machine file and each project's `llm_project_links` into that project's `specweaver.toml`, once, list every file it changed, then read the files only | nothing the user configured is lost; no second source remains; the user sees which files changed |
-| FR-15 | Commands write the files | `sw config`, `sw costs` | SHALL write the machine or project file with `tomlkit`, keeping comments, instead of the DB | the commands and the file are one truth |
+| FR-15 | Commands write the files | `sw config set-role`, `sw costs set`, `sw costs reset` | SHALL write the machine or project file with `tomlkit`, keeping comments; `set-provider`, `routing` and the DB's LLM tables go `[agreed 2026-09-27]` | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
 | FR-17 | Brake values handed over | Resolver → brake | SHALL provide `[brake]` values (CHF and GPU-hour check-in intervals, agent turns) to the brake — **seam with `B-FLOW-05`**, test written as `xfail(strict=True)` until its redesign | the values live here; the behaviour lives there |
 | FR-18 | Catalogue update | `scripts/update_model_catalogue.py` | SHALL regenerate the shipped catalogue from models.dev, keeping local additions, and stamp source, fetch date, ETag and repo commit; the committed file is the pin `[agreed 2026-09-27]` | an update is a reviewable diff, never a runtime fetch |
@@ -103,13 +102,12 @@ a cloned repo must not be able to send code to its own server.
 | FR | Data needed | Provider · surface | Verified how |
 |---|---|---|---|
 | FR-1 | data dir | `paths.specweaver_root() -> Path` | read `core/config/paths.py:28-41` |
-| FR-2, FR-14 | project root | `proj.get("root_path")` from the project registry | read `bootstrap/settings_loader.py:198` |
+| FR-2 | project root | `proj.get("root_path")` from the project registry | read `bootstrap/settings_loader.py:198` |
 | FR-10 | direct adapter path | `create_llm_adapter(settings, *, telemetry_project, cost_overrides)` | read `infrastructure/llm/factory.py:84-161` |
 | FR-10 | routed adapter path | `ModelRouter(settings_provider, telemetry_project, cost_overrides)`; `get_for_task(task_type)` | read `infrastructure/llm/router.py:62-128`; routed collectors get no budget (`router.py:120`, `collector.py:60`) |
 | FR-7 | client construction | `__init__(self, api_key: str \| None = None)` on all five adapters; none takes `base_url` | read `adapters/openai.py:71-79` and the other four |
 | FR-8 | current limiter | `AsyncRateLimiterAdapter(wrapped, limit=3, timeout=30.0)`, semaphore keyed by `provider_name` | read `adapters/_rate_limit.py:15-39` |
 | FR-12 | current pricing | `estimate_cost(model, usage, overrides)` returns 0.0 for unknown | read `infrastructure/llm/telemetry.py:61-90` |
-| FR-14 | migration source | `LlmProfile`, `ProjectLlmLink`, `LlmCostOverride` | read `infrastructure/llm/store.py:21-66` |
 | FR-15 | writer precedent | `tomlkit.parse` / `tomlkit.dumps` | read `workspace/project/tach_sync.py:86,116` |
 | FR-17 | brake input | `SpendBudget(limit_usd, token_limit)` | read `infrastructure/llm/budget.py:49` — to be redesigned by `B-FLOW-05` |
 
@@ -117,7 +115,6 @@ a cloned repo must not be able to send code to its own server.
 
 | Risk | Mitigation |
 |---|---|
-| Migration loses a setting | FR-14 test: every row of each table appears in the files; the DB is not deleted in this feature |
 | pydantic-settings merges one source's file list shallowly (a project `[llm]` wipes the machine one) | one source per file, explicit layering (AD-6) |
 | TOML errors carry no line number on Python 3.11–3.13 | line parsed from the message; key → line via the tomlkit document |
 | A stale env var overrides the file invisibly | `sw config show` prints each value's origin (FR-3) |
@@ -130,8 +127,8 @@ a cloned repo must not be able to send code to its own server.
 |----|------|-----|-----------|------|
 | SF-01 | Settings models, loader, validator, layering, `sw config show` | FR-1, FR-2, FR-3, FR-4, FR-5 | — | [sf01](C-FLOW-13_sf01_implementation_plan.md) |
 | SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | [sf02](C-FLOW-13_sf02_implementation_plan.md) |
-| SF-03 | One adapter path, hard-coded models removed, one price source, one currency | FR-10, FR-11, FR-12, FR-13 | SF-02 | [sf03](C-FLOW-13_sf03_implementation_plan.md) — built after SF-04 `[agreed 2026-09-27]` |
-| SF-04 | Migration and commands writing the files | FR-14, FR-15 | SF-01 | ⬜ |
+| SF-03 | One adapter path, hard-coded models removed, one price source, one currency, commands write the files | FR-10, FR-11, FR-12, FR-13, FR-15 | SF-02 | [sf03](C-FLOW-13_sf03_implementation_plan.md) |
+| SF-04 | Retired `[agreed 2026-09-27]`: no migration (FR-14 dropped); FR-15 moved to SF-03 | — | — | — |
 | SF-05 | `--model` for one run; brake values handed to `B-FLOW-05` | FR-16, FR-17 | SF-03 | ⬜ |
 
 ## Progress Tracker
@@ -140,5 +137,5 @@ a cloned repo must not be able to send code to its own server.
 | SF-01 | Settings and layering | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consumers switched over | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-04 | Migration and writers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Retired — see the sub-feature table | — | — | — | — | — | — |
 | SF-05 | Run override, brake values | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
