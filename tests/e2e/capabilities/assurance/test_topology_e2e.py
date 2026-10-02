@@ -14,12 +14,13 @@ Exercises:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from typer.testing import CliRunner
 
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -208,8 +209,7 @@ class TestReviewWithNhopSelector:
 
         mock_llm = _make_mock_llm("VERDICT: ACCEPTED\nGood spec.")
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -252,8 +252,7 @@ class TestReviewWithImpactSelector:
 
         mock_llm = _make_mock_llm("VERDICT: ACCEPTED\nLooks good.")
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -296,8 +295,7 @@ class TestReviewWithNoTopology:
 
         mock_llm = _make_mock_llm("VERDICT: ACCEPTED\nNo topology needed.")
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec), "--project", str(project_dir)],
@@ -317,8 +315,7 @@ class TestReviewWithNoTopology:
 
         for selector in ("direct", "nhop", "constraint", "impact"):
             mock_llm = _make_mock_llm(f"VERDICT: ACCEPTED\n{selector} ok.")
-            with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-                mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+            with doubled_llm(mock_llm, model="mock"):
                 result = runner.invoke(
                     app,
                     [

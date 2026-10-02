@@ -18,8 +18,9 @@ from unittest.mock import AsyncMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -236,16 +237,11 @@ class TestFullLifecycle:
             return next(_mock_hitl_answers, "")
 
         with (
-            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
+            doubled_llm(draft_llm, model="mock"),
             patch(
                 "specweaver.interfaces.cli.hitl_provider.HITLProvider",
             ) as mock_hitl_cls,
         ):
-            mock_req.return_value = (
-                None,  # settings
-                draft_llm,
-                GenerationConfig(model="mock"),
-            )
             mock_hitl_instance = AsyncMock()
             mock_hitl_instance.ask = _mock_ask
             mock_hitl_instance.name = "mock_hitl"
@@ -281,12 +277,7 @@ class TestFullLifecycle:
         # -- Step 4: Review spec (mocked LLM) ------------------------------
         review_llm = _make_sequenced_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(review_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -302,12 +293,7 @@ class TestFullLifecycle:
         # -- Step 5: Implement (mocked LLM) --------------------------------
         impl_llm = _make_sequenced_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                impl_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(impl_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -345,12 +331,7 @@ class TestFullLifecycle:
         # -- Step 7: Review code (mocked LLM) ------------------------------
         code_review_llm = _make_sequenced_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                code_review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(code_review_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -378,12 +359,7 @@ class TestLifecycleEdgeCases:
         specs_dir.mkdir(exist_ok=True)
         (specs_dir / "existing_spec.md").write_text("# Existing", encoding="utf-8")
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                _make_sequenced_llm([]),
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(_make_sequenced_llm([]), model="mock"):
             result = runner.invoke(
                 app,
                 ["draft", "existing", "--project", str(tmp_path)],
@@ -414,12 +390,7 @@ class TestLifecycleEdgeCases:
             ]
         )
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                denied_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(denied_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec), "--project", str(tmp_path)],

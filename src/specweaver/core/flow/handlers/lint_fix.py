@@ -139,7 +139,7 @@ class LintFixHandler:
         # Phase 2: LLM reflection loop for remaining errors
         for _ in range(max_reflections):
             # No LLM → can't fix
-            if context.model.llm is None:
+            if context.model.llm_router is None:
                 return _lint_outcome(
                     started,
                     status=StepStatus.FAILED,
@@ -171,7 +171,6 @@ class LintFixHandler:
                     code_files[0].name,
                 )
                 await self._llm_fix(
-                    context.model.llm,
                     code_files[0],
                     lint_result.exports.get("errors", []) if lint_result.exports else [],
                     context=context,
@@ -251,14 +250,13 @@ class LintFixHandler:
 
     async def _llm_fix(
         self,
-        llm: Any,
         code_path: Path,
         lint_errors: list[dict[str, object]],
         *,
         context: RunContext,
     ) -> None:
         """Ask the LLM to fix lint errors in the given file."""
-        from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role, TaskType
+        from specweaver.infrastructure.llm.models import Message, Role, TaskType
 
         code = code_path.read_text(encoding="utf-8")
         from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
@@ -290,42 +288,9 @@ class LintFixHandler:
 
         messages = [Message(role=Role.USER, content=prompt)]
 
-        # Base config from project default (fallback)
-        if context.model.config is not None:
-            base_config = GenerationConfig(
-                model=context.model.config.llm.model,
-                temperature=0.1,  # low creativity — fix, not invent
-                max_output_tokens=context.model.config.llm.max_output_tokens,
-                task_type=TaskType.CHECK,
-                run_id=context.run.run_id or "",
-            )
-        else:
-            base_config = GenerationConfig(
-                model="gemini-3-flash-preview",
-                temperature=0.1,
-                max_output_tokens=4096,
-                task_type=TaskType.CHECK,
-                run_id=context.run.run_id or "",
-            )
+        from specweaver.core.flow.handlers._llm import llm_for
 
-        # Routing resolution — same pattern as all other handlers
-        routed = (
-            context.model.llm_router.get_for_task(TaskType.CHECK)
-            if context.model.llm_router
-            else None
-        )
-        adapter = routed.adapter if routed else llm
-        config = (
-            GenerationConfig(
-                model=routed.model,
-                temperature=routed.temperature,
-                max_output_tokens=routed.max_output_tokens,
-                task_type=TaskType.CHECK,
-                run_id=context.run.run_id or "",
-            )
-            if routed
-            else base_config
-        )
+        adapter, config = llm_for(context, TaskType.CHECK)
 
         response = await adapter.generate(messages, config)
 

@@ -14,13 +14,13 @@ Multi-provider, auto-discovered (introduced in Feature 3.12a).
 | **Providers** | `gemini`, `openai`, `anthropic`, `mistral`, `qwen` |
 | **Factory** | `infrastructure/llm/factory.py` builds the configured adapter from the project's settings (its linked database profile). Default provider: `gemini`. |
 | **Telemetry** | The factory wraps the adapter in a `TelemetryCollector` proxy: token usage, cost, streaming telemetry. The adapter does not know. |
-| **Cost table** | The registry merges every adapter's `default_costs` into one tier-sheet. |
+| **Model catalogue** | Prices (USD per 1M tokens), limits and sampling per model, shipped in `catalogue_data/` and corrected by the user's settings file. |
 
 Rules:
 
 - Adding a provider = adding one file under `adapters/`. No hardcoded imports, no central
   dictionary. The folder is a PEP 420 implicit namespace package (no `__init__.py`).
-- New providers bring their own pricing via `default_costs`; nothing central changes.
+- New models are a catalogue data change (`scripts/update_model_catalogue.py`); adapters carry no prices.
 
 (Since moved: this package was `src/specweaver/llm/` (adapters in `src/specweaver/llm/adapters/`); `registry.py` and `src/specweaver/llm/factory.py`
 now live under `src/specweaver/infrastructure/llm/`.)

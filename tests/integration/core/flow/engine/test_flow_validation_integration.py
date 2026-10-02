@@ -14,6 +14,7 @@ from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.mark.asyncio
@@ -69,7 +70,7 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
         project_path=tmp_path,
         spec_path=spec_path,
         output_dir=out_dir,
-        model=ModelAccess(llm=mock_adapter),
+        model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
     )
 
     step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)

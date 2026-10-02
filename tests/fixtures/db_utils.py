@@ -8,10 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import delete, select
-
 from specweaver.commons.async_bridge import run_sync
-from specweaver.infrastructure.llm.store import LlmProfile, LlmRepository, ProjectLlmLink
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
@@ -34,12 +31,6 @@ def register_test_project(db: Database, name: str, root_path: str) -> None:
         async with db.async_session_scope() as session:
             ws_repo = WorkspaceRepository(session)
             await ws_repo.register_project(name, root_path)
-
-            llm_repo = LlmRepository(session)
-            stmt = select(LlmProfile).where(LlmProfile.is_global == 1)
-            globals_ = (await session.execute(stmt)).scalars().all()
-            for profile in globals_:
-                await llm_repo.link_project_profile(name, profile.name, profile.id)
 
     _sync_or_async(_register())
 
@@ -65,12 +56,11 @@ def list_test_projects(db: Database) -> list[dict[str, object]]:
 
 
 def remove_test_project(db: Database, name: str) -> None:
-    """Unregister a project and cascade-delete its links."""
+    """Unregister a project."""
 
     async def _remove() -> None:
         async with db.async_session_scope() as session:
             await WorkspaceRepository(session).remove_project(name)
-            await session.execute(delete(ProjectLlmLink).where(ProjectLlmLink.project_name == name))
 
     _sync_or_async(_remove())
 

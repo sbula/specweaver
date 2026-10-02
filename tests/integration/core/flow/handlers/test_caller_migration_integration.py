@@ -5,7 +5,7 @@
 """Integration tests verifying complete injection pathways for handlers."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -14,6 +14,7 @@ from specweaver.core.flow.handlers._profiles import ARBITER, MINIMAL
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -26,7 +27,7 @@ def mock_run_context(tmp_path: Path) -> RunContext:
         project_path=workspace,
         spec_path=workspace / "docs" / "specs" / "test_spec.md",
     )
-    context.model = context.model.model_copy(update={"llm": AsyncMock()})
+    context.model = context.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     return context
 
 
@@ -35,11 +36,11 @@ def mock_run_context(tmp_path: Path) -> RunContext:
 async def test_integration_arbitrate_verdict_full_path(mock_build, mock_run_context, tmp_path):
     """I1: Verify Arbiter full path execution injects correct profile and builds properly."""
     # Setup mock to return a builder that returns a fake prompt
-    mock_builder = AsyncMock()
+    mock_builder = MagicMock()  # PromptBuilder.build() is synchronous and returns the text
     mock_builder.build.return_value = "fake prompt"
     mock_build.return_value = mock_builder
 
-    mock_run_context.model.llm.generate.return_value = '{"verdict": "code_bug", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
+    mock_run_context.model.llm_router.adapter.generate.return_value = '{"verdict": "code_bug", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
 
     # INT-US-24 FR-2: failure evidence required to reach the prompt-building path.
     mock_run_context.feedback["scenario_test_failures"] = {
@@ -69,7 +70,7 @@ async def test_integration_arbitrate_verdict_full_path(mock_build, mock_run_cont
     assert kwargs.get("profile") == ARBITER
     mock_builder.add_context.assert_called()
     mock_builder.build.assert_called_once()
-    mock_run_context.model.llm.generate.assert_called_once()
+    mock_run_context.model.llm_router.adapter.generate.assert_called_once()
 
 
 @pytest.mark.asyncio

@@ -10,10 +10,19 @@ the TelemetryCollector after operations.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from starlette.testclient import TestClient
+
+from tests.scripted_llm import FixedRouter, doubled_llm
+
+
+def _flushable() -> MagicMock:
+    """An adapter whose flush the endpoint can await."""
+    adapter = MagicMock()
+    adapter.flush_async = AsyncMock()
+    return adapter
 
 
 @pytest.fixture()
@@ -54,7 +63,7 @@ class TestReviewEndpointTelemetry:
         client,
         _project_with_spec,
     ):
-        """create_llm_adapter is called with telemetry_project='testproj'."""
+        """The router is built to record usage against project 'testproj'."""
         from specweaver.workflows.review.reviewer import ReviewResult
 
         mock_review.return_value = ReviewResult(
@@ -65,11 +74,9 @@ class TestReviewEndpointTelemetry:
         proj, spec = _project_with_spec
 
         with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-        ) as mock_create:
-            mock_adapter = MagicMock()
-            mock_create.return_value = (MagicMock(), mock_adapter, MagicMock())
-
+            "specweaver.interfaces.api.v1._llm.build_router",
+            return_value=FixedRouter(_flushable()),
+        ) as mock_build:
             client.post(
                 "/api/v1/review",
                 json={
@@ -78,10 +85,10 @@ class TestReviewEndpointTelemetry:
                 },
             )
 
-        # Verify telemetry_project was passed
-        mock_create.assert_called_once()
-        _, kwargs = mock_create.call_args
-        assert kwargs.get("telemetry_project") == "testproj"
+        # Verify the router records usage against the project
+        mock_build.assert_called_once()
+        _, kwargs = mock_build.call_args
+        assert kwargs.get("project") == "testproj"
 
     @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
     def test_review_flushes_telemetry_collector(
@@ -102,11 +109,7 @@ class TestReviewEndpointTelemetry:
         proj, spec = _project_with_spec
 
         mock_collector = MagicMock(spec=TelemetryCollector)
-        with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-        ) as mock_create:
-            mock_create.return_value = (MagicMock(), mock_collector, MagicMock())
-
+        with doubled_llm(mock_collector):
             client.post(
                 "/api/v1/review",
                 json={
@@ -126,13 +129,14 @@ class TestImplementEndpointTelemetry:
         client,
         _project_with_spec,
     ):
-        """create_llm_adapter is called with telemetry_project='testproj'."""
+        """The router is built to record usage against project 'testproj'."""
         proj, spec = _project_with_spec
 
         with (
             patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            ) as mock_create,
+                "specweaver.interfaces.api.v1._llm.build_router",
+                return_value=FixedRouter(_flushable()),
+            ) as mock_build,
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
             ),
@@ -140,8 +144,6 @@ class TestImplementEndpointTelemetry:
                 "specweaver.workflows.implementation.generator.Generator.generate_tests",
             ),
         ):
-            mock_create.return_value = (MagicMock(), MagicMock(), MagicMock())
-
             client.post(
                 "/api/v1/implement",
                 json={
@@ -150,9 +152,9 @@ class TestImplementEndpointTelemetry:
                 },
             )
 
-        mock_create.assert_called_once()
-        _, kwargs = mock_create.call_args
-        assert kwargs.get("telemetry_project") == "testproj"
+        mock_build.assert_called_once()
+        _, kwargs = mock_build.call_args
+        assert kwargs.get("project") == "testproj"
 
     def test_implement_flushes_telemetry_collector(
         self,
@@ -166,9 +168,7 @@ class TestImplementEndpointTelemetry:
         mock_collector = MagicMock(spec=TelemetryCollector)
 
         with (
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            ) as mock_create,
+            doubled_llm(mock_collector),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
             ),
@@ -176,8 +176,6 @@ class TestImplementEndpointTelemetry:
                 "specweaver.workflows.implementation.generator.Generator.generate_tests",
             ),
         ):
-            mock_create.return_value = (MagicMock(), mock_collector, MagicMock())
-
             client.post(
                 "/api/v1/implement",
                 json={

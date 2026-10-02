@@ -32,13 +32,9 @@ class StandardComparison(BaseModel):
 class StandardsEnricher:
     """Enriches codebase standard findings using asynchronous LLM comparisons."""
 
-    def __init__(self, llm_adapter: LLMAdapter, config: GenerationConfig | None = None):
+    def __init__(self, llm_adapter: LLMAdapter, config: GenerationConfig):
         self.llm = llm_adapter
-        self.config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.3,
-            max_output_tokens=4096,
-        )
+        self.config = config
 
     async def enrich(
         self,

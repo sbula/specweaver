@@ -66,18 +66,14 @@ class Planner:
         self,
         llm: LLMAdapter,
         *,
-        config: GenerationConfig | None = None,
+        config: GenerationConfig,
         max_retries: int = 3,
         tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
         self._max_retries = max_retries
         self._tool_dispatcher = tool_dispatcher
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.3,
-            max_output_tokens=4096,
-        )
+        self._config = config
 
     async def generate_plan(
         self,

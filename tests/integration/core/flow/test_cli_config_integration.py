@@ -16,6 +16,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -328,12 +329,9 @@ def test_headless_new_feature_run_parks_at_draft(tmp_path: Path) -> None:
     assert not spec.exists()
 
     with (
-        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_create,
+        doubled_llm(MagicMock()),
         patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
     ):
-        settings = MagicMock()
-        settings.llm.model = "test-model"
-        mock_create.return_value = (settings, MagicMock(), MagicMock())
         result = runner.invoke(
             app, ["run", "new_feature", "greeter", "--project", str(project_dir)]
         )

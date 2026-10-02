@@ -15,6 +15,7 @@ from specweaver.core.flow.handlers.arbiter import (
     _guard_coding_feedback,
 )
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunHandle
+from tests.scripted_llm import FixedRouter
 
 
 class TestArbitrateVerdict:
@@ -75,7 +76,7 @@ def run_context():
     # MagicMock, so the AsyncMock below would never reach `ctx.model.llm` and the handler
     # would be handed something it cannot await.
     ctx.run = RunHandle(run_id="test_run")
-    ctx.model = ModelAccess(llm=AsyncMock())
+    ctx.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
     ctx.feedback = {"scenario_test_failures": _evidence()}
     ctx.spec_path.exists.return_value = True
     ctx.spec_path.read_text.return_value = "Spec data"
@@ -89,7 +90,7 @@ class TestArbitrateVerdictHandler:
     async def test_code_bug_writes_to_generate_code_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
 
-        run_context.model.llm.generate.return_value = (
+        run_context.model.llm_router.adapter.generate.return_value = (
             '{"verdict": "code_bug", "reasoning": "bad code", "coding_feedback": "Check FR-1"}'
         )
 
@@ -116,7 +117,7 @@ class TestArbitrateVerdictHandler:
         self, mock_create_filter, run_context
     ):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model.llm.generate.return_value = '{"verdict": "scenario_error", "reasoning": "bad code", "scenario_feedback": "Check FR-1"}'
+        run_context.model.llm_router.adapter.generate.return_value = '{"verdict": "scenario_error", "reasoning": "bad code", "scenario_feedback": "Check FR-1"}'
 
         handler = ArbitrateVerdictHandler()
         step = PipelineStep(name="test", action=StepAction.ARBITRATE, target=StepTarget.VERDICT)
@@ -130,7 +131,7 @@ class TestArbitrateVerdictHandler:
 
     @pytest.mark.asyncio
     async def test_no_llm_returns_error(self, run_context):
-        run_context.model = run_context.model.model_copy(update={"llm": None})
+        run_context.model = run_context.model.model_copy(update={"llm_router": None})
         handler = ArbitrateVerdictHandler()
         step = PipelineStep(name="test", action=StepAction.ARBITRATE, target=StepTarget.VERDICT)
         result = await handler.execute(step, run_context)
@@ -142,7 +143,7 @@ class TestArbitrateVerdictHandler:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_spec_ambiguity_returns_waiting_for_input(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model.llm.generate.return_value = (
+        run_context.model.llm_router.adapter.generate.return_value = (
             '{"verdict": "spec_ambiguity", "spec_clause": "FR-2"}'
         )
 
@@ -180,7 +181,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.PASSED
         assert result.output["verdict"] == "no_failures"
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
         # no_failures is terminal → popped.
         assert "scenario_test_failures" not in run_context.feedback
 
@@ -188,7 +189,7 @@ class TestArbitrateEvidenceContract:
     async def test_green_short_circuit_works_without_llm(self, run_context):
         # [Boundary] a green verdict needs no LLM at all — must not trip the
         # "LLM not configured" guard.
-        run_context.model = run_context.model.model_copy(update={"llm": None})
+        run_context.model = run_context.model.model_copy(update={"llm_router": None})
         run_context.feedback = {
             "scenario_test_failures": _evidence(passed=5, failed=0, errors=0, failures=[])
         }
@@ -209,13 +210,13 @@ class TestArbitrateEvidenceContract:
         # cross-session resume (feedback is not persisted). The message must
         # name both so a resumed ambiguity park doesn't read as an engine bug.
         assert "resumed" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_errors_only_evidence_still_arbitrates(self, run_context):
         # [Boundary/E1] failed==0 but errors>0 (e.g. import crash in the
         # generated test file) is NOT green — must arbitrate.
-        run_context.model.llm.generate.return_value = (
+        run_context.model.llm_router.adapter.generate.return_value = (
             '{"verdict": "scenario_error", "scenario_feedback": "Broken import"}'
         )
         run_context.feedback = {
@@ -228,7 +229,7 @@ class TestArbitrateEvidenceContract:
             result = await ArbitrateVerdictHandler().execute(_arb_step(), run_context)
 
         assert result.status == StepStatus.FAILED
-        run_context.model.llm.generate.assert_called_once()
+        run_context.model.llm_router.adapter.generate.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_zero_total_fails_loud_without_llm(self, run_context):
@@ -241,7 +242,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.FAILED
         assert "no scenario tests" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
         # Not a terminal verdict branch → retained (loop re-publication overwrites).
         assert "scenario_test_failures" in run_context.feedback
 
@@ -249,7 +250,7 @@ class TestArbitrateEvidenceContract:
     async def test_unparseable_llm_verdict_retains_evidence(self, run_context):
         # [Graceful degradation] ERROR (bad LLM JSON) → evidence retained for
         # the retry.
-        run_context.model.llm.generate.return_value = "not json at all"
+        run_context.model.llm_router.adapter.generate.return_value = "not json at all"
         with patch(
             "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
         ) as mock_filter:
@@ -268,7 +269,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.FAILED
         assert "no scenario tests" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_string_counts_error_as_malformed(self, run_context):
@@ -278,7 +279,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.ERROR
         assert "malformed" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_non_list_failures_error_as_malformed(self, run_context):
@@ -288,7 +289,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.ERROR
         assert "malformed" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_non_dict_evidence_errors_cleanly(self, run_context):
@@ -298,7 +299,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.ERROR
         assert "malformed" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_non_dict_failure_entries_error_cleanly(self, run_context):
@@ -308,7 +309,7 @@ class TestArbitrateEvidenceContract:
 
         assert result.status == StepStatus.ERROR
         assert "malformed" in result.error_message.lower()
-        run_context.model.llm.generate.assert_not_called()
+        run_context.model.llm_router.adapter.generate.assert_not_called()
 
 
 class TestAdapterContract:
@@ -321,7 +322,7 @@ class TestAdapterContract:
         from specweaver.infrastructure.llm.models import LLMResponse
 
         mock_create_filter.return_value.filter.return_value = "Filtered"
-        run_context.model.llm.generate.return_value = LLMResponse(
+        run_context.model.llm_router.adapter.generate.return_value = LLMResponse(
             text='{"verdict": "code_bug", "coding_feedback": "Check FR-1"}', model="m"
         )
         result = await ArbitrateVerdictHandler().execute(_arb_step(), run_context)

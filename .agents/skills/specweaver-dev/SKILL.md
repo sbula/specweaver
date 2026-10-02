@@ -274,13 +274,13 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 > image: asserting a truncated string is ABSENT passes for free, which is how the same commit's
 > isolation test was vacuous until it counted rows instead.
 >
-> **`tests/scripted_llm.py` — `ScriptedLLM` / `scripted_world()` when a test needs a doubled LLM.**
-> `scripted_world` patches **two** things and both are load-bearing: patching only
-> `create_llm_adapter` leaves `ModelRouter.get_for_task` free to build a **real provider** from the
-> registry, bypassing the patch — a live API call inside a test that reads as mocked. That was found
-> for real in `INT-US-02`'s e2e. Anything that copies or re-implements this must carry both patches.
-> Import it explicitly rather than hiding it in a fixture: the import line is the only place a
-> reader sees that a test doubles the model.
+> **`tests/scripted_llm.py` — `doubled_llm()` / `scripted_world()` when a test needs a doubled LLM.**
+> Every model call takes one path, `RoleResolver`, so these patch that one class: commands, the
+> router and the REST API are all covered. Never add a second way to build an adapter — two paths
+> is how `INT-US-02`'s e2e once made a live API call while reading as mocked. `FixedRouter` gives a
+> hand-built `RunContext` its router; `TEST_CONFIG` gives a hand-built workflow class its settings.
+> Import them explicitly rather than hiding them in a fixture: the import line is the only place a
+> reader sees that a test doubles the model. `tests/fake_http.py` fakes HTTP for SDKs on `httpx2`.
 
 ### 3.2 Green — Implement the Minimum Code
 

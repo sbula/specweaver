@@ -52,15 +52,11 @@ class FeatureDecomposer:
         self,
         llm: LLMAdapter,
         context_provider: ContextProvider,
-        config: GenerationConfig | None = None,
+        config: GenerationConfig,
     ) -> None:
         self._llm = llm
         self._context = context_provider
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.2,  # Low temperature for structured output
-            max_output_tokens=4096,
-        )
+        self._config = config
 
     async def decompose(
         self,

@@ -6,7 +6,7 @@
 auto-escalation) into its RunContext at the composition root.
 
 Drives the real `sw implement` command through `apply_session_policy(dal_auto_escalate=True)`,
-mocking only the LLM adapter and capturing the RunContext handed to `PipelineRunner` (so the
+mocking only the LLM adapter and the loaded settings, and capturing the RunContext handed to `PipelineRunner` (so the
 pipeline itself is not executed). Proves: a DAL_B project auto-enables session isolation with
 the derived allow-list; a small/low-DAL project stays on host; and `auto_isolate_min_dal="off"`
 disables escalation.
@@ -19,8 +19,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.settings import SpecWeaverSettings
+from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 runner = CliRunner()
 pytestmark = pytest.mark.integration
@@ -75,19 +76,22 @@ def _run_and_capture_context(
     from specweaver.core.flow.engine.state import RunStatus
 
     spec = _scaffold(tmp_path, dal=dal, git=git)
-    settings = SpecWeaverSettings(llm={"model": "test-model"})
+    settings = SpecWeaverSettings(llm=LLMSettings())
     settings.sandbox.auto_isolate_min_dal = min_dal  # enforce_session_isolation stays False
     if execution_mode is not None:
         # Set on the settings object the CLI actually receives. Writing a specweaver.toml here
-        # would prove nothing: this harness injects settings through the mocked adapter factory,
+        # would prove nothing: this harness injects settings through the patched `load_settings`,
         # so a toml on disk is never read (established by probe, TECH-017 SF-02 CB-3).
         settings.sandbox.execution_mode = execution_mode
 
     with (
-        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_adapter,
+        doubled_llm(_mock_adapter()),
+        patch(
+            "specweaver.core.config.bootstrap.settings_loader.load_settings",
+            return_value=settings,
+        ),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
     ):
-        mock_adapter.return_value = (settings, _mock_adapter(), MagicMock(temperature=0.2))
         run_state = MagicMock()
         run_state.status = RunStatus.COMPLETED
         run_state.step_records = []

@@ -30,8 +30,10 @@ Covers:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 import pytest
+from tests.scripted_llm import doubled_llm
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -40,6 +42,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _doubled_model():
+    """`scan` resolves the `check` role before scanning; these tests are not about the model."""
+    with doubled_llm(MagicMock()):
+        yield
 
 
 @pytest.fixture(autouse=True)

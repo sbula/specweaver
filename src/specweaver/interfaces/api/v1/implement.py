@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
 from specweaver.interfaces.api.v1.schemas import ImplementRequest, ImplementResponse
 
@@ -36,27 +35,16 @@ async def implement_spec(
 
     from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
     from specweaver.core.config.bootstrap.settings_loader import load_settings_async
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.infrastructure.llm.models import TaskType
+    from specweaver.interfaces.api.v1._llm import api_router
     from specweaver.workflows.implementation.generator import Generator
     from specweaver.workspace.project.constitution import find_constitution
 
     settings = await load_settings_async(db, body.project)
 
-    try:
-        _, adapter, gen_config = create_llm_adapter(
-            settings,
-            telemetry_project=body.project,
-        )
-    except (LLMAdapterError, ValueError) as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="LLM_ERROR",
-            status_code=500,
-        ) from exc
-
-    gen_config.temperature = 0.2  # Low temp for code generation
-
-    generator = Generator(llm=adapter, config=gen_config)
+    router = api_router(project_root, body.project, settings, [TaskType.IMPLEMENT])
+    routed = router.get_for_task(TaskType.IMPLEMENT)
+    generator = Generator(llm=routed.adapter, config=routed.config)
 
     # Load topology context
     topo_graph = load_topology(project_root)
@@ -101,10 +89,8 @@ async def implement_spec(
             standards=standards,
         )
     finally:
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-
-        if isinstance(adapter, TelemetryCollector):
-            await adapter.flush_async(db)
+        for collector in router.collectors():
+            await collector.flush_async(db)
 
     return ImplementResponse(
         code_path=str(code_path),

@@ -4,16 +4,17 @@
 import uuid
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.core.config.database import Database
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app  # type: ignore
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
+from tests.scripted_llm import doubled_llm
 
 runner = CliRunner()
 
@@ -97,8 +98,7 @@ class TestPipelineHydrationE2E:
         mock_llm = _make_mock_llm(captured_prompts)
 
         # 3. Run the pipeline command (e.g. review)
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(app, ["review", str(spec), "--project", str(project_dir)])
 
         # 4. Verify successful execution
@@ -134,8 +134,7 @@ class TestPipelineHydrationE2E:
         captured_prompts: list[str] = []
         mock_llm = _make_mock_llm(captured_prompts)
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(app, ["review", str(spec), "--project", str(project_dir)])
 
         assert result.exit_code == 0
@@ -198,8 +197,7 @@ class TestPipelineHydrationE2E:
         captured_prompts: list[str] = []
         mock_llm = _make_mock_llm(captured_prompts)
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(app, ["review", str(spec), "--project", str(project_dir)])
 
         assert result.exit_code == 0

@@ -29,9 +29,10 @@ if TYPE_CHECKING:
 from typer.testing import CliRunner
 
 from specweaver.core.flow.handlers.run_context import ModelAccess
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 from tests.rendering import shows
+from tests.scripted_llm import FixedRouter, doubled_llm
 
 runner = CliRunner()
 
@@ -89,20 +90,16 @@ class TestLineageE2EFlow:
         )
 
         with (
-            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
-            ),
+            doubled_llm(mock_llm, model="mock"),
+            patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls,
         ):
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
-            with patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls:
-                mock_hitl = AsyncMock()
-                mock_hitl.ask = AsyncMock(return_value="")
-                mock_hitl_cls.return_value = mock_hitl
+            mock_hitl = AsyncMock()
+            mock_hitl.ask = AsyncMock(return_value="")
+            mock_hitl_cls.return_value = mock_hitl
 
-                # Run generating part of the pipeline directly (e.g. generate_code)
-                # Since new_feature parks at draft, we just invoke `sw implement` via CLI to prove CLI integration!
-                result = runner.invoke(app, ["implement", str(spec), "--project", str(project_dir)])
+            # Run generating part of the pipeline directly (e.g. generate_code)
+            # Since new_feature parks at draft, we just invoke `sw implement` via CLI to prove CLI integration!
+            result = runner.invoke(app, ["implement", str(spec), "--project", str(project_dir)])
 
         assert result.exit_code == 0, f"Code gen failed: {result.output}"
 
@@ -119,15 +116,13 @@ class TestLineageE2EFlow:
         assert (
             rows[0][1] == "11111111-2222-3333-4444-555555555555"
         )  # parent_id was correctly pulled from the spec tag
-        assert (
-            rows[0][3] == "gemini-3-flash-preview"
-        )  # model_id properly flowed from context through flow layers to DB
+        assert rows[0][3] == "mock"  # model_id flowed from the role's settings through to the DB
 
         test_rows = conn.execute(
             "SELECT model_id FROM flow_artifact_events WHERE event_type='generated_tests'"
         ).fetchall()
         if test_rows:
-            assert test_rows[0][0] == "gemini-3-flash-preview"
+            assert test_rows[0][0] == "mock"
 
         conn.close()
 
@@ -145,10 +140,6 @@ class TestLineageE2EFlow:
             ]
         )
 
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
-
-        mock_settings = SpecWeaverSettings(llm=LLMSettings(model="mock"))
-
         # INT-US-02 SF-01: `sw draft` now chains validate+review after drafting. This test's
         # intent is LINEAGE ONLY (tag injection + drafted_spec event), so the downstream
         # handlers are stubbed to pass — the trivial mock spec content would legitimately
@@ -165,10 +156,7 @@ class TestLineageE2EFlow:
             )
 
         with (
-            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
-            ),
+            doubled_llm(mock_llm, model="mock"),
             patch(
                 "specweaver.core.flow.handlers.validation.ValidateSpecHandler.execute",
                 new=_step_ok,
@@ -177,14 +165,13 @@ class TestLineageE2EFlow:
                 "specweaver.core.flow.handlers.review.ReviewSpecHandler.execute",
                 new=_step_ok,
             ),
+            patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls,
         ):
-            mock_req.return_value = (mock_settings, mock_llm, GenerationConfig(model="mock"))
-            with patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls:
-                mock_hitl = AsyncMock()
-                mock_hitl.ask = AsyncMock(return_value="")
-                mock_hitl_cls.return_value = mock_hitl
+            mock_hitl = AsyncMock()
+            mock_hitl.ask = AsyncMock(return_value="")
+            mock_hitl_cls.return_value = mock_hitl
 
-                result = runner.invoke(app, ["draft", "feature_x", "--project", str(project_dir)])
+            result = runner.invoke(app, ["draft", "feature_x", "--project", str(project_dir)])
 
         assert result.exit_code == 0, f"Draft failed: {result.output}"
 
@@ -207,7 +194,7 @@ class TestLineageE2EFlow:
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == spec_uuid
-        assert rows[0][2] == "mock"  # model extracted from context.model.config.llm.model
+        assert rows[0][2] == "mock"  # model taken from the role's generation settings
         conn.close()
 
     def test_plan_spec_retains_tag(self, tmp_path: Path, _isolate_env) -> None:
@@ -263,7 +250,8 @@ class TestLineageE2EFlow:
         bootstrap_database(str(db_path))
         context = RunContext(
             model=ModelAccess(
-                llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))
+                llm_router=FixedRouter(mock_llm, model="mock"),
+                config=SpecWeaverSettings(llm=LLMSettings()),
             ),
             project_path=project_dir,
             spec_path=spec,
@@ -378,23 +366,9 @@ class TestASTFixSurvivability:
             ["```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```"]
         )
 
-        from specweaver.infrastructure.llm.models import LLMResponse
-
         with (
-            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
-            ),
-            patch(
-                "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter.generate"
-            ) as mock_gemini,
+            doubled_llm(mock_llm, model="mock"),
         ):
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
-            mock_gemini.return_value = LLMResponse(
-                text="```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```",
-                model="mock",
-            )
-
             pipe_def = project_dir / "my_lint.yaml"
             pipe_def.write_text(
                 "name: my_lint\nsteps:\n  - name: lint\n    action: lint_fix\n    target: code\n",
@@ -416,7 +390,5 @@ class TestASTFixSurvivability:
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == "99999999-2222-3333-4444-555555555555"
-        assert (
-            rows[0][2] == "gemini-3-flash-preview"
-        )  # Ensure pipeline fallback/resolved model hit DB
+        assert rows[0][2] == "mock"  # the role's resolved model reached the DB
         conn.close()

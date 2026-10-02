@@ -26,7 +26,7 @@ from __future__ import annotations
 import contextlib
 import pathlib
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
@@ -36,6 +36,7 @@ from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 from specweaver.workspace.context.provider import ContextProvider
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -126,14 +127,6 @@ async def _ok_execute(self, step, context) -> StepResult:
 
 
 # Handlers beyond review_spec in new_feature.yaml — US-3 territory, out of this contract.
-# INT-US-21 CB-4: ReviewSpecHandler prefers `context.model.llm_router.get_for_task(...)` over
-# `context.model.llm` (review.py:32-36), and `sw run`/`sw resume` inject a real ModelRouter. Patching
-# only `create_llm_adapter` left the router building a LIVE adapter — once approve-on-resume let
-# E6/E7 reach review_spec they started making real Gemini calls (observed as 429s). Returning
-# None makes every routed lookup fall back to the scripted adapter on `context.model.llm`.
-_NO_ROUTING = "specweaver.infrastructure.llm.router.ModelRouter.get_for_task"
-
-
 _POST_REVIEW_STUBS = [
     "specweaver.core.flow.handlers.generation.GenerateCodeHandler.execute",
     "specweaver.core.flow.handlers.generation.GenerateTestsHandler.execute",
@@ -230,25 +223,11 @@ def _init_project(tmp_path: Path, name: str) -> Path:
     return project_dir
 
 
-def _settings_mock():
-    settings = MagicMock()
-    settings.llm.model = "scripted-1"
-    settings.llm.temperature = 0.2
-    settings.llm.max_output_tokens = 4096
-    from specweaver.core.config.settings import SandboxSettings
-
-    settings.sandbox = SandboxSettings()
-    return settings
-
-
 @contextlib.contextmanager
 def _drafter_world(adapter: ScriptedAdapter, provider: ScriptedProvider):
     """Patch the LLM edge + the interactive channel for the `sw draft` surface."""
     with (
-        patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            return_value=(_settings_mock(), adapter, MagicMock()),
-        ),
+        doubled_llm(adapter, model="scripted-1"),
         patch(
             "specweaver.interfaces.cli.hitl_provider.HITLProvider",
             return_value=provider,
@@ -303,10 +282,7 @@ def test_e2_rejection_loops_into_real_redraft_then_accepts(tmp_path: Path) -> No
 
 def test_e3_headless_new_feature_parks_exit_zero(tmp_path: Path) -> None:
     project = _init_project(tmp_path, "us2_e3")
-    with patch(
-        "specweaver.infrastructure.llm.factory.create_llm_adapter",
-        return_value=(_settings_mock(), ScriptedAdapter([]), MagicMock()),
-    ):
+    with doubled_llm(ScriptedAdapter([]), model="scripted-1"):
         result = runner.invoke(app, ["run", "new_feature", "greeter", "--project", str(project)])
 
     assert result.exit_code == 0, result.output  # parked is NOT an error (SF-02 fix)
@@ -425,13 +401,7 @@ def test_e6_park_manual_spec_resume_flows_through_chain(tmp_path: Path, monkeypa
 
     stubs = [patch(p, new=_ok_execute) for p in _POST_REVIEW_STUBS]
     with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(_settings_mock(), adapter, MagicMock()),
-            )
-        )
-        stack.enter_context(patch(_NO_ROUTING, return_value=None))
+        stack.enter_context(doubled_llm(adapter, model="scripted-1"))
         for s in stubs:
             stack.enter_context(s)
 
@@ -473,13 +443,7 @@ def test_e7_rejection_park_edit_resume_accepted(tmp_path: Path, monkeypatch) -> 
 
     stubs = [patch(p, new=_ok_execute) for p in _POST_REVIEW_STUBS]
     with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(_settings_mock(), adapter, MagicMock()),
-            )
-        )
-        stack.enter_context(patch(_NO_ROUTING, return_value=None))
+        stack.enter_context(doubled_llm(adapter, model="scripted-1"))
         for s in stubs:
             stack.enter_context(s)
 

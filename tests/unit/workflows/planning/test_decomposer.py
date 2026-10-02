@@ -10,6 +10,7 @@ import pytest
 
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 from specweaver.workflows.planning.decomposition import DecompositionPlan
+from tests.scripted_llm import TEST_CONFIG
 
 
 @pytest.fixture
@@ -29,7 +30,9 @@ async def test_decompose_returns_plan(
     mock_llm: AsyncMock, mock_context_provider: AsyncMock, tmp_path: Path
 ) -> None:
     """Test that FeatureDecomposer returns a DecompositionPlan using LLM structured output."""
-    decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
+    decomposer = FeatureDecomposer(
+        llm=mock_llm, context_provider=mock_context_provider, config=TEST_CONFIG
+    )
 
     # Let's mock the LLM response to return a valid JSON-like payload parsing to DecompositionPlan
     # Since we might use the LLM structured output pattern later,
@@ -58,7 +61,9 @@ async def test_decompose_llm_exception(
     mock_llm: AsyncMock, mock_context_provider: AsyncMock
 ) -> None:
     # FR-4/FR-1 Exception Propagation
-    decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
+    decomposer = FeatureDecomposer(
+        llm=mock_llm, context_provider=mock_context_provider, config=TEST_CONFIG
+    )
     mock_llm.generate.side_effect = Exception("API Connect Timeout")
 
     from specweaver.core.flow.handlers._profiles import MINIMAL
@@ -75,7 +80,9 @@ async def test_decompose_pydantic_validation_error(
     mock_llm: AsyncMock, mock_context_provider: AsyncMock
 ) -> None:
     # FR-1 Validation formatting
-    decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
+    decomposer = FeatureDecomposer(
+        llm=mock_llm, context_provider=mock_context_provider, config=TEST_CONFIG
+    )
 
     mock_response = AsyncMock()
     # Missing crucial fields like components, build_sequence

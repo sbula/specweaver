@@ -62,14 +62,10 @@ class Generator:
     def __init__(
         self,
         llm: LLMAdapter,
-        config: GenerationConfig | None = None,
+        config: GenerationConfig,
     ) -> None:
         self._llm = llm
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.2,
-            max_output_tokens=4096,
-        )
+        self._config = config
 
     async def generate_code(
         self,

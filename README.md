@@ -43,10 +43,9 @@ works in an isolated copy of the repository, and only permitted changes come bac
 
 - **No evidence yet for the core claim.** There is no benchmark that shows a small local model
   performs better with SpecWeaver than without it. That comparison is planned.
-- **No local-model adapter.** Supported providers today: Gemini, OpenAI, Anthropic, Mistral, Qwen
-  (hosted). Local models are the goal, not a tested path. Work in progress: one settings file for
-  all LLM choices (servers, models per role, limits). `sw config show` already reads it and shows
-  where each value comes from, but model calls do not use it yet.
+- **Local models are wired, not yet measured.** Gemini, OpenAI, Anthropic, Mistral, Qwen and any
+  OpenAI-compatible server (vLLM, Ollama) can serve a role, set in one file. No benchmark has run a
+  real project on a local model yet.
 - **Mutation testing for your project is not built.** Mutation testing exists for SpecWeaver's own
   test suite (see below); the product gate for user projects is on the roadmap.
 
@@ -71,8 +70,9 @@ sw check specs/greeter_spec.md
 
 `sw init` registers the project in a local SQLite database under `~/.specweaver/`.
 
-The LLM commands — `sw draft`, `sw review`, `sw implement` — need a provider key, for example
-`GEMINI_API_KEY`. Other providers: `uv sync --extra all-llm`. See the
+The LLM commands — `sw draft`, `sw review`, `sw implement` — need a model chosen in
+`~/.specweaver/settings.toml` (a server and a role; there is no built-in model) and the provider's
+key in the environment. Other providers: `uv sync --extra all-llm`. See the
 [installation guide](docs/user_guides/1_installation_and_setup.md).
 
 ## Testing

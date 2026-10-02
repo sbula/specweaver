@@ -29,6 +29,7 @@ import pytest
 from specweaver.assurance.validation.drift_detector import detect_drift
 from specweaver.infrastructure.llm.prompt.builder import PromptBuilder
 from specweaver.workflows.planning.planner import Planner
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -85,7 +86,7 @@ class _FakeLLM:
 
 async def _plan() -> Any:
     """A `PlanArtifact` the real planner produced — never one written by this test."""
-    return await Planner(_FakeLLM(_PLAN_REPLY)).generate_plan(
+    return await Planner(_FakeLLM(_PLAN_REPLY), config=TEST_CONFIG).generate_plan(
         spec_content=_SPEC,
         spec_path="specs/ledger.md",
         spec_name="Ledger",

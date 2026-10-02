@@ -8,11 +8,8 @@ import sqlite3
 from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy import select
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import create_async_engine, session_scope
-from specweaver.infrastructure.llm.store import LlmProfile
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,32 +28,11 @@ def test_bootstrap_database_happy_path(tmp_path: Path) -> None:
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
     tables = [row[0] for row in cursor.fetchall()]
-    assert "llm_profiles" in tables
+    assert "llm_usage_log" in tables
+    assert "llm_profiles" not in tables  # LLM settings live in the settings files
     assert "workspace_projects" in tables
     assert "workspace_active_state" in tables
     conn.close()
-
-
-def test_bootstrap_database_seeds_data(tmp_path: Path) -> None:
-    """Verifies that the 3 default profiles are seeded."""
-    db_path = tmp_path / "test.db"
-    bootstrap_database(str(db_path))
-
-    import anyio
-
-    async def _verify():
-        engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
-        try:
-            async with session_scope(engine) as session:
-                result = await session.execute(select(LlmProfile))
-                profiles = result.scalars().all()
-                assert len(profiles) == 3
-                names = {p.name for p in profiles}
-                assert names == {"system-default", "implement", "review"}
-        finally:
-            await engine.dispose()
-
-    anyio.run(_verify)
 
 
 def test_bootstrap_database_degradation_readonly(

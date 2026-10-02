@@ -3,19 +3,34 @@
 
 import logging
 
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import specweaver.workspace.memory.store  # noqa: F401
 from specweaver.commons.async_bridge import run_sync
-from specweaver.core.config.database import Database, session_scope
+from specweaver.core.config.database import Database
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.flow.store import Base as FlowBase
 from specweaver.infrastructure.llm.store import Base as LlmBase
-from specweaver.infrastructure.llm.store import LlmProfile
 from specweaver.workspace.store import Base as WorkspaceBase
 
 logger = logging.getLogger(__name__)
+
+
+#: LLM settings tables the database no longer holds: every LLM setting lives in the settings files.
+#: `project_llm_links` is the same table under the name an old migration gave it.
+_RETIRED_LLM_TABLES = (
+    "llm_project_links",
+    "project_llm_links",
+    "llm_cost_overrides",
+    "llm_profiles",
+)
+
+
+def _drop_retired_llm_tables(conn: Connection) -> None:
+    """Drop the old LLM settings tables from an existing database. Idempotent."""
+    for table in _RETIRED_LLM_TABLES:
+        conn.exec_driver_sql(f"DROP TABLE IF EXISTS {table}")
 
 
 def _allow_unknown_cost(conn: Connection) -> None:
@@ -59,41 +74,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(LlmBase.metadata.create_all)
             await conn.run_sync(FlowBase.metadata.create_all)
             await conn.run_sync(_allow_unknown_cost)
-
-        # Seed default LLM profiles if empty
-        async with session_scope(engine) as session:
-            result = await session.execute(select(LlmProfile).limit(1))
-            if result.first() is None:
-                defaults = [
-                    LlmProfile(
-                        name="system-default",
-                        is_global=1,
-                        provider="gemini",
-                        model="gemini-2.5-pro",
-                        temperature=0.7,
-                        max_output_tokens=8192,
-                        response_format="text",
-                    ),
-                    LlmProfile(
-                        name="implement",
-                        is_global=1,
-                        provider="gemini",
-                        model="gemini-2.5-flash",
-                        temperature=0.2,
-                        max_output_tokens=8192,
-                        response_format="text",
-                    ),
-                    LlmProfile(
-                        name="review",
-                        is_global=1,
-                        provider="gemini",
-                        model="gemini-2.5-flash",
-                        temperature=0.0,
-                        max_output_tokens=8192,
-                        response_format="text",
-                    ),
-                ]
-                session.add_all(defaults)
+            await conn.run_sync(_drop_retired_llm_tables)
 
         await engine.dispose()
 

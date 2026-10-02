@@ -23,6 +23,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 pytestmark = pytest.mark.integration
 
@@ -52,8 +53,10 @@ async def test_e2e_scenario_integration_pipeline_happy_path(tmp_path: Path):
         project_path=project_path,
         spec_path=spec_path,
     )
-    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
-    ctx.model.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "fixed"}'
+    ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
+    ctx.model.llm_router.adapter.generate.return_value = (
+        '{"verdict": "code_bug", "coding_feedback": "fixed"}'
+    )
 
     runner = PipelineRunner(pipeline=pipeline_def, context=ctx)
 

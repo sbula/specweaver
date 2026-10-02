@@ -3,7 +3,7 @@
 
 """An existing database learns that a call's cost can be unknown, and keeps its history.
 
-Proves: C-FLOW-13 FR-12
+Proves: C-FLOW-13 FR-12, FR-15
 
 Alembic never runs at start-up, so the start-up itself rebuilds the one table (AD in the SF-03 plan).
 
@@ -78,3 +78,25 @@ def test_an_old_database_can_store_an_unknown_cost_and_keeps_its_rows(tmp_path: 
         indexes = {row[1] for row in conn.execute("PRAGMA index_list(llm_usage_log)")}
     assert rows == [("gemini-2.5-pro", 0.25), ("qwen3-coder-next", None)]
     assert {"ix_llm_usage_log_project_name", "ix_llm_usage_log_task_type"} <= indexes
+
+
+def test_the_retired_llm_settings_tables_are_dropped(tmp_path: Path) -> None:
+    """LLM settings live in the settings files only (C-FLOW-13 FR-15): the old tables go."""
+    db = tmp_path / "specweaver.db"
+    with sqlite3.connect(db) as conn:
+        conn.executescript(
+            "CREATE TABLE llm_profiles (id INTEGER PRIMARY KEY, name VARCHAR);"
+            "INSERT INTO llm_profiles VALUES (1, 'system-default');"
+            "CREATE TABLE llm_project_links (project_name VARCHAR, role VARCHAR, profile_id INT);"
+            "CREATE TABLE llm_cost_overrides (model_pattern VARCHAR PRIMARY KEY);"
+        )
+
+    bootstrap_database(str(db))
+    bootstrap_database(str(db))
+
+    with sqlite3.connect(db) as conn:
+        tables = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+    assert not {"llm_profiles", "llm_project_links", "llm_cost_overrides"} & tables
+    assert "llm_usage_log" in tables

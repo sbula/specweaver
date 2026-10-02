@@ -113,8 +113,12 @@ class RoleResolver:
     def _adapter(self, server_name: str) -> TelemetryCollector:
         if server_name not in self._by_server:
             server = self._files.machine.servers[server_name]
+            corrections = self._files.machine.models
             self._by_server[server_name] = TelemetryCollector(
-                adapter_for_server(server_name, server), self._project, budget=self._budget
+                adapter_for_server(server_name, server),
+                self._project,
+                prices=lambda model: self._catalogue.facts(server.kind, model, corrections),
+                budget=self._budget,
             )
         return self._by_server[server_name]
 

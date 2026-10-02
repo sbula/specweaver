@@ -122,3 +122,25 @@ Commit boundaries: CB-1 (items 1–3), CB-2 (4–6), CB-3 (7–10, with the e2e)
 | Q-8 | Where FR-15 lives | (a) SF-03's last commit, with the old commands and tables removed in the same step; (b) SF-04 | **(a)** `[agreed 2026-09-27]` — no commit with a command that does nothing; SF-04 retired |
 | Q-9 | Which commands | (a) `set-role`, `costs set`, `costs reset` only; (b) also `set-server`, `set-currency` | **(a)** `[agreed 2026-09-27]` |
 | Q-10 | The old tables | (a) dropped by Alembic; (b) left unused | **(a)** `[agreed 2026-09-27]` |
+
+## As built (2026-10-02)
+
+Committed in three boundaries: `c267e4b9` (resolver), `b6365ddc` (one price source, one currency),
+and the CB-3 commit (every consumer on the resolver). CB-3 and CB-4 merged: the old commands and
+tables went in the same commit that switched the consumers (Q-8).
+
+- One path for every LLM call: `RoleResolver` → `ModelRouter` → `llm_for(context, task)` in the
+  pipeline steps, `command_router` in the CLI, `api_router` in REST. No model name stays in `src/`
+  (`test_no_model_names_in_code.py`).
+- A pipeline names its roles through `ROLE_OF_STEP`; `roles_of(pipeline)` is checked before the first
+  call. A command whose pipeline uses no LLM builds no router.
+- The old tables are dropped at database start-up (`_drop_retired_llm_tables`), not by Alembic:
+  Alembic never runs at start-up, and its history is out of step with the bootstrap schema. That
+  mismatch is a note for `TECH-071`.
+- `sw standards scan` enriches only when a `check` role is set; without one the results pass
+  through, as before.
+- Two defects found and fixed on the way: the arbiter called `generate(prompt)` with a string, not
+  messages; and the resolver's collectors had no price lookup, so every call was stored as unpriced.
+- Mutants: [C-FLOW-13_mutants.json](C-FLOW-13_mutants.json), all protected. The FR-4 refusal now
+  lives in one place (`refuse_llm_settings`) and is held by a test that tells a clean refusal from
+  a crash.

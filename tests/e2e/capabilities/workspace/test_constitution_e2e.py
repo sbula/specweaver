@@ -13,13 +13,14 @@ Exercises:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from typer.testing import CliRunner
 
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 from tests.fixtures.db_utils import set_test_active_project
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -212,12 +213,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(review_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec_path), "--project", str(tmp_path)],
@@ -251,12 +247,7 @@ class TestConstitutionE2E:
 
         review_llm, captured = _make_capturing_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(review_llm, model="mock"):
             result = runner.invoke(
                 app,
                 [
@@ -288,12 +279,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         impl_llm, captured = _make_capturing_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                impl_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(impl_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["implement", str(spec_path), "--project", str(tmp_path)],
@@ -323,12 +309,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(review_llm, model="mock"):
             runner.invoke(
                 app,
                 ["review", str(spec_path), "--project", str(tmp_path)],
@@ -350,12 +331,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (
-                None,
-                review_llm,
-                GenerationConfig(model="mock"),
-            )
+        with doubled_llm(review_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec_path), "--project", str(tmp_path)],

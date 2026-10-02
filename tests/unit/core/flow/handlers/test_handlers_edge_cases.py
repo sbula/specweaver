@@ -16,6 +16,7 @@ from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
 from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateTestsHandler
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -87,7 +88,9 @@ async def test_generate_handlers_exception_wrapper(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """GenerateCodeHandler and GenerateTestsHandler trap LLM generation faults."""
-    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
+    run_context.model = run_context.model.model_copy(
+        update={"llm_router": FixedRouter(AsyncMock())}
+    )
 
     code_handler = GenerateCodeHandler()
     test_handler = GenerateTestsHandler()
@@ -126,7 +129,9 @@ async def test_lint_fix_handler_missing_code(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """LintFixHandler safely aborts reflection if code files vanish."""
-    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
+    run_context.model = run_context.model.model_copy(
+        update={"llm_router": FixedRouter(AsyncMock())}
+    )
     handler = LintFixHandler()
 
     with patch.object(handler, "_get_atom") as mock_get_atom:
@@ -158,7 +163,8 @@ async def test_lint_fix_handler_ast_fences(tmp_path: Path, run_context: RunConte
     code_path = tmp_path / "target.py"
     code_path.touch()
 
-    await handler._llm_fix(llm, code_path, [{"line": 1}], context=run_context)
+    run_context.model = run_context.model.model_copy(update={"llm_router": FixedRouter(llm)})
+    await handler._llm_fix(code_path, [{"line": 1}], context=run_context)
 
     fixed = code_path.read_text(encoding="utf-8")
     assert "print('fixed')" in fixed
@@ -170,7 +176,9 @@ async def test_review_handlers_execution(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """ReviewSpecHandler and ReviewCodeHandler execute their core LLM logic without crashing."""
-    run_context.model = run_context.model.model_copy(update={"llm": AsyncMock()})
+    run_context.model = run_context.model.model_copy(
+        update={"llm_router": FixedRouter(AsyncMock())}
+    )
     (run_context.output_dir / "foo.py").touch()
 
     spec_handler = ReviewSpecHandler()

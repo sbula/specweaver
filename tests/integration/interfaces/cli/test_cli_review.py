@@ -11,12 +11,13 @@ LLM calls are mocked — these are not e2e tests.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -84,15 +85,11 @@ class TestReviewErrors:
         # Should fail at the LLM adapter step (no API key) or spec not found
         assert result.exit_code == 1
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_review_spec_accepted(
         self,
-        mock_llm,
         tmp_path: Path,
     ) -> None:
         """sw review on a spec returns ACCEPTED verdict."""
-        from specweaver.infrastructure.llm.models import GenerationConfig
-
         project_dir = _init_project(tmp_path)
         spec = project_dir / "specs" / "greeter_spec.md"
         spec.write_text(
@@ -111,25 +108,19 @@ class TestReviewErrors:
             return LLMResponse(text="VERDICT: ACCEPTED\nLooks good.", model="test-model")
 
         mock_adapter.generate_with_tools = _accepted
-        gen_config = GenerationConfig(model="test-model")
-        mock_llm.return_value = (None, mock_adapter, gen_config)
-
-        result = runner.invoke(
-            app,
-            ["review", str(spec), "--project", str(project_dir)],
-        )
+        with doubled_llm(mock_adapter):
+            result = runner.invoke(
+                app,
+                ["review", str(spec), "--project", str(project_dir)],
+            )
         assert result.exit_code == 0
         assert "ACCEPTED" in result.output
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_review_spec_denied(
         self,
-        mock_llm,
         tmp_path: Path,
     ) -> None:
         """sw review on a spec returns DENIED with findings."""
-        from specweaver.infrastructure.llm.models import GenerationConfig
-
         project_dir = _init_project(tmp_path)
         spec = project_dir / "specs" / "bad_spec.md"
         spec.write_text("Not a real spec.", encoding="utf-8")
@@ -149,13 +140,11 @@ class TestReviewErrors:
             )
 
         mock_adapter.generate_with_tools = _denied
-        gen_config = GenerationConfig(model="test-model")
-        mock_llm.return_value = (None, mock_adapter, gen_config)
-
-        result = runner.invoke(
-            app,
-            ["review", str(spec), "--project", str(project_dir)],
-        )
+        with doubled_llm(mock_adapter):
+            result = runner.invoke(
+                app,
+                ["review", str(spec), "--project", str(project_dir)],
+            )
         assert result.exit_code == 1
         assert "DENIED" in result.output
         assert "No type hints" in result.output
@@ -212,14 +201,9 @@ def _invoke_draft_with(run_state, tmp_path):
     """Invoke sw draft with adapter + runner mocked; return (result, captured pipeline)."""
     project_dir = _init_project(tmp_path, "chain-proj")
     with (
-        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_create,
+        doubled_llm(MagicMock()),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
     ):
-        from unittest.mock import MagicMock
-
-        settings = MagicMock()
-        settings.llm.model = "test-model"
-        mock_create.return_value = (settings, MagicMock(), MagicMock())
         mock_runner_class.return_value.run = AsyncMock(return_value=run_state)
         result = runner.invoke(app, ["draft", "greeter", "--project", str(project_dir)])
         pipeline = mock_runner_class.call_args.args[0] if mock_runner_class.call_args else None

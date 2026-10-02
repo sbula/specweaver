@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 def flush_telemetry(context: RunContext, logger: logging.Logger) -> None:
-    """Flush telemetry if context.model.llm is a TelemetryCollector."""
-    from specweaver.infrastructure.llm.collector import TelemetryCollector
+    """Persist the usage records of every collector the run's calls went through.
 
-    llm = context.model.llm
-    if not isinstance(llm, TelemetryCollector):
+    All of them, not one: every role's adapter is a collector, and a run's steps use several roles.
+    """
+    router = context.model.llm_router
+    if router is None:
         return
 
     db = getattr(context, "db", None)
@@ -27,7 +28,8 @@ def flush_telemetry(context: RunContext, logger: logging.Logger) -> None:
         logger.warning("Cannot flush telemetry: no db on RunContext")
         return
 
-    try:
-        llm.flush(db)
-    except Exception:
-        logger.warning("Failed to flush telemetry", exc_info=True)
+    for collector in router.collectors():
+        try:
+            collector.flush(db)
+        except Exception:
+            logger.warning("Failed to flush telemetry", exc_info=True)

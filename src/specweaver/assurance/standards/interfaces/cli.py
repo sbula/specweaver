@@ -132,7 +132,8 @@ def standards_scan(
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
     from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
+    from specweaver.infrastructure.llm.interfaces.command import optional_command_router
+    from specweaver.infrastructure.llm.models import TaskType
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -152,7 +153,8 @@ def standards_scan(
     from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
 
     settings = load_settings(db, name)
-    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+    # Enrichment is optional: without a model for the `check` role the findings stand as found.
+    router = optional_command_router(name, settings, [TaskType.CHECK])
 
     # We use a dummy spec_path since standards scanning is project/scope-wide
     dummy_spec = project_path / "CONSTITUTION.md"
@@ -162,7 +164,7 @@ def standards_scan(
             analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
             project_path=project_path,
             spec_path=dummy_spec,
-            model=ModelAccess(llm=adapter, config=settings),
+            model=ModelAccess(config=settings, llm_router=router),
             db=db,
         )
 

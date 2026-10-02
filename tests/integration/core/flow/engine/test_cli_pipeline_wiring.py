@@ -11,6 +11,7 @@ from typer.testing import CliRunner
 
 from specweaver.core.flow.engine.state import RunStatus
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 runner = CliRunner()
 
@@ -27,7 +28,7 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
 
         # Mute adapter creation and pipeline loading
         with (
-            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_adapter,
+            doubled_llm(MagicMock()),
             patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load_pipeline,
         ):
             # Fake the return
@@ -36,7 +37,6 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
             fake_pr.run_id = "fake-123"
             mock_run.return_value = fake_pr
 
-            mock_adapter.return_value = (MagicMock(), MagicMock(), MagicMock())
             mock_pipeline = MagicMock()
             mock_pipeline.name = "dummy"
             mock_load_pipeline.return_value = mock_pipeline

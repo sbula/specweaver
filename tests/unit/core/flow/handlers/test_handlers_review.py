@@ -11,6 +11,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 
 class TestReviewSpecHandler:
@@ -36,7 +37,11 @@ class TestReviewSpecHandler:
         """Verifies MCP environment context is fetched and passed to Reviewer."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
@@ -77,7 +82,11 @@ class TestReviewSpecOutputContract:
     ) -> None:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
 
@@ -116,7 +125,7 @@ class TestReviewSpecOutputContract:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path,
-            model=ModelAccess(llm=MagicMock()),
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         (tmp_path / "test.py").write_text("x = 1")
@@ -169,7 +178,7 @@ class TestReviewCodeHandler:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path,
-            model=ModelAccess(llm=MagicMock()),
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         (tmp_path / "test.py").write_text("x = 1")

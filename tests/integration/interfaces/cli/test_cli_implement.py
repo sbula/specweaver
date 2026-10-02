@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.settings import SandboxSettings
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 runner = CliRunner()
 
@@ -135,21 +135,13 @@ def _patch_qa(*, tests_pass: bool = True, code_pass: bool = True, lint_pass: boo
 class TestImplementQALoop:
     """sw implement runs tests + code validation in-pipeline and reports outcomes."""
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_qa_pass_reports_and_exits_zero(self, mock_require, tmp_path) -> None:
+    def test_qa_pass_reports_and_exits_zero(self, tmp_path) -> None:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
-        with _patch_qa(tests_pass=True, code_pass=True):
+        with doubled_llm(adapter), _patch_qa(tests_pass=True, code_pass=True):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         assert result.exit_code == 0, result.output
@@ -157,42 +149,26 @@ class TestImplementQALoop:
         assert "2 passed" in result.output
         assert "95" in result.output  # coverage surfaced
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_failing_tests_exit_nonzero(self, mock_require, tmp_path) -> None:
+    def test_failing_tests_exit_nonzero(self, tmp_path) -> None:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
-        with _patch_qa(tests_pass=False, code_pass=True):
+        with doubled_llm(adapter), _patch_qa(tests_pass=False, code_pass=True):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         # run_tests fails → loop-back exhausts → run not completed → exit 1
         assert result.exit_code == 1, result.output
         assert "fail" in result.output.lower()
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_validate_code_failure_is_report_only(self, mock_require, tmp_path) -> None:
+    def test_validate_code_failure_is_report_only(self, tmp_path) -> None:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
-        with _patch_qa(tests_pass=True, code_pass=False):
+        with doubled_llm(adapter), _patch_qa(tests_pass=True, code_pass=False):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         # validate_code gate is CONTINUE → run completes → exit 0, failure reported
@@ -200,51 +176,34 @@ class TestImplementQALoop:
         assert "Implementation complete" in result.output
         assert "C04" in result.output  # failed rule surfaced
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_lint_fix_reported_and_clean_exits_zero(self, mock_require, tmp_path) -> None:
+    def test_lint_fix_reported_and_clean_exits_zero(self, tmp_path) -> None:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
-        with _patch_qa():  # lint clean by default
+        with doubled_llm(adapter), _patch_qa():  # lint clean by default
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         assert result.exit_code == 0, result.output
         assert "lint" in result.output.lower()
         assert "auto-fixed" in result.output
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_lint_fix_failure_is_report_only(self, mock_require, tmp_path) -> None:
+    def test_lint_fix_failure_is_report_only(self, tmp_path) -> None:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
         # lint_fix FAILED (errors remain) but tests pass → CONTINUE gate → exit 0
-        with _patch_qa(lint_pass=False, tests_pass=True, code_pass=True):
+        with doubled_llm(adapter), _patch_qa(lint_pass=False, tests_pass=True, code_pass=True):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         assert result.exit_code == 0, result.output
         assert "Implementation complete" in result.output
         assert "2 errors remaining" in result.output  # lint outcome surfaced
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_lint_fix_error_is_absorbed_by_continue_gate(self, mock_require, tmp_path) -> None:
+    def test_lint_fix_error_is_absorbed_by_continue_gate(self, tmp_path) -> None:
         """[Graceful degradation] an LLM crash inside lint_fix (StepStatus.ERROR) must NOT
         abort the autonomous run — the CONTINUE gate advances to run_tests, whose result
         governs the exit code."""
@@ -253,14 +212,7 @@ class TestImplementQALoop:
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
         lint_error = StepResult(
             status=StepStatus.ERROR,
@@ -270,6 +222,7 @@ class TestImplementQALoop:
             completed_at="t1",
         )
         with (
+            doubled_llm(adapter),
             patch(
                 "specweaver.core.flow.handlers.lint_fix.LintFixHandler.execute",
                 new=AsyncMock(return_value=lint_error),
@@ -293,23 +246,15 @@ class TestImplementQALoop:
         assert result.exit_code == 0, result.output
         assert "Implementation complete" in result.output
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    def test_lint_and_tests_both_fail_exits_nonzero(self, mock_require, tmp_path) -> None:
+    def test_lint_and_tests_both_fail_exits_nonzero(self, tmp_path) -> None:
         """[Graceful degradation] lint_fix report-only failure + run_tests failure →
         run_tests governs the exit (1); the run doesn't hang or mis-report."""
         project = _scaffold_project(tmp_path)
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            _make_mock_adapter("def greet(n):\n    return n\n"),
-            MagicMock(temperature=0.2),
-        )
+        adapter = _make_mock_adapter("def greet(n):\n    return n\n")
 
-        with _patch_qa(lint_pass=False, tests_pass=False, code_pass=True):
+        with doubled_llm(adapter), _patch_qa(lint_pass=False, tests_pass=False, code_pass=True):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
         assert result.exit_code == 1, result.output
@@ -324,10 +269,8 @@ class TestImplementQALoop:
 class TestImplementFlow:
     """Test sw implement command."""
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_implement_generates_files(
         self,
-        mock_require,
         tmp_path: pytest.TempPathFactory,
     ) -> None:
         """Implement should create code and test files."""
@@ -341,16 +284,11 @@ class TestImplementFlow:
         mock_adapter = _make_mock_adapter(
             'def greet(name: str) -> str:\n    return f"Hello {name}!"\n',
         )
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            mock_adapter,
-            MagicMock(temperature=0.7),
-        )
 
-        with _patch_qa():  # stub the appended QA steps (real exec = SF-03 e2e)
+        with (
+            doubled_llm(mock_adapter),
+            _patch_qa(),
+        ):  # stub the appended QA steps (real exec = SF-03 e2e)
             result = runner.invoke(
                 app,
                 ["implement", str(spec), "--project", str(project)],
@@ -365,10 +303,8 @@ class TestImplementFlow:
         assert code_path.exists()
         assert test_path.exists()
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_implement_spec_suffix_removal(
         self,
-        mock_require,
         tmp_path: pytest.TempPathFactory,
     ) -> None:
         """The _spec suffix should be stripped from output filenames."""
@@ -379,16 +315,8 @@ class TestImplementFlow:
         spec.write_text("# Auth Spec\n## 1. Purpose\nAuth.", encoding="utf-8")
 
         mock_adapter = _make_mock_adapter("pass\n")
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            mock_adapter,
-            MagicMock(temperature=0.7),
-        )
 
-        with _patch_qa():  # stub the appended QA steps
+        with doubled_llm(mock_adapter), _patch_qa():  # stub the appended QA steps
             result = runner.invoke(
                 app,
                 ["implement", str(spec), "--project", str(project)],
@@ -420,10 +348,8 @@ class TestImplementFlow:
 class TestFullPipeline:
     """Test the full SpecWeaver pipeline end-to-end."""
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_full_pipeline(
         self,
-        mock_require,
         tmp_path: pytest.TempPathFactory,
     ) -> None:
         """Run the complete pipeline: init → check → implement → check."""
@@ -466,16 +392,11 @@ class TestFullPipeline:
             'def add(a: int, b: int) -> int:\n    """Add two integers."""\n    return a + b\n'
         )
         mock_adapter = _make_mock_adapter(generated_code)
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-        mock_require.return_value = (
-            mock_settings,
-            mock_adapter,
-            MagicMock(temperature=0.7),
-        )
 
-        with _patch_qa():  # stub the appended QA steps (real exec = SF-03 e2e)
+        with (
+            doubled_llm(mock_adapter),
+            _patch_qa(),
+        ):  # stub the appended QA steps (real exec = SF-03 e2e)
             result = runner.invoke(
                 app,
                 ["implement", str(spec), "--project", str(tmp_path)],

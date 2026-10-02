@@ -34,17 +34,15 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
-from tests.scripted_llm import settings_mock
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
 
 runner = CliRunner()
@@ -139,17 +137,6 @@ def project(tmp_path: Path) -> Path:
     return project_dir
 
 
-def _scripted(llm: _LoopAwareLLM) -> Iterator[None]:
-    return patch.multiple(
-        "specweaver.infrastructure.llm.factory",
-        create_llm_adapter=MagicMock(return_value=(settings_mock(), llm, MagicMock())),
-    )
-
-
-def _no_router():
-    return patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None)
-
-
 def _run_implement(project: Path):
     return runner.invoke(
         app, ["implement", str(project / "specs" / SPEC), "--project", str(project)]
@@ -168,7 +155,7 @@ def test_the_loop_generates_fails_regenerates_and_goes_green(project: Path) -> N
     real pytest fails it, the loop-back regenerates, and the second attempt passes.
     """
     llm = _LoopAwareLLM(collectable=True)
-    with _scripted(llm), _no_router():
+    with doubled_llm(llm, model="scripted-1"):
         result = _run_implement(project)
 
     assert llm.code_calls == 2, (
@@ -189,7 +176,7 @@ def test_the_generated_code_reaches_the_code_rules(project: Path) -> None:
     `validate_code` was declared in the pipeline and had never been observed running.
     """
     llm = _LoopAwareLLM(collectable=True)
-    with _scripted(llm), _no_router():
+    with doubled_llm(llm, model="scripted-1"):
         result = _run_implement(project)
 
     rules = re.search(r"code validation: (\d+)/(\d+) rules", result.output)
@@ -210,7 +197,7 @@ def test_a_single_file_target_is_not_marker_filtered(project: Path) -> None:
     can only ever deselect it. Directory runs keep their filter, where a marker is a real selector.
     """
     llm = _LoopAwareLLM(collectable=True)
-    with _scripted(llm), _no_router():
+    with doubled_llm(llm, model="scripted-1"):
         result = _run_implement(project)
 
     assert "0 passed, 0 failed" not in result.output, (
@@ -232,7 +219,7 @@ def test_the_loop_auto_fixes_lint_in_flight(project: Path) -> None:
     gone from disk afterwards, auto-fix ran in the journey.
     """
     llm = _LoopAwareLLM(collectable=True, first_draft=_LINTY)
-    with _scripted(llm), _no_router():
+    with doubled_llm(llm, model="scripted-1"):
         result = _run_implement(project)
 
     written = (project / "src" / "greeter.py").read_text(encoding="utf-8")

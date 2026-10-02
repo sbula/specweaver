@@ -20,6 +20,7 @@ from specweaver.workflows.review.reviewer import (
     ReviewResult,
     ReviewVerdict,
 )
+from tests.scripted_llm import TEST_CONFIG
 
 # ---------------------------------------------------------------------------
 # ReviewFinding model — confidence field
@@ -165,21 +166,21 @@ class TestReviewerConfidenceThreshold:
         class MockLLM:
             pass
 
-        r = Reviewer(llm=MockLLM(), confidence_threshold=80)  # type: ignore[arg-type]
+        r = Reviewer(llm=MockLLM(), confidence_threshold=80, config=TEST_CONFIG)  # type: ignore[arg-type]
         assert r._confidence_threshold == 80
 
     def test_custom_threshold(self) -> None:
         class MockLLM:
             pass
 
-        r = Reviewer(llm=MockLLM(), confidence_threshold=50)  # type: ignore[arg-type]
+        r = Reviewer(llm=MockLLM(), confidence_threshold=50, config=TEST_CONFIG)  # type: ignore[arg-type]
         assert r._confidence_threshold == 50
 
     def test_no_threshold_uses_default(self) -> None:
         class MockLLM:
             pass
 
-        r = Reviewer(llm=MockLLM())  # type: ignore[arg-type]
+        r = Reviewer(llm=MockLLM(), config=TEST_CONFIG)  # type: ignore[arg-type]
         assert r._confidence_threshold == 80
 
 

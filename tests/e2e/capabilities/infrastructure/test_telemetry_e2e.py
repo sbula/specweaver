@@ -4,8 +4,8 @@
 
 """E2E tests for telemetry pipeline (stories 29-30).
 
-Full vertical slice: factory → TelemetryCollector → generate → flush → DB query.
-Uses mock adapter but real DB and real factory logic.
+Full vertical slice: settings file → RoleResolver → TelemetryCollector → generate → flush → DB query.
+Only the provider adapter class is faked; the settings file, the resolver and the DB are real.
 """
 
 from __future__ import annotations
@@ -16,7 +16,6 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,
     LLMResponse,
@@ -89,6 +88,43 @@ class FakeGeminiAdapter:
         )
 
 
+_SETTINGS = """\
+[servers.gem]
+kind = "gemini"
+private = false
+max_parallel = 2
+
+[roles]
+default = "gemini-2.5-pro@gem"
+"""
+
+
+def _router(extra: str = ""):
+    """The router a command would build, from a real machine settings file."""
+    from specweaver.core.config.bootstrap.llm_settings_loader import (
+        load_llm_settings,
+        machine_settings_path,
+    )
+    from specweaver.infrastructure.llm.router import build_router
+
+    path = machine_settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_SETTINGS + extra, encoding="utf-8")
+    with patch(
+        "specweaver.infrastructure.llm.servers.get_adapter_class",
+        return_value=FakeGeminiAdapter,
+    ):
+        router = build_router(
+            load_llm_settings(None),
+            project="e2e-proj",
+            roles=["default"],
+            spend_limit_usd=None,
+            token_limit=None,
+        )
+        result = router.get_for_task(TaskType.UNKNOWN)
+    return result.adapter, result.config
+
+
 # ---------------------------------------------------------------------------
 # Story 29: Full pipeline E2E
 # ---------------------------------------------------------------------------
@@ -136,24 +172,15 @@ def _get_estimated_cost_sync(db, project: str) -> float:
 
 
 class TestFullPipelineE2E:
-    """Factory → wrapped adapter → generate → flush → query."""
+    """Settings file → wrapped adapter → generate → flush → query."""
 
     @pytest.mark.asyncio
     @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_full_telemetry_pipeline(self, db):
-        """Story 29: full vertical slice — factory, collector, generate, flush, query."""
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
+        """Story 29: full vertical slice — settings, resolver, collector, generate, flush, query."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
 
-        with patch(
-            "specweaver.infrastructure.llm.factory._get_adapter_class",
-            return_value=FakeGeminiAdapter,
-        ):
-            settings = load_settings(db, "e2e-proj", llm_role="default")
-            _settings, adapter, gen_config = create_llm_adapter(
-                settings, telemetry_project="e2e-proj"
-            )
+        adapter, gen_config = _router()
 
         assert isinstance(adapter, TelemetryCollector)
 
@@ -189,36 +216,28 @@ class TestFullPipelineE2E:
 # ---------------------------------------------------------------------------
 
 
-_PRICE = ModelFacts(usd_per_million_input=100_000.0, usd_per_million_output=200_000.0)
+_PRICE = """
+[models."gemini-2.5-pro"]
+usd_per_million_input = 100000.0
+usd_per_million_output = 200000.0
+"""
 
 
 class TestCostOverrideLifecycleE2E:
-    """A machine-file price → factory → generate → flush → the stored cost uses it."""
+    """A machine-file price → resolver → generate → flush → the stored cost uses it."""
 
     @pytest.mark.asyncio
     @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_cost_override_affects_persisted_cost(self, db):
         """Story 30: the machine file's price flows through the whole pipeline to the DB."""
         # A very high price in the machine file, so it is plainly the one used
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
         from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
 
-        with patch(
-            "specweaver.infrastructure.llm.factory._get_adapter_class",
-            return_value=FakeGeminiAdapter,
-        ):
-            settings = load_settings(db, "e2e-proj", llm_role="default")
-            _settings, adapter, gen_config = create_llm_adapter(
-                settings,
-                telemetry_project="e2e-proj",
-                machine_models={"gemini-2.5-pro": _PRICE},
-            )
+        adapter, gen_config = _router(_PRICE)
 
         assert isinstance(adapter, TelemetryCollector)
 
         # Generate — adapter returns 500 prompt + 200 completion tokens
-        print(f"DEBUG MODEL: {gen_config.model}")
         config = GenerationConfig(
             model=gen_config.model,
             task_type=TaskType.IMPLEMENT,

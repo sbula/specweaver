@@ -20,6 +20,7 @@ from specweaver.core.flow.handlers.generation import GenerateTestsHandler, PlanS
 from specweaver.core.flow.handlers.review import ReviewSpecHandler
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -50,7 +51,7 @@ async def test_metadata_flows_to_reviewer_handler(
 
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
-        model=ModelAccess(llm=mock_llm),
+        model=ModelAccess(llm_router=FixedRouter(mock_llm)),
         project_path=tmp_path,
         spec_path=tmp_path / "test.md",
         project_metadata=mock_metadata,
@@ -77,7 +78,7 @@ async def test_metadata_flows_to_generator_handler(
 
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
-        model=ModelAccess(llm=mock_llm),
+        model=ModelAccess(llm_router=FixedRouter(mock_llm)),
         project_path=tmp_path,
         spec_path=tmp_path / "test.md",
         # `test_path`/`code_path` were never RunContext fields — silently discarded until
@@ -118,7 +119,7 @@ async def test_metadata_flows_to_planner_handler(
 
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
-        model=ModelAccess(llm=mock_llm),
+        model=ModelAccess(llm_router=FixedRouter(mock_llm)),
         project_path=tmp_path,
         spec_path=tmp_path / "test.md",
         project_metadata=mock_metadata,

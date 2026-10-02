@@ -6,25 +6,17 @@
 
 Proves: INT-US-16 FR-1, INT-US-16 FR-4
 
-**Why FR-1 is only the token half.** The design wrote the US-16 journey as one e2e asserting tokens
-*and* a USD figure priced from `sw costs set`. Those are two claims, and only one of them holds:
-no command passes `cost_overrides` into `create_llm_adapter` (`factory.py:43` accepts the keyword;
-`cli.py:219`, `flow/interfaces/cli.py:96` and `review/…/cli.py:195,293` all omit it), so a rate the
-user configures is echoed back by `sw costs` and then ignored. Splitting the FR is not a softening —
-the token half is the larger half of *"see exactly how much each agent is spending"*, it works
-today, and it deserves a live proof rather than being held hostage to the pricing bug. FR-1b, the
-USD half, is **FR-4** and CB-2's red.
-
-**The seam this closes.** Before this file the write half was proven from the factory down to DB
+**The seam this closes.** Before this file the write half was proven from the adapter down to DB
 rows and the read half from a hand-written `sqlite3` INSERT up to `sw usage`
 (`test_cli_decentralized_e2e.py:96-107`), with nothing crossing the middle. If the writer's column
 set drifted, both halves stayed green.
 
-**What is deliberately not patched.** `create_llm_adapter` runs for real, so the
-`if telemetry_project:` branch that installs the collector is exercised rather than replaced; the
-double sits one level lower at `factory._get_adapter_class`. `tests/scripted_llm.py::scripted_world`
-is unusable here for the same reason — it patches the factory and hands back a bare `ScriptedLLM`,
-leaving `context.model.llm` unwrapped and the assertions below passing against nothing.
+**What is deliberately not patched.** The role is resolved for real from a machine settings file
+(C-FLOW-13), so `RoleResolver` wraps the adapter in its `TelemetryCollector` exactly as a user's run
+does; the double sits one level lower, at the adapter class the server's `kind` names.
+`tests/scripted_llm.py::doubled_llm` is unusable here for the same reason — it replaces the
+resolver and hands back a bare adapter, leaving the calls unwrapped and the assertions below
+passing against nothing.
 
 **DB isolation** comes from `tests/e2e/conftest.py::_isolate_env` (`autouse`, sets
 `SPECWEAVER_DATA_DIR`) — the command resolves its own database. This file must NOT copy
@@ -63,6 +55,43 @@ _MODEL = "fake-journey-model"
 #: Valid as either the generated module or the generated test: since `TECH-017` SF-04 a QA run that
 #: collects nothing fails loud, so a bare `pass` will not do.
 _COLLECTABLE = "def greet():\n    pass\n\n\ndef test_greet_is_callable() -> None:\n    assert greet() is None\n"
+
+
+#: The machine settings file the journey runs under: one hosted server, every role on it. The model
+#: is unknown to the shipped catalogue, so its output limit is set here and it has no price until
+#: the user sets one.
+_SETTINGS = f"""\
+[servers.gem]
+kind = "gemini"
+private = false
+max_parallel = 2
+
+[roles]
+default = "{_MODEL}@gem"
+
+[models."{_MODEL}"]
+max_output = 8192
+"""
+
+
+def _write_settings() -> None:
+    from specweaver.core.config.bootstrap.llm_settings_loader import machine_settings_path
+
+    path = machine_settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_SETTINGS, encoding="utf-8")
+
+
+def _implement(spec: Path, project: Path) -> None:
+    """`sw implement` with the provider doubled at its adapter class and nothing above it."""
+    with (
+        patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
+        patch(
+            "specweaver.infrastructure.llm.servers.get_adapter_class",
+            return_value=_FakeGeminiAdapter,
+        ),
+    ):
+        runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 
 
 class _FakeGeminiAdapter:
@@ -142,6 +171,7 @@ class TestImplementSpendIsVisibleInUsage:
 
     def test_a_run_records_tokens_that_sw_usage_then_displays(self, tmp_path: Path) -> None:
         """[Happy] `sw init` → `sw use` → `sw implement` → `sw usage` shows THAT run's tokens."""
+        _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
 
@@ -149,14 +179,7 @@ class TestImplementSpendIsVisibleInUsage:
         spec.parent.mkdir(parents=True, exist_ok=True)
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
-        with (
-            patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
-            patch(
-                "specweaver.infrastructure.llm.factory._get_adapter_class",
-                return_value=_FakeGeminiAdapter,
-            ),
-        ):
-            runner.invoke(app, ["implement", str(spec), "--project", str(tmp_path)])
+        _implement(spec, tmp_path)
 
         usage = runner.invoke(app, ["usage"])
         assert usage.exit_code == 0, usage.output
@@ -181,6 +204,7 @@ class TestImplementSpendIsVisibleInUsage:
 
     def test_usage_attributes_the_run_to_the_active_project_only(self, tmp_path: Path) -> None:
         """[Boundary] a second project that ran nothing shows none of the first one's spend."""
+        _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
 
@@ -188,14 +212,7 @@ class TestImplementSpendIsVisibleInUsage:
         spec.parent.mkdir(parents=True, exist_ok=True)
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
-        with (
-            patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
-            patch(
-                "specweaver.infrastructure.llm.factory._get_adapter_class",
-                return_value=_FakeGeminiAdapter,
-            ),
-        ):
-            runner.invoke(app, ["implement", str(spec), "--project", str(tmp_path)])
+        _implement(spec, tmp_path)
 
         other = tmp_path / "other"
         other.mkdir()
@@ -215,20 +232,18 @@ class TestImplementSpendIsVisibleInUsage:
 class TestConfiguredRateReachesTheRun:
     """FR-4 — a rate set with `sw costs set` prices what `sw usage` reports.
 
-    **Red when written, and for the right reason.** `create_llm_adapter` has always accepted
-    `cost_overrides` (`factory.py:43`), and no command has ever passed it: `cli.py:219`,
-    `flow/interfaces/cli.py:96` and `review/…/cli.py:195,293` all omit the keyword, and the only
-    reader of `LlmRepository.get_cost_overrides()` in `src/` is `sw costs` itself, for display. So
-    the user sets a price, `sw costs` echoes it back, and every run prices from the built-in table —
-    or `0.0` for a model absent from it, with the fact buried in a `logger.warning`.
+    The rate is written to the machine settings file, the one price source (C-FLOW-13); the run's
+    collector prices each call from it by the model the call asked for.
     """
 
-    #: USD per 1M tokens, large on purpose. Rich truncates the Cost column, so `USD 0.0000` and a
-    #: priced figure must differ in their first characters to be told apart at any width.
+    #: Per 1M tokens in the configured currency (USD here, none being set), large on purpose. Rich
+    #: truncates the Cost column, so `USD 0.0000` and a priced figure must differ in their first
+    #: characters to be told apart at any width.
     _RATE_PER_1M = 1_000_000.0
 
     def test_the_rate_the_user_set_is_the_rate_that_is_reported(self, tmp_path: Path) -> None:
         """[Happy] `sw costs set` → `sw implement` → `sw usage` shows a priced, non-zero cost."""
+        _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
         priced = runner.invoke(
@@ -240,14 +255,7 @@ class TestConfiguredRateReachesTheRun:
         spec.parent.mkdir(parents=True, exist_ok=True)
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
-        with (
-            patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
-            patch(
-                "specweaver.infrastructure.llm.factory._get_adapter_class",
-                return_value=_FakeGeminiAdapter,
-            ),
-        ):
-            runner.invoke(app, ["implement", str(spec), "--project", str(tmp_path)])
+        _implement(spec, tmp_path)
 
         usage = runner.invoke(app, ["usage"])
         assert usage.exit_code == 0, usage.output

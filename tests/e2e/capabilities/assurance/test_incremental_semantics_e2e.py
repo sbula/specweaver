@@ -23,16 +23,37 @@ Exercises:
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 runner = CliRunner()
+
+
+class _NoCallsExpected:
+    """The `lint_fix` step resolves its role up front, but clean code never reaches the model."""
+
+    def available(self) -> bool:
+        return True
+
+    async def generate(self, *args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("clean code must not reach the model")
+
+    generate_with_tools = generate
+
+
+@pytest.fixture(autouse=True)
+def _model_never_called() -> Iterator[None]:
+    with doubled_llm(_NoCallsExpected()):
+        yield
 
 
 def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:

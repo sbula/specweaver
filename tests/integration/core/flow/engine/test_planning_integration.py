@@ -37,6 +37,7 @@ from specweaver.core.flow.handlers.run_context import ModelAccess, PlanContext, 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.renderer import render_plan_markdown
+from tests.scripted_llm import TEST_CONFIG, FixedRouter
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -97,7 +98,7 @@ class TestPlannerToRenderer:
         llm = FakeLLM([_valid_plan_json()])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
         plan = await planner.generate_plan(
             spec_content="# Login Spec\nHandle login.",
             spec_path="specs/login_spec.md",
@@ -221,7 +222,7 @@ class TestGeneratorPlanIntegration:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "out.py"
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         pb = PromptBuilder().add_plan("## File Layout\n- src/auth.py")
         await gen.generate_code(spec, output, base_prompt=pb)
 
@@ -238,7 +239,7 @@ class TestGeneratorPlanIntegration:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "test_out.py"
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         pb = PromptBuilder().add_plan("## Test Expectations\n- test_login")
         await gen.generate_tests(spec, output, base_prompt=pb)
 
@@ -261,7 +262,9 @@ class TestPlanSpecHandlerFileSystem:
         spec.write_text("# Component\n## 1. Purpose\nDoes things.\n", encoding="utf-8")
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm))
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm_router=FixedRouter(llm))
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -322,7 +325,7 @@ class TestPlanSpecHandlerFileSystem:
         ctx = RunContext(
             project_path=tmp_path,
             spec_path=spec,
-            model=ModelAccess(llm=FakeLLM([]), config=MockSettings()),
+            model=ModelAccess(llm_router=FixedRouter(FakeLLM([])), config=MockSettings()),
         )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
@@ -358,7 +361,9 @@ class TestPlanSpecHandlerFileSystem:
 
         # Just test the fallback case: config is missing or lacks stitch
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=FakeLLM([]), config=None)
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(FakeLLM([])), config=None),
         )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
@@ -390,7 +395,9 @@ class TestPlanSpecHandlerFileSystem:
 
         llm = FakeLLM([_valid_plan_json()])
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm, config=MockSettings())
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(llm), config=MockSettings()),
         )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
@@ -426,7 +433,9 @@ class TestPlanSpecHandlerFileSystem:
 
         llm = FakeLLM([_valid_plan_json()])
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=llm, config=MockSettings())
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(llm), config=MockSettings()),
         )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
@@ -460,7 +469,7 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="x = 1\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_llm),
+            model=ModelAccess(llm_router=FixedRouter(mock_llm)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
@@ -489,7 +498,7 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="def test_x(): pass\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_llm),
+            model=ModelAccess(llm_router=FixedRouter(mock_llm)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
@@ -567,7 +576,7 @@ class TestPlannerWithConstitutionAndStandards:
         llm = FakeLLM([_valid_plan_json()])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
         pb = (
             PromptBuilder()
             .add_constitution("Always follow security best practices.")
@@ -670,7 +679,7 @@ class TestPlannerRetryWithCleanJson:
         llm = FakeLLM([fenced])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
         plan = await planner.generate_plan(
             spec_content="# Spec\nContent.",
             spec_path="specs/test.md",

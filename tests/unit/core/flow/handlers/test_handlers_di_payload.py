@@ -10,6 +10,7 @@ from specweaver.assurance.validation.models import Status
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.mark.asyncio
@@ -28,7 +29,7 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
     spec_file.write_text("spec")
 
     context = RunContext(
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
@@ -111,7 +112,7 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
     spec_file.write_text("spec")
 
     context = RunContext(
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
@@ -159,7 +160,7 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
     spec_file.write_text("spec")
 
     context = RunContext(
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
@@ -226,7 +227,7 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
     spec_file.write_text("spec")
 
     context = RunContext(
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
@@ -270,7 +271,7 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -322,7 +323,7 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
@@ -372,7 +373,7 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -418,7 +419,7 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
@@ -486,7 +487,7 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
@@ -569,7 +570,7 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
         project_path=project_root,
         spec_path=spec_file,
         output_dir=project_root,
-        model=ModelAccess(llm=MagicMock()),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock())),
     )
     step = PipelineStep(
         name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}

@@ -51,6 +51,7 @@ from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.generation import PlanSpecHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 
 class _FakeResponse:
@@ -131,7 +132,7 @@ def _run(tmp_path: Path, sink: dict[str, Any]):
     ctx = RunContext(
         project_path=tmp_path,
         spec_path=_spec(tmp_path),
-        model=ModelAccess(llm=_FakeLLM([_plan_json()])),
+        model=ModelAccess(llm_router=FixedRouter(_FakeLLM([_plan_json()]))),
     )
     runner = PipelineRunner(
         _plan_then_generate(), ctx, registry=registry, store=StateStore(tmp_path / "state.db")
@@ -202,7 +203,9 @@ class TestPlanBridgeIsHookDriven:
 
         registry.register(StepAction.PLAN, StepTarget.SPEC, _PlanThenVanish())
         ctx = RunContext(
-            project_path=tmp_path, spec_path=_spec(tmp_path), model=ModelAccess(llm=_FakeLLM([""]))
+            project_path=tmp_path,
+            spec_path=_spec(tmp_path),
+            model=ModelAccess(llm_router=FixedRouter(_FakeLLM([""]))),
         )
         run2 = asyncio.run(
             PipelineRunner(

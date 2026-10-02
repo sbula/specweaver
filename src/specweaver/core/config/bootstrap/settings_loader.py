@@ -17,7 +17,6 @@ from specweaver.core.config.settings import (
     StitchSettings,
     deep_merge_dict,
 )
-from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
@@ -86,35 +85,14 @@ def _load_toml_sandbox(root_path: str | None) -> SandboxSettings:
     return sandbox
 
 
-def load_settings(
-    db: Database, project_name: str, *, llm_role: str = "review"
-) -> SpecWeaverSettings:
-    logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
+def load_settings(db: Database, project_name: str) -> SpecWeaverSettings:
+    logger.debug("load_settings called for project=%s", project_name)
 
     import typing
 
     return typing.cast(
         "SpecWeaverSettings",
-        _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role)),
-    )
-
-
-def _llm_settings(profile: dict[str, object], project_name: str) -> LLMSettings:
-    """The LLM settings for a resolved profile, with the provider's key read from the environment.
-
-    The key is looked up per provider (`GEMINI_API_KEY`, `OPENAI_API_KEY`, ...) and defaults to
-    empty rather than raising: a missing key is the adapter's error to report, with a message that
-    names which one, not this loader's.
-    """
-    provider = str(profile.get("provider", "gemini"))
-    logger.debug("Resolved provider=%s for project=%s", provider, project_name)
-    return LLMSettings(
-        model=str(profile["model"]),
-        temperature=float(profile["temperature"]),  # type: ignore[arg-type]
-        max_output_tokens=int(str(profile["max_output_tokens"])),
-        response_format=str(profile["response_format"]),  # type: ignore[arg-type]
-        provider=provider,
-        api_key=os.environ.get(f"{provider.upper()}_API_KEY", ""),
+        _sync_or_async(load_settings_async(db, project_name)),
     )
 
 
@@ -144,51 +122,25 @@ def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
     return matrix
 
 
-async def load_settings_async(
-    db: Database, project_name: str, *, llm_role: str = "review"
-) -> SpecWeaverSettings:
-    logger.debug("load_settings_async called for project=%s, role=%s", project_name, llm_role)
+async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSettings:
+    logger.debug("load_settings_async called for project=%s", project_name)
 
-    async def _get_data() -> tuple[dict[str, object] | None, dict[str, object] | None, str | None]:
+    async def _get_data() -> tuple[dict[str, object] | None, str | None]:
         async with db.async_session_scope() as session:
             ws_repo = WorkspaceRepository(session)
             proj = await ws_repo.get_project(project_name)
             if not proj:
-                return None, None, None
-            stitch_mode = await ws_repo.get_stitch_mode(project_name)
-            repo = LlmRepository(session)
-            p = await repo.get_project_profile(project_name, llm_role)
-            if not p:
-                p = await repo.get_llm_profile_by_name("system-default")
+                return None, None
+            return proj, await ws_repo.get_stitch_mode(project_name)
 
-            if p:
-                profile_dict = {
-                    "model": p.model,
-                    "temperature": p.temperature,
-                    "max_output_tokens": p.max_output_tokens,
-                    "response_format": p.response_format,
-                    "provider": p.provider,
-                }
-            else:
-                profile_dict = None
-
-            return proj, profile_dict, stitch_mode
-
-    proj, profile, stitch_mode = await _get_data()
+    proj, stitch_mode = await _get_data()
 
     if not proj:
         logger.error("Project '%s' not found in database", project_name)
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    if not profile:
-        logger.error(
-            "System default profile not found; cannot load settings for '%s'", project_name
-        )
-        msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
-        raise ValueError(msg)
-
-    llm = _llm_settings(profile, project_name)
+    llm = LLMSettings()
 
     stitch = StitchSettings(
         mode=stitch_mode or "off",  # type: ignore[arg-type]
@@ -208,8 +160,8 @@ async def load_settings_async(
     )
 
 
-def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecWeaverSettings:
-    logger.debug("load_settings_for_active called with role=%s", llm_role)
+def load_settings_for_active(db: Database) -> SpecWeaverSettings:
+    logger.debug("load_settings_for_active called")
 
     async def _get_active() -> str | None:
         async with db.async_session_scope() as session:
@@ -221,67 +173,4 @@ def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecW
         msg = "No active project. Run 'sw init <name> --path <path>' first."
         raise ValueError(msg)
     logger.debug("Active project resolved to '%s'", active)
-    return load_settings(db, active, llm_role=llm_role)
-
-
-def migrate_legacy_config(db: Database, project_name: str, project_path: str) -> bool:
-    from pathlib import Path
-
-    from ruamel.yaml import YAML
-
-    logger.debug("migrate_legacy_config called for project=%s, path=%s", project_name, project_path)
-    config_file = Path(project_path) / ".specweaver" / "config.yaml"
-    if not config_file.is_file():
-        logger.debug("No legacy config.yaml found at %s", config_file)
-        return False
-
-    async def _check_and_migrate() -> None:
-        async with db.async_session_scope() as session:
-            ws_repo = WorkspaceRepository(session)
-            existing = await ws_repo.get_project(project_name)
-            if existing:
-                logger.error("Project '%s' already exists in database", project_name)
-                msg = f"Project '{project_name}' already exists"
-                raise ValueError(msg)
-
-            yaml = YAML()
-            try:
-                data = yaml.load(config_file)
-            except YAMLError:
-                logger.exception("Failed to parse legacy config at %s", config_file)
-                data = {}
-
-            if not isinstance(data, dict):
-                data = {}
-
-            llm_raw = data.get("llm", {})
-            if not isinstance(llm_raw, dict):
-                llm_raw = {}
-
-            await ws_repo.register_project(project_name, project_path)
-
-            repo = LlmRepository(session)
-            p = await repo.get_llm_profile_by_name("system-default")
-            if not p:
-                raise ValueError("Database missing system-default profile.")
-
-            p_provider = p.provider or "gemini"
-            _model = llm_raw.get("model", p.model)
-            _provider = llm_raw.get("provider", p_provider)
-
-            profile_id = await repo.create_llm_profile(
-                name="legacy-import",
-                is_global=False,
-                model=_model,
-                temperature=llm_raw.get("temperature", 0.7),
-                max_output_tokens=llm_raw.get("max_output_tokens", 4096),
-                response_format=llm_raw.get("response_format", "text"),
-                provider=_provider,
-            )
-
-            for role in ("review", "draft", "search"):
-                await repo.link_project_profile(project_name, role, profile_id)
-
-    _sync_or_async(_check_and_migrate())
-    logger.info("Migrated legacy config for project '%s'", project_name)
-    return True
+    return load_settings(db, active)

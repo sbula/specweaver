@@ -23,6 +23,7 @@ from specweaver.workflows.review.reviewer import (
     ReviewVerdict,
 )
 from specweaver.workspace.context.provider import ContextProvider
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -131,7 +132,9 @@ class TestDrafter:
                 "Boundaries": "No logging, no persistence",
             }
         )
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=TEST_CONFIG
+        )
 
         result = await drafter.draft("greet_service", tmp_path)
 
@@ -146,7 +149,9 @@ class TestDrafter:
     async def test_draft_with_skipped_sections(self, tmp_path: Path) -> None:
         mock_llm = _make_mock_llm()
         provider = SkipContextProvider()
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=TEST_CONFIG
+        )
 
         result = await drafter.draft("empty_spec", tmp_path)
 
@@ -157,7 +162,9 @@ class TestDrafter:
     async def test_draft_calls_llm_for_each_section(self, tmp_path: Path) -> None:
         mock_llm = _make_mock_llm()
         provider = MockContextProvider()
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=TEST_CONFIG
+        )
 
         await drafter.draft("test_service", tmp_path)
 
@@ -169,7 +176,9 @@ class TestDrafter:
         output_dir = tmp_path / "nested" / "specs"
         mock_llm = _make_mock_llm()
         provider = MockContextProvider()
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=TEST_CONFIG
+        )
 
         result = await drafter.draft("nested_spec", output_dir)
 
@@ -213,7 +222,7 @@ class TestReviewer:
             "- Good structure\n\n"
             "Overall, this spec is well-written."
         )
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
@@ -232,7 +241,7 @@ class TestReviewer:
             "- No error handling defined\n\n"
             "This spec is incomplete."
         )
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
@@ -247,7 +256,7 @@ class TestReviewer:
         code_file.write_text("def greet(): pass", encoding="utf-8")
 
         mock_llm = _make_mock_llm("VERDICT: ACCEPTED\n\nCode matches spec.")
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_code(code_file, spec_file, base_prompt=PromptBuilder())
 
@@ -260,7 +269,7 @@ class TestReviewer:
 
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(side_effect=Exception("LLM failed"))
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
@@ -273,7 +282,7 @@ class TestReviewer:
         spec_file.write_text("# Spec", encoding="utf-8")
 
         mock_llm = _make_mock_llm("Some text without any verdict marker.")
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
@@ -468,6 +477,7 @@ class TestDrafterBehavioral:
             base_prompt=PromptBuilder(),
             llm=_failing_llm(),
             context_provider=MockContextProvider(),
+            config=TEST_CONFIG,
         )
         with pytest.raises(GenerationError):
             await drafter.draft("test_comp", tmp_path)
@@ -479,6 +489,7 @@ class TestDrafterBehavioral:
             base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Generated content"),
             context_provider=MockContextProvider(),
+            config=TEST_CONFIG,
         )
         result = await drafter.draft("my special comp!", tmp_path)
 
@@ -492,6 +503,7 @@ class TestDrafterBehavioral:
             base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Generated content"),
             context_provider=MockContextProvider(),
+            config=TEST_CONFIG,
         )
         result = await drafter.draft("", tmp_path)
 
@@ -513,7 +525,7 @@ class TestReviewerBehavioral:
         spec = tmp_path / "spec.md"
         spec.write_text("# Spec", encoding="utf-8")
 
-        reviewer = Reviewer(llm=_make_mock_llm("   \n\n\t  "))
+        reviewer = Reviewer(llm=_make_mock_llm("   \n\n\t  "), config=TEST_CONFIG)
         result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.DENIED
@@ -524,7 +536,9 @@ class TestReviewerBehavioral:
         spec = tmp_path / "empty.md"
         spec.write_text("", encoding="utf-8")
 
-        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED\nLooks fine."))
+        reviewer = Reviewer(
+            llm=_make_mock_llm("VERDICT: ACCEPTED\nLooks fine."), config=TEST_CONFIG
+        )
         result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ACCEPTED
@@ -539,7 +553,7 @@ class TestReviewerBehavioral:
         spec.write_text("# Spec", encoding="utf-8")
 
         specific_error = GenerationError("timeout after 30s", provider="gemini")
-        reviewer = Reviewer(llm=_failing_llm(specific_error))
+        reviewer = Reviewer(llm=_failing_llm(specific_error), config=TEST_CONFIG)
         result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ERROR
@@ -552,7 +566,7 @@ class TestReviewerBehavioral:
         code.write_text("pass", encoding="utf-8")
         spec = tmp_path / "nonexistent.md"
 
-        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
+        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"), config=TEST_CONFIG)
         with pytest.raises(FileNotFoundError):
             await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
@@ -563,7 +577,7 @@ class TestReviewerBehavioral:
         spec.write_text("# Spec", encoding="utf-8")
         code = tmp_path / "nonexistent.py"
 
-        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
+        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"), config=TEST_CONFIG)
         with pytest.raises(FileNotFoundError):
             await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
@@ -578,7 +592,7 @@ class TestReviewerParseResponse:
 
     def test_multiple_findings_extracted(self) -> None:
         """Multiple '- ' lines → multiple ReviewFinding objects."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: DENIED\n"
             "- Missing type hints\n"
@@ -594,7 +608,7 @@ class TestReviewerParseResponse:
 
     def test_no_findings(self) -> None:
         """Response with verdict but no '- ' lines → empty findings."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response("VERDICT: ACCEPTED\nLooks great.")
 
         assert result.verdict == ReviewVerdict.ACCEPTED
@@ -603,7 +617,7 @@ class TestReviewerParseResponse:
 
     def test_verdict_on_later_line(self) -> None:
         """VERDICT keyword not on first line → still detected."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "I've reviewed the spec carefully.\nVERDICT: ACCEPTED\nAll good.",
         )
@@ -612,7 +626,7 @@ class TestReviewerParseResponse:
 
     def test_raw_response_preserved(self) -> None:
         """raw_response field contains the original text."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         text = "VERDICT: DENIED\n- Issue found"
         result = reviewer._parse_response(text)
 
@@ -629,7 +643,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_completely_empty_response(self) -> None:
         """Empty string response → DENIED (conservative), no findings."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response("")
         assert result.verdict == ReviewVerdict.DENIED
         assert len(result.findings) == 0
@@ -637,14 +651,14 @@ class TestReviewerParseResponseRobustness:
 
     def test_whitespace_only_response(self) -> None:
         """Whitespace-only → DENIED, no findings."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response("   \n\n\t  ")
         assert result.verdict == ReviewVerdict.DENIED
         assert len(result.findings) == 0
 
     def test_multiple_verdict_lines_uses_first(self) -> None:
         """If LLM outputs multiple VERDICT lines, first one wins."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: ACCEPTED\n"
             "- Everything looks good\n"
@@ -657,19 +671,19 @@ class TestReviewerParseResponseRobustness:
 
     def test_verdict_case_insensitive(self) -> None:
         """verdict: accepted (lowercase) should still be detected."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response("verdict: accepted\nOK.")
         assert result.verdict == ReviewVerdict.ACCEPTED
 
     def test_verdict_mixed_case(self) -> None:
         """Verdict: Denied (mixed) should be detected."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response("Verdict: Denied\n- Bad spec.")
         assert result.verdict == ReviewVerdict.DENIED
 
     def test_findings_with_nested_dashes(self) -> None:
         """Findings line containing sub-dashes should extract full message."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: DENIED\n"
             "- Missing error handling - no try/except blocks\n"
@@ -681,7 +695,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_unicode_findings(self) -> None:
         """Unicode characters in findings should be preserved."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: DENIED\n"
             "- Spëcification fehlt Klarheit\n"
@@ -694,7 +708,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_summary_is_last_non_finding_line(self) -> None:
         """Summary should be the last non-empty, non-VERDICT, non-finding line."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: ACCEPTED\nSome preamble text.\n- A finding\nOverall conclusion here.",
         )
@@ -702,7 +716,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_only_findings_no_summary(self) -> None:
         """Response with only VERDICT + findings and no summary text."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: DENIED\n- Issue one\n- Issue two",
         )
@@ -712,7 +726,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_verdict_embedded_in_prose_still_detected(self) -> None:
         """VERDICT: ACCEPTED embedded in a prose paragraph still matches."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "After careful review, I believe VERDICT: ACCEPTED is appropriate.\n"
             "- Good structure\n"
@@ -722,7 +736,7 @@ class TestReviewerParseResponseRobustness:
 
     def test_finding_with_leading_whitespace(self) -> None:
         """Finding lines with leading spaces before '- ' should still parse."""
-        reviewer = Reviewer(llm=_make_mock_llm(""))
+        reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "VERDICT: DENIED\n  - Indented finding\nRegular text.",
         )
@@ -749,6 +763,7 @@ class TestDrafterAllSkipped:
             base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Should not be called"),
             context_provider=SkipContextProvider(),
+            config=TEST_CONFIG,
         )
         result = await drafter.draft("skipped_comp", tmp_path)
 

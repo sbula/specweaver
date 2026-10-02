@@ -10,18 +10,14 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 
 def _make_context(*, with_config: bool = True) -> RunContext:
     """Build a RunContext with or without a config object."""
-    if with_config:
-        config = MagicMock()
-        config.llm.model = "gemini-3-flash-preview"
-        config.llm.max_output_tokens = 4096
-    else:
-        config = None
+    config = MagicMock() if with_config else None
     return RunContext(
-        model=ModelAccess(config=config, llm=MagicMock()),
+        model=ModelAccess(config=config, llm_router=FixedRouter(MagicMock())),
         project_path=Path("/tmp/fake-project"),
         spec_path=Path("/tmp/fake-project/spec.md"),
     )
@@ -50,16 +46,13 @@ class TestGenConfigTaskType:
     """_resolve_generation_routing task_type behavior (stories 7-8)."""
 
     def test_default_task_type_is_implement(self):
-        """No explicit task_type → defaults to IMPLEMENT (story 7)."""
+        """No explicit task_type → IMPLEMENT, from the run's router (story 7)."""
         from specweaver.core.flow.handlers.generation import _resolve_generation_routing
-        from specweaver.infrastructure.llm.models import TaskType
 
         context = _make_context()
-        adapter, config = _resolve_generation_routing(
-            context, task_type=TaskType.IMPLEMENT, temperature=0.2
-        )
+        adapter, config = _resolve_generation_routing(context)
         assert config.task_type == "implement"
-        assert adapter == context.model.llm
+        assert adapter is context.model.llm_router.adapter
 
     def test_explicit_task_type_override(self):
         """Explicit task_type is used instead of default (story 8)."""
@@ -67,22 +60,20 @@ class TestGenConfigTaskType:
         from specweaver.infrastructure.llm.models import TaskType
 
         context = _make_context()
-        _adapter, config = _resolve_generation_routing(
-            context, task_type=TaskType.VALIDATE, temperature=0.2
-        )
+        _adapter, config = _resolve_generation_routing(context, task_type=TaskType.VALIDATE)
         assert config.task_type == "validate"
 
-    def test_fallback_path_still_sets_task_type(self):
-        """Fallback path (context.model.config=None) still sets task_type."""
-        from specweaver.core.flow.handlers.generation import _resolve_generation_routing
-        from specweaver.infrastructure.llm.models import TaskType
+    def test_without_a_router_the_step_refuses(self):
+        """No resolved LLM settings → no model is guessed: the step refuses."""
+        import pytest
 
-        context = _make_context(with_config=False)
-        _adapter, config = _resolve_generation_routing(
-            context, task_type=TaskType.IMPLEMENT, temperature=0.2
-        )
-        assert config.task_type == "implement"
-        assert config.model == "gemini-3-flash-preview"
+        from specweaver.core.flow.handlers._llm import LlmNotConfiguredError
+        from specweaver.core.flow.handlers.generation import _resolve_generation_routing
+
+        context = _make_context()
+        context.model = context.model.model_copy(update={"llm_router": None})
+        with pytest.raises(LlmNotConfiguredError):
+            _resolve_generation_routing(context)
 
 
 class TestPlanSpecConfigTaskType:

@@ -203,6 +203,7 @@ def implement(
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers._llm import roles_of
     from specweaver.core.flow.handlers.run_context import (
         AnalysisContext,
         GraphContext,
@@ -210,30 +211,14 @@ def implement(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import (
-        LLMAdapterError,
-        build_adapter_for_project,
-    )
+    from specweaver.infrastructure.llm.interfaces.command import command_router
 
     db = _core.get_db()
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
-    # failure. The adapter is built through `build_adapter_for_project`, which prices every call
-    # from the model catalogue.
+    # failure. The models come from the settings files through `command_router`.
     project = _core._require_active_project()
-    try:
-        settings = load_settings(db, project)
-        machine_models = _core.load_active_llm_settings(project).machine.models
-        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
-    except LLMAdapterError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        _core.console.print(f"[red]Error:[/red] LLM configuration failed: {exc}")
-        raise typer.Exit(code=1) from exc
-
-    if settings and getattr(settings, "llm", None):
-        settings.llm.temperature = 0.2  # Low temperature for code
+    settings = load_settings(db, project)
 
     # Load topology context for the implementation target
     topo_graph = load_topology(project_path)
@@ -268,12 +253,13 @@ def implement(
     )
 
     pipeline = _build_implement_pipeline(stem)
+    router = command_router(project, settings, roles_of(pipeline))
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
-        model=ModelAccess(llm=adapter, config=settings),
+        model=ModelAccess(config=settings, llm_router=router),
         graph=GraphContext(topology=topo_contexts),
         db=_core.get_db(),
         guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),

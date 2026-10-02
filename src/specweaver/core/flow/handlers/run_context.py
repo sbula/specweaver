@@ -66,16 +66,17 @@ class PlanContext(BaseModel):
 
 
 class ModelAccess(BaseModel):
-    """How this run reaches a language model: adapter, settings, router.
+    """How this run reaches a language model: its settings and its router.
 
-    All ``Any``: importing the real types would cross a module boundary this package may not.
+    Every step's model comes from the router, which the LLM settings files feed; there is no
+    second adapter here. All ``Any``: importing the real types would cross a module boundary this
+    package may not.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    llm: Any = None  # LLMAdapter | None
-    config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
-    llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
+    config: Any = None  # SpecWeaverSettings | None
+    llm_router: Any = None  # ModelRouter | None — every role's adapter and settings
 
 
 class RunHandle(BaseModel):
@@ -209,13 +210,7 @@ class RunContext(BaseModel):
             if isinstance(overrides, dict):
                 rules = overrides
 
-        try:
-            llm = self.model.llm
-            provider = str(llm.provider_name) if hasattr(llm, "provider_name") else "unknown"
-            model_str = str(llm.model) if hasattr(llm, "model") else "unknown"
-        except Exception:
-            provider = "unknown"
-            model_str = "unknown"
+        provider, model_str = self._default_model()
 
         return ProjectMetadata(
             project_name=self.project_path.name,
@@ -226,6 +221,19 @@ class RunContext(BaseModel):
                 llm_provider=provider, llm_model=model_str, validation_rules=rules
             ),
         )
+
+    def _default_model(self) -> tuple[str, str]:
+        """The `default` role's provider and model, for the prompt's metadata; unknown if unset."""
+        router = self.model.llm_router
+        if router is None:
+            return "unknown", "unknown"
+        try:
+            from specweaver.infrastructure.llm.models import TaskType
+
+            routed = router.get_for_task(TaskType.UNKNOWN)
+        except Exception:
+            return "unknown", "unknown"
+        return str(getattr(routed.adapter, "provider_name", "unknown")), routed.config.model
 
     def _read_archetype(self) -> str:
         """The project's archetype from its `context.yaml`, or "generic" if unavailable."""

@@ -31,6 +31,7 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -85,7 +86,7 @@ class TestQARunnerTelemetryFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_db = MagicMock()
         ctx = RunContext(
-            model=ModelAccess(llm=mock_collector),
+            model=ModelAccess(llm_router=FixedRouter(mock_collector)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             db=mock_db,
@@ -104,7 +105,7 @@ class TestQARunnerTelemetryFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_db = MagicMock()
         ctx = RunContext(
-            model=ModelAccess(llm=mock_collector),
+            model=ModelAccess(llm_router=FixedRouter(mock_collector)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             db=mock_db,
@@ -120,7 +121,7 @@ class TestQARunnerTelemetryFlush:
         """When context.model.llm is a plain adapter (not TelemetryCollector), no crash."""
         mock_adapter = MagicMock()  # no spec=TelemetryCollector
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
         )
@@ -137,7 +138,7 @@ class TestQARunnerTelemetryFlush:
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         ctx = RunContext(
-            model=ModelAccess(llm=mock_collector),
+            model=ModelAccess(llm_router=FixedRouter(mock_collector)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             # db=None — omitted
@@ -152,7 +153,7 @@ class TestQARunnerTelemetryFlush:
     async def test_flush_called_when_context_llm_is_none(self, tmp_path: Path):
         """When context.model.llm is None, _flush_telemetry does nothing (no crash)."""
         ctx = RunContext(
-            model=ModelAccess(llm=None),
+            model=ModelAccess(llm_router=None),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
         )
@@ -192,7 +193,7 @@ class TestQARunnerTelemetryFlush:
         mock_store.load_run.return_value = run
 
         ctx = RunContext(
-            model=ModelAccess(llm=mock_collector),
+            model=ModelAccess(llm_router=FixedRouter(mock_collector)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             db=mock_db,

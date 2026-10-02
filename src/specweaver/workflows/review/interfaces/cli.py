@@ -180,32 +180,21 @@ def draft(
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.core.flow.handlers._llm import roles_of
     from specweaver.core.flow.handlers.run_context import (
         AnalysisContext,
         GraphContext,
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import (
-        LLMAdapterError,
-        build_adapter_for_project,
-    )
+    from specweaver.infrastructure.llm.interfaces.command import command_router
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
 
     db = _core.get_db()
-    # Same two hazards as `sw implement`: a refusal that names a database lookup instead of the
-    # missing project, and a configured price that never reaches the run.
+    # A refusal must name the missing project, not a database lookup; the models come from the
+    # settings files through `command_router`, which checks every role before the first call.
     project = _core._require_active_project()
-    try:
-        settings = load_settings(db, project, llm_role="draft")
-        machine_models = _core.load_active_llm_settings(project).machine.models
-        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
-    except LLMAdapterError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        _core.console.print(f"[red]Error:[/red] LLM configuration failed: {exc}")
-        raise typer.Exit(code=1) from exc
+    settings = load_settings(db, project)
 
     # Load topology context for the new component (best-effort)
     topo_graph = load_topology(project_path)
@@ -221,12 +210,13 @@ def draft(
     )
 
     pipeline = _build_draft_pipeline(name)
+    router = command_router(project, settings, roles_of(pipeline))
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=spec_path,
-        model=ModelAccess(llm=adapter, config=settings),
+        model=ModelAccess(config=settings, llm_router=router),
         context_provider=HITLProvider(console=_core.console),
         graph=GraphContext(topology=topo_contexts),
         db=_core.get_db(),
@@ -284,6 +274,7 @@ def review(
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers._llm import roles_of
     from specweaver.core.flow.handlers.run_context import (
         AnalysisContext,
         GraphContext,
@@ -291,27 +282,13 @@ def review(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.factory import (
-        LLMAdapterError,
-        build_adapter_for_project,
-    )
+    from specweaver.infrastructure.llm.interfaces.command import command_router
 
     db = _core.get_db()
-    # Same two hazards as `sw implement`: a refusal that names a database lookup instead of the
-    # missing project, and a configured price that never reaches the run.
+    # A refusal must name the missing project, not a database lookup; the models come from the
+    # settings files through `command_router`, which checks every role before the first call.
     project = _core._require_active_project()
-    try:
-        settings = load_settings(db, project)
-        machine_models = _core.load_active_llm_settings(project).machine.models
-        settings, adapter = build_adapter_for_project(db, settings, project, machine_models)
-    except LLMAdapterError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        _core.console.print(f"[red]Error:[/red] LLM configuration failed: {exc}")
-        raise typer.Exit(code=1) from exc
-    if settings and getattr(settings, "llm", None):
-        settings.llm.temperature = 0.3  # Lower for reviews
+    settings = load_settings(db, project)
 
     # Load topology context for the review target
     topo_graph = load_topology(project_path)
@@ -348,12 +325,13 @@ def review(
         description=f"Review {target_path.name}",
         params=params,
     )
+    router = command_router(project, settings, roles_of(pipeline))
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=project_path,
         spec_path=actual_spec_path,
-        model=ModelAccess(llm=adapter, config=settings),
+        model=ModelAccess(config=settings, llm_router=router),
         graph=GraphContext(topology=topo_contexts),
         db=_core.get_db(),
         guidance=GuidanceContent(

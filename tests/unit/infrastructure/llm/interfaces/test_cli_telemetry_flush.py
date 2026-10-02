@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import click
 import pytest
+from tests.scripted_llm import doubled_llm
 
 from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.core.config.settings import SandboxSettings
@@ -59,7 +60,6 @@ class TestReviewCommandFlush:
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
-        mock_settings.llm.model = "gemini-2.5-pro"
         mock_settings.sandbox = SandboxSettings()
 
         with (
@@ -67,10 +67,7 @@ class TestReviewCommandFlush:
                 "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(mock_settings, mock_collector, MagicMock()),
-            ),
+            doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",
@@ -122,7 +119,6 @@ class TestImplementCommandFlush:
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
-        mock_settings.llm.model = "gemini-2.5-pro"
         mock_settings.sandbox = SandboxSettings()
 
         with (
@@ -130,10 +126,7 @@ class TestImplementCommandFlush:
                 "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(mock_settings, mock_collector, MagicMock()),
-            ),
+            doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",
@@ -179,7 +172,6 @@ class TestDraftCommandFlush:
 
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
-        mock_settings.llm.model = "gemini-2.5-pro"
         mock_settings.sandbox = SandboxSettings()
 
         with (
@@ -187,10 +179,7 @@ class TestDraftCommandFlush:
                 "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(mock_settings, mock_collector, MagicMock()),
-            ),
+            doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",

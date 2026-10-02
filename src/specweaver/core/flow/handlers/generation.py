@@ -31,49 +31,13 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_generation_routing(
-    context: RunContext,
-    *,
-    temperature: float = 0.2,
-    task_type: TaskType | None = None,
+    context: RunContext, *, task_type: TaskType | None = None
 ) -> tuple[Any, GenerationConfig]:
-    """Resolve the adapter and config from RunContext, routing if enabled, else default."""
-    from specweaver.infrastructure.llm.models import GenerationConfig
+    """The adapter and settings for code generation (`implement` unless told otherwise)."""
+    from specweaver.core.flow.handlers._llm import llm_for
     from specweaver.infrastructure.llm.models import TaskType as _TaskType
 
-    resolved_type = task_type if task_type is not None else _TaskType.IMPLEMENT
-
-    routed = (
-        context.model.llm_router.get_for_task(resolved_type) if context.model.llm_router else None
-    )
-    adapter = routed.adapter if routed else context.model.llm
-
-    if routed:
-        config = GenerationConfig(
-            model=routed.model,
-            temperature=routed.temperature,
-            max_output_tokens=routed.max_output_tokens,
-            task_type=resolved_type,
-            run_id=context.run.run_id or "",
-        )
-    elif context.model.config is not None:
-        config = GenerationConfig(
-            model=context.model.config.llm.model,
-            temperature=temperature,
-            max_output_tokens=context.model.config.llm.max_output_tokens,
-            task_type=resolved_type,
-            run_id=context.run.run_id or "",
-        )
-    else:
-        # Fallback: no config set (e.g. test harness)
-        config = GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=temperature,
-            max_output_tokens=4096,
-            task_type=resolved_type,
-            run_id=context.run.run_id or "",
-        )
-
-    return adapter, config
+    return llm_for(context, task_type if task_type is not None else _TaskType.IMPLEMENT)
 
 
 def _pop_findings(context: RunContext, step: PipelineStep) -> dict[str, Any] | None:
@@ -156,14 +120,14 @@ class _GenerationHandler:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         name = type(self).__name__
-        if context.model.llm is None:
+        if context.model.llm_router is None:
             logger.error("%s: LLM adapter required but not configured", name)
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
             from specweaver.workflows.implementation.generator import Generator
 
-            adapter, config = _resolve_generation_routing(context, temperature=0.2)
+            adapter, config = _resolve_generation_routing(context)
             generator = Generator(llm=adapter, config=config)
 
             output_dir = context.output_dir or context.project_path / self.OUTPUT_SUBDIR
@@ -307,43 +271,11 @@ class PlanSpecHandler:
     """
 
     def _resolve_routing(self, context: RunContext) -> tuple[Any, GenerationConfig]:
-        """Resolve adapter and build GenerationConfig for plan, with routing."""
-        from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
+        """The adapter and settings for planning."""
+        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.infrastructure.llm.models import TaskType
 
-        routed = (
-            context.model.llm_router.get_for_task(TaskType.PLAN)
-            if context.model.llm_router
-            else None
-        )
-        adapter = routed.adapter if routed else context.model.llm
-
-        if routed:
-            config = GenerationConfig(
-                model=routed.model,
-                temperature=routed.temperature,
-                max_output_tokens=routed.max_output_tokens,
-                task_type=TaskType.PLAN,
-                run_id=context.run.run_id or "",
-            )
-        elif context.model.config is not None:
-            config = GenerationConfig(
-                model=context.model.config.llm.model,
-                temperature=0.3,
-                max_output_tokens=context.model.config.llm.max_output_tokens,
-                task_type=TaskType.PLAN,
-                run_id=context.run.run_id or "",
-            )
-        else:
-            # Fallback
-            config = GenerationConfig(
-                model="gemini-3-flash-preview",
-                temperature=0.3,
-                max_output_tokens=4096,
-                task_type=TaskType.PLAN,
-                run_id=context.run.run_id or "",
-            )
-
-        return adapter, config
+        return llm_for(context, TaskType.PLAN)
 
     async def _generate_plan_artifact(
         self, planner: Any, context: RunContext, spec_content: str, base_prompt: PromptBuilder
@@ -399,7 +331,7 @@ class PlanSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.model.llm is None:
+        if context.model.llm_router is None:
             logger.error("PlanSpecHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for plan steps", started)
 
@@ -419,7 +351,9 @@ class PlanSpecHandler:
                 llm=adapter,
                 config=config,
                 max_retries=max_retries,
-                tool_dispatcher=_build_tool_dispatcher(context, role="implementer"),
+                tool_dispatcher=_build_tool_dispatcher(
+                    context, role="implementer", adapter=adapter
+                ),
             )
 
             spec_content = context.spec_path.read_text(encoding="utf-8")

@@ -3,27 +3,14 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from specweaver.core.config.settings import LLMSettings
-from specweaver.infrastructure.llm.factory import create_llm_adapter
+from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import Message, Role
-
-
-@pytest.fixture
-def mock_telemetry() -> None:
-    with patch("specweaver.infrastructure.llm.factory.TelemetryCollector") as mock_col:
-        instance = mock_col.return_value
-        instance.record_usage = AsyncMock()
-
-        # We need the patched class to behave like an adapter, so it needs a generate method
-        # But wait, if we mock TelemetryCollector, we mock the whole wrapper! We won't actually call generate on the real adapter.
-        # Instead, let's not mock TelemetryCollector, but mock `record_usage` on the collector module or the store.
-        # Actually, let's patch the underlying _store.record_usage if we can.
-        pass
+from specweaver.infrastructure.llm.resolve import RoleResolver
 
 
 @pytest.mark.asyncio
@@ -44,12 +31,17 @@ async def test_provider_e2e_flow(
     # 1. Setup Environment
     monkeypatch.setenv(env_var, "fake-api-key")
 
-    class MockSettings:
-        llm = LLMSettings(provider=provider, model="fake-model", max_output_tokens=100)
+    machine = (
+        f'[servers.{provider}]\nkind = "{provider}"\nprivate = false\nmax_parallel = 1\n\n'
+        f'[roles]\ndefault = {{ model = "fake-model@{provider}", max_output_tokens = 100 }}\n'
+    )
+    files = LlmSettingsFiles.from_texts(
+        machine_text=machine, machine_source="-", project_text="", project_source="-"
+    )
 
-    # 3. Create adapter via factory with telemetry enabled
-    mock_settings = cast("Any", MockSettings())
-    _settings, adapter, config = create_llm_adapter(mock_settings, telemetry_project="test-proj")
+    # 3. Resolve the role's adapter: the resolver always records telemetry
+    resolver = RoleResolver(files, telemetry_project="test-proj", budget=SpendBudget(None))
+    adapter, config = resolver.for_role("draft")
 
     # Unwind the wrappers: TelemetryCollector -> AsyncRateLimiterAdapter -> ActualAdapter
     actual_adapter = adapter._adapter._wrapped

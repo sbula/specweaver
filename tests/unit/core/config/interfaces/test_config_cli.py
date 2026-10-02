@@ -208,86 +208,91 @@ class TestConfigAutoBootstrap:
 
 
 # ---------------------------------------------------------------------------
-# config set-provider
+# config set-role — writes the LLM settings files (C-FLOW-13 FR-15)
 # ---------------------------------------------------------------------------
 
+_MACHINE = """\
+# my machine
+[servers.gb10]
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 4
+"""
 
-class TestConfigSetProvider:
-    """Test config set-provider command."""
 
-    def _get_profile(self, _mock_db, name: str, role: str):
-        import anyio
+class TestConfigSetRole:
+    """`sw config set-role` writes a role into the machine file, or the project's with --project."""
 
-        from specweaver.infrastructure.llm.store import LlmRepository
+    def test_a_machine_role_is_written(self, _mock_db, tmp_path, monkeypatch) -> None:
+        from specweaver.core.config.llm_settings import parse_machine_file
 
-        async def _get():
-            async with _mock_db.async_session_scope() as session:
-                return await LlmRepository(session).get_project_profile(name, role)
-
-        return anyio.run(_get)
-
-    def test_set_provider_happy_path_new_profile(self, _mock_db) -> None:
-        """set-provider creates a new local profile if project doesn't have one."""
-        _create_project(_mock_db)
-        # Initially, no local profile
-        profile = self._get_profile(_mock_db, "testproj", "draft")
-        assert profile is None or profile.is_global == 1
-
-        result = runner.invoke(app, ["config", "set-provider", "openai"])
-
-        assert result.exit_code == 0
-        assert "Created new local profile" in result.output
-        assert "openai" in result.output
-
-        profile = self._get_profile(_mock_db, "testproj", "draft")
-        assert profile is not None
-        assert profile.is_global == 0
-        assert profile.provider == "openai"
-        assert profile.model == "default"
-
-    def test_set_provider_updates_existing_local_profile(self, _mock_db) -> None:
-        """set-provider updates the provider and model on an existing local profile."""
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
+        (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
         _create_project(_mock_db)
 
-        # Create initial local profile
-        runner.invoke(app, ["config", "set-provider", "mistral"])
+        result = runner.invoke(app, ["config", "set-role", "draft", "qwen3-coder-next@gb10"])
 
-        # Update it
+        assert result.exit_code == 0, result.output
+        text = (tmp_path / "settings.toml").read_text(encoding="utf-8")
+        assert text.startswith("# my machine")
+        assert parse_machine_file(text, "x").roles["draft"].model == "qwen3-coder-next"
+
+    def test_a_project_role_goes_to_the_projects_file(
+        self, _mock_db, tmp_path, monkeypatch
+    ) -> None:
+        from specweaver.core.config.llm_settings import parse_project_llm
+
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
+        (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+        project = tmp_path / "proj"
+        project.mkdir()
+        _run_workspace_op(_mock_db, "register_project", "testproj", str(project))
+        _run_workspace_op(_mock_db, "set_active_project", "testproj")
+
         result = runner.invoke(
-            app, ["config", "set-provider", "anthropic", "--model", "claude-3-haiku"]
+            app, ["config", "set-role", "review", "qwen3-coder-next@gb10", "--project"]
         )
 
-        assert result.exit_code == 0
-        assert "Updated existing custom profile" in result.output
+        assert result.exit_code == 0, result.output
+        llm = parse_project_llm((project / "specweaver.toml").read_text(encoding="utf-8"), "x")
+        assert llm.roles["review"].server == "gb10"
 
-        profile = self._get_profile(_mock_db, "testproj", "draft")
-        assert profile is not None
-        assert profile.provider == "anthropic"
-        assert profile.model == "claude-3-haiku"
-
-    def test_set_provider_unknown_provider(self, _mock_db) -> None:
-        """set-provider rejects unknown providers based on the registry."""
+    def test_an_unknown_server_is_refused(self, _mock_db, tmp_path, monkeypatch) -> None:
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
+        (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
         _create_project(_mock_db)
 
-        result = runner.invoke(app, ["config", "set-provider", "fake-provider-123"])
+        result = runner.invoke(app, ["config", "set-role", "draft", "claude-opus-5-5@nowhere"])
 
         assert result.exit_code == 1
-        assert "Unknown provider" in result.output
-        assert "Available:" in result.output
+        assert shows(result.output, "nowhere")
+        assert (tmp_path / "settings.toml").read_text(encoding="utf-8") == _MACHINE
 
-    @pytest.mark.parametrize("provider", ["openai-compatible", "qwen"])
-    def test_set_provider_refuses_a_kind_without_an_official_address(
-        self, _mock_db, provider: str
-    ) -> None:
-        """A local server or DashScope needs an address, which only the settings file holds."""
+    def test_an_unknown_role_is_refused(self, _mock_db, tmp_path, monkeypatch) -> None:
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
+        (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
         _create_project(_mock_db)
 
-        result = runner.invoke(app, ["config", "set-provider", provider])
+        result = runner.invoke(app, ["config", "set-role", "drafting", "qwen3-coder-next@gb10"])
 
         assert result.exit_code == 1
+        assert shows(result.output, "drafting")
+
+
+class TestConfigShowBrokenFile:
+    """A broken settings file stops the command cleanly with exit code 1, not with a crash."""
+
+    def test_show_refuses_a_broken_file(self, _mock_db, tmp_path, monkeypatch) -> None:
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
+        (tmp_path / "settings.toml").write_text("[servers.gb10\n", encoding="utf-8")
+        _create_project(_mock_db)
+
+        result = runner.invoke(app, ["config", "show"])
+
+        assert result.exit_code == 1, result.output
+        assert isinstance(result.exception, SystemExit), result.exception
         assert shows(result.output, "settings.toml")
-        assert shows(result.output, "[servers.<name>]")
-        assert self._get_profile(_mock_db, "testproj", "draft") is None
 
 
 def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):

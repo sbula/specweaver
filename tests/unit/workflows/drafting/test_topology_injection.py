@@ -20,6 +20,7 @@ import pytest
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -92,7 +93,7 @@ class TestReviewerTopologyInjection:
 
         spec = _make_spec(tmp_path)
         mock_llm = _make_mock_llm()
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
@@ -106,7 +107,7 @@ class TestReviewerTopologyInjection:
 
         spec = _make_spec(tmp_path)
         mock_llm = _make_mock_llm()
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
         contexts = _sample_topology()
 
         await reviewer.review_spec(spec, base_prompt=PromptBuilder().add_topology(contexts))
@@ -126,7 +127,7 @@ class TestReviewerTopologyInjection:
 
         spec = _make_spec(tmp_path)
         mock_llm = _make_mock_llm()
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
@@ -143,7 +144,7 @@ class TestReviewerTopologyInjection:
         spec = _make_spec(tmp_path)
         code = _make_code(tmp_path)
         mock_llm = _make_mock_llm()
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
         contexts = _sample_topology()
 
         await reviewer.review_code(code, spec, base_prompt=PromptBuilder().add_topology(contexts))
@@ -162,7 +163,7 @@ class TestReviewerTopologyInjection:
         spec = _make_spec(tmp_path)
         code = _make_code(tmp_path)
         mock_llm = _make_mock_llm()
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
@@ -189,7 +190,7 @@ class TestGeneratorTopologyInjection:
         spec = _make_spec(tmp_path)
         out = tmp_path / "src" / "greet_service.py"
         mock_llm = _make_mock_llm("def greet(name):\n    return f'Hello {name}'")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         result = await gen.generate_code(spec, out, base_prompt=PromptBuilder())
 
@@ -204,7 +205,7 @@ class TestGeneratorTopologyInjection:
         spec = _make_spec(tmp_path)
         out = tmp_path / "src" / "greet_service.py"
         mock_llm = _make_mock_llm("def greet(name):\n    return f'Hello {name}'")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         contexts = _sample_topology()
 
         await gen.generate_code(spec, out, base_prompt=PromptBuilder().add_topology(contexts))
@@ -223,7 +224,7 @@ class TestGeneratorTopologyInjection:
         spec = _make_spec(tmp_path)
         out = tmp_path / "src" / "greet_service.py"
         mock_llm = _make_mock_llm("def greet(name):\n    return f'Hello {name}'")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         await gen.generate_code(spec, out, base_prompt=PromptBuilder())
 
@@ -240,7 +241,7 @@ class TestGeneratorTopologyInjection:
         spec = _make_spec(tmp_path)
         out = tmp_path / "tests" / "test_greet_service.py"
         mock_llm = _make_mock_llm("def test_greet():\n    assert True")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         contexts = _sample_topology()
 
         await gen.generate_tests(spec, out, base_prompt=PromptBuilder().add_topology(contexts))
@@ -258,7 +259,7 @@ class TestGeneratorTopologyInjection:
         spec = _make_spec(tmp_path)
         out = tmp_path / "tests" / "test_greet_service.py"
         mock_llm = _make_mock_llm("def test_greet():\n    assert True")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         await gen.generate_tests(spec, out, base_prompt=PromptBuilder())
 
@@ -292,7 +293,10 @@ class TestDrafterTopologyInjection:
 
         mock_llm = _make_mock_llm("Generated section content")
         drafter = Drafter(
-            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider()
+            base_prompt=PromptBuilder(),
+            llm=mock_llm,
+            context_provider=QuickProvider(),
+            config=TEST_CONFIG,
         )
         specs_dir = tmp_path / "specs"
 
@@ -317,7 +321,10 @@ class TestDrafterTopologyInjection:
 
         mock_llm = _make_mock_llm("Generated content")
         drafter = Drafter(
-            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider()
+            base_prompt=PromptBuilder(),
+            llm=mock_llm,
+            context_provider=QuickProvider(),
+            config=TEST_CONFIG,
         )
         specs_dir = tmp_path / "specs"
         contexts = _sample_topology()
@@ -353,7 +360,10 @@ class TestDrafterTopologyInjection:
 
         mock_llm = _make_mock_llm("Generated content")
         drafter = Drafter(
-            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=TrackingProvider()
+            base_prompt=PromptBuilder(),
+            llm=mock_llm,
+            context_provider=TrackingProvider(),
+            config=TEST_CONFIG,
         )
         specs_dir = tmp_path / "specs"
         contexts = _sample_topology()

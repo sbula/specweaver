@@ -23,6 +23,7 @@ from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -53,7 +54,7 @@ def _make_context(
         db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
     return RunContext(
-        model=ModelAccess(llm=llm),
+        model=ModelAccess(llm_router=FixedRouter(llm) if llm is not None else None),
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         output_dir=output_dir,
@@ -338,7 +339,7 @@ class TestLintFixInterface:
         # Second arg should be GenerationConfig
         config = args[1]
         assert config.task_type == "check"
-        assert config.temperature == 0.1
+        assert config.temperature is None  # no forced value: the check role's own settings apply
 
 
 class TestLintFixArtifactLineage:
@@ -404,7 +405,7 @@ class TestLintFixArtifactLineage:
             parent_id=None,
             run_id="test-run-1",
             event_type="lint_fixed",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     async def test_a_fix_survives_having_no_telemetry_database(self, tmp_path: Path) -> None:

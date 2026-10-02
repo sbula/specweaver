@@ -8,22 +8,18 @@ Drives the store directly rather than through a caller, so a regression that fol
 back into the shared config database would fail here rather than somewhere downstream.
 
 Proves: TECH-001 FR-1.
+Proves: C-FLOW-13 FR-12.
 """
 
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import Column, String, Table, text
+from sqlalchemy import Column, String, Table
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.pool import StaticPool
 
 from specweaver.core.config.database import create_async_engine, session_scope
-from specweaver.infrastructure.llm.store import (
-    Base,
-    LlmProfile,
-    LlmUsageLog,
-    ProjectLlmLink,
-)
+from specweaver.infrastructure.llm.store import Base, LlmUsageLog
 
 
 @pytest.fixture
@@ -55,18 +51,30 @@ async def setup_test_db(engine):
         await conn.run_sync(Base.metadata.drop_all)
 
 
+def _usage(**overrides) -> LlmUsageLog:
+    values = {
+        "timestamp": datetime(2026, 5, 2, 10, 0, 0, tzinfo=UTC),
+        "project_name": "test-project",
+        "task_type": "review",
+        "model": "claude-opus-5-5",
+        "prompt_tokens": 10,
+        "completion_tokens": 5,
+        "total_tokens": 15,
+        "estimated_cost": 0.25,
+    }
+    return LlmUsageLog(**(values | overrides))
+
+
 @pytest.mark.asyncio
 async def test_llm_store_happy_path_crud(engine):
     async with session_scope(engine) as session:
-        # Create
-        profile = LlmProfile(name="test-profile")
-        session.add(profile)
+        log = _usage()
+        session.add(log)
         await session.commit()
-        await session.refresh(profile)
+        await session.refresh(log)
 
-        assert profile.id is not None
-        assert profile.model == "gemini-3-flash-preview"
-        assert profile.context_limit == 128000
+        assert log.id is not None
+        assert (log.model, log.estimated_cost) == ("claude-opus-5-5", 0.25)
 
 
 @pytest.mark.asyncio
@@ -91,25 +99,20 @@ async def test_llm_store_boundary_max_tokens(engine):
 
 
 @pytest.mark.asyncio
-async def test_llm_store_degradation_fk_constraint(engine):
-    # Enable FKs for SQLite in tests
-    async with engine.begin() as conn:
-        await conn.execute(text("PRAGMA foreign_keys=ON"))
+async def test_llm_store_degradation_unknown_cost_is_stored_as_unknown(engine):
+    """A model without a known price records no cost, never 0 (C-FLOW-13 FR-12)."""
+    async with session_scope(engine) as session:
+        log = _usage(model="qwen3-coder-next", estimated_cost=None)
+        session.add(log)
+        await session.commit()
+        await session.refresh(log)
 
-    with pytest.raises(IntegrityError):
-        async with session_scope(engine) as session:
-            link = ProjectLlmLink(
-                project_name="fake-project",
-                role="draft",
-                profile_id=9999,  # Does not exist
-            )
-            session.add(link)
+        assert log.estimated_cost is None
 
 
 @pytest.mark.asyncio
 async def test_llm_store_hostile_null_injection(engine):
     with pytest.raises(IntegrityError):
         async with session_scope(engine) as session:
-            # None injection into NOT NULL field
-            profile = LlmProfile(name=None)
-            session.add(profile)
+            # None injection into a NOT NULL field
+            session.add(_usage(model=None))

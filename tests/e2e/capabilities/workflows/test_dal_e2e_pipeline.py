@@ -30,6 +30,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
 
 #: Passes with warnings and no failures — see the module docstring for why that matters.
 _SPEC = (Path(__file__).resolve().parents[3] / "fixtures" / "good_spec.md").read_text(
@@ -151,4 +152,4 @@ class TestImplementUnderDal:
 
         assert result.exit_code == 1, result.output
         assert "Spec not found" not in result.output
-        assert "No API key configured" in result.output
+        assert shows(result.output, "no model for role 'implement'")

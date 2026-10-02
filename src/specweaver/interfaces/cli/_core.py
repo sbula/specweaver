@@ -12,10 +12,11 @@ local binding.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, NoReturn, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+    from pathlib import Path
 
     from specweaver.core.config.llm_settings import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
@@ -89,24 +90,33 @@ def _require_active_project() -> str:
     return str(name_raw)
 
 
+def project_root(name: str) -> Path | None:
+    """The registered root directory of project `name`, or `None` if it has none."""
+    from pathlib import Path
+
+    project = run_repo_op(lambda repo: repo.get_project(name))
+    root = project.get("root_path") if project else None
+    return Path(str(root)) if root else None
+
+
 def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFiles:
     """The LLM settings files for a project (the active one by default), or exit naming the error.
 
     A broken settings file stops every command that uses LLM settings, naming the file and line.
     """
-    from pathlib import Path
-
     from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
     from specweaver.core.config.llm_settings import SettingsFileError
 
-    name = project_name or _require_active_project()
-    project = run_repo_op(lambda repo: repo.get_project(name))
-    root = project.get("root_path") if project else None
     try:
-        return load_llm_settings(Path(str(root)) if root else None)
+        return load_llm_settings(project_root(project_name or _require_active_project()))
     except SettingsFileError as err:
-        console.print("Error:", str(err), style="red", markup=False, highlight=False)
-        raise typer.Exit(code=1) from err
+        refuse_llm_settings(err)
+
+
+def refuse_llm_settings(err: Exception) -> NoReturn:
+    """Stop a command whose LLM settings cannot be resolved, naming the file, key and line."""
+    console.print("Error:", str(err), style="red", markup=False, highlight=False)
+    raise typer.Exit(code=1) from err
 
 
 def _version_callback(value: bool) -> None:

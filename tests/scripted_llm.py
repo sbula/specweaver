@@ -9,10 +9,11 @@ place a reader can see that a test doubles the model. `TECH-017` spent a boundar
 one that changed a verdict once it was read. Doubling should be visible at the call site.
 
 > [!CAUTION]
-> **`scripted_world` patches two things and both are load-bearing.** Patching only the adapter
-> factory leaves `ModelRouter.get_for_task` free to build a **real provider** from the registry,
-> bypassing the patch entirely — a live API call inside a test that reads as mocked. That was found
-> for real in `INT-US-02`'s e2e. Anything that copies or re-implements this must carry both.
+> **`scripted_world` patches the one path every model call takes: `RoleResolver`.** Commands, the
+> router and the REST API all get their adapters from it (C-FLOW-13), so one patch covers them all.
+> The old setup needed two, because the router could build a **real provider** past a patched
+> factory — a live API call inside a test that read as mocked (`INT-US-02`'s e2e). With one path
+> that hole is closed by construction; do not add a second way to build an adapter.
 
 Extracted from `test_feature_decomposition_e2e.py` by `TECH-017` SF-04 CB-1, where it had been
 file-local; that suite's 24 scenarios are the proof the extraction is faithful.
@@ -22,9 +23,10 @@ from __future__ import annotations
 
 import contextlib
 from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from specweaver.infrastructure.llm.models import LLMResponse
+from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.router import RouterResult
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -77,22 +79,52 @@ def settings_mock() -> MagicMock:
 
 
 @contextlib.contextmanager
+def doubled_llm(adapter: Any, model: str = "test-model", **settings: Any) -> Iterator[Any]:
+    """Every role resolves to `adapter`: the one place adapters come from (`RoleResolver`) is doubled.
+
+    Commands, the router and the REST API all take their adapters from the resolver, so this one
+    patch covers every path a model call can take. The run flushes `adapter` if it has a flush.
+    Yields the generation settings every role gets.
+    """
+    from specweaver.infrastructure.llm.resolve import RoleResolver
+
+    config = GenerationConfig(model=model, **({"max_output_tokens": 4096} | settings))
+
+    def _for_role(_resolver: Any, _role: str) -> tuple[Any, GenerationConfig]:
+        return adapter, config
+
+    # A bare AsyncMock has an awaitable `flush` the run would call without awaiting: not a collector.
+    flush = getattr(adapter, "flush", None)
+    flushable = [adapter] if flush is not None and not isinstance(flush, AsyncMock) else []
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(patch.object(RoleResolver, "for_role", _for_role))
+        stack.enter_context(patch.object(RoleResolver, "require", lambda _resolver, _roles: None))
+        stack.enter_context(patch.object(RoleResolver, "collectors", lambda _resolver: flushable))
+        yield config
+
+
+@contextlib.contextmanager
 def scripted_world(llm: ScriptedLLM) -> Iterator[None]:
     """Only the LLM is doubled. Everything downstream of it is the real thing."""
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(settings_mock(), llm, MagicMock()),
-            )
-        )
-        # Without this the router builds a REAL provider adapter from the registry, bypassing the
-        # factory patch entirely — a live API call inside a "mocked" test (vacuous-proof pattern 5,
-        # found for real in INT-US-02's e2e). None makes handlers fall back to context.model.llm.
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task",
-                return_value=None,
-            )
-        )
+    with doubled_llm(llm, model="scripted-1"):
         yield
+
+
+class FixedRouter:
+    """A router that answers every task type with one adapter — for tests that build a
+    `RunContext` by hand. Production runs get theirs from `RoleResolver`."""
+
+    def __init__(self, adapter: Any, model: str = "test-model", **settings: Any) -> None:
+        self.adapter = adapter
+        self.config = GenerationConfig(model=model, **({"max_output_tokens": 4096} | settings))
+
+    def get_for_task(self, task_type: Any) -> RouterResult:
+        return RouterResult(adapter=self.adapter, config=self.config)
+
+    def collectors(self) -> list[Any]:
+        return [self.adapter] if hasattr(self.adapter, "flush") else []
+
+
+#: Generation settings for tests that build a workflow class by hand. Production code gets its
+#: settings from the resolver; there is no default model to fall back on.
+TEST_CONFIG = GenerationConfig(model="test-model", max_output_tokens=4096)

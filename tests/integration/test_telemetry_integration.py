@@ -25,6 +25,7 @@ from specweaver.infrastructure.llm.models import (
     TokenUsage,
 )
 from specweaver.infrastructure.llm.store import LlmRepository
+from tests.scripted_llm import FixedRouter
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -74,7 +75,7 @@ def _make_context(*, with_config: bool = True) -> RunContext:
     else:
         config = None
     return RunContext(
-        model=ModelAccess(config=config, llm=MagicMock()),
+        model=ModelAccess(config=config, llm_router=FixedRouter(MagicMock())),
         project_path=Path("/tmp/fake"),
         spec_path=Path("/tmp/fake/spec.md"),
     )

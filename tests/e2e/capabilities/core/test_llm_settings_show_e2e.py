@@ -89,6 +89,7 @@ def test_a_typo_in_the_machine_file_stops_with_its_line(
     result = runner.invoke(app, ["config", "show"])
 
     assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit), result.exception  # a refusal, not a crash
     typo_line = _MACHINE.splitlines().index("max_parallel = 4") + 1
     assert shows(result.output, f"{_isolate_env / 'settings.toml'}:{typo_line}")
     assert shows(result.output, "max_paralel")

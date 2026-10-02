@@ -44,7 +44,8 @@ from specweaver.core.flow.handlers.decompose import (
     DecomposeFeatureHandler,
     OrchestrateComponentsHandler,
 )
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
+from tests.scripted_llm import FixedRouter
 
 
 def _spawning_parent(runner_cls: MagicMock) -> MagicMock:
@@ -69,6 +70,7 @@ def mock_context(tmp_path: Path) -> RunContext:
         run=RunHandle(run_id="test_run"),
         project_path=workspace,
         spec_path=workspace / "docs" / "specs" / "test_feature_spec.md",
+        model=ModelAccess(llm_router=FixedRouter(AsyncMock())),
     )
 
 

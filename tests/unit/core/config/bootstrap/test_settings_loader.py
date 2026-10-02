@@ -148,7 +148,7 @@ def test_load_settings_toml_overrides_defaults(tmp_path: Path):
     toml_path.write_text('[standards]\nmode = "best_practice"\n', encoding="utf-8")
 
     # Load settings
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     # Assert
     assert hasattr(settings, "standards")
@@ -164,7 +164,7 @@ def test_load_settings_toml_absent_keeps_defaults(tmp_path: Path):
     project_path.mkdir()
     register_test_project(db, "my_project", str(project_path))
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
     assert hasattr(settings, "standards")
     assert settings.standards.mode == "mimicry"
 
@@ -182,7 +182,7 @@ def test_load_settings_toml_sandbox_container_mode(tmp_path: Path):
     toml_path = project_path / "specweaver.toml"
     toml_path.write_text('[sandbox]\nexecution_mode = "container"\n', encoding="utf-8")
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert hasattr(settings, "sandbox")
     assert settings.sandbox.execution_mode == "container"
@@ -201,7 +201,7 @@ def test_load_settings_toml_sandbox_enforce_isolation_true(tmp_path: Path):
     toml_path = project_path / "specweaver.toml"
     toml_path.write_text("[sandbox]\nenforce_worktree_isolation = true\n", encoding="utf-8")
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.enforce_worktree_isolation is True
 
@@ -216,7 +216,7 @@ def test_load_settings_toml_sandbox_enforce_isolation_absent_defaults_false(tmp_
     project_path.mkdir()
     register_test_project(db, "my_project", str(project_path))
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.enforce_worktree_isolation is False
 
@@ -238,7 +238,7 @@ def test_load_settings_toml_sandbox_session_isolation_true(tmp_path: Path):
         encoding="utf-8",
     )
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.enforce_session_isolation is True
     assert settings.sandbox.session_allowed_paths == ["src/x.py", "tests/test_x.py"]
@@ -254,7 +254,7 @@ def test_load_settings_toml_sandbox_session_isolation_absent_defaults_false(tmp_
     project_path.mkdir()
     register_test_project(db, "my_project", str(project_path))
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.enforce_session_isolation is False
     assert settings.sandbox.session_allowed_paths == []
@@ -273,7 +273,7 @@ def test_load_settings_toml_sandbox_auto_isolate_min_dal(tmp_path: Path):
     toml_path = project_path / "specweaver.toml"
     toml_path.write_text('[sandbox]\nauto_isolate_min_dal = "DAL_A"\n', encoding="utf-8")
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.auto_isolate_min_dal == "DAL_A"
 
@@ -287,7 +287,7 @@ def test_load_settings_toml_sandbox_auto_isolate_min_dal_absent_defaults(tmp_pat
     project_path.mkdir()
     register_test_project(db, "my_project", str(project_path))
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.auto_isolate_min_dal == "DAL_B"
 
@@ -301,7 +301,7 @@ def test_load_settings_toml_sandbox_absent_keeps_host_default(tmp_path: Path):
     project_path.mkdir()
     register_test_project(db, "my_project", str(project_path))
 
-    settings = load_settings(db, "my_project", llm_role="review")
+    settings = load_settings(db, "my_project")
 
     assert settings.sandbox.execution_mode == "host"
 
@@ -319,6 +319,6 @@ def test_load_settings_toml_sandbox_malformed_falls_back_to_default(tmp_path: Pa
     toml_path.write_text("not valid toml [[[", encoding="utf-8")
 
     with caplog.at_level("ERROR"):
-        settings = load_settings(db, "my_project", llm_role="review")
+        settings = load_settings(db, "my_project")
 
     assert settings.sandbox.execution_mode == "host"

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sqlite3
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from typer.testing import CliRunner
@@ -14,6 +14,7 @@ from typer.testing import CliRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.run_context import ModelAccess
 from specweaver.interfaces.cli.main import app as app  # type: ignore
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -40,7 +41,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     spec.parent.mkdir(exist_ok=True)
     spec.write_text("# Test Spec", encoding="utf-8")
 
-    from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+    from specweaver.infrastructure.llm.models import LLMResponse
 
     mock_llm = AsyncMock()
     mock_llm.available.return_value = True
@@ -58,27 +59,6 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
 
     mock_llm.generate = _generate
     mock_llm.generate_with_tools = _generate
-
-    with (
-        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
-        patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None),
-        patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls,
-    ):
-        mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
-        mock_hitl = AsyncMock()
-        mock_hitl.ask = AsyncMock(return_value="")
-        mock_hitl_cls.return_value = mock_hitl
-
-        # 'validate_only' invokes the ReviewStepHandler which uses the ARBITER profile by default in some configurations,
-        # but wait, ReviewStepHandler uses FULL.
-        # DraftStepHandler uses INTERACTIVE.
-        # Which one uses ARBITER? The Validate Handler uses FULL, but drops standard rules if not provided.
-        # We can pass an explicit pipeline yaml with a custom profile to ensure it uses ARBITER.
-        # But wait, step profiles are hardcoded in the handlers.
-        # To strictly test the pipeline with a profile, we can intercept the _build_base_prompt call or just use DraftStepHandler (which uses INTERACTIVE -> no constitution/standards).
-        # Let's use `sw draft` to trigger the INTERACTIVE profile (which drops constitution and standards).
-        # And we'll ensure Agent Memory is dropped if the profile is MINIMAL, but INTERACTIVE keeps memory.
-        pass
 
     # Since we need to test specific profiles (ARBITER, FULL, MINIMAL), and the CLI commands map to specific handlers:
     # `sw draft` -> DraftStepHandler (INTERACTIVE profile -> no constitution/standards, has memory)
@@ -105,11 +85,11 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
                 prompt = await _build_base_prompt(run_context, "Test instructions", profile=ARBITER)
 
                 # Send to mock LLM to capture it
-                from specweaver.infrastructure.llm.models import Message, Role
+                from specweaver.core.flow.handlers._llm import llm_for
+                from specweaver.infrastructure.llm.models import Message, Role, TaskType
 
-                await run_context.model.llm.generate(
-                    [Message(role=Role.USER, content=prompt.build())]
-                )
+                llm, _config = llm_for(run_context, TaskType.DRAFT)
+                await llm.generate([Message(role=Role.USER, content=prompt.build())])
 
                 from specweaver.core.flow.engine.state import StepResult
                 from specweaver.core.flow.handlers.base import _now_iso
@@ -171,7 +151,10 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     conn.close()
 
     context = RunContext(
-        model=ModelAccess(llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))),
+        model=ModelAccess(
+            llm_router=FixedRouter(mock_llm),
+            config=SpecWeaverSettings(llm=LLMSettings()),
+        ),
         project_path=project_dir,
         spec_path=spec,
         db=Database(db_path),
@@ -246,11 +229,11 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
                 # Add a massive low priority context
                 prompt.add_context("A" * 5000, "massive_context", priority=3)
 
-                from specweaver.infrastructure.llm.models import Message, Role
+                from specweaver.core.flow.handlers._llm import llm_for
+                from specweaver.infrastructure.llm.models import Message, Role, TaskType
 
-                await run_context.model.llm.generate(
-                    [Message(role=Role.USER, content=prompt.build())]
-                )
+                llm, _config = llm_for(run_context, TaskType.DRAFT)
+                await llm.generate([Message(role=Role.USER, content=prompt.build())])
 
                 from specweaver.core.flow.engine.state import StepResult
                 from specweaver.core.flow.handlers.base import _now_iso
@@ -279,7 +262,10 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     bootstrap_database(str(db_path))
 
     context = RunContext(
-        model=ModelAccess(llm=mock_llm, config=SpecWeaverSettings(llm=LLMSettings(model="mock"))),
+        model=ModelAccess(
+            llm_router=FixedRouter(mock_llm),
+            config=SpecWeaverSettings(llm=LLMSettings()),
+        ),
         project_path=project_dir,
         spec_path=spec,
         db=Database(db_path),

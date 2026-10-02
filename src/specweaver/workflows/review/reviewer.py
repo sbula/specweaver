@@ -87,16 +87,12 @@ class Reviewer:
     def __init__(
         self,
         llm: LLMAdapter,
-        config: GenerationConfig | None = None,
+        config: GenerationConfig,
         confidence_threshold: int = 80,
         tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.3,
-            max_output_tokens=4096,
-        )
+        self._config = config
         self._confidence_threshold = confidence_threshold
         self._tool_dispatcher = tool_dispatcher
 

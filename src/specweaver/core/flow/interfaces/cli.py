@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
+    from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
@@ -79,25 +80,6 @@ def _get_state_store() -> StateStore:
     from specweaver.core.flow.engine.store import StateStore
 
     return StateStore(state_db_path())
-
-
-def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> None:
-    """Wire context.model.llm for non-validate-only pipelines — shared by run AND
-    resume. A resume that skips this silently degrades every resumed LLM step to
-    "LLM not configured"."""
-    if pipeline_name == "validate_only":
-        return
-    try:
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
-        from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-
-        settings = load_settings(_core.get_db(), project_path.name)
-        _, adapter, _gen_config = create_llm_adapter(settings, telemetry_project=project_path.name)
-        context.model = context.model.model_copy(update={"llm": adapter})
-    except (LLMAdapterError, ValueError):
-        _core.console.print(
-            "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
-        )
 
 
 def _create_display(
@@ -241,15 +223,15 @@ def run_pipeline(
         raise typer.Exit(code=1) from None
 
 
-def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) -> RunContext:
+def _build_run_context(
+    project_path: Path, spec_path: Path, pipeline: PipelineDefinition
+) -> RunContext:
     """The fully-wired `RunContext` a run or a resume starts from.
 
     Shared by `_execute_run` and `resume` — constitution, standards, interaction provider,
-    isolation policy, model router, LLM wiring. As two copies it is forty lines where the entry
-    points can drift into giving a run and its resume different execution postures.
+    isolation policy, model router. As two copies it is forty lines where the entry points can
+    drift into giving a run and its resume different execution postures.
     """
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.infrastructure.llm.router import ModelRouter
 
     info = find_constitution(project_path, spec_path=spec_path)
     active = _core.run_repo_op(lambda r: r.get_active_project())
@@ -277,18 +259,25 @@ def _build_run_context(project_path: Path, spec_path: Path, pipeline_name: str) 
     _maybe_attach_provider(context)
     _apply_isolation_policy(context, db, project_path)
 
-    context.model = context.model.model_copy(
-        update={
-            "llm_router": ModelRouter(
-                settings_provider=lambda role: load_settings(
-                    _core.get_db(), project_path.name, llm_role=role
-                ),
-                telemetry_project=project_path.name,
-            )
-        }
-    )
-    _wire_llm(context, pipeline_name, project_path)
+    _wire_models(context, pipeline, active or project_path.name)
     return context
+
+
+def _wire_models(context: RunContext, pipeline: PipelineDefinition, project: str) -> None:
+    """Give the run its router, every role its steps use checked before the first call.
+
+    A pipeline whose steps call no model (`validate_only`) needs no settings files at all.
+    """
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
+    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.infrastructure.llm.interfaces.command import command_router
+
+    roles = roles_of(pipeline)
+    if not roles:
+        return
+    settings = load_settings(_core.get_db(), project)
+    router = command_router(project, settings, roles)
+    context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
 
 def _apply_isolation_policy(context: RunContext, db: Database, project_path: Path) -> None:
@@ -382,7 +371,7 @@ def _execute_run(
     # Build display backend
     display = _create_display(use_json=json_output, verbose=verbose)
 
-    context = _build_run_context(project_path, spec_path, pipeline_def.name)
+    context = _build_run_context(project_path, spec_path, pipeline_def)
 
     # Load topology
     topo_graph = load_topology(project_path)
@@ -513,7 +502,7 @@ def resume(
 
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
-    context = _build_run_context(project_path, spec_path, pipeline_def.name)
+    context = _build_run_context(project_path, spec_path, pipeline_def)
 
     display = _create_display(use_json=json_output, verbose=verbose)
 

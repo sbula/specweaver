@@ -1,142 +1,70 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""ModelRouter — config-driven per-task-type LLM adapter resolution (3.12b).
+"""ModelRouter — the pipeline's view of the one resolver.
 
-Resolves which LLM adapter and generation settings to use for each pipeline
-step, based on database routing entries keyed by TaskType.
-
-Adapter instances are cached by (provider, api_key_hash) so that multiple
-task types using the same provider share a single adapter connection. The
-model name and temperature travel in RouterResult, not the adapter itself —
-enabling e.g. gemini-pro at 0.5 for spec writing and 0.2 for review using
-one GeminiAdapter instance.
+A step names its task type; the router answers with that role's adapter and generation settings,
+exactly as `RoleResolver` resolves them from the settings files; a task type no role names — such
+as `unknown` — gets the `default` role. There is no other source: a step never builds an adapter or picks a model itself.
 """
 
 from __future__ import annotations
 
-import logging
-import os
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
+from specweaver.infrastructure.llm.models import TaskType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Iterable
 
-    from specweaver.core.config.settings import SpecWeaverSettings
-    from specweaver.infrastructure.llm.models import TaskType
-
-logger = logging.getLogger(__name__)
+    from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.infrastructure.llm.collector import TelemetryCollector
+    from specweaver.infrastructure.llm.models import GenerationConfig
+    from specweaver.infrastructure.llm.resolve import RoleResolver
 
 
 class RouterResult(NamedTuple):
-    """Resolved routing result for one LLM call.
+    """One task type's adapter and the settings its calls use."""
 
-    All fields are read by the handler to build GenerationConfig and select
-    the adapter. Temperature is profile-wins: use routed.temperature, not the
-    handler's hardcoded default.
-    """
-
-    adapter: Any  # LLMAdapter or TelemetryCollector proxy
-    model: str
-    temperature: float
-    max_output_tokens: int
-    provider: str  # for logging / diagnostics
-    profile_name: str  # for logging / diagnostics
+    adapter: Any  # TelemetryCollector
+    config: GenerationConfig
 
 
 class ModelRouter:
-    """Resolves the correct LLM adapter + settings per TaskType.
+    """Resolves each task type to its role's adapter and settings."""
 
-    Created once per pipeline run by the CLI layer. Injected into
-    RunContext.llm_router. Caches adapter instances by (provider, api_key_hash)
-    so that multiple task types sharing the same provider reuse one adapter.
+    def __init__(self, resolver: RoleResolver) -> None:
+        self._resolver = resolver
 
-    Multiple task types MAY use the same provider with different models
-    (e.g. draft → gemini-flash, implement → gemini-pro). They share one
-    adapter instance; model differences are in RouterResult.model and
-    temperature differences are in RouterResult.temperature.
+    def get_for_task(self, task_type: TaskType) -> RouterResult:
+        adapter, config = self._resolver.for_role(task_type.value)
+        return RouterResult(adapter=adapter, config=config)
+
+    def collectors(self) -> list[TelemetryCollector]:
+        """Every collector the run's calls went through, for flushing their usage records."""
+        return self._resolver.collectors()
+
+
+def build_router(
+    files: LlmSettingsFiles,
+    *,
+    project: str,
+    roles: Iterable[TaskType | str],
+    spend_limit_usd: float | None,
+    token_limit: int | None,
+) -> ModelRouter:
+    """A command's router: every role it will use checked now, before the first call.
+
+    One spend budget covers every role of the command. Raises `SettingsFileError` naming the role
+    or key a settings file is missing.
     """
+    from specweaver.infrastructure.llm.budget import SpendBudget
+    from specweaver.infrastructure.llm.resolve import RoleResolver
 
-    def __init__(
-        self,
-        settings_provider: Callable[[str], SpecWeaverSettings | None],
-        telemetry_project: str | None = None,
-    ) -> None:
-        self._settings_provider = settings_provider
-        self._telemetry_project = telemetry_project
-        self._cache: dict[str, Any] = {}  # key: f"{provider}:{hash(api_key)}"
-
-    def get_for_task(self, task_type: TaskType) -> RouterResult | None:
-        """Return RouterResult for this task_type, or None if no routing configured.
-
-        None → caller MUST fall back to context.model.llm + context.model.config.llm.model.
-        Never raises — all exceptions are caught and logged.
-        """
-        role_key = f"task:{task_type.value}"
-
-        try:
-            settings = self._settings_provider(role_key)
-        except Exception:
-            logger.warning(
-                "[routing] lookup failed for task_type=%s",
-                task_type.value,
-                exc_info=True,
-            )
-            return None
-
-        if not settings:
-            logger.debug(
-                "[routing] no entry for task_type=%s, using default",
-                task_type.value,
-            )
-            return None
-
-        cache_key = f"{settings.llm.provider}:{hash(settings.llm.api_key)}"
-        if cache_key not in self._cache:
-            try:
-                adapter_cls = get_adapter_class(settings.llm.provider)
-                api_key = settings.llm.api_key or os.environ.get(
-                    getattr(
-                        adapter_cls,
-                        "api_key_env_var",
-                        f"{settings.llm.provider.upper()}_API_KEY",
-                    ),
-                    "",
-                )
-                adapter: Any = adapter_cls(api_key=api_key or None)
-                if self._telemetry_project:
-                    from specweaver.infrastructure.llm.catalogue import shipped_catalogue
-                    from specweaver.infrastructure.llm.collector import TelemetryCollector
-
-                    provider = settings.llm.provider
-                    adapter = TelemetryCollector(
-                        adapter,
-                        self._telemetry_project,
-                        lambda model: shipped_catalogue().facts(provider, model, {}),
-                    )
-                self._cache[cache_key] = adapter
-            except Exception:
-                logger.warning(
-                    "[routing] adapter creation failed for provider=%s",
-                    settings.llm.provider,
-                    exc_info=True,
-                )
-                return None
-
-        logger.debug(
-            "[routing] task_type=%s → provider=%s, model=%s, temperature=%.2f",
-            task_type.value,
-            settings.llm.provider,
-            settings.llm.model,
-            settings.llm.temperature,
-        )
-        return RouterResult(
-            adapter=self._cache[cache_key],
-            model=settings.llm.model,
-            temperature=settings.llm.temperature,
-            max_output_tokens=settings.llm.max_output_tokens,
-            provider=settings.llm.provider,
-            profile_name="",
-        )
+    resolver = RoleResolver(
+        files,
+        telemetry_project=project,
+        budget=SpendBudget(limit_usd=spend_limit_usd, token_limit=token_limit),
+    )
+    resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
+    return ModelRouter(resolver)

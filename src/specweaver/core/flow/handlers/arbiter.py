@@ -189,7 +189,7 @@ class ArbitrateVerdictHandler(StepHandler):
                 completed_at=_now_iso(),
             )
 
-        if not context.model.llm:
+        if context.model.llm_router is None:
             return _error_result("LLM not configured in context", started)
 
         try:
@@ -226,8 +226,12 @@ class ArbitrateVerdictHandler(StepHandler):
             base_prompt = await _build_base_prompt(context, ARBITRATE_INSTRUCTIONS, profile=profile)
             base_prompt.add_context(filtered_trace, label="Failures")
 
+            from specweaver.core.flow.handlers._llm import llm_for
+            from specweaver.infrastructure.llm.models import Message, Role, TaskType
+
+            adapter, config = llm_for(context, TaskType.REVIEW)
             prompt = base_prompt.build()
-            response = await context.model.llm.generate(prompt)
+            response = await adapter.generate([Message(role=Role.USER, content=prompt)], config)
             # Normalize the adapter's LLMResponse (string returns are the unit-mock convention
             # only).
             raw_response = response.text if hasattr(response, "text") else response

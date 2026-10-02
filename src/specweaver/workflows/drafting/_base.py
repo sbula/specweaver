@@ -69,15 +69,11 @@ class BaseDrafter:
         base_prompt: PromptBuilder,
         llm: LLMAdapter,
         context_provider: ContextProvider,
-        config: GenerationConfig | None = None,
+        config: GenerationConfig,
     ) -> None:
         self._llm = llm
         self._context = context_provider
-        self._config = config or GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.7,
-            max_output_tokens=4096,
-        )
+        self._config = config
         self._base_prompt = base_prompt
 
     async def draft(

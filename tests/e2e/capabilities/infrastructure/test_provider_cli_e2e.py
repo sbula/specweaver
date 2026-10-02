@@ -71,14 +71,23 @@ def test_openai_draft_telemetry_journey(
     test_project: Path, mock_openai_response: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    E2E User Journey: provider=openai -> sw draft -> telemetry shows openai.
+    E2E User Journey: an openai server -> `sw config set-role default` -> sw draft -> telemetry
+    shows openai.
     """
     # 1. Check if openai is installed in the test environment
     pytest.importorskip("openai", reason="openai SDK not installed, skipping E2E test")
 
-    # 2. Configure project to use openai provider
-    result = runner.invoke(app, ["config", "set-provider", "openai"])
-    assert result.exit_code == 0, f"Failed to set provider config: {result.stdout}"
+    # 2. Route every role (draft chains a review) to an openai model: the server is defined in the machine settings file,
+    #    the role is set with the command a user runs.
+    from specweaver.core.config.bootstrap.llm_settings_loader import machine_settings_path
+
+    machine = machine_settings_path()
+    machine.parent.mkdir(parents=True, exist_ok=True)
+    machine.write_text(
+        '[servers.oai]\nkind = "openai"\nprivate = false\nmax_parallel = 2\n', encoding="utf-8"
+    )
+    result = runner.invoke(app, ["config", "set-role", "default", "gpt-5.4@oai"])
+    assert result.exit_code == 0, f"Failed to set the default role: {result.stdout}"
 
     # 3. Run the draft command
     # Mocking the interactive input

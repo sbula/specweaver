@@ -30,6 +30,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.drift import DriftCheckHandler
 from specweaver.core.flow.handlers.run_context import RunContext
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -160,7 +161,7 @@ async def test_drift_handler_does_not_analyze_without_the_flag(
         params={"target_path": str(src_file), "plan_path": str(plan_file)},
     )
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
-    context.model = context.model.model_copy(update={"llm": llm})
+    context.model = context.model.model_copy(update={"llm_router": FixedRouter(llm)})
 
     result = await handler.execute(step, context)
 
@@ -190,7 +191,7 @@ async def test_drift_handler_analyze(tmp_path: Path, plan_yaml_content: str) -> 
         params={"target_path": str(src_file), "plan_path": str(plan_file), "analyze": True},
     )
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
-    context.model = context.model.model_copy(update={"llm": MockLLMAdapter()})
+    context.model = context.model.model_copy(update={"llm_router": FixedRouter(MockLLMAdapter())})
 
     result = await handler.execute(step, context)
     assert result.status == StepStatus.FAILED
@@ -307,7 +308,9 @@ async def test_drift_handler_analyze_failure(tmp_path: Path, plan_yaml_content: 
         params={"target_path": str(src_file), "plan_path": str(plan_file), "analyze": True},
     )
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md")
-    context.model = context.model.model_copy(update={"llm": FailingLLMAdapter()})
+    context.model = context.model.model_copy(
+        update={"llm_router": FixedRouter(FailingLLMAdapter())}
+    )
 
     result = await handler.execute(step, context)
     assert result.status == StepStatus.FAILED

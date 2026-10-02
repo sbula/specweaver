@@ -195,7 +195,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Trigger:** When an LLM call needs its model, server, sampling or price
   > - **Precondition:** —
   > - **Reads:** the machine and project settings files · the shipped model catalogue
-  > - **Produces:** one resolved setting per call · prices in CHF · server addresses · the privacy rule
+  > - **Produces:** one resolved setting per call · prices in one configurable currency · server addresses · the privacy rule
   > - **Enables:** `B-FLOW-05` brake values · `A-FLOW-01` model choice
   > - **Done when:** every LLM call's settings come from one place and no `default_costs` dict remains in any adapter
   > - **Note:** absorbs `D-FLOW-05` (2026-09-26) · decisions: [record](../../analysis/llm_settings_grilling_2026-09-26.md)

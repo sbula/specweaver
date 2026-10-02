@@ -22,6 +22,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.review import ReviewSpecHandler
 from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +61,7 @@ async def test_the_projects_own_criteria_reach_the_model(project: Path) -> None:
     llm = _RecordingLLM()
     context = RunContext(
         analysis=AnalysisContext(parsers={}),
-        model=ModelAccess(llm=llm),
+        model=ModelAccess(llm_router=FixedRouter(llm)),
         project_path=project,
         spec_path=project / "spec.md",
     )
@@ -80,7 +81,7 @@ async def test_the_shipped_criteria_do_not_reach_the_model_once_overridden(proje
     llm = _RecordingLLM()
     context = RunContext(
         analysis=AnalysisContext(parsers={}),
-        model=ModelAccess(llm=llm),
+        model=ModelAccess(llm_router=FixedRouter(llm)),
         project_path=project,
         spec_path=project / "spec.md",
     )
@@ -100,7 +101,7 @@ async def test_the_parser_contract_travels_with_the_override(project: Path) -> N
     llm = _RecordingLLM()
     context = RunContext(
         analysis=AnalysisContext(parsers={}),
-        model=ModelAccess(llm=llm),
+        model=ModelAccess(llm_router=FixedRouter(llm)),
         project_path=project,
         spec_path=project / "spec.md",
     )

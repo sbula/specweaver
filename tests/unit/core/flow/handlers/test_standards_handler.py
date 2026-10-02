@@ -13,6 +13,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.core.flow.handlers.standards import EnrichStandardsHandler
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -25,7 +26,7 @@ def mock_context(tmp_path: Path) -> RunContext:
     mock_config.standards.mode = "mimicry"
 
     return RunContext(
-        model=ModelAccess(llm=MagicMock(), config=mock_config),
+        model=ModelAccess(llm_router=FixedRouter(MagicMock()), config=mock_config),
         project_path=tmp_path,
         spec_path=tmp_path / "dummy.md",
     )
@@ -95,3 +96,30 @@ def test_enrich_standards_no_results(mock_context: RunContext) -> None:
         assert result.status == StepStatus.PASSED
         mock_enricher.enrich.assert_not_called()
         assert result.output == {"results": []}
+
+
+def test_without_a_model_the_standards_are_kept_unenriched(mock_context: RunContext) -> None:
+    """No `check` role resolved → the scan's findings pass through; enrichment is optional."""
+    context = mock_context.model_copy(
+        update={"model": mock_context.model.model_copy(update={"llm_router": None})}
+    )
+    step = PipelineStep(
+        name="test_enrich",
+        action=StepAction.ENRICH,
+        target=StepTarget.STANDARDS,
+        params={"scope_files": ["src/main.py"], "half_life_days": 90.0, "compare": False},
+    )
+
+    with (
+        patch("specweaver.assurance.standards.scanner.StandardsScanner") as mock_scanner_cls,
+        patch("specweaver.assurance.standards.enricher.StandardsEnricher") as mock_enricher_cls,
+    ):
+        mock_raw_result = MagicMock()
+        mock_raw_result.confidence = 0.8
+        mock_scanner_cls.return_value.scan.return_value = [mock_raw_result]
+
+        result = asyncio.run(EnrichStandardsHandler().execute(step, context))
+
+    assert result.status == StepStatus.PASSED
+    assert result.output == {"results": [mock_raw_result]}
+    mock_enricher_cls.assert_not_called()

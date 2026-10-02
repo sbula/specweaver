@@ -77,64 +77,6 @@ def _get_domain_profile_sync(db, project: str) -> str | None:
     return anyio.run(_do)
 
 
-def _create_llm_profile_sync(
-    db,
-    name: str,
-    provider: str,
-    model: str,
-    temperature: float = 0.2,
-    max_output_tokens: int = 4096,
-) -> int:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.create_llm_profile(
-                name,
-                provider=provider,
-                model=model,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
-                response_format="text",
-            )
-
-    return anyio.run(_do)
-
-
-def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.link_project_profile(project, task, profile_id)
-
-    anyio.run(_do)
-
-
-def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, in_cost, out_cost)
-
-    anyio.run(_do)
-
-
-def _get_cost_overrides_sync(db) -> dict:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.get_cost_overrides()
-
-    return anyio.run(_do)
-
-
 from specweaver.commons.async_bridge import run_sync  # noqa: E402
 
 
@@ -164,64 +106,6 @@ def _get_domain_profile_sync(db, project: str) -> str | None:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             return await repo.get_domain_profile(project)
-
-    return _sync_run(_do())
-
-
-def _create_llm_profile_sync(
-    db,
-    name: str,
-    provider: str,
-    model: str,
-    temperature: float = 0.2,
-    max_output_tokens: int = 4096,
-) -> int:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.create_llm_profile(
-                name,
-                provider=provider,
-                model=model,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
-                response_format="text",
-            )
-
-    return _sync_run(_do())
-
-
-def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.link_project_profile(project, task, profile_id)
-
-    _sync_run(_do())
-
-
-def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, in_cost, out_cost)
-
-    _sync_run(_do())
-
-
-def _get_cost_overrides_sync(db) -> dict:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.get_cost_overrides()
 
     return _sync_run(_do())
 

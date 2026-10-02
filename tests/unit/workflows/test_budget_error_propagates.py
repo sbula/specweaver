@@ -26,6 +26,7 @@ from typing import Any
 import pytest
 
 from specweaver.infrastructure.llm.budget import BudgetExceededError
+from tests.scripted_llm import TEST_CONFIG
 
 
 class _BrokenBudgetLLM:
@@ -53,7 +54,7 @@ async def test_the_planner_does_not_retry_a_tripped_breaker() -> None:
     from specweaver.workflows.planning.planner import Planner
 
     llm = _BrokenBudgetLLM()
-    planner = Planner(llm=llm, max_retries=3)
+    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG)
 
     with pytest.raises(BudgetExceededError):
         await planner.generate_plan("spec", "spec.md", "spec", PromptBuilder())
@@ -80,7 +81,7 @@ async def test_the_reviewer_does_not_relabel_a_tripped_breaker() -> None:
     """A verdict of ERROR reads as *the review found problems*, not *you are out of money*."""
     from specweaver.workflows.review.reviewer import Reviewer
 
-    reviewer = Reviewer(llm=_BrokenBudgetLLM())
+    reviewer = Reviewer(llm=_BrokenBudgetLLM(), config=TEST_CONFIG)
 
     with pytest.raises(BudgetExceededError):
         await reviewer._execute_review("prompt")
@@ -110,7 +111,7 @@ async def test_malformed_output_is_still_retried_by_the_planner() -> None:
             return LLMResponse(text="not json at all", model="stub")
 
     llm = _MalformedLLM()
-    planner = Planner(llm=llm, max_retries=3)
+    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG)
 
     with pytest.raises(ValueError, match="after 3 attempts"):
         await planner.generate_plan("spec", "spec.md", "spec", PromptBuilder())

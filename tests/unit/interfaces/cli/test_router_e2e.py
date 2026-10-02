@@ -58,9 +58,9 @@ def test_cli_pipelines_injects_model_router_in_run(
         # Extract context
         context = args[1]
 
-        # Verify the ModelRouter was successfully instantiated and attached
-        assert context.model.llm_router is not None
-        assert context.model.llm_router._telemetry_project == "test-proj"
+        # validate_only calls no model, so it needs no LLM settings and gets no router
+        # (C-FLOW-13 FR-4: commands that call no LLM are unaffected by the settings files)
+        assert context.model.llm_router is None
 
         # Verify the AnalyzerFactory was successfully attached at the edge
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -109,9 +109,9 @@ def test_cli_pipelines_injects_model_router_in_resume(
         # Extract context
         context = args[1]
 
-        # Verify ModelRouter was attached to the resurrected context
-        assert context.model.llm_router is not None
-        assert context.model.llm_router._telemetry_project == "test-proj"
+        # validate_only calls no model, so it needs no LLM settings and gets no router
+        # (C-FLOW-13 FR-4: commands that call no LLM are unaffected by the settings files)
+        assert context.model.llm_router is None
 
         # Verify the AnalyzerFactory was attached to resurrected context
         from specweaver.workspace.analyzers.factory import AnalyzerFactory

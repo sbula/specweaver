@@ -10,6 +10,7 @@ import pytest
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.mark.asyncio
@@ -103,7 +104,7 @@ async def test_drift_handler_analyze_drift_logic(tmp_path: Path) -> None:
         db=MagicMock(),
         model=ModelAccess(config=MockConfig()),
     )  # type: ignore
-    context.model = context.model.model_copy(update={"llm": mock_llm})
+    context.model = context.model.model_copy(update={"llm_router": FixedRouter(mock_llm)})
 
     report = DriftReport(
         is_drifted=True,

@@ -19,8 +19,16 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.config.bootstrap.llm_settings_writer import clear_model_price, set_model_price
-from specweaver.core.config.llm_settings import SettingsFileError, parse_machine_file
+from specweaver.core.config.bootstrap.llm_settings_writer import (
+    clear_model_price,
+    set_model_price,
+    set_role,
+)
+from specweaver.core.config.llm_settings import (
+    SettingsFileError,
+    parse_machine_file,
+    parse_project_llm,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -94,3 +102,62 @@ def test_a_dotted_model_name_stays_one_key(machine_file: Path) -> None:
 
     models = parse_machine_file(machine_file.read_text(encoding="utf-8"), "x").models
     assert list(models) == ["qwen3.8-max"]
+
+
+class TestSetRole:
+    """`sw config set-role` writes a role into the machine file or the project's `[llm.roles]`."""
+
+    def test_a_machine_role_is_written_and_comments_survive(self, machine_file: Path) -> None:
+        machine_file.write_text(_EXISTING, encoding="utf-8")
+
+        set_role("draft", "qwen3-coder-next@gb10")
+
+        text = machine_file.read_text(encoding="utf-8")
+        assert text.startswith(_EXISTING.rstrip("\n"))
+        assert parse_machine_file(text, "x").roles["draft"].model == "qwen3-coder-next"
+
+    def test_a_project_role_goes_into_the_projects_llm_section(
+        self, machine_file: Path, tmp_path: Path
+    ) -> None:
+        machine_file.write_text(_EXISTING, encoding="utf-8")
+        project = tmp_path / "proj"
+        project.mkdir()
+        (project / "specweaver.toml").write_text(
+            '[sandbox]\nexecution_mode = "host"\n', encoding="utf-8"
+        )
+
+        set_role("review", "qwen3-coder-next@gb10", project_root=project)
+
+        text = (project / "specweaver.toml").read_text(encoding="utf-8")
+        assert text.startswith('[sandbox]\nexecution_mode = "host"\n')
+        assert parse_project_llm(text, "x").roles["review"].server == "gb10"
+
+    def test_a_role_on_an_unknown_server_is_refused_and_nothing_written(
+        self, machine_file: Path
+    ) -> None:
+        machine_file.write_text(_EXISTING, encoding="utf-8")
+
+        with pytest.raises(SettingsFileError) as caught:
+            set_role("draft", "claude-opus-5-5@nowhere")
+
+        assert "nowhere" in caught.value.message
+        assert machine_file.read_text(encoding="utf-8") == _EXISTING
+
+    def test_a_private_project_refuses_a_hosted_role(
+        self, machine_file: Path, tmp_path: Path
+    ) -> None:
+        machine_file.write_text(
+            _EXISTING
+            + '\n[servers.anthropic]\nkind = "anthropic"\nprivate = false\nmax_parallel = 2\n',
+            encoding="utf-8",
+        )
+        project = tmp_path / "proj"
+        project.mkdir()
+        (project / "specweaver.toml").write_text("[llm]\nprivate_only = true\n", encoding="utf-8")
+
+        with pytest.raises(SettingsFileError):
+            set_role("review", "claude-opus-5-5@anthropic", project_root=project)
+
+        assert (project / "specweaver.toml").read_text(
+            encoding="utf-8"
+        ) == "[llm]\nprivate_only = true\n"

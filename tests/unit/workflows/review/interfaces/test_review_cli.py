@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from tests.scripted_llm import doubled_llm
 from typer.testing import CliRunner
 
 # Force import to test decentralized location (Red Phase)
@@ -49,19 +50,15 @@ def _scaffold(tmp_path: Path) -> Path:
 class TestReviewCommand:
     """Test the review command behavior using PipelineRunner."""
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
-    def test_review_success_no_exit(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
+    def test_review_success_no_exit(self, mock_run, mock_load, tmp_path: Path) -> None:
         """Pipeline returns completed and step PASSED -> exit 0."""
         project = _scaffold(tmp_path)
         spec = project / "test.md"
         spec.write_text("# Spec\n", encoding="utf-8")
 
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_load.return_value = mock_settings
-        mock_create.return_value = (mock_settings, MagicMock(), MagicMock())
+        mock_load.return_value = MagicMock()
 
         # Mock a successful Pipeline run
         mock_result = StepResult(
@@ -83,23 +80,20 @@ class TestReviewCommand:
             ],
         )
 
-        result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
+        with doubled_llm(MagicMock()):
+            result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
         assert result.exit_code == 0
         assert "Looks good." in result.output
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
-    def test_review_denied_exit_1(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
+    def test_review_denied_exit_1(self, mock_run, mock_load, tmp_path: Path) -> None:
         """Pipeline PASSED but review verdict DENIED -> exit 1."""
         project = _scaffold(tmp_path)
         spec = project / "test.md"
         spec.write_text("# Spec\n", encoding="utf-8")
 
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_load.return_value = mock_settings
-        mock_create.return_value = (mock_settings, MagicMock(), MagicMock())
+        mock_load.return_value = MagicMock()
 
         # Mock a pipeline run where review was DENIED
         mock_result = StepResult(
@@ -125,24 +119,21 @@ class TestReviewCommand:
             ],
         )
 
-        result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
+        with doubled_llm(MagicMock()):
+            result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
         assert result.exit_code == 1
         assert "Missing sections." in result.output
         assert "No Purpose" in result.output
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
-    def test_review_error_exit_1(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
+    def test_review_error_exit_1(self, mock_run, mock_load, tmp_path: Path) -> None:
         """Pipeline returns parked or step FAILED -> exit 1."""
         project = _scaffold(tmp_path)
         spec = project / "test.md"
         spec.write_text("# Spec\n", encoding="utf-8")
 
-        mock_settings = MagicMock()
-        mock_settings.llm.model = "test-model"
-        mock_load.return_value = mock_settings
-        mock_create.return_value = (mock_settings, MagicMock(), MagicMock())
+        mock_load.return_value = MagicMock()
 
         mock_result = StepResult(
             status=StepStatus.FAILED,
@@ -163,6 +154,7 @@ class TestReviewCommand:
             ],
         )
 
-        result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
+        with doubled_llm(MagicMock()):
+            result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
         assert result.exit_code == 1
         assert "API Error" in result.output

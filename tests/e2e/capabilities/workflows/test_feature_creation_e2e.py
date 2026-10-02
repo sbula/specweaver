@@ -23,8 +23,9 @@ from unittest.mock import AsyncMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -179,8 +180,7 @@ class TestFeatureCreationFullCycle:
             mock_hitl_cls.return_value = mock_hitl
 
             mock_llm = _make_llm([])
-            with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-                mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+            with doubled_llm(mock_llm, model="mock"):
                 result = runner.invoke(
                     app,
                     [
@@ -279,8 +279,7 @@ class TestFeatureCreationLlmErrorMidPipeline:
         crash_llm.generate = _crash
         crash_llm.generate_with_tools = _crash
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, crash_llm, GenerationConfig(model="mock"))
+        with doubled_llm(crash_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec), "--project", str(project_dir)],
@@ -345,8 +344,7 @@ class TestFeatureCreationWithConstitution:
         mock_llm.generate = _capture_and_respond
         mock_llm.generate_with_tools = _capture_and_respond
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
-            mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+        with doubled_llm(mock_llm, model="mock"):
             result = runner.invoke(
                 app,
                 ["review", str(spec), "--project", str(project_dir)],

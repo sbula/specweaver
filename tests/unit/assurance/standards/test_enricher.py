@@ -14,6 +14,7 @@ from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.enricher import StandardsEnricher
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.models import LLMResponse
+from tests.scripted_llm import TEST_CONFIG
 
 
 class DummyAdapter(LLMAdapter):
@@ -44,7 +45,7 @@ class TestStandardsEnricher:
     async def test_skips_enrichment_if_confidence_high(self) -> None:
         adapter = DummyAdapter([])
         adapter.generate = AsyncMock()  # type: ignore
-        enricher = StandardsEnricher(adapter)
+        enricher = StandardsEnricher(adapter, config=TEST_CONFIG)
 
         res = CategoryResult(
             category="naming", dominant={"style": "snake"}, confidence=0.95, sample_size=10
@@ -57,7 +58,7 @@ class TestStandardsEnricher:
     async def test_enriches_if_confidence_low(self) -> None:
         json_resp = '{"industry_standard": "PascalCase", "is_conflict": true, "conflict_reason": "snake is wrong"}'
         adapter = DummyAdapter([json_resp])
-        enricher = StandardsEnricher(adapter)
+        enricher = StandardsEnricher(adapter, config=TEST_CONFIG)
 
         res = CategoryResult(
             category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10
@@ -71,7 +72,7 @@ class TestStandardsEnricher:
     async def test_enriches_if_force_compare_true(self) -> None:
         json_resp = '{"industry_standard": "snake", "is_conflict": false}'
         adapter = DummyAdapter([json_resp])
-        enricher = StandardsEnricher(adapter)
+        enricher = StandardsEnricher(adapter, config=TEST_CONFIG)
 
         # High confidence, but forced
         res = CategoryResult(
@@ -86,7 +87,7 @@ class TestStandardsEnricher:
         # Invalid JSON missing quotes
         json_resp = '{industry_standard: "PascalCase", is_conflict: true}'
         adapter = DummyAdapter([json_resp])
-        enricher = StandardsEnricher(adapter)
+        enricher = StandardsEnricher(adapter, config=TEST_CONFIG)
 
         res = CategoryResult(
             category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10

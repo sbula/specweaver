@@ -31,6 +31,7 @@ from specweaver.core.flow.handlers.generation import (
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,7 +50,7 @@ class TestRunContext:
             spec_path=tmp_path / "specs" / "test.md",
         )
         assert ctx.project_path == tmp_path
-        assert ctx.model.llm is None
+        assert ctx.model.llm_router is None
         assert ctx.graph.topology is None
         assert ctx.settings is None
 
@@ -252,7 +253,7 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
@@ -277,7 +278,7 @@ class TestGenerateCodeHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_code",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -289,7 +290,11 @@ class TestGenerateCodeHandler:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         # Inject feedback mock matching runner behavior
@@ -343,7 +348,7 @@ class TestGenerateCodeHandler:
             )
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
@@ -367,7 +372,7 @@ class TestGenerateCodeHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_code",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -388,7 +393,7 @@ class TestGenerateCodeHandler:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -414,7 +419,7 @@ class TestGenerateCodeHandler:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=src_dir,
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
         )
         # deliberately NOT setting ctx.db
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -466,7 +471,7 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
@@ -491,7 +496,7 @@ class TestGenerateTestsHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_tests",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -503,7 +508,11 @@ class TestGenerateTestsHandler:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
         # Inject feedback mock matching runner behavior
@@ -554,7 +563,7 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
@@ -584,7 +593,7 @@ class TestGenerateTestsHandler:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tests_dir,
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
         )
         ctx.db = None
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -631,7 +640,7 @@ class TestPlanSpecHandler:
             project_path=tmp_path,
             spec_path=spec,
             db=MagicMock(),
-            model=ModelAccess(llm=MagicMock()),
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
 
         mock_repo = MagicMock()
@@ -670,7 +679,7 @@ class TestPlanSpecHandler:
             parent_id="11111111-2222-3333-4444-888888888888",
             run_id="pipeline_run",
             event_type="generated_plan",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -686,7 +695,7 @@ class TestPlanSpecHandler:
             project_path=tmp_path,
             spec_path=spec,
             db=MagicMock(),
-            model=ModelAccess(llm=MagicMock()),
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run-123"})
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
@@ -714,7 +723,7 @@ class TestPlanSpecHandler:
             parent_id="test-run-123",
             run_id="test-run-123",
             event_type="generated_plan",
-            model_id="gemini-3-flash-preview",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -723,7 +732,11 @@ class TestPlanSpecHandler:
         """Verifies handler catches planner exceptions and returns a clean error."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(llm=MagicMock()))
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
 

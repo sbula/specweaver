@@ -138,3 +138,17 @@ class TestRoleResolverSharing:
         assert draft is review
         assert draft.budget is review.budget
         assert resolver.collectors() == [draft]
+
+
+class TestRoleResolverPrices:
+    def test_a_call_is_priced_from_the_catalogue_and_the_machine_file(self) -> None:
+        machine = _MACHINE + '\n[models."qwen3-coder-next"]\nusd_per_million_input = 2.0\n'
+        local = _LOCAL.replace(
+            "max_output = 65536\n", "max_output = 65536\nusd_per_million_output = 8.0\n"
+        )
+        adapter, _config = _resolver(machine, local).for_role("draft")
+
+        facts = adapter._prices("qwen3-coder-next")
+
+        assert facts is not None
+        assert (facts.usd_per_million_input, facts.usd_per_million_output) == (2.0, 8.0)

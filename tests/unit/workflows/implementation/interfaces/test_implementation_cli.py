@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from tests.scripted_llm import doubled_llm
 from typer.testing import CliRunner
 
 # Force import to test decentralized location (Red Phase)
@@ -87,7 +88,6 @@ def _make_mock_adapter(text: str = _COLLECTABLE) -> MagicMock:
 class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
@@ -96,7 +96,6 @@ class TestImplementOutputPaths:
         mock_ensure_schema,
         mock_log_event,
         mock_load,
-        mock_create,
         tmp_path: Path,
     ) -> None:
         """implement → creates code + test files."""
@@ -105,25 +104,18 @@ class TestImplementOutputPaths:
         spec.write_text("# Greeter Spec\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
         mock_settings = MagicMock()
-        mock_settings.llm.model = "gemini-2.5-pro"
         mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-
         mock_load.return_value = mock_settings
-        mock_create.return_value = (
-            mock_settings,
-            _make_mock_adapter(),
-            MagicMock(temperature=0.7),
-        )
 
-        result = runner.invoke(
-            app,
-            ["implement", str(spec), "--project", str(project)],
-        )
+        with doubled_llm(_make_mock_adapter()):
+            result = runner.invoke(
+                app,
+                ["implement", str(spec), "--project", str(project)],
+            )
         assert result.exit_code == 0, f"Command failed: {result.output}"
         assert (project / "src" / "greeter.py").exists()
         assert (project / "tests" / "test_greeter.py").exists()
 
-    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
@@ -132,7 +124,6 @@ class TestImplementOutputPaths:
         mock_ensure_schema,
         mock_log_event,
         mock_load,
-        mock_create,
         tmp_path: Path,
     ) -> None:
         """'_spec' suffix stripped from output filenames."""
@@ -141,20 +132,14 @@ class TestImplementOutputPaths:
         spec.write_text("# Auth Spec\n## 1. Purpose\nAuth.\n", encoding="utf-8")
 
         mock_settings = MagicMock()
-        mock_settings.llm.model = "gemini-2.5-pro"
         mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
-
         mock_load.return_value = mock_settings
-        mock_create.return_value = (
-            mock_settings,
-            _make_mock_adapter(),
-            MagicMock(temperature=0.7),
-        )
 
-        result = runner.invoke(
-            app,
-            ["implement", str(spec), "--project", str(project)],
-        )
+        with doubled_llm(_make_mock_adapter()):
+            result = runner.invoke(
+                app,
+                ["implement", str(spec), "--project", str(project)],
+            )
         assert result.exit_code == 0, f"Command failed: {result.output}"
         assert (project / "src" / "auth_service.py").exists()
         assert not (project / "src" / "auth_service_spec.py").exists()

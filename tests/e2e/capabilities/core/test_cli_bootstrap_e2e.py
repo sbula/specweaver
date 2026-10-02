@@ -61,7 +61,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
     tables = [row[0] for row in cursor.fetchall()]
     conn.close()
 
-    assert "llm_profiles" in tables
+    assert "llm_usage_log" in tables
     assert "workspace_projects" in tables
 
 
@@ -85,19 +85,21 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
         "specweaver.core.config.bootstrap.db_bootstrap.config_db_path", lambda: db_path
     )
 
+    def _schema() -> list[tuple[str, str]]:
+        conn = sqlite3.connect(str(db_path))
+        rows = conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall()
+        conn.close()
+        return rows
+
     # Run once
     runner.invoke(app, ["projects"])
     assert db_path.exists()
+    first = _schema()
 
     # Run twice
     result = runner.invoke(app, ["projects"])
     assert result.exit_code == 0
 
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM llm_profiles")
-    count = cursor.fetchone()[0]
-    conn.close()
-
-    # It shouldn't have double-seeded the defaults
-    assert count == 3
+    # The second bootstrap neither rebuilt nor added anything
+    assert _schema() == first
+    assert first

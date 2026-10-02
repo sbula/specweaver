@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +61,7 @@ class TestGeneratorBehavioral:
         spec.write_text("# Spec\n## 1. Purpose\nDoes things.", encoding="utf-8")
         output = tmp_path / "code.py"
 
-        gen = Generator(llm=_failing_llm())
+        gen = Generator(llm=_failing_llm(), config=TEST_CONFIG)
         with pytest.raises(GenerationError, match="LLM exploded"):
             await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
@@ -75,7 +76,7 @@ class TestGeneratorBehavioral:
         mock_llm.generate = AsyncMock(
             return_value=LLMResponse(text="", model="test-model"),
         )
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
@@ -91,7 +92,7 @@ class TestGeneratorBehavioral:
         mock_llm.generate = AsyncMock(
             return_value=LLMResponse(text="pass", model="test-model"),
         )
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         with pytest.raises(FileNotFoundError):
             await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
@@ -106,7 +107,7 @@ class TestGeneratorBehavioral:
         mock_llm.generate = AsyncMock(
             return_value=LLMResponse(text="pass\n", model="test-model"),
         )
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
@@ -119,7 +120,7 @@ class TestGeneratorBehavioral:
         spec.write_text("# Spec", encoding="utf-8")
         output = tmp_path / "test_code.py"
 
-        gen = Generator(llm=_failing_llm())
+        gen = Generator(llm=_failing_llm(), config=TEST_CONFIG)
         with pytest.raises(GenerationError):
             await gen.generate_tests(spec, output, base_prompt=PromptBuilder())
 
@@ -130,7 +131,7 @@ class TestGeneratorBehavioral:
         spec.write_text("# Spec", encoding="utf-8")
         output = tmp_path / "code.py"
 
-        gen = Generator(llm=_failing_llm())
+        gen = Generator(llm=_failing_llm(), config=TEST_CONFIG)
         with pytest.raises(GenerationError):
             await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 

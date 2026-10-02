@@ -18,6 +18,7 @@ from specweaver.core.flow.handlers.run_context import (
     RunHandle,
 )
 from specweaver.infrastructure.llm.models import ProjectMetadata
+from tests.scripted_llm import FixedRouter
 
 
 def test_run_context_builds_project_metadata(tmp_path: Path) -> None:
@@ -28,14 +29,13 @@ def test_run_context_builds_project_metadata(tmp_path: Path) -> None:
     config.validation.overrides = {"S01": True}
     llm = MagicMock()
     llm.provider_name = "mock_provider"
-    llm.model = "mock-model"
     db = MagicMock()
 
     context = RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         db=db,
-        model=ModelAccess(llm=llm, config=config),
+        model=ModelAccess(llm_router=FixedRouter(llm, model="mock-model"), config=config),
     )
 
     assert isinstance(context.project_metadata, ProjectMetadata)
@@ -61,7 +61,7 @@ def test_run_context_graceful_degradation(tmp_path: Path) -> None:
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
             db=db,
-            model=ModelAccess(llm=llm, config=config),
+            model=ModelAccess(llm_router=FixedRouter(llm), config=config),
         )
 
     assert context.project_metadata.language_target == "Unknown Environment"
@@ -269,14 +269,13 @@ class TestPlanContext:
 
 
 class TestModelAccess:
-    """How a run reaches a language model: adapter, settings, router.
+    """How a run reaches a language model: settings and router.
 
     Proves: TECH-006 FR-6, FR-7.
     """
 
     def test_defaults_match_the_previous_flat_defaults(self) -> None:
         access = ModelAccess()
-        assert access.llm is None
         assert access.config is None
         assert access.llm_router is None
 
@@ -289,15 +288,17 @@ class TestModelAccess:
         directly rather than assumed, because a silent namespace clash here would surface as
         a confusing failure far from this file."""
         context = RunContext(
-            project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(llm="x")
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            model=ModelAccess(config="x"),
         )
-        assert context.model.llm == "x"
-        assert context.model_dump()["model"]["llm"] == "x"
+        assert context.model.config == "x"
+        assert context.model_dump()["model"]["config"] == "x"
 
     def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
         context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         with pytest.raises(ValidationError):
-            context.model.llm = "x"
+            context.model.config = "x"
 
     def test_unknown_kwarg_raises(self) -> None:
         with pytest.raises(ValidationError):

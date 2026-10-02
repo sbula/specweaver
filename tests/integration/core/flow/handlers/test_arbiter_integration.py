@@ -1,7 +1,6 @@
 # mypy: ignore-errors
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,6 +16,7 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
     RunHandle,
 )
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -82,9 +82,9 @@ class TestArbiterIntegrationFlow:
         mock_filter.filter.return_value = "Cleaned assertion text"
         mock_create_filter.return_value = mock_filter
 
-        run_context.model = ModelAccess(llm=AsyncMock())
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
         # Mock LLM verdict
-        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The implementation drifted.", "scenario_feedback": ""}'
+        run_context.model.llm_router.adapter.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The implementation drifted.", "scenario_feedback": ""}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -109,9 +109,9 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_nfr8_no_scenario_vocab_in_coding_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model = ModelAccess(llm=AsyncMock())
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
         # LLM tries to leak scenario vocabulary
-        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The scenario test failed on Pytest parametrized inputs.", "scenario_feedback": ""}'
+        run_context.model.llm_router.adapter.generate.return_value = '{"verdict": "code_bug", "coding_feedback": "The scenario test failed on Pytest parametrized inputs.", "scenario_feedback": ""}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -130,8 +130,8 @@ class TestArbiterIntegrationFlow:
         self, mock_create_filter, run_context
     ):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model = ModelAccess(llm=AsyncMock())
-        run_context.model.llm.generate.return_value = '{"verdict": "scenario_error", "coding_feedback": "", "scenario_feedback": "Check FR-1 test."}'
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
+        run_context.model.llm_router.adapter.generate.return_value = '{"verdict": "scenario_error", "coding_feedback": "", "scenario_feedback": "Check FR-1 test."}'
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -150,8 +150,10 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_gracefully_handles_malformed_json(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model = ModelAccess(llm=AsyncMock())
-        run_context.model.llm.generate.return_value = '{"verdict": "code_bug", missing quotes}'
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
+        run_context.model.llm_router.adapter.generate.return_value = (
+            '{"verdict": "code_bug", missing quotes}'
+        )
         run_context.spec_path.exists.return_value = True
         run_context.spec_path.read_text.return_value = "## Spec Content"
 
@@ -165,8 +167,8 @@ class TestArbiterIntegrationFlow:
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_spec_ambiguity_parks_run(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
-        run_context.model = ModelAccess(llm=AsyncMock())
-        run_context.model.llm.generate.return_value = (
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
+        run_context.model.llm_router.adapter.generate.return_value = (
             '{"verdict": "spec_ambiguity", "spec_clause": "FR-99"}'
         )
         run_context.spec_path.exists.return_value = True

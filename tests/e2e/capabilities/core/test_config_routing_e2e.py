@@ -2,12 +2,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E tests — LLM model routing CLI commands (Feature 3.12b SF-2).
+"""E2E tests — routing a task to a model with `sw config set-role` (C-FLOW-13).
+
+Replaces the `sw config routing set/show/clear` journey: routing now lives in the LLM settings
+files, a role per task, written by `sw config set-role` and read back by `sw config show`.
 
 Exercises:
-    sw config routing set <task_type> <profile_name>
-    sw config routing show
-    sw config routing clear
+    sw config set-role <role> <model@server>              (machine file)
+    sw config set-role <role> <model@server> --project    (the project's specweaver.toml)
+    sw config show
 """
 
 from __future__ import annotations
@@ -17,7 +20,7 @@ from typing import TYPE_CHECKING
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
-from tests.fixtures.db_utils import set_test_active_project
+from tests.rendering import shows
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,279 +29,96 @@ if TYPE_CHECKING:
 
 runner = CliRunner()
 
-_proj_counter = 0
+_MACHINE = """\
+[servers.gb10]
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 4
+"""
 
 
-def _unique_name(prefix: str = "test-route") -> str:
-    """Generate unique project names to avoid DB collisions."""
-    global _proj_counter
-    _proj_counter += 1
-    return f"{prefix}-{_proj_counter}"
-
-
-import anyio  # noqa: E402
-
-
-def _set_domain_profile_sync(db, project: str, profile: str) -> None:
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            await repo.set_domain_profile(project, profile)
-
-    anyio.run(_do)
-
-
-def _get_domain_profile_sync(db, project: str) -> str | None:
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            return await repo.get_domain_profile(project)
-
-    return anyio.run(_do)
-
-
-def _create_llm_profile_sync(
-    db,
-    name: str,
-    provider: str,
-    model: str,
-    temperature: float = 0.2,
-    max_output_tokens: int = 4096,
-) -> int:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.create_llm_profile(
-                name,
-                provider=provider,
-                model=model,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
-                response_format="text",
-            )
-
-    return anyio.run(_do)
-
-
-def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.link_project_profile(project, task, profile_id)
-
-    anyio.run(_do)
-
-
-def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, in_cost, out_cost)
-
-    anyio.run(_do)
-
-
-def _get_cost_overrides_sync(db) -> dict:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.get_cost_overrides()
-
-    return anyio.run(_do)
-
-
-from specweaver.commons.async_bridge import run_sync  # noqa: E402
-
-
-def _sync_run(coro):
-    """Run a coroutine from a sync test helper without re-entering a running loop.
-
-    Previously applied `nest_asyncio` to the caller's loop. See `commons.async_bridge`.
-    """
-    return run_sync(lambda: coro)
-
-
-def _set_domain_profile_sync(db, project: str, profile: str) -> None:
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            await repo.set_domain_profile(project, profile)
-
-    _sync_run(_do())
-
-
-def _get_domain_profile_sync(db, project: str) -> str | None:
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            return await repo.get_domain_profile(project)
-
-    return _sync_run(_do())
-
-
-def _create_llm_profile_sync(
-    db,
-    name: str,
-    provider: str,
-    model: str,
-    temperature: float = 0.2,
-    max_output_tokens: int = 4096,
-) -> int:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.create_llm_profile(
-                name,
-                provider=provider,
-                model=model,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
-                response_format="text",
-            )
-
-    return _sync_run(_do())
-
-
-def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.link_project_profile(project, task, profile_id)
-
-    _sync_run(_do())
-
-
-def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            await repo.set_cost_override(model, in_cost, out_cost)
-
-    _sync_run(_do())
-
-
-def _get_cost_overrides_sync(db) -> dict:
-    from specweaver.infrastructure.llm.store import LlmRepository
-
-    async def _do():
-        async with db.async_session_scope() as session:
-            repo = LlmRepository(session)
-            return await repo.get_cost_overrides()
-
-    return _sync_run(_do())
+def _project(tmp_path: Path, name: str) -> Path:
+    project = tmp_path / name
+    project.mkdir()
+    result = runner.invoke(app, ["init", name, "--path", str(project)])
+    assert result.exit_code == 0, result.output
+    return project
 
 
 class TestConfigRoutingE2E:
-    """E2E tests for sw config routing commands."""
+    """E2E tests for routing roles to models."""
 
-    def test_full_routing_lifecycle(self, tmp_path: Path, _mock_db: Database) -> None:
-        """Full E2E lifecycle: set, show, and clear."""
-        name = _unique_name("route-lifecycle")
-        runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        set_test_active_project(_mock_db, name)
+    def test_full_routing_lifecycle(
+        self, tmp_path: Path, _mock_db: Database, _isolate_env: Path
+    ) -> None:
+        """Set a machine role, a project role, overwrite one, and show where each came from."""
+        machine = _isolate_env / "settings.toml"
+        machine.write_text(_MACHINE, encoding="utf-8")
+        project = _project(tmp_path, "route-lifecycle")
 
-        # Create some profiles backing the routes
-        _create_llm_profile_sync(_mock_db, "o1-mini-prof", provider="openai", model="o1-mini")
-        _create_llm_profile_sync(
-            _mock_db,
-            "claude-prof",
-            provider="anthropic",
-            model="claude-3-5-sonnet",
+        # 1. SET on the machine
+        result = runner.invoke(app, ["config", "set-role", "plan", "o1-mini@gb10"])
+        assert result.exit_code == 0, result.output
+        assert shows(result.output, "roles.plan = o1-mini@gb10")
+        assert 'plan = "o1-mini@gb10"' in machine.read_text(encoding="utf-8")
+
+        # 2. SET for the project only
+        result2 = runner.invoke(
+            app, ["config", "set-role", "implement", "claude-sonnet@gb10", "--project"]
         )
+        assert result2.exit_code == 0, result2.output
+        project_file = (project / "specweaver.toml").read_text(encoding="utf-8")
+        assert 'implement = "claude-sonnet@gb10"' in project_file
+        assert "implement" not in machine.read_text(encoding="utf-8")
 
-        # 1. SET
-        result = runner.invoke(app, ["config", "routing", "set", "plan", "o1-mini-prof"])
-        assert result.exit_code == 0
-        assert "plan" in result.output
-        assert "o1-mini-prof" in result.output
+        # 3. SHOW — both roles, each with the file it came from
+        show_result = runner.invoke(app, ["config", "show"])
+        assert show_result.exit_code == 0, show_result.output
+        assert shows(show_result.output, "o1-mini@gb10")
+        assert shows(show_result.output, "claude-sonnet@gb10")
+        assert shows(show_result.output, str(machine))
+        assert shows(show_result.output, "specweaver.toml")
 
-        result2 = runner.invoke(app, ["config", "routing", "set", "implement", "claude-prof"])
-        assert result2.exit_code == 0
+        # 4. SET again replaces the role rather than adding a second one
+        result3 = runner.invoke(app, ["config", "set-role", "plan", "qwen3@gb10"])
+        assert result3.exit_code == 0, result3.output
+        text = machine.read_text(encoding="utf-8")
+        assert 'plan = "qwen3@gb10"' in text
+        assert "o1-mini" not in text
+        show_result2 = runner.invoke(app, ["config", "show"])
+        assert shows(show_result2.output, "qwen3@gb10")
+        assert "o1-mini" not in show_result2.output
 
-        # 2. SHOW
-        show_result = runner.invoke(app, ["config", "routing", "show"])
-        assert show_result.exit_code == 0
-        assert "plan" in show_result.output
-        assert "o1-mini-prof" in show_result.output
-        assert "implement" in show_result.output
-        assert "claude-prof" in show_result.output
+    def test_role_on_an_undefined_server_is_refused(
+        self, tmp_path: Path, _mock_db: Database, _isolate_env: Path
+    ) -> None:
+        """A role pointing at a server nobody defined is refused and the file stays untouched."""
+        machine = _isolate_env / "settings.toml"
+        machine.write_text(_MACHINE, encoding="utf-8")
+        _project(tmp_path, "route-orphan")
 
-        # 3. CLEAR specific
-        clear_spec = runner.invoke(app, ["config", "routing", "clear", "plan"])
-        assert clear_spec.exit_code == 0
-        assert "Cleared routing for" in clear_spec.output
-        assert "plan" in clear_spec.output
+        result = runner.invoke(app, ["config", "set-role", "review", "gemini-1.5-pro@nowhere"])
+        assert result.exit_code != 0
+        assert shows(result.output, "nowhere")
+        assert machine.read_text(encoding="utf-8") == _MACHINE
 
-        # 4. SHOW after clear specific (plan is gone, implement remains)
-        show_result2 = runner.invoke(app, ["config", "routing", "show"])
-        assert "plan" not in show_result2.output
-        assert "implement" in show_result2.output
+    def test_invalid_terminal_inputs(
+        self, tmp_path: Path, _mock_db: Database, _isolate_env: Path
+    ) -> None:
+        """Invalid commands exit with non-zero exit codes and write nothing."""
+        machine = _isolate_env / "settings.toml"
+        machine.write_text(_MACHINE, encoding="utf-8")
+        _project(tmp_path, "route-invalid")
 
-        # 5. CLEAR all
-        # By default 'clear' doesn't ask for confirmation right now (unless I add a prompt), wait in test CLI we didn't add prompt
-        clear_all = runner.invoke(app, ["config", "routing", "clear"])
-        assert clear_all.exit_code == 0
-        assert "Cleared all" in clear_all.output
+        # 1. Invalid role name
+        res1 = runner.invoke(app, ["config", "set-role", "fly", "o1-mini@gb10"])
+        assert res1.exit_code != 0, res1.output
+        assert shows(res1.output, "roles.fly")
 
-        # 6. SHOW after clear all
-        show_result3 = runner.invoke(app, ["config", "routing", "show"])
-        assert "No routing configured" in show_result3.output
+        # 2. Not model@server
+        res2 = runner.invoke(app, ["config", "set-role", "draft", "o1-mini"])
+        assert res2.exit_code != 0, res2.output
+        assert shows(res2.output, "model@server")
 
-    def test_show_orphaned_profile(self, tmp_path: Path, _mock_db: Database) -> None:
-        """If a profile is deleted, 'show' renders it safely."""
-        name = _unique_name("route-orphan")
-        runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        set_test_active_project(_mock_db, name)
-
-        pid = _create_llm_profile_sync(
-            _mock_db, "doomed-prof", provider="gemini", model="gemini-1.5-pro"
-        )
-        runner.invoke(app, ["config", "routing", "set", "review", "doomed-prof"])
-
-        # Orphan the profile by deleting the underlying profile ID
-        with _mock_db.connect() as conn:
-            conn.execute("PRAGMA foreign_keys = OFF")
-            conn.execute("DELETE FROM llm_profiles WHERE id = ?", (pid,))
-            conn.execute("PRAGMA foreign_keys = ON")
-
-        show_result = runner.invoke(app, ["config", "routing", "show"])
-        assert show_result.exit_code == 0
-        assert "review" in show_result.output
-        assert "[deleted]" in show_result.output
-
-    def test_invalid_terminal_inputs(self, tmp_path: Path, _mock_db: Database) -> None:
-        """Invalid commands exit gracefully with non-zero exit codes."""
-        name = _unique_name("route-invalid")
-        runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        set_test_active_project(_mock_db, name)
-
-        # 1. Invalid task type
-        res1 = runner.invoke(app, ["config", "routing", "set", "fly", "some-prof"])
-        assert res1.exit_code != 0
-
-        # 2. Nonexistent profile
-        res2 = runner.invoke(app, ["config", "routing", "set", "draft", "nonexistent-prof"])
-        assert res2.exit_code != 0
-        assert "Profile 'nonexistent-prof' not found" in res2.output
+        assert machine.read_text(encoding="utf-8") == _MACHINE

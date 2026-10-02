@@ -107,12 +107,12 @@
         {
           "id": "show-broken-file-exits-zero",
           "origin": "authored",
-          "file": "src/specweaver/core/config/interfaces/llm_show.py",
-          "symbol": "config_show",
-          "old": "        raise typer.Exit(code=1) from err\n",
-          "new": "        return\n",
-          "breaks": "a broken settings file prints an error and exits 0, so scripts treat it as success",
-          "symbol_sha": "sha256:add7d1349425a187e59d1f95192118313c8e5534aa75d03f21b4947ec07b3b08"
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "refuse_llm_settings",
+          "old": "    raise typer.Exit(code=1) from err\n",
+          "new": "    return\n",
+          "breaks": "a broken settings file no longer stops the command cleanly; it runs on with no settings and crashes",
+          "symbol_sha": "sha256:e3b19b916c0b739130765366e2adbb3d9504ab05a5283658c4217c012690eb87"
         }
       ]
     },
@@ -332,8 +332,10 @@
       "requirement": "FR-10",
       "title": "One resolver: one adapter per server, one budget per run, the catalogue's facts",
       "scope": [
-        "tests/unit/infrastructure/llm/test_resolve.py",
-        "tests/integration/infrastructure/llm/test_resolve_integration.py"
+        "tests/integration/infrastructure/llm/test_resolve_integration.py",
+        "tests/integration/workflows/implementation/test_implement_collector_wiring.py",
+        "tests/unit/infrastructure/llm/interfaces/test_cli_telemetry_flush.py",
+        "tests/unit/infrastructure/llm/test_resolve.py"
       ],
       "mutants": [
         {
@@ -341,10 +343,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._adapter",
-          "old": "                adapter_for_server(server_name, server), self._project, budget=self._budget\n",
-          "new": "                adapter_for_server(server_name, server), self._project\n",
+          "old": "                budget=self._budget,\n",
+          "new": "\n",
           "breaks": "each server gets its own unlimited budget, so the run's spend brake never sees those calls",
-          "symbol_sha": "sha256:692e4e3fa1603755c950e1578843475faea25fcab1cd232a4f8e20fd390f6a19"
+          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
         },
         {
           "id": "adapter-per-call",
@@ -354,7 +356,7 @@
           "old": "        if server_name not in self._by_server:\n",
           "new": "        if True:\n",
           "breaks": "every role builds its own adapter, so the server's parallel limit and the flush list split",
-          "symbol_sha": "sha256:692e4e3fa1603755c950e1578843475faea25fcab1cd232a4f8e20fd390f6a19"
+          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
         },
         {
           "id": "catalogue-sampling-ignored",
@@ -375,6 +377,16 @@
           "new": "        if False:\n",
           "breaks": "a cloud role without its key starts a run and fails only at its first call",
           "symbol_sha": "sha256:d2723e2d239802c0a56c9c22194c69e24801c2208a4318d7af49a8eb43dc0496"
+        },
+        {
+          "id": "routed-collectors-not-flushed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "flush_telemetry",
+          "old": "    for collector in router.collectors():\n",
+          "new": "    for collector in []:\n",
+          "breaks": "no role's usage is ever written to the database",
+          "symbol_sha": "sha256:056174d4240cf7fec6c9b0305f2ee3975ed6f25c63ef0efabbf7eb08ae6287ce"
         }
       ]
     },
@@ -412,12 +424,14 @@
       "requirement": "FR-12",
       "title": "One price source; an unknown price stays unknown",
       "scope": [
-        "tests/unit/infrastructure/llm/test_telemetry.py",
-        "tests/unit/infrastructure/llm/test_collector.py",
-        "tests/integration/test_telemetry_integration.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py",
+        "tests/e2e/capabilities/interfaces/test_implement_usage_journey_e2e.py",
         "tests/integration/core/config/bootstrap/test_db_bootstrap_usage_cost.py",
+        "tests/integration/test_telemetry_integration.py",
         "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py",
-        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
+        "tests/unit/infrastructure/llm/test_collector.py",
+        "tests/unit/infrastructure/llm/test_resolve.py",
+        "tests/unit/infrastructure/llm/test_telemetry.py"
       ],
       "mutants": [
         {
@@ -449,6 +463,16 @@
           "new": "        return format_money(0.0, currency, places=4)\n",
           "breaks": "sw usage shows unpriced calls as costing nothing",
           "symbol_sha": "sha256:415a63faaff17a6dce2f071833e2dd7b4463c84d186dc715844d9c4f4691456e"
+        },
+        {
+          "id": "resolver-calls-unpriced",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                prices=lambda model: self._catalogue.facts(server.kind, model, corrections),\n",
+          "new": "\n",
+          "breaks": "every call through the one path is stored as unpriced, whatever the catalogue or the user set",
+          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
         }
       ]
     },
@@ -487,7 +511,9 @@
       "requirement": "FR-15",
       "title": "Commands write the file, never leaving it broken",
       "scope": [
-        "tests/integration/core/config/bootstrap/test_llm_settings_writer.py"
+        "tests/integration/core/config/bootstrap/test_db_bootstrap_usage_cost.py",
+        "tests/integration/core/config/bootstrap/test_llm_settings_writer.py",
+        "tests/unit/core/config/interfaces/test_config_cli.py"
       ],
       "mutants": [
         {
@@ -499,6 +525,26 @@
           "new": "    pass\n",
           "breaks": "a command writes a settings file the next command refuses to read",
           "symbol_sha": "sha256:77bde7d4dc1f6e24c447813abb7ba394a7e9c6985031cc173c7119af888be3dc"
+        },
+        {
+          "id": "set-role-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "set_role",
+          "old": "    resolve_roles(files)  # refuses before anything is written\n",
+          "new": "    pass\n",
+          "breaks": "a role on a server nobody defined is written, and every later command refuses",
+          "symbol_sha": "sha256:f65b2eb9ed5a40663e958a4d5665f3382c07183ebdf82c558198bd46510aa755"
+        },
+        {
+          "id": "retired-tables-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "bootstrap_database",
+          "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
+          "new": "            pass\n",
+          "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
+          "symbol_sha": "sha256:6bb476e301a61d8d0e1135be0ca495c1850d384318b22e5e2672f1aa9f9d2550"
         }
       ]
     }

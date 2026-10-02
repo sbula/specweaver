@@ -38,6 +38,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from tests.scripted_llm import FixedRouter
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -117,7 +118,10 @@ async def test_lineage_tracking_flow_database(
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
     ctx = RunContext(
-        project_path=tmp_path, spec_path=spec, output_dir=src_dir, model=ModelAccess(llm=mock_llm)
+        project_path=tmp_path,
+        spec_path=spec,
+        output_dir=src_dir,
+        model=ModelAccess(llm_router=FixedRouter(mock_llm)),
     )
     ctx.context_provider = AsyncMock()
     ctx.db = lineage_db
@@ -193,7 +197,10 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
     ctx = RunContext(
-        project_path=tmp_path, spec_path=spec, output_dir=src_dir, model=ModelAccess(llm=mock_llm)
+        project_path=tmp_path,
+        spec_path=spec,
+        output_dir=src_dir,
+        model=ModelAccess(llm_router=FixedRouter(mock_llm)),
     )
     ctx.context_provider = AsyncMock()
     ctx.db = lineage_db

@@ -24,6 +24,7 @@ from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -74,7 +75,7 @@ def _make_context(tmp_path: Path) -> RunContext:
     config.llm.temperature = 0.2
     config.llm.max_output_tokens = 4096
     ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(config=config))
-    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+    ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     ctx.context_provider = AsyncMock()
     return ctx
 

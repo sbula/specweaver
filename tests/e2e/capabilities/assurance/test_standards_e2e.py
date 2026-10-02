@@ -32,15 +32,31 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _unreachable_model() -> Iterator[None]:
+    """`sw standards scan` resolves the `check` role up front; these tests are about discovery,
+    not enrichment, so the model is doubled as unreachable and the enricher skips every category.
+    """
+    llm = MagicMock()
+    llm.available.return_value = False
+    with doubled_llm(llm):
+        yield
+
 
 _proj_counter = 0
 

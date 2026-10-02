@@ -26,43 +26,14 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]:
-    """Resolve the adapter and config for review, routing if enabled, else default."""
-    from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
+    """The adapter and settings for review."""
+    from specweaver.core.flow.handlers._llm import llm_for
+    from specweaver.infrastructure.llm.models import TaskType
 
-    routed = (
-        context.model.llm_router.get_for_task(TaskType.REVIEW) if context.model.llm_router else None
-    )
-    adapter = routed.adapter if routed else context.model.llm
-
-    if routed:
-        config = GenerationConfig(
-            model=routed.model,
-            temperature=routed.temperature,
-            max_output_tokens=routed.max_output_tokens,
-            task_type=TaskType.REVIEW,
-            run_id=context.run.run_id or "",
-        )
-    elif context.model.config is not None:
-        config = GenerationConfig(
-            model=context.model.config.llm.model,
-            temperature=0.3,
-            max_output_tokens=context.model.config.llm.max_output_tokens,
-            task_type=TaskType.REVIEW,
-            run_id=context.run.run_id or "",
-        )
-    else:
-        config = GenerationConfig(
-            model="gemini-3-flash-preview",
-            temperature=0.3,
-            max_output_tokens=4096,
-            task_type=TaskType.REVIEW,
-            run_id=context.run.run_id or "",
-        )
-
-    return adapter, config
+    return llm_for(context, TaskType.REVIEW)
 
 
-def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | None:
+def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> ToolDispatcher | None:
     """Build a ToolDispatcher from RunContext if workspace boundaries exist.
 
     Returns None when research tools should not be available, preserving
@@ -74,8 +45,8 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     from specweaver.sandbox.dispatcher import ToolDispatcher
     from specweaver.sandbox.security import WorkspaceBoundary
 
-    # Only enable when the LLM actually supports tool use
-    if not hasattr(context.model.llm, "generate_with_tools"):
+    # Only when the step's adapter actually supports tool use.
+    if not hasattr(adapter, "generate_with_tools"):
         return None
 
     try:
@@ -208,7 +179,7 @@ class ReviewSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.model.llm is None:
+        if context.model.llm_router is None:
             logger.error("ReviewSpecHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 
@@ -220,7 +191,7 @@ class ReviewSpecHandler:
             reviewer = Reviewer(
                 llm=adapter,
                 config=config,
-                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
+                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer", adapter=adapter),
             )
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
@@ -278,7 +249,7 @@ class ReviewCodeHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        if context.model.llm is None:
+        if context.model.llm_router is None:
             logger.error("ReviewCodeHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 
@@ -295,7 +266,7 @@ class ReviewCodeHandler:
             reviewer = Reviewer(
                 llm=adapter,
                 config=config,
-                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
+                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer", adapter=adapter),
             )
 
             def on_tool_round(round_num: int, messages: list[Message]) -> None:

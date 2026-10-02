@@ -55,7 +55,7 @@ class DraftSpecHandler:
         # attempts.
         findings = self._pop_feedback(step, context)
         if findings is not None:
-            if context.context_provider is not None and context.model.llm is not None:
+            if context.context_provider is not None and context.model.llm_router is not None:
                 logger.info(
                     "DraftSpecHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -98,7 +98,7 @@ class DraftSpecHandler:
             )
 
         # Spec doesn't exist. If we have a context provider (HITL), do the drafting.
-        if context.context_provider is not None and context.model.llm is not None:
+        if context.context_provider is not None and context.model.llm_router is not None:
             return await self._execute_drafting(step, context, started)
 
         # Otherwise (e.g. headless autonomous run without provider), park and tell the user
@@ -131,18 +131,12 @@ class DraftSpecHandler:
         findings: dict[str, Any] | None = None,
     ) -> StepResult:
         """Execute the actual interactive Drafter."""
+        from specweaver.core.flow.handlers._llm import llm_for
         from specweaver.core.flow.handlers.base import _build_base_prompt
-        from specweaver.infrastructure.llm.models import GenerationConfig
+        from specweaver.infrastructure.llm.models import TaskType
         from specweaver.workflows.drafting.drafter import Drafter
 
-        gen_config = None
-        if context.model.config and hasattr(context.model.config, "llm"):
-            gen_config = GenerationConfig(
-                model=context.model.config.llm.model,
-                temperature=context.model.config.llm.temperature,
-                max_output_tokens=context.model.config.llm.max_output_tokens,
-                run_id=context.run.run_id or "",
-            )
+        adapter, gen_config = llm_for(context, TaskType.DRAFT)
 
         from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
 
@@ -166,7 +160,7 @@ class DraftSpecHandler:
             base_prompt.add_context(json.dumps(findings, ensure_ascii=False), "reviewer_findings")
 
         drafter = Drafter(
-            llm=context.model.llm,
+            llm=adapter,
             context_provider=context.context_provider,
             config=gen_config,
             base_prompt=base_prompt,
@@ -234,7 +228,7 @@ class DraftFeatureHandler:
             )
 
         if findings is not None:
-            if context.context_provider is not None and context.model.llm is not None:
+            if context.context_provider is not None and context.model.llm_router is not None:
                 logger.info(
                     "DraftFeatureHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -282,7 +276,7 @@ class DraftFeatureHandler:
                 artifact_uuid=artifact_uuid,
             )
 
-        if context.context_provider is not None and context.model.llm is not None:
+        if context.context_provider is not None and context.model.llm_router is not None:
             return await self._execute_drafting(step, context, started, name)
 
         logger.info(
@@ -328,7 +322,6 @@ class DraftFeatureHandler:
         """Run the interactive FeatureDrafter and reconcile its output path."""
         from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
         from specweaver.core.flow.handlers.base import _build_base_prompt
-        from specweaver.infrastructure.llm.models import GenerationConfig
         from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
 
         try:
@@ -336,14 +329,10 @@ class DraftFeatureHandler:
         except ValueError as e:
             return _error_result(str(e), started)
 
-        gen_config = None
-        if context.model.config and hasattr(context.model.config, "llm"):
-            gen_config = GenerationConfig(
-                model=context.model.config.llm.model,
-                temperature=context.model.config.llm.temperature,
-                max_output_tokens=context.model.config.llm.max_output_tokens,
-                run_id=context.run.run_id or "",
-            )
+        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.infrastructure.llm.models import TaskType
+
+        adapter, gen_config = llm_for(context, TaskType.DRAFT)
 
         base_prompt = await _build_base_prompt(
             context=context,
@@ -359,7 +348,7 @@ class DraftFeatureHandler:
         # Keyword args only: FeatureDrafter's positional order differs from Drafter's.
         drafter = FeatureDrafter(
             base_prompt=base_prompt,
-            llm=context.model.llm,
+            llm=adapter,
             context_provider=context.context_provider,
             config=gen_config,
         )

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.mark.asyncio
@@ -33,7 +34,7 @@ async def test_full_execute_pipeline_generates_json_log_session(tmp_path: Path) 
 
         try:
             context = RunContext(
-                model=ModelAccess(config=MagicMock(), llm=MagicMock()),
+                model=ModelAccess(config=MagicMock(), llm_router=FixedRouter(MagicMock())),
                 project_path=tmp_path,
                 spec_path=tmp_path / "spec.md",
             )

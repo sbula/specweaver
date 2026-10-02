@@ -2,10 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration test: factory → TelemetryCollector → flush → DB roundtrip.
+"""Integration test: resolver → TelemetryCollector → flush → DB roundtrip.
 
 Verifies that the full telemetry pipeline works end-to-end:
-1. Factory creates a TelemetryCollector wrapper when telemetry_project is set.
+1. The role resolver wraps every adapter it builds in a TelemetryCollector.
 2. Calling generate() on the collector records a UsageRecord.
 3. Flushing the collector persists records to the Database.
 """
@@ -17,29 +17,25 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-def _make_settings():
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+_MACHINE = """\
+[servers.gemini]
+kind = "gemini"
+private = false
+max_parallel = 1
 
-    return SpecWeaverSettings(
-        llm=LLMSettings(
-            provider="gemini",
-            model="gemini-2.5-pro",
-            temperature=0.7,
-            max_output_tokens=8192,
-            response_format="text",
-            api_key="fake",
-        )
-    )
+[roles]
+default = { model = "some-model@gemini", max_output_tokens = 8192 }
+"""
 
 
 class TestTelemetryRoundtrip:
-    """Factory → TelemetryCollector → flush → DB integration test."""
+    """Resolver → TelemetryCollector → flush → DB integration test."""
 
     @pytest.mark.asyncio
     async def test_collector_records_persist_to_db(self, tmp_path: Path):
@@ -103,46 +99,25 @@ class TestTelemetryRoundtrip:
             assert row is not None
             assert row["run_id"] == "mock-run-id-123"
 
-    @pytest.mark.asyncio
-    async def test_factory_creates_collector_when_project_set(self, tmp_path: Path):
-        """create_llm_adapter wraps in TelemetryCollector when telemetry_project is set."""
-        from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-        from specweaver.core.config.database import Database
+    def test_the_resolver_builds_a_collector_for_the_project(self, tmp_path: Path):
+        """Every adapter a command's router hands out records usage against its project."""
+        from specweaver.core.config.llm_settings import LlmSettingsFiles
         from specweaver.infrastructure.llm.collector import TelemetryCollector
+        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.infrastructure.llm.router import build_router
 
-        bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-        db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-        register_test_project(db, "testproj", ".")
-        set_test_active_project(db, "testproj")
-
+        files = LlmSettingsFiles.from_texts(
+            machine_text=_MACHINE, machine_source="-", project_text="", project_source="-"
+        )
         with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
-            from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-            _settings, adapter, _config = create_llm_adapter(
-                _make_settings(),
-                telemetry_project="testproj",
+            router = build_router(
+                files,
+                project="testproj",
+                roles=[TaskType.DRAFT],
+                spend_limit_usd=None,
+                token_limit=None,
             )
+            adapter = router.get_for_task(TaskType.DRAFT).adapter
 
         assert isinstance(adapter, TelemetryCollector)
-
-    @pytest.mark.asyncio
-    async def test_factory_returns_plain_adapter_when_no_project(self, tmp_path: Path):
-        """create_llm_adapter returns plain adapter when telemetry_project is None."""
-        from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-        from specweaver.core.config.database import Database
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-
-        bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-        db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-        register_test_project(db, "testproj", ".")
-        set_test_active_project(db, "testproj")
-
-        with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
-            from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-            _settings, adapter, _config = create_llm_adapter(
-                _make_settings(),
-                telemetry_project=None,
-            )
-
-        assert not isinstance(adapter, TelemetryCollector)
+        assert adapter._project == "testproj"

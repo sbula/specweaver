@@ -135,26 +135,23 @@ class TestReviewEndpoint:
 class TestReviewEndpointWithoutAnLlm:
     """The route's own error path, which was previously exercised only by accident."""
 
-    def test_missing_provider_key_returns_llm_error(self, client, _project_with_spec) -> None:
-        """No usable adapter → 500 with `LLM_ERROR`, not an unhandled exception.
+    def test_an_unset_role_returns_llm_settings_error(
+        self, client, _project_with_spec, tmp_path, monkeypatch
+    ) -> None:
+        """No model for the role → 500 with `LLM_SETTINGS` naming the role, not an exception.
 
-        Written while fixing three tests that returned 500 on any machine without `GEMINI_API_KEY`
-        exported. The 500 was correct — `review.py` maps `LLMAdapterError` to a structured
-        `LLM_ERROR` response — but nothing asserted it, so the endpoint's documented failure mode
-        was proven only by other tests failing for the wrong reason. This pins it deliberately, and
-        supplies no adapter on purpose.
+        Written while fixing three tests that returned 500 on any machine without a provider key
+        exported. The 500 was correct, but nothing asserted it, so the endpoint's documented
+        failure mode was proven only by other tests failing for the wrong reason. This pins it
+        deliberately, and supplies no model on purpose: the data directory holds no settings file.
         """
-        from specweaver.infrastructure.llm.factory import LLMAdapterError
-
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / "no-settings"))
         proj, spec = _project_with_spec
-        with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            side_effect=LLMAdapterError("No API key configured for gemini."),
-        ):
-            resp = client.post(
-                "/api/v1/review",
-                json={"file": str(spec.relative_to(proj)), "project": "testproj"},
-            )
+        resp = client.post(
+            "/api/v1/review",
+            json={"file": str(spec.relative_to(proj)), "project": "testproj"},
+        )
 
         assert resp.status_code == 500
-        assert resp.json()["error_code"] == "LLM_ERROR"
+        assert resp.json()["error_code"] == "LLM_SETTINGS"
+        assert "roles.review" in resp.json()["detail"]

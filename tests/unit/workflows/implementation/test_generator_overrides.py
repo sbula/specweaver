@@ -16,6 +16,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from tests.scripted_llm import TEST_CONFIG
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -50,7 +52,7 @@ class TestGeneratorOverridesInjection:
 
         base_prompt = PromptBuilder()
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         await gen.generate_code(
             spec,
             output,
@@ -81,7 +83,7 @@ class TestGeneratorOverridesInjection:
 
         base_prompt = PromptBuilder()
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         await gen.generate_code(
             spec,
             output,
@@ -112,7 +114,7 @@ class TestGeneratorOverridesInjection:
 
         base_prompt = PromptBuilder()
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         await gen.generate_tests(
             spec,
             output,
@@ -143,7 +145,7 @@ class TestGeneratorOverridesInjection:
 
         base_prompt = PromptBuilder()
 
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
         await gen.generate_tests(
             spec,
             output,

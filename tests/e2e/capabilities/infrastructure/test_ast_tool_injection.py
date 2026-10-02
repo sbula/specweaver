@@ -7,6 +7,9 @@ from unittest.mock import MagicMock, patch
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
 
+#: Any adapter that can call tools; the dispatcher is offered only to one that can.
+_TOOL_CAPABLE = type("_ToolCapable", (), {"generate_with_tools": lambda *a, **k: None})()
+
 
 def test_dispatcher_ast_injection() -> None:
     """Verify that AST tools securely inject into the Review Spec Pipeline loop via ToolDispatcher boundary."""
@@ -23,7 +26,7 @@ def test_dispatcher_ast_injection() -> None:
         mock_bounds.return_value = mock_boundary
 
         # 1. Reviewer role (requires AST access)
-        dispatcher_reviewer = _build_tool_dispatcher(context, "reviewer")
+        dispatcher_reviewer = _build_tool_dispatcher(context, "reviewer", adapter=_TOOL_CAPABLE)
         assert dispatcher_reviewer is not None
         schema_reviewer = dispatcher_reviewer.available_tools()
 
@@ -37,7 +40,9 @@ def test_dispatcher_ast_injection() -> None:
         context_drafter = MagicMock()
         context_drafter.llm.generate_with_tools = True
         context_drafter.workspace.uri = "file://C:/workspace"
-        dispatcher_drafter = _build_tool_dispatcher(context_drafter, "drafter")
+        dispatcher_drafter = _build_tool_dispatcher(
+            context_drafter, "drafter", adapter=_TOOL_CAPABLE
+        )
         assert dispatcher_drafter is not None
         schema_drafter = dispatcher_drafter.available_tools()
 

@@ -14,6 +14,7 @@ from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, 
 from specweaver.core.flow.handlers.base import _build_base_prompt
 from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture
@@ -199,7 +200,9 @@ class TestHandlerProfileIntegration:
         # We expect a failure because LLM is None or other setup is missing, but that's fine.
         # We just want to check the call args to _build_base_prompt if it gets called.
         # Let's mock the necessary context components.
-        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
+        run_context.model = run_context.model.model_copy(
+            update={"llm_router": FixedRouter(MagicMock())}
+        )
         run_context.context_provider = MagicMock()
 
         # We mock the specific generator/drafter/etc to prevent full execution.
@@ -290,7 +293,9 @@ class TestHandlerProfileIntegration:
             params={"render_profile": "MINIMAL"},
         )
 
-        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
+        run_context.model = run_context.model.model_copy(
+            update={"llm_router": FixedRouter(MagicMock())}
+        )
         run_context.context_provider = MagicMock()
 
         def mock_exists(self: Any) -> bool:
@@ -365,7 +370,9 @@ class TestHandlerProfileIntegration:
             params={"render_profile": "INVALID"},
         )
 
-        run_context.model = run_context.model.model_copy(update={"llm": MagicMock()})
+        run_context.model = run_context.model.model_copy(
+            update={"llm_router": FixedRouter(MagicMock())}
+        )
         run_context.context_provider = MagicMock()
 
         # We don't need to mock Generator here because resolve_profile should fail before instantiation

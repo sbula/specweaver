@@ -502,9 +502,9 @@ def test_llm_entry_points_take_settings_not_a_database() -> None:
     Proves: TECH-001 FR-8.
     """
     assert llm_database_coupling(SRC_ROOT) == []
-    assert "SpecWeaverSettings" in (SRC_ROOT / "infrastructure" / "llm" / "factory.py").read_text(
+    assert "LlmSettingsFiles" in (SRC_ROOT / "infrastructure" / "llm" / "resolve.py").read_text(
         encoding="utf-8"
-    ), "create_llm_adapter no longer takes SpecWeaverSettings — FR-8's DI seam is gone"
+    ), "RoleResolver no longer takes the settings files by injection — FR-8's DI seam is gone"
 
 
 def test_no_model_is_dumped_to_yaml_in_python_mode() -> None:

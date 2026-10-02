@@ -22,6 +22,7 @@ from typer.testing import CliRunner
 from specweaver.interfaces.cli._core import get_db
 from specweaver.interfaces.cli.main import app
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from tests.scripted_llm import doubled_llm
 
 runner = CliRunner()
 
@@ -189,24 +190,20 @@ def test_drift_check_analyze(dummy_project: Path, monkeypatch: pytest.MonkeyPatc
 
             return MockResp()
 
-    monkeypatch.setattr(
-        "specweaver.infrastructure.llm.factory.create_llm_adapter",
-        lambda *args, **kwargs: (None, MockAdapter(), None),
-    )
-
-    result = runner.invoke(
-        app,
-        [
-            "drift",
-            "check",
-            str(target_path),
-            "--plan",
-            str(plan_path),
-            "--project",
-            str(dummy_project),
-            "--analyze",
-        ],
-    )
+    with doubled_llm(MockAdapter()):
+        result = runner.invoke(
+            app,
+            [
+                "drift",
+                "check",
+                str(target_path),
+                "--plan",
+                str(plan_path),
+                "--project",
+                str(dummy_project),
+                "--analyze",
+            ],
+        )
     assert result.exit_code == 42
     assert "LLM Root-Cause Analysis" in result.stdout
     assert "Mock LLM Root Cause" in result.stdout

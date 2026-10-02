@@ -20,6 +20,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -86,7 +87,7 @@ class TestReviewSpecHandlerGuards:
         spec.write_text("# Test spec\n", encoding="utf-8")
 
         ctx = RunContext(
-            model=ModelAccess(llm=None),
+            model=ModelAccess(llm_router=None),
             project_path=tmp_path,
             spec_path=spec,
         )
@@ -120,7 +121,7 @@ class TestReviewCodeHandlerGuards:
         spec.write_text("# Test spec\n", encoding="utf-8")
 
         ctx = RunContext(
-            model=ModelAccess(llm=None),
+            model=ModelAccess(llm_router=None),
             project_path=tmp_path,
             spec_path=spec,
         )
@@ -157,7 +158,7 @@ class TestReviewCodeHandlerGuards:
         )
 
         ctx = RunContext(
-            model=ModelAccess(llm=mock_llm, config=mock_config),
+            model=ModelAccess(llm_router=FixedRouter(mock_llm), config=mock_config),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=output_dir,
@@ -194,13 +195,13 @@ class TestBuildToolDispatcherDI:
 
         ctx = RunContext(
             analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-            model=ModelAccess(llm=mock_llm),
+            model=ModelAccess(llm_router=FixedRouter(mock_llm)),
             project_path=tmp_path,
             spec_path=tmp_path / "spec.md",
         )
 
         # Mocking or simulating _build_tool_dispatcher requirement for project paths
-        dispatcher = _build_tool_dispatcher(ctx, role="reviewer")
+        dispatcher = _build_tool_dispatcher(ctx, role="reviewer", adapter=mock_llm)
         # Ensure it actually resolved
         assert dispatcher is not None
 

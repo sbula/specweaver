@@ -801,6 +801,30 @@
       "first_seen": 1790429150.0298598,
       "last_seen": 1790429150.0298598,
       "occurrences": 1
+    },
+    "C-FLOW-13 FR-4 show-broken-file-exits-zero": {
+      "history": [
+        {
+          "at": 1790920381.5171657,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1790920461.55537,
+          "state": "open",
+          "verdict": "UNPROTECTED",
+          "reason": "no-killer"
+        },
+        {
+          "at": 1790921433.0040855,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1790920381.5171657,
+      "last_seen": 1790921357.4829483,
+      "occurrences": 4
     }
   },
   "override_count": 0,

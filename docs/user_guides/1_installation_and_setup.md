@@ -34,18 +34,41 @@ $env:MISTRAL_API_KEY = "your-mistral-key"
 $env:DASHSCOPE_API_KEY = "your-qwen-key"
 ```
 
-The default provider is `gemini`. Change it per project role with
-`sw config set-provider <provider>` (`--role`, default `draft`; optional `--model`).
+Keys stay in the environment; everything else about models lives in one file.
 
-Qwen (DashScope) and local servers (vLLM, Ollama) have no single official address, so
-`set-provider` refuses them. They are set up as servers in the settings file below, which model
-calls read from C-FLOW-13 SF-03 on.
+## 3a. Choosing models: `~/.specweaver/settings.toml`
 
-**Coming: one settings file.** LLM settings are moving into `~/.specweaver/settings.toml` (servers,
-roles, brake values, currency) and an `[llm]` section in each project's `specweaver.toml`
-(`C-FLOW-13`). `sw config show` already reads both and prints every value with the file and line it
-came from, and refuses a broken file naming the line. Model calls still use `set-provider` until the
-switch-over lands.
+There is no built-in model. Every LLM command reads this file and refuses, naming the missing key,
+until a server and a role are set:
+
+```toml
+[servers.anthropic]
+kind = "anthropic"            # gemini, openai, anthropic, mistral, qwen, openai-compatible
+private = false               # true for a server you run yourself
+max_parallel = 3              # calls at once on this server
+
+[servers.gb10]                # a local vLLM server
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 4
+
+[roles]                       # draft, review, plan, implement, validate, check
+default = "claude-sonnet-5@anthropic"   # the one fallback for every role left unset
+implement = "qwen3-coder-next@gb10"
+
+[currency]                    # optional; without it every amount is USD
+code = "CHF"
+per_usd = 0.80
+rate_date = 2026-09-26
+```
+
+- `sw config set-role <role> <model@server>` writes a role; `--project` writes it into the active
+  project's `specweaver.toml` instead, where `[llm] private_only = true` refuses any cloud server.
+- `sw config show` prints every value with the file and line it came from.
+- `sw costs` shows each role's model, its price per 1M tokens and this month's spend;
+  `sw costs set <model> <input> <output>` corrects a price, in your currency.
+- A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
 
 ## 4. Initializing your First Project
 

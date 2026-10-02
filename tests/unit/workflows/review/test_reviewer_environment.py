@@ -12,6 +12,7 @@ import pytest
 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.review.reviewer import Reviewer
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,7 +25,7 @@ class TestReviewerEnvironment:
     async def test_environment_context_spec_review(self, tmp_path: Path) -> None:
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(return_value=MagicMock(text="review content"))
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         spec = tmp_path / "spec.md"
         spec.write_text("Spec info")
@@ -44,7 +45,7 @@ class TestReviewerEnvironment:
     async def test_environment_context_code_review(self, tmp_path: Path) -> None:
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(return_value=MagicMock(text="review content"))
-        reviewer = Reviewer(llm=mock_llm)
+        reviewer = Reviewer(llm=mock_llm, config=TEST_CONFIG)
 
         spec = tmp_path / "spec.md"
         spec.write_text("Spec info")

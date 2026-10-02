@@ -13,6 +13,7 @@ import pytest
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
+from tests.scripted_llm import TEST_CONFIG
 
 
 class TestFeatureDrafterProjectMetadata:
@@ -27,7 +28,10 @@ class TestFeatureDrafterProjectMetadata:
         mock_context.ask.return_value = "yes"
 
         feature_drafter = FeatureDrafter(
-            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context
+            base_prompt=PromptBuilder(),
+            llm=mock_llm,
+            context_provider=mock_context,
+            config=TEST_CONFIG,
         )
         metadata = ProjectMetadata(
             project_name="feature_draft_test",

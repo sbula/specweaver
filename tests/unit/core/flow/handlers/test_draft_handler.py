@@ -13,6 +13,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.run_context import RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,7 +55,7 @@ class TestDraftSpecHandler:
         """If drafting succeeds, StepResult contains a generated artifact_uuid."""
         spec = tmp_path / "test_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
-        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+        ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
 
         mock_repo = MagicMock()
@@ -87,7 +88,7 @@ class TestDraftSpecHandler:
             parent_id=None,
             run_id="test-run",
             event_type="drafted_spec",
-            model_id="unknown",
+            model_id="test-model",
         )
 
 
@@ -121,7 +122,7 @@ class TestDraftSpecHandlerFeedbackLoop:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# v1 draft\n", encoding="utf-8")
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
-        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+        ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         ctx.feedback = self._feedback()

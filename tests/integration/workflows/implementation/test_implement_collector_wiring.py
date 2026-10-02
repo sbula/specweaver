@@ -7,17 +7,17 @@
 Proves: INT-US-16 FR-3, INT-US-16 FR-2, INT-US-16 NFR-1
 
 The seam has three links and this file pins all of them at the boundary the `implement` command
-owns: the command builds an adapter, the adapter must arrive on `RunContext.model.llm` as a
-`TelemetryCollector`, and `PipelineRunner._flush_telemetry` only drains it if that `isinstance`
-guard passes (`core/flow/engine/telemetry.py:24-26`).
+owns: the command builds a router from the settings files, every adapter that router hands out
+must be a `TelemetryCollector`, and `PipelineRunner` drains every collector the router reports
+(`core/flow/engine/telemetry.py`).
 
-**Why these tests never patch `create_llm_adapter`.** The condition under test IS
-`if telemetry_project:` inside that function (`factory.py:84-92`). Patching it would replace the
-branch with a stub and prove nothing — so the double goes one level lower, at
-`factory._get_adapter_class`, the seam `tests/e2e/capabilities/infrastructure/test_telemetry_e2e.py:172`
-established. For the same reason `tests/scripted_llm.py::scripted_world` is unusable here: it
-patches `create_llm_adapter` and hands back a bare `ScriptedLLM`, which would leave
-`context.model.llm` unwrapped and every assertion below vacuously "passing" against the wrong object.
+**Why these tests never patch `RoleResolver`.** The wrapping under test happens inside it
+(`RoleResolver._adapter`). Patching it would replace the wrap with a stub and prove nothing — so
+the role is set in a real settings file and the double goes one level lower, at
+`resolve.adapter_for_server`, the one place a server entry becomes a provider adapter. For the same
+reason `tests/scripted_llm.py::doubled_llm` is unusable here: it patches the resolver and hands
+back a bare double, which would leave every assertion below vacuously "passing" against the wrong
+object.
 
 **Why the RunContext is captured rather than constructed.** An assertion on a context this file
 built itself would hold no matter what the command does. The spy takes the object the command
@@ -26,7 +26,9 @@ actually handed to `PipelineRunner`.
 
 from __future__ import annotations
 
+import contextlib
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -34,12 +36,12 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.infrastructure.llm.collector import TelemetryCollector
-from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.models import LLMResponse, TaskType, TokenUsage
 from specweaver.interfaces.cli.main import app
 from tests.rendering import shows
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from collections.abc import Iterator
 
 runner = CliRunner()
 pytestmark = pytest.mark.integration
@@ -137,17 +139,40 @@ def _scaffold(tmp_path: Path, *, project: str | None) -> Path:
     return spec
 
 
+#: One server whose adapter is the fake above; every role falls back to `default`.
+_SETTINGS = """\
+[servers.fake]
+kind = "gemini"
+private = false
+max_parallel = 4
+
+[roles]
+default = { model = "fake-telemetry-model@fake", max_output_tokens = 4096 }
+"""
+
+
+@contextlib.contextmanager
+def _fake_server() -> Iterator[None]:
+    """The role is set in a real settings file; only the provider adapter behind it is faked."""
+    data_dir = Path(os.environ["SPECWEAVER_DATA_DIR"])
+    (data_dir / "settings.toml").write_text(_SETTINGS, encoding="utf-8")
+    with (
+        patch.dict(os.environ, {"GEMINI_API_KEY": "integration-key"}),
+        patch(
+            "specweaver.infrastructure.llm.resolve.adapter_for_server",
+            side_effect=lambda _name, _server: _FakeGeminiAdapter(),
+        ),
+    ):
+        yield
+
+
 def _invoke_with_mocked_pipeline(tmp_path: Path, *, project: str | None):
     """Run `sw implement` with the pipeline mocked. Returns `(cli result, runner mock)`."""
     from specweaver.core.flow.engine.state import RunStatus
 
     spec = _scaffold(tmp_path, project=project)
     with (
-        patch.dict(os.environ, {"GEMINI_API_KEY": "integration-key"}),
-        patch(
-            "specweaver.infrastructure.llm.factory._get_adapter_class",
-            return_value=_FakeGeminiAdapter,
-        ),
+        _fake_server(),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
     ):
         run_state = MagicMock()
@@ -170,13 +195,7 @@ def _run_for_real(tmp_path: Path, *, project: str, payload: str):
     spec = _scaffold(tmp_path, project=project)
     _FakeGeminiAdapter.payload = payload
     try:
-        with (
-            patch.dict(os.environ, {"GEMINI_API_KEY": "integration-key"}),
-            patch(
-                "specweaver.infrastructure.llm.factory._get_adapter_class",
-                return_value=_FakeGeminiAdapter,
-            ),
-        ):
+        with _fake_server():
             return runner.invoke(app, ["implement", str(spec), "--project", str(tmp_path)])
     finally:
         _FakeGeminiAdapter.payload = _COLLECTABLE
@@ -195,12 +214,16 @@ def _usage_rows(db, project: str) -> list[dict]:
 
 
 class TestImplementInstallsTelemetryCollector:
-    """FR-3 — the adapter the command builds arrives wrapped, or deliberately does not."""
+    """FR-3 — the adapters the command's router hands out arrive wrapped, or none is built."""
 
     def test_active_project_wraps_the_adapter_for_the_runner(self, tmp_path: Path) -> None:
-        """[Happy] with an active project, `RunContext.model.llm` satisfies flush_telemetry's guard."""
+        """[Happy] with an active project, the router's adapter is a collector the runner flushes."""
         context = _capture_context(tmp_path, project="tele_proj")
-        assert isinstance(context.model.llm, TelemetryCollector)
+        router = context.model.llm_router
+        with _fake_server():
+            adapter = router.get_for_task(TaskType.IMPLEMENT).adapter
+        assert isinstance(adapter, TelemetryCollector)
+        assert router.collectors() == [adapter]
 
     def test_no_active_project_stops_the_command_before_any_adapter_is_built(
         self, tmp_path: Path

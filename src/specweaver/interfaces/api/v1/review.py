@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
 from specweaver.interfaces.api.v1.schemas import ReviewRequest  # noqa: TC001 -- runtime for FastAPI
 
@@ -35,27 +34,18 @@ async def review_spec(
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     from specweaver.core.config.bootstrap.settings_loader import load_settings_async
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.infrastructure.llm.models import TaskType
+    from specweaver.interfaces.api.v1._llm import api_router
     from specweaver.workflows.review.reviewer import Reviewer
     from specweaver.workspace.project.constitution import find_constitution
 
     settings = await load_settings_async(db, body.project)
-
-    try:
-        _, adapter, gen_config = create_llm_adapter(
-            settings,
-            telemetry_project=body.project,
-        )
-    except (LLMAdapterError, ValueError) as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="LLM_ERROR",
-            status_code=500,
-        ) from exc
+    router = api_router(project_root, body.project, settings, [TaskType.REVIEW])
+    routed = router.get_for_task(TaskType.REVIEW)
 
     from specweaver.assurance.standards.loader import load_standards_content_async
 
-    reviewer = Reviewer(llm=adapter, config=gen_config)
+    reviewer = Reviewer(llm=routed.adapter, config=routed.config)
 
     _info = find_constitution(project_root, spec_path=abs_path)
     constitution = _info.content if _info else None
@@ -72,9 +62,7 @@ async def review_spec(
             standards=standards,
         )
     finally:
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-
-        if isinstance(adapter, TelemetryCollector):
-            await adapter.flush_async(db)
+        for collector in router.collectors():
+            await collector.flush_async(db)
 
     return result.model_dump()

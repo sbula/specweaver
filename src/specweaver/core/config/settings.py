@@ -3,13 +3,9 @@
 
 """SpecWeaver configuration loading.
 
-Settings are loaded from:
-1. SQLite database at ~/.specweaver/specweaver.db (project config, LLM profiles)
-2. Environment variables (GEMINI_API_KEY — secrets never in DB)
-3. Built-in defaults (when no DB profile is linked)
-
-Legacy support: .specweaver/config.yaml in a project can be migrated
-into the DB via migrate_legacy_config().
+Settings are loaded from the SQLite database at ~/.specweaver/specweaver.db (project config) and
+the project's `specweaver.toml`. LLM settings — models, servers, sampling, prices — live in the LLM
+settings files instead (`core.config.llm_settings`).
 """
 
 from __future__ import annotations
@@ -47,7 +43,10 @@ def deep_merge_dict(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, 
 
 
 class LLMSettings(BaseModel):
-    """LLM-related configuration.
+    """The run's spend ceilings — the last LLM values outside the settings files.
+
+    Models, servers, sampling and prices live in the LLM settings files; these two move
+    to its `[brake]` section with the spend brake's redesign.
 
     ``max_spend_usd`` and ``max_tokens_per_run`` are the run's circuit breakers. Both default to a
     finite value: a breaker that ships disabled stops nothing, and until it existed the only guard
@@ -57,16 +56,10 @@ class LLMSettings(BaseModel):
     Write ``null`` to disable either deliberately. ``0`` is not that — it means *refuse
     everything*, so a mistyped ceiling fails closed.
 
-    ``max_tokens_per_run`` is not redundant with ``max_spend_usd``: a model absent from the cost
-    table is priced at ``0.0``, so cost alone cannot bound it. Tokens come back on every response.
+    ``max_tokens_per_run`` is not redundant with ``max_spend_usd``: a model without a known price
+    adds no money to the run, so cost alone cannot bound it. Tokens come back on every response.
     """
 
-    model: str
-    temperature: float = 0.7
-    max_output_tokens: int = 4096
-    response_format: Literal["text", "json"] = "text"
-    provider: str = "gemini"
-    api_key: str = ""
     max_spend_usd: float | None = 25.0
     max_tokens_per_run: int | None = 20_000_000
 

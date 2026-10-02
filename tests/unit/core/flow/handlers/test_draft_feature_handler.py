@@ -24,6 +24,7 @@ from specweaver.core.flow.handlers.draft import (
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,7 +42,7 @@ def _step(**params: Any) -> PipelineStep:
 def _interactive_ctx(tmp_path: Path, spec: Path) -> RunContext:
     """A context with both an LLM and a provider — the drafting path is reachable."""
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
-    ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+    ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     ctx.context_provider = AsyncMock()
     return ctx
 
@@ -307,7 +308,7 @@ class TestDraftFeatureHostile:
     async def test_llm_present_but_no_provider_parks(self, tmp_path: Path) -> None:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec)
-        ctx.model = ctx.model.model_copy(update={"llm": AsyncMock()})
+        ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
 
         result = await DraftFeatureHandler().execute(_step(), ctx)
 
@@ -508,7 +509,7 @@ class TestDraftFeatureLineageAndConfig:
             parent_id=None,
             run_id="run-42",
             event_type="drafted_feature_spec",
-            model_id="unknown",
+            model_id="test-model",
         )
 
     @pytest.mark.asyncio
@@ -516,15 +517,15 @@ class TestDraftFeatureLineageAndConfig:
     async def test_generation_config_built_from_context_config(
         self, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
-        """context.model.config.llm present -> GenerationConfig built; its model reaches lineage."""
+        """The draft role's model, from the run's router, reaches the lineage record."""
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
         ctx.db = MagicMock()
         ctx.run = ctx.run.model_copy(update={"run_id": "run-7"})
-        ctx.model = ctx.model.model_copy(update={"config": MagicMock()})
-        ctx.model.config.llm.model = "gemini-3-flash-preview"
-        ctx.model.config.llm.temperature = 0.4
-        ctx.model.config.llm.max_output_tokens = 2048
+        adapter = ctx.model.llm_router.adapter
+        ctx.model = ctx.model.model_copy(
+            update={"llm_router": FixedRouter(adapter, model="qwen3-coder-next")}
+        )
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -537,34 +538,7 @@ class TestDraftFeatureLineageAndConfig:
             result = await DraftFeatureHandler().execute(_step(), ctx)
 
         assert result.status == StepStatus.PASSED, result.error_message
-        assert mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "gemini-3-flash-preview"
-
-    @pytest.mark.asyncio
-    @patch("specweaver.core.flow.store.FlowRepository")
-    async def test_config_without_llm_attribute_falls_back_to_unknown_model(
-        self, mock_repo_class: MagicMock, tmp_path: Path
-    ) -> None:
-        spec = tmp_path / "greeter_feature_spec.md"
-        ctx = _interactive_ctx(tmp_path, spec)
-        ctx.db = MagicMock()
-
-        class _ConfigWithoutLlm:
-            pass
-
-        ctx.model = ctx.model.model_copy(update={"config": _ConfigWithoutLlm()})
-
-        mock_repo = MagicMock()
-        mock_repo.log_artifact_event = AsyncMock()
-        mock_repo_class.return_value = mock_repo
-
-        with patch(
-            "specweaver.workflows.drafting.feature_drafter.FeatureDrafter.draft",
-            new=self._fake_draft_writing(spec),
-        ):
-            result = await DraftFeatureHandler().execute(_step(), ctx)
-
-        assert result.status == StepStatus.PASSED, result.error_message
-        assert mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "unknown"
+        assert mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "qwen3-coder-next"
 
     @pytest.mark.asyncio
     async def test_list_topology_is_forwarded(self, tmp_path: Path) -> None:

@@ -23,6 +23,7 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
     RunHandle,
 )
+from tests.scripted_llm import FixedRouter
 
 
 @pytest.fixture()
@@ -98,7 +99,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.project_path = project_workspace
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
-    ctx.model = ModelAccess(llm=mock_llm, config=None, llm_router=None)
+    ctx.model = ModelAccess(llm_router=FixedRouter(mock_llm), config=None)
     ctx.graph = ctx.graph.model_copy(
         update={"api_contract_paths": [str(project_workspace / "contracts" / "auth_contract.py")]}
     )

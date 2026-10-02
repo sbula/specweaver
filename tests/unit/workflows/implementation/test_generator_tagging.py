@@ -12,6 +12,7 @@ import pytest
 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -29,7 +30,7 @@ async def test_generator_injects_uuid_to_prompt(tmp_path: Path) -> None:
     spec_path.write_text("# Spec")
     output_path = tmp_path / "out.py"
 
-    generator = Generator(llm=llm)
+    generator = Generator(llm=llm, config=TEST_CONFIG)
 
     await generator.generate_code(
         spec_path=spec_path,
@@ -61,7 +62,7 @@ async def test_generator_tests_injects_uuid_to_prompt(tmp_path: Path) -> None:
     spec_path.write_text("# Spec")
     output_path = tmp_path / "test_out.py"
 
-    generator = Generator(llm=llm)
+    generator = Generator(llm=llm, config=TEST_CONFIG)
 
     await generator.generate_tests(
         spec_path=spec_path,

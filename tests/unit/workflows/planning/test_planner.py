@@ -15,6 +15,7 @@ import pytest
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.planner import Planner
+from tests.scripted_llm import TEST_CONFIG
 
 # ---------------------------------------------------------------------------
 # Fake LLM adapter
@@ -85,7 +86,7 @@ class TestPlannerSuccess:
     @pytest.mark.asyncio()
     async def test_generates_valid_plan(self) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=3)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Login Spec\n\nHandle login.",
@@ -104,7 +105,7 @@ class TestPlannerSuccess:
     async def test_overwrites_hash(self) -> None:
         """Planner always recomputes spec_hash from actual content."""
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -123,7 +124,7 @@ class TestPlannerSuccess:
         json_str = _valid_plan_json()
         wrapped = f"```json\n{json_str}\n```"
         llm = FakeLLM([wrapped])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -151,7 +152,7 @@ class TestPlannerRetry:
                 _valid_plan_json(),
             ]
         )
-        planner = Planner(llm, max_retries=3)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -172,7 +173,7 @@ class TestPlannerRetry:
                 _valid_plan_json(),
             ]
         )
-        planner = Planner(llm, max_retries=3)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
 
         await planner.generate_plan(
             spec_content="# Test",
@@ -197,7 +198,7 @@ class TestPlannerRetry:
                 "bad 3",
             ]
         )
-        planner = Planner(llm, max_retries=3)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
 
         with pytest.raises(ValueError, match="failed after 3 attempts"):
             await planner.generate_plan(
@@ -244,7 +245,7 @@ class TestPlannerEdgeCases:
     async def test_empty_spec_content(self) -> None:
         """Empty spec content should still work (hash computed from empty string)."""
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="",
@@ -276,7 +277,7 @@ class TestPlannerEdgeCases:
             "confidence": 70,
         }
         llm = FakeLLM([json.dumps(plan_data)])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -294,7 +295,7 @@ class TestPlannerEdgeCases:
         # Missing required 'file_layout' field
         bad_json = json.dumps({"spec_path": "t.md", "confidence": 50})
         llm = FakeLLM([bad_json, _valid_plan_json()])
-        planner = Planner(llm, max_retries=3)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -309,7 +310,7 @@ class TestPlannerEdgeCases:
     async def test_max_retries_one_exhausted(self) -> None:
         """max_retries=1 means only one attempt — no retries on failure."""
         llm = FakeLLM(["not json"])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         with pytest.raises(ValueError, match="failed after 1 attempts"):
             await planner.generate_plan(
@@ -332,7 +333,7 @@ class TestPlannerStitchIntegration:
     @pytest.mark.asyncio()
     async def test_stitch_mode_off_does_not_extract(self, monkeypatch) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
         mock_extract_called = False
 
         def mock_extract(spec):
@@ -362,7 +363,7 @@ class TestPlannerStitchIntegration:
     @pytest.mark.asyncio()
     async def test_stitch_mode_auto_no_ui_found(self, monkeypatch) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
         mock_stitch_called = False
 
         class MockStitchClient:
@@ -394,7 +395,7 @@ class TestPlannerStitchIntegration:
     @pytest.mark.asyncio()
     async def test_stitch_returns_empty_mockups(self, monkeypatch) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         class MockMockupResult:
             def __init__(self):
@@ -425,7 +426,7 @@ class TestPlannerStitchIntegration:
     @pytest.mark.asyncio()
     async def test_stitch_mode_prompt_behaves_like_auto(self) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
 
         plan = await planner.generate_plan(
             spec_content="## Protocol\n\nUI dashboard",

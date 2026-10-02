@@ -5,8 +5,6 @@
 
 Proves: C-FLOW-13 FR-7, FR-9
 
-Both are red until `sw draft` takes its model from the settings file (C-FLOW-13 SF-03).
-
 | Bucket | Case |
 |---|---|
 | Happy | `sw draft` with its role on the GB10 → the request goes to the GB10 |
@@ -21,7 +19,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import httpx2
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -47,6 +44,7 @@ max_parallel = 3
 
 [roles]
 draft = "qwen3-coder-next@gb10"
+default = "qwen3-coder-next@gb10"   # sw draft also reviews what it drafted
 """
 
 _REPLY = {
@@ -79,9 +77,6 @@ def _draft(project: Path):
         return runner.invoke(app, ["draft", "Greeter", "--project", str(project)])
 
 
-@pytest.mark.xfail(
-    strict=True, reason="blocked on C-FLOW-13 SF-03: sw draft does not read the settings file yet"
-)
 def test_a_draft_on_the_gb10_is_sent_to_the_gb10(
     tmp_path: Path, _mock_db, _isolate_env: Path
 ) -> None:
@@ -91,12 +86,11 @@ def test_a_draft_on_the_gb10_is_sent_to_the_gb10(
     with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:
         _draft(project)
 
-    assert [str(request.url) for request in seen] == ["http://gb10:8000/v1/chat/completions"]
+    urls = {str(request.url) for request in seen}
+    assert seen, "sw draft sent no request at all"
+    assert urls == {"http://gb10:8000/v1/chat/completions"}  # every request, none elsewhere
 
 
-@pytest.mark.xfail(
-    strict=True, reason="blocked on C-FLOW-13 SF-03: sw draft does not read the settings file yet"
-)
 def test_a_private_project_refuses_a_hosted_role_before_any_request(
     tmp_path: Path, _mock_db, _isolate_env: Path
 ) -> None:

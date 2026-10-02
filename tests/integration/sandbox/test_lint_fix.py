@@ -19,6 +19,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,7 +32,9 @@ if TYPE_CHECKING:
 def _make_context(project: Path, *, llm: object = None) -> RunContext:
     """Create a RunContext from the sample project."""
     spec = project / "specs" / "calculator.md"
-    return RunContext(project_path=project, spec_path=spec, model=ModelAccess(llm=llm))
+    return RunContext(
+        project_path=project, spec_path=spec, model=ModelAccess(llm_router=FixedRouter(llm))
+    )
 
 
 def _make_step(target: str = "src/") -> PipelineStep:

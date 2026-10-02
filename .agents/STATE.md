@@ -25,9 +25,11 @@ Read the design before touching it. It says so in its own first section.
 
 `B-FLOW-05` is blocked on that decision, which `C-FLOW-13` now owns `[agreed 2026-09-26]`. `C-FLOW-13`'s design
 is APPROVED (2026-09-26): machine `settings.toml` + project `[llm]`; B-FLOW-05 is redesigned after it.
-SF-01 and SF-02 are committed (2026-09-27): the files parse strictly, `sw config show` reads them, a
-model catalogue ships, and an adapter can be built from a server entry (the GB10 included). No
-command uses them until SF-03 — the US-16 P2/P3 e2e is written and xfail until then.
+SF-01 to SF-03 are committed (2026-10-02): every LLM call now takes its model from the settings
+files, through one resolver. There is no built-in model: a command that calls an LLM needs a
+`default` role in `settings.toml`. `sw config set-role` replaced `set-provider` and `routing`; the
+old DB tables are dropped at start-up. Left: SF-05 (`--model` for one run, brake values to
+`B-FLOW-05`).
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot

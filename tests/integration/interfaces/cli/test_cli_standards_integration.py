@@ -10,11 +10,13 @@ Tests the full standards discovery lifecycle through the CLI.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,6 +30,13 @@ from tests.rendering import shows
 #: and 80 is the no-TTY default, so it is the width CI actually gets.
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _doubled_model():
+    """`scan` resolves the `check` role before scanning; these tests are not about the model."""
+    with doubled_llm(MagicMock()):
+        yield
 
 
 @pytest.fixture(autouse=True)

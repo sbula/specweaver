@@ -42,7 +42,7 @@
   "src/specweaver/assurance/validation/interfaces/cli_drift.py <-> src/specweaver/workflows/review/interfaces/cli.py @160e5d70ab8a": {
     "lines": 10,
     "first": "src/specweaver/assurance/validation/interfaces/cli_drift.py:56",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:275"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
   "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py <-> src/specweaver/assurance/validation/rules/code/c04_coverage.py @a536cb106114": {
     "lines": 11,
@@ -89,16 +89,6 @@
     "first": "src/specweaver/core/flow/handlers/contract_renderers.py:250",
     "second": "src/specweaver/core/flow/handlers/contract_renderers.py:129"
   },
-  "src/specweaver/core/flow/handlers/draft.py <-> src/specweaver/core/flow/handlers/standards.py @7b44fb644078": {
-    "lines": 10,
-    "first": "src/specweaver/core/flow/handlers/draft.py:138",
-    "second": "src/specweaver/core/flow/handlers/standards.py:101"
-  },
-  "src/specweaver/core/flow/handlers/draft.py <-> src/specweaver/core/flow/handlers/standards.py @a3483a08f50e": {
-    "lines": 10,
-    "first": "src/specweaver/core/flow/handlers/draft.py:339",
-    "second": "src/specweaver/core/flow/handlers/standards.py:101"
-  },
   "src/specweaver/core/flow/handlers/drift.py <-> src/specweaver/core/flow/handlers/standards.py @ef96d7c678a1": {
     "lines": 11,
     "first": "src/specweaver/core/flow/handlers/drift.py:13",
@@ -109,25 +99,10 @@
     "first": "src/specweaver/core/flow/handlers/dual_pipeline.py:16",
     "second": "src/specweaver/core/flow/handlers/standards.py:11"
   },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @01db673bf237": {
-    "lines": 12,
-    "first": "src/specweaver/core/flow/handlers/generation.py:314",
-    "second": "src/specweaver/core/flow/handlers/review.py:33"
-  },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @35aa7bcb5f19": {
-    "lines": 9,
-    "first": "src/specweaver/core/flow/handlers/generation.py:325",
-    "second": "src/specweaver/core/flow/handlers/review.py:42"
-  },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @a95082fd55df": {
-    "lines": 10,
-    "first": "src/specweaver/core/flow/handlers/generation.py:46",
-    "second": "src/specweaver/core/flow/handlers/review.py:33"
-  },
   "src/specweaver/core/flow/handlers/review.py <-> src/specweaver/core/flow/handlers/review.py @bc2b01ec85a3": {
     "lines": 25,
-    "first": "src/specweaver/core/flow/handlers/review.py:326",
-    "second": "src/specweaver/core/flow/handlers/review.py:241"
+    "first": "src/specweaver/core/flow/handlers/review.py:297",
+    "second": "src/specweaver/core/flow/handlers/review.py:212"
   },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,
@@ -147,7 +122,7 @@
   "src/specweaver/core/flow/store.py <-> src/specweaver/infrastructure/llm/store.py @066b17a9cd13": {
     "lines": 13,
     "first": "src/specweaver/core/flow/store.py:5",
-    "second": "src/specweaver/infrastructure/llm/store.py:9"
+    "second": "src/specweaver/infrastructure/llm/store.py:8"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
@@ -209,15 +184,10 @@
     "first": "src/specweaver/interfaces/api/v1/constitution.py:10",
     "second": "src/specweaver/interfaces/api/v1/standards.py:11"
   },
-  "src/specweaver/interfaces/api/v1/implement.py <-> src/specweaver/interfaces/api/v1/review.py @a46e5be53255": {
-    "lines": 11,
+  "src/specweaver/interfaces/api/v1/implement.py <-> src/specweaver/interfaces/api/v1/review.py @6756001146ae": {
+    "lines": 10,
     "first": "src/specweaver/interfaces/api/v1/implement.py:6",
     "second": "src/specweaver/interfaces/api/v1/review.py:6"
-  },
-  "src/specweaver/interfaces/api/v1/implement.py <-> src/specweaver/interfaces/api/v1/review.py @baa960fc9633": {
-    "lines": 17,
-    "first": "src/specweaver/interfaces/api/v1/implement.py:41",
-    "second": "src/specweaver/interfaces/api/v1/review.py:40"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
     "lines": 15,
@@ -391,38 +361,28 @@
   },
   "src/specweaver/workflows/implementation/generator.py <-> src/specweaver/workflows/implementation/generator.py @f896f75da63b": {
     "lines": 7,
-    "first": "src/specweaver/workflows/implementation/generator.py:148",
-    "second": "src/specweaver/workflows/implementation/generator.py:89"
+    "first": "src/specweaver/workflows/implementation/generator.py:144",
+    "second": "src/specweaver/workflows/implementation/generator.py:85"
   },
   "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @46cbc9fb5be6": {
     "lines": 8,
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:15",
     "second": "src/specweaver/workflows/review/interfaces/cli.py:16"
   },
-  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @ab2a2022dcea": {
-    "lines": 14,
-    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:223",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:302"
+  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @95c06b43823f": {
+    "lines": 13,
+    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:205",
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:276"
   },
   "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @b7d04899b60c": {
     "lines": 11,
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:195",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:275"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
-  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @e14a8ebbf6cb": {
-    "lines": 15,
-    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:205",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:286"
-  },
-  "src/specweaver/workflows/review/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @e0e5e477b2ca": {
-    "lines": 10,
-    "first": "src/specweaver/workflows/review/interfaces/cli.py:304",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:200"
-  },
-  "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
-    "lines": 22,
-    "first": "src/specweaver/workflows/review/reviewer.py:139",
-    "second": "src/specweaver/workflows/review/reviewer.py:104"
+  "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @384dc5f05d84": {
+    "lines": 30,
+    "first": "src/specweaver/workflows/review/reviewer.py:147",
+    "second": "src/specweaver/workflows/review/reviewer.py:111"
   },
   "src/specweaver/workspace/analyzers/factory.py <-> src/specweaver/workspace/analyzers/factory.py @b5b1be179b0c": {
     "lines": 11,

@@ -126,7 +126,7 @@ class DriftCheckHandler:
         analyze = step.params.get("analyze", False)
         llm_analysis = None
 
-        if analyze and report.is_drifted and context.model.llm:
+        if analyze and report.is_drifted and context.model.llm_router is not None:
             llm_analysis = await self._analyze_drift(context, report, target_path_str)
 
         output = {
@@ -167,15 +167,11 @@ class DriftCheckHandler:
         ]
 
         try:
-            # Check for config (we don't strictly require context.model.config for test harnesses)
-            from specweaver.infrastructure.llm.models import GenerationConfig
+            from specweaver.core.flow.handlers._llm import llm_for
+            from specweaver.infrastructure.llm.models import TaskType
 
-            config = (
-                context.model.config.llm
-                if context.model.config and hasattr(context.model.config, "llm")
-                else GenerationConfig(model="gemini-3-flash-preview")
-            )
-            response = await context.model.llm.generate(messages, config)
+            adapter, config = llm_for(context, TaskType.REVIEW)
+            response = await adapter.generate(messages, config)
             return str(response.text)
         except Exception as exc:
             logger.exception("DriftCheckHandler: Failed LLM root-cause analysis.")

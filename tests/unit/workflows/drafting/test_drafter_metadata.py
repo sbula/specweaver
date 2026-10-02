@@ -13,6 +13,7 @@ import pytest
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.drafting.drafter import Drafter
+from tests.scripted_llm import TEST_CONFIG
 
 
 class TestDrafterProjectMetadata:
@@ -26,7 +27,12 @@ class TestDrafterProjectMetadata:
         mock_context = AsyncMock()
         mock_context.ask.return_value = "yes"
 
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(),
+            llm=mock_llm,
+            context_provider=mock_context,
+            config=TEST_CONFIG,
+        )
         metadata = ProjectMetadata(
             project_name="draft_test",
             archetype="pure-logic",

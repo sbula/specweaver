@@ -12,6 +12,7 @@ import pytest
 
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
+from tests.scripted_llm import TEST_CONFIG
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,7 +25,7 @@ class TestGeneratorEnvironment:
     async def test_environment_context_code(self, tmp_path: Path) -> None:
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(return_value=MagicMock(text="generated code"))
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         spec = tmp_path / "spec.md"
         spec.write_text("Spec info")
@@ -47,7 +48,7 @@ class TestGeneratorEnvironment:
     async def test_environment_context_tests(self, tmp_path: Path) -> None:
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(return_value=MagicMock(text="generated tests"))
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         spec = tmp_path / "spec.md"
         spec.write_text("Spec info")

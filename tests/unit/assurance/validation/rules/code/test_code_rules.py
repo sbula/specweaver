@@ -20,6 +20,7 @@ from specweaver.assurance.validation.rules.code.c08_type_hints import TypeHintsR
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
+from tests.scripted_llm import TEST_CONFIG
 
 # ---------------------------------------------------------------------------
 # C01 Syntax Valid
@@ -401,7 +402,7 @@ class TestGenerator:
         output = tmp_path / "greet.py"
 
         mock_llm = _make_mock_llm("def greet(name: str) -> str:\n    return f'Hello {name}!'\n")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
@@ -417,7 +418,7 @@ class TestGenerator:
         output = tmp_path / "test_greet.py"
 
         mock_llm = _make_mock_llm("import pytest\ndef test_greet():\n    assert True\n")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         result = await gen.generate_tests(spec, output, base_prompt=PromptBuilder())
 
@@ -432,7 +433,7 @@ class TestGenerator:
         output = tmp_path / "nested" / "dir" / "code.py"
 
         mock_llm = _make_mock_llm("pass\n")
-        gen = Generator(llm=mock_llm)
+        gen = Generator(llm=mock_llm, config=TEST_CONFIG)
 
         result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
         assert result.exists()

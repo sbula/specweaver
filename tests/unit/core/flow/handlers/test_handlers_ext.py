@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from tests.scripted_llm import FixedRouter
 
 # ---------------------------------------------------------------------------
 # Telemetry run_id propagation
@@ -49,7 +50,7 @@ class TestRunIdPropagation:
         mock_adapter = MagicMock()
         mock_adapter.generate = AsyncMock()
         ctx = RunContext(
-            model=ModelAccess(llm=mock_adapter),
+            model=ModelAccess(llm_router=FixedRouter(mock_adapter)),
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path / "src",
@@ -78,7 +79,9 @@ class TestExtractPromptFeedback:
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
         ctx = RunContext(
-            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+            project_path=tmp_path,
+            spec_path=tmp_path / "f",
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.feedback = {"test_step": {"other_data": True}}
         step = PipelineStep(name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -93,7 +96,9 @@ class TestExtractPromptFeedback:
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
         ctx = RunContext(
-            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+            project_path=tmp_path,
+            spec_path=tmp_path / "f",
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.feedback = {
             "test_step": {
@@ -114,7 +119,9 @@ class TestExtractPromptFeedback:
         from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
 
         ctx = RunContext(
-            project_path=tmp_path, spec_path=tmp_path / "f", model=ModelAccess(llm=MagicMock())
+            project_path=tmp_path,
+            spec_path=tmp_path / "f",
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
         )
         ctx.feedback = {
             "test_step": {

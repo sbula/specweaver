@@ -92,22 +92,21 @@ class EnrichStandardsHandler:
                 completed_at=_now_iso(),
             )
 
-        if not context.model.llm:
-            logger.error("EnrichStandardsHandler: context.model.llm is missing")
-            return _error_result("No LLM adapter provided for standards enrichment", started)
-
-        from specweaver.infrastructure.llm.models import GenerationConfig
-
-        gen_config = None
-        if context.model.config and hasattr(context.model.config, "llm"):
-            gen_config = GenerationConfig(
-                model=context.model.config.llm.model,
-                temperature=context.model.config.llm.temperature,
-                max_output_tokens=context.model.config.llm.max_output_tokens,
-                run_id=context.run.run_id or "",
+        if context.model.llm_router is None:
+            # Enrichment is optional: without a `check` role the scan's findings stand as found.
+            logger.info("EnrichStandardsHandler: no model for the check role; not enriching")
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={"results": results},
+                started_at=started,
+                completed_at=_now_iso(),
             )
 
-        enricher = StandardsEnricher(context.model.llm, config=gen_config)
+        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.infrastructure.llm.models import TaskType
+
+        adapter, gen_config = llm_for(context, TaskType.CHECK)
+        enricher = StandardsEnricher(adapter, config=gen_config)
 
         try:
             logger.info(

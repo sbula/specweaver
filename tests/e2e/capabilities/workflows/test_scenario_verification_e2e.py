@@ -28,7 +28,7 @@ from __future__ import annotations
 import contextlib
 import json
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
@@ -38,6 +38,8 @@ from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
+from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -299,17 +301,6 @@ def _isolated_env(tmp_path: Path, monkeypatch):
     return data_dir
 
 
-def _settings_mock():
-    settings = MagicMock()
-    settings.llm.model = "scripted-1"
-    settings.llm.temperature = 0.2
-    settings.llm.max_output_tokens = 4096
-    from specweaver.core.config.settings import SandboxSettings
-
-    settings.sandbox = SandboxSettings()
-    return settings
-
-
 def _init_project(tmp_path: Path, name: str) -> Path:
     project_dir = tmp_path / name
     project_dir.mkdir()
@@ -338,23 +329,12 @@ def _init_project(tmp_path: Path, name: str) -> Path:
 
 
 @contextlib.contextmanager
-def _scenario_world(adapter: ScenarioWorldAdapter, implementer: ImplementerState, record: list):
+def _scenario_world(
+    adapter: ScenarioWorldAdapter, implementer: ImplementerState, record: list, *, llm: bool = True
+):
     with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter",
-                return_value=(_settings_mock(), adapter, MagicMock()),
-            )
-        )
-        # The router would otherwise build a REAL provider adapter from the
-        # registry (bypassing the factory patch); None → handlers fall back to
-        # context.model.llm, i.e. the scripted adapter.
-        stack.enter_context(
-            patch(
-                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task",
-                return_value=None,
-            )
-        )
+        if llm:
+            stack.enter_context(doubled_llm(adapter, model="scripted-1"))
         stack.enter_context(
             patch(
                 "specweaver.core.flow.handlers.generation.GenerateCodeHandler.execute",
@@ -613,11 +593,8 @@ def test_e7_resume_after_park_heals_through_the_loop(
 def test_e7b_resume_without_llm_warns_and_degrades_gracefully(
     tmp_path: Path, monkeypatch, _isolated_env
 ) -> None:
-    # [Graceful degradation] G-c: defect #10's guarded branch — if the adapter
-    # cannot be built at resume time, resume WARNS and proceeds with llm=None
-    # (LLM steps fail loud downstream; never a crash).
-    from specweaver.infrastructure.llm.factory import LLMAdapterError
-
+    # [Graceful degradation] G-c: if no model can be resolved at resume time, resume refuses
+    # loud before any step runs, naming the unset role (C-FLOW-13) — never green, never a crash.
     project = _init_project(tmp_path, "us24_e7b")
     monkeypatch.setenv("SW_PROJECT", str(project))
     adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[AMBIGUITY_VERDICT])
@@ -628,14 +605,13 @@ def test_e7b_resume_without_llm_warns_and_degrades_gracefully(
         result1 = _run_cli(project)
         assert result1.exit_code == 0, result1.output
 
-        with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            side_effect=LLMAdapterError("no provider configured"),
-        ):
-            result2 = CliRunner().invoke(app, ["resume"])
+    # No settings file in the test data dir: the model is gone for session 2.
+    with _scenario_world(adapter, implementer, record, llm=False):
+        result2 = CliRunner().invoke(app, ["resume"])
 
     assert result2.exit_code != 0  # degraded, loud — never green, never a crash
-    assert "No LLM configured" in result2.output
+    assert result2.exception is None or isinstance(result2.exception, SystemExit)
+    assert shows(result2.output, "roles.default")
 
 
 # --------------------------------------------------------------------------- #
