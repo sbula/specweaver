@@ -9,7 +9,9 @@
 ## Goal
 
 FR-16: `sw implement` and `sw run` take `--model <model@server>` for this run only.
-FR-17: every limit lives in the machine `settings.toml` — stored, strictly read, shown with its origin, handed to the brake — and today's brake reads its numbers from there. SF-05 brings no numbers and no new brake rules (Q-13).
+FR-17: every limit lives in the machine `settings.toml` — stored, strictly read, shown with its
+origin, handed to the brake — and today's brake reads its numbers from there. SF-05 brings no
+numbers and no new brake rules (Q-13).
 
 ## Where it plugs in (measured 2026-10-02)
 
