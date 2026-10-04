@@ -100,7 +100,7 @@ def test_cli_pipelines_injects_model_router_in_resume(
         mock_runner.resume = AsyncMock()
 
         # Execute resume command
-        resume(run_id="run-123", verbose=False, json_output=False)
+        resume(run_id="run-123", verbose=False, json_output=False, model=None)
 
         # Assert resume triggered
         mock_runner_cls.assert_called_once()

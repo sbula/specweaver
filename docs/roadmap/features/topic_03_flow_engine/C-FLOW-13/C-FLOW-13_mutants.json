@@ -547,6 +547,97 @@
           "symbol_sha": "sha256:6bb476e301a61d8d0e1135be0ca495c1850d384318b22e5e2672f1aa9f9d2550"
         }
       ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "--model gives one run one model",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_run_model.py",
+        "tests/e2e/capabilities/infrastructure/test_run_model_e2e.py",
+        "tests/unit/core/flow/interfaces/test_run_model_flag.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-model-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "_every_role",
+          "old": "    return dict.fromkeys(named, run_model)\n",
+          "new": "    return {}\n",
+          "breaks": "--model is accepted and every call still goes to the file's model",
+          "symbol_sha": "sha256:2e8ec35f13cae701bf24e5ca20126cdb0eec70718c84e897e4d8b5f2cdf4389c"
+        },
+        {
+          "id": "router-drops-run-model",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "build_router",
+          "old": "        run_model=run_model,\n",
+          "new": "        run_model=None,\n",
+          "breaks": "commands pass --model, the router forgets it",
+          "symbol_sha": "sha256:097c4c05ff0cc0d1b952cfdbbe7739583d55eca96e38b4b33159a6046fb8463c"
+        },
+        {
+          "id": "command-drops-run-model",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "command_router",
+          "old": "            run_model=run_model,\n",
+          "new": "            run_model=None,\n",
+          "breaks": "every CLI command ignores --model",
+          "symbol_sha": "sha256:521d383439014ac8d71b3b423746da6ad6ae5b6d040f06f460808727ab005229"
+        },
+        {
+          "id": "implement-drops-run-model",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    router = command_router(project, settings, roles_of(pipeline), run_model=run_model)\n",
+          "new": "    router = command_router(project, settings, roles_of(pipeline))\n",
+          "breaks": "sw implement ignores --model",
+          "symbol_sha": "sha256:fbcd4c11e92a9f999e090d7faddf62f652deee71daa238bd5335a246c65186d1"
+        },
+        {
+          "id": "run-drops-run-model",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_build_run_context",
+          "old": "    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)\n",
+          "new": "    _wire_models(context, pipeline, active or project_path.name, run_model=None)\n",
+          "breaks": "sw run and sw resume ignore --model",
+          "symbol_sha": "sha256:011347472cd234c4120c8a6f961cd4ff7eb21a7bc217d5ec7dfd7db2ca836383"
+        },
+        {
+          "id": "resume-drops-run-model",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "resume",
+          "old": "    run_model = run_model_option(model)\n    store = _get_state_store()\n",
+          "new": "    run_model = None\n    store = _get_state_store()\n",
+          "breaks": "sw resume ignores --model and a bad value passes",
+          "symbol_sha": "sha256:0949570426d4b72ecba17822e7fc04e79699d5a03f7540e6a852b39266985ff8"
+        },
+        {
+          "id": "project-role-keeps-its-model",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "_every_role",
+          "old": "    named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE}\n",
+          "new": "    named = {*files.machine.roles, DEFAULT_ROLE}\n",
+          "breaks": "a role the project file sets keeps its own model under --model",
+          "symbol_sha": "sha256:2e8ec35f13cae701bf24e5ca20126cdb0eec70718c84e897e4d8b5f2cdf4389c"
+        },
+        {
+          "id": "run-model-reads-settings-for-no-model-pipeline",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_wire_models",
+          "old": "    roles = roles_of(pipeline)\n    if not roles:\n        return\n",
+          "new": "    roles = roles_of(pipeline)\n    if not roles and run_model is None:\n        return\n",
+          "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
+          "symbol_sha": "sha256:149b8f7d2334630db754b5ec28474fcf9f7aa92e334723541f36f647c71f457a"
+        }
+      ]
     }
   ]
 }

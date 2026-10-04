@@ -66,6 +66,9 @@ rate_date = 2026-09-26
 - `sw config set-role <role> <model@server>` writes a role; `--project` writes it into the active
   project's `specweaver.toml` instead, where `[llm] private_only = true` refuses any cloud server.
 - `sw config show` prints every value with the file and line it came from.
+- `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
+  one run the same model; the files stay unchanged. The server must be in `settings.toml`, and
+  `private_only` still applies.
 - `sw costs` shows each role's model, its price per 1M tokens and this month's spend;
   `sw costs set <model> <input> <output>` corrects a price, in your currency.
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).

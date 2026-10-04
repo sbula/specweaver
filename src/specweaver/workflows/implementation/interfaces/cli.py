@@ -182,6 +182,11 @@ def implement(
         "--selector",
         help="Topology selector: direct, nhop, constraint, impact.",
     ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="model@server for every step of this run only; the settings files stay unchanged.",
+    ),
 ) -> None:
     """Generate code + tests from a validated, reviewed spec.
 
@@ -190,6 +195,9 @@ def implement(
     - Test file in tests/
     """
     logger.debug("Executing implement command")
+    from specweaver.infrastructure.llm.interfaces.command import command_router, run_model_option
+
+    run_model = run_model_option(model)
     spec_path = Path(spec)
     if not spec_path.exists():
         _core.console.print(f"[red]Error:[/red] Spec not found: {spec}")
@@ -211,7 +219,6 @@ def implement(
         ModelAccess,
         RunContext,
     )
-    from specweaver.infrastructure.llm.interfaces.command import command_router
 
     db = _core.get_db()
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
@@ -253,7 +260,7 @@ def implement(
     )
 
     pipeline = _build_implement_pipeline(stem)
-    router = command_router(project, settings, roles_of(pipeline))
+    router = command_router(project, settings, roles_of(pipeline), run_model=run_model)
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),

@@ -851,6 +851,96 @@
       "first_seen": 1790996740.1887307,
       "last_seen": 1791083141.1559765,
       "occurrences": 2
+    },
+    "C-FLOW-13 FR-10 budget-not-shared": {
+      "history": [
+        {
+          "at": 1791118973.5756214,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1791119243.6308744,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791118973.5756214,
+      "last_seen": 1791119125.2005277,
+      "occurrences": 3
+    },
+    "C-FLOW-13 FR-10 adapter-per-call": {
+      "history": [
+        {
+          "at": 1791118973.5756214,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1791119243.6308744,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791118973.5756214,
+      "last_seen": 1791119125.2005277,
+      "occurrences": 3
+    },
+    "C-FLOW-13 FR-10 catalogue-sampling-ignored": {
+      "history": [
+        {
+          "at": 1791118973.5756214,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1791119243.6308744,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791118973.5756214,
+      "last_seen": 1791119125.2005277,
+      "occurrences": 3
+    },
+    "C-FLOW-13 FR-10 missing-key-not-refused": {
+      "history": [
+        {
+          "at": 1791118973.5756214,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1791119243.6308744,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791118973.5756214,
+      "last_seen": 1791119125.2005277,
+      "occurrences": 3
+    },
+    "C-FLOW-13 FR-10 routed-collectors-not-flushed": {
+      "history": [
+        {
+          "at": 1791118973.5756214,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "killer-already-failing"
+        },
+        {
+          "at": 1791119243.6308744,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791118973.5756214,
+      "last_seen": 1791119125.2005277,
+      "occurrences": 3
     }
   },
   "override_count": 0,

@@ -103,7 +103,7 @@ def _implement_ignoring_exit(implement: Any, **kwargs: Any) -> None:
     that is the stronger claim this test can now make. A failure other than the exit still escapes.
     """
     with contextlib.suppress(SystemExit, click.exceptions.Exit):
-        implement(selector="direct", **kwargs)
+        implement(selector="direct", model=None, **kwargs)
 
 
 class TestImplementCommandFlush:

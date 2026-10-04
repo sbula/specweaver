@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from specweaver.core.config.database import Database
+    from specweaver.core.config.llm_settings import RoleEntry
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
@@ -161,6 +162,11 @@ def run_pipeline(
         "--selector",
         help="Topology selector: direct, nhop, constraint, impact.",
     ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="model@server for every step of this run only; the settings files stay unchanged.",
+    ),
 ) -> None:
     """Run a pipeline against a spec file or module.
 
@@ -173,6 +179,9 @@ def run_pipeline(
         sw run validate_only specs/calculator.md --verbose
         sw run validate_only specs/calculator.md --json
     """
+    from specweaver.infrastructure.llm.interfaces.command import run_model_option
+
+    run_model = run_model_option(model)
     try:
         _execute_run(
             pipeline=pipeline,
@@ -182,6 +191,7 @@ def run_pipeline(
             verbose=verbose,
             json_output=json_output,
             selector=selector,
+            run_model=run_model,
         )
     except KeyboardInterrupt:
         # Fallback only. `_execute_run` handles the interrupt where `runner.current_run_id` is
@@ -224,7 +234,11 @@ def run_pipeline(
 
 
 def _build_run_context(
-    project_path: Path, spec_path: Path, pipeline: PipelineDefinition
+    project_path: Path,
+    spec_path: Path,
+    pipeline: PipelineDefinition,
+    *,
+    run_model: RoleEntry | None = None,
 ) -> RunContext:
     """The fully-wired `RunContext` a run or a resume starts from.
 
@@ -259,11 +273,17 @@ def _build_run_context(
     _maybe_attach_provider(context)
     _apply_isolation_policy(context, db, project_path)
 
-    _wire_models(context, pipeline, active or project_path.name)
+    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)
     return context
 
 
-def _wire_models(context: RunContext, pipeline: PipelineDefinition, project: str) -> None:
+def _wire_models(
+    context: RunContext,
+    pipeline: PipelineDefinition,
+    project: str,
+    *,
+    run_model: RoleEntry | None = None,
+) -> None:
     """Give the run its router, every role its steps use checked before the first call.
 
     A pipeline whose steps call no model (`validate_only`) needs no settings files at all.
@@ -276,7 +296,7 @@ def _wire_models(context: RunContext, pipeline: PipelineDefinition, project: str
     if not roles:
         return
     settings = load_settings(_core.get_db(), project)
-    router = command_router(project, settings, roles)
+    router = command_router(project, settings, roles, run_model=run_model)
     context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
 
@@ -344,6 +364,7 @@ def _execute_run(
     verbose: bool,
     json_output: bool,
     selector: str,
+    run_model: RoleEntry | None = None,
 ) -> None:
     """Core run logic -- separated for testability."""
     from specweaver.core.flow.engine.parser import load_pipeline
@@ -371,7 +392,7 @@ def _execute_run(
     # Build display backend
     display = _create_display(use_json=json_output, verbose=verbose)
 
-    context = _build_run_context(project_path, spec_path, pipeline_def)
+    context = _build_run_context(project_path, spec_path, pipeline_def, run_model=run_model)
 
     # Load topology
     topo_graph = load_topology(project_path)
@@ -475,6 +496,11 @@ def resume(
         "--json",
         help="Output NDJSON event stream (machine-readable).",
     ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="model@server for every step of this run only; the settings files stay unchanged.",
+    ),
 ) -> None:
     """Resume a parked or failed pipeline run.
 
@@ -487,7 +513,9 @@ def resume(
     """
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.infrastructure.llm.interfaces.command import run_model_option
 
+    run_model = run_model_option(model)
     store = _get_state_store()
     run_state = _resolve_resumable_run(store, run_id)
 
@@ -502,7 +530,7 @@ def resume(
 
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
-    context = _build_run_context(project_path, spec_path, pipeline_def)
+    context = _build_run_context(project_path, spec_path, pipeline_def, run_model=run_model)
 
     display = _create_display(use_json=json_output, verbose=verbose)
 

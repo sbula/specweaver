@@ -175,7 +175,7 @@ expose = [ "cli", "cli.standards_app",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm.interfaces",]
-expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router",]
+expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router", "command.run_model_option",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.interfaces",]

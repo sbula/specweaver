@@ -17,7 +17,7 @@ from specweaver.infrastructure.llm.models import TaskType
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry
     from specweaver.infrastructure.llm.collector import TelemetryCollector
     from specweaver.infrastructure.llm.models import GenerationConfig
     from specweaver.infrastructure.llm.resolve import RoleResolver
@@ -52,6 +52,7 @@ def build_router(
     roles: Iterable[TaskType | str],
     spend_limit_usd: float | None,
     token_limit: int | None,
+    run_model: RoleEntry | None = None,
 ) -> ModelRouter:
     """A command's router: every role it will use checked now, before the first call.
 
@@ -65,6 +66,7 @@ def build_router(
         files,
         telemetry_project=project,
         budget=SpendBudget(limit_usd=spend_limit_usd, token_limit=token_limit),
+        run_model=run_model,
     )
     resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
     return ModelRouter(resolver)

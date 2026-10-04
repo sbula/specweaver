@@ -27,6 +27,7 @@ if TYPE_CHECKING:
         LlmSettingsFiles,
         ModelFacts,
         ResolvedRole,
+        RoleEntry,
     )
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.catalogue import Catalogue
@@ -46,9 +47,10 @@ class RoleResolver:
         telemetry_project: str,
         budget: SpendBudget,
         catalogue: Catalogue | None = None,
+        run_model: RoleEntry | None = None,
     ) -> None:
         self._files = files
-        self._roles = resolve_roles(files)
+        self._roles = resolve_roles(files, _every_role(files, run_model))
         self._project = telemetry_project
         self._budget = budget
         self._catalogue = catalogue or shipped_catalogue()
@@ -134,3 +136,14 @@ def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, floa
         if value is not None:
             values[name] = value
     return values
+
+
+def _every_role(files: LlmSettingsFiles, run_model: RoleEntry | None) -> dict[str, RoleEntry]:
+    """`--model` for one run: every role the files name, and `default`, get the same model.
+
+    A role nobody named falls back to `default`, so overriding `default` covers it too.
+    """
+    if run_model is None:
+        return {}
+    named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE}
+    return dict.fromkeys(named, run_model)

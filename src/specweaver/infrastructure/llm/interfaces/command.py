@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.config.llm_settings import SettingsFileError
+import typer
+from pydantic import ValidationError
+
+from specweaver.core.config.llm_settings import RoleEntry, SettingsFileError
 from specweaver.infrastructure.llm.router import build_router
 from specweaver.interfaces.cli import _core
 
@@ -19,10 +22,29 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.router import ModelRouter
 
 
+def run_model_option(value: str | None) -> RoleEntry | None:
+    """The `--model <model@server>` value; a malformed one stops the command before any call."""
+    if value is None:
+        return None
+    try:
+        return RoleEntry.model_validate(value)
+    except ValidationError as err:
+        message = err.errors()[0]["msg"].removeprefix("Value error, ")
+        _core.console.print(f"Error: --model {value}: {message}", style="red", markup=False)
+        raise typer.Exit(code=1) from err
+
+
 def command_router(
-    project: str, settings: SpecWeaverSettings, roles: Iterable[TaskType | str]
+    project: str,
+    settings: SpecWeaverSettings,
+    roles: Iterable[TaskType | str],
+    *,
+    run_model: RoleEntry | None = None,
 ) -> ModelRouter:
-    """The command's router with every role it uses checked; stops the command if one is unset."""
+    """The command's router with every role it uses checked; stops the command if one is unset.
+
+    `run_model` (`--model`) gives every role of this run that one model.
+    """
     files = _core.load_active_llm_settings(project)
     try:
         return build_router(
@@ -31,6 +53,7 @@ def command_router(
             roles=roles,
             spend_limit_usd=settings.llm.max_spend_usd,
             token_limit=settings.llm.max_tokens_per_run,
+            run_model=run_model,
         )
     except SettingsFileError as err:
         _core.refuse_llm_settings(err)
