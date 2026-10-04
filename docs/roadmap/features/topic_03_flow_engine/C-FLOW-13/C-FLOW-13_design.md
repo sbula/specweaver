@@ -129,7 +129,7 @@ a cloned repo must not be able to send code to its own server.
 | SF-02 | Catalogue, server entries, adapters built from servers, per-server limit, privacy rule | FR-6, FR-7, FR-8, FR-9, FR-18 | SF-01 | [sf02](C-FLOW-13_sf02_implementation_plan.md) |
 | SF-03 | One adapter path, hard-coded models removed, one price source, one currency, commands write the files | FR-10, FR-11, FR-12, FR-13, FR-15 | SF-02 | [sf03](C-FLOW-13_sf03_implementation_plan.md) |
 | SF-04 | Retired `[agreed 2026-09-27]`: no migration (FR-14 dropped); FR-15 moved to SF-03 | — | — | — |
-| SF-05 | `--model` for one run; brake values handed to `B-FLOW-05` | FR-16, FR-17 | SF-03 | ⬜ |
+| SF-05 | `--model` for one run; brake values handed to `B-FLOW-05` | FR-16, FR-17 | SF-03 | [sf05](C-FLOW-13_sf05_implementation_plan.md) |
 
 ## Progress Tracker
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
@@ -138,4 +138,4 @@ a cloned repo must not be able to send code to its own server.
 | SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consumers switched over | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Retired — see the sub-feature table | — | — | — | — | — | — |
-| SF-05 | Run override, brake values | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Run override, brake values | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
