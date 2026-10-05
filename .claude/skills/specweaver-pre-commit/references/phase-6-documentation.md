@@ -38,7 +38,8 @@ maintain graphical Mermaid mappings during pre-commit.
        `.claude/skills/specweaver-ticket/references/closure-contract.md`.
      - **Filing a follow-up ticket does not close anything.** If the promise is not met, the status
        does not change — a new ticket defers the work, it does not discharge it.
-     - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
+     - Re-rank the **Focus Points** by the Entry Rules (gain for a real run against build cost) if an item
+       on it was finished.
 
 6.3. **MANDATORY: Update the architecture documentation** if this feature
      changed any module placement, dependency direction, layer boundaries, security

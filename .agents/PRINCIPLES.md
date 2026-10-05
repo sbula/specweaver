@@ -45,7 +45,7 @@ told? Then it was never yours.
 | | `T-POSTURE` | What happens when a check cannot run — fail open or fail closed, whether a missing measurement counts as a pass |
 | The agreement | `T-DIVERGE` | Building something that would not satisfy the capability's own name, or would leave an FR in its table unmet — including when the substitute looks better |
 | | `T-SCOPE` | What the thing will not do — Non-Goals, deferrals, retirements, half-a-capability calls |
-| | `T-ORDER` | Which of two open journeys goes first, where the routing queue, the focus points and `STATE.md` all leave it open |
+| | `T-ORDER` | Which of two open journeys goes first, where the focus points and `STATE.md` both leave it open |
 | | `T-PROVEN` | Calling something proven — flipping `🔧` to `✅`, judging a mutant equivalent, declaring a claim covered or a gate green |
 | Expensive to take back | `T-ARCH` | Where a thing lives and what it may need — the one central home, a new service to operate, a boundary an ADR already set |
 | | `T-NAME` | A name anything can depend on — CLI flags, config keys, API fields, verdict vocabularies |

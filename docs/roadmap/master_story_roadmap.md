@@ -18,61 +18,28 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ---
 
-## 🎯 Active Routing Queue
+## 🎯 Focus Points
+
 > **Markers.** `✅` delivered and approved · `🔧` built and proven, **approval outstanding**
 > · `[ ]` not started. `🔧` is not a softer `✅`: it means the code and its evidence exist
 > and the `specweaver-design` Phase 6 gate has not been run.
 
-*The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
-
 > [!CAUTION]
-> **Nothing in this queue is the next thing to do.** Six capabilities are `🔧` — built, proven, and
-> never approved — and two of them are known wrong. Finish those first. They are listed in
-> `.agents/STATE.md`, which is the file to read before this one.
->
-> This queue ranks what to start **after** that. `C-FLOW-11` used to head it and has since been
-> built; it is not a candidate any more.
+> **Finish the `🔧` capabilities first.** They are built, proven and never approved, and some are
+> known wrong. They are listed in `.agents/STATE.md`, which is the file to read before this one.
+> This list ranks what to start **after** that.
 
-1. **Kernel-Enforced Resource Bounds (`B-EXEC-04`)** ← SECURITY MANDATE
-   * **Features:** `B-EXEC-04` — cgroups v2 `pids.max` scoped to a process subtree. Prereqs: none.
-     Details: [topic_06](topics/topic_06_sandbox.md).
-   * **Pros:** `C-EXEC-02` FR-11 promises a fork-bombing script is capped, and today that promise
-     rests on a best-effort `RLIMIT_NPROC` backstop which is per-real-UID and therefore bounds the
-     machine's user rather than the sandbox. Two sampling-based repairs were tried and measured to
-     fail. This is the mechanism that can hold, and it **removes** the backstop.
-   * **Cons:** Linux-only, needs a real cgroups v2 delegation story, no epic unlock.
-   * **ROI:** **Risk-driven** — an unmet FR on the untrusted-execution path, with the replacement
-     already named in the design and in `CLAUDE.md`.
-2. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07`)** ← DAL PARITY
-   * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree +
-     `sw run`/`sw resume` escalation wiring), integration implicit per `ADR-005`. Prereqs: `C-EXEC-06` ✅.
-     Details: [topic_06](topics/topic_06_sandbox.md) / [US-09.md](stories/US-09.md).
-   * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution
-     surface (LLM-derived scenario tests over LLM-generated code, now LIVE via
-     `sw run scenario_integration`) has the weakest default.
-   * **Cons:** Engine work; no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
-   * **ROI:** **Medium** — security parity plus workspace hygiene; cheapest while the run-journey
-     context from `INT-US-24` is still fresh, and it batches with the same high-criticality modules.
-3. **Multi-Stage Reviews (`E-VAL-04`)** ← CHEAPEST BITE
-   * **Features:** `E-VAL-04` — configurable multi-stage review pipeline, designed rubric-first on
-     `C-VAL-05` 🔧. Prereqs: `E-VAL-02` ✅, `B-VAL-02` ✅, and `C-VAL-05` **approved**.
-     Details: [topic_05](topics/topic_05_validation.md).
-   * **Pros:** A stage becomes a rubric file plus a `load_rubric` call rather than a rule class.
-   * **Cons:** Blocked until `C-VAL-05` is approved, which is a set-back item. Smallest strategic payoff.
-   * **ROI:** **Medium-high** — least effort per unit of capability, and it is the test of whether
-     `C-VAL-05`'s substrate actually pays out before `B-VAL-03` and `B-INTL-08` bet on it.
-
-### 🔭 Focus Points
-
-*Ranked by what an item does for a real run against what it costs to build. Closing a story earns
-nothing by itself `[agreed 2026-10-05]`. Gain and cost are estimates; the design settles them.*
+*One list, ranked by what an item does for a real run against what it costs to build. Closing a
+story earns nothing by itself `[agreed 2026-10-05]`. Gain and cost are estimates; the design
+settles them. Pick one; do not start another until it is done.*
 
 | # | Item | Gain | Cost | Next step |
 |---|---|---|---|---|
 | 1 | `B-FLOW-05` brake redesign | high — the model and role limits, the unpriced-model refusal and the loop guard are stored but do nothing until it lands | medium — rules agreed 2026-10-03 | redesign |
-| 2 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user | medium — Linux cgroups v2 delegation | design (stub) |
+| 2 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user; it removes the `RLIMIT_NPROC` backstop | medium — Linux-only, cgroups v2 delegation | design (stub) |
 | 3 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
-| 4 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted | medium-high | design (stub) |
+| 4 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted | medium-high — allow-list derivation for any pipeline | design (stub) |
+| 5 | `E-VAL-04` multi-stage reviews | medium — separate review questions, each a rubric file | low once `C-VAL-05` is approved; blocked until then | approve `C-VAL-05` |
 
 Not on the list: items whose main effect is closing a story (`D-UI-01`, `B-VAL-05`, `A-INTL-01`
 and the rest of the former "one item from green" table). `A-SENS-02` (GraphRAG) pays only on very
@@ -94,10 +61,10 @@ killed mutant. Full record: [topic_07](topics/topic_07_technical_debt.md) and th
 somewhere to go — and because an empty ranking is a fact worth being able to read, where a deleted
 section would only be an absence.*
 
-### 📋 Routing Selection Matrix
-A story only enters the Active Routing Queue if it satisfies one of these rules:
-1. **The Prove It Rule:** Directly contributes to achieving Success Criteria #1 through #6.
-2. **The Hard Blocker Rule:** If a feature requires a dependency, the dependency evicts it from the queue.
+### 📋 Entry Rules
+An item only enters the Focus Points if it satisfies one of these rules:
+1. **The Gain Rule:** It makes a real run better, safer or cheaper, or removes something known wrong.
+2. **The Hard Blocker Rule:** If a feature requires a dependency, the dependency takes its place on the list.
 3. **The Security Mandate:** Mitigating critical threats (e.g. Sandbox Escape) preempts UX work.
 4. **The DAL Batching Rule:** Batching features that touch the same high-criticality modules to prevent paying the integration cost twice.
 

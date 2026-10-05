@@ -240,5 +240,5 @@ set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot b
 
 ## The queue
 
-`docs/roadmap/master_story_roadmap.md`, section *Active Routing Queue*. The marker legend is at the
+`docs/roadmap/master_story_roadmap.md`, section *Focus Points*. The marker legend is at the
 top of it.
