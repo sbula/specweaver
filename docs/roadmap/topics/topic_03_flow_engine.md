@@ -244,7 +244,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   >   and the design disagree with the user. Needs you**
   > - **Trigger:** Before every LLM request, and after every completed call
   > - **Precondition:** `C-FLOW-01` → token and cost data · a decision on where LLM limits live — see its design and `STATE.md`
-  > - **Reads:** `llm.max_spend_usd` · `llm.max_tokens_per_run` · accumulated usage
+  > - **Reads:** `[brake] hosted_spend_per_run` · `[brake] tokens_per_run` (machine `settings.toml`, no defaults) · accumulated usage
   > - **Produces:** a run that stops and names the ceiling it hit
   > - **Enables:** `C-FLOW-11` → the cap on an agentic loop
   > - **Done when:** a run exceeding either ceiling stops and says which one

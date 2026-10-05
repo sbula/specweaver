@@ -16,7 +16,10 @@ Paths: `src/specweaver/infrastructure/llm/`; discovery lives in `adapters/regist
    1. `async generate(messages, config) -> LLMResponse`: plain chat completion, no tools.
    2. `generate_with_tools(messages, config, dispatcher)`: map the provider's native function-calling
       format (e.g. a JSON schema into Cohere's tool schema) and pipe native payload callbacks to the
-      `sandbox/dispatcher.py`.
+      `sandbox/dispatcher.py`. Loop over `tool_rounds(config)` (`infrastructure/llm/models.py`),
+      which refuses a config with no round limit; if the model is still calling tools when the
+      rounds run out, raise `ToolRoundsExceededError.reached(...)`. Never return a placeholder text
+      or the last half-finished response as the answer.
    3. `provider_name`: a unique static string identifying the class; it is also the server `kind`
       a settings file names.
    4. `default_base_url`: the provider's official address, written out, so no SDK environment

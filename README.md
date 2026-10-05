@@ -71,8 +71,8 @@ sw check specs/greeter_spec.md
 `sw init` registers the project in a local SQLite database under `~/.specweaver/`.
 
 The LLM commands — `sw draft`, `sw review`, `sw implement` — need a model chosen in
-`~/.specweaver/settings.toml` (a server and a role; there is no built-in model) and the provider's
-key in the environment. Other providers: `uv sync --extra all-llm`. See the
+`~/.specweaver/settings.toml` (a server, a role and the `[brake]` limits; there is no built-in model
+and no built-in limit) and the provider's key in the environment. Other providers: `uv sync --extra all-llm`. See the
 [installation guide](docs/user_guides/1_installation_and_setup.md).
 
 ## Testing

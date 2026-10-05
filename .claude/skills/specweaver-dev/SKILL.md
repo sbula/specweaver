@@ -276,7 +276,8 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 >
 > **`tests/scripted_llm.py` — `doubled_llm()` / `scripted_world()` when a test needs a doubled LLM.**
 > Every model call takes one path, `RoleResolver`, so these patch that one class: commands, the
-> router and the REST API are all covered. Never add a second way to build an adapter — two paths
+> router and the REST API are all covered. `doubled_llm` also stands in for the `[brake]` values, so
+> a test's settings file need not spell them out. Never add a second way to build an adapter — two paths
 > is how `INT-US-02`'s e2e once made a live API call while reading as mocked. `FixedRouter` gives a
 > hand-built `RunContext` its router; `TEST_CONFIG` gives a hand-built workflow class its settings.
 > Import them explicitly rather than hiding them in a fixture: the import line is the only place a

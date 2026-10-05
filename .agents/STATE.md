@@ -21,10 +21,10 @@ Read the design before touching it. It says so in its own first section.
 
 | Capability | What is wrong |
 |---|---|
-| `B-FLOW-05` | Its ceilings sit on `LLMSettings`. Every LLM access, payment, pricing, token and limit parameter is to live in **one central place** — file or database is still undecided |
+| `B-FLOW-05` | Its ceilings now come from `[brake]` in `settings.toml` (C-FLOW-13 SF-05), but its design still describes the old defaults, and the rules handed to it on 2026-10-03 (per-model and per-role limits, unpriced models, pause-and-ask, loop detection) are unbuilt |
 
-`B-FLOW-05` is blocked on that decision, which `C-FLOW-13` now owns `[agreed 2026-09-26]`. `C-FLOW-13`'s design
-is APPROVED (2026-09-26): machine `settings.toml` + project `[llm]`; B-FLOW-05 is redesigned after it.
+`C-FLOW-13` settled where the limits live `[agreed 2026-09-26]`: machine `settings.toml` + project
+`[llm]`; `B-FLOW-05` is redesigned now that it is built.
 All five sub-features are committed (2026-10-05). Every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`.
@@ -34,15 +34,13 @@ C-FLOW-13's own status flip awaits the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
-see — tests use `tests/fake_http.py`, and a non-`live` test cannot reach a real server. Until SF-03,
-hosted Qwen is unusable: it needs an address, which only the settings file holds.
+see — tests use `tests/fake_http.py`, and a non-`live` test cannot reach a real server.
 
 ## Live and worth knowing
 
-`llm.max_spend_usd` defaults to **$25**. `llm.max_tokens_per_run` to **20,000,000**. A run that
-reaches either stops and names the setting. The numbers are placeholders nobody agreed.
-
-Disable with `null`. `0` means *refuse everything* — a mistyped ceiling fails closed.
+The run's limits are `[brake] hosted_spend_per_run`, `tokens_per_run` and `agent_turns` in
+`settings.toml`, with **no defaults**: a command that calls a model refuses until all three are
+set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot be switched off.
 
 ## Recently done
 
