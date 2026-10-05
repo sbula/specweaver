@@ -104,7 +104,9 @@ class TestOpenAIAdapter:
         from specweaver.infrastructure.llm.models import ToolDefinition
 
         config = GenerationConfig(
-            model="gpt-4o", tools=[ToolDefinition(name="test", description="desc")]
+            model="gpt-4o",
+            tools=[ToolDefinition(name="test", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()
@@ -146,12 +148,30 @@ class TestOpenAIAdapter:
         mock_exec = AsyncMock()
         mock_exec.execute.return_value = {"success": True}
 
-        result = await adapter.generate_with_tools([], config, mock_exec)
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        assert result.text == "Max tool rounds exceeded."
-        assert result.finish_reason == "max_tokens"
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+            await adapter.generate_with_tools([], config, mock_exec)
+
         # It should loop exactly 2 times and call execute twice
         assert mock_exec.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_a_tool_loop_without_a_round_limit_is_refused_before_any_call(self) -> None:
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
+        from specweaver.infrastructure.llm.models import ToolDefinition
+
+        adapter = OpenAIAdapter(api_key="key")
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock()
+        adapter._client = mock_client
+        config = GenerationConfig(
+            model="gpt-5.4", tools=[ToolDefinition(name="my_tool", description="desc")]
+        )
+
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+            await adapter.generate_with_tools([], config, AsyncMock())
+        mock_client.chat.completions.create.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_generate_with_tools_json_error(self) -> None:
@@ -187,7 +207,9 @@ class TestOpenAIAdapter:
         from specweaver.infrastructure.llm.models import ToolDefinition
 
         config = GenerationConfig(
-            model="gpt-5.4", tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="gpt-5.4",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()

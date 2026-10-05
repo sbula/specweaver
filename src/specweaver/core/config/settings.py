@@ -4,8 +4,8 @@
 """SpecWeaver configuration loading.
 
 Settings are loaded from the SQLite database at ~/.specweaver/specweaver.db (project config) and
-the project's `specweaver.toml`. LLM settings — models, servers, sampling, prices — live in the LLM
-settings files instead (`core.config.llm_settings`).
+the project's `specweaver.toml`. LLM settings — models, servers, sampling, prices, limits — live in
+the LLM settings files instead (`core.config.llm_settings`).
 """
 
 from __future__ import annotations
@@ -40,28 +40,6 @@ def deep_merge_dict(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, 
         else:
             merged[key] = value
     return merged
-
-
-class LLMSettings(BaseModel):
-    """The run's spend ceilings — the last LLM values outside the settings files.
-
-    Models, servers, sampling and prices live in the LLM settings files; these two move
-    to its `[brake]` section with the spend brake's redesign.
-
-    ``max_spend_usd`` and ``max_tokens_per_run`` are the run's circuit breakers. Both default to a
-    finite value: a breaker that ships disabled stops nothing, and until it existed the only guard
-    on a runaway loop was ``max_retries``, which counts attempts rather than money. The defaults
-    are far above an ordinary run and far below a runaway one.
-
-    Write ``null`` to disable either deliberately. ``0`` is not that — it means *refuse
-    everything*, so a mistyped ceiling fails closed.
-
-    ``max_tokens_per_run`` is not redundant with ``max_spend_usd``: a model without a known price
-    adds no money to the run, so cost alone cannot bound it. Tokens come back on every response.
-    """
-
-    max_spend_usd: float | None = 25.0
-    max_tokens_per_run: int | None = 20_000_000
 
 
 class RuleOverride(BaseModel):
@@ -131,7 +109,7 @@ class AutonomySettings(BaseModel):
     DAL-A, DAL-B and DAL-C targets stay deterministic whatever a pipeline requests.
 
     ``max_turns`` bounds one agentic work unit. It is one of two bounds; the other is the run's
-    spend ceiling in ``LLMSettings``. Turns alone cannot stop expensive calls and spend alone
+    spend limit, ``[brake]`` in the machine settings file. Turns alone cannot stop expensive calls and spend alone
     cannot stop cheap ones, so neither is redundant.
     """
 
@@ -192,7 +170,6 @@ class SandboxSettings(BaseModel):
 class SpecWeaverSettings(BaseModel):
     """Root configuration object spanning all domains."""
 
-    llm: LLMSettings
     stitch: StitchSettings = StitchSettings()
     validation: ValidationSettings = ValidationSettings()
     dal_matrix: DALImpactMatrix = DALImpactMatrix()

@@ -49,11 +49,18 @@ def tmp_db(tmp_path: Path) -> Database:
 def _router(machine: str, roles: list[TaskType]) -> ModelRouter:
     """The router a command builds, from a machine settings file and no project file."""
     files = LlmSettingsFiles.from_texts(
-        machine_text=machine, machine_source="-", project_text="", project_source="-"
+        machine_text=machine + _BRAKE, machine_source="-", project_text="", project_source="-"
     )
-    return build_router(
-        files, project="test-proj", roles=roles, spend_limit_usd=None, token_limit=None
-    )
+    return build_router(files, project="test-proj", roles=roles)
+
+
+#: Generous run limits, so a test about routing never trips them.
+_BRAKE = """
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
+"""
 
 
 _HOSTED = """\

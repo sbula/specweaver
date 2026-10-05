@@ -33,7 +33,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from specweaver.assurance.graph.topology import TopologyContext
-from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.run_context import GraphContext, ModelAccess, RunContext
@@ -130,7 +130,7 @@ class TestMCPFlowE2E:
         ctx = RunContext(
             model=ModelAccess(
                 llm_router=FixedRouter(AsyncMock()),
-                config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
+                config=SpecWeaverSettings(),
             ),
             project_path=tmp_path,
             spec_path=spec,
@@ -181,7 +181,7 @@ class TestMCPFlowE2E:
         ctx = RunContext(
             model=ModelAccess(
                 llm_router=FixedRouter(AsyncMock()),
-                config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
+                config=SpecWeaverSettings(),
             ),
             project_path=tmp_path,
             spec_path=spec,
@@ -253,7 +253,7 @@ class TestMCPFlowE2E:
         ctx = RunContext(
             model=ModelAccess(
                 llm_router=FixedRouter(AsyncMock()),
-                config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
+                config=SpecWeaverSettings(),
             ),
             project_path=tmp_path,
             spec_path=spec,

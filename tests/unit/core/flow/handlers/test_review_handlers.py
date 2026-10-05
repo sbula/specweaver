@@ -142,7 +142,7 @@ class TestReviewCodeHandlerGuards:
         """ReviewCodeHandler with no .py files in output_dir → error result."""
         from unittest.mock import MagicMock
 
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+        from specweaver.core.config.settings import SpecWeaverSettings
         from specweaver.core.flow.handlers.review import ReviewCodeHandler
 
         spec = tmp_path / "test_spec.md"
@@ -153,9 +153,7 @@ class TestReviewCodeHandlerGuards:
         output_dir.mkdir()
 
         mock_llm = MagicMock()
-        mock_config = SpecWeaverSettings(
-            llm=LLMSettings(model="mock-model"),
-        )
+        mock_config = SpecWeaverSettings()
 
         ctx = RunContext(
             model=ModelAccess(llm_router=FixedRouter(mock_llm), config=mock_config),

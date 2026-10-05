@@ -45,6 +45,11 @@ max_parallel = 3
 [roles]
 draft = "qwen3-coder-next@gb10"
 default = "qwen3-coder-next@gb10"   # sw draft also reviews what it drafted
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 _REPLY = {

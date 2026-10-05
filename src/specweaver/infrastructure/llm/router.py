@@ -50,23 +50,24 @@ def build_router(
     *,
     project: str,
     roles: Iterable[TaskType | str],
-    spend_limit_usd: float | None,
-    token_limit: int | None,
     run_model: RoleEntry | None = None,
 ) -> ModelRouter:
-    """A command's router: every role it will use checked now, before the first call.
+    """A command's router: its limits and every role it will use checked now, before any call.
 
-    One spend budget covers every role of the command. Raises `SettingsFileError` naming the role
-    or key a settings file is missing.
+    One spend budget covers every role of the command, its limits from `[brake]` in the machine
+    file. Raises `SettingsFileError` naming the role or key a settings file is missing.
     """
+    from specweaver.core.config.llm_settings import brake_limits, to_usd
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.resolve import RoleResolver
 
-    resolver = RoleResolver(
-        files,
-        telemetry_project=project,
-        budget=SpendBudget(limit_usd=spend_limit_usd, token_limit=token_limit),
-        run_model=run_model,
+    limits = brake_limits(files)
+    currency = files.machine.currency
+    budget = SpendBudget(
+        limit_usd=to_usd(limits.hosted_spend_per_run, currency),
+        token_limit=limits.tokens_per_run,
+        currency=currency,
     )
+    resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=run_model)
     resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
     return ModelRouter(resolver)

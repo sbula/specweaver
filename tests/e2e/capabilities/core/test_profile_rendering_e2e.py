@@ -68,7 +68,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     import asyncio
 
     from specweaver.core.config.database import Database
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._profiles import ARBITER
@@ -153,7 +153,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     context = RunContext(
         model=ModelAccess(
             llm_router=FixedRouter(mock_llm),
-            config=SpecWeaverSettings(llm=LLMSettings()),
+            config=SpecWeaverSettings(),
         ),
         project_path=project_dir,
         spec_path=spec,
@@ -209,7 +209,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     import asyncio
 
     from specweaver.core.config.database import Database
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._profiles import FULL
@@ -264,7 +264,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     context = RunContext(
         model=ModelAccess(
             llm_router=FixedRouter(mock_llm),
-            config=SpecWeaverSettings(llm=LLMSettings()),
+            config=SpecWeaverSettings(),
         ),
         project_path=project_dir,
         spec_path=spec,

@@ -14,6 +14,12 @@ what thirty cheap calls do.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
+
+from specweaver.core.config.llm_settings import format_money
+
+if TYPE_CHECKING:
+    from specweaver.core.config.llm_settings import Currency
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +40,7 @@ class BudgetExceededError(Exception):
         self.setting = setting
         super().__init__(
             f"LLM circuit breaker tripped: {reason}. No further requests will be sent this run. "
-            f"Raise or disable `llm.{setting}` if this run is legitimate."
+            f"Raise `{setting}` in settings.toml if this run is legitimate."
         )
 
 
@@ -46,8 +52,14 @@ class SpendBudget:
     everything*. Failing closed on a mistyped limit is recoverable; failing open is the bill.
     """
 
-    def __init__(self, limit_usd: float | None, token_limit: int | None = None) -> None:
+    def __init__(
+        self,
+        limit_usd: float | None,
+        token_limit: int | None = None,
+        currency: Currency | None = None,
+    ) -> None:
         self._limit_usd = limit_usd
+        self._currency = currency
         self._token_limit = token_limit
         self._spent_usd = 0.0
         self._tokens = 0
@@ -90,10 +102,10 @@ class SpendBudget:
         if self._spent_usd >= self._limit_usd * _WARN_AT:
             self._warned = True
             logger.warning(
-                "LLM spend at %.0f%% of budget: $%.2f of $%.2f used this run",
+                "LLM spend at %.0f%% of budget: %s of %s used this run",
                 self._spent_usd / self._limit_usd * 100,
-                self._spent_usd,
-                self._limit_usd,
+                format_money(self._spent_usd, self._currency),
+                format_money(self._limit_usd, self._currency),
             )
 
     def check(self) -> None:
@@ -104,13 +116,13 @@ class SpendBudget:
         """
         if self.cost_exceeded:
             raise BudgetExceededError(
-                f"this run has spent ${self._spent_usd:.2f} against a limit of "
-                f"${self._limit_usd:.2f}",
-                setting="max_spend_usd",
+                f"this run has spent {format_money(self._spent_usd, self._currency)} against a "
+                f"limit of {format_money(self._limit_usd, self._currency)}",
+                setting="brake.hosted_spend_per_run",
             )
         if self.tokens_exceeded:
             raise BudgetExceededError(
                 f"this run has used {self._tokens:,} tokens against a limit of "
                 f"{self._token_limit:,}",
-                setting="max_tokens_per_run",
+                setting="brake.tokens_per_run",
             )

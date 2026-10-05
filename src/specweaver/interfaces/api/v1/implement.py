@@ -34,15 +34,12 @@ async def implement_spec(
     project_root, spec_path = await resolve_file_in_project(body.file, body.project, db)
 
     from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
-    from specweaver.core.config.bootstrap.settings_loader import load_settings_async
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.interfaces.api.v1._llm import api_router
     from specweaver.workflows.implementation.generator import Generator
     from specweaver.workspace.project.constitution import find_constitution
 
-    settings = await load_settings_async(db, body.project)
-
-    router = api_router(project_root, body.project, settings, [TaskType.IMPLEMENT])
+    router = api_router(project_root, body.project, [TaskType.IMPLEMENT])
     routed = router.get_for_task(TaskType.IMPLEMENT)
     generator = Generator(llm=routed.adapter, config=routed.config)
 

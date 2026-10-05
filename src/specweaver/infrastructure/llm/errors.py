@@ -53,6 +53,25 @@ class ContentFilterError(LLMError):
     """Response was blocked by the provider's safety/content filters."""
 
 
+class ToolRoundsExceededError(LLMError):
+    """A tool loop hit its round limit, or was given none; the run stops instead of guessing.
+
+    The limit is `[brake] agent_turns` in the machine settings file. Reaching it once returned a
+    canned text as if the model had answered; a stopped run says why instead.
+    """
+
+    @classmethod
+    def unset(cls) -> ToolRoundsExceededError:
+        return cls("a tool loop needs a round limit — set brake.agent_turns in settings.toml")
+
+    @classmethod
+    def reached(cls, rounds: int | None) -> ToolRoundsExceededError:
+        return cls(
+            f"the model was still calling tools after {rounds} rounds — raise brake.agent_turns "
+            "in settings.toml if the task needs more"
+        )
+
+
 class LLMAdapterError(Exception):
     """Raised when an LLM adapter cannot be created or validated.
 

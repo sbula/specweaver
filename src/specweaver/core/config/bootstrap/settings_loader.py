@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.config.settings import (
     DALImpactMatrix,
-    LLMSettings,
     SandboxSettings,
     SpecWeaverSettings,
     StandardsSettings,
@@ -140,8 +139,6 @@ async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSett
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    llm = LLMSettings()
-
     stitch = StitchSettings(
         mode=stitch_mode or "off",  # type: ignore[arg-type]
         api_key=os.environ.get("STITCH_API_KEY", ""),
@@ -152,7 +149,6 @@ async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSett
     sandbox = _load_toml_sandbox(str(root_path) if root_path else None)
 
     return SpecWeaverSettings(
-        llm=llm,
         stitch=stitch,
         dal_matrix=_load_dal_matrix(root_path),
         standards=standards,

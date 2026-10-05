@@ -70,6 +70,7 @@ class RoleResolver:
             {
                 "model": setting.model,
                 "max_output_tokens": self._output_limit(role, setting, facts),
+                "max_tool_rounds": self._files.machine.brake.agent_turns,
                 **_sampling(setting, facts),
             }
         )

@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.interfaces.cli.main import app
 from tests.scripted_llm import doubled_llm
 
@@ -76,7 +76,7 @@ def _run_and_capture_context(
     from specweaver.core.flow.engine.state import RunStatus
 
     spec = _scaffold(tmp_path, dal=dal, git=git)
-    settings = SpecWeaverSettings(llm=LLMSettings())
+    settings = SpecWeaverSettings()
     settings.sandbox.auto_isolate_min_dal = min_dal  # enforce_session_isolation stays False
     if execution_mode is not None:
         # Set on the settings object the CLI actually receives. Writing a specweaver.toml here

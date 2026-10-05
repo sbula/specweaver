@@ -154,7 +154,7 @@ def standards_scan(
 
     settings = load_settings(db, name)
     # Enrichment is optional: without a model for the `check` role the findings stand as found.
-    router = optional_command_router(name, settings, [TaskType.CHECK])
+    router = optional_command_router(name, [TaskType.CHECK])
 
     # We use a dummy spec_path since standards scanning is project/scope-wide
     dummy_spec = project_path / "CONSTITUTION.md"

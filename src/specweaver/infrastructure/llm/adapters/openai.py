@@ -15,7 +15,9 @@ from specweaver.infrastructure.llm.errors import (
     GenerationError,
     ModelNotFoundError,
     RateLimitError,
+    ToolRoundsExceededError,
 )
+from specweaver.infrastructure.llm.models import tool_rounds
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +245,7 @@ class OpenAIAdapter(LLMAdapter):
 
         cumulative_usage = TokenUsage()
 
-        for _total_calls, round_num in enumerate(range(config.max_tool_rounds)):
+        for _total_calls, round_num in enumerate(tool_rounds(config)):
             if on_tool_round:
                 self._apply_on_tool_round(messages, oai_messages, round_num, on_tool_round)
 
@@ -269,12 +271,7 @@ class OpenAIAdapter(LLMAdapter):
 
             await self._execute_tool_calls(msg.tool_calls, tool_executor, oai_messages)
 
-        return LLMResponse(
-            text="Max tool rounds exceeded.",
-            model=config.model,
-            usage=cumulative_usage,
-            finish_reason="max_tokens",
-        )
+        raise ToolRoundsExceededError.reached(config.max_tool_rounds)
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4

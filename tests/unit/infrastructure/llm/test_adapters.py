@@ -441,6 +441,7 @@ class TestGenerateWithTools:
         config = GenerationConfig(
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
+            max_tool_rounds=3,
         )
         messages = [Message(role=Role.USER, content="Hello")]
         mock_executor = AsyncMock()
@@ -486,6 +487,7 @@ class TestGenerateWithTools:
         config = GenerationConfig(
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
+            max_tool_rounds=3,
         )
         messages = [Message(role=Role.USER, content="Search for hello")]
 
@@ -635,10 +637,11 @@ class TestGenerateWithToolsEdgeCases:
         )
         messages = [Message(role=Role.USER, content="Find it")]
 
-        result = await adapter.generate_with_tools(messages, config, mock_executor)
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        # Should return after max rounds with the last parsed response
-        assert result is not None
+        # The last half-finished response is not an answer: the run stops, naming the limit.
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+            await adapter.generate_with_tools(messages, config, mock_executor)
         # Executor should have been called in each round
         assert mock_executor.execute.call_count == 2
 
@@ -684,6 +687,7 @@ class TestGenerateWithToolsEdgeCases:
         config = GenerationConfig(
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
+            max_tool_rounds=3,
         )
         messages = [Message(role=Role.USER, content="Search")]
 

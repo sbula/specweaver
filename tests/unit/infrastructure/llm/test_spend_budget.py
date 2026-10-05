@@ -96,6 +96,23 @@ def test_a_warning_fires_before_the_limit(caplog: pytest.LogCaptureFixture) -> N
     assert any("85" in record.message or "0.85" in record.message for record in caplog.records)
 
 
+def test_the_warning_speaks_the_users_currency(caplog: pytest.LogCaptureFixture) -> None:
+    """The limit is set in the user's currency, so the warning must not switch to dollars."""
+    from datetime import date
+
+    from specweaver.core.config.llm_settings import Currency
+
+    chf = Currency(code="CHF", per_usd=0.8, rate_date=date(2026, 9, 26))
+    budget = SpendBudget(limit_usd=10.0, currency=chf)
+
+    with caplog.at_level("WARNING"):
+        budget.record(8.5)
+
+    message = " ".join(record.message for record in caplog.records)
+    assert "CHF 6.80 of CHF 8.00" in message
+    assert "$" not in message
+
+
 def test_no_warning_well_below_the_limit(caplog: pytest.LogCaptureFixture) -> None:
     """The control for FR-4. A warning on every call is a warning nobody reads."""
     budget = SpendBudget(limit_usd=1.0)

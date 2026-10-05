@@ -18,7 +18,6 @@ forbids:
 exposes:
   - SpecWeaverSettings
   - ValidationSettings
-  - LLMSettings
   - SandboxSettings
   - Database
   - DALResolver

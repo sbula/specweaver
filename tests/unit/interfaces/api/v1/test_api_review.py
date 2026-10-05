@@ -143,9 +143,15 @@ class TestReviewEndpointWithoutAnLlm:
         Written while fixing three tests that returned 500 on any machine without a provider key
         exported. The 500 was correct, but nothing asserted it, so the endpoint's documented
         failure mode was proven only by other tests failing for the wrong reason. This pins it
-        deliberately, and supplies no model on purpose: the data directory holds no settings file.
+        deliberately, and supplies no model on purpose: the settings file sets only `[brake]`.
         """
-        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / "no-settings"))
+        data_dir = tmp_path / "no-roles"
+        data_dir.mkdir()
+        (data_dir / "settings.toml").write_text(
+            "[brake]\nhosted_spend_per_run = 20\ntokens_per_run = 500000\nagent_turns = 10\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
         proj, spec = _project_with_spec
         resp = client.post(
             "/api/v1/review",
@@ -155,3 +161,18 @@ class TestReviewEndpointWithoutAnLlm:
         assert resp.status_code == 500
         assert resp.json()["error_code"] == "LLM_SETTINGS"
         assert "roles.review" in resp.json()["detail"]
+
+    def test_an_unset_brake_returns_llm_settings_error(
+        self, client, _project_with_spec, tmp_path, monkeypatch
+    ) -> None:
+        """No settings file at all → the first unset `[brake]` limit is named; no default applies."""
+        monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / "no-settings"))
+        proj, spec = _project_with_spec
+        resp = client.post(
+            "/api/v1/review",
+            json={"file": str(spec.relative_to(proj)), "project": "testproj"},
+        )
+
+        assert resp.status_code == 500
+        assert resp.json()["error_code"] == "LLM_SETTINGS"
+        assert "brake.hosted_spend_per_run" in resp.json()["detail"]

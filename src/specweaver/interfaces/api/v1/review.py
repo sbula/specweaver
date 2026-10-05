@@ -33,14 +33,12 @@ async def review_spec(
     """
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
-    from specweaver.core.config.bootstrap.settings_loader import load_settings_async
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.interfaces.api.v1._llm import api_router
     from specweaver.workflows.review.reviewer import Reviewer
     from specweaver.workspace.project.constitution import find_constitution
 
-    settings = await load_settings_async(db, body.project)
-    router = api_router(project_root, body.project, settings, [TaskType.REVIEW])
+    router = api_router(project_root, body.project, [TaskType.REVIEW])
     routed = router.get_for_task(TaskType.REVIEW)
 
     from specweaver.assurance.standards.loader import load_standards_content_async

@@ -9,7 +9,7 @@ Proves: C-FLOW-13 FR-4, FR-5
 |---|---|
 | Happy | a full machine file and a project section parse into typed models |
 | Boundary | empty text; `max_parallel = 0`; a role without `@`; an unknown role name |
-| Degradation | empty text means built-in defaults; `schema_version` from the future refuses |
+| Degradation | empty text leaves every brake value unset; `schema_version` from the future refuses |
 | Hostile | a typo'd key; a wrong type; broken TOML; a project that tries to define a server, a `base_url` or a key variable; a secret-looking value never echoed |
 """
 
@@ -48,7 +48,7 @@ implement = { model = "qwen3-coder-next@gb10", temperature = 1.0 }
 
 [brake]
 hosted_spend_per_run = 20
-local_gpu_hours_per_run = 2
+tokens_per_run = 500000
 agent_turns = 10
 
 [models."qwen3-coder-next"]
@@ -74,6 +74,7 @@ class TestTheMachineFileParses:
         assert machine.servers["gb10"].private is True
         assert machine.servers["anthropic"].max_parallel == 3
         assert machine.brake.hosted_spend_per_run == 20
+        assert machine.brake.tokens_per_run == 500000
         assert machine.models["qwen3-coder-next"].context == 262144
         assert machine.models["qwen3-coder-next"].usd_per_million_output == 0.0
         assert machine.models["qwen3-coder-next"].thinking_in_output_cap is True
@@ -99,16 +100,16 @@ class TestTheMachineFileParses:
 
         assert (role.model, role.server, role.temperature) == ("qwen3-coder-next", "gb10", 1.0)
 
-    def test_empty_text_means_the_agreed_defaults(self) -> None:
+    def test_empty_text_leaves_every_brake_value_unset(self) -> None:
         machine = parse_machine_file("", "settings.toml")
 
         assert machine.servers == {}
         assert machine.roles == {}
-        assert (machine.brake.hosted_spend_per_run, machine.brake.local_gpu_hours_per_run) == (
-            20,
-            2,
-        )
-        assert machine.brake.agent_turns == 10
+        assert (
+            machine.brake.hosted_spend_per_run,
+            machine.brake.tokens_per_run,
+            machine.brake.agent_turns,
+        ) == (None, None, None)
 
 
 def _refusal(text: str, *, project: bool = False) -> SettingsFileError:
@@ -156,6 +157,7 @@ class TestABrokenMachineFileRefuses:
             ('draft = "claude-sonnet@anthropic"', 'draft = "claude-sonnet"'),
             ('draft = "claude-sonnet@anthropic"', 'drafting = "claude-sonnet@anthropic"'),
             ('kind = "anthropic"', 'kind = "anthropik"'),
+            ("agent_turns = 10", "agent_turns = 10\nlocal_gpu_hours_per_run = 2"),
         ],
     )
     def test_an_invalid_value_refuses(self, old: str, new: str) -> None:

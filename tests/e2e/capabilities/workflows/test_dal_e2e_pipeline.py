@@ -40,6 +40,15 @@ _SPEC = (Path(__file__).resolve().parents[3] / "fixtures" / "good_spec.md").read
 _proj_counter = 0
 
 
+#: A machine settings file with the run's limits and nothing else: no server, no role.
+_BRAKE_ONLY = """\
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
+"""
+
+
 def _unique_name(prefix: str = "test") -> str:
     """Generate unique project names to avoid DB collisions."""
     global _proj_counter
@@ -147,6 +156,12 @@ class TestImplementUnderDal:
         """
         project = _project(tmp_path, "dal_impl")
         spec = _bind(project / "src" / "critical", "DAL_A")
+        # The run's limits are set; no role is, so the missing model is what stops the run.
+        from specweaver.core.config.bootstrap.llm_settings_loader import machine_settings_path
+
+        machine = machine_settings_path()
+        machine.parent.mkdir(parents=True, exist_ok=True)
+        machine.write_text(_BRAKE_ONLY, encoding="utf-8")
 
         result = CliRunner().invoke(app, ["implement", str(spec), "--project", str(project)])
 

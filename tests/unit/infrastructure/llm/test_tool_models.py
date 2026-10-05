@@ -141,7 +141,7 @@ class TestGenerationConfigTools:
     def test_default_no_tools(self) -> None:
         config = GenerationConfig(model="test-model")
         assert config.tools is None
-        assert config.max_tool_rounds == 5
+        assert config.max_tool_rounds is None  # no number in code: `brake.agent_turns` sets it
 
     def test_with_tools(self) -> None:
         tool = ToolDefinition(name="grep", description="search")

@@ -78,7 +78,10 @@ async def test_qwen_gets_max_tokens() -> None:
 async def test_the_tool_calling_path_sends_the_same_field() -> None:
     adapter = OpenAIAdapter(api_key="k")
     config = GenerationConfig(
-        model="m", max_output_tokens=512, tools=[ToolDefinition(name="grep", description="search")]
+        model="m",
+        max_output_tokens=512,
+        tools=[ToolDefinition(name="grep", description="search")],
+        max_tool_rounds=3,
     )
 
     with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:

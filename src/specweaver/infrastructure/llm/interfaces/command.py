@@ -17,7 +17,6 @@ from specweaver.interfaces.cli import _core
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.infrastructure.llm.router import ModelRouter
 
@@ -36,7 +35,6 @@ def run_model_option(value: str | None) -> RoleEntry | None:
 
 def command_router(
     project: str,
-    settings: SpecWeaverSettings,
     roles: Iterable[TaskType | str],
     *,
     run_model: RoleEntry | None = None,
@@ -51,17 +49,13 @@ def command_router(
             files,
             project=project,
             roles=roles,
-            spend_limit_usd=settings.llm.max_spend_usd,
-            token_limit=settings.llm.max_tokens_per_run,
             run_model=run_model,
         )
     except SettingsFileError as err:
         _core.refuse_llm_settings(err)
 
 
-def optional_command_router(
-    project: str, settings: SpecWeaverSettings, roles: Iterable[TaskType | str]
-) -> ModelRouter | None:
+def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> ModelRouter | None:
     """Like `command_router`, but a role nobody set means no router instead of a refusal.
 
     For commands whose model use is optional. A broken settings file still stops the command.
@@ -72,9 +66,7 @@ def optional_command_router(
             files,
             project=project,
             roles=roles,
-            spend_limit_usd=settings.llm.max_spend_usd,
-            token_limit=settings.llm.max_tokens_per_run,
         )
     except SettingsFileError as err:
-        _core.console.print(f"No model used: {err.message}", style="dim", markup=False)
+        _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)
         return None

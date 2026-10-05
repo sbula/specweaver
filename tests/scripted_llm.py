@@ -78,6 +78,10 @@ def settings_mock() -> MagicMock:
     return settings
 
 
+#: Generous limits for doubled models: a test about something else must not trip them.
+_TEST_LIMITS: dict[str, Any] = {"max_output_tokens": 4096, "max_tool_rounds": 10}
+
+
 @contextlib.contextmanager
 def doubled_llm(adapter: Any, model: str = "test-model", **settings: Any) -> Iterator[Any]:
     """Every role resolves to `adapter`: the one place adapters come from (`RoleResolver`) is doubled.
@@ -86,9 +90,10 @@ def doubled_llm(adapter: Any, model: str = "test-model", **settings: Any) -> Ite
     patch covers every path a model call can take. The run flushes `adapter` if it has a flush.
     Yields the generation settings every role gets.
     """
+    from specweaver.core.config.llm_settings import BrakeLimits
     from specweaver.infrastructure.llm.resolve import RoleResolver
 
-    config = GenerationConfig(model=model, **({"max_output_tokens": 4096} | settings))
+    config = GenerationConfig(model=model, **(_TEST_LIMITS | settings))
 
     def _for_role(_resolver: Any, _role: str) -> tuple[Any, GenerationConfig]:
         return adapter, config
@@ -100,6 +105,13 @@ def doubled_llm(adapter: Any, model: str = "test-model", **settings: Any) -> Ite
         stack.enter_context(patch.object(RoleResolver, "for_role", _for_role))
         stack.enter_context(patch.object(RoleResolver, "require", lambda _resolver, _roles: None))
         stack.enter_context(patch.object(RoleResolver, "collectors", lambda _resolver: flushable))
+        # The run's `[brake]` values, which a test's settings file need not spell out.
+        stack.enter_context(
+            patch(
+                "specweaver.core.config.llm_settings.brake_limits",
+                lambda _files: BrakeLimits(1000.0, 100_000_000, _TEST_LIMITS["max_tool_rounds"]),
+            )
+        )
         yield config
 
 
@@ -116,7 +128,7 @@ class FixedRouter:
 
     def __init__(self, adapter: Any, model: str = "test-model", **settings: Any) -> None:
         self.adapter = adapter
-        self.config = GenerationConfig(model=model, **({"max_output_tokens": 4096} | settings))
+        self.config = GenerationConfig(model=model, **(_TEST_LIMITS | settings))
 
     def get_for_task(self, task_type: Any) -> RouterResult:
         return RouterResult(adapter=self.adapter, config=self.config)
@@ -127,4 +139,4 @@ class FixedRouter:
 
 #: Generation settings for tests that build a workflow class by hand. Production code gets its
 #: settings from the resolver; there is no default model to fall back on.
-TEST_CONFIG = GenerationConfig(model="test-model", max_output_tokens=4096)
+TEST_CONFIG = GenerationConfig(model="test-model", **_TEST_LIMITS)

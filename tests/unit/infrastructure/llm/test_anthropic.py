@@ -74,6 +74,7 @@ class TestAnthropicAdapter:
         config = GenerationConfig(
             model="claude-3-7-sonnet-20250219",
             tools=[ToolDefinition(name="test", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()
@@ -111,10 +112,11 @@ class TestAnthropicAdapter:
         mock_exec = AsyncMock()
         mock_exec.execute.return_value = "fixed"
 
-        result = await adapter.generate_with_tools([], config, mock_exec)
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        assert result.text == "Max tool rounds exceeded."
-        assert result.finish_reason == "max_tokens"
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+            await adapter.generate_with_tools([], config, mock_exec)
+
         assert mock_exec.execute.call_count == 2
 
     @pytest.mark.asyncio
@@ -149,7 +151,9 @@ class TestAnthropicAdapter:
         from specweaver.infrastructure.llm.models import ToolDefinition
 
         config = GenerationConfig(
-            model="claude-4-6-sonnet", tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="claude-4-6-sonnet",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()

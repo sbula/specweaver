@@ -17,6 +17,8 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
+
 
 class Role(enum.StrEnum):
     """Message role in a conversation."""
@@ -71,9 +73,18 @@ class GenerationConfig(BaseModel):
     response_format: Literal["text", "json"] = "text"
     system_instruction: str | None = None
     tools: list[ToolDefinition] | None = None  # Provider-agnostic tool definitions
-    max_tool_rounds: int = 5  # Max agentic loop iterations
+    # Tool-loop rounds, from `[brake] agent_turns`; `None` means no limit was given, and a tool loop
+    # refuses to start without one.
+    max_tool_rounds: int | None = Field(default=None, ge=1)
     task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
     run_id: str = ""  # Telemetry lineage correlation (3.14)
+
+
+def tool_rounds(config: GenerationConfig) -> range:
+    """The rounds a tool loop may run; refuses before any call when no limit was given."""
+    if config.max_tool_rounds is None:
+        raise ToolRoundsExceededError.unset()
+    return range(config.max_tool_rounds)
 
 
 class TokenUsage(BaseModel):

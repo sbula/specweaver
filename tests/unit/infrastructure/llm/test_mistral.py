@@ -98,7 +98,9 @@ class TestMistralAdapter:
         from specweaver.infrastructure.llm.models import ToolDefinition
 
         config = GenerationConfig(
-            model="mistral-large-latest", tools=[ToolDefinition(name="test", description="desc")]
+            model="mistral-large-latest",
+            tools=[ToolDefinition(name="test", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()
@@ -142,10 +144,11 @@ class TestMistralAdapter:
         mock_exec = AsyncMock()
         mock_exec.execute.return_value = {"success": True}
 
-        result = await adapter.generate_with_tools([], config, mock_exec)
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        assert result.text == "Max tool rounds exceeded."
-        assert result.finish_reason == "max_tokens"
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+            await adapter.generate_with_tools([], config, mock_exec)
+
         assert mock_exec.execute.call_count == 2
 
     @pytest.mark.asyncio
@@ -180,7 +183,9 @@ class TestMistralAdapter:
         from specweaver.infrastructure.llm.models import ToolDefinition
 
         config = GenerationConfig(
-            model="mistral-large-latest", tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="mistral-large-latest",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=3,
         )
 
         mock_exec = AsyncMock()

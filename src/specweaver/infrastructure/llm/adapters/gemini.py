@@ -21,6 +21,7 @@ from specweaver.infrastructure.llm.errors import (
     GenerationError,
     ModelNotFoundError,
     RateLimitError,
+    ToolRoundsExceededError,
 )
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,
@@ -30,6 +31,7 @@ from specweaver.infrastructure.llm.models import (
     TokenUsage,
     ToolCall,
     ToolDefinition,
+    tool_rounds,
 )
 
 if TYPE_CHECKING:
@@ -297,7 +299,7 @@ class GeminiAdapter(LLMAdapter):
         cumulative_usage = TokenUsage()
         total_calls = 0
 
-        for round_num in range(config.max_tool_rounds):
+        for round_num in tool_rounds(config):
             logger.debug(
                 "GeminiAdapter.generate_with_tools: round %d/%d",
                 round_num + 1,
@@ -338,14 +340,7 @@ class GeminiAdapter(LLMAdapter):
             )
             await self._run_tool_round(tool_calls, tool_executor, response, contents)
 
-        # Max rounds reached — log warning and return
-        if total_calls > 5:
-            logger.warning(
-                "GeminiAdapter: tool loop used %d LLM calls (max_rounds=%d)",
-                total_calls,
-                config.max_tool_rounds,
-            )
-        return self._final_response(response, config.model, cumulative_usage)
+        raise ToolRoundsExceededError.reached(total_calls)
 
     def _final_response(self, response: Any, model: str, usage: Any) -> LLMResponse:
         """The parsed response, carrying the tokens accumulated across every round."""

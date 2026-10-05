@@ -31,6 +31,11 @@ max_parallel = 1
 
 [roles]
 default = { model = "some-model@gemini", max_output_tokens = 8192 }
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 
@@ -114,8 +119,6 @@ class TestTelemetryRoundtrip:
                 files,
                 project="testproj",
                 roles=[TaskType.DRAFT],
-                spend_limit_usd=None,
-                token_limit=None,
             )
             adapter = router.get_for_task(TaskType.DRAFT).adapter
 

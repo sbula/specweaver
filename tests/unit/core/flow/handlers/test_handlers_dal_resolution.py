@@ -27,7 +27,6 @@ class TestValidationDALResolution:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.core.config.settings import (
             DALImpactMatrix,
-            LLMSettings,
             RuleOverride,
             SpecWeaverSettings,
             ValidationSettings,
@@ -39,9 +38,7 @@ class TestValidationDALResolution:
             overrides={"S01": RuleOverride(rule_id="S01", enabled=True, fail_threshold=10.0)}
         )
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
-
-        llm = LLMSettings(model="gemini", provider="gemini", api_key="")
-        settings = SpecWeaverSettings(llm=llm, validation=base_val, dal_matrix=matrix)
+        settings = SpecWeaverSettings(validation=base_val, dal_matrix=matrix)
 
         spec = tmp_path / "test.md"
         spec.touch()
@@ -66,7 +63,6 @@ class TestValidationDALResolution:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.core.config.settings import (
             DALImpactMatrix,
-            LLMSettings,
             RuleOverride,
             SpecWeaverSettings,
             ValidationSettings,
@@ -76,9 +72,7 @@ class TestValidationDALResolution:
         base_val = ValidationSettings()
         dal_val = ValidationSettings(overrides={"C02": RuleOverride(rule_id="C02", enabled=False)})
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: dal_val})
-
-        llm = LLMSettings(model="g", provider="g", api_key="")
-        settings = SpecWeaverSettings(llm=llm, validation=base_val, dal_matrix=matrix)
+        settings = SpecWeaverSettings(validation=base_val, dal_matrix=matrix)
 
         from contextlib import asynccontextmanager
 
@@ -114,7 +108,6 @@ class TestValidationDALResolution:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.core.config.settings import (
             DALImpactMatrix,
-            LLMSettings,
             SpecWeaverSettings,
             ValidationSettings,
         )
@@ -123,7 +116,6 @@ class TestValidationDALResolution:
         base_val = ValidationSettings()
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: ValidationSettings()})
         settings = SpecWeaverSettings(
-            llm=LLMSettings(model="g", provider="g", api_key=""),
             validation=base_val,
             dal_matrix=matrix,
         )
@@ -152,16 +144,13 @@ class TestValidationDALResolution:
         from unittest.mock import MagicMock
 
         from specweaver.core.config.settings import (
-            LLMSettings,
             SpecWeaverSettings,
             ValidationSettings,
         )
         from specweaver.core.flow.handlers.validation import _resolve_merged_settings
 
         base_val = ValidationSettings()
-        settings = SpecWeaverSettings(
-            llm=LLMSettings(model="g", provider="g", api_key=""), validation=base_val
-        )
+        settings = SpecWeaverSettings(validation=base_val)
 
         mock_db = MagicMock()
         mock_repo = AsyncMock()
@@ -186,7 +175,6 @@ class TestValidationDALResolution:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.core.config.settings import (
             DALImpactMatrix,
-            LLMSettings,
             RuleOverride,
             SpecWeaverSettings,
             ValidationSettings,
@@ -216,7 +204,6 @@ class TestValidationDALResolution:
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
 
         settings = SpecWeaverSettings(
-            llm=LLMSettings(model="g", provider="g", api_key=""),
             validation=base_val,
             dal_matrix=matrix,
         )

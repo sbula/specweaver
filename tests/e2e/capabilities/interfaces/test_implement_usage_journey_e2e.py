@@ -71,6 +71,11 @@ default = "{_MODEL}@gem"
 
 [models."{_MODEL}"]
 max_output = 8192
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 

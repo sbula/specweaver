@@ -234,7 +234,7 @@ class TestLineageE2EFlow:
         import asyncio
 
         from specweaver.core.config.database import Database
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+        from specweaver.core.config.settings import SpecWeaverSettings
         from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
         from specweaver.core.flow.engine.runner import PipelineRunner
         from specweaver.core.flow.handlers.run_context import RunContext
@@ -251,7 +251,7 @@ class TestLineageE2EFlow:
         context = RunContext(
             model=ModelAccess(
                 llm_router=FixedRouter(mock_llm, model="mock"),
-                config=SpecWeaverSettings(llm=LLMSettings()),
+                config=SpecWeaverSettings(),
             ),
             project_path=project_dir,
             spec_path=spec,

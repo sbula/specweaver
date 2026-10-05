@@ -4,8 +4,7 @@
 
 """Tests for config/settings.py — DB-backed settings loading.
 
-LLM models, servers and prices are not loaded here any more: they live in the LLM settings files.
-What remains in `LLMSettings` are the run's spend ceilings.
+LLM models, servers, prices and run limits are not loaded here: they live in the LLM settings files.
 """
 
 from __future__ import annotations
@@ -57,7 +56,8 @@ class TestLoadSettings:
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
 
-        assert (settings.llm.max_spend_usd, settings.llm.max_tokens_per_run) == (25.0, 20_000_000)
+        assert settings.stitch.mode == "off"
+        assert not hasattr(settings, "llm")
 
     def test_load_nonexistent_project_raises(self, db):
         from specweaver.core.config.bootstrap.settings_loader import load_settings
@@ -74,31 +74,16 @@ class TestLoadActiveProject:
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         set_test_active_project(db, "myapp")
+        _set_stitch_mode(db, "myapp", "auto")
         settings = load_settings_for_active(db)
 
-        assert settings.llm.max_spend_usd == 25.0
+        assert settings.stitch.mode == "auto"
 
     def test_load_no_active_raises(self, db):
         from specweaver.core.config.bootstrap.settings_loader import load_settings_for_active
 
         with pytest.raises(ValueError, match=r"[Nn]o active project"):
             load_settings_for_active(db)
-
-
-class TestPydanticModels:
-    """SpecWeaverSettings and LLMSettings models."""
-
-    def test_the_spend_ceilings_default_to_finite_values(self):
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
-
-        s = SpecWeaverSettings(llm=LLMSettings())
-
-        assert (s.llm.max_spend_usd, s.llm.max_tokens_per_run) == (25.0, 20_000_000)
-
-    def test_a_ceiling_can_be_switched_off(self):
-        from specweaver.core.config.settings import LLMSettings
-
-        assert LLMSettings(max_spend_usd=None).max_spend_usd is None
 
 
 class TestStitchSettingsLoad:

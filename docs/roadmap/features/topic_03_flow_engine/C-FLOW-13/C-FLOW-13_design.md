@@ -138,4 +138,4 @@ a cloned repo must not be able to send code to its own server.
 | SF-02 | Catalogue, servers, privacy | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consumers switched over | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Retired — see the sub-feature table | — | — | — | — | — | — |
-| SF-05 | Run override, brake values | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Run override, brake values | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |

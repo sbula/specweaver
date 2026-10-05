@@ -260,7 +260,7 @@ def implement(
     )
 
     pipeline = _build_implement_pipeline(stem)
-    router = command_router(project, settings, roles_of(pipeline), run_model=run_model)
+    router = command_router(project, roles_of(pipeline), run_model=run_model)
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),

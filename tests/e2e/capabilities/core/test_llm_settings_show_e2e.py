@@ -8,7 +8,7 @@ Proves: C-FLOW-13 FR-3, FR-4, FR-5, FR-9
 | Bucket | Case |
 |---|---|
 | Happy | machine and project files → each role with its value and origin |
-| Boundary | no settings files at all → the built-in brake values, marked as built-in |
+| Boundary | no settings files at all → every brake value shown as unset; a set one shows its line |
 | Degradation | a typo in the machine file → exit 1 naming the file and the line (P4) |
 | Hostile | a project file that defines a server → exit 1, told to use the machine file (P7) |
 | Hostile | a private-only project with a role on a hosted server → exit 1, naming the rule (P3) |
@@ -68,14 +68,32 @@ def test_each_value_shows_where_it_came_from(
     assert shows(result.output, "specweaver.toml:2")
 
 
-def test_without_files_the_brake_values_are_built_in(tmp_path: Path, _mock_db: Database) -> None:
+def test_without_files_the_brake_values_are_unset(tmp_path: Path, _mock_db: Database) -> None:
+    _project(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 0, result.output
+    for key in ("hosted_spend_per_run", "tokens_per_run", "agent_turns"):
+        assert shows(
+            result.output, f"brake.{key} = unset — required by any command that calls a model"
+        )
+    assert not shows(result.output, "brake.hosted_spend_per_run = 20")
+
+
+def test_a_set_brake_value_shows_its_line(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    text = _MACHINE + "\n[brake]\nhosted_spend_per_run = 20\n"
+    (_isolate_env / "settings.toml").write_text(text, encoding="utf-8")
     _project(tmp_path)
 
     result = runner.invoke(app, ["config", "show"])
 
     assert result.exit_code == 0, result.output
     assert shows(result.output, "brake.hosted_spend_per_run = 20")
-    assert shows(result.output, "built-in default")
+    line = text.splitlines().index("hosted_spend_per_run = 20") + 1
+    assert shows(result.output, f"{_isolate_env / 'settings.toml'}:{line}")
 
 
 def test_a_typo_in_the_machine_file_stops_with_its_line(

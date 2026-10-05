@@ -572,10 +572,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/router.py",
           "symbol": "build_router",
-          "old": "        run_model=run_model,\n",
-          "new": "        run_model=None,\n",
+          "old": "    resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=run_model)\n",
+          "new": "    resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=None)\n",
           "breaks": "commands pass --model, the router forgets it",
-          "symbol_sha": "sha256:097c4c05ff0cc0d1b952cfdbbe7739583d55eca96e38b4b33159a6046fb8463c"
+          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
         },
         {
           "id": "command-drops-run-model",
@@ -592,10 +592,10 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    router = command_router(project, settings, roles_of(pipeline), run_model=run_model)\n",
-          "new": "    router = command_router(project, settings, roles_of(pipeline))\n",
+          "old": "    router = command_router(project, roles_of(pipeline), run_model=run_model)\n",
+          "new": "    router = command_router(project, roles_of(pipeline))\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:fbcd4c11e92a9f999e090d7faddf62f652deee71daa238bd5335a246c65186d1"
+          "symbol_sha": "sha256:fa46b6f07093e1b4feddf6c3cd6056237a1aacc4738c06417aa9215e22a235c3"
         },
         {
           "id": "run-drops-run-model",
@@ -636,6 +636,144 @@
           "new": "    roles = roles_of(pipeline)\n    if not roles and run_model is None:\n        return\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
           "symbol_sha": "sha256:149b8f7d2334630db754b5ec28474fcf9f7aa92e334723541f36f647c71f457a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "Every limit from the machine file, none in code",
+      "scope": [
+        "tests/unit/core/config/test_llm_limit_fields.py",
+        "tests/integration/infrastructure/llm/test_brake_from_settings.py",
+        "tests/unit/infrastructure/llm/test_openai.py",
+        "tests/unit/infrastructure/llm/test_anthropic.py",
+        "tests/unit/infrastructure/llm/test_mistral.py",
+        "tests/unit/infrastructure/llm/test_adapters.py",
+        "tests/unit/infrastructure/llm/test_tool_models.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/integration/workflows/review/test_review_round_limit.py",
+        "tests/e2e/capabilities/assurance/test_scan_without_brake_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "spend-limit-not-converted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "build_router",
+          "old": "        limit_usd=to_usd(limits.hosted_spend_per_run, currency),\n",
+          "new": "        limit_usd=limits.hosted_spend_per_run,\n",
+          "breaks": "a limit set in CHF is applied as USD",
+          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
+        },
+        {
+          "id": "token-limit-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "build_router",
+          "old": "        token_limit=limits.tokens_per_run,\n",
+          "new": "        token_limit=None,\n",
+          "breaks": "the run's token limit is read and never applied",
+          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
+        },
+        {
+          "id": "unset-brake-passes",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "brake_limits",
+          "old": "        if getattr(brake, name) is None:\n",
+          "new": "        if False:\n",
+          "breaks": "a run with no limit set calls the model anyway",
+          "symbol_sha": "sha256:3845e908da07b31822a0b08e94b34094d46048f74b49c117eafc520228cdb5fb"
+        },
+        {
+          "id": "agent-turns-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver.for_role",
+          "old": "                \"max_tool_rounds\": self._files.machine.brake.agent_turns,\n",
+          "new": "                \"max_tool_rounds\": 5,\n",
+          "breaks": "the round limit is a number in code again",
+          "symbol_sha": "sha256:5f7878d042817dff21377cef5dd4b518dbb46559d8d40318c0cb70d378f9bf09"
+        },
+        {
+          "id": "no-round-limit-runs",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/models.py",
+          "symbol": "tool_rounds",
+          "old": "    if config.max_tool_rounds is None:\n",
+          "new": "    if False:\n",
+          "breaks": "a tool loop with no limit fails with a bare TypeError instead of naming the key",
+          "symbol_sha": "sha256:5975464a5463c5ebebead1cbbe5109c87dd45877d950c533c7d2b83bbe0d9710"
+        },
+        {
+          "id": "project-limit-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "parse_project_llm",
+          "old": "        if limit:\n",
+          "new": "        if False:\n",
+          "breaks": "a cloned repo's specweaver.toml can set the user's money limits",
+          "symbol_sha": "sha256:840047230123c03186c1148e9a37d41f27aed9428fd6c7a061146fb9fcf549fa"
+        },
+        {
+          "id": "openai-fake-answer",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
+          "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
+          "breaks": "a tool loop at its limit returns canned text as the model's answer",
+          "symbol_sha": "sha256:6ac72fee1768ba7bfbad7776dc2023f7d78fd57ac67266d0d37a9cc0c0d270cd"
+        },
+        {
+          "id": "anthropic-fake-answer",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
+          "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
+          "breaks": "a tool loop at its limit returns canned text as the model's answer",
+          "symbol_sha": "sha256:2506b996c7feca888b4b47c43a7381dbd107e3ab3ff3fe40353920ecf867a7cc"
+        },
+        {
+          "id": "mistral-fake-answer",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
+          "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
+          "breaks": "a tool loop at its limit returns canned text as the model's answer",
+          "symbol_sha": "sha256:46e598ee9df7e991395a14909e75c612e914545fdcc3aef46a3d6db61e1f99f4"
+        },
+        {
+          "id": "gemini-partial-answer",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "        raise ToolRoundsExceededError.reached(total_calls)\n",
+          "new": "        return self._final_response(response, config.model, cumulative_usage)\n",
+          "breaks": "a tool loop at its limit returns the last half-finished response as the answer",
+          "symbol_sha": "sha256:3a05e7f403800cd623a31626e18ee0b6a15be8b3233aeba9362debf344f10aac"
+        },
+        {
+          "id": "warning-in-dollars",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.record",
+          "old": "                format_money(self._spent_usd, self._currency),\n                format_money(self._limit_usd, self._currency),\n",
+          "new": "                format_money(self._spent_usd, None),\n                format_money(self._limit_usd, None),\n",
+          "breaks": "the 80% warning shows USD for a limit the user set in their own currency",
+          "symbol_sha": "sha256:4959c28c70b2045bcc2dc8eb77a6e53106908f6fd169fbdb5e0292f5a07d92ee"
+        },
+        {
+          "id": "skipped-model-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "optional_command_router",
+          "old": "        _core.console.print(f\"No model used: {err.key}: {err.message}\", style=\"dim\", markup=False)\n",
+          "new": "        _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
+          "breaks": "a scan skips the model and never says which key would turn it on",
+          "symbol_sha": "sha256:411f6c6844acf3804b52a7c55738180f6be291d01066019946880dae37945eb8"
         }
       ]
     }

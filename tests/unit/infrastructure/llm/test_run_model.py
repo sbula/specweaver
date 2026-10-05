@@ -48,6 +48,11 @@ max_parallel = 2
 [roles]
 review = { model = "qwen3-coder-next@gb10", temperature = 0.3 }
 default = "qwen3-coder-next@gb10"
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 _CATALOGUE = Catalogue.from_texts(
@@ -137,8 +142,6 @@ class TestBuildRouterPassesTheRunModel:
             _files(),
             project="demo",
             roles=[TaskType.REVIEW, TaskType.IMPLEMENT],
-            spend_limit_usd=None,
-            token_limit=None,
             run_model=RoleEntry.model_validate("qwen3-coder-next@spare"),
         )
 

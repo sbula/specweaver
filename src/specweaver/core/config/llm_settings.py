@@ -16,7 +16,7 @@ import re
 import tomllib
 from dataclasses import dataclass, field
 from datetime import date
-from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -46,6 +46,8 @@ _NEEDS_ADDRESS = frozenset({"openai-compatible", "qwen"})
 
 #: Keys that decide where code is sent. Only the machine file may set them.
 _MACHINE_ONLY_KEYS = frozenset({"servers", "base_url", "api_key_env"})
+#: Limit keys. They live in the machine file only, so a cloned repo cannot touch the user's money.
+_LIMIT_KEYS = ("spend_per_run", "tokens_per_run")
 
 
 class SettingsFileError(ValueError):
@@ -91,6 +93,9 @@ class RoleEntry(_Strict):
     max_output_tokens: int | None = Field(default=None, ge=1)
     top_p: float | None = None
     top_k: int | None = None
+    #: Limits for this kind of task; stored and shown here, not yet applied by the spend brake.
+    spend_per_run: float | None = Field(default=None, gt=0)
+    tokens_per_run: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="before")
     @classmethod
@@ -122,15 +127,47 @@ class ModelFacts(_Strict):
     #: One output limit also bounds the model's hidden thinking, so a call's cost has a ceiling.
     thinking_in_output_cap: bool | None = None
     sampling: Sampling | None = None
+    #: Per-run limits for this model — money (configured currency) for a hosted model, tokens for
+    #: one on a private server. Stored and shown here, not yet applied by the spend brake.
+    spend_per_run: float | None = Field(default=None, gt=0)
+    tokens_per_run: int | None = Field(default=None, gt=0)
 
 
 class BrakeValues(_Strict):
-    """Check-in intervals per run. Values only: how the brake behaves is the spend brake's job."""
+    """A run's limits. Values only: how the brake behaves is the spend brake's job.
 
-    #: In the configured currency (`[currency] code`), USD when none is set.
-    hosted_spend_per_run: float = Field(default=20, gt=0)
-    local_gpu_hours_per_run: float = Field(default=2, gt=0)
-    agent_turns: int = Field(default=10, ge=1)
+    None has a default: a value nobody set is unset, and a command that calls a model refuses
+    until it is set (`brake_limits`). Commands that call no model never ask.
+    """
+
+    #: The run's money total, in the configured currency (`[currency] code`), USD when none is set.
+    hosted_spend_per_run: float | None = Field(default=None, gt=0)
+    #: The run's token total.
+    tokens_per_run: int | None = Field(default=None, gt=0)
+    #: Rounds one tool loop may take.
+    agent_turns: int | None = Field(default=None, gt=0)
+
+
+class BrakeLimits(NamedTuple):
+    """The three `[brake]` values a command that calls a model needs, all set."""
+
+    hosted_spend_per_run: float
+    tokens_per_run: int
+    agent_turns: int
+
+
+def brake_limits(files: LlmSettingsFiles) -> BrakeLimits:
+    """The run's limits, or `SettingsFileError` naming the first `[brake]` value left unset."""
+    brake = files.machine.brake
+    for name in BrakeLimits._fields:
+        if getattr(brake, name) is None:
+            raise SettingsFileError(
+                files.machine_source,
+                f"brake.{name}",
+                _line_of(files.machine_text, ("brake",)),
+                "not set — every command that calls a model needs it; there is no default",
+            )
+    return BrakeLimits(*(getattr(brake, name) for name in BrakeLimits._fields))
 
 
 class Currency(_Strict):
@@ -205,6 +242,16 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
             "a project may choose models, not define where code is sent — set servers, "
             "addresses and key variables in the machine settings file",
         )
+    for role, entry in section.get("roles", {}).items():
+        limit = next((key for key in _LIMIT_KEYS if isinstance(entry, dict) and key in entry), None)
+        if limit:
+            path = ("llm", "roles", role, limit)
+            raise SettingsFileError(
+                source,
+                ".".join(path),
+                _line_of(text, path),
+                "limits live in the machine settings file only, never in a project",
+            )
     return _validate(ProjectLlmSection, section, text, source, prefix=("llm",))
 
 
@@ -371,9 +418,16 @@ def settings_report(
             if value is not None:
                 rows.append((f"roles.{role}.{name}", str(value), resolved.origin[name]))
     for name in BrakeValues.model_fields:
-        set_here = name in machine.brake.model_fields_set
-        origin = at.format(_line_of(files.machine_text, ("brake", name))) if set_here else BUILT_IN
-        rows.append((f"brake.{name}", f"{getattr(machine.brake, name):g}", origin))
+        value = getattr(machine.brake, name)
+        if value is None:
+            rows.append(
+                (f"brake.{name}", "unset — required by any command that calls a model", "-")
+            )
+        else:
+            line = _line_of(files.machine_text, ("brake", name))
+            rows.append((f"brake.{name}", _number(value), at.format(line)))
+    rows.extend(_stored_limits(files, "roles", machine.roles.items()))
+    rows.extend(_stored_limits(files, "models", machine.models.items()))
     if machine.currency is None:
         rows.append(("currency", "not set — costs are shown in USD", BUILT_IN))
     else:
@@ -390,6 +444,31 @@ def settings_report(
             )
         )
     return rows
+
+
+def _stored_limits(
+    files: LlmSettingsFiles, table: str, entries: Iterable[tuple[str, RoleEntry | ModelFacts]]
+) -> list[tuple[str, str, str]]:
+    """Model and role limits, marked as stored only: the spend brake does not apply them yet."""
+    rows = []
+    for name, entry in sorted(entries, key=lambda item: item[0]):
+        for key in _LIMIT_KEYS:
+            value = getattr(entry, key)
+            if value is not None:
+                line = _line_of(files.machine_text, (table, name, key))
+                rows.append(
+                    (
+                        f"{table}.{name}.{key}",
+                        f"{_number(value)} (applied by B-FLOW-05)",
+                        f"{files.machine_source}:{line}",
+                    )
+                )
+    return rows
+
+
+def _number(value: float) -> str:
+    """A limit as written: no exponent, no trailing `.0`."""
+    return str(int(value)) if float(value).is_integer() else str(value)
 
 
 # ---------------------------------------------------------------------------

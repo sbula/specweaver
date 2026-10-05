@@ -96,6 +96,11 @@ max_parallel = 2
 
 [roles]
 default = "gemini-2.5-pro@gem"
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 
@@ -118,8 +123,6 @@ def _router(extra: str = ""):
             load_llm_settings(None),
             project="e2e-proj",
             roles=["default"],
-            spend_limit_usd=None,
-            token_limit=None,
         )
         result = router.get_for_task(TaskType.UNKNOWN)
     return result.adapter, result.config

@@ -93,7 +93,7 @@ def drift_check(
 
         drift_project = _core._require_active_project()
         settings = load_settings(_core.get_db(), drift_project)
-        router = command_router(drift_project, settings, roles_of(pipeline))
+        router = command_router(drift_project, roles_of(pipeline))
         context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
     runner = PipelineRunner(pipeline, context)

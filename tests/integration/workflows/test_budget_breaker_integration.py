@@ -97,7 +97,7 @@ async def test_the_refusal_is_not_relabelled_as_a_review_outcome() -> None:
     try:
         await reviewer._execute_review("prompt")
     except BudgetExceededError as caught:
-        assert "max_spend_usd" in str(caught)
+        assert "brake.hosted_spend_per_run" in str(caught)
     else:
         pytest.fail("the breaker was swallowed and turned into a verdict")
 

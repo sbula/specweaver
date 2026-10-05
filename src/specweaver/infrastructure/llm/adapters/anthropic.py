@@ -14,7 +14,9 @@ from specweaver.infrastructure.llm.errors import (
     GenerationError,
     ModelNotFoundError,
     RateLimitError,
+    ToolRoundsExceededError,
 )
+from specweaver.infrastructure.llm.models import tool_rounds
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +232,7 @@ class AnthropicAdapter(LLMAdapter):
 
         cumulative_usage = TokenUsage()
 
-        for round_num in range(config.max_tool_rounds):
+        for round_num in tool_rounds(config):
             if on_tool_round:
                 self._apply_on_tool_round(messages, anthropic_messages, round_num, on_tool_round)
 
@@ -259,12 +261,7 @@ class AnthropicAdapter(LLMAdapter):
                 tool_blocks, tool_executor, anthropic_messages, response.content
             )
 
-        return LLMResponse(
-            text="Max tool rounds exceeded.",
-            model=config.model,
-            usage=cumulative_usage,
-            finish_reason="max_tokens",
-        )
+        raise ToolRoundsExceededError.reached(config.max_tool_rounds)
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4

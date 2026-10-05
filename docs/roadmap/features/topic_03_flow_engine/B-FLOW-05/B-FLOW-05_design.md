@@ -68,6 +68,17 @@ location does not.
 The values `$25`, `20,000,000` and the 80% warning threshold were chosen by the agent with no
 input. They are placeholders, not decisions.
 
+**Moved by `C-FLOW-13` SF-05 (2026-10-04).** `LLMSettings` is gone. The ceilings are
+`[brake] hosted_spend_per_run` (in the configured currency) and `[brake] tokens_per_run` in the
+machine `settings.toml`, with **no defaults**: a command that calls a model refuses until both are
+set, so FR-5's "finite by default, `null` disables" no longer holds and is for this redesign to
+restate. `[brake] agent_turns` bounds every tool loop. Handed to this redesign `[agreed 2026-10-03]`:
+apply the stored per-model and per-role `spend_per_run` / `tokens_per_run` (a role only lowers);
+refuse a hosted model with no price; a private server's models use the token limit, others the
+money limit; a model without its own limit falls under the run total; pause-and-ask at the limit;
+loop detection (loops can span several steps — weigh effort against result; a repeat check, if
+built first, goes once the detector exists). Record: the SF-05 plan's §Decisions.
+
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |

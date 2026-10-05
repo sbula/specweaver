@@ -605,7 +605,15 @@ def test_e7b_resume_without_llm_warns_and_degrades_gracefully(
         result1 = _run_cli(project)
         assert result1.exit_code == 0, result1.output
 
-    # No settings file in the test data dir: the model is gone for session 2.
+    # The settings file sets the run's limits and no role: the model is gone for session 2.
+    from specweaver.core.config.bootstrap.llm_settings_loader import machine_settings_path
+
+    machine = machine_settings_path()
+    machine.parent.mkdir(parents=True, exist_ok=True)
+    machine.write_text(
+        "[brake]\nhosted_spend_per_run = 1000\ntokens_per_run = 100000000\nagent_turns = 10\n",
+        encoding="utf-8",
+    )
     with _scenario_world(adapter, implementer, record, llm=False):
         result2 = CliRunner().invoke(app, ["resume"])
 

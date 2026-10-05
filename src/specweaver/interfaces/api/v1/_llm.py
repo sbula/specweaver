@@ -16,22 +16,17 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
 
-    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.infrastructure.llm.router import ModelRouter
 
 
-def api_router(
-    project_root: Path, project: str, settings: SpecWeaverSettings, roles: Iterable[TaskType]
-) -> ModelRouter:
+def api_router(project_root: Path, project: str, roles: Iterable[TaskType]) -> ModelRouter:
     """The endpoint's router with every role it uses checked, or a 500 naming the settings error."""
     try:
         return build_router(
             load_llm_settings(project_root),
             project=project,
             roles=roles,
-            spend_limit_usd=settings.llm.max_spend_usd,
-            token_limit=settings.llm.max_tokens_per_run,
         )
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(

@@ -38,8 +38,8 @@ Keys stay in the environment; everything else about models lives in one file.
 
 ## 3a. Choosing models: `~/.specweaver/settings.toml`
 
-There is no built-in model. Every LLM command reads this file and refuses, naming the missing key,
-until a server and a role are set:
+There is no built-in model and no built-in limit. Every LLM command reads this file and refuses,
+naming the missing key, until a server, a role and the three `[brake]` values are set:
 
 ```toml
 [servers.anthropic]
@@ -57,6 +57,14 @@ max_parallel = 4
 default = "claude-sonnet-5@anthropic"   # the one fallback for every role left unset
 implement = "qwen3-coder-next@gb10"
 
+[brake]                       # required; no defaults
+hosted_spend_per_run = 20     # the run's money limit, in your [currency]
+tokens_per_run = 20000000     # the run's token limit
+agent_turns = 30              # rounds one tool loop may take
+
+[models."qwen3-coder-next"]   # optional per-model limits, beside the price
+tokens_per_run = 2000000      # stored and shown; the spend brake does not apply them yet
+
 [currency]                    # optional; without it every amount is USD
 code = "CHF"
 per_usd = 0.80
@@ -66,6 +74,9 @@ rate_date = 2026-09-26
 - `sw config set-role <role> <model@server>` writes a role; `--project` writes it into the active
   project's `specweaver.toml` instead, where `[llm] private_only = true` refuses any cloud server.
 - `sw config show` prints every value with the file and line it came from.
+- A run stops at 100% of a `[brake]` limit, after one warning at 80%. A tool loop that reaches
+  `agent_turns` stops with an error naming it. A role may carry `spend_per_run` or
+  `tokens_per_run` too; only the machine file may set limits.
 - `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
   one run the same model; the files stay unchanged. The server must be in `settings.toml`, and
   `private_only` still applies.

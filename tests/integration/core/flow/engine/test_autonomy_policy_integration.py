@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.config.settings import AutonomySettings, LLMSettings, SpecWeaverSettings
+from specweaver.core.config.settings import AutonomySettings, SpecWeaverSettings
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.isolation import apply_isolation_policy
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
@@ -45,7 +45,7 @@ def _run(tmp_path: Path, dal: DALLevel, **autonomy: object) -> RunContext:
     """A context carrying a resolved DAL and a policy frozen by the real composition root."""
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     context.isolation = context.isolation.model_copy(update={"dal_level": dal})
-    settings = SpecWeaverSettings(llm=LLMSettings(model="m"), autonomy=AutonomySettings(**autonomy))
+    settings = SpecWeaverSettings(autonomy=AutonomySettings(**autonomy))
     apply_isolation_policy(context, settings, LOGGER)
     return context
 

@@ -150,3 +150,26 @@ role limit accepted.
 | R-6 | `api_router` with no `[brake]` | LOW | Same `SettingsFileError` → HTTP 500 `LLM_SETTINGS`, as for any settings error |
 
 Cycle 2 re-checked R-1..R-6 and the bindings; no new finding above LOW.
+
+## As built (2026-10-05)
+
+Committed in two boundaries: `e2d47423` (`--model`) and the CB-2 commit (every limit from the
+machine file).
+
+- `--model` overrides every role the machine or project file names, plus `default`, so a role left
+  unset follows too. A pipeline that calls no model ignores the settings files, `--model` or not.
+- `brake_limits(files)` in `core.config.llm_settings` is the one check for the three required
+  `[brake]` values; `build_router` calls it before building anything.
+- `ToolRoundsExceededError` is an `LLMError`, not an `LLMAdapterError` as item 9 said: it is a
+  generation failure, and `LLMAdapterError` means an adapter cannot be built. `tool_rounds(config)`
+  in `infrastructure/llm/models.py` is the one place a loop gets its rounds.
+- `command_router`, `optional_command_router` and `api_router` lost their `settings` argument;
+  the REST endpoints no longer load project settings they did not use.
+- Found by the gap tests and fixed: `sw standards scan` said "No model used" without naming the
+  key to set; it now names it.
+- Still in code, outside this scope: `ExecutionSettings.max_turns = 10` (agentic work-unit turns,
+  `core/config/settings.py`) and `GenerationConfig.max_output_tokens = 4096` (a default the
+  resolver always overrides). Both are numbers the "no limits in code" rule covers; for the user
+  to decide.
+- Mutants: [C-FLOW-13_mutants.json](C-FLOW-13_mutants.json) FR-16 (8) and FR-17 (12), all
+  protected.

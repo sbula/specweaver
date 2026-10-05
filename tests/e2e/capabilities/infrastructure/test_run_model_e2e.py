@@ -53,6 +53,11 @@ max_parallel = 2
 
 [roles]
 default = "qwen3-coder-next@spare"
+
+[brake]
+hosted_spend_per_run = 1000
+tokens_per_run = 100000000
+agent_turns = 10
 """
 
 _REPLY = {

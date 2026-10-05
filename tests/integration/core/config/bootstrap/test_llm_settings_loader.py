@@ -61,11 +61,11 @@ def test_both_files_are_read_and_layered(data_dir: Path, tmp_path: Path) -> None
     assert implement.origin["model"] == f"{data_dir / 'settings.toml'}:{line}"
 
 
-def test_no_files_mean_defaults_and_an_empty_choice(data_dir: Path, tmp_path: Path) -> None:
+def test_no_files_mean_unset_limits_and_an_empty_choice(data_dir: Path, tmp_path: Path) -> None:
     files = load_llm_settings(tmp_path)
 
     assert files.machine.servers == {}
-    assert files.machine.brake.agent_turns == 10
+    assert files.machine.brake.agent_turns is None
     assert files.project.roles == {}
 
 

@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.settings import (
     AutonomySettings,
-    LLMSettings,
     SpecWeaverSettings,
 )
 from specweaver.core.flow.engine.isolation import apply_isolation_policy
@@ -36,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _settings(**autonomy: object) -> SpecWeaverSettings:
-    return SpecWeaverSettings(llm=LLMSettings(model="m"), autonomy=AutonomySettings(**autonomy))
+    return SpecWeaverSettings(autonomy=AutonomySettings(**autonomy))
 
 
 def _context(tmp_path: Path) -> RunContext:

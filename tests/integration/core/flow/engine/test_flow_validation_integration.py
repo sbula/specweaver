@@ -24,10 +24,10 @@ async def test_validate_spec_integration_real_rules(tmp_path: Path) -> None:
     spec_path.write_text("# Test Spec\n\n## Intent\n\nThis is a test spec.\n")
 
     # We provide a real ProjectConfig since the validation framework relies on context
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+    from specweaver.core.config.settings import SpecWeaverSettings
 
     # Create an empty specweaver.toml so config loader finds it
-    settings = SpecWeaverSettings(llm=LLMSettings(model="mock-model"))
+    settings = SpecWeaverSettings()
 
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
@@ -102,7 +102,6 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.config.settings import (
         DALImpactMatrix,
-        LLMSettings,
         RuleOverride,
         SpecWeaverSettings,
         ValidationSettings,
@@ -116,7 +115,7 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
         }
     )
     matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
-    settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock"), dal_matrix=matrix)
+    settings = SpecWeaverSettings(dal_matrix=matrix)
 
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
@@ -137,7 +136,6 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.config.settings import (
         DALImpactMatrix,
-        LLMSettings,
         RuleOverride,
         SpecWeaverSettings,
         ValidationSettings,
@@ -150,7 +148,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
 
     dal_val = ValidationSettings(overrides={"C02": RuleOverride(rule_id="C02", enabled=False)})
     matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: dal_val})
-    settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock"), dal_matrix=matrix)
+    settings = SpecWeaverSettings(dal_matrix=matrix)
 
     mock_db = MagicMock()
     from contextlib import asynccontextmanager
@@ -190,9 +188,9 @@ async def test_validate_spec_missing_matrix_integration(tmp_path: Path) -> None:
     spec_path = tmp_path / "spec.md"
     spec_path.write_text("# Test Spec\n\n## Intent\n\nThis is a test spec.\n")
 
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+    from specweaver.core.config.settings import SpecWeaverSettings
 
-    settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock"))  # No dal_matrix set
+    settings = SpecWeaverSettings()  # No dal_matrix set
 
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 

@@ -826,32 +826,6 @@
       "last_seen": 1790921357.4829483,
       "occurrences": 4
     },
-    "INT-US-16 FR-1 flush-becomes-a-no-op": {
-      "history": [
-        {
-          "at": 1790996740.1887307,
-          "state": "open",
-          "verdict": "UNMEASURED",
-          "reason": "symbol-drifted"
-        }
-      ],
-      "first_seen": 1790996740.1887307,
-      "last_seen": 1791083141.1559765,
-      "occurrences": 2
-    },
-    "INT-US-16 FR-3 telemetry-wrap-never-applied": {
-      "history": [
-        {
-          "at": 1790996740.1887307,
-          "state": "open",
-          "verdict": "UNMEASURED",
-          "reason": "symbol-drifted"
-        }
-      ],
-      "first_seen": 1790996740.1887307,
-      "last_seen": 1791083141.1559765,
-      "occurrences": 2
-    },
     "C-FLOW-13 FR-10 budget-not-shared": {
       "history": [
         {
@@ -940,6 +914,68 @@
       ],
       "first_seen": 1791118973.5756214,
       "last_seen": 1791119125.2005277,
+      "occurrences": 3
+    },
+    "C-FLOW-13 FR-16 router-drops-run-model": {
+      "history": [
+        {
+          "at": 1791121122.976546,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791121231.7388368,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791121122.976546,
+      "last_seen": 1791121122.976546,
+      "occurrences": 1
+    },
+    "C-FLOW-13 FR-16 implement-drops-run-model": {
+      "history": [
+        {
+          "at": 1791121122.976546,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791121231.7388368,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791121122.976546,
+      "last_seen": 1791121122.976546,
+      "occurrences": 1
+    },
+    "INT-US-16 FR-1 flush-becomes-a-no-op": {
+      "history": [
+        {
+          "at": 1790996740.1887307,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        }
+      ],
+      "first_seen": 1790996740.1887307,
+      "last_seen": 1791169579.0986595,
+      "occurrences": 3
+    },
+    "INT-US-16 FR-3 telemetry-wrap-never-applied": {
+      "history": [
+        {
+          "at": 1790996740.1887307,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        }
+      ],
+      "first_seen": 1790996740.1887307,
+      "last_seen": 1791169579.0986595,
       "occurrences": 3
     }
   },

@@ -210,7 +210,7 @@ def draft(
     )
 
     pipeline = _build_draft_pipeline(name)
-    router = command_router(project, settings, roles_of(pipeline))
+    router = command_router(project, roles_of(pipeline))
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
@@ -325,7 +325,7 @@ def review(
         description=f"Review {target_path.name}",
         params=params,
     )
-    router = command_router(project, settings, roles_of(pipeline))
+    router = command_router(project, roles_of(pipeline))
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),

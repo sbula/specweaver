@@ -296,7 +296,7 @@ def _wire_models(
     if not roles:
         return
     settings = load_settings(_core.get_db(), project)
-    router = command_router(project, settings, roles, run_model=run_model)
+    router = command_router(project, roles, run_model=run_model)
     context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
 

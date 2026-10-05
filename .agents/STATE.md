@@ -25,11 +25,12 @@ Read the design before touching it. It says so in its own first section.
 
 `B-FLOW-05` is blocked on that decision, which `C-FLOW-13` now owns `[agreed 2026-09-26]`. `C-FLOW-13`'s design
 is APPROVED (2026-09-26): machine `settings.toml` + project `[llm]`; B-FLOW-05 is redesigned after it.
-SF-01 to SF-03 are committed (2026-10-02): every LLM call now takes its model from the settings
-files, through one resolver. There is no built-in model: a command that calls an LLM needs a
-`default` role in `settings.toml`. `sw config set-role` replaced `set-provider` and `routing`; the
-old DB tables are dropped at start-up. Left: SF-05 (`--model` for one run, brake values to
-`B-FLOW-05`).
+All five sub-features are committed (2026-10-05). Every LLM call takes its model from the
+settings files, through one resolver; there is no built-in model and no built-in limit. A command
+that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`.
+`--model` sets one run's model. Model and role limits are stored and shown, not yet applied: that,
+with the rules handed over on 2026-10-03, is `B-FLOW-05`'s redesign (see its design note).
+C-FLOW-13's own status flip awaits the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
