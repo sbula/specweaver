@@ -72,14 +72,15 @@ sw check specs/greeter_spec.md
 
 The LLM commands — `sw draft`, `sw review`, `sw implement` — need a model chosen in
 `~/.specweaver/settings.toml` (a server, a role and the `[brake]` limits; there is no built-in model
-and no built-in limit) and the provider's key in the environment. Other providers: `uv sync --extra all-llm`. See the
+and no built-in limit) and the provider's key in the environment. `--model <model@server>` picks a
+different model for one run. Other providers: `uv sync --extra all-llm`. See the
 [installation guide](docs/user_guides/1_installation_and_setup.md).
 
 ## Testing
 
-**9,197 tests** (pytest, parametrized cases counted): 7,957 unit, 963 integration, 261 e2e and
-16 manual. 31 of them call real LLM APIs and are skipped by default, so a plain `pytest` run
-collects 9,166.
+**9,291 tests** (pytest, parametrized cases counted; 2026-10-05): 8,013 unit, 986 integration,
+276 e2e and 16 manual. 31 of them call real LLM APIs and are skipped by default, so a plain
+`pytest` run collects 9,260.
 
 | Tier | Scope | Mocks |
 |---|---|---|
@@ -91,7 +92,7 @@ Static checks: **ruff** (lint), **mypy** in strict mode, **tach** (module-bounda
 complexity, coupling, file-size and duplication checks. `scripts/quality.py` bundles them into gates
 that run before every commit.
 
-**Mutation testing.** `scripts/mutation.py` runs every night over 15 corpora with 233 hand-written
+**Mutation testing.** `scripts/mutation.py` runs every night over 15 corpora with 285 hand-written
 mutants. Each mutant breaks one line that a requirement depends on — for example, it changes the
 API server's bind address from `127.0.0.1` to `0.0.0.0` — and at least one test must fail. Each
 mutant ends as `PROTECTED`, `UNPROTECTED` or `UNMEASURED` (a hang is never counted as a pass).
