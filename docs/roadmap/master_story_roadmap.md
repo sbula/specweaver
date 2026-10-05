@@ -64,56 +64,19 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ### 🔭 Focus Points
 
-*Two standing lenses, orthogonal to the queue above. The queue ranks by strategic unlock; these
-rank by proximity to a closed story. A capability can appear in both.*
+*Ranked by what an item does for a real run against what it costs to build. Closing a story earns
+nothing by itself `[agreed 2026-10-05]`. Gain and cost are estimates; the design settles them.*
 
-**Focus 1 — `US-11` (GraphRAG for Brownfield Scale) and its add-ons.**
+| # | Item | Gain | Cost | Next step |
+|---|---|---|---|---|
+| 1 | `B-FLOW-05` brake redesign | high — the model and role limits, the unpriced-model refusal and the loop guard are stored but do nothing until it lands | medium — rules agreed 2026-10-03 | redesign |
+| 2 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user | medium — Linux cgroups v2 delegation | design (stub) |
+| 3 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
+| 4 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted | medium-high | design (stub) |
 
-Core MVS is **one capability from 🟢**: `B-SENS-03` ✅ shipped the chunking half, and `A-SENS-02`
-(Postgres Apache AGE + pgvector sidecar) is all that remains. It is the highest-leverage single
-item on the board — it also closes `US-12`'s *Massive Scale Context Retrieval* and `US-19`'s
-*Distributed Topology Scaling*, so **one capability moves three stories**. It has no design
-document yet, and it is infrastructure work rather than a pure-logic module, so it is high value
-and *not* cheap; it belongs to this focus rather than to Focus 2.
-
-The add-on groups behind it, nearest first:
-
-| Group | Open | Note |
-|---|---|---|
-| 🟡 Infinite Scale Management | `A-FLOW-02`, `A-INTL-04` | `A-SENS-01` ✅ already landed; two items from 🟢 |
-| 🔴 Cross-Language Dependency Resolution | `B-SENS-07` | single item |
-| 🔴 Microservice Federation | `A-SENS-04` | single item |
-| 🔴 Dynamic Knowledge Relevance | `B-FLOW-04`, `A-SENS-03` | retrieval scoring; wants `A-SENS-02` first |
-| 🔴 Deterministic Context Packing | `B-SENS-09`, `B-SENS-08` | ADR-006 contextualize step; `TECH-068` closed 2026-08-22, so edge truth is in place |
-| 🔴 Static Code Flow Analysis | `B-SENS-04`, `B-SENS-05` | statically-typed languages only, by design |
-
-**Focus 2 — the 🟡 harvest: stories one capability from green.**
-
-Measured against the ledger, **thirteen 🟡 stories have exactly one open item in their Core MVS**.
-Each is a whole user story that turns 🟢 for one capability, which is the cheapest kind of progress
-this roadmap can buy.
-
-| Story | Sole open item | Why it is close |
-|---|---|---|
-| `US-6` | `D-UI-01` | **Already in progress** — TDD phases 1–3 done, 57 API tests. Nearest thing on the board to finished, and it is also half of `US-7` |
-| `US-20` | `B-VAL-05` | A battery rule over DAL boundaries; both the battery and the DAL machinery already exist |
-| `US-14` | `A-INTL-01` | Adversarial spec review — a rubric plus a review stage now that `C-VAL-05` 🔧 ships the substrate |
-| `US-10` | `C-UI-01` | Pipeline visualiser on the delivered dashboard; also closes `US-20`'s *DAG Visualization* |
-| `US-15` | `C-UI-02` | Traceability matrix UX over `C-VAL-04` ✅ |
-| `US-8` | `D-INTL-07` | Greenfield bootstrap, now a second rubric on the interview engine that `US-2` needs; blocked on `C-FLOW-11` |
-| `US-11` | `A-SENS-02` | See Focus 1 — highest leverage, lowest cheapness |
-| `US-12` | `C-INTL-03` | Reverse-weaving (`sw capture`) |
-| `US-13` | `A-VAL-02` | Symbolic maths validation; needs a solver, so cheap it is not |
-| `US-17` | `B-VAL-04` | SWE-Bench QA gates |
-| `US-19` | `C-FLOW-04` | Work packet bundling |
-| `US-26` | `B-SENS-06` | OSV vulnerability feed ingestion |
-| `US-27` | `A-SENS-05` | APM telemetry ingestion (Sentry/Datadog) |
-
-`US-7` is the near miss: two items (`D-UI-01`, `D-UI-03`), and `D-UI-01` is the same in-progress
-capability that closes `US-6`.
-
-**If the aim is stories closed per unit of effort, `D-UI-01` first, then `B-VAL-05` and
-`A-INTL-01`.** If the aim is capability reach, `A-SENS-02`.
+Not on the list: items whose main effect is closing a story (`D-UI-01`, `B-VAL-05`, `A-INTL-01`
+and the rest of the former "one item from green" table). `A-SENS-02` (GraphRAG) pays only on very
+large codebases.
 
 ### 🔧 Debt Sequencing
 
