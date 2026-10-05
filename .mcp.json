@@ -2,11 +2,10 @@
   "mcpServers": {
     "context7": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "codebase-memory": {
-      "command": "C:\\Users\\steve\\AppData\\Local\\Programs\\codebase-memory-mcp\\codebase-memory-mcp.exe",
-      "args": []
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
     }
   }
 }
