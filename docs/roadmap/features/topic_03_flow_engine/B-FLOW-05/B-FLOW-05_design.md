@@ -1,127 +1,203 @@
-# B-FLOW-05 — Token-Burn Circuit Breakers (EDoS Prevention)
+# Design: Spend Brake
 
-**Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design` Phase 6 gate
-was never run for this capability. Status returns to ✅ only after that review and any corrections
-it produces. · **DAL**: B (Severe failure) · **Epic**: Topic 03 (Flow Engine)
+- **Feature ID**: B-FLOW-05
+- **Phase**: Topic 03 (Flow Engine) · DAL-B (High-Assurance)
+- **Status**: APPROVED `[agreed 2026-10-06]` — redesign after `C-FLOW-13`; the capability stays `🔧` until it is built and proven
+- **Design Doc**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md
+- **Story**: `US-4` add-on *Security Defenses* — paths in [US-04.md](../../../stories/US-04.md#spend-brake-b-flow-05)
+- **Decisions**: [spend_brake_grilling_2026-10-06.md](../../../../analysis/spend_brake_grilling_2026-10-06.md),
+  building on [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md)
+- **Plan of the built version**: [B-FLOW-05_implementation_plan.md](B-FLOW-05_implementation_plan.md)
 
-| | |
-|---|---|
-| Uses | `C-FLOW-01` (telemetry, cost) · `E-INTL-01` (adapter factory) · `E-INTL-03` (`Reviewer`) |
-| Plan | [B-FLOW-05_implementation_plan.md](B-FLOW-05_implementation_plan.md) |
+## Feature Overview
 
-## What it does
+`B-FLOW-05` is the emergency brake on what one run may spend `[agreed 2026-10-06]`. Measuring
+models to choose between them is `A-FLOW-01`, and loop detection is `B-FLOW-06`. The brake counts
+every call of the run — every role, every server, across `sw resume` — against limits the user
+writes in `settings.toml`, and none written in code. Before a call could cross a limit, the run
+**pauses and asks**; with nobody to answer, or on a "no", it parks and `sw resume` continues it.
+A hosted model with no known price, or whose output cap may not bound its thinking, is refused
+before the first call.
 
-`src/specweaver/infrastructure/llm/budget.py` holds a run's spend against two ceilings — dollars
-and tokens. `TelemetryCollector` checks it before every request and feeds every completed call
-back into it. Once a ceiling is reached, the next request is refused with `BudgetExceededError`.
+## Research Findings
 
-Both ceilings are configured on `LLMSettings` and **default to a finite value**. A breaker that
-ships disabled stops nothing. Before this, the only guard was `max_retries`, which counts attempts,
-not money: three retries at a 200k-token prompt cost what thirty cheap calls do.
+### Codebase Patterns
 
-## Why the collector
+Measured 2026-10-06 (research of `src/specweaver`):
 
-It is the one place that sees both halves. `TelemetryCollector` already wraps every adapter —
-`create_llm_adapter` puts it there for `sw implement`, both `sw review` paths, drift checking and
-the API — and already computes each call's cost. Nothing else has both the running total and the
-chance to refuse. A check in the handlers would leave each new call site to remember.
+- **One budget per command already.** `build_router` builds one `SpendBudget` from `[brake]`
+  (`infrastructure/llm/router.py:49-72`); `RoleResolver` hands it to one `TelemetryCollector` per
+  server (`resolve.py:57`, `:116`). The collector checks before `generate`, `generate_with_tools`
+  and `generate_stream` and records after (`collector.py:79`, `:93`, `:115`, `:166`).
+- **What the built brake does not do.**
+  - It checks only what is already spent, never the next call's worst case.
+  - It checks once before a whole tool loop, not before each round (`collector.py:93`).
+  - It records nothing when a tool loop raises, so those rounds' tokens are lost.
+  - A streamed call records no input tokens (`collector.py:125-133`).
+  - An unpriced call adds 0 USD.
+  - Model and role limits are stored but not applied.
+- **A stop is not a pause.** `execute_step` turns every exception into `StepStatus.ERROR`
+  (`core/flow/engine/step_execution.py:208`); a retry gate then hits the spent budget again. Only a
+  handler returning `WAITING_FOR_INPUT` parks (`step_execution.py:470`, `park_run` at `:220`).
+- **Handlers that hide the stop.** `drift.py:175-177` turns it into text and the step goes on;
+  `lint_fix`, `standards`, `arbiter`, `scenario`, `dual_pipeline`, `draft` turn it into a step error.
+  Only `Reviewer` re-raises it (`workflows/review/reviewer.py:198`).
+- **Resume forgets.** `sw resume` rebuilds the router through `_build_run_context` → `_wire_models`,
+  so the budget restarts at zero (`core/flow/interfaces/cli.py:482`).
+- **Asking exists.** `ContextProvider.ask(question, *, section="") -> str`
+  (`workspace/context/provider.py:31`), implemented by `HITLProvider`
+  (`interfaces/cli/hitl_provider.py:22`), attached to `RunContext.context_provider` only with a TTY
+  (`interfaces/cli/main.py:136`).
+- **REST.** A `BudgetExceededError` in `POST /implement` reaches FastAPI as a bare 500
+  (`interfaces/api/app.py:80` handles only `SpecWeaverAPIError`).
+- **Token estimates.** Every adapter but Gemini counts `len(text) // 4` (`adapters/base.py:144`).
 
-Cost is known only after a call returns, so the breaker cannot stop the request that crosses the
-line. It stops the next one — the right bound for a runaway loop, which is the threat.
+### External Tools
 
-## Why two ceilings
+None. The brake reads only what the adapters already return.
 
-`estimate_cost` returns `0.0` for any model absent from the cost table (it logs a warning and
-carries on). A dollar ceiling alone would accrue nothing for such a model and never trip: an
-unknown model name would mean an unbounded run, exactly the failure this capability exists to
-stop.
+### Blueprint References
 
-Token counts come back on every response and need no price list. `max_tokens_per_run` bounds the
-case `max_spend_usd` cannot.
-
-## Why only `Reviewer` changed
-
-Three callers wrap an LLM call in `except Exception`, but in `Planner` and `ScenarioGenerator` the
-LLM call sits *outside* the retry loop's `try`, which covers only JSON parsing and model
-validation — a raising adapter was never retried there. Only `Reviewer._execute_review` wraps the
-call, and it turned every exception into `ReviewVerdict.ERROR`, a verdict that reads as *the review
-found problems*. That is the one place changed. The tests for the other two stay: "the call is
-outside the `try`" is worth pinning, since moving it inside would silently make the breaker
-retryable.
-
-## OPEN — the limits are not where they belong
-
-**Ruled 2026-08-19.** Every LLM access, payment, pricing, token-consumption and limit parameter is
-to live in **one central place**. Whether that place is a file or the database is **still
-undecided**, and this capability must not settle it by default.
-The decision belongs to `C-FLOW-13`, widened to own it `[agreed 2026-09-26]`.
-
-**Brake behaviour redecided with the user `[agreed 2026-09-26]`:** two totals per run (CHF hosted,
-GPU time local), a check-in that pauses and asks instead of refusing, a worst-case check before each
-call, park when nobody can answer, no token limit, no monthly limit. This design is rewritten against
-those decisions after `C-FLOW-13`. Record: [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md).
-
-`max_spend_usd` and `max_tokens_per_run` sit on `LLMSettings`, beside the model and the API key —
-one more scattered home for a number that belongs in the central one. The ceilings stand; their
-location does not.
-
-The values `$25`, `20,000,000` and the 80% warning threshold were chosen by the agent with no
-input. They are placeholders, not decisions.
-
-**Moved by `C-FLOW-13` SF-05 (2026-10-04).** `LLMSettings` is gone. The ceilings are
-`[brake] hosted_spend_per_run` (in the configured currency) and `[brake] tokens_per_run` in the
-machine `settings.toml`, with **no defaults**: a command that calls a model refuses until both are
-set, so FR-5's "finite by default, `null` disables" no longer holds and is for this redesign to
-restate. `[brake] agent_turns` bounds every tool loop. Handed to this redesign `[agreed 2026-10-03]`:
-apply the stored per-model and per-role `spend_per_run` / `tokens_per_run` (a role only lowers);
-refuse a hosted model with no price; a private server's models use the token limit, others the
-money limit; a model without its own limit falls under the run total; pause-and-ask at the limit;
-loop detection, now its own capability `B-FLOW-06` (loops can span several steps — weigh effort against result; a repeat check, if
-built first, goes once the detector exists). Record: the SF-05 plan's §Decisions.
+None.
 
 ## Functional Requirements
 
+FR-1 to FR-5 keep their numbers so the tests that cite them stay valid; their wording is new.
+
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Spend is measured as it accrues | System | Accumulates cost and tokens per completed call against the run's ceilings | The running total is a fact the breaker can act on, not a number reconstructed from logs afterwards |
-| FR-2 | A spent run sends nothing more | System | Checks the budget before `generate`, `generate_with_tools` and `generate_stream`, and refuses rather than calling the adapter | The loop stops at the ceiling instead of at whatever the provider or the operator's patience ends first |
-| FR-3 | The refusal reaches the operator | System | Raises `BudgetExceededError`, which `Reviewer` re-raises instead of converting to a verdict | The run fails saying *you have spent your budget*, not "review failed" or "plan generation failed after 3 attempts" |
-| FR-4 | A long run can be saved before the ceiling | System | Logs one warning at 80% of a ceiling, and only one | The operator can raise the limit while the work still has somewhere to go; after the trip it is too late |
-| FR-5 | The ceilings are configuration, and on by default | System | Reads `llm.max_spend_usd` and `llm.max_tokens_per_run`, both finite by default, each disableable with `null` | A default install is protected; a deliberate `null` opts out; a mistyped `0` refuses everything rather than allowing everything |
-
-Proof is by citation in the test files, read by `check_fr_coverage.py`. Each FR is behind a killed
-mutant: neutering `check()`, tripping at zero, dropping the cost feedback, removing the check from
-the tool path, letting `Reviewer` swallow the error again, and shipping either ceiling disabled all
-fail the tests that claim them.
+| FR-1 | Spend is measured as it accrues | Brake | SHALL add every completed call's cost and tokens to the run's totals, by server privacy, by model and by role — including a call that failed partway (a tool loop that raised) and a streamed call's input tokens | the totals are what the run really spent |
+| FR-2 | No call can cross a limit unasked | Brake | SHALL, before every request — each tool round included — add the call's worst case to the totals (estimated input tokens × 1.25 plus the output cap; in money at the model's prices for a hosted server, in tokens for a private one) and pause first if any limit would be crossed `[agreed 2026-10-06]` | a runaway is stopped before the call that would cross the line |
+| FR-3 | The pause reaches the user | Handlers, runner | SHALL let the brake's signal through every handler, and the runner SHALL turn it into a pause, never into a step error, a retry or text | the run says *you reached your limit*, not "drift analysis failed" |
+| FR-4 | One warning first | Brake | SHALL warn once at 80% of each limit `[agreed 2026-10-06]` | a long run can be watched before it pauses |
+| FR-5 | Limits come from the settings file | Brake | SHALL take every limit from the machine `settings.toml` and none from code: `[brake] hosted_spend_per_run` (configured currency) for calls to non-private servers, `[brake] tokens_per_run` for calls to private servers `[agreed 2026-10-06]`, a model's `spend_per_run` / `tokens_per_run`, and a role's, which only lowers the model's `[agreed 2026-10-03]` | one place, and the user's own numbers |
+| FR-6 | Pause and ask | Brake | SHALL, at a limit and with someone to answer, ask — one question at a time, however many calls run in parallel — naming the limit, what was spent and any overshoot by calls already running `[agreed 2026-09-26]`; "yes" raises that limit by its own size (20 → 40 → 60) `[agreed 2026-10-06]` | the user decides, with the numbers in front of them |
+| FR-7 | Park when nobody answers | Runner | SHALL park the run at a limit when nobody can answer (no TTY, nightly, CI) or the answer is "no" `[agreed 2026-10-06]` | no work is lost, and nothing is spent unasked |
+| FR-8 | Resume keeps the totals | Runner, brake | SHALL save the brake's totals and raised limits with the run before it parks, and `sw resume` SHALL continue from them; a limit the user raised in `settings.toml` meanwhile counts if it is higher | a parked run cannot buy a fresh budget by resuming |
+| FR-9 | Refuse what cannot be bounded | Brake | SHALL refuse, before the first call, a hosted model with no known price `[agreed 2026-09-26]`, and one whose `thinking_in_output_cap` is not `true` `[agreed 2026-10-06]`, naming the key that would allow it | no hosted call has an unbounded cost |
+| FR-10 | REST stops with a named error | REST API | SHALL answer a request that reaches a limit with an HTTP error naming the limit, never a bare 500 `[agreed 2026-10-06]` | an API client can tell a spent budget from a crash |
 
 ## Requirement–Surface Bindings
 
 | FR | Data needed | Provider · surface | Verified how |
 |---|---|---|---|
-| FR-1 | Per-call cost and tokens | `C-FLOW-01` · `telemetry.create_usage_record(...) -> UsageRecord` | read `src/specweaver/infrastructure/llm/telemetry.py` — carries `estimated_cost_usd` and `total_tokens` |
-| FR-1 | Why a token ceiling is not redundant | `C-FLOW-01` · `telemetry.estimate_cost(model, usage, overrides)` | read the same file — returns `0.0` for a model absent from the cost table, so cost alone cannot bound it |
-| FR-2 | The one place every adapter is wrapped | `E-INTL-01` · `factory.create_llm_adapter(settings, telemetry_project=...)` | read `src/specweaver/infrastructure/llm/factory.py` — the sole `TelemetryCollector` construction site |
-| FR-3 | The broad handler the breaker must survive | `E-INTL-03` · `Reviewer._execute_review` | read `src/specweaver/workflows/review/reviewer.py` — caught every exception and returned `ReviewVerdict.ERROR` |
+| FR-1, FR-2 | each call's tokens, price, output cap | `C-FLOW-13` · `Catalogue.facts(kind, model, overrides) -> ModelFacts \| None`; `GenerationConfig.max_output_tokens` | read `infrastructure/llm/catalogue.py:62`, `infrastructure/llm/models.py` |
+| FR-1 | a call's cost | `C-FLOW-01` · `estimate_cost(usage, facts) -> float \| None` | read `infrastructure/llm/telemetry.py:49` |
+| FR-2 | a check inside each tool round | adapters · the loop over `tool_rounds(config)` | read `adapters/anthropic.py:235`, `models.py:83` — the collector cannot see rounds today; the adapters gain a per-round check |
+| FR-2 | the prompt's size | adapters · `count_tokens(text, model)`, `estimate_tokens(text)` | read `adapters/base.py:122`, `:144`; `adapters/gemini.py:377` |
+| FR-5 | limits | `C-FLOW-13` · `brake_limits(files)`, `ModelFacts.spend_per_run`, `RoleEntry.spend_per_run`, `ServerEntry.private` | read `core/config/llm_settings.py:97`, `:132`, `:159` |
+| FR-5 | which role a call is for | `C-FLOW-13` · `GenerationConfig.task_type`, set by `llm_for(context, task_type)` | read `core/flow/handlers/_llm.py:46` — REST calls leave it `UNKNOWN`; FR-5 has them stamp it |
+| FR-3, FR-7 | turning the signal into a park | `D-FLOW-01` · `execute_step(...)`, `park_run(runner, run, step_def, step_idx, total, result)` | read `core/flow/engine/step_execution.py:183`, `:220` |
+| FR-6 | asking | `ContextProvider.ask(question, *, section="") -> str` | read `workspace/context/provider.py:31`, `interfaces/cli/main.py:136` |
+| FR-8 | saving with the run | `D-FLOW-01` · `PipelineRun` in `pipeline_state.db`; `PipelineRunner.resume(run_id)` | read `core/flow/engine/state.py:46`, `runner.py:177` |
+| FR-10 | the error shape | `SpecWeaverAPIError(detail, error_code, status_code)` | read `interfaces/api/errors.py:16` |
 
-`FR-3` crosses `infrastructure.llm` → `workflows.review`, so it is a **seam FR**, proven at
-integration tier by `tests/integration/workflows/test_budget_breaker_integration.py`. The unit test
-beside it uses a stub that raises on call: it proves the re-raise but never builds a collector or
-spends a budget.
+`FR-3`, `FR-7` and `FR-8` cross `infrastructure.llm` → `core.flow`; `FR-6` crosses into
+`interfaces.cli`; `FR-10` into `interfaces.api`. Each is a **seam FR**, proven at integration tier
+or by the e2e paths in `US-04.md`.
 
 ## Non-Functional Requirements
 
-| # | NFR | Requirement |
-|---|-----|-------------|
-| NFR-1 | Fail closed | A ceiling of `0` refuses everything. Disabling is `null` and nothing else, so a mistyped limit cannot open the gate |
-| NFR-2 | Scope | One budget per `TelemetryCollector`, which `create_llm_adapter` builds once per CLI invocation or API request — so the ceiling is per run, which is the unit a loop runs away in |
+| # | NFR | Threshold / Constraint |
+|---|-----|----------------------|
+| NFR-1 | Fail closed | Unknown is never a pass: an unknown price or thinking cap refuses (FR-9); a limit must be `> 0`; an unset `[brake]` value refuses the command (`C-FLOW-13`) |
+| NFR-2 | Scope | One brake per run, covering the whole call tree and surviving `sw resume` `[agreed 2026-09-26]` |
+| NFR-3 | No limit in code | No number or default for any limit in `src/` `[agreed 2026-10-03]` |
 
-`NFR-3` ("two additions and two comparisons per call") was deleted: an implementation note, not a
-product claim — nothing to prove.
+## External Dependencies
+
+None.
+
+## Architectural Decisions
+
+| # | Decision | Rationale | Architectural Switch? |
+|---|----------|-----------|----------------------|
+| AD-1 | The brake asks through a callback the command passes in (`ask_to_continue`), built from the `ContextProvider` by the CLI; `infrastructure.llm` imports nothing from `workspace` or `interfaces` | keeps the LLM layer free of UI; REST passes none and so stops (FR-10) | No |
+| AD-2 | Without an answer the brake raises `SpendLimitReached` (a `BudgetExceededError`), which `execute_step` maps to `WAITING_FOR_INPUT`, so the run parks through the existing `park_run` | reuses the one park path; no new run status | No |
+| AD-3 | The brake's totals and raised limits are a JSON field on the persisted run in `pipeline_state.db` | the run is what parks and resumes, so its spend belongs with it | No — a new field in the run-state store, not a new store |
+| AD-4 | The worst-case check is in the adapters' tool loop as well as in the collector, through one `SpendBudget.before_call(...)` | the collector cannot see rounds; one method keeps one rule | No |
+| AD-5 | REST answers HTTP 402 with `error_code = "SPEND_LIMIT"` `[agreed 2026-10-06]` | 402 *Payment Required* says money, not a fault | No |
+
+## ROI Analysis
+
+### Investment Cost
+| Item | Effort | Risk |
+|------|--------|------|
+| Accounting: totals by privacy, model, role; worst case; failed and streamed calls | medium | low — pure logic, well tested today |
+| Pause, park, resume with saved totals | medium | medium — touches the runner and every LLM handler |
+| REST error, rename, docs | low | low |
+
+### Returns
+| Beneficiary | Benefit | Magnitude |
+|-------------|---------|-----------|
+| The user running hosted models | no run spends past a limit without being asked | high |
+| The user running the GB10 | a runaway local model is stopped by tokens, per model | medium |
+| Nightly and CI runs | a limit parks instead of failing, so the work survives | medium |
+
+### Risk Assessment
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| A handler still hides the signal | medium | high | one integration test per LLM handler; a scan test that no handler catches it without re-raising |
+| The estimate is low and a call overshoots | medium | low | 25% margin (Q12); the pause reports the overshoot (FR-6) |
+| Many models refused by FR-9 | low | medium | the message names the one key to set; only Mistral and hosted Qwen are unknown today |
+
+### Refactoring Opportunities
+| Existing Feature | Current Issue | Benefit from This Feature | Effort |
+|-----------------|---------------|---------------------------|--------|
+| `drift` handler | swallows the brake into text | fixed by FR-3 | low |
+| `TelemetryCollector` streaming | input tokens never recorded | fixed by FR-1 | low |
+
+## Developer Guides Required
+
+| Guide Topic | Description | Status |
+|-------------|-------------|--------|
+| `adding_llm_adapters.md` | a tool loop calls `budget.before_call` each round | ⬜ To be written during Pre-commit |
+| `pipeline_engine_guide.md` | a handler never catches `BudgetExceededError` without re-raising | ⬜ To be written during Pre-commit |
 
 ## Non-Goals
 
-- Per-step or per-project cumulative ceilings. The run is the unit that runs away.
-- Enforcing spend against the persisted `llm_usage_log`. The breaker must work before a flush, and
-  a run that never flushes is exactly the one that crashed while spending.
-- Changing pricing or the cost table. The token ceiling exists so this capability does not depend
-  on the table being complete.
+- Loop detection — `B-FLOW-06`.
+- Choosing or comparing models — `A-FLOW-01`.
+- A monthly limit — providers' billing does that; `sw costs` shows month-to-date `[agreed 2026-09-26]`.
+- Downgrading or switching the model at a limit `[agreed 2026-09-26]`.
+- Counting tokens exactly through the providers' counting endpoints `[agreed 2026-10-06]`.
+- The agentic runtime's own turn count (`AutonomySettings.max_turns`, not yet wired) — `C-FLOW-11`.
+
+## Sub-Feature Breakdown
+
+### SF-01: Accounting and limits
+- **Scope**: every call is counted and checked against every limit before it is sent.
+- **FRs**: [FR-1, FR-2, FR-4, FR-5, FR-9]
+- **Inputs**: `[brake]`, model and role limits, catalogue facts, each call's config and usage
+- **Outputs**: a `SpendBudget` that refuses or signals a limit before a call; `SpendLimitReached`
+- **Depends on**: none
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf01_implementation_plan.md
+
+### SF-02: Pause, park and resume
+- **Scope**: a limit becomes a question, or a park the run survives, and REST names it.
+- **FRs**: [FR-3, FR-6, FR-7, FR-8, FR-10]
+- **Inputs**: `SpendLimitReached` from SF-01; the `ContextProvider`; the persisted run
+- **Outputs**: paused, parked and resumed runs with their totals; REST 402 `SPEND_LIMIT`
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf02_implementation_plan.md
+
+## Execution Order
+
+1. SF-01 (no deps)
+2. SF-02 (depends on SF-01)
+
+## Progress Tracker
+
+| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
+|----|------|-----------|--------|-----------|-----|------------|-----------|
+| SF-01 | Accounting and limits | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Pause, park and resume | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+
+## Session Handoff
+
+**Current status**: Redesign APPROVED 2026-10-06. Red/Blue
+2026-10-06, two cycles: worst case in tokens for private servers (FR-2), one question at a time
+(FR-6), the higher limit wins on resume (FR-8), the agentic turn count named a non-goal.
+**Next step**: Trigger the implementation-plan skill for SF-01.
+**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
+resume from there using the appropriate skill.

@@ -35,7 +35,7 @@ settles them. Pick one; do not start another until it is done.*
 
 | # | Item | Gain | Cost | Next step |
 |---|---|---|---|---|
-| 1 | `B-FLOW-05` brake redesign | high — the model and role limits, the unpriced-model refusal and the loop guard are stored but do nothing until it lands | medium — rules agreed 2026-10-03 | redesign |
+| 1 | `B-FLOW-05` brake redesign | high — the model and role limits and the unpriced-model refusal are stored but do nothing until it lands | medium — rules agreed 2026-10-03 | redesign |
 | 2 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user; it removes the `RLIMIT_NPROC` backstop | medium — Linux-only, cgroups v2 delegation | design (stub) |
 | 3 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
 | 4 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted: since `INT-US-24`, LLM-written scenario tests run over LLM-generated code | medium-high — allow-list derivation for any pipeline | design (stub) |
@@ -164,7 +164,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🟡 **Security Defenses:**
-        *   `🔧` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
+        *   `🔧` **B-FLOW-05:** Spend Brake
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   🟢 **Context Mention Highlighting:**

@@ -239,15 +239,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Note:** its output never feeds a gate or a blast radius. No correctness decision consumes vector output (`ADR-006` decision 3)
 
-* **`B-FLOW-05` 🔧: Token-Burn Circuit Breakers**
-  > - **Purpose:** ⚠️ **Contested.** Built as a spend guard — two ceilings that stop a run. The user states its real value is a number for choosing which model suits which task. **The title
-  >   and the design disagree with the user. Needs you**
-  > - **Trigger:** Before every LLM request, and after every completed call
-  > - **Precondition:** `C-FLOW-01` → token and cost data · a decision on where LLM limits live — see its design and `STATE.md`
-  > - **Reads:** `[brake] hosted_spend_per_run` · `[brake] tokens_per_run` (machine `settings.toml`, no defaults) · accumulated usage
-  > - **Produces:** a run that stops and names the ceiling it hit
+* **`B-FLOW-05` 🔧: Spend Brake**
+  > - **Purpose:** No run spends past the user's limits unasked: it pauses and asks, or parks
+  > - **Trigger:** Before every LLM request, each tool round included, and after every completed call
+  > - **Precondition:** `C-FLOW-01` → token and cost data · `C-FLOW-13` → `[brake]` and model and role limits in `settings.toml`
+  > - **Reads:** `[brake]`, model and role limits · prices and caps · accumulated usage
+  > - **Produces:** a run that pauses and asks at a limit, or parks with its totals saved
   > - **Enables:** `C-FLOW-11` → the cap on an agentic loop
-  > - **Done when:** a run exceeding either ceiling stops and says which one
+  > - **Done when:** a run that would cross any limit pauses before the call, and a resumed run continues its totals
 
 * **`B-FLOW-06` 🔜: Loop Detection for Agent Runs**
   > - **Purpose:** Stop an agent that keeps repeating itself, across one step or several, before the money or token limit is the only thing that would
