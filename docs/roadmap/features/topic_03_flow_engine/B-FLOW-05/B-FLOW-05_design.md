@@ -190,7 +190,7 @@ None.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Accounting and limits | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Accounting and limits | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Pause, park and resume | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -198,6 +198,6 @@ None.
 **Current status**: Redesign APPROVED 2026-10-06. Red/Blue
 2026-10-06, two cycles: worst case in tokens for private servers (FR-2), one question at a time
 (FR-6), the higher limit wins on resume (FR-8), the agentic turn count named a non-goal.
-**Next step**: Trigger the implementation-plan skill for SF-01.
+**Next step**: Trigger the dev skill for SF-01 (plan approved 2026-10-06).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

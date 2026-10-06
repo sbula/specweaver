@@ -18,7 +18,7 @@ Every row was answered by the user `[agreed 2026-10-06]`.
 | Q9 | A REST request at a limit stops with an HTTP error naming the limit; it does not park |
 | Q10 | A model's or a role's own limit behaves like the run total: pause and ask, then its own step size |
 | Q11 | Renamed "Spend Brake"; the ID stays `B-FLOW-05` |
-| Q12 | The worst-case check before a call estimates the prompt's tokens (characters ÷ 4, Gemini counts exactly) plus a 25% margin; no extra request to the provider |
+| Q12 | The worst-case check before a call estimates the prompt's tokens (characters ÷ 4 for every model; Gemini's exact count would be a request) plus a 25% margin; no extra request to the provider |
 | Q13 | Answering "no" at a pause parks the run; the spend so far stays with it, and `sw resume` continues after the limit is raised |
 | Q14 | A hosted model whose output cap is not known to bound its thinking (`thinking_in_output_cap` unset — today Mistral and hosted Qwen) is refused until the user sets it for that model; models on private servers are bounded by tokens and exempt |
 
