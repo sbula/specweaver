@@ -46,7 +46,7 @@ Two spend numbers exist for one thing: 25 USD in code (used) and 20 in the file 
 | Q-16 | How a role limit is written | — | **As an amount, with the model's field names: `spend_per_run`, `tokens_per_run`** `[agreed 2026-10-03]` |
 | Q-17 | How limits are set | — | **By hand in the file; `sw config show` reads each back with its file and line** `[agreed 2026-10-03]` |
 | Q-18 | Role limits in a project file | — | **No: limits live in the machine file only; a project role entry with a limit field is refused** `[agreed 2026-10-03]` |
-| — | Moved to `B-FLOW-05` by Q-13, with the user's notes | — | a cloud model with no price is refused; a private server's models use the token limit, others the money limit; a model with no own limit falls under the run total; a role limit only lowers the model's; close-to-limit stays 80% warning + refusal until pause-and-ask; the loop detector (loops can span several steps; weigh effort against result) and the repeat check, which if built must be removed once the detector exists |
+| — | Moved to `B-FLOW-05` by Q-13, with the user's notes | — | a cloud model with no price is refused; a private server's models use the token limit, others the money limit; a model with no own limit falls under the run total; a role limit only lowers the model's; close-to-limit stays 80% warning + refusal until pause-and-ask; the loop detector (now `B-FLOW-06`, minted 2026-10-06) (loops can span several steps; weigh effort against result) and the repeat check, which if built must be removed once the detector exists |
 
 ## Changes
 

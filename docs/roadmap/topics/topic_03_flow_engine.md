@@ -249,6 +249,16 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `C-FLOW-11` → the cap on an agentic loop
   > - **Done when:** a run exceeding either ceiling stops and says which one
 
+* **`B-FLOW-06` 🔜: Loop Detection for Agent Runs**
+  > - **Purpose:** Stop an agent that keeps repeating itself, across one step or several, before the money or token limit is the only thing that would
+  > - **Trigger:** While a tool loop or a multi-step run is in progress
+  > - **Precondition:** `C-FLOW-13` → `[brake] agent_turns` · `B-FLOW-05` → the run's limits
+  > - **Reads:** the run's tool calls and step results
+  > - **Produces:** a run that stops and says which repetition it found
+  > - **Enables:** `C-FLOW-11` → agentic mode that cannot spin
+  > - **Done when:** a run that repeats a cycle of steps stops with the cycle named, and a run that follows a chain of different files does not
+  > - **Note:** weigh detection effort against what it saves before building `[agreed 2026-10-06]` · origin: `B-FLOW-05` redesign and `C-FLOW-13` SF-05
+
 ## DAL-A: Mission-Critical
 
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)

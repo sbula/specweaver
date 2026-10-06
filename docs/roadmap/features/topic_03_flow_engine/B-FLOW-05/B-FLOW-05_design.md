@@ -76,7 +76,7 @@ restate. `[brake] agent_turns` bounds every tool loop. Handed to this redesign `
 apply the stored per-model and per-role `spend_per_run` / `tokens_per_run` (a role only lowers);
 refuse a hosted model with no price; a private server's models use the token limit, others the
 money limit; a model without its own limit falls under the run total; pause-and-ask at the limit;
-loop detection (loops can span several steps — weigh effort against result; a repeat check, if
+loop detection, now its own capability `B-FLOW-06` (loops can span several steps — weigh effort against result; a repeat check, if
 built first, goes once the detector exists). Record: the SF-05 plan's §Decisions.
 
 ## Functional Requirements
