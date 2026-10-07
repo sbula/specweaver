@@ -17,7 +17,7 @@ from specweaver.infrastructure.llm.errors import (
     ToolRoundsExceededError,
     attach_usage,
 )
-from specweaver.infrastructure.llm.models import tool_rounds
+from specweaver.infrastructure.llm.models import payload_chars, tool_rounds
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +212,7 @@ class AnthropicAdapter(LLMAdapter):
         config: GenerationConfig,
         tool_executor: object,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
+        before_request: Callable[[int, int], None] | None = None,
     ) -> LLMResponse:
         from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 
@@ -240,6 +241,8 @@ class AnthropicAdapter(LLMAdapter):
                         messages, anthropic_messages, round_num, on_tool_round
                     )
 
+                if before_request:
+                    before_request(round_num, payload_chars(anthropic_messages))
                 try:
                     response = await client.messages.create(**kwargs)
                 except Exception as e:

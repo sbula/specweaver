@@ -81,12 +81,13 @@ class AsyncRateLimiterAdapter(LLMAdapter):
         config: GenerationConfig,
         tool_executor: object,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
+        before_request: Callable[[int, int], None] | None = None,
     ) -> LLMResponse:
         """Wraps the function-calling generation sequence inside a lock boundary."""
         semaphore = await self._wait_for_lock()
         try:
             return await self._wrapped.generate_with_tools(
-                messages, config, tool_executor, on_tool_round
+                messages, config, tool_executor, on_tool_round, before_request=before_request
             )
         finally:
             semaphore.release()

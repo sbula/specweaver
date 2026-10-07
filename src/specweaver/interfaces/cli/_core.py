@@ -119,6 +119,28 @@ def refuse_llm_settings(err: Exception) -> NoReturn:
     raise typer.Exit(code=1) from err
 
 
+def stdin_is_interactive() -> bool:
+    import sys
+
+    try:
+        return sys.stdin.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def ask_to_spend(question: str) -> bool:
+    """Ask at a spend limit; only "y" or "yes" goes on."""
+    from rich.prompt import Prompt
+
+    answer = Prompt.ask(f"Spend brake: {question} [y/N]", default="", console=console)
+    return answer.strip().lower() in ("y", "yes")
+
+
+def spend_asker() -> Callable[[str], bool] | None:
+    """The spend question for a command with a terminal; none without one."""
+    return ask_to_spend if stdin_is_interactive() else None
+
+
 def _version_callback(value: bool) -> None:
     logger.debug("Executing _version_callback (value=%s)", value)
     if value:

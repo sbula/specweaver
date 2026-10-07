@@ -67,7 +67,7 @@ class _StubAdapter:
         return self._answer()
 
     async def generate_with_tools(
-        self, messages: Any, config: Any, tool_executor: Any = None, on_tool_round: Any = None
+        self, messages: Any, config: Any, tool_executor: Any = None, *_a: Any, **_k: Any
     ) -> LLMResponse:
         return self._answer()
 
@@ -182,19 +182,29 @@ def _cost(usd: float) -> Cost:
 class _LoopingAdapter(_StubAdapter):
     """A tool loop of `rounds` requests, asking the round hook first each time like the adapters."""
 
-    def __init__(self, rounds: int, fail_in: int | None = None) -> None:
+    def __init__(self, rounds: int, fail_in: int | None = None, growth_per_round: int = 0) -> None:
         super().__init__()
         self._rounds = rounds
         self._fail_in = fail_in
+        self._growth = growth_per_round
+
+    def _prompt_chars(self, round_num: int) -> int:
+        """The payload grows by each round's tool results."""
+        return 4000 + round_num * self._growth
 
     async def generate_with_tools(
-        self, messages: Any, config: Any, tool_executor: Any = None, on_tool_round: Any = None
+        self,
+        messages: Any,
+        config: Any,
+        tool_executor: Any = None,
+        on_tool_round: Any = None,
+        before_request: Any = None,
     ) -> LLMResponse:
         used = TokenUsage()
         try:
             for round_num in range(self._rounds):
-                if on_tool_round:
-                    on_tool_round(round_num, messages)
+                if before_request:
+                    before_request(round_num, self._prompt_chars(round_num))
                 if round_num == self._fail_in:
                     raise RuntimeError("provider down")
                 self.calls += 1
@@ -232,3 +242,14 @@ async def test_a_tool_loop_that_fails_partway_counts_the_rounds_it_ran() -> None
         await collector.generate_with_tools(_PROMPT, _CONFIG, None)
 
     assert collector.budget.spent(_RUN.key) == pytest.approx(0.4)  # rounds 0 and 1
+
+
+async def test_the_round_check_sees_the_prompt_grow() -> None:
+    # Round 1's payload is 28,000 chars: 8,750 tokens with the margin + 1,000 out = USD 9.75,
+    # which with round 0's USD 2.25 crosses the USD 10 limit. The first prompt alone would fit.
+    adapter = _LoopingAdapter(rounds=3, growth_per_round=24_000)
+
+    with pytest.raises(SpendLimitReachedError):
+        await _collector(adapter).generate_with_tools(_PROMPT, _CONFIG, None)
+
+    assert adapter.calls == 1

@@ -15,9 +15,10 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from specweaver.infrastructure.llm.models import TaskType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry
+    from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.collector import TelemetryCollector
     from specweaver.infrastructure.llm.models import GenerationConfig
     from specweaver.infrastructure.llm.resolve import RoleResolver
@@ -42,6 +43,11 @@ class ModelRouter:
             adapter=adapter, config=config.model_copy(update={"task_type": task_type})
         )
 
+    @property
+    def budget(self) -> SpendBudget:
+        """The run's spend brake, shared by every role."""
+        return self._resolver.budget
+
     def collectors(self) -> list[TelemetryCollector]:
         """Every collector the run's calls went through, for flushing their usage records."""
         return self._resolver.collectors()
@@ -53,6 +59,7 @@ def build_router(
     project: str,
     roles: Iterable[TaskType | str],
     run_model: RoleEntry | None = None,
+    ask: Callable[[str], bool] | None = None,
 ) -> ModelRouter:
     """A command's router: its limits and every role it will use checked now, before any call.
 
@@ -64,7 +71,7 @@ def build_router(
     from specweaver.infrastructure.llm.resolve import RoleResolver
 
     brake_limits(files)
-    budget = SpendBudget(currency=files.machine.currency)
+    budget = SpendBudget(currency=files.machine.currency, ask=ask)
     resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=run_model)
     resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
     return ModelRouter(resolver)

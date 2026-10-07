@@ -161,6 +161,7 @@ class LLMAdapter(ABC):
         config: GenerationConfig,
         tool_executor: object,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
+        before_request: Callable[[int, int], None] | None = None,
     ) -> LLMResponse:
         """Agentic generation loop with tool use.
 

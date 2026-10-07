@@ -162,3 +162,76 @@ class TestWarning:
         assert "CHF 6.80 of CHF 8.00" in caplog.records[0].message
         assert "CHF 6.80" in str(caught.value)
         assert "$" not in str(caught.value)
+
+
+class TestAsking:
+    def test_one_yes_raises_by_as_many_steps_as_the_call_needs(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda question: asked.append(question) or True)
+
+        budget.before_call(_scope(_RUN_USD), Cost(usd=25.0, tokens=0))
+
+        assert len(asked) == 1
+        assert "USD 30.00" in asked[0]
+        assert budget.limit_of(_RUN_USD) == 30.0
+
+    def test_yes_raises_the_limit_by_its_own_value_and_the_call_goes_on(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda question: asked.append(question) or True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        assert len(asked) == 1
+        assert "brake.hosted_spend_per_run" in asked[0]
+        assert budget.limit_of(_RUN_USD) == 20.0
+
+    def test_the_next_crossing_asks_again_at_the_raised_limit(self) -> None:
+        answers = iter([True, True])
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or next(answers))
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # 10 -> 20
+
+        budget.record(_scope(_RUN_USD), Cost(usd=10.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # 20 -> 30
+
+        assert len(asked) == 2
+        assert budget.limit_of(_RUN_USD) == 30.0
+
+    def test_no_stops_the_call_and_the_budget_remembers_it(self) -> None:
+        budget = SpendBudget(ask=lambda _question: False)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+
+        with pytest.raises(SpendLimitReachedError) as caught:
+            budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        assert budget.stopped is caught.value
+
+    def test_without_anyone_to_ask_the_call_stops(self) -> None:
+        budget = SpendBudget()
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        assert budget.stopped is not None
+
+    def test_a_call_within_its_limits_asks_nothing(self) -> None:
+        budget = SpendBudget(ask=lambda _question: pytest.fail("asked without a crossing"))
+
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        assert budget.stopped is None
+
+    def test_the_question_says_what_was_spent_and_what_the_call_may_add(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or False)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        assert "USD 9.00" in asked[0]
+        assert "USD 10.00" in asked[0]
+        assert "USD 2.00" in asked[0]

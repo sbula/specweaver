@@ -43,6 +43,10 @@ steps:
 The runner looks up `action` + `target` (e.g. `review` + `code`) in the `StepHandlerRegistry` and runs
 that handler.
 
+A handler need not do anything about the spend brake. When the brake stops a call, the runner parks
+the step after it returns, whatever the handler did with the error (`_parked_by_brake` in
+`step_execution.py`).
+
 - **Location**: `src/specweaver/flow/_<domain>.py`
 
 ```python

@@ -42,7 +42,7 @@ class StubAdapter(LLMAdapter):
         yield "success"
 
     async def generate_with_tools(
-        self, messages, config, tool_executor, on_tool_round=None
+        self, messages, config, tool_executor, on_tool_round=None, before_request=None
     ) -> LLMResponse:
         from specweaver.infrastructure.llm.models import TokenUsage
 
@@ -101,7 +101,9 @@ class CountingAdapter(StubAdapter):
         finally:
             self.active -= 1
 
-    async def generate_with_tools(self, messages, config, tool_executor, on_tool_round=None):
+    async def generate_with_tools(
+        self, messages, config, tool_executor, on_tool_round=None, before_request=None
+    ):
         return await self.generate(messages, config)
 
 

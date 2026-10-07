@@ -57,6 +57,10 @@ class RoleResolver:
         self._catalogue = catalogue or shipped_catalogue()
         self._by_server: dict[str, TelemetryCollector] = {}
 
+    @property
+    def budget(self) -> SpendBudget:
+        return self._budget
+
     def require(self, roles: Iterable[str]) -> None:
         """Refuse now, before any call, if one of these roles has no model."""
         for role in roles:

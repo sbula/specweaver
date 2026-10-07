@@ -42,7 +42,7 @@
           "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
           "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
           "breaks": "a streamed call's prompt is never counted",
-          "symbol_sha": "sha256:2800ef41a05f763d1a3319f9c71141849050a3b8e82c764007f445247117efdf"
+          "symbol_sha": "sha256:7815d20355dbead80b95fe959bdce81ec7a3885b0ffd79e4af2d0a79cc054b8b"
         },
         {
           "id": "failed-tool-call-not-counted",
@@ -52,7 +52,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:d4ca535d54940b13bf6c3551715a6a54e009f2608e5508af17f934ceef89c966"
+          "symbol_sha": "sha256:e653064462a749511d30c07f8c3dd69ca650f4cad07bbc3530e7fdb9e814dc8c"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -62,7 +62,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:2643d19a6861fc28d032387f54303886e88a7590adbc44b128179aae55018888"
+          "symbol_sha": "sha256:2756f8b13a1edee11d3b93799f3df55405f20e7f4d222ea5f1d79056b79da0c4"
         },
         {
           "id": "anthropic-loses-usage-on-error",
@@ -72,7 +72,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:a412b5d60d84ee314e30e45e9a8ecaeb83991ead243aa0bf79b32aa7f7b410dd"
+          "symbol_sha": "sha256:ec65ce3d9574258e7642c168d4fe1c4b154dead2323c68197d93dd8b96e3b9cf"
         },
         {
           "id": "mistral-loses-usage-on-error",
@@ -82,7 +82,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:c49b447738e18456f26d2c8c9752dd103a6b295eabd165fec8610dca02490277"
+          "symbol_sha": "sha256:7089a25fb3c3573afcaf294e1d595b47328edddc0ab8d6c94060c38693ef40f6"
         },
         {
           "id": "gemini-loses-usage-on-error",
@@ -92,7 +92,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:663ef7a0a4e5ffe6fdf39ea7b22358d5a597b8d42e9c1955e7712ed579459c6e"
+          "symbol_sha": "sha256:b4b8f4b457f8a375bb4a13ed03f7eafa16eb07452cb3f6d8d6f4e44c2e253785"
         },
         {
           "id": "failure-usage-ignored",
@@ -110,10 +110,15 @@
       "requirement": "FR-2",
       "title": "No call is sent whose worst case could cross a limit",
       "scope": [
-        "tests/unit/infrastructure/llm/test_spend_budget.py",
-        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py",
         "tests/integration/infrastructure/llm/test_brake_from_settings.py",
-        "tests/unit/infrastructure/llm/test_budget_from_settings.py"
+        "tests/unit/infrastructure/llm/test_adapters.py",
+        "tests/unit/infrastructure/llm/test_anthropic.py",
+        "tests/unit/infrastructure/llm/test_budget_from_settings.py",
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_mistral.py",
+        "tests/unit/infrastructure/llm/test_openai.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py"
       ],
       "mutants": [
         {
@@ -121,10 +126,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.before_call",
-          "old": "            if self._spent[limit.key] + self._reserved[limit.key] + amount > limit.value:\n",
+          "old": "            if needed > self.limit_of(limit):\n",
           "new": "            if False:\n",
           "breaks": "every call is sent whatever it may cost",
-          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
         },
         {
           "id": "reservation-not-held",
@@ -134,17 +139,17 @@
           "old": "            self._reserved[key] += amount\n",
           "new": "            pass\n",
           "breaks": "parallel calls each pass on the same headroom",
-          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
         },
         {
           "id": "margin-dropped",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
-          "symbol": "TelemetryCollector._reserve",
-          "old": "        prompt = math.ceil(self._prompt_tokens(messages, config) * _PROMPT_MARGIN)\n",
-          "new": "        prompt = self._prompt_tokens(messages, config)\n",
+          "symbol": "TelemetryCollector._worst_of",
+          "old": "        prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)\n",
+          "new": "        prompt = prompt_tokens\n",
           "breaks": "an underestimated prompt lets a call cross the line",
-          "symbol_sha": "sha256:49b360eca4f82bd378c1a1cf47cf7c44ac70087f0fd17dd8afb0de897f8399db"
+          "symbol_sha": "sha256:f891ee3f0b8ab61d2ba6b52d4ae7c091871758fdc62765ec14ae32769931ab6b"
         },
         {
           "id": "output-cap-dropped",
@@ -154,7 +159,7 @@
           "old": "            completion_tokens=config.max_output_tokens,\n",
           "new": "            completion_tokens=0,\n",
           "breaks": "the worst case ignores the answer, which is most of the cost",
-          "symbol_sha": "sha256:49b360eca4f82bd378c1a1cf47cf7c44ac70087f0fd17dd8afb0de897f8399db"
+          "symbol_sha": "sha256:b937794fc7fdc5144f8a9474a9b1b7c3aec5d66bef2e086ad5029ab42a6d4114"
         },
         {
           "id": "unknown-price-passes",
@@ -164,7 +169,7 @@
           "old": "            if amount is None:\n",
           "new": "            if amount is None and False:\n",
           "breaks": "a call with no price passes a money limit unchecked",
-          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
         },
         {
           "id": "round-not-checked",
@@ -174,7 +179,47 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:d4ca535d54940b13bf6c3551715a6a54e009f2608e5508af17f934ceef89c966"
+          "symbol_sha": "sha256:e653064462a749511d30c07f8c3dd69ca650f4cad07bbc3530e7fdb9e814dc8c"
+        },
+        {
+          "id": "round-payload-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(oai_messages))\n",
+          "new": "                    before_request(round_num, 0)\n",
+          "breaks": "a tool round's growing prompt is never counted before it is sent",
+          "symbol_sha": "sha256:2756f8b13a1edee11d3b93799f3df55405f20e7f4d222ea5f1d79056b79da0c4"
+        },
+        {
+          "id": "anthropic-round-payload-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(anthropic_messages))\n",
+          "new": "                    before_request(round_num, 0)\n",
+          "breaks": "a tool round's growing prompt is never counted before it is sent",
+          "symbol_sha": "sha256:ec65ce3d9574258e7642c168d4fe1c4b154dead2323c68197d93dd8b96e3b9cf"
+        },
+        {
+          "id": "mistral-round-payload-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(mistral_messages))\n",
+          "new": "                    before_request(round_num, 0)\n",
+          "breaks": "a tool round's growing prompt is never counted before it is sent",
+          "symbol_sha": "sha256:7089a25fb3c3573afcaf294e1d595b47328edddc0ab8d6c94060c38693ef40f6"
+        },
+        {
+          "id": "gemini-round-payload-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(contents))\n",
+          "new": "                    before_request(round_num, 0)\n",
+          "breaks": "a tool round's growing prompt is never counted before it is sent",
+          "symbol_sha": "sha256:b4b8f4b457f8a375bb4a13ed03f7eafa16eb07452cb3f6d8d6f4e44c2e253785"
         }
       ]
     },
@@ -191,10 +236,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget._warn",
-          "old": "        if limit.key in self._warned or spent < limit.value * _WARN_AT:\n",
-          "new": "        if self._warned or spent < limit.value * _WARN_AT:\n",
+          "old": "        if limit.key in self._warned or spent < self.limit_of(limit) * _WARN_AT:\n",
+          "new": "        if self._warned or spent < self.limit_of(limit) * _WARN_AT:\n",
           "breaks": "after the first limit warns, no other limit ever warns",
-          "symbol_sha": "sha256:84de749eb01fb4e538046d42fe10a6f6e5b937495404fd43bae8fd70c7eadaa2"
+          "symbol_sha": "sha256:645992ba14b8fc5d0e778f4805e9bc17dc64f1a66318fb1aa44b963a99871e31"
         }
       ]
     },
@@ -308,6 +353,106 @@
           "new": "        if False:\n",
           "breaks": "a role limit in the wrong unit for its server is silently ignored",
           "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A stop parks the run whatever the step did with it",
+      "scope": [
+        "tests/integration/core/flow/engine/test_spend_brake_parks_run.py",
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "runner-ignores-the-brake",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/step_execution.py",
+          "symbol": "execute_step",
+          "old": "    return _parked_by_brake(runner._context) or result\n",
+          "new": "    return result\n",
+          "breaks": "a step that caught the stop reports success, and a retry gate retries into the spent limit",
+          "symbol_sha": "sha256:bc0cb2b737028d2082b6a5e6343e224c97ef4a169982b44ea636166a0e8e4245"
+        },
+        {
+          "id": "stop-not-remembered",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget._stop",
+          "old": "        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason)\n        raise self.stopped\n",
+          "new": "        raise SpendLimitReachedError(limit, self._spent[limit.key], reason)\n",
+          "breaks": "the runner cannot see that the brake stopped a call",
+          "symbol_sha": "sha256:2681a9e5ae8178ba9abeaefdd13b32721a5a42b5f77c46894c0d09badb53f07e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "At a limit the user is asked; yes goes on by whole steps",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "yes-does-not-raise",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                self._raised[limit.key] += steps * limit.value\n",
+          "new": "                pass\n",
+          "breaks": "a yes lets one call through and the next crossing asks again at the same limit",
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+        },
+        {
+          "id": "raise-by-one-step-only",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                self._raised[limit.key] += steps * limit.value\n",
+          "new": "                self._raised[limit.key] += limit.value\n",
+          "breaks": "one yes raises less than the call needs",
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "No answer, or no one to ask, stops the call",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-ask-goes-on",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                if self._ask is None or not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
+          "new": "                if self._ask is not None and not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
+          "breaks": "a headless run spends past its limit with nobody asked",
+          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+        },
+        {
+          "id": "enter-is-yes",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "ask_to_spend",
+          "old": "    return answer.strip().lower() in (\"y\", \"yes\")\n",
+          "new": "    return answer.strip().lower() in (\"y\", \"yes\", \"\")\n",
+          "breaks": "pressing Enter spends more money",
+          "symbol_sha": "sha256:ddfd3c466f2aabf569ad01eb6cf412f2f7bc48b21d731316c74347dd04bcd854"
+        },
+        {
+          "id": "implement-says-tests-failed",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    if run_state.status == \"parked\":\n",
+          "new": "    if False:\n",
+          "breaks": "sw implement stopped by the spend brake says the tests did not pass",
+          "symbol_sha": "sha256:fbff0a828dd3b40125a0a264e72c1ed5c1aebc36adf505f0e8c71a3d534351bf"
         }
       ]
     }

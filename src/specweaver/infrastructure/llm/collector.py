@@ -86,7 +86,10 @@ class TelemetryCollector:
         return scope, self._budget.before_call(scope, self._worst(messages, config, scope))
 
     def _worst(self, messages: list[Message], config: GenerationConfig, scope: CallScope) -> Cost:
-        prompt = math.ceil(self._prompt_tokens(messages, config) * _PROMPT_MARGIN)
+        return self._worst_of(self._prompt_tokens(messages, config), config, scope)
+
+    def _worst_of(self, prompt_tokens: int, config: GenerationConfig, scope: CallScope) -> Cost:
+        prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)
         worst = TokenUsage(
             prompt_tokens=prompt,
             completion_tokens=config.max_output_tokens,
@@ -143,18 +146,15 @@ class TelemetryCollector:
         scope, first = self._reserve(messages, config)
         held = [first]
 
-        def before_round(round_num: int, round_messages: list[Message]) -> None:
+        def before_request(round_num: int, prompt_chars: int) -> None:
             if round_num > 0:
-                held.append(
-                    self._budget.before_call(scope, self._worst(round_messages, config, scope))
-                )
-            if on_tool_round:
-                on_tool_round(round_num, round_messages)
+                worst = self._worst_of(_estimate_chars(prompt_chars), config, scope)
+                held.append(self._budget.before_call(scope, worst))
 
         start = time.monotonic()
         try:
             response = await self._adapter.generate_with_tools(
-                messages, config, tool_executor, before_round
+                messages, config, tool_executor, on_tool_round, before_request=before_request
             )
         except BaseException as exc:
             self._record_failure(scope, Reservation.combined(held), exc)
@@ -318,4 +318,8 @@ class TelemetryCollector:
 
 def _estimate_tokens(text: str) -> int:
     """About four characters per token; the brake adds its margin on top."""
-    return len(text) // 4
+    return _estimate_chars(len(text))
+
+
+def _estimate_chars(chars: int) -> int:
+    return chars // 4

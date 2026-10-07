@@ -39,6 +39,7 @@ from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import GateDefinition, PipelineStep
@@ -204,17 +205,35 @@ async def execute_step(
             from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
             return await execute_in_sandbox(runner, handler, step_def, run, logger)
-        return cast("StepResult", await handler.execute(step_def, runner._context))
+        result = cast("StepResult", await handler.execute(step_def, runner._context))
     except Exception as exc:
         logger.exception(
             "[run_id=%s] Step '%s' raised unhandled exception", run.run_id, step_def.name
         )
-        return StepResult(
+        result = StepResult(
             status=StepStatus.ERROR,
             error_message=str(exc),
             started_at=_now_iso(),
             completed_at=_now_iso(),
         )
+    return _parked_by_brake(runner._context) or result
+
+
+def _parked_by_brake(context: Any) -> StepResult | None:
+    """If the spend brake stopped a call of this step, the step waits for the user instead.
+
+    Read from the brake, not from the step's result: a step may have caught the stop.
+    """
+    router = getattr(getattr(context, "model", None), "llm_router", None)
+    stopped = getattr(getattr(router, "budget", None), "stopped", None)
+    if not isinstance(stopped, SpendLimitReachedError):
+        return None
+    return StepResult(
+        status=StepStatus.WAITING_FOR_INPUT,
+        error_message=str(stopped),
+        started_at=_now_iso(),
+        completed_at=_now_iso(),
+    )
 
 
 def park_run(

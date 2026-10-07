@@ -606,6 +606,39 @@ class TestGenerateWithToolsEdgeCases:
     """Edge cases for the agentic tool-use loop."""
 
     @pytest.mark.asyncio
+    async def test_each_round_reports_the_payload_it_is_about_to_send(self) -> None:
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
+        from specweaver.infrastructure.llm.models import ToolDefinition
+
+        adapter = GeminiAdapter(api_key="fake-key")
+        call = MagicMock()
+        call.name = "my_tool"
+        call.args = {}
+        response = MagicMock(text="", usage_metadata=None, function_calls=[call])
+        response.candidates = [MagicMock(content=MagicMock(), finish_reason="STOP")]
+        adapter._client = MagicMock()
+        adapter._client.aio.models.generate_content = AsyncMock(return_value=response)
+        config = GenerationConfig(
+            model="gemini-2.5-flash",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=2,
+        )
+        executor = AsyncMock()
+        executor.execute.return_value = {"content": "x" * 5000}
+        seen: list[tuple[int, int]] = []
+
+        with pytest.raises(ToolRoundsExceededError):
+            await adapter.generate_with_tools(
+                [],
+                config,
+                executor,
+                before_request=lambda round_num, chars: seen.append((round_num, chars)),
+            )
+
+        assert [r for r, _ in seen] == [0, 1]
+        assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
+
+    @pytest.mark.asyncio
     async def test_max_rounds_exhausted(self) -> None:
         """Max tool rounds reached → returns last response, logs warning."""
         adapter = GeminiAdapter(api_key="fake-key")

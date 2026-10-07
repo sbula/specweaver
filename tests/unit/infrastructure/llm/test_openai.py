@@ -158,6 +158,42 @@ class TestOpenAIAdapter:
         assert mock_exec.execute.call_count == 2
 
     @pytest.mark.asyncio
+    async def test_each_round_reports_the_payload_it_is_about_to_send(self) -> None:
+        from specweaver.infrastructure.llm.models import Message, Role, ToolDefinition
+
+        adapter = OpenAIAdapter(api_key="key")
+        call = MagicMock()
+        call.id = "c1"
+        call.function.name = "my_tool"
+        call.function.arguments = "{}"
+        asks = MagicMock(choices=[MagicMock(finish_reason="tool_calls")], usage=None)
+        asks.choices[0].message.content = ""
+        asks.choices[0].message.tool_calls = [call]
+        done = MagicMock(choices=[MagicMock(finish_reason="stop")], usage=None)
+        done.choices[0].message.content = "fine"
+        done.choices[0].message.tool_calls = None
+        adapter._client = MagicMock()
+        adapter._client.chat.completions.create = AsyncMock(side_effect=[asks, done])
+        config = GenerationConfig(
+            model="gpt-5.4",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=5,
+        )
+        executor = AsyncMock()
+        executor.execute.return_value = {"content": "x" * 5000}
+        seen: list[tuple[int, int]] = []
+
+        await adapter.generate_with_tools(
+            [Message(role=Role.USER, content="hi")],
+            config,
+            executor,
+            before_request=lambda round_num, chars: seen.append((round_num, chars)),
+        )
+
+        assert [r for r, _ in seen] == [0, 1]
+        assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
+
+    @pytest.mark.asyncio
     async def test_a_tool_loop_that_fails_partway_keeps_the_usage_of_the_rounds_it_ran(
         self,
     ) -> None:

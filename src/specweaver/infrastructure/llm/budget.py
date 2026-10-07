@@ -6,13 +6,16 @@
 from __future__ import annotations
 
 import logging
+import math
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, NoReturn
 
 from specweaver.core.config.llm_settings import format_money
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from specweaver.core.config.llm_settings import Currency, ModelFacts
 
 logger = logging.getLogger(__name__)
@@ -93,33 +96,43 @@ class SpendLimitReachedError(BudgetExceededError):
 class SpendBudget:
     """Spent and reserved amounts of one run, per limit key."""
 
-    def __init__(self, currency: Currency | None = None) -> None:
+    def __init__(
+        self, currency: Currency | None = None, ask: Callable[[str], bool] | None = None
+    ) -> None:
         self._currency = currency
+        self._ask = ask
         self._spent: defaultdict[str, float] = defaultdict(float)
         self._reserved: defaultdict[str, float] = defaultdict(float)
+        self._raised: defaultdict[str, float] = defaultdict(float)
         self._warned: set[str] = set()
+        #: The stop that ended the run's spending, if any.
+        self.stopped: SpendLimitReachedError | None = None
 
     def spent(self, key: str) -> float:
         return self._spent[key]
+
+    def limit_of(self, limit: Limit) -> float:
+        """The limit as it stands now, raised by every "yes" at a pause."""
+        return limit.value + self._raised[limit.key]
 
     def before_call(self, scope: CallScope, worst: Cost) -> Reservation:
         """Reserve the call's worst case, or refuse if it could cross a limit."""
         for limit in scope.limits:
             amount = worst.amount(limit.unit)
             if amount is None:
-                raise SpendLimitReachedError(
-                    limit,
-                    self._spent[limit.key],
-                    f"the model's price is unknown, so {limit.key} cannot be checked",
-                )
-            if self._spent[limit.key] + self._reserved[limit.key] + amount > limit.value:
-                raise SpendLimitReachedError(
-                    limit,
-                    self._spent[limit.key],
+                self._stop(limit, f"the model's price is unknown, so {limit.key} cannot be checked")
+            needed = self._spent[limit.key] + self._reserved[limit.key] + amount
+            if needed > self.limit_of(limit):
+                reason = (
                     f"{limit.key} would be crossed: {self._show(limit, self._spent[limit.key])} of "
-                    f"{self._show(limit, limit.value)} spent, the next call may cost up to "
-                    f"{self._show(limit, amount)}",
+                    f"{self._show(limit, self.limit_of(limit))} spent, the next call may cost up to "
+                    f"{self._show(limit, amount)}"
                 )
+                steps = math.ceil((needed - self.limit_of(limit)) / limit.value)
+                raised = self._show(limit, self.limit_of(limit) + steps * limit.value)
+                if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
+                    self._stop(limit, reason)
+                self._raised[limit.key] += steps * limit.value
         reservation = Reservation(
             {limit.key: worst.amount(limit.unit) or 0.0 for limit in scope.limits}
         )
@@ -142,9 +155,13 @@ class SpendBudget:
             self._spent[limit.key] += reserved if amount is None else amount
             self._warn(limit)
 
+    def _stop(self, limit: Limit, reason: str) -> NoReturn:
+        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason)
+        raise self.stopped
+
     def _warn(self, limit: Limit) -> None:
         spent = self._spent[limit.key]
-        if limit.key in self._warned or spent < limit.value * _WARN_AT:
+        if limit.key in self._warned or spent < self.limit_of(limit) * _WARN_AT:
             return
         self._warned.add(limit.key)
         logger.warning(

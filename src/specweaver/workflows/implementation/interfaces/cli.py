@@ -289,6 +289,12 @@ def implement(
     # Exit reflects QA outcome. A failed run_tests exhausts its
     # loop-back and leaves the run non-completed \u2192 exit 1. A failed validate_code
     # is report-only (CONTINUE gate) and does not, on its own, fail the command.
+    if run_state.status == "parked":
+        reason = run_state.step_records[run_state.current_step].result
+        _core.console.print("\nStopped by the spend brake:", style="red")
+        _core.console.print(reason.error_message if reason else "", markup=False)
+        _core.console.print("Raise the limit in settings.toml and run sw implement again.")
+        raise typer.Exit(code=1)
     if run_state.status != "completed":
         _core.console.print("\n[red]Implementation failed:[/red] tests did not pass.")
         raise typer.Exit(code=1)

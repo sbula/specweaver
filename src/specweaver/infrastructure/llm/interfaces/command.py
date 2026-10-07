@@ -49,6 +49,7 @@ def command_router(
             files,
             project=project,
             roles=roles,
+            ask=_core.spend_asker(),
             run_model=run_model,
         )
     except SettingsFileError as err:
@@ -66,6 +67,7 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
             files,
             project=project,
             roles=roles,
+            ask=_core.spend_asker(),
         )
     except SettingsFileError as err:
         _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)

@@ -55,7 +55,7 @@ class FakeAdapter:
         return self._response
 
     async def generate_with_tools(
-        self, messages, config, tool_executor, on_tool_round=None
+        self, messages, config, tool_executor, on_tool_round=None, before_request=None
     ) -> LLMResponse:
         self._call_count += 1
         return self._response
@@ -475,7 +475,9 @@ async def _raise_adapter_error(messages, config):
     raise RuntimeError(msg)
 
 
-async def _raise_adapter_error_tools(messages, config, tool_executor, on_tool_round=None):
+async def _raise_adapter_error_tools(
+    messages, config, tool_executor, on_tool_round=None, before_request=None
+):
     msg = "adapter exploded"
     raise RuntimeError(msg)
 

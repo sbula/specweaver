@@ -13,6 +13,7 @@ Each adapter converts these to its provider's format internally.
 from __future__ import annotations
 
 import enum
+import json
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
@@ -78,6 +79,11 @@ class GenerationConfig(BaseModel):
     max_tool_rounds: int | None = Field(default=None, ge=1)
     task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
     run_id: str = ""  # Telemetry lineage correlation (3.14)
+
+
+def payload_chars(payload: object) -> int:
+    """The size of a request payload, for the spend brake's estimate before it is sent."""
+    return len(json.dumps(payload, default=str))
 
 
 def tool_rounds(config: GenerationConfig) -> range:

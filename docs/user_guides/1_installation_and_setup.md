@@ -74,9 +74,13 @@ rate_date = 2026-09-26
 - `sw config set-role <role> <model@server>` writes a role; `--project` writes it into the active
   project's `specweaver.toml` instead, where `[llm] private_only = true` refuses any cloud server.
 - `sw config show` prints every value with the file and line it came from.
-- Before each call the brake adds that call's worst case (the prompt with a 25% margin plus the
-  full output cap) and stops the run if a limit could be crossed; each limit warns once at 80%.
-  Cloud servers count money, private servers (`private = true`) count tokens.
+- Before each call, and before each tool round, the brake adds that call's worst case (the prompt
+  with a 25% margin plus the full output cap); each limit warns once at 80%. Cloud servers count
+  money, private servers (`private = true`) count tokens.
+- If a limit could be crossed and you are at a terminal, the run asks. `y` raises that limit by
+  as many of its own steps as the call needs (20 → 40); anything else, Enter included, parks the
+  run. Without a terminal it parks straight away. Raise the limit in `settings.toml` if you like,
+  then continue with `sw run --resume <id>`.
 - A model (`[models."<id>"]`) and a role may carry `spend_per_run` or `tokens_per_run` too; the
   lowest limit that applies wins. Only the machine file may set limits. A tool loop that reaches
   `agent_turns` stops with an error naming it.

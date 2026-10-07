@@ -110,6 +110,45 @@ class TestMistralAdapter:
         mock_exec.execute.assert_not_called()
 
     @pytest.mark.asyncio
+    async def test_each_round_reports_the_payload_it_is_about_to_send(self) -> None:
+        from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
+        from specweaver.infrastructure.llm.models import ToolDefinition
+
+        adapter = MistralAdapter(api_key="key")
+        call = MagicMock()
+        call.id = "call_1"
+        call.function.name = "my_tool"
+        call.function.arguments = "{}"
+        choice = MagicMock(finish_reason="tool_calls")
+        choice.message.content = ""
+        choice.message.tool_calls = [call]
+        message = MagicMock(choices=[choice])
+        message.usage.prompt_tokens = 10
+        message.usage.completion_tokens = 20
+        message.usage.total_tokens = 30
+        adapter._client = MagicMock()
+        adapter._client.chat.complete_async = AsyncMock(return_value=message)
+        config = GenerationConfig(
+            model="mistral-large-latest",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=2,
+        )
+        executor = AsyncMock()
+        executor.execute.return_value = {"content": "x" * 5000}
+        seen: list[tuple[int, int]] = []
+
+        with pytest.raises(ToolRoundsExceededError):
+            await adapter.generate_with_tools(
+                [],
+                config,
+                executor,
+                before_request=lambda round_num, chars: seen.append((round_num, chars)),
+            )
+
+        assert [r for r, _ in seen] == [0, 1]
+        assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
+
+    @pytest.mark.asyncio
     async def test_generate_with_tools_max_rounds(self) -> None:
         adapter = MistralAdapter(api_key="key")
 
