@@ -63,7 +63,7 @@ tokens_per_run = 20000000     # the run's token limit
 agent_turns = 30              # rounds one tool loop may take
 
 [models."qwen3-coder-next"]   # optional per-model limits, beside the price
-tokens_per_run = 2000000      # stored and shown; the spend brake does not apply them yet
+tokens_per_run = 2000000      # this model's own limit; the lower one always wins
 
 [currency]                    # optional; without it every amount is USD
 code = "CHF"
@@ -74,9 +74,12 @@ rate_date = 2026-09-26
 - `sw config set-role <role> <model@server>` writes a role; `--project` writes it into the active
   project's `specweaver.toml` instead, where `[llm] private_only = true` refuses any cloud server.
 - `sw config show` prints every value with the file and line it came from.
-- A run stops at 100% of a `[brake]` limit, after one warning at 80%. A tool loop that reaches
-  `agent_turns` stops with an error naming it. A role may carry `spend_per_run` or
-  `tokens_per_run` too; only the machine file may set limits.
+- Before each call the brake adds that call's worst case (the prompt with a 25% margin plus the
+  full output cap) and stops the run if a limit could be crossed; each limit warns once at 80%.
+  Cloud servers count money, private servers (`private = true`) count tokens.
+- A model (`[models."<id>"]`) and a role may carry `spend_per_run` or `tokens_per_run` too; the
+  lowest limit that applies wins. Only the machine file may set limits. A tool loop that reaches
+  `agent_turns` stops with an error naming it.
 - `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
   one run the same model; the files stay unchanged. The server must be in `settings.toml`, and
   `private_only` still applies.

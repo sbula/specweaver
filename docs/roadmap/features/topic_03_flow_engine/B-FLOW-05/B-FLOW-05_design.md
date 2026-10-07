@@ -113,7 +113,7 @@ None.
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
 | AD-1 | The brake asks through a callback the command passes in (`ask_to_continue`), built from the `ContextProvider` by the CLI; `infrastructure.llm` imports nothing from `workspace` or `interfaces` | keeps the LLM layer free of UI; REST passes none and so stops (FR-10) | No |
-| AD-2 | Without an answer the brake raises `SpendLimitReached` (a `BudgetExceededError`), which `execute_step` maps to `WAITING_FOR_INPUT`, so the run parks through the existing `park_run` | reuses the one park path; no new run status | No |
+| AD-2 | Without an answer the brake raises `SpendLimitReachedError` (a `BudgetExceededError`), which `execute_step` maps to `WAITING_FOR_INPUT`, so the run parks through the existing `park_run` | reuses the one park path; no new run status | No |
 | AD-3 | The brake's totals and raised limits are a JSON field on the persisted run in `pipeline_state.db` | the run is what parks and resumes, so its spend belongs with it | No — a new field in the run-state store, not a new store |
 | AD-4 | The worst-case check is in the adapters' tool loop as well as in the collector, through one `SpendBudget.before_call(...)` | the collector cannot see rounds; one method keeps one rule | No |
 | AD-5 | REST answers HTTP 402 with `error_code = "SPEND_LIMIT"` `[agreed 2026-10-06]` | 402 *Payment Required* says money, not a fault | No |
@@ -169,14 +169,14 @@ None.
 - **Scope**: every call is counted and checked against every limit before it is sent.
 - **FRs**: [FR-1, FR-2, FR-4, FR-5, FR-9]
 - **Inputs**: `[brake]`, model and role limits, catalogue facts, each call's config and usage
-- **Outputs**: a `SpendBudget` that refuses or signals a limit before a call; `SpendLimitReached`
+- **Outputs**: a `SpendBudget` that refuses or signals a limit before a call; `SpendLimitReachedError`
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf01_implementation_plan.md
 
 ### SF-02: Pause, park and resume
 - **Scope**: a limit becomes a question, or a park the run survives, and REST names it.
 - **FRs**: [FR-3, FR-6, FR-7, FR-8, FR-10]
-- **Inputs**: `SpendLimitReached` from SF-01; the `ContextProvider`; the persisted run
+- **Inputs**: `SpendLimitReachedError` from SF-01; the `ContextProvider`; the persisted run
 - **Outputs**: paused, parked and resumed runs with their totals; REST 402 `SPEND_LIMIT`
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf02_implementation_plan.md

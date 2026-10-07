@@ -93,7 +93,7 @@ class RoleEntry(_Strict):
     max_output_tokens: int | None = Field(default=None, ge=1)
     top_p: float | None = None
     top_k: int | None = None
-    #: Limits for this kind of task; stored and shown here, not yet applied by the spend brake.
+    #: This kind of task's own limit; it can only lower the model's.
     spend_per_run: float | None = Field(default=None, gt=0)
     tokens_per_run: int | None = Field(default=None, gt=0)
 
@@ -128,7 +128,7 @@ class ModelFacts(_Strict):
     thinking_in_output_cap: bool | None = None
     sampling: Sampling | None = None
     #: Per-run limits for this model — money (configured currency) for a hosted model, tokens for
-    #: one on a private server. Stored and shown here, not yet applied by the spend brake.
+    #: one on a private server.
     spend_per_run: float | None = Field(default=None, gt=0)
     tokens_per_run: int | None = Field(default=None, gt=0)
 
@@ -340,6 +340,8 @@ class ResolvedRole:
     max_output_tokens: int | None = None
     top_p: float | None = None
     top_k: int | None = None
+    spend_per_run: float | None = None
+    tokens_per_run: int | None = None
     origin: dict[str, str] = field(default_factory=dict)
 
 
@@ -389,7 +391,10 @@ def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:
     values = {name: getattr(entry, name) for name in _SAMPLING_FIELDS}
     origins = {"model": origin, "server": origin}
     origins.update({name: origin for name, value in values.items() if value is not None})
-    return ResolvedRole(role=role, model=entry.model, server=entry.server, origin=origins, **values)
+    limits = {name: getattr(entry, name) for name in _LIMIT_KEYS}
+    return ResolvedRole(
+        role=role, model=entry.model, server=entry.server, origin=origins, **values, **limits
+    )
 
 
 def settings_report(
@@ -449,7 +454,7 @@ def settings_report(
 def _stored_limits(
     files: LlmSettingsFiles, table: str, entries: Iterable[tuple[str, RoleEntry | ModelFacts]]
 ) -> list[tuple[str, str, str]]:
-    """Model and role limits, marked as stored only: the spend brake does not apply them yet."""
+    """Model and role limits, each with its line."""
     rows = []
     for name, entry in sorted(entries, key=lambda item: item[0]):
         for key in _LIMIT_KEYS:
@@ -459,7 +464,7 @@ def _stored_limits(
                 rows.append(
                     (
                         f"{table}.{name}.{key}",
-                        f"{_number(value)} (applied by B-FLOW-05)",
+                        _number(value),
                         f"{files.machine_source}:{line}",
                     )
                 )

@@ -14,7 +14,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from specweaver.core.config.llm_settings import SettingsFileError, resolve_roles
+from specweaver.core.config.llm_settings import SettingsFileError, resolve_roles, to_usd
+from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig
@@ -122,8 +123,36 @@ class RoleResolver:
                 self._project,
                 prices=lambda model: self._catalogue.facts(server.kind, model, corrections),
                 budget=self._budget,
+                scope_of=lambda config: self._scope(server_name, config),
             )
         return self._by_server[server_name]
+
+    def _scope(self, server_name: str, config: GenerationConfig) -> CallScope:
+        """The limits a call counts against: money on a hosted server, tokens on a private one."""
+        server = self._files.machine.servers[server_name]
+        facts = self._catalogue.facts(server.kind, config.model, self._files.machine.models)
+        setting = self._roles.get(config.task_type.value) or self._roles.get(DEFAULT_ROLE)
+        brake = self._files.machine.brake
+        unit: Unit
+        if server.private:
+            unit, field = "tokens", "tokens_per_run"
+            run: tuple[str, float | None] = ("brake.tokens_per_run", brake.tokens_per_run)
+        else:
+            unit, field = "usd", "spend_per_run"
+            run = ("brake.hosted_spend_per_run", brake.hosted_spend_per_run)
+        candidates = [
+            run,
+            (f'models."{config.model}".{field}', getattr(facts, field) if facts else None),
+        ]
+        if setting is not None:
+            candidates.append((f"roles.{setting.role}.{field}", getattr(setting, field)))
+        currency = self._files.machine.currency
+        limits = tuple(
+            Limit(key, unit, value if unit == "tokens" else to_usd(value, currency))
+            for key, value in candidates
+            if value is not None
+        )
+        return CallScope(limits=limits, facts=facts)
 
 
 def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, float | int]:

@@ -57,17 +57,12 @@ def build_router(
     One spend budget covers every role of the command, its limits from `[brake]` in the machine
     file. Raises `SettingsFileError` naming the role or key a settings file is missing.
     """
-    from specweaver.core.config.llm_settings import brake_limits, to_usd
+    from specweaver.core.config.llm_settings import brake_limits
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.resolve import RoleResolver
 
-    limits = brake_limits(files)
-    currency = files.machine.currency
-    budget = SpendBudget(
-        limit_usd=to_usd(limits.hosted_spend_per_run, currency),
-        token_limit=limits.tokens_per_run,
-        currency=currency,
-    )
+    brake_limits(files)
+    budget = SpendBudget(currency=files.machine.currency)
     resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=run_model)
     resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
     return ModelRouter(resolver)

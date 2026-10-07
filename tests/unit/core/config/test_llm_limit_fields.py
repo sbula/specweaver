@@ -127,15 +127,15 @@ class TestLimitsInTheReport:
         assert value.startswith("unset")
         assert origin == "-"
 
-    def test_model_and_role_limits_are_listed_and_marked_not_yet_applied(self) -> None:
+    def test_model_and_role_limits_are_listed_with_their_lines(self) -> None:
         report = _report()
 
         assert report["models.qwen3-coder-next.tokens_per_run"] == (
-            "1000000 (applied by B-FLOW-05)",
+            "1000000",
             "settings.toml:17",
         )
-        assert report["models.claude-sonnet-5.spend_per_run"][0] == "8 (applied by B-FLOW-05)"
+        assert report["models.claude-sonnet-5.spend_per_run"][0] == "8"
         assert report["roles.review.tokens_per_run"] == (
-            "300000 (applied by B-FLOW-05)",
+            "300000",
             "settings.toml:9",
         )

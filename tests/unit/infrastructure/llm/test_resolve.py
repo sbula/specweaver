@@ -57,7 +57,7 @@ def _resolver(machine: str = _MACHINE, local: str = _LOCAL) -> RoleResolver:
     return RoleResolver(
         _files(machine),
         telemetry_project="demo",
-        budget=SpendBudget(limit_usd=None),
+        budget=SpendBudget(),
         catalogue=Catalogue.from_texts(_GENERATED, local),
     )
 

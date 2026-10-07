@@ -1,128 +1,153 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""A spend ceiling for one run, and the error that stops it.
-
-`TokenBudget` in `models.py` bounds a single prompt so it fits a context window. This bounds a
-whole run so it fits a wallet. The two never interact.
-
-The threat is economic denial of service: a loop that does not terminate bills until a human
-notices. `max_retries` counts attempts, not money, and three attempts at a 200k-token prompt cost
-what thirty cheap calls do.
-"""
+"""The run's limits, and the check every call passes before it is sent."""
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal
 
 from specweaver.core.config.llm_settings import format_money
 
 if TYPE_CHECKING:
-    from specweaver.core.config.llm_settings import Currency
+    from specweaver.core.config.llm_settings import Currency, ModelFacts
 
 logger = logging.getLogger(__name__)
 
-#: Fraction of the limit that triggers the one-time warning.
+#: Share of a limit at which it warns, once.
 _WARN_AT = 0.8
+
+Unit = Literal["usd", "tokens"]
+
+
+@dataclass(frozen=True)
+class Limit:
+    """One limit, named by the settings key that sets it."""
+
+    key: str
+    unit: Unit
+    value: float
+
+
+@dataclass(frozen=True)
+class Cost:
+    """What a call costs: money is `None` when its price is unknown."""
+
+    usd: float | None
+    tokens: int
+
+    def amount(self, unit: Unit) -> float | None:
+        return self.usd if unit == "usd" else self.tokens
+
+
+@dataclass(frozen=True)
+class CallScope:
+    """The limits one call counts against, and the facts that price it."""
+
+    limits: tuple[Limit, ...] = ()
+    facts: ModelFacts | None = None
+
+
+@dataclass(frozen=True)
+class Reservation:
+    """A call's worst case, held against its limits until the call is recorded."""
+
+    amounts: dict[str, float] = field(default_factory=dict)
 
 
 class BudgetExceededError(Exception):
-    """The run has spent its budget and must not send another request.
+    """The run must not send another request.
 
-    Deliberately **not** an `LLMError`. Several callers wrap an LLM call in a retry loop that
-    catches broad exceptions, and a breaker those loops swallow is not a breaker — it would be
-    retried, then reported as an unrelated generation failure. Anything that catches this must
-    re-raise it; `tests/unit/test_budget_error_propagates.py` is what holds that line.
+    Not an `LLMError`: retry loops that catch those must not retry this. Anything that catches it
+    re-raises it.
     """
 
     def __init__(self, reason: str, *, setting: str) -> None:
         self.setting = setting
         super().__init__(
-            f"LLM circuit breaker tripped: {reason}. No further requests will be sent this run. "
+            f"LLM spend brake: {reason}. No further requests will be sent this run. "
             f"Raise `{setting}` in settings.toml if this run is legitimate."
         )
 
 
+class SpendLimitReachedError(BudgetExceededError):
+    """The next call could cross `limit`."""
+
+    def __init__(self, limit: Limit, spent: float, reason: str) -> None:
+        self.limit = limit
+        self.spent = spent
+        super().__init__(reason, setting=limit.key)
+
+
 class SpendBudget:
-    """Accumulated cost for one run, against a ceiling.
+    """Spent and reserved amounts of one run, per limit key."""
 
-    `limit_usd=None` disables the breaker. That is spelled as `None` rather than `0` on purpose:
-    zero is what a careless config produces, and it means *refuse everything*, not *allow
-    everything*. Failing closed on a mistyped limit is recoverable; failing open is the bill.
-    """
-
-    def __init__(
-        self,
-        limit_usd: float | None,
-        token_limit: int | None = None,
-        currency: Currency | None = None,
-    ) -> None:
-        self._limit_usd = limit_usd
+    def __init__(self, currency: Currency | None = None) -> None:
         self._currency = currency
-        self._token_limit = token_limit
-        self._spent_usd = 0.0
-        self._tokens = 0
-        self._warned = False
+        self._spent: defaultdict[str, float] = defaultdict(float)
+        self._reserved: defaultdict[str, float] = defaultdict(float)
+        self._warned: set[str] = set()
 
-    @property
-    def limit_usd(self) -> float | None:
-        return self._limit_usd
+    def spent(self, key: str) -> float:
+        return self._spent[key]
 
-    @property
-    def token_limit(self) -> int | None:
-        return self._token_limit
+    def before_call(self, scope: CallScope, worst: Cost) -> Reservation:
+        """Reserve the call's worst case, or refuse if it could cross a limit."""
+        for limit in scope.limits:
+            amount = worst.amount(limit.unit)
+            if amount is None:
+                raise SpendLimitReachedError(
+                    limit,
+                    self._spent[limit.key],
+                    f"the model's price is unknown, so {limit.key} cannot be checked",
+                )
+            if self._spent[limit.key] + self._reserved[limit.key] + amount > limit.value:
+                raise SpendLimitReachedError(
+                    limit,
+                    self._spent[limit.key],
+                    f"{limit.key} would be crossed: {self._show(limit, self._spent[limit.key])} of "
+                    f"{self._show(limit, limit.value)} spent, the next call may cost up to "
+                    f"{self._show(limit, amount)}",
+                )
+        reservation = Reservation(
+            {limit.key: worst.amount(limit.unit) or 0.0 for limit in scope.limits}
+        )
+        for key, amount in reservation.amounts.items():
+            self._reserved[key] += amount
+        return reservation
 
-    @property
-    def spent_usd(self) -> float:
-        return self._spent_usd
+    def record(
+        self, scope: CallScope, cost: Cost | None, reservation: Reservation | None = None
+    ) -> None:
+        """Add a finished call to its limits, releasing its reservation.
 
-    @property
-    def tokens(self) -> int:
-        return self._tokens
-
-    @property
-    def cost_exceeded(self) -> bool:
-        return self._limit_usd is not None and self._spent_usd >= self._limit_usd
-
-    @property
-    def tokens_exceeded(self) -> bool:
-        return self._token_limit is not None and self._tokens >= self._token_limit
-
-    @property
-    def exceeded(self) -> bool:
-        return self.cost_exceeded or self.tokens_exceeded
-
-    def record(self, cost_usd: float, tokens: int = 0) -> None:
-        """Add a completed call's cost and tokens, warning once as a ceiling approaches."""
-        self._spent_usd += cost_usd
-        self._tokens += tokens
-        if self._limit_usd is None or self._warned or self.exceeded:
-            return
-        if self._spent_usd >= self._limit_usd * _WARN_AT:
-            self._warned = True
-            logger.warning(
-                "LLM spend at %.0f%% of budget: %s of %s used this run",
-                self._spent_usd / self._limit_usd * 100,
-                format_money(self._spent_usd, self._currency),
-                format_money(self._limit_usd, self._currency),
-            )
-
-    def check(self) -> None:
-        """Raise if this run has already spent its budget.
-
-        Called *before* a request, never after: the cost of a call is known only once it returns,
-        so the breaker cannot stop the call that crosses the line — it stops the next one.
+        An unknown cost (`None`, or money with no price) counts the reserved worst case.
         """
-        if self.cost_exceeded:
-            raise BudgetExceededError(
-                f"this run has spent {format_money(self._spent_usd, self._currency)} against a "
-                f"limit of {format_money(self._limit_usd, self._currency)}",
-                setting="brake.hosted_spend_per_run",
-            )
-        if self.tokens_exceeded:
-            raise BudgetExceededError(
-                f"this run has used {self._tokens:,} tokens against a limit of "
-                f"{self._token_limit:,}",
-                setting="brake.tokens_per_run",
-            )
+        held = reservation.amounts if reservation else {}
+        for limit in scope.limits:
+            reserved = held.get(limit.key, 0.0)
+            amount = cost.amount(limit.unit) if cost else None
+            self._reserved[limit.key] -= reserved
+            self._spent[limit.key] += reserved if amount is None else amount
+            self._warn(limit)
+
+    def _warn(self, limit: Limit) -> None:
+        spent = self._spent[limit.key]
+        if limit.key in self._warned or spent < limit.value * _WARN_AT:
+            return
+        self._warned.add(limit.key)
+        logger.warning(
+            "LLM spend at %.0f%% of %s: %s of %s used this run",
+            spent / limit.value * 100,
+            limit.key,
+            self._show(limit, spent),
+            self._show(limit, limit.value),
+        )
+
+    def _show(self, limit: Limit, amount: float) -> str:
+        if limit.unit == "usd":
+            return format_money(amount, self._currency)
+        return f"{amount:,.0f} tokens"

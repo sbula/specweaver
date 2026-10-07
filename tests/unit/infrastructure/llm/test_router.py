@@ -48,7 +48,7 @@ def _router(machine: str = _MACHINE) -> ModelRouter:
         machine_text=machine, machine_source="m", project_text="", project_source="-"
     )
     return ModelRouter(
-        RoleResolver(files, telemetry_project="p", budget=SpendBudget(None), catalogue=_CATALOGUE)
+        RoleResolver(files, telemetry_project="p", budget=SpendBudget(), catalogue=_CATALOGUE)
     )
 
 

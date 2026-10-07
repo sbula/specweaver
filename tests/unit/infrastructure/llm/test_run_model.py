@@ -83,7 +83,7 @@ def _resolver(run_model: str | None, project: str = "") -> RoleResolver:
     return RoleResolver(
         _files(project),
         telemetry_project="demo",
-        budget=SpendBudget(limit_usd=None),
+        budget=SpendBudget(),
         catalogue=_CATALOGUE,
         run_model=RoleEntry.model_validate(run_model) if run_model else None,
     )

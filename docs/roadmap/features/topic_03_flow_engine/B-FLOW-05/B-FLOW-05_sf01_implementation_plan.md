@@ -14,7 +14,7 @@ A hosted model with no price or an unknown thinking cap is refused at the start.
 FR-5, FR-9.
 
 SF-01 stops the run when a limit would be crossed, as today's brake does. SF-02 turns that stop into
-a question or a park; SF-01 raises `SpendLimitReached` so SF-02 has one signal to catch.
+a question or a park; SF-01 raises `SpendLimitReachedError` so SF-02 has one signal to catch.
 
 ## Where it plugs in (measured 2026-10-06)
 
@@ -48,12 +48,12 @@ a question or a park; SF-01 raises `SpendLimitReached` so SF-02 has one signal t
    and its spent total. Per call the caller passes the call's **scope**: server private or not, model
    facts, role entry. Methods:
    - `before_call(scope, worst_usd, worst_tokens)` — for every limit that applies to the scope:
-     if spent + reserved + worst > value → raise `SpendLimitReached(limit, spent)`.
+     if spent + reserved + worst > value → raise `SpendLimitReachedError(limit, spent)`.
    - `record(scope, cost_usd | None, tokens)` — adds to every limit that applies; warns once at 80%
      of each limit.
    - Which limits apply: hosted server → the money ones (run, model, role); private server → the
      token ones. Pseudocode only; no class body here.
-2. `SpendLimitReached(BudgetExceededError)` carries the limit key, value, spent, and the unit; its
+2. `SpendLimitReachedError(BudgetExceededError)` carries the limit key, value, spent, and the unit; its
    message names the key and shows money with `format_money`.
 3. `infrastructure/llm/router.py::build_router` builds the limits from `brake_limits(files)`,
    `files.machine.currency` and the machine roles; `to_usd` converts every money value once.

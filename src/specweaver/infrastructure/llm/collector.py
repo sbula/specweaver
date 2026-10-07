@@ -14,15 +14,17 @@ typing.  Works because ``RunContext.llm`` is typed ``Any``.
 
 from __future__ import annotations
 
+import json
 import logging
+import math
 import time
 from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.async_bridge import run_sync
-from specweaver.infrastructure.llm.budget import SpendBudget
+from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, SpendBudget
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import UsageRecord, create_usage_record
+from specweaver.infrastructure.llm.telemetry import UsageRecord, create_usage_record, estimate_cost
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -32,6 +34,9 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
 
 logger = logging.getLogger(__name__)
+
+#: Headroom on the prompt estimate, which is characters / 4.
+_PROMPT_MARGIN = 1.25
 
 
 class TelemetryCollector:
@@ -53,18 +58,45 @@ class TelemetryCollector:
         project: str,
         prices: Callable[[str], ModelFacts | None] | None = None,
         budget: SpendBudget | None = None,
+        scope_of: Callable[[GenerationConfig], CallScope] | None = None,
     ) -> None:
         self._adapter = adapter
         self._project = project
         self._prices = prices or (lambda _model: None)
+        self._scope_of = scope_of
         self._unpriced_warned: set[str] = set()
         self._records: list[UsageRecord] = []
-        self._budget = budget or SpendBudget(limit_usd=None)
+        self._budget = budget or SpendBudget()
 
     @property
     def budget(self) -> SpendBudget:
-        """The run's spend ceiling. Every generation path checks it before sending."""
+        """The run's limits. Every generation path checks them before sending."""
         return self._budget
+
+    def scope(self, config: GenerationConfig) -> CallScope:
+        """The limits a call with this config counts against."""
+        if self._scope_of is not None:
+            return self._scope_of(config)
+        return CallScope(facts=self._prices(config.model))
+
+    def _reserve(
+        self, messages: list[Message], config: GenerationConfig
+    ) -> tuple[CallScope, Reservation]:
+        scope = self.scope(config)
+        prompt = math.ceil(self._prompt_tokens(messages, config) * _PROMPT_MARGIN)
+        worst = TokenUsage(
+            prompt_tokens=prompt,
+            completion_tokens=config.max_output_tokens,
+            total_tokens=prompt + config.max_output_tokens,
+        )
+        cost = Cost(usd=estimate_cost(worst, scope.facts), tokens=worst.total_tokens)
+        return scope, self._budget.before_call(scope, cost)
+
+    def _prompt_tokens(self, messages: list[Message], config: GenerationConfig) -> int:
+        text = "".join(message.content for message in messages)
+        if config.tools:
+            text += json.dumps([tool.model_dump(mode="json") for tool in config.tools])
+        return _estimate_tokens(text)
 
     # ------------------------------------------------------------------
     # Generation proxies (telemetry captured per call)
@@ -76,10 +108,14 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> LLMResponse:
         """Proxy ``generate()`` — captures timing and usage."""
-        self._budget.check()
+        scope, reservation = self._reserve(messages, config)
         start = time.monotonic()
-        response = await self._adapter.generate(messages, config)
-        self._capture(config, response, time.monotonic() - start)
+        try:
+            response = await self._adapter.generate(messages, config)
+        except BaseException:
+            self._budget.record(scope, None, reservation)
+            raise
+        self._capture(config, response, time.monotonic() - start, scope, reservation)
         return response
 
     async def generate_with_tools(
@@ -90,15 +126,19 @@ class TelemetryCollector:
         on_tool_round: Any = None,
     ) -> LLMResponse:
         """Proxy ``generate_with_tools()`` — captures cumulative usage."""
-        self._budget.check()
+        scope, reservation = self._reserve(messages, config)
         start = time.monotonic()
-        response = await self._adapter.generate_with_tools(
-            messages,
-            config,
-            tool_executor,
-            on_tool_round,
-        )
-        self._capture(config, response, time.monotonic() - start)
+        try:
+            response = await self._adapter.generate_with_tools(
+                messages,
+                config,
+                tool_executor,
+                on_tool_round,
+            )
+        except BaseException:
+            self._budget.record(scope, None, reservation)
+            raise
+        self._capture(config, response, time.monotonic() - start, scope, reservation)
         return response
 
     async def generate_stream(
@@ -106,33 +146,27 @@ class TelemetryCollector:
         messages: list[Message],
         config: GenerationConfig,
     ) -> AsyncIterator[str]:
-        """Proxy ``generate_stream()`` — yields chunks, estimates telemetry.
-
-        After the stream is fully consumed, estimates output tokens from
-        accumulated text.  ``prompt_tokens`` is 0 for streaming calls
-        (exact counts require adapter-level support — see backlog).
-        """
-        self._budget.check()
+        """Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text."""
+        scope, reservation = self._reserve(messages, config)
         start = time.monotonic()
         total_text: list[str] = []
-        async for chunk in self._adapter.generate_stream(messages, config):
-            total_text.append(chunk)
-            yield chunk
-
-        # Build synthetic response for telemetry after stream exhaustion.
-        elapsed = time.monotonic() - start
-        full_text = "".join(total_text)
-        estimated_output = self._adapter.estimate_tokens(full_text)
+        try:
+            async for chunk in self._adapter.generate_stream(messages, config):
+                total_text.append(chunk)
+                yield chunk
+        except BaseException:
+            self._budget.record(scope, None, reservation)
+            raise
+        prompt = self._prompt_tokens(messages, config)
+        output = _estimate_tokens("".join(total_text))
         synthetic = LLMResponse(
             text="",
             model=config.model,
             usage=TokenUsage(
-                prompt_tokens=0,
-                completion_tokens=estimated_output,
-                total_tokens=estimated_output,
+                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output
             ),
         )
-        self._capture(config, synthetic, elapsed)
+        self._capture(config, synthetic, time.monotonic() - start, scope, reservation)
 
     # ------------------------------------------------------------------
     # Record capture
@@ -143,6 +177,8 @@ class TelemetryCollector:
         config: GenerationConfig,
         response: LLMResponse,
         elapsed: float,
+        scope: CallScope,
+        reservation: Reservation,
     ) -> None:
         """Create a UsageRecord and append to the internal list.
 
@@ -163,7 +199,9 @@ class TelemetryCollector:
             logger.warning(
                 "%s has no known price: its tokens are counted, its money is not", config.model
             )
-        self._budget.record(record.estimated_cost_usd or 0.0, tokens=record.total_tokens)
+        self._budget.record(
+            scope, Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens), reservation
+        )
 
     # ------------------------------------------------------------------
     # Persistence
@@ -254,3 +292,8 @@ class TelemetryCollector:
     def estimate_tokens(self, text: str) -> int:
         """Delegate to wrapped adapter."""
         return self._adapter.estimate_tokens(text)
+
+
+def _estimate_tokens(text: str) -> int:
+    """About four characters per token; the brake adds its margin on top."""
+    return len(text) // 4

@@ -45,6 +45,11 @@ max_parallel = 4
 [roles]
 draft = "qwen3-coder-next@gb10"
 review = { model = "qwen3-coder-next@gb10", max_output_tokens = 1024 }
+
+[brake]
+hosted_spend_per_run = 10
+tokens_per_run = 1000000
+agent_turns = 10
 """
 
 _REPLY = {
@@ -73,7 +78,7 @@ def files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.mark.asyncio
 async def test_two_roles_reach_the_gb10_on_one_budget(files) -> None:
-    budget = SpendBudget(limit_usd=None)
+    budget = SpendBudget()
     resolver = RoleResolver(files(_MACHINE), telemetry_project="demo", budget=budget)
 
     with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:
@@ -85,13 +90,13 @@ async def test_two_roles_reach_the_gb10_on_one_budget(files) -> None:
     assert [str(request.url) for request in seen] == ["http://gb10:8000/v1/chat/completions"] * 2
     assert bodies[0]["temperature"] == 1.0  # the model card's value, from the shipped catalogue
     assert bodies[1]["max_completion_tokens"] == 1024
-    assert budget.tokens == 30
+    assert budget.spent("brake.tokens_per_run") == 30
     [collector] = resolver.collectors()
     assert len(collector.records) == 2
 
 
 def test_a_role_nobody_set_refuses_before_any_request(files) -> None:
-    resolver = RoleResolver(files(_MACHINE), telemetry_project="demo", budget=SpendBudget(None))
+    resolver = RoleResolver(files(_MACHINE), telemetry_project="demo", budget=SpendBudget())
 
     with (
         fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen,

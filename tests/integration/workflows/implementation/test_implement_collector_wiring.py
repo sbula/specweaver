@@ -149,6 +149,10 @@ max_parallel = 4
 [roles]
 default = { model = "fake-telemetry-model@fake", max_output_tokens = 4096 }
 
+[models."fake-telemetry-model"]
+usd_per_million_input = 1.0
+usd_per_million_output = 1.0
+
 [brake]
 hosted_spend_per_run = 1000
 tokens_per_run = 100000000

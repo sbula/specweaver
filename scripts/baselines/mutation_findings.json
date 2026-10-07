@@ -952,6 +952,60 @@
       "last_seen": 1791121122.976546,
       "occurrences": 1
     },
+    "C-FLOW-13 FR-17 spend-limit-not-converted": {
+      "history": [
+        {
+          "at": 1791266999.9034786,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791267112.6693847,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791266999.9034786,
+      "last_seen": 1791266999.9034786,
+      "occurrences": 1
+    },
+    "C-FLOW-13 FR-17 token-limit-dropped": {
+      "history": [
+        {
+          "at": 1791266999.9034786,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791267112.6693847,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791266999.9034786,
+      "last_seen": 1791266999.9034786,
+      "occurrences": 1
+    },
+    "C-FLOW-13 FR-17 warning-in-dollars": {
+      "history": [
+        {
+          "at": 1791266999.9034786,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791267112.6693847,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791266999.9034786,
+      "last_seen": 1791266999.9034786,
+      "occurrences": 1
+    },
     "INT-US-16 FR-1 flush-becomes-a-no-op": {
       "history": [
         {
@@ -962,8 +1016,8 @@
         }
       ],
       "first_seen": 1790996740.1887307,
-      "last_seen": 1791169579.0986595,
-      "occurrences": 3
+      "last_seen": 1791342395.0538297,
+      "occurrences": 5
     },
     "INT-US-16 FR-3 telemetry-wrap-never-applied": {
       "history": [
@@ -975,8 +1029,8 @@
         }
       ],
       "first_seen": 1790996740.1887307,
-      "last_seen": 1791169579.0986595,
-      "occurrences": 3
+      "last_seen": 1791342395.0538297,
+      "occurrences": 5
     }
   },
   "override_count": 0,

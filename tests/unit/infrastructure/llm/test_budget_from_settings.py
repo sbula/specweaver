@@ -45,24 +45,29 @@ def _files(machine_text: str) -> LlmSettingsFiles:
     )
 
 
-def _budget(machine_text: str):
+def _limits(machine_text: str) -> dict[str, float]:
+    """Each limit a review call counts against, by key."""
     router = build_router(_files(machine_text), project="proj", roles=[TaskType.REVIEW])
-    return router.get_for_task(TaskType.REVIEW).adapter.budget
+    routed = router.get_for_task(TaskType.REVIEW)
+    return {limit.key: limit.value for limit in routed.adapter.scope(routed.config).limits}
+
+
+_HOSTED = _MACHINE.replace("private = true", "private = false")
 
 
 def test_the_spend_ceiling_comes_from_the_brake_table() -> None:
-    assert _budget(_MACHINE + _BRAKE).limit_usd == 7.5
+    assert _limits(_HOSTED + _BRAKE) == {"brake.hosted_spend_per_run": 7.5}
 
 
 def test_the_token_ceiling_comes_from_the_brake_table() -> None:
-    """The ceiling that still applies when a model is missing from the cost table."""
-    assert _budget(_MACHINE + _BRAKE).token_limit == 42
+    assert _limits(_MACHINE + _BRAKE) == {"brake.tokens_per_run": 42}
 
 
 def test_the_spend_ceiling_is_given_in_the_configured_currency() -> None:
     currency = '[currency]\ncode = "CHF"\nper_usd = 0.80\nrate_date = 2026-09-26\n\n'
 
-    assert _budget(currency + _MACHINE + _BRAKE).limit_usd == pytest.approx(7.5 / 0.80)
+    limits = _limits(currency + _HOSTED + _BRAKE)
+    assert limits["brake.hosted_spend_per_run"] == pytest.approx(7.5 / 0.80)
 
 
 @pytest.mark.parametrize("key", ["hosted_spend_per_run", "tokens_per_run", "agent_turns"])
@@ -70,7 +75,7 @@ def test_an_unset_ceiling_refuses_naming_its_key(key: str) -> None:
     brake = "\n".join(line for line in _BRAKE.splitlines() if not line.startswith(key))
 
     with pytest.raises(SettingsFileError) as caught:
-        _budget(_MACHINE + brake)
+        _limits(_MACHINE + brake)
 
     assert caught.value.key == f"brake.{key}"
 
@@ -83,9 +88,11 @@ def test_a_telemetry_adapter_carries_the_configured_ceilings() -> None:
     """
     from specweaver.infrastructure.llm.interfaces.command import command_router
 
-    files = _files(_MACHINE + _BRAKE)
+    files = _files(_HOSTED + _BRAKE)
 
     with patch("specweaver.interfaces.cli._core.load_active_llm_settings", return_value=files):
         router = command_router("proj", [TaskType.REVIEW])
 
-    assert router.get_for_task(TaskType.REVIEW).adapter.budget.limit_usd == 7.5
+    routed = router.get_for_task(TaskType.REVIEW)
+    (limit,) = routed.adapter.scope(routed.config).limits
+    assert (limit.key, limit.value) == ("brake.hosted_spend_per_run", 7.5)

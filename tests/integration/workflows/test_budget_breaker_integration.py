@@ -25,14 +25,15 @@ from typing import Any
 import pytest
 
 from specweaver.core.config.llm_settings import ModelFacts
-from specweaver.infrastructure.llm.budget import BudgetExceededError, SpendBudget
+from specweaver.infrastructure.llm.budget import BudgetExceededError, CallScope, Limit, SpendBudget
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
 from specweaver.workflows.review.reviewer import Reviewer, ReviewVerdict
 
 pytestmark = pytest.mark.integration
 
-#: One call costs $2 at these rates, so a $1 ceiling is spent by the first one.
+#: One call costs USD 2 at these rates; its worst case before sending is about USD 1, the
+#: 1,000-token output cap. A USD 2.50 limit lets the first through and stops the second.
 PRICED = {"stub-model": ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)}
 
 
@@ -59,16 +60,23 @@ class _Adapter:
 
 
 def _reviewer(adapter: _Adapter, limit: float) -> Reviewer:
+    run = Limit("brake.hosted_spend_per_run", "usd", limit)
     collector = TelemetryCollector(
-        adapter, "proj", prices=PRICED.get, budget=SpendBudget(limit_usd=limit)
+        adapter,
+        "proj",
+        prices=PRICED.get,
+        budget=SpendBudget(),
+        scope_of=lambda _config: CallScope(limits=(run,), facts=PRICED["stub-model"]),
     )
-    return Reviewer(llm=collector, config=GenerationConfig(model="stub-model"))
+    return Reviewer(
+        llm=collector, config=GenerationConfig(model="stub-model", max_output_tokens=1000)
+    )
 
 
 async def test_the_first_review_succeeds_and_spends_the_budget() -> None:
     """The control, and the setup: without it the next test could pass by never working at all."""
     adapter = _Adapter()
-    reviewer = _reviewer(adapter, limit=1.0)
+    reviewer = _reviewer(adapter, limit=2.5)
 
     result = await reviewer._execute_review("prompt")
 
@@ -78,7 +86,7 @@ async def test_the_first_review_succeeds_and_spends_the_budget() -> None:
 
 async def test_the_next_review_is_refused_and_the_refusal_escapes_the_reviewer() -> None:
     adapter = _Adapter()
-    reviewer = _reviewer(adapter, limit=1.0)
+    reviewer = _reviewer(adapter, limit=2.5)
     await reviewer._execute_review("prompt")
 
     with pytest.raises(BudgetExceededError):
@@ -91,7 +99,7 @@ async def test_the_refusal_is_not_relabelled_as_a_review_outcome() -> None:
     """The failure this seam exists to prevent: `ERROR` reads as *the review found problems*, and
     the pipeline would carry on past a tripped breaker."""
     adapter = _Adapter()
-    reviewer = _reviewer(adapter, limit=1.0)
+    reviewer = _reviewer(adapter, limit=2.5)
     await reviewer._execute_review("prompt")
 
     try:

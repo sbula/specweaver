@@ -1,189 +1,164 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""A run cannot spend without limit.
+"""Every call is counted against every limit of its scope, and checked before it is sent.
 
-Proves: B-FLOW-05 FR-1, B-FLOW-05 FR-4, B-FLOW-05 FR-5, B-FLOW-05 NFR-1
+Proves: B-FLOW-05 FR-1, B-FLOW-05 FR-2, B-FLOW-05 FR-4, B-FLOW-05 FR-5, B-FLOW-05 NFR-1
 
-Economic denial of service is the failure this prevents: a loop that never terminates bills until
-somebody notices. The engine has three live loops — the autonomous flow, the dual-pipeline
-verification round, and the reflection retries inside `Planner` and `ScenarioGenerator` — and until
-now the only guard on any of them was `max_retries`, which counts attempts and not money. A step
-that retries three times with a 200k-token prompt costs the same as thirty cheap ones.
-
-`TokenBudget` is a different thing and does not overlap: it bounds ONE prompt so it fits a context
-window. This bounds a whole run so it fits a wallet.
+| Bucket | Case |
+|---|---|
+| Happy | a call adds its money to money limits and its tokens to token limits |
+| Boundary | a worst case landing exactly on a limit passes, one unit over is refused before the call |
+| Degradation | a call whose price is unknown cannot be checked against a money limit and is refused |
+| Hostile | of two limits on one call the lower stops it; parallel calls cannot share one headroom |
 """
 
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
-from specweaver.infrastructure.llm.budget import BudgetExceededError, SpendBudget
+from specweaver.core.config.llm_settings import Currency
+from specweaver.infrastructure.llm.budget import (
+    BudgetExceededError,
+    CallScope,
+    Cost,
+    Limit,
+    SpendBudget,
+    SpendLimitReachedError,
+)
 
+_RUN_USD = Limit("brake.hosted_spend_per_run", "usd", 10.0)
+_MODEL_USD = Limit('models."claude-sonnet-5".spend_per_run', "usd", 8.0)
+_ROLE_USD = Limit("roles.review.spend_per_run", "usd", 2.0)
+_RUN_TOKENS = Limit("brake.tokens_per_run", "tokens", 1000)
 
-def test_a_fresh_budget_permits_a_call() -> None:
-    assert SpendBudget(limit_usd=1.0).exceeded is False
 
+def _scope(*limits: Limit) -> CallScope:
+    return CallScope(limits=limits)
 
-def test_spend_accumulates() -> None:
-    budget = SpendBudget(limit_usd=1.0)
 
-    budget.record(0.30)
-    budget.record(0.20)
+class TestCounting:
+    def test_money_goes_to_money_limits_and_tokens_to_token_limits(self) -> None:
+        budget = SpendBudget()
 
-    assert budget.spent_usd == pytest.approx(0.50)
+        budget.record(_scope(_RUN_USD, _MODEL_USD), Cost(usd=1.5, tokens=300))
+        budget.record(_scope(_RUN_TOKENS), Cost(usd=None, tokens=200))
 
+        assert budget.spent(_RUN_USD.key) == pytest.approx(1.5)
+        assert budget.spent(_MODEL_USD.key) == pytest.approx(1.5)
+        assert budget.spent(_RUN_TOKENS.key) == 200
 
-def test_the_budget_trips_when_the_limit_is_reached() -> None:
-    budget = SpendBudget(limit_usd=1.0)
+    def test_a_limit_outside_the_calls_scope_is_untouched(self) -> None:
+        budget = SpendBudget()
 
-    budget.record(1.0)
+        budget.record(_scope(_RUN_USD), Cost(usd=1.0, tokens=10))
 
-    assert budget.exceeded is True
+        assert budget.spent(_ROLE_USD.key) == 0
 
 
-def test_the_budget_does_not_trip_below_the_limit() -> None:
-    """The control. A breaker that trips early stops legitimate work and gets switched off."""
-    budget = SpendBudget(limit_usd=1.0)
+class TestCheckBeforeTheCall:
+    def test_a_worst_case_exactly_on_the_limit_passes(self) -> None:
+        budget = SpendBudget()
+        budget.record(_scope(_RUN_USD), Cost(usd=6.0, tokens=0))
 
-    budget.record(0.99)
+        budget.before_call(_scope(_RUN_USD), Cost(usd=4.0, tokens=0))
 
-    assert budget.exceeded is False
+    def test_a_worst_case_over_the_limit_is_refused_naming_it(self) -> None:
+        budget = SpendBudget()
+        budget.record(_scope(_RUN_TOKENS), Cost(usd=None, tokens=900))
 
+        with pytest.raises(SpendLimitReachedError) as caught:
+            budget.before_call(_scope(_RUN_TOKENS), Cost(usd=None, tokens=101))
 
-def test_checking_a_tripped_budget_raises() -> None:
-    """FR-1 into FR-2: the check is what refuses, so it must be an error, not a boolean nobody reads."""
-    budget = SpendBudget(limit_usd=1.0)
-    budget.record(1.5)
+        assert caught.value.limit == _RUN_TOKENS
+        assert caught.value.spent == 900
+        assert "brake.tokens_per_run" in str(caught.value)
 
-    with pytest.raises(BudgetExceededError) as caught:
-        budget.check()
+    def test_the_stop_is_a_budget_error_that_handlers_must_let_through(self) -> None:
+        assert issubclass(SpendLimitReachedError, BudgetExceededError)
 
-    assert "1.50" in str(caught.value)
-    assert "1.00" in str(caught.value)
+    def test_the_lower_of_two_limits_stops_the_call(self) -> None:
+        budget = SpendBudget()
 
+        with pytest.raises(SpendLimitReachedError) as caught:
+            budget.before_call(_scope(_RUN_USD, _MODEL_USD, _ROLE_USD), Cost(usd=3.0, tokens=0))
 
-def test_checking_an_untripped_budget_is_silent() -> None:
-    """The control for `check`. One that always raised would stop the first call of every run."""
-    SpendBudget(limit_usd=1.0).check()
+        assert caught.value.limit == _ROLE_USD
 
+    def test_an_unknown_price_cannot_pass_a_money_limit(self) -> None:
+        budget = SpendBudget()
 
-def test_a_disabled_budget_never_trips() -> None:
-    """FR-5. Disabling is deliberate and explicit — `None`, not a zero somebody typed by mistake."""
-    budget = SpendBudget(limit_usd=None)
+        with pytest.raises(SpendLimitReachedError, match="price"):
+            budget.before_call(_scope(_RUN_USD), Cost(usd=None, tokens=50))
 
-    budget.record(1_000_000.0)
+    def test_an_unknown_price_does_not_matter_to_a_token_limit(self) -> None:
+        SpendBudget().before_call(_scope(_RUN_TOKENS), Cost(usd=None, tokens=50))
 
-    assert budget.exceeded is False
-    budget.check()
 
+class TestReservations:
+    def test_parallel_calls_cannot_share_one_headroom(self) -> None:
+        budget = SpendBudget()
+        budget.before_call(_scope(_RUN_USD), Cost(usd=6.0, tokens=0))
 
-def test_a_zero_limit_refuses_everything_rather_than_meaning_unlimited() -> None:
-    """`0` is the value a careless config produces. It must fail closed, not open."""
-    budget = SpendBudget(limit_usd=0.0)
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(_RUN_USD), Cost(usd=6.0, tokens=0))
 
-    assert budget.exceeded is True
+    def test_recording_a_call_replaces_its_reservation(self) -> None:
+        budget = SpendBudget()
+        reservation = budget.before_call(_scope(_RUN_USD), Cost(usd=6.0, tokens=0))
 
+        budget.record(_scope(_RUN_USD), Cost(usd=2.0, tokens=0), reservation)
 
-def test_a_warning_fires_before_the_limit(caplog: pytest.LogCaptureFixture) -> None:
-    """FR-4. A long run should be savable while it still can be — after the trip it is too late."""
-    budget = SpendBudget(limit_usd=1.0)
+        budget.before_call(_scope(_RUN_USD), Cost(usd=6.0, tokens=0))
+        assert budget.spent(_RUN_USD.key) == pytest.approx(2.0)
 
-    with caplog.at_level("WARNING"):
-        budget.record(0.85)
+    def test_a_free_call_counts_zero_not_its_reservation(self) -> None:
+        budget = SpendBudget()
+        reservation = budget.before_call(_scope(_RUN_TOKENS), Cost(usd=None, tokens=500))
 
-    assert any("85" in record.message or "0.85" in record.message for record in caplog.records)
+        budget.record(_scope(_RUN_TOKENS), Cost(usd=None, tokens=0), reservation)
 
+        assert budget.spent(_RUN_TOKENS.key) == 0
 
-def test_the_warning_speaks_the_users_currency(caplog: pytest.LogCaptureFixture) -> None:
-    """The limit is set in the user's currency, so the warning must not switch to dollars."""
-    from datetime import date
+    def test_an_unknown_cost_counts_its_reservation(self) -> None:
+        budget = SpendBudget()
+        reservation = budget.before_call(_scope(_RUN_TOKENS), Cost(usd=None, tokens=500))
 
-    from specweaver.core.config.llm_settings import Currency
+        budget.record(_scope(_RUN_TOKENS), None, reservation)
 
-    chf = Currency(code="CHF", per_usd=0.8, rate_date=date(2026, 9, 26))
-    budget = SpendBudget(limit_usd=10.0, currency=chf)
+        assert budget.spent(_RUN_TOKENS.key) == 500
 
-    with caplog.at_level("WARNING"):
-        budget.record(8.5)
 
-    message = " ".join(record.message for record in caplog.records)
-    assert "CHF 6.80 of CHF 8.00" in message
-    assert "$" not in message
+class TestWarning:
+    def test_each_limit_warns_once_at_80_percent(self, caplog: pytest.LogCaptureFixture) -> None:
+        budget = SpendBudget()
 
+        with caplog.at_level("WARNING"):
+            budget.record(_scope(_RUN_USD, _MODEL_USD), Cost(usd=6.5, tokens=0))
+            budget.record(_scope(_RUN_USD, _MODEL_USD), Cost(usd=1.6, tokens=0))
 
-def test_no_warning_well_below_the_limit(caplog: pytest.LogCaptureFixture) -> None:
-    """The control for FR-4. A warning on every call is a warning nobody reads."""
-    budget = SpendBudget(limit_usd=1.0)
+        warned = [r.message for r in caplog.records if "80%" in r.message or "%" in r.message]
+        assert len(warned) == 2  # the model at 6.5 of 8, then the run at 8.1 of 10; once each
+        assert any(_MODEL_USD.key in message for message in warned)
+        assert any(_RUN_USD.key in message for message in warned)
 
-    with caplog.at_level("WARNING"):
-        budget.record(0.10)
+    def test_no_warning_below_80_percent(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level("WARNING"):
+            SpendBudget().record(_scope(_RUN_USD), Cost(usd=7.9, tokens=0))
 
-    assert caplog.records == []
+        assert caplog.records == []
 
+    def test_money_is_shown_in_the_users_currency(self, caplog: pytest.LogCaptureFixture) -> None:
+        chf = Currency(code="CHF", per_usd=0.8, rate_date=date(2026, 9, 26))
+        budget = SpendBudget(currency=chf)
 
-def test_the_warning_fires_once_not_on_every_later_call(caplog: pytest.LogCaptureFixture) -> None:
-    """A warning repeated per call is noise, and noise is how the real one gets missed."""
-    budget = SpendBudget(limit_usd=1.0)
-    budget.record(0.85)
-    caplog.clear()
+        with caplog.at_level("WARNING"):
+            budget.record(_scope(_RUN_USD), Cost(usd=8.5, tokens=0))
+        with pytest.raises(SpendLimitReachedError) as caught:
+            budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
 
-    with caplog.at_level("WARNING"):
-        budget.record(0.01)
-        budget.record(0.01)
-
-    assert caplog.records == []
-
-
-class TestTokenCeiling:
-    """A cost ceiling alone can be bypassed by a model nobody priced.
-
-    `estimate_cost` returns `0.0` for any model absent from the cost table — it warns, but the
-    budget still accrues nothing, so the breaker never trips. Pointing a config at a model name
-    the table does not know is therefore an unbounded run, which is precisely the failure this
-    capability exists to stop.
-
-    Tokens come back from the provider on every response and need no price list, so they bound
-    the case dollars cannot.
-    """
-
-    def test_a_run_trips_on_tokens_when_the_model_has_no_price(self) -> None:
-        budget = SpendBudget(limit_usd=10.0, token_limit=1000)
-
-        budget.record(0.0, tokens=1000)
-
-        assert budget.exceeded is True
-
-    def test_tokens_below_the_ceiling_do_not_trip(self) -> None:
-        """The control."""
-        budget = SpendBudget(limit_usd=10.0, token_limit=1000)
-
-        budget.record(0.0, tokens=999)
-
-        assert budget.exceeded is False
-
-    def test_either_ceiling_trips_the_breaker(self) -> None:
-        """Cost is still enforced when tokens are nowhere near their limit."""
-        budget = SpendBudget(limit_usd=1.0, token_limit=1_000_000)
-
-        budget.record(1.0, tokens=10)
-
-        assert budget.exceeded is True
-
-    def test_the_token_ceiling_can_be_disabled_on_its_own(self) -> None:
-        budget = SpendBudget(limit_usd=10.0, token_limit=None)
-
-        budget.record(0.0, tokens=10_000_000)
-
-        assert budget.exceeded is False
-
-    def test_the_error_names_the_ceiling_that_tripped(self) -> None:
-        """Two ceilings means the operator must be told which one to raise."""
-        budget = SpendBudget(limit_usd=10.0, token_limit=1000)
-        budget.record(0.0, tokens=5000)
-
-        with pytest.raises(BudgetExceededError) as caught:
-            budget.check()
-
-        assert "token" in str(caught.value).lower()
+        assert "CHF 6.80 of CHF 8.00" in caplog.records[0].message
+        assert "CHF 6.80" in str(caught.value)
+        assert "$" not in str(caught.value)

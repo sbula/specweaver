@@ -57,9 +57,8 @@ _MODEL = "fake-journey-model"
 _COLLECTABLE = "def greet():\n    pass\n\n\ndef test_greet_is_callable() -> None:\n    assert greet() is None\n"
 
 
-#: The machine settings file the journey runs under: one hosted server, every role on it. The model
-#: is unknown to the shipped catalogue, so its output limit is set here and it has no price until
-#: the user sets one.
+#: One hosted server, every role on it. The model is unknown to the catalogue, so its output limit
+#: and a price are set here: the spend brake refuses a hosted model with no price.
 _SETTINGS = f"""\
 [servers.gem]
 kind = "gemini"
@@ -71,9 +70,11 @@ default = "{_MODEL}@gem"
 
 [models."{_MODEL}"]
 max_output = 8192
+usd_per_million_input = 1.0
+usd_per_million_output = 1.0
 
 [brake]
-hosted_spend_per_run = 1000
+hosted_spend_per_run = 1000000000
 tokens_per_run = 100000000
 agent_turns = 10
 """

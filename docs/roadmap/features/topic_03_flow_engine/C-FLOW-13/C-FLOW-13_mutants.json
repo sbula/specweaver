@@ -658,22 +658,22 @@
         {
           "id": "spend-limit-not-converted",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/router.py",
-          "symbol": "build_router",
-          "old": "        limit_usd=to_usd(limits.hosted_spend_per_run, currency),\n",
-          "new": "        limit_usd=limits.hosted_spend_per_run,\n",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "            Limit(key, unit, value if unit == \"tokens\" else to_usd(value, currency))\n",
+          "new": "            Limit(key, unit, value)\n",
           "breaks": "a limit set in CHF is applied as USD",
-          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
+          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
         },
         {
           "id": "token-limit-dropped",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/router.py",
-          "symbol": "build_router",
-          "old": "        token_limit=limits.tokens_per_run,\n",
-          "new": "        token_limit=None,\n",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", brake.tokens_per_run)\n",
+          "new": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", None)\n",
           "breaks": "the run's token limit is read and never applied",
-          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
+          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
         },
         {
           "id": "unset-brake-passes",
@@ -759,11 +759,11 @@
           "id": "warning-in-dollars",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget.record",
-          "old": "                format_money(self._spent_usd, self._currency),\n                format_money(self._limit_usd, self._currency),\n",
-          "new": "                format_money(self._spent_usd, None),\n                format_money(self._limit_usd, None),\n",
+          "symbol": "SpendBudget._show",
+          "old": "            return format_money(amount, self._currency)\n",
+          "new": "            return format_money(amount, None)\n",
           "breaks": "the 80% warning shows USD for a limit the user set in their own currency",
-          "symbol_sha": "sha256:4959c28c70b2045bcc2dc8eb77a6e53106908f6fd169fbdb5e0292f5a07d92ee"
+          "symbol_sha": "sha256:af5272477aadacc9504d50fe7688fb01f45bbec2d862227b2e37c2a87eeb2f60"
         },
         {
           "id": "skipped-model-unnamed",

@@ -1,17 +1,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Once the budget is gone, the collector stops sending requests.
+"""No request is sent whose worst case would cross a limit.
 
-Proves: B-FLOW-05 FR-2
+Proves: B-FLOW-05 FR-1, B-FLOW-05 FR-2
 
-`TelemetryCollector` is where the breaker belongs. It already wraps every adapter — `factory.py`
-puts it there for `sw implement`, both `sw review` paths, drift and the API — and it already sees
-what each call cost. Nothing else in the stack sees both.
-
-The three generation methods are tested separately on purpose. A breaker on `generate` alone leaves
-`generate_with_tools` — the *most* expensive path, because a tool round trips repeatedly — wide
-open, and every test of `generate` would still pass.
+| Bucket | Case |
+|---|---|
+| Happy | a call within its limits reaches the adapter and its real cost is recorded |
+| Boundary | the worst case counts the prompt with a 25% margin and the full output cap |
+| Degradation | a call that fails counts the worst case it reserved; a stream counts its input |
+| Hostile | a call whose worst case would cross is refused on every path, and nothing is sent |
 """
 
 from __future__ import annotations
@@ -21,25 +20,43 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from specweaver.core.config.llm_settings import ModelFacts
-from specweaver.infrastructure.llm.budget import BudgetExceededError, SpendBudget
+from specweaver.infrastructure.llm.budget import (
+    CallScope,
+    Cost,
+    Limit,
+    SpendBudget,
+    SpendLimitReachedError,
+)
 from specweaver.infrastructure.llm.collector import TelemetryCollector
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.models import (
+    GenerationConfig,
+    LLMResponse,
+    Message,
+    Role,
+    TokenUsage,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 
 class _StubAdapter:
-    """Answers every call, and counts how many actually reached it."""
+    """Answers every call with 1,000 + 1,000 tokens, and counts the calls that reached it."""
 
     provider_name = "stub"
     available = True
 
-    def __init__(self) -> None:
+    def __init__(self, fail: bool = False) -> None:
         self.calls = 0
+        self._fail = fail
+
+    def estimate_tokens(self, text: str) -> int:
+        return len(text) // 4
 
     def _answer(self) -> LLMResponse:
         self.calls += 1
+        if self._fail:
+            raise RuntimeError("provider down")
         return LLMResponse(
             text="ok",
             model="stub-model",
@@ -59,94 +76,104 @@ class _StubAdapter:
         yield "ok"
 
 
-#: The stub model is absent from the catalogue, so its cost would be unknown. Naming a rate
-#: here keeps these tests about the breaker rather than about what the catalogue holds.
-PRICED = {"stub-model": ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)}
+#: USD 1 per 1,000 tokens either way, so a worst case is easy to read off.
+_FACTS = ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
+_RUN = Limit("brake.hosted_spend_per_run", "usd", 10.0)
+_CONFIG = GenerationConfig(model="stub-model", max_output_tokens=1000)
+#: 4,000 characters → 1,000 estimated tokens → 1,250 with the margin.
+_PROMPT = [Message(role=Role.USER, content="x" * 4000)]
 
 
-def _collector(adapter: _StubAdapter, limit: float | None) -> TelemetryCollector:
+def _collector(adapter: _StubAdapter, budget: SpendBudget | None = None) -> TelemetryCollector:
     return TelemetryCollector(
-        adapter, "proj", prices=PRICED.get, budget=SpendBudget(limit_usd=limit)
+        adapter,
+        "proj",
+        prices=lambda _model: _FACTS,
+        budget=budget or SpendBudget(),
+        scope_of=lambda _config: CallScope(limits=(_RUN,), facts=_FACTS),
     )
 
 
-CONFIG = GenerationConfig(model="stub-model")
+async def test_a_call_within_its_limits_reaches_the_adapter_and_counts_its_real_cost() -> None:
+    adapter = _StubAdapter()
+    collector = _collector(adapter)
+
+    await collector.generate(_PROMPT, _CONFIG)
+
+    assert adapter.calls == 1
+    assert collector.budget.spent(_RUN.key) == pytest.approx(2.0)  # 2,000 real tokens
 
 
-async def test_a_call_within_budget_reaches_the_adapter() -> None:
-    """The control, and the one that matters most: the breaker must not break normal work."""
+async def test_the_worst_case_counts_the_prompt_with_its_margin_and_the_full_output_cap() -> None:
+    budget = SpendBudget()
+    budget.record(CallScope(limits=(_RUN,)), _cost(7.75))  # 2.25 left: the worst case exactly
     adapter = _StubAdapter()
 
-    await _collector(adapter, 100.0).generate([], CONFIG)
+    await _collector(adapter, budget).generate(_PROMPT, _CONFIG)  # 1.25 + 1.0 = 2.25 passes
 
     assert adapter.calls == 1
 
 
-async def test_a_call_is_refused_once_the_budget_is_spent() -> None:
+async def test_a_worst_case_over_the_limit_sends_nothing() -> None:
+    budget = SpendBudget()
+    budget.record(CallScope(limits=(_RUN,)), _cost(7.76))
     adapter = _StubAdapter()
-    collector = _collector(adapter, 100.0)
-    collector.budget.record(100.0)
 
-    with pytest.raises(BudgetExceededError):
-        await collector.generate([], CONFIG)
-
-    assert adapter.calls == 0, "the request was sent anyway — the breaker only reported"
-
-
-async def test_the_tool_path_is_refused_too() -> None:
-    """The expensive path. A tool call loops, so an unbroken one bills the most."""
-    adapter = _StubAdapter()
-    collector = _collector(adapter, 100.0)
-    collector.budget.record(100.0)
-
-    with pytest.raises(BudgetExceededError):
-        await collector.generate_with_tools([], CONFIG, None)
+    with pytest.raises(SpendLimitReachedError):
+        await _collector(adapter, budget).generate(_PROMPT, _CONFIG)
 
     assert adapter.calls == 0
 
 
-async def test_the_stream_path_is_refused_too() -> None:
+@pytest.mark.parametrize("path", ["tools", "stream"])
+async def test_every_path_is_checked_before_it_sends(path: str) -> None:
+    budget = SpendBudget()
+    budget.record(CallScope(limits=(_RUN,)), _cost(9.5))
     adapter = _StubAdapter()
-    collector = _collector(adapter, 100.0)
-    collector.budget.record(100.0)
+    collector = _collector(adapter, budget)
 
-    with pytest.raises(BudgetExceededError):
-        async for _ in collector.generate_stream([], CONFIG):
-            pass
+    with pytest.raises(SpendLimitReachedError):
+        if path == "tools":
+            await collector.generate_with_tools(_PROMPT, _CONFIG, None)
+        else:
+            async for _ in collector.generate_stream(_PROMPT, _CONFIG):
+                pass
 
     assert adapter.calls == 0
 
 
-async def test_spend_from_a_real_call_counts_towards_the_limit() -> None:
-    """FR-2 end to end: the collector must feed what it measured back into the budget.
+@pytest.mark.parametrize("path", ["plain", "tools"])
+async def test_a_failed_call_counts_the_worst_case_it_reserved(path: str) -> None:
+    collector = _collector(_StubAdapter(fail=True))
 
-    Without this the budget stays at zero for ever and never trips, and every test above still
-    passes because they record by hand.
-    """
-    adapter = _StubAdapter()
-    collector = _collector(adapter, 100.0)
+    with pytest.raises(RuntimeError):
+        if path == "plain":
+            await collector.generate(_PROMPT, _CONFIG)
+        else:
+            await collector.generate_with_tools(_PROMPT, _CONFIG, None)
 
-    await collector.generate([], CONFIG)
-
-    assert collector.budget.spent_usd > 0.0
+    assert collector.budget.spent(_RUN.key) == pytest.approx(2.25)
 
 
-async def test_an_unlimited_collector_never_refuses() -> None:
-    """The control for FR-5 at the seam: no budget configured must behave exactly as before."""
+async def test_a_stream_counts_its_input_tokens() -> None:
+    collector = _collector(_StubAdapter())
+
+    async for _ in collector.generate_stream(_PROMPT, _CONFIG):
+        pass
+
+    assert collector.records[0].prompt_tokens == 1000  # estimated from the 4,000-char prompt
+
+
+async def test_a_collector_without_limits_never_refuses() -> None:
     adapter = _StubAdapter()
     collector = TelemetryCollector(adapter, "proj")
 
     for _ in range(3):
-        await collector.generate([], CONFIG)
+        await collector.generate(_PROMPT, _CONFIG)
 
     assert adapter.calls == 3
+    assert len(collector.records) == 3
 
 
-async def test_telemetry_is_still_recorded() -> None:
-    """The breaker must not cost the feature it was bolted onto."""
-    adapter = _StubAdapter()
-    collector = _collector(adapter, 100.0)
-
-    await collector.generate([], CONFIG)
-
-    assert len(collector.records) == 1
+def _cost(usd: float) -> Cost:
+    return Cost(usd=usd, tokens=0)

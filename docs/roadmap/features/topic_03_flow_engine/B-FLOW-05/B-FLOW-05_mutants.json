@@ -4,7 +4,7 @@
   "campaigns": [
     {
       "requirement": "FR-1",
-      "title": "Spend accumulates against the ceiling",
+      "title": "Every call is counted, failed and streamed ones too",
       "scope": [
         "tests/unit/infrastructure/llm/test_spend_budget.py",
         "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
@@ -15,27 +15,164 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.record",
-          "old": "self._spent_usd += cost_usd",
-          "new": "self._spent_usd += 0.0",
-          "breaks": "the run's cost stays at zero for ever, so the breaker never trips"
+          "old": "            self._spent[limit.key] += reserved if amount is None else amount\n",
+          "new": "            self._spent[limit.key] += 0\n",
+          "breaks": "no limit ever fills, so nothing is ever stopped",
+          "symbol_sha": "sha256:06e36eea11cca1b01a090831f246971f113e97e2e479ae8c106d18bd8a354d85"
+        },
+        {
+          "id": "failed-call-not-counted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate",
+          "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException:\n            self._budget.record(scope, None, reservation)\n",
+          "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException:\n            pass\n",
+          "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
+          "symbol_sha": "sha256:8276931a47a17bc801a882a99d8ba535df07607d27b8402b3ec7cb849a60ffe4"
+        },
+        {
+          "id": "stream-input-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_stream",
+          "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
+          "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
+          "breaks": "a streamed call's prompt is never counted",
+          "symbol_sha": "sha256:2800ef41a05f763d1a3319f9c71141849050a3b8e82c764007f445247117efdf"
+        },
+        {
+          "id": "failed-tool-call-not-counted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "                on_tool_round,\n            )\n        except BaseException:\n            self._budget.record(scope, None, reservation)\n",
+          "new": "                on_tool_round,\n            )\n        except BaseException:\n            pass\n",
+          "breaks": "a tool call that failed after spending costs nothing",
+          "symbol_sha": "sha256:e67ca85931256482531a1f1ba9a1771fb406137b1cb3cc436cea8ea776a23850"
         }
       ]
     },
     {
       "requirement": "FR-2",
-      "title": "The expensive tool path is refused too",
+      "title": "No call is sent whose worst case could cross a limit",
       "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/integration/infrastructure/llm/test_brake_from_settings.py",
+        "tests/unit/infrastructure/llm/test_budget_from_settings.py"
+      ],
+      "mutants": [
+        {
+          "id": "worst-case-not-checked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "            if self._spent[limit.key] + self._reserved[limit.key] + amount > limit.value:\n",
+          "new": "            if False:\n",
+          "breaks": "every call is sent whatever it may cost",
+          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+        },
+        {
+          "id": "reservation-not-held",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "            self._reserved[key] += amount\n",
+          "new": "            pass\n",
+          "breaks": "parallel calls each pass on the same headroom",
+          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+        },
+        {
+          "id": "margin-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._reserve",
+          "old": "        prompt = math.ceil(self._prompt_tokens(messages, config) * _PROMPT_MARGIN)\n",
+          "new": "        prompt = self._prompt_tokens(messages, config)\n",
+          "breaks": "an underestimated prompt lets a call cross the line",
+          "symbol_sha": "sha256:49b360eca4f82bd378c1a1cf47cf7c44ac70087f0fd17dd8afb0de897f8399db"
+        },
+        {
+          "id": "output-cap-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._reserve",
+          "old": "            completion_tokens=config.max_output_tokens,\n",
+          "new": "            completion_tokens=0,\n",
+          "breaks": "the worst case ignores the answer, which is most of the cost",
+          "symbol_sha": "sha256:49b360eca4f82bd378c1a1cf47cf7c44ac70087f0fd17dd8afb0de897f8399db"
+        },
+        {
+          "id": "unknown-price-passes",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "            if amount is None:\n",
+          "new": "            if amount is None and False:\n",
+          "breaks": "a call with no price passes a money limit unchecked",
+          "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Each limit warns once at 80%",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
         "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
       ],
       "mutants": [
         {
-          "id": "tool-path-unchecked",
+          "id": "warn-once-per-budget",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/collector.py",
-          "symbol": "TelemetryCollector.generate_with_tools",
-          "old": "\"\"\"Proxy ``generate_with_tools()`` \u2014 captures cumulative usage.\"\"\"\n        self._budget.check()",
-          "new": "\"\"\"Proxy ``generate_with_tools()`` \u2014 captures cumulative usage.\"\"\"",
-          "breaks": "a spent run can still make tool calls, which is the costliest path of the three"
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget._warn",
+          "old": "        if limit.key in self._warned or spent < limit.value * _WARN_AT:\n",
+          "new": "        if self._warned or spent < limit.value * _WARN_AT:\n",
+          "breaks": "after the first limit warns, no other limit ever warns",
+          "symbol_sha": "sha256:84de749eb01fb4e538046d42fe10a6f6e5b937495404fd43bae8fd70c7eadaa2"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The right limits for the call: tokens on private servers, money elsewhere, the role's too",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_brake_from_settings.py",
+        "tests/unit/infrastructure/llm/test_budget_from_settings.py",
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py"
+      ],
+      "mutants": [
+        {
+          "id": "private-counts-money",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "        if server.private:\n",
+          "new": "        if False:\n",
+          "breaks": "a GB10 run is limited by money it never spends, so nothing stops it",
+          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+        },
+        {
+          "id": "role-limit-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "            candidates.append((f\"roles.{setting.role}.{field}\", getattr(setting, field)))\n",
+          "new": "            pass\n",
+          "breaks": "a role's own limit is shown but never applied",
+          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+        },
+        {
+          "id": "model-limit-not-converted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "            Limit(key, unit, value if unit == \"tokens\" else to_usd(value, currency))\n",
+          "new": "            Limit(key, unit, value if unit == \"tokens\" or key.startswith(\"models.\") else to_usd(value, currency))\n",
+          "breaks": "a model's limit set in CHF is applied as USD",
+          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
         }
       ]
     },
@@ -53,7 +190,8 @@
           "symbol": "Reviewer._execute_review",
           "old": "        except BudgetExceededError:",
           "new": "        except KeyboardInterrupt:",
-          "breaks": "the breaker is no longer re-raised, so it falls through to the broad handler and is relabelled as a review verdict of ERROR"
+          "breaks": "the breaker is no longer re-raised, so it falls through to the broad handler and is relabelled as a review verdict of ERROR",
+          "symbol_sha": "sha256:07766e56c14118f0399efcabb0cd4724eb59735386c56eeaf12c4006c9a1199e"
         }
       ]
     }

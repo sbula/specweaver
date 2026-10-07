@@ -40,7 +40,7 @@ async def test_provider_e2e_flow(
     )
 
     # 3. Resolve the role's adapter: the resolver always records telemetry
-    resolver = RoleResolver(files, telemetry_project="test-proj", budget=SpendBudget(None))
+    resolver = RoleResolver(files, telemetry_project="test-proj", budget=SpendBudget())
     adapter, config = resolver.for_role("draft")
 
     # Unwind the wrappers: TelemetryCollector -> AsyncRateLimiterAdapter -> ActualAdapter
