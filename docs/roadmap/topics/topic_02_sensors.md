@@ -7,7 +7,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)
+* **`E-SENS-01` 🔧: Loom FS Tools** (Legacy: Step 1b)
   > - **Purpose:** Give agents filesystem access that is role-gated, so an agent sees only the files its task allows
   > - **Trigger:** When an agent or the engine reads or writes a file
   > - **Precondition:** —
@@ -16,7 +16,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every agent tool that touches disk
   > - **Done when:** an agent cannot read a file outside its granted boundary
 
-* **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)
+* **`E-SENS-02` 🔧: Agentic Research Tools** (Legacy: 3.10)
   > - **Purpose:** Let the LLM look things up itself — read files, search the web — instead of guessing from what it was handed
   > - **Trigger:** When an LLM call is made with tools enabled
   > - **Precondition:** `E-SENS-01` → boundary enforcement
@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** Reviewer · Planner
   > - **Done when:** six tools — four filesystem, two web — resolve through one provider-agnostic call
 
-* **`E-SENS-03` ✅: Context Ledgers & Workspace Boundaries**
+* **`E-SENS-03` 🔧: Context Ledgers & Workspace Boundaries**
   > - **Purpose:** Restrict what an agent can see to the scope of its assigned task, not the whole repo
   > - **Trigger:** When a task is dispatched to an agent
   > - **Precondition:** —
@@ -45,7 +45,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** impact analysis · context-enriched prompts
   > - **Done when:** 🟡 a missing `context.yaml` can be generated from the code
 
-* **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)
+* **`D-SENS-02` 🔧: Polyglot AST Extractor** (Legacy: 3.22)
   > - **Purpose:** Read and edit code by symbol rather than by line, so an agent never has to hold a whole file
   > - **Trigger:** When a caller asks for a skeleton, a symbol, or a symbol edit
   > - **Precondition:** —
@@ -54,7 +54,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `context_assembler` · every AST-editing tool · `B-SENS-02`
   > - **Done when:** read and write both work across five languages
 
-* **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)
+* **`D-SENS-03` 🔧: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)
   > - **Purpose:** Cover the languages enterprise targets actually use — systems, cloud, schemas, and spec documents
   > - **Trigger:** When a file of one of these types is parsed
   > - **Precondition:** `D-SENS-02` → the extractor to extend

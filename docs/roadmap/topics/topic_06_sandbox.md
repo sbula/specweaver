@@ -36,7 +36,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** remote dashboard access · CI/CD publishing to GHCR
   > - **Done when:** `podman run … ghcr.io/sbula/specweaver` serves a mounted project
 
-* **`D-EXEC-02` ✅: Git Worktree Bouncer** (Legacy: 3.26)
+* **`D-EXEC-02` 🔧: Git Worktree Bouncer** (Legacy: 3.26)
   > - **Purpose:** Let an agent write freely without letting it write anywhere — work happens in a throwaway worktree, and only permitted paths come back
   > - **Trigger:** Per step, when an agent may modify files
   > - **Precondition:** —
@@ -56,7 +56,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** DDD layering that cannot quietly erode
   > - **Done when:** an L3 capability importing an L1 CLI dependency fails the check
 
-* **`C-EXEC-02` ✅: Native CLI Nodes** (Legacy: 3.40)
+* **`C-EXEC-02` 🔧: Native CLI Nodes** (Legacy: 3.40)
   > - **Purpose:** Let a pipeline run a shell step — while making agent-authored commands impossible, since the script must already exist in a protected directory
   > - **Trigger:** When a pipeline step declares `action: bash`
   > - **Precondition:** `E-SENS-03` → the `FolderGrant` that protects the script directory
@@ -87,7 +87,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`C-EXEC-05` ⚰️ RETIRED:** *(Issue Tracker Atoms — absorbed into `B-INTL-09` Agent Memory Bank;
   see topic 04. ID is dead — do NOT reuse; the gap to `C-EXEC-06` is intentional.)*
 
-* **`C-EXEC-06` ✅: Per-Run (Session) Worktree Isolation**
+* **`C-EXEC-06` 🔧: Per-Run (Session) Worktree Isolation**
   > - **Purpose:** Isolate a whole untrusted run behind one authorization gate, instead of paying the per-step worktree cycle
   > - **Trigger:** When a run contains untrusted execution
   > - **Precondition:** `D-EXEC-02` → the worktree machinery

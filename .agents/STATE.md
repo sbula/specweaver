@@ -4,13 +4,18 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**Four capabilities are `🔧`, not `✅`.**
+**Four capabilities are `🔧`, not `✅`, awaiting approval.**
 
 `C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `D-UI-01`
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
-They are built, tested and proven. The `specweaver-design` **Phase 6 approval gate has never run
-for any of them**.
+They are built and tested; the `specweaver-design` **Phase 6 approval gate has never run for any
+of them**. `B-FLOW-05` also has open defects (the 2026-10-07 audit).
+
+**Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
+`TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Each one's evidence is in
+[done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) §Census. Fix order agreed:
+privacy, security and silently-wrong results first.
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.

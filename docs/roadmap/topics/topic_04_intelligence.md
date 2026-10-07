@@ -7,7 +7,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-INTL-01` ✅: LLM Adapter** (Legacy: Step 3)
+* **`E-INTL-01` 🔧: LLM Adapter** (Legacy: Step 3)
   > - **Purpose:** Talk to a language model through one interface, so the rest of the system never knows which provider it is
   > - **Trigger:** When any capability needs a model
   > - **Precondition:** —
@@ -16,7 +16,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM-dependent capability · the S03/S07 spec rules · the S04 dependency-direction rule
   > - **Done when:** a rule or workflow calls a model without naming a provider
 
-* **`E-INTL-02` ✅: Spec Drafting** (Legacy: Step 4)
+* **`E-INTL-02` 🔧: Spec Drafting** (Legacy: Step 4)
   > - **Purpose:** Write a spec with the model rather than from a blank page, stopping for the human at each decision
   > - **Trigger:** When a user runs `sw draft`
   > - **Precondition:** `E-INTL-01` → the model
@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `E-INTL-03` → the review it hands off to
   > - **Done when:** a spec is produced through an interactive loop with HITL stops
 
-* **`E-INTL-03` ✅: Spec Review Engine** (Legacy: Step 4)
+* **`E-INTL-03` 🔧: Spec Review Engine** (Legacy: Step 4)
   > - **Purpose:** Judge a spec or a piece of code on meaning, not just on rules a regex can check
   > - **Trigger:** When `sw review` runs, or drafting hands off
   > - **Precondition:** `E-INTL-01` → the model · `C-VAL-05` → the criteria it judges against
@@ -54,7 +54,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `C-INTL-01` · `C-FLOW-03` fan-out · `C-FLOW-12` execution
   > - **Done when:** a feature spec yields component specs scored by confidence
 
-* **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)
+* **`D-INTL-03` 🔧: Explicit Plan Phase** (Legacy: 3.6)
   > - **Purpose:** Decide architecture, stack and constraints on the record *before* code is generated, instead of discovering them in the output
   > - **Trigger:** Between validate and implement
   > - **Precondition:** `E-INTL-01` → the model
@@ -79,7 +79,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM call
   > - **Done when:** the model is told its project rather than inferring it
 
-* **`D-INTL-06` ✅: Context Hydration & Handover Engine**
+* **`D-INTL-06` 🔧: Context Hydration & Handover Engine**
   > - **Purpose:** Carry task state and blockers between agents without the next one inheriting the previous one's hallucinations
   > - **Trigger:** When an agent's prompt is built, or work passes between agents
   > - **Precondition:** `B-INTL-09` → the Memory Bank
@@ -178,7 +178,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-B: High-Assurance
 
-* **`B-INTL-01` ✅: Archetype Rule Sets** (Legacy: 3.29)
+* **`B-INTL-01` 🔧: Archetype Rule Sets** (Legacy: 3.29)
   > - **Purpose:** Apply the standards a given kind of project actually has, without the user configuring them by hand
   > - **Trigger:** When a project's archetype is known
   > - **Precondition:** `E-FLOW-01` → project config

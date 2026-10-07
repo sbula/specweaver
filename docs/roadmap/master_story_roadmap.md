@@ -95,9 +95,9 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides AST extraction for C13 drift rules)*
     *   `✅` **E-UI-01:** CLI Scaffold
-    *   `✅` **E-SENS-01:** Loom Filesystem Tools
+    *   `🔧` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-VAL-01:** Validation Engine (Foundation)
-    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
+    *   `🔧` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
     *   ⚰️ **Security Defenses:** *(retired 2026-08-21 — `E-VAL-03` ruled nonsense, [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md) §8; `escaping.py` stays, `B-SENS-09` succeeds)*
     *   🟡 **Enforce Internal Architecture:**
@@ -116,10 +116,10 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
-    *   `✅` **E-SENS-01:** Loom Filesystem Tools
-    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
-    *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
-    *   `✅` **E-INTL-03:** Spec Review Engine
+    *   `🔧` **E-SENS-01:** Loom Filesystem Tools
+    *   `🔧` **E-INTL-01:** LLM Adapter (Gemini)
+    *   `🔧` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
+    *   `🔧` **E-INTL-03:** Spec Review Engine
     *   `✅` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   🔴 **Surgical Spec Refactoring:**
@@ -136,7 +136,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **D-INTL-01:** Implementation Generator
-    *   `✅` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
+    *   `🔧` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🟡 **Multi-Language Test Support:**
@@ -160,8 +160,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **E-FLOW-02:** YAML Pipeline Models
     *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
-    *   `✅` **D-FLOW-04:** Unified Runner Architecture
-    *   `✅` **E-FLOW-03:** Multi-Provider Registry
+    *   `🔧` **D-FLOW-04:** Unified Runner Architecture
+    *   `🔧` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🟡 **Security Defenses:**
         *   `🔧` **B-FLOW-05:** Spend Brake
@@ -187,11 +187,11 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
-    *   `✅` **E-SENS-03:** Context Ledgers & Workspace Boundaries
-    *   `✅` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
+    *   `🔧` **E-SENS-03:** Context Ledgers & Workspace Boundaries
+    *   `🔧` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
-    *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
+    *   `🔧` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
+    *   `🔧` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infrastructure Understanding:**
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
@@ -253,8 +253,8 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
-    *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
-    *   `✅` **C-EXEC-02:** Native CLI Action Nodes
+    *   `🔧` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
+    *   `🔧` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟢 **Containerized Isolation:**
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
@@ -266,9 +266,9 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
         *   `[ ]` **A-EXEC-01:** Functional Agent Sandboxing (Black Box Ledgers)
     *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-EXEC-03`; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
     *   🟢 **Per-Run (Session) Worktree Isolation:**
-        *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
+        *   `🔧` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
-        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
+        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` 🔧
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
@@ -348,7 +348,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   🔴 **Architectural Sandboxing:**
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
-        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` ✅
+        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` 🔧
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
@@ -370,7 +370,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
     *   `✅` **C-FLOW-01:** Telemetry DB
-    *   `✅` **D-FLOW-03:** Static Routing
+    *   `🔧` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   🔴 **Centralized Model Table:**
         *   `[ ]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
@@ -453,7 +453,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-INTL-02:** Feature Decomposition
-    *   `✅` **D-INTL-03:** Explicit Plan Phase
+    *   `🔧` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**
     *   🟢 **Recursive Planning:**
         *   `✅` **C-INTL-01:** Iterative Decomposition
@@ -486,7 +486,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
-    *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
+    *   `🔧` **B-FLOW-01:** Scenario Testing Pipeline
     *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**
@@ -496,7 +496,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
 *   **Core Required (MVS):**
     *   `✅` **C-VAL-01:** Constitution Artifact
-    *   `✅` **C-VAL-02:** Domain Profiles
+    *   `🔧` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
     *   🟢 **Dynamic Risk Controls:**
         *   `✅` **D-VAL-02:** Custom Rule Paths
@@ -528,8 +528,8 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 ### 🟢 US-28: Agent-Native Issue & State Tracker
 **Benefit:** *Agents hand complex tasks to one another without context degrading — session state, tasks and blockers live in a local Memory Bank.*
 *   **Core Required (MVS):**
-    *   `✅` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (Complete)
-    *   `✅` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md) (Complete)
+    *   `🔧` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (Complete)
+    *   `🔧` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md) (Complete)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
         *   `[ ]` **A-EXEC-04:** Advanced Row-Level Task Locking (Pessimistic Locks, WAL2, Deadlock Detection)
@@ -546,8 +546,8 @@ These stories do not add new user-facing features, but are critical epics requir
 
     *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
     *   `✅` **TECH-002:** [BaseTool Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
-    *   `✅` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_design.md)
-    *   `✅` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
+    *   `🔧` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_design.md)
+    *   `🔧` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
     *   `✅` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
     *   `✅` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
     *   `✅` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md)

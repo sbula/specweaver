@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `D-FLOW-01` → the runner that executes it
   > - **Done when:** a pipeline file parses to a step model. No execution — that is the runner's job
 
-* **`E-FLOW-03` ✅: Multi-Provider Registry** (Legacy: 3.13)
+* **`E-FLOW-03` 🔧: Multi-Provider Registry** (Legacy: 3.13)
   > - **Purpose:** Add an LLM provider by dropping in one file, with no other change anywhere
   > - **Trigger:** At import, when adapters are scanned
   > - **Precondition:** —
@@ -55,7 +55,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every user-driven pipeline run
   > - **Done when:** a failing run prints a friendly one-liner rather than a trace
 
-* **`D-FLOW-03` ✅: Static Model Routing** (Legacy: 3.14)
+* **`D-FLOW-03` 🔧: Static Model Routing** (Legacy: 3.14)
   > - **Purpose:** Send each kind of task to the model the user chose for it — review to one, implement to another
   > - **Trigger:** When a task needs a model
   > - **Precondition:** `E-FLOW-03` → the provider registry
@@ -64,7 +64,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM call
   > - **Done when:** a task type maps to a model by configuration alone — no learning, no inference
 
-* **`D-FLOW-04` ✅: Unified Runner Architecture** (Legacy: 3.16)
+* **`D-FLOW-04` 🔧: Unified Runner Architecture** (Legacy: 3.16)
   > - **Purpose:** Make every command run through the same machinery, so telemetry and state work identically whether it is one step or twenty
   > - **Trigger:** When any single-shot command runs
   > - **Precondition:** `D-FLOW-01` → the runner
@@ -124,7 +124,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** loop-back generation that acts on the human's reason first
   > - **Done when:** a human rejection outranks a linter error in the next prompt
 
-* **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)
+* **`C-FLOW-06` 🔧: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)
   > - **Purpose:** Cut token and time cost on the paths that were measurably expensive — condense context, limit tests by impact, route context dynamically
   > - **Trigger:** Various — per optimisation
   > - **Precondition:** `D-SENS-02` → AST skeletons · `D-SENS-01` → impact data
@@ -202,7 +202,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-B: High-Assurance
 
-* **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)
+* **`B-FLOW-01` 🔧: Scenario Testing Pipeline** (Legacy: 3.28)
   > - **Purpose:** Run the code pipeline and a scenario pipeline side by side, so when they disagree the cause can be attributed
   > - **Trigger:** When a scenario pipeline is run
   > - **Precondition:** `D-FLOW-01` → the runner

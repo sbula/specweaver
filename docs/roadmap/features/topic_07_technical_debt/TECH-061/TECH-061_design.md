@@ -23,7 +23,7 @@ def collect_files(self, target_path: Path) -> set[str]:
 
 `graph/core/builder/orchestrator.py:85-97`. Every other layer of the path is polyglot:
 
-* `D-SENS-03` ✅ ships extractors for Go, Kotlin, Java, C/C++ and Rust.
+* `D-SENS-03` 🔧 ships extractors for Go, Kotlin, Java, C/C++ and Rust.
 * `graph_adapter.extract_ast_dict` resolves a parser by file extension from
   `get_default_parsers()` and handles whatever it returns
   (`workspace/ast/adapters/graph_adapter.py:30-38`).
