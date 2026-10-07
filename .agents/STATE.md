@@ -15,6 +15,14 @@ for any of them**.
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
 
+## Audit of "done", 2026-10-07
+
+Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
+`B-FLOW-05` and `C-FLOW-13` are not done either: critical finds include a private-only project's
+code reaching a hosted server and `sw drift check` passing drifted code when the brake stops it.
+Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
+status; which statuses to reopen is the user's decision.
+
 ## One of them is wrong
 
 Read the design before touching it. It says so in its own first section.
