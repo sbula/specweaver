@@ -6,6 +6,7 @@
 
 Proves: B-VAL-01 FR-6
 Proves: C-FLOW-13 FR-9
+Proves: B-FLOW-05 FR-3
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`. Mutant: the command renamed, so the
 documented invocation no longer exists — 9 fail here and at e2e.
@@ -266,3 +267,56 @@ def test_drift_analyze_keeps_the_target_projects_private_rule(
 
     assert seen == []
     assert "private servers only" in " ".join(result.output.split())
+
+
+_TINY_LIMIT_MACHINE = """\
+[servers.gb10]
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 2
+
+[roles]
+default = { model = "qwen3-coder-next@gb10", max_output_tokens = 1000 }
+
+[models."qwen3-coder-next"]
+tokens_per_run = 50
+
+[brake]
+hosted_spend_per_run = 10
+tokens_per_run = 1000000
+agent_turns = 5
+"""
+
+
+def test_drift_analyze_stopped_by_the_brake_still_fails_on_drift(dummy_project: Path) -> None:
+    import httpx2
+
+    from tests.fake_http import fake_httpx2
+
+    (dummy_project / ".specweaver" / "settings.toml").write_text(_TINY_LIMIT_MACHINE)
+    target_path = dummy_project / "src" / "test.py"
+    target_path.write_text("def missing() -> int: return 0\n")
+
+    with fake_httpx2(lambda _request: httpx2.Response(500)) as seen:
+        result = runner.invoke(
+            app,
+            [
+                "drift",
+                "check",
+                str(target_path),
+                "--plan",
+                str(dummy_project / "plan.yaml"),
+                "--project",
+                str(dummy_project),
+                "--analyze",
+            ],
+        )
+
+    output = " ".join(result.output.split())
+    assert seen == []
+    assert result.exit_code == 42, result.output
+    assert "signatures match" not in output
+    assert "AST Drift Detected" in output
+    assert 'models."qwen3-coder-next".tokens_per_run' in output
+    assert "analysis failed" not in output

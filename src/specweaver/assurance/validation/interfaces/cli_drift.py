@@ -110,6 +110,10 @@ def drift_check(
         _core.console.print(f"[red]Execution failed:[/red] {error_msg}")
         raise typer.Exit(code=1)
 
+    if last_record.status == StepStatus.WAITING_FOR_INPUT:
+        _core.console.print("Root-cause analysis stopped by the spend brake:", style="red")
+        _core.console.print(last_record.result.error_message, markup=False)
+
     _present_result(last_record.result, target_path.name, analyze)
 
 

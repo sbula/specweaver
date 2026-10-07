@@ -17,7 +17,7 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 
 | # | Sev | Finding | Evidence |
 |---|---|---|---|
-| 1 | CRIT | `sw drift check --analyze` prints "✓ AST signatures match" and exits 0 when the brake stops the root-cause call — exactly on drifted files | `cli_drift.py:104,116`; `step_execution.py:219-236`; `.tmp/repro_drift.py` |
+| 1 | CRIT | `sw drift check --analyze` prints "✓ AST signatures match" and exits 0 when the brake stops the root-cause call — exactly on drifted files | `cli_drift.py:104,116`; `step_execution.py:219-236`; `.tmp/repro_drift.py`. **Fixed** 2026-10-07: a parked step keeps its findings; the command names the limit and exits 42 |
 | 2 | CRIT | A brake park inside session isolation raises `RuntimeError` (misleading "HITL" message); `sw implement` enables it automatically on high-DAL projects; code torn down | `session.py:81`; `implementation/interfaces/cli.py:281` |
 | 3 | HIGH | Per-step worktree isolation skips the park check: run FAILED, retried, partial work merged | `step_execution.py:202-207`; `.tmp/repro_sandbox.py` |
 | 4 | HIGH | Gemini thinking tokens (`thoughts_token_count`) never counted | `adapters/gemini.py:178,249` |

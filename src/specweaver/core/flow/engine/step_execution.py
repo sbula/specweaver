@@ -216,13 +216,14 @@ async def execute_step(
             started_at=_now_iso(),
             completed_at=_now_iso(),
         )
-    return _parked_by_brake(runner._context) or result
+    return _parked_by_brake(runner._context, result) or result
 
 
-def _parked_by_brake(context: Any) -> StepResult | None:
+def _parked_by_brake(context: Any, result: StepResult) -> StepResult | None:
     """If the spend brake stopped a call of this step, the step waits for the user instead.
 
-    Read from the brake, not from the step's result: a step may have caught the stop.
+    Read from the brake, not from the step's result: a step may have caught the stop. What the
+    step found before the stop is kept.
     """
     router = getattr(getattr(context, "model", None), "llm_router", None)
     stopped = getattr(getattr(router, "budget", None), "stopped", None)
@@ -230,6 +231,7 @@ def _parked_by_brake(context: Any) -> StepResult | None:
         return None
     return StepResult(
         status=StepStatus.WAITING_FOR_INPUT,
+        output=result.output,
         error_message=str(stopped),
         started_at=_now_iso(),
         completed_at=_now_iso(),

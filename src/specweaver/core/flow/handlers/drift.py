@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
+from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -147,8 +148,8 @@ class DriftCheckHandler:
             error_message="Drift detected" if report.is_drifted else "",
         )
 
-    async def _analyze_drift(self, context: RunContext, report: Any, file_path: str) -> str:
-        """Invoke LLM to determine drift root cause."""
+    async def _analyze_drift(self, context: RunContext, report: Any, file_path: str) -> str | None:
+        """Invoke LLM to determine drift root cause; None when the spend brake stopped it."""
         from specweaver.infrastructure.llm.models import Message, Role
 
         prompt = (
@@ -173,6 +174,8 @@ class DriftCheckHandler:
             adapter, config = llm_for(context, TaskType.REVIEW)
             response = await adapter.generate(messages, config)
             return str(response.text)
+        except SpendLimitReachedError:
+            return None
         except Exception as exc:
             logger.exception("DriftCheckHandler: Failed LLM root-cause analysis.")
             return f"LLM analysis failed: {exc}"

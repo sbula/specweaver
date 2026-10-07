@@ -13,7 +13,7 @@ Settings file → router → real collector; only HTTP is faked.
 | Happy | a step within its limits completes the run |
 | Boundary | a step that lets the stop out parks the run instead of failing it |
 | Degradation | a gate set to retry does not retry a stopped step; a resumed run keeps its totals |
-| Hostile | a step that swallows the stop and reports success still parks the run |
+| Hostile | a step that swallows the stop and reports success still parks the run, keeping what it found |
 """
 
 from __future__ import annotations
@@ -82,7 +82,12 @@ class _CallsTheModel:
         except Exception:
             if not self._swallow:
                 raise
-        return StepResult(status=StepStatus.PASSED, output={}, started_at="t0", completed_at="t1")
+        return StepResult(
+            status=StepStatus.PASSED, output=_FOUND, started_at="t0", completed_at="t1"
+        )
+
+
+_FOUND = {"is_drifted": True}
 
 
 def _pipeline(gate: dict | None = None) -> PipelineDefinition:
@@ -123,6 +128,12 @@ async def test_a_stopped_step_parks_the_run(tmp_path: Path, swallow: bool) -> No
 
     assert run.status is RunStatus.PARKED
     assert "brake.tokens_per_run" in (run.step_records[0].result.error_message or "")
+
+
+async def test_a_parked_step_keeps_what_it_found_before_the_stop(tmp_path: Path) -> None:
+    run = await _run(tmp_path, _CallsTheModel(swallow=True), tokens=50)
+
+    assert run.step_records[0].result.output == _FOUND
 
 
 async def test_a_retry_gate_does_not_retry_a_stopped_step(tmp_path: Path) -> None:
