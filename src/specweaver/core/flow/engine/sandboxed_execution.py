@@ -12,6 +12,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
+from specweaver.core.flow.engine.brake import brake_stop
+
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.state import StepResult
     from specweaver.core.flow.handlers.run_context import RunContext
@@ -97,6 +99,8 @@ async def execute_in_sandbox(
     try:
         # 2. Execute inner handler bounded to the isolated worktree context
         result = await handler.execute(step_def, isolated_context)
+        if brake_stop(context) is not None:
+            return cast("StepResult", result)  # the step runs again on resume; merge nothing
 
         # 3. Continuous Micro-Sync (FR-7)
         atom.run({"intent": "worktree_sync", "path": wt_path})

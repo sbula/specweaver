@@ -33,13 +33,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.engine.approval import try_approve_parked_step
+from specweaver.core.flow.engine.brake import brake_stop
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
 from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import GateDefinition, PipelineStep
@@ -204,8 +204,9 @@ async def execute_step(
         ):
             from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
-            return await execute_in_sandbox(runner, handler, step_def, run, logger)
-        result = cast("StepResult", await handler.execute(step_def, runner._context))
+            result = await execute_in_sandbox(runner, handler, step_def, run, logger)
+        else:
+            result = cast("StepResult", await handler.execute(step_def, runner._context))
     except Exception as exc:
         logger.exception(
             "[run_id=%s] Step '%s' raised unhandled exception", run.run_id, step_def.name
@@ -225,9 +226,8 @@ def _parked_by_brake(context: Any, result: StepResult) -> StepResult | None:
     Read from the brake, not from the step's result: a step may have caught the stop. What the
     step found before the stop is kept.
     """
-    router = getattr(getattr(context, "model", None), "llm_router", None)
-    stopped = getattr(getattr(router, "budget", None), "stopped", None)
-    if not isinstance(stopped, SpendLimitReachedError):
+    stopped = brake_stop(context)
+    if stopped is None:
         return None
     return StepResult(
         status=StepStatus.WAITING_FOR_INPUT,

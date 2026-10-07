@@ -542,7 +542,7 @@
           "old": "        output=result.output,\n",
           "new": "        output={},\n",
           "breaks": "sw drift check --analyze prints 'signatures match' and exits 0 on drifted code",
-          "symbol_sha": "sha256:8129a999bd2c1d395ce963fef9ee42769ce1f187b3c1ad1eba1122a0a4eb7f49"
+          "symbol_sha": "sha256:7f31d0c9389b53f7f6f43cddab928e70d09bc801ceed8a7f477395f69cd3ab09"
         },
         {
           "id": "drift-stop-unnamed",
@@ -563,6 +563,26 @@
           "new": "        except Exception as exc:\n",
           "breaks": "a brake stop is shown as a failed analysis with a traceback",
           "symbol_sha": "sha256:b68fe819bb96ef07570c84f08d742b753b072d6ddb335bdec16e070654f2e002"
+        },
+        {
+          "id": "worktree-step-skips-park",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/step_execution.py",
+          "symbol": "execute_step",
+          "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
+          "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
+          "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
+          "symbol_sha": "sha256:533078b7c061bead00d97205295a09246749d76acf3cdec930bea45ab740dfc9"
+        },
+        {
+          "id": "worktree-merges-stopped-work",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "        if brake_stop(context) is not None:\n",
+          "new": "        if False:\n",
+          "breaks": "half-done work of a stopped step is merged into the project",
+          "symbol_sha": "sha256:fec05445ed1f6db99519d0f698763b904510ebc3f66e9fc40ade8304c709d559"
         }
       ]
     }

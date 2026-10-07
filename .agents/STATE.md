@@ -24,7 +24,8 @@ to `✅`. Do not.** Only the user can give the sign-off.
 
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
 `B-FLOW-05` and `C-FLOW-13` are not done either. Fixed so far: the private-only leak (C-FLOW-13 #1)
-and the drift false pass at a brake stop (B-FLOW-05 #1). Next: B-FLOW-05 #2, park inside a session.
+the drift false pass at a brake stop (B-FLOW-05 #1), the per-step worktree park (#3).
+Open decision: B-FLOW-05 #2, a brake stop inside a session worktree.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

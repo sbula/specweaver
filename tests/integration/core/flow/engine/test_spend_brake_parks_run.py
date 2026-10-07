@@ -12,7 +12,7 @@ Settings file → router → real collector; only HTTP is faked.
 |---|---|
 | Happy | a step within its limits completes the run |
 | Boundary | a step that lets the stop out parks the run instead of failing it |
-| Degradation | a gate set to retry does not retry a stopped step; a resumed run keeps its totals |
+| Degradation | a gate set to retry does not retry a stopped step; a resumed run keeps its totals; a stop in a step's own worktree parks and merges nothing |
 | Hostile | a step that swallows the stop and reports success still parks the run, keeping what it found |
 """
 
@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import httpx2
 import pytest
@@ -90,14 +91,21 @@ class _CallsTheModel:
 _FOUND = {"is_drifted": True}
 
 
-def _pipeline(gate: dict | None = None) -> PipelineDefinition:
-    step = {"name": "review_it", "action": "review", "target": "spec"}
+def _pipeline(gate: dict | None = None, *, worktree: bool = False) -> PipelineDefinition:
+    step = {"name": "review_it", "action": "review", "target": "spec", "use_worktree": worktree}
     if gate:
         step["gate"] = gate
     return PipelineDefinition.model_validate_json(json.dumps({"name": "brake", "steps": [step]}))
 
 
-async def _run(tmp_path: Path, handler: _CallsTheModel, tokens: int, gate: dict | None = None):
+async def _run(
+    tmp_path: Path,
+    handler: _CallsTheModel,
+    tokens: int,
+    gate: dict | None = None,
+    *,
+    worktree: bool = False,
+):
     files = LlmSettingsFiles.from_texts(
         machine_text=_MACHINE.format(tokens=tokens),
         machine_source="settings.toml",
@@ -113,7 +121,8 @@ async def _run(tmp_path: Path, handler: _CallsTheModel, tokens: int, gate: dict 
     registry = StepHandlerRegistry()
     registry.register("review", "spec", handler)
     with fake_httpx2(lambda _request: httpx2.Response(200, json=_REPLY)):
-        return await PipelineRunner(_pipeline(gate), context, registry=registry).run()
+        pipeline = _pipeline(gate, worktree=worktree)
+        return await PipelineRunner(pipeline, context, registry=registry).run()
 
 
 async def test_a_step_within_its_limits_completes_the_run(tmp_path: Path) -> None:
@@ -134,6 +143,26 @@ async def test_a_parked_step_keeps_what_it_found_before_the_stop(tmp_path: Path)
     run = await _run(tmp_path, _CallsTheModel(swallow=True), tokens=50)
 
     assert run.step_records[0].result.output == _FOUND
+
+
+@pytest.mark.parametrize("swallow", [False, True])
+async def test_a_stopped_step_in_its_own_worktree_parks_and_merges_nothing(
+    tmp_path: Path, swallow: bool
+) -> None:
+    from specweaver.sandbox.base import AtomResult, AtomStatus
+
+    intents: list[str] = []
+
+    def git(_self, request: dict) -> AtomResult:
+        intents.append(request["intent"])
+        return AtomResult(status=AtomStatus.SUCCESS, message="", exports={})
+
+    with patch("specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=git):
+        run = await _run(tmp_path, _CallsTheModel(swallow=swallow), tokens=50, worktree=True)
+
+    assert run.status is RunStatus.PARKED
+    assert "worktree_add" in intents
+    assert "strip_merge" not in intents
 
 
 async def test_a_retry_gate_does_not_retry_a_stopped_step(tmp_path: Path) -> None:
