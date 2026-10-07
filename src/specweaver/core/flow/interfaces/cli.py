@@ -248,7 +248,9 @@ def _build_run_context(
     """
 
     info = find_constitution(project_path, spec_path=spec_path)
-    active = _core.run_repo_op(lambda r: r.get_active_project())
+    active = _core.registered_project_at(project_path) or _core.run_repo_op(
+        lambda r: r.get_active_project()
+    )
     db = _core.get_db()
 
     context = RunContext(
@@ -296,7 +298,7 @@ def _wire_models(
     if not roles:
         return
     settings = load_settings(_core.get_db(), project)
-    router = command_router(project, roles, run_model=run_model)
+    router = command_router(project, roles, run_model=run_model, project_root=context.project_path)
     context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
 

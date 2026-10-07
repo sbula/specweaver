@@ -193,7 +193,7 @@ def draft(
     db = _core.get_db()
     # A refusal must name the missing project, not a database lookup; the models come from the
     # settings files through `command_router`, which checks every role before the first call.
-    project = _core._require_active_project()
+    project = _core.project_name_for(project_path)
     settings = load_settings(db, project)
 
     # Load topology context for the new component (best-effort)
@@ -210,7 +210,7 @@ def draft(
     )
 
     pipeline = _build_draft_pipeline(name)
-    router = command_router(project, roles_of(pipeline))
+    router = command_router(project, roles_of(pipeline), project_root=project_path)
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
@@ -287,7 +287,7 @@ def review(
     db = _core.get_db()
     # A refusal must name the missing project, not a database lookup; the models come from the
     # settings files through `command_router`, which checks every role before the first call.
-    project = _core._require_active_project()
+    project = _core.project_name_for(project_path)
     settings = load_settings(db, project)
 
     # Load topology context for the review target
@@ -325,7 +325,7 @@ def review(
         description=f"Review {target_path.name}",
         params=params,
     )
-    router = command_router(project, roles_of(pipeline))
+    router = command_router(project, roles_of(pipeline), project_root=project_path)
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),

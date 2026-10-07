@@ -23,8 +23,8 @@ to `✅`. Do not.** Only the user can give the sign-off.
 ## Audit of "done", 2026-10-07
 
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
-`B-FLOW-05` and `C-FLOW-13` are not done either: critical finds include a private-only project's
-code reaching a hosted server and `sw drift check` passing drifted code when the brake stops it.
+`B-FLOW-05` and `C-FLOW-13` are not done either. The private-only leak (C-FLOW-13 #1) is fixed;
+`sw drift check` still passes drifted code when the brake stops it (B-FLOW-05 #1).
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

@@ -5,6 +5,7 @@
 """`sw drift check` end to end through the pipeline runner.
 
 Proves: B-VAL-01 FR-6
+Proves: C-FLOW-13 FR-9
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-10-SF01-MIG`. Mutant: the command renamed, so the
 documented invocation no longer exists — 9 fail here and at e2e.
@@ -207,3 +208,61 @@ def test_drift_check_analyze(dummy_project: Path, monkeypatch: pytest.MonkeyPatc
     assert result.exit_code == 42
     assert "LLM Root-Cause Analysis" in result.stdout
     assert "Mock LLM Root Cause" in result.stdout
+
+
+_HOSTED_MACHINE = """\
+[servers.hosted]
+kind = "openai-compatible"
+base_url = "http://hosted.example/v1"
+private = false
+max_parallel = 2
+
+[roles]
+default = "m@hosted"
+
+[models."m"]
+max_output = 100
+usd_per_million_input = 1
+usd_per_million_output = 1
+thinking_in_output_cap = true
+
+[brake]
+hosted_spend_per_run = 100
+tokens_per_run = 1000000
+agent_turns = 5
+"""
+
+
+def test_drift_analyze_keeps_the_target_projects_private_rule(
+    dummy_project: Path, tmp_path: Path
+) -> None:
+    import httpx2
+
+    from tests.fake_http import fake_httpx2
+
+    (dummy_project / ".specweaver" / "settings.toml").write_text(_HOSTED_MACHINE)
+    (dummy_project / "specweaver.toml").write_text("[llm]\nprivate_only = true\n")
+    other = tmp_path / "other"
+    other.mkdir()
+    register_test_project(get_db(), "other", str(other))
+    set_test_active_project(get_db(), "other")
+    target_path = dummy_project / "src" / "test.py"
+    target_path.write_text("def missing() -> int: return 0\n")
+
+    with fake_httpx2(lambda _request: httpx2.Response(500)) as seen:
+        result = runner.invoke(
+            app,
+            [
+                "drift",
+                "check",
+                str(target_path),
+                "--plan",
+                str(dummy_project / "plan.yaml"),
+                "--project",
+                str(dummy_project),
+                "--analyze",
+            ],
+        )
+
+    assert seen == []
+    assert "private servers only" in " ".join(result.output.split())

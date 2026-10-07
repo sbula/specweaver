@@ -12,11 +12,11 @@ local binding.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
-    from pathlib import Path
 
     from specweaver.core.config.llm_settings import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
@@ -92,11 +92,36 @@ def _require_active_project() -> str:
 
 def project_root(name: str) -> Path | None:
     """The registered root directory of project `name`, or `None` if it has none."""
-    from pathlib import Path
 
     project = run_repo_op(lambda repo: repo.get_project(name))
     root = project.get("root_path") if project else None
     return Path(str(root)) if root else None
+
+
+def registered_project_at(path: Path) -> str | None:
+    """The name of the project registered at `path`, if any."""
+    target = path.resolve()
+    for project in run_repo_op(lambda repo: repo.list_projects()):
+        root = project.get("root_path")
+        if root and Path(str(root)).resolve() == target:
+            return str(project["name"])
+    return None
+
+
+def project_name_for(path: Path) -> str:
+    """The project registered at `path`; the active project when none is registered there."""
+    return registered_project_at(path) or _require_active_project()
+
+
+def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
+    """The LLM settings files for the project at `path`, or exit naming the error."""
+    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+    from specweaver.core.config.llm_settings import SettingsFileError
+
+    try:
+        return load_llm_settings(path)
+    except SettingsFileError as err:
+        refuse_llm_settings(err)
 
 
 def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFiles:

@@ -147,6 +147,37 @@
       ]
     },
     {
+      "requirement": "FR-9",
+      "title": "A command reads the settings of the project it works on, not the active one",
+      "scope": [
+        "tests/unit/interfaces/cli/test_target_project.py",
+        "tests/e2e/capabilities/infrastructure/test_llm_servers_e2e.py",
+        "tests/integration/interfaces/cli/test_cli_drift.py"
+      ],
+      "mutants": [
+        {
+          "id": "router-reads-active-project",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "command_router",
+          "old": "        files = _core.load_llm_settings_at(project_root)\n",
+          "new": "        files = _core.load_active_llm_settings(project)\n",
+          "breaks": "a private-only project's code goes to a hosted server while another project is active",
+          "symbol_sha": "sha256:ae84db77fd6c218676479259c63b657aa08d2657f17be03dac4407f233eeb710"
+        },
+        {
+          "id": "target-name-is-active-project",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "project_name_for",
+          "old": "    return registered_project_at(path) or _require_active_project()\n",
+          "new": "    return _require_active_project()\n",
+          "breaks": "a command on one project runs under another project's name and settings",
+          "symbol_sha": "sha256:55108524c0426a58dbf2087a94597f405de9446505a956c1e4dc8fc5ab4dc08e"
+        }
+      ]
+    },
+    {
       "requirement": "FR-6",
       "title": "Model facts layer generated → local → machine file",
       "scope": [

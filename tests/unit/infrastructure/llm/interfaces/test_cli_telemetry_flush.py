@@ -69,6 +69,7 @@ class TestReviewCommandFlush:
             ),
             doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.registered_project_at", return_value=None),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",
                 return_value=_NO_SETTINGS,
@@ -128,6 +129,7 @@ class TestImplementCommandFlush:
             ),
             doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.registered_project_at", return_value=None),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",
                 return_value=_NO_SETTINGS,
@@ -181,6 +183,7 @@ class TestDraftCommandFlush:
             ),
             doubled_llm(mock_collector),
             patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.registered_project_at", return_value=None),
             patch(
                 "specweaver.interfaces.cli._core.load_active_llm_settings",
                 return_value=_NO_SETTINGS,

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The one way a CLI command gets its models: the router, from the active project's settings."""
+"""The one way a CLI command gets its models: the router, from its target project's settings."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from specweaver.interfaces.cli import _core
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from pathlib import Path
 
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.infrastructure.llm.router import ModelRouter
@@ -38,12 +39,17 @@ def command_router(
     roles: Iterable[TaskType | str],
     *,
     run_model: RoleEntry | None = None,
+    project_root: Path | None = None,
 ) -> ModelRouter:
     """The command's router with every role it uses checked; stops the command if one is unset.
 
-    `run_model` (`--model`) gives every role of this run that one model.
+    `run_model` (`--model`) gives every role of this run that one model. `project_root` is the
+    project the command works on; its own settings file decides, not the active project's.
     """
-    files = _core.load_active_llm_settings(project)
+    if project_root is not None:
+        files = _core.load_llm_settings_at(project_root)
+    else:
+        files = _core.load_active_llm_settings(project)
     try:
         return build_router(
             files,

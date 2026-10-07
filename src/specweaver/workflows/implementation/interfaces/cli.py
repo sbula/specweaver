@@ -224,7 +224,7 @@ def implement(
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
     # failure. The models come from the settings files through `command_router`.
-    project = _core._require_active_project()
+    project = _core.project_name_for(project_path)
     settings = load_settings(db, project)
 
     # Load topology context for the implementation target
@@ -260,7 +260,9 @@ def implement(
     )
 
     pipeline = _build_implement_pipeline(stem)
-    router = command_router(project, roles_of(pipeline), run_model=run_model)
+    router = command_router(
+        project, roles_of(pipeline), run_model=run_model, project_root=project_path
+    )
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
