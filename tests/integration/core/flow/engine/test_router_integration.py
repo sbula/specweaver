@@ -80,6 +80,11 @@ plan = { model = "claude-sonnet-4-5@anthropic", max_output_tokens = 8192 }
 draft = { model = "claude-sonnet-4-5@anthropic", max_output_tokens = 8192 }
 review = { model = "fast-model@gemini", max_output_tokens = 8192 }
 validate = { model = "fast-model@gemini", max_output_tokens = 8192 }
+
+[models."fast-model"]
+usd_per_million_input = 1.0
+usd_per_million_output = 1.0
+thinking_in_output_cap = true
 """
 
 _KEYS = {"ANTHROPIC_API_KEY": "dummy1", "GEMINI_API_KEY": "dummy2"}

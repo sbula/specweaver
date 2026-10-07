@@ -12,7 +12,7 @@ parallel limit, and every role of the run shares one spend budget.
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 from specweaver.core.config.llm_settings import SettingsFileError, resolve_roles, to_usd
 from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
@@ -60,11 +60,14 @@ class RoleResolver:
     def require(self, roles: Iterable[str]) -> None:
         """Refuse now, before any call, if one of these roles has no model."""
         for role in roles:
-            self._check_key(self._setting(role).server)
+            setting = self._setting(role)
+            self._check_key(setting.server)
+            self._check_bounded(setting)
 
     def for_role(self, role: str) -> tuple[TelemetryCollector, GenerationConfig]:
         setting = self._setting(role)
         self._check_key(setting.server)
+        self._check_bounded(setting)
         server = self._files.machine.servers[setting.server]
         facts = self._catalogue.facts(server.kind, setting.model, self._files.machine.models)
         config = GenerationConfig.model_validate(
@@ -91,6 +94,37 @@ class RoleResolver:
                 f"no model for role '{role}' and no roles.{DEFAULT_ROLE} — set one of them",
             )
         return setting
+
+    def _check_bounded(self, setting: ResolvedRole) -> None:
+        """Refuse a setting whose cost the brake cannot bound."""
+        server = self._files.machine.servers[setting.server]
+        wrong = "spend_per_run" if server.private else "tokens_per_run"
+        if getattr(setting, wrong) is not None:
+            unit = "tokens" if server.private else "money"
+            self._refuse(
+                f"roles.{setting.role}.{wrong}",
+                f"server '{setting.server}' is limited in {unit}; set the other limit instead",
+            )
+        if server.private:
+            return
+        facts = self._catalogue.facts(server.kind, setting.model, self._files.machine.models)
+        table = f'models."{setting.model}"'
+        if facts is None or None in (facts.usd_per_million_input, facts.usd_per_million_output):
+            self._refuse(
+                f"{table}.usd_per_million_input",
+                f"the hosted model '{setting.model}' has no known price; set usd_per_million_input "
+                f"and usd_per_million_output under [{table}]",
+            )
+        if facts is not None and facts.thinking_in_output_cap is not True:
+            self._refuse(
+                f"{table}.thinking_in_output_cap",
+                f"it is not known whether the output limit of '{setting.model}' also bounds its "
+                f"thinking; set thinking_in_output_cap = true under [{table}] once you have "
+                "checked",
+            )
+
+    def _refuse(self, key: str, message: str) -> NoReturn:
+        raise SettingsFileError(self._files.machine_source, key, 0, message)
 
     def _check_key(self, server_name: str) -> None:
         variable = self._files.machine.servers[server_name].api_key_env

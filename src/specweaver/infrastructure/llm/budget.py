@@ -57,6 +57,14 @@ class Reservation:
 
     amounts: dict[str, float] = field(default_factory=dict)
 
+    @classmethod
+    def combined(cls, reservations: list[Reservation]) -> Reservation:
+        total: defaultdict[str, float] = defaultdict(float)
+        for reservation in reservations:
+            for key, amount in reservation.amounts.items():
+                total[key] += amount
+        return cls(dict(total))
+
 
 class BudgetExceededError(Exception):
     """The run must not send another request.

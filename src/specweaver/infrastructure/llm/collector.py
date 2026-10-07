@@ -83,14 +83,28 @@ class TelemetryCollector:
         self, messages: list[Message], config: GenerationConfig
     ) -> tuple[CallScope, Reservation]:
         scope = self.scope(config)
+        return scope, self._budget.before_call(scope, self._worst(messages, config, scope))
+
+    def _worst(self, messages: list[Message], config: GenerationConfig, scope: CallScope) -> Cost:
         prompt = math.ceil(self._prompt_tokens(messages, config) * _PROMPT_MARGIN)
         worst = TokenUsage(
             prompt_tokens=prompt,
             completion_tokens=config.max_output_tokens,
             total_tokens=prompt + config.max_output_tokens,
         )
-        cost = Cost(usd=estimate_cost(worst, scope.facts), tokens=worst.total_tokens)
-        return scope, self._budget.before_call(scope, cost)
+        return Cost(usd=estimate_cost(worst, scope.facts), tokens=worst.total_tokens)
+
+    def _record_failure(
+        self, scope: CallScope, reservation: Reservation, exc: BaseException
+    ) -> None:
+        """Count a failed call's usage if the adapter attached it, else its reserved worst case."""
+        usage = getattr(exc, "usage", None)
+        cost = (
+            Cost(usd=estimate_cost(usage, scope.facts), tokens=usage.total_tokens)
+            if isinstance(usage, TokenUsage)
+            else None
+        )
+        self._budget.record(scope, cost, reservation)
 
     def _prompt_tokens(self, messages: list[Message], config: GenerationConfig) -> int:
         text = "".join(message.content for message in messages)
@@ -112,8 +126,8 @@ class TelemetryCollector:
         start = time.monotonic()
         try:
             response = await self._adapter.generate(messages, config)
-        except BaseException:
-            self._budget.record(scope, None, reservation)
+        except BaseException as exc:
+            self._record_failure(scope, reservation, exc)
             raise
         self._capture(config, response, time.monotonic() - start, scope, reservation)
         return response
@@ -125,20 +139,28 @@ class TelemetryCollector:
         tool_executor: Any,
         on_tool_round: Any = None,
     ) -> LLMResponse:
-        """Proxy ``generate_with_tools()`` — captures cumulative usage."""
-        scope, reservation = self._reserve(messages, config)
+        """Proxy ``generate_with_tools()``; every round is checked before its request."""
+        scope, first = self._reserve(messages, config)
+        held = [first]
+
+        def before_round(round_num: int, round_messages: list[Message]) -> None:
+            if round_num > 0:
+                held.append(
+                    self._budget.before_call(scope, self._worst(round_messages, config, scope))
+                )
+            if on_tool_round:
+                on_tool_round(round_num, round_messages)
+
         start = time.monotonic()
         try:
             response = await self._adapter.generate_with_tools(
-                messages,
-                config,
-                tool_executor,
-                on_tool_round,
+                messages, config, tool_executor, before_round
             )
-        except BaseException:
-            self._budget.record(scope, None, reservation)
+        except BaseException as exc:
+            self._record_failure(scope, Reservation.combined(held), exc)
             raise
-        self._capture(config, response, time.monotonic() - start, scope, reservation)
+        elapsed = time.monotonic() - start
+        self._capture(config, response, elapsed, scope, Reservation.combined(held))
         return response
 
     async def generate_stream(
@@ -154,8 +176,8 @@ class TelemetryCollector:
             async for chunk in self._adapter.generate_stream(messages, config):
                 total_text.append(chunk)
                 yield chunk
-        except BaseException:
-            self._budget.record(scope, None, reservation)
+        except BaseException as exc:
+            self._record_failure(scope, reservation, exc)
             raise
         prompt = self._prompt_tokens(messages, config)
         output = _estimate_tokens("".join(total_text))

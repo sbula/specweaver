@@ -174,7 +174,9 @@ None.
 - **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf01_implementation_plan.md
 
 ### SF-02: Pause, park and resume
-- **Scope**: a limit becomes a question, or a park the run survives, and REST names it.
+- **Scope**: a limit becomes a question, or a park the run survives, and REST names it. Also
+  carried over from SF-01 `[agreed 2026-10-07]`: the US-04 S5 e2e, and the round check's prompt
+  growth (adapters report each round's real prompt size).
 - **FRs**: [FR-3, FR-6, FR-7, FR-8, FR-10]
 - **Inputs**: `SpendLimitReachedError` from SF-01; the `ContextProvider`; the persisted run
 - **Outputs**: paused, parked and resumed runs with their totals; REST 402 `SPEND_LIMIT`
@@ -190,7 +192,7 @@ None.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Accounting and limits | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Accounting and limits | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Pause, park and resume | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -198,6 +200,6 @@ None.
 **Current status**: Redesign APPROVED 2026-10-06. Red/Blue
 2026-10-06, two cycles: worst case in tokens for private servers (FR-2), one question at a time
 (FR-6), the higher limit wins on resume (FR-8), the agentic turn count named a non-goal.
-**Next step**: Trigger the dev skill for SF-01 (plan approved 2026-10-06).
+**Next step**: Trigger the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.

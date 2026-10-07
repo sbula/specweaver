@@ -16,6 +16,7 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
     ToolRoundsExceededError,
+    attach_usage,
 )
 from specweaver.infrastructure.llm.models import tool_rounds
 
@@ -245,33 +246,37 @@ class OpenAIAdapter(LLMAdapter):
 
         cumulative_usage = TokenUsage()
 
-        for _total_calls, round_num in enumerate(tool_rounds(config)):
-            if on_tool_round:
-                self._apply_on_tool_round(messages, oai_messages, round_num, on_tool_round)
+        try:
+            for _total_calls, round_num in enumerate(tool_rounds(config)):
+                if on_tool_round:
+                    self._apply_on_tool_round(messages, oai_messages, round_num, on_tool_round)
 
-            try:
-                response = await client.chat.completions.create(**kwargs)
-            except Exception as e:
-                self._handle_error(e)
+                try:
+                    response = await client.chat.completions.create(**kwargs)
+                except Exception as e:
+                    self._handle_error(e)
 
-            _accumulate_usage(cumulative_usage, response.usage)
+                _accumulate_usage(cumulative_usage, response.usage)
 
-            choice = response.choices[0]
-            msg = choice.message
+                choice = response.choices[0]
+                msg = choice.message
 
-            if not msg.tool_calls:
-                return LLMResponse(
-                    text=msg.content or "",
-                    model=config.model,
-                    usage=cumulative_usage,
-                    finish_reason=choice.finish_reason or "stop",
-                )
+                if not msg.tool_calls:
+                    return LLMResponse(
+                        text=msg.content or "",
+                        model=config.model,
+                        usage=cumulative_usage,
+                        finish_reason=choice.finish_reason or "stop",
+                    )
 
-            oai_messages.append(_assistant_message(msg))
+                oai_messages.append(_assistant_message(msg))
 
-            await self._execute_tool_calls(msg.tool_calls, tool_executor, oai_messages)
+                await self._execute_tool_calls(msg.tool_calls, tool_executor, oai_messages)
 
-        raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+            raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+        except BaseException as exc:
+            attach_usage(exc, cumulative_usage)
+            raise
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4

@@ -126,3 +126,23 @@ the unpriced and the uncappable refusals skipped.
 
 Cycle 2 re-checked the bindings and the commit boundaries; nothing above LOW.
 
+## As built (2026-10-07)
+
+Committed in two boundaries: `b4be6cf2` (limits and the per-call check) and the CB-2 commit (tool
+rounds, failed loops, task stamping, refusals).
+
+- The collector counts the prompt itself (characters ÷ 4) rather than asking the adapter; every
+  adapter did the same, and a doubled adapter answered nonsense (Q-4).
+- `SpendLimitReachedError` (the plan's `SpendLimitReached`; ruff requires the suffix).
+- An unknown price cannot pass a money limit even before the start-of-command refusal: the check
+  refuses it (NFR-1).
+- Adapters attach the loop's usage with `attach_usage(exc, usage)` (`errors.py`), not an attribute
+  set with a type-ignore.
+- Moved to SF-02 `[agreed 2026-10-07]`:
+  - the e2e for US-04 S5 (a tool round that would cross a limit) — today a unit test;
+  - **a known limit of FR-2**: the check before rounds 2, 3, … sees only the original prompt, not
+    the tool results added since, so it underestimates how the prompt grows. Fixing it needs the
+    adapters to report each round's real prompt size.
+- Mutants: [B-FLOW-05_mutants.json](B-FLOW-05_mutants.json), FR-1, FR-2, FR-4, FR-5, FR-9, all
+  protected.
+

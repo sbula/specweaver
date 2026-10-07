@@ -34,6 +34,8 @@ async def test_provider_e2e_flow(
     machine = (
         f'[servers.{provider}]\nkind = "{provider}"\nprivate = false\nmax_parallel = 1\n\n'
         f'[roles]\ndefault = {{ model = "fake-model@{provider}", max_output_tokens = 100 }}\n'
+        '\n[models."fake-model"]\n'
+        "usd_per_million_input = 1.0\nusd_per_million_output = 1.0\nthinking_in_output_cap = true\n"
     )
     files = LlmSettingsFiles.from_texts(
         machine_text=machine, machine_source="-", project_text="", project_source="-"

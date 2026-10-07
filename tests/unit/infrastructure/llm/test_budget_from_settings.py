@@ -52,7 +52,10 @@ def _limits(machine_text: str) -> dict[str, float]:
     return {limit.key: limit.value for limit in routed.adapter.scope(routed.config).limits}
 
 
-_HOSTED = _MACHINE.replace("private = true", "private = false")
+_HOSTED = _MACHINE.replace("private = true", "private = false") + (
+    '\n[models."m"]\nusd_per_million_input = 1.0\nusd_per_million_output = 1.0\n'
+    "thinking_in_output_cap = true\n"
+)
 
 
 def test_the_spend_ceiling_comes_from_the_brake_table() -> None:

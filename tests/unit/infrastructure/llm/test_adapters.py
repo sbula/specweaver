@@ -640,8 +640,9 @@ class TestGenerateWithToolsEdgeCases:
         from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
         # The last half-finished response is not an answer: the run stops, naming the limit.
-        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns") as caught:
             await adapter.generate_with_tools(messages, config, mock_executor)
+        assert caught.value.usage.total_tokens >= 0  # the rounds' usage goes to the brake
         # Executor should have been called in each round
         assert mock_executor.execute.call_count == 2
 

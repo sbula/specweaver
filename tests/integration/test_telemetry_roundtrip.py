@@ -32,6 +32,11 @@ max_parallel = 1
 [roles]
 default = { model = "some-model@gemini", max_output_tokens = 8192 }
 
+[models."some-model"]
+usd_per_million_input = 1.0
+usd_per_million_output = 1.0
+thinking_in_output_cap = true
+
 [brake]
 hosted_spend_per_run = 1000
 tokens_per_run = 100000000

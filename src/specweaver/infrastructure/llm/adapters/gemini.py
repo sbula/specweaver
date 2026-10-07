@@ -22,6 +22,7 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
     ToolRoundsExceededError,
+    attach_usage,
 )
 from specweaver.infrastructure.llm.models import (
     GenerationConfig,
@@ -299,48 +300,52 @@ class GeminiAdapter(LLMAdapter):
         cumulative_usage = TokenUsage()
         total_calls = 0
 
-        for round_num in tool_rounds(config):
-            logger.debug(
-                "GeminiAdapter.generate_with_tools: round %d/%d",
-                round_num + 1,
-                config.max_tool_rounds,
-            )
-
-            if on_tool_round:
-                self._apply_on_tool_round(
-                    on_tool_round,
-                    round_num,
-                    messages,
-                    contents,
+        try:
+            for round_num in tool_rounds(config):
+                logger.debug(
+                    "GeminiAdapter.generate_with_tools: round %d/%d",
+                    round_num + 1,
+                    config.max_tool_rounds,
                 )
 
-            try:
-                response = await client.aio.models.generate_content(
-                    model=config.model,
-                    contents=contents,  # type: ignore[arg-type]
-                    config=gen_config,
+                if on_tool_round:
+                    self._apply_on_tool_round(
+                        on_tool_round,
+                        round_num,
+                        messages,
+                        contents,
+                    )
+
+                try:
+                    response = await client.aio.models.generate_content(
+                        model=config.model,
+                        contents=contents,  # type: ignore[arg-type]
+                        config=gen_config,
+                    )
+                except Exception as exc:
+                    logger.error("GeminiAdapter.generate_with_tools: API call failed — %s", exc)
+                    return self._handle_error(exc)
+
+                cumulative_usage = cumulative_usage + self._extract_usage(response)
+                total_calls += 1
+
+                tool_calls = self._extract_tool_calls(response)
+                if not tool_calls:
+                    # The model produced its final text response.
+                    return self._final_response(response, config.model, cumulative_usage)
+
+                logger.debug(
+                    "GeminiAdapter: %d tool call(s) in round %d: %s",
+                    len(tool_calls),
+                    round_num + 1,
+                    [tc.name for tc in tool_calls],
                 )
-            except Exception as exc:
-                logger.error("GeminiAdapter.generate_with_tools: API call failed — %s", exc)
-                return self._handle_error(exc)
+                await self._run_tool_round(tool_calls, tool_executor, response, contents)
 
-            cumulative_usage = cumulative_usage + self._extract_usage(response)
-            total_calls += 1
-
-            tool_calls = self._extract_tool_calls(response)
-            if not tool_calls:
-                # The model produced its final text response.
-                return self._final_response(response, config.model, cumulative_usage)
-
-            logger.debug(
-                "GeminiAdapter: %d tool call(s) in round %d: %s",
-                len(tool_calls),
-                round_num + 1,
-                [tc.name for tc in tool_calls],
-            )
-            await self._run_tool_round(tool_calls, tool_executor, response, contents)
-
-        raise ToolRoundsExceededError.reached(total_calls)
+            raise ToolRoundsExceededError.reached(total_calls)
+        except BaseException as exc:
+            attach_usage(exc, cumulative_usage)
+            raise
 
     def _final_response(self, response: Any, model: str, usage: Any) -> LLMResponse:
         """The parsed response, carrying the tokens accumulated across every round."""

@@ -84,3 +84,8 @@ class LLMAdapterError(Exception):
     Not a subclass of `LLMError`: eleven files catch these separately and widening the hierarchy
     would silently change what their `except LLMError` blocks catch.
     """
+
+
+def attach_usage(exc: BaseException, usage: object) -> None:
+    """Keep the usage a failed tool loop already spent on its exception, for the spend brake."""
+    exc.__dict__["usage"] = usage

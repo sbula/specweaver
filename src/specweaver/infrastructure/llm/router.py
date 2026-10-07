@@ -38,7 +38,9 @@ class ModelRouter:
 
     def get_for_task(self, task_type: TaskType) -> RouterResult:
         adapter, config = self._resolver.for_role(task_type.value)
-        return RouterResult(adapter=adapter, config=config)
+        return RouterResult(
+            adapter=adapter, config=config.model_copy(update={"task_type": task_type})
+        )
 
     def collectors(self) -> list[TelemetryCollector]:
         """Every collector the run's calls went through, for flushing their usage records."""

@@ -114,8 +114,9 @@ class TestAnthropicAdapter:
 
         from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns") as caught:
             await adapter.generate_with_tools([], config, mock_exec)
+        assert caught.value.usage.total_tokens >= 0  # the rounds' usage goes to the brake
 
         assert mock_exec.execute.call_count == 2
 

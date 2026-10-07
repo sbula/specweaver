@@ -177,3 +177,58 @@ async def test_a_collector_without_limits_never_refuses() -> None:
 
 def _cost(usd: float) -> Cost:
     return Cost(usd=usd, tokens=0)
+
+
+class _LoopingAdapter(_StubAdapter):
+    """A tool loop of `rounds` requests, asking the round hook first each time like the adapters."""
+
+    def __init__(self, rounds: int, fail_in: int | None = None) -> None:
+        super().__init__()
+        self._rounds = rounds
+        self._fail_in = fail_in
+
+    async def generate_with_tools(
+        self, messages: Any, config: Any, tool_executor: Any = None, on_tool_round: Any = None
+    ) -> LLMResponse:
+        used = TokenUsage()
+        try:
+            for round_num in range(self._rounds):
+                if on_tool_round:
+                    on_tool_round(round_num, messages)
+                if round_num == self._fail_in:
+                    raise RuntimeError("provider down")
+                self.calls += 1
+                used = used + TokenUsage(prompt_tokens=100, completion_tokens=100, total_tokens=200)
+        except BaseException as exc:
+            exc.usage = used  # type: ignore[attr-defined]
+            raise
+        return LLMResponse(text="ok", model="stub-model", usage=used)
+
+
+async def test_every_tool_round_is_checked_before_its_request() -> None:
+    budget = SpendBudget()
+    budget.record(CallScope(limits=(_RUN,)), _cost(2.0))  # room for three worst cases of 2.25
+    adapter = _LoopingAdapter(rounds=5)
+
+    with pytest.raises(SpendLimitReachedError):
+        await _collector(adapter, budget).generate_with_tools(_PROMPT, _CONFIG, None)
+
+    assert adapter.calls == 3
+
+
+async def test_a_finished_tool_loop_counts_its_real_usage_not_its_reservations() -> None:
+    collector = _collector(_LoopingAdapter(rounds=3))
+
+    await collector.generate_with_tools(_PROMPT, _CONFIG, None)
+
+    assert collector.budget.spent(_RUN.key) == pytest.approx(0.6)  # 3 rounds of 200 tokens
+    collector.budget.before_call(CallScope(limits=(_RUN,)), _cost(9.4))  # nothing still held
+
+
+async def test_a_tool_loop_that_fails_partway_counts_the_rounds_it_ran() -> None:
+    collector = _collector(_LoopingAdapter(rounds=5, fail_in=2))
+
+    with pytest.raises(RuntimeError):
+        await collector.generate_with_tools(_PROMPT, _CONFIG, None)
+
+    assert collector.budget.spent(_RUN.key) == pytest.approx(0.4)  # rounds 0 and 1

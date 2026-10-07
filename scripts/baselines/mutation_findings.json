@@ -1031,6 +1031,60 @@
       "first_seen": 1790996740.1887307,
       "last_seen": 1791342395.0538297,
       "occurrences": 5
+    },
+    "B-FLOW-05 FR-1 failed-call-not-counted": {
+      "history": [
+        {
+          "at": 1791348144.8427355,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791348186.5863721,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791348144.8427355,
+      "last_seen": 1791348144.8427355,
+      "occurrences": 1
+    },
+    "B-FLOW-05 FR-1 failed-tool-call-not-counted": {
+      "history": [
+        {
+          "at": 1791348144.8427355,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791348186.5863721,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791348144.8427355,
+      "last_seen": 1791348144.8427355,
+      "occurrences": 1
+    },
+    "B-FLOW-05 FR-5 private-counts-money": {
+      "history": [
+        {
+          "at": 1791348144.8427355,
+          "state": "open",
+          "verdict": "UNMEASURED",
+          "reason": "symbol-drifted"
+        },
+        {
+          "at": 1791348186.5863721,
+          "state": "closed",
+          "reason": "fixed"
+        }
+      ],
+      "first_seen": 1791348144.8427355,
+      "last_seen": 1791348144.8427355,
+      "occurrences": 1
     }
   },
   "override_count": 0,

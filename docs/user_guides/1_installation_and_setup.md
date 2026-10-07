@@ -80,6 +80,9 @@ rate_date = 2026-09-26
 - A model (`[models."<id>"]`) and a role may carry `spend_per_run` or `tokens_per_run` too; the
   lowest limit that applies wins. Only the machine file may set limits. A tool loop that reaches
   `agent_turns` stops with an error naming it.
+- A cloud model needs a known price and `thinking_in_output_cap = true` (its output limit also
+  bounds its thinking). The model list has both for OpenAI, Anthropic and Gemini; for any other
+  cloud model, set them under `[models."<id>"]`, or the command stops at the start and names the key.
 - `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
   one run the same model; the files stay unchanged. The server must be in `settings.toml`, and
   `private_only` still applies.

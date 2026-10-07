@@ -150,11 +150,45 @@ class TestOpenAIAdapter:
 
         from specweaver.infrastructure.llm.errors import ToolRoundsExceededError
 
-        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
+        with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns") as caught:
             await adapter.generate_with_tools([], config, mock_exec)
+        assert caught.value.usage.total_tokens >= 0  # the rounds' usage goes to the brake
 
         # It should loop exactly 2 times and call execute twice
         assert mock_exec.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_a_tool_loop_that_fails_partway_keeps_the_usage_of_the_rounds_it_ran(
+        self,
+    ) -> None:
+        from specweaver.infrastructure.llm.models import ToolDefinition
+
+        adapter = OpenAIAdapter(api_key="key")
+        call = MagicMock()
+        call.id = "c1"
+        call.function.name = "my_tool"
+        call.function.arguments = "{}"
+        first = MagicMock()
+        first.choices = [MagicMock(finish_reason="tool_calls")]
+        first.choices[0].message.content = ""
+        first.choices[0].message.tool_calls = [call]
+        first.usage = MagicMock(prompt_tokens=40, completion_tokens=10, total_tokens=50)
+        adapter._client = MagicMock()
+        adapter._client.chat.completions.create = AsyncMock(
+            side_effect=[first, RuntimeError("provider down")]
+        )
+        config = GenerationConfig(
+            model="gpt-5.4",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_tool_rounds=5,
+        )
+        executor = AsyncMock()
+        executor.execute.return_value = {"ok": True}
+
+        with pytest.raises(Exception) as caught:
+            await adapter.generate_with_tools([], config, executor)
+
+        assert caught.value.usage.total_tokens == 50
 
     @pytest.mark.asyncio
     async def test_a_tool_loop_without_a_round_limit_is_refused_before_any_call(self) -> None:

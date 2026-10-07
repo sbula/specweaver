@@ -15,6 +15,7 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
     ToolRoundsExceededError,
+    attach_usage,
 )
 from specweaver.infrastructure.llm.models import tool_rounds
 
@@ -232,36 +233,42 @@ class AnthropicAdapter(LLMAdapter):
 
         cumulative_usage = TokenUsage()
 
-        for round_num in tool_rounds(config):
-            if on_tool_round:
-                self._apply_on_tool_round(messages, anthropic_messages, round_num, on_tool_round)
+        try:
+            for round_num in tool_rounds(config):
+                if on_tool_round:
+                    self._apply_on_tool_round(
+                        messages, anthropic_messages, round_num, on_tool_round
+                    )
 
-            try:
-                response = await client.messages.create(**kwargs)
-            except Exception as e:
-                self._handle_error(e)
+                try:
+                    response = await client.messages.create(**kwargs)
+                except Exception as e:
+                    self._handle_error(e)
 
-            _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
+                _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
 
-            # Anthropic signals tool use via stop_reason, not a tool_calls field.
-            if getattr(response, "stop_reason", None) != "tool_use":
-                return LLMResponse(
-                    text=self._extract_text(response.content),
-                    model=config.model,
-                    usage=cumulative_usage,
-                    finish_reason=_finish_reason(response),
+                # Anthropic signals tool use via stop_reason, not a tool_calls field.
+                if getattr(response, "stop_reason", None) != "tool_use":
+                    return LLMResponse(
+                        text=self._extract_text(response.content),
+                        model=config.model,
+                        usage=cumulative_usage,
+                        finish_reason=_finish_reason(response),
+                    )
+
+                # Isolate tool_use blocks and text blocks
+                tool_blocks = [b for b in response.content if getattr(b, "type", "") == "tool_use"]
+
+                # The API requires us to supply exactly the assistant content format that was returned
+                # Anthropic SDK message content blocks can just be appended as-is
+                await self._execute_anthropic_tools(
+                    tool_blocks, tool_executor, anthropic_messages, response.content
                 )
 
-            # Isolate tool_use blocks and text blocks
-            tool_blocks = [b for b in response.content if getattr(b, "type", "") == "tool_use"]
-
-            # The API requires us to supply exactly the assistant content format that was returned
-            # Anthropic SDK message content blocks can just be appended as-is
-            await self._execute_anthropic_tools(
-                tool_blocks, tool_executor, anthropic_messages, response.content
-            )
-
-        raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+            raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+        except BaseException as exc:
+            attach_usage(exc, cumulative_usage)
+            raise
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4

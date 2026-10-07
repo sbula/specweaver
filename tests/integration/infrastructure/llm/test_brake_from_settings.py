@@ -53,6 +53,7 @@ default = { model = "big-model@hosted", max_output_tokens = 1000 }
 [models."big-model"]
 usd_per_million_input = 1000.0
 usd_per_million_output = 1000.0
+thinking_in_output_cap = true
 """
 
 _BRAKE = """

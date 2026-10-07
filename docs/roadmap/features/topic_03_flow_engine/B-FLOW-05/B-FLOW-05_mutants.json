@@ -6,8 +6,12 @@
       "requirement": "FR-1",
       "title": "Every call is counted, failed and streamed ones too",
       "scope": [
-        "tests/unit/infrastructure/llm/test_spend_budget.py",
-        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
+        "tests/unit/infrastructure/llm/test_adapters.py",
+        "tests/unit/infrastructure/llm/test_anthropic.py",
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_mistral.py",
+        "tests/unit/infrastructure/llm/test_openai.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py"
       ],
       "mutants": [
         {
@@ -25,10 +29,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
           "symbol": "TelemetryCollector.generate",
-          "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException:\n            self._budget.record(scope, None, reservation)\n",
-          "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException:\n            pass\n",
+          "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            self._record_failure(scope, reservation, exc)\n",
+          "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            pass\n",
           "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
-          "symbol_sha": "sha256:8276931a47a17bc801a882a99d8ba535df07607d27b8402b3ec7cb849a60ffe4"
+          "symbol_sha": "sha256:bbdb5ddf011afbdb19cd158ab895338f318c58369fae8375f56d1748a0451d0d"
         },
         {
           "id": "stream-input-dropped",
@@ -45,10 +49,60 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
           "symbol": "TelemetryCollector.generate_with_tools",
-          "old": "                on_tool_round,\n            )\n        except BaseException:\n            self._budget.record(scope, None, reservation)\n",
-          "new": "                on_tool_round,\n            )\n        except BaseException:\n            pass\n",
+          "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
+          "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:e67ca85931256482531a1f1ba9a1771fb406137b1cb3cc436cea8ea776a23850"
+          "symbol_sha": "sha256:d4ca535d54940b13bf6c3551715a6a54e009f2608e5508af17f934ceef89c966"
+        },
+        {
+          "id": "openai-loses-usage-on-error",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "            attach_usage(exc, cumulative_usage)\n",
+          "new": "            pass\n",
+          "breaks": "a tool loop that raises drops the usage of the rounds it ran",
+          "symbol_sha": "sha256:2643d19a6861fc28d032387f54303886e88a7590adbc44b128179aae55018888"
+        },
+        {
+          "id": "anthropic-loses-usage-on-error",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "            attach_usage(exc, cumulative_usage)\n",
+          "new": "            pass\n",
+          "breaks": "a tool loop that raises drops the usage of the rounds it ran",
+          "symbol_sha": "sha256:a412b5d60d84ee314e30e45e9a8ecaeb83991ead243aa0bf79b32aa7f7b410dd"
+        },
+        {
+          "id": "mistral-loses-usage-on-error",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "            attach_usage(exc, cumulative_usage)\n",
+          "new": "            pass\n",
+          "breaks": "a tool loop that raises drops the usage of the rounds it ran",
+          "symbol_sha": "sha256:c49b447738e18456f26d2c8c9752dd103a6b295eabd165fec8610dca02490277"
+        },
+        {
+          "id": "gemini-loses-usage-on-error",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "            attach_usage(exc, cumulative_usage)\n",
+          "new": "            pass\n",
+          "breaks": "a tool loop that raises drops the usage of the rounds it ran",
+          "symbol_sha": "sha256:663ef7a0a4e5ffe6fdf39ea7b22358d5a597b8d42e9c1955e7712ed579459c6e"
+        },
+        {
+          "id": "failure-usage-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._record_failure",
+          "old": "        usage = getattr(exc, \"usage\", None)\n",
+          "new": "        usage = None\n",
+          "breaks": "a failed loop counts its worst case even when its real usage is known",
+          "symbol_sha": "sha256:cc9de3a207e34b1e4621404c4483f8dcad6c1708f50ac225f8242055088d1259"
         }
       ]
     },
@@ -111,6 +165,16 @@
           "new": "            if amount is None and False:\n",
           "breaks": "a call with no price passes a money limit unchecked",
           "symbol_sha": "sha256:b32423d58928f9ab3ae6802cc359bdce672ff58ceba63887659b9b09ae15bf6d"
+        },
+        {
+          "id": "round-not-checked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "            if round_num > 0:\n",
+          "new": "            if False:\n",
+          "breaks": "only the first round of a tool loop is checked",
+          "symbol_sha": "sha256:d4ca535d54940b13bf6c3551715a6a54e009f2608e5508af17f934ceef89c966"
         }
       ]
     },
@@ -139,9 +203,11 @@
       "title": "The right limits for the call: tokens on private servers, money elsewhere, the role's too",
       "scope": [
         "tests/integration/infrastructure/llm/test_brake_from_settings.py",
+        "tests/integration/interfaces/api/test_api_role_limits.py",
         "tests/unit/infrastructure/llm/test_budget_from_settings.py",
         "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
-        "tests/unit/infrastructure/llm/test_spend_budget.py"
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/unit/infrastructure/llm/test_unbounded_models.py"
       ],
       "mutants": [
         {
@@ -149,8 +215,8 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._scope",
-          "old": "        if server.private:\n",
-          "new": "        if False:\n",
+          "old": "        if server.private:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
+          "new": "        if False:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "breaks": "a GB10 run is limited by money it never spends, so nothing stops it",
           "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
         },
@@ -173,6 +239,16 @@
           "new": "            Limit(key, unit, value if unit == \"tokens\" or key.startswith(\"models.\") else to_usd(value, currency))\n",
           "breaks": "a model's limit set in CHF is applied as USD",
           "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+        },
+        {
+          "id": "task-not-stamped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "ModelRouter.get_for_task",
+          "old": "            adapter=adapter, config=config.model_copy(update={\"task_type\": task_type})\n",
+          "new": "            adapter=adapter, config=config\n",
+          "breaks": "a REST or direct call never carries its role, so the role's limit never applies",
+          "symbol_sha": "sha256:11df0e2d49378f8acc0430872f11dc26f0698c791a8531c77ac7e5c280f8f5a6"
         }
       ]
     },
@@ -192,6 +268,46 @@
           "new": "        except KeyboardInterrupt:",
           "breaks": "the breaker is no longer re-raised, so it falls through to the broad handler and is relabelled as a review verdict of ERROR",
           "symbol_sha": "sha256:07766e56c14118f0399efcabb0cd4724eb59735386c56eeaf12c4006c9a1199e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "What cannot be bounded is refused before the first call",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_unbounded_models.py",
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "unpriced-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._check_bounded",
+          "old": "        if facts is None or None in (facts.usd_per_million_input, facts.usd_per_million_output):\n",
+          "new": "        if False:\n",
+          "breaks": "a hosted model with no price runs, and its money is never counted",
+          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
+        },
+        {
+          "id": "uncapped-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._check_bounded",
+          "old": "        if facts is not None and facts.thinking_in_output_cap is not True:\n",
+          "new": "        if False:\n",
+          "breaks": "a model whose thinking is not bounded by its output cap runs, so a call's cost has no ceiling",
+          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
+        },
+        {
+          "id": "wrong-unit-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._check_bounded",
+          "old": "        if getattr(setting, wrong) is not None:\n",
+          "new": "        if False:\n",
+          "breaks": "a role limit in the wrong unit for its server is silently ignored",
+          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
         }
       ]
     }

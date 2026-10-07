@@ -19,7 +19,9 @@ Paths: `src/specweaver/infrastructure/llm/`; discovery lives in `adapters/regist
       `sandbox/dispatcher.py`. Loop over `tool_rounds(config)` (`infrastructure/llm/models.py`),
       which refuses a config with no round limit; if the model is still calling tools when the
       rounds run out, raise `ToolRoundsExceededError.reached(...)`. Never return a placeholder text
-      or the last half-finished response as the answer.
+      or the last half-finished response as the answer. Call `on_tool_round` before every request
+      (the spend brake checks each round there), and attach the usage so far to any exception
+      leaving the loop (`exc.usage = cumulative_usage`), so a failed loop is counted exactly.
    3. `provider_name`: a unique static string identifying the class; it is also the server `kind`
       a settings file names.
    4. `default_base_url`: the provider's official address, written out, so no SDK environment

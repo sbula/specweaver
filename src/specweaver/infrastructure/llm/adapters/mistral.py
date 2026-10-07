@@ -13,6 +13,7 @@ from specweaver.infrastructure.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
     ToolRoundsExceededError,
+    attach_usage,
 )
 from specweaver.infrastructure.llm.models import tool_rounds
 
@@ -220,33 +221,37 @@ class MistralAdapter(LLMAdapter):
 
         cumulative_usage = TokenUsage()
 
-        for round_num in tool_rounds(config):
-            if on_tool_round:
-                self._apply_on_tool_round(messages, mistral_messages, round_num, on_tool_round)
+        try:
+            for round_num in tool_rounds(config):
+                if on_tool_round:
+                    self._apply_on_tool_round(messages, mistral_messages, round_num, on_tool_round)
 
-            try:
-                response = await client.chat.complete_async(**kwargs)
-            except Exception as e:
-                self._handle_error(e)
+                try:
+                    response = await client.chat.complete_async(**kwargs)
+                except Exception as e:
+                    self._handle_error(e)
 
-            _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
+                _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
 
-            choice = response.choices[0]
-            msg = choice.message
+                choice = response.choices[0]
+                msg = choice.message
 
-            if not getattr(msg, "tool_calls", None):
-                return LLMResponse(
-                    text=msg.content or "",
-                    model=config.model,
-                    usage=cumulative_usage,
-                    finish_reason=getattr(choice, "finish_reason", "stop") or "stop",
-                )
+                if not getattr(msg, "tool_calls", None):
+                    return LLMResponse(
+                        text=msg.content or "",
+                        model=config.model,
+                        usage=cumulative_usage,
+                        finish_reason=getattr(choice, "finish_reason", "stop") or "stop",
+                    )
 
-            mistral_messages.append(_assistant_message(msg))
+                mistral_messages.append(_assistant_message(msg))
 
-            await self._execute_mistral_tools(msg.tool_calls, tool_executor, mistral_messages)
+                await self._execute_mistral_tools(msg.tool_calls, tool_executor, mistral_messages)
 
-        raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+            raise ToolRoundsExceededError.reached(config.max_tool_rounds)
+        except BaseException as exc:
+            attach_usage(exc, cumulative_usage)
+            raise
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4

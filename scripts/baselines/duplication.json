@@ -124,45 +124,45 @@
     "first": "src/specweaver/core/flow/store.py:5",
     "second": "src/specweaver/infrastructure/llm/store.py:8"
   },
-  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @4f79652fb82a": {
-    "lines": 30,
+  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @61c63b7e7a6a": {
+    "lines": 31,
     "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:11",
     "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:9"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:197",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:153"
-  },
-  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @9cd7c3865ac4": {
-    "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:262",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:272"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:198",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:154"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @b19139f1e54a": {
     "lines": 16,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:206",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:221"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:207",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
   },
-  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @094707711099": {
-    "lines": 27,
+  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
+    "lines": 12,
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:266",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:274"
+  },
+  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @6534bb822991": {
+    "lines": 28,
     "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:11",
     "second": "src/specweaver/infrastructure/llm/adapters/openai.py:14"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @67dfd312109f": {
     "lines": 16,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:201",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:221"
-  },
-  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @9cd7c3865ac4": {
-    "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:247",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:272"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:202",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @aabfcc2d4963": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:165",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:121"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:166",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:122"
+  },
+  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
+    "lines": 12,
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:249",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:274"
   },
   "src/specweaver/infrastructure/llm/prompt/adders.py <-> src/specweaver/infrastructure/llm/prompt/adders.py @1cf4d76d07d0": {
     "lines": 12,
