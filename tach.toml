@@ -63,7 +63,7 @@ depends_on = [ "specweaver.interfaces.cli", "specweaver.infrastructure.llm", "sp
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workflows.implementation",]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"

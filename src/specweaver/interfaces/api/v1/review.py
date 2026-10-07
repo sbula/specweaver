@@ -33,34 +33,23 @@ async def review_spec(
     """
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.infrastructure.llm.models import TaskType
-    from specweaver.interfaces.api.v1._llm import api_router
-    from specweaver.workflows.review.reviewer import Reviewer
-    from specweaver.workspace.project.constitution import find_constitution
+    from specweaver.interfaces.api.v1._llm import run_steps
+    from specweaver.workflows.review.reviewer import result_from_run
 
-    router = api_router(project_root, body.project, [TaskType.REVIEW])
-    routed = router.get_for_task(TaskType.REVIEW)
-
-    from specweaver.assurance.standards.loader import load_standards_content_async
-
-    reviewer = Reviewer(llm=routed.adapter, config=routed.config)
-
-    _info = find_constitution(project_root, spec_path=abs_path)
-    constitution = _info.content if _info else None
-    standards = await load_standards_content_async(
-        db,
-        project_name=body.project,
-        project_path=project_root,
+    pipeline = PipelineDefinition.create_single_step(
+        name="review_spec",
+        action=StepAction.REVIEW,
+        target=StepTarget.SPEC,
+        description=f"Review {abs_path.name}",
     )
-
-    try:
-        result = await reviewer.review_spec(  # type: ignore[call-arg]
-            abs_path,
-            constitution=constitution,
-            standards=standards,
-        )
-    finally:
-        for collector in router.collectors():
-            await collector.flush_async(db)
-
-    return result.model_dump()
+    run = await run_steps(
+        pipeline,
+        project_root=project_root,
+        spec_path=abs_path,
+        project=body.project,
+        db=db,
+        roles=[TaskType.REVIEW],
+    )
+    return result_from_run(run).model_dump()

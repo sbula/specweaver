@@ -33,61 +33,45 @@ async def implement_spec(
     """
     project_root, spec_path = await resolve_file_in_project(body.file, body.project, db)
 
-    from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
-    from specweaver.infrastructure.llm.models import TaskType
-    from specweaver.interfaces.api.v1._llm import api_router
-    from specweaver.workflows.implementation.generator import Generator
-    from specweaver.workspace.project.constitution import find_constitution
-
-    router = api_router(project_root, body.project, [TaskType.IMPLEMENT])
-    routed = router.get_for_task(TaskType.IMPLEMENT)
-    generator = Generator(llm=routed.adapter, config=routed.config)
-
-    # Load topology context
-    topo_graph = load_topology(project_root)
-    module_name = spec_path.stem.removesuffix("_spec")
-    topo_contexts = select_topology_contexts(
-        topo_graph,
-        module_name,
-        selector_name=body.selector,
+    from specweaver.core.flow.engine.models import (
+        PipelineDefinition,
+        PipelineStep,
+        StepAction,
+        StepTarget,
     )
+    from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.infrastructure.llm.models import TaskType
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
+    from specweaver.interfaces.api.v1._llm import run_steps
 
-    # Derive output paths
     stem = spec_path.stem.removesuffix("_spec")
+    pipeline = PipelineDefinition(
+        name="implement_spec",
+        description=f"Generate code and tests for {stem}",
+        steps=[
+            PipelineStep(name="generate_code", action=StepAction.GENERATE, target=StepTarget.CODE),
+            PipelineStep(
+                name="generate_tests", action=StepAction.GENERATE, target=StepTarget.TESTS
+            ),
+        ],
+    )
+    run = await run_steps(
+        pipeline,
+        project_root=project_root,
+        spec_path=spec_path,
+        project=body.project,
+        db=db,
+        roles=[TaskType.IMPLEMENT],
+    )
+    if run.status is not RunStatus.COMPLETED:
+        failed = next((r for r in run.step_records if r.result and r.result.error_message), None)
+        raise SpecWeaverAPIError(
+            detail=failed.result.error_message if failed and failed.result else "generation failed",
+            error_code="GENERATION_FAILED",
+            status_code=500,
+        )
     code_path = project_root / "src" / f"{stem}.py"
     test_path = project_root / "tests" / f"test_{stem}.py"
-
-    from specweaver.assurance.standards.loader import load_standards_content_async
-
-    _info = find_constitution(project_root, spec_path=spec_path)
-    constitution = _info.content if _info else None
-    standards = await load_standards_content_async(
-        db,
-        project_name=body.project,
-        project_path=project_root,
-    )
-
-    try:
-        # Generate code
-        await generator.generate_code(  # type: ignore[call-arg]
-            spec_path,
-            code_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution,
-            standards=standards,
-        )
-
-        # Generate tests
-        await generator.generate_tests(  # type: ignore[call-arg]
-            spec_path,
-            test_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution,
-            standards=standards,
-        )
-    finally:
-        for collector in router.collectors():
-            await collector.flush_async(db)
 
     return ImplementResponse(
         code_path=str(code_path),

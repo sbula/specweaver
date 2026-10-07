@@ -12,7 +12,7 @@ from __future__ import annotations
 import enum
 import logging
 import re as _re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -264,3 +264,31 @@ class Reviewer:
         """Extract confidence score from [confidence: N] tag in text."""
         match = _re.search(r"\[confidence:\s*(\d+)\]", text)
         return int(match.group(1)) if match else 0
+
+
+def result_from_run(run_state: Any) -> ReviewResult:
+    """The `ReviewResult` a finished review run produced, or an ERROR result if it produced none.
+
+    A pipeline that failed before its handler ran leaves no result to read, and that is not the
+    same as a review that returned ERROR — hence the distinct summary.
+    """
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+    if not (last_record and last_record.result):
+        return ReviewResult(
+            verdict=ReviewVerdict.ERROR,
+            summary="Review failed: pipeline did not produce a valid result.",
+        )
+
+    out = last_record.result.output
+    try:
+        verdict = ReviewVerdict(out.get("verdict", "error"))
+    except ValueError:
+        verdict = ReviewVerdict.ERROR
+
+    return ReviewResult(
+        verdict=verdict,
+        summary=out.get("summary", last_record.result.error_message),
+        findings=[
+            ReviewFinding(**f) if isinstance(f, dict) else f for f in out.get("findings", [])
+        ],
+    )
