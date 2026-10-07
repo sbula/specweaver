@@ -21,16 +21,13 @@ Read the design before touching it. It says so in its own first section.
 
 | Capability | What is wrong |
 |---|---|
-| `B-FLOW-05` | Its ceilings now come from `[brake]` in `settings.toml` (C-FLOW-13 SF-05), but its design still describes the old defaults, and the rules handed to it on 2026-10-03 (per-model and per-role limits, unpriced models, pause-and-ask, loop detection) are unbuilt |
+| `B-FLOW-05` | Redesigned and rebuilt 2026-10-07 (Spend Brake: pause and ask, park, resume with totals, model and role limits, REST 402); awaiting the user's approval, so still `🔧`. Loop detection moved to `B-FLOW-06` |
 
-`C-FLOW-13` settled where the limits live `[agreed 2026-09-26]`: machine `settings.toml` + project
-`[llm]`; `B-FLOW-05` is redesigned now that it is built.
-All five sub-features are committed (2026-10-05). Every LLM call takes its model from the
+`C-FLOW-13` (all five sub-features committed 2026-10-05): every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
-that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`.
-`--model` sets one run's model. Model and role limits are stored and shown, not yet applied: that,
-with the rules handed over on 2026-10-03, is `B-FLOW-05`'s redesign (see its design note).
-C-FLOW-13's own status flip awaits the user's sign-off.
+that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
+`--model` sets one run's model. `B-FLOW-05` applies every limit, including model and role limits.
+Both status flips (`C-FLOW-13` 🔜 → ✅, `B-FLOW-05` 🔧 → ✅) await the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot

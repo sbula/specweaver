@@ -455,6 +455,76 @@
           "symbol_sha": "sha256:fbff0a828dd3b40125a0a264e72c1ed5c1aebc36adf505f0e8c71a3d534351bf"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A resumed run continues from its saved totals",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/unit/core/flow/engine/test_run_spend_state.py",
+        "tests/integration/core/flow/engine/test_spend_brake_parks_run.py"
+      ],
+      "mutants": [
+        {
+          "id": "totals-not-saved",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner._persist",
+          "old": "                run.spend_state = budget.snapshot()\n",
+          "new": "                pass\n",
+          "breaks": "a parked run keeps nothing, and its resume spends from zero",
+          "symbol_sha": "sha256:8ce29f60e978ef29d62ad264d2d0142279fa14670ceb2e764f5b797b035d84b8"
+        },
+        {
+          "id": "totals-not-restored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner.resume",
+          "old": "            budget.restore(run.spend_state)\n",
+          "new": "            pass\n",
+          "breaks": "a resumed run buys a fresh budget",
+          "symbol_sha": "sha256:b67062a620d1688f22c85e424a66aef7c42cad12a8f94bbf8782b57248abcc4c"
+        },
+        {
+          "id": "store-drops-totals",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.save_run",
+          "old": "                    json.dumps(run.spend_state),\n",
+          "new": "                    \"{}\",\n",
+          "breaks": "the state store forgets the totals it was given",
+          "symbol_sha": "sha256:4ec4f21c90bc3eda7e35583b51ad8980486bb665ca25e5fc9db00316c21858b7"
+        },
+        {
+          "id": "raised-limit-forgotten",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.limit_of",
+          "old": "        return max(limit.value + self._raised[limit.key], self._floor.get(limit.key, 0.0))\n",
+          "new": "        return limit.value + self._raised[limit.key]\n",
+          "breaks": "a yes given before the park is undone by the resume",
+          "symbol_sha": "sha256:c427b14c37300ecc3eb3616875b9f3ac86c34d74fefff8c01fbc0edbc06e9b72"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "REST answers 402 SPEND_LIMIT",
+      "scope": [
+        "tests/e2e/capabilities/interfaces/test_api_spend_limit_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "rest-402-missing",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/_llm.py",
+          "symbol": "run_steps",
+          "old": "    if isinstance(stopped, SpendLimitReachedError):\n",
+          "new": "    if False:\n",
+          "breaks": "a spent budget looks to an API client like an ordinary result",
+          "symbol_sha": "sha256:0a4793273b7b09a0549b7350982290ea33b4b007f1b933f31001789a8a50f60c"
+        }
+      ]
     }
   ]
 }

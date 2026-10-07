@@ -104,6 +104,8 @@ class SpendBudget:
         self._spent: defaultdict[str, float] = defaultdict(float)
         self._reserved: defaultdict[str, float] = defaultdict(float)
         self._raised: defaultdict[str, float] = defaultdict(float)
+        self._floor: dict[str, float] = {}
+        self._values: dict[str, float] = {}
         self._warned: set[str] = set()
         #: The stop that ended the run's spending, if any.
         self.stopped: SpendLimitReachedError | None = None
@@ -112,8 +114,24 @@ class SpendBudget:
         return self._spent[key]
 
     def limit_of(self, limit: Limit) -> float:
-        """The limit as it stands now, raised by every "yes" at a pause."""
-        return limit.value + self._raised[limit.key]
+        """The limit as it stands now: raised by every "yes", and never below a resumed run's."""
+        self._values[limit.key] = limit.value
+        return max(limit.value + self._raised[limit.key], self._floor.get(limit.key, 0.0))
+
+    def snapshot(self) -> dict[str, dict[str, float]]:
+        """What a parked run keeps: its spending, and each limit as it stood."""
+        return {
+            "spent": dict(self._spent),
+            "limits": {
+                key: max(value + self._raised[key], self._floor.get(key, 0.0))
+                for key, value in self._values.items()
+            },
+        }
+
+    def restore(self, state: dict[str, dict[str, float]]) -> None:
+        """Continue a resumed run from its snapshot."""
+        self._spent.update(state.get("spent", {}))
+        self._floor.update(state.get("limits", {}))
 
     def before_call(self, scope: CallScope, worst: Cost) -> Reservation:
         """Reserve the call's worst case, or refuse if it could cross a limit."""

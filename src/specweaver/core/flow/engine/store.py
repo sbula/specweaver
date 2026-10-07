@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS flow_pipeline_runs (
     current_step  INTEGER NOT NULL DEFAULT 0,
     step_records  TEXT NOT NULL DEFAULT '[]',
     started_at    TEXT NOT NULL,
-    updated_at    TEXT NOT NULL
+    updated_at    TEXT NOT NULL,
+    spend_state   TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS flow_audit_log (
@@ -87,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_flow_validation_results_run
 #: Bumped to 3 by CB-2. The new table needs no data migration -- every statement above is
 #: `IF NOT EXISTS` and the script runs on every construction -- so the version records what the
 #: schema contains rather than gating a migration step.
-_CURRENT_SCHEMA_VERSION = 3
+_CURRENT_SCHEMA_VERSION = 4
 
 # Legacy installations used these unprefixed names. Order matters — rename
 # `flow_pipeline_runs`' predecessor before `flow_audit_log`'s (which references it), and
@@ -184,6 +185,10 @@ class StateStore:
                 conn.execute(
                     "ALTER TABLE flow_pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES flow_pipeline_runs(run_id);"
                 )
+            if version < 4:
+                conn.execute(
+                    "ALTER TABLE flow_pipeline_runs ADD COLUMN spend_state TEXT NOT NULL DEFAULT '{}';"
+                )
             if version < _CURRENT_SCHEMA_VERSION:
                 self._record_version(conn)
                 logger.debug(
@@ -225,8 +230,8 @@ class StateStore:
             conn.execute(
                 "INSERT OR REPLACE INTO flow_pipeline_runs "
                 "(run_id, parent_run_id, pipeline_name, project_name, spec_path, "
-                "status, current_step, step_records, started_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "status, current_step, step_records, started_at, updated_at, spend_state) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     run.run_id,
                     run.parent_run_id,
@@ -238,6 +243,7 @@ class StateStore:
                     records_json,
                     run.started_at,
                     run.updated_at,
+                    json.dumps(run.spend_state),
                 ),
             )
 
@@ -459,6 +465,7 @@ def _row_to_run(row: sqlite3.Row) -> PipelineRun:
         status=RunStatus(row["status"]),
         current_step=row["current_step"],
         step_records=step_records,
+        spend_state=json.loads(row["spend_state"]),
         started_at=row["started_at"],
         updated_at=row["updated_at"],
     )

@@ -80,7 +80,9 @@ rate_date = 2026-09-26
 - If a limit could be crossed and you are at a terminal, the run asks. `y` raises that limit by
   as many of its own steps as the call needs (20 → 40); anything else, Enter included, parks the
   run. Without a terminal it parks straight away. Raise the limit in `settings.toml` if you like,
-  then continue with `sw run --resume <id>`.
+  then continue with `sw run --resume <id>`: the run keeps what it already spent, and a limit is
+  the higher of the file's value and the one you raised. Over the REST API a request at a limit
+  gets HTTP 402 with `error_code` `SPEND_LIMIT`.
 - A model (`[models."<id>"]`) and a role may carry `spend_per_run` or `tokens_per_run` too; the
   lowest limit that applies wins. Only the machine file may set limits. A tool loop that reaches
   `agent_turns` stops with an error naming it.

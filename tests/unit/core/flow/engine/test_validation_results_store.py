@@ -125,7 +125,7 @@ class TestStateStoreValidationSchema:
                 0
             ]
         assert "flow_validation_results" in tables
-        assert version == 3, "the recorded version must reflect the schema actually present"
+        assert version == 4, "the recorded version must reflect the schema actually present"
 
 
 class TestStateStoreSaveValidationResults:

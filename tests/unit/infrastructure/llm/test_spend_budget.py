@@ -235,3 +235,41 @@ class TestAsking:
         assert "USD 9.00" in asked[0]
         assert "USD 10.00" in asked[0]
         assert "USD 2.00" in asked[0]
+
+
+class TestSnapshot:
+    def test_spent_and_raised_limits_survive_a_snapshot(self) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
+
+        restored = SpendBudget()
+        restored.restore(budget.snapshot())
+
+        assert restored.spent(_RUN_USD.key) == pytest.approx(9.0)
+        assert restored.limit_of(_RUN_USD) == 20.0
+
+    def test_a_higher_limit_in_the_file_wins_after_a_resume(self) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
+        restored = SpendBudget()
+        restored.restore(budget.snapshot())
+
+        assert restored.limit_of(Limit(_RUN_USD.key, "usd", 50.0)) == 50.0
+
+    def test_a_lower_limit_in_the_file_does_not_undo_a_yes(self) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
+        restored = SpendBudget()
+        restored.restore(budget.snapshot())
+
+        assert restored.limit_of(Limit(_RUN_USD.key, "usd", 5.0)) == 20.0
+
+    def test_an_empty_snapshot_restores_nothing(self) -> None:
+        restored = SpendBudget()
+
+        restored.restore({})
+
+        assert restored.spent(_RUN_USD.key) == 0

@@ -3,7 +3,7 @@
 
 """A step whose call the spend brake stopped parks the run, whatever the step did with the stop.
 
-Proves: B-FLOW-05 FR-3, B-FLOW-05 FR-7
+Proves: B-FLOW-05 FR-3, B-FLOW-05 FR-7, B-FLOW-05 FR-8
 
 The seam: the brake (`infrastructure.llm`) stops a call; the runner (`core.flow`) parks the run.
 Settings file → router → real collector; only HTTP is faked.
@@ -12,7 +12,7 @@ Settings file → router → real collector; only HTTP is faked.
 |---|---|
 | Happy | a step within its limits completes the run |
 | Boundary | a step that lets the stop out parks the run instead of failing it |
-| Degradation | a gate set to retry does not retry a stopped step |
+| Degradation | a gate set to retry does not retry a stopped step; a resumed run keeps its totals |
 | Hostile | a step that swallows the stop and reports success still parks the run |
 """
 
@@ -133,3 +133,53 @@ async def test_a_retry_gate_does_not_retry_a_stopped_step(tmp_path: Path) -> Non
 
     assert run.status is RunStatus.PARKED
     assert handler.calls == 1
+
+
+_BIG_REPLY = {
+    **_REPLY,
+    "usage": {"prompt_tokens": 50, "completion_tokens": 50, "total_tokens": 100},
+}
+
+
+class _CallsTwice(_CallsTheModel):
+    async def execute(self, _step, context) -> StepResult:
+        self.calls += 1
+        routed = context.model.llm_router.get_for_task(TaskType.REVIEW)
+        for _ in range(2):
+            await routed.adapter.generate([Message(role=Role.USER, content="hi")], routed.config)
+        return StepResult(status=StepStatus.PASSED, output={}, started_at="t0", completed_at="t1")
+
+
+async def test_a_resumed_run_continues_from_the_totals_it_parked_with(tmp_path: Path) -> None:
+    from specweaver.core.flow.engine.store import StateStore
+
+    store = StateStore(tmp_path / "state.db")
+
+    def runner_for(handler):
+        files = LlmSettingsFiles.from_texts(
+            machine_text=_MACHINE.format(tokens=150),
+            machine_source="settings.toml",
+            project_text="",
+            project_source="-",
+        )
+        context = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "a_spec.md",
+            model=ModelAccess(
+                llm_router=build_router(files, project="demo", roles=[TaskType.REVIEW])
+            ),
+        )
+        registry = StepHandlerRegistry()
+        registry.register("review", "spec", handler)
+        return PipelineRunner(_pipeline(), context, registry=registry, store=store)
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_BIG_REPLY)) as first:
+        parked = await runner_for(_CallsTwice(swallow=False)).run()
+    assert parked.status is RunStatus.PARKED
+    assert len(first) == 1  # the first call spent 100 of 150; the second could cross
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_BIG_REPLY)) as resumed:
+        again = await runner_for(_CallsTwice(swallow=False)).resume(parked.run_id)
+
+    assert again.status is RunStatus.PARKED
+    assert resumed == [], "the resumed run started from zero and spent past its limit"

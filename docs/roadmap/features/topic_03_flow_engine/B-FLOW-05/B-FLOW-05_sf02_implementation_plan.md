@@ -104,3 +104,21 @@ round check; REST mapping removed.
 
 Cycle 2 re-checked the bindings and the boundaries; nothing above LOW.
 
+## As built (2026-10-07)
+
+Committed in two boundaries: `435e6796` (the question and the park) and the CB-2 commit (resume
+with the totals, REST 402), with a REST fix between them.
+
+- The question is synchronous: a terminal prompt blocks the run while it waits, so one question
+  at a time needs no lock (supersedes item 1's lock and R-2).
+- One "yes" raises a limit by as many of its own steps as the call needs, so a call larger than
+  one step is asked about once, not once per step.
+- `sw implement` keeps no run state and cannot be resumed; stopped by the brake it says so and
+  asks for the limit to be raised and the command run again.
+- Found on the way and fixed in its own commit: `POST /review` and `POST /implement` crashed on
+  every real request (wrong arguments hidden by `# type: ignore`, unit tests mocking the
+  workflows). Both now run the same pipeline steps as the CLI through `run_steps`
+  (`interfaces/api/v1/_llm.py`), which also turns a brake stop into 402 `SPEND_LIMIT`. US-04 S6 is
+  proven through `POST /review`; `POST /implement` shares the same path.
+- Mutants: [B-FLOW-05_mutants.json](B-FLOW-05_mutants.json), FR-1 to FR-10, all protected.
+

@@ -40,6 +40,7 @@ from specweaver.core.flow.engine.step_execution import (
     run_one_step,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.infrastructure.llm.budget import SpendBudget
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.events import RunnerEventCallback
@@ -211,6 +212,9 @@ class PipelineRunner:
         )
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
+        budget = self._spend_budget()
+        if budget is not None:
+            budget.restore(run.spend_state)
 
         # The plan context lives in memory and dies with the session. Rebuild it from persisted
         # step records BEFORE the loop starts, so the first resumed handler sees the same context a
@@ -286,7 +290,16 @@ class PipelineRunner:
     def _persist(self, run: PipelineRun) -> None:
         if self._store is not None:
             run.updated_at = _now_iso()
+            budget = self._spend_budget()
+            if budget is not None:
+                run.spend_state = budget.snapshot()
             self._store.save_run(run)
+
+    def _spend_budget(self) -> SpendBudget | None:
+        """The run's spend brake, if it calls models through a router that has one."""
+        router = getattr(getattr(self._context, "model", None), "llm_router", None)
+        budget = getattr(router, "budget", None)
+        return budget if isinstance(budget, SpendBudget) else None
 
     def _log(self, run: PipelineRun, event: str, step_name: str | None = None) -> None:
         if self._store is not None:

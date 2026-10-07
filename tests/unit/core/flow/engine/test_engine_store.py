@@ -140,7 +140,7 @@ class TestStoreSchema:
         # created by the `IF NOT EXISTS` script that runs on every construction.
         conn = sqlite3.connect(db_path)
         version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0]
-        assert version == 3
+        assert version == 4
 
         # Verify parent_run_id column exists
         columns = [
@@ -210,7 +210,7 @@ class TestStoreSchema:
         assert {"flow_pipeline_runs", "flow_audit_log", "flow_state_schema_version"} <= tables
 
         assert (
-            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 3
+            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 4
         )  # renamed, not re-migrated -- 3 is the current version since CB-2 added a table
 
         run_row = conn.execute(
@@ -656,7 +656,7 @@ class TestStoreEdgeCases:
         row = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()
         conn.close()
         assert row is not None
-        assert row[0] == 3, "current schema version -- CB-2 added flow_validation_results"
+        assert row[0] == 4, "current schema version: v4 added the runs' spend_state"
 
     def test_foreign_keys_enabled(self, store: StateStore) -> None:
         """Foreign key constraints should be active."""

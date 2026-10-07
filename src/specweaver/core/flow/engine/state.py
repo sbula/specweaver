@@ -129,6 +129,8 @@ class PipelineRun(BaseModel):
     step_records: list[StepRecord] = Field(default_factory=list)
     started_at: str
     updated_at: str
+    #: The spend brake's totals and raised limits, kept so a resumed run continues from them.
+    spend_state: dict[str, dict[str, float]] = Field(default_factory=dict)
 
     @property
     def is_terminal(self) -> bool:
