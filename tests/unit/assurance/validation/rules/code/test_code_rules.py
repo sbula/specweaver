@@ -461,7 +461,7 @@ class TestGenerator:
         output = tmp_path / "code.py"
 
         mock_llm = _make_mock_llm("pass\n")
-        config = GenerationConfig(model="custom-model", temperature=0.1)
+        config = GenerationConfig(model="custom-model", temperature=0.1, max_output_tokens=1000)
         gen = Generator(llm=mock_llm, config=config)
 
         await gen.generate_code(spec, output, base_prompt=PromptBuilder())

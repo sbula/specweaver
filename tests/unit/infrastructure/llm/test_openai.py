@@ -51,7 +51,7 @@ class TestOpenAIAdapter:
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gpt-4o")
+        config = GenerationConfig(model="gpt-4o", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await adapter.generate(messages, config)
@@ -78,7 +78,7 @@ class TestOpenAIAdapter:
         )
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gpt-4o")
+        config = GenerationConfig(model="gpt-4o", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="hi")]
 
         with pytest.raises(AuthenticationError):
@@ -107,6 +107,7 @@ class TestOpenAIAdapter:
             model="gpt-4o",
             tools=[ToolDefinition(name="test", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -143,6 +144,7 @@ class TestOpenAIAdapter:
             model="gpt-5.4",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -178,6 +180,7 @@ class TestOpenAIAdapter:
             model="gpt-5.4",
             tools=[ToolDefinition(name="my_tool", description="d" * 8000)],
             max_tool_rounds=5,
+            max_output_tokens=1000,
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
@@ -218,6 +221,7 @@ class TestOpenAIAdapter:
             model="gpt-5.4",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=5,
+            max_output_tokens=1000,
         )
         executor = AsyncMock()
         executor.execute.return_value = {"ok": True}
@@ -237,7 +241,9 @@ class TestOpenAIAdapter:
         mock_client.chat.completions.create = AsyncMock()
         adapter._client = mock_client
         config = GenerationConfig(
-            model="gpt-5.4", tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="gpt-5.4",
+            tools=[ToolDefinition(name="my_tool", description="desc")],
+            max_output_tokens=1000,
         )
 
         with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns"):
@@ -281,6 +287,7 @@ class TestOpenAIAdapter:
             model="gpt-5.4",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()

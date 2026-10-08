@@ -115,8 +115,10 @@ async def test_gemini_sends_exactly_the_sampling_that_is_set() -> None:
             await adapter.generate([Message(role=Role.USER, content="x")], config)
         return client.aio.models.generate_content.call_args.kwargs["config"]
 
-    unset = await sent(GenerationConfig(model="m"))
-    full = await sent(GenerationConfig(model="m", temperature=1.0, top_p=0.95, top_k=40))
+    unset = await sent(GenerationConfig(model="m", max_output_tokens=1000))
+    full = await sent(
+        GenerationConfig(model="m", temperature=1.0, top_p=0.95, top_k=40, max_output_tokens=1000)
+    )
 
     assert (unset.temperature, unset.top_p, unset.top_k) == (None, None, None)
     assert (full.temperature, full.top_p, full.top_k) == (1.0, 0.95, 40)

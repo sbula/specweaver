@@ -189,7 +189,7 @@ class TestDrafter:
     async def test_draft_custom_config(self, tmp_path: Path) -> None:
         mock_llm = _make_mock_llm()
         provider = MockContextProvider()
-        config = GenerationConfig(model="custom-model", temperature=0.2)
+        config = GenerationConfig(model="custom-model", temperature=0.2, max_output_tokens=1000)
         drafter = Drafter(
             base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=config
         )

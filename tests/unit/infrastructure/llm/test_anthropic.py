@@ -39,7 +39,7 @@ class TestAnthropicAdapter:
         mock_client.messages.create = AsyncMock(return_value=mock_msg)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="claude-3-7-sonnet-20250219")
+        config = GenerationConfig(model="claude-3-7-sonnet-20250219", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await adapter.generate(messages, config)
@@ -75,6 +75,7 @@ class TestAnthropicAdapter:
             model="claude-3-7-sonnet-20250219",
             tools=[ToolDefinition(name="test", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -101,6 +102,7 @@ class TestAnthropicAdapter:
             model="claude-4-6-sonnet",
             tools=[ToolDefinition(name="my_tool", description="d" * 8000)],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
@@ -142,6 +144,7 @@ class TestAnthropicAdapter:
             model="claude-4-6-sonnet",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -190,6 +193,7 @@ class TestAnthropicAdapter:
             model="claude-4-6-sonnet",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()

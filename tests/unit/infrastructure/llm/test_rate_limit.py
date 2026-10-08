@@ -113,7 +113,10 @@ async def test_a_busy_server_makes_calls_wait_not_fail():
     adapter = AsyncRateLimiterAdapter(stub, limit=2, key="gb10")
 
     results = await asyncio.gather(
-        *(adapter.generate([], GenerationConfig(model="m")) for _ in range(4))
+        *(
+            adapter.generate([], GenerationConfig(model="m", max_output_tokens=1000))
+            for _ in range(4)
+        )
     )
 
     assert [r.text for r in results] == ["success"] * 4
@@ -127,8 +130,8 @@ async def test_two_servers_of_the_same_kind_do_not_share_slots():
     second = AsyncRateLimiterAdapter(stub, limit=1, key="gb10-backup")
 
     await asyncio.gather(
-        first.generate([], GenerationConfig(model="m")),
-        second.generate([], GenerationConfig(model="m")),
+        first.generate([], GenerationConfig(model="m", max_output_tokens=1000)),
+        second.generate([], GenerationConfig(model="m", max_output_tokens=1000)),
     )
 
     assert stub.peak == 2
@@ -141,8 +144,8 @@ async def test_adapters_for_one_server_share_its_slots():
     second = AsyncRateLimiterAdapter(stub, limit=1, key="gb10")
 
     await asyncio.gather(
-        first.generate([], GenerationConfig(model="m")),
-        second.generate([], GenerationConfig(model="m")),
+        first.generate([], GenerationConfig(model="m", max_output_tokens=1000)),
+        second.generate([], GenerationConfig(model="m", max_output_tokens=1000)),
     )
 
     assert stub.peak == 1
@@ -152,7 +155,12 @@ def test_each_event_loop_gets_its_own_semaphore():
     adapter = AsyncRateLimiterAdapter(CountingAdapter(delay=0.01), limit=1, key="gb10")
 
     async def contended() -> None:
-        await asyncio.gather(*(adapter.generate([], GenerationConfig(model="m")) for _ in range(2)))
+        await asyncio.gather(
+            *(
+                adapter.generate([], GenerationConfig(model="m", max_output_tokens=1000))
+                for _ in range(2)
+            )
+        )
 
     asyncio.run(contended())
     asyncio.run(contended())  # a semaphore bound to the first loop would raise here
@@ -161,12 +169,16 @@ def test_each_event_loop_gets_its_own_semaphore():
 @pytest.mark.asyncio
 async def test_a_cancelled_call_frees_its_slot():
     adapter = AsyncRateLimiterAdapter(CountingAdapter(delay=10), limit=1, key="gb10")
-    stuck = asyncio.create_task(adapter.generate([], GenerationConfig(model="m")))
+    stuck = asyncio.create_task(
+        adapter.generate([], GenerationConfig(model="m", max_output_tokens=1000))
+    )
     await asyncio.sleep(0.01)
     stuck.cancel()
     adapter._wrapped._config.delay = 0
 
-    result = await asyncio.wait_for(adapter.generate([], GenerationConfig(model="m")), timeout=1)
+    result = await asyncio.wait_for(
+        adapter.generate([], GenerationConfig(model="m", max_output_tokens=1000)), timeout=1
+    )
 
     assert result.text == "success"
 
@@ -179,11 +191,13 @@ async def test_a_stream_closed_early_frees_its_slot():
             yield "two"
 
     adapter = AsyncRateLimiterAdapter(TwoChunks(MockAdapterConfig(delay=0)), limit=1, key="gb10")
-    stream = adapter.generate_stream([], GenerationConfig(model="m"))
+    stream = adapter.generate_stream([], GenerationConfig(model="m", max_output_tokens=1000))
     assert await anext(stream) == "one"
     await stream.aclose()
 
-    result = await asyncio.wait_for(adapter.generate([], GenerationConfig(model="m")), timeout=1)
+    result = await asyncio.wait_for(
+        adapter.generate([], GenerationConfig(model="m", max_output_tokens=1000)), timeout=1
+    )
 
     assert result.text == "success"
 
@@ -199,12 +213,15 @@ async def test_rate_limiter_releases_lock_on_exception():
 
     # 1. Fire a failing request
     with pytest.raises(ValueError, match="Upstream API 500 Error"):
-        await adapter.generate([], GenerationConfig(model="stub"))
+        await adapter.generate([], GenerationConfig(model="stub", max_output_tokens=1000))
 
     # 2. Lock should be released! Fire again and it should NOT timeout.
     # We prove the lock is available because we don't throw Timeout LLMAdapterError
     with pytest.raises(ValueError, match="Upstream API 500 Error"):
-        await asyncio.wait_for(adapter.generate([], GenerationConfig(model="stub")), timeout=0.1)
+        await asyncio.wait_for(
+            adapter.generate([], GenerationConfig(model="stub", max_output_tokens=1000)),
+            timeout=0.1,
+        )
 
 
 @pytest.mark.asyncio
@@ -214,7 +231,9 @@ async def test_rate_limiter_wraps_generate_with_tools():
 
     results = await asyncio.gather(
         *(
-            adapter.generate_with_tools([], GenerationConfig(model="m"), tool_executor=None)
+            adapter.generate_with_tools(
+                [], GenerationConfig(model="m", max_output_tokens=1000), tool_executor=None
+            )
             for _ in range(2)
         )
     )
@@ -229,7 +248,9 @@ async def test_rate_limiter_stream_delegation():
     adapter = AsyncRateLimiterAdapter(stub, limit=2)
 
     chunks = []
-    async for chunk in adapter.generate_stream([], GenerationConfig(model="stub")):
+    async for chunk in adapter.generate_stream(
+        [], GenerationConfig(model="stub", max_output_tokens=1000)
+    ):
         chunks.append(chunk)
 
     assert chunks == ["success"]

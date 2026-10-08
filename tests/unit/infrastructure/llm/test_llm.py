@@ -37,15 +37,18 @@ class TestLLMModels:
         assert msg.content == "Hello"
 
     def test_generation_config_defaults(self) -> None:
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         assert (config.temperature, config.top_p, config.top_k) == (None, None, None)
-        assert config.max_output_tokens == 4096
         assert config.response_format == "text"
         assert config.system_instruction is None
 
+    def test_the_output_limit_has_no_default(self) -> None:
+        with pytest.raises(ValueError, match="max_output_tokens"):
+            GenerationConfig(model="test")
+
     def test_generation_config_validation(self) -> None:
         with pytest.raises(ValueError):
-            GenerationConfig(model="test", temperature=-1.0)
+            GenerationConfig(model="test", temperature=-1.0, max_output_tokens=1000)
         with pytest.raises(ValueError):
             GenerationConfig(model="test", max_output_tokens=0)
 
@@ -66,7 +69,7 @@ class TestLLMModels:
         assert Role.ASSISTANT.value == "assistant"
 
     def test_generation_config_json_format(self) -> None:
-        config = GenerationConfig(model="test", response_format="json")
+        config = GenerationConfig(model="test", response_format="json", max_output_tokens=1000)
         assert config.response_format == "json"
 
 

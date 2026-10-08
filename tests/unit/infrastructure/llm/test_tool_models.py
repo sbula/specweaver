@@ -139,7 +139,7 @@ class TestGenerationConfigTools:
     """Tests for tools field on GenerationConfig."""
 
     def test_default_no_tools(self) -> None:
-        config = GenerationConfig(model="test-model")
+        config = GenerationConfig(model="test-model", max_output_tokens=1000)
         assert config.tools is None
         assert config.max_tool_rounds is None  # no number in code: `brake.agent_turns` sets it
 
@@ -149,6 +149,7 @@ class TestGenerationConfigTools:
             model="test-model",
             tools=[tool],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
         assert config.tools is not None
         assert len(config.tools) == 1

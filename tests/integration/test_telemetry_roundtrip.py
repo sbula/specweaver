@@ -78,7 +78,9 @@ class TestTelemetryRoundtrip:
         collector = TelemetryCollector(mock_adapter, "testproj")
 
         # Call generate — should capture one record
-        config = GenerationConfig(model="test-model", temperature=0.7, run_id="mock-run-id-123")
+        config = GenerationConfig(
+            model="test-model", temperature=0.7, run_id="mock-run-id-123", max_output_tokens=1000
+        )
         await collector.generate([], config)
 
         assert len(collector.records) == 1

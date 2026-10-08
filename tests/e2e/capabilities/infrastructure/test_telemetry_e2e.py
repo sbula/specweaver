@@ -191,10 +191,12 @@ class TestFullPipelineE2E:
         config1 = GenerationConfig(
             model=gen_config.model,
             task_type=TaskType.DRAFT,
+            max_output_tokens=1000,
         )
         config2 = GenerationConfig(
             model=gen_config.model,
             task_type=TaskType.REVIEW,
+            max_output_tokens=1000,
         )
         await adapter.generate([], config1)
         await adapter.generate([], config2)
@@ -244,6 +246,7 @@ class TestCostOverrideLifecycleE2E:
         config = GenerationConfig(
             model=gen_config.model,
             task_type=TaskType.IMPLEMENT,
+            max_output_tokens=1000,
         )
         await adapter.generate([], config)
 

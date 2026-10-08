@@ -63,7 +63,10 @@ async def test_openai_dispatcher_integration() -> None:
     adapter._client = mock_client
 
     config = GenerationConfig(
-        model="gpt-4o", tools=dispatcher.available_tools(), max_tool_rounds=10
+        model="gpt-4o",
+        tools=dispatcher.available_tools(),
+        max_tool_rounds=10,
+        max_output_tokens=1000,
     )
 
     result = await adapter.generate_with_tools([], config, dispatcher)
@@ -97,7 +100,10 @@ async def test_anthropic_dispatcher_integration() -> None:
     adapter._client = mock_client
 
     config = GenerationConfig(
-        model="claude-4-6-sonnet", tools=dispatcher.available_tools(), max_tool_rounds=10
+        model="claude-4-6-sonnet",
+        tools=dispatcher.available_tools(),
+        max_tool_rounds=10,
+        max_output_tokens=1000,
     )
 
     result = await adapter.generate_with_tools([], config, dispatcher)
@@ -136,7 +142,10 @@ async def test_mistral_dispatcher_integration() -> None:
     adapter._client = mock_client
 
     config = GenerationConfig(
-        model="mistral-large-latest", tools=dispatcher.available_tools(), max_tool_rounds=10
+        model="mistral-large-latest",
+        tools=dispatcher.available_tools(),
+        max_tool_rounds=10,
+        max_output_tokens=1000,
     )
 
     result = await adapter.generate_with_tools([], config, dispatcher)
@@ -177,7 +186,10 @@ async def test_qwen_dispatcher_integration() -> None:
     adapter._client = mock_client
 
     config = GenerationConfig(
-        model="qwen3-max", tools=dispatcher.available_tools(), max_tool_rounds=10
+        model="qwen3-max",
+        tools=dispatcher.available_tools(),
+        max_tool_rounds=10,
+        max_output_tokens=1000,
     )
 
     result = await adapter.generate_with_tools([], config, dispatcher)

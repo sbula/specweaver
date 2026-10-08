@@ -61,6 +61,7 @@ class TestCreateUsageRecord:
             model="gemini-3-flash-preview",
             task_type=TaskType.REVIEW,
             run_id="test-run-123",
+            max_output_tokens=1000,
         )
         response = LLMResponse(
             text="result",
@@ -82,13 +83,13 @@ class TestCreateUsageRecord:
         assert record.run_id == "test-run-123"
 
     def test_run_id_populated(self):
-        config = GenerationConfig(model="gemini", run_id="my-uuid-1234")
+        config = GenerationConfig(model="gemini", run_id="my-uuid-1234", max_output_tokens=1000)
         response = LLMResponse(text="", model="gemini")
         record = create_usage_record(config, response, "gemini", "proj", 0)
         assert record.run_id == "my-uuid-1234"
 
     def test_unknown_task_type_default(self):
-        config = GenerationConfig(model="gemini-3-flash-preview")
+        config = GenerationConfig(model="gemini-3-flash-preview", max_output_tokens=1000)
         response = LLMResponse(
             text="",
             model="gemini-3-flash-preview",
@@ -98,7 +99,9 @@ class TestCreateUsageRecord:
         assert record.task_type == "unknown"
 
     def test_model_dump_produces_dict(self):
-        config = GenerationConfig(model="gemini-3-flash-preview", task_type=TaskType.DRAFT)
+        config = GenerationConfig(
+            model="gemini-3-flash-preview", task_type=TaskType.DRAFT, max_output_tokens=1000
+        )
         response = LLMResponse(
             text="",
             model="gemini-3-flash-preview",
@@ -112,7 +115,9 @@ class TestCreateUsageRecord:
         assert d["task_type"] == "draft"
 
     def test_the_price_comes_from_the_facts_given(self):
-        config = GenerationConfig(model="my-model", task_type=TaskType.CHECK)
+        config = GenerationConfig(
+            model="my-model", task_type=TaskType.CHECK, max_output_tokens=1000
+        )
         response = LLMResponse(
             text="",
             model="my-model",
@@ -126,7 +131,9 @@ class TestCreateUsageRecord:
 
     def test_zero_token_response(self):
         """create_usage_record with zero tokens produces zero cost."""
-        config = GenerationConfig(model="gemini-3-flash-preview", task_type=TaskType.DRAFT)
+        config = GenerationConfig(
+            model="gemini-3-flash-preview", task_type=TaskType.DRAFT, max_output_tokens=1000
+        )
         response = LLMResponse(
             text="",
             model="gemini-3-flash-preview",
@@ -141,7 +148,7 @@ class TestCreateUsageRecord:
         assert record.duration_ms == 42
 
     def test_without_a_price_the_record_says_unknown(self):
-        config = GenerationConfig(model="qwen3-coder-next")
+        config = GenerationConfig(model="qwen3-coder-next", max_output_tokens=1000)
         response = LLMResponse(text="", model="qwen3-coder-next", usage=TokenUsage(total_tokens=9))
 
         record = create_usage_record(config, response, "openai-compatible", "proj", 0)

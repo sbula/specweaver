@@ -103,7 +103,9 @@ class TestCollectorToDatabase:
     async def test_flush_writes_real_db_rows(self, db):
         """Story 22: flush persists records to llm_usage_log via log_usage."""
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        config = GenerationConfig(model="fake-model", task_type=TaskType.DRAFT)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
+        )
         await collector.generate([], config)
 
         count = await collector.flush_async(db)
@@ -120,8 +122,12 @@ class TestCollectorToDatabase:
     async def test_flush_data_queryable_via_get_usage_summary(self, db):
         """Story 23: flush → log_usage → get_usage_summary returns data."""
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
         await collector.flush_async(db)
 
         async with db.async_session_scope() as session:
@@ -134,9 +140,15 @@ class TestCollectorToDatabase:
     async def test_flush_data_groups_by_task_type(self, db):
         """Story 24: flush → get_usage_by_task_type groups correctly."""
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.REVIEW))
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT))
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.REVIEW, max_output_tokens=1000)
+        )
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT, max_output_tokens=1000)
+        )
         await collector.flush_async(db)
 
         async with db.async_session_scope() as session:
@@ -164,7 +176,9 @@ class TestUnknownPriceFlow:
             FakeAdapter(), project="proj", prices={"priced-model": priced}.get
         )
         for model in ("priced-model", "fake-model"):
-            await collector.generate([], GenerationConfig(model=model, task_type=TaskType.DRAFT))
+            await collector.generate(
+                [], GenerationConfig(model=model, task_type=TaskType.DRAFT, max_output_tokens=1000)
+            )
 
         await collector.flush_async(db)
 
@@ -188,7 +202,9 @@ class TestTaskTypeFlowThrough:
     @pytest.mark.asyncio
     async def test_review_task_type_survives_capture(self, db):
         """Story 26: task_type=REVIEW from config helper → collector record."""
-        config = GenerationConfig(model="fake-model", task_type=TaskType.REVIEW)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
+        )
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         await collector.generate([], config)
 
@@ -197,7 +213,9 @@ class TestTaskTypeFlowThrough:
     @pytest.mark.asyncio
     async def test_implement_task_type_survives_capture(self, db):
         """Story 27: task_type=IMPLEMENT from config helper → collector record."""
-        config = GenerationConfig(model="fake-model", task_type=TaskType.IMPLEMENT)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.IMPLEMENT, max_output_tokens=1000
+        )
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         await collector.generate([], config)
 
@@ -219,9 +237,15 @@ class TestMultiProjectIsolation:
         c1 = TelemetryCollector(adapter, project="alpha")
         c2 = TelemetryCollector(adapter, project="beta")
 
-        await c1.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        await c1.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        await c2.generate([], GenerationConfig(model="m", task_type=TaskType.REVIEW))
+        await c1.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
+        await c1.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
+        await c2.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.REVIEW, max_output_tokens=1000)
+        )
 
         await c1.flush_async(db)
         await c2.flush_async(db)

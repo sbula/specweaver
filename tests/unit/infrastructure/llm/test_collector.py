@@ -78,7 +78,9 @@ class TestCollectorGenerate:
     async def test_captures_one_record(self):
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="test-proj")
-        config = GenerationConfig(model="fake-model", task_type=TaskType.DRAFT)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
+        )
 
         response = await collector.generate([], config)
 
@@ -96,7 +98,7 @@ class TestCollectorGenerate:
     async def test_timing_is_positive(self):
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="test-proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         await collector.generate([], config)
 
@@ -108,8 +110,12 @@ class TestCollectorGenerate:
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
 
-        config1 = GenerationConfig(model="fake-model", task_type=TaskType.REVIEW)
-        config2 = GenerationConfig(model="fake-model", task_type=TaskType.IMPLEMENT)
+        config1 = GenerationConfig(
+            model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
+        )
+        config2 = GenerationConfig(
+            model="fake-model", task_type=TaskType.IMPLEMENT, max_output_tokens=1000
+        )
 
         await collector.generate([], config1)
         await collector.generate([], config2)
@@ -125,7 +131,9 @@ class TestCollectorGenerateWithTools:
     async def test_captures_one_record(self):
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model", task_type=TaskType.REVIEW)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
+        )
 
         response = await collector.generate_with_tools([], config, MagicMock())
 
@@ -141,7 +149,9 @@ class TestCollectorGenerateStream:
     async def test_captures_record_after_stream(self):
         adapter = FakeAdapter(stream_chunks=["hello", " world", "!"])
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model", task_type=TaskType.DRAFT)
+        config = GenerationConfig(
+            model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
+        )
 
         chunks = []
         async for chunk in collector.generate_stream([], config):
@@ -163,9 +173,15 @@ class TestCollectorMultipleCalls:
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
 
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.REVIEW))
-        await collector.generate([], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT))
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
+        )
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.REVIEW, max_output_tokens=1000)
+        )
+        await collector.generate(
+            [], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT, max_output_tokens=1000)
+        )
 
         assert len(collector.records) == 3
         types = [r.task_type for r in collector.records]
@@ -179,7 +195,7 @@ class TestCollectorFlush:
     async def test_flush_calls_log_usage(self):
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
         await collector.generate([], config)
         await collector.generate([], config)
 
@@ -216,7 +232,7 @@ class TestCollectorFlush:
         """Telemetry failures are logged, not propagated."""
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -266,7 +282,7 @@ class TestFlushFromARunningLoop:
         import asyncio
 
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -285,8 +301,8 @@ class TestFlushFromARunningLoop:
     async def test_records_are_still_persisted_and_cleared(self):
         """Fixing the loop damage must not quietly stop the flush from working."""
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m"))
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -305,7 +321,7 @@ class TestFlushFromARunningLoop:
         import asyncio
 
         collector = TelemetryCollector(FakeAdapter(), project="proj")
-        asyncio.run(collector.generate([], GenerationConfig(model="m")))
+        asyncio.run(collector.generate([], GenerationConfig(model="m", max_output_tokens=1000)))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -362,7 +378,7 @@ class TestCollectorAdapterExceptions:
         adapter = FakeAdapter()
         adapter.generate = _raise_adapter_error
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="adapter exploded"):
             await collector.generate([], config)
@@ -375,7 +391,7 @@ class TestCollectorAdapterExceptions:
         adapter = FakeAdapter()
         adapter.generate_with_tools = _raise_adapter_error_tools
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="adapter exploded"):
             await collector.generate_with_tools([], config, MagicMock())
@@ -391,7 +407,7 @@ class TestCollectorStreamEdgeCases:
         """Empty stream (0 chunks) → record with 0 completion tokens."""
         adapter = FakeAdapter(stream_chunks=[])
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         chunks = []
         async for chunk in collector.generate_stream([], config):
@@ -407,7 +423,7 @@ class TestCollectorStreamEdgeCases:
         adapter = FakeAdapter()
         adapter.generate_stream = _raise_stream_error
         collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model")
+        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="stream exploded"):
             async for _chunk in collector.generate_stream([], config):
@@ -424,7 +440,7 @@ class TestCollectorFlushEdgeCases:
         """Flushing twice: second flush returns 0 (records already cleared)."""
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -445,8 +461,8 @@ class TestCollectorFlushEdgeCases:
         """DB fails mid-flush → records are NOT cleared (preserved for retry)."""
         adapter = FakeAdapter()
         collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m"))
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         mock_db = MagicMock()
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -507,7 +523,7 @@ class TestTelemetryCollectorPrices:
             scope_of=lambda _config: CallScope(limits=(run,), facts=facts),
         )
 
-        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
         assert collector.records[0].estimated_cost_usd == pytest.approx(
             100 / 1e6 * 2 + 50 / 1e6 * 10
@@ -531,8 +547,12 @@ class TestTelemetryCollectorPrices:
         )
 
         with caplog.at_level("WARNING"):
-            await collector.generate([], GenerationConfig(model="qwen3-coder-next"))
-            await collector.generate([], GenerationConfig(model="qwen3-coder-next"))
+            await collector.generate(
+                [], GenerationConfig(model="qwen3-coder-next", max_output_tokens=1000)
+            )
+            await collector.generate(
+                [], GenerationConfig(model="qwen3-coder-next", max_output_tokens=1000)
+            )
 
         assert [r.estimated_cost_usd for r in collector.records] == [None, None]
         assert budget.spent(tokens.key) == 300

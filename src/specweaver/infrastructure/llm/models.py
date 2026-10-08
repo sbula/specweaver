@@ -70,7 +70,8 @@ class GenerationConfig(BaseModel):
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     top_p: float | None = Field(default=None, gt=0.0, le=1.0)
     top_k: int | None = Field(default=None, ge=1)
-    max_output_tokens: int = Field(default=4096, gt=0)
+    # From the role or the model's facts; there is no default.
+    max_output_tokens: int = Field(gt=0)
     response_format: Literal["text", "json"] = "text"
     system_instruction: str | None = None
     tools: list[ToolDefinition] | None = None  # Provider-agnostic tool definitions

@@ -64,7 +64,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted | writer |
 | 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address | `_rate_limit.py` (suspected) |
 | 22 | LOW | Catalogue drops tiered/reasoning/cache prices | `update_model_catalogue.py` (suspected) |
-| 23 | Info | `max_output_tokens = 4096`, `AutonomySettings.max_turns = 10` still in code (dead) | `models.py:73`; `settings.py:118` |
+| 23 | Info | `max_output_tokens = 4096`, `AutonomySettings.max_turns = 10` still in code (dead). **Partly fixed** 2026-10-08: the output limit has no default; `max_turns` waits for `C-FLOW-11`, which wires it | `models.py:73`; `settings.py:118` |
 
 ## User paths (US-16 P1–P8, US-04 S1–S7)
 

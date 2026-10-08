@@ -70,7 +70,10 @@ def gb10_role(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _ask(adapter, model: str):
-    return adapter.generate([Message(role=Role.USER, content="hi")], GenerationConfig(model=model))
+    return adapter.generate(
+        [Message(role=Role.USER, content="hi")],
+        GenerationConfig(model=model, max_output_tokens=1000),
+    )
 
 
 @pytest.mark.asyncio

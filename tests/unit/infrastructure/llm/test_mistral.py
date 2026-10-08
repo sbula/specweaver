@@ -43,7 +43,7 @@ class TestMistralAdapter:
         mock_client.chat.complete_async = AsyncMock(return_value=mock_msg)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="mistral-large-latest")
+        config = GenerationConfig(model="mistral-large-latest", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Bonjour")]
 
         result = await adapter.generate(messages, config)
@@ -70,7 +70,7 @@ class TestMistralAdapter:
         with pytest.raises(Exception, match="stop here"):
             await adapter.generate(
                 [Message(role=Role.USER, content="x")],
-                GenerationConfig(model="m", temperature=0.4, top_p=0.9),
+                GenerationConfig(model="m", temperature=0.4, top_p=0.9, max_output_tokens=1000),
             )
 
         kwargs = mock_client.chat.complete_async.call_args.kwargs
@@ -101,6 +101,7 @@ class TestMistralAdapter:
             model="mistral-large-latest",
             tools=[ToolDefinition(name="test", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -132,6 +133,7 @@ class TestMistralAdapter:
             model="mistral-large-latest",
             tools=[ToolDefinition(name="my_tool", description="d" * 8000)],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
@@ -179,6 +181,7 @@ class TestMistralAdapter:
             model="mistral-large-latest",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()
@@ -227,6 +230,7 @@ class TestMistralAdapter:
             model="mistral-large-latest",
             tools=[ToolDefinition(name="my_tool", description="desc")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
 
         mock_exec = AsyncMock()

@@ -25,7 +25,7 @@ async def test_llm_live_gemini_connection() -> None:
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."
         )
     ]
-    config = GenerationConfig(model="gemini-3-flash-preview")
+    config = GenerationConfig(model="gemini-3-flash-preview", max_output_tokens=1000)
 
     print(f"\n[LIVE] Sending payload to {adapter.provider_name}...")
     response = await adapter.generate(messages, config)
@@ -48,7 +48,7 @@ async def test_llm_live_openai_connection() -> None:
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."
         )
     ]
-    config = GenerationConfig(model="gpt-5.4-mini")
+    config = GenerationConfig(model="gpt-5.4-mini", max_output_tokens=1000)
     print(f"\n[LIVE] Sending payload to {adapter.provider_name}...")
     response = await adapter.generate(messages, config)
     assert response
@@ -69,7 +69,7 @@ async def test_llm_live_anthropic_connection() -> None:
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."
         )
     ]
-    config = GenerationConfig(model="claude-4-6-sonnet")
+    config = GenerationConfig(model="claude-4-6-sonnet", max_output_tokens=1000)
     response = await adapter.generate(messages, config)
     assert response
     assert "PLEB" in response.text.upper()
@@ -89,7 +89,7 @@ async def test_llm_live_mistral_connection() -> None:
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."
         )
     ]
-    config = GenerationConfig(model="mistral-small-4")
+    config = GenerationConfig(model="mistral-small-4", max_output_tokens=1000)
     response = await adapter.generate(messages, config)
     assert response
     assert "PLEB" in response.text.upper()
@@ -110,7 +110,7 @@ async def test_llm_live_qwen_connection() -> None:
             role=Role.USER, content="Reply specifically with ONLY the word 'Pleb' and nothing else."
         )
     ]
-    config = GenerationConfig(model="qwen3.5-plus")
+    config = GenerationConfig(model="qwen3.5-plus", max_output_tokens=1000)
     response = await adapter.generate(messages, config)
     assert response
     assert "PLEB" in response.text.upper()

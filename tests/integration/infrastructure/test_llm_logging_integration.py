@@ -28,7 +28,7 @@ async def test_llm_adapter_exception_emits_structured_error_log(caplog):
     """Story 2: [Boundary/Edge Case] LLM Adapter HTTP exceptions emit structured JSON logs."""
     # We use caplog to intercept the logging module at the adapter layer
     adapter = OpenAIAdapter(api_key="fake")
-    config = GenerationConfig(model="gpt-4o")
+    config = GenerationConfig(model="gpt-4o", max_output_tokens=1000)
 
     # Force the adapter to throw an authentication error by mocking the internal client
     with patch("openai.AsyncOpenAI") as mock_client_cls:
@@ -61,7 +61,7 @@ async def test_fallback_adapter_writes_warning_logs(caplog):
     from specweaver.infrastructure.llm.models import GenerationConfig
 
     adapter = OpenAIAdapter(api_key="fake")
-    config = GenerationConfig(model="gpt-4o")
+    config = GenerationConfig(model="gpt-4o", max_output_tokens=1000)
 
     with patch("openai.AsyncOpenAI") as mock_client_cls:
         mock_client = AsyncMock()

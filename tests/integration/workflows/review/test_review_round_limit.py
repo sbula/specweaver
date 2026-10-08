@@ -52,7 +52,7 @@ async def test_a_review_stopped_at_the_round_limit_is_an_error_naming_the_limit(
     dispatcher.execute = AsyncMock(return_value={"content": "x = 1"})
     reviewer = Reviewer(
         llm=adapter,
-        config=GenerationConfig(model="m", max_tool_rounds=2),
+        config=GenerationConfig(model="m", max_tool_rounds=2, max_output_tokens=1000),
         tool_dispatcher=dispatcher,
     )
 

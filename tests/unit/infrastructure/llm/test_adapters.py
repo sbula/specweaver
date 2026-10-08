@@ -147,7 +147,7 @@ class TestGeminiAdapter:
         mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await adapter.generate(messages, config)
@@ -169,7 +169,7 @@ class TestGeminiAdapter:
         )
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         with pytest.raises(AuthenticationError):
@@ -186,7 +186,7 @@ class TestGeminiAdapter:
         )
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         with pytest.raises(RateLimitError):
@@ -203,7 +203,7 @@ class TestGeminiAdapter:
         )
         adapter._client = mock_client
 
-        config = GenerationConfig(model="nonexistent-model")
+        config = GenerationConfig(model="nonexistent-model", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         with pytest.raises(ModelNotFoundError):
@@ -220,7 +220,7 @@ class TestGeminiAdapter:
         )
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         with pytest.raises(GenerationError):
@@ -240,7 +240,7 @@ class TestGeminiAdapter:
         mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [
             Message(role=Role.SYSTEM, content="You are a helpful assistant"),
             Message(role=Role.USER, content="Hello"),
@@ -267,7 +267,9 @@ class TestGeminiAdapter:
         mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash", response_format="json")
+        config = GenerationConfig(
+            model="gemini-2.5-flash", response_format="json", max_output_tokens=1000
+        )
         messages = [Message(role=Role.USER, content="Give me JSON")]
 
         result = await adapter.generate(messages, config)
@@ -442,6 +444,7 @@ class TestGenerateWithTools:
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
         messages = [Message(role=Role.USER, content="Hello")]
         mock_executor = AsyncMock()
@@ -488,6 +491,7 @@ class TestGenerateWithTools:
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
         messages = [Message(role=Role.USER, content="Search for hello")]
 
@@ -509,7 +513,7 @@ class TestGenerateWithTools:
         mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
         adapter._client = mock_client
 
-        config = GenerationConfig(model="gemini-2.5-flash")  # No tools
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)  # No tools
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await adapter.generate_with_tools(messages, config, AsyncMock())
@@ -532,7 +536,7 @@ class TestGenerateWithTools:
         # Call the base class method explicitly (no tools)
         from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 
-        config = GenerationConfig(model="gemini-2.5-flash")
+        config = GenerationConfig(model="gemini-2.5-flash", max_output_tokens=1000)
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await LLMAdapter.generate_with_tools(
@@ -622,6 +626,7 @@ class TestGenerateWithToolsEdgeCases:
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="my_tool", description="d" * 8000)],
             max_tool_rounds=2,
+            max_output_tokens=1000,
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
@@ -668,6 +673,7 @@ class TestGenerateWithToolsEdgeCases:
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="search", description="search files")],
             max_tool_rounds=2,  # Only 2 rounds allowed
+            max_output_tokens=1000,
         )
         messages = [Message(role=Role.USER, content="Find it")]
 
@@ -723,6 +729,7 @@ class TestGenerateWithToolsEdgeCases:
             model="gemini-2.5-flash",
             tools=[ToolDefinition(name="grep", description="search")],
             max_tool_rounds=3,
+            max_output_tokens=1000,
         )
         messages = [Message(role=Role.USER, content="Search")]
 

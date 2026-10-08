@@ -26,7 +26,9 @@ from specweaver.infrastructure.llm.router import RouterResult
 
 class _Router:
     def __init__(self) -> None:
-        self.config = GenerationConfig(model="qwen3-coder-next", temperature=1.0)
+        self.config = GenerationConfig(
+            model="qwen3-coder-next", temperature=1.0, max_output_tokens=1000
+        )
         self.asked: list[TaskType] = []
 
     def get_for_task(self, task_type: TaskType) -> RouterResult:
