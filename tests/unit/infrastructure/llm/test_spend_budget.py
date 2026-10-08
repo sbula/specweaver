@@ -365,3 +365,43 @@ class TestALimitCheckedOnSpend:
 
         with pytest.raises(SpendLimitReachedError):
             budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=1))
+
+    def test_a_yes_after_a_large_overshoot_leaves_room_for_the_next_call(self) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        step = Limit("step_limits.review.review_it", "tokens", 10, on_spent=True)
+        budget.record(_scope(step), Cost(usd=None, tokens=30))
+
+        budget.before_call(_scope(step), Cost(usd=None, tokens=1))
+
+        assert budget.limit_of(step) > 30
+
+    def test_the_question_says_the_limit_is_reached_and_nothing_about_running_calls(
+        self,
+    ) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or True)
+        budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=5))  # still running
+        budget.record(_scope(self._STEP), Cost(usd=None, tokens=100))  # another call, done
+
+        budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=5))
+
+        assert "is reached: 100 tokens of 100 tokens spent" in asked[0]
+        assert not any("already running" in question for question in asked)
+
+    def test_without_anyone_to_ask_the_stop_says_how_to_go_on(self) -> None:
+        budget = SpendBudget()
+        budget.record(_scope(self._STEP), Cost(usd=None, tokens=100))
+
+        with pytest.raises(SpendLimitReachedError) as caught:
+            budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=1))
+
+        assert "resume it from a terminal with `sw resume`" in str(caught.value)
+
+    def test_an_unknown_price_is_not_called_a_reached_step_limit(self) -> None:
+        step = Limit("step_limits.review.review_it", "usd", 1.0, on_spent=True)
+
+        with pytest.raises(SpendLimitReachedError) as caught:
+            SpendBudget().before_call(_scope(step), Cost(usd=None, tokens=10))
+
+        assert "price is unknown" in str(caught.value)
+        assert "similar steps" not in str(caught.value)

@@ -80,22 +80,24 @@ class BudgetExceededError(Exception):
     re-raises it.
     """
 
-    def __init__(self, reason: str, *, setting: str) -> None:
+    def __init__(self, reason: str, *, setting: str, advice: str | None = None) -> None:
         self.setting = setting
         super().__init__(
             f"LLM spend brake: {reason}. No further requests will be sent this run. "
-            + _advice(setting)
+            + (advice or f"Raise `{setting}` in settings.toml if this run is legitimate.")
         )
 
 
-def _advice(setting: str) -> str:
-    if setting.startswith(STEP_LIMIT_PREFIX):
-        return (
-            "This step has spent what similar steps usually cost (the `[step_limits]` percentile "
-            "of the last passed ones); answer yes to go on, or change `[step_limits]` in "
-            "settings.toml."
-        )
-    return f"Raise `{setting}` in settings.toml if this run is legitimate."
+def _step_limit_advice(can_answer: bool) -> str:
+    how = (
+        "answer yes to go on"
+        if can_answer
+        else "resume it from a terminal with `sw resume` and answer yes to go on"
+    )
+    return (
+        "This step has spent what similar steps usually cost (the `[step_limits]` percentile of "
+        f"the last passed ones); {how}, or change `[step_limits]` in settings.toml."
+    )
 
 
 #: The key of every step limit starts with this.
@@ -105,10 +107,10 @@ STEP_LIMIT_PREFIX = "step_limits."
 class SpendLimitReachedError(BudgetExceededError):
     """The next call could cross `limit`."""
 
-    def __init__(self, limit: Limit, spent: float, reason: str) -> None:
+    def __init__(self, limit: Limit, spent: float, reason: str, advice: str | None = None) -> None:
         self.limit = limit
         self.spent = spent
-        super().__init__(reason, setting=limit.key)
+        super().__init__(reason, setting=limit.key, advice=advice)
 
 
 #: The refusals of the step running in this task; tasks it starts share the same list.
@@ -190,7 +192,11 @@ class SpendBudget:
         for limit in scope.limits:
             amount = worst.amount(limit.unit)
             if amount is None:
-                self._stop(limit, f"the model's price is unknown, so {limit.key} cannot be checked")
+                self._stop(
+                    limit,
+                    f"the model's price is unknown, so {limit.key} cannot be checked",
+                    advice="Set the model's price in settings.toml.",
+                )
             if limit.on_spent:
                 if self._spent[limit.key] >= self.limit_of(limit):
                     raises[limit.key] = self._ask_to_raise(limit, amount, self._spent[limit.key])
@@ -218,13 +224,17 @@ class SpendBudget:
                 f"{limit.key} would be crossed: {spent} of {self._show(limit, current)} spent, "
                 f"the next call may cost up to {self._show(limit, amount)}"
             )
-        if self._reserved[limit.key] > 0:
+        if self._reserved[limit.key] > 0 and not limit.on_spent:
             running = self._show(limit, self._reserved[limit.key])
             reason += f", and calls already running may add up to {running}"
-        steps = max(math.ceil((needed - current) / limit.value), 1)
+        if limit.on_spent:  # past it: the raise must leave room above what is spent
+            steps = math.floor((needed - current) / limit.value) + 1
+        else:
+            steps = math.ceil((needed - current) / limit.value)
         raised = self._show(limit, current + steps * limit.value)
         if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
-            self._stop(limit, reason)
+            advice = _step_limit_advice(self._ask is not None) if limit.on_spent else None
+            self._stop(limit, reason, advice=advice)
         return steps * limit.value
 
     def record(
@@ -242,8 +252,8 @@ class SpendBudget:
             self._spent[limit.key] += reserved if amount is None else amount
             self._warn(limit)
 
-    def _stop(self, limit: Limit, reason: str) -> NoReturn:
-        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason)
+    def _stop(self, limit: Limit, reason: str, advice: str | None = None) -> NoReturn:
+        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason, advice)
         _refused(self.stopped)
 
     def _warn(self, limit: Limit) -> None:

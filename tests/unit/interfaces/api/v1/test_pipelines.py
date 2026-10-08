@@ -475,6 +475,53 @@ class TestGateDecision:
         assert resp.status_code == 200, resp.text
         assert mock_resume.called, "approve did not route through resume() — FR-4 cannot apply"
 
+    def test_a_resumed_run_gets_its_models_and_the_database(self, client, tmp_path) -> None:
+        """Proves: B-FLOW-07 FR-1 — a REST resume can call a model and record its history."""
+        from specweaver.core.flow.engine.runner import PipelineRunner
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
+        from specweaver.core.flow.handlers.run_context import ModelAccess
+
+        state_dir = tmp_path / ".specweaver"
+        state_dir.mkdir(exist_ok=True)
+        StateStore(state_dir / "pipeline_state.db").save_run(
+            PipelineRun(
+                run_id="test-run-models",
+                pipeline_name="validate_only",
+                project_name="myproject",
+                spec_path="/fake/spec.md",
+                status=RunStatus.PARKED,
+                current_step=0,
+                step_records=[],
+                started_at="2026-01-01T00:00:00",
+                updated_at="2026-01-01T00:00:01",
+            )
+        )
+        models = ModelAccess()
+        seen: list = []
+
+        async def resume(self, _run_id):
+            seen.append(self._context)
+
+        with (
+            patch.object(Path, "home", return_value=tmp_path),
+            patch(
+                "specweaver.interfaces.api.v1.pipelines.resolve_project_root",
+                new=AsyncMock(return_value=tmp_path),
+            ),
+            patch(
+                "specweaver.core.flow.engine.parser.load_pipeline",
+                return_value=_simple_pipeline(),
+            ),
+            patch("specweaver.interfaces.api.v1.pipelines._models_for", return_value=models),
+            patch.object(PipelineRunner, "resume", autospec=True, side_effect=resume),
+        ):
+            resp = client.post("/api/v1/runs/test-run-models/resume")
+
+        assert resp.status_code == 200, resp.text
+        assert seen and seen[0].model is models
+        assert seen[0].db is not None
+
     # --- Gap #38: gate on non-parked run → 409 ---
 
     def test_gate_non_parked_run_returns_409(self, client, tmp_path) -> None:

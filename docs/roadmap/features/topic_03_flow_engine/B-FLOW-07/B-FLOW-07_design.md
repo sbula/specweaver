@@ -129,6 +129,7 @@ None.
 | A cheap simple task and a costly hard one share a group | medium | low | the limit is the 90% value of the group; the footprint (cut for now) is the known fix |
 | Validation gets less strict for projects without a DAL (`DAL_A` → `DAL_C`) | certain | low | agreed `[2026-10-08]`; a project sets its own DAL in `context.yaml` |
 | The DAL fallback changes session isolation for `sw implement` | low | low | it escalates at `DAL_B` and above; the fallback `DAL_C` is below it, as `None` was |
+| Over REST nobody can answer, so a run parked at a step limit parks again on each REST resume | medium | low | the park message says to resume it from a terminal (`sw resume`) or change `[step_limits]`; a REST way to say yes is not built |
 
 ## Developer Guides Required
 

@@ -87,7 +87,9 @@ def _move_default_dal_once(conn: Connection) -> None:
     conn.exec_driver_sql(
         "UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'"
     )
-    conn.exec_driver_sql("INSERT INTO specweaver_migrations (name) VALUES ('default_dal_c')")
+    conn.exec_driver_sql(
+        "INSERT OR IGNORE INTO specweaver_migrations (name) VALUES ('default_dal_c')"
+    )
 
 
 def bootstrap_database(db_path: str) -> None:
