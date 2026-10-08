@@ -46,18 +46,18 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) â€
 | 2 | HIGH | Broken TOML or a BOM: `set-role` / `costs reset` end in a raw traceback. **Fixed** 2026-10-08: refused naming the line; a BOM is read | `llm_settings_writer.py:104-128` |
 | 3 | HIGH | `set-role` on a `[roles.review]` table deletes comments and keys. **Fixed** 2026-10-08: only the table's `model` changes | `llm_settings_writer.py:105` |
 | 4 | MED | Wrong line numbers for dotted keys and multi-line strings | `llm_settings.py:515-521` |
-| 5 | MED | Resolver refusals say `settings.toml:0` | `resolve.py` |
+| 5 | MED | Resolver refusals say `settings.toml:0`. **Fixed** 2026-10-08: they name the key's line, or the line that uses it | `resolve.py` |
 | 6 | MED | `[models."openai/gpt-5"]` override silently ignored (only bare ids match) | `catalogue.py:67` |
 | 7 | MED | `sw costs set <model>` prices the model on every kind, GB10 included | `catalogue.py:67` |
 | 8 | MED | `kind = "openai"` with a custom `base_url` sends the real `OPENAI_API_KEY` to that host. **Fixed** 2026-10-08: refused at load unless the entry names that host's key | `llm_settings.py:79`; `servers.py` |
-| 9 | MED | A secret pasted into `api_key_env` is printed by `config show` and errors | `llm_settings.py:408` |
-| 10 | MED | `schema_version = "2"`, `0`, `true` accepted | `llm_settings.py:221` |
-| 11 | MED | Project file has no `schema_version` gate | `ProjectLlmSection` |
+| 9 | MED | A secret pasted into `api_key_env` is printed by `config show` and errors. **Fixed** 2026-10-08: refused as not a variable name, without echoing it | `llm_settings.py:408` |
+| 10 | MED | `schema_version = "2"`, `0`, `true` accepted. **Fixed** 2026-10-08 | `llm_settings.py:221` |
+| 11 | MED | Project file has no `schema_version` gate. **Fixed** 2026-10-08: the same gate as the machine file | `ProjectLlmSection` |
 | 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks | `settings_report` |
 | 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent | adapters |
 | 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11) | `resolve.py` |
 | 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on | `command.py:72-74` |
-| 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run | `RoleEntry` |
+| 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |
 | 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11) | `resolve.py:214` |
 | 18 | LOW | `sw costs` lacks the catalogue version stamp; spend merged across servers | infra `cli.py` |
 | 19 | LOW | `sw usage` refused on a broken machine file | infra `cli.py:309` |

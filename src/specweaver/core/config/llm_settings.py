@@ -55,6 +55,8 @@ _PROVIDER_DOMAIN: dict[str, str] = {
 
 _NEEDS_ADDRESS = frozenset({"openai-compatible", "qwen"})
 
+_VARIABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
 #: Keys that decide where code is sent. Only the machine file may set them.
 _MACHINE_ONLY_KEYS = frozenset({"servers", "base_url", "api_key_env"})
 #: Limit keys. They live in the machine file only, so a cloned repo cannot touch the user's money.
@@ -87,6 +89,9 @@ class ServerEntry(_Strict):
 
     @model_validator(mode="after")
     def _key_variable_and_address(self) -> ServerEntry:
+        if self.api_key_env is not None and not _VARIABLE_NAME.fullmatch(self.api_key_env):
+            msg = "api_key_env names the environment variable that holds the key, not the key"
+            raise ValueError(msg)
         if self.api_key_env is None and self.kind in _DEFAULT_KEY_ENV:
             if not _is_providers_own(self.kind, self.base_url):
                 msg = (
@@ -110,15 +115,20 @@ def _is_providers_own(kind: str, base_url: str | None) -> bool:
     return domain is not None and (host == domain or host.endswith(f".{domain}"))
 
 
-class RoleEntry(_Strict):
+class Sampling(_Strict):
+    """Sampling values, within the widest ranges the providers accept."""
+
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    top_p: float | None = Field(default=None, ge=0, le=1)
+    top_k: int | None = Field(default=None, ge=1)
+
+
+class RoleEntry(Sampling):
     """Which model does a role's work, on which server, with optional sampling overrides."""
 
     model: str
     server: str
-    temperature: float | None = None
     max_output_tokens: int | None = Field(default=None, ge=1)
-    top_p: float | None = None
-    top_k: int | None = None
     #: This kind of task's own limit; it can only lower the model's.
     spend_per_run: float | None = Field(default=None, gt=0)
     tokens_per_run: int | None = Field(default=None, gt=0)
@@ -134,12 +144,6 @@ class RoleEntry(_Strict):
             msg = 'a role names its model as "model@server"'
             raise ValueError(msg)
         return {**entry, "model": model, "server": server}
-
-
-class Sampling(_Strict):
-    temperature: float | None = None
-    top_p: float | None = None
-    top_k: int | None = None
 
 
 class ModelFacts(_Strict):
@@ -232,6 +236,7 @@ class MachineLlmFile(_Strict):
 class ProjectLlmSection(_Strict):
     """The `[llm]` section of a project's `specweaver.toml`: choices only."""
 
+    schema_version: int = SCHEMA_VERSION
     private_only: bool = False
     roles: dict[RoleName, RoleEntry] = Field(default_factory=dict)
 
@@ -244,21 +249,14 @@ class ProjectLlmSection(_Strict):
 def parse_machine_file(text: str, source: str) -> MachineLlmFile:
     """The machine settings file, or `SettingsFileError` naming what is wrong and where."""
     data = _load_toml(text, source)
-    version = data.get("schema_version", SCHEMA_VERSION)
-    if isinstance(version, int) and version > SCHEMA_VERSION:
-        raise SettingsFileError(
-            source,
-            "schema_version",
-            _line_of(text, ("schema_version",)),
-            f"written for settings schema {version}; this SpecWeaver reads {SCHEMA_VERSION} — "
-            "upgrade SpecWeaver",
-        )
+    _check_schema_version(data, text, source, prefix=())
     return _validate(MachineLlmFile, data, text, source, prefix=())
 
 
 def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
     """A project's `[llm]` section; an absent section is an empty choice."""
     section = _load_toml(text, source).get("llm", {})
+    _check_schema_version(section, text, source, prefix=("llm",))
     forbidden = _find_machine_only_key(section, ("llm",))
     if forbidden:
         raise SettingsFileError(
@@ -279,6 +277,23 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
                 "limits live in the machine settings file only, never in a project",
             )
     return _validate(ProjectLlmSection, section, text, source, prefix=("llm",))
+
+
+def _check_schema_version(
+    data: dict[str, Any], text: str, source: str, *, prefix: tuple[str, ...]
+) -> None:
+    version = data.get("schema_version", SCHEMA_VERSION)
+    path = (*prefix, "schema_version")
+    if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+        message = f"schema_version is a whole number from 1 to {SCHEMA_VERSION}"
+    elif version > SCHEMA_VERSION:
+        message = (
+            f"written for settings schema {version}; this SpecWeaver reads {SCHEMA_VERSION} — "
+            "upgrade SpecWeaver"
+        )
+    else:
+        return
+    raise SettingsFileError(source, ".".join(path), _line_of(text, path), message)
 
 
 def _load_toml(text: str, source: str) -> dict[str, Any]:
@@ -526,14 +541,29 @@ def _header_parts(raw: str) -> tuple[str, ...]:
     return tuple(next(g for g in match.groups() if g is not None) for match in _PART.finditer(raw))
 
 
+def line_of(text: str, *keys: str) -> int:
+    """The line of the first of `keys` (dotted, as an error names them) found in `text`, else 1."""
+    for key in keys:
+        line = _find_line(text, _header_parts(key))
+        if line is not None:
+            return line
+    return 1
+
+
 def _line_of(text: str, path: tuple[str, ...]) -> int:
+    return _find_line(text, path) or 1
+
+
+def _find_line(text: str, path: tuple[str, ...]) -> int | None:
+    """The line assigning `path`, else its deepest table's header; None when neither is there."""
     lines = text.splitlines()
     tables = _tables(lines)
     for start, parts in sorted(tables, key=lambda table: -len(table[1])):
         if path[: len(parts)] == parts:
             end = min((s for s, _ in tables if s > start), default=len(lines) + 1)
-            return _line_in_table(lines, start, end, path[len(parts) :])
-    return 1
+            assigned = _assignment_in(lines, start, end, path[len(parts) :])
+            return assigned or (start if parts else None)
+    return None
 
 
 def _tables(lines: list[str]) -> list[tuple[int, tuple[str, ...]]]:
@@ -546,11 +576,11 @@ def _tables(lines: list[str]) -> list[tuple[int, tuple[str, ...]]]:
     return tables
 
 
-def _line_in_table(lines: list[str], start: int, end: int, rest: tuple[str, ...]) -> int:
-    """The line assigning `rest[0]` inside a table, else the table's own line."""
+def _assignment_in(lines: list[str], start: int, end: int, rest: tuple[str, ...]) -> int | None:
+    """The line assigning `rest[0]` inside a table, if any."""
     if rest:
         assign = re.compile(rf"^\s*[\"']?{re.escape(rest[0])}[\"']?\s*=")
         for number in range(start + 1, end):
             if assign.match(lines[number - 1]):
                 return number
-    return max(start, 1)
+    return None

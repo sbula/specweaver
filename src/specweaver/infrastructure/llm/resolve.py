@@ -14,7 +14,12 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, NoReturn
 
-from specweaver.core.config.llm_settings import SettingsFileError, resolve_roles, to_usd
+from specweaver.core.config.llm_settings import (
+    SettingsFileError,
+    line_of,
+    resolve_roles,
+    to_usd,
+)
 from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
@@ -93,11 +98,10 @@ class RoleResolver:
     def _setting(self, role: str) -> ResolvedRole:
         setting = self._roles.get(role) or self._roles.get(DEFAULT_ROLE)
         if setting is None:
-            raise SettingsFileError(
-                self._files.machine_source,
+            self._refuse(
                 f"roles.{role}",
-                0,
                 f"no model for role '{role}' and no roles.{DEFAULT_ROLE} — set one of them",
+                "roles",
             )
         return setting
 
@@ -110,6 +114,7 @@ class RoleResolver:
             self._refuse(
                 f"roles.{setting.role}.{wrong}",
                 f"server '{setting.server}' is limited in {unit}; set the other limit instead",
+                f"roles.{setting.role}",
             )
         if server.private:
             return
@@ -120,6 +125,7 @@ class RoleResolver:
                 f"{table}.usd_per_million_input",
                 f"the hosted model '{setting.model}' has no known price; set usd_per_million_input "
                 f"and usd_per_million_output under [{table}]",
+                f"roles.{setting.role}",
             )
         if facts is not None and facts.thinking_in_output_cap is not True:
             self._refuse(
@@ -127,30 +133,33 @@ class RoleResolver:
                 f"it is not known whether the output limit of '{setting.model}' also bounds its "
                 f"thinking; set thinking_in_output_cap = true under [{table}] once you have "
                 "checked",
+                table,
+                f"roles.{setting.role}",
             )
 
-    def _refuse(self, key: str, message: str) -> NoReturn:
-        raise SettingsFileError(self._files.machine_source, key, 0, message)
+    def _refuse(self, key: str, message: str, *near: str) -> NoReturn:
+        """Refuse naming `key`'s line, else the line of the first of `near` in the file."""
+        line = line_of(self._files.machine_text, key, *near)
+        raise SettingsFileError(self._files.machine_source, key, line, message)
 
     def _check_key(self, server_name: str) -> None:
         variable = self._files.machine.servers[server_name].api_key_env
         if variable and not os.environ.get(variable):
-            raise SettingsFileError(
-                self._files.machine_source,
+            self._refuse(
                 f"servers.{server_name}.api_key_env",
-                0,
                 f"server '{server_name}' reads its key from {variable}, which is not set",
+                f"servers.{server_name}",
             )
 
     def _output_limit(self, role: str, setting: ResolvedRole, facts: ModelFacts | None) -> int:
         limit = setting.max_output_tokens or (facts.max_output if facts else None)
         if limit is None:
-            raise SettingsFileError(
-                self._files.machine_source,
+            self._refuse(
                 f"roles.{role}.max_output_tokens",
-                0,
                 f"the output limit of '{setting.model}' is unknown — set max_output_tokens on the "
                 f'role, or max_output under [models."{setting.model}"]',
+                f"roles.{role}",
+                "roles",
             )
         return limit
 

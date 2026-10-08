@@ -880,6 +880,88 @@
           "symbol_sha": "sha256:411f6c6844acf3804b52a7c55738180f6be291d01066019946880dae37945eb8"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A value no run can use is refused when the file is read, at its line",
+      "scope": [
+        "tests/unit/core/config/test_key_variable_is_a_name.py",
+        "tests/unit/core/config/test_schema_version_gate.py",
+        "tests/unit/core/config/test_sampling_ranges.py",
+        "tests/integration/infrastructure/llm/test_refusals_name_a_line.py"
+      ],
+      "mutants": [
+        {
+          "id": "pasted-key-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "ServerEntry._key_variable_and_address",
+          "old": "        if self.api_key_env is not None and not _VARIABLE_NAME.fullmatch(self.api_key_env):\n",
+          "new": "        if False:\n",
+          "breaks": "a key pasted into api_key_env is kept and shown back",
+          "symbol_sha": "sha256:3289d1895d575b9676e5d7ce4a8547fa95365e7c87d1c6dd329be086622ce323"
+        },
+        {
+          "id": "odd-schema-version-read",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_check_schema_version",
+          "old": "    if isinstance(version, bool) or not isinstance(version, int) or version < 1:\n",
+          "new": "    if False:\n",
+          "breaks": "schema_version = \"2\", 0 or true is read as valid",
+          "symbol_sha": "sha256:a3552061f36195399c6c9858141e205ce1d0adaf6faa01b2191132f51c2b93ed"
+        },
+        {
+          "id": "project-version-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "parse_project_llm",
+          "old": "    _check_schema_version(section, text, source, prefix=(\"llm\",))\n",
+          "new": "    pass\n",
+          "breaks": "a project file from a newer schema is read as if current",
+          "symbol_sha": "sha256:e16a7edb0b38dbe7d28a34dfcf99edb5327c013d1bdba7852d36dadcb5753b1f"
+        },
+        {
+          "id": "temperature-unbounded",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "Sampling",
+          "old": "    temperature: float | None = Field(default=None, ge=0, le=2)\n",
+          "new": "    temperature: float | None = None\n",
+          "breaks": "temperature = 50 fails every call mid-run",
+          "symbol_sha": "sha256:361850c669481100c3535716f759fc487c6a3322a4b61ea09b37d964b81f7ff0"
+        },
+        {
+          "id": "top-p-unbounded",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "Sampling",
+          "old": "    top_p: float | None = Field(default=None, ge=0, le=1)\n",
+          "new": "    top_p: float | None = None\n",
+          "breaks": "a negative top_p fails every call mid-run",
+          "symbol_sha": "sha256:361850c669481100c3535716f759fc487c6a3322a4b61ea09b37d964b81f7ff0"
+        },
+        {
+          "id": "top-k-unbounded",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "Sampling",
+          "old": "    top_k: int | None = Field(default=None, ge=1)\n",
+          "new": "    top_k: int | None = None\n",
+          "breaks": "top_k = 0 fails every call mid-run",
+          "symbol_sha": "sha256:361850c669481100c3535716f759fc487c6a3322a4b61ea09b37d964b81f7ff0"
+        },
+        {
+          "id": "refusal-at-line-one",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._refuse",
+          "old": "        line = line_of(self._files.machine_text, key, *near)\n",
+          "new": "        line = line_of(self._files.machine_text, key)\n",
+          "breaks": "a refusal names a line that does not show the problem",
+          "symbol_sha": "sha256:f09b46c1b8ba9a6a2be22fd42f5ca828c5ca673845fee5daa737d70cc89c0d4a"
+        }
+      ]
     }
   ]
 }
