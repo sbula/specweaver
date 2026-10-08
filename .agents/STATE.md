@@ -25,8 +25,10 @@ to `✅`. Do not.** Only the user can give the sign-off.
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
 `B-FLOW-05` and `C-FLOW-13` are not done either. The audit marks each fixed row **Fixed**;
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
-Open and waiting on the user: B-FLOW-05 #6/#9 (a resume re-runs paid work), #11 (`--model` drops
-role limits), #12 (queued calls reserve before their slot). Next: the remaining C-FLOW-13 rows,
+**Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
+accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
+Open and waiting on the user: #11 (`--model` and the limits matrix), #12 (queued calls reserve
+before their slot). Next: the remaining C-FLOW-13 rows,
 then the other false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.

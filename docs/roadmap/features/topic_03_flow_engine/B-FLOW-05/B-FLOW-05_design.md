@@ -117,6 +117,7 @@ None.
 | AD-3 | The brake's totals and raised limits are a JSON field on the persisted run in `pipeline_state.db` | the run is what parks and resumes, so its spend belongs with it | No — a new field in the run-state store, not a new store |
 | AD-4 | The worst-case check is in the adapters' tool loop as well as in the collector, through one `SpendBudget.before_call(...)` | the collector cannot see rounds; one method keeps one rule | No |
 | AD-5 | REST answers HTTP 402 with `error_code = "SPEND_LIMIT"` `[agreed 2026-10-06]` | 402 *Payment Required* says money, not a fault | No |
+| AD-6 | **A resume pays again for work already done** — the parked step re-runs from its start, and a fan-out's resume re-runs every sub-run. The paid work stays counted, so the brake still holds `[agreed 2026-10-08]` | saving each finished model answer for reuse needs its own design; revisit when real runs show what the repeats cost | No |
 
 ## ROI Analysis
 
@@ -160,6 +161,7 @@ None.
 - Choosing or comparing models — `A-FLOW-01`.
 - A monthly limit — providers' billing does that; `sw costs` shows month-to-date `[agreed 2026-09-26]`.
 - Downgrading or switching the model at a limit `[agreed 2026-09-26]`.
+- Reusing paid model answers when a run resumes — deferred, see AD-6 `[agreed 2026-10-08]`.
 - Counting tokens exactly through the providers' counting endpoints `[agreed 2026-10-06]`.
 - The agentic runtime's own turn count (`AutonomySettings.max_turns`, not yet wired) — `C-FLOW-11`.
 
