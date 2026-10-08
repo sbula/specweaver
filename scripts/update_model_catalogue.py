@@ -68,10 +68,19 @@ def _facts(model: dict[str, Any]) -> dict[str, Any]:
         "context": limit.get("context") or None,
         "max_output": limit.get("output") or None,
         "tool_calls": model.get("tool_call"),
-        "usd_per_million_input": cost.get("input"),
-        "usd_per_million_output": cost.get("output"),
+        "usd_per_million_input": _highest(cost, ("input", "cache_write")),
+        "usd_per_million_output": _highest(cost, ("output", "reasoning")),
     }
     return {key: value for key, value in facts.items() if value is not None}
+
+
+def _highest(cost: dict[str, Any], fields: tuple[str, ...]) -> float | None:
+    """The highest price any of `fields` has, at the base rate or in any tier (a nested table such
+    as `context_over_200k`), so the brake never counts a call below what it can be billed
+    `[agreed 2026-10-08]`."""
+    tables = [cost, *(value for value in cost.values() if isinstance(value, dict))]
+    prices = [table[f] for table in tables for f in fields if isinstance(table.get(f), int | float)]
+    return max(prices) if prices else None
 
 
 def render(catalogue: dict[str, Any]) -> str:

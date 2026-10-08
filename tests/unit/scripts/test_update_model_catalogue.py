@@ -129,3 +129,32 @@ def test_main_writes_a_stamped_file_from_what_it_fetched(
         "MIT License",
     )
     assert source["fetched"]
+
+
+def test_the_brake_gets_the_highest_price_a_call_can_be_billed(mod: ModuleType) -> None:
+    api = {
+        "anthropic": {
+            "models": {
+                "tiered": {
+                    "cost": {
+                        "input": 3,
+                        "output": 15,
+                        "cache_read": 0.3,
+                        "cache_write": 3.75,
+                        "reasoning": 20,
+                        "context_over_200k": {"input": 6, "output": 22.5},
+                    }
+                }
+            }
+        }
+    }
+
+    api["anthropic"]["models"]["reasons"] = {
+        "cost": {"input": 3, "output": 10, "cache_write": 3.75, "reasoning": 40}
+    }
+
+    models = mod.convert(api, _STAMP)["models"]
+
+    tiered, reasons = models["anthropic/tiered"], models["anthropic/reasons"]
+    assert (tiered["usd_per_million_input"], tiered["usd_per_million_output"]) == (6, 22.5)
+    assert (reasons["usd_per_million_input"], reasons["usd_per_million_output"]) == (3.75, 40)

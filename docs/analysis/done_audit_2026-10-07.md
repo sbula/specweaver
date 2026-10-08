@@ -28,7 +28,7 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls. **Accepted 2026-10-08, B-FLOW-05 AD-6:** revisit when real runs show the cost | `approval.py` |
 | 10 | MED | A response without `usage` counts as 0, so `tokens_per_run` never fills on such servers. **Fixed** 2026-10-08: it counts its worst case | `openai.py:160-164`; `.tmp/repro_no_usage.py` |
 | 11 | MED | `--model` drops role limits (maybe intended — user's call). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is `B-FLOW-07` | `resolve.py:209-217` |
-| 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6). **Partly fixed** 2026-10-08: the question names what running calls may add; queued calls still reserve before their slot | `collector.py:128`; `_rate_limit.py:51` |
+| 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6). **Partly fixed** 2026-10-08: the question names what running calls may add; queued calls still reserve before their slot — **kept on purpose, user's decision 2026-10-08** | `collector.py:128`; `_rate_limit.py:51` |
 | 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction). **Fixed** 2026-10-08, and the first check counts the system instruction | adapters' `before_request` |
 | 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs. **Fixed** 2026-10-08: asked on stderr | `_core.py:131-141` |
 | 15 | LOW | "Yes" on one limit then a stop on another leaves the first raised. **Fixed** 2026-10-08 | `budget.py:138-153` |
@@ -63,7 +63,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 19 | LOW | `sw usage` refused on a broken machine file. **Fixed** 2026-10-08: it reports in USD and names the broken line | infra `cli.py:309` |
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted. **Fixed** 2026-10-08 | writer |
 | 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address. **Partly fixed** 2026-10-08: an edited limit applies at once; two names on one address still get two limits | `_rate_limit.py` (confirmed) |
-| 22 | LOW | Catalogue drops tiered/reasoning/cache prices — **confirmed 2026-10-08**: only base input/output are kept, so a long prompt on a tiered model is under-counted; waits on the user | `update_model_catalogue.py:64-72` |
+| 22 | LOW | Catalogue drops tiered/reasoning/cache prices — **confirmed 2026-10-08**: only base input/output are kept, so a long prompt on a tiered model is under-counted. **Fixed** 2026-10-08 (user chose A): the brake gets the highest price a call can be billed; the shipped catalogue must be regenerated (`python scripts/update_model_catalogue.py`); exact tiers belong to `B-FLOW-07` | `update_model_catalogue.py:64-72` |
 | 23 | Info | `max_output_tokens = 4096`, `AutonomySettings.max_turns = 10` still in code (dead). **Partly fixed** 2026-10-08: the output limit has no default; `max_turns` waits for `C-FLOW-11`, which wires it | `models.py:73`; `settings.py:118` |
 
 ## User paths (US-16 P1–P8, US-04 S1–S7)

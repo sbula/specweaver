@@ -264,6 +264,36 @@
           "new": "    pass\n",
           "breaks": "sw costs shows prices without saying how old the catalogue is",
           "symbol_sha": "sha256:19ecc8430ff49d578ae8705df9f51ae4020cda6ff8015152d7823c080b7f972c"
+        },
+        {
+          "id": "tier-price-dropped",
+          "origin": "authored",
+          "file": "scripts/update_model_catalogue.py",
+          "symbol": "_highest",
+          "old": "    tables = [cost, *(value for value in cost.values() if isinstance(value, dict))]\n",
+          "new": "    tables = [cost]\n",
+          "breaks": "a long prompt on a tiered model is counted at the cheaper base price",
+          "symbol_sha": "sha256:cafb426c96ab06be33acc5e030b1b77538aa729ea61d945f0f360464e2c02989"
+        },
+        {
+          "id": "reasoning-price-dropped",
+          "origin": "authored",
+          "file": "scripts/update_model_catalogue.py",
+          "symbol": "_facts",
+          "old": "        \"usd_per_million_output\": _highest(cost, (\"output\", \"reasoning\")),\n",
+          "new": "        \"usd_per_million_output\": _highest(cost, (\"output\",)),\n",
+          "breaks": "thinking billed above the output price is counted at the output price",
+          "symbol_sha": "sha256:f7dd24c6882b59de833723046dedabaa22940bad5715b00defc96f66f6215173"
+        },
+        {
+          "id": "cache-write-price-dropped",
+          "origin": "authored",
+          "file": "scripts/update_model_catalogue.py",
+          "symbol": "_facts",
+          "old": "        \"usd_per_million_input\": _highest(cost, (\"input\", \"cache_write\")),\n",
+          "new": "        \"usd_per_million_input\": _highest(cost, (\"input\",)),\n",
+          "breaks": "a cache write billed above the input price is under-counted",
+          "symbol_sha": "sha256:f7dd24c6882b59de833723046dedabaa22940bad5715b00defc96f66f6215173"
         }
       ]
     },

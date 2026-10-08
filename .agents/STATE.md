@@ -27,9 +27,9 @@ Of 141 items marked done, **26 are false** (a promised behaviour missing or brok
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
-Open and waiting on the user (asked 2026-10-08): B-FLOW-05 #12 (queued calls reserve before
-their slot); C-FLOW-13 #12/#13 (`sw config show` cannot see the catalogue and adapters from its
-module); #22 (tiered prices dropped, so long prompts are under-counted). Next: `B-FLOW-07` (limits matrix: model × task × DAL, the user's next topic), then the other
+Decided 2026-10-08: queued calls keep reserving before their slot (B-FLOW-05 #12); the brake
+uses the highest tier price (C-FLOW-13 #22 — regenerate the catalogue to apply it); `sw config
+show` moves into the LLM module so it shows what a call sends (C-FLOW-13 #12/#13, in progress). Next: `B-FLOW-07` (limits matrix: model × task × DAL, the user's next topic), then the other
 false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
