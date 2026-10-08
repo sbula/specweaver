@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+#: Roles that read and never write.
+_READ_ONLY_ROLES = frozenset({"reviewer", "planner", "arbiter_agent"})
+
+
 def _folder_grant(path: Any, mode: Any) -> Any:
     """A recursive `FolderGrant` over `path`. Every grant this dispatcher issues is recursive."""
     from specweaver.sandbox.security import FolderGrant
@@ -172,7 +176,7 @@ class ToolDispatcher:
                 )
             ]
 
-        if role == "arbiter_agent":
+        if role in _READ_ONLY_ROLES:
             # A read-only boundary already withholds the roots, so granting them would widen it.
             roots = [] if isinstance(boundary, ReadOnlyWorkspaceBoundary) else list(boundary.roots)
             return [

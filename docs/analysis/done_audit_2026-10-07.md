@@ -90,7 +90,7 @@ proven through `/review`, not `/implement`).
 | D-EXEC-02, INT-US-09 FR-5 | Per-step worktree isolation discards all output (no commit before strip-merge, empty allow-list); run says COMPLETED. **Fixed** 2026-10-08 (user chose the session rule): commit, then merge only a passed step's targets; FR-7 micro-sync withdrawn | `sandboxed_execution.py:96-112` |
 | E-SENS-01 | grep/find follow symlinks out of the root. **Fixed** 2026-10-08: the search path is contained, symlinks are skipped | `sandbox/filesystem/interfaces/tool.py:189-234`; `core/search.py:223` |
 | E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87` |
-| E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access | `run_context.py:114-123`; `security.py:128` |
+| E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access. **Partly fixed** 2026-10-08: reviewer and planner get read grants; task-scoped roots still unbuilt | `run_context.py:114-123`; `security.py:128` |
 | E-INTL-01 FR-3 | No secret redaction before prompts | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash | `handlers/validation.py:228` |
