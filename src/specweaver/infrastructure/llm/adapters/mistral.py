@@ -228,7 +228,7 @@ class MistralAdapter(LLMAdapter):
                     self._apply_on_tool_round(messages, mistral_messages, round_num, on_tool_round)
 
                 if before_request:
-                    before_request(round_num, payload_chars(mistral_messages))
+                    before_request(round_num, payload_chars(kwargs))
                 try:
                     response = await client.chat.complete_async(**kwargs)
                 except Exception as e:

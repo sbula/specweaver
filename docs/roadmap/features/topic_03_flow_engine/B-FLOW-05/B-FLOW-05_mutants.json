@@ -694,17 +694,17 @@
           "old": "        if self.stopped is not None:\n            raise self.stopped\n        raises: dict[str, float] = {}\n",
           "new": "        raises: dict[str, float] = {}\n",
           "breaks": "after a no, every further call asks again",
-          "symbol_sha": "sha256:6c3c686bbb3441acb37117a20b0f99a4b2e5420f6986e9138eb5392dc49444a7"
+          "symbol_sha": "sha256:8a0fd0499f59b84c3a99705a0742be812d0a04f61102b33831a8a4cb240d204f"
         },
         {
           "id": "refused-call-keeps-raise",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.before_call",
-          "old": "                raises[limit.key] = steps * limit.value\n",
-          "new": "                self._raised[limit.key] += steps * limit.value\n",
+          "old": "                raises[limit.key] = self._ask_to_raise(limit, amount, needed)\n",
+          "new": "                self._raised[limit.key] += self._ask_to_raise(limit, amount, needed)\n",
           "breaks": "a yes on one limit stays even though the call was refused",
-          "symbol_sha": "sha256:6c3c686bbb3441acb37117a20b0f99a4b2e5420f6986e9138eb5392dc49444a7"
+          "symbol_sha": "sha256:8a0fd0499f59b84c3a99705a0742be812d0a04f61102b33831a8a4cb240d204f"
         },
         {
           "id": "warning-never-rearmed",
@@ -755,6 +755,16 @@
           "new": "    kept = (StepStatus.PASSED,)",
           "breaks": "a scan at a limit throws away what it found",
           "symbol_sha": "sha256:527aedcefcd29d6b12df16a8d9e88c0024c4404b4e24b0e459eb20f956d98fa8"
+        },
+        {
+          "id": "running-calls-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget._ask_to_raise",
+          "old": "        if self._reserved[limit.key] > 0:\n",
+          "new": "        if False:\n",
+          "breaks": "the question shows 0 spent and hides what running calls hold",
+          "symbol_sha": "sha256:666407aa99b4b2b9b73ced85ed5430fef7e65ceef4301dabba20a812df74e798"
         }
       ]
     },
@@ -784,6 +794,69 @@
           "new": "        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value, RunStatus.FAILED.value)\n",
           "breaks": "sw resume cannot find an interrupted run",
           "symbol_sha": "sha256:4f098f6613ca1d63a71d7ba4ea9db2e13a87be1d8d4451cacb8659dec6fe4849"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Each request's worst case counts all it sends",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_openai.py",
+        "tests/unit/infrastructure/llm/test_mistral.py",
+        "tests/unit/infrastructure/llm/test_anthropic.py",
+        "tests/unit/infrastructure/llm/test_adapters.py",
+        "tests/unit/infrastructure/llm/test_worst_case_counts_everything_sent.py"
+      ],
+      "mutants": [
+        {
+          "id": "openai-round-without-schemas",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "before_request(round_num, payload_chars(kwargs))",
+          "new": "before_request(round_num, payload_chars(oai_messages))",
+          "breaks": "a tool round's check leaves out the tool schemas and system prompt",
+          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
+        },
+        {
+          "id": "mistral-round-without-schemas",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "before_request(round_num, payload_chars(kwargs))",
+          "new": "before_request(round_num, payload_chars(mistral_messages))",
+          "breaks": "a tool round's check leaves out the tool schemas and system prompt",
+          "symbol_sha": "sha256:fe691eb6857b21d6db11fd1f61d45a1e9005641fdad98c07a6f55a260fe8d186"
+        },
+        {
+          "id": "anthropic-round-without-schemas",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "before_request(round_num, payload_chars(kwargs))",
+          "new": "before_request(round_num, payload_chars(anthropic_messages))",
+          "breaks": "a tool round's check leaves out the tool schemas and system prompt",
+          "symbol_sha": "sha256:40a4a77b376ea94abeb3980215a94d3c18ba2c58aed779ee392bd6c4130d8214"
+        },
+        {
+          "id": "gemini-round-without-schemas",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "payload_chars([system_instruction, gemini_tools, contents])",
+          "new": "payload_chars(contents)",
+          "breaks": "a Gemini tool round's check leaves out the tool schemas and system instruction",
+          "symbol_sha": "sha256:80fa41f880fcc06258fc3572fe92d1ec548a0cab18123566cf2d1856019a3d07"
+        },
+        {
+          "id": "system-instruction-free",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._prompt_tokens",
+          "old": "        text = (config.system_instruction or \"\") + \"\".join(m.content for m in messages)\n",
+          "new": "        text = \"\".join(m.content for m in messages)\n",
+          "breaks": "a long system instruction is sent without counting against the limits",
+          "symbol_sha": "sha256:68d9a36c8c6c405e0d0a9a56ea1a3ae77f0e1253a19a4b4a8592af347604d93d"
         }
       ]
     }

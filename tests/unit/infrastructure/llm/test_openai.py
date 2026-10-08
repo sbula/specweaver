@@ -176,7 +176,7 @@ class TestOpenAIAdapter:
         adapter._client.chat.completions.create = AsyncMock(side_effect=[asks, done])
         config = GenerationConfig(
             model="gpt-5.4",
-            tools=[ToolDefinition(name="my_tool", description="desc")],
+            tools=[ToolDefinition(name="my_tool", description="d" * 8000)],
             max_tool_rounds=5,
         )
         executor = AsyncMock()
@@ -192,6 +192,7 @@ class TestOpenAIAdapter:
 
         assert [r for r, _ in seen] == [0, 1]
         assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
+        assert all(chars > 8000 for _, chars in seen)  # the tool schemas are in every round
 
     @pytest.mark.asyncio
     async def test_a_tool_loop_that_fails_partway_keeps_the_usage_of_the_rounds_it_ran(

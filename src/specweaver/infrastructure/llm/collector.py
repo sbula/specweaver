@@ -113,7 +113,7 @@ class TelemetryCollector:
         self._budget.record(scope, cost, reservation)
 
     def _prompt_tokens(self, messages: list[Message], config: GenerationConfig) -> int:
-        text = "".join(message.content for message in messages)
+        text = (config.system_instruction or "") + "".join(m.content for m in messages)
         if config.tools:
             text += json.dumps([tool.model_dump(mode="json") for tool in config.tools])
         return _estimate_tokens(text)

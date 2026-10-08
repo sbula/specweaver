@@ -223,6 +223,17 @@ class TestAsking:
 
         assert budget.stopped is caught.value
 
+    def test_the_question_names_what_running_calls_may_still_add(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or False)
+        budget.before_call(_scope(_RUN_USD), Cost(usd=7.0, tokens=0))  # still running
+
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(_RUN_USD), Cost(usd=4.0, tokens=0))
+
+        assert "USD 0.00 of USD 10.00 spent" in asked[0]
+        assert "calls already running may add up to USD 7.00" in asked[0]
+
     def test_after_a_no_the_run_spends_nothing_more_and_asks_nothing(self) -> None:
         asked: list[str] = []
         budget = SpendBudget(ask=lambda q: asked.append(q) or False)

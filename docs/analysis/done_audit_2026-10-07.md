@@ -28,8 +28,8 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls | `approval.py` |
 | 10 | MED | A response without `usage` counts as 0, so `tokens_per_run` never fills on such servers. **Fixed** 2026-10-08: it counts its worst case | `openai.py:160-164`; `.tmp/repro_no_usage.py` |
 | 11 | MED | `--model` drops role limits (maybe intended — user's call) | `resolve.py:209-217` |
-| 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6) | `collector.py:128`; `_rate_limit.py:51` |
-| 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction) | adapters' `before_request` |
+| 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6). **Partly fixed** 2026-10-08: the question names what running calls may add; queued calls still reserve before their slot | `collector.py:128`; `_rate_limit.py:51` |
+| 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction). **Fixed** 2026-10-08, and the first check counts the system instruction | adapters' `before_request` |
 | 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs. **Fixed** 2026-10-08: asked on stderr | `_core.py:131-141` |
 | 15 | LOW | "Yes" on one limit then a stop on another leaves the first raised. **Fixed** 2026-10-08 | `budget.py:138-153` |
 | 16 | LOW | After resume, raised limits of keys not touched this session are dropped from the next snapshot. **Fixed** 2026-10-08 | `budget.py:121-129` |

@@ -315,7 +315,9 @@ class GeminiAdapter(LLMAdapter):
                     )
 
                 if before_request:
-                    before_request(round_num, payload_chars(contents))
+                    before_request(
+                        round_num, payload_chars([system_instruction, gemini_tools, contents])
+                    )
                 try:
                     response = await client.aio.models.generate_content(
                         model=config.model,

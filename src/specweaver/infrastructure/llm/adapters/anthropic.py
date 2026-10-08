@@ -242,7 +242,7 @@ class AnthropicAdapter(LLMAdapter):
                     )
 
                 if before_request:
-                    before_request(round_num, payload_chars(anthropic_messages))
+                    before_request(round_num, payload_chars(kwargs))
                 try:
                     response = await client.messages.create(**kwargs)
                 except Exception as e:

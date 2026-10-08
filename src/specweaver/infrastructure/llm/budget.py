@@ -176,16 +176,7 @@ class SpendBudget:
                 self._stop(limit, f"the model's price is unknown, so {limit.key} cannot be checked")
             needed = self._spent[limit.key] + self._reserved[limit.key] + amount
             if needed > self.limit_of(limit):
-                reason = (
-                    f"{limit.key} would be crossed: {self._show(limit, self._spent[limit.key])} of "
-                    f"{self._show(limit, self.limit_of(limit))} spent, the next call may cost up to "
-                    f"{self._show(limit, amount)}"
-                )
-                steps = math.ceil((needed - self.limit_of(limit)) / limit.value)
-                raised = self._show(limit, self.limit_of(limit) + steps * limit.value)
-                if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
-                    self._stop(limit, reason)
-                raises[limit.key] = steps * limit.value
+                raises[limit.key] = self._ask_to_raise(limit, amount, needed)
         for key, amount in raises.items():
             self._raised[key] += amount
         reservation = Reservation(
@@ -194,6 +185,23 @@ class SpendBudget:
         for key, amount in reservation.amounts.items():
             self._reserved[key] += amount
         return reservation
+
+    def _ask_to_raise(self, limit: Limit, amount: float, needed: float) -> float:
+        """How far a "yes" raises `limit` for a call that would cross it; a "no" stops."""
+        current = self.limit_of(limit)
+        reason = (
+            f"{limit.key} would be crossed: {self._show(limit, self._spent[limit.key])} of "
+            f"{self._show(limit, current)} spent, the next call may cost up to "
+            f"{self._show(limit, amount)}"
+        )
+        if self._reserved[limit.key] > 0:
+            running = self._show(limit, self._reserved[limit.key])
+            reason += f", and calls already running may add up to {running}"
+        steps = math.ceil((needed - current) / limit.value)
+        raised = self._show(limit, current + steps * limit.value)
+        if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
+            self._stop(limit, reason)
+        return steps * limit.value
 
     def record(
         self, scope: CallScope, cost: Cost | None, reservation: Reservation | None = None

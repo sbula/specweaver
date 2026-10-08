@@ -253,7 +253,7 @@ class OpenAIAdapter(LLMAdapter):
                     self._apply_on_tool_round(messages, oai_messages, round_num, on_tool_round)
 
                 if before_request:
-                    before_request(round_num, payload_chars(oai_messages))
+                    before_request(round_num, payload_chars(kwargs))
                 try:
                     response = await client.chat.completions.create(**kwargs)
                 except Exception as e:
