@@ -109,6 +109,33 @@ class TestCatalogueFacts:
         assert facts is not None and facts.sampling is not None
         assert (facts.sampling.top_p, facts.sampling.top_k) == (0.9, None)
 
+    def test_a_kind_qualified_entry_applies_to_that_kind_only(self) -> None:
+        overrides = {"anthropic/claude-sonnet-4-5": ModelFacts(usd_per_million_input=1.0)}
+        catalogue = _catalogue()
+
+        hosted = catalogue.facts("anthropic", "claude-sonnet-4-5", overrides)
+        local = catalogue.facts("openai-compatible", "claude-sonnet-4-5", overrides)
+
+        assert hosted is not None and hosted.usd_per_million_input == 1.0
+        assert local is None
+
+    def test_a_kind_qualified_entry_beats_a_bare_one(self) -> None:
+        overrides = {
+            "claude-sonnet-4-5": ModelFacts(usd_per_million_input=2.0),
+            "anthropic/claude-sonnet-4-5": ModelFacts(usd_per_million_input=1.0),
+        }
+
+        facts = _catalogue().facts("anthropic", "claude-sonnet-4-5", overrides)
+
+        assert facts is not None and facts.usd_per_million_input == 1.0
+
+    def test_a_model_id_with_a_slash_still_matches_bare(self) -> None:
+        overrides = {"openai/gpt-5": ModelFacts(context=4096)}
+
+        facts = _catalogue().facts("openai-compatible", "openai/gpt-5", overrides)
+
+        assert facts is not None and facts.context == 4096
+
     def test_an_unknown_model_has_no_facts(self) -> None:
         assert _catalogue().facts("anthropic", "claude-nonexistent", {}) is None
 

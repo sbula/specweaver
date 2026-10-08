@@ -214,6 +214,16 @@
           "new": "        if known is None:\n",
           "breaks": "a model the user describes only in the machine file has no facts",
           "symbol_sha": "sha256:ceaa2c49fab185bb9d94df3d254bc8a552bffe0d60e7174c901ba0ceb1153f4b"
+        },
+        {
+          "id": "kind-entry-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/catalogue.py",
+          "symbol": "Catalogue.facts",
+          "old": "        override = _merge(overrides.get(model), overrides.get(f\"{kind}/{model}\"))\n",
+          "new": "        override = overrides.get(model)\n",
+          "breaks": "[models.\"anthropic/claude-sonnet-5\"] is silently ignored",
+          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
         }
       ]
     },

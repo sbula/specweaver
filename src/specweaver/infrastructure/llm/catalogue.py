@@ -62,9 +62,12 @@ class Catalogue:
     def facts(
         self, kind: str, model: str, overrides: Mapping[str, ModelFacts]
     ) -> ModelFacts | None:
-        """The model's facts on a server of this kind, or `None` if nothing is known about it."""
+        """The model's facts on a server of this kind, or `None` if nothing is known about it.
+
+        A machine entry named `"<kind>/<model>"` applies to that kind only, over a bare `"<model>"`.
+        """
         known = self.models.get(f"{kind}/{model}")
-        override = overrides.get(model)
+        override = _merge(overrides.get(model), overrides.get(f"{kind}/{model}"))
         if known is None and override is None:
             return None
         return _merge(_merge(self.kinds.get(kind), known), override)

@@ -94,6 +94,8 @@ rate_date = 2026-09-26
   `private_only` still applies.
 - `sw costs` shows each role's model, its price per 1M tokens and this month's spend;
   `sw costs set <model> <input> <output>` corrects a price, in your currency.
+  `sw costs set <kind>/<model> ...` (e.g. `anthropic/claude-sonnet-5`) prices it on one kind of
+  server only; a bare model name prices it on every kind.
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
 - A provider's own key (`OPENAI_API_KEY` and the like) is sent only to that provider's own
   address. Point `kind = "openai"` at another host and you must name that host's key in
