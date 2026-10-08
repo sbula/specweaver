@@ -399,6 +399,16 @@
           "new": "    return AsyncRateLimiterAdapter(adapter, key=name)\n",
           "breaks": "max_parallel in the settings file has no effect",
           "symbol_sha": "sha256:afd19986e4f84bfb8f922d7bbd34743a75aabf1de3835aef278a8be73faa6693"
+        },
+        {
+          "id": "edited-limit-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py",
+          "symbol": "AsyncRateLimiterAdapter._get_semaphore",
+          "old": "        slot = (self._key, self._limit)\n",
+          "new": "        slot = (self._key, 0)\n",
+          "breaks": "an edited max_parallel is ignored until the process restarts",
+          "symbol_sha": "sha256:932139282fc3878469395fa4aae3c66c4cdfd0b0b333fcb641345d87bbba7dfb"
         }
       ]
     },

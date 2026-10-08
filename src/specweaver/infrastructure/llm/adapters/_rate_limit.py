@@ -11,11 +11,12 @@ from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, 
 
 logger = logging.getLogger(__name__)
 
-# One semaphore per (event loop, key). An asyncio.Semaphore binds to the loop it first waits on, so
-# one shared across loops raises "bound to a different event loop" under contention.
-_SEMAPHORES: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, dict[str, asyncio.Semaphore]] = (
-    weakref.WeakKeyDictionary()
-)
+# One semaphore per (event loop, key, limit). An asyncio.Semaphore binds to the loop it first waits
+# on, so one shared across loops raises "bound to a different event loop" under contention. The limit
+# is part of the key so an edited `max_parallel` applies in a long-running process.
+_SEMAPHORES: weakref.WeakKeyDictionary[
+    asyncio.AbstractEventLoop, dict[tuple[str, int], asyncio.Semaphore]
+] = weakref.WeakKeyDictionary()
 
 
 class AsyncRateLimiterAdapter(LLMAdapter):
@@ -35,11 +36,12 @@ class AsyncRateLimiterAdapter(LLMAdapter):
         self.api_key_env_var = wrapped.api_key_env_var
 
     def _get_semaphore(self) -> asyncio.Semaphore:
-        """The semaphore for this key on the running event loop; the first limit set wins."""
+        """The semaphore for this key and limit on the running event loop."""
         per_loop = _SEMAPHORES.setdefault(asyncio.get_running_loop(), {})
-        if self._key not in per_loop:
-            per_loop[self._key] = asyncio.Semaphore(self._limit)
-        return per_loop[self._key]
+        slot = (self._key, self._limit)
+        if slot not in per_loop:
+            per_loop[slot] = asyncio.Semaphore(self._limit)
+        return per_loop[slot]
 
     async def _wait_for_lock(self) -> asyncio.Semaphore:
         semaphore = self._get_semaphore()

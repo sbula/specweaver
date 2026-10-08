@@ -254,3 +254,30 @@ async def test_rate_limiter_stream_delegation():
         chunks.append(chunk)
 
     assert chunks == ["success"]
+
+
+async def test_an_edited_parallel_limit_applies_without_a_restart() -> None:
+    import asyncio
+
+    from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
+    running = 0
+    most = 0
+
+    class _Slow:
+        provider_name = "fake"
+        api_key_env_var = ""
+
+        async def generate(self, _messages, _config):
+            nonlocal running, most
+            running += 1
+            most = max(most, running)
+            await asyncio.sleep(0.02)
+            running -= 1
+
+    AsyncRateLimiterAdapter(_Slow(), limit=1, key="edited")._get_semaphore()
+    widened = AsyncRateLimiterAdapter(_Slow(), limit=3, key="edited")
+
+    await asyncio.gather(*(widened.generate([], None) for _ in range(3)))
+
+    assert most == 3
