@@ -1010,7 +1010,8 @@
         "tests/unit/core/config/test_key_variable_is_a_name.py",
         "tests/unit/core/config/test_schema_version_gate.py",
         "tests/unit/core/config/test_sampling_ranges.py",
-        "tests/integration/infrastructure/llm/test_refusals_name_a_line.py"
+        "tests/integration/infrastructure/llm/test_refusals_name_a_line.py",
+        "tests/unit/core/config/test_line_of.py"
       ],
       "mutants": [
         {
@@ -1082,6 +1083,26 @@
           "new": "        line = line_of(self._files.machine_text, key)\n",
           "breaks": "a refusal names a line that does not show the problem",
           "symbol_sha": "sha256:f09b46c1b8ba9a6a2be22fd42f5ca828c5ca673845fee5daa737d70cc89c0d4a"
+        },
+        {
+          "id": "string-lines-read-as-keys",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_code_lines",
+          "old": "        code.append(\"\" if quote else line)\n",
+          "new": "        code.append(line)\n",
+          "breaks": "an error names a line inside a multi-line string",
+          "symbol_sha": "sha256:ca60dd1faf21a945408bd9ba177090ef5e8e998c143ea56297b35714a2e29ef8"
+        },
+        {
+          "id": "dotted-key-first-part-only",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_assignment_in",
+          "old": "        if parts and rest[: len(parts)] == parts and (best is None or len(parts) > best[0]):\n",
+          "new": "        if parts and rest[:1] == parts[:1] and best is None:\n",
+          "breaks": "an error names a sibling dotted key's line",
+          "symbol_sha": "sha256:534281f28e762c1dac4a210cde9f7ca7c787b8bf47b7f5ee821dc9ea96cee2e2"
         }
       ]
     }

@@ -567,7 +567,7 @@ def _line_of(text: str, path: tuple[str, ...]) -> int:
 
 def _find_line(text: str, path: tuple[str, ...]) -> int | None:
     """The line assigning `path`, else its deepest table's header; None when neither is there."""
-    lines = text.splitlines()
+    lines = _code_lines(text.splitlines())
     tables = _tables(lines)
     for start, parts in sorted(tables, key=lambda table: -len(table[1])):
         if path[: len(parts)] == parts:
@@ -575,6 +575,18 @@ def _find_line(text: str, path: tuple[str, ...]) -> int | None:
             assigned = _assignment_in(lines, start, end, path[len(parts) :])
             return assigned or (start if parts else None)
     return None
+
+
+def _code_lines(lines: list[str]) -> list[str]:
+    """`lines` with the inside of every multi-line string blanked, so it is never read as a key."""
+    code: list[str] = []
+    quote: str | None = None
+    for line in lines:
+        code.append("" if quote else line)
+        for mark in ('"""', "'''"):
+            if (quote is None or quote == mark) and line.count(mark) % 2:
+                quote = None if quote else mark
+    return code
 
 
 def _tables(lines: list[str]) -> list[tuple[int, tuple[str, ...]]]:
@@ -587,11 +599,17 @@ def _tables(lines: list[str]) -> list[tuple[int, tuple[str, ...]]]:
     return tables
 
 
+_ASSIGNED_KEY = re.compile(r"^\s*([^=#\[][^=]*?)\s*=")
+
+
 def _assignment_in(lines: list[str], start: int, end: int, rest: tuple[str, ...]) -> int | None:
-    """The line assigning `rest[0]` inside a table, if any."""
-    if rest:
-        assign = re.compile(rf"^\s*[\"']?{re.escape(rest[0])}[\"']?\s*=")
-        for number in range(start + 1, end):
-            if assign.match(lines[number - 1]):
-                return number
-    return None
+    """The line inside a table whose key, dotted or not, is `rest` or the nearest part of it."""
+    best: tuple[int, int] | None = None
+    for number in range(start + 1, end):
+        found = _ASSIGNED_KEY.match(lines[number - 1])
+        if not found:
+            continue
+        parts = _header_parts(found.group(1))
+        if parts and rest[: len(parts)] == parts and (best is None or len(parts) > best[0]):
+            best = (len(parts), number)
+    return best[1] if best else None
