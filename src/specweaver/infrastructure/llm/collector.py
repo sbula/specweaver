@@ -228,9 +228,13 @@ class TelemetryCollector:
             logger.warning(
                 "%s has no known price: its tokens are counted, its money is not", config.model
             )
-        self._budget.record(
-            scope, Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens), reservation
+        # A reply that reports no usage counts its reserved worst case.
+        cost = (
+            None
+            if response.usage == TokenUsage()
+            else Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
         )
+        self._budget.record(scope, cost, reservation)
 
     # ------------------------------------------------------------------
     # Persistence

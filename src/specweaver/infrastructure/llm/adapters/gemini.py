@@ -170,14 +170,8 @@ class GeminiAdapter(LLMAdapter):
         text = response.text or ""
 
         # Extract token usage if available
-        usage = TokenUsage()
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
-            meta = response.usage_metadata
-            usage = TokenUsage(
-                prompt_tokens=getattr(meta, "prompt_token_count", 0) or 0,
-                completion_tokens=getattr(meta, "candidates_token_count", 0) or 0,
-                total_tokens=getattr(meta, "total_token_count", 0) or 0,
-            )
+        usage = self._extract_usage(response)
+        if usage != TokenUsage():
             logger.debug(
                 "GeminiAdapter: tokens used — prompt=%d completion=%d total=%d",
                 usage.prompt_tokens,
@@ -242,14 +236,16 @@ class GeminiAdapter(LLMAdapter):
 
     def _extract_usage(self, response: Any) -> TokenUsage:
         """Extract token usage from a Gemini response."""
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
-            meta = response.usage_metadata
-            return TokenUsage(
-                prompt_tokens=getattr(meta, "prompt_token_count", 0) or 0,
-                completion_tokens=getattr(meta, "candidates_token_count", 0) or 0,
-                total_tokens=getattr(meta, "total_token_count", 0) or 0,
-            )
-        return TokenUsage()
+        meta = getattr(response, "usage_metadata", None)
+        if not meta:
+            return TokenUsage()
+        # Thinking is billed as output.
+        return TokenUsage(
+            prompt_tokens=_count(meta, "prompt_token_count"),
+            completion_tokens=_count(meta, "candidates_token_count")
+            + _count(meta, "thoughts_token_count"),
+            total_tokens=_count(meta, "total_token_count"),
+        )
 
     def _apply_on_tool_round(
         self,
@@ -425,3 +421,8 @@ class GeminiAdapter(LLMAdapter):
 
         logger.error("GeminiAdapter: unclassified generation error — %s", exc)
         raise GenerationError(str(exc), provider="gemini") from exc
+
+
+def _count(meta: Any, field: str) -> int:
+    value = getattr(meta, field, 0)
+    return value if isinstance(value, int) else 0
