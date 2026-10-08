@@ -281,3 +281,18 @@ async def test_an_edited_parallel_limit_applies_without_a_restart() -> None:
     await asyncio.gather(*(widened.generate([], None) for _ in range(3)))
 
     assert most == 3
+
+
+async def test_two_server_names_on_one_address_share_one_limit() -> None:
+    from specweaver.core.config.llm_settings import ServerEntry
+    from specweaver.infrastructure.llm.servers import adapter_for_server
+
+    def entry() -> ServerEntry:
+        return ServerEntry(
+            kind="openai-compatible", base_url="http://gb10:8000/v1", private=True, max_parallel=1
+        )
+
+    first = adapter_for_server("gb10", entry())
+    second = adapter_for_server("gb10-again", entry())
+
+    assert first._get_semaphore() is second._get_semaphore()

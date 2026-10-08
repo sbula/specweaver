@@ -26,10 +26,18 @@ class AsyncRateLimiterAdapter(LLMAdapter):
     fail only because the server is busy. A hung call is ended by the provider client's own timeout.
     """
 
-    def __init__(self, wrapped: LLMAdapter, limit: int = 3, key: str | None = None) -> None:
+    def __init__(
+        self,
+        wrapped: LLMAdapter,
+        limit: int = 3,
+        key: str | None = None,
+        address: str | None = None,
+    ) -> None:
         self._wrapped = wrapped
         self._limit = limit
         self._key = key or wrapped.provider_name
+        #: Servers named twice but at one address share one limit.
+        self._address = address or self._key
 
         # Dynamically mirror metadata interfaces required by upstream integrations
         self.provider_name = wrapped.provider_name
@@ -38,7 +46,7 @@ class AsyncRateLimiterAdapter(LLMAdapter):
     def _get_semaphore(self) -> asyncio.Semaphore:
         """The semaphore for this key and limit on the running event loop."""
         per_loop = _SEMAPHORES.setdefault(asyncio.get_running_loop(), {})
-        slot = (self._key, self._limit)
+        slot = (self._address, self._limit)
         if slot not in per_loop:
             per_loop[slot] = asyncio.Semaphore(self._limit)
         return per_loop[slot]

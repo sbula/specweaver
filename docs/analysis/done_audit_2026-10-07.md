@@ -62,7 +62,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 18 | LOW | `sw costs` lacks the catalogue version stamp; spend merged across servers. **Partly fixed** 2026-10-08: the stamp is shown; splitting spend per server needs the server in the telemetry table | infra `cli.py` |
 | 19 | LOW | `sw usage` refused on a broken machine file. **Fixed** 2026-10-08: it reports in USD and names the broken line | infra `cli.py:309` |
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted. **Fixed** 2026-10-08 | writer |
-| 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address. **Partly fixed** 2026-10-08: an edited limit applies at once; two names on one address still get two limits | `_rate_limit.py` (confirmed) |
+| 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address. **Fixed** 2026-10-08: an edited limit applies at once; names on one address share its limit | `_rate_limit.py` (confirmed) |
 | 22 | LOW | Catalogue drops tiered/reasoning/cache prices — **confirmed 2026-10-08**: only base input/output are kept, so a long prompt on a tiered model is under-counted. **Fixed** 2026-10-08 (user chose A): the brake gets the highest price a call can be billed; the shipped catalogue must be regenerated (`python scripts/update_model_catalogue.py`); exact tiers belong to `B-FLOW-07` | `update_model_catalogue.py:64-72` |
 | 23 | Info | `max_output_tokens = 4096`, `AutonomySettings.max_turns = 10` still in code (dead). **Partly fixed** 2026-10-08: the output limit has no default; `max_turns` waits for `C-FLOW-11`, which wires it | `models.py:73`; `settings.py:118` |
 

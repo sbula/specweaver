@@ -435,10 +435,20 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py",
           "symbol": "AsyncRateLimiterAdapter._get_semaphore",
-          "old": "        slot = (self._key, self._limit)\n",
-          "new": "        slot = (self._key, 0)\n",
+          "old": "        slot = (self._address, self._limit)\n",
+          "new": "        slot = (self._address, 0)\n",
           "breaks": "an edited max_parallel is ignored until the process restarts",
-          "symbol_sha": "sha256:932139282fc3878469395fa4aae3c66c4cdfd0b0b333fcb641345d87bbba7dfb"
+          "symbol_sha": "sha256:4089e7450591d6d72b073b29289b05989ca59f15c34bb531f000ef4071e6864a"
+        },
+        {
+          "id": "two-names-two-limits",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py",
+          "symbol": "AsyncRateLimiterAdapter._get_semaphore",
+          "old": "        slot = (self._address, self._limit)\n",
+          "new": "        slot = (self._key, self._limit)\n",
+          "breaks": "two server names for one address run twice the calls it allows",
+          "symbol_sha": "sha256:4089e7450591d6d72b073b29289b05989ca59f15c34bb531f000ef4071e6864a"
         }
       ]
     },
