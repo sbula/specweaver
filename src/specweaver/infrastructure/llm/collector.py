@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.commons.async_bridge import run_sync
 from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, SpendBudget
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.redaction import Redactor
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import UsageRecord, create_usage_record, estimate_cost
 
@@ -59,8 +60,10 @@ class TelemetryCollector:
         prices: Callable[[str], ModelFacts | None] | None = None,
         budget: SpendBudget | None = None,
         scope_of: Callable[[GenerationConfig], CallScope] | None = None,
+        redactor: Redactor | None = None,
     ) -> None:
         self._adapter = adapter
+        self._redactor = redactor or Redactor(())
         self._project = project
         self._prices = prices or (lambda _model: None)
         self._scope_of = scope_of
@@ -125,6 +128,7 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> LLMResponse:
         """Proxy ``generate()`` — captures timing and usage."""
+        messages = self._redactor.messages(messages)
         scope, reservation = self._reserve(messages, config)
         start = time.monotonic()
         try:
@@ -143,6 +147,8 @@ class TelemetryCollector:
         on_tool_round: Any = None,
     ) -> LLMResponse:
         """Proxy ``generate_with_tools()``; every round is checked before its request."""
+        messages = self._redactor.messages(messages)
+        tool_executor = self._redactor.tools(tool_executor)
         scope, first = self._reserve(messages, config)
         held = [first]
 
@@ -169,6 +175,7 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> AsyncIterator[str]:
         """Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text."""
+        messages = self._redactor.messages(messages)
         scope, reservation = self._reserve(messages, config)
         start = time.monotonic()
         total_text: list[str] = []

@@ -1,0 +1,86 @@
+{
+  "schema": 2,
+  "feature": "E-INTL-01",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "Known secrets never leave in a prompt",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_prompt_redaction.py",
+        "tests/unit/infrastructure/llm/test_redaction.py"
+      ],
+      "mutants": [
+        {
+          "id": "prompt-sent-raw",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate",
+          "old": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n        messages = self._redactor.messages(messages)\n",
+          "new": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n",
+          "breaks": "an API key pasted into a prompt reaches the provider",
+          "symbol_sha": "sha256:e0e8358390e753fa81a77fb8324967c6f35e1ba07989c79984e3640d8131aa46"
+        },
+        {
+          "id": "tool-result-raw",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "        messages = self._redactor.messages(messages)\n        tool_executor = self._redactor.tools(tool_executor)\n",
+          "new": "        messages = self._redactor.messages(messages)\n",
+          "breaks": "a tool that reads the vault hands its secrets to the model",
+          "symbol_sha": "sha256:394b3d511227c7a8984734222167ecf5f21f433c43544012353999a94d7d4a4a"
+        },
+        {
+          "id": "stream-sent-raw",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_stream",
+          "old": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n        messages = self._redactor.messages(messages)\n",
+          "new": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n",
+          "breaks": "a streamed prompt carries secrets",
+          "symbol_sha": "sha256:93454b36ebeae0cd5f84ad06f91484aa490fcef7c7debcb6efe8ef8d4c28f745"
+        },
+        {
+          "id": "vault-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                redactor=Redactor([*keys, *self._vault]),\n",
+          "new": "                redactor=Redactor([*keys]),\n",
+          "breaks": "vault values reach the model",
+          "symbol_sha": "sha256:554f761f0b205acc45c6b1c482fe402a33e6cecda34da0a667dd7ac8a6bd9f8a"
+        },
+        {
+          "id": "api-keys-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                redactor=Redactor([*keys, *self._vault]),\n",
+          "new": "                redactor=Redactor([*self._vault]),\n",
+          "breaks": "the server's own API key reaches the model",
+          "symbol_sha": "sha256:554f761f0b205acc45c6b1c482fe402a33e6cecda34da0a667dd7ac8a6bd9f8a"
+        },
+        {
+          "id": "shorter-secret-first",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/redaction.py",
+          "symbol": "Redactor.__init__",
+          "old": "        self._secrets = sorted(kept, key=len, reverse=True)\n",
+          "new": "        self._secrets = sorted(kept, key=len)\n",
+          "breaks": "the tail of a longer secret is sent unmasked",
+          "symbol_sha": "sha256:56bd1cb4d979db3e9635aa68301cb9175d85b70e7ba82220c1d2c3d910c23c2a"
+        },
+        {
+          "id": "loader-loses-project",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_loader.py",
+          "symbol": "load_llm_settings",
+          "old": "        project_source=str(project_path) if project_path else \"(no project)\",\n        project_root=project_root,\n",
+          "new": "        project_source=str(project_path) if project_path else \"(no project)\",\n",
+          "breaks": "a real command never finds the project's vault",
+          "symbol_sha": "sha256:6d198c4fe3636fec83dcae7d50026c56a61359dc3133a1a0c3ff2d439e24ab95"
+        }
+      ]
+    }
+  ]
+}

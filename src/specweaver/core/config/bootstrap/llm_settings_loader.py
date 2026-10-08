@@ -35,6 +35,7 @@ def load_llm_settings(project_root: Path | None) -> LlmSettingsFiles:
         machine_source=str(machine_path),
         project_text=_read(project_path),
         project_source=str(project_path) if project_path else "(no project)",
+        project_root=project_root,
     )
 
 

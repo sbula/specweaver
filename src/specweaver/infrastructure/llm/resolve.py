@@ -19,6 +19,7 @@ from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig
+from specweaver.infrastructure.llm.redaction import Redactor, env_values, vault_values
 from specweaver.infrastructure.llm.servers import adapter_for_server
 
 if TYPE_CHECKING:
@@ -56,6 +57,7 @@ class RoleResolver:
         self._budget = budget
         self._catalogue = catalogue or shipped_catalogue()
         self._by_server: dict[str, TelemetryCollector] = {}
+        self._vault = vault_values(files.project_root)
 
     @property
     def budget(self) -> SpendBudget:
@@ -156,12 +158,15 @@ class RoleResolver:
         if server_name not in self._by_server:
             server = self._files.machine.servers[server_name]
             corrections = self._files.machine.models
+            adapter = adapter_for_server(server_name, server)
+            keys = env_values([server.api_key_env, getattr(adapter, "api_key_env_var", None)])
             self._by_server[server_name] = TelemetryCollector(
-                adapter_for_server(server_name, server),
+                adapter,
                 self._project,
                 prices=lambda model: self._catalogue.facts(server.kind, model, corrections),
                 budget=self._budget,
                 scope_of=lambda config: self._scope(server_name, config),
+                redactor=Redactor([*keys, *self._vault]),
             )
         return self._by_server[server_name]
 

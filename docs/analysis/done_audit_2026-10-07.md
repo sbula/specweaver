@@ -91,7 +91,7 @@ proven through `/review`, not `/implement`).
 | E-SENS-01 | grep/find follow symlinks out of the root. **Fixed** 2026-10-08: the search path is contained, symlinks are skipped | `sandbox/filesystem/interfaces/tool.py:189-234`; `core/search.py:223` |
 | E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87` |
 | E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access. **Partly fixed** 2026-10-08: reviewer and planner get read grants; task-scoped roots still unbuilt | `run_context.py:114-123`; `security.py:128` |
-| E-INTL-01 FR-3 | No secret redaction before prompts | only MCP `scrub_secrets` exists |
+| E-INTL-01 FR-3 | No secret redaction before prompts. **Fixed** 2026-10-08: known secret values are masked in every prompt and tool result | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash | `handlers/validation.py:228` |
 | B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks | `register_fk_pragma_listener` test-only |

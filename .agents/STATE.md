@@ -26,7 +26,8 @@ Of 141 items marked done, **26 are false** (a promised behaviour missing or brok
 `B-FLOW-05` and `C-FLOW-13` are not done either. Fixed so far: the private-only leak (C-FLOW-13 #1)
 the drift false pass at a brake stop (B-FLOW-05 #1), the per-step worktree park (#3), the park inside a session (#2).
 E-SENS-01's symlink escape is fixed too. So are E-INTL-03's verdict parsing, D-EXEC-02's lost output and E-SENS-03's write grants for
-readers. Next: E-INTL-01 FR-3, known secret values redacted from prompts (agreed 2026-10-08).
+readers, and E-INTL-01 FR-3 (known secrets masked in prompts). Next: the rest of the B-FLOW-05 and
+C-FLOW-13 findings in the audit, then the other false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

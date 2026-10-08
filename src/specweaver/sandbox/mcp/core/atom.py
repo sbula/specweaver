@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from specweaver.infrastructure.llm.redaction import Redactor
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 
@@ -20,28 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def scrub_secrets(payload: Any, env: dict[str, str] | None) -> Any:
-    """`payload` with every secret from `env` redacted — the one rule both MCP paths apply.
-
-    Only values of 8+ characters are treated as secrets: a short vault entry (a port, a flag
-    like "true") would otherwise match everywhere and redact ordinary telemetry.
-    """
+    """`payload` with every secret from `env` redacted — the one rule both MCP paths apply."""
     if not env:
         return payload
-    secrets = {v for v in env.values() if isinstance(v, str) and len(v.strip()) >= 8}
-    return _scrub(payload, secrets) if secrets else payload
-
-
-def _scrub(payload: Any, secrets: set[str]) -> Any:
-    """`payload` with every secret replaced, walking dicts and lists."""
-    if isinstance(payload, dict):
-        return {k: _scrub(v, secrets) for k, v in payload.items()}
-    if isinstance(payload, list):
-        return [_scrub(item, secrets) for item in payload]
-    if isinstance(payload, str):
-        for secret in secrets:
-            payload = payload.replace(secret, "***RESTRICTED***")
-        return payload
-    return payload
+    return Redactor(v for v in env.values() if isinstance(v, str)).payload(payload)
 
 
 #: The only runtimes NFR-2 permits. Names, because that is what a config declares.

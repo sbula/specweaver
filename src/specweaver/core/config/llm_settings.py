@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from pathlib import Path
 
 _M = TypeVar("_M", bound=BaseModel)
 
@@ -314,10 +315,17 @@ class LlmSettingsFiles:
     project: ProjectLlmSection
     project_source: str
     project_text: str
+    project_root: Path | None = None
 
     @classmethod
     def from_texts(
-        cls, *, machine_text: str, machine_source: str, project_text: str, project_source: str
+        cls,
+        *,
+        machine_text: str,
+        machine_source: str,
+        project_text: str,
+        project_source: str,
+        project_root: Path | None = None,
     ) -> LlmSettingsFiles:
         return cls(
             machine=parse_machine_file(machine_text, machine_source),
@@ -326,6 +334,7 @@ class LlmSettingsFiles:
             project=parse_project_llm(project_text, project_source),
             project_source=project_source,
             project_text=project_text,
+            project_root=project_root,
         )
 
 
