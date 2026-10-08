@@ -15,6 +15,7 @@ import os
 from typing import TYPE_CHECKING, NoReturn
 
 from specweaver.core.config.llm_settings import (
+    SettingNotSetError,
     SettingsFileError,
     line_of,
     resolve_roles,
@@ -98,10 +99,13 @@ class RoleResolver:
     def _setting(self, role: str) -> ResolvedRole:
         setting = self._roles.get(role) or self._roles.get(DEFAULT_ROLE)
         if setting is None:
-            self._refuse(
-                f"roles.{role}",
-                f"no model for role '{role}' and no roles.{DEFAULT_ROLE} — set one of them",
-                "roles",
+            key = f"roles.{role}"
+            raise SettingNotSetError(
+                self._files.machine_source,
+                key,
+                line_of(self._files.machine_text, key, "roles"),
+                f"no model for role '{role}' and no roles.{DEFAULT_ROLE} — set one of them, "
+                f"e.g. sw config set-role {role} <model@server>",
             )
         return setting
 

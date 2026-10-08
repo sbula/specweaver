@@ -168,3 +168,4 @@ class TestImplementUnderDal:
         assert result.exit_code == 1, result.output
         assert "Spec not found" not in result.output
         assert shows(result.output, "no model for role 'implement'")
+        assert shows(result.output, "sw config set-role implement")

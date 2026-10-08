@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import typer
 from pydantic import ValidationError
 
-from specweaver.core.config.llm_settings import RoleEntry, SettingsFileError
+from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError, SettingsFileError
 from specweaver.infrastructure.llm.router import build_router
 from specweaver.interfaces.cli import _core
 
@@ -63,9 +63,10 @@ def command_router(
 
 
 def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> ModelRouter | None:
-    """Like `command_router`, but a role nobody set means no router instead of a refusal.
+    """Like `command_router`, but a model nobody set up means no router instead of a refusal.
 
-    For commands whose model use is optional. A broken settings file still stops the command.
+    For commands whose model use is optional. A setting that is set but wrong still stops the
+    command.
     """
     files = _core.load_active_llm_settings(project)
     try:
@@ -75,6 +76,8 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
             roles=roles,
             ask=_core.spend_asker(),
         )
-    except SettingsFileError as err:
+    except SettingNotSetError as err:
         _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)
         return None
+    except SettingsFileError as err:
+        _core.refuse_llm_settings(err)

@@ -74,6 +74,10 @@ class SettingsFileError(ValueError):
         super().__init__(f"{source}:{line}: {key}: {message}")
 
 
+class SettingNotSetError(SettingsFileError):
+    """A setting nobody set, as opposed to one set wrong: optional model use can skip it."""
+
+
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -191,7 +195,7 @@ def brake_limits(files: LlmSettingsFiles) -> BrakeLimits:
     brake = files.machine.brake
     for name in BrakeLimits._fields:
         if getattr(brake, name) is None:
-            raise SettingsFileError(
+            raise SettingNotSetError(
                 files.machine_source,
                 f"brake.{name}",
                 _line_of(files.machine_text, ("brake",)),

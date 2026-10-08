@@ -448,7 +448,8 @@
       "title": "No hard-coded model: a role, else the default role, else refused",
       "scope": [
         "tests/unit/infrastructure/llm/test_resolve.py",
-        "tests/integration/infrastructure/llm/test_resolve_integration.py"
+        "tests/integration/infrastructure/llm/test_resolve_integration.py",
+        "tests/e2e/capabilities/workflows/test_dal_e2e_pipeline.py"
       ],
       "mutants": [
         {
@@ -470,6 +471,16 @@
           "new": "        limit = facts.max_output if facts else None\n",
           "breaks": "the role's own output limit is ignored for the model's maximum",
           "symbol_sha": "sha256:20b7921ed8ec96b0515815b051526dff77e952b3d150e4967f9acb1673449d35"
+        },
+        {
+          "id": "unset-role-unhelpful",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._setting",
+          "old": "                f\"e.g. sw config set-role {role} <model@server>\",\n",
+          "new": "                \"\",\n",
+          "breaks": "an unset role is refused without saying which command sets it",
+          "symbol_sha": "sha256:321cbbc044ce328b6f755858e55f945a893911e7e47786d21724a9c8a645e739"
         }
       ]
     },
@@ -878,6 +889,26 @@
           "new": "        _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
           "breaks": "a scan skips the model and never says which key would turn it on",
           "symbol_sha": "sha256:411f6c6844acf3804b52a7c55738180f6be291d01066019946880dae37945eb8"
+        },
+        {
+          "id": "scan-skips-wrong-settings",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "optional_command_router",
+          "old": "    except SettingNotSetError as err:\n",
+          "new": "    except SettingsFileError as err:\n",
+          "breaks": "a scan with a server typo says 'No model used' and goes on",
+          "symbol_sha": "sha256:742422ce1158c3f21c3581889a0d80eff71b1fabd37e6233316b4e2549e93532"
+        },
+        {
+          "id": "unset-brake-is-an-error",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "brake_limits",
+          "old": "            raise SettingNotSetError(\n                files.machine_source,\n",
+          "new": "            raise SettingsFileError(\n                files.machine_source,\n",
+          "breaks": "a scan without [brake] stops instead of scanning without a model",
+          "symbol_sha": "sha256:48ab69546b0a16a63203015afc6a298dda59a439ed47be934767f269eae4e100"
         }
       ]
     },

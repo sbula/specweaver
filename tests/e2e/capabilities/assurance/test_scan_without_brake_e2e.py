@@ -3,7 +3,7 @@
 
 """`sw standards scan` still scans when no `[brake]` is set, and says why no model was used.
 
-Proves: C-FLOW-13 FR-17
+Proves: C-FLOW-13 FR-17, C-FLOW-13 FR-3
 
 Model enrichment is optional for a scan. A missing limit must not stop the scan, and it must not be
 silent either: the user learns which key would turn enrichment on.
@@ -66,3 +66,38 @@ def test_a_scan_without_brake_values_scans_and_says_why_no_model_was_used(
     assert seen == []
     assert shows(result.output, "No model used")
     assert shows(result.output, "brake.hosted_spend_per_run")
+
+
+_SERVER_TYPO = """\
+[servers.gb10]
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 2
+
+[roles]
+default = "qwen3-coder-next@gb01"
+
+[brake]
+hosted_spend_per_run = 10
+tokens_per_run = 1000000
+agent_turns = 5
+"""
+
+
+@pytest.mark.usefixtures("_mock_db")
+def test_a_scan_with_a_misconfigured_model_stops_and_names_it(
+    tmp_path: Path, _isolate_env: Path
+) -> None:
+    (_isolate_env / "settings.toml").write_text(_SERVER_TYPO, encoding="utf-8")
+    project = tmp_path / "proj"
+    (project / "src").mkdir(parents=True)
+    (project / "src" / "greet.py").write_text("def greet() -> str:\n    return 'hi'\n")
+    assert runner.invoke(app, ["init", "typo-demo", "--path", str(project)]).exit_code == 0
+    assert runner.invoke(app, ["use", "typo-demo"]).exit_code == 0
+
+    result = runner.invoke(app, ["standards", "scan", "--no-review"])
+
+    assert result.exit_code == 1, result.output
+    assert shows(result.output, "gb01")
+    assert not shows(result.output, "No model used")

@@ -56,9 +56,9 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks | `settings_report` |
 | 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent | adapters |
 | 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11) | `resolve.py` |
-| 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on | `command.py:72-74` |
+| 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on. **Fixed** 2026-10-08: only a model nobody set is skipped; a wrong setting stops the scan | `command.py:72-74` |
 | 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |
-| 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11) | `resolve.py:214` |
+| 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11). **Fixed** 2026-10-08 | `resolve.py:214` |
 | 18 | LOW | `sw costs` lacks the catalogue version stamp; spend merged across servers | infra `cli.py` |
 | 19 | LOW | `sw usage` refused on a broken machine file | infra `cli.py:309` |
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted | writer |
