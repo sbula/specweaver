@@ -724,15 +724,15 @@ class TestReviewerParseResponseRobustness:
         assert len(result.findings) == 2
         # Summary might be empty or a finding-like string
 
-    def test_verdict_embedded_in_prose_still_detected(self) -> None:
-        """VERDICT: ACCEPTED embedded in a prose paragraph still matches."""
+    def test_verdict_embedded_in_prose_is_not_a_verdict(self) -> None:
+        """Only a verdict line counts; prose that mentions one is denied (E-INTL-03)."""
         reviewer = Reviewer(llm=_make_mock_llm(""), config=TEST_CONFIG)
         result = reviewer._parse_response(
             "After careful review, I believe VERDICT: ACCEPTED is appropriate.\n"
             "- Good structure\n"
             "Well done.",
         )
-        assert result.verdict == ReviewVerdict.ACCEPTED
+        assert result.verdict == ReviewVerdict.DENIED
 
     def test_finding_with_leading_whitespace(self) -> None:
         """Finding lines with leading spaces before '- ' should still parse."""

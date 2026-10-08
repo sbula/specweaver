@@ -379,10 +379,10 @@
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:203",
     "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
-  "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @384dc5f05d84": {
-    "lines": 30,
-    "first": "src/specweaver/workflows/review/reviewer.py:147",
-    "second": "src/specweaver/workflows/review/reviewer.py:111"
+  "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
+    "lines": 22,
+    "first": "src/specweaver/workflows/review/reviewer.py:149",
+    "second": "src/specweaver/workflows/review/reviewer.py:114"
   },
   "src/specweaver/workspace/analyzers/factory.py <-> src/specweaver/workspace/analyzers/factory.py @b5b1be179b0c": {
     "lines": 11,

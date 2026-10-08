@@ -81,6 +81,20 @@ def review_instructions(criteria: str) -> str:
     return f"{criteria.rstrip()}\n\n{REVIEW_OUTPUT_CONTRACT}"
 
 
+_VERDICT_LINE = _re.compile(
+    r"^[\s#*_>]*VERDICT:\s*(ACCEPTED|DENIED)\b[*_.]*(?:\s+[-\u2014\u2013(].*)?\s*$",
+    _re.IGNORECASE | _re.MULTILINE,
+)
+
+
+def _verdict_of(text: str) -> ReviewVerdict:
+    """The first verdict line's verdict; DENIED when there is none."""
+    match = _VERDICT_LINE.search(text)
+    if match and match.group(1).upper() == "ACCEPTED":
+        return ReviewVerdict.ACCEPTED
+    return ReviewVerdict.DENIED
+
+
 class Reviewer:
     """LLM-based semantic reviewer for specs and code."""
 
@@ -220,15 +234,7 @@ class Reviewer:
         """Parse LLM response into a ReviewResult."""
         raw = text.strip()
 
-        # Determine verdict
-        upper_text = raw.upper()
-        if "VERDICT: ACCEPTED" in upper_text:
-            verdict = ReviewVerdict.ACCEPTED
-        elif "VERDICT: DENIED" in upper_text:
-            verdict = ReviewVerdict.DENIED
-        else:
-            # If no clear verdict, treat as denied (conservative)
-            verdict = ReviewVerdict.DENIED
+        verdict = _verdict_of(raw)
 
         # Extract findings (lines starting with "- ")
         findings: list[ReviewFinding] = []
