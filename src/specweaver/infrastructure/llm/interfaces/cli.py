@@ -90,8 +90,7 @@ def costs_set(
     try:
         path = set_model_price(model, to_usd(input_price, currency), to_usd(output_price, currency))
     except SettingsFileError as err:
-        _core.console.print("Error:", str(err), style="red", markup=False, highlight=False)
-        raise typer.Exit(code=1) from err
+        _core.refuse_llm_settings(err)
     code = currency.code if currency else "USD"
     _say(
         f"Price for {model}: input {code} {input_price}, output {code} {output_price} per 1M tokens ({path})"
@@ -106,7 +105,11 @@ def costs_reset(
 
     Example: sw costs reset qwen3-coder-next
     """
-    if clear_model_price(model):
+    try:
+        cleared = clear_model_price(model)
+    except SettingsFileError as err:
+        _core.refuse_llm_settings(err)
+    if cleared:
         _say(f"Price for {model} removed; the catalogue's price applies.")
     else:
         _say(f"No price was set for {model}.")

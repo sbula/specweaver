@@ -161,3 +161,59 @@ class TestSetRole:
         assert (project / "specweaver.toml").read_text(
             encoding="utf-8"
         ) == "[llm]\nprivate_only = true\n"
+
+
+_ROLE_TABLE = """\
+[servers.gb10]
+kind = "openai-compatible"
+base_url = "http://gb10:8000/v1"
+private = true
+max_parallel = 4
+
+[roles.review]   # the reviewer needs room
+model = "old-model@gb10"
+max_output_tokens = 4000   # keep this
+"""
+
+
+def test_set_role_on_a_role_table_changes_only_its_model(machine_file: Path) -> None:
+    machine_file.write_text(_ROLE_TABLE, encoding="utf-8")
+
+    set_role("review", "qwen3-coder-next@gb10")
+
+    text = machine_file.read_text(encoding="utf-8")
+    assert "# the reviewer needs room" in text
+    assert "max_output_tokens = 4000   # keep this" in text
+    assert 'model = "qwen3-coder-next@gb10"' in text
+
+
+@pytest.mark.parametrize(
+    "write", [lambda: set_role("review", "m@gb10"), lambda: clear_model_price("m")]
+)
+def test_a_broken_file_is_refused_naming_its_line(machine_file: Path, write) -> None:
+    machine_file.write_text("[servers.gb10\nkind = 1\n", encoding="utf-8")
+
+    with pytest.raises(SettingsFileError) as caught:
+        write()
+
+    assert caught.value.line == 1
+    assert machine_file.read_text(encoding="utf-8") == "[servers.gb10\nkind = 1\n"
+
+
+def test_a_file_saved_with_a_byte_order_mark_is_read(machine_file: Path) -> None:
+    machine_file.write_text(_EXISTING, encoding="utf-8-sig")
+
+    set_model_price("qwen3-coder-next", 1.0, 2.0)
+
+    facts = parse_machine_file(machine_file.read_text(encoding="utf-8"), "x").models[
+        "qwen3-coder-next"
+    ]
+    assert facts.usd_per_million_input == 1.0
+
+
+def test_the_loader_reads_a_file_saved_with_a_byte_order_mark(machine_file: Path) -> None:
+    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+
+    machine_file.write_text(_EXISTING, encoding="utf-8-sig")
+
+    assert "gb10" in load_llm_settings(None).machine.servers

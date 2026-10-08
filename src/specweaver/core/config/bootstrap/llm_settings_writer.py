@@ -11,9 +11,10 @@ write replaces the file in one step, so a command never leaves a broken file beh
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import tomlkit
+import tomlkit.exceptions
 
 from specweaver.core.config.bootstrap.llm_settings_loader import (
     PROJECT_FILE_NAME,
@@ -21,6 +22,7 @@ from specweaver.core.config.bootstrap.llm_settings_loader import (
 )
 from specweaver.core.config.llm_settings import (
     LlmSettingsFiles,
+    SettingsFileError,
     parse_machine_file,
     resolve_roles,
 )
@@ -57,14 +59,14 @@ def set_role(role: str, value: str, *, project_root: Path | None = None) -> Path
     machine_text = _text(machine_path)
     project_text = _text(project_path)
     if project_path is None:
-        document = tomlkit.parse(machine_text)
-        document.setdefault("roles", tomlkit.table())[role] = value
+        document = _parse(machine_text, machine_path)
+        _assign_role(document.setdefault("roles", tomlkit.table()), role, value)
         machine_text = tomlkit.dumps(document)
         target, text = machine_path, machine_text
     else:
-        document = tomlkit.parse(project_text)
+        document = _parse(project_text, project_path)
         llm = document.setdefault("llm", tomlkit.table())
-        llm.setdefault("roles", tomlkit.table())[role] = value
+        _assign_role(llm.setdefault("roles", tomlkit.table()), role, value)
         project_text = tomlkit.dumps(document)
         target, text = project_path, project_text
     files = LlmSettingsFiles.from_texts(
@@ -94,12 +96,28 @@ def clear_model_price(model: str) -> bool:
     return True
 
 
+def _assign_role(roles: Any, role: str, value: str) -> None:
+    """A role written as a table keeps its other keys and comments; only its model changes."""
+    if isinstance(roles.get(role), dict):
+        roles[role]["model"] = value
+    else:
+        roles[role] = value
+
+
 def _text(path: Path | None) -> str:
-    return path.read_text(encoding="utf-8") if path is not None and path.is_file() else ""
+    # utf-8-sig: an editor's byte order mark is not part of the TOML.
+    return path.read_text(encoding="utf-8-sig") if path is not None and path.is_file() else ""
 
 
 def _read(path: Path) -> TOMLDocument:
-    return tomlkit.parse(_text(path))
+    return _parse(_text(path), path)
+
+
+def _parse(text: str, path: Path) -> TOMLDocument:
+    try:
+        return tomlkit.parse(text)
+    except tomlkit.exceptions.ParseError as exc:
+        raise SettingsFileError(str(path), "(syntax)", exc.line, "not valid TOML") from exc
 
 
 def _write(path: Path, document: TOMLDocument) -> None:

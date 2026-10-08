@@ -43,8 +43,8 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) â€
 | # | Sev | Finding | Evidence |
 |---|---|---|---|
 | 1 | CRIT | `--project priv` while another project is active: settings come from the **active** project; a `private_only` project's spec went to a hosted server | `core/flow/interfaces/cli.py:250,276`; review/implementation CLIs; `.tmp/cflow13/test_repro_project_mismatch.py` (re-run 2026-10-07). **Fixed** 2026-10-07: commands read the target folder's settings |
-| 2 | HIGH | Broken TOML or a BOM: `set-role` / `costs reset` end in a raw traceback | `llm_settings_writer.py:104-128` |
-| 3 | HIGH | `set-role` on a `[roles.review]` table deletes comments and keys | `llm_settings_writer.py:105` |
+| 2 | HIGH | Broken TOML or a BOM: `set-role` / `costs reset` end in a raw traceback. **Fixed** 2026-10-08: refused naming the line; a BOM is read | `llm_settings_writer.py:104-128` |
+| 3 | HIGH | `set-role` on a `[roles.review]` table deletes comments and keys. **Fixed** 2026-10-08: only the table's `model` changes | `llm_settings_writer.py:105` |
 | 4 | MED | Wrong line numbers for dotted keys and multi-line strings | `llm_settings.py:515-521` |
 | 5 | MED | Resolver refusals say `settings.toml:0` | `resolve.py` |
 | 6 | MED | `[models."openai/gpt-5"]` override silently ignored (only bare ids match) | `catalogue.py:67` |

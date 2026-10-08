@@ -544,7 +544,8 @@
       "scope": [
         "tests/integration/core/config/bootstrap/test_db_bootstrap_usage_cost.py",
         "tests/integration/core/config/bootstrap/test_llm_settings_writer.py",
-        "tests/unit/core/config/interfaces/test_config_cli.py"
+        "tests/unit/core/config/interfaces/test_config_cli.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
       ],
       "mutants": [
         {
@@ -576,6 +577,56 @@
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
           "symbol_sha": "sha256:6bb476e301a61d8d0e1135be0ca495c1850d384318b22e5e2672f1aa9f9d2550"
+        },
+        {
+          "id": "role-table-overwritten",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_assign_role",
+          "old": "    if isinstance(roles.get(role), dict):\n",
+          "new": "    if False:\n",
+          "breaks": "set-role deletes a role table's other keys and comments",
+          "symbol_sha": "sha256:a6948dac58c6c26c773b859ea0e52d7729447caff658ea1cb7f01233f3c15312"
+        },
+        {
+          "id": "bom-breaks-writer",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_text",
+          "old": "path.read_text(encoding=\"utf-8-sig\") if path",
+          "new": "path.read_text(encoding=\"utf-8\") if path",
+          "breaks": "a file saved by an editor with a byte order mark cannot be edited",
+          "symbol_sha": "sha256:4d33a1515ac9cdea92bff63f2a38d54760f3e119218ef6804665d97be1e91acb"
+        },
+        {
+          "id": "broken-file-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_parse",
+          "old": "    except tomlkit.exceptions.ParseError as exc:\n",
+          "new": "    except ZeroDivisionError as exc:\n",
+          "breaks": "a broken settings file ends set-role in a raw traceback",
+          "symbol_sha": "sha256:7fa62ea50a8a09e20d6677c5eada93f69cb5ec56a06d471a94f8b6c299aec96b"
+        },
+        {
+          "id": "bom-breaks-reader",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_loader.py",
+          "symbol": "_read",
+          "old": "    return path.read_text(encoding=\"utf-8-sig\")\n",
+          "new": "    return path.read_text(encoding=\"utf-8\")\n",
+          "breaks": "a settings file with a byte order mark is refused as not TOML",
+          "symbol_sha": "sha256:770203094d4787718cc75205f37fa2d6a6cbd05da4b503050830bdd35a240f28"
+        },
+        {
+          "id": "reset-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs_reset",
+          "old": "        cleared = clear_model_price(model)\n    except SettingsFileError as err:\n",
+          "new": "        cleared = clear_model_price(model)\n    except ZeroDivisionError as err:\n",
+          "breaks": "sw costs reset on a broken file ends in a raw traceback",
+          "symbol_sha": "sha256:d6300fbb60a0cbf2edcbbd192907c64f29c1ba0f9c554d957e674ca3c04f02e5"
         }
       ]
     },

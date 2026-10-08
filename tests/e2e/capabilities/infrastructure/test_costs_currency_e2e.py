@@ -123,3 +123,15 @@ def test_usage_marks_unpriced_calls_in_the_configured_currency(
     assert usage.exit_code == 0, usage.output
     assert shows(usage.output, "(CHF)")  # in the title, which Rich never truncates
     assert shows(usage.output, "unknown")
+
+
+def test_a_reset_on_a_broken_file_names_the_line_without_a_traceback(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    (_isolate_env / "settings.toml").write_text("[models.x\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["costs", "reset", "x"])
+
+    assert result.exit_code == 1
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert shows(result.output, "not valid TOML")

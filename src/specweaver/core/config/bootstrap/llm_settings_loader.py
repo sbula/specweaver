@@ -42,4 +42,4 @@ def load_llm_settings(project_root: Path | None) -> LlmSettingsFiles:
 def _read(path: Path | None) -> str:
     if path is None or not path.is_file():
         return ""
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8-sig")
