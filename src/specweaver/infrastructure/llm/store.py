@@ -1,6 +1,7 @@
+import math
+
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 from datetime import datetime
 from typing import Any
 
@@ -60,6 +61,44 @@ def record_step_outcomes(db: Any, run_id: str, outcomes: dict[str, str]) -> None
             "INSERT OR REPLACE INTO llm_step_outcome (run_id, step_name, outcome) VALUES (?, ?, ?)",
             [(run_id, step, outcome) for step, outcome in outcomes.items()],
         )
+
+
+def step_history_limit(
+    db: Any,
+    *,
+    task_type: str,
+    model: str,
+    dal_level: str,
+    unit: str,
+    steps: int,
+    percentile: int,
+) -> float | None:
+    """The `percentile` value of the newest `steps` passed steps of one group, in `unit`;
+    None while the group has fewer. A step with an unpriced call has no money total."""
+    query = """
+    SELECT SUM(l.total_tokens), SUM(l.estimated_cost), SUM(l.estimated_cost IS NULL)
+    FROM llm_usage_log l
+    JOIN llm_step_outcome o ON o.run_id = l.run_id AND o.step_name = l.step_name
+    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?
+    GROUP BY l.run_id, l.step_name
+    {having}
+    ORDER BY MAX(l.timestamp) DESC
+    LIMIT ?
+    """
+    having = "HAVING SUM(l.estimated_cost IS NULL) = 0" if unit == "usd" else ""
+    with db.connect() as conn:
+        rows = conn.execute(
+            query.format(having=having), (task_type, model, dal_level, steps)
+        ).fetchall()
+    if len(rows) < steps:
+        return None
+    return nearest_rank([row[1] if unit == "usd" else row[0] for row in rows], percentile)
+
+
+def nearest_rank(values: list[float], percentile: int) -> float:
+    """The smallest value at or above `percentile` percent of `values`."""
+    ordered = sorted(values)
+    return ordered[max(math.ceil(percentile / 100 * len(ordered)), 1) - 1]
 
 
 class LlmRepository:

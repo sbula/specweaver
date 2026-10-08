@@ -217,6 +217,74 @@
           "symbol_sha": "sha256:67d938fedd2749a43cbfa2744102b68f6758ee7dc249eb641dfb56150698ec41"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The percentile of the newest passed steps of one group",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_step_history_limit.py"
+      ],
+      "mutants": [
+        {
+          "id": "failed-steps-counted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
+          "new": "    WHERE o.outcome != 'x' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
+          "breaks": "failed attempts lower the limit",
+          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        },
+        {
+          "id": "dal-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
+          "new": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND ? IS NOT NULL\n",
+          "breaks": "DAL_E history sets a DAL_A step's limit",
+          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        },
+        {
+          "id": "oldest-first",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    ORDER BY MAX(l.timestamp) DESC\n",
+          "new": "    ORDER BY MAX(l.timestamp) ASC\n",
+          "breaks": "the limit follows the oldest work, not the newest",
+          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        },
+        {
+          "id": "unpriced-step-counted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    having = \"HAVING SUM(l.estimated_cost IS NULL) = 0\" if unit == \"usd\" else \"\"\n",
+          "new": "    having = \"\"\n",
+          "breaks": "a step with an unknown cost lowers a money limit",
+          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "No history, no step limit",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_step_history_limit.py"
+      ],
+      "mutants": [
+        {
+          "id": "too-little-history-used",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    if len(rows) < steps:\n",
+          "new": "    if not rows:\n",
+          "breaks": "a step is limited by one or two past steps",
+          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        }
+      ]
     }
   ]
 }
