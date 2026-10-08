@@ -207,7 +207,7 @@
           "old": "        spent, unpriced = spend.get((model, server), (None, 0))\n",
           "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
           "breaks": "the same model on two servers shows one server's spend on both",
-          "symbol_sha": "sha256:42c9109530ec23d41493aec11395f91db5ea5fd39157d1d3f1f22af581b8ea44"
+          "symbol_sha": "sha256:cf3e00c4f1e891d313a9d3b5c2db54d86d474c3f0c74dd693e194eed5c9fccf1"
         },
         {
           "id": "old-spend-hidden",
@@ -284,7 +284,7 @@
           "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "new": "    WHERE o.outcome != 'x' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "breaks": "failed attempts lower the limit",
-          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         },
         {
           "id": "dal-ignored",
@@ -294,7 +294,7 @@
           "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "new": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND ? IS NOT NULL\n",
           "breaks": "DAL_E history sets a DAL_A step's limit",
-          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         },
         {
           "id": "oldest-first",
@@ -304,7 +304,7 @@
           "old": "    ORDER BY MAX(l.timestamp) DESC\n",
           "new": "    ORDER BY MAX(l.timestamp) ASC\n",
           "breaks": "the limit follows the oldest work, not the newest",
-          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         },
         {
           "id": "unpriced-step-counted",
@@ -314,7 +314,7 @@
           "old": "    having = \"HAVING SUM(l.estimated_cost IS NULL) = 0\" if unit == \"usd\" else \"\"\n",
           "new": "    having = \"\"\n",
           "breaks": "a step with an unknown cost lowers a money limit",
-          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         },
         {
           "id": "zero-limit",
@@ -343,7 +343,7 @@
           "old": "    if len(rows) < steps:\n",
           "new": "    if not rows:\n",
           "breaks": "a step is limited by one or two past steps",
-          "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         }
       ]
     },
@@ -352,7 +352,8 @@
       "title": "The step limit is one more limit of the call",
       "scope": [
         "tests/integration/core/flow/engine/test_step_limit_in_the_brake.py",
-        "tests/e2e/capabilities/infrastructure/test_step_limits_e2e.py"
+        "tests/e2e/capabilities/infrastructure/test_step_limits_e2e.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py"
       ],
       "mutants": [
         {
@@ -383,7 +384,47 @@
           "old": "    if setting.startswith(STEP_LIMIT_PREFIX):\n",
           "new": "    if False:\n",
           "breaks": "the user is told to raise a setting that does not exist",
-          "symbol_sha": "sha256:7fe2cbf94077e899adea1379d1a5fc4aa6041e809dc6650b979d8b242c31a7e3"
+          "symbol_sha": "sha256:24428e3c388d894f3838b3284487139bcdec5b9090d1ca1af316408473bd5365"
+        },
+        {
+          "id": "step-limit-on-worst-case",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._step_limit",
+          "old": "        return (Limit(name, unit, value, on_spent=True),)\n",
+          "new": "        return (Limit(name, unit, value),)\n",
+          "breaks": "nearly every step asks, because one call's worst case exceeds its kind's real cost",
+          "symbol_sha": "sha256:2ba03b64e0df303404e7a7a16e77a92a28cfbc28fecb617b825604db69907e51"
+        },
+        {
+          "id": "reached-limit-passes",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                if self._spent[limit.key] >= self.limit_of(limit):\n",
+          "new": "                if self._spent[limit.key] > self.limit_of(limit):\n",
+          "breaks": "a step that spent exactly its limit goes on unasked",
+          "symbol_sha": "sha256:0e637c8fe64ee492a4819888e03fb78beeeb892fae1d29de91474d856c5aff4b"
+        },
+        {
+          "id": "yes-raises-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget._ask_to_raise",
+          "old": "        steps = max(math.ceil((needed - current) / limit.value), 1)\n",
+          "new": "        steps = math.ceil((needed - current) / limit.value)\n",
+          "breaks": "a yes at a reached step limit raises nothing and asks again at once",
+          "symbol_sha": "sha256:2fddc0cf6961e056e87fb9690952a85c9227544c53d72e7b412890def3c7d117"
+        },
+        {
+          "id": "spent-step-also-checked-on-worst",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                    raises[limit.key] = self._ask_to_raise(limit, amount, self._spent[limit.key])\n                continue\n",
+          "new": "                    raises[limit.key] = self._ask_to_raise(limit, amount, self._spent[limit.key])\n",
+          "breaks": "a step limit is also checked against the worst case",
+          "symbol_sha": "sha256:0e637c8fe64ee492a4819888e03fb78beeeb892fae1d29de91474d856c5aff4b"
         }
       ]
     },
@@ -399,10 +440,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._step_limit",
-          "old": "        return (Limit(f\"{key}@{config.run_id[:8]}\" if config.run_id else key, unit, value),)\n",
-          "new": "        return (Limit(key, unit, value),)\n",
+          "old": "        name = f\"{key}@{config.run_id[:8]}\" if config.run_id else key\n",
+          "new": "        name = key\n",
           "breaks": "parallel sub-runs of one step stop each other",
-          "symbol_sha": "sha256:ef75a8869207f1084bae53a4e8f677aaca2ecbe08cdbab0e6af5b33b038586ba"
+          "symbol_sha": "sha256:2ba03b64e0df303404e7a7a16e77a92a28cfbc28fecb617b825604db69907e51"
         }
       ]
     },
@@ -421,7 +462,7 @@
           "old": "        if group not in self._step_limits:\n",
           "new": "        if True:\n",
           "breaks": "every model call queries the database",
-          "symbol_sha": "sha256:ef75a8869207f1084bae53a4e8f677aaca2ecbe08cdbab0e6af5b33b038586ba"
+          "symbol_sha": "sha256:2ba03b64e0df303404e7a7a16e77a92a28cfbc28fecb617b825604db69907e51"
         }
       ]
     }

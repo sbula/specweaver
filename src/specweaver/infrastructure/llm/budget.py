@@ -34,6 +34,9 @@ class Limit:
     key: str
     unit: Unit
     value: float
+    #: Checked against what was already spent, not against the next call's worst case: a step
+    #: limit comes from real past costs, which a worst case would always exceed.
+    on_spent: bool = False
 
 
 @dataclass(frozen=True)
@@ -88,9 +91,9 @@ class BudgetExceededError(Exception):
 def _advice(setting: str) -> str:
     if setting.startswith(STEP_LIMIT_PREFIX):
         return (
-            "This step would cost more than similar steps usually do (the `[step_limits]` "
-            "percentile of the last passed ones); answer yes to go on, or change `[step_limits]` "
-            "in settings.toml."
+            "This step has spent what similar steps usually cost (the `[step_limits]` percentile "
+            "of the last passed ones); answer yes to go on, or change `[step_limits]` in "
+            "settings.toml."
         )
     return f"Raise `{setting}` in settings.toml if this run is legitimate."
 
@@ -188,6 +191,10 @@ class SpendBudget:
             amount = worst.amount(limit.unit)
             if amount is None:
                 self._stop(limit, f"the model's price is unknown, so {limit.key} cannot be checked")
+            if limit.on_spent:
+                if self._spent[limit.key] >= self.limit_of(limit):
+                    raises[limit.key] = self._ask_to_raise(limit, amount, self._spent[limit.key])
+                continue
             needed = self._spent[limit.key] + self._reserved[limit.key] + amount
             if needed > self.limit_of(limit):
                 raises[limit.key] = self._ask_to_raise(limit, amount, needed)
@@ -203,15 +210,18 @@ class SpendBudget:
     def _ask_to_raise(self, limit: Limit, amount: float, needed: float) -> float:
         """How far a "yes" raises `limit` for a call that would cross it; a "no" stops."""
         current = self.limit_of(limit)
-        reason = (
-            f"{limit.key} would be crossed: {self._show(limit, self._spent[limit.key])} of "
-            f"{self._show(limit, current)} spent, the next call may cost up to "
-            f"{self._show(limit, amount)}"
-        )
+        spent = self._show(limit, self._spent[limit.key])
+        if limit.on_spent:
+            reason = f"{limit.key} is reached: {spent} of {self._show(limit, current)} spent"
+        else:
+            reason = (
+                f"{limit.key} would be crossed: {spent} of {self._show(limit, current)} spent, "
+                f"the next call may cost up to {self._show(limit, amount)}"
+            )
         if self._reserved[limit.key] > 0:
             running = self._show(limit, self._reserved[limit.key])
             reason += f", and calls already running may add up to {running}"
-        steps = math.ceil((needed - current) / limit.value)
+        steps = max(math.ceil((needed - current) / limit.value), 1)
         raised = self._show(limit, current + steps * limit.value)
         if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
             self._stop(limit, reason)

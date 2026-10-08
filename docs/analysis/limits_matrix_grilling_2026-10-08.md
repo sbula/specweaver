@@ -25,4 +25,5 @@ this record keeps the path to it, including the answers a later one replaced. Re
 | Q17 | Names | **`[step_limits]`**, keys as proposed (after Q19: `percentile`, `min_steps`) |
 | Q18 | History shared across projects? | **Yes, all projects on the machine** |
 | Q19 | How much to build? | **Lean**: the 90% value of the last 10 passed steps of the same task, model and DAL; no step limit until a group has 10; the base per DAL, the window and the footprint are cut. "We should not over-engineer the whole price/token limitation" |
+| Q20 | Worst case against real past costs (found by review) | **The step limit is checked against what the step really spent**: once spent, its next call asks; one call may go past by its own size |
 | — | Missing history columns | **Add them** (server, DAL, step, outcome); "we do not have any user for now" |

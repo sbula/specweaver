@@ -237,7 +237,8 @@ class RoleResolver:
             return ()
         # The run keeps sub-runs that share a step name apart; retries share the key.
         key = f"{STEP_LIMIT_PREFIX}{task}.{config.step_name}"
-        return (Limit(f"{key}@{config.run_id[:8]}" if config.run_id else key, unit, value),)
+        name = f"{key}@{config.run_id[:8]}" if config.run_id else key
+        return (Limit(name, unit, value, on_spent=True),)
 
 
 def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, float | int]:

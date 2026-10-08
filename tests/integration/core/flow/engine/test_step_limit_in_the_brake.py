@@ -144,44 +144,30 @@ async def test_a_call_within_the_step_limit_completes(tmp_path: Path) -> None:
     assert run.status is RunStatus.COMPLETED
 
 
-async def test_a_call_that_would_cross_parks_naming_the_step_limit(tmp_path: Path) -> None:
-    db, context, registry = _world(tmp_path, max_output=100)
-    _history(db, tokens=50)
+async def test_a_step_that_spent_its_limit_parks_before_its_next_call(tmp_path: Path) -> None:
+    db, context, registry = _world(tmp_path, max_output=1000)
+    _history(db, tokens=15)
+    registry.register("review", "spec", _CallsTwice())
 
     with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(20))) as seen:
         run = await PipelineRunner(_pipeline(), context, registry=registry).run()
 
-    assert seen == []
+    assert len(seen) == 1, "the first call fits: the step had spent nothing yet"
     assert run.status is RunStatus.PARKED
     message = run.step_records[0].result.error_message or ""
     assert "step_limits.review.review_it" in message
     assert "similar steps" in message
-    assert "settings.toml" not in message or "[step_limits]" in message
 
 
 async def test_without_step_limits_the_step_completes(tmp_path: Path) -> None:
     db, context, registry = _world(tmp_path, max_output=100, step_limits="")
-    _history(db, tokens=50)
+    _history(db, tokens=15)
+    registry.register("review", "spec", _CallsTwice())
 
     with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(20))):
         run = await PipelineRunner(_pipeline(), context, registry=registry).run()
 
     assert run.status is RunStatus.COMPLETED
-
-
-async def test_sub_runs_with_the_same_step_keep_their_own_limit(tmp_path: Path) -> None:
-    db, context, registry = _world(tmp_path, max_output=500)
-    _history(db, tokens=1000)
-
-    def sub() -> PipelineRunner:
-        return PipelineRunner(_pipeline(), context, registry=registry)
-
-    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(600))):
-        first, second = await asyncio.gather(
-            sub().run(parent_run_id="parent"), sub().run(parent_run_id="parent")
-        )
-
-    assert (first.status, second.status) == (RunStatus.COMPLETED, RunStatus.COMPLETED)
 
 
 class _CallsTwice:
@@ -226,3 +212,19 @@ async def test_each_run_reads_the_history_again(tmp_path: Path) -> None:
             await PipelineRunner(_pipeline(), context, registry=registry).run()
 
     assert read.call_count == 2
+
+
+async def test_sub_runs_with_the_same_step_keep_their_own_limit(tmp_path: Path) -> None:
+    db, context, registry = _world(tmp_path, max_output=10)
+    _history(db, tokens=1000)
+    registry.register("review", "spec", _CallsTwice())
+
+    def sub() -> PipelineRunner:
+        return PipelineRunner(_pipeline(), context, registry=registry)
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(600))):
+        first, second = await asyncio.gather(
+            sub().run(parent_run_id="parent"), sub().run(parent_run_id="parent")
+        )
+
+    assert (first.status, second.status) == (RunStatus.COMPLETED, RunStatus.COMPLETED)

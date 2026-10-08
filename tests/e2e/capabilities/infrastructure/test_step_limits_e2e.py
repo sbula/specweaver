@@ -1,14 +1,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""`sw run`: a step that would cost more than similar steps usually do asks first (US-04 L1, L2).
+"""`sw run`: a step that has spent what similar steps usually cost asks before more (US-04 L1, L2).
 
 Proves: B-FLOW-07 FR-4, B-FLOW-07 FR-5, B-FLOW-07 FR-6
 
 | Bucket | Case |
 |---|---|
 | Happy | not applicable — a step within its limit is proven by the integration test |
-| Boundary | a group with 10 passed steps → its step asks before a call that would cross |
+| Boundary | a group with 10 passed steps → the step's retry, after it spent its limit, asks first |
 | Degradation | a group with 9 passed steps → no step limit, the call is sent without a question |
 | Hostile | not applicable — the history is written by SpecWeaver, never by input |
 """
@@ -60,6 +60,11 @@ steps:
   - name: review_spec
     action: review
     target: spec
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: retry
+      max_retries: 1
 """
 
 _REPLY = {
@@ -70,7 +75,7 @@ _REPLY = {
     "choices": [
         {
             "index": 0,
-            "message": {"role": "assistant", "content": "VERDICT: ACCEPTED\nFine."},
+            "message": {"role": "assistant", "content": "VERDICT: DENIED\n- missing tests"},
             "finish_reason": "stop",
         }
     ],
@@ -86,7 +91,7 @@ def _history(db: Database, steps: int) -> None:
                 "INSERT INTO llm_usage_log (timestamp, project_name, task_type, model, provider, "
                 "prompt_tokens, completion_tokens, total_tokens, estimated_cost, duration_ms, "
                 "run_id, server, dal_level, step_name) VALUES (?, 'p', 'review', "
-                "'qwen3-coder-next', 'x', 0, 0, 50, NULL, 1, ?, 'gb10', 'DAL_C', 'review_spec')",
+                "'qwen3-coder-next', 'x', 0, 0, 15, NULL, 1, ?, 'gb10', 'DAL_C', 'review_spec')",
                 (f"2026-10-01T10:{n:02d}:00+00:00", run),
             )
             conn.execute("INSERT INTO llm_step_outcome VALUES (?, 'review_spec', 'passed')", (run,))
@@ -119,7 +124,7 @@ def test_a_step_that_would_cost_more_than_usual_asks_first(
     questions, seen = _run(tmp_path, _isolate_env, _mock_db, steps=10)
 
     assert any("step_limits.review.review_spec" in q for q in questions), questions
-    assert seen, "the user said yes, but the call was never sent"
+    assert len(seen) == 2, "the user said yes, but the retry's call was never sent"
 
 
 def test_too_little_history_sets_no_step_limit(
@@ -127,5 +132,5 @@ def test_too_little_history_sets_no_step_limit(
 ) -> None:
     questions, seen = _run(tmp_path, _isolate_env, _mock_db, steps=9)
 
-    assert questions == []
-    assert seen
+    assert not any("step_limits" in q for q in questions), questions
+    assert len(seen) == 2

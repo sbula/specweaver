@@ -336,3 +336,32 @@ class TestSnapshot:
         restored.restore({})
 
         assert restored.spent(_RUN_USD.key) == 0
+
+
+class TestALimitCheckedOnSpend:
+    """A step limit compares what the step really spent, not the next call's worst case."""
+
+    _STEP = Limit("step_limits.review.review_it", "tokens", 100, on_spent=True)
+
+    def test_a_large_worst_case_below_the_spend_asks_nothing(self) -> None:
+        budget = SpendBudget(ask=lambda _q: pytest.fail("asked before the step spent its limit"))
+
+        budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=5000))
+
+    def test_once_the_step_spent_its_limit_the_next_call_asks(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or True)
+        budget.record(_scope(self._STEP), Cost(usd=None, tokens=100))
+
+        budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=10))
+
+        assert len(asked) == 1
+        assert "step_limits.review.review_it" in asked[0]
+        assert budget.limit_of(self._STEP) == 200
+
+    def test_without_an_answer_a_spent_step_stops(self) -> None:
+        budget = SpendBudget()
+        budget.record(_scope(self._STEP), Cost(usd=None, tokens=150))
+
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(self._STEP), Cost(usd=None, tokens=1))
