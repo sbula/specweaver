@@ -656,6 +656,87 @@
           "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "One answer per run, asked where a person sees it",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_spend_budget.py",
+        "tests/unit/interfaces/cli/test_spend_question.py",
+        "tests/e2e/capabilities/assurance/test_scan_at_a_spend_limit_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-is-forgotten",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "        if self.stopped is not None:\n            raise self.stopped\n        raises: dict[str, float] = {}\n",
+          "new": "        raises: dict[str, float] = {}\n",
+          "breaks": "after a no, every further call asks again",
+          "symbol_sha": "sha256:6c3c686bbb3441acb37117a20b0f99a4b2e5420f6986e9138eb5392dc49444a7"
+        },
+        {
+          "id": "refused-call-keeps-raise",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.before_call",
+          "old": "                raises[limit.key] = steps * limit.value\n",
+          "new": "                self._raised[limit.key] += steps * limit.value\n",
+          "breaks": "a yes on one limit stays even though the call was refused",
+          "symbol_sha": "sha256:6c3c686bbb3441acb37117a20b0f99a4b2e5420f6986e9138eb5392dc49444a7"
+        },
+        {
+          "id": "warning-never-rearmed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget._warn",
+          "old": "        if self._warned.get(limit.key) == current or",
+          "new": "        if limit.key in self._warned or",
+          "breaks": "a raised limit is approached without a warning",
+          "symbol_sha": "sha256:9f49ead4e0c1c9a23dcac3e2e47ad030cabe88f2794f123a61f607a7b44ecd37"
+        },
+        {
+          "id": "resume-drops-raised-limits",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "SpendBudget.snapshot",
+          "old": "            \"limits\": {\n                **self._floor,\n",
+          "new": "            \"limits\": {\n",
+          "breaks": "a second resume forgets a yes given before the first",
+          "symbol_sha": "sha256:27ed967190b38f3c4194423ecb187b3c9c92b86f644bb16b1749327d74c5c33f"
+        },
+        {
+          "id": "ctrl-d-crashes",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "ask_to_spend",
+          "old": "    except EOFError:\n",
+          "new": "    except ZeroDivisionError:\n",
+          "breaks": "Ctrl-D at the question is an error, not a stop",
+          "symbol_sha": "sha256:7e8dabf9708253125161d6ed339d189cef3c4ba4c728de2e67d753e2f67dcbd2"
+        },
+        {
+          "id": "question-in-stdout",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "ask_to_spend",
+          "old": "console=Console(stderr=True)",
+          "new": "console=console",
+          "breaks": "the question breaks sw run --json output",
+          "symbol_sha": "sha256:7e8dabf9708253125161d6ed339d189cef3c4ba4c728de2e67d753e2f67dcbd2"
+        },
+        {
+          "id": "scan-drops-stopped-scope",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/interfaces/cli.py",
+          "symbol": "_enrich_scope",
+          "old": "    kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)",
+          "new": "    kept = (StepStatus.PASSED,)",
+          "breaks": "a scan at a limit throws away what it found",
+          "symbol_sha": "sha256:527aedcefcd29d6b12df16a8d9e88c0024c4404b4e24b0e459eb20f956d98fa8"
+        }
+      ]
     }
   ]
 }

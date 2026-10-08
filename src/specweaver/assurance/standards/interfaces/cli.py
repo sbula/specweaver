@@ -60,7 +60,10 @@ def _scan_scopes(
     `make_context` is a factory rather than a value: each scope gets a fresh `RunContext`, which is
     what the loop did inline before and what keeps one scope's run from observing another's state.
     """
+    from specweaver.core.flow.engine.brake import brake_stop
+
     scope_results: dict[str, list[CategoryResult]] = {}
+    stopped = None
     for scope in scopes:
         scope_path = project_path if scope == "." else project_path / scope
         scope_files = [
@@ -70,7 +73,11 @@ def _scan_scopes(
             continue
 
         _core.console.print(f"  Scope [cyan]{scope}[/cyan]: {len(scope_files)} source files")
-        results = _enrich_scope(scope, scope_files, make_context(), compare=compare)
+        context = make_context()
+        results = _enrich_scope(scope, scope_files, context, compare=compare)
+        if stopped is None and (stopped := brake_stop(context)) is not None:
+            _core.console.print("  Model enrichment stopped by the spend brake:", style="yellow")
+            _core.console.print(f"  {stopped}", markup=False)
         if results:
             scope_results[scope] = results
     return scope_results
@@ -96,7 +103,8 @@ def _enrich_scope(
 
     run_state = asyncio.run(PipelineRunner(pipeline, context).run())
     last_record = run_state.step_records[-1] if run_state.step_records else None
-    if last_record and last_record.status == StepStatus.PASSED and last_record.result:
+    kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)
+    if last_record and last_record.status in kept and last_record.result:
         results: list[CategoryResult] = last_record.result.output.get("results", [])
         return results
     return []

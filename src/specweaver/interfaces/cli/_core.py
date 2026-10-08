@@ -154,10 +154,19 @@ def stdin_is_interactive() -> bool:
 
 
 def ask_to_spend(question: str) -> bool:
-    """Ask at a spend limit; only "y" or "yes" goes on."""
+    """Ask at a spend limit; only "y" or "yes" goes on, and end of input is a "no".
+
+    Asked on stderr, so a command's own output (`--json`) stays parseable.
+    """
+    from rich.console import Console
     from rich.prompt import Prompt
 
-    answer = Prompt.ask(f"Spend brake: {question} [y/N]", default="", console=console)
+    try:
+        answer = Prompt.ask(
+            f"Spend brake: {question} [y/N]", default="", console=Console(stderr=True)
+        )
+    except EOFError:
+        return False
     return answer.strip().lower() in ("y", "yes")
 
 

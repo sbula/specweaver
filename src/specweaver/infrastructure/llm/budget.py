@@ -106,7 +106,8 @@ class SpendBudget:
         self._raised: defaultdict[str, float] = defaultdict(float)
         self._floor: dict[str, float] = {}
         self._values: dict[str, float] = {}
-        self._warned: set[str] = set()
+        #: The limit each key last warned at; a raised limit warns again.
+        self._warned: dict[str, float] = {}
         #: The stop that ended the run's spending, if any.
         self.stopped: SpendLimitReachedError | None = None
 
@@ -123,8 +124,11 @@ class SpendBudget:
         return {
             "spent": dict(self._spent),
             "limits": {
-                key: max(value + self._raised[key], self._floor.get(key, 0.0))
-                for key, value in self._values.items()
+                **self._floor,
+                **{
+                    key: max(value + self._raised[key], self._floor.get(key, 0.0))
+                    for key, value in self._values.items()
+                },
             },
         }
 
@@ -134,7 +138,13 @@ class SpendBudget:
         self._floor.update(state.get("limits", {}))
 
     def before_call(self, scope: CallScope, worst: Cost) -> Reservation:
-        """Reserve the call's worst case, or refuse if it could cross a limit."""
+        """Reserve the call's worst case, or refuse if it could cross a limit.
+
+        Once a call was refused, the run spends nothing more and asks nothing more.
+        """
+        if self.stopped is not None:
+            raise self.stopped
+        raises: dict[str, float] = {}
         for limit in scope.limits:
             amount = worst.amount(limit.unit)
             if amount is None:
@@ -150,7 +160,9 @@ class SpendBudget:
                 raised = self._show(limit, self.limit_of(limit) + steps * limit.value)
                 if self._ask is None or not self._ask(f"{reason}. Continue up to {raised}?"):
                     self._stop(limit, reason)
-                self._raised[limit.key] += steps * limit.value
+                raises[limit.key] = steps * limit.value
+        for key, amount in raises.items():
+            self._raised[key] += amount
         reservation = Reservation(
             {limit.key: worst.amount(limit.unit) or 0.0 for limit in scope.limits}
         )
@@ -179,15 +191,16 @@ class SpendBudget:
 
     def _warn(self, limit: Limit) -> None:
         spent = self._spent[limit.key]
-        if limit.key in self._warned or spent < self.limit_of(limit) * _WARN_AT:
+        current = self.limit_of(limit)
+        if self._warned.get(limit.key) == current or spent < current * _WARN_AT:
             return
-        self._warned.add(limit.key)
+        self._warned[limit.key] = current
         logger.warning(
             "LLM spend at %.0f%% of %s: %s of %s used this run",
-            spent / limit.value * 100,
+            spent / current * 100,
             limit.key,
             self._show(limit, spent),
-            self._show(limit, limit.value),
+            self._show(limit, current),
         )
 
     def _show(self, limit: Limit, amount: float) -> str:

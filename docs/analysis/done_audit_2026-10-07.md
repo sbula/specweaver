@@ -23,18 +23,18 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 4 | HIGH | Gemini thinking tokens (`thoughts_token_count`) never counted. **Fixed** 2026-10-08 | `adapters/gemini.py:178,249` |
 | 5 | HIGH | Ctrl-C mid-step: run left RUNNING, spend saved as at step start; resume pays the step again unasked | `runner.py:172-176,317-325` |
 | 6 | HIGH | Fan-out / dual pipeline: one sub-run's stop parks siblings and discards their paid results; resume re-runs all | `fan_out.py:61`; `dual_pipeline.py:42`; `.tmp/repro_fanout.py` |
-| 7 | MED | `budget.stopped` never resets: `sw standards scan` drops every later scope silently | `budget.py`; `standards/interfaces/cli.py:97-157` |
-| 8 | MED | After a "no", every further call asks again; a later "yes" spends, but the step is parked anyway | `budget.py:136-153`; `.tmp/repro_budget.py` |
+| 7 | MED | `budget.stopped` never resets: `sw standards scan` drops every later scope silently. **Fixed** 2026-10-08: a stop is final for the run; the scan keeps every scope's findings and names the stop once | `budget.py`; `standards/interfaces/cli.py:97-157` |
+| 8 | MED | After a "no", every further call asks again; a later "yes" spends, but the step is parked anyway. **Fixed** 2026-10-08: after a no, nothing more is asked or spent | `budget.py:136-153`; `.tmp/repro_budget.py` |
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls | `approval.py` |
 | 10 | MED | A response without `usage` counts as 0, so `tokens_per_run` never fills on such servers. **Fixed** 2026-10-08: it counts its worst case | `openai.py:160-164`; `.tmp/repro_no_usage.py` |
 | 11 | MED | `--model` drops role limits (maybe intended — user's call) | `resolve.py:209-217` |
 | 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6) | `collector.py:128`; `_rate_limit.py:51` |
 | 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction) | adapters' `before_request` |
-| 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs | `_core.py:131-141` |
-| 15 | LOW | "Yes" on one limit then a stop on another leaves the first raised | `budget.py:138-153` |
-| 16 | LOW | After resume, raised limits of keys not touched this session are dropped from the next snapshot | `budget.py:121-129` |
-| 17 | LOW | The 80% warning is not re-armed after a raise; its message uses the base value | `budget.py:180-191` |
-| 18 | LOW | Ctrl-D at the question: an error, not a stop; a retry gate repeats paid calls | `_core.ask_to_spend` |
+| 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs. **Fixed** 2026-10-08: asked on stderr | `_core.py:131-141` |
+| 15 | LOW | "Yes" on one limit then a stop on another leaves the first raised. **Fixed** 2026-10-08 | `budget.py:138-153` |
+| 16 | LOW | After resume, raised limits of keys not touched this session are dropped from the next snapshot. **Fixed** 2026-10-08 | `budget.py:121-129` |
+| 17 | LOW | The 80% warning is not re-armed after a raise; its message uses the base value. **Fixed** 2026-10-08 | `budget.py:180-191` |
+| 18 | LOW | Ctrl-D at the question: an error, not a stop; a retry gate repeats paid calls. **Fixed** 2026-10-08: Ctrl-D is a no | `_core.ask_to_spend` |
 
 Also: the same model on two servers shares one model limit (`resolve.py:183`) — user's call.
 

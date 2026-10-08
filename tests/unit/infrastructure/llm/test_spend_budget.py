@@ -144,6 +144,21 @@ class TestWarning:
         assert any(_MODEL_USD.key in message for message in warned)
         assert any(_RUN_USD.key in message for message in warned)
 
+    def test_a_raised_limit_warns_again_at_its_own_80_percent(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))  # warns at 10
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
+        caplog.clear()
+
+        with caplog.at_level("WARNING"):
+            budget.record(_scope(_RUN_USD), Cost(usd=8.0, tokens=0))  # 17 of 20
+
+        [warning] = [r.message for r in caplog.records]
+        assert "85%" in warning
+        assert "USD 20.00" in warning
+
     def test_no_warning_below_80_percent(self, caplog: pytest.LogCaptureFixture) -> None:
         with caplog.at_level("WARNING"):
             SpendBudget().record(_scope(_RUN_USD), Cost(usd=7.9, tokens=0))
@@ -208,6 +223,30 @@ class TestAsking:
 
         assert budget.stopped is caught.value
 
+    def test_after_a_no_the_run_spends_nothing_more_and_asks_nothing(self) -> None:
+        asked: list[str] = []
+        budget = SpendBudget(ask=lambda q: asked.append(q) or False)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        with pytest.raises(SpendLimitReachedError) as first:
+            budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))
+
+        for worst in (2.0, 0.5):
+            with pytest.raises(SpendLimitReachedError) as again:
+                budget.before_call(_scope(_RUN_USD), Cost(usd=worst, tokens=0))
+            assert again.value is first.value
+
+        assert len(asked) == 1
+
+    def test_a_refused_call_keeps_no_raise_from_its_other_limits(self) -> None:
+        answers = iter([True, False])
+        budget = SpendBudget(ask=lambda _q: next(answers))
+        budget.record(_scope(_ROLE_USD, _MODEL_USD), Cost(usd=1.9, tokens=0))
+
+        with pytest.raises(SpendLimitReachedError):
+            budget.before_call(_scope(_ROLE_USD, _MODEL_USD), Cost(usd=7.0, tokens=0))
+
+        assert budget.limit_of(_ROLE_USD) == 2.0
+
     def test_without_anyone_to_ask_the_call_stops(self) -> None:
         budget = SpendBudget()
         budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
@@ -266,6 +305,19 @@ class TestSnapshot:
         restored.restore(budget.snapshot())
 
         assert restored.limit_of(Limit(_RUN_USD.key, "usd", 5.0)) == 20.0
+
+    def test_a_raised_limit_not_touched_after_a_resume_stays_raised(self) -> None:
+        budget = SpendBudget(ask=lambda _q: True)
+        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
+        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
+        resumed = SpendBudget()
+        resumed.restore(budget.snapshot())
+        resumed.record(_scope(_RUN_TOKENS), Cost(usd=None, tokens=10))  # only tokens touched
+
+        again = SpendBudget()
+        again.restore(resumed.snapshot())
+
+        assert again.limit_of(_RUN_USD) == 20.0
 
     def test_an_empty_snapshot_restores_nothing(self) -> None:
         restored = SpendBudget()
