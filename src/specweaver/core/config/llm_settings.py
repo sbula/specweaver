@@ -21,6 +21,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from specweaver.core.config.toml_lines import path_line
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
@@ -198,7 +200,7 @@ def brake_limits(files: LlmSettingsFiles) -> BrakeLimits:
             raise SettingNotSetError(
                 files.machine_source,
                 f"brake.{name}",
-                _line_of(files.machine_text, ("brake",)),
+                path_line(files.machine_text, ("brake",)),
                 "not set — every command that calls a model needs it; there is no default",
             )
     return BrakeLimits(*(getattr(brake, name) for name in BrakeLimits._fields))
@@ -273,7 +275,7 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
         raise SettingsFileError(
             source,
             ".".join(forbidden),
-            _line_of(text, forbidden),
+            path_line(text, forbidden),
             "a project may choose models, not define where code is sent — set servers, "
             "addresses and key variables in the machine settings file",
         )
@@ -284,7 +286,7 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
             raise SettingsFileError(
                 source,
                 ".".join(path),
-                _line_of(text, path),
+                path_line(text, path),
                 "limits live in the machine settings file only, never in a project",
             )
     return _validate(ProjectLlmSection, section, text, source, prefix=("llm",))
@@ -304,7 +306,7 @@ def _check_schema_version(
         )
     else:
         return
-    raise SettingsFileError(source, ".".join(path), _line_of(text, path), message)
+    raise SettingsFileError(source, ".".join(path), path_line(text, path), message)
 
 
 def _load_toml(text: str, source: str) -> dict[str, Any]:
@@ -329,7 +331,7 @@ def _validate(
         first = errors[0]
         loc = prefix + tuple(str(part) for part in first["loc"] if part != "[key]")
         # The message only: pydantic's `input` would echo the value, which may be a secret.
-        raise SettingsFileError(source, ".".join(loc), _line_of(text, loc), first["msg"]) from None
+        raise SettingsFileError(source, ".".join(loc), path_line(text, loc), first["msg"]) from None
 
 
 def _find_machine_only_key(value: Any, path: tuple[str, ...]) -> tuple[str, ...] | None:
@@ -419,12 +421,12 @@ def resolve_roles(
     resolved: dict[str, ResolvedRole] = {}
     for entries, source, text, prefix in layers:
         for role, entry in entries:
-            origin = source if text is None else f"{source}:{_line_of(text, (*prefix, role))}"
+            origin = source if text is None else f"{source}:{path_line(text, (*prefix, role))}"
             if entry.server not in files.machine.servers:
                 raise SettingsFileError(
                     source,
                     ".".join((*prefix, role)),
-                    _line_of(text, (*prefix, role)) if text is not None else 0,
+                    path_line(text, (*prefix, role)) if text is not None else 0,
                     f"names server '{entry.server}', which the machine settings file does not "
                     "define",
                 )
@@ -441,7 +443,7 @@ def _refuse_hosted(files: LlmSettingsFiles, resolved: dict[str, ResolvedRole]) -
             raise SettingsFileError(
                 files.project_source,
                 "llm.private_only",
-                _line_of(files.project_text, ("llm", "private_only")),
+                path_line(files.project_text, ("llm", "private_only")),
                 f"the project allows private servers only, but role '{role}' uses "
                 f"'{setting.server}', which is not private ({setting.origin['model']})",
             )
@@ -471,7 +473,7 @@ def settings_report(
             (
                 f"servers.{name}",
                 " ".join(value.split()),
-                at.format(_line_of(files.machine_text, ("servers", name))),
+                at.format(path_line(files.machine_text, ("servers", name))),
             )
         )
     for role, resolved in sorted(roles.items()):
@@ -489,7 +491,7 @@ def settings_report(
                 (f"brake.{name}", "unset — required by any command that calls a model", "-")
             )
         else:
-            line = _line_of(files.machine_text, ("brake", name))
+            line = path_line(files.machine_text, ("brake", name))
             rows.append((f"brake.{name}", _number(value), at.format(line)))
     rows.extend(_stored_limits(files, "roles", machine.roles.items()))
     rows.extend(_stored_limits(files, "models", machine.models.items()))
@@ -498,14 +500,14 @@ def settings_report(
     else:
         currency = machine.currency
         rate = f"{currency.code}, {currency.per_usd:g} per USD, rate of {currency.rate_date}"
-        rows.append(("currency", rate, at.format(_line_of(files.machine_text, ("currency",)))))
+        rows.append(("currency", rate, at.format(path_line(files.machine_text, ("currency",)))))
     project = files.project
     if project.private_only:
         rows.append(
             (
                 "llm.private_only",
                 "true",
-                f"{files.project_source}:{_line_of(files.project_text, ('llm', 'private_only'))}",
+                f"{files.project_source}:{path_line(files.project_text, ('llm', 'private_only'))}",
             )
         )
     return rows
@@ -520,7 +522,7 @@ def _stored_limits(
         for key in _LIMIT_KEYS:
             value = getattr(entry, key)
             if value is not None:
-                line = _line_of(files.machine_text, (table, name, key))
+                line = path_line(files.machine_text, (table, name, key))
                 rows.append(
                     (
                         f"{table}.{name}.{key}",
@@ -534,82 +536,3 @@ def _stored_limits(
 def _number(value: float) -> str:
     """A limit as written: no exponent, no trailing `.0`."""
     return str(int(value)) if float(value).is_integer() else str(value)
-
-
-# ---------------------------------------------------------------------------
-# Locating a key path in the source text
-# ---------------------------------------------------------------------------
-#
-# Neither `tomllib` nor `tomlkit` reports where a key sits, so the line is found by scanning: the
-# deepest table header that is a prefix of the key path, then the first line in that table that
-# assigns the next key — which covers inline tables, whose keys share their parent's line.
-
-_HEADER = re.compile(r"^\s*\[+\s*(.+?)\s*\]+\s*(#.*)?$")
-_PART = re.compile(r'"([^"]*)"|\'([^\']*)\'|([^.\s]+)')
-
-
-def _header_parts(raw: str) -> tuple[str, ...]:
-    return tuple(next(g for g in match.groups() if g is not None) for match in _PART.finditer(raw))
-
-
-def line_of(text: str, *keys: str) -> int:
-    """The line of the first of `keys` (dotted, as an error names them) found in `text`, else 1."""
-    for key in keys:
-        line = _find_line(text, _header_parts(key))
-        if line is not None:
-            return line
-    return 1
-
-
-def _line_of(text: str, path: tuple[str, ...]) -> int:
-    return _find_line(text, path) or 1
-
-
-def _find_line(text: str, path: tuple[str, ...]) -> int | None:
-    """The line assigning `path`, else its deepest table's header; None when neither is there."""
-    lines = _code_lines(text.splitlines())
-    tables = _tables(lines)
-    for start, parts in sorted(tables, key=lambda table: -len(table[1])):
-        if path[: len(parts)] == parts:
-            end = min((s for s, _ in tables if s > start), default=len(lines) + 1)
-            assigned = _assignment_in(lines, start, end, path[len(parts) :])
-            return assigned or (start if parts else None)
-    return None
-
-
-def _code_lines(lines: list[str]) -> list[str]:
-    """`lines` with the inside of every multi-line string blanked, so it is never read as a key."""
-    code: list[str] = []
-    quote: str | None = None
-    for line in lines:
-        code.append("" if quote else line)
-        for mark in ('"""', "'''"):
-            if (quote is None or quote == mark) and line.count(mark) % 2:
-                quote = None if quote else mark
-    return code
-
-
-def _tables(lines: list[str]) -> list[tuple[int, tuple[str, ...]]]:
-    """Every table header as (line number, key parts); the top level is (0, ())."""
-    tables: list[tuple[int, tuple[str, ...]]] = [(0, ())]
-    for index, line in enumerate(lines):
-        header = _HEADER.match(line)
-        if header:
-            tables.append((index + 1, _header_parts(header.group(1))))
-    return tables
-
-
-_ASSIGNED_KEY = re.compile(r"^\s*([^=#\[][^=]*?)\s*=")
-
-
-def _assignment_in(lines: list[str], start: int, end: int, rest: tuple[str, ...]) -> int | None:
-    """The line inside a table whose key, dotted or not, is `rest` or the nearest part of it."""
-    best: tuple[int, int] | None = None
-    for number in range(start + 1, end):
-        found = _ASSIGNED_KEY.match(lines[number - 1])
-        if not found:
-            continue
-        parts = _header_parts(found.group(1))
-        if parts and rest[: len(parts)] == parts and (best is None or len(parts) > best[0]):
-            best = (len(parts), number)
-    return best[1] if best else None

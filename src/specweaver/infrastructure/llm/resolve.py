@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING, NoReturn
 from specweaver.core.config.llm_settings import (
     SettingNotSetError,
     SettingsFileError,
-    line_of,
     resolve_roles,
     to_usd,
 )
+from specweaver.core.config.toml_lines import line_of
 from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector

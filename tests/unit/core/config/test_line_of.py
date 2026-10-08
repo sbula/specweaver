@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import line_of
+from specweaver.core.config.toml_lines import line_of
 
 _TEXT = '''\
 schema_version = 1

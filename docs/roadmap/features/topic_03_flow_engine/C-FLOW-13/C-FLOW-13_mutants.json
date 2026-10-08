@@ -1087,7 +1087,7 @@
         {
           "id": "string-lines-read-as-keys",
           "origin": "authored",
-          "file": "src/specweaver/core/config/llm_settings.py",
+          "file": "src/specweaver/core/config/toml_lines.py",
           "symbol": "_code_lines",
           "old": "        code.append(\"\" if quote else line)\n",
           "new": "        code.append(line)\n",
@@ -1097,7 +1097,7 @@
         {
           "id": "dotted-key-first-part-only",
           "origin": "authored",
-          "file": "src/specweaver/core/config/llm_settings.py",
+          "file": "src/specweaver/core/config/toml_lines.py",
           "symbol": "_assignment_in",
           "old": "        if parts and rest[: len(parts)] == parts and (best is None or len(parts) > best[0]):\n",
           "new": "        if parts and rest[:1] == parts[:1] and best is None:\n",
