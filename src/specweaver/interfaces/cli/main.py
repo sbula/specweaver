@@ -61,7 +61,9 @@ def _app_callback(
 
 try:
     from specweaver.core.config.interfaces.cli import config_app
+    from specweaver.infrastructure.llm.interfaces.settings_show import config_show
 
+    config_app.command("show")(config_show)
     app.add_typer(config_app, name="config")
 except ImportError as e:
     console.print(f"[bold red]Failed to load config plugin:[/bold red] {e}")

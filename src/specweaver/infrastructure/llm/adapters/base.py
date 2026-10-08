@@ -41,6 +41,8 @@ class LLMAdapter(ABC):
     #: The provider's official address, used when none is given. Written out so that no SDK
     #: environment variable (`OPENAI_BASE_URL`, ...) can redirect a call.
     default_base_url: ClassVar[str | None] = None
+    #: The sampling values this adapter puts in a request; the others are never sent.
+    sent_sampling: ClassVar[frozenset[str]] = frozenset()
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
         """Every adapter is built from a key and an address.

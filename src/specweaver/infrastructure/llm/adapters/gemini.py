@@ -78,6 +78,7 @@ class GeminiAdapter(LLMAdapter):
     """
 
     provider_name = "gemini"
+    sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
     api_key_env_var = "GEMINI_API_KEY"
 
     default_base_url: ClassVar[str | None] = "https://generativelanguage.googleapis.com/"

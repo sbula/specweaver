@@ -53,8 +53,8 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 9 | MED | A secret pasted into `api_key_env` is printed by `config show` and errors. **Fixed** 2026-10-08: refused as not a variable name, without echoing it | `llm_settings.py:408` |
 | 10 | MED | `schema_version = "2"`, `0`, `true` accepted. **Fixed** 2026-10-08 | `llm_settings.py:221` |
 | 11 | MED | Project file has no `schema_version` gate. **Fixed** 2026-10-08: the same gate as the machine file | `ProjectLlmSection` |
-| 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks | `settings_report` |
-| 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent | adapters |
+| 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks. **Fixed** 2026-10-08 (user chose to move it): `sw config show` now lives in the LLM module and shows each role's output limit and sampling with their origin, and an unset `default` | `settings_report` |
+| 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent. **Fixed** 2026-10-08: each adapter declares what it sends; the report marks the rest "not sent" | adapters |
 | 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is `B-FLOW-07` | `resolve.py` |
 | 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on. **Fixed** 2026-10-08: only a model nobody set is skipped; a wrong setting stops the scan | `command.py:72-74` |
 | 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |

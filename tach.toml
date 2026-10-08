@@ -155,7 +155,7 @@ expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm",]
-expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role", "models.ToolDispatcherProtocol", "models.ToolDefinition", "models.ToolParameter", "models.ProjectMetadata", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "factory.LLMAdapterError", "models.PromptSafeConfig", "mention_scanner.models.ResolvedMention", "adapters.registry.get_all_adapters", "adapters.gemini.GeminiAdapter", "mention_scanner.scanner.extract_mentions", "prompt_builder.PromptBuilder", "store.Base", "models.TaskType", "_prompt_profiles.RenderProfile", "router.ModelRouter", "collector.TelemetryCollector", "_prompt_profiles.PromptSlot", "store.LlmRepository", "budget", "budget.SpendBudget", "budget.BudgetExceededError", "budget.SpendLimitReachedError", "budget.step_refusal", "budget.track_step_refusals", "catalogue.shipped_catalogue", "catalogue.Catalogue", "resolve.RoleResolver", "router.build_router", "redaction.Redactor",]
+expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role", "models.ToolDispatcherProtocol", "models.ToolDefinition", "models.ToolParameter", "models.ProjectMetadata", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "factory.LLMAdapterError", "models.PromptSafeConfig", "mention_scanner.models.ResolvedMention", "adapters.registry.get_all_adapters", "adapters.gemini.GeminiAdapter", "mention_scanner.scanner.extract_mentions", "prompt_builder.PromptBuilder", "store.Base", "models.TaskType", "_prompt_profiles.RenderProfile", "router.ModelRouter", "collector.TelemetryCollector", "_prompt_profiles.PromptSlot", "store.LlmRepository", "budget", "budget.SpendBudget", "budget.BudgetExceededError", "budget.SpendLimitReachedError", "budget.step_refusal", "budget.track_step_refusals", "catalogue.shipped_catalogue", "catalogue.Catalogue", "resolve.RoleResolver", "router.build_router", "redaction.Redactor", "settings_view.role_rows",]
 
 [[interfaces]]
 from = [ "specweaver.sandbox",]
@@ -175,7 +175,7 @@ expose = [ "cli", "cli.standards_app",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm.interfaces",]
-expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router", "command.run_model_option",]
+expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router", "command.run_model_option", "settings_show.config_show",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.interfaces",]

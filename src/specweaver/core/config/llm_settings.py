@@ -459,10 +459,29 @@ def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:
     )
 
 
+def _file_role_rows(roles: dict[str, ResolvedRole]) -> list[tuple[str, str, str]]:
+    """Each role as the settings files set it."""
+    rows: list[tuple[str, str, str]] = []
+    for role, resolved in sorted(roles.items()):
+        rows.append(
+            (f"roles.{role}", f"{resolved.model}@{resolved.server}", resolved.origin["model"])
+        )
+        for name in _SAMPLING_FIELDS:
+            value = getattr(resolved, name)
+            if value is not None:
+                rows.append((f"roles.{role}.{name}", str(value), resolved.origin[name]))
+    return rows
+
+
 def settings_report(
-    files: LlmSettingsFiles, roles: dict[str, ResolvedRole]
+    files: LlmSettingsFiles,
+    roles: dict[str, ResolvedRole],
+    role_rows: list[tuple[str, str, str]] | None = None,
 ) -> list[tuple[str, str, str]]:
-    """Every effective LLM setting as (key, value, origin), for `sw config show`."""
+    """Every effective LLM setting as (key, value, origin), for `sw config show`.
+
+    `role_rows`, when given, replaces the roles as the files set them with what a call sends.
+    """
     machine = files.machine
     at = f"{files.machine_source}:{{}}"
     rows: list[tuple[str, str, str]] = []
@@ -476,14 +495,7 @@ def settings_report(
                 at.format(path_line(files.machine_text, ("servers", name))),
             )
         )
-    for role, resolved in sorted(roles.items()):
-        rows.append(
-            (f"roles.{role}", f"{resolved.model}@{resolved.server}", resolved.origin["model"])
-        )
-        for name in _SAMPLING_FIELDS:
-            value = getattr(resolved, name)
-            if value is not None:
-                rows.append((f"roles.{role}.{name}", str(value), resolved.origin[name]))
+    rows.extend(role_rows if role_rows is not None else _file_role_rows(roles))
     for name in BrakeValues.model_fields:
         value = getattr(machine.brake, name)
         if value is None:

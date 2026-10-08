@@ -69,18 +69,16 @@ class OpenAIAdapter(LLMAdapter):
     #: deprecated there and refused by reasoning models.
     output_limit_field: ClassVar[str] = "max_completion_tokens"
     #: OpenAI's current models (GPT-5 and later) refuse a non-default temperature with a 400.
-    sends_sampling: ClassVar[bool] = False
+    sent_sampling: ClassVar[frozenset[str]] = frozenset()
 
     def _sampling_kwargs(self, config: GenerationConfig) -> dict[str, Any]:
         """The sampling values that are set, for a server that accepts them."""
-        if not self.sends_sampling:
-            return {}
         kwargs: dict[str, Any] = {
             name: value
             for name in ("temperature", "top_p")
-            if (value := getattr(config, name)) is not None
+            if name in self.sent_sampling and (value := getattr(config, name)) is not None
         }
-        if config.top_k is not None:
+        if "top_k" in self.sent_sampling and config.top_k is not None:
             kwargs["extra_body"] = {
                 "top_k": config.top_k
             }  # not an OpenAI field; vLLM and DashScope read it
@@ -301,7 +299,7 @@ class OpenAICompatibleAdapter(OpenAIAdapter):
     provider_name = "openai-compatible"
     api_key_env_var = ""
     default_base_url: ClassVar[str | None] = None
-    sends_sampling: ClassVar[bool] = True
+    sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
         super().__init__(api_key=_NO_KEY if api_key is None else api_key, base_url=base_url)

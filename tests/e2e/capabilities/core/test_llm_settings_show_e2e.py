@@ -163,3 +163,35 @@ def test_a_private_project_with_a_hosted_role_is_refused(
     assert result.exit_code == 1
     assert shows(result.output, "specweaver.toml:2")
     assert shows(result.output, "review")
+
+
+def test_a_role_shows_the_output_limit_and_sampling_a_call_uses(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    (_isolate_env / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+    _project(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 0, result.output
+    assert shows(result.output, "roles.draft.max_output_tokens = 65536 (catalogue)")
+    assert shows(result.output, "roles.draft.top_k = 40 (catalogue)")
+    assert shows(result.output, "roles.default = unset")
+
+
+def test_a_value_the_server_never_receives_says_so(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    machine = (
+        _MACHINE
+        + '\n[servers.openai]\nkind = "openai"\nprivate = false\nmax_parallel = 2\n'
+        + '\n[roles.review]\nmodel = "gpt-5.4@openai"\nmax_output_tokens = 2000\ntemperature = 0.3\n'
+    )
+    (_isolate_env / "settings.toml").write_text(machine, encoding="utf-8")
+    _project(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 0, result.output
+    assert shows(result.output, "roles.review.temperature = 0.3 — not sent: openai ignores it")
+    assert shows(result.output, "roles.draft.temperature = 1.0 (catalogue)")

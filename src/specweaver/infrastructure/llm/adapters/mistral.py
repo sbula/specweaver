@@ -74,13 +74,13 @@ def _request(messages: list[Message], config: GenerationConfig) -> dict[str, Any
     }
 
 
+#: Mistral has no `top_k`.
+_SENT = frozenset({"temperature", "top_p"})
+
+
 def _sampling(config: GenerationConfig) -> dict[str, float]:
-    """The sampling values that are set; Mistral has no `top_k`."""
-    return {
-        name: value
-        for name in ("temperature", "top_p")
-        if (value := getattr(config, name)) is not None
-    }
+    """The sampling values that are set and that Mistral takes."""
+    return {name: value for name in sorted(_SENT) if (value := getattr(config, name)) is not None}
 
 
 class MistralAdapter(LLMAdapter):
@@ -88,6 +88,7 @@ class MistralAdapter(LLMAdapter):
 
     provider_name = "mistral"
     api_key_env_var = "MISTRAL_API_KEY"
+    sent_sampling: ClassVar[frozenset[str]] = _SENT
 
     default_base_url: ClassVar[str | None] = "https://api.mistral.ai"
 

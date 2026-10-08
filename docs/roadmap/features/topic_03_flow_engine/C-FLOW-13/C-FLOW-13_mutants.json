@@ -1167,6 +1167,56 @@
           "symbol_sha": "sha256:534281f28e762c1dac4a210cde9f7ca7c787b8bf47b7f5ee821dc9ea96cee2e2"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "sw config show says what a call with each role sends",
+      "scope": [
+        "tests/e2e/capabilities/core/test_llm_settings_show_e2e.py",
+        "tests/unit/infrastructure/llm/test_openai.py"
+      ],
+      "mutants": [
+        {
+          "id": "unsent-value-shown-as-used",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/settings_view.py",
+          "symbol": "_sampling_rows",
+          "old": "        shown = str(value) if name in sent else f\"{value} — not sent: {kind} ignores it\"\n",
+          "new": "        shown = str(value)\n",
+          "breaks": "a temperature openai never receives is shown as in effect",
+          "symbol_sha": "sha256:53ba5fafee1e63e98418fb4a618241c68dadd1050ea539545e1f9a74d582d140"
+        },
+        {
+          "id": "catalogue-limit-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/settings_view.py",
+          "symbol": "_output_limit_row",
+          "old": "    if facts is not None and facts.max_output is not None:\n",
+          "new": "    if False:\n",
+          "breaks": "the catalogue's output limit, which every call uses, is reported unknown",
+          "symbol_sha": "sha256:65133d32fd9df53108822cc4896f14697ee6355ac52760c046bbd3f3b33894b1"
+        },
+        {
+          "id": "unset-default-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/settings_view.py",
+          "symbol": "role_rows",
+          "old": "    if DEFAULT_ROLE not in roles:\n",
+          "new": "    if False:\n",
+          "breaks": "the report hides that a role nobody set has no model",
+          "symbol_sha": "sha256:c83eda670033b81320c276ec2d167412dd3b023493eeffd37ab9c4dc5c80b76c"
+        },
+        {
+          "id": "openai-sends-sampling",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter._sampling_kwargs",
+          "old": "            if name in self.sent_sampling and (value := getattr(config, name)) is not None\n",
+          "new": "            if (value := getattr(config, name)) is not None\n",
+          "breaks": "OpenAI gets a temperature its models refuse",
+          "symbol_sha": "sha256:74066e943a79337e199af99aa117e879779f7ee9c8ac6a4dda974fc56049b319"
+        }
+      ]
     }
   ]
 }

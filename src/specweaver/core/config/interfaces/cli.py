@@ -11,7 +11,7 @@ import logging
 import typer
 from rich.table import Table
 
-from specweaver.core.config.interfaces.llm_show import config_set_role, config_show
+from specweaver.core.config.interfaces.llm_show import config_set_role
 from specweaver.interfaces.cli import _core
 
 logger = logging.getLogger(__name__)
@@ -290,5 +290,4 @@ def config_reset_profile() -> None:
     )
 
 
-config_app.command("show")(config_show)
 config_app.command("set-role")(config_set_role)

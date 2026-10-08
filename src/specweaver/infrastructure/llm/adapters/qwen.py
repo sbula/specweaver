@@ -22,4 +22,4 @@ class QwenAdapter(OpenAIAdapter):
     default_base_url: ClassVar[str | None] = None
     #: DashScope documents only `max_tokens`.
     output_limit_field: ClassVar[str] = "max_tokens"
-    sends_sampling: ClassVar[bool] = True
+    sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
