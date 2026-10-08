@@ -59,25 +59,24 @@ async def execute_in_sandbox(
     """Execute a handler step inside an isolated Git worktree."""
     import copy
 
+    from specweaver.core.flow.engine.isolation import derive_allowed_paths
+    from specweaver.core.flow.engine.state import StepStatus
     from specweaver.sandbox.base import AtomStatus
     from specweaver.sandbox.git.core.atom import GitAtom
 
     context = runner._context
 
     atom = GitAtom(cwd=context.project_path)
-    # From the run: the old context field was never set, so every branch was "sf-default_pipe-".
     clean_pipeline = (run.pipeline_name or "default_pipe").replace(" ", "_")
-    # May be None, giving a branch named "...-None". Pre-existing; left alone.
-    task_id = context.run.task_id
+    task_id = context.run.task_id or run.run_id
     branch = f"sf-{clean_pipeline}-{task_id}"
     wt_path = f".worktrees/{task_id}"
 
-    # 1. Add worktree
+    # Prune a stale same-named worktree and branch left by a crash, so the add cannot collide.
+    atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
     add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
     if add_res.status != AtomStatus.SUCCESS:
-        # Fail closed: isolation was requested (per-step or policy) but the
-        # worktree could not be created. Surface GitAtom's ACTUAL failure (do not assume
-        # the cause) plus an actionable hint — the most common cause is a non-git project.
+        # Fail closed: isolation was requested but the worktree could not be created.
         raise RuntimeError(
             f"US-9 worktree isolation could not start ({add_res.message}). "
             f"Ensure {context.project_path} is a git repository, or disable "
@@ -86,42 +85,38 @@ async def execute_in_sandbox(
 
     setup_sandbox_caches(context, wt_path, logger)
 
+    # The step sees the worktree as its project, as a session step does.
+    worktree = context.project_path / wt_path
     isolated_context = copy.copy(context)
-    isolated_context.output_dir = context.project_path / wt_path
-    # Rebind the execution root to the worktree source tree so untrusted-
-    # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
-    # cwd inside the worktree rather than against the real project root.
-    # Shallow copy: rebind the whole attribute, don't edit the shared one.
+    isolated_context.project_path = worktree
+    isolated_context.output_dir = None
     isolated_context.isolation = isolated_context.isolation.model_copy(
-        update={"execution_root": context.project_path / wt_path}
+        update={"execution_root": worktree}
     )
 
     try:
-        # 2. Execute inner handler bounded to the isolated worktree context
-        result = await handler.execute(step_def, isolated_context)
-        if brake_stop(context) is not None:
-            return cast("StepResult", result)  # the step runs again on resume; merge nothing
+        result = cast("StepResult", await handler.execute(step_def, isolated_context))
+        if brake_stop(context) is not None or result.status != StepStatus.PASSED:
+            return result  # a stopped or failed step lands nothing
 
-        # 3. Continuous Micro-Sync (FR-7)
-        atom.run({"intent": "worktree_sync", "path": wt_path})
-
-        # 4. Mathematical diff striping (FR-4, FR-5, NFR-4)
-        strip_res = atom.run(
+        commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
+        if commit_res.status != AtomStatus.SUCCESS:
+            raise RuntimeError(f"worktree commit failed: {commit_res.message}")
+        merge_res = atom.run(
             {
                 "intent": "strip_merge",
                 "branch": branch,
-                "allowed_paths": context.isolation.allowed_paths,
+                "allowed_paths": context.isolation.allowed_paths
+                or derive_allowed_paths(context.spec_path),
             }
         )
-        if strip_res.status != AtomStatus.SUCCESS:
-            logger.warning(f"Sandbox diff striping returned non-success: {strip_res.message}")
-        return cast("StepResult", result)
+        if merge_res.status != AtomStatus.SUCCESS:
+            raise RuntimeError(f"authorized strip-merge failed: {merge_res.message}")
+        return result
 
     finally:
-        # 5. Teardown resilience
-        atom.run({"intent": "worktree_teardown", "path": wt_path})
+        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
 
-        # 6. Database Cleanup Hooks bounds guarantee zombie block survival
         try:
             from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
 

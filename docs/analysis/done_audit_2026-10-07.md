@@ -87,7 +87,7 @@ proven through `/review`, not `/implement`).
 
 | ID | Broken | Evidence |
 |---|---|---|
-| D-EXEC-02, INT-US-09 FR-5 | Per-step worktree isolation discards all output (no commit before strip-merge, empty allow-list); run says COMPLETED | `sandboxed_execution.py:96-112` |
+| D-EXEC-02, INT-US-09 FR-5 | Per-step worktree isolation discards all output (no commit before strip-merge, empty allow-list); run says COMPLETED. **Fixed** 2026-10-08 (user chose the session rule): commit, then merge only a passed step's targets; FR-7 micro-sync withdrawn | `sandboxed_execution.py:96-112` |
 | E-SENS-01 | grep/find follow symlinks out of the root. **Fixed** 2026-10-08: the search path is contained, symlinks are skipped | `sandbox/filesystem/interfaces/tool.py:189-234`; `core/search.py:223` |
 | E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87` |
 | E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access | `run_context.py:114-123`; `security.py:128` |

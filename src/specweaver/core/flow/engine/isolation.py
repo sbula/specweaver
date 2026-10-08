@@ -37,7 +37,7 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
-def _derive_allowed_paths(spec_path: Path) -> list[str]:
+def derive_allowed_paths(spec_path: Path) -> list[str]:
     """The reconcile allow-list, derived from the spec stem.
 
     Mirrors the pipeline's generation targets so the single end-of-run strip-merge
@@ -111,7 +111,8 @@ def apply_session_policy(
 
     Called at the composition root (`ADR-002`). Reads the opt-in ``[sandbox]`` knobs and,
     **only when per-run isolation is on**, populates ``allowed_paths`` (the configured
-    override, else the derived generation targets).
+    override, else the derived generation targets). A step in its own worktree with no
+    ``allowed_paths`` derives the same targets itself.
 
     ``dal_auto_escalate``: when True and the explicit
     ``enforce_session_isolation`` flag is off, the policy auto-enables session isolation if
@@ -119,10 +120,6 @@ def apply_session_policy(
     (default ``DAL_B``). This is **opt-in per caller** — ``sw implement`` passes True;
     ``sw run``/``sw resume`` leave it False, so their behavior is byte-identical (escalation
     never even resolves a DAL for them).
-
-    When the policy is OFF, ``allowed_paths`` is left EMPTY — the per-step path
-    (``execute_in_sandbox``) also reads ``allowed_paths``, so populating it here would silently
-    change per-step ``strip_merge`` behavior.
 
     No half-apply: the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the
@@ -140,7 +137,7 @@ def apply_session_policy(
             context.isolation = context.isolation.model_copy(update={"session_isolation": False})
             return
         override = list(getattr(sandbox, "session_allowed_paths", None) or [])
-        allowed = override or _derive_allowed_paths(context.spec_path)
+        allowed = override or derive_allowed_paths(context.spec_path)
         context.isolation = context.isolation.model_copy(
             update={"session_isolation": True, "allowed_paths": allowed}
         )

@@ -55,10 +55,10 @@ graph LR
 | FR-1 | Create worktree | Orchestrator | create a dedicated git worktree in `.worktrees/<task_id>` | The agent executes inside parallel files separate from the main workspace. |
 | FR-2 | Cache symlinking | Orchestrator | symlink heavy workspace cache folders (like `node_modules`, `.gradle`) into the new worktree | The new worktree compiles without downloading gigabytes of cache dependencies. |
 | FR-3 | Commit bounding | Agent | write code and commit changes strictly within the active worktree index | Hallucinations never touch the human's main branch files. |
-| FR-4 | Diff Striping | Orchestrator | compute a structural diff patch of the worktree against main, stripping any hunks that target paths not listed in `context.yaml` | The final merge pipeline blocks hallucinated edits to forbidden dependencies. |
+| FR-4 | Diff Striping | Orchestrator | commit the worktree, then merge back only the step's generation targets (`src/<stem>.py`, `tests/test_<stem>.py`, the session rule of `C-EXEC-06` AD-2), and only when the step passed `[agreed 2026-10-08]` | The final merge pipeline blocks hallucinated edits to forbidden dependencies. |
 | FR-5 | Conflict Auto-Resolution| Orchestrator | apply a "Main-Branch Wins" (`--strategy-option=ours`) merge conflict logic during syncing | Human changes on main immediately override conflicting hallucinated agent changes. |
 | FR-6 | Cleanup / Zombie prevention | Orchestrator | execute `git worktree remove --force` upon phase success/failure with strict OS unlock retries | The system is purged of temporary structures without leaving orphaned locked files on Windows. |
-| FR-7 | Continuous Micro-Sync | Orchestrator | execute a proactive `git rebase main` on the sub-feature worktree when human edits occur on main | The worktree avoids deep drift over long implementation phases. |
+| FR-7 | Continuous Micro-Sync | Orchestrator | *Withdrawn 2026-10-08:* a rebase onto `main` would pull `main` into whatever branch the user is on; never effective (it ran before any commit) | The worktree avoids deep drift over long implementation phases. |
 | FR-8 | Isolated Documentation Claims | Agent / Orchestrator | output a localized `doc_updates.md` explicitly bounded within the isolated Component directory before completing its task | Agents flag required changes to global architecture documents without modifying them concurrently, delegating compilation to a sequential post-merge step. |
 
 ## Non-Functional Requirements

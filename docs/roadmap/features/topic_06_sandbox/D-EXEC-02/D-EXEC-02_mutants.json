@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "feature": "D-EXEC-02",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "The step's work is committed in its worktree",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_worktree_merge.py",
+        "tests/integration/core/flow/engine/test_runner_sandbox.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-commit-before-merge",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "        commit_res = atom.run({\"intent\": \"worktree_commit\", \"path\": wt_path})\n",
+          "new": "        commit_res = add_res\n",
+          "breaks": "the step's output is discarded and the run says completed",
+          "symbol_sha": "sha256:7afeefa87d2e62cdef0047f8bb2af37036de860309ac4941ebc64f70ea530a62"
+        },
+        {
+          "id": "step-writes-real-root",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "    isolated_context.project_path = worktree\n    isolated_context.output_dir = None\n",
+          "new": "    isolated_context.output_dir = None\n",
+          "breaks": "a step writing through its project path writes the real project",
+          "symbol_sha": "sha256:7afeefa87d2e62cdef0047f8bb2af37036de860309ac4941ebc64f70ea530a62"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Only a passed step's targets land",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_worktree_merge.py",
+        "tests/integration/core/flow/engine/test_runner_sandbox.py"
+      ],
+      "mutants": [
+        {
+          "id": "empty-allow-list",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "                \"allowed_paths\": context.isolation.allowed_paths\n                or derive_allowed_paths(context.spec_path),\n",
+          "new": "                \"allowed_paths\": context.isolation.allowed_paths,\n",
+          "breaks": "every file is stripped, so nothing lands",
+          "symbol_sha": "sha256:7afeefa87d2e62cdef0047f8bb2af37036de860309ac4941ebc64f70ea530a62"
+        },
+        {
+          "id": "failed-step-lands",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": " or result.status != StepStatus.PASSED:",
+          "new": ":",
+          "breaks": "a failed step's half-done work is merged",
+          "symbol_sha": "sha256:7afeefa87d2e62cdef0047f8bb2af37036de860309ac4941ebc64f70ea530a62"
+        },
+        {
+          "id": "merge-failure-silent",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "            raise RuntimeError(f\"authorized strip-merge failed: {merge_res.message}\")\n",
+          "new": "            return result\n",
+          "breaks": "a refused merge reads as a completed step",
+          "symbol_sha": "sha256:7afeefa87d2e62cdef0047f8bb2af37036de860309ac4941ebc64f70ea530a62"
+        }
+      ]
+    }
+  ]
+}

@@ -67,8 +67,8 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
         mock_handler = MagicMock()
 
         async def fake_execute(step_def, ctx):
-            # Verify that context was updated to the worktree path!
-            assert ".worktrees" in str(ctx.output_dir)
+            # The step sees the worktree as its project.
+            assert ".worktrees" in str(ctx.project_path)
             return StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
 
         mock_handler.execute.side_effect = fake_execute
@@ -83,8 +83,9 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
 
         # 3. Verify exactly sequential execution lifecycle
         assert intents_called == [
+            "worktree_teardown",
             "worktree_add",
-            "worktree_sync",
+            "worktree_commit",
             "strip_merge",
             "worktree_teardown",
         ]

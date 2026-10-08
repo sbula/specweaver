@@ -3,7 +3,7 @@
 
 """C-EXEC-06 SF-03 T2/T3: composition-root session-isolation policy helpers.
 
-`_derive_allowed_paths` derives the reconcile allow-list from the spec stem (AD-2),
+`derive_allowed_paths` derives the reconcile allow-list from the spec stem (AD-2),
 byte-matching `generation.py`'s target derivation. `apply_session_policy` freezes the
 per-run isolation policy + allow-list onto the RunContext at the composition root, with
 the C-EXEC-06 NFR-2 guard: when the policy is off, `allowed_paths` MUST stay empty (the per-step
@@ -18,7 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.flow.engine.isolation import _derive_allowed_paths, apply_session_policy
+from specweaver.core.flow.engine.isolation import derive_allowed_paths, apply_session_policy
 from specweaver.core.flow.handlers.run_context import RunContext
 
 _LOG = logging.getLogger("test.session_policy")
@@ -40,14 +40,14 @@ def _settings(*, session: bool = False, allowed: list[str] | None = None, min_da
 
 
 # --------------------------------------------------------------------------- #
-# T2 — _derive_allowed_paths                                                   #
+# T2 — derive_allowed_paths                                                   #
 # --------------------------------------------------------------------------- #
 
 
 class TestDeriveAllowedPaths:
     def test_happy_strips_spec_suffix(self):
         # [Happy] foo_spec -> src/foo.py + tests/test_foo.py
-        assert _derive_allowed_paths(Path("/p/foo_spec.md")) == [
+        assert derive_allowed_paths(Path("/p/foo_spec.md")) == [
             "src/foo.py",
             "tests/test_foo.py",
         ]
@@ -57,13 +57,13 @@ class TestDeriveAllowedPaths:
         # substring, including inside "_special"), NOT .removesuffix. The allow-list MUST
         # match the path the handler actually generates, else the real file is stripped.
         # "my_special_spec" -> .replace -> "myial" (NOT "my_special").
-        assert _derive_allowed_paths(Path("/p/my_special_spec.md")) == [
+        assert derive_allowed_paths(Path("/p/my_special_spec.md")) == [
             "src/myial.py",
             "tests/test_myial.py",
         ]
 
     def test_boundary_stem_without_spec_suffix(self):
-        assert _derive_allowed_paths(Path("/p/foo.md")) == [
+        assert derive_allowed_paths(Path("/p/foo.md")) == [
             "src/foo.py",
             "tests/test_foo.py",
         ]
@@ -72,12 +72,12 @@ class TestDeriveAllowedPaths:
         # [Hostile] a dotfile spec (".md") has stem ".md" in pathlib (no suffix split), so
         # the derived paths are degenerate ("src/.md.py") but SAFE — they match no real
         # generated file, so nothing extra is ever authorized for write-back.
-        assert _derive_allowed_paths(Path("/p/.md")) == ["src/.md.py", "tests/test_.md.py"]
+        assert derive_allowed_paths(Path("/p/.md")) == ["src/.md.py", "tests/test_.md.py"]
 
     def test_boundary_forward_slash_on_all_platforms(self):
         # [Boundary] strip_merge compares git --name-only output (forward slashes even on
         # Windows). The derived paths MUST use "/" literally, never os.sep.
-        for p in _derive_allowed_paths(Path("/p/bar_spec.md")):
+        for p in derive_allowed_paths(Path("/p/bar_spec.md")):
             assert "/" in p
             if os.sep != "/":
                 assert os.sep not in p
@@ -135,7 +135,7 @@ class TestApplySessionPolicy:
         def _boom(_spec):
             raise RuntimeError("derivation blew up")
 
-        monkeypatch.setattr("specweaver.core.flow.engine.isolation._derive_allowed_paths", _boom)
+        monkeypatch.setattr("specweaver.core.flow.engine.isolation.derive_allowed_paths", _boom)
         ctx = _ctx("foo_spec.md")
         apply_session_policy(ctx, _settings(session=True), _LOG)
         assert ctx.isolation.session_isolation is False
