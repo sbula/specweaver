@@ -737,6 +737,35 @@
           "symbol_sha": "sha256:527aedcefcd29d6b12df16a8d9e88c0024c4404b4e24b0e459eb20f956d98fa8"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "An interrupted run keeps its totals and can be resumed",
+      "scope": [
+        "tests/integration/core/flow/engine/test_spend_brake_parks_run.py"
+      ],
+      "mutants": [
+        {
+          "id": "interrupt-loses-spend",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner._finalize",
+          "old": "            run.status = RunStatus.ABORTED\n            self._persist(run)\n",
+          "new": "            pass\n",
+          "breaks": "Ctrl-C leaves the run RUNNING and its resume pays from zero",
+          "symbol_sha": "sha256:1dad2159e2ffcd34b4a02002d4bdcda58db77b3e7ba471518695f56afbf15e45"
+        },
+        {
+          "id": "aborted-not-found",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore.get_latest_resumable_run",
+          "old": "        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value, RunStatus.ABORTED.value)\n",
+          "new": "        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value, RunStatus.FAILED.value)\n",
+          "breaks": "sw resume cannot find an interrupted run",
+          "symbol_sha": "sha256:4f098f6613ca1d63a71d7ba4ea9db2e13a87be1d8d4451cacb8659dec6fe4849"
+        }
+      ]
     }
   ]
 }

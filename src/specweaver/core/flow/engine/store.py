@@ -278,7 +278,7 @@ class StateStore:
             return _row_to_run(row)
 
     def get_latest_resumable_run(self, project_name: str) -> PipelineRun | None:
-        """The newest parked-or-failed run for a project, whatever pipeline produced it.
+        """The newest parked, failed or aborted run for a project, whatever pipeline produced it.
 
         `sw resume` used to build this answer itself, by asking `get_latest_run` for each of the 14
         **bundled** pipeline names in turn. That could not see a run of a pipeline loaded from a
@@ -289,11 +289,11 @@ class StateStore:
         would pick the newest run of any kind and then discard it, reporting nothing to resume while
         a parked run waits.
         """
-        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value)
+        resumable = (RunStatus.PARKED.value, RunStatus.FAILED.value, RunStatus.ABORTED.value)
         with self.connect() as conn:
             row = conn.execute(
                 "SELECT * FROM flow_pipeline_runs "
-                "WHERE project_name = ? AND status IN (?, ?) "
+                "WHERE project_name = ? AND status IN (?, ?, ?) "
                 "ORDER BY updated_at DESC LIMIT 1",
                 (project_name, *resumable),
             ).fetchone()

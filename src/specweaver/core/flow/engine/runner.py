@@ -321,6 +321,9 @@ class PipelineRunner:
         saved before telemetry is flushed, because `save_handover_context` reads the run's step
         records and `_flush_telemetry` is the step that may drain them.
         """
+        if run.status == RunStatus.RUNNING:  # an interrupt or a crash ended it
+            run.status = RunStatus.ABORTED
+            self._persist(run)
         await self._save_handover(run)
         self._flush_telemetry()
 

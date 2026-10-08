@@ -223,3 +223,41 @@ async def test_a_resumed_run_continues_from_the_totals_it_parked_with(tmp_path: 
 
     assert again.status is RunStatus.PARKED
     assert resumed == [], "the resumed run started from zero and spent past its limit"
+
+
+class _SpendsThenInterrupted(_CallsTheModel):
+    async def execute(self, _step, context) -> StepResult:
+        routed = context.model.llm_router.get_for_task(TaskType.REVIEW)
+        await routed.adapter.generate([Message(role=Role.USER, content="hi")], routed.config)
+        raise KeyboardInterrupt
+
+
+async def test_an_interrupted_run_keeps_what_it_spent_and_can_be_resumed(tmp_path: Path) -> None:
+    from specweaver.core.flow.engine.store import StateStore
+
+    store = StateStore(tmp_path / "state.db")
+    files = LlmSettingsFiles.from_texts(
+        machine_text=_MACHINE.format(tokens=1000),
+        machine_source="settings.toml",
+        project_text="",
+        project_source="-",
+    )
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "a_spec.md",
+        model=ModelAccess(llm_router=build_router(files, project="demo", roles=[TaskType.REVIEW])),
+    )
+    registry = StepHandlerRegistry()
+    registry.register("review", "spec", _SpendsThenInterrupted(swallow=False))
+    runner = PipelineRunner(_pipeline(), context, registry=registry, store=store)
+
+    with (
+        fake_httpx2(lambda _request: httpx2.Response(200, json=_BIG_REPLY)),
+        pytest.raises(KeyboardInterrupt),
+    ):
+        await runner.run()
+
+    [saved] = store.list_runs()
+    assert saved.status is RunStatus.ABORTED
+    assert saved.spend_state["spent"]["brake.tokens_per_run"] == 100
+    assert store.get_latest_resumable_run(saved.project_name).run_id == saved.run_id
