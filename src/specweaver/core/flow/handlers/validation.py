@@ -16,6 +16,7 @@ from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
+    from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
     from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
@@ -23,31 +24,26 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def target_dal(context: RunContext, target_path: Path) -> DALLevel | None:
+    """The target's DAL: its nearest `context.yaml`, else its project's default."""
+    from specweaver.core.config.dal_resolver import DALResolver
+    from specweaver.workspace.store import default_dal_at
+
+    dal = DALResolver(context.project_path).resolve(target_path)
+    db = getattr(context, "db", None)
+    if dal is None and db is not None:
+        try:
+            dal = default_dal_at(db, context.project_path)
+        except Exception:
+            logger.warning("Could not read the project's default DAL", exc_info=True)
+    return dal
+
+
 async def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
     """Resolve DAL for the target and overlay validation constraints over settings."""
-    from specweaver.commons.enums.dal import DALLevel
-    from specweaver.core.config.dal_resolver import DALResolver
     from specweaver.core.config.settings import SpecWeaverSettings, deep_merge_dict
 
-    dal_resolver = DALResolver(context.project_path)
-    dal_str = dal_resolver.resolve(target_path)
-
-    if not dal_str and context.db:
-        try:
-            from specweaver.workspace.store import WorkspaceRepository
-
-            async with context.db.async_session_scope() as session:
-                dal_raw = await WorkspaceRepository(session).get_default_dal(
-                    context.project_path.name
-                )
-            if dal_raw:
-                try:
-                    dal_str = DALLevel(dal_raw)
-                except ValueError:
-                    dal_str = None
-        except Exception as e:
-            logger.error("Exception in _resolve_merged_settings: %s", e)
-            dal_str = None
+    dal_str = target_dal(context, target_path)
 
     merged_settings = context.settings
     if dal_str and merged_settings and hasattr(merged_settings, "dal_matrix"):

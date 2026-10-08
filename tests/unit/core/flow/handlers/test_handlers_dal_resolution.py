@@ -5,7 +5,7 @@
 """Unit tests for DAL resolution within pipeline handlers."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -53,7 +53,7 @@ class TestValidationDALResolution:
         assert merged.validation.get_override("S01").fail_threshold == 10.0
 
     @pytest.mark.asyncio
-    @patch("specweaver.workspace.store.WorkspaceRepository")
+    @patch("specweaver.workspace.store.default_dal_at")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_fallback_to_db(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
@@ -74,17 +74,8 @@ class TestValidationDALResolution:
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: dal_val})
         settings = SpecWeaverSettings(validation=base_val, dal_matrix=matrix)
 
-        from contextlib import asynccontextmanager
-
-        @asynccontextmanager
-        async def mock_scope():
-            yield MagicMock()
-
         mock_db = MagicMock()
-        mock_db.async_session_scope = mock_scope
-        mock_repo = AsyncMock()
-        mock_repo.get_default_dal.return_value = "DAL_B"
-        mock_repo_class.return_value = mock_repo
+        mock_repo_class.return_value = DALLevel.DAL_B
 
         spec = tmp_path / "test.md"
         spec.touch()
@@ -94,49 +85,11 @@ class TestValidationDALResolution:
 
         merged = await _resolve_merged_settings(ctx, spec)
 
-        mock_repo.get_default_dal.assert_called_once_with(tmp_path.name)
+        mock_repo_class.assert_called_once_with(mock_db, tmp_path)
         assert merged.validation.get_override("C02").enabled is False
 
     @pytest.mark.asyncio
-    @patch("specweaver.workspace.store.WorkspaceRepository")
-    @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_invalid_db_string_ignored(
-        self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
-    ) -> None:
-        from unittest.mock import MagicMock
-
-        from specweaver.commons.enums.dal import DALLevel
-        from specweaver.core.config.settings import (
-            DALImpactMatrix,
-            SpecWeaverSettings,
-            ValidationSettings,
-        )
-        from specweaver.core.flow.handlers.validation import _resolve_merged_settings
-
-        base_val = ValidationSettings()
-        matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: ValidationSettings()})
-        settings = SpecWeaverSettings(
-            validation=base_val,
-            dal_matrix=matrix,
-        )
-
-        mock_db = MagicMock()
-        mock_repo = AsyncMock()
-        mock_repo.get_default_dal.return_value = "INVALID_DAL_STRING"
-        mock_repo_class.return_value = mock_repo
-
-        ctx = RunContext(
-            project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db
-        )
-        mock_resolve.return_value = None
-
-        merged = await _resolve_merged_settings(ctx, tmp_path / "test.md")
-
-        # Should gracefully catch ValueError during DALLevel mapping on Line 44, returning default settings
-        assert merged is ctx.settings
-
-    @pytest.mark.asyncio
-    @patch("specweaver.workspace.store.WorkspaceRepository")
+    @patch("specweaver.workspace.store.default_dal_at")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_catches_db_exception(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
@@ -153,9 +106,7 @@ class TestValidationDALResolution:
         settings = SpecWeaverSettings(validation=base_val)
 
         mock_db = MagicMock()
-        mock_repo = AsyncMock()
-        mock_repo.get_default_dal.side_effect = Exception("DB Connection Lost")
-        mock_repo_class.return_value = mock_repo
+        mock_repo_class.side_effect = Exception("DB Connection Lost")
 
         ctx = RunContext(
             project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db

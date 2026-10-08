@@ -54,6 +54,31 @@ def _allow_unknown_cost(conn: Connection) -> None:
     conn.exec_driver_sql(f"DROP TABLE {old}")
 
 
+#: The history columns of `llm_usage_log`.
+_HISTORY_COLUMNS = ("server", "dal_level", "step_name")
+
+
+def _add_history_columns(conn: Connection) -> None:
+    """Add the history columns to an older `llm_usage_log`. Keeps every row. Idempotent.
+
+    Done once, in the same step: projects move from the old default DAL_A to DAL_C. No command
+    sets a project's DAL, so every DAL_A here is the old default, not a choice.
+    """
+    present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(llm_usage_log)")}
+    missing = [name for name in _HISTORY_COLUMNS if name not in present]
+    if not missing:
+        return
+    for name in missing:
+        conn.exec_driver_sql(f"ALTER TABLE llm_usage_log ADD COLUMN {name} VARCHAR")
+    conn.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS ix_llm_usage_history "
+        "ON llm_usage_log (task_type, model, dal_level)"
+    )
+    conn.exec_driver_sql(
+        "UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'"
+    )
+
+
 def bootstrap_database(db_path: str) -> None:
     """Create tables and apply defaults natively. Idempotent."""
     import pathlib
@@ -74,6 +99,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(LlmBase.metadata.create_all)
             await conn.run_sync(FlowBase.metadata.create_all)
             await conn.run_sync(_allow_unknown_cost)
+            await conn.run_sync(_add_history_columns)
             await conn.run_sync(_drop_retired_llm_tables)
 
         await engine.dispose()

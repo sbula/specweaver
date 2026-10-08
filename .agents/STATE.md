@@ -29,7 +29,7 @@ the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EX
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
 Decided 2026-10-08: queued calls keep reserving before their slot (B-FLOW-05 #12); the brake
 uses the highest tier price (C-FLOW-13 #22 — regenerate the catalogue to apply it); `sw config
-show` moved into the LLM module and shows what a call sends (C-FLOW-13 #12/#13, done). Next: `B-FLOW-07` — design DRAFT 2026-10-08, waiting on the user's approval; decisions in
+show` moved into the LLM module and shows what a call sends (C-FLOW-13 #12/#13, done). Next: `B-FLOW-07` — design APPROVED 2026-10-08, SF-01 plan next; decisions in
 `docs/analysis/limits_matrix_grilling_2026-10-08.md`, then the other
 false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any

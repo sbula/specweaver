@@ -157,10 +157,10 @@ def seed_dal_level(context: RunContext) -> Any:
     if context.isolation.dal_level is not None:
         return context.isolation.dal_level
 
-    from specweaver.core.config.dal_resolver import DALResolver
+    from specweaver.core.flow.handlers.validation import target_dal
 
     target = context.spec_path if context.spec_path.exists() else context.project_path
-    dal = DALResolver(context.project_path).resolve(target)
+    dal = target_dal(context, target)
     context.isolation = context.isolation.model_copy(update={"dal_level": dal})
     return dal
 

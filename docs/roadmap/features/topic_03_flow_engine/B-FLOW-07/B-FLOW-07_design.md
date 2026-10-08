@@ -2,7 +2,7 @@
 
 - **Feature ID**: B-FLOW-07
 - **Phase**: Topic 03 (Flow Engine) · DAL-B (High-Assurance)
-- **Status**: DRAFT — awaiting the user's approval
+- **Status**: APPROVED `[agreed 2026-10-08]` — the capability stays `🔜` until it is built and proven
 - **Design Doc**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_design.md
 - **Story**: `US-4` add-on *Security Defenses* — paths in [US-04.md](../../../stories/US-04.md#step-limits-b-flow-07)
 - **Decisions**: [limits_matrix_grilling_2026-10-08.md](../../../../analysis/limits_matrix_grilling_2026-10-08.md);
@@ -63,7 +63,7 @@ None.
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Each call says where it ran and for what | Telemetry | SHALL store, with every call, the server's name, the run's DAL and the step's name — passed from the run through `llm_for` (**seam**: `core.flow` → `infrastructure.llm`) | the history can group by task, model and DAL, and spend splits by server |
-| FR-2 | Each call knows how its step ended | Runner, telemetry | SHALL store, when a run's records are written, each call's step outcome — `passed`, `failed` or `unfinished` — from the run's step records (**seam**: runner → telemetry) | only finished work counts as history |
+| FR-2 | Each call knows how its step ended | Runner, telemetry | SHALL store, when a run's records are written, each step's outcome — `passed` or `failed`, none while unfinished — from the run's step records, one row per step that its calls join (**seam**: runner → telemetry) | only finished work counts as history |
 | FR-3 | Every target has a DAL | Runner, validation | SHALL take the run's DAL from the nearest `context.yaml`, else from the project's default DAL, the same rule validation uses; a project's default DAL is `DAL_C` `[agreed 2026-10-08]` (**seam**: workspace project store) | the history and validation agree on a target's DAL |
 | FR-4 | A step limit from history | Brake | SHALL set a step's limit, before its first call, to the `[step_limits] percentile` value (`[agreed 2026-10-08]`: 90) of the totals of the last `min_steps` (`[agreed 2026-10-08]`: 10) **passed** steps with the same kind of task, model and DAL, across all projects on the machine `[agreed 2026-10-08]`, each total counting all the step's attempts `[agreed 2026-10-08]` — money for a hosted server, tokens for a private one; the percentile by nearest rank | a step that costs far more than its kind usually does is stopped early |
 | FR-5 | No history, no step limit | Brake | SHALL set no step limit while a group has fewer than `min_steps` passed steps; the run, model and task limits still apply `[agreed 2026-10-08]` | a new kind of work is never stopped by a guess |
@@ -153,7 +153,7 @@ None.
 - **Inputs**: the run's context and step records; the project's default DAL
 - **Outputs**: history rows that can be grouped by task, model and DAL
 - **Depends on**: none
-- **Impl Plan**: —
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_sf01_implementation_plan.md
 
 ### SF-02: Step limits
 - **Scope**: the step limit from the history, in the brake, with its settings.
@@ -172,10 +172,10 @@ None.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The history | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-02 | Step limits | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The history | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Step limits | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-DRAFT written 2026-10-08 after the grilling. Waiting on the user's approval (Phase 6). Read the
-grilling record before changing a decision.
+Approved 2026-10-08. SF-01 plan approved; SF-01 in development. Read the grilling record before changing
+a decision.

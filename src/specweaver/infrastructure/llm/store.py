@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Float, Integer, String, func, select
+from sqlalchemy import Float, Index, Integer, String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -33,6 +33,22 @@ class LlmUsageLog(Base):
     estimated_cost: Mapped[float | None] = mapped_column(Float, default=None, nullable=True)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     run_id: Mapped[str | None] = mapped_column(String, default="")
+    # `None`: unknown — a row written before these existed never joins the history.
+    server: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
+    dal_level: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
+    step_name: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
+
+    __table_args__ = (Index("ix_llm_usage_history", "task_type", "model", "dal_level"),)
+
+
+class LlmStepOutcome(Base):
+    """How a step ended: one row per step of a run, so its calls can join the history."""
+
+    __tablename__ = "llm_step_outcome"
+
+    run_id: Mapped[str] = mapped_column(String, primary_key=True)
+    step_name: Mapped[str] = mapped_column(String, primary_key=True)
+    outcome: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class LlmRepository:

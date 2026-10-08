@@ -173,7 +173,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     with (
         patch("specweaver.core.config.dal_resolver.DALResolver.resolve", return_value=None),
         patch(
-            "specweaver.workspace.store.WorkspaceRepository.get_default_dal", return_value="DAL_B"
+            "specweaver.workspace.store.default_dal_at", return_value=DALLevel.DAL_B
         ) as mock_get_dal,
     ):
         result = await handler.execute(step, context)

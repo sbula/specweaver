@@ -58,7 +58,7 @@ async def test_workspace_store_happy_path_crud(engine):
         await session.refresh(project)
 
         assert project.log_level == "DEBUG"
-        assert project.default_dal == "DAL_A"
+        assert project.default_dal == "DAL_C"
         assert project.stitch_mode == "off"
 
 

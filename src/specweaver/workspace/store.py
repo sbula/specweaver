@@ -5,11 +5,14 @@ import json
 import logging
 import re
 from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 from sqlalchemy import Float, ForeignKey, Integer, String, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
+from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.database import StrictISODateTime
 
 logger = logging.getLogger(__name__)
@@ -45,7 +48,7 @@ class Project(Base):
         String, default="prompt", nullable=False
     )
     stitch_mode: Mapped[str] = mapped_column(String, default="off", nullable=False)
-    default_dal: Mapped[str] = mapped_column(String, default="DAL_A", nullable=False)
+    default_dal: Mapped[str] = mapped_column(String, default="DAL_C", nullable=False)
 
 
 class ActiveState(Base):
@@ -68,6 +71,20 @@ class ProjectStandard(Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     confirmed_by: Mapped[str | None] = mapped_column(String, default=None)
     scanned_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
+
+
+def default_dal_at(db: Any, root: Path) -> DALLevel | None:
+    """The default DAL of the project registered at `root`; None when no project is."""
+    target = root.resolve()
+    with db.connect() as conn:
+        rows = conn.execute("SELECT root_path, default_dal FROM workspace_projects").fetchall()
+    for root_path, dal in rows:
+        if Path(root_path).resolve() == target:
+            try:
+                return DALLevel(dal)
+            except ValueError:
+                return None
+    return None
 
 
 class WorkspaceRepository:

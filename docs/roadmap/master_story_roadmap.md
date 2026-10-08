@@ -166,6 +166,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🟡 **Security Defenses:**
         *   `🔧` **B-FLOW-05:** Spend Brake
+        *   `🔜` **B-FLOW-07:** Spend Limit Matrix (Model × Task × DAL)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   🟢 **Context Mention Highlighting:**

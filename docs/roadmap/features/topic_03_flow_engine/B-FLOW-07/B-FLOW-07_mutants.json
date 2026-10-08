@@ -1,0 +1,66 @@
+{
+  "schema": 2,
+  "feature": "B-FLOW-07",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "Every target has a DAL",
+      "scope": [
+        "tests/integration/core/flow/engine/test_every_target_has_a_dal.py",
+        "tests/unit/core/flow/handlers/test_handlers_dal_resolution.py",
+        "tests/unit/workspace/test_workspace_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "default-dal-by-name",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "default_dal_at",
+          "old": "        rows = conn.execute(\"SELECT root_path, default_dal FROM workspace_projects\").fetchall()\n",
+          "new": "        rows = conn.execute(\"SELECT name, default_dal FROM workspace_projects\").fetchall()\n",
+          "breaks": "a project registered under another name than its folder loses its default DAL",
+          "symbol_sha": "sha256:7d2972f0db209f2cc9a66485a5160fc330545e6c8cc22ad892a76fa5c4559b3e"
+        },
+        {
+          "id": "no-default-dal-fallback",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "target_dal",
+          "old": "    if dal is None and db is not None:\n",
+          "new": "    if False:\n",
+          "breaks": "a target without a declared DAL has none, so its history group is unknown",
+          "symbol_sha": "sha256:4e6a1c84b78eb378c50ccff460381e3b0171bfbe7ea9db0c2f1d1c30007223cc"
+        },
+        {
+          "id": "old-default-dal-a",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "Project",
+          "old": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_C\", nullable=False)\n",
+          "new": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_A\", nullable=False)\n",
+          "breaks": "a new project defaults to DAL_A instead of the agreed DAL_C",
+          "symbol_sha": "sha256:1d6b2f19350aef0cbfd3161e183959832b1b64dba9ee1f0965a6c71c3e505931"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The database keeps its data and moves to DAL_C once",
+      "scope": [
+        "tests/integration/core/flow/engine/test_every_target_has_a_dal.py"
+      ],
+      "mutants": [
+        {
+          "id": "dal-c-every-start",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_add_history_columns",
+          "old": "    if not missing:\n        return\n",
+          "new": "    if not missing:\n        conn.exec_driver_sql(\"UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'\")\n        return\n",
+          "breaks": "every start undoes a DAL_A set on purpose",
+          "symbol_sha": "sha256:afff48c68a7951edff76c54c72d6b08935245de5428be089e4618178aa394b4c"
+        }
+      ]
+    }
+  ]
+}
