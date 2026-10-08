@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-from specweaver.core.flow.engine.brake import brake_stop
+from specweaver.infrastructure.llm.budget import step_refusal
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.state import StepResult
@@ -96,7 +96,7 @@ async def execute_in_sandbox(
 
     try:
         result = cast("StepResult", await handler.execute(step_def, isolated_context))
-        if brake_stop(context) is not None or result.status != StepStatus.PASSED:
+        if step_refusal() is not None or result.status != StepStatus.PASSED:
             return result  # a stopped or failed step lands nothing
 
         commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})

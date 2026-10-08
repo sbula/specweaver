@@ -261,3 +261,64 @@ async def test_an_interrupted_run_keeps_what_it_spent_and_can_be_resumed(tmp_pat
     assert saved.status is RunStatus.ABORTED
     assert saved.spend_state["spent"]["brake.tokens_per_run"] == 100
     assert store.get_latest_resumable_run(saved.project_name).run_id == saved.run_id
+
+
+class _AsksTooMuch:
+    async def execute(self, _step, context) -> StepResult:
+        import asyncio
+
+        routed = context.model.llm_router.get_for_task(TaskType.REVIEW)
+        await asyncio.sleep(0.05)
+        big = routed.config.model_copy(update={"max_output_tokens": 10_000})
+        await routed.adapter.generate([Message(role=Role.USER, content="x")], big)
+        return StepResult(status=StepStatus.PASSED, output={}, started_at="t0", completed_at="t1")
+
+
+class _FitsAndFinishes:
+    async def execute(self, _step, context) -> StepResult:
+        import asyncio
+
+        routed = context.model.llm_router.get_for_task(TaskType.REVIEW)
+        await routed.adapter.generate([Message(role=Role.USER, content="x")], routed.config)
+        await asyncio.sleep(0.2)  # the sibling is stopped meanwhile
+        return StepResult(
+            status=StepStatus.PASSED, output={"paid": True}, started_at="t0", completed_at="t1"
+        )
+
+
+async def test_a_sibling_stop_does_not_park_a_sub_run_that_was_never_refused(
+    tmp_path: Path,
+) -> None:
+    import asyncio
+
+    files = LlmSettingsFiles.from_texts(
+        machine_text=_MACHINE.format(tokens=300),
+        machine_source="settings.toml",
+        project_text="",
+        project_source="-",
+    )
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "a_spec.md",
+        model=ModelAccess(llm_router=build_router(files, project="demo", roles=[TaskType.REVIEW])),
+    )
+    registry = StepHandlerRegistry()
+    registry.register("review", "spec", _AsksTooMuch())
+    registry.register("review", "code", _FitsAndFinishes())
+
+    def sub(name: str, target: str) -> PipelineRunner:
+        pipeline = PipelineDefinition.model_validate_json(
+            json.dumps(
+                {"name": name, "steps": [{"name": name, "action": "review", "target": target}]}
+            )
+        )
+        return PipelineRunner(pipeline, context, registry=registry)
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_BIG_REPLY)):
+        stopped, paid = await asyncio.gather(
+            sub("big", "spec").run(parent_run_id="p"), sub("small", "code").run(parent_run_id="p")
+        )
+
+    assert stopped.status is RunStatus.PARKED
+    assert paid.status is RunStatus.COMPLETED
+    assert paid.step_records[0].result.output == {"paid": True}

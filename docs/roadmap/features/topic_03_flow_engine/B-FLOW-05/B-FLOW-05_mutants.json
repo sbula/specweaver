@@ -335,6 +335,26 @@
           "new": "        except KeyboardInterrupt:",
           "breaks": "the breaker is no longer re-raised, so it falls through to the broad handler and is relabelled as a review verdict of ERROR",
           "symbol_sha": "sha256:07766e56c14118f0399efcabb0cd4724eb59735386c56eeaf12c4006c9a1199e"
+        },
+        {
+          "id": "step-refusals-untracked",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/step_execution.py",
+          "symbol": "execute_step",
+          "old": "    track_step_refusals()\n    try:\n",
+          "new": "    try:\n",
+          "breaks": "a stopped step is not parked, and a sibling's stop leaks into the next step",
+          "symbol_sha": "sha256:5caee53a15f8647560b8b17a0ccdd8f7390c5d9de4d6af5d5b3bee8d49ef1d1a"
+        },
+        {
+          "id": "refusal-not-recorded",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "_refused",
+          "old": "    if refusals is not None:\n        refusals.append(error)\n",
+          "new": "    if refusals is not None:\n        pass\n",
+          "breaks": "a step whose call was refused completes as if it had its answer",
+          "symbol_sha": "sha256:26c39cd2031a9db2a3c8ec609ddedcbf1042da5a3461d9e27d36d70a9918dc80"
         }
       ]
     },
@@ -564,7 +584,7 @@
           "old": "        output=result.output,\n",
           "new": "        output={},\n",
           "breaks": "sw drift check --analyze prints 'signatures match' and exits 0 on drifted code",
-          "symbol_sha": "sha256:7f31d0c9389b53f7f6f43cddab928e70d09bc801ceed8a7f477395f69cd3ab09"
+          "symbol_sha": "sha256:e39d8b657982e373034c057cfd9868a244424c5c60f1ae167f5517d7f02a0de6"
         },
         {
           "id": "drift-stop-unnamed",
@@ -594,7 +614,7 @@
           "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
-          "symbol_sha": "sha256:533078b7c061bead00d97205295a09246749d76acf3cdec930bea45ab740dfc9"
+          "symbol_sha": "sha256:5caee53a15f8647560b8b17a0ccdd8f7390c5d9de4d6af5d5b3bee8d49ef1d1a"
         },
         {
           "id": "worktree-merges-stopped-work",
@@ -604,7 +624,7 @@
           "old": "        if brake_stop(context) is not None:\n",
           "new": "        if False:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
-          "symbol_sha": "sha256:fec05445ed1f6db99519d0f698763b904510ebc3f66e9fc40ade8304c709d559"
+          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
         }
       ]
     },

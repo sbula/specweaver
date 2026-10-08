@@ -33,13 +33,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.engine.approval import try_approve_parked_step
-from specweaver.core.flow.engine.brake import brake_stop
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
 from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import GateDefinition, PipelineStep
@@ -185,6 +185,7 @@ async def execute_step(
     runner: Any, handler: Any, step_def: PipelineStep, run: PipelineRun
 ) -> StepResult:
     """Run the handler, in a sandbox when policy says so, converting any escape into an ERROR."""
+    track_step_refusals()
     try:
         # Inject flow state for downstream tracking.
         runner._context.run = runner._context.run.model_copy(
@@ -217,16 +218,16 @@ async def execute_step(
             started_at=_now_iso(),
             completed_at=_now_iso(),
         )
-    return _parked_by_brake(runner._context, result) or result
+    return _parked_by_brake(result) or result
 
 
-def _parked_by_brake(context: Any, result: StepResult) -> StepResult | None:
+def _parked_by_brake(result: StepResult) -> StepResult | None:
     """If the spend brake stopped a call of this step, the step waits for the user instead.
 
-    Read from the brake, not from the step's result: a step may have caught the stop. What the
-    step found before the stop is kept.
+    Read from this step's refusals, not from its result: a step may have caught the stop. A
+    sibling sub-run's stop is not this step's. What the step found before the stop is kept.
     """
-    stopped = brake_stop(context)
+    stopped = step_refusal()
     if stopped is None:
         return None
     return StepResult(

@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import math
 from collections import defaultdict
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, NoReturn
 
@@ -93,6 +94,30 @@ class SpendLimitReachedError(BudgetExceededError):
         super().__init__(reason, setting=limit.key)
 
 
+#: The refusals of the step running in this task; tasks it starts share the same list.
+_step_refusals: ContextVar[list[SpendLimitReachedError] | None] = ContextVar(
+    "step_refusals", default=None
+)
+
+
+def track_step_refusals() -> None:
+    """Start collecting the refusals of the step this task runs, apart from its siblings'."""
+    _step_refusals.set([])
+
+
+def step_refusal() -> SpendLimitReachedError | None:
+    """The last refusal of the step this task runs, if one of its calls was refused."""
+    refusals = _step_refusals.get()
+    return refusals[-1] if refusals else None
+
+
+def _refused(error: SpendLimitReachedError) -> NoReturn:
+    refusals = _step_refusals.get()
+    if refusals is not None:
+        refusals.append(error)
+    raise error
+
+
 class SpendBudget:
     """Spent and reserved amounts of one run, per limit key."""
 
@@ -143,7 +168,7 @@ class SpendBudget:
         Once a call was refused, the run spends nothing more and asks nothing more.
         """
         if self.stopped is not None:
-            raise self.stopped
+            _refused(self.stopped)
         raises: dict[str, float] = {}
         for limit in scope.limits:
             amount = worst.amount(limit.unit)
@@ -187,7 +212,7 @@ class SpendBudget:
 
     def _stop(self, limit: Limit, reason: str) -> NoReturn:
         self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason)
-        raise self.stopped
+        _refused(self.stopped)
 
     def _warn(self, limit: Limit) -> None:
         spent = self._spent[limit.key]

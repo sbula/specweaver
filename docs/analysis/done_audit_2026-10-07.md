@@ -22,7 +22,7 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 3 | HIGH | Per-step worktree isolation skips the park check: run FAILED, retried, partial work merged | `step_execution.py:202-207`; `.tmp/repro_sandbox.py`. **Fixed** 2026-10-07: the step parks and nothing is merged |
 | 4 | HIGH | Gemini thinking tokens (`thoughts_token_count`) never counted. **Fixed** 2026-10-08 | `adapters/gemini.py:178,249` |
 | 5 | HIGH | Ctrl-C mid-step: run left RUNNING, spend saved as at step start; resume pays the step again unasked. **Fixed** 2026-10-08: the run is saved ABORTED with its totals, and `sw resume` finds it | `runner.py:172-176,317-325` |
-| 6 | HIGH | Fan-out / dual pipeline: one sub-run's stop parks siblings and discards their paid results; resume re-runs all | `fan_out.py:61`; `dual_pipeline.py:42`; `.tmp/repro_fanout.py` |
+| 6 | HIGH | Fan-out / dual pipeline: one sub-run's stop parks siblings and discards their paid results; resume re-runs all. **Partly fixed** 2026-10-08: a sub-run parks only on its own refusal and keeps its result; resume still re-runs every sub-run | `fan_out.py:61`; `dual_pipeline.py:42`; `.tmp/repro_fanout.py` |
 | 7 | MED | `budget.stopped` never resets: `sw standards scan` drops every later scope silently. **Fixed** 2026-10-08: a stop is final for the run; the scan keeps every scope's findings and names the stop once | `budget.py`; `standards/interfaces/cli.py:97-157` |
 | 8 | MED | After a "no", every further call asks again; a later "yes" spends, but the step is parked anyway. **Fixed** 2026-10-08: after a no, nothing more is asked or spent | `budget.py:136-153`; `.tmp/repro_budget.py` |
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls | `approval.py` |
