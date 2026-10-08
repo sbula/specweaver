@@ -285,6 +285,74 @@
           "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "The step limit is one more limit of the call",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_limit_in_the_brake.py",
+        "tests/e2e/capabilities/infrastructure/test_step_limits_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "step-limit-not-applied",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "        return CallScope(limits=(*limits, *self._step_limit(config, unit)), facts=facts)\n",
+          "new": "        return CallScope(limits=limits, facts=facts)\n",
+          "breaks": "a step that costs far more than usual is never asked about",
+          "symbol_sha": "sha256:039743435291a29d7156869bc8d8b120595d4e0913a5651bce9fc6c15ba6ab6c"
+        },
+        {
+          "id": "command-without-history",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "command_router",
+          "old": "            run_model=run_model,\n            db=_core.get_db(),\n",
+          "new": "            run_model=run_model,\n",
+          "breaks": "sw run and sw implement never apply step limits",
+          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "One step, one limit; sub-runs their own",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_limit_in_the_brake.py"
+      ],
+      "mutants": [
+        {
+          "id": "sub-runs-share-a-limit",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._step_limit",
+          "old": "        return (Limit(f\"{key}@{config.run_id[:8]}\" if config.run_id else key, unit, value),)\n",
+          "new": "        return (Limit(key, unit, value),)\n",
+          "breaks": "parallel sub-runs of one step stop each other",
+          "symbol_sha": "sha256:ef75a8869207f1084bae53a4e8f677aaca2ecbe08cdbab0e6af5b33b038586ba"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-1",
+      "title": "The history is read once per run and group",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_limit_in_the_brake.py"
+      ],
+      "mutants": [
+        {
+          "id": "history-read-per-call",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._step_limit",
+          "old": "        if group not in self._step_limits:\n",
+          "new": "        if True:\n",
+          "breaks": "every model call queries the database",
+          "symbol_sha": "sha256:ef75a8869207f1084bae53a4e8f677aaca2ecbe08cdbab0e6af5b33b038586ba"
+        }
+      ]
     }
   ]
 }

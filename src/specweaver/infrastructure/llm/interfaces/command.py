@@ -57,6 +57,7 @@ def command_router(
             roles=roles,
             ask=_core.spend_asker(),
             run_model=run_model,
+            db=_core.get_db(),
         )
     except SettingsFileError as err:
         _core.refuse_llm_settings(err)
@@ -75,6 +76,7 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
             project=project,
             roles=roles,
             ask=_core.spend_asker(),
+            db=_core.get_db(),
         )
     except SettingNotSetError as err:
         _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)

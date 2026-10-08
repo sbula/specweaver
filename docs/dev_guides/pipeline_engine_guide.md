@@ -47,6 +47,10 @@ A handler need not do anything about the spend brake. When the brake stops a cal
 the step after it returns, whatever the handler did with the error (`_parked_by_brake` in
 `step_execution.py`).
 
+A handler gets its model through `llm_for(context, task_type)`. It stamps the call with the run, the
+step and the run's DAL, which the cost history and the step limits need; a handler that builds a
+config itself loses them.
+
 - **Location**: `src/specweaver/flow/_<domain>.py`
 
 ```python

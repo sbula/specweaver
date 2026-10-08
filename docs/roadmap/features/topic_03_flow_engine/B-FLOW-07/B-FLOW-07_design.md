@@ -134,7 +134,7 @@ None.
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| `pipeline_engine_guide.md` | a handler gets its model through `llm_for`, which carries the step limit | ⬜ To be written during Pre-commit |
+| `pipeline_engine_guide.md` | a handler gets its model through `llm_for`, which carries the step and DAL | ✅ Written 2026-10-08 |
 
 ## Non-Goals
 
@@ -173,9 +173,9 @@ None.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The history | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Step limits | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Step limits | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-Approved 2026-10-08. SF-01 built and committed 2026-10-08 (CB-1..3). Next: the SF-02 plan. Read the grilling record before changing
+Approved 2026-10-08. SF-01 and SF-02 built and committed 2026-10-08. The capability stays `🔜` until the user signs it off. Read the grilling record before changing
 a decision.

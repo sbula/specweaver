@@ -12,7 +12,7 @@ parallel limit, and every role of the run shares one spend budget.
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from specweaver.core.config.llm_settings import (
     SettingNotSetError,
@@ -27,6 +27,7 @@ from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig
 from specweaver.infrastructure.llm.redaction import Redactor, env_values, vault_values
 from specweaver.infrastructure.llm.servers import adapter_for_server
+from specweaver.infrastructure.llm.store import step_history_limit
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -56,6 +57,7 @@ class RoleResolver:
         budget: SpendBudget,
         catalogue: Catalogue | None = None,
         run_model: RoleEntry | None = None,
+        history: Any = None,
     ) -> None:
         self._files = files
         self._roles = resolve_roles(files, _every_role(files, run_model))
@@ -64,6 +66,8 @@ class RoleResolver:
         self._catalogue = catalogue or shipped_catalogue()
         self._by_server: dict[str, TelemetryCollector] = {}
         self._vault = vault_values(files.project_root)
+        self._history = history
+        self._step_limits: dict[tuple[str, ...], float | None] = {}
 
     @property
     def budget(self) -> SpendBudget:
@@ -209,7 +213,31 @@ class RoleResolver:
             for key, value in candidates
             if value is not None
         )
-        return CallScope(limits=limits, facts=facts)
+        return CallScope(limits=(*limits, *self._step_limit(config, unit)), facts=facts)
+
+    def _step_limit(self, config: GenerationConfig, unit: Unit) -> tuple[Limit, ...]:
+        """The step's limit from the history of its group, read once per run and group."""
+        settings = self._files.machine.step_limits
+        if settings is None or self._history is None or not config.step_name:
+            return ()
+        task = config.task_type.value
+        group = (config.run_id, task, config.model, config.dal_level, unit)
+        if group not in self._step_limits:
+            self._step_limits[group] = step_history_limit(
+                self._history,
+                task_type=task,
+                model=config.model,
+                dal_level=config.dal_level,
+                unit=unit,
+                steps=settings.min_steps,
+                percentile=settings.percentile,
+            )
+        value = self._step_limits[group]
+        if value is None:
+            return ()
+        # The run keeps sub-runs that share a step name apart; retries share the key.
+        key = f"step_limits.{task}.{config.step_name}"
+        return (Limit(f"{key}@{config.run_id[:8]}" if config.run_id else key, unit, value),)
 
 
 def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, float | int]:

@@ -86,6 +86,11 @@ rate_date = 2026-09-26
 - A model (`[models."<id>"]`) and a role may carry `spend_per_run` or `tokens_per_run` too; the
   lowest limit that applies wins. Only the machine file may set limits. A tool loop that reaches
   `agent_turns` stops with an error naming it.
+- **Step limits** (optional): with `[step_limits] percentile = 90` and `min_steps = 10`, a step may
+  cost at most the 90% value of the last 10 passed steps of the same kind of task, model and DAL,
+  and asks before going past it. While there are fewer than 10, there is no step limit. Without
+  the section, step limits are off; `sw config show` says so. A target with no DAL in any
+  `context.yaml` uses its project's default DAL, `DAL_C`.
 - A cloud model needs a known price and `thinking_in_output_cap = true` (its output limit also
   bounds its thinking). The model list has both for OpenAI, Anthropic and Gemini; for any other
   cloud model, set them under `[models."<id>"]`, or the command stops at the start and names the key.
