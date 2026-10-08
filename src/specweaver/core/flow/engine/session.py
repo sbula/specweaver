@@ -35,8 +35,9 @@ async def execute_run(
     unaffected.
 
     The whole run executes in a single ephemeral worktree (generated code persists across steps),
-    reconciled once at the end (reconcile lands in SF-02) and torn down once (worktree + branch).
-    Fail-closed: a non-git project raises. Default-off: the path is byte-identical to before.
+    reconciled once at the end and torn down once (worktree + branch). A parked run keeps its
+    worktree when it has a store to resume from; the resume continues in it. Fail-closed: a
+    non-git project, or a resume whose worktree is gone, raises.
     """
     context = runner._context
     if not context.isolation.session_isolation:
@@ -53,16 +54,23 @@ async def execute_run(
     wt_path = f".worktrees/session-{run.run_id}"
     branch = f"sf-session-{run.run_id}"
 
-    # Idempotent create: prune a stale same-named worktree+branch left by a hard crash that
-    # skipped a prior teardown, so worktree_add doesn't collide (Q3).
-    atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
-    add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
-    if add_res.status != AtomStatus.SUCCESS:
-        raise RuntimeError(
-            f"C-EXEC-06 session isolation could not start ({add_res.message}). "
-            f"Ensure {original.project_path} is a git repository, or disable session isolation."
-        )
-    setup_sandbox_caches(original, wt_path, logger)
+    worktree = original.project_path / wt_path
+    if approve_parked and run.current_step > 0:
+        if not worktree.is_dir():
+            raise RuntimeError(
+                f"Cannot resume: the run's worktree {wt_path} is gone, and with it the files of "
+                "its earlier steps. Start the run again."
+            )
+    else:
+        # Prune a stale same-named worktree and branch left by a crash, so the add cannot collide.
+        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+        add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
+        if add_res.status != AtomStatus.SUCCESS:
+            raise RuntimeError(
+                f"C-EXEC-06 session isolation could not start ({add_res.message}). "
+                f"Ensure {original.project_path} is a git repository, or disable session isolation."
+            )
+        setup_sandbox_caches(original, wt_path, logger)
 
     isolated = copy.copy(original)
     isolated.project_path = original.project_path / wt_path
@@ -76,13 +84,6 @@ async def execute_run(
     runner._session_active = True
     try:
         result = cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
-        # AD-4 (v1): a park inside a session is unsupported — the worktree is torn down in
-        # finally, so parked state cannot survive a resume. Fail clearly.
-        if run.status == RunStatus.PARKED:
-            raise RuntimeError(
-                "C-EXEC-06 session isolation does not support HITL parking (v1): the ephemeral "
-                "worktree cannot persist across resume. Disable session isolation for HITL pipelines."
-            )
         # SF-02: reconcile ONLY on successful completion — never write back the generated
         # code of a failed/parked run. Commit the worktree, then a single authorized
         # strip-merge lands only allowed_paths in the real repo. Failures are surfaced.
@@ -107,4 +108,6 @@ async def execute_run(
     finally:
         runner._session_active = False
         runner._context = original
-        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+        # A parked run keeps its worktree when it can be resumed.
+        if not (run.status == RunStatus.PARKED and runner._store is not None):
+            atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})

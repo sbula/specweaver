@@ -8,6 +8,8 @@ Proves the thing the INT-US-09 per-step model cannot do: a multi-step run shares
 worktree, so a file written by step 1 survives for step 2 to read — while the real
 source root stays unmutated (no reconcile in SF-01) and the worktree + branch are
 cleaned up. Needs git + bash; skips cleanly otherwise.
+
+Proves: C-EXEC-06 FR-7, B-FLOW-05 FR-7
 """
 
 from __future__ import annotations
@@ -162,29 +164,101 @@ def test_explicit_use_worktree_step_still_shares_session_worktree(tmp_path: Path
     assert "SESSION_CONTENT" in run_state.step_records[1].result.output["stdout"]
 
 
-# --- T4: park-guard (parking inside a session is unsupported in v1) --------
+# --- A park keeps the session worktree for resume (B-FLOW-05 #2) -----------
 
 
-def test_park_inside_session_raises(tmp_path: Path) -> None:
-    """[Hostile] A step that parks (WAITING_FOR_INPUT) under session isolation → clear error,
-    since the torn-down worktree cannot persist across resume (v1)."""
-    from unittest.mock import AsyncMock, patch
-
+def _parks_once_on(step_name: str):
+    """BashActionHandler.execute that parks `step_name` once, then runs it for real."""
     from specweaver.core.flow.engine.state import StepResult, StepStatus
+    from specweaver.core.flow.handlers.bash_action import BashActionHandler
+
+    real = BashActionHandler.execute
+    parked: list[str] = []
+
+    async def execute(self, step, context):
+        if step.name == step_name and not parked:
+            parked.append(step.name)
+            return StepResult(
+                status=StepStatus.WAITING_FOR_INPUT, started_at="t0", completed_at="t1"
+            )
+        return await real(self, step, context)
+
+    return execute
+
+
+def _two_steps() -> PipelineDefinition:
+    return PipelineDefinition(
+        name="p", steps=[_bash_step("w", "write.sh"), _bash_step("r", "read.sh")]
+    )
+
+
+def test_a_parked_run_resumes_in_the_worktree_it_parked_in(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from specweaver.core.flow.engine.store import StateStore
 
     _commit_project(tmp_path)
-    parked = StepResult(status=StepStatus.WAITING_FOR_INPUT, started_at="t0", completed_at="t1")
-    with (
-        patch(
-            "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
-            new=AsyncMock(return_value=parked),
-        ),
-        pytest.raises(RuntimeError, match=r"parking"),
-    ):
-        _run(
-            PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]),
-            _ctx(tmp_path, session=True),
+    store = StateStore(tmp_path / "state.db")
+
+    def runner() -> PipelineRunner:
+        return PipelineRunner(
+            _two_steps(), _ctx(tmp_path, session=True), registry=StepHandlerRegistry(), store=store
         )
+
+    with patch(
+        "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
+        new=_parks_once_on("r"),
+    ):
+        parked = asyncio.run(runner().run())
+        worktree = tmp_path / ".worktrees" / f"session-{parked.run_id}"
+        assert parked.status == RunStatus.PARKED
+        assert (worktree / "shared.txt").exists(), "the parked run lost its worktree"
+
+        resumed = asyncio.run(runner().resume(parked.run_id))
+
+    assert resumed.status == RunStatus.COMPLETED, resumed
+    assert "SESSION_CONTENT" in resumed.step_records[1].result.output["stdout"]
+    assert not worktree.exists()
+
+
+def test_a_park_nobody_can_resume_ends_the_run_and_removes_the_worktree(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    _commit_project(tmp_path)
+    with patch(
+        "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
+        new=_parks_once_on("r"),
+    ):
+        run_state = _run(_two_steps(), _ctx(tmp_path, session=True))
+
+    assert run_state.status == RunStatus.PARKED
+    assert not (tmp_path / ".worktrees" / f"session-{run_state.run_id}").exists()
+    assert not (tmp_path / "shared.txt").exists()
+
+
+def test_a_resume_whose_worktree_is_gone_refuses(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from specweaver.core.flow.engine.store import StateStore
+
+    _commit_project(tmp_path)
+    store = StateStore(tmp_path / "state.db")
+
+    def runner() -> PipelineRunner:
+        return PipelineRunner(
+            _two_steps(), _ctx(tmp_path, session=True), registry=StepHandlerRegistry(), store=store
+        )
+
+    with patch(
+        "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
+        new=_parks_once_on("r"),
+    ):
+        parked = asyncio.run(runner().run())
+    _git(tmp_path, "worktree", "remove", "--force", f".worktrees/session-{parked.run_id}")
+
+    with pytest.raises(RuntimeError, match="worktree"):
+        asyncio.run(runner().resume(parked.run_id))
+    assert not (tmp_path / "shared.txt").exists()
 
 
 # --- Q3: idempotent create recovers from a crash-orphaned worktree/branch --
@@ -217,32 +291,21 @@ def test_crash_orphan_worktree_is_pruned_before_readd(tmp_path: Path) -> None:
     assert not (tmp_path / wt).exists()
 
 
-# --- Context is restored even when the session raises ----------------------
+# --- Context is restored after a session run ------------------------------
 
 
-def test_context_restored_after_session_exception(tmp_path: Path) -> None:
-    """[Boundary] The finally must restore the runner's context to the original even when
-    the session raises (here via the park-guard), not leave it bound to the worktree copy."""
-    from unittest.mock import AsyncMock, patch
-
-    from specweaver.core.flow.engine.state import StepResult, StepStatus
+def test_context_restored_after_a_parked_session(tmp_path: Path) -> None:
+    """[Boundary] The runner's context is the original again, not the worktree copy."""
+    from unittest.mock import patch
 
     _commit_project(tmp_path)
     ctx = _ctx(tmp_path, session=True)
-    runner = PipelineRunner(
-        PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]),
-        ctx,
-        registry=StepHandlerRegistry(),
-    )
-    parked = StepResult(status=StepStatus.WAITING_FOR_INPUT, started_at="t0", completed_at="t1")
-    with (
-        patch(
-            "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
-            new=AsyncMock(return_value=parked),
-        ),
-        pytest.raises(RuntimeError),
+    runner = PipelineRunner(_two_steps(), ctx, registry=StepHandlerRegistry())
+    with patch(
+        "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
+        new=_parks_once_on("w"),
     ):
         asyncio.run(runner.run())
 
-    assert runner._context is ctx  # restored to the original, not the worktree copy
+    assert runner._context is ctx
     assert runner._context.project_path == tmp_path

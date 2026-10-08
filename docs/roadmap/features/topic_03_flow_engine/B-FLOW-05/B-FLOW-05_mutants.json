@@ -585,6 +585,55 @@
           "symbol_sha": "sha256:fec05445ed1f6db99519d0f698763b904510ebc3f66e9fc40ade8304c709d559"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A parked session run resumes in its own worktree",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_isolation.py"
+      ],
+      "mutants": [
+        {
+          "id": "park-tears-down-worktree",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
+          "new": "        if True:\n",
+          "breaks": "a parked run loses the paid work of its earlier steps",
+          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+        },
+        {
+          "id": "unresumable-park-leaks-worktree",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
+          "new": "        if not run.status == RunStatus.PARKED:\n",
+          "breaks": "sw implement leaves a worktree behind that nothing can resume",
+          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+        },
+        {
+          "id": "resume-starts-fresh-worktree",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "    if approve_parked and run.current_step > 0:\n",
+          "new": "    if False:\n",
+          "breaks": "a resume runs the later steps without the files the earlier steps wrote",
+          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+        },
+        {
+          "id": "resume-without-worktree-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "        if not worktree.is_dir():\n",
+          "new": "        if False:\n",
+          "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
+          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+        }
+      ]
     }
   ]
 }
