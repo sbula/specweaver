@@ -4,6 +4,7 @@
 """`sw config show` — what each LLM setting is, and where it came from (US-16 paths P4, P7).
 
 Proves: C-FLOW-13 FR-3, FR-4, FR-5, FR-9
+Proves: B-FLOW-07 FR-8, B-FLOW-07 FR-9
 
 | Bucket | Case |
 |---|---|
