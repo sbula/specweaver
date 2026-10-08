@@ -180,6 +180,7 @@ class RoleResolver:
                 budget=self._budget,
                 scope_of=lambda config: self._scope(server_name, config),
                 redactor=Redactor([*keys, *self._vault]),
+                server=server_name,
             )
         return self._by_server[server_name]
 

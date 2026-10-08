@@ -61,8 +61,10 @@ class TelemetryCollector:
         budget: SpendBudget | None = None,
         scope_of: Callable[[GenerationConfig], CallScope] | None = None,
         redactor: Redactor | None = None,
+        server: str = "",
     ) -> None:
         self._adapter = adapter
+        self._server = server
         self._redactor = redactor or Redactor(())
         self._project = project
         self._prices = prices or (lambda _model: None)
@@ -221,6 +223,7 @@ class TelemetryCollector:
             self._project,
             int(elapsed * 1000),
             self._prices(config.model),
+            server=self._server,
         )
         self._records.append(record)
         if record.estimated_cost_usd is None and config.model not in self._unpriced_warned:

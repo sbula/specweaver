@@ -3,6 +3,55 @@
   "feature": "B-FLOW-07",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "Each call says where it ran and for what",
+      "scope": [
+        "tests/integration/core/flow/engine/test_calls_record_where_they_ran.py"
+      ],
+      "mutants": [
+        {
+          "id": "step-name-not-set",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/step_execution.py",
+          "symbol": "execute_step",
+          "old": "                \"step_name\": step_def.name,\n",
+          "new": "                \"step_name\": None,\n",
+          "breaks": "calls cannot be added up per step",
+          "symbol_sha": "sha256:95b13f7a7ac3edb99d84cec50f6c70f5516ad532a40302fd27c0810184e18923"
+        },
+        {
+          "id": "dal-not-stamped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/_llm.py",
+          "symbol": "llm_for",
+          "old": "            \"dal_level\": str(dal) if dal is not None else \"\",\n",
+          "new": "            \"dal_level\": \"\",\n",
+          "breaks": "the history cannot tell DAL_A work from DAL_E work",
+          "symbol_sha": "sha256:146927dfed9442bb53efc85ac720d909b63c5b8b63ecce4f00074cce9e0c7006"
+        },
+        {
+          "id": "server-not-passed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                server=server_name,\n",
+          "new": "                server=\"\",\n",
+          "breaks": "spend on the GB10 and on DashScope is mixed",
+          "symbol_sha": "sha256:624beba4d5fd7a28d0e6e93981887d9154e3ae5e4b81754b7bd69e5628ad8f13"
+        },
+        {
+          "id": "step-not-stored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.log_usage",
+          "old": "            step_name=record.get(\"step_name\") or None,\n",
+          "new": "            step_name=None,\n",
+          "breaks": "the step is known in memory and lost in the database",
+          "symbol_sha": "sha256:27011f44a120a5dcf6bb68a4a9c779abd016cf0f82d68653af4bfc607741d213"
+        }
+      ]
+    },
+    {
       "requirement": "FR-3",
       "title": "Every target has a DAL",
       "scope": [

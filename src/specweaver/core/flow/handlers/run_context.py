@@ -92,6 +92,7 @@ class RunHandle(BaseModel):
     run_id: str | None = None
     pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
     task_id: str | None = None  # Target Task ID for Handover Protocol
+    step_name: str | None = None
     step_records: list[dict[str, Any]] | None = None
 
 

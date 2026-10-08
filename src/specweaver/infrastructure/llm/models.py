@@ -80,6 +80,9 @@ class GenerationConfig(BaseModel):
     max_tool_rounds: int | None = Field(default=None, ge=1)
     task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
     run_id: str = ""  # Telemetry lineage correlation (3.14)
+    # Where the call belongs, for the cost history.
+    dal_level: str = ""
+    step_name: str = ""
 
 
 def payload_chars(payload: object) -> int:

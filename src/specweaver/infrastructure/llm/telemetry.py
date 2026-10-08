@@ -44,6 +44,9 @@ class UsageRecord(BaseModel):
     estimated_cost_usd: float | None = None
     duration_ms: int = 0
     run_id: str = ""
+    server: str = ""
+    dal_level: str = ""
+    step_name: str = ""
 
 
 def estimate_cost(usage: TokenUsage, facts: ModelFacts | None) -> float | None:
@@ -68,6 +71,7 @@ def create_usage_record(
     project: str,
     duration_ms: int,
     facts: ModelFacts | None = None,
+    server: str = "",
 ) -> UsageRecord:
     """Build a ``UsageRecord`` from generation config and response.
 
@@ -103,4 +107,7 @@ def create_usage_record(
         estimated_cost_usd=cost,
         duration_ms=duration_ms,
         run_id=config.run_id,
+        server=server,
+        dal_level=config.dal_level,
+        step_name=config.step_name,
     )

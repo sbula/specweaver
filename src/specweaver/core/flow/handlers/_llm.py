@@ -50,8 +50,14 @@ def llm_for(context: RunContext, task_type: TaskType) -> tuple[Any, GenerationCo
         msg = "no LLM settings were resolved for this run — check `sw config show`"
         raise LlmNotConfiguredError(msg)
     routed = router.get_for_task(task_type)
+    dal = getattr(getattr(context, "isolation", None), "dal_level", None)
     config = routed.config.model_copy(
-        update={"task_type": task_type, "run_id": context.run.run_id or ""}
+        update={
+            "task_type": task_type,
+            "run_id": context.run.run_id or "",
+            "dal_level": str(dal) if dal is not None else "",
+            "step_name": getattr(context.run, "step_name", None) or "",
+        }
     )
     return routed.adapter, config
 

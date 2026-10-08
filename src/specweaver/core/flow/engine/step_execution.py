@@ -191,6 +191,7 @@ async def execute_step(
         runner._context.run = runner._context.run.model_copy(
             update={
                 "run_id": run.run_id,
+                "step_name": step_def.name,
                 "pipeline_runner": runner,
                 "step_records": [r.model_dump() for r in run.step_records],
             }

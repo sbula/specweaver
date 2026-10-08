@@ -72,6 +72,9 @@ class LlmRepository:
             estimated_cost=record.get("estimated_cost_usd"),
             duration_ms=record.get("duration_ms", 0),
             run_id=record.get("run_id", ""),
+            server=record.get("server") or None,
+            dal_level=record.get("dal_level") or None,
+            step_name=record.get("step_name") or None,
         )
         self.session.add(log)
 
