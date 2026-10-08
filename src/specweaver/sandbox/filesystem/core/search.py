@@ -246,7 +246,7 @@ def _candidates_in(
         items.extend(root_path / d for d in dirs)
     if file_type in ("file", "any"):
         items.extend(root_path / f for f in files)
-    return items
+    return [item for item in items if not item.is_symlink()]
 
 
 def _relative_to(item: Path, search_dir: Path) -> str:
@@ -343,29 +343,40 @@ def find_by_glob(
 # ---------------------------------------------------------------------------
 
 
+_TEXT_EXTENSIONS = {
+    ".py",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".toml",
+    ".cfg",
+    ".ini",
+    ".rst",
+    ".html",
+    ".css",
+    ".js",
+    ".ts",
+    ".sh",
+    ".bat",
+    ".ps1",
+    ".xml",
+    ".csv",
+}
+
+
+def _is_text_file(item: Path) -> bool:
+    """A searchable file: not hidden, not a symlink, with a text extension."""
+    return (
+        not item.name.startswith(".")
+        and item.suffix.lower() in _TEXT_EXTENSIONS
+        and not item.is_symlink()
+    )
+
+
 def iter_text_files(directory: Path, exclude_dirs: set[str] | None = None) -> list[Path]:
     """Iterate over text files in a directory, skipping binary and hidden files."""
-    text_extensions = {
-        ".py",
-        ".md",
-        ".txt",
-        ".yaml",
-        ".yml",
-        ".json",
-        ".toml",
-        ".cfg",
-        ".ini",
-        ".rst",
-        ".html",
-        ".css",
-        ".js",
-        ".ts",
-        ".sh",
-        ".bat",
-        ".ps1",
-        ".xml",
-        ".csv",
-    }
     import os
 
     exclude_set = exclude_dirs or set()
@@ -377,10 +388,8 @@ def iter_text_files(directory: Path, exclude_dirs: set[str] | None = None) -> li
 
             root_path = Path(root_str)
             for f in file_names:
-                if f.startswith("."):
-                    continue
                 item = root_path / f
-                if item.suffix.lower() in text_extensions:
+                if _is_text_file(item):
                     files.append(item)
     except OSError:
         pass

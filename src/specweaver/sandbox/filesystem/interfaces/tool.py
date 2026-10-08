@@ -38,6 +38,8 @@ from specweaver.sandbox.security import (
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.sandbox.filesystem.core.executor import ExecutorResult, FileExecutor
 
@@ -185,17 +187,13 @@ class FileSystemTool(BaseTool):
             case_sensitive: Whether to perform case-sensitive search.
             max_results: Maximum number of matches to return.
         """
-        self._require_intent("grep")
-        err = self._check_grant(path, MODE_ALLOWS_READ)
-        if err:
-            return err
-        resolved = self._executor.cwd / path
-        if not resolved.is_dir():
-            return ToolResult(status="error", message=f"Not a directory: {path}")
+        resolved = self._search_root("grep", path)
+        if isinstance(resolved, ToolResult):
+            return resolved
         from specweaver.sandbox.filesystem.core.search import grep_content
 
         results = grep_content(
-            resolved.resolve(),
+            resolved,
             pattern,
             context_lines=context_lines,
             case_sensitive=case_sensitive,
@@ -220,17 +218,13 @@ class FileSystemTool(BaseTool):
             file_type: Filter: 'file', 'directory', or 'any'.
             max_results: Maximum number of results.
         """
-        self._require_intent("find_files")
-        err = self._check_grant(path, MODE_ALLOWS_READ)
-        if err:
-            return err
-        resolved = self._executor.cwd / path
-        if not resolved.is_dir():
-            return ToolResult(status="error", message=f"Not a directory: {path}")
+        resolved = self._search_root("find_files", path)
+        if isinstance(resolved, ToolResult):
+            return resolved
         from specweaver.sandbox.filesystem.core.search import find_by_glob
 
         results = find_by_glob(
-            resolved.resolve(),
+            resolved,
             pattern,
             file_type=file_type,
             max_results=max_results,
@@ -423,6 +417,17 @@ class FileSystemTool(BaseTool):
     def _normalize_path(path: str) -> str:
         """Normalise a path for grant matching (see `normalize_grant_path`)."""
         return normalize_grant_path(path)
+
+    def _search_root(self, intent: str, path: str) -> Path | ToolResult:
+        """The folder a search starts from, or the error that refuses it."""
+        self._require_intent(intent)
+        err = self._check_grant(path, MODE_ALLOWS_READ)
+        if err:
+            return err
+        resolved = self._executor.contained(path)
+        if resolved is None or not resolved.is_dir():
+            return ToolResult(status="error", message=f"Not a directory: {path}")
+        return resolved
 
     def _check_grant(
         self,

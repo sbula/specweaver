@@ -21,12 +21,10 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -337,6 +335,16 @@ class FileExecutor:
     # -------------------------------------------------------------------
     # Path validation & security
     # -------------------------------------------------------------------
+
+    def contained(self, path: str) -> Path | None:
+        """`path` resolved inside the root, or None if it leaves the root or passes a symlink."""
+        target = Path(path or ".")
+        if target.is_absolute():
+            try:
+                target = target.relative_to(self._cwd)
+            except ValueError:
+                return None
+        return self._validate_path(str(target))
 
     def _validate_path(self, path: str) -> Path | None:
         """Resolve and validate a relative path.
