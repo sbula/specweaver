@@ -27,8 +27,7 @@ Of 141 items marked done, **26 are false** (a promised behaviour missing or brok
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
-Open and waiting on the user: #11 (`--model` and the limits matrix), #12 (queued calls reserve
-before their slot). Next: the remaining C-FLOW-13 rows,
+Open and waiting on the user: B-FLOW-05 #12 (queued calls reserve before their slot). Next: the remaining C-FLOW-13 rows,
 then the other false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.

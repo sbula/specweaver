@@ -751,6 +751,26 @@
           "new": "    roles = roles_of(pipeline)\n    if not roles and run_model is None:\n        return\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
           "symbol_sha": "sha256:149b8f7d2334630db754b5ec28474fcf9f7aa92e334723541f36f647c71f457a"
+        },
+        {
+          "id": "run-model-drops-task-limits",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "_every_role",
+          "old": "    return {role: _keeping_task_limit(files, role, run_model) for role in named}\n",
+          "new": "    return dict.fromkeys(named, run_model)\n",
+          "breaks": "--model removes every task's own limit for the run",
+          "symbol_sha": "sha256:27b60ba47ec9e89e8c63b2454ad93f60fa068c40097fefacfcbb9e45fc03c336"
+        },
+        {
+          "id": "task-limit-wrong-unit",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "_keeping_task_limit",
+          "old": "    unit = \"tokens_per_run\" if server.private else \"spend_per_run\"\n",
+          "new": "    unit = \"spend_per_run\" if server.private else \"tokens_per_run\"\n",
+          "breaks": "a task limit in the wrong unit is carried and the run is refused",
+          "symbol_sha": "sha256:18508511725e39f96415a307a51a34413f5fe48133a424478531d294b6061539"
         }
       ]
     },

@@ -27,7 +27,7 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 8 | MED | After a "no", every further call asks again; a later "yes" spends, but the step is parked anyway. **Fixed** 2026-10-08: after a no, nothing more is asked or spent | `budget.py:136-153`; `.tmp/repro_budget.py` |
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls. **Accepted 2026-10-08, B-FLOW-05 AD-6:** revisit when real runs show the cost | `approval.py` |
 | 10 | MED | A response without `usage` counts as 0, so `tokens_per_run` never fills on such servers. **Fixed** 2026-10-08: it counts its worst case | `openai.py:160-164`; `.tmp/repro_no_usage.py` |
-| 11 | MED | `--model` drops role limits (maybe intended — user's call) | `resolve.py:209-217` |
+| 11 | MED | `--model` drops role limits (maybe intended — user's call). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is a new feature | `resolve.py:209-217` |
 | 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6). **Partly fixed** 2026-10-08: the question names what running calls may add; queued calls still reserve before their slot | `collector.py:128`; `_rate_limit.py:51` |
 | 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction). **Fixed** 2026-10-08, and the first check counts the system instruction | adapters' `before_request` |
 | 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs. **Fixed** 2026-10-08: asked on stderr | `_core.py:131-141` |
@@ -55,7 +55,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 11 | MED | Project file has no `schema_version` gate. **Fixed** 2026-10-08: the same gate as the machine file | `ProjectLlmSection` |
 | 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks | `settings_report` |
 | 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent | adapters |
-| 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11) | `resolve.py` |
+| 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is a new feature | `resolve.py` |
 | 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on. **Fixed** 2026-10-08: only a model nobody set is skipped; a wrong setting stops the scan | `command.py:72-74` |
 | 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |
 | 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11). **Fixed** 2026-10-08 | `resolve.py:214` |

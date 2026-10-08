@@ -227,9 +227,24 @@ def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, floa
 def _every_role(files: LlmSettingsFiles, run_model: RoleEntry | None) -> dict[str, RoleEntry]:
     """`--model` for one run: every role the files name, and `default`, get the same model.
 
-    A role nobody named falls back to `default`, so overriding `default` covers it too.
+    A role nobody named falls back to `default`, so overriding `default` covers it too. Each task
+    keeps its own limit.
     """
     if run_model is None:
         return {}
     named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE}
-    return dict.fromkeys(named, run_model)
+    return {role: _keeping_task_limit(files, role, run_model) for role in named}
+
+
+def _keeping_task_limit(files: LlmSettingsFiles, role: str, run_model: RoleEntry) -> RoleEntry:
+    """The run model, with the task's own limit when it is in the unit the run model's server uses.
+
+    A task limit in the other unit cannot bound this server; that gap is the limits matrix's.
+    """
+    entry = next((e for name, e in files.machine.roles.items() if name == role), None)
+    server = files.machine.servers.get(run_model.server)
+    if entry is None or server is None:
+        return run_model
+    unit = "tokens_per_run" if server.private else "spend_per_run"
+    limit = getattr(entry, unit)
+    return run_model if limit is None else run_model.model_copy(update={unit: limit})
