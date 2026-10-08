@@ -58,6 +58,7 @@ def costs(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from err
     currency = files.machine.currency
     _say(_currency_line(currency))
+    _say(_catalogue_line(shipped_catalogue().source))
     spend = _month_spend(project)
     for (model, server), role_names in sorted(_models_in_use(roles).items()):
         kind = files.machine.servers[server].kind
@@ -72,7 +73,7 @@ def costs(ctx: typer.Context) -> None:
             f"{model}@{server} ({', '.join(role_names)}): "
             f"input {format_money(price_in, currency, places=4)}, "
             f"output {format_money(price_out, currency, places=4)} per 1M tokens"
-            f" — {_price_source(model, facts, files)}; this month {month}"
+            f" — {_price_source(kind, model, facts, files)}; this month {month}"
         )
 
 
@@ -156,10 +157,15 @@ def _models_in_use(roles: dict[str, ResolvedRole]) -> dict[tuple[str, str], list
     return used
 
 
-def _price_source(model: str, facts: ModelFacts | None, files: LlmSettingsFiles) -> str:
-    own = files.machine.models.get(model)
-    if own is not None and own.usd_per_million_input is not None:
-        return "your settings file"
+def _catalogue_line(source: dict[str, Any]) -> str:
+    return f"Prices from the catalogue: models.dev, fetched {source.get('fetched', 'unknown')}."
+
+
+def _price_source(kind: str, model: str, facts: ModelFacts | None, files: LlmSettingsFiles) -> str:
+    for key in (f"{kind}/{model}", model):
+        own = files.machine.models.get(key)
+        if own is not None and own.usd_per_million_input is not None:
+            return "your settings file"
     if facts is not None and facts.usd_per_million_input is not None:
         return "catalogue"
     return "no price known"

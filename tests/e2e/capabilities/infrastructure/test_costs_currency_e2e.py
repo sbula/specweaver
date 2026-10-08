@@ -135,3 +135,25 @@ def test_a_reset_on_a_broken_file_names_the_line_without_a_traceback(
     assert result.exit_code == 1
     assert result.exception is None or isinstance(result.exception, SystemExit)
     assert shows(result.output, "not valid TOML")
+
+
+def test_costs_names_the_catalogue_and_a_kind_price(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    import re
+
+    (_isolate_env / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+    _project(tmp_path)
+    kind = parse_machine_file(_MACHINE, "x").servers
+    server_kind = next(iter(kind.values())).kind
+
+    set_price = runner.invoke(
+        app, ["costs", "set", f"{server_kind}/qwen3-coder-next", "0.8", "1.6"]
+    )
+    shown = runner.invoke(app, ["costs"])
+
+    assert set_price.exit_code == 0, set_price.output
+    assert re.search(
+        r"catalogue: models\.dev, fetched \d{4}-\d{2}-\d{2}", " ".join(shown.output.split())
+    )
+    assert shows(shown.output, "your settings file")

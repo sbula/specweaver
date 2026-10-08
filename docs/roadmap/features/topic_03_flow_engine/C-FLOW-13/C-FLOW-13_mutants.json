@@ -231,7 +231,8 @@
       "requirement": "FR-18",
       "title": "The catalogue is regenerated from models.dev, filtered and stamped",
       "scope": [
-        "tests/unit/scripts/test_update_model_catalogue.py"
+        "tests/unit/scripts/test_update_model_catalogue.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
       ],
       "mutants": [
         {
@@ -253,6 +254,16 @@
           "new": "        \"context\": limit.get(\"context\"),\n",
           "breaks": "a zero context from models.dev makes the whole shipped catalogue refuse to load",
           "symbol_sha": "sha256:a55aa263cf4f2a74e0b99a0c184ccd62bfb4070f922f2bd8e107934464622ea8"
+        },
+        {
+          "id": "costs-unstamped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs",
+          "old": "    _say(_catalogue_line(shipped_catalogue().source))\n",
+          "new": "    pass\n",
+          "breaks": "sw costs shows prices without saying how old the catalogue is",
+          "symbol_sha": "sha256:19ecc8430ff49d578ae8705df9f51ae4020cda6ff8015152d7823c080b7f972c"
         }
       ]
     },
@@ -505,7 +516,8 @@
         "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py",
         "tests/unit/infrastructure/llm/test_collector.py",
         "tests/unit/infrastructure/llm/test_resolve.py",
-        "tests/unit/infrastructure/llm/test_telemetry.py"
+        "tests/unit/infrastructure/llm/test_telemetry.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
       ],
       "mutants": [
         {
@@ -547,6 +559,16 @@
           "new": "\n",
           "breaks": "every call through the one path is stored as unpriced, whatever the catalogue or the user set",
           "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
+        },
+        {
+          "id": "kind-price-shown-as-catalogue",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_price_source",
+          "old": "    for key in (f\"{kind}/{model}\", model):\n",
+          "new": "    for key in (model,):\n",
+          "breaks": "a price you set for one kind is shown as the catalogue's",
+          "symbol_sha": "sha256:5815aaf5ad879236b746de0573fadca52cf46f82be8dce00221147d245cd0eb1"
         }
       ]
     },

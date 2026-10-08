@@ -59,7 +59,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on. **Fixed** 2026-10-08: only a model nobody set is skipped; a wrong setting stops the scan | `command.py:72-74` |
 | 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |
 | 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11). **Fixed** 2026-10-08 | `resolve.py:214` |
-| 18 | LOW | `sw costs` lacks the catalogue version stamp; spend merged across servers | infra `cli.py` |
+| 18 | LOW | `sw costs` lacks the catalogue version stamp; spend merged across servers. **Partly fixed** 2026-10-08: the stamp is shown; splitting spend per server needs the server in the telemetry table | infra `cli.py` |
 | 19 | LOW | `sw usage` refused on a broken machine file. **Fixed** 2026-10-08: it reports in USD and names the broken line | infra `cli.py:309` |
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted. **Fixed** 2026-10-08 | writer |
 | 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address | `_rate_limit.py` (suspected) |
