@@ -309,10 +309,10 @@ class PipelineRunner:
         if self._on_event is not None:
             self._on_event(event, **kwargs)
 
-    def _flush_telemetry(self) -> None:
+    def _flush_telemetry(self, run: PipelineRun) -> None:
         from specweaver.core.flow.engine.telemetry import flush_telemetry
 
-        flush_telemetry(self._context, logger)
+        flush_telemetry(self._context, logger, run)
 
     async def _finalize(self, run: PipelineRun) -> None:
         """End-of-run bookkeeping, run from the `finally` of BOTH `run()` and `resume()`.
@@ -325,7 +325,7 @@ class PipelineRunner:
             run.status = RunStatus.ABORTED
             self._persist(run)
         await self._save_handover(run)
-        self._flush_telemetry()
+        self._flush_telemetry(run)
 
     async def _save_handover(self, run: PipelineRun) -> None:
         try:

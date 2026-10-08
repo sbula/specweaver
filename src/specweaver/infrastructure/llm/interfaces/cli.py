@@ -65,7 +65,7 @@ def costs(ctx: typer.Context) -> None:
         facts = shipped_catalogue().facts(kind, model, files.machine.models)
         price_in = facts.usd_per_million_input if facts else None
         price_out = facts.usd_per_million_output if facts else None
-        spent, unpriced = spend.get(model, (None, 0))
+        spent, unpriced = spend.get((model, server), (None, 0))
         month = format_money(spent or 0.0, currency) + (
             f" + {unpriced} unknown" if unpriced else ""
         )
@@ -171,23 +171,20 @@ def _price_source(kind: str, model: str, facts: ModelFacts | None, files: LlmSet
     return "no price known"
 
 
-def _month_spend(project: str) -> dict[str, tuple[float | None, int]]:
-    """This calendar month's spend per model (UTC): USD known, and how many calls had no price."""
+def _month_spend(project: str) -> dict[tuple[str, str | None], tuple[float | None, int]]:
+    """This calendar month's spend per model and server (UTC): USD known, and calls with no price."""
     now = datetime.now(UTC)
     since = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     db = _core.get_db()
 
     async def _read() -> list[dict[str, Any]]:
         async with db.async_session_scope() as session:
-            return await LlmRepository(session).get_usage_summary(project=project, since=since)
+            return await LlmRepository(session).get_spend_by_server(project, since)
 
-    spend: dict[str, tuple[float | None, int]] = {}
-    for row in anyio.run(_read):
-        spent, unpriced = spend.get(row["model"], (None, 0))
-        if row["total_cost"] is not None:
-            spent = (spent or 0.0) + row["total_cost"]
-        spend[row["model"]] = (spent, unpriced + (row["unpriced_calls"] or 0))
-    return spend
+    return {
+        (row["model"], row["server"]): (row["total_cost"], row["unpriced_calls"] or 0)
+        for row in anyio.run(_read)
+    }
 
 
 usage_app = typer.Typer(

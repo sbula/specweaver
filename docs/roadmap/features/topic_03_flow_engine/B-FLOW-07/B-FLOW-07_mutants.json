@@ -110,6 +110,65 @@
           "symbol_sha": "sha256:afff48c68a7951edff76c54c72d6b08935245de5428be089e4618178aa394b4c"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Each step's outcome joins its calls",
+      "scope": [
+        "tests/integration/core/flow/engine/test_step_outcomes.py",
+        "tests/e2e/capabilities/infrastructure/test_cost_history_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "outcomes-not-written",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "flush_telemetry",
+          "old": "            record_step_outcomes(db, run.run_id, step_outcomes(run))\n",
+          "new": "            pass\n",
+          "breaks": "no step ever counts as finished, so no history forms",
+          "symbol_sha": "sha256:a859da158bbaafc8c2111948f400b026c8921aaf9625a98d30022e15943abc46"
+        },
+        {
+          "id": "failed-counts-as-passed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "step_outcomes",
+          "old": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\"}\n",
+          "new": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"passed\", StepStatus.ERROR: \"failed\"}\n",
+          "breaks": "cheap failed attempts lower the typical cost",
+          "symbol_sha": "sha256:3f31fbc80016b2ac4c997c1462bf754542008dfbf3789c9f7b7ec52776a91ec6"
+        },
+        {
+          "id": "unfinished-counts-as-passed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "step_outcomes",
+          "old": "    return {r.step_name: ended[r.status] for r in run.step_records if r.status in ended}\n",
+          "new": "    return {r.step_name: ended.get(r.status, \"passed\") for r in run.step_records}\n",
+          "breaks": "a parked step's partial cost counts as finished work",
+          "symbol_sha": "sha256:3f31fbc80016b2ac4c997c1462bf754542008dfbf3789c9f7b7ec52776a91ec6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "Spend by model and server",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_cost_history_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "spend-merged-across-servers",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs",
+          "old": "        spent, unpriced = spend.get((model, server), (None, 0))\n",
+          "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
+          "breaks": "the same model on two servers shows one server's spend on both",
+          "symbol_sha": "sha256:42c9109530ec23d41493aec11395f91db5ea5fd39157d1d3f1f22af581b8ea44"
+        }
+      ]
     }
   ]
 }

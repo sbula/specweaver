@@ -172,10 +172,10 @@ None.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The history | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The history | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Step limits | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-Approved 2026-10-08. SF-01 plan approved; SF-01 in development. Read the grilling record before changing
+Approved 2026-10-08. SF-01 built and committed 2026-10-08 (CB-1..3). Next: the SF-02 plan. Read the grilling record before changing
 a decision.

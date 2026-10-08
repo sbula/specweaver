@@ -51,6 +51,17 @@ class LlmStepOutcome(Base):
     outcome: Mapped[str] = mapped_column(String, nullable=False)
 
 
+def record_step_outcomes(db: Any, run_id: str, outcomes: dict[str, str]) -> None:
+    """Store how each of a run's steps ended; a later end of the same run replaces it."""
+    if not outcomes:
+        return
+    with db.connect() as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO llm_step_outcome (run_id, step_name, outcome) VALUES (?, ?, ?)",
+            [(run_id, step, outcome) for step, outcome in outcomes.items()],
+        )
+
+
 class LlmRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -77,6 +88,21 @@ class LlmRepository:
             step_name=record.get("step_name") or None,
         )
         self.session.add(log)
+
+    async def get_spend_by_server(self, project: str, since: datetime) -> list[dict[str, Any]]:
+        """Spend per model and server since `since`: USD known, and calls with no price."""
+        stmt = (
+            select(
+                LlmUsageLog.model,
+                LlmUsageLog.server,
+                func.sum(LlmUsageLog.estimated_cost).label("total_cost"),
+                func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
+            )
+            .where(LlmUsageLog.project_name == project, LlmUsageLog.timestamp >= since)
+            .group_by(LlmUsageLog.model, LlmUsageLog.server)
+        )
+        result = await self.session.execute(stmt)
+        return [dict(row._mapping) for row in result]
 
     async def get_usage_summary(
         self,
