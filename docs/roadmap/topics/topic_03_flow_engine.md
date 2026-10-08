@@ -258,6 +258,16 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a run that repeats a cycle of steps stops with the cycle named, and a run that follows a chain of different files does not
   > - **Note:** weigh detection effort against what it saves before building `[agreed 2026-10-06]` · origin: `B-FLOW-05` redesign and `C-FLOW-13` SF-05
 
+* **`B-FLOW-07` 🔜: Spend Limit Matrix (Model × Task × DAL)**
+  > - **Purpose:** A spend limit per model, kind of task and DAL level
+  > - **Trigger:** Before every LLM request, through the brake
+  > - **Precondition:** `B-FLOW-05` → the brake · `C-VAL-03` → a target's DAL
+  > - **Reads:** the limits matrix in `settings.toml`
+  > - **Produces:** the limits a call counts against
+  > - **Enables:** `A-FLOW-01` → cost per kind of task
+  > - **Done when:** a call is checked against its model's, task's and DAL's limits, whatever `--model` picks
+  > - **Note:** origin: audit 2026-10-07, `B-FLOW-05` #11 `[agreed 2026-10-08]`
+
 ## DAL-A: Mission-Critical
 
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)

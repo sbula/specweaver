@@ -158,6 +158,7 @@ None.
 ## Non-Goals
 
 - Loop detection — `B-FLOW-06`.
+- Limits per model × kind of task × DAL — `B-FLOW-07` `[agreed 2026-10-08]`.
 - Choosing or comparing models — `A-FLOW-01`.
 - A monthly limit — providers' billing does that; `sw costs` shows month-to-date `[agreed 2026-09-26]`.
 - Downgrading or switching the model at a limit `[agreed 2026-09-26]`.
