@@ -4,127 +4,141 @@
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 10,
+   "usd_per_million_input": 12.5,
    "usd_per_million_output": 50
   },
   "anthropic/claude-fable-5-1": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 10,
+   "usd_per_million_input": 12.5,
    "usd_per_million_output": 50
   },
   "anthropic/claude-haiku-4-5": {
    "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 1,
+   "usd_per_million_input": 1.25,
    "usd_per_million_output": 5
   },
   "anthropic/claude-haiku-4-5-20251001": {
    "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 1,
+   "usd_per_million_input": 1.25,
    "usd_per_million_output": 5
+  },
+  "anthropic/claude-haiku-5-5": {
+   "context": 1000000,
+   "max_output": 128000,
+   "tool_calls": true,
+   "usd_per_million_input": 0.125,
+   "usd_per_million_output": 0.5
   },
   "anthropic/claude-opus-4-5": {
    "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-4-5-20251101": {
    "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-4-6": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-4-7": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-4-8": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-5": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
+   "usd_per_million_input": 6.25,
    "usd_per_million_output": 25
   },
   "anthropic/claude-opus-5-5": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 4,
+   "usd_per_million_input": 5,
    "usd_per_million_output": 20
   },
   "anthropic/claude-sonnet-4-5": {
-   "context": 1000000,
+   "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 3,
+   "usd_per_million_input": 3.75,
    "usd_per_million_output": 15
   },
   "anthropic/claude-sonnet-4-5-20250929": {
-   "context": 1000000,
+   "context": 200000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 3,
+   "usd_per_million_input": 3.75,
    "usd_per_million_output": 15
   },
   "anthropic/claude-sonnet-4-6": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 3,
+   "usd_per_million_input": 3.75,
    "usd_per_million_output": 15
   },
   "anthropic/claude-sonnet-5": {
    "context": 1000000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 2,
+   "usd_per_million_input": 2.5,
+   "usd_per_million_output": 10
+  },
+  "anthropic/claude-sonnet-5-5": {
+   "context": 1000000,
+   "max_output": 128000,
+   "tool_calls": true,
+   "usd_per_million_input": 2.5,
    "usd_per_million_output": 10
   },
   "gemini/deep-research-max-preview-04-2026": {
    "context": 131072,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 12
+   "usd_per_million_input": 4,
+   "usd_per_million_output": 18
   },
   "gemini/deep-research-preview-04-2026": {
    "context": 131072,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 12
+   "usd_per_million_input": 4,
+   "usd_per_million_output": 18
   },
   "gemini/gemini-2.5-computer-use-preview-10-2025": {
    "context": 128000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 1.25,
-   "usd_per_million_output": 10
+   "usd_per_million_input": 2.5,
+   "usd_per_million_output": 15
   },
   "gemini/gemini-2.5-flash": {
    "context": 1048576,
@@ -158,8 +172,8 @@
    "context": 1048576,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 1.25,
-   "usd_per_million_output": 10
+   "usd_per_million_input": 2.5,
+   "usd_per_million_output": 15
   },
   "gemini/gemini-2.5-pro-preview-tts": {
    "context": 8192,
@@ -235,15 +249,15 @@
    "context": 1048576,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 12
+   "usd_per_million_input": 4,
+   "usd_per_million_output": 18
   },
   "gemini/gemini-3.1-pro-preview-customtools": {
    "context": 1048576,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 12
+   "usd_per_million_input": 4,
+   "usd_per_million_output": 18
   },
   "gemini/gemini-3.5-flash": {
    "context": 1048576,
@@ -361,6 +375,13 @@
    "max_output": 8192,
    "tool_calls": false
   },
+  "mistral/codestral-2508": {
+   "context": 256000,
+   "max_output": 8192,
+   "tool_calls": true,
+   "usd_per_million_input": 0.3,
+   "usd_per_million_output": 0.9
+  },
   "mistral/codestral-latest": {
    "context": 256000,
    "max_output": 4096,
@@ -368,29 +389,36 @@
    "usd_per_million_input": 0.3,
    "usd_per_million_output": 0.9
   },
-  "mistral/magistral-medium-latest": {
-   "context": 128000,
-   "max_output": 16384,
+  "mistral/ministral-14b-2512": {
+   "context": 262144,
+   "max_output": 262144,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 5
+   "usd_per_million_input": 0.2,
+   "usd_per_million_output": 0.2
   },
-  "mistral/magistral-small": {
-   "context": 128000,
-   "max_output": 128000,
+  "mistral/ministral-3b-2512": {
+   "context": 131072,
+   "max_output": 262144,
    "tool_calls": true,
-   "usd_per_million_input": 0.5,
-   "usd_per_million_output": 1.5
+   "usd_per_million_input": 0.1,
+   "usd_per_million_output": 0.1
   },
   "mistral/ministral-3b-latest": {
-   "context": 128000,
+   "context": 131072,
    "max_output": 128000,
    "tool_calls": true,
    "usd_per_million_input": 0.04,
    "usd_per_million_output": 0.04
   },
+  "mistral/ministral-8b-2512": {
+   "context": 262144,
+   "max_output": 262144,
+   "tool_calls": true,
+   "usd_per_million_input": 0.15,
+   "usd_per_million_output": 0.15
+  },
   "mistral/ministral-8b-latest": {
-   "context": 128000,
+   "context": 262144,
    "max_output": 128000,
    "tool_calls": true,
    "usd_per_million_input": 0.1,
@@ -403,13 +431,6 @@
    "usd_per_million_input": 0.1,
    "usd_per_million_output": 0
   },
-  "mistral/mistral-large-2411": {
-   "context": 131072,
-   "max_output": 16384,
-   "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 6
-  },
   "mistral/mistral-large-2512": {
    "context": 262144,
    "max_output": 262144,
@@ -417,26 +438,19 @@
    "usd_per_million_input": 0.5,
    "usd_per_million_output": 1.5
   },
+  "mistral/mistral-large-4": {
+   "context": 1048576,
+   "max_output": 262144,
+   "tool_calls": true,
+   "usd_per_million_input": 0.68,
+   "usd_per_million_output": 2.09
+  },
   "mistral/mistral-large-latest": {
    "context": 262144,
    "max_output": 262144,
    "tool_calls": true,
    "usd_per_million_input": 0.5,
    "usd_per_million_output": 1.5
-  },
-  "mistral/mistral-medium-2505": {
-   "context": 131072,
-   "max_output": 131072,
-   "tool_calls": true,
-   "usd_per_million_input": 0.4,
-   "usd_per_million_output": 2
-  },
-  "mistral/mistral-medium-2508": {
-   "context": 262144,
-   "max_output": 262144,
-   "tool_calls": true,
-   "usd_per_million_input": 0.4,
-   "usd_per_million_output": 2
   },
   "mistral/mistral-medium-2604": {
    "context": 262144,
@@ -452,68 +466,19 @@
    "usd_per_million_input": 1.5,
    "usd_per_million_output": 7.5
   },
-  "mistral/mistral-nemo": {
-   "context": 128000,
-   "max_output": 128000,
-   "tool_calls": true,
-   "usd_per_million_input": 0.15,
-   "usd_per_million_output": 0.15
-  },
-  "mistral/mistral-small-2506": {
-   "context": 128000,
-   "max_output": 16384,
-   "tool_calls": true,
-   "usd_per_million_input": 0.1,
-   "usd_per_million_output": 0.3
-  },
   "mistral/mistral-small-2603": {
-   "context": 256000,
+   "context": 262144,
    "max_output": 256000,
    "tool_calls": true,
    "usd_per_million_input": 0.15,
    "usd_per_million_output": 0.6
   },
   "mistral/mistral-small-latest": {
-   "context": 256000,
+   "context": 262144,
    "max_output": 256000,
    "tool_calls": true,
    "usd_per_million_input": 0.15,
    "usd_per_million_output": 0.6
-  },
-  "mistral/open-mistral-7b": {
-   "context": 8000,
-   "max_output": 8000,
-   "tool_calls": true,
-   "usd_per_million_input": 0.25,
-   "usd_per_million_output": 0.25
-  },
-  "mistral/open-mixtral-8x22b": {
-   "context": 64000,
-   "max_output": 64000,
-   "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 6
-  },
-  "mistral/open-mixtral-8x7b": {
-   "context": 32000,
-   "max_output": 32000,
-   "tool_calls": true,
-   "usd_per_million_input": 0.7,
-   "usd_per_million_output": 0.7
-  },
-  "mistral/pixtral-12b": {
-   "context": 128000,
-   "max_output": 128000,
-   "tool_calls": true,
-   "usd_per_million_input": 0.15,
-   "usd_per_million_output": 0.15
-  },
-  "mistral/pixtral-large-latest": {
-   "context": 128000,
-   "max_output": 128000,
-   "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 6
   },
   "mistral/voxtral-mini-latest": {
    "tool_calls": false
@@ -521,22 +486,22 @@
   "mistral/voxtral-mini-tts-latest": {
    "tool_calls": false
   },
+  "mistral/voxtral-small-2507": {
+   "context": 32768,
+   "max_output": 32000,
+   "tool_calls": true,
+   "usd_per_million_input": 0.1,
+   "usd_per_million_output": 0.4
+  },
   "mistral/voxtral-small-latest": {
-   "context": 32000,
+   "context": 32768,
    "max_output": 32000,
    "tool_calls": true,
    "usd_per_million_input": 0.1,
    "usd_per_million_output": 0.3
   },
-  "mistral/zai-glm-5-2": {
-   "context": 1000000,
-   "max_output": 131072,
-   "tool_calls": true,
-   "usd_per_million_input": 1.4,
-   "usd_per_million_output": 4.4
-  },
   "mistral/zai-glm-5-3": {
-   "context": 1000000,
+   "context": 1048576,
    "max_output": 131072,
    "tool_calls": true,
    "usd_per_million_input": 1.4,
@@ -654,8 +619,8 @@
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 2.5,
-   "usd_per_million_output": 15
+   "usd_per_million_input": 5,
+   "usd_per_million_output": 22.5
   },
   "openai/gpt-5.4-mini": {
    "context": 400000,
@@ -675,71 +640,92 @@
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 30,
-   "usd_per_million_output": 180
+   "usd_per_million_input": 60,
+   "usd_per_million_output": 270
   },
   "openai/gpt-5.5": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 5,
-   "usd_per_million_output": 30
+   "usd_per_million_input": 10,
+   "usd_per_million_output": 45
   },
   "openai/gpt-5.5-pro": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 30,
-   "usd_per_million_output": 180
+   "usd_per_million_input": 60,
+   "usd_per_million_output": 270
   },
   "openai/gpt-5.6": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 4,
-   "usd_per_million_output": 20
+   "usd_per_million_input": 10,
+   "usd_per_million_output": 30
   },
   "openai/gpt-5.6-luna": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 0.2,
-   "usd_per_million_output": 1.2
+   "usd_per_million_input": 0.5,
+   "usd_per_million_output": 1.8
   },
   "openai/gpt-5.6-sol": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 4,
-   "usd_per_million_output": 20
+   "usd_per_million_input": 10,
+   "usd_per_million_output": 30
   },
   "openai/gpt-5.6-terra": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 12
+   "usd_per_million_input": 5,
+   "usd_per_million_output": 18
   },
   "openai/gpt-6-astra": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 10,
-   "usd_per_million_output": 50
+   "usd_per_million_input": 25,
+   "usd_per_million_output": 75
   },
   "openai/gpt-6-luna": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 0.1,
-   "usd_per_million_output": 0.5
+   "usd_per_million_input": 0.25,
+   "usd_per_million_output": 0.75
   },
   "openai/gpt-6-sol": {
    "context": 1050000,
    "max_output": 128000,
    "tool_calls": true,
-   "usd_per_million_input": 2,
-   "usd_per_million_output": 10
+   "usd_per_million_input": 5,
+   "usd_per_million_output": 15
+  },
+  "openai/gpt-6.1-sol": {
+   "context": 1050000,
+   "max_output": 128000,
+   "tool_calls": true,
+   "usd_per_million_input": 5,
+   "usd_per_million_output": 15
+  },
+  "openai/gpt-daybreak-blue-latest": {
+   "context": 1050000,
+   "max_output": 128000,
+   "tool_calls": true,
+   "usd_per_million_input": 10,
+   "usd_per_million_output": 30
+  },
+  "openai/gpt-daybreak-red-latest": {
+   "context": 400000,
+   "max_output": 128000,
+   "tool_calls": true,
+   "usd_per_million_input": 15.625,
+   "usd_per_million_output": 75
   },
   "openai/gpt-image-1-mini": {
    "tool_calls": false
@@ -805,7 +791,7 @@
    "context": 204800,
    "max_output": 131072,
    "tool_calls": true,
-   "usd_per_million_input": 0.3,
+   "usd_per_million_input": 0.375,
    "usd_per_million_output": 1.2
   },
   "qwen/deepseek-r1": {
@@ -1064,8 +1050,8 @@
    "context": 1000000,
    "max_output": 32768,
    "tool_calls": true,
-   "usd_per_million_input": 0.115,
-   "usd_per_million_output": 0.287
+   "usd_per_million_input": 0.144,
+   "usd_per_million_output": 1.147
   },
   "qwen/qwen-plus-character": {
    "context": 32768,
@@ -1079,7 +1065,7 @@
    "max_output": 16384,
    "tool_calls": true,
    "usd_per_million_input": 0.044,
-   "usd_per_million_output": 0.087
+   "usd_per_million_output": 0.431
   },
   "qwen/qwen-vl-max": {
    "context": 131072,
@@ -1184,28 +1170,28 @@
    "max_output": 8192,
    "tool_calls": true,
    "usd_per_million_input": 0.144,
-   "usd_per_million_output": 0.574
+   "usd_per_million_output": 1.434
   },
   "qwen/qwen3-235b-a22b": {
    "context": 131072,
    "max_output": 16384,
    "tool_calls": true,
    "usd_per_million_input": 0.287,
-   "usd_per_million_output": 1.147
+   "usd_per_million_output": 2.868
   },
   "qwen/qwen3-32b": {
    "context": 131072,
    "max_output": 16384,
    "tool_calls": true,
    "usd_per_million_input": 0.287,
-   "usd_per_million_output": 1.147
+   "usd_per_million_output": 2.868
   },
   "qwen/qwen3-8b": {
    "context": 131072,
    "max_output": 8192,
    "tool_calls": true,
    "usd_per_million_input": 0.072,
-   "usd_per_million_output": 0.287
+   "usd_per_million_output": 0.717
   },
   "qwen/qwen3-asr-flash": {
    "context": 53248,
@@ -1282,21 +1268,21 @@
    "max_output": 32768,
    "tool_calls": true,
    "usd_per_million_input": 0.286705,
-   "usd_per_million_output": 1.14682
+   "usd_per_million_output": 2.867051
   },
   "qwen/qwen3-vl-30b-a3b": {
    "context": 131072,
    "max_output": 32768,
    "tool_calls": true,
    "usd_per_million_input": 0.108,
-   "usd_per_million_output": 0.431
+   "usd_per_million_output": 1.076
   },
   "qwen/qwen3-vl-plus": {
    "context": 262144,
    "max_output": 32768,
    "tool_calls": true,
    "usd_per_million_input": 0.143353,
-   "usd_per_million_output": 1.433525
+   "usd_per_million_output": 4.300576
   },
   "qwen/qwen3.5-397b-a17b": {
    "context": 262144,
@@ -1323,7 +1309,7 @@
    "context": 1000000,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 0.1875,
+   "usd_per_million_input": 0.234375,
    "usd_per_million_output": 1.125
   },
   "qwen/qwen3.6-max-preview": {
@@ -1337,43 +1323,50 @@
    "context": 1000000,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 0.5,
-   "usd_per_million_output": 3
+   "usd_per_million_input": 2.5,
+   "usd_per_million_output": 6
   },
   "qwen/qwen3.7-flash": {
    "context": 1000000,
-   "max_output": 65536,
+   "max_output": 131072,
    "tool_calls": true,
-   "usd_per_million_input": 0.02962,
+   "usd_per_million_input": 0.03703,
    "usd_per_million_output": 0.1185
   },
   "qwen/qwen3.7-max": {
    "context": 1000000,
    "max_output": 65536,
    "tool_calls": true,
-   "usd_per_million_input": 2.5,
+   "usd_per_million_input": 3.125,
    "usd_per_million_output": 7.5
   },
   "qwen/qwen3.7-plus": {
    "context": 1000000,
    "max_output": 64000,
    "tool_calls": true,
-   "usd_per_million_input": 0.5,
+   "usd_per_million_input": 0.625,
    "usd_per_million_output": 3
   },
   "qwen/qwen3.8-flash": {
    "context": 1000000,
    "max_output": 131072,
    "tool_calls": true,
-   "usd_per_million_input": 0.11875,
+   "usd_per_million_input": 0.14844,
    "usd_per_million_output": 0.40073
   },
   "qwen/qwen3.8-max": {
    "context": 1000000,
    "max_output": 131072,
    "tool_calls": true,
-   "usd_per_million_input": 1.77744,
+   "usd_per_million_input": 2.22179,
    "usd_per_million_output": 5.33231
+  },
+  "qwen/qwen3.8-omni-flash": {
+   "context": 1000000,
+   "max_output": 131072,
+   "tool_calls": true,
+   "usd_per_million_input": 0.113,
+   "usd_per_million_output": 0.382
   },
   "qwen/qwq-32b": {
    "context": 131072,
@@ -1427,10 +1420,10 @@
  },
  "schema_version": 1,
  "source": {
-  "etag": "\"f85d52a4d10a7397a51039e8f526b8d1\"",
-  "fetched": "2026-09-27",
+  "etag": "\"63fe28d226713ba2ad6254be9200f8cf\"",
+  "fetched": "2026-10-08",
   "license": "MIT License\n\nCopyright (c) 2025 models.dev\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.",
-  "repo_commit": "142aece954f0932db4002d62878c466dd482fba0",
+  "repo_commit": "09edcea9de4f38c2442ec28a3fd71689f1e39836",
   "url": "https://models.dev/api.json"
  }
 }
