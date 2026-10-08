@@ -49,7 +49,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) â€
 | 5 | MED | Resolver refusals say `settings.toml:0` | `resolve.py` |
 | 6 | MED | `[models."openai/gpt-5"]` override silently ignored (only bare ids match) | `catalogue.py:67` |
 | 7 | MED | `sw costs set <model>` prices the model on every kind, GB10 included | `catalogue.py:67` |
-| 8 | MED | `kind = "openai"` with a custom `base_url` sends the real `OPENAI_API_KEY` to that host | `llm_settings.py:79`; `servers.py` |
+| 8 | MED | `kind = "openai"` with a custom `base_url` sends the real `OPENAI_API_KEY` to that host. **Fixed** 2026-10-08: refused at load unless the entry names that host's key | `llm_settings.py:79`; `servers.py` |
 | 9 | MED | A secret pasted into `api_key_env` is printed by `config show` and errors | `llm_settings.py:408` |
 | 10 | MED | `schema_version = "2"`, `0`, `true` accepted | `llm_settings.py:221` |
 | 11 | MED | Project file has no `schema_version` gate | `ProjectLlmSection` |

@@ -253,7 +253,9 @@
         "tests/unit/infrastructure/llm/test_adapter_addresses.py",
         "tests/unit/infrastructure/llm/test_servers.py",
         "tests/unit/infrastructure/llm/test_adapter_output_limit.py",
-        "tests/integration/infrastructure/llm/test_server_settings_integration.py"
+        "tests/integration/infrastructure/llm/test_server_settings_integration.py",
+        "tests/unit/core/config/test_provider_key_stays_with_provider.py",
+        "tests/integration/infrastructure/llm/test_provider_key_leak.py"
       ],
       "mutants": [
         {
@@ -315,6 +317,26 @@
           "new": "    sends_sampling: ClassVar[bool] = True\n",
           "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
           "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
+        },
+        {
+          "id": "provider-key-to-any-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "ServerEntry._key_variable_and_address",
+          "old": "            if not _is_providers_own(self.kind, self.base_url):\n",
+          "new": "            if False:\n",
+          "breaks": "OPENAI_API_KEY is sent to whatever host base_url names",
+          "symbol_sha": "sha256:b64517d89d772a3ae8c932c44654f868e02ef16ff9c4b8abc68b26fb6dcf034c"
+        },
+        {
+          "id": "lookalike-host-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_is_providers_own",
+          "old": "    return domain is not None and (host == domain or host.endswith(f\".{domain}\"))\n",
+          "new": "    return domain is not None and domain in host\n",
+          "breaks": "openai.com.evil.example gets the OpenAI key",
+          "symbol_sha": "sha256:351d02e27847cf605085699c1b182eaf4043c03f6b1281e56e9350ba074ccd2e"
         }
       ]
     },
