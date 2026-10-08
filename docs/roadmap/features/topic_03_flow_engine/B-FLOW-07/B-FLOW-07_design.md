@@ -102,7 +102,7 @@ None.
 
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
-| AD-1 | The step limit is worked out in `llm_for`, cached for the step (a handler may call `llm_for` for every call), and travels on the call's `GenerationConfig` to `RoleResolver._scope` | `llm_for` is where a step meets its model and already stamps run and task; the brake stays free of database access | No |
+| AD-1 | The step limit is worked out in `RoleResolver._scope`, from the step and DAL `llm_for` stamps on the call's config, and cached per run and group (changed at SF-02 planning, 2026-10-08: the resolver already knows the unit and holds the settings) | `llm_for` is where a step meets its model and already stamps run and task; the brake stays free of database access | No |
 | AD-2 | The history is read with `Database.connect()` (sync sqlite) | `llm_for` is sync and runs inside the event loop; the async session would have to re-enter it | No |
 | AD-3 | The new columns are added by `bootstrap_database`, like `_allow_unknown_cost`; `projects.default_dal` changes from `DAL_A` to `DAL_C` in the same place | this table's schema already lives there; no user holds a deliberately set DAL, since no command sets one | No |
 | AD-4 | The step's limit key carries the run and the step, so retries share it and sub-runs do not | FR-7 | No |
@@ -161,7 +161,7 @@ None.
 - **Inputs**: the history from SF-01; `[step_limits]`
 - **Outputs**: a step limit in each call's scope; `sw config show` rows
 - **Depends on**: SF-01
-- **Impl Plan**: —
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_sf02_implementation_plan.md
 
 ## Execution Order
 
@@ -173,7 +173,7 @@ None.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The history | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Step limits | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Step limits | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 

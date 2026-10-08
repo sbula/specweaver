@@ -4,7 +4,7 @@
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_sf02_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: APPROVED `[agreed 2026-10-08]`
 
 ## Scope
 

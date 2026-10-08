@@ -235,6 +235,13 @@ def to_usd(amount: float, currency: Currency | None) -> float:
     return amount if currency is None else amount / currency.per_usd
 
 
+class StepLimits(_Strict):
+    """How a step's limit is taken from the history of similar steps; no value in code."""
+
+    percentile: int = Field(ge=1, le=100)
+    min_steps: int = Field(ge=1)
+
+
 class MachineLlmFile(_Strict):
     """`~/.specweaver/settings.toml`."""
 
@@ -244,6 +251,7 @@ class MachineLlmFile(_Strict):
     roles: dict[RoleName, RoleEntry] = Field(default_factory=dict)
     brake: BrakeValues = Field(default_factory=BrakeValues)
     models: dict[str, ModelFacts] = Field(default_factory=dict)
+    step_limits: StepLimits | None = None
 
 
 class ProjectLlmSection(_Strict):
@@ -459,6 +467,20 @@ def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:
     )
 
 
+def _step_limit_rows(files: LlmSettingsFiles) -> list[tuple[str, str, str]]:
+    limits = files.machine.step_limits
+    if limits is None:
+        return [("step_limits", "off — [step_limits] is not set", "-")]
+    return [
+        (
+            f"step_limits.{name}",
+            str(getattr(limits, name)),
+            f"{files.machine_source}:{path_line(files.machine_text, ('step_limits', name))}",
+        )
+        for name in StepLimits.model_fields
+    ]
+
+
 def _file_role_rows(roles: dict[str, ResolvedRole]) -> list[tuple[str, str, str]]:
     """Each role as the settings files set it."""
     rows: list[tuple[str, str, str]] = []
@@ -507,6 +529,7 @@ def settings_report(
             rows.append((f"brake.{name}", _number(value), at.format(line)))
     rows.extend(_stored_limits(files, "roles", machine.roles.items()))
     rows.extend(_stored_limits(files, "models", machine.models.items()))
+    rows.extend(_step_limit_rows(files))
     if machine.currency is None:
         rows.append(("currency", "not set — costs are shown in USD", BUILT_IN))
     else:

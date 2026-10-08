@@ -195,3 +195,31 @@ def test_a_value_the_server_never_receives_says_so(
     assert result.exit_code == 0, result.output
     assert shows(result.output, "roles.review.temperature = 0.3 — not sent: openai ignores it")
     assert shows(result.output, "roles.draft.temperature = 1.0 (catalogue)")
+
+
+def test_step_limits_are_shown_with_their_lines(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    text = _MACHINE + "\n[step_limits]\npercentile = 90\nmin_steps = 10\n"
+    (_isolate_env / "settings.toml").write_text(text, encoding="utf-8")
+    _project(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert result.exit_code == 0, result.output
+    line = text.splitlines().index("percentile = 90") + 1
+    assert shows(
+        result.output, f"step_limits.percentile = 90 ({_isolate_env / 'settings.toml'}:{line})"
+    )
+    assert shows(result.output, "step_limits.min_steps = 10")
+
+
+def test_without_step_limits_show_says_they_are_off(
+    tmp_path: Path, _mock_db: Database, _isolate_env: Path
+) -> None:
+    (_isolate_env / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+    _project(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+
+    assert shows(result.output, "step_limits = off — [step_limits] is not set")

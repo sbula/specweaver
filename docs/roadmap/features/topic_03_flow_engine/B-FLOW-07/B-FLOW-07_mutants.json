@@ -169,6 +169,54 @@
           "symbol_sha": "sha256:42c9109530ec23d41493aec11395f91db5ea5fd39157d1d3f1f22af581b8ea44"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Step-limit settings in the machine file, checked when read",
+      "scope": [
+        "tests/unit/core/config/test_step_limits_settings.py"
+      ],
+      "mutants": [
+        {
+          "id": "percentile-unbounded",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "StepLimits",
+          "old": "    percentile: int = Field(ge=1, le=100)\n",
+          "new": "    percentile: int = Field(ge=0)\n",
+          "breaks": "a percentile of 0 or 150 is accepted",
+          "symbol_sha": "sha256:504cdc06fd46c866910794ab3f7623c7a36438664fa887d930106cce373ea3b4"
+        },
+        {
+          "id": "min-steps-zero",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "StepLimits",
+          "old": "    min_steps: int = Field(ge=1)\n",
+          "new": "    min_steps: int = Field(ge=0)\n",
+          "breaks": "a step limit is taken from no history at all",
+          "symbol_sha": "sha256:504cdc06fd46c866910794ab3f7623c7a36438664fa887d930106cce373ea3b4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Off when not set, and said so",
+      "scope": [
+        "tests/e2e/capabilities/core/test_llm_settings_show_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "off-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "_step_limit_rows",
+          "old": "        return [(\"step_limits\", \"off — [step_limits] is not set\", \"-\")]\n",
+          "new": "        return []\n",
+          "breaks": "the user cannot see that step limits are off",
+          "symbol_sha": "sha256:67d938fedd2749a43cbfa2744102b68f6758ee7dc249eb641dfb56150698ec41"
+        }
+      ]
     }
   ]
 }
