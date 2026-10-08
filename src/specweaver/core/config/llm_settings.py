@@ -156,8 +156,8 @@ class ModelFacts(_Strict):
     context: int | None = Field(default=None, ge=1)
     max_output: int | None = Field(default=None, ge=1)
     tool_calls: bool | None = None
-    usd_per_million_input: float | None = Field(default=None, ge=0)
-    usd_per_million_output: float | None = Field(default=None, ge=0)
+    usd_per_million_input: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    usd_per_million_output: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     #: One output limit also bounds the model's hidden thinking, so a call's cost has a ceiling.
     thinking_in_output_cap: bool | None = None
     sampling: Sampling | None = None
@@ -210,6 +210,13 @@ class Currency(_Strict):
     code: str = Field(pattern=r"^[A-Z]{3}$")
     per_usd: float = Field(gt=0)
     rate_date: date
+
+    @model_validator(mode="after")
+    def _rate_from_the_past(self) -> Currency:
+        if self.rate_date > date.today():
+            msg = f"rate_date {self.rate_date} is in the future; give the date the rate was read"
+            raise ValueError(msg)
+        return self
 
 
 def format_money(usd: float | None, currency: Currency | None, *, places: int = 2) -> str:

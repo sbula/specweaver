@@ -11,6 +11,7 @@ write replaces the file in one step, so a command never leaves a broken file beh
 from __future__ import annotations
 
 import os
+import stat
 from typing import TYPE_CHECKING, Any
 
 import tomlkit
@@ -41,8 +42,8 @@ def set_model_price(model: str, usd_input: float, usd_output: float) -> Path:
     document = _read(path)
     models = document.setdefault("models", tomlkit.table(is_super_table=True))
     entry = models.setdefault(model, tomlkit.table())
-    entry["usd_per_million_input"] = usd_input
-    entry["usd_per_million_output"] = usd_output
+    entry["usd_per_million_input"] = _tidy(usd_input)
+    entry["usd_per_million_output"] = _tidy(usd_output)
     _write(path, document)
     return path
 
@@ -104,9 +105,17 @@ def _assign_role(roles: Any, role: str, value: str) -> None:
         roles[role] = value
 
 
+def _tidy(price: float) -> float:
+    """A price converted from another currency, without float noise like 0.30000000000000004."""
+    return float(f"{price:.12g}")
+
+
 def _text(path: Path | None) -> str:
-    # utf-8-sig: an editor's byte order mark is not part of the TOML.
-    return path.read_text(encoding="utf-8-sig") if path is not None and path.is_file() else ""
+    # utf-8-sig: an editor's byte order mark is not part of the TOML. newline="": keep CRLF.
+    if path is None or not path.is_file():
+        return ""
+    with path.open(encoding="utf-8-sig", newline="") as file:
+        return file.read()
 
 
 def _read(path: Path) -> TOMLDocument:
@@ -130,5 +139,9 @@ def _replace(path: Path, text: str) -> None:
     """Write in one step: the file is either the old text or the new, never half of each."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".toml.tmp")
-    temporary.write_text(text, encoding="utf-8")
+    if path.is_file() and "\r\n" in _text(path):
+        text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+    temporary.write_text(text, encoding="utf-8", newline="")
+    if path.is_file():
+        os.chmod(temporary, stat.S_IMODE(path.stat().st_mode))
     os.replace(temporary, path)

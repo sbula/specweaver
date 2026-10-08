@@ -556,7 +556,8 @@
       "scope": [
         "tests/unit/core/config/test_llm_money.py",
         "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py",
-        "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py"
+        "tests/unit/infrastructure/llm/interfaces/test_usage_cost_cell.py",
+        "tests/integration/infrastructure/llm/interfaces/test_usage_with_a_broken_settings_file.py"
       ],
       "mutants": [
         {
@@ -578,6 +579,16 @@
           "new": "    return amount\n",
           "breaks": "a price typed in CHF is stored as that many USD",
           "symbol_sha": "sha256:2072433d845576d197b0ccaf3a0fa672bb4639b2b5d2b0199965a921e9753d49"
+        },
+        {
+          "id": "usage-hidden-by-broken-file",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "usage",
+          "old": "    currency = _currency_or_usd()\n",
+          "new": "    currency = _machine_currency()\n",
+          "breaks": "a broken settings file hides past spend from sw usage",
+          "symbol_sha": "sha256:2d99824175e8b7bd157a48a37816c29aed1f35723fc424fb27f9ab6a9b7f8106"
         }
       ]
     },
@@ -670,6 +681,56 @@
           "new": "        cleared = clear_model_price(model)\n    except ZeroDivisionError as err:\n",
           "breaks": "sw costs reset on a broken file ends in a raw traceback",
           "symbol_sha": "sha256:d6300fbb60a0cbf2edcbbd192907c64f29c1ba0f9c554d957e674ca3c04f02e5"
+        },
+        {
+          "id": "crlf-lost",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_replace",
+          "old": "    if path.is_file() and \"\\r\\n\" in _text(path):\n",
+          "new": "    if False:\n",
+          "breaks": "a Windows file comes back with Unix line endings",
+          "symbol_sha": "sha256:7fb927b3535c0ec719a93988955a7bcac9853d4bb655c833c790f4145032b6c6"
+        },
+        {
+          "id": "mode-widened",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_replace",
+          "old": "        os.chmod(temporary, stat.S_IMODE(path.stat().st_mode))\n",
+          "new": "        pass\n",
+          "breaks": "a settings file kept private (600) becomes readable by others",
+          "symbol_sha": "sha256:7fb927b3535c0ec719a93988955a7bcac9853d4bb655c833c790f4145032b6c6"
+        },
+        {
+          "id": "float-noise",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
+          "symbol": "_tidy",
+          "old": "    return float(f\"{price:.12g}\")\n",
+          "new": "    return price\n",
+          "breaks": "a converted price is written as 0.30000000000000004",
+          "symbol_sha": "sha256:2ae701aa63983981d436f882d210d69695c0af751485bb62165368b9457f5089"
+        },
+        {
+          "id": "infinite-price",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "ModelFacts",
+          "old": "    usd_per_million_input: float | None = Field(default=None, ge=0, allow_inf_nan=False)\n",
+          "new": "    usd_per_million_input: float | None = Field(default=None, ge=0)\n",
+          "breaks": "a price of inf is stored, and every hosted call stops",
+          "symbol_sha": "sha256:ca1e34006e29ffaeda0e6fcc61f51dba552d2c1544a54d950b4b80fee3c465b6"
+        },
+        {
+          "id": "future-rate",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "Currency._rate_from_the_past",
+          "old": "        if self.rate_date > date.today():\n",
+          "new": "        if False:\n",
+          "breaks": "an exchange rate dated in the future is accepted",
+          "symbol_sha": "sha256:65ac43befec241ac80479c489d57de5af0c69146c463bee625c0f6ab04da7a98"
         }
       ]
     },

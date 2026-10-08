@@ -217,3 +217,50 @@ def test_the_loader_reads_a_file_saved_with_a_byte_order_mark(machine_file: Path
     machine_file.write_text(_EXISTING, encoding="utf-8-sig")
 
     assert "gb10" in load_llm_settings(None).machine.servers
+
+
+def test_windows_line_endings_survive_an_edit(machine_file: Path) -> None:
+    machine_file.write_bytes(_EXISTING.replace("\n", "\r\n").encode("utf-8"))
+
+    set_model_price("qwen3-coder-next", 1.0, 2.0)
+
+    raw = machine_file.read_bytes()
+    assert raw.count(b"\r\n") == raw.count(b"\n")
+
+
+def test_the_files_permissions_survive_an_edit(machine_file: Path) -> None:
+    import os
+    import stat
+
+    machine_file.write_text(_EXISTING, encoding="utf-8")
+    os.chmod(machine_file, 0o600)
+
+    set_model_price("qwen3-coder-next", 1.0, 2.0)
+
+    assert stat.S_IMODE(machine_file.stat().st_mode) == 0o600
+
+
+def test_a_price_is_stored_without_float_noise(machine_file: Path) -> None:
+    set_model_price("m", 0.1 + 0.2, 1.0 / 3.0)
+
+    text = machine_file.read_text(encoding="utf-8")
+    assert "0.30000000000000004" not in text
+    assert "usd_per_million_input = 0.3\n" in text
+
+
+@pytest.mark.parametrize("price", [float("inf"), float("nan")])
+def test_an_infinite_or_missing_number_is_refused(machine_file: Path, price: float) -> None:
+    with pytest.raises(SettingsFileError):
+        set_model_price("m", price, 1.0)
+
+    assert not machine_file.exists()
+
+
+def test_an_exchange_rate_dated_in_the_future_is_refused() -> None:
+    from datetime import date, timedelta
+
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    text = f'[currency]\ncode = "CHF"\nper_usd = 0.8\nrate_date = {tomorrow}\n'
+
+    with pytest.raises(SettingsFileError, match="future"):
+        parse_machine_file(text, "settings.toml")

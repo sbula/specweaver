@@ -135,6 +135,20 @@ def _machine_currency() -> Currency | None:
         raise typer.Exit(code=1) from err
 
 
+def _currency_or_usd() -> Currency | None:
+    """The currency to show past spend in; a broken settings file must not hide that spend."""
+    try:
+        return load_llm_settings(None).machine.currency
+    except SettingsFileError as err:
+        _core.console.print(
+            f"Settings file not read ({err}); amounts are in USD.",
+            style="yellow",
+            markup=False,
+            highlight=False,
+        )
+        return None
+
+
 def _models_in_use(roles: dict[str, ResolvedRole]) -> dict[tuple[str, str], list[str]]:
     used: dict[tuple[str, str], list[str]] = {}
     for name, setting in sorted(roles.items()):
@@ -235,7 +249,7 @@ def usage(
     by task type and model.
     """
     db = _core.get_db()
-    currency = _machine_currency()
+    currency = _currency_or_usd()
 
     project: str | None = None
     if not all_projects:
