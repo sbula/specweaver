@@ -104,7 +104,7 @@ Sketch:
 
 ```python
 # Extract the target architecture baseline
-dal = dal_resolver.resolve(target.path) or context.db.get_default_dal()
+dal = target_dal(context, target.path)  # nearest context.yaml, else the project's default DAL
 
 # Map bounding thresholds locally and merge
 if dal_settings := context.settings.dal_matrix.matrix.get(dal):

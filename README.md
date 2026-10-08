@@ -73,7 +73,8 @@ sw check specs/greeter_spec.md
 The LLM commands — `sw draft`, `sw review`, `sw implement` — need a model chosen in
 `~/.specweaver/settings.toml` (a server, a role and the `[brake]` limits; there is no built-in model
 and no built-in limit) and the provider's key in the environment. `--model <model@server>` picks a
-different model for one run. Other providers: `uv sync --extra all-llm`. See the
+different model for one run. Optional `[step_limits]` stop a step that would cost far more than
+similar steps usually do. Other providers: `uv sync --extra all-llm`. See the
 [installation guide](docs/user_guides/1_installation_and_setup.md).
 
 ## Testing

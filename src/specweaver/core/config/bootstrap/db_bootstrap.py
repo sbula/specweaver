@@ -59,11 +59,7 @@ _HISTORY_COLUMNS = ("server", "dal_level", "step_name")
 
 
 def _add_history_columns(conn: Connection) -> None:
-    """Add the history columns to an older `llm_usage_log`. Keeps every row. Idempotent.
-
-    Done once, in the same step: projects move from the old default DAL_A to DAL_C. No command
-    sets a project's DAL, so every DAL_A here is the old default, not a choice.
-    """
+    """Add the history columns to an older `llm_usage_log`. Keeps every row. Idempotent."""
     present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(llm_usage_log)")}
     missing = [name for name in _HISTORY_COLUMNS if name not in present]
     if not missing:
@@ -74,9 +70,24 @@ def _add_history_columns(conn: Connection) -> None:
         "CREATE INDEX IF NOT EXISTS ix_llm_usage_history "
         "ON llm_usage_log (task_type, model, dal_level)"
     )
+
+
+def _move_default_dal_once(conn: Connection) -> None:
+    """Move projects from the old default DAL_A to DAL_C, once per database.
+
+    No command sets a project's DAL, so every DAL_A at this point is the old default, not a choice.
+    A marker keeps a later start from undoing a DAL_A set on purpose.
+    """
+    conn.exec_driver_sql("CREATE TABLE IF NOT EXISTS specweaver_migrations (name TEXT PRIMARY KEY)")
+    done = conn.exec_driver_sql(
+        "SELECT 1 FROM specweaver_migrations WHERE name = 'default_dal_c'"
+    ).fetchone()
+    if done:
+        return
     conn.exec_driver_sql(
         "UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'"
     )
+    conn.exec_driver_sql("INSERT INTO specweaver_migrations (name) VALUES ('default_dal_c')")
 
 
 def bootstrap_database(db_path: str) -> None:
@@ -100,6 +111,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(FlowBase.metadata.create_all)
             await conn.run_sync(_allow_unknown_cost)
             await conn.run_sync(_add_history_columns)
+            await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)
 
         await engine.dispose()

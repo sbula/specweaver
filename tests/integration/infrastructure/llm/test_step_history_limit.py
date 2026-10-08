@@ -118,3 +118,22 @@ def test_an_unpriced_step_is_left_out_of_a_money_history(db: Database) -> None:
 
     assert _limit(db, "usd") is None
     assert _limit(db) == 100
+
+
+def test_a_history_that_cost_nothing_gives_no_limit(db: Database) -> None:
+    for n in range(1, 11):
+        _step(db, n, tokens=0, cost=0.0)
+
+    assert _limit(db) is None
+    assert _limit(db, "usd") is None
+
+
+def test_a_runs_outcomes_are_replaced_whole(db: Database) -> None:
+    from specweaver.infrastructure.llm.store import record_step_outcomes
+
+    record_step_outcomes(db, "r1", {"a": "passed", "b": "passed"})
+    record_step_outcomes(db, "r1", {"a": "passed"})
+
+    with db.connect() as conn:
+        rows = conn.execute("SELECT step_name FROM llm_step_outcome WHERE run_id = 'r1'").fetchall()
+    assert [tuple(row) for row in rows] == [("a",)]

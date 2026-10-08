@@ -110,6 +110,7 @@ proven through `/review`, not `/implement`).
 | C-VAL-02 | "Produces bulk-written overrides" is false | `core/config/profiles.py:7` |
 | TECH-004 FR-6 | `resolve_service_name` unused and always "default" | `assurance/graph/loader.py:62` |
 | C-FLOW-01 (REST) | `POST /review`, `/implement` crashed on every call until `67f51443`; now works, still weakly tested | `test_telemetry_wiring.py` mocks |
+| C-FLOW-01 (REST pipelines), found 2026-10-08 | `POST /pipelines/{name}/run` and `/runs/{id}/resume` build their run with no model router and no database: a step that needs a model fails, no cost history or outcome is written; the returned run id was never the run's. **Fixed** 2026-10-08 | `interfaces/api/v1/pipelines.py:56,148` |
 
 **Baselines hiding debt:** `fr_uncited.json` (127 FRs, undercounts by ≥ 20 — the sweep only scans
 some roadmap lines and skips unparsable FR tables); `nfr_uncited.json` (120 behavioural NFRs, most

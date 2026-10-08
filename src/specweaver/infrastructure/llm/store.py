@@ -1,7 +1,7 @@
-import math
-
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+import math
 from datetime import datetime
 from typing import Any
 
@@ -53,10 +53,9 @@ class LlmStepOutcome(Base):
 
 
 def record_step_outcomes(db: Any, run_id: str, outcomes: dict[str, str]) -> None:
-    """Store how each of a run's steps ended; a later end of the same run replaces it."""
-    if not outcomes:
-        return
+    """Store how each of a run's steps ended; a later end of the same run replaces them all."""
     with db.connect() as conn:
+        conn.execute("DELETE FROM llm_step_outcome WHERE run_id = ?", (run_id,))
         conn.executemany(
             "INSERT OR REPLACE INTO llm_step_outcome (run_id, step_name, outcome) VALUES (?, ?, ?)",
             [(run_id, step, outcome) for step, outcome in outcomes.items()],
@@ -92,7 +91,8 @@ def step_history_limit(
         ).fetchall()
     if len(rows) < steps:
         return None
-    return nearest_rank([row[1] if unit == "usd" else row[0] for row in rows], percentile)
+    value = nearest_rank([row[1] if unit == "usd" else row[0] for row in rows], percentile)
+    return value if value > 0 else None
 
 
 def nearest_rank(values: list[float], percentile: int) -> float:

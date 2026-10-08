@@ -6,7 +6,8 @@
       "requirement": "FR-1",
       "title": "Each call says where it ran and for what",
       "scope": [
-        "tests/integration/core/flow/engine/test_calls_record_where_they_ran.py"
+        "tests/integration/core/flow/engine/test_calls_record_where_they_ran.py",
+        "tests/e2e/capabilities/interfaces/test_api_pipeline_run_models_e2e.py"
       ],
       "mutants": [
         {
@@ -48,6 +49,26 @@
           "new": "            step_name=None,\n",
           "breaks": "the step is known in memory and lost in the database",
           "symbol_sha": "sha256:27011f44a120a5dcf6bb68a4a9c779abd016cf0f82d68653af4bfc607741d213"
+        },
+        {
+          "id": "rest-run-id-lost",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "        bridge.start_run(run_id, runner.run(run_id=run_id))\n",
+          "new": "        bridge.start_run(run_id, runner.run())\n",
+          "breaks": "GET /runs/{id} never finds a run started over REST",
+          "symbol_sha": "sha256:f6a0ee5103a451f9ce5c094d31bc8c41281d9d86e6ae3653a1d6b171bde668c4"
+        },
+        {
+          "id": "rest-run-without-models",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "        db=db,\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "new": "        db=db,\n",
+          "breaks": "a REST pipeline step that needs a model fails",
+          "symbol_sha": "sha256:f6a0ee5103a451f9ce5c094d31bc8c41281d9d86e6ae3653a1d6b171bde668c4"
         }
       ]
     },
@@ -107,7 +128,17 @@
           "old": "    if not missing:\n        return\n",
           "new": "    if not missing:\n        conn.exec_driver_sql(\"UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'\")\n        return\n",
           "breaks": "every start undoes a DAL_A set on purpose",
-          "symbol_sha": "sha256:afff48c68a7951edff76c54c72d6b08935245de5428be089e4618178aa394b4c"
+          "symbol_sha": "sha256:ec5e159f2c8cd08bffd2fd3bd3b434d5067472eddd8b2ea959f5881d7caef759"
+        },
+        {
+          "id": "dal-move-every-start",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_move_default_dal_once",
+          "old": "    if done:\n        return\n",
+          "new": "    if False:\n        return\n",
+          "breaks": "a later start undoes a DAL_A set on purpose",
+          "symbol_sha": "sha256:2e2efdc94616e6f48d608957cd1fd176343516b3807ae46766d21350ddf392a0"
         }
       ]
     },
@@ -148,6 +179,16 @@
           "new": "    return {r.step_name: ended.get(r.status, \"passed\") for r in run.step_records}\n",
           "breaks": "a parked step's partial cost counts as finished work",
           "symbol_sha": "sha256:3f31fbc80016b2ac4c997c1462bf754542008dfbf3789c9f7b7ec52776a91ec6"
+        },
+        {
+          "id": "stale-outcome-kept",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "record_step_outcomes",
+          "old": "        conn.execute(\"DELETE FROM llm_step_outcome WHERE run_id = ?\", (run_id,))\n",
+          "new": "        pass\n",
+          "breaks": "a step that passed, then looped back and never ended, still counts as passed",
+          "symbol_sha": "sha256:57fd06fad48c909811f73f0a1f84c1671c39df2f9b834f5db7d2f0f9dd378a61"
         }
       ]
     },
@@ -167,6 +208,16 @@
           "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
           "breaks": "the same model on two servers shows one server's spend on both",
           "symbol_sha": "sha256:42c9109530ec23d41493aec11395f91db5ea5fd39157d1d3f1f22af581b8ea44"
+        },
+        {
+          "id": "old-spend-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs",
+          "old": "        if where is None:  # recorded before the server was stored\n",
+          "new": "        if False:\n",
+          "breaks": "spend from before the upgrade disappears from sw costs",
+          "symbol_sha": "sha256:cf3e00c4f1e891d313a9d3b5c2db54d86d474c3f0c74dd693e194eed5c9fccf1"
         }
       ]
     },
@@ -264,6 +315,16 @@
           "new": "    having = \"\"\n",
           "breaks": "a step with an unknown cost lowers a money limit",
           "symbol_sha": "sha256:c10a6e9e9aceaa2189a06ab087627838de5402204e064fa8b407665f06a4d160"
+        },
+        {
+          "id": "zero-limit",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "    return value if value > 0 else None\n",
+          "new": "    return value\n",
+          "breaks": "a history that cost nothing gives a limit of 0 and the brake divides by it",
+          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
         }
       ]
     },
@@ -313,6 +374,16 @@
           "new": "            run_model=run_model,\n",
           "breaks": "sw run and sw implement never apply step limits",
           "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
+        },
+        {
+          "id": "step-limit-advice-wrong",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/budget.py",
+          "symbol": "_advice",
+          "old": "    if setting.startswith(STEP_LIMIT_PREFIX):\n",
+          "new": "    if False:\n",
+          "breaks": "the user is told to raise a setting that does not exist",
+          "symbol_sha": "sha256:7fe2cbf94077e899adea1379d1a5fc4aa6041e809dc6650b979d8b242c31a7e3"
         }
       ]
     },

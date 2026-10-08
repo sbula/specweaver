@@ -153,7 +153,10 @@ async def test_a_call_that_would_cross_parks_naming_the_step_limit(tmp_path: Pat
 
     assert seen == []
     assert run.status is RunStatus.PARKED
-    assert "step_limits.review.review_it" in (run.step_records[0].result.error_message or "")
+    message = run.step_records[0].result.error_message or ""
+    assert "step_limits.review.review_it" in message
+    assert "similar steps" in message
+    assert "settings.toml" not in message or "[step_limits]" in message
 
 
 async def test_without_step_limits_the_step_completes(tmp_path: Path) -> None:
@@ -205,3 +208,21 @@ async def test_the_history_is_read_once_per_run_and_group(tmp_path: Path) -> Non
         await PipelineRunner(_pipeline(), context, registry=registry).run()
 
     assert read.call_count == 1
+
+
+async def test_each_run_reads_the_history_again(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from specweaver.infrastructure.llm import resolve
+
+    db, context, registry = _world(tmp_path, max_output=10)
+    _history(db, tokens=1000)
+
+    with (
+        patch.object(resolve, "step_history_limit", wraps=resolve.step_history_limit) as read,
+        fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(20))),
+    ):
+        for _ in range(2):
+            await PipelineRunner(_pipeline(), context, registry=registry).run()
+
+    assert read.call_count == 2

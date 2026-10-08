@@ -36,7 +36,7 @@ settles them. Pick one; do not start another until it is done.*
 | # | Item | Gain | Cost | Next step |
 |---|---|---|---|---|
 | 1 | `B-FLOW-05` brake | high — the model and role limits and the unpriced-model refusal now act on every call | low — the audit's remaining rows | finish the audit fixes |
-| 2 | `B-FLOW-07` spend-limit matrix | high — a limit per model × kind of task × DAL; today a task limit sits inside its role entry and DAL plays no part | medium-high — a new settings shape; ties to `A-FLOW-01` | grill, then design |
+| 2 | `B-FLOW-07` spend-limit matrix | high — a limit per model × kind of task × DAL; today a task limit sits inside its role entry and DAL plays no part | medium-high — a new settings shape; ties to `A-FLOW-01` | built 2026-10-08 (lean); awaiting sign-off |
 | 3 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user; it removes the `RLIMIT_NPROC` backstop | medium — Linux-only, cgroups v2 delegation | design (stub) |
 | 4 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
 | 5 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted: since `INT-US-24`, LLM-written scenario tests run over LLM-generated code | medium-high — allow-list derivation for any pipeline | design (stub) |

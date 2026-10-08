@@ -306,12 +306,6 @@ class WorkspaceRepository:
         project.stitch_mode = mode_lower
         await self.session.flush()
 
-    async def get_default_dal(self, project_name: str) -> str:
-        project = await self.session.get(Project, project_name)
-        if not project:
-            raise ValueError(f"Project '{project_name}' not found")
-        return project.default_dal
-
     async def set_default_dal(self, project_name: str, dal: str) -> None:
         project = await self.session.get(Project, project_name)
         if not project:

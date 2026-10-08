@@ -132,7 +132,7 @@ class PipelineRunner:
         """
         return self._current_run_id
 
-    async def run(self, parent_run_id: str | None = None) -> PipelineRun:
+    async def run(self, parent_run_id: str | None = None, run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
 
         Args:
@@ -146,7 +146,7 @@ class PipelineRunner:
         now = _now_iso()
 
         run = PipelineRun(
-            run_id=str(uuid.uuid4()),
+            run_id=run_id or str(uuid.uuid4()),
             parent_run_id=parent_run_id,
             pipeline_name=self._pipeline.name,
             project_name=self._context.project_path.name,

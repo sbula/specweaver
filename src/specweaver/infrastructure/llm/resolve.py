@@ -21,7 +21,7 @@ from specweaver.core.config.llm_settings import (
     to_usd,
 )
 from specweaver.core.config.toml_lines import line_of
-from specweaver.infrastructure.llm.budget import CallScope, Limit, Unit
+from specweaver.infrastructure.llm.budget import STEP_LIMIT_PREFIX, CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig
@@ -236,7 +236,7 @@ class RoleResolver:
         if value is None:
             return ()
         # The run keeps sub-runs that share a step name apart; retries share the key.
-        key = f"step_limits.{task}.{config.step_name}"
+        key = f"{STEP_LIMIT_PREFIX}{task}.{config.step_name}"
         return (Limit(f"{key}@{config.run_id[:8]}" if config.run_id else key, unit, value),)
 
 

@@ -66,15 +66,23 @@ def costs(ctx: typer.Context) -> None:
         price_in = facts.usd_per_million_input if facts else None
         price_out = facts.usd_per_million_output if facts else None
         spent, unpriced = spend.get((model, server), (None, 0))
-        month = format_money(spent or 0.0, currency) + (
-            f" + {unpriced} unknown" if unpriced else ""
-        )
         _say(
             f"{model}@{server} ({', '.join(role_names)}): "
             f"input {format_money(price_in, currency, places=4)}, "
             f"output {format_money(price_out, currency, places=4)} per 1M tokens"
-            f" — {_price_source(kind, model, facts, files)}; this month {month}"
+            f" — {_price_source(kind, model, facts, files)}; this month "
+            f"{_month(spent, unpriced, currency)}"
         )
+    for (old_model, where), (old_spent, old_unpriced) in sorted(
+        spend.items(), key=lambda item: item[0][0]
+    ):
+        if where is None:  # recorded before the server was stored
+            month = _month(old_spent, old_unpriced, currency)
+            _say(f"{old_model}, server not recorded: this month {month}")
+
+
+def _month(spent: float | None, unpriced: int, currency: Currency | None) -> str:
+    return format_money(spent or 0.0, currency) + (f" + {unpriced} unknown" if unpriced else "")
 
 
 @costs_app.command("set")

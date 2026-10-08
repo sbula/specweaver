@@ -81,8 +81,22 @@ class BudgetExceededError(Exception):
         self.setting = setting
         super().__init__(
             f"LLM spend brake: {reason}. No further requests will be sent this run. "
-            f"Raise `{setting}` in settings.toml if this run is legitimate."
+            + _advice(setting)
         )
+
+
+def _advice(setting: str) -> str:
+    if setting.startswith(STEP_LIMIT_PREFIX):
+        return (
+            "This step would cost more than similar steps usually do (the `[step_limits]` "
+            "percentile of the last passed ones); answer yes to go on, or change `[step_limits]` "
+            "in settings.toml."
+        )
+    return f"Raise `{setting}` in settings.toml if this run is legitimate."
+
+
+#: The key of every step limit starts with this.
+STEP_LIMIT_PREFIX = "step_limits."
 
 
 class SpendLimitReachedError(BudgetExceededError):

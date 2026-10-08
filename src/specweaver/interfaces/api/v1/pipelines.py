@@ -57,6 +57,8 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
         project_path=project_root,
         spec_path=Path(run.spec_path),
         output_dir=project_root / "src",
+        db=db,
+        model=_models_for(pipeline_def, project_root, run.project_name, db),
     )
     await _apply_isolation(context, db, run.project_name)
 
@@ -78,6 +80,18 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
             error_code="MAX_CONCURRENT_RUNS",
             status_code=429,
         ) from exc
+
+
+def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:
+    """The run's model access: a router for the roles its steps use; none when no step needs one."""
+    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.core.flow.handlers.run_context import ModelAccess
+    from specweaver.interfaces.api.v1._llm import api_router
+
+    roles = roles_of(pipeline)
+    if not roles:
+        return ModelAccess()
+    return ModelAccess(llm_router=api_router(project_root, project, roles, db))
 
 
 async def _apply_isolation(context: RunContext, db: Database, project: str) -> None:
@@ -148,6 +162,8 @@ async def start_pipeline_run(
         project_path=project_root,
         spec_path=spec_path,
         output_dir=project_root / "src",
+        db=db,
+        model=_models_for(pipeline_def, project_root, body.project, db),
     )
     await _apply_isolation(context, db, body.project)
 
@@ -172,7 +188,7 @@ async def start_pipeline_run(
 
     # Start background run
     try:
-        bridge.start_run(run_id, runner.run())
+        bridge.start_run(run_id, runner.run(run_id=run_id))
     except RuntimeError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),

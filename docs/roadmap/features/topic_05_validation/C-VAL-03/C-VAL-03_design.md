@@ -24,7 +24,7 @@ are basic startup scripts (DAL E).
 ```mermaid
 graph LR
     T["target file"] --> R["DALResolver<br/>walk up to project_root"]
-    R -->|"none found"| D["db.get_default_dal()<br/>seeded DAL_A"]
+    R -->|"none found"| D["project default DAL<br/>(DAL_C since B-FLOW-07)"]
     R --> M["settings.dal_matrix<br/>packaged profiles + dal_definitions.yaml"]
     D --> M
     M --> P["apply_settings_to_pipeline()"]

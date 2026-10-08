@@ -100,6 +100,7 @@ def _drop_new_columns(path: Path) -> None:
         for column in ("server", "dal_level", "step_name"):
             conn.execute(f"ALTER TABLE llm_usage_log DROP COLUMN {column}")
         conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
+        conn.execute("DROP TABLE specweaver_migrations")
 
 
 def test_an_old_database_moves_to_dal_c_once(tmp_path: Path, db: Database) -> None:
@@ -127,3 +128,24 @@ def test_a_stored_value_that_is_not_a_dal_counts_as_none(tmp_path: Path, db: Dat
         conn.execute("UPDATE workspace_projects SET default_dal = 'NOT_A_DAL'")
 
     assert default_dal_at(db, root) is None
+
+
+def test_a_rebuilt_old_table_still_moves_to_dal_c(tmp_path: Path, db: Database) -> None:
+    _project(tmp_path, db)
+    path = tmp_path / "specweaver.db"
+    with sqlite3.connect(path) as conn:
+        conn.execute("DROP TABLE llm_usage_log")
+        conn.execute(
+            "CREATE TABLE llm_usage_log (id INTEGER PRIMARY KEY, timestamp VARCHAR NOT NULL, "
+            "project_name VARCHAR NOT NULL, task_type VARCHAR NOT NULL, model VARCHAR NOT NULL, "
+            "provider VARCHAR NOT NULL, prompt_tokens INTEGER NOT NULL, "
+            "completion_tokens INTEGER NOT NULL, total_tokens INTEGER NOT NULL, "
+            "estimated_cost FLOAT NOT NULL, duration_ms INTEGER NOT NULL, run_id VARCHAR)"
+        )
+        conn.execute("DROP TABLE IF EXISTS specweaver_migrations")
+        conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
+
+    bootstrap_database(str(path))
+
+    with sqlite3.connect(path) as conn:
+        assert conn.execute("SELECT default_dal FROM workspace_projects").fetchall() == [("DAL_C",)]

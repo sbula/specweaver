@@ -102,3 +102,30 @@ def test_a_finished_run_leaves_its_cost_history(tmp_path: Path, _isolate_env: Pa
     spare = shown.split("qwen3-coder-next@spare")[1]
     assert re.search(r"this month \S+ \S+ \+ \d+ unknown", gb10), gb10
     assert re.search(r"this month \S+ \S+$", spare.strip()), spare
+
+
+@pytest.mark.usefixtures("_mock_db")
+def test_spend_recorded_before_servers_were_stored_is_still_shown(
+    tmp_path: Path, _isolate_env: Path
+) -> None:
+    from datetime import UTC, datetime
+
+    (_isolate_env / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+    project = tmp_path / "proj"
+    project.mkdir()
+    assert runner.invoke(app, ["init", "old-rows", "--path", str(project)]).exit_code == 0
+    assert runner.invoke(app, ["use", "old-rows"]).exit_code == 0
+    with sqlite3.connect(_isolate_env / "specweaver.db") as conn:
+        conn.execute(
+            "INSERT INTO llm_usage_log (timestamp, project_name, task_type, model, provider, "
+            "prompt_tokens, completion_tokens, total_tokens, estimated_cost, duration_ms, run_id) "
+            "VALUES (?, 'old-rows', 'draft', 'qwen3-coder-next', 'x', 1, 1, 2, NULL, 1, 'r')",
+            (datetime.now(UTC).isoformat(),),
+        )
+
+    costs = runner.invoke(app, ["costs"])
+
+    shown = " ".join(costs.output.split())
+    assert re.search(
+        r"qwen3-coder-next, server not recorded: this month \S+ \S+ \+ 1 unknown", shown
+    ), shown
