@@ -11,7 +11,7 @@ this deliberately suppresses while a session is active.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 
@@ -90,8 +90,10 @@ async def execute_run(
         if run.status == RunStatus.COMPLETED:
             commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
             if commit_res.status != AtomStatus.SUCCESS:
-                raise RuntimeError(
-                    f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}"
+                _reconcile_failed(
+                    runner,
+                    run,
+                    f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}",
                 )
             merge_res = atom.run(
                 {
@@ -101,8 +103,10 @@ async def execute_run(
                 }
             )
             if merge_res.status != AtomStatus.SUCCESS:
-                raise RuntimeError(
-                    f"C-EXEC-06 reconcile: authorized strip-merge failed: {merge_res.message}"
+                _reconcile_failed(
+                    runner,
+                    run,
+                    f"C-EXEC-06 reconcile: authorized strip-merge failed: {merge_res.message}",
                 )
         return result
     finally:
@@ -111,3 +115,13 @@ async def execute_run(
         # A parked run keeps its worktree when it can be resumed.
         if not (run.status == RunStatus.PARKED and runner._store is not None):
             atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+
+
+def _reconcile_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:
+    """The run's work did not land: it is a failed run, in the store too, not a completed one."""
+    from specweaver.core.flow.engine.state import RunStatus
+
+    run.status = RunStatus.FAILED
+    runner._persist(run)
+    runner._emit("run_failed", run=run)
+    raise RuntimeError(message)

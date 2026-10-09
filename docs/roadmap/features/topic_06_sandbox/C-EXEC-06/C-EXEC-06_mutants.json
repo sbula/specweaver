@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "feature": "C-EXEC-06",
+  "campaigns": [
+    {
+      "requirement": "FR-4",
+      "title": "A failed reconcile is a failed run, in the store too",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "reconcile-failure-stored-completed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "_reconcile_failed",
+          "old": "    run.status = RunStatus.FAILED\n",
+          "new": "    pass\n",
+          "breaks": "a run whose work never landed is stored as COMPLETED",
+          "symbol_sha": "sha256:4f111e3533ab68e3743d2aba00945b1d3526e7a78e86caedcbaa3d515a44d17b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "allowed_paths takes globs; * stays in one folder",
+      "scope": [
+        "tests/unit/sandbox/git/core/git/test_allowed_path_globs.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "star-crosses-folders",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "path_allowed",
+          "old": "    return any(_match(parts, pattern.split(\"/\")) for pattern in patterns)\n",
+          "new": "    return any(fnmatchcase(path, pattern) for pattern in patterns)\n",
+          "breaks": "src/*.py lets a file deep under src/ reach the real repo",
+          "symbol_sha": "sha256:2ad4132d4e827237ba532d23af9e00e29a31b9d1f84f819f7555887edb1e4352"
+        }
+      ]
+    }
+  ]
+}

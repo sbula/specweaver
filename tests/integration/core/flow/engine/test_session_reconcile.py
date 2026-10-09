@@ -7,6 +7,8 @@
 At span end (COMPLETED runs only), the session worktree's changes are committed and
 strip-merged back to the real repo — writing back ONLY paths in ``allowed_paths``. This
 is the DAL-C authorization gate: a file outside the allow-list must never reach the real repo.
+
+Proves: C-EXEC-06 FR-4, FR-5
 """
 
 from __future__ import annotations
@@ -293,3 +295,42 @@ def test_doc_updates_md_survives(tmp_path: Path) -> None:
     )
     assert run_state.status == RunStatus.COMPLETED
     assert (tmp_path / "doc_updates.md").exists()
+
+
+# --- C-EXEC-06 FR-4: a failed reconcile is a failed run, also in the store ---
+
+
+@pytest.mark.parametrize("intent", ["worktree_commit", "strip_merge"])
+def test_a_failed_reconcile_is_stored_as_a_failed_run(tmp_path: Path, intent: str) -> None:
+    from specweaver.core.flow.engine.store import StateStore
+
+    _commit_project(tmp_path, ("gen.sh", _GEN))
+    store = StateStore(tmp_path / "state.db")
+    runner = PipelineRunner(
+        PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+        _ctx(tmp_path, allowed=["src/foo.py"]),
+        registry=StepHandlerRegistry(),
+        store=store,
+    )
+
+    with _patch_intent_fail(intent), pytest.raises(RuntimeError):
+        asyncio.run(runner.run())
+
+    (stored,) = store.list_runs()
+    assert stored.status == RunStatus.FAILED
+
+
+# --- C-EXEC-06 FR-5: allowed_paths takes globs ------------------------------
+
+
+@pytest.mark.parametrize("pattern", ["src/*.py", "src/**/*.py", "**/foo.py"])
+def test_a_glob_in_allowed_paths_lands_its_files(tmp_path: Path, pattern: str) -> None:
+    _commit_project(tmp_path, ("gen.sh", _GEN))
+
+    _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+        _ctx(tmp_path, allowed=[pattern]),
+    )
+
+    assert (tmp_path / "src" / "foo.py").exists()
+    assert not (tmp_path / "secret.py").exists()
