@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for BashActionAtom (C-EXEC-02 SF-1)."""
+"""Tests for BashActionAtom (C-EXEC-02 SF-1).
+
+Proves: C-EXEC-02 FR-13
+"""
 
 from __future__ import annotations
 
@@ -412,3 +415,39 @@ class TestHostileArgs:
         result = atom.run({"script": "noop.sh", "args": [123]})  # must not raise
 
         assert result.status == AtomStatus.FAILED
+
+
+class TestMalformedParams:
+    """C-EXEC-02 FR-13: a step written wrong is a result, never an exception."""
+
+    @pytest.mark.skipif(_BASH_UNAVAILABLE, reason="bash not on PATH")
+    def test_an_empty_env_and_args_run_the_script(self, tmp_path: Path) -> None:
+        _write_script(
+            tmp_path / ".specweaver" / "scripts", "ok.sh", "#!/usr/bin/env bash\nexit 0\n"
+        )
+
+        result = BashActionAtom(cwd=tmp_path).run({"script": "ok.sh", "env": None, "args": None})
+
+        assert result.status == AtomStatus.SUCCESS
+
+    @pytest.mark.parametrize(
+        ("params", "named"),
+        [
+            ({"script": "ok.sh", "env": "PATH=/tmp"}, "'env'"),
+            ({"script": "ok.sh", "env": ["PATH"]}, "'env'"),
+            ({"script": "ok.sh", "args": "--force"}, "'args'"),
+            ({"script": 5}, "'script'"),
+        ],
+    )
+    def test_a_wrong_type_is_refused_without_raising(
+        self, tmp_path: Path, params: dict, named: str
+    ) -> None:
+        _write_script(
+            tmp_path / ".specweaver" / "scripts", "ok.sh", "#!/usr/bin/env bash\nexit 0\n"
+        )
+
+        result = BashActionAtom(cwd=tmp_path).run(params)
+
+        assert result.status == AtomStatus.FAILED
+        assert named in result.message
+        assert "exit_code" not in result.exports

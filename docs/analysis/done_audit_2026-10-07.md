@@ -97,7 +97,7 @@ proven through `/review`, not `/implement`).
 | B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks | `register_fk_pragma_listener` test-only |
 | C-FLOW-06 FR-1/2 | `stale_nodes` never written; skeletons dropped | `run_context.py:114` |
 | B-FLOW-01 FR-1/9/10 | S07 warns not rejects; no stack trace to the coder; ambiguity park not resumable | `s07_test_first.py:122`; `arbiter.py` |
-| C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR | `models.py:380`; `atom.py:128` |
+| C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR. **Fixed** 2026-10-09: one check runs at load and before each run; a wrong type is a result, not an exception; a step that never ran is ERROR | `models.py:380`; `atom.py:128` |
 | C-EXEC-06 FR-4/5 | Reconcile failure leaves COMPLETED; glob allow-lists exact-match | `runner.py:276`; `worktree_ops.py:128` |
 | E-EXEC-01 FR-2/4 | No per-DAL timeouts; no peak memory | `executor.py` |
 | E-INTL-02 FR-2 | Draft accept/modify/reject step missing | `drafting/_base.py:136-200` |

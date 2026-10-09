@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for BashActionHandler — runs a bash script via BashActionAtom."""
+"""Tests for BashActionHandler — runs a bash script via BashActionAtom.
+
+Proves: C-EXEC-02 FR-13
+"""
 
 from __future__ import annotations
 
@@ -99,6 +102,19 @@ class TestBashActionHandler:
             result = await handler.execute(_step(params={}), _ctx(tmp_path))
 
         mock_get.return_value.run.assert_called_once_with({})
+        assert result.status == StepStatus.ERROR
+
+    @pytest.mark.asyncio
+    async def test_a_script_that_ran_and_failed_is_failed(self, tmp_path: Path) -> None:
+        """C-EXEC-02 FR-13: only a script that ran and exited non-zero is FAILED; one that never
+        ran (bad step, containment, crash) is ERROR."""
+        handler = BashActionHandler()
+        ran = AtomResult(status=AtomStatus.FAILED, message="exited 3", exports={"exit_code": 3})
+
+        with patch.object(handler, "_get_atom", return_value=MagicMock()) as mock_get:
+            mock_get.return_value.run.return_value = ran
+            result = await handler.execute(_step(params={"script": "x.sh"}), _ctx(tmp_path))
+
         assert result.status == StepStatus.FAILED
 
 

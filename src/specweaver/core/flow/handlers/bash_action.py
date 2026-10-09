@@ -53,8 +53,10 @@ class BashActionHandler:
             )
 
         logger.warning("BashActionHandler: script failed: %s", result.message)
+        # A script that ran and exited non-zero failed; one that never ran is an error (FR-13).
+        ran = "exit_code" in result.exports
         return StepResult(
-            status=StepStatus.FAILED,
+            status=StepStatus.FAILED if ran else StepStatus.ERROR,
             output=result.exports,
             error_message=result.message,
             started_at=started,

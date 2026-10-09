@@ -1,0 +1,44 @@
+{
+  "schema": 2,
+  "feature": "C-EXEC-02",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "A script path or a PATH override is refused at load",
+      "scope": [
+        "tests/unit/core/flow/engine/test_step_params_validated_at_load.py"
+      ],
+      "mutants": [
+        {
+          "id": "load-time-check-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "_validate_params",
+          "old": "        errors.extend(f\"Step '{step.name}': {error}\" for error in bash_param_errors(step.params))\n",
+          "new": "        pass\n",
+          "breaks": "a bash step naming ../evil.sh or setting PATH loads clean and fails only when it runs",
+          "symbol_sha": "sha256:762426fe1ba7979a9a66c64acf03ffb9a04481dfd137c5e7a06c4a761a1cb075"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "A bash step that never ran is ERROR, not FAILED",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_bash_action_handler.py"
+      ],
+      "mutants": [
+        {
+          "id": "never-ran-is-failed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/bash_action.py",
+          "symbol": "BashActionHandler.execute",
+          "old": "            status=StepStatus.FAILED if ran else StepStatus.ERROR,\n",
+          "new": "            status=StepStatus.FAILED,\n",
+          "breaks": "a step written wrong reads as a script that ran and failed",
+          "symbol_sha": "sha256:1bf594e50ac178c669f2adbd32c4cc250f5b474412e89371b7254668f3e99cb3"
+        }
+      ]
+    }
+  ]
+}

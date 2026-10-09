@@ -17,6 +17,7 @@ from specweaver.sandbox.execution.models import ResourceLimits
 from specweaver.sandbox.security import WorkspaceBoundary, WorkspaceBoundaryError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
 _MAX_OUTPUT_BYTES = 1_048_576  # 1 MiB, FR-8
@@ -49,30 +50,30 @@ def _truncate(text: str) -> str:
     return encoded[:_MAX_OUTPUT_BYTES].decode("utf-8", errors="ignore") + "...[TRUNCATED]"
 
 
-def _validate_cheap(
-    script: str | None,
-    timeout_seconds: int | None,
-    env: dict[str, str],
-) -> str | None:
-    """In-memory checks that must pass before any filesystem/process I/O.
-
-    Returns an error message, or None if all checks pass.
-    """
-    if not script:
-        return "Missing 'script' in context."
-
-    # FR-2 (part 1): bare-name-only, no separators/traversal
-    if "/" in script or "\\" in script or ".." in script:
-        return f"Invalid script name {script!r}: must be a bare filename, no path separators."
-
-    if timeout_seconds is not None and timeout_seconds > _MAX_TIMEOUT_SECONDS:
-        return f"timeout_seconds={timeout_seconds} exceeds the {_MAX_TIMEOUT_SECONDS}s ceiling."
-
-    # FR-12: reject PATH override in the step-level env map, case-insensitively
-    if any(key.upper() == "PATH" for key in env):
-        return "The 'env' map may not set PATH (would hijack bash resolution)."
-
-    return None
+def bash_param_errors(params: Mapping[str, Any]) -> list[str]:
+    """What is wrong with a bash step's params; checked at load and again before each run."""
+    errors = []
+    script = params.get("script")
+    if script is not None and not isinstance(script, str):
+        errors.append("'script' must be a file name.")
+    elif script and ("/" in script or "\\" in script or ".." in script):  # FR-2
+        errors.append(
+            f"Invalid script name {script!r}: must be a bare filename, no path separators."
+        )
+    env = params.get("env")
+    if env is not None and not isinstance(env, dict):
+        errors.append("'env' must be a map of names to values.")
+    elif env and any(str(key).upper() == "PATH" for key in env):  # FR-12
+        errors.append("The 'env' map may not set PATH (would hijack bash resolution).")
+    args = params.get("args")
+    if args is not None and not isinstance(args, list):
+        errors.append("'args' must be a list.")
+    timeout = params.get("timeout_seconds")
+    if timeout is not None and (not isinstance(timeout, int) or timeout > _MAX_TIMEOUT_SECONDS):
+        errors.append(
+            f"timeout_seconds={timeout!r} must be whole seconds up to {_MAX_TIMEOUT_SECONDS}."
+        )
+    return errors
 
 
 class BashActionAtom(Atom):
@@ -84,13 +85,13 @@ class BashActionAtom(Atom):
 
     def run(self, context: dict[str, Any]) -> AtomResult:
         script = context.get("script")
+        if not script:
+            return AtomResult(status=AtomStatus.FAILED, message="Missing 'script' in context.")
+        errors = bash_param_errors(context)
+        if errors:
+            return AtomResult(status=AtomStatus.FAILED, message=" ".join(errors))
         timeout_seconds = context.get("timeout_seconds")
-        env: dict[str, str] = context.get("env", {})
-
-        cheap_error = _validate_cheap(script, timeout_seconds, env)
-        if cheap_error:
-            return AtomResult(status=AtomStatus.FAILED, message=cheap_error)
-        assert script is not None  # narrowed by _validate_cheap returning None
+        env: dict[str, str] = context.get("env") or {}
 
         try:
             # FR-2 (part 2): canonical containment check — this call IS the
@@ -115,7 +116,7 @@ class BashActionAtom(Atom):
                 message="bash interpreter not found on PATH.",
             )
 
-        args = context.get("args", [])
+        args = context.get("args") or []
         working_dir = context.get("working_dir")
         cwd_override = (self._cwd / working_dir) if working_dir else None
 

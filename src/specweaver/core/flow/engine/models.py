@@ -19,6 +19,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from specweaver.sandbox.execution.core.atom import bash_param_errors
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -389,12 +391,11 @@ def _validate_params(step: PipelineStep) -> list[str]:
     value they meant — which is enough to say so precisely, instead of reporting a missing param and
     leaving them to find a key that is right there.
     """
+    errors: list[str] = []
+    if step.action is StepAction.BASH:
+        errors.extend(f"Step '{step.name}': {error}" for error in bash_param_errors(step.params))
     required = _REQUIRED_PARAMS.get(step.action, ())
-    if not required:
-        return []
-
     extras = step.model_extra or {}
-    errors = []
     for key in required:
         if step.params.get(key):
             continue

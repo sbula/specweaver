@@ -4,6 +4,7 @@
 """A pipeline author's typo fails at load, not three HITL gates later.
 
 Proves: TECH-011 FR-1, TECH-011 FR-2
+Proves: C-EXEC-02 FR-2, C-EXEC-02 FR-12
 
 `PipelineStep.params` was opaque to `validate_flow()`: no step type's params were checked at load,
 and each handler validated its own only when the step actually ran — potentially much later in a
@@ -112,3 +113,32 @@ def test_params_still_accepts_arbitrary_extra_keys() -> None:
     )
 
     assert step.params["env"] == {}
+
+
+def _bash(params: dict) -> list[str]:
+    return _pipeline(
+        {"name": "s", "action": "bash", "target": "script", "params": params}
+    ).validate_flow()
+
+
+def test_a_script_path_is_refused_at_load() -> None:
+    """C-EXEC-02 FR-2: the bare-name rule holds at load as well as before each run."""
+    for name in ("../evil.sh", "sub/x.sh", "a\\b.sh"):
+        assert any("bare filename" in e for e in _bash({"script": name})), name
+
+
+def test_a_path_override_in_env_is_refused_at_load() -> None:
+    """C-EXEC-02 FR-12: PATH in a step's env, in any case, is refused at load."""
+    errors = _bash({"script": "x.sh", "env": {"Path": "/tmp"}})
+
+    assert any("PATH" in e for e in errors), errors
+
+
+def test_an_env_that_is_not_a_mapping_is_refused_at_load() -> None:
+    errors = _bash({"script": "x.sh", "env": ["PATH=/tmp"]})
+
+    assert any("'env'" in e for e in errors), errors
+
+
+def test_a_well_formed_bash_step_loads_clean() -> None:
+    assert _bash({"script": "x.sh", "env": {"MODE": "ci"}, "args": ["-v"]}) == []
