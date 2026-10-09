@@ -242,8 +242,8 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`B-FLOW-05` 🔧: Spend Brake**
   > - **Purpose:** No run spends past the user's limits unasked: it pauses and asks, or parks
   > - **Trigger:** Before every LLM request, each tool round included, and after every completed call
-  > - **Precondition:** `C-FLOW-01` → token and cost data · `C-FLOW-13` → `[brake]` and model and role limits in `settings.toml`
-  > - **Reads:** `[brake]`, model and role limits · prices and caps · accumulated usage
+  > - **Precondition:** `C-FLOW-01` → token and cost data · `C-FLOW-13` → `[brake]` and model limits in `settings.toml`
+  > - **Reads:** `[brake]`, model limits · prices and caps · accumulated usage
   > - **Produces:** a run that pauses and asks at a limit, or parks with its totals saved
   > - **Enables:** `C-FLOW-11` → the cap on an agentic loop
   > - **Done when:** a run that would cross any limit pauses before the call, and a resumed run continues its totals

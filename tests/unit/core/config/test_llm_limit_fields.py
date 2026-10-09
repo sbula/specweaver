@@ -7,10 +7,10 @@ Proves: C-FLOW-13 FR-17
 
 | Bucket | Case |
 |---|---|
-| Happy | `[brake]`, a model's and a role's limits parse; `sw config show` lists each with its line |
+| Happy | `[brake]` and a model's limits parse; `sw config show` lists each with its line |
 | Boundary | a file without `[brake]` still parses — the limits are then unset, not defaulted |
 | Degradation | not applicable here — refusing a command on an unset limit is proven at the router |
-| Hostile | the retired `local_gpu_hours_per_run`, a zero or negative limit, and a limit in a project file are refused |
+| Hostile | the retired `local_gpu_hours_per_run`, a zero or negative limit, a role's limit and a limit in a project file are refused |
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ max_parallel = 4
 
 [roles]
 default = "qwen3-coder-next@gb10"
-review = { model = "qwen3-coder-next@gb10", tokens_per_run = 300000 }
+review = "qwen3-coder-next@gb10"
 
 [brake]
 hosted_spend_per_run = 16
@@ -75,12 +75,6 @@ class TestLimitFieldsParse:
         assert models["qwen3-coder-next"].tokens_per_run == 1_000_000
         assert models["claude-sonnet-5"].spend_per_run == 8
 
-    def test_role_limit(self) -> None:
-        roles = parse_machine_file(_MACHINE, "settings.toml").roles
-
-        assert roles["review"].tokens_per_run == 300_000
-        assert roles["review"].model == "qwen3-coder-next"
-
     def test_no_brake_section_means_unset_not_a_default(self) -> None:
         brake = parse_machine_file("", "settings.toml").brake
 
@@ -104,10 +98,18 @@ class TestLimitFieldsRefused:
             parse_machine_file(f"[brake]\n{line}\n", "settings.toml")
 
     @pytest.mark.parametrize("field", ["spend_per_run", "tokens_per_run"])
+    def test_a_role_has_no_limit_in_the_machine_file(self, field: str) -> None:
+        text = f'[roles]\nreview = {{ model = "qwen3-coder-next@gb10", {field} = 5 }}\n'
+
+        with pytest.raises(SettingsFileError) as caught:
+            parse_machine_file(text, "settings.toml")
+        assert caught.value.key == f"roles.review.{field}"
+
+    @pytest.mark.parametrize("field", ["spend_per_run", "tokens_per_run"])
     def test_a_limit_in_a_project_file(self, field: str) -> None:
         text = f'[llm.roles]\nreview = {{ model = "qwen3-coder-next@gb10", {field} = 5 }}\n'
 
-        with pytest.raises(SettingsFileError, match="machine settings file") as caught:
+        with pytest.raises(SettingsFileError) as caught:
             parse_project_llm(text, "specweaver.toml")
         assert caught.value.key == f"llm.roles.review.{field}"
         assert caught.value.line == 2
@@ -127,7 +129,7 @@ class TestLimitsInTheReport:
         assert value.startswith("unset")
         assert origin == "-"
 
-    def test_model_and_role_limits_are_listed_with_their_lines(self) -> None:
+    def test_model_limits_are_listed_with_their_lines(self) -> None:
         report = _report()
 
         assert report["models.qwen3-coder-next.tokens_per_run"] == (
@@ -135,7 +137,3 @@ class TestLimitsInTheReport:
             "settings.toml:17",
         )
         assert report["models.claude-sonnet-5.spend_per_run"][0] == "8"
-        assert report["roles.review.tokens_per_run"] == (
-            "300000",
-            "settings.toml:9",
-        )

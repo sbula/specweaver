@@ -70,7 +70,7 @@ FR-1 to FR-5 keep their numbers so the tests that cite them stay valid; their wo
 | FR-2 | No call can cross a limit unasked | Brake | SHALL, before every request — each tool round included — add the call's worst case to the totals (estimated input tokens × 1.25 plus the output cap; in money at the model's prices for a hosted server, in tokens for a private one) and pause first if any limit would be crossed `[agreed 2026-10-06]` | a runaway is stopped before the call that would cross the line |
 | FR-3 | The pause reaches the user | Handlers, runner | SHALL let the brake's signal through every handler, and the runner SHALL turn it into a pause, never into a step error, a retry or text | the run says *you reached your limit*, not "drift analysis failed" |
 | FR-4 | One warning first | Brake | SHALL warn once at 80% of each limit `[agreed 2026-10-06]` | a long run can be watched before it pauses |
-| FR-5 | Limits come from the settings file | Brake | SHALL take every limit from the machine `settings.toml` and none from code: `[brake] hosted_spend_per_run` (configured currency) for calls to non-private servers, `[brake] tokens_per_run` for calls to private servers `[agreed 2026-10-06]`, a model's `spend_per_run` / `tokens_per_run`, and a role's, which only lowers the model's `[agreed 2026-10-03]` | one place, and the user's own numbers |
+| FR-5 | Limits come from the settings file | Brake | SHALL take every limit from the machine `settings.toml` and none from code: `[brake] hosted_spend_per_run` (configured currency) for calls to non-private servers, `[brake] tokens_per_run` for calls to private servers `[agreed 2026-10-06]`, and a model's `spend_per_run` / `tokens_per_run` `[agreed 2026-10-03]`; a role carries no limit `[agreed 2026-10-09]` | one place, and the user's own numbers |
 | FR-6 | Pause and ask | Brake | SHALL, at a limit and with someone to answer, ask — one question at a time, however many calls run in parallel — naming the limit, what was spent and any overshoot by calls already running `[agreed 2026-09-26]`; "yes" raises that limit by its own size (20 → 40 → 60) `[agreed 2026-10-06]` | the user decides, with the numbers in front of them |
 | FR-7 | Park when nobody answers | Runner | SHALL park the run at a limit when nobody can answer (no TTY, nightly, CI) or the answer is "no" `[agreed 2026-10-06]` | no work is lost, and nothing is spent unasked |
 | FR-8 | Resume keeps the totals | Runner, brake | SHALL save the brake's totals and raised limits with the run before it parks, and `sw resume` SHALL continue from them; a limit the user raised in `settings.toml` meanwhile counts if it is higher | a parked run cannot buy a fresh budget by resuming |
@@ -85,7 +85,7 @@ FR-1 to FR-5 keep their numbers so the tests that cite them stay valid; their wo
 | FR-1 | a call's cost | `C-FLOW-01` · `estimate_cost(usage, facts) -> float \| None` | read `infrastructure/llm/telemetry.py:49` |
 | FR-2 | a check inside each tool round | adapters · the loop over `tool_rounds(config)` | read `adapters/anthropic.py:235`, `models.py:83` — the collector cannot see rounds today; the adapters gain a per-round check |
 | FR-2 | the prompt's size | adapters · `count_tokens(text, model)`, `estimate_tokens(text)` | read `adapters/base.py:122`, `:144`; `adapters/gemini.py:377` |
-| FR-5 | limits | `C-FLOW-13` · `brake_limits(files)`, `ModelFacts.spend_per_run`, `RoleEntry.spend_per_run`, `ServerEntry.private` | read `core/config/llm_settings.py:97`, `:132`, `:159` |
+| FR-5 | limits | `C-FLOW-13` · `brake_limits(files)`, `ModelFacts.spend_per_run`, `ServerEntry.private` | read `core/config/llm_settings.py:97`, `:132`, `:159` |
 | FR-5 | which role a call is for | `C-FLOW-13` · `GenerationConfig.task_type`, set by `llm_for(context, task_type)` | read `core/flow/handlers/_llm.py:46` — REST calls leave it `UNKNOWN`; FR-5 has them stamp it |
 | FR-3, FR-7 | turning the signal into a park | `D-FLOW-01` · `execute_step(...)`, `park_run(runner, run, step_def, step_idx, total, result)` | read `core/flow/engine/step_execution.py:183`, `:220` |
 | FR-6 | asking | `ContextProvider.ask(question, *, section="") -> str` | read `workspace/context/provider.py:31`, `interfaces/cli/main.py:136` |
@@ -171,7 +171,7 @@ None.
 ### SF-01: Accounting and limits
 - **Scope**: every call is counted and checked against every limit before it is sent.
 - **FRs**: [FR-1, FR-2, FR-4, FR-5, FR-9]
-- **Inputs**: `[brake]`, model and role limits, catalogue facts, each call's config and usage
+- **Inputs**: `[brake]`, model limits, catalogue facts, each call's config and usage
 - **Outputs**: a `SpendBudget` that refuses or signals a limit before a call; `SpendLimitReachedError`
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf01_implementation_plan.md

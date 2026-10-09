@@ -116,14 +116,6 @@ class RoleResolver:
     def _check_bounded(self, setting: ResolvedRole) -> None:
         """Refuse a setting whose cost the brake cannot bound."""
         server = self._files.machine.servers[setting.server]
-        wrong = "spend_per_run" if server.private else "tokens_per_run"
-        if getattr(setting, wrong) is not None:
-            unit = "tokens" if server.private else "money"
-            self._refuse(
-                f"roles.{setting.role}.{wrong}",
-                f"server '{setting.server}' is limited in {unit}; set the other limit instead",
-                f"roles.{setting.role}",
-            )
         if server.private:
             return
         facts = self._catalogue.facts(server.kind, setting.model, self._files.machine.models)
@@ -192,7 +184,6 @@ class RoleResolver:
         """The limits a call counts against: money on a hosted server, tokens on a private one."""
         server = self._files.machine.servers[server_name]
         facts = self._catalogue.facts(server.kind, config.model, self._files.machine.models)
-        setting = self._roles.get(config.task_type.value) or self._roles.get(DEFAULT_ROLE)
         brake = self._files.machine.brake
         unit: Unit
         if server.private:
@@ -205,8 +196,6 @@ class RoleResolver:
             run,
             (f'models."{config.model}".{field}', getattr(facts, field) if facts else None),
         ]
-        if setting is not None:
-            candidates.append((f"roles.{setting.role}.{field}", getattr(setting, field)))
         currency = self._files.machine.currency
         limits = tuple(
             Limit(key, unit, value if unit == "tokens" else to_usd(value, currency))
@@ -257,24 +246,9 @@ def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, floa
 def _every_role(files: LlmSettingsFiles, run_model: RoleEntry | None) -> dict[str, RoleEntry]:
     """`--model` for one run: every role the files name, and `default`, get the same model.
 
-    A role nobody named falls back to `default`, so overriding `default` covers it too. Each task
-    keeps its own limit.
+    A role nobody named falls back to `default`, so overriding `default` covers it too.
     """
     if run_model is None:
         return {}
     named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE}
-    return {role: _keeping_task_limit(files, role, run_model) for role in named}
-
-
-def _keeping_task_limit(files: LlmSettingsFiles, role: str, run_model: RoleEntry) -> RoleEntry:
-    """The run model, with the task's own limit when it is in the unit the run model's server uses.
-
-    A task limit in the other unit cannot bound this server; that gap is the limits matrix's.
-    """
-    entry = next((e for name, e in files.machine.roles.items() if name == role), None)
-    server = files.machine.servers.get(run_model.server)
-    if entry is None or server is None:
-        return run_model
-    unit = "tokens_per_run" if server.private else "spend_per_run"
-    limit = getattr(entry, unit)
-    return run_model if limit is None else run_model.model_copy(update={unit: limit})
+    return dict.fromkeys(named, run_model)

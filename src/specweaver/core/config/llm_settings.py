@@ -61,7 +61,7 @@ _VARIABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 #: Keys that decide where code is sent. Only the machine file may set them.
 _MACHINE_ONLY_KEYS = frozenset({"servers", "base_url", "api_key_env"})
-#: Limit keys. They live in the machine file only, so a cloned repo cannot touch the user's money.
+#: A model's limit keys.
 _LIMIT_KEYS = ("spend_per_run", "tokens_per_run")
 
 
@@ -135,9 +135,6 @@ class RoleEntry(Sampling):
     model: str
     server: str
     max_output_tokens: int | None = Field(default=None, ge=1)
-    #: This kind of task's own limit; it can only lower the model's.
-    spend_per_run: float | None = Field(default=None, gt=0)
-    tokens_per_run: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="before")
     @classmethod
@@ -287,16 +284,6 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
             "a project may choose models, not define where code is sent — set servers, "
             "addresses and key variables in the machine settings file",
         )
-    for role, entry in section.get("roles", {}).items():
-        limit = next((key for key in _LIMIT_KEYS if isinstance(entry, dict) and key in entry), None)
-        if limit:
-            path = ("llm", "roles", role, limit)
-            raise SettingsFileError(
-                source,
-                ".".join(path),
-                path_line(text, path),
-                "limits live in the machine settings file only, never in a project",
-            )
     return _validate(ProjectLlmSection, section, text, source, prefix=("llm",))
 
 
@@ -410,8 +397,6 @@ class ResolvedRole:
     max_output_tokens: int | None = None
     top_p: float | None = None
     top_k: int | None = None
-    spend_per_run: float | None = None
-    tokens_per_run: int | None = None
     origin: dict[str, str] = field(default_factory=dict)
 
 
@@ -461,10 +446,7 @@ def _resolved(role: str, entry: RoleEntry, origin: str) -> ResolvedRole:
     values = {name: getattr(entry, name) for name in _SAMPLING_FIELDS}
     origins = {"model": origin, "server": origin}
     origins.update({name: origin for name, value in values.items() if value is not None})
-    limits = {name: getattr(entry, name) for name in _LIMIT_KEYS}
-    return ResolvedRole(
-        role=role, model=entry.model, server=entry.server, origin=origins, **values, **limits
-    )
+    return ResolvedRole(role=role, model=entry.model, server=entry.server, origin=origins, **values)
 
 
 def _step_limit_rows(files: LlmSettingsFiles) -> list[tuple[str, str, str]]:
@@ -527,7 +509,6 @@ def settings_report(
         else:
             line = path_line(files.machine_text, ("brake", name))
             rows.append((f"brake.{name}", _number(value), at.format(line)))
-    rows.extend(_stored_limits(files, "roles", machine.roles.items()))
     rows.extend(_stored_limits(files, "models", machine.models.items()))
     rows.extend(_step_limit_rows(files))
     if machine.currency is None:
@@ -549,9 +530,9 @@ def settings_report(
 
 
 def _stored_limits(
-    files: LlmSettingsFiles, table: str, entries: Iterable[tuple[str, RoleEntry | ModelFacts]]
+    files: LlmSettingsFiles, table: str, entries: Iterable[tuple[str, ModelFacts]]
 ) -> list[tuple[str, str, str]]:
-    """Model and role limits, each with its line."""
+    """Model limits, each with its line."""
     rows = []
     for name, entry in sorted(entries, key=lambda item: item[0]):
         for key in _LIMIT_KEYS:

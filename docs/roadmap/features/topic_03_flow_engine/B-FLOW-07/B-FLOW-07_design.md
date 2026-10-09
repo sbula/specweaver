@@ -16,8 +16,8 @@ DAL `[agreed 2026-10-08]`, because a higher DAL demands more work — DO-178C as
 level A and 26 at level D.
 
 It solves a step that costs far more than its kind usually does, caught before the run limit would
-catch it. It does not replace any limit: the run limit (`[brake]`), the model limit and the task
-limit (`roles.<task>`) stay as they are `[agreed 2026-10-08]`.
+catch it. It does not replace any limit: the run limit (`[brake]`) and the model limit stay as they are
+`[agreed 2026-10-08]`. The task limit (`roles.<task>`) is removed `[agreed 2026-10-09]`.
 
 It does **not** read the task's text: a vague task must not look easy `[agreed 2026-10-08]`. The
 research found history the strongest indicator that text cannot move; the model's own forecast of
@@ -66,7 +66,7 @@ None.
 | FR-2 | Each call knows how its step ended | Runner, telemetry | SHALL store, when a run's records are written, each step's outcome — `passed` or `failed`, none while unfinished — from the run's step records, one row per step that its calls join (**seam**: runner → telemetry) | only finished work counts as history |
 | FR-3 | Every target has a DAL | Runner, validation | SHALL take the run's DAL from the nearest `context.yaml`, else from the project's default DAL, the same rule validation uses; a project's default DAL is `DAL_C` `[agreed 2026-10-08]` (**seam**: workspace project store) | the history and validation agree on a target's DAL |
 | FR-4 | A step limit from history | Brake | SHALL set a step's limit, before its first call, to the `[step_limits] percentile` value (`[agreed 2026-10-08]`: 90) of the totals of the last `min_steps` (`[agreed 2026-10-08]`: 10) **passed** steps with the same kind of task, model and DAL, across all projects on the machine `[agreed 2026-10-08]`, each total counting all the step's attempts `[agreed 2026-10-08]` — money for a hosted server, tokens for a private one; the percentile by nearest rank | a step that costs far more than its kind usually does is stopped early |
-| FR-5 | No history, no step limit | Brake | SHALL set no step limit while a group has fewer than `min_steps` passed steps; the run, model and task limits still apply `[agreed 2026-10-08]` | a new kind of work is never stopped by a guess |
+| FR-5 | No history, no step limit | Brake | SHALL set no step limit while a group has fewer than `min_steps` passed steps; the run and model limits still apply `[agreed 2026-10-08]` | a new kind of work is never stopped by a guess |
 | FR-6 | The step limit behaves like every limit | Brake, runner | SHALL treat the step limit as one more limit of the call, checked against what the step has really spent, not against the next call's worst case `[agreed 2026-10-08]`: once a step has spent its limit, its next call pauses and asks; "yes" raises it by its own size; "no" or no terminal parks the run `[agreed 2026-10-08]` | one behaviour for all limits, built in `B-FLOW-05` |
 | FR-7 | One step, one limit | Brake | SHALL count every attempt of a step against the same step limit, and give each sub-run its own | a retry cannot reset the limit; sub-runs do not share one |
 | FR-8 | Settings in the machine file | Settings | SHALL read `[step_limits] percentile` (1–100) and `min_steps` (≥ 1) from the machine `settings.toml` only, with no value in code; a project file that sets them is refused `[agreed 2026-10-08]` | a cloned repository cannot change the user's limits |

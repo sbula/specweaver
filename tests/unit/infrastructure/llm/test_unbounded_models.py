@@ -10,7 +10,7 @@ Proves: B-FLOW-05 FR-5, B-FLOW-05 FR-9
 | Happy | a hosted model with prices and a thinking cap, and any model on a private server, are accepted |
 | Boundary | the router stamps each config with its task, so the role's limit applies on every path |
 | Degradation | a hosted model whose thinking cap is unknown is refused, naming the key |
-| Hostile | a hosted model with no price, and a role limit in the wrong unit for its server, are refused |
+| Hostile | a hosted model with no price is refused |
 """
 
 from __future__ import annotations
@@ -87,22 +87,6 @@ class TestRefused:
             _resolver('review = "priced@hosted"\n', models).require(["review"])
 
         assert caught.value.key == 'models."priced".thinking_in_output_cap'
-
-    @pytest.mark.parametrize(
-        ("role", "key"),
-        [
-            (
-                'review = { model = "free@gb10", max_output_tokens = 100, spend_per_run = 5 }',
-                "spend_per_run",
-            ),
-            ('review = { model = "priced@hosted", tokens_per_run = 500 }', "tokens_per_run"),
-        ],
-    )
-    def test_a_role_limit_in_the_wrong_unit_for_its_server(self, role: str, key: str) -> None:
-        with pytest.raises(SettingsFileError) as caught:
-            _resolver(role + "\n").require(["review"])
-
-        assert caught.value.key == f"roles.review.{key}"
 
     def test_the_refusal_also_holds_for_a_role_resolved_later(self) -> None:
         models = '\n[models."unpriced"]\nmax_output = 100\nthinking_in_output_cap = true\n'

@@ -270,7 +270,6 @@
       "title": "The right limits for the call: tokens on private servers, money elsewhere, the role's too",
       "scope": [
         "tests/integration/infrastructure/llm/test_brake_from_settings.py",
-        "tests/integration/interfaces/api/test_api_role_limits.py",
         "tests/unit/infrastructure/llm/test_budget_from_settings.py",
         "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
         "tests/unit/infrastructure/llm/test_spend_budget.py",
@@ -285,16 +284,6 @@
           "old": "        if server.private:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "new": "        if False:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "breaks": "a GB10 run is limited by money it never spends, so nothing stops it",
-          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
-        },
-        {
-          "id": "role-limit-dropped",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/resolve.py",
-          "symbol": "RoleResolver._scope",
-          "old": "            candidates.append((f\"roles.{setting.role}.{field}\", getattr(setting, field)))\n",
-          "new": "            pass\n",
-          "breaks": "a role's own limit is shown but never applied",
           "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
         },
         {
@@ -384,16 +373,6 @@
           "old": "        if facts is not None and facts.thinking_in_output_cap is not True:\n",
           "new": "        if False:\n",
           "breaks": "a model whose thinking is not bounded by its output cap runs, so a call's cost has no ceiling",
-          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
-        },
-        {
-          "id": "wrong-unit-accepted",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/resolve.py",
-          "symbol": "RoleResolver._check_bounded",
-          "old": "        if getattr(setting, wrong) is not None:\n",
-          "new": "        if False:\n",
-          "breaks": "a role limit in the wrong unit for its server is silently ignored",
           "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
         }
       ]

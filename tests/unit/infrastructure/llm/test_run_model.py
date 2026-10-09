@@ -8,7 +8,7 @@ Proves: C-FLOW-13 FR-16
 | Bucket | Case |
 |---|---|
 | Happy | a role set in the machine or project file, a role left to `default`, and `default` itself all get the run model |
-| Boundary | the run model replaces a role's model and sampling, never its task limit |
+| Boundary | the run model replaces a role's model and sampling |
 | Degradation | no run model → the files decide, as before |
 | Hostile | a run model on a server the file does not define, or on a hosted server in a private-only project → refused before any call |
 """
@@ -117,33 +117,6 @@ class TestRunModelReplacesEveryRole:
         adapters = {id(resolver.for_role(role)[0]) for role in ("review", "plan", "draft")}
         assert len(adapters) == 1
         assert {c._adapter._key for c in resolver.collectors()} == {"spare"}
-
-
-class TestTaskLimitsStay:
-    def test_a_tasks_token_limit_stays_under_the_run_model(self) -> None:
-        machine = _MACHINE.replace(
-            'review = { model = "qwen3-coder-next@gb10", temperature = 0.3 }',
-            'review = { model = "qwen3-coder-next@gb10", tokens_per_run = 500 }',
-        )
-        files = LlmSettingsFiles.from_texts(
-            machine_text=machine,
-            machine_source="settings.toml",
-            project_text="",
-            project_source="-",
-        )
-        router = build_router(
-            files,
-            project="demo",
-            roles=[TaskType.REVIEW, TaskType.PLAN],
-            run_model=RoleEntry.model_validate("qwen3-coder-next@spare"),
-        )
-
-        def limits(task: TaskType) -> dict[str, float]:
-            routed = router.get_for_task(task)
-            return {limit.key: limit.value for limit in routed.adapter.scope(routed.config).limits}
-
-        assert limits(TaskType.REVIEW)["roles.review.tokens_per_run"] == 500
-        assert "roles.review.tokens_per_run" not in limits(TaskType.PLAN)
 
 
 class TestWithoutRunModel:

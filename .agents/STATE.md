@@ -41,12 +41,12 @@ Read the design before touching it. It says so in its own first section.
 
 | Capability | What is wrong |
 |---|---|
-| `B-FLOW-05` | Redesigned and rebuilt 2026-10-07 (Spend Brake: pause and ask, park, resume with totals, model and role limits, REST 402); awaiting the user's approval, so still `🔧`. Loop detection moved to `B-FLOW-06` |
+| `B-FLOW-05` | Redesigned and rebuilt 2026-10-07 (Spend Brake: pause and ask, park, resume with totals, model limits, REST 402); awaiting the user's approval, so still `🔧`. Loop detection moved to `B-FLOW-06` |
 
 `C-FLOW-13` (all five sub-features committed 2026-10-05): every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
-`--model` sets one run's model. `B-FLOW-05` applies every limit, including model and role limits.
+`--model` sets one run's model. `B-FLOW-05` applies every limit, including model limits.
 Both status flips (`C-FLOW-13` 🔜 → ✅, `B-FLOW-05` 🔧 → ✅) await the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,

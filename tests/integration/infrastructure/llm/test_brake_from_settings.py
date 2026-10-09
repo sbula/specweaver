@@ -3,16 +3,16 @@
 
 """The run's limits come from the settings file and stop a real call before it is sent.
 
-Proves: C-FLOW-13 FR-17, B-FLOW-05 FR-5
+Proves: C-FLOW-13 FR-17
 
 Settings file → `build_router` → a real adapter → its collector → the brake. Only HTTP is faked.
 
 | Bucket | Case |
 |---|---|
-| Happy | a GB10 call counts its tokens on the run's, the model's and the role's token limits, and no money |
+| Happy | a GB10 call counts its tokens on the run's and the model's token limits, and no money |
 | Boundary | a hosted call counts money only, the CHF limit converted once to USD |
 | Degradation | a `[brake]` value missing → the router refuses before any adapter is built, naming the key |
-| Hostile | a role limit below the model's stops the call first, and nothing is sent |
+| Hostile | a model limit below the call's worst case stops the call first, and nothing is sent |
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ private = true
 max_parallel = 4
 
 [roles]
-default = { model = "qwen3-coder-next@gb10", max_output_tokens = 1000, tokens_per_run = 5000 }
+default = { model = "qwen3-coder-next@gb10", max_output_tokens = 1000 }
 
 [models."qwen3-coder-next"]
 tokens_per_run = 1000000
@@ -105,7 +105,6 @@ class TestALimitedCall:
         assert len(seen) == 1
         assert budget.spent("brake.tokens_per_run") == 30
         assert budget.spent('models."qwen3-coder-next".tokens_per_run') == 30
-        assert budget.spent("roles.default.tokens_per_run") == 30
         assert budget.spent("brake.hosted_spend_per_run") == 0
 
     async def test_a_hosted_call_counts_money_against_the_converted_limit(self) -> None:
@@ -120,16 +119,8 @@ class TestALimitedCall:
         assert budget.spent("brake.hosted_spend_per_run") == pytest.approx(0.03)  # 30 tokens
         assert budget.spent("brake.tokens_per_run") == 0
 
-    def test_a_models_and_a_roles_money_limit_are_converted_too(self) -> None:
-        machine = (
-            _HOSTED.replace(
-                'default = { model = "big-model@hosted", max_output_tokens = 1000 }',
-                'default = { model = "big-model@hosted", max_output_tokens = 1000, spend_per_run = 4 }',
-            )
-            + "spend_per_run = 8\n"
-            + _BRAKE
-            + _CHF
-        )
+    def test_a_models_money_limit_is_converted_too(self) -> None:
+        machine = _HOSTED + "spend_per_run = 8\n" + _BRAKE + _CHF
         router = _router(machine)
         routed = router.get_for_task(TaskType.REVIEW)
 
@@ -139,19 +130,18 @@ class TestALimitedCall:
             {
                 "brake.hosted_spend_per_run": 20.0,
                 'models."big-model".spend_per_run': 10.0,
-                "roles.default.spend_per_run": 5.0,
             }
         )
 
-    async def test_a_role_limit_below_the_worst_case_stops_the_call_before_it_is_sent(
+    async def test_a_model_limit_below_the_worst_case_stops_the_call_before_it_is_sent(
         self,
     ) -> None:
-        machine = (_GB10 + _BRAKE).replace("tokens_per_run = 5000", "tokens_per_run = 900")
+        machine = (_GB10 + _BRAKE).replace("tokens_per_run = 1000000", "tokens_per_run = 900")
 
         with pytest.raises(SpendLimitReachedError) as caught:
             await _call(_router(machine))
 
-        assert caught.value.limit.key == "roles.default.tokens_per_run"
+        assert caught.value.limit.key == 'models."qwen3-coder-next".tokens_per_run'
 
     def test_agent_turns_is_every_roles_round_limit(self) -> None:
         router = _router(_GB10 + _BRAKE)
