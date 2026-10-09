@@ -218,14 +218,16 @@ class ValidateSpecHandler:
         # Pass project_dir so the documented project-local override
         # ({project}/.specweaver/pipelines/) applies on the flow-handler path; without it the
         # loader searches packaged pipelines only and the override is silently ignored.
-        if archetype:
+        # An archetype's spec pipeline is `validation_spec_<archetype>`; one it lacks falls back.
+        pipeline = None
+        if archetype and kind_str != "feature":
             try:
                 pipeline = load_pipeline_yaml(
-                    f"{pipeline_name}_{archetype}", project_dir=project_path
+                    f"validation_spec_{archetype}", project_dir=project_path
                 )
-            except Exception:
-                pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
-        else:
+            except FileNotFoundError:
+                logger.debug("No spec pipeline for archetype %r; using the default", archetype)
+        if pipeline is None:
             pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
 
         if settings is not None:
@@ -244,7 +246,9 @@ class ValidateSpecHandler:
             active_archetype=active_archetype,
             parsers=parsers,
         )
-        payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
+        payload_res = atom.run(
+            {"intent": "read_file_structure", "path": _inside(spec_path, cwd_path)}
+        )
 
         ast_payload: dict[str, Any] = {}
         if payload_res.status.value == "SUCCESS":
@@ -586,3 +590,11 @@ class ValidateTestsHandler:
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]
+
+
+def _inside(path: Path, root: Path) -> str:
+    """`path` relative to `root`, as the sandboxed atoms take it; unchanged when it lies outside."""
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path)

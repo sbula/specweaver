@@ -6,5 +6,6 @@ add:
   - name: s12_archetype_spec_bounds
     rule: S12
     params:
-      required_headers: ["1. Purpose", "2. Boundaries"]
+      required_headers:
+        h2: ["1. Purpose", "2. Boundaries"]
     position: end

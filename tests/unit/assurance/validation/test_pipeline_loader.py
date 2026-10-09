@@ -204,7 +204,7 @@ class TestFrameworksPluginLoading:
         # Verify the S12 boundary exists
         s12_step = pipeline.get_step("s12_archetype_spec_bounds")
         assert s12_step is not None
-        assert s12_step.params["required_headers"] == ["1. Purpose", "2. Boundaries"]
+        assert s12_step.params["required_headers"] == {"h2": ["1. Purpose", "2. Boundaries"]}
 
     def test_load_java_spring_boot_code(self):
         """Loads validation_code_spring-boot correctly."""

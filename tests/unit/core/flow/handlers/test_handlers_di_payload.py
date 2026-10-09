@@ -144,9 +144,7 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
 
         await handler.execute(step, context)
 
-        mock_load.assert_called_once_with(
-            "validation_spec_default_spring-boot", project_dir=project_root
-        )
+        mock_load.assert_called_once_with("validation_spec_spring-boot", project_dir=project_root)
 
 
 @pytest.mark.asyncio
@@ -393,8 +391,8 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
         mock_resolver_cls.return_value = mock_resolver
 
         def mock_load_side_effect(name, **kwargs):
-            if name == "validation_spec_default_unrecognized_archetype":
-                raise ValueError("File not found")
+            if name == "validation_spec_unrecognized_archetype":
+                raise FileNotFoundError(name)
             mock_pipeline = MagicMock()
             mock_pipeline.steps = []
             return mock_pipeline

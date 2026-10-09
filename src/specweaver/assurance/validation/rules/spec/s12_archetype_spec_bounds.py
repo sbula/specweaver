@@ -1,6 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -40,24 +41,14 @@ class S12ArchetypeSpecBoundsRule(Rule):
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         if not self.required_headers:
             return self._pass(message="No structural bounds configured.")
-
-        if not hasattr(self, "context") or "structure" not in self.context:
+        if not isinstance(self.required_headers, dict):
             return self._fail(
-                message="Markdown AST payload missing or malformed.",
-                findings=[Finding(message="Missing `structure` context payload.")],
+                message="required_headers must map a header level to its titles, e.g. h2: [...]",
+                findings=[Finding(message="required_headers is not a map of header levels.")],
             )
 
-        try:
-            skeleton = json.loads(self.context["structure"])
-        except (json.JSONDecodeError, TypeError):
-            return self._fail(
-                message="Markdown AST payload missing or malformed.",
-                findings=[
-                    Finding(message="Context payload `structure` is not a valid JSON string.")
-                ],
-            )
-
-        failures = self._missing_headers(skeleton)
+        structure = getattr(self, "context", {}).get("structure")
+        failures = self._missing_headers(_headings(structure if structure else spec_text))
 
         if failures:
             return self._fail(
@@ -65,3 +56,22 @@ class S12ArchetypeSpecBoundsRule(Rule):
             )
 
         return self._pass(message="Structural bounds matched.")
+
+
+_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$", re.MULTILINE)
+
+
+def _headings(structure: Any) -> dict[str, list[str]]:
+    """Headings per level (`h1`..`h6`): from a JSON map, else from Markdown text."""
+    if isinstance(structure, dict):
+        return structure
+    try:
+        parsed = json.loads(structure)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        parsed = None
+    if isinstance(parsed, dict):
+        return parsed
+    levels: dict[str, list[str]] = {}
+    for marks, title in _HEADING.findall(str(structure)):
+        levels.setdefault(f"h{len(marks)}", []).append(title)
+    return levels

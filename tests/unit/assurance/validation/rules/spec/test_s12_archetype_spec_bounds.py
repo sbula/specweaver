@@ -34,14 +34,23 @@ def test_s12_archetype_spec_bounds_missing_h2() -> None:
     assert "Missing required <h2> header: '3. Architecture'" in result.findings[0].message
 
 
-def test_s12_archetype_spec_bounds_no_payload() -> None:
+def test_s12_without_a_payload_reads_the_spec_itself() -> None:
     rule = S12ArchetypeSpecBoundsRule(required_headers={"h1": ["Main Title"]})
-    rule.context = {}  # Missing structure payload
+    rule.context = {}
 
-    result = rule.check("spec content", Path("spec.md"))
+    assert rule.check("# Main Title\n", Path("spec.md")).status == Status.PASS
+    assert rule.check("spec content", Path("spec.md")).status == Status.FAIL
+
+
+def test_s12_reads_the_markdown_skeleton_the_reader_produces() -> None:
+    """The structure reader hands over the spec's Markdown skeleton as text, not JSON."""
+    rule = S12ArchetypeSpecBoundsRule(required_headers={"h2": ["1. Purpose", "2. Boundaries"]})
+    rule.context = {"structure": "# Orders\n\n## 1. Purpose\n\nx\n"}
+
+    result = rule.check("", Path("spec.md"))
 
     assert result.status == Status.FAIL
-    assert "Markdown AST payload missing or malformed" in result.message
+    assert [f.message for f in result.findings] == ["Missing required <h2> header: '2. Boundaries'"]
 
 
 def test_s12_archetype_spec_bounds_empty_no_requirements() -> None:
