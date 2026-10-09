@@ -363,17 +363,17 @@
           "old": "        if facts is None or None in (facts.usd_per_million_input, facts.usd_per_million_output):\n",
           "new": "        if False:\n",
           "breaks": "a hosted model with no price runs, and its money is never counted",
-          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
+          "symbol_sha": "sha256:9f7df301ce3593d9433f7cea2735894e2c6c60d8c4f996425825e3826a023055"
         },
         {
-          "id": "uncapped-accepted",
+          "id": "uncapped-silent",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._check_bounded",
           "old": "        if facts is not None and facts.thinking_in_output_cap is not True:\n",
           "new": "        if False:\n",
-          "breaks": "a model whose thinking is not bounded by its output cap runs, so a call's cost has no ceiling",
-          "symbol_sha": "sha256:f57dd1ff8a98be4b6d055a782196c11801534cf0012926c7816b3ff6bb08e3ce"
+          "breaks": "a model whose thinking may not be bounded by its output cap runs without a warning",
+          "symbol_sha": "sha256:9f7df301ce3593d9433f7cea2735894e2c6c60d8c4f996425825e3826a023055"
         }
       ]
     },

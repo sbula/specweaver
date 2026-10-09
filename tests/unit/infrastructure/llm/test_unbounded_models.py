@@ -9,13 +9,14 @@ Proves: B-FLOW-05 FR-5, B-FLOW-05 FR-9
 |---|---|
 | Happy | a hosted model with prices and a thinking cap, and any model on a private server, are accepted |
 | Boundary | the router stamps each config with its task, so the role's limit applies on every path |
-| Degradation | a hosted model whose thinking cap is unknown is refused, naming the key |
+| Degradation | a hosted model whose thinking cap is unknown runs, with one warning naming the key |
 | Hostile | a hosted model with no price is refused |
 """
 
 from __future__ import annotations
 
 import json
+import logging
 
 import pytest
 
@@ -70,6 +71,29 @@ class TestAccepted:
     def test_any_model_on_a_private_server(self) -> None:
         _resolver('review = { model = "free@gb10", max_output_tokens = 100 }\n').require(["review"])
 
+    def test_a_hosted_model_whose_thinking_cap_is_unknown_runs_with_one_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        resolver = _resolver(
+            'review = "priced@hosted"\n', _PRICED.replace("thinking_in_output_cap = true\n", "")
+        )
+
+        with caplog.at_level(logging.WARNING):
+            resolver.require(["review"])
+            resolver.for_role("review")
+
+        warnings = [
+            r.getMessage() for r in caplog.records if "thinking_in_output_cap" in r.getMessage()
+        ]
+        assert len(warnings) == 1
+        assert 'models."priced"' in warnings[0]
+
+    def test_a_known_thinking_cap_warns_nothing(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.WARNING):
+            _resolver('review = "priced@hosted"\n').require(["review"])
+
+        assert not [r for r in caplog.records if "thinking_in_output_cap" in r.getMessage()]
+
 
 class TestRefused:
     def test_a_hosted_model_with_no_price(self) -> None:
@@ -79,14 +103,6 @@ class TestRefused:
             _resolver('review = "unpriced@hosted"\n', models).require(["review"])
 
         assert caught.value.key == 'models."unpriced".usd_per_million_input'
-
-    def test_a_hosted_model_whose_thinking_cap_is_unknown(self) -> None:
-        models = _PRICED.replace("thinking_in_output_cap = true\n", "")
-
-        with pytest.raises(SettingsFileError) as caught:
-            _resolver('review = "priced@hosted"\n', models).require(["review"])
-
-        assert caught.value.key == 'models."priced".thinking_in_output_cap'
 
     def test_the_refusal_also_holds_for_a_role_resolved_later(self) -> None:
         models = '\n[models."unpriced"]\nmax_output = 100\nthinking_in_output_cap = true\n'

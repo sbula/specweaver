@@ -74,7 +74,7 @@ FR-1 to FR-5 keep their numbers so the tests that cite them stay valid; their wo
 | FR-6 | Pause and ask | Brake | SHALL, at a limit and with someone to answer, ask — one question at a time, however many calls run in parallel — naming the limit, what was spent and any overshoot by calls already running `[agreed 2026-09-26]`; "yes" raises that limit by its own size (20 → 40 → 60) `[agreed 2026-10-06]` | the user decides, with the numbers in front of them |
 | FR-7 | Park when nobody answers | Runner | SHALL park the run at a limit when nobody can answer (no TTY, nightly, CI) or the answer is "no" `[agreed 2026-10-06]` | no work is lost, and nothing is spent unasked |
 | FR-8 | Resume keeps the totals | Runner, brake | SHALL save the brake's totals and raised limits with the run before it parks, and `sw resume` SHALL continue from them; a limit the user raised in `settings.toml` meanwhile counts if it is higher | a parked run cannot buy a fresh budget by resuming |
-| FR-9 | Refuse what cannot be bounded | Brake | SHALL refuse, before the first call, a hosted model with no known price `[agreed 2026-09-26]`, and one whose `thinking_in_output_cap` is not `true` `[agreed 2026-10-06]`, naming the key that would allow it | no hosted call has an unbounded cost |
+| FR-9 | Refuse what cannot be bounded | Brake | SHALL refuse, before the first call, a hosted model with no known price `[agreed 2026-09-26]`, naming the key that would allow it; one whose `thinking_in_output_cap` is not `true` runs with one warning naming the key `[agreed 2026-10-09]` | no hosted call has an unknown price |
 | FR-10 | REST stops with a named error | REST API | SHALL answer a request that reaches a limit with an HTTP error naming the limit, never a bare 500 `[agreed 2026-10-06]` | an API client can tell a spent budget from a crash |
 
 ## Requirement–Surface Bindings
@@ -100,7 +100,7 @@ or by the e2e paths in `US-04.md`.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Fail closed | Unknown is never a pass: an unknown price or thinking cap refuses (FR-9); a limit must be `> 0`; an unset `[brake]` value refuses the command (`C-FLOW-13`) |
+| NFR-1 | Fail closed | Unknown is never a pass: an unknown price refuses (FR-9); an unknown thinking cap warns; a limit must be `> 0`; an unset `[brake]` value refuses the command (`C-FLOW-13`) |
 | NFR-2 | Scope | One brake per run, covering the whole call tree and surviving `sw resume` `[agreed 2026-09-26]` |
 | NFR-3 | No limit in code | No number or default for any limit in `src/` `[agreed 2026-10-03]` |
 

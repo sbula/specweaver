@@ -11,6 +11,7 @@ parallel limit, and every role of the run shares one spend budget.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Any, NoReturn
 
@@ -41,6 +42,8 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.catalogue import Catalogue
 
+logger = logging.getLogger(__name__)
+
 #: The role that covers every role left unset.
 DEFAULT_ROLE = "default"
 _SAMPLING = ("temperature", "top_p", "top_k")
@@ -68,6 +71,7 @@ class RoleResolver:
         self._vault = vault_values(files.project_root)
         self._history = history
         self._step_limits: dict[tuple[str, ...], float | None] = {}
+        self._uncapped: set[str] = set()
 
     @property
     def budget(self) -> SpendBudget:
@@ -114,7 +118,7 @@ class RoleResolver:
         return setting
 
     def _check_bounded(self, setting: ResolvedRole) -> None:
-        """Refuse a setting whose cost the brake cannot bound."""
+        """Refuse a hosted model with no price; warn when its thinking may not be bounded."""
         server = self._files.machine.servers[setting.server]
         if server.private:
             return
@@ -128,14 +132,19 @@ class RoleResolver:
                 f"roles.{setting.role}",
             )
         if facts is not None and facts.thinking_in_output_cap is not True:
-            self._refuse(
-                f"{table}.thinking_in_output_cap",
-                f"it is not known whether the output limit of '{setting.model}' also bounds its "
-                f"thinking; set thinking_in_output_cap = true under [{table}] once you have "
-                "checked",
-                table,
-                f"roles.{setting.role}",
-            )
+            self._warn_uncapped(setting.model, table)
+
+    def _warn_uncapped(self, model: str, table: str) -> None:
+        if model in self._uncapped:
+            return
+        self._uncapped.add(model)
+        logger.warning(
+            "it is not known whether the output limit of '%s' also bounds its thinking, so a "
+            "call may cost more than its worst case; set %s.thinking_in_output_cap once you "
+            "have checked",
+            model,
+            table,
+        )
 
     def _refuse(self, key: str, message: str, *near: str) -> NoReturn:
         """Refuse naming `key`'s line, else the line of the first of `near` in the file."""
