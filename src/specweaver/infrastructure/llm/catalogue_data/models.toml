@@ -1,0 +1,99 @@
+# The models SpecWeaver is used with, and what each costs and can do. Edited by hand; the machine
+# settings file wins over it ([models."<id>"]). A fact left out is unknown, never false or 0.
+#
+# Prices are USD per 1M tokens, taken from models.dev (MIT licence, Copyright (c) 2025 models.dev).
+# Where a model has tiers (long prompts, cache writes, reasoning), the highest price is written, so
+# a call is never under-counted. Add a model by copying an entry and checking its provider's price.
+
+schema_version = 1
+checked = "2026-10-08"
+
+# Whether the one output limit a call sends also bounds the model's hidden thinking.
+# Checked against each provider's documentation on 2026-09-27. Mistral and Qwen do not say, so
+# they are left unknown.
+[kinds.openai]
+thinking_in_output_cap = true   # max_completion_tokens counts reasoning tokens
+
+[kinds.anthropic]
+thinking_in_output_cap = true   # thinking tokens count toward max_tokens
+
+[kinds.gemini]
+thinking_in_output_cap = true   # max_output_tokens includes thought tokens
+
+[models."anthropic/claude-opus-5-5"]
+context = 1000000
+max_output = 128000
+tool_calls = true
+usd_per_million_input = 5
+usd_per_million_output = 20
+
+[models."anthropic/claude-sonnet-5"]
+context = 1000000
+max_output = 128000
+tool_calls = true
+usd_per_million_input = 2.5
+usd_per_million_output = 10
+
+[models."anthropic/claude-haiku-4-5"]
+context = 200000
+max_output = 64000
+tool_calls = true
+usd_per_million_input = 1.25
+usd_per_million_output = 5
+
+[models."openai/gpt-5.6"]
+context = 1050000
+max_output = 128000
+tool_calls = true
+usd_per_million_input = 10
+usd_per_million_output = 30
+
+[models."openai/gpt-5.6-luna"]
+context = 1050000
+max_output = 128000
+tool_calls = true
+usd_per_million_input = 0.5
+usd_per_million_output = 1.8
+
+[models."gemini/gemini-3.1-pro-preview"]
+context = 1048576
+max_output = 65536
+tool_calls = true
+usd_per_million_input = 4
+usd_per_million_output = 18
+
+[models."gemini/gemini-3.8-flash"]
+context = 1048576
+max_output = 65536
+tool_calls = true
+usd_per_million_input = 0.75
+usd_per_million_output = 3.75
+
+[models."mistral/mistral-large-latest"]
+context = 262144
+max_output = 262144
+tool_calls = true
+usd_per_million_input = 0.5
+usd_per_million_output = 1.5
+
+[models."mistral/codestral-latest"]
+context = 256000
+max_output = 4096
+tool_calls = true
+usd_per_million_input = 0.3
+usd_per_million_output = 0.9
+
+[models."qwen/qwen3-coder-plus"]
+context = 1048576
+max_output = 65536
+tool_calls = true
+usd_per_million_input = 0.574
+usd_per_million_output = 2.296
+
+# Models on a local server. A hosted entry of the same name is never used for these.
+[models."openai-compatible/qwen3-coder-next"]
+context = 262144
+max_output = 65536   # the model card's own examples use max_new_tokens=65536
+tool_calls = true
+sampling = { temperature = 1.0, top_p = 0.95, top_k = 40 }   # the model card's values
+note = "vLLM: serve with --tool-call-parser qwen3_xml; qwen3_coder loops on long tool inputs"

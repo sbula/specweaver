@@ -3,12 +3,12 @@
 
 """The shipped catalogue loads, and the machine settings file corrects it.
 
-Proves: C-FLOW-13 FR-6, NFR-1
+Proves: C-FLOW-13 FR-6, FR-18, NFR-1
 
 | Bucket | Case |
 |---|---|
-| Happy | the shipped files load and price a current hosted model |
-| Boundary | loading both files stays under the 50 ms budget |
+| Happy | the shipped list loads; every hosted model on it has both prices and an output limit |
+| Boundary | loading it stays under the 50 ms budget |
 | Degradation | a machine-file correction reaches the facts through the settings reader |
 | Hostile | the GB10's model is not priced from a hosted namesake |
 """
@@ -19,7 +19,7 @@ import time
 from typing import TYPE_CHECKING
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-from specweaver.infrastructure.llm.catalogue import CATALOGUE_DIR, Catalogue, shipped_catalogue
+from specweaver.infrastructure.llm.catalogue import CATALOGUE_FILE, Catalogue, shipped_catalogue
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,21 +27,24 @@ if TYPE_CHECKING:
     import pytest
 
 
-def test_the_shipped_catalogue_prices_a_hosted_model() -> None:
-    facts = shipped_catalogue().facts("anthropic", "claude-sonnet-4-5", {})
+def test_every_hosted_model_on_the_shipped_list_is_priced() -> None:
+    catalogue = shipped_catalogue()
+    hosted = [key for key in catalogue.models if not key.startswith("openai-compatible/")]
 
-    assert facts is not None
-    assert facts.usd_per_million_input and facts.usd_per_million_input > 0
-    assert facts.thinking_in_output_cap is True
-    assert shipped_catalogue().source["repo_commit"]
+    assert hosted
+    for key in hosted:
+        kind, model = key.split("/", 1)
+        facts = catalogue.facts(kind, model, {})
+        assert facts is not None and facts.max_output, key
+        assert facts.usd_per_million_input and facts.usd_per_million_output, key
+    assert catalogue.checked
 
 
 def test_loading_stays_within_the_budget() -> None:
-    generated = (CATALOGUE_DIR / "models_dev.json").read_text(encoding="utf-8")
-    local = (CATALOGUE_DIR / "local.toml").read_text(encoding="utf-8")
+    text = CATALOGUE_FILE.read_text(encoding="utf-8")
 
     start = time.perf_counter()
-    Catalogue.from_texts(generated, local)
+    Catalogue.from_text(text)
 
     assert time.perf_counter() - start < 0.05
 
@@ -51,11 +54,11 @@ def test_a_machine_correction_reaches_the_facts(
 ) -> None:
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
     (tmp_path / "settings.toml").write_text(
-        '[models."claude-sonnet-4-5"]\nusd_per_million_input = 1.5\n', encoding="utf-8"
+        '[models."claude-sonnet-5"]\nusd_per_million_input = 1.5\n', encoding="utf-8"
     )
     files = load_llm_settings(None)
 
-    facts = shipped_catalogue().facts("anthropic", "claude-sonnet-4-5", files.machine.models)
+    facts = shipped_catalogue().facts("anthropic", "claude-sonnet-5", files.machine.models)
 
     assert facts is not None
     assert facts.usd_per_million_input == 1.5

@@ -153,7 +153,5 @@ def test_costs_names_the_catalogue_and_a_kind_price(
     shown = runner.invoke(app, ["costs"])
 
     assert set_price.exit_code == 0, set_price.output
-    assert re.search(
-        r"catalogue: models\.dev, fetched \d{4}-\d{2}-\d{2}", " ".join(shown.output.split())
-    )
+    assert re.search(r"shipped list, checked \d{4}-\d{2}-\d{2}", " ".join(shown.output.split()))
     assert shows(shown.output, "your settings file")

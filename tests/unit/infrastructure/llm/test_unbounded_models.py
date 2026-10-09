@@ -15,7 +15,6 @@ Proves: B-FLOW-05 FR-5, B-FLOW-05 FR-9
 
 from __future__ import annotations
 
-import json
 import logging
 
 import pytest
@@ -49,9 +48,7 @@ usd_per_million_output = 2.0
 thinking_in_output_cap = true
 """
 
-_CATALOGUE = Catalogue.from_texts(
-    json.dumps({"schema_version": 1, "source": {}, "models": {}}), "schema_version = 1\n"
-)
+_CATALOGUE = Catalogue.from_text("schema_version = 1\n")
 
 
 def _resolver(roles: str, models: str = _PRICED) -> RoleResolver:

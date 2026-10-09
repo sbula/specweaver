@@ -58,7 +58,7 @@ def costs(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from err
     currency = files.machine.currency
     _say(_currency_line(currency))
-    _say(_catalogue_line(shipped_catalogue().source))
+    _say(_catalogue_line(shipped_catalogue().checked))
     spend = _month_spend(project)
     for (model, server), role_names in sorted(_models_in_use(roles).items()):
         kind = files.machine.servers[server].kind
@@ -165,8 +165,8 @@ def _models_in_use(roles: dict[str, ResolvedRole]) -> dict[tuple[str, str], list
     return used
 
 
-def _catalogue_line(source: dict[str, Any]) -> str:
-    return f"Prices from the catalogue: models.dev, fetched {source.get('fetched', 'unknown')}."
+def _catalogue_line(checked: str) -> str:
+    return f"Prices from the shipped list, checked {checked}."
 
 
 def _price_source(kind: str, model: str, facts: ModelFacts | None, files: LlmSettingsFiles) -> str:

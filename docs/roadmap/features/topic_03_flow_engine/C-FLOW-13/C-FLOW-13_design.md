@@ -60,7 +60,7 @@ a cloned repo must not be able to send code to its own server.
 | AD-4 | Every client gets `base_url` explicitly from its server entry; `OPENAI_BASE_URL` is ignored | one stray env var would send private code to the cloud or cloud calls to the GB10 |
 | AD-5 | Read with `tomllib`, write with `tomlkit` | tomlkit keeps the user's comments; tomllib is stdlib |
 | AD-6 | Each file is validated alone, strictly (`extra="forbid"`), before layering | every error can name its own file; a typo cannot pass as a default |
-| AD-7 | Catalogue seeded from models.dev (MIT, credited), version stamped, never fetched at runtime `[agreed 2026-09-26]` | its shape matches ours; runtime fetch is the anti-pattern |
+| AD-7 | Catalogue: a short list kept by hand, prices from models.dev (MIT, credited), never fetched at runtime `[agreed 2026-09-26]`; the download script and its 207-model file are removed `[agreed 2026-10-09]` | its shape matches ours; runtime fetch is the anti-pattern |
 | AD-8 | Prices stored in USD per 1M tokens; converted only at display, to the one configured currency, with the dated manual rate `[agreed 2026-09-26]`; the currency is configurable, not fixed to CHF `[agreed 2026-09-27]` | the providers' unit; history does not shift when the rate changes |
 | AD-9 | No migration from the database `[agreed 2026-09-27]` | measured 2026-09-27: the only user's DB held 3 seeded profiles with retired Gemini 2.5 models, 0 links, 0 overrides; old models are not supported, so a migration would move nothing |
 
@@ -84,7 +84,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-15 | Commands write the files | `sw config set-role`, `sw costs set`, `sw costs reset` | SHALL write the machine or project file with `tomlkit`, keeping comments; `set-provider`, `routing` and the DB's LLM tables go `[agreed 2026-09-27]` | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
 | FR-17 | Brake values handed over | Resolver → brake | SHALL provide `[brake]` values (CHF and GPU-hour check-in intervals, agent turns) to the brake — **seam with `B-FLOW-05`**, test written as `xfail(strict=True)` until its redesign | the values live here; the behaviour lives there |
-| FR-18 | Catalogue update | `scripts/update_model_catalogue.py` | SHALL regenerate the shipped catalogue from models.dev, keeping local additions, and stamp source, fetch date, ETag and repo commit; the committed file is the pin `[agreed 2026-09-27]` | an update is a reviewable diff, never a runtime fetch |
+| FR-18 | Catalogue upkeep | `catalogue_data/models.toml` | SHALL ship a short list kept by hand: every hosted model on it has both prices, at the highest tier, and an output limit, and the list states the date its prices were checked `[agreed 2026-10-09]` | a price change is a one-line, reviewable edit, never a runtime fetch |
 
 ## Non-Functional Requirements
 

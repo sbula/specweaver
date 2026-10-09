@@ -15,8 +15,6 @@ Proves: C-FLOW-13 FR-10, FR-11
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
@@ -37,7 +35,6 @@ review = { model = "qwen3-coder-next@gb10", temperature = 0.3, max_output_tokens
 default = "qwen3-coder-next@gb10"
 """
 
-_GENERATED = json.dumps({"schema_version": 1, "source": {}, "models": {}})
 _LOCAL = """\
 schema_version = 1
 
@@ -58,7 +55,7 @@ def _resolver(machine: str = _MACHINE, local: str = _LOCAL) -> RoleResolver:
         _files(machine),
         telemetry_project="demo",
         budget=SpendBudget(),
-        catalogue=Catalogue.from_texts(_GENERATED, local),
+        catalogue=Catalogue.from_text(local),
     )
 
 

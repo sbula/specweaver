@@ -15,8 +15,6 @@ Proves: C-FLOW-13 FR-10
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
@@ -37,8 +35,7 @@ max_parallel = 4
 review = { model = "qwen3-coder-next@gb10", temperature = 0.3 }
 default = "qwen3-coder-next@gb10"
 """
-_CATALOGUE = Catalogue.from_texts(
-    json.dumps({"schema_version": 1, "source": {}, "models": {}}),
+_CATALOGUE = Catalogue.from_text(
     'schema_version = 1\n[models."openai-compatible/qwen3-coder-next"]\nmax_output = 8192\n',
 )
 

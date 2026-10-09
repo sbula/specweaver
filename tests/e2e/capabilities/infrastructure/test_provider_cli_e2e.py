@@ -21,7 +21,7 @@ _OPENAI_REPLY = {
     "id": "chatcmpl-123",
     "object": "chat.completion",
     "created": 1677652288,
-    "model": "gpt-5.4",
+    "model": "gpt-5.6",
     "choices": [
         {
             "index": 0,
@@ -88,7 +88,7 @@ def test_openai_draft_telemetry_journey(
         "[brake]\nhosted_spend_per_run = 1000\ntokens_per_run = 100000000\nagent_turns = 10\n",
         encoding="utf-8",
     )
-    result = runner.invoke(app, ["config", "set-role", "default", "gpt-5.4@oai"])
+    result = runner.invoke(app, ["config", "set-role", "default", "gpt-5.6@oai"])
     assert result.exit_code == 0, f"Failed to set the default role: {result.stdout}"
 
     # 3. Run the draft command

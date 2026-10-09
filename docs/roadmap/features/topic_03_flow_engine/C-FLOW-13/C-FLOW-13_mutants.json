@@ -231,7 +231,6 @@
       "requirement": "FR-18",
       "title": "The catalogue is regenerated from models.dev, filtered and stamped",
       "scope": [
-        "tests/unit/scripts/test_update_model_catalogue.py",
         "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
       ],
       "mutants": [
@@ -295,7 +294,11 @@
           "breaks": "a cache write billed above the input price is under-counted",
           "symbol_sha": "sha256:f7dd24c6882b59de833723046dedabaa22940bad5715b00defc96f66f6215173"
         }
-      ]
+      ],
+      "retired": {
+        "reason": "the download script is removed; the shipped list is short and kept by hand (user decision 2026-10-09)",
+        "date": "2026-10-09"
+      }
     },
     {
       "requirement": "FR-7",

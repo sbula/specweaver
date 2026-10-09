@@ -95,7 +95,7 @@ private = false
 max_parallel = 2
 
 [roles]
-default = "gemini-2.5-pro@gem"
+default = "gemini-3.8-flash@gem"
 
 [brake]
 hosted_spend_per_run = 1000
@@ -222,7 +222,7 @@ class TestFullPipelineE2E:
 
 
 _PRICE = """
-[models."gemini-2.5-pro"]
+[models."gemini-3.8-flash"]
 usd_per_million_input = 100000.0
 usd_per_million_output = 200000.0
 """

@@ -15,13 +15,13 @@ Multi-provider, auto-discovered (introduced in Feature 3.12a).
 | **Factory** | `infrastructure/llm/factory.py` builds the configured adapter from the project's settings (its linked database profile). Default provider: `gemini`. |
 | **Telemetry** | `RoleResolver` wraps the adapter in a `TelemetryCollector` proxy: token usage, cost, streaming telemetry. The adapter does not know. |
 | **Limits** | `[brake]` in the machine settings file, no defaults: the run's money total (`SpendBudget`, one per command), its token total, and `agent_turns` for every tool loop. A model's limit is stored there too; the spend brake applies every limit. |
-| **Model catalogue** | Prices (USD per 1M tokens), limits and sampling per model, shipped in `catalogue_data/` and corrected by the user's settings file. |
+| **Model catalogue** | Prices (USD per 1M tokens), limits and sampling per model, shipped in `catalogue_data/models.toml` (a short list kept by hand) and corrected by the user's settings file. |
 
 Rules:
 
 - Adding a provider = adding one file under `adapters/`. No hardcoded imports, no central
   dictionary. The folder is a PEP 420 implicit namespace package (no `__init__.py`).
-- New models are a catalogue data change (`scripts/update_model_catalogue.py`); adapters carry no prices.
+- A new model is one entry in `catalogue_data/models.toml`, or in the user's settings file; adapters carry no prices.
 
 (Since moved: this package was `src/specweaver/llm/` (adapters in `src/specweaver/llm/adapters/`); `registry.py` and `src/specweaver/llm/factory.py`
 now live under `src/specweaver/infrastructure/llm/`.)

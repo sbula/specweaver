@@ -15,8 +15,6 @@ Proves: C-FLOW-13 FR-16
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry, SettingsFileError
@@ -55,8 +53,7 @@ tokens_per_run = 100000000
 agent_turns = 10
 """
 
-_CATALOGUE = Catalogue.from_texts(
-    json.dumps({"schema_version": 1, "source": {}, "models": {}}),
+_CATALOGUE = Catalogue.from_text(
     """\
 schema_version = 1
 

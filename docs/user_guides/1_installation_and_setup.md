@@ -91,8 +91,9 @@ rate_date = 2026-09-26
   has, it asks before its next call. While there are fewer than 10, there is no step limit. Without
   the section, step limits are off; `sw config show` says so. A target with no DAL in any
   `context.yaml` uses its project's default DAL, `DAL_C`.
-- A cloud model needs a known price, or the command stops at the start and names the key. Set it
-  under `[models."<id>"]` when the model list has none. Without `thinking_in_output_cap = true`
+- A cloud model needs a known price, or the command stops at the start and names the key.
+  SpecWeaver ships prices for about ten common models; for any other, set them under
+  `[models."<id>"]`. Without `thinking_in_output_cap = true`
   (its output limit also bounds its thinking) the command runs, with one warning.
 - `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
   one run the same model; the files stay unchanged. The server must be in `settings.toml`, and

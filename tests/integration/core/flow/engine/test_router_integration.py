@@ -75,9 +75,9 @@ private = false
 max_parallel = 2
 
 [roles]
-implement = { model = "claude-sonnet-4-5@anthropic", max_output_tokens = 8192 }
-plan = { model = "claude-sonnet-4-5@anthropic", max_output_tokens = 8192 }
-draft = { model = "claude-sonnet-4-5@anthropic", max_output_tokens = 8192 }
+implement = { model = "claude-sonnet-5@anthropic", max_output_tokens = 8192 }
+plan = { model = "claude-sonnet-5@anthropic", max_output_tokens = 8192 }
+draft = { model = "claude-sonnet-5@anthropic", max_output_tokens = 8192 }
 review = { model = "fast-model@gemini", max_output_tokens = 8192 }
 validate = { model = "fast-model@gemini", max_output_tokens = 8192 }
 
@@ -96,7 +96,7 @@ def test_routed_calls_are_priced_from_the_catalogue() -> None:
         res = _router(_HOSTED, [TaskType.IMPLEMENT]).get_for_task(TaskType.IMPLEMENT)
 
         assert isinstance(res.adapter, TelemetryCollector)
-        facts = res.adapter._prices("claude-sonnet-4-5")
+        facts = res.adapter._prices("claude-sonnet-5")
         assert facts is not None and facts.usd_per_million_input > 0
 
 
