@@ -67,9 +67,6 @@ class MarkdownCodeStructure(DeclarativeParser):
     def get_default_directory_ignores(self) -> list[str]:
         return []
 
-    def extract_traceability_tags(self, code: str) -> set[str]:
-        return set()
-
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         if not code.strip():
             return new_code

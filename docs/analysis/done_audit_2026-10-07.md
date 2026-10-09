@@ -101,7 +101,7 @@ proven through `/review`, not `/implement`).
 | C-EXEC-06 FR-4/5 | Reconcile failure leaves COMPLETED; glob allow-lists exact-match. **Fixed** 2026-10-09: a failed reconcile stores the run FAILED; an allow-list entry may be a glob (`*` in one folder, `**` across folders) | `runner.py:276`; `worktree_ops.py:128` |
 | E-EXEC-01 FR-2/4 | No per-DAL timeouts; no peak memory | `executor.py` |
 | E-INTL-02 FR-2 | Draft accept/modify/reject step missing | `drafting/_base.py:136-200` |
-| D-SENS-03 FR-4/5 | Markdown/SQL traceability always empty | `markdown/codestructure.py:70` |
+| D-SENS-03 FR-4/5 | Markdown/SQL traceability always empty. **Fixed** 2026-10-09: Markdown reads tags from HTML comments, SQL from line and block comments; code text is not read | `markdown/codestructure.py:70` |
 | D-VAL-05 | C04 never yields coverage; relative paths break C02/C04/C05 | `validation_hydrator.py:257` |
 | D-INTL-03 | No shipped pipeline, CLI or API has a plan step | `new_feature.yaml` |
 | D-FLOW-04 FR-6 | Logger rollout incomplete (107 of 360 modules) | grep |
